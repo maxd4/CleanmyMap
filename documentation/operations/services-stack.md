@@ -207,6 +207,36 @@ Statut observé au moment de cette passe:
   navigateur. `SENTRY_CLI_BIN`, lorsqu'il est défini, doit pointer vers la CLI
   v11 `sentry`.
 
+Chaîne Sentry, Codex et GitHub (état observé le 15 octobre 2026):
+
+- Codex utilise le serveur MCP officiel distant `https://mcp.sentry.dev/mcp`;
+  l'authentification OAuth locale a été validée. Aucun token Sentry n'est
+  enregistré dans le dépôt ou dans cette documentation.
+- Dans l'organisation Sentry `cleanmymap`, l'intégration GitHub est installée
+  et le dépôt `maxd4/CleanmyMap` est autorisé. Le dépôt n'est pas encore relié
+  au projet Sentry `javascript-nextjs`; cette liaison concerne le code linking,
+  les commits suspects et les liens vers les lignes de code.
+- L'accès MCP a permis de lister l'organisation et le projet, de consulter des
+  métadonnées d'issue de production et de lire un événement réel en sortie
+  redacted. Les contrôles MCP, Sentry et GitHub restent séparés: cette preuve
+  ne vaut pas preuve de ticketing GitHub.
+- Les règles d'alerte actuellement visibles sont des notifications email. Dans
+  l'éditeur Sentry, les recherches `GitHub` et `Issue` ne proposent aucune
+  action; la création automatique d'une GitHub Issue sur `first_seen_event` ou
+  `regression_event` n'est donc pas opérationnelle ou vérifiable pour cette
+  organisation dans l'état observé.
+
+Action manuelle restante, dans Sentry: vérifier avec un administrateur
+`Organization Settings > Integrations > GitHub`, puis la règle du projet dans
+`Alerts`, que la capacité **Ticket Rules / Create a GitHub Issue** est activée
+et disponible. Si elle apparaît, créer une règle ciblée sur une nouvelle
+issue ou une régression et conserver le lien Sentry pour éviter les doublons;
+ne publier dans GitHub que le titre, le lien Sentry et les métadonnées
+techniques minimales, jamais un événement brut, une trace ou une donnée
+personnelle. Si l'action reste absente, un changement de plan ou une
+autorisation Sentry/GitHub est requis; aucun webhook, workflow GitHub Actions
+ou stockage parallèle n'est ajouté par ce dépôt.
+
 ### Resend
 
 Rôle:
