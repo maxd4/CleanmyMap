@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getOrganizerDirectoryEntries } from "@/lib/actions/association-options";
 import { normalizeOrganizerName } from "@/lib/actions/organizer-directory-registry";
 import type { WasteCategorySlug } from "@/lib/waste/types";
+import { defaultSpogomiTeamClosureDecision, type SpogomiEnvironmentalEligibility, type SpogomiTeamClosureDecision, type SpogomiTeamClosureStatus } from "./closure";
 import {
   aggregateSpogomiEnvironmentalProjection,
   deriveSpogomiEnvironmentalMapping,
@@ -65,6 +66,18 @@ type ActionRow = {
   organizer_id: string | null;
   organizer_name: string | null;
   organizer_type: string | null;
+};
+
+type ClosureDecisionRow = {
+  id: string;
+  team_id: string;
+  division_id: string;
+  status: SpogomiTeamClosureStatus;
+  sport_eligible: boolean;
+  environmental_eligibility: SpogomiEnvironmentalEligibility;
+  decision_version: number;
+  reason: string;
+  updated_at?: string;
 };
 
 const WASTE_CATEGORY_SLUGS: ReadonlySet<string> = new Set([
@@ -179,7 +192,7 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
   if (eventResult.error) throw eventResult.error;
   if (!eventResult.data) throw new Error("SPOGOMI event not found.");
   const event = eventResult.data as EventRow;
-  const [actionResult, categories, mappings, teams, submissions, items, participants, routeResult] = await Promise.all([
+  const [actionResult, categories, mappings, teams, submissions, items, participants, decisions, routeResult] = await Promise.all([
     supabase.from("actions").select("organizer_id, organizer_name, organizer_type, updated_at").eq("id", event.action_id).single(),
     readAllSpogomiPages("consolidation categories", (from, to) => supabase.from("spogomi_category_rules").select("id, division_id, code, label, measurement_kind, unit, environmental_category_slug, updated_at").eq("event_id", event.id).order("display_order", { ascending: true }).order("id", { ascending: true }).range(from, to)),
     readAllSpogomiPages("consolidation mappings", (from, to) => supabase.from("spogomi_environment_category_mappings").select("id, division_id, category_rule_id, mapping_version, category_code, environmental_category_slug, source_field, source_unit, target_unit, unit_factor_to_target, counts_toward_total, is_megots, mapping_status, exclusion_reason, updated_at").eq("event_id", event.id).eq("mapping_version", event.environmental_mapping_version).order("category_rule_id", { ascending: true }).order("id", { ascending: true }).range(from, to)),
@@ -187,6 +200,7 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
     readAllSpogomiPages("consolidation submissions", (from, to) => supabase.from("spogomi_result_submissions").select("id, division_id, team_id, status, updated_at").eq("event_id", event.id).order("id", { ascending: true }).range(from, to)),
     readAllSpogomiPages("consolidation result items", (from, to) => supabase.from("spogomi_result_items").select("id, division_id, submission_id, category_rule_id, quantity, mass_grams, object_count, provenance, measurement_method, source_reference, updated_at").eq("event_id", event.id).order("submission_id", { ascending: true }).order("category_rule_id", { ascending: true }).order("id", { ascending: true }).range(from, to)),
     readAllSpogomiPages("consolidation participants", (from, to) => supabase.from("spogomi_participants").select("id, division_id, team_id, attendance_status, registration_status, updated_at").eq("event_id", event.id).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("consolidation closure decisions", (from, to) => supabase.from("spogomi_team_closure_decisions").select("id, team_id, division_id, status, sport_eligible, environmental_eligibility, decision_version, reason, created_at, updated_at").eq("event_id", event.id).eq("is_current", true).order("division_id", { ascending: true }).order("team_id", { ascending: true }).range(from, to)),
     supabase.from("spogomi_event_routes").select("id, source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson, updated_at").eq("event_id", event.id).maybeSingle(),
   ]);
   for (const result of [actionResult, routeResult]) if (result.error) throw result.error;
@@ -203,11 +217,17 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
     persisted: persisted.get(category.id) ?? null,
   }), divisionId: category.division_id }));
   const submissionsById = new Map((submissions ?? []).map((row) => [String(row.id), row as { id: string; team_id: string; status: string }]));
+  const decisionsByTeam = new Map(((decisions ?? []) as unknown as ClosureDecisionRow[]).map((row) => [String(row.team_id), {
+    teamId: String(row.team_id), divisionId: String(row.division_id), status: row.status, sportEligible: Boolean(row.sport_eligible), environmentalEligibility: row.environmental_eligibility, decisionVersion: Number(row.decision_version), reason: String(row.reason),
+  } satisfies SpogomiTeamClosureDecision]));
   const rawItems = (items ?? []) as Array<Record<string, unknown>>;
   const teamRows = (teams ?? []).map((row) => {
     const teamId = String(row.id);
     const submissionId = row.certified_submission_id ? String(row.certified_submission_id) : null;
     const submission = submissionId ? submissionsById.get(submissionId) : null;
+    const closureDecision = decisionsByTeam.get(teamId) ?? (submissionId && submission?.status === "certified"
+      ? defaultSpogomiTeamClosureDecision({ teamId, divisionId: String(row.division_id), certifiedSubmission: true })
+      : null);
     const teamItems: SpogomiConsolidationSourceItem[] = rawItems.filter((item) => String(item.submission_id) === submissionId).map((item) => {
       const category = categoryRows.find((candidate) => candidate.id === String(item.category_rule_id));
       return {
@@ -235,6 +255,12 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
       publicName: String(row.public_name),
       certifiedSubmissionId: submissionId,
       certifiedSubmissionStatus: submission?.status ?? null,
+      ...(closureDecision ? {
+        closureStatus: closureDecision.status,
+        sportEligible: closureDecision.sportEligible,
+        environmentalEligibility: closureDecision.environmentalEligibility,
+        closureDecision,
+      } : {}),
       items: teamItems,
     };
   });
@@ -268,6 +294,7 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
     submissions: (submissions ?? []).map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
     items: rawItems.map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
     participants: (participants ?? []).map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
+    decisions: ((decisions ?? []) as unknown as ClosureDecisionRow[]).map((row) => ({ id: String(row.id), divisionId: String(row.division_id), teamId: String(row.team_id), status: row.status, sportEligible: Boolean(row.sport_eligible), environmentalEligibility: row.environmental_eligibility, decisionVersion: Number(row.decision_version), updatedAt: String(row.updated_at ?? "") })),
     route: routeResult.data ? { id: String(routeResult.data.id), updatedAt: String(routeResult.data.updated_at) } : null,
   };
   const input: SpogomiConsolidationInput = {

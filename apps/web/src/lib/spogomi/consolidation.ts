@@ -1,4 +1,5 @@
 import type { WasteCategorySlug } from "@/lib/waste/types";
+import type { SpogomiEnvironmentalEligibility, SpogomiTeamClosureDecision, SpogomiTeamClosureStatus } from "./closure";
 
 export const SPOGOMI_ENVIRONMENTAL_MAPPING_VERSION = "spogomi-cleanmymap-v1";
 const SPOGOMI_CONSOLIDATION_KEY_PREFIX = "spogomi-environmental";
@@ -50,6 +51,10 @@ type SpogomiConsolidationSourceTeam = {
   publicName: string;
   certifiedSubmissionId: string | null;
   certifiedSubmissionStatus: string | null;
+  closureStatus?: SpogomiTeamClosureStatus;
+  sportEligible?: boolean;
+  environmentalEligibility?: SpogomiEnvironmentalEligibility;
+  closureDecision?: SpogomiTeamClosureDecision | null;
   items: SpogomiConsolidationSourceItem[];
 };
 
@@ -86,6 +91,7 @@ export type SpogomiConsolidationSourceSnapshot = {
   submissions: SpogomiSourceRowSnapshot[];
   items: SpogomiSourceRowSnapshot[];
   participants: SpogomiSourceRowSnapshot[];
+  decisions?: Array<SpogomiSourceRowSnapshot & { teamId: string; status: string; sportEligible: boolean; environmentalEligibility: string; decisionVersion: number }>;
   route: SpogomiSourceRowSnapshot | null;
 };
 
@@ -144,6 +150,11 @@ type SpogomiExcludedMeasure = {
   categoryCode: string;
   reason:
     | "team_not_certified"
+    | "team_absent"
+    | "team_forfeit"
+    | "team_excluded"
+    | "team_result_missing"
+    | "team_contested"
     | "incomplete_submission"
     | "category_without_mapping"
     | "missing_source_value"
@@ -328,6 +339,23 @@ export function aggregateSpogomiEnvironmentalProjection(input: SpogomiConsolidat
   let teamsIncluded = 0;
 
   for (const team of input.teams) {
+    const hasExplicitClosure = team.environmentalEligibility !== undefined || team.closureStatus !== undefined;
+    if (!hasExplicitClosure && (team.certifiedSubmissionId === null || team.certifiedSubmissionStatus !== "certified")) {
+      excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: "*", reason: "team_not_certified" });
+      continue;
+    }
+    const environmentalEligibility = team.environmentalEligibility ?? (team.certifiedSubmissionId && team.certifiedSubmissionStatus === "certified" ? "eligible" : "unknown");
+    const closureStatus = team.closureStatus ?? (environmentalEligibility === "eligible" ? "present_measured" : "result_missing");
+    if (environmentalEligibility === "excluded") {
+      const reason = closureStatus === "absent" ? "team_absent" : closureStatus === "forfeit" ? "team_forfeit" : "team_excluded";
+      excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: "*", reason });
+      continue;
+    }
+    if (environmentalEligibility === "unknown") {
+      const reason = closureStatus === "contested" ? "team_contested" : "team_result_missing";
+      excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: "*", reason });
+      continue;
+    }
     if (team.certifiedSubmissionId === null || team.certifiedSubmissionStatus !== "certified") {
       excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: "*", reason: "team_not_certified" });
       continue;
@@ -408,8 +436,8 @@ export function aggregateSpogomiEnvironmentalProjection(input: SpogomiConsolidat
       .map((participant) => participant.id),
   ).size;
   const categoriesWithoutMapping = input.mappings.filter((mapping) => mapping.status === "unmapped").map((mapping) => mapping.categoryCode);
-  const blockingExclusions = excludedMeasures.filter((measure) => measure.reason !== "team_not_certified");
-  const readyForPublication = teamsIncluded > 0 && excludedMeasures.length === 0 && categoriesWithoutMapping.length === 0;
+  const blockingExclusions = excludedMeasures.filter((measure) => !["team_absent", "team_forfeit", "team_excluded"].includes(measure.reason));
+  const readyForPublication = teamsIncluded > 0 && blockingExclusions.length === 0 && categoriesWithoutMapping.length === 0;
   const consolidationKey = buildSpogomiConsolidationKey(input.eventId, input.mappingVersion);
   const totalWaste = hasWasteMass ? normalizeNumber(totalWasteMassGrams) : null;
   const buttsMass = hasCigaretteButtsMass ? normalizeNumber(cigaretteButtsMassGrams) : null;

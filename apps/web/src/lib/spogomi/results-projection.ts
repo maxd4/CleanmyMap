@@ -8,6 +8,7 @@ import { buildPublicationSourceSnapshot, type SpogomiPublicationSourceSnapshot }
 
 type SpogomiPublicResultsVisibility = "hidden" | "provisional" | "certified";
 import type { SpogomiDivision, SpogomiDivisionType } from "./types";
+import { effectiveSpogomiTeamClosureDecision, type SpogomiTeamClosureStatus } from "./closure";
 
 export type SpogomiResultsSource = {
   event: {
@@ -51,7 +52,7 @@ export type SpogomiResultsSource = {
     is_complete: boolean;
     updated_at?: string;
   }>;
-  teams: Array<{ id: string; division_id?: string; team_number: number; public_name: string; composition_state: string; certified_submission_id: string | null; updated_at?: string }>;
+  teams: Array<{ id: string; division_id?: string; team_number: number; public_name: string; composition_state: string; certified_submission_id: string | null; closure_status?: SpogomiTeamClosureStatus; sport_eligible?: boolean; environmental_eligibility?: string; closure_decision_version?: number; updated_at?: string }>;
   submissions: Array<{ id: string; division_id?: string; team_id: string; version: number; status: string; submitted_at: string | null; updated_at: string; regulation_version?: string }>;
   items: Array<Record<string, unknown>>;
   participants: Array<{ id: string; division_id?: string; team_id: string | null; registration_status: string; attendance_status: string; updated_at?: string }>;
@@ -128,6 +129,9 @@ type SpogomiExportTeam = {
   buttsStatus: string;
   buttsCount: number | null;
   buttsPerParticipant: number | null;
+  closureStatus: SpogomiTeamClosureStatus;
+  sportEligible: boolean;
+  environmentalEligibility: string;
   categories: Array<{
     code: string;
     label: string;
@@ -172,6 +176,7 @@ type TeamComputed = {
   presentParticipants: number;
   registeredParticipants: number;
   items: Array<Record<string, unknown>>;
+  closure: ReturnType<typeof effectiveSpogomiTeamClosureDecision>;
 };
 
 function sourceEvent(event: SpogomiResultsSource["event"]) {
@@ -226,6 +231,7 @@ function compareRankingValues(left: TeamComputed, right: TeamComputed, kind: "po
 
 function rankBy(entries: TeamComputed[], kind: "points" | "butts", regulation: SpogomiRegulation): Map<string, number> {
   const comparable = entries.filter((entry) => {
+    if (!entry.closure.sportEligible) return false;
     if (!entry.result) return false;
     return kind === "points"
       ? entry.result.officialScore !== null && entry.result.ineligibleReason === null
@@ -271,6 +277,7 @@ function buildRankingEntries(params: {
   const { source, computed, kind, regulationComplete, regulation, publicationSourceSnapshot } = params;
   const official = currentOfficialRankings(source, kind, publicationSourceSnapshot);
   const hasOfficialSet = source.event.state === "certified" && computed.every((entry) => {
+    if (!entry.closure.sportEligible) return true;
     if (!entry.result) return false;
     const eligible = kind === "points"
       ? entry.result.officialScore !== null && entry.result.ineligibleReason === null
@@ -286,7 +293,7 @@ function buildRankingEntries(params: {
   const entries = computed.map((entry): SpogomiPublicRankingEntry => {
     const result = entry.result;
     const comparable = Boolean(result && (kind === "points" ? result.officialScore !== null : result.comparableForButtsPerParticipant));
-    const eligible = kind === "points" ? Boolean(result && result.officialScore !== null && result.ineligibleReason === null) : comparable;
+    const eligible = entry.closure.sportEligible && (kind === "points" ? Boolean(result && result.officialScore !== null && result.ineligibleReason === null) : comparable);
     const selected = rankingSource.includes(entry);
     const publishedOfficial = hasOfficialSet && entry.submission?.status === "certified" ? official.get(entry.team.id) ?? null : null;
     const status: SpogomiPublicRankingEntry["status"] = !eligible || !canShowProvisional || !selected ? "unavailable" : source.event.publicResultsVisibility === "certified" ? (publishedOfficial ? "certified" : "unavailable") : publishedOfficial ? "certified" : "provisional";
@@ -306,7 +313,7 @@ function buildRankingEntries(params: {
       rank: status === "certified" ? (publishedOfficial?.rank ?? null) : status === "provisional" ? (ranking.get(entry.team.id) ?? null) : null,
       status,
       eligible,
-      reason,
+      reason: entry.closure.sportEligible ? reason : `Équipe non éligible : ${entry.closure.status}.`,
       valueUnit: (kind === "points" ? "points" : "mégots/participant") as SpogomiPublicRankingEntry["valueUnit"],
     };
     return exposeValues ? {
@@ -381,6 +388,15 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
     const itemInputs = items.map((item) => toSpogomiResultItemInput(item, source.categories.find((category) => category.id === String(item.category_rule_id))?.code ?? ""));
     const teamParticipants = source.participants.filter((participant) => participant.team_id === team.id && participant.registration_status === "registered");
     const presentParticipants = teamParticipants.filter((participant) => participant.attendance_status === "present").length;
+    const hasSubmissionForSport = Boolean(submission && ["submitted", "provisional", "certified"].includes(submission.status));
+    const closure = effectiveSpogomiTeamClosureDecision({
+      teamId: team.id,
+      divisionId: team.division_id ?? "",
+      certifiedSubmission: submission?.status === "certified",
+      decision: team.closure_status
+        ? { teamId: team.id, divisionId: team.division_id ?? "", status: team.closure_status, sportEligible: team.sport_eligible ?? !["absent", "forfeit", "excluded", "disqualified", "result_missing", "contested"].includes(team.closure_status), environmentalEligibility: (team.environmental_eligibility as "eligible" | "excluded" | "unknown" | undefined) ?? "eligible", decisionVersion: 0, reason: "Projection source" }
+        : { teamId: team.id, divisionId: team.division_id ?? "", status: hasSubmissionForSport ? "present_measured" : "result_missing", sportEligible: hasSubmissionForSport, environmentalEligibility: submission?.status === "certified" ? "eligible" : "unknown", decisionVersion: 0, reason: "Projection source" },
+    });
     return {
       team,
       submission,
@@ -388,6 +404,7 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
       presentParticipants,
       registeredParticipants: teamParticipants.length,
       items,
+      closure,
     };
   });
   const publicResults: SpogomiPublicResults = {
@@ -437,6 +454,9 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
       buttsStatus: buttsDecision ? "certified" : "unavailable",
       buttsCount: certified ? entry.result?.physicalTotals.countedButts ?? null : null,
       buttsPerParticipant: certified ? entry.result?.buttsPerParticipant ?? null : null,
+      closureStatus: entry.closure.status,
+      sportEligible: entry.closure.sportEligible,
+      environmentalEligibility: entry.closure.environmentalEligibility,
       categories: certified ? source.categories.filter((category) => (category.division_id ?? null) === (entry.team.division_id ?? null)).map((category) => {
         const item = entry.items.find((candidate) => String(candidate.category_rule_id) === category.id);
         return {
@@ -455,7 +475,7 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
       }) : [],
     };
   });
-  const sourceSubmissionIds = computed.map((entry) => entry.team.certified_submission_id).filter((id): id is string => Boolean(id));
+  const sourceSubmissionIds = computed.filter((entry) => entry.closure.environmentalEligibility === "eligible").map((entry) => entry.team.certified_submission_id).filter((id): id is string => Boolean(id));
   const projection: SpogomiExportProjection = { event: source.event, regulation, results: publicResults, teams: exportTeams, consolidation: source.consolidation?.projection ?? null, categories: source.categories, sourceSubmissionIds, publicationSourceSnapshot };
   divisionProjectionStore.set(projection, [projection]);
   return projection;

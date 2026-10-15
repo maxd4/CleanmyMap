@@ -435,6 +435,10 @@ describe("SPOGOMI persistence routes", () => {
         presentParticipants: 2,
         submissionStatus: "certified",
         submissionVersion: 2,
+         closureStatus: "present_measured",
+         sportEligible: true,
+         environmentalEligibility: "eligible",
+         closureDecisionVersion: 1,
         sportRank: 1,
         sportStatus: "certified",
         sportScore: 10,
@@ -498,7 +502,7 @@ describe("SPOGOMI persistence routes", () => {
         sport: { entries: [{ teamId, teamNumber: 1, rank, eligible: true, score }] },
         butts: { entries: [{ teamId, teamNumber: 1, rank: rank + 1, eligible: true }] },
       },
-      teams: [{ teamId, divisionId, teamNumber: 1, submissionStatus: "certified", submissionVersion: 1, presentParticipants: 3 }],
+      teams: [{ teamId, divisionId, teamNumber: 1, submissionStatus: "certified", submissionVersion: 1, presentParticipants: 3, closureStatus: "present_measured", sportEligible: true, environmentalEligibility: "eligible", closureDecisionVersion: 1 }],
       publicationSourceSnapshot: snapshot(divisionId, teamId),
     });
     const casual = divisionProjection(casualDivisionId, casualTeamId, 1, 80);
@@ -518,7 +522,7 @@ describe("SPOGOMI persistence routes", () => {
     const calls = mocks.supabase.rpc.mock.calls;
     const casualCall = calls[0]?.[1] as Record<string, unknown>;
     const worldCall = calls[1]?.[1] as Record<string, unknown>;
-    expect(calls[0]?.[0]).toBe("publish_spogomi_official_rankings_for_division");
+    expect(calls[0]?.[0]).toBe("publish_spogomi_official_rankings_for_division_checked_closure");
     expect(casualCall.p_division_id).toBe(casualDivisionId);
     expect(worldCall.p_division_id).toBe(worldDivisionId);
     expect(casualCall.p_rankings).toEqual(expect.arrayContaining([
@@ -570,7 +574,7 @@ describe("SPOGOMI persistence routes", () => {
       event: { mode: "casual", divisions: [{ id: casualDivisionId, division_type: "casual" }] },
       regulation: { version: "rules-casual", status: "complete", sourceReference: null },
       results: { regulationComplete: true, sport: { entries: [{ teamId: casualTeamId, rank: 1, eligible: true }] }, butts: { entries: [] } },
-      teams: [{ teamId: casualTeamId, divisionId: casualDivisionId, teamNumber: 1, submissionStatus: "certified", submissionVersion: 1, presentParticipants: 3 }],
+      teams: [{ teamId: casualTeamId, divisionId: casualDivisionId, teamNumber: 1, submissionStatus: "certified", submissionVersion: 1, presentParticipants: 3, closureStatus: "present_measured", sportEligible: true, environmentalEligibility: "eligible", closureDecisionVersion: 1 }],
       publicationSourceSnapshot: { event: { id: "event-1" }, divisions: [{ id: casualDivisionId, type: "casual" }], categories: [], teams: [{ id: casualTeamId }], submissions: [], items: [], participants: [] },
     };
     mocks.loadSpogomiResultsProjection.mockResolvedValue({ event: { mode: "mixed" }, teams: casual.teams });

@@ -909,6 +909,51 @@ Fichiers principaux :
 - `apps/web/supabase/migrations/20261012000007_spogomi_action_consolidation.sql` — mapping, projection et protection initiale des champs contrôlés ;
 - `apps/web/supabase/migrations/20261012000011_harden_spogomi_consolidation_revisions.sql` — replay des hashes historiques, snapshot transactionnel et remplacement atomique.
 
+## 17 ter.1. Clôture explicite des équipes — CURRENT
+
+La clôture sportive ne déduit plus une absence, un forfait ou une contestation
+d'une soumission manquante. La table append-only
+`spogomi_team_closure_decisions` porte, par événement, division et équipe, le
+statut explicite (`present_measured`, `absent`, `forfeit`, `excluded`,
+`disqualified`, `result_missing` ou `contested`), l'éligibilité sportive,
+l'éligibilité environnementale, la version, le motif et l'auteur. Une seule
+décision est courante ; une correction conserve la ligne précédente et le RPC
+`spogomi_set_team_closure_decision` refuse les versions obsolètes. Un forfait
+n'est donc jamais converti en zéro kg ou zéro point.
+
+Les deux axes restent indépendants : une équipe disqualifiée du classement
+peut conserver une mesure environnementale certifiée, alors qu'une absence ou
+un forfait explicite est exclu du bilan sans donnée fictive. Une équipe
+`result_missing` ou `contested` reste bloquante tant qu'aucune décision validée
+ne permet de distinguer participation, exclusion justifiée et donnée absente.
+La consolidation capture le jeu courant des décisions et ses soumissions
+environnementales ; elle bloque en cas de modification concurrente. La
+publication d'un classement capture le même état par division via le garde-fou
+`publish_spogomi_official_rankings_for_division_checked_closure`.
+
+Le cockpit organisateur expose une synthèse séparée des phases terrain,
+arbitrage, classements, consolidation, action CleanMyMap et demandes
+individuelles. L'action CleanMyMap reste soumise à son propre cycle de
+modération : aucune certification sportive ne vaut publication automatique de
+l'action. Les demandes individuelles persistées de l'édition sont comptées
+séparément ; une demande `pending` maintient explicitement la phase en attente
+et ne devient pas une certification sportive ou environnementale par défaut.
+
+Une correction de clôture après proclamation révoque les classements courants,
+supersède la consolidation environnementale courante et conserve les preuves
+dans leurs historiques append-only. Les attestations de collecte et les
+distinctions dépendant d'un classement sont révoquées/remplacées avec motif et
+auteur ; la masse mesurée n'est pas recalculée à partir de la sanction. Une
+nouvelle publication des classements, une nouvelle consolidation et une
+réconciliation des distinctions sont requises après validation du snapshot
+corrigé.
+
+Les migrations `20261015000026_spogomi_closure_decisions.sql`,
+`20261015000027_spogomi_closure_publication_guards.sql` et
+`20261015000028_spogomi_ranking_closure_guard.sql` portent ces invariants ; le
+smoke SQL mixed exécuté en CI éphémère vérifie le replay, l'historique,
+l'unicité de la décision courante et le refus d'un mauvais scope de division.
+
 ## 17 bis. Addendum public vérifié — contrat à intégrer (PLAN)
 
 > **Statut : PLAN documentaire.** Cet addendum intègre des informations
