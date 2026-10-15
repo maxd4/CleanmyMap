@@ -7,7 +7,6 @@ import {
   type EventRow,
 } from "./preparation-service";
 import { readAllSpogomiPages } from "./pagination";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const ACTION_ID_BATCH_SIZE = 100;
 
@@ -121,8 +120,4 @@ export async function listSpogomiEventsForOrganizer(
   return deduplicateEvents([...createdEvents, ...relatedEvents]).filter((event) =>
     canManageEvent(identity, event, organizerIdsByAction.get(event.action_id) ?? []),
   );
-}
-
-export async function listSpogomiEventsForCurrentOrganizer(userId: string): Promise<EventRow[]> {
-  return listSpogomiEventsForOrganizer(getSupabaseServerClient(true), userId);
 }
