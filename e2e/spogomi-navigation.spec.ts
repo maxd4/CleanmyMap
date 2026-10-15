@@ -35,6 +35,15 @@ test.describe("SPOGOMI public navigation", () => {
     await expect(page).toHaveURL(/\/spogomi$/);
   });
 
+  test("does not expose private identity fields on the public consultation surface", async ({ page }) => {
+    const response = await page.goto("/spogomi");
+    expect(response?.status()).toBe(200);
+    const publicText = (await page.locator("body").innerText()).toLowerCase();
+    expect(publicText).not.toContain("matchedparticipantid");
+    expect(publicText).not.toContain("verificationnote");
+    expect(publicText).not.toContain("resolutionnote");
+  });
+
   test("keeps secondary content accessible and compact", async ({ page }) => {
     const response = await page.goto("/spogomi");
     expect(response?.status()).toBe(200);

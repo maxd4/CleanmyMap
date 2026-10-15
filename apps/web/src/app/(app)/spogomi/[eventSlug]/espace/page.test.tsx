@@ -2,11 +2,14 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccess: vi.fn(),
   getCurrentUserActiveRole: vi.fn(),
   getSupabaseServerClient: vi.fn(),
   resolveSpogomiEventAccessBySlug: vi.fn(),
+  loadSpogomiFieldOperationsAccess: vi.fn(),
 }));
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess, getCurrentUserActiveRole: mocks.getCurrentUserActiveRole }));
@@ -14,6 +17,9 @@ vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: mocks.getSupa
 vi.mock("@/lib/spogomi/authorization", () => ({
   hasSpogomiCapability: (access: { capabilities: Set<string> }, capability: string) => access.capabilities.has(capability),
   resolveSpogomiEventAccessBySlug: mocks.resolveSpogomiEventAccessBySlug,
+}));
+vi.mock("@/lib/spogomi/field-operations-service", () => ({
+  loadSpogomiFieldOperationsAccess: mocks.loadSpogomiFieldOperationsAccess,
 }));
 vi.mock("@/components/spogomi/spogomi-preparation-workspace", () => ({
   SpogomiPreparationWorkspace: ({ eventId }: { eventId: string }) => React.createElement("div", { "data-event-id": eventId }),
@@ -29,6 +35,7 @@ describe("/spogomi/[eventSlug]/espace", () => {
     vi.clearAllMocks();
     mocks.getCurrentUserActiveRole.mockResolvedValue("benevole");
     mocks.getSupabaseServerClient.mockReturnValue({ server: true });
+    mocks.loadSpogomiFieldOperationsAccess.mockResolvedValue(null);
   });
 
   it("requires authentication before reading organizer ownership", async () => {
