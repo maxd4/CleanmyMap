@@ -3,7 +3,9 @@ import {
   assertGoogleSheetUrl,
   buildGoogleSheetCsvCandidates,
 } from "./google-sheet-source.mjs";
+import test from "node:test";
 
+test("Google Sheet URLs and CSV candidates follow the source contract", () => {
 assert.throws(
   () => assertGoogleSheetUrl("https://example.com/export.csv"),
   /Only https:\/\/docs\.google\.com\/spreadsheets\/d\/<sheetId>\/\.\.\. URLs are allowed/,
@@ -26,3 +28,4 @@ assert.deepEqual(
 );
 
 console.log("google-sheet-source validation passed");
+});

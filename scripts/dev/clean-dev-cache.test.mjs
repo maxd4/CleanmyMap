@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import test from "node:test";
 import { cleanDevCache } from "./clean-dev-cache.mjs";
 
+test("development cache cleanup stays within the requested fixture", async () => {
 const tempRoot = mkdtempSync(join(tmpdir(), "clean-dev-cache-test-"));
 
 try {
@@ -33,3 +35,4 @@ try {
 } finally {
   rmSync(tempRoot, { recursive: true, force: true });
 }
+});

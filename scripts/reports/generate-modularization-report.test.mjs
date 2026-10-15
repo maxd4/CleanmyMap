@@ -2,9 +2,11 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import test from 'node:test';
 
 import { analyzeFile, buildReport } from './generate-modularization-report.mjs';
 
+test('modularization report preserves its evidence fields', () => {
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cmm-mod-report-'));
 
 try {
@@ -57,3 +59,4 @@ try {
 } finally {
   fs.rmSync(tempDir, { recursive: true, force: true });
 }
+});

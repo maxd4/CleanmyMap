@@ -112,8 +112,13 @@ function resolveImport(importer, specifier, files) {
 }
 
 function importSpecifiers(content) {
-  const matches = content.matchAll(/\b(?:from|import|require)\s*\(?\s*["']([^"']+)["']/g);
-  return [...matches].map((match) => match[1]);
+  const patterns = [
+    /\bfrom[ \t]+["']([^"']+)["']/g,
+    /\bimport[ \t]+["']([^"']+)["']/g,
+    /\bimport[ \t]*\([ \t]*["']([^"']+)["']/g,
+    /\brequire[ \t]*\([ \t]*["']([^"']+)["']/g,
+  ];
+  return patterns.flatMap((pattern) => [...content.matchAll(pattern)].map((match) => match[1]));
 }
 
 function readSourceFiles(sourceView, files) {

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import test from "node:test";
 
 const scriptsDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptsDirectory, "../..");
@@ -22,6 +23,7 @@ function assertCommonWorkflowSecurity(workflow, name) {
   assert.doesNotMatch(workflow, /pull_request_target:/, `${name} must not use pull_request_target`);
 }
 
+test("security workflow contracts remain restrictive", () => {
 const scorecard = readWorkflow("scorecard.yml");
 assertCommonWorkflowSecurity(scorecard, "scorecard.yml");
 assert.match(scorecard, /cron: ["']30 1 \* \* 6["']/);
@@ -53,3 +55,4 @@ assert.equal(
 const e2e = readWorkflow("e2e-supabase.yml");
 assert.match(e2e, /pull_request\.head\.repo\.full_name != github\.repository/);
 assert.match(e2e, /External pull requests cannot execute[\s\S]*?exit 1/);
+});

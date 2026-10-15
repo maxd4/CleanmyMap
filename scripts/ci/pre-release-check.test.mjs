@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import test from "node:test";
 
 import { runPreReleaseCheck } from "./pre-release-check.mjs";
 
+test("pre-release check reports actionable findings", async () => {
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "cmm-pre-release-"));
 const previousCwd = process.cwd();
 
@@ -30,3 +32,4 @@ try {
   process.chdir(previousCwd);
   fs.rmSync(tempDir, { recursive: true, force: true });
 }
+});

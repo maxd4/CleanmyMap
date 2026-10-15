@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   createGeocodeResolver,
@@ -9,6 +10,7 @@ import {
   toNullableNumber,
 } from "./sheet-ingestion-core.mjs";
 
+test("sheet ingestion validates values, coordinates, and geocoding boundaries", async () => {
 assert.equal(
   findColumnIndex(["Déchets (kg)"], ["dechets (kg)", "dechets(kg)"]),
   0,
@@ -61,3 +63,4 @@ try {
 } finally {
   globalThis.fetch = originalFetch;
 }
+});

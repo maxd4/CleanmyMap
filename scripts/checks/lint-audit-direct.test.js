@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const test = require('node:test');
 
 const {
   generateMarkdownReport,
@@ -7,6 +8,7 @@ const {
   parseLintOutput,
 } = require('./lint-audit-direct.js');
 
+test('lint audit parsing and report formatting preserve their contracts', () => {
 assert.equal(
   normalizeFilePath('C:\\repo\\apps\\web\\src\\components\\dashboard\\page.tsx'),
   'C:/repo/apps/web/src/components/dashboard/page.tsx',
@@ -47,3 +49,4 @@ assert.deepEqual(diagnostics, [
 const cleanReport = generateMarkdownReport([]);
 assert.equal(cleanReport.endsWith('\n\n'), false);
 assert.equal(cleanReport.includes('  \n'), false);
+});

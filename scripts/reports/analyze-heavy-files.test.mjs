@@ -2,9 +2,11 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import test from 'node:test';
 
 import { scanDirectory } from './analyze-heavy-files.mjs';
 
+test('heavy-file analysis reports the fixture thresholds', () => {
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cmm-heavy-files-'));
 
 try {
@@ -34,3 +36,4 @@ try {
 } finally {
   fs.rmSync(tempDir, { recursive: true, force: true });
 }
+});

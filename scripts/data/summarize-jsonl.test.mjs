@@ -6,6 +6,7 @@ import test from 'node:test';
 
 import { ALL_TOKEN_FIELDS, NA, analyzeRoot, escapeCell, table } from './summarize-jsonl.mjs';
 
+test('markdown cells and tables escape control characters', () => {
 const escaped = escapeCell('a\\b|c`d');
 assert.ok(escaped.includes('\\\\'));
 assert.ok(escaped.includes('\\|'));
@@ -17,6 +18,7 @@ assert.ok(rendered.includes('col\\|1'));
 assert.ok(rendered.includes('col\\`2'));
 assert.ok(rendered.includes('x\\\\y'));
 assert.ok(rendered.includes('z\\|w'));
+});
 
 const SESSION_ID = '00000000-0000-4000-8000-000000000001';
 

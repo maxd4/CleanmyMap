@@ -131,8 +131,8 @@ function parseLintOutput(lintOutput) {
       
       warnings.push({
         file: currentFile,
-        line: parseInt(lineNum),
-        column: parseInt(colNum),
+        line: Number.parseInt(lineNum),
+        column: Number.parseInt(colNum),
         type: type,
         message: message.trim(),
         ruleId: ruleId,

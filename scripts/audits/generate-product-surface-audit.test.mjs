@@ -96,6 +96,17 @@ test("distingue un attribut de référence d'un href utilisateur", () => {
   );
 });
 
+test("collecte un lien interne même dans une entrée longue", () => {
+  const longLabel = "x".repeat(100_000);
+  const references = collectRuntimeReferences(new Map([
+    ["apps/web/src/components/example.tsx", '<a href="/actions/new">' + longLabel + "</a>"],
+  ]));
+
+  assert.deepEqual(references.map(({ kind, target }) => ({ kind, target })), [
+    { kind: "link", target: "/actions/new" },
+  ]);
+});
+
 test("signale les href internes qui ne correspondent à aucun pattern runtime", () => {
   const references = collectRuntimeReferences(new Map([
     ["apps/web/src/components/example.tsx", '<a href="/route-inexistante">Lien</a>'],

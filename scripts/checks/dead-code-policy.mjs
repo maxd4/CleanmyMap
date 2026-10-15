@@ -210,16 +210,20 @@ function isAncestor(sourceCommit) {
 export function compareDeadCodeFindings(
   currentFindings,
   baseline,
-  justifications = { schemaVersion: DEAD_CODE_JUSTIFICATION_SCHEMA_VERSION, justifications: [] },
+  justifications,
 ) {
+  const effectiveJustifications = justifications ?? {
+    schemaVersion: DEAD_CODE_JUSTIFICATION_SCHEMA_VERSION,
+    justifications: [],
+  };
   validateDeadCodeBaseline(baseline);
-  validateDeadCodeJustifications(justifications);
+  validateDeadCodeJustifications(effectiveJustifications);
   const baselineByKey = new Map(baseline.findings.map((finding) => [findingKey(finding), finding]));
   const baselineById = new Map(baseline.findings.map((finding) => [finding.id, finding]));
   const currentByKey = new Map(currentFindings.map((finding) => [findingKey(finding), finding]));
   const newFindings = currentFindings.filter((finding) => !baselineByKey.has(findingKey(finding)));
   const resolvedFindings = baseline.findings.filter((finding) => !currentByKey.has(findingKey(finding)));
-  for (const justification of justifications.justifications) {
+  for (const justification of effectiveJustifications.justifications) {
     if (!baselineById.has(justification.id)) {
       throw new Error(`Dead-code justification targets a finding absent from the historical baseline: ${justification.id}`);
     }
@@ -230,7 +234,7 @@ export function compareDeadCodeFindings(
     const historicalFinding = baselineByKey.get(findingKey(finding));
     if (historicalFinding) currentByBaselineId.set(historicalFinding.id, finding);
   }
-  const justifiedIds = new Set(justifications.justifications.map((justification) => justification.id));
+  const justifiedIds = new Set(effectiveJustifications.justifications.map((justification) => justification.id));
   const keepJustifiedFindings = currentFindings.filter((finding) => {
     const historicalFinding = baselineByKey.get(findingKey(finding));
     return historicalFinding && justifiedIds.has(historicalFinding.id);
@@ -239,7 +243,7 @@ export function compareDeadCodeFindings(
     const historicalFinding = baselineByKey.get(findingKey(finding));
     return historicalFinding && !justifiedIds.has(historicalFinding.id);
   });
-  const staleKeepJustifications = justifications.justifications
+  const staleKeepJustifications = effectiveJustifications.justifications
     .filter((justification) => !currentByBaselineId.has(justification.id))
     .map((justification) => ({ ...justification, status: "STALE_KEEP_JUSTIFIED" }));
 

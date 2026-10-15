@@ -3,7 +3,9 @@ import {
   filterSyncableEnvEntries,
   isSensitiveEnvKey,
 } from "./vercel-env-policy.mjs";
+import test from "node:test";
 
+test("Vercel environment synchronization filters secrets", () => {
 assert.equal(isSensitiveEnvKey("NEXT_PUBLIC_SUPABASE_URL"), false);
 assert.equal(isSensitiveEnvKey("SUPABASE_SERVICE_ROLE_KEY"), true);
 assert.equal(isSensitiveEnvKey("RESEND_TEST_TOKEN"), true);
@@ -24,3 +26,4 @@ assert.deepEqual(filterSyncableEnvEntries(entries), [
 assert.deepEqual(filterSyncableEnvEntries(entries, { includeSecrets: true }), entries);
 
 console.log("vercel-env-policy validation passed");
+});

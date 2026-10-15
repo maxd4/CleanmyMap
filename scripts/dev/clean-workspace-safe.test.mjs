@@ -10,7 +10,9 @@ import {
   runWorkspaceCleanup,
   sizeOfPath,
 } from "./clean-workspace-safe.mjs";
+import test from "node:test";
 
+test("safe workspace cleanup preserves its path and size contracts", () => {
 const tempRoot = mkdtempSync(join(tmpdir(), "clean-workspace-safe-test-"));
 
 try {
@@ -98,3 +100,4 @@ try {
 } finally {
   rmSync(tempRoot, { recursive: true, force: true });
 }
+});

@@ -114,6 +114,17 @@ test("accepts a static sobre helper contract", () => {
   assert.deepEqual(auditDisplayModesCss(source), []);
 });
 
+test("handles a long CSS declaration without changing reveal visibility", () => {
+  const longDeclaration = "color: red; ".repeat(50_000);
+  assert.deepEqual(
+    auditRevealVisibilityCss("[data-gsap-reveal] { " + longDeclaration + " }"),
+    [],
+  );
+  assert.ok(
+    auditRevealVisibilityCss("[data-gsap-reveal] { " + longDeclaration + " opacity: 0; }").length > 0,
+  );
+});
+
 test("rejects ActionCard local lift and icon nudge recipes", () => {
   const source = `
   export function ActionCard() {

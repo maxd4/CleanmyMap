@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
+import test from 'node:test';
 
 import { escapeTableCell, markdownTable } from './cicd-metrics-report.mjs';
 
+test('CI metrics markdown escapes table content', () => {
 const escaped = escapeTableCell('a\\b|c`d\nnext');
 assert.ok(escaped.includes('\\\\'));
 assert.ok(escaped.includes('\\|'));
@@ -13,3 +15,4 @@ assert.ok(rendered.includes('col\\|1'));
 assert.ok(rendered.includes('col\\`2'));
 assert.ok(rendered.includes('x\\\\y'));
 assert.ok(rendered.includes('z\\|w'));
+});

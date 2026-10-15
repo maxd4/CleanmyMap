@@ -6,7 +6,9 @@ import {
   sanitizeLogValue,
   toCsv,
 } from "./export-clerk-users.mjs";
+import test from "node:test";
 
+test("Clerk export normalization and CSV output protect the data contract", () => {
 const user = normaliseUser({
   id: "user_123",
   username: "maxence",
@@ -60,3 +62,4 @@ assert.match(csv, /publicMetadata/);
 assert.doesNotMatch(csv, /privateMetadata|unsafeMetadata|emailAddresses/);
 
 console.log("export-clerk-users validation passed");
+});

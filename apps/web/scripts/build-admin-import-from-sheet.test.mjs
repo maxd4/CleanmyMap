@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import test from "node:test";
 
+test("admin import keeps the local snapshot fallback and expected dates", async () => {
 const artifactUrl = new URL(
   "../data/raw/google-sheet-admin-import.json",
   import.meta.url,
@@ -41,3 +43,4 @@ assert.match(
   /readFile\(RAW_PATH/,
   "the existing local snapshot remains available as a fallback",
 );
+});

@@ -14,11 +14,7 @@ const scanRoots = [
 
 const fileExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 const ignoredDirs = new Set([".git", "node_modules", ".next", "dist", "build", "coverage"]);
-const localImportPatterns = [
-  /^\s*import\s+(?!type\b)[^\n]*\sfrom\s+['"]([^'"]+)['"]/gm,
-  /^\s*export\s+(?!type\b)[^\n]*\sfrom\s+['"]([^'"]+)['"]/gm,
-  /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
-];
+const dynamicImportPattern = /\bimport[ \t]*\([ \t]*['"]([^'"]+)['"][ \t]*\)/g;
 const dynamicTriggerPatterns = {
   auth: /\bauth\s*\(/,
   cookies: /\bcookies\s*\(/,
@@ -206,17 +202,29 @@ function resolveLocalImport(filePath, specifier, filesByRelPath, view = null) {
 function collectLocalDependencies(filePath, content, filesByRelPath, view = null) {
   const dependencies = new Set();
 
-  for (const pattern of localImportPatterns) {
-    pattern.lastIndex = 0;
-    for (const match of content.matchAll(pattern)) {
-      const specifier = match[1];
-      const resolved = resolveLocalImport(filePath, specifier, filesByRelPath, view);
-      if (resolved) {
-        dependencies.add(resolved);
-      }
+  for (const line of String(content).split(/\r?\n/)) {
+    const trimmed = line.trim();
+    for (const keyword of ["import", "export"]) {
+      if (!trimmed.startsWith(keyword + " ")) continue;
+      const body = trimmed.slice(keyword.length + 1);
+      if (keyword === "import" && body.startsWith("type ")) continue;
+      const fromIndex = body.indexOf(" from ");
+      if (fromIndex < 0) continue;
+      const quoted = body.slice(fromIndex + " from ".length).trim();
+      const quote = quoted[0];
+      if (quote !== "'" && quote !== "\"") continue;
+      const end = quoted.indexOf(quote, 1);
+      if (end < 0) continue;
+      const resolved = resolveLocalImport(filePath, quoted.slice(1, end), filesByRelPath, view);
+      if (resolved) dependencies.add(resolved);
     }
   }
 
+  dynamicImportPattern.lastIndex = 0;
+  for (const match of content.matchAll(dynamicImportPattern)) {
+    const resolved = resolveLocalImport(filePath, match[1], filesByRelPath, view);
+    if (resolved) dependencies.add(resolved);
+  }
   return Array.from(dependencies);
 }
 

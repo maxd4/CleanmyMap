@@ -191,7 +191,10 @@ function parseLcov(content, definition, root) {
   }
   finish();
   if (records.length === 0 || !records.some((record) => record.hasMetric)) throw new Error(`${definition.scope} LCOV is empty.`);
-  return { records, normalizedContent: `${normalizedLines.join("\n").replace(/\n+$/, "")}\n` };
+  const normalized = normalizedLines.join("\n");
+  let contentEnd = normalized.length;
+  while (contentEnd > 0 && normalized[contentEnd - 1] === "\n") contentEnd -= 1;
+  return { records, normalizedContent: `${normalized.slice(0, contentEnd)}\n` };
 }
 
 function summarySources(summary, definition, root) {

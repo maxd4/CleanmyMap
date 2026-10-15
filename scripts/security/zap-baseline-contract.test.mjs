@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import test from "node:test";
 
 const scriptsDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptsDirectory, "../..");
@@ -9,6 +10,7 @@ const workflowPath = resolve(repositoryRoot, ".github/workflows/dast-zap-baselin
 const contextPath = resolve(scriptsDirectory, "zap-public.context");
 const apiRoutesPath = resolve(repositoryRoot, "apps/web/src/app/api");
 
+test("ZAP scope and private API CORS contracts remain bounded", () => {
 const workflow = readFileSync(workflowPath, "utf8");
 const context = readFileSync(contextPath, "utf8");
 
@@ -109,3 +111,4 @@ for (const routePath of privateApiRouteFiles) {
     `private API handler must not combine wildcard CORS with credentials: ${routePath}`,
   );
 }
+});

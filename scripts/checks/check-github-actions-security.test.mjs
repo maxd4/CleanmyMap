@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import test from "node:test";
 
 import { auditWorkflowContent } from "./check-github-actions-security.mjs";
 
+test("GitHub Actions security contracts remain enforced", () => {
 const pinned = "actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd";
 
 assert.deepEqual(
@@ -251,3 +253,4 @@ assert.match(ciWorkflow, /Mobile lint/);
 assert.match(ciWorkflow, /Architectural Semgrep \(mobile-only\)/);
 assert.match(ciWorkflow, /web_code_relevant != 'true'/);
 assert.match(e2eWorkflow, /retention-days:\s*3/);
+});
