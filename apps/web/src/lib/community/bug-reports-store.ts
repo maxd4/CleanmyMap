@@ -53,10 +53,95 @@ export type BugReportRecord = BugReportInput & {
   creatorState: "new" | "pending" | "responded" | "treated" | "archived";
 };
 
+export const COMMUNITY_BUG_REPORTS_HISTORY_DEFAULT_LIMIT = 20;
+export const COMMUNITY_BUG_REPORTS_HISTORY_MAX_LIMIT = 50;
+
+export type CommunityBugReportHistoryCursor = {
+  createdAt: string;
+  id: string;
+};
+
+export type CommunityBugReportHistoryPage = {
+  items: BugReportRecord[];
+  nextCursor: CommunityBugReportHistoryCursor | null;
+  hasMore: boolean;
+};
+
+const COMMUNITY_BUG_REPORT_HISTORY_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+
 type StorePayload = {
   updatedAt: string;
   records: BugReportRecord[];
 };
+
+export function clampCommunityBugReportsHistoryLimit(
+  value: number | null | undefined,
+): number {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return COMMUNITY_BUG_REPORTS_HISTORY_DEFAULT_LIMIT;
+  }
+  return Math.min(
+    COMMUNITY_BUG_REPORTS_HISTORY_MAX_LIMIT,
+    Math.max(1, Math.trunc(value)),
+  );
+}
+
+export function parseCommunityBugReportHistoryCursor(
+  value: string | null | undefined,
+): CommunityBugReportHistoryCursor | null {
+  if (!value) return null;
+  const separatorIndex = value.lastIndexOf("|");
+  if (separatorIndex <= 0 || separatorIndex === value.length - 1) {
+    return null;
+  }
+
+  const createdAt = value.slice(0, separatorIndex);
+  const id = value.slice(separatorIndex + 1).trim();
+  const timestamp = Date.parse(createdAt);
+  if (!COMMUNITY_BUG_REPORT_HISTORY_ID_PATTERN.test(id) || !Number.isFinite(timestamp)) {
+    return null;
+  }
+
+  return { createdAt: new Date(timestamp).toISOString(), id };
+}
+
+export function buildCommunityBugReportHistoryCursor(
+  cursor: CommunityBugReportHistoryCursor,
+): string {
+  return `${cursor.createdAt}|${cursor.id}`;
+}
+
+function compareHistoryKeys(
+  left: CommunityBugReportHistoryCursor,
+  right: CommunityBugReportHistoryCursor,
+): number {
+  const leftTime = Date.parse(left.createdAt);
+  const rightTime = Date.parse(right.createdAt);
+  if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) {
+    return leftTime - rightTime;
+  }
+  if (left.createdAt !== right.createdAt) {
+    return left.createdAt.localeCompare(right.createdAt);
+  }
+  return left.id.localeCompare(right.id);
+}
+
+function toHistoryPage(
+  records: BugReportRecord[],
+  limit: number,
+): CommunityBugReportHistoryPage {
+  const hasMore = records.length > limit;
+  const items = records.slice(0, limit);
+  const lastItem = items.at(-1);
+  return {
+    items,
+    nextCursor:
+      hasMore && lastItem
+        ? { createdAt: lastItem.createdAt, id: lastItem.id }
+        : null,
+    hasMore,
+  };
+}
 
 function isBugReportType(
   value: unknown,
@@ -251,6 +336,58 @@ export async function listCommunityBugReports(
 
   const store = await readStore();
   return store.records.slice(0, normalizedLimit);
+}
+
+export async function listCommunityBugReportsForUser(params: {
+  submittedByUserId: string;
+  limit?: number | null;
+  beforeCursor?: CommunityBugReportHistoryCursor | null;
+}): Promise<CommunityBugReportHistoryPage> {
+  assertPersistenceAvailable("community_bug_reports");
+  const submittedByUserId = params.submittedByUserId.trim();
+  if (!submittedByUserId) {
+    throw new Error("Authenticated feedback owner id is required.");
+  }
+
+  const limit = clampCommunityBugReportsHistoryLimit(params.limit);
+
+  if (canUseSupabaseServerPersistence()) {
+    let query = getSupabaseServerClient(true)
+      .from("community_bug_reports")
+      .select(SUPABASE_BUG_REPORT_COLUMNS)
+      .eq("submitted_by_user_id", submittedByUserId)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+    if (params.beforeCursor) {
+      const { createdAt, id } = params.beforeCursor;
+      query = query.or(
+        `created_at.lt.${createdAt},and(created_at.eq.${createdAt},id.lt.${id})`,
+      );
+    }
+    return toHistoryPage(
+      await readSupabaseRecords(query.limit(limit + 1), fromSupabaseRow),
+      limit,
+    );
+  }
+
+  const store = await readStore();
+  const records = store.records
+    .filter((record) => record.submittedByUserId === submittedByUserId)
+    .filter((record) =>
+      params.beforeCursor
+        ? compareHistoryKeys(
+            { createdAt: record.createdAt, id: record.id },
+            params.beforeCursor,
+          ) < 0
+        : true,
+    )
+    .sort((left, right) =>
+      compareHistoryKeys(
+        { createdAt: right.createdAt, id: right.id },
+        { createdAt: left.createdAt, id: left.id },
+      ),
+    );
+  return toHistoryPage(records.slice(0, limit + 1), limit);
 }
 
 export async function getCommunityBugReportById(

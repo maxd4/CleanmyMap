@@ -2,6 +2,7 @@
 
 import { FeedbackSectionDashboardForm } from "./feedback-section-dashboard-form";
 import { FeedbackSectionDashboardGuidance } from "./feedback-section-dashboard-guidance";
+import { FeedbackHistory } from "./feedback/feedback-history";
 import type {
   FeedbackSectionProps,
   FeedbackSectionContext,
@@ -30,6 +31,7 @@ function FeedbackDashboardMode(props: FeedbackSectionDashboardProps) {
         supportPrefill={props.supportPrefill}
         initialType={props.initialType}
       />
+      <FeedbackHistory locale={props.locale} />
       <FeedbackSectionDashboardGuidance locale={props.locale} fr={props.locale === "fr"} />
     </div>
   );

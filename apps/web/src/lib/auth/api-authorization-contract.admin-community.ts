@@ -149,6 +149,12 @@ export const adminCommunityAuthorizationContract = {
     },
   },
   "community/bug-reports": {
+    GET: {
+      expected: "Authenticated owner-only feedback history with minimal projection",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + server-bound submittedByUserId + bounded keyset pagination",
+      evidence: ["requireAuthenticatedAccess", "submittedByUserId", "listCommunityBugReportsForUser"],
+    },
     POST: {
       expected: "Authenticated user submits a report attributed to their current identity",
       dimensions: ["authentication", "ownership"],

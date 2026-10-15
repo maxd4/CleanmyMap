@@ -1,14 +1,24 @@
 import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { z } from"zod";
-import { getCurrentUserActiveRole, getCurrentUserIdentity } from"@/lib/authz";
+import {
+ getCurrentUserActiveRole,
+ getCurrentUserIdentity,
+ requireAuthenticatedAccess,
+} from"@/lib/authz";
 import { appendAdminOperationAudit } from"@/lib/admin/audit/operation-audit";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import {
  appendCommunityBugReport,
+ buildCommunityBugReportHistoryCursor,
+ clampCommunityBugReportsHistoryLimit,
  getCommunityBugReportById,
+ listCommunityBugReportsForUser,
+ parseCommunityBugReportHistoryCursor,
  updateCommunityBugReportStatus,
 } from"@/lib/community/bug-reports-store";
+import type { BugReportRecord } from "@/lib/community/bug-reports-store";
+import type { PersonalFeedbackItem } from "@/lib/community/feedback-history-contract";
 import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import {
@@ -20,9 +30,11 @@ import {
  parseJsonBodyWithSchema,
  rejectPublicFormAbuse,
 } from"@/lib/security/validation";
+import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { logWarning } from "@/lib/logging/failure-log";
 
 export const runtime ="nodejs";
+export const dynamic = "force-dynamic";
 
 const payloadSchema = z.object({
  reportType: z.enum(["bug", "idea", "improvement", "collaboration"]),
@@ -39,6 +51,23 @@ const statusUpdateSchema = z.object({
  status: z.enum(["open", "treated", "archived"]),
  reason: z.string().trim().min(5).max(500),
 });
+
+const historyQuerySchema = z.object({
+ limit: z.coerce.number().int().min(1).max(5000).default(20),
+ cursor: z.string().trim().min(1).optional(),
+});
+
+function projectPersonalFeedback(
+ report: BugReportRecord,
+): PersonalFeedbackItem {
+ return {
+  id: report.id,
+  title: report.title,
+  type: report.reportType,
+  createdAt: report.createdAt,
+  status: report.creatorState,
+ };
+}
 
 type BugReportAuditSnapshot = {
  status: "open" | "treated" | "archived" | "unknown";
@@ -155,6 +184,49 @@ function parsedReportTypeLabel(
  : reportType === "collaboration"
  ? "Collaboration"
  : "Idée";
+}
+
+export async function GET(request: Request) {
+ // API_AUTHORIZATION_CONTRACT: the owner is resolved from the authenticated
+ // Clerk session and is never accepted from query parameters.
+ const access = await requireAuthenticatedAccess();
+ if (!access.ok) return unauthorizedJsonResponse();
+
+ const searchParams = Object.fromEntries(new URL(request.url).searchParams.entries());
+ const parsed = historyQuerySchema.safeParse(searchParams);
+ if (!parsed.success) {
+  return validationErrorResponse(
+   parsed.error.flatten().fieldErrors as Record<string, string[]>,
+  );
+ }
+
+ const beforeCursor = parsed.data.cursor
+  ? parseCommunityBugReportHistoryCursor(parsed.data.cursor)
+  : null;
+ if (parsed.data.cursor && !beforeCursor) {
+  return validationErrorResponse({ cursor: ["Le curseur de pagination est invalide."] });
+ }
+
+ try {
+  const page = await listCommunityBugReportsForUser({
+   submittedByUserId: access.userId,
+   limit: clampCommunityBugReportsHistoryLimit(parsed.data.limit),
+   beforeCursor,
+  });
+  return NextResponse.json(
+   {
+    status: "ok",
+    items: page.items.map(projectPersonalFeedback),
+    nextCursor: page.nextCursor
+     ? buildCommunityBugReportHistoryCursor(page.nextCursor)
+     : null,
+    hasMore: page.hasMore,
+   },
+   { headers: { "Cache-Control": "private, no-store" } },
+  );
+ } catch (error) {
+  return handleApiError(error, "GET /api/community/bug-reports");
+ }
 }
 
 export async function POST(request: Request) {

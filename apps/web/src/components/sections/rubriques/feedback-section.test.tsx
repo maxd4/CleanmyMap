@@ -29,6 +29,7 @@ describe("FeedbackSection", () => {
     );
 
     expect(markup).toContain("Retours &amp; Qualité");
+    expect(markup).toContain("Mes retours");
     expect(markup).toContain("Comment ça marche ?");
     expect(markup).toContain("Le retour est transmis à CleanMyMap pour examen.");
     expect(markup).toContain("Connecte-toi pour envoyer ce questionnaire.");

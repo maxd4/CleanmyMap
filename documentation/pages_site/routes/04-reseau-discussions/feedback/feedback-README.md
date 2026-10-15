@@ -11,8 +11,10 @@
 - **Statut** : public
 - **Contrat SEO** : `ACCESS=PUBLIC`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Le feedback reste accessible par les parcours du produit, sans devenir une page de recherche autonome.
 - **Contexte nécessaire** : Aucun
-- **Objectif utilisateur principal** : Partager un bug, une idée, une amélioration ou une proposition de collaboration.
+- **Objectif utilisateur principal** : Partager un bug, une idée, une amélioration ou une proposition de collaboration, puis retrouver ses propres retours.
 - **Action principale attendue** : Ouvrir la rubrique, choisir l'un des quatre questionnaires puis envoyer le retour.
+- **Boucle propriétaire** : Le bloc `Mes retours` est visible dans la page Feedback ; après connexion, il lit uniquement les retours du compte Clerk courant via `GET /api/community/bug-reports`, avec une projection minimale et une pagination stable.
+- **Statuts affichés** : `new`, `pending`, `responded`, `treated` et `archived` sont lus depuis l'état persistant du retour. Le contenu d'une réponse privée reste dans la messagerie existante.
 - **Point d'entrée** : carte du bloc Réseau & Discussions dans le sommaire, menu déroulant du bloc dans la navbar, raccourci feedback de la barre supérieure.
 - **Palette attendue** : pink
 - **Scope** : terminé
