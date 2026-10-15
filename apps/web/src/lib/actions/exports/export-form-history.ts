@@ -1,5 +1,6 @@
 import type { ExportForm } from "./export-form-contract";
 import type { ActionDeclarationExportBundleId, ActionDeclarationExportPresetId } from "@/lib/actions/exports/export-form-media";
+import { createClientIdentifier } from "@/lib/client-identifier";
 
 export type ActionDeclarationExportHistoryTargetId = "pdf" | ActionDeclarationExportPresetId;
 
@@ -93,7 +94,7 @@ export function createActionDeclarationExportHistoryEntry(params: {
   bundleId?: ActionDeclarationExportBundleId;
 }): ActionDeclarationExportHistoryEntry {
   return {
-    id: `CMM-EXP-${Math.random().toString(36).slice(2, 9).toUpperCase()}`,
+    id: createClientIdentifier("CMM-EXP").toUpperCase(),
     generatedAt: new Date().toISOString(),
     filename: params.filename,
     label: params.label,

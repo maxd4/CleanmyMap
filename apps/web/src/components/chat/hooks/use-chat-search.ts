@@ -97,7 +97,7 @@ function buildSearchPageKey(
   searchKey: string,
   cursor: ChatHistoryCursor,
 ): string {
-  const url = new URL(searchKey, "http://chat.local");
+  const url = new URL(searchKey, "https://chat.local");
   url.searchParams.set("beforeCreatedAt", cursor.createdAt);
   url.searchParams.set("beforeId", cursor.id);
   return `${url.pathname}${url.search}`;

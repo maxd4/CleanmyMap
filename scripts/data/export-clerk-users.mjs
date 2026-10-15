@@ -55,6 +55,13 @@ function resolveOutputBasePath(value) {
   return resolved;
 }
 
+export function sanitizeLogValue(value) {
+  return String(value).replace(/[\u0000-\u001f\u007f-\u009f]/g, (character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return `\\u${codePoint.toString(16).padStart(4, "0")}`;
+  });
+}
+
 function parseDotEnv(content) {
   const env = {};
   for (const line of content.split(/\r?\n/)) {
@@ -268,8 +275,8 @@ async function main() {
   if (typeof totalCount === "number") {
     console.log(`Clerk totalCount: ${totalCount}`);
   }
-  console.log(`JSON: ${path.resolve(jsonPath)}`);
-  console.log(`CSV:  ${path.resolve(csvPath)}`);
+  console.log(`JSON: ${sanitizeLogValue(path.resolve(jsonPath))}`);
+  console.log(`CSV:  ${sanitizeLogValue(path.resolve(csvPath))}`);
 }
 
 const isDirectRun =

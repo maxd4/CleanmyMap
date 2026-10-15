@@ -1,4 +1,5 @@
 import type { ExportForm } from "./export-form-contract";
+import { createClientIdentifier } from "@/lib/client-identifier";
 
 function esc(v: string): string {
   return v
@@ -79,7 +80,7 @@ export function exportFormAsPdf(form: ExportForm, actorName: string): boolean {
       <p style="font-size:12px;color:#64748b;margin:4px 0 0">Généré le ${esc(date)}</p>
     </div>
     <div style="text-align:right;font-size:10px;color:#94a3b8;font-family:monospace">
-      CMM-FORM-${Math.random().toString(36).substring(2, 8).toUpperCase()}
+      ${createClientIdentifier("CMM-FORM").toUpperCase()}
     </div>
   </div>
 

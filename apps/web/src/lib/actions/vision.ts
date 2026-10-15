@@ -9,6 +9,7 @@ import {
   readBlobAsDataUrl,
   readImageDimensions,
 } from "@/lib/media/image-compression";
+import { createClientIdentifier } from "@/lib/client-identifier";
 
 export type ActionVisionContext = {
   locationLabel: string;
@@ -329,7 +330,7 @@ export async function normalizeActionPhotos(files: File[]): Promise<ActionPhotoA
         height: null,
       }));
       return {
-        id: globalThis.crypto?.randomUUID?.() ?? `photo-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        id: createClientIdentifier(),
         name: preparedFile.name,
         mimeType: preparedFile.type || file.type || "image/*",
         size: preparedFile.size,

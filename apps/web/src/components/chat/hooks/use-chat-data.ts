@@ -180,7 +180,7 @@ function mergeChatMessages(
 }
 
 function getRecentMessagesKey(messagesKey: string): string {
-  const url = new URL(messagesKey, "http://chat.local");
+  const url = new URL(messagesKey, "https://chat.local");
   url.searchParams.delete("messageId");
   url.searchParams.delete("beforeCreatedAt");
   url.searchParams.delete("beforeId");
@@ -484,7 +484,7 @@ export function useChatData({
     setLoadPreviousError(null);
     const cursor: ChatHistoryCursor = messagesData.previousCursor;
     try {
-      const url = new URL(getRecentMessagesKey(messagesKey), "http://chat.local");
+      const url = new URL(getRecentMessagesKey(messagesKey), "https://chat.local");
       url.searchParams.set("beforeCreatedAt", cursor.createdAt);
       url.searchParams.set("beforeId", cursor.id);
       const olderData = await fetchChatJson<ChatMessagesResponse>(

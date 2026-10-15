@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import path from "node:path";
-import { normaliseUser, resolveOutputBasePath, toCsv } from "./export-clerk-users.mjs";
+import {
+  normaliseUser,
+  resolveOutputBasePath,
+  sanitizeLogValue,
+  toCsv,
+} from "./export-clerk-users.mjs";
 
 const user = normaliseUser({
   id: "user_123",
@@ -47,6 +52,8 @@ assert.throws(
   () => resolveOutputBasePath("https://example.com/export"),
   /local filesystem path/,
 );
+
+assert.equal(sanitizeLogValue("safe\nforged-entry\r\u0000"), "safe\\u000aforged-entry\\u000d\\u0000");
 
 const csv = toCsv([user]);
 assert.match(csv, /publicMetadata/);

@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { useUser } from "@clerk/nextjs";
 import { isAppError, toAppError } from "@/lib/errors/app-errors";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
+import { createClientIdentifier } from "@/lib/client-identifier";
 import type { ChatMessage, ChatUser } from "../chat-types";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicId } from "@/lib/chat/topics";
@@ -50,11 +51,7 @@ type UseChatSubmitParams = {
 };
 
 function createFeedbackOperationId(): string {
-  if (typeof globalThis.crypto?.randomUUID === "function") {
-    return globalThis.crypto.randomUUID();
-  }
-
-  return `feedback-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return createClientIdentifier();
 }
 
 export function buildOptimisticChatMessage({

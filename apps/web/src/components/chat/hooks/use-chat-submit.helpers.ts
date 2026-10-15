@@ -14,6 +14,7 @@ import {
 import type { ChatUser } from "../chat-types";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
+import { createClientIdentifier } from "@/lib/client-identifier";
 
 export class ChatAttachmentValidationError extends Error {}
 
@@ -63,7 +64,7 @@ async function uploadPreparedChatAttachment(params: {
   setIsUploading: (value: boolean) => void;
 }): Promise<ChatAttachmentUpload> {
   const fileExt = inferChatAttachmentExtension(params.preparedFile) ?? "bin";
-  const fileName = `${params.userId}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+  const fileName = `${params.userId}-${createClientIdentifier()}.${fileExt}`;
   const filePath = `${params.activeChannelType}/${fileName}`;
   const attachmentMimeType =
     params.inferredAttachmentType ?? params.preparedFile.type ?? params.originalFile.type ?? null;

@@ -2,6 +2,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { compressImageFile } from "@/lib/media/image-compression";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
 import { logFailure, logWarning } from "@/lib/logging/failure-log";
+import { createClientIdentifier } from "@/lib/client-identifier";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 interface PhotoUploadResult {
@@ -61,7 +62,7 @@ class PhotoUploadService {
       }
 
       const fileExt = preparedFile.name.split('.').pop() || 'jpg'
-      const fileName = `${actionId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      const fileName = `${actionId}/${createClientIdentifier("upload")}.${fileExt}`
 
       const { data, error } = await supabase.storage
         .from(this.bucket)

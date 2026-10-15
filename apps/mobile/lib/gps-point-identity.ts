@@ -1,8 +1,7 @@
-export function createGpsPointId(): string {
-  const randomUUID = globalThis.crypto?.randomUUID;
-  if (randomUUID) return randomUUID.call(globalThis.crypto);
+import { createLocalIdentifier } from './local-identifier';
 
-  return `gps-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
+export function createGpsPointId(): string {
+  return createLocalIdentifier();
 }
 
 export function ensureGpsPointIdentity<T extends { client_point_id?: string | null }>(

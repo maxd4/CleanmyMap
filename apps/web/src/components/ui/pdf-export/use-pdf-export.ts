@@ -7,6 +7,7 @@ import {
 } from "@/lib/pdf-export/simple-pdf";
 import { openOrDownloadReport } from "@/lib/pdf-export/browser-report";
 import { buildExportUiCopy } from "@/lib/reports/export-ui";
+import { createClientIdentifier } from "@/lib/client-identifier";
 
 export type ExportHistoryEntry = {
   id: string;
@@ -112,7 +113,7 @@ export function usePdfExport(params: UsePdfExportParams) {
 
       await params.onExportSuccess?.(payload);
 
-      const id = `CMM-PDF-${Math.random().toString(36).slice(2, 9).toUpperCase()}`;
+      const id = createClientIdentifier("CMM-PDF").toUpperCase();
       setHistory((prev) => [
         { id, rubrique: params.rubrique, filename, generatedAt },
         ...prev,

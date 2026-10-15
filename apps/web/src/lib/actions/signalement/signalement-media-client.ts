@@ -14,6 +14,7 @@ import {
   type SignalementEvidenceMimeType,
   type SignalementMediaReadItem,
 } from "./signalement-media-contract";
+import { createClientIdentifier } from "@/lib/client-identifier";
 
 export type SignalementEvidenceUploadItem = {
   file: File;
@@ -50,7 +51,7 @@ export class SignalementMediaReadError extends Error {
 }
 
 function randomClientUploadId(): string {
-  return globalThis.crypto?.randomUUID?.() ?? `signalement-photo-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return createClientIdentifier();
 }
 
 export function createSignalementEvidenceUploadItem(file: File): SignalementEvidenceUploadItem {
