@@ -11,8 +11,8 @@
 - **Statut** : public
 - **Contrat SEO** : `ACCESS=PUBLIC`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Le feedback reste accessible par les parcours du produit, sans devenir une page de recherche autonome.
 - **Contexte nécessaire** : Aucun
-- **Objectif utilisateur principal** : Partager un bug, une amélioration ou une proposition de collaboration.
-- **Action principale attendue** : Ouvrir la rubrique, choisir le bon questionnaire puis envoyer le retour.
+- **Objectif utilisateur principal** : Partager un bug, une idée, une amélioration ou une proposition de collaboration.
+- **Action principale attendue** : Ouvrir la rubrique, choisir l'un des quatre questionnaires puis envoyer le retour.
 - **Point d'entrée** : carte du bloc Réseau & Discussions dans le sommaire, menu déroulant du bloc dans la navbar, raccourci feedback de la barre supérieure.
 - **Palette attendue** : pink
 - **Scope** : terminé
@@ -35,7 +35,7 @@
 - **Accès bloc** : la page doit rester explicitement accessible comme rubrique du bloc Réseau & Discussions, pas comme page orpheline.
 - **Composants UI concernés** :
 - hero de section
-- questionnaires
+- sélection de quatre questionnaires et formulaire canonique
 - cartes de retour
 - CTA contact
 - barre de navigation

@@ -2,7 +2,7 @@
 
 ## Formulaires
 
-- Vérifier que les trois questionnaires restent bien différenciés
+- Vérifier que les quatre questionnaires restent bien différenciés, avec une version courte pour l'idée
 - Harmoniser le préremplissage via les paramètres `subject`, `context`, `steps` et `expected`
 - Clarifier les messages d'erreur pour la validation courte des champs
 

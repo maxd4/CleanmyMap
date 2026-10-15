@@ -1,7 +1,7 @@
-import { Bug, Handshake, Lightbulb } from "lucide-react";
+import { Bug, Handshake, Lightbulb, MessageSquare } from "lucide-react";
 
 export type L10n = { fr: string; en: string };
-export type FeedbackType = "bug" | "improvement" | "collaboration";
+export type FeedbackType = "bug" | "idea" | "improvement" | "collaboration";
 
 export type FeedbackField = {
   key: string;
@@ -71,6 +71,51 @@ export const QUESTIONNAIRES = [
         placeholder: {
           fr: "Ce qui devrait se passer normalement",
           en: "What should happen normally",
+        },
+        rows: 3,
+        minLength: 10,
+      },
+    ],
+  },
+  {
+    id: "idea",
+    title: { fr: "Idée", en: "Idea" },
+    intro: {
+      fr: "Partage une idée ou une observation en quelques réponses.",
+      en: "Share an idea or observation in a few answers.",
+    },
+    success: {
+      fr: "Merci. Votre idée a été transmise.",
+      en: "Thanks. Your idea has been sent.",
+    },
+    icon: MessageSquare,
+    accent: "rose",
+    fields: [
+      {
+        key: "subject",
+        label: { fr: "Sujet", en: "Subject" },
+        placeholder: {
+          fr: "Ex: Ajouter un filtre par quartier",
+          en: "E.g. Add a neighbourhood filter",
+        },
+        minLength: 4,
+      },
+      {
+        key: "proposal",
+        label: { fr: "Votre idée", en: "Your idea" },
+        placeholder: {
+          fr: "Décrivez simplement ce que vous aimeriez voir.",
+          en: "Briefly describe what you would like to see.",
+        },
+        rows: 4,
+        minLength: 10,
+      },
+      {
+        key: "benefit",
+        label: { fr: "Bénéfice attendu", en: "Expected benefit" },
+        placeholder: {
+          fr: "À qui cette idée serait-elle utile ?",
+          en: "Who would this idea help?",
         },
         rows: 3,
         minLength: 10,

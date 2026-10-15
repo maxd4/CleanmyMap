@@ -14,12 +14,19 @@ export function FeedbackSection({
   source = "feedback_section",
 }: FeedbackSectionProps = {}) {
   const { locale } = useSitePreferences();
-  const { pagePath, supportPrefill } = resolveFeedbackSectionContext(pagePathOverride);
+  const {
+    pagePath,
+    supportPrefill,
+    initialType,
+    source: sourceFromUrl,
+  } = resolveFeedbackSectionContext(pagePathOverride);
+
+  const resolvedSource =
+    source === "feedback_section" ? sourceFromUrl : source;
 
   if (source === "feedback_discussion") {
     return (
       <FeedbackSectionDiscussion
-        pagePath={pagePath}
         source={source}
         supportPrefill={supportPrefill}
         locale={locale}
@@ -31,9 +38,10 @@ export function FeedbackSection({
     <SectionShell id="feedback" hideHeader gradient="from-rose-100/80 via-white to-transparent">
       <FeedbackSectionDashboard
         pagePath={pagePath}
-        source={source}
+        source={resolvedSource}
         supportPrefill={supportPrefill}
         locale={locale}
+        initialType={initialType}
       />
     </SectionShell>
   );

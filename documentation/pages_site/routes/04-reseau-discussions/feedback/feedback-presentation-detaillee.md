@@ -6,7 +6,8 @@ La rubrique `Feedback` centralise les retours d'usage, les idées d'amélioratio
 
 ## Ce que la page montre
 
-- plusieurs questionnaires ciblés, dont le bug, l'idée et la collaboration
+- quatre questionnaires ciblés : bug, idée, amélioration et collaboration
+- un seul formulaire canonique ; les liens depuis la messagerie n'embarquent pas de second formulaire
 - une logique de préremplissage à partir de l'URL
 - un contact direct par mail quand le formulaire n'est pas suffisant
 - un message factuel indiquant que le retour est transmis à CleanMyMap pour examen

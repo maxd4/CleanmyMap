@@ -3,25 +3,23 @@
 import { ArrowRight, Mail } from "lucide-react";
 import Link from "next/link";
 import {
+  buildFeedbackCanonicalHref,
   FEEDBACK_SUPPORT_LINKS,
-  type FeedbackSectionProps,
+  type FeedbackSource,
   type Locale,
 } from "./feedback-section.shared";
-import { QuestionnaireCard } from "./feedback/questionnaire-card";
 import { PageHeader } from "@/components/ui/page-header";
-import { QUESTIONNAIRES } from "./feedback/questionnaire-config";
+import { QUESTIONNAIRES, type FeedbackType } from "./feedback/questionnaire-config";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import { CmmButton } from "@/components/ui/cmm-button";
 
 function FeedbackDiscussionMode({
   fr,
-  pagePath,
   source,
   supportPrefill,
 }: {
   fr: boolean;
-  pagePath: string;
-  source: FeedbackSectionProps["source"];
+  source: FeedbackSource;
   supportPrefill: Partial<Record<string, string>> | null;
 }) {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
@@ -47,17 +45,42 @@ function FeedbackDiscussionMode({
 
       <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="rounded-[1.8rem] border border-rose-200/70 bg-white/90 p-5 shadow-[0_22px_62px_-54px_rgba(236,72,153,0.48)]">
-          <div className="grid gap-4 xl:grid-cols-3">
-            {QUESTIONNAIRES.map((questionnaire) => (
-              <div key={questionnaire.id} id={questionnaire.id}>
-                <QuestionnaireCard
-                  questionnaire={questionnaire}
-                  pagePath={pagePath}
-                  source={source ?? "feedback_discussion"}
-                  initialValues={questionnaire.id === "bug" ? supportPrefill ?? undefined : undefined}
-                />
-              </div>
-            ))}
+          <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-pink-600">
+            {fr ? "Choisir un type de retour" : "Choose a feedback type"}
+          </p>
+          <p className="mt-2 max-w-2xl text-[0.96rem] leading-[1.65] text-slate-600">
+            {fr
+              ? "Le formulaire complet s’ouvre sur la page Feedback afin de garder un seul parcours de saisie."
+              : "The complete form opens on the Feedback page so there is one submission flow."}
+          </p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {QUESTIONNAIRES.map((questionnaire) => {
+              const Icon = questionnaire.icon;
+              const type = questionnaire.id as FeedbackType;
+              return (
+                <Link
+                  key={questionnaire.id}
+                  id={questionnaire.id}
+                  href={buildFeedbackCanonicalHref({
+                    type,
+                    supportPrefill: questionnaire.id === "bug" ? supportPrefill : null,
+                    source,
+                  })}
+                  className="flex min-h-24 items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/60 p-4 transition hover:border-pink-300 hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
+                >
+                  <Icon className="mt-0.5 shrink-0 text-pink-500" size={18} aria-hidden="true" />
+                  <span>
+                    <span className="block text-sm font-bold text-slate-950">
+                      {fr ? questionnaire.title.fr : questionnaire.title.en}
+                    </span>
+                    <span className="cmm-text-small mt-1 block leading-relaxed text-slate-500">
+                      {fr ? questionnaire.intro.fr : questionnaire.intro.en}
+                    </span>
+                  </span>
+                  <ArrowRight className="ml-auto mt-1 shrink-0 text-pink-400" size={16} aria-hidden="true" />
+                </Link>
+              );
+            })}
           </div>
         </div>
 
@@ -133,21 +156,18 @@ function FeedbackDiscussionMode({
 }
 
 export function FeedbackSectionDiscussion({
-  pagePath,
   source,
   supportPrefill,
   locale,
 }: {
-  pagePath: string;
-  source: FeedbackSectionProps["source"];
+  source: FeedbackSource;
   supportPrefill: Partial<Record<string, string>> | null;
   locale: Locale;
 }) {
   return (
     <FeedbackDiscussionMode
       fr={locale === "fr"}
-      pagePath={pagePath}
-      source={source}
+      source={source ?? "feedback_discussion"}
       supportPrefill={supportPrefill}
     />
   );

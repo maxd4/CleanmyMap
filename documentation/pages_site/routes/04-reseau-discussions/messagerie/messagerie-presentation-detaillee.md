@@ -36,7 +36,7 @@ La page `Messagerie` sert aux échanges publics thématiques et directs entre me
 - garder la surface compacte sur mobile
 - sur mobile, afficher la liste des contextes puis le fil avec retour ; afficher les deux simultanément sur desktop lorsque l’espace le permet
 - éviter une densité de cartes trop élevée
-- ne pas mélanger la messagerie avec les retours `Feedback`
+- ne pas afficher un second formulaire `Feedback` complet dans la messagerie : le canal propose un accès compact vers `/sections/feedback`, avec le type et le préremplissage bug utiles
 - ne pas afficher une sidebar DM dans l’onglet `Discussions`
 - laisser `Communauté globale` et `Territoire global` afficher les messages non classés ; un groupe sélectionné filtre sur les `topic_id` persistés qui le composent, tandis que le fil territorial reste zone-driven et conserve les messages legacy/non classés
 - afficher sobrement le topic porté par un message dans une vue agrégée

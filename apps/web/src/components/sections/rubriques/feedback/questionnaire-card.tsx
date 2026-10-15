@@ -15,26 +15,10 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
 import type { QuestionnaireConfig } from "./questionnaire-config";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
+import { submitFeedbackQuestionnaire } from "./feedback-submission";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
-
-function formatQuestionnaireDescription(
-  questionnaire: QuestionnaireConfig,
-  values: Record<string, string>,
-  pagePath: string,
-  locale: "fr" | "en",
-): string {
-  const lines = [
-    `Type: ${questionnaire.title[locale]}`,
-    `Page: ${pagePath}`,
-    "",
-    ...questionnaire.fields.map((field) => {
-      const value = values[field.key].trim();
-      return `${field.label[locale]}: ${value}`;
-    }),
-  ];
-  return lines.join("\n");
-}
 
 export function QuestionnaireCard({
   questionnaire,
@@ -68,6 +52,7 @@ export function QuestionnaireCard({
   const formStartedAt = useRef<number | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     formStartedAt.current = Date.now();
@@ -82,6 +67,7 @@ export function QuestionnaireCard({
     if (submitState !== "idle") {
       setSubmitState("idle");
       setErrorMessage(null);
+      setRequestId(null);
     }
     setValues((current) => ({ ...current, [fieldKey]: value }));
   }
@@ -96,38 +82,18 @@ export function QuestionnaireCard({
     setErrorMessage(null);
 
     try {
-      const questionnairePagePath = `${pagePath}#${questionnaire.id}`;
-      const response = await fetch("/api/community/bug-reports", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          reportType: questionnaire.id,
-          title: values["subject"]?.trim() || questionnaire.title[locale],
-          description: formatQuestionnaireDescription(
-            questionnaire,
-            values,
-            questionnairePagePath,
-            locale,
-          ),
-          pagePath: questionnairePagePath,
-          source,
-          honeypot,
-          submittedAt: formStartedAt.current ?? Date.now(),
-        }),
+      const result = await submitFeedbackQuestionnaire({
+        questionnaire,
+        values,
+        pagePath,
+        source,
+        locale,
+        honeypot,
+        submittedAt: formStartedAt.current ?? Date.now(),
       });
 
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as
-          | { error?: string; message?: string }
-          | null;
-        throw new Error(
-          body?.message ??
-            body?.error ??
-            (locale === "fr" ? "Impossible d'envoyer le questionnaire." : "Unable to send the questionnaire."),
-        );
-      }
-
       setSubmitState("success");
+      setRequestId(result.requestId);
       setValues(
         Object.fromEntries(questionnaire.fields.map((field) => [field.key, ""])),
       );
@@ -144,6 +110,16 @@ export function QuestionnaireCard({
   }
 
   const Icon = questionnaire.icon;
+  const returnPath = (() => {
+    if (typeof window === "undefined") {
+      return `${pagePath}#${questionnaire.id}`;
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("type", questionnaire.id);
+    url.hash = questionnaire.id;
+    return `${url.pathname}${url.search}${url.hash}`;
+  })();
   const accentClasses = {
     rose: {
       border: "border-rose-300/30",
@@ -223,7 +199,7 @@ export function QuestionnaireCard({
               : "After submission, your feedback is sent to CleanMyMap for review."}
           </p>
           <CmmButton
-            href="/sign-in"
+            href={buildSignInRedirectHref(returnPath)}
             tone="secondary"
             variant="pill"
             className={cn(
@@ -289,8 +265,17 @@ export function QuestionnaireCard({
           </div>
 
           {submitState === "success" ? (
-            <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50">
+            <div
+              className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50"
+              role="status"
+              aria-live="polite"
+            >
               {questionnaire.success[locale]}
+              {requestId ? (
+                <span className="mt-1 block text-emerald-100/80">
+                  {locale === "fr" ? "Référence" : "Reference"}: {requestId}
+                </span>
+              ) : null}
             </div>
           ) : null}
 

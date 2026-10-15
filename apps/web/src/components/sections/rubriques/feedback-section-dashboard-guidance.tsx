@@ -18,7 +18,6 @@ export function FeedbackSectionDashboardGuidance({
     <>
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
         <aside
-          id="collaboration"
           className="rounded-[2rem] border border-rose-200/70 bg-white/88 p-6 shadow-[0_24px_72px_-60px_rgba(236,72,153,0.55)] backdrop-blur-sm"
         >
           <h2 className="text-[0.9rem] font-black uppercase tracking-[0.18em] text-pink-600">
