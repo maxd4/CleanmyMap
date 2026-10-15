@@ -548,7 +548,7 @@ jobs:
           name: web-coverage-evidence-${{ github.sha }}
           path: apps/web/coverage
 
-      - name: Web coverage ratchet from existing evidence
+      - name: Web coverage comparison from existing evidence
         run: npm run quality:coverage -- --from-existing-summary
 
   web-vercel-audit:
@@ -671,7 +671,7 @@ jobs:
       - name: Mobile Vitest tests
         run: npm run mobile:test
 
-      - name: Mobile Vitest coverage ratchet
+      - name: Mobile Vitest coverage comparison
         run: npm run quality:mobile-coverage
 
       - name: Mobile lint

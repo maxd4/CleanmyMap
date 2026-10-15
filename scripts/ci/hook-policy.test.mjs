@@ -104,7 +104,7 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.match(mobileJob, /npm run check:semgrep/);
   assert.match(mobileJob, /web_code_relevant != 'true'/);
   assert.doesNotMatch(mobileJob, /Mobile Vitest tests \(FULL only\)/);
-  assert.doesNotMatch(mobileJob, /Mobile Vitest coverage ratchet \(FULL only\)/);
+  assert.doesNotMatch(mobileJob, /Mobile Vitest coverage comparison \(FULL only\)/);
   assert.match(workflow, /build_relevant: \$\{\{ steps\.detect-scope\.outputs\.build_relevant \}\}/);
   const scopeJob = extractJob(workflow, "scope");
   assert.match(scopeJob, /VALIDATION_MODE: \$\{\{ inputs\.validation_mode \}\}/);
@@ -127,9 +127,9 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   }
   assert.match(
     workflow,
-    /- name: Web coverage ratchet from existing evidence[\s\S]*?run: npm run quality:coverage -- --from-existing-summary/,
+    /- name: Web coverage comparison from existing evidence[\s\S]*?run: npm run quality:coverage -- --from-existing-summary/,
   );
-  const coverageStep = extractJob(workflow, "web-coverage").match(/- name: Web coverage ratchet from existing evidence[\s\S]*$/)?.[0] ?? "";
+  const coverageStep = extractJob(workflow, "web-coverage").match(/- name: Web coverage comparison from existing evidence[\s\S]*$/)?.[0] ?? "";
   assert.doesNotMatch(coverageStep, /continue-on-error:\s*true/);
   const summaryStep = qualityJobForGrace.match(/- name: Publish web-quality summary[\s\S]*?(?=\n      - name:|\n\n  [a-z0-9-]+:)/)?.[0] ?? "";
   assert.doesNotMatch(summaryStep, /continue-on-error:\s*true/);

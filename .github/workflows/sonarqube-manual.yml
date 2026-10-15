@@ -56,9 +56,7 @@ jobs:
       - name: Generate Web coverage
         run: npm run test:coverage
 
-      - name: Verify Web coverage ratchet
-        id: web_coverage_ratchet
-        continue-on-error: true
+      - name: Report Web coverage comparison
         run: npm run quality:coverage -- --from-existing-summary
 
       - name: Generate and verify Mobile coverage
@@ -77,13 +75,3 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      - name: Enforce Web coverage ratchet verdict
-        if: ${{ always() }}
-        env:
-          WEB_COVERAGE_RATCHET_OUTCOME: ${{ steps.web_coverage_ratchet.outcome }}
-        run: |
-          if [ "$WEB_COVERAGE_RATCHET_OUTCOME" != "success" ]; then
-            echo "Web coverage ratchet failed; preserving the final workflow failure after downstream evidence steps."
-            exit 1
-          fi

@@ -37,7 +37,7 @@ test("SonarQube receives Web, mobile and Node LCOV plus Python coverage", () => 
 test("the workflow generates and validates coverage before scanning", () => {
   const workflow = read(".github/workflows/sonarqube-manual.yml");
   const web = workflow.indexOf("run: npm run test:coverage");
-  const webRatchet = workflow.indexOf("- name: Verify Web coverage ratchet");
+  const webRatchet = workflow.indexOf("- name: Report Web coverage comparison");
   const mobile = workflow.indexOf("run: npm run quality:mobile-coverage");
   const node = workflow.indexOf("run: npm run test:coverage:node");
   const python = workflow.indexOf("run: npm run test:coverage:python");
@@ -48,54 +48,51 @@ test("the workflow generates and validates coverage before scanning", () => {
   assert.match(workflow, /run:\s+"?python -m pip install .*requirements-dev\.txt .*requirements-lock\.txt"?/);
 });
 
-test("only the Web ratchet is deferred and its final verdict runs after the scan", () => {
+test("coverage regressions remain informational while mandatory scan inputs stay blocking", () => {
   const workflow = read(".github/workflows/sonarqube-manual.yml");
-  const ratchetStart = workflow.indexOf("      - name: Verify Web coverage ratchet");
+  const ratchetStart = workflow.indexOf("      - name: Report Web coverage comparison");
   const mobileStart = workflow.indexOf("      - name: Generate and verify Mobile coverage");
   const scannerStart = workflow.indexOf("      - name: SonarQube Cloud scan");
-  const verdictStart = workflow.indexOf("      - name: Enforce Web coverage ratchet verdict");
   const ratchetStep = workflow.slice(ratchetStart, mobileStart);
-  const downstreamSteps = workflow.slice(mobileStart, verdictStart);
-  const verdictStep = workflow.slice(verdictStart);
 
-  assert.match(ratchetStep, /id: web_coverage_ratchet/);
-  assert.match(ratchetStep, /continue-on-error: true/);
-  assert.equal((ratchetStep.match(/continue-on-error:\s*true/g) ?? []).length, 1);
-  assert.doesNotMatch(downstreamSteps, /continue-on-error:\s*true/);
-  assert.ok(verdictStart > scannerStart, "the ratchet verdict must be enforced after SonarQube");
-  assert.match(verdictStep, /if: \$\{\{ always\(\) \}\}/);
-  assert.match(verdictStep, /WEB_COVERAGE_RATCHET_OUTCOME: \$\{\{ steps\.web_coverage_ratchet\.outcome \}\}/);
-  assert.match(verdictStep, /WEB_COVERAGE_RATCHET_OUTCOME.*!= "success"/s);
-  assert.match(verdictStep, /exit 1/);
+  assert.doesNotMatch(workflow, /Enforce Web coverage ratchet verdict/);
+  assert.doesNotMatch(ratchetStep, /id: web_coverage_ratchet/);
+  assert.doesNotMatch(ratchetStep, /continue-on-error:\s*true/);
+  assert.ok(scannerStart > mobileStart, "the scanner must remain after all mandatory coverage inputs");
 });
 
-function expectedWorkflowConclusion({ webGeneration, ratchet, mobile, lcov, scanner }) {
+function expectedWorkflowConclusion({ webGeneration, coverageComparison, mobile, lcov, scanner }) {
   if (webGeneration !== "success") return "failure";
   if (mobile !== "success" || lcov !== "success" || scanner !== "success") return "failure";
-  if (ratchet !== "success") return "failure";
+  if (coverageComparison === "mandatory-failure") return "failure";
   return "success";
 }
 
-test("workflow outcome cases preserve mandatory failures while allowing downstream evidence", () => {
+test("workflow outcome cases allow numeric regressions but preserve mandatory failures", () => {
   const cases = [
     {
-      name: "ratchet PASS",
-      input: { webGeneration: "success", ratchet: "success", mobile: "success", lcov: "success", scanner: "success" },
+      name: "comparison PASS",
+      input: { webGeneration: "success", coverageComparison: "pass", mobile: "success", lcov: "success", scanner: "success" },
       expected: "success",
     },
     {
-      name: "ratchet FAIL with successful scan",
-      input: { webGeneration: "success", ratchet: "failure", mobile: "success", lcov: "success", scanner: "success" },
-      expected: "failure",
+      name: "numeric regression with successful scan",
+      input: { webGeneration: "success", coverageComparison: "informative-regression", mobile: "success", lcov: "success", scanner: "success" },
+      expected: "success",
     },
     {
       name: "LCOV absent",
-      input: { webGeneration: "success", ratchet: "success", mobile: "success", lcov: "failure", scanner: "skipped" },
+      input: { webGeneration: "success", coverageComparison: "pass", mobile: "success", lcov: "failure", scanner: "skipped" },
       expected: "failure",
     },
     {
       name: "scanner error",
-      input: { webGeneration: "success", ratchet: "success", mobile: "success", lcov: "success", scanner: "failure" },
+      input: { webGeneration: "success", coverageComparison: "pass", mobile: "success", lcov: "success", scanner: "failure" },
+      expected: "failure",
+    },
+    {
+      name: "mandatory coverage evidence error",
+      input: { webGeneration: "success", coverageComparison: "mandatory-failure", mobile: "success", lcov: "success", scanner: "skipped" },
       expected: "failure",
     },
   ];

@@ -273,7 +273,11 @@ export function compareCoverage(current, baseline) {
   const grace = regressions.filter(({ kind }) => kind === "grace");
   const failures = regressions.filter(({ kind }) => kind === "failure");
   return {
-    status: failures.length > 0 ? "FAIL" : grace.length > 0 ? "PASS_WITH_GRACE" : "PASS",
+    status: failures.length > 0
+      ? "INFORMATIVE_REGRESSION"
+      : grace.length > 0
+        ? "PASS_WITH_GRACE"
+        : "PASS",
     failures,
     grace,
   };

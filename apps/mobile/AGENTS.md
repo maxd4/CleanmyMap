@@ -144,7 +144,7 @@ npm run mobile:security
 npm run mobile:lint
 ```
 
-La couverture ratchetée du mobile est mesurée par `mobile-validation` sur
+La couverture mobile et sa comparaison historique informative sont mesurées par `mobile-validation` sur
 chaque push vers `main` et chaque Pull Request ciblant `main`. Elle reste aussi
 disponible en FULL et en pré-release de code avec :
 

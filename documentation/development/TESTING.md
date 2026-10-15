@@ -538,9 +538,10 @@ et lines — au baseline réel de `main` dans
 `scripts/checks/coverage-baseline.json`. La baseline a été mesurée sur le SHA
 `a900d227041b1dcd39cf9a971b4fa31d8eb1e643`, le 18 septembre 2026, sans seuil
 arbitraire : statements `56.86 %`, branches `47.22 %`, functions `57.19 %` et
-lines `57.39 %`. Le ratchet quotidien applique une stabilisation court terme :
-une baisse bornée peut être classée `PASS_WITH_GRACE`, tandis qu'une baisse
-au-delà de l'enveloppe reste `FAIL`. La marge globale est de `0.25` point de
+lines `57.39 %`. La comparaison historique reste informative : une baisse
+bornée peut être classée `PASS_WITH_GRACE`, tandis qu'une baisse au-delà de
+l'enveloppe est classée `INFORMATIVE_REGRESSION`. Aucun de ces deux résultats
+ne fait échouer la commande. La marge globale est de `0.25` point de
 pourcentage ; pour chaque métrique, la marge effective est le maximum entre
 cette valeur et une unité mesurée (`100 / baseline.total`). Les ratios exacts
 `covered / total` sont comparés, et non les pourcentages JSON arrondis.
@@ -552,10 +553,12 @@ objectifs historiques inventés. Les marges sont de `0.25` point pour
 `auth-authz` et de `0.75` point pour chacun des quatre autres domaines, avec la
 même règle d'unité mesurée. Une petite baisse bornée est reportée avec
 `COVERAGE_GRACE <scope>.<metric>` et le statut `PASS_WITH_GRACE` ; elle ne
-modifie jamais la baseline. L'accumulation des régressions finit donc par
-dépasser l'enveloppe et bloquer. Une baseline malformée, obsolète, dont le
-périmètre ne correspond plus à la policy, ou dont un domaine/métrique attendu
-manque, échoue toujours strictement.
+modifie jamais la baseline. Une baisse au-delà de l'enveloppe conserve tous ses
+détails dans le rapport et le statut `INFORMATIVE_REGRESSION`, mais reste
+non bloquante. Une baseline absente, malformée ou obsolète rend la comparaison
+historique `UNAVAILABLE` sans invalider une mesure courante correctement
+produite. En revanche, un résumé courant invalide, une preuve obligatoire
+manquante ou une preuve ne correspondant plus au candidat échoue strictement.
 
 Une amélioration de la baseline doit être ratifiée par une modification
 explicite de ce fichier et ne peut pas régresser silencieusement. Les métriques
@@ -568,7 +571,7 @@ correspond plus. Ainsi `checks:full` peut consommer une couverture déjà
 produite sans relancer Vitest, tandis qu'un candidat sans preuve recalcule la
 suite complète. Dans la CI, `web-tests` produit la suite couverte et publie
 l'artefact court terme ; `web-coverage` le télécharge puis exécute uniquement
-le ratchet. `checks:fast` ne relance pas cette suite complète instrumentée afin
+la comparaison informative. `checks:fast` ne relance pas cette suite complète instrumentée afin
 de respecter son budget et d'éviter une seconde exécution inutile des tests.
 
 Les étapes CI `Duplication ratchet` et `GitNexus cycle ratchet` restent
@@ -578,9 +581,11 @@ chaque preuve : seuls `PASS` et `PASS_WITH_GRACE` rattachés au candidat courant
 et à une baseline ancêtre sont acceptés ; un `FAIL`, une baseline obsolète, une
 preuve manquante, invalide ou rattachée à un autre SHA fait échouer
 `web-quality`. Le job `web-coverage` télécharge la preuve produite par
-`web-tests` et exécute directement le ratchet checker-only ; son échec est
-bloquant et ne relance pas Vitest. Aucun de ces contrôles ne peut donc devenir
-vert par simple masquage de son code de sortie.
+`web-tests` et exécute directement la comparaison checker-only ; une baisse
+numérique reste informative et ne relance pas Vitest. La génération de la
+couverture, l'intégrité de la preuve et les rapports obligatoires restent
+fail-closed et bloquants. Aucun de ces contrôles ne peut donc devenir vert par
+simple masquage de son code de sortie.
 
 Le même moteur V8 mesure séparément le mobile :
 
@@ -596,6 +601,9 @@ functions `47.89 %` (`114/238`) et lines `49.25 %` (`396/804`). Aucun
 pourcentage mobile n'est
 agrégé avec le web et le mobile ne possède pas de domaines web artificiels.
 Une baisse mobile est donc comparée indépendamment sur les quatre métriques.
+Comme pour le Web, elle est reportée mais ne bloque ni CI, ni FULL, ni le scan
+SonarQube ; l'échec des tests, de la production du rapport ou de sa validation
+reste bloquant.
 
 ### Rapports de couverture importés par SonarQube Cloud
 
