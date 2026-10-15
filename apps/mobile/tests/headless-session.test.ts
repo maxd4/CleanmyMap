@@ -53,7 +53,8 @@ describe('mobile headless Clerk session', () => {
     state.instance = createClerkInstance(null)
 
     await expect(getClerkSupabaseAccessToken()).resolves.toBeNull()
-    expect(state.instance.session.getToken).toHaveBeenCalledOnce()
+    await expect(getAuthenticatedSupabaseClient()).resolves.toBeNull()
+    expect(state.instance.session.getToken).toHaveBeenCalledTimes(2)
   })
 
   it('reads the same Clerk owner used to namespace headless GPS data', async () => {

@@ -7,12 +7,17 @@ import type { EmergencyContact } from '../types/emergency-contact'
 
 export function EmergencyCallActions({ compact = false }: { compact?: boolean }) {
   const [contact, setContact] = useState<EmergencyContact | null>(null)
+  const [contactLoadError, setContactLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    getStoredEmergencyContact().then((storedContact) => {
-      if (!cancelled && hasEmergencyContact(storedContact)) setContact(storedContact)
-    })
+    void getStoredEmergencyContact()
+      .then((storedContact) => {
+        if (!cancelled && hasEmergencyContact(storedContact)) setContact(storedContact)
+      })
+      .catch(() => {
+        if (!cancelled) setContactLoadError('Contact d’urgence indisponible sur cet appareil.')
+      })
 
     return () => {
       cancelled = true
@@ -75,6 +80,7 @@ export function EmergencyCallActions({ compact = false }: { compact?: boolean })
           <Text style={styles.description}>Aucun appel ni partage de position automatique.</Text>
         </View>
       </View>
+      {contactLoadError ? <Text style={styles.error}>{contactLoadError}</Text> : null}
       {contact ? (
         <TouchableOpacity style={styles.contactButton} onPress={() => confirmCall('mon contact d’urgence', contact.phone)}>
           <Ionicons name="person-outline" size={20} color="#fef3c7" />
@@ -121,6 +127,7 @@ const styles = StyleSheet.create({
   copy: { flex: 1, marginLeft: 10 },
   title: { color: '#f8fafc', fontSize: 14, fontWeight: '900', marginBottom: 4 },
   description: { color: '#94a3b8', fontSize: 12, lineHeight: 17 },
+  error: { color: '#fca5a5', fontSize: 12, lineHeight: 18, marginBottom: 12 },
   contactButton: {
     alignItems: 'center',
     backgroundColor: '#78350f',

@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { getAuthenticatedSupabaseClient, getClerkUserId } from './supabase';
 import { ensureGpsPointIdentity } from './gps-point-identity';
+import { createLocalIdentifier } from './local-identifier';
 import type {
   ForegroundTrackPoint,
   MissionLocationInsert,
@@ -35,7 +36,7 @@ function ownerScopedKey(prefix: string, ownerId: string): string | null {
 }
 
 function makeBufferRecordKey(prefix: string): string {
-  return normalizeSecureStoreKey(`${prefix}.${Date.now()}.${Math.random().toString(16).slice(2)}`);
+  return normalizeSecureStoreKey(`${prefix}.${createLocalIdentifier()}`);
 }
 
 async function readStoredValue(key: string): Promise<string | null> {

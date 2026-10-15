@@ -21,11 +21,17 @@ export function EmergencyContactPanel() {
 
   useEffect(() => {
     let cancelled = false
-    getStoredEmergencyContact().then((storedContact) => {
-      if (cancelled) return
-      setContact(storedContact)
-      setLoading(false)
-    })
+    void getStoredEmergencyContact()
+      .then((storedContact) => {
+        if (cancelled) return
+        setContact(storedContact)
+      })
+      .catch(() => {
+        if (!cancelled) setError('Impossible de lire le contact sur cet appareil.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
 
     return () => {
       cancelled = true
@@ -105,7 +111,7 @@ export function EmergencyContactPanel() {
   }
 
   if (!contact) {
-    return <EmptyEmergencyContact onCreate={beginCreate} />
+    return <EmptyEmergencyContact error={error} onCreate={beginCreate} />
   }
 
   return <SavedEmergencyContact contact={contact} error={error} onEdit={() => beginEdit(contact)} onDelete={handleDelete} />
@@ -155,10 +161,11 @@ function EmergencyContactEditor({
   )
 }
 
-function EmptyEmergencyContact({ onCreate }: { onCreate: () => void }) {
+function EmptyEmergencyContact({ error, onCreate }: { error: string | null; onCreate: () => void }) {
   return (
     <View style={styles.panel}>
       <ContactPanelHeader description="Ajoutez un contact privé pour pouvoir l’appeler rapidement pendant une mission." />
+      {error ? <Text style={styles.error}>{error}</Text> : null}
       <TouchableOpacity style={styles.primaryButton} onPress={onCreate}>
         <Text style={styles.primaryButtonLabel}>AJOUTER UN CONTACT</Text>
       </TouchableOpacity>

@@ -78,6 +78,16 @@ it('keeps mission and reconciliation state scoped to the Clerk owner', async () 
     await expect(getStoredActiveMissionContext()).resolves.toBeNull()
 })
 
+it('assigns distinct local record keys to buffered points across appends', async () => {
+    await bufferPoint(ownerId, point)
+    await bufferPoint(ownerId, { ...point, client_point_id: 'point-2', recorded_at: '2026-09-28T10:01:00.000Z' })
+
+    const index = JSON.parse(state.values.get('_cmm_gps_buffer_index_user_123') ?? '[]') as string[]
+    expect(index).toHaveLength(2)
+    expect(new Set(index).size).toBe(2)
+    expect(index.every((key) => state.values.has(key))).toBe(true)
+})
+
 it('rejects invalid mission owners before writing local identity state', async () => {
     await expect(setStoredMissionId('user/a', 'mission-a')).rejects.toThrow('Owner Clerk invalide')
     await clearStoredMissionId('user/a')

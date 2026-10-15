@@ -103,9 +103,11 @@ export type MobileSignalement = {
   notes: string | null
 }
 
-export async function loadMobileActions(params: { view: 'all' | 'future' | 'past'; query?: string } = { view: 'all' }) {
-  const query = new URLSearchParams({ view: params.view, limit: '24', historyLimit: '200' })
-  if (params.query?.trim()) query.set('q', params.query.trim())
+export async function loadMobileActions(params?: { view: 'all' | 'future' | 'past'; query?: string }) {
+  const view = params?.view ?? 'all'
+  const search = params?.query
+  const query = new URLSearchParams({ view, limit: '24', historyLimit: '200' })
+  if (search?.trim()) query.set('q', search.trim())
   return mobileRequest<MobileActionsPayload>(`/api/mobile/actions?${query.toString()}`)
 }
 

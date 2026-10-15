@@ -32,6 +32,12 @@ describe('mobile actions transport', () => {
     expect(requestMock).toHaveBeenCalledWith('/api/mobile/actions?view=future&limit=24&historyLimit=200&q=Paris')
   })
 
+  it('defaults to the complete action list when no filters are provided', async () => {
+    await loadMobileActions()
+
+    expect(requestMock).toHaveBeenCalledWith('/api/mobile/actions?view=all&limit=24&historyLimit=200')
+  })
+
   it('keeps action identifiers encoded for reads and mutations', async () => {
     await loadMobileActionDetail('action/1')
     await claimPastAction('action/1')

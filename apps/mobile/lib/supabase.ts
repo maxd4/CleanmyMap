@@ -31,15 +31,14 @@ function getConfiguredClerkInstance() {
   }
 }
 
-async function ensureClerkLoaded() {
+async function ensureClerkLoaded(): Promise<void> {
   const clerk = getConfiguredClerkInstance();
-  if (!clerk || typeof clerk.load !== 'function' || clerk.loaded) return clerk;
+  if (!clerk || typeof clerk.load !== 'function' || clerk.loaded) return;
 
   clerkLoadPromise ??= clerk.load().finally(() => {
     clerkLoadPromise = null;
   });
   await clerkLoadPromise;
-  return clerk;
 }
 
 /**
@@ -48,7 +47,8 @@ async function ensureClerkLoaded() {
  */
 export async function getClerkSupabaseAccessToken(): Promise<string | null> {
   try {
-    const clerk = await ensureClerkLoaded();
+    await ensureClerkLoaded();
+    const clerk = getConfiguredClerkInstance();
     if (!clerk) return null;
     return (await clerk.session?.getToken()) ?? null;
   } catch {
@@ -61,7 +61,8 @@ export async function getClerkSupabaseAccessToken(): Promise<string | null> {
 /** Identité Clerk associée au token courant, utilisée par le réveil headless. */
 export async function getClerkUserId(): Promise<string | null> {
   try {
-    const clerk = await ensureClerkLoaded();
+    await ensureClerkLoaded();
+    const clerk = getConfiguredClerkInstance();
     return clerk?.user?.id ?? clerk?.session?.user?.id ?? null;
   } catch {
     return null;
