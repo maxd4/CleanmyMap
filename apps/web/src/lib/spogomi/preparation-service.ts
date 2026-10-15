@@ -173,8 +173,9 @@ async function persistConfirmedRosterImport(params: {
   eligibleRows: SpogomiRosterPreview["rows"];
   participantRows: ReturnType<typeof participantRowsForImport>;
   token: string;
+  divisionId?: string;
 }): Promise<{ importId: string; importedRows: number; alreadyImported: boolean }> {
-  const { supabase, event, preview, reservedImport, selectedRows, eligibleRows, participantRows, token } = params;
+  const { supabase, event, preview, reservedImport, selectedRows, eligibleRows, participantRows, token, divisionId } = params;
   try {
     if (preview.sourceSystem === "cachan_ticketing") {
       const reconciliation = await reconcileCachanTicketRows({ supabase, eventId: event.id, rosterImport: reservedImport, rows: selectedRows });
@@ -183,8 +184,8 @@ async function persistConfirmedRosterImport(params: {
       const inserted = await supabase.from("spogomi_participants").upsert(participantRows, { onConflict: "event_id,roster_import_id,source_row_number", ignoreDuplicates: false });
       if (inserted.error) throw inserted.error;
     }
-    if (!(await verifyImportedRosterSelection(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing"))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
-    const completeProof = await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, eligibleRows, eligibleRows.length, preview.sourceSystem === "cachan_ticketing");
+    if (!(await verifyImportedRosterSelection(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing", divisionId))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
+    const completeProof = await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, eligibleRows, eligibleRows.length, preview.sourceSystem === "cachan_ticketing", divisionId);
     const confirmed = await supabase.from("spogomi_roster_imports").update({ status: "confirmed", source_proof_status: completeProof ? "complete" : "incomplete", processing_token: null, processing_started_at: null }).eq("id", reservedImport.id).eq("processing_token", token).select("id").maybeSingle();
     if (confirmed.error) throw confirmed.error;
     if (!confirmed.data) throw conflict("la confirmation de l'import a été reprise par une autre opération.");
@@ -241,12 +242,13 @@ type ExistingCachanParticipant = {
   registration_status: string | null;
 };
 
-async function loadCachanPreviewContext(supabase: SupabaseClient, event: EventRow, preview: SpogomiRosterPreview, references: string[]) {
-  const existing = await supabase.from("spogomi_participants")
+async function loadCachanPreviewContext(supabase: SupabaseClient, event: EventRow, preview: SpogomiRosterPreview, references: string[], divisionId?: string) {
+  const existingQuery = supabase.from("spogomi_participants")
     .select("id, external_reference, source_system, order_reference, order_alternative_reference, ticket_status, ticket_deleted, display_name, identity_status, attendance_status, account_link_status, clerk_id, team_id, registration_status")
     .eq("event_id", event.id)
     .eq("source_system", preview.sourceSystem)
     .in("external_reference", references);
+  const existing = await (divisionId ? existingQuery.eq("division_id", divisionId) : existingQuery);
   if (existing.error) throw existing.error;
   const byReference = new Map((existing.data as ExistingCachanParticipant[] ?? []).map((row) => [String(row.external_reference), row]));
   const existingParticipantIds = [...byReference.values()].map((row) => String(row.id));
@@ -320,18 +322,20 @@ export async function previewRosterImportChanges(
   supabase: SupabaseClient,
   event: EventRow,
   preview: SpogomiRosterPreview,
+  divisionId?: string,
 ): Promise<SpogomiRosterPreview> {
   if (preview.sourceSystem !== "cachan_ticketing") return previewNonCachanChanges(preview);
   const references = preview.rows.map((row) => row.externalReference).filter((reference): reference is string => Boolean(reference));
   if (!references.length) return { ...preview, rowEffects: {}, importSummary: { created: 0, unchanged: 0, changed: 0, conflicts: preview.errors.length, excluded: preview.ignoredRowNumbers.length } };
-  const context = await loadCachanPreviewContext(supabase, event, preview, references);
+  if (event.mode === "mixed" && !divisionId) throw new Error("Validation: une division explicite est requise pour prévisualiser un événement mixte.");
+  const context = await loadCachanPreviewContext(supabase, event, preview, references, divisionId);
   return { ...preview, ...classifyCachanPreviewRows(preview, context) };
 }
 
 export async function confirmRosterImport(params: ConfirmRosterImportParams) {
   const { supabase, event, userId } = params;
   if (event.mode === "mixed" && !params.divisionId) throw new Error("Validation: une division explicite est requise pour importer un événement mixte.");
-  const preview = await previewRosterImportChanges(supabase, event, await previewRosterFile(params.file, params.importOptions ? { mapping: params.mapping, ...params.importOptions } : params.mapping));
+  const preview = await previewRosterImportChanges(supabase, event, await previewRosterFile(params.file, params.importOptions ? { mapping: params.mapping, ...params.importOptions } : params.mapping), params.divisionId);
   if (preview.requiresExplicitSelection) throw new Error("Validation: sélectionnez explicitement la feuille et les correspondances ambiguës avant confirmation.");
   const { eligibleRows, selectedRows } = selectImportRows(preview, params.acceptedRowNumbers);
   assertSelectedImportRowsAllowed(preview, selectedRows);
@@ -339,13 +343,13 @@ export async function confirmRosterImport(params: ConfirmRosterImportParams) {
   const { imported: reservedImport, ownsInitialReservation } = await reserveRosterImport({ supabase, event, userId, preview, eligibleRows, token, divisionId: params.divisionId });
   const allowsPartialProof = reservedImport.source_proof_status === "incomplete";
   if (reservedImport.status === "confirmed") {
-    const selectedAlreadyImported = await verifyImportedRosterSelection(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing");
+    const selectedAlreadyImported = await verifyImportedRosterSelection(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing", params.divisionId);
     if (selectedAlreadyImported) return { importId: reservedImport.id, importedRows: selectedRows.length, alreadyImported: true };
     if (!allowsPartialProof) throw conflict("l'import confirmé est incomplet et doit être repris.");
   }
   await claimRosterImport({ supabase, imported: reservedImport, preview, eligibleRows, token, ownsInitialReservation });
   const participantRows = participantRowsForImport(preview, event.id, reservedImport.id, selectedRows, params.divisionId);
-  return persistConfirmedRosterImport({ supabase, event, preview, reservedImport, selectedRows, eligibleRows, participantRows, token });
+  return persistConfirmedRosterImport({ supabase, event, preview, reservedImport, selectedRows, eligibleRows, participantRows, token, divisionId: params.divisionId });
 }
 
 export type SpogomiTeamCompositionPreview = {
@@ -447,8 +451,10 @@ export async function confirmSpogomiTeams(params: {
     ...formation.teams.flatMap((team) => team.participantIds.map((participantId) => ({ participantId, teamNumber: team.teamNumber, ...(params.division ? { divisionId: params.division.id } : {}) }))),
     ...formation.unassignedParticipantIds.map((participantId) => ({ participantId, teamNumber: null, ...(params.division ? { divisionId: params.division.id } : {}) })),
   ];
-  const result = await params.supabase.rpc("spogomi_confirm_team_composition", {
+  const rpcName = params.division ? "spogomi_confirm_team_composition_for_division" : "spogomi_confirm_team_composition";
+  const result = await params.supabase.rpc(rpcName, {
     p_event_id: params.event.id,
+    ...(params.division ? { p_division_id: params.division.id } : {}),
     p_expected_revision: params.expectedRevision,
     p_assignments: assignments,
     p_actor_clerk_id: params.actorClerkId,

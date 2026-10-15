@@ -16,7 +16,7 @@ export async function loadSpogomiManagementProjection(params: {
   const { supabase, event, divisionId } = params;
   const divisions = await supabase
     .from("spogomi_divisions")
-    .select("id, event_id, division_type, division_key")
+    .select("id, event_id, division_type, division_key, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config")
     .eq("event_id", event.id)
     .order("division_type");
   if (divisions.error) throw divisions.error;

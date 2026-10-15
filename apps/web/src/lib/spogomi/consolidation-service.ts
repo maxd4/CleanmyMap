@@ -33,6 +33,7 @@ type EventRow = {
 
 type CategoryRow = {
   id: string;
+  division_id?: string;
   code: string;
   label: string;
   measurement_kind: "mass" | "count" | "volume";
@@ -44,6 +45,7 @@ type CategoryRow = {
 type PersistedMappingRow = {
   id: string;
   category_rule_id: string;
+  division_id?: string;
   mapping_version: string;
   category_code: string;
   environmental_category_slug: string | null;
@@ -179,19 +181,19 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
   const event = eventResult.data as EventRow;
   const [actionResult, categories, mappings, teams, submissions, items, participants, routeResult] = await Promise.all([
     supabase.from("actions").select("organizer_id, organizer_name, organizer_type, updated_at").eq("id", event.action_id).single(),
-    readAllSpogomiPages("consolidation categories", (from, to) => supabase.from("spogomi_category_rules").select("id, code, label, measurement_kind, unit, environmental_category_slug, updated_at").eq("event_id", event.id).order("display_order", { ascending: true }).order("id", { ascending: true }).range(from, to)),
-    readAllSpogomiPages("consolidation mappings", (from, to) => supabase.from("spogomi_environment_category_mappings").select("id, category_rule_id, mapping_version, category_code, environmental_category_slug, source_field, source_unit, target_unit, unit_factor_to_target, counts_toward_total, is_megots, mapping_status, exclusion_reason, updated_at").eq("event_id", event.id).eq("mapping_version", event.environmental_mapping_version).order("category_rule_id", { ascending: true }).order("id", { ascending: true }).range(from, to)),
-    readAllSpogomiPages("consolidation teams", (from, to) => supabase.from("spogomi_teams").select("id, team_number, public_name, certified_submission_id, updated_at").eq("event_id", event.id).order("team_number", { ascending: true }).order("id", { ascending: true }).range(from, to)),
-    readAllSpogomiPages("consolidation submissions", (from, to) => supabase.from("spogomi_result_submissions").select("id, team_id, status, updated_at").eq("event_id", event.id).order("id", { ascending: true }).range(from, to)),
-    readAllSpogomiPages("consolidation result items", (from, to) => supabase.from("spogomi_result_items").select("id, submission_id, category_rule_id, quantity, mass_grams, object_count, provenance, measurement_method, source_reference, updated_at").eq("event_id", event.id).order("submission_id", { ascending: true }).order("category_rule_id", { ascending: true }).order("id", { ascending: true }).range(from, to)),
-    readAllSpogomiPages("consolidation participants", (from, to) => supabase.from("spogomi_participants").select("id, team_id, attendance_status, registration_status, updated_at").eq("event_id", event.id).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("consolidation categories", (from, to) => supabase.from("spogomi_category_rules").select("id, division_id, code, label, measurement_kind, unit, environmental_category_slug, updated_at").eq("event_id", event.id).order("display_order", { ascending: true }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("consolidation mappings", (from, to) => supabase.from("spogomi_environment_category_mappings").select("id, division_id, category_rule_id, mapping_version, category_code, environmental_category_slug, source_field, source_unit, target_unit, unit_factor_to_target, counts_toward_total, is_megots, mapping_status, exclusion_reason, updated_at").eq("event_id", event.id).eq("mapping_version", event.environmental_mapping_version).order("category_rule_id", { ascending: true }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("consolidation teams", (from, to) => supabase.from("spogomi_teams").select("id, division_id, team_number, public_name, certified_submission_id, updated_at").eq("event_id", event.id).order("team_number", { ascending: true }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("consolidation submissions", (from, to) => supabase.from("spogomi_result_submissions").select("id, division_id, team_id, status, updated_at").eq("event_id", event.id).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("consolidation result items", (from, to) => supabase.from("spogomi_result_items").select("id, division_id, submission_id, category_rule_id, quantity, mass_grams, object_count, provenance, measurement_method, source_reference, updated_at").eq("event_id", event.id).order("submission_id", { ascending: true }).order("category_rule_id", { ascending: true }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("consolidation participants", (from, to) => supabase.from("spogomi_participants").select("id, division_id, team_id, attendance_status, registration_status, updated_at").eq("event_id", event.id).order("id", { ascending: true }).range(from, to)),
     supabase.from("spogomi_event_routes").select("id, source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson, updated_at").eq("event_id", event.id).maybeSingle(),
   ]);
   for (const result of [actionResult, routeResult]) if (result.error) throw result.error;
   const action = actionResult.data as ActionRow;
   const categoryRows = categories as unknown as CategoryRow[];
   const persisted = new Map(((mappings ?? []) as unknown as PersistedMappingRow[]).map((row) => [row.category_rule_id, persistedMapping(row)]));
-  const mappingRows = categoryRows.map((category) => deriveSpogomiEnvironmentalMapping({
+  const mappingRows = categoryRows.map((category) => ({ ...deriveSpogomiEnvironmentalMapping({
     categoryRuleId: category.id,
     categoryCode: category.code,
     measurementKind: category.measurement_kind,
@@ -199,7 +201,7 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
     environmentalCategorySlug: asWasteCategorySlug(category.environmental_category_slug),
     mappingVersion: event.environmental_mapping_version || SPOGOMI_ENVIRONMENTAL_MAPPING_VERSION,
     persisted: persisted.get(category.id) ?? null,
-  }));
+  }), divisionId: category.division_id }));
   const submissionsById = new Map((submissions ?? []).map((row) => [String(row.id), row as { id: string; team_id: string; status: string }]));
   const rawItems = (items ?? []) as Array<Record<string, unknown>>;
   const teamRows = (teams ?? []).map((row) => {
@@ -210,6 +212,7 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
       const category = categoryRows.find((candidate) => candidate.id === String(item.category_rule_id));
       return {
         categoryRuleId: String(item.category_rule_id),
+        divisionId: item.division_id ? String(item.division_id) : undefined,
         categoryCode: category?.code ?? "unknown",
         categoryLabel: category?.label ?? "Catégorie inconnue",
         quantity: item.quantity === null || item.quantity === undefined ? null : Number(item.quantity),
@@ -227,6 +230,7 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
     });
     return {
       teamId,
+      divisionId: row.division_id ? String(row.division_id) : undefined,
       teamNumber: Number(row.team_number),
       publicName: String(row.public_name),
       certifiedSubmissionId: submissionId,
@@ -236,6 +240,7 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
   });
   const participantRows = ((participants ?? []) as Array<Record<string, unknown>>).map((participant): SpogomiConsolidationParticipant => ({
     id: String(participant.id),
+    divisionId: participant.division_id ? String(participant.division_id) : undefined,
     teamId: participant.team_id ? String(participant.team_id) : null,
     attendanceStatus: String(participant.attendance_status),
     registrationStatus: String(participant.registration_status),
@@ -257,12 +262,12 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
       organizerName: action.organizer_name,
       organizerType: action.organizer_type,
     },
-    categories: categoryRows.map((row) => ({ id: String(row.id), updatedAt: String(row.updated_at) })),
-    mappings: ((mappings ?? []) as unknown as PersistedMappingRow[]).map((row) => ({ id: String(row.id), updatedAt: String(row.updated_at) })),
-    teams: (teams ?? []).map((row) => ({ id: String(row.id), updatedAt: String(row.updated_at) })),
-    submissions: (submissions ?? []).map((row) => ({ id: String(row.id), updatedAt: String(row.updated_at) })),
-    items: rawItems.map((row) => ({ id: String(row.id), updatedAt: String(row.updated_at) })),
-    participants: (participants ?? []).map((row) => ({ id: String(row.id), updatedAt: String(row.updated_at) })),
+    categories: categoryRows.map((row) => ({ id: String(row.id), divisionId: row.division_id, updatedAt: String(row.updated_at) })),
+    mappings: ((mappings ?? []) as unknown as PersistedMappingRow[]).map((row) => ({ id: String(row.id), divisionId: row.division_id, updatedAt: String(row.updated_at) })),
+    teams: (teams ?? []).map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
+    submissions: (submissions ?? []).map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
+    items: rawItems.map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
+    participants: (participants ?? []).map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
     route: routeResult.data ? { id: String(routeResult.data.id), updatedAt: String(routeResult.data.updated_at) } : null,
   };
   const input: SpogomiConsolidationInput = {

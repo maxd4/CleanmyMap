@@ -63,12 +63,16 @@ describe("SPOGOMI public results projection", () => {
     candidate.categories = candidate.categories.map((category) => ({ ...category, division_id: category.code === "waste" ? "division-casual" : "division-world" }));
     candidate.teams = candidate.teams.map((team) => ({ ...team, division_id: team.id === "team-3" ? "division-world" : "division-casual" }));
     candidate.submissions = candidate.submissions.map((submission) => ({ ...submission, division_id: submission.team_id === "team-3" ? "division-world" : "division-casual" }));
+    candidate.teams = candidate.teams.map((team) => ({ ...team, certified_submission_id: `submission-${team.team_number}` }));
+    candidate.submissions = candidate.submissions.map((submission) => ({ ...submission, status: "certified" }));
     candidate.items = candidate.items.map((item) => ({ ...item, division_id: item.submission_id === "submission-3" ? "division-world" : "division-casual" }));
     candidate.participants = candidate.participants.map((participant) => ({ ...participant, division_id: participant.team_id === "team-3" ? "division-world" : "division-casual" }));
     const projection = buildSpogomiResultsProjection(candidate);
     expect(projection.results.divisions).toHaveLength(2);
     expect(projection.results.divisions?.[0]?.sport.entries.map((entry) => entry.teamNumber)).toEqual([1, 2]);
     expect(projection.results.divisions?.[1]?.sport.entries.map((entry) => entry.teamNumber)).toEqual([3]);
+    expect(projection.teams.find((team) => team.teamNumber === 1)?.categories.map((category) => category.code)).toEqual(["waste"]);
+    expect(projection.teams.find((team) => team.teamNumber === 3)?.categories.map((category) => category.code)).toEqual(["butts"]);
   });
 
   it("keeps unresolved sports ties equal when the regulation does not configure a further departure", () => {

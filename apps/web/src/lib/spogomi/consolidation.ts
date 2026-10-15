@@ -14,6 +14,7 @@ type SpogomiEnvironmentalMappingStatus = "mapped" | "excluded" | "unmapped";
 
 export type SpogomiEnvironmentalMapping = {
   categoryRuleId: string;
+  divisionId?: string;
   categoryCode: string;
   mappingVersion: string;
   environmentalCategorySlug: WasteCategorySlug | null;
@@ -29,6 +30,7 @@ export type SpogomiEnvironmentalMapping = {
 
 export type SpogomiConsolidationSourceItem = {
   categoryRuleId: string;
+  divisionId?: string;
   categoryCode: string;
   categoryLabel: string;
   quantity: number | null;
@@ -43,6 +45,7 @@ export type SpogomiConsolidationSourceItem = {
 
 type SpogomiConsolidationSourceTeam = {
   teamId: string;
+  divisionId?: string;
   teamNumber: number;
   publicName: string;
   certifiedSubmissionId: string | null;
@@ -52,6 +55,7 @@ type SpogomiConsolidationSourceTeam = {
 
 export type SpogomiConsolidationParticipant = {
   id: string;
+  divisionId?: string;
   teamId: string | null;
   attendanceStatus: string;
   registrationStatus: string;
@@ -59,6 +63,7 @@ export type SpogomiConsolidationParticipant = {
 
 type SpogomiSourceRowSnapshot = {
   id: string;
+  divisionId?: string;
   updatedAt: string;
 };
 

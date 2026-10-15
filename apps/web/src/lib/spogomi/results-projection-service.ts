@@ -29,7 +29,7 @@ export async function loadSpogomiResultsProjection(params: {
 
   const [actionResult, divisions, categories, teams, submissions, items, participants, rankings, consolidation] = await Promise.all([
     params.supabase.from("actions").select("status, published_at, moderation_visibility").eq("id", eventResult.data.action_id).maybeSingle(),
-    readAllSpogomiPages("public SPOGOMI divisions", (from, to) => params.supabase.from("spogomi_divisions").select("id, division_type").eq("event_id", params.eventId).order("division_type", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("public SPOGOMI divisions", (from, to) => params.supabase.from("spogomi_divisions").select("id, division_type, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config").eq("event_id", params.eventId).order("division_type", { ascending: true }).range(from, to)),
     readAllSpogomiPages("public SPOGOMI categories", (from, to) => params.supabase.from("spogomi_category_rules").select("id, event_id, division_id, regulation_version, code, label, measurement_kind, unit, coefficient, coefficient_status, environmental_category_slug, display_order, is_complete, updated_at").eq("event_id", params.eventId).order("display_order", { ascending: true }).order("id", { ascending: true }).range(from, to)),
     readAllSpogomiPages("public SPOGOMI teams", (from, to) => params.supabase.from("spogomi_teams").select("id, division_id, team_number, public_name, composition_state, certified_submission_id, updated_at").eq("event_id", params.eventId).order("team_number", { ascending: true }).order("id", { ascending: true }).range(from, to)),
     readAllSpogomiPages("public SPOGOMI submissions", (from, to) => params.supabase.from("spogomi_result_submissions").select("id, division_id, team_id, version, status, submitted_at, updated_at, regulation_version").eq("event_id", params.eventId).order("team_id", { ascending: true }).order("version", { ascending: false }).order("id", { ascending: true }).range(from, to)),
@@ -47,13 +47,21 @@ export async function loadSpogomiResultsProjection(params: {
       regulationVersion: String(event.regulation_version), regulationStatus: event.regulation_status,
       regulationSourceReference: event.regulation_source_reference ? String(event.regulation_source_reference) : null,
       regulationConfig: event.regulation_config, teamSizeConfig: event.team_size_config,
-      divisions: (divisions as Array<Record<string, unknown>>).map((division) => ({ id: String(division.id), division_type: division.division_type as "casual" | "world_cup" })),
+      divisions: (divisions as Array<Record<string, unknown>>).map((division) => ({
+        id: String(division.id), division_type: division.division_type as "casual" | "world_cup",
+        regulation_version: String(division.regulation_version ?? event.regulation_version),
+        regulation_status: division.regulation_status as "incomplete" | "complete",
+        regulation_source_reference: division.regulation_source_reference ? String(division.regulation_source_reference) : null,
+        regulation_config: division.regulation_config,
+        team_size_config: division.team_size_config,
+      })),
       publicResultsVisibility: params.visibilityOverride ?? event.public_results_visibility ?? "hidden",
       updatedAt: String(event.updated_at),
     },
     categories: categories as unknown as SpogomiResultsSource["categories"],
     teams: (teams as Array<Record<string, unknown>>).map((team) => ({
       id: String(team.id),
+      division_id: String(team.division_id),
       team_number: Number(team.team_number),
       public_name: String(team.public_name),
       composition_state: String(team.composition_state),

@@ -6,6 +6,11 @@ export type SpogomiDivision = {
   event_id: string;
   division_type: SpogomiDivisionType;
   division_key: SpogomiDivisionType;
+  regulation_version?: string;
+  regulation_status?: SpogomiRegulationStatus;
+  regulation_source_reference?: string | null;
+  regulation_config?: unknown;
+  team_size_config?: unknown;
 };
 
 export function spogomiDivisionTypesForMode(mode: SpogomiEventMode): SpogomiDivisionType[] {
@@ -78,6 +83,7 @@ type SpogomiEligibilityRule = {
 type SpogomiTiebreaker = "sporting_score" | "mass_grams" | "counted_objects";
 
 export type SpogomiRegulation = {
+  divisionId?: string;
   version: string;
   sourceReference: string | null;
   status: SpogomiRegulationStatus;

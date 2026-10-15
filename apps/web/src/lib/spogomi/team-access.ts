@@ -10,6 +10,7 @@ const TEAM_SESSION_LIFETIME_MS = 12 * 60 * 60 * 1000;
 type TeamAccessGrantRow = {
   id: string;
   event_id: string;
+  division_id: string;
   team_id: string;
   expires_at: string;
   revoked_at: string | null;
@@ -19,6 +20,7 @@ export type SpogomiTeamSessionContext = {
   sessionId: string;
   grantId: string;
   eventId: string;
+  divisionId: string;
   teamId: string;
   eventSlug: string;
 };
@@ -43,7 +45,7 @@ export async function issueSpogomiTeamAccessGrant(params: {
 }): Promise<{ grantId: string; token: string; expiresAt: string }> {
   const team = await params.supabase
     .from("spogomi_teams")
-    .select("id, event_id")
+    .select("id, event_id, division_id")
     .eq("id", params.teamId)
     .eq("event_id", params.eventId)
     .maybeSingle();
@@ -64,6 +66,7 @@ export async function issueSpogomiTeamAccessGrant(params: {
     .from("spogomi_team_access_grants")
     .insert({
       event_id: params.eventId,
+      division_id: String(team.data.division_id),
       team_id: params.teamId,
       token_hash: sha256(token),
       created_by_clerk_id: params.createdByClerkId,
@@ -100,11 +103,11 @@ export async function consumeSpogomiTeamAccessToken(params: {
   supabase: SupabaseClient;
   token: string;
   eventSlug: string;
-}): Promise<{ sessionToken: string; eventSlug: string; teamId: string }> {
+}): Promise<{ sessionToken: string; eventSlug: string; teamId: string; divisionId: string }> {
   if (!/^[A-Za-z0-9_-]{40,}$/.test(params.token)) throw new Error("Team access token is invalid.");
   const grant = await params.supabase
     .from("spogomi_team_access_grants")
-    .select("id, event_id, team_id, expires_at, revoked_at")
+    .select("id, event_id, division_id, team_id, expires_at, revoked_at")
     .eq("token_hash", sha256(params.token))
     .maybeSingle();
   if (grant.error) throw grant.error;
@@ -129,6 +132,7 @@ export async function consumeSpogomiTeamAccessToken(params: {
     .insert({
       grant_id: row.id,
       event_id: row.event_id,
+      division_id: row.division_id,
       team_id: row.team_id,
       session_hash: sha256(sessionToken),
       expires_at: sessionExpiresAt,
@@ -142,7 +146,7 @@ export async function consumeSpogomiTeamAccessToken(params: {
     .update({ last_used_at: new Date().toISOString() })
     .eq("id", row.id);
   if (used.error) throw used.error;
-  return { sessionToken, eventSlug: params.eventSlug, teamId: row.team_id };
+  return { sessionToken, eventSlug: params.eventSlug, teamId: row.team_id, divisionId: row.division_id };
 }
 
 export async function loadSpogomiTeamSession(
@@ -152,20 +156,21 @@ export async function loadSpogomiTeamSession(
   if (!sessionToken || !/^[A-Za-z0-9_-]{40,}$/.test(sessionToken)) return null;
   const session = await supabase
     .from("spogomi_team_access_sessions")
-    .select("id, grant_id, event_id, team_id, expires_at, revoked_at")
+    .select("id, grant_id, event_id, division_id, team_id, expires_at, revoked_at")
     .eq("session_hash", sha256(sessionToken))
     .maybeSingle();
   if (session.error) throw session.error;
-  const sessionRow = session.data as { id: string; grant_id: string; event_id: string; team_id: string; expires_at: string; revoked_at: string | null } | null;
+  const sessionRow = session.data as { id: string; grant_id: string; event_id: string; division_id: string; team_id: string; expires_at: string; revoked_at: string | null } | null;
   if (!sessionRow || !isActive(sessionRow.expires_at, sessionRow.revoked_at)) return null;
 
   const grant = await supabase
     .from("spogomi_team_access_grants")
-    .select("expires_at, revoked_at")
+    .select("expires_at, revoked_at, division_id")
     .eq("id", sessionRow.grant_id)
     .maybeSingle();
   if (grant.error) throw grant.error;
   if (!grant.data || !isActive(String(grant.data.expires_at), grant.data.revoked_at as string | null)) return null;
+  if (String(grant.data.division_id) !== sessionRow.division_id) return null;
 
   const event = await supabase
     .from("spogomi_events")
@@ -183,6 +188,7 @@ export async function loadSpogomiTeamSession(
     sessionId: sessionRow.id,
     grantId: sessionRow.grant_id,
     eventId: sessionRow.event_id,
+    divisionId: sessionRow.division_id,
     teamId: sessionRow.team_id,
     eventSlug: String(event.data.event_slug),
   };

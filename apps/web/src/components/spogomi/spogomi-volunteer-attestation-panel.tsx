@@ -10,7 +10,7 @@ const kinds: Array<[SpogomiRecognitionKind, string]> = [
   ["field_safety", "Sécurité terrain"], ["weighing_sorting", "Pesée et tri"], ["logistics_support", "Soutien logistique"],
 ];
 
-export function SpogomiVolunteerAttestationPanel({ eventId, participants }: { eventId: string; participants: Participant[] }) {
+export function SpogomiVolunteerAttestationPanel({ eventId, divisionId, participants }: { eventId: string; divisionId?: string | null; participants: Participant[] }) {
   const [participantId, setParticipantId] = useState("");
   const [kind, setKind] = useState<SpogomiRecognitionKind>("collector");
   const [status, setStatus] = useState<"certified" | "revoked">("certified");
@@ -25,7 +25,7 @@ export function SpogomiVolunteerAttestationPanel({ eventId, participants }: { ev
     try {
       const response = await fetch(`/api/spogomi/events/${eventId}/recognition/attestations`, {
         method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ participantId, kind, status, evidenceReference: evidenceReference.trim(), certificationVersion: "spogomi-volunteer-v1", reason: reason.trim() || null }),
+        body: JSON.stringify({ participantId, kind, status, evidenceReference: evidenceReference.trim(), certificationVersion: "spogomi-volunteer-v1", reason: reason.trim() || null, ...(divisionId ? { divisionId } : {}) }),
       });
       const body = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) throw new Error(body.error ?? "Attestation refusée.");

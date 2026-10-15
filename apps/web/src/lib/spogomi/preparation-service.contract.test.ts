@@ -36,7 +36,8 @@ describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
     expect(service).toContain("previewSpogomiTeams");
     expect(service).toContain("proposalFingerprint");
     expect(service).toContain("composition_revision");
-    expect(service).toContain('rpc("spogomi_confirm_team_composition"');
+    expect(service).toContain('spogomi_confirm_team_composition_for_division');
+    expect(service).toContain('spogomi_confirm_team_composition');
     expect(service).not.toContain('.from("spogomi_teams").delete');
   });
 
@@ -51,7 +52,8 @@ describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
   });
 
   it("routes manual moves and locks through revision-controlled server procedures", () => {
-    expect(compositionMutationService).toContain('rpc("spogomi_move_participant_to_team"');
+    expect(compositionMutationService).toContain('spogomi_move_participant_to_team_for_division');
+    expect(compositionMutationService).toContain('spogomi_move_participant_to_team');
     expect(compositionMutationService).toContain('rpc("spogomi_lock_team_composition"');
     expect(compositionMutationService).toContain("actorClerkId");
     expect(service).not.toContain('.from("spogomi_participants").update({ team_id');

@@ -7,14 +7,17 @@ const access = readFileSync(new URL("./team-access.ts", import.meta.url), "utf8"
 describe("SPOGOMI result services STATIC_CONTRACT", () => {
   it("scopes form reads and writes from the server-held session rather than a client team id", () => {
     expect(service).toContain("loadSpogomiTeamSession");
-    expect(service).toContain('rpc("spogomi_save_team_submission"');
+    expect(service).toContain('spogomi_save_team_submission_for_division');
+    expect(service).toContain('spogomi_save_team_submission');
     expect(service).toContain('p_team_id: session.teamId');
+    expect(service).toContain('p_division_id: session.divisionId');
     expect(service).toContain("p_idempotency_key");
     expect(service).toContain("p_replaces_submission_id");
   });
 
   it("routes certification through an organizer/referee review boundary", () => {
-    expect(service).toContain('rpc("spogomi_review_team_submission"');
+    expect(service).toContain('spogomi_review_team_submission_for_division');
+    expect(service).toContain('spogomi_review_team_submission');
     expect(service).toContain('rpc("spogomi_set_event_access"');
     expect(service).toContain("assignSpogomiObserver");
     expect(service).toContain("revokeSpogomiObserver");

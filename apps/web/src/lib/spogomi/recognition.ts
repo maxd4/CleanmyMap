@@ -11,6 +11,7 @@ type SpogomiRankingKind = "points" | "butts";
 export type SpogomiRecognitionParticipant = {
   participantId: string;
   eventId: string;
+  divisionId?: string;
   teamId: string | null;
   userId: string | null;
   registrationStatus: "registered" | "withdrawn";
@@ -24,6 +25,7 @@ export type SpogomiRecognitionParticipant = {
 export type SpogomiMissionProof = {
   missionId: string;
   eventId: string;
+  divisionId?: string;
   participantId: string;
   kind: SpogomiRecognitionKind;
   status: "certified" | "revoked";
@@ -34,6 +36,7 @@ export type SpogomiMissionProof = {
 
 export type SpogomiOfficialRanking = {
   eventId: string;
+  divisionId?: string;
   teamId: string;
   kind: SpogomiRankingKind;
   rank: number;
@@ -46,6 +49,7 @@ export type SpogomiOfficialRanking = {
 export type SpogomiAward = {
   userId: string;
   eventId: string;
+  divisionId?: string;
   badgeTypeId: string;
   proofReference: string;
   certificationReference: string;
@@ -98,11 +102,13 @@ function certifiedRanking(
   eventId: string,
   kind: SpogomiRankingKind,
   teamId: string,
+  divisionId?: string,
 ): SpogomiOfficialRanking | null {
   const matches = rankings.filter((ranking) =>
     ranking.eventId === eventId &&
     ranking.kind === kind &&
     ranking.teamId === teamId &&
+    (ranking.divisionId ?? null) === (divisionId ?? null) &&
     ranking.status === "certified" &&
     ranking.teamEligible &&
     Number.isInteger(ranking.rank) &&
@@ -134,6 +140,7 @@ export function buildSpogomiRecognitionProjection(input: {
     addAward(awards, {
       userId: participant.userId!,
       eventId: input.eventId,
+      divisionId: participant.divisionId,
       badgeTypeId: "spogomi_collector",
       proofReference: `spogomi_participant:${participant.participantId}`,
       certificationReference: `action_participants:${participant.userId}:confirmed`,
@@ -146,7 +153,7 @@ export function buildSpogomiRecognitionProjection(input: {
     candidate.eventId === input.eventId && candidate.status === "certified" && candidate.evidenceReference.trim().length > 0,
   )) {
     const participant = input.participants.find((candidate) => candidate.participantId === mission.participantId);
-    if (!participant || !isEligibleSpogomiMissionParticipant(participant)) continue;
+    if (!participant || !isEligibleSpogomiMissionParticipant(participant) || (mission.divisionId && mission.divisionId !== participant.divisionId)) continue;
     const badgeTypeId = mission.kind === "referee"
       ? "spogomi_referee"
       : mission.kind === "organizer"
@@ -156,6 +163,7 @@ export function buildSpogomiRecognitionProjection(input: {
       addAward(awards, {
         userId: participant.userId!,
         eventId: input.eventId,
+        divisionId: participant.divisionId,
         badgeTypeId,
         proofReference: `spogomi_mission:${mission.missionId}`,
         certificationReference: `spogomi_attestation:${mission.missionId}:${mission.certificationVersion}`,
@@ -166,14 +174,16 @@ export function buildSpogomiRecognitionProjection(input: {
   }
 
   for (const teamId of collectorsByTeam.keys()) {
-    const points = certifiedRanking(input.rankings, input.eventId, "points", teamId);
-    const butts = certifiedRanking(input.rankings, input.eventId, "butts", teamId);
     const members = collectorsByTeam.get(teamId) ?? [];
+    const divisionId = members[0]?.divisionId;
+    if (members.some((member) => (member.divisionId ?? null) !== (divisionId ?? null))) continue;
+    const points = certifiedRanking(input.rankings, input.eventId, "points", teamId, divisionId);
+    const butts = certifiedRanking(input.rankings, input.eventId, "butts", teamId, divisionId);
     for (const participant of members) {
       if (points) {
         const pointsBadge = medalBadge("points", points.rank);
         if (pointsBadge) addAward(awards, {
-          userId: participant.userId!, eventId: input.eventId, badgeTypeId: pointsBadge,
+          userId: participant.userId!, eventId: input.eventId, divisionId: participant.divisionId, badgeTypeId: pointsBadge,
           proofReference: `spogomi_ranking:${points.kind}:${teamId}`,
           certificationReference: points.sourceReference,
           rankingVersion: points.decisionVersion, occurredOn: input.eventDate,
@@ -182,14 +192,14 @@ export function buildSpogomiRecognitionProjection(input: {
       if (butts) {
         const buttsBadge = medalBadge("butts", butts.rank);
         if (buttsBadge) addAward(awards, {
-          userId: participant.userId!, eventId: input.eventId, badgeTypeId: buttsBadge,
+          userId: participant.userId!, eventId: input.eventId, divisionId: participant.divisionId, badgeTypeId: buttsBadge,
           proofReference: `spogomi_ranking:${butts.kind}:${teamId}`,
           certificationReference: butts.sourceReference,
           rankingVersion: butts.decisionVersion, occurredOn: input.eventDate,
         });
       }
       if (points && butts) addAward(awards, {
-        userId: participant.userId!, eventId: input.eventId, badgeTypeId: "spogomi_double_podium",
+        userId: participant.userId!, eventId: input.eventId, divisionId: participant.divisionId, badgeTypeId: "spogomi_double_podium",
         proofReference: `spogomi_ranking:double_podium:${teamId}`,
         certificationReference: `${points.sourceReference};${butts.sourceReference}`,
         rankingVersion: `${points.decisionVersion};${butts.decisionVersion}`,

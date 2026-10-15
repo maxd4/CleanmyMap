@@ -6,6 +6,7 @@ type SpogomiCollectionAwardStatus = "active" | "revoked" | "replaced";
 export type SpogomiCollectionAward = {
   id: string;
   eventId: string;
+  divisionId?: string | null;
   badgeTypeId: string;
   eventYear: number;
   eventLocalDate: string;

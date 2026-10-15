@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 // Justification Vercel: team composition is mutable event state and requires fresh authorization.
 export const dynamic = "force-dynamic";
 
-const moveSchema = z.object({ participantId: z.string().uuid(), teamId: z.string().uuid().nullable(), expectedRevision: z.number().int().nonnegative().optional() });
+const moveSchema = z.object({ participantId: z.string().uuid(), teamId: z.string().uuid().nullable(), expectedRevision: z.number().int().nonnegative().optional(), divisionId: z.string().uuid().optional() });
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {
   const access = await requireAuthenticatedAccess();
@@ -20,7 +20,8 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
   try {
     const { supabase, authorized } = await loadAuthorizedSpogomiEvent((await context.params).eventId, access.userId);
     if ("response" in authorized) return authorized.response;
-    return NextResponse.json(await moveParticipantToTeam({ supabase, event: authorized.event, actorClerkId: access.userId, ...parsed.data }));
+    const divisionId = parsed.data.divisionId ?? new URL(request.url).searchParams.get("divisionId") ?? undefined;
+    return NextResponse.json(await moveParticipantToTeam({ supabase, event: authorized.event, actorClerkId: access.userId, ...parsed.data, divisionId }));
   } catch (error) {
     if (error instanceof SpogomiCompositionProtectionError) {
       return NextResponse.json({ error: error.message, kind: "validation", status: "error" }, { status: 409 });

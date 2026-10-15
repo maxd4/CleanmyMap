@@ -119,7 +119,7 @@ export function SpogomiOrganizerDashboard({
         <form className="grid gap-4 md:grid-cols-2" onSubmit={(event) => void createEvent(event)}>
           <label className="space-y-1 text-sm font-bold text-slate-800">Nom<input className={inputClassName()} name="name" required maxLength={160} /></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Lieu<input className={inputClassName()} name="locationLabel" required maxLength={200} /></label>
-          <label className="space-y-1 text-sm font-bold text-slate-800">Mode<select className={inputClassName()} name="mode" defaultValue="casual"><option value="casual">Casual</option><option value="world_cup">World Cup</option><option value="mixed">Casual &amp; World Cup</option></select></label>
+          <label className="space-y-1 text-sm font-bold text-slate-800">Mode<select className={inputClassName()} name="mode" defaultValue="casual"><option value="casual">Casual</option><option value="world_cup">World Cup</option></select></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Début<input className={inputClassName()} name="startsAt" type="datetime-local" required /></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Fin (facultative)<input className={inputClassName()} name="endsAt" type="datetime-local" /></label>
           <div className="md:col-span-2 flex flex-wrap items-center gap-3">

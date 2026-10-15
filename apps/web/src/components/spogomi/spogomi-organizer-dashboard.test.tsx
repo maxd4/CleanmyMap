@@ -119,7 +119,7 @@ describe("SpogomiOrganizerDashboard creation flow", () => {
   it("renders the three parent edition modes", () => {
     const { renderer } = getFormSubmit();
     const select = renderer.root.findByProps({ name: "mode" });
-    expect(select.props.children.map((option: React.ReactElement<{ value: string }>) => option.props.value)).toEqual(["casual", "world_cup", "mixed"]);
+    expect(select.props.children.map((option: React.ReactElement<{ value: string }>) => option.props.value)).toEqual(["casual", "world_cup"]);
     renderer.unmount();
   });
 });

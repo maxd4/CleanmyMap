@@ -16,7 +16,13 @@ export type SpogomiResultsSource = {
     name: string;
     locationLabel: string;
     mode: "casual" | "world_cup" | "mixed";
-    divisions?: Array<Pick<SpogomiDivision, "id" | "division_type">>;
+    divisions?: Array<Pick<SpogomiDivision, "id" | "division_type"> & {
+      regulation_version?: string;
+      regulation_status?: "incomplete" | "complete";
+      regulation_source_reference?: string | null;
+      regulation_config?: unknown;
+      team_size_config?: unknown;
+    }>;
     state: string;
     startsAt: string;
     endsAt: string | null;
@@ -54,6 +60,8 @@ export type SpogomiResultsSource = {
 };
 
 type SpogomiPublicRankingEntry = {
+  teamId?: string;
+  divisionId?: string;
   teamNumber: number;
   publicName: string;
   rank: number | null;
@@ -279,6 +287,8 @@ function buildRankingEntries(params: {
           : status === "unavailable" ? "Résultat non publié." : null;
     const exposeValues = status !== "unavailable";
     const base = {
+      teamId: entry.team.id,
+      divisionId: entry.team.division_id,
       teamNumber: entry.team.team_number,
       publicName: entry.team.public_name,
       rank: status === "certified" ? (publishedOfficial?.rank ?? null) : status === "provisional" ? (ranking.get(entry.team.id) ?? null) : null,
@@ -305,7 +315,16 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
   if (source.event.mode === "mixed" && divisionRows.length === 2) {
     const projections = divisionRows.map((division) => buildSpogomiResultsProjection({
       ...source,
-      event: { ...source.event, mode: division.division_type, divisions: undefined },
+      event: {
+        ...source.event,
+        mode: division.division_type,
+        divisions: undefined,
+        ...(division.regulation_version ? { regulationVersion: division.regulation_version } : {}),
+        ...(division.regulation_status ? { regulationStatus: division.regulation_status } : {}),
+        ...(division.regulation_source_reference !== undefined ? { regulationSourceReference: division.regulation_source_reference } : {}),
+        ...(division.regulation_config !== undefined ? { regulationConfig: division.regulation_config } : {}),
+        ...(division.team_size_config !== undefined ? { teamSizeConfig: division.team_size_config } : {}),
+      },
       categories: source.categories.filter((row) => row.division_id === division.id),
       teams: source.teams.filter((row) => row.division_id === division.id),
       submissions: source.submissions.filter((row) => row.division_id === division.id),
@@ -333,6 +352,7 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
       sourceSubmissionIds: projections.flatMap((projection) => projection.sourceSubmissionIds),
       results: {
         ...first.results,
+        regulationComplete: projections.every((projection) => projection.results.regulationComplete),
         environmental,
         divisions: projections.map((projection, index) => ({ id: divisionRows[index]!.id, type: divisionRows[index]!.division_type, regulationVersion: projection.results.regulationVersion, regulationComplete: projection.results.regulationComplete, sport: projection.results.sport, butts: projection.results.butts })),
       },
@@ -403,7 +423,7 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
       buttsStatus: buttsDecision ? "certified" : "unavailable",
       buttsCount: certified ? entry.result?.physicalTotals.countedButts ?? null : null,
       buttsPerParticipant: certified ? entry.result?.buttsPerParticipant ?? null : null,
-      categories: certified ? source.categories.map((category) => {
+      categories: certified ? source.categories.filter((category) => (category.division_id ?? null) === (entry.team.division_id ?? null)).map((category) => {
         const item = entry.items.find((candidate) => String(candidate.category_rule_id) === category.id);
         return {
           code: category.code,

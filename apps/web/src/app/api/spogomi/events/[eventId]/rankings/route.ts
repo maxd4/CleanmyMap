@@ -20,30 +20,26 @@ export async function POST(_request: Request, context: { params: Promise<{ event
     const { event } = authorized;
     if (event.state !== "certified") return NextResponse.json({ error: "L’événement doit être certifié avant publication des classements." }, { status: 409 });
     const projection = await loadSpogomiResultsProjection({ supabase, eventId: event.id, visibilityOverride: "provisional" });
-    if (!projection || !projection.results.regulationComplete || projection.teams.some((team) => team.submissionStatus !== "certified")) {
+    const divisionResults = projection?.results.divisions ?? [{ regulationComplete: projection?.results.regulationComplete ?? false }];
+    if (!projection || !divisionResults.every((division) => division.regulationComplete) || projection.teams.some((team) => team.submissionStatus !== "certified")) {
       return NextResponse.json({ error: "Chaque équipe doit disposer d’un résultat certifié et d’un règlement complet." }, { status: 409 });
     }
-    const teamIdByNumber = new Map(projection.teams.map((team) => [team.teamNumber, team.teamId]));
-    const rankings = [
-      ...projection.results.sport.entries.filter((entry) => entry.rank !== null && entry.eligible).map((entry) => ({ kind: "points" as const, teamId: teamIdByNumber.get(entry.teamNumber) ?? null, rank: entry.rank, teamEligible: true })),
-      ...projection.results.butts.entries.filter((entry) => entry.rank !== null && entry.eligible).map((entry) => ({ kind: "butts" as const, teamId: teamIdByNumber.get(entry.teamNumber) ?? null, rank: entry.rank, teamEligible: true })),
+    const rankingEntries = [
+      ...projection.results.sport.entries.filter((entry) => entry.rank !== null && entry.eligible).map((entry) => ({ kind: "points" as const, teamId: entry.teamId ?? null, divisionId: entry.divisionId ?? null, rank: entry.rank, teamEligible: true })),
+      ...projection.results.butts.entries.filter((entry) => entry.rank !== null && entry.eligible).map((entry) => ({ kind: "butts" as const, teamId: entry.teamId ?? null, divisionId: entry.divisionId ?? null, rank: entry.rank, teamEligible: true })),
     ];
-    const sportByTeam = new Map(projection.results.sport.entries.map((entry) => [entry.teamNumber, entry]));
-    const buttsByTeam = new Map(projection.results.butts.entries.map((entry) => [entry.teamNumber, entry]));
-    const source = {
-      snapshot: projection.publicationSourceSnapshot,
-      teams: projection.teams.map((team) => ({
-        team: team.teamNumber,
-        submission: team.submissionVersion,
-        present: team.presentParticipants,
-        sport: sportByTeam.get(team.teamNumber)?.score ?? null,
-        butts: buttsByTeam.get(team.teamNumber)?.ratio ?? null,
-      })).sort((left, right) => left.team - right.team),
-    };
-    const decisionVersion = createHash("sha256").update(JSON.stringify({ regulation: projection.regulation, source, rankings })).digest("hex");
-    const result = await supabase.rpc("publish_spogomi_official_rankings_checked", { p_event_id: event.id, p_decision_version: decisionVersion, p_source_reference: `spogomi:official-rankings:${event.id}:${decisionVersion}`, p_rankings: rankings, p_actor_clerk_id: access.userId, p_source_snapshot: projection.publicationSourceSnapshot });
-    if (result.error) throw result.error;
-    return NextResponse.json({ status: "published", rankings: Number(result.data ?? 0), decisionVersion });
+    const divisionIds = projection.event.divisions?.map((division) => division.id)
+      ?? [...new Set(projection.teams.map((team) => team.divisionId).filter((value): value is string => Boolean(value)))];
+    const source = { snapshot: projection.publicationSourceSnapshot, teams: projection.teams.map((team) => ({ divisionId: team.divisionId, teamId: team.teamId, team: team.teamNumber, submission: team.submissionVersion, present: team.presentParticipants })) };
+    const published = [];
+    for (const divisionId of divisionIds) {
+      const rankings = rankingEntries.filter((entry) => entry.divisionId === divisionId && entry.teamId).map((entry) => ({ ...entry, teamId: entry.teamId!, divisionId }));
+      const decisionVersion = createHash("sha256").update(JSON.stringify({ divisionId, regulation: projection.regulation, source, rankings })).digest("hex");
+      const result = await supabase.rpc("publish_spogomi_official_rankings_for_division", { p_event_id: event.id, p_division_id: divisionId, p_decision_version: decisionVersion, p_source_reference: `spogomi:official-rankings:${event.id}:${divisionId}:${decisionVersion}`, p_rankings: rankings, p_actor_clerk_id: access.userId, p_source_snapshot: projection.publicationSourceSnapshot });
+      if (result.error) throw result.error;
+      published.push({ divisionId, decisionVersion, count: Number(result.data ?? 0) });
+    }
+    return NextResponse.json({ status: "published", rankings: published.reduce((sum, item) => sum + item.count, 0), divisions: published });
   } catch (error) {
     return handleApiError(error, "spogomi.rankings.publish");
   }

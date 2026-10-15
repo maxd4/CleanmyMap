@@ -15,6 +15,7 @@ const inputSchema = z.object({
   evidenceReference: z.string().trim().min(1).max(500),
   certificationVersion: z.string().trim().min(1).max(120),
   reason: z.string().trim().max(1000).nullable().optional(),
+  divisionId: z.string().uuid().optional(),
 }).strict();
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {
@@ -28,10 +29,12 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
     const { event } = authorized;
     const parsed = inputSchema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: "Attestation SPOGOMI invalide." }, { status: 400 });
-    const result = await supabase.rpc("set_spogomi_recognition_attestation", {
+    const rpcName = parsed.data.divisionId ? "set_spogomi_recognition_attestation_for_division" : "set_spogomi_recognition_attestation";
+    const result = await supabase.rpc(rpcName, {
       p_event_id: eventId, p_participant_id: parsed.data.participantId, p_kind: parsed.data.kind, p_status: parsed.data.status,
       p_evidence_reference: parsed.data.evidenceReference, p_certification_version: parsed.data.certificationVersion,
       p_actor_clerk_id: access.userId, p_reason: parsed.data.reason ?? null,
+      ...(parsed.data.divisionId ? { p_division_id: parsed.data.divisionId } : {}),
     });
     if (result.error) throw result.error;
     attestationMutationApplied = true;

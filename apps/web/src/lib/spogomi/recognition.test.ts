@@ -60,6 +60,20 @@ describe("SPOGOMI recognition projection", () => {
     expect(buttsOnly.awards.find((award) => award.badgeTypeId === "spogomi_butts_silver")).toMatchObject({ certificationReference: "official:butts:v2", rankingVersion: "butts-v2" });
   });
 
+  it("never crosses division boundaries when awarding a podium badge", () => {
+    const projection = buildSpogomiRecognitionProjection({
+      eventId: "event-1", eventDate: "2026-06-01",
+      participants: [participant({ divisionId: "casual" })], missions: [],
+      rankings: [
+        { eventId: "event-1", divisionId: "world-cup", teamId: "team-1", kind: "points", rank: 1, status: "certified", teamEligible: true, decisionVersion: "wrong-v1", sourceReference: "official:world-cup" },
+        { eventId: "event-1", divisionId: "casual", teamId: "team-1", kind: "points", rank: 2, status: "certified", teamEligible: true, decisionVersion: "casual-v1", sourceReference: "official:casual" },
+      ],
+    });
+
+    expect(projection.awards.find((award) => award.badgeTypeId === "spogomi_points_silver")).toMatchObject({ divisionId: "casual", certificationReference: "official:casual" });
+    expect(projection.awards.some((award) => award.certificationReference === "official:world-cup")).toBe(false);
+  });
+
   it("reconciles a changed ranking without retaining revoked medals or duplicating the badge", () => {
     const revokedButts = buildSpogomiRecognitionProjection({
       eventId: "event-1", eventDate: "2026-06-01", participants: [participant()], missions: [],

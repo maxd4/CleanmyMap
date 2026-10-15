@@ -15,13 +15,14 @@ const reviewSchema = z.object({
   submissionId: z.string().uuid(),
   decision: z.enum(["certified", "rejected"]),
   reason: z.string().trim().max(2000).nullable(),
+  divisionId: z.string().uuid().optional(),
 }).strict();
 
-export async function GET(_request: Request, context: { params: Promise<{ eventId: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ eventId: string }> }) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse();
   try {
-    const result = await loadSpogomiEventResultReviews({ supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, userId: access.userId });
+    const result = await loadSpogomiEventResultReviews({ supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, userId: access.userId, divisionId: new URL(request.url).searchParams.get("divisionId") });
     if (result === false) return forbiddenJsonResponse();
     if (!result) return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
     // Justification Vercel: result review data must not be served from a shared cache.

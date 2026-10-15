@@ -42,7 +42,7 @@ Une édition possède une division `casual`, une division `world_cup`, ou les de
 - Les éditions existantes sont conservées sans réinterprétation : chaque ancien `casual` ou `world_cup` reçoit une seule division de même type, avec un identifiant stable. Le mécanisme de compatibilité ne résout automatiquement une valeur absente que lorsqu’une seule division existe ; il échoue fermé pour une édition mixte.
 - `spogomi_ensure_parent_divisions` verrouille l’édition et effectue les insertions idempotentes dans une transaction. La clé d’idempotence existante continue de protéger la reprise de l’action et de l’édition ; aucune reprise ne crée une seconde action, division ou équipe.
 - Les verrous de composition, règlements, certifications et classements restent portés par les procédures serveur et s’appliquent dans le périmètre d’une division. Le rôle HTTP conserve l’AuthN/AuthZ ; Supabase RLS et les grants ne sont pas élargis aux écritures client.
-- Le formulaire de création propose `Casual`, `World Cup` et `Casual & World Cup`. Le dernier crée une édition privée avec deux divisions déterministes et une seule action parent ; les onglets de gestion et les projections gardent les équipes, mesures, arbitrages et classements dans leur division.
+- L'API et la préparation savent porter le mode `mixed` comme une édition privée avec deux divisions déterministes et une seule action parent ; le choix `Casual & World Cup` reste masqué dans le formulaire tant que les preuves PostgreSQL et navigateur de la chaîne complète ne sont pas réunies. Les onglets de gestion et les projections gardent les équipes, mesures, arbitrages et classements dans leur division.
 
 **Frontières non négociables :**
 
@@ -1287,6 +1287,42 @@ Fichiers principaux :
 - `apps/web/src/app/api/spogomi/events/[eventId]/observer/route.ts` ;
 - `apps/web/src/app/api/spogomi/events/[eventId]/reviewers/route.ts` ;
 - `apps/web/supabase/migrations/20261015000011_spogomi_event_capability_access.sql`.
+
+## 19 octies. Cloisonnement mixte — CURRENT structurel / COMPATIBILITY historique
+
+La migration append-only `20261015000012_spogomi_division_regulations_and_operations.sql`
+place les versions, états, sources, configurations réglementaires et bornes de
+composition sur `spogomi_divisions`. Les opérations critiques disposent de
+points d'entrée server-only qui exigent `event_id + division_id` et vérifient
+les appartenances croisées avant toute écriture : composition, déplacement,
+saisie, arbitrage, attestation et publication des classements. Les snapshots,
+audits, historiques et reprises idempotentes conservent cette provenance.
+
+Les éditions `casual` et `world_cup` historiques restent compatibles : leur
+division déterministe reçoit le règlement parent existant et les anciennes
+voies ne résolvent implicitement une division que lorsque l'édition n'en
+possède qu'une. Une édition `mixed` exige toujours la division explicite et
+refuse une ressource d'une autre division. Deux équipes portant le numéro `1`
+restent donc indépendantes.
+
+La consolidation reste parentale et utilise l'unique `action_id`. Les mesures
+certifiées des divisions conservent leurs identifiants de division dans les
+sources et sont agrégées une seule fois ; les scores sportifs n'alimentent
+jamais la masse environnementale. Les reconnaissances sportives et les
+attestations gardent la division de leur preuve. Un certificat bénévole reste
+une projection personnelle unique par personne et édition, y compris lorsque
+ses missions couvrent plusieurs divisions.
+
+L'export privé conserve les quatre feuilles canoniques (`Synthèse`, `Équipes`,
+`Catégories`, `Traçabilité`) et expose la division avec l'identifiant d'équipe,
+le règlement et les résultats associés. Le mode mixte n'est pas exposé dans
+le formulaire de création tant que la lane PostgreSQL transactionnelle et les
+parcours navigateur desktop/mobile n'ont pas été réellement exécutés avec
+succès.
+
+**Preuves de ce lot :** tests Vitest ciblés et contrats statiques exécutés ;
+typecheck Web exécuté. La sémantique PostgreSQL et le parcours navigateur
+restent à qualifier séparément sur une base de validation autorisée.
 
 ## 20. Sources canoniques liées
 

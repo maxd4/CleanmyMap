@@ -15,6 +15,7 @@ async function verifyImportedRosterRows(
   expectedCount: number,
   useHistoricalRows = false,
   mode: "selection" | "document" = "document",
+  divisionId?: string,
 ) {
   if (rows.length !== expectedCount) return false;
   const expected = new Map(rows.map((row) => [row.rowNumber, row.sourceFingerprint]));
@@ -39,13 +40,15 @@ async function verifyImportedRosterRows(
 
   const persisted: PersistedProofRow[] = [];
   for (let from = 0; ; from += IMPORT_VERIFICATION_PAGE_SIZE) {
-    const page = await supabase
+    let pageQuery = supabase
       .from(useHistoricalRows ? "spogomi_roster_import_rows" : "spogomi_participants")
       .select("source_row_number, source_fingerprint")
       .eq("event_id", eventId)
       .eq("roster_import_id", importId)
       .order("source_row_number", { ascending: true })
       .range(from, from + IMPORT_VERIFICATION_PAGE_SIZE - 1);
+    if (divisionId) pageQuery = pageQuery.eq("division_id", divisionId);
+    const page = await pageQuery;
     if (page.error) throw page.error;
     const rowsOnPage = (page.data ?? []) as Array<{ source_row_number: number | null; source_fingerprint: string | null }>;
     persisted.push(...rowsOnPage);
@@ -73,8 +76,9 @@ export function verifyImportedRosterSelection(
   rows: ProofRow[],
   expectedCount: number,
   useHistoricalRows = false,
+  divisionId?: string,
 ) {
-  return verifyImportedRosterRows(supabase, eventId, importId, rows, expectedCount, useHistoricalRows, "selection");
+  return verifyImportedRosterRows(supabase, eventId, importId, rows, expectedCount, useHistoricalRows, "selection", divisionId);
 }
 
 export function verifyImportedRosterCompleteness(
@@ -84,6 +88,7 @@ export function verifyImportedRosterCompleteness(
   rows: ProofRow[],
   expectedCount: number,
   useHistoricalRows = false,
+  divisionId?: string,
 ) {
-  return verifyImportedRosterRows(supabase, eventId, importId, rows, expectedCount, useHistoricalRows, "document");
+  return verifyImportedRosterRows(supabase, eventId, importId, rows, expectedCount, useHistoricalRows, "document", divisionId);
 }

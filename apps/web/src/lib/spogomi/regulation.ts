@@ -4,13 +4,14 @@ export type SpogomiEventRegulationRow = {
   id: string;
   name: string;
   event_slug: string | null;
-  mode: "casual" | "world_cup";
+  mode: "casual" | "world_cup" | "mixed";
   state: string;
   regulation_version: string;
   regulation_status: "incomplete" | "complete";
   regulation_source_reference: string | null;
   regulation_config: unknown;
   team_size_config: unknown;
+  division_id?: string;
 };
 
 export type SpogomiCategoryRegulationRow = {
@@ -40,6 +41,7 @@ function asTeamSize(value: unknown): SpogomiRegulation["teamSize"] {
 export function buildSpogomiRegulation(event: SpogomiEventRegulationRow, categoryRows: SpogomiCategoryRegulationRow[]): SpogomiRegulation {
   const config = asConfig(event.regulation_config);
   return {
+    ...(event.division_id ? { divisionId: event.division_id } : {}),
     version: event.regulation_version,
     sourceReference: event.regulation_source_reference,
     status: event.regulation_status,

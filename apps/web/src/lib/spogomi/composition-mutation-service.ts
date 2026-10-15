@@ -59,9 +59,12 @@ export async function moveParticipantToTeam(params: {
   teamId: string | null;
   actorClerkId: string;
   expectedRevision?: number;
+  divisionId?: string;
 }) {
-  const result = await params.supabase.rpc("spogomi_move_participant_to_team", {
+  const rpcName = params.divisionId ? "spogomi_move_participant_to_team_for_division" : "spogomi_move_participant_to_team";
+  const result = await params.supabase.rpc(rpcName, {
     p_event_id: params.event.id,
+    ...(params.divisionId ? { p_division_id: params.divisionId } : {}),
     p_participant_id: params.participantId,
     p_team_id: params.teamId,
     p_expected_revision: params.expectedRevision ?? Number(params.event.composition_revision ?? 0),

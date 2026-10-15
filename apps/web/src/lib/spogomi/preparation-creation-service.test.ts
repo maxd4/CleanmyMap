@@ -29,14 +29,16 @@ class CreationStore {
   attemptFingerprintUpdateFailures = 0;
   actionInsertCount = 0;
   eventInsertCount = 0;
+  parentDivisionRequests: Array<{ eventId: string; mode: string }> = [];
 
   from(table: string) {
     return new Query(this, table);
   }
 
-  rpc(name: string) {
+  rpc(name: string, params?: { p_event_id?: string; p_mode?: string }) {
     if (name !== "spogomi_ensure_parent_divisions") throw new Error(`Unexpected RPC ${name}`);
-    return Promise.resolve({ data: [{ id: "division-1", type: "casual" }], error: null });
+    this.parentDivisionRequests.push({ eventId: String(params?.p_event_id), mode: String(params?.p_mode) });
+    return Promise.resolve({ data: params?.p_mode === "mixed" ? [{ id: "division-casual", type: "casual" }, { id: "division-world-cup", type: "world_cup" }] : [{ id: "division-1", type: "casual" }], error: null });
   }
 }
 
@@ -224,6 +226,22 @@ describe("SPOGOMI event creation contract", () => {
     expect(result.eventId).toBe("event-1");
     expect(store.events[0]).toMatchObject({ starts_at: new Date(startsAt).toISOString(), ends_at: new Date(endsAt).toISOString(), public_visibility: "private" });
     expect(store.events[0]).not.toHaveProperty("team_size_config.casual");
+  });
+
+  it("creates a private mixed edition through one parent action and materializes both divisions idempotently", async () => {
+    const store = new CreationStore();
+    installActionFactory(store);
+    const value = input({ idempotencyKey: "spogomi-mixed-create", mode: "mixed" });
+
+    const first = await createSpogomiEvent({ supabase: store as never, userId: "user-1", input: value });
+    const second = await createSpogomiEvent({ supabase: store as never, userId: "user-1", input: value });
+
+    expect(first).toEqual(second);
+    expect(store.actionInsertCount).toBe(1);
+    expect(store.eventInsertCount).toBe(1);
+    expect(store.events[0]).toMatchObject({ mode: "mixed", public_visibility: "private" });
+    expect(store.parentDivisionRequests).toHaveLength(1);
+    expect(store.parentDivisionRequests[0]?.mode).toBe("mixed");
   });
 
   it("accepts a missing end date and rejects invalid or reversed dates", async () => {

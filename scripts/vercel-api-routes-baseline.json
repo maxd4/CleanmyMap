@@ -232,6 +232,7 @@
     "apps/web/src/app/api/spogomi/events/[eventId]/identity-link/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/imports/confirm/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/imports/preview/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/observer/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/participants/[participantId]/identity-code/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/rankings/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/recognition/attestations/route.ts",

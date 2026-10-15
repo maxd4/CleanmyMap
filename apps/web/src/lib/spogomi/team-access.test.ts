@@ -23,12 +23,12 @@ function makeSupabase() {
       update: vi.fn(() => query),
       insert: vi.fn(() => query),
       maybeSingle: vi.fn(async () => {
-        if (table === "spogomi_teams") return { data: { id: "team-1", event_id: "event-1" }, error: null };
+        if (table === "spogomi_teams") return { data: { id: "team-1", event_id: "event-1", division_id: "division-1" }, error: null };
         if (table === "spogomi_team_access_grants" && (selectValue.includes("token_hash") || selectValue.includes("expires_at, revoked_at"))) {
-          return { data: { id: "grant-1", event_id: "event-1", team_id: "team-1", expires_at: "2999-01-01T00:00:00.000Z", revoked_at: null }, error: null };
+          return { data: { id: "grant-1", event_id: "event-1", team_id: "team-1", division_id: "division-1", expires_at: "2999-01-01T00:00:00.000Z", revoked_at: null }, error: null };
         }
         if (table === "spogomi_team_access_sessions") {
-          return { data: { id: "session-1", grant_id: "grant-1", event_id: "event-1", team_id: "team-1", expires_at: "2999-01-01T00:00:00.000Z", revoked_at: null }, error: null };
+          return { data: { id: "session-1", grant_id: "grant-1", event_id: "event-1", team_id: "team-1", division_id: "division-1", expires_at: "2999-01-01T00:00:00.000Z", revoked_at: null }, error: null };
         }
         if (table === "spogomi_events") return { data: { id: "event-1", event_slug: "paris-2026" }, error: null };
         return { data: null, error: null };
@@ -65,13 +65,14 @@ describe("SPOGOMI team access", () => {
       token: "a".repeat(40),
       eventSlug: "paris-2026",
     });
-    expect(consumed).toMatchObject({ eventSlug: "paris-2026", teamId: "team-1" });
+    expect(consumed).toMatchObject({ eventSlug: "paris-2026", teamId: "team-1", divisionId: "division-1" });
 
     await expect(loadSpogomiTeamSession(supabase as never, consumed.sessionToken)).resolves.toMatchObject({
       sessionId: "session-1",
       grantId: "grant-1",
       eventId: "event-1",
       teamId: "team-1",
+      divisionId: "division-1",
     });
 
     await expect(revokeSpogomiTeamAccessGrant({ supabase: supabase as never, eventId: "event-1", teamId: "team-1" })).resolves.toBeUndefined();
