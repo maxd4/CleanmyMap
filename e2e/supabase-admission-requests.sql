@@ -1,7 +1,8 @@
 -- SPOGOMI admission request PostgreSQL contract.
 -- Synthetic mixed-division fixtures only; the transaction is rolled back.
 -- This proves the RPC boundary, replay scope, authorization ordering, dates,
--- audit atomicity and the absence of CleanMyMap participation side effects.
+-- audit atomicity, private decision notifications and the absence of
+-- CleanMyMap participation side effects.
 
 begin;
 
@@ -31,6 +32,7 @@ declare
   v_rejected_request_id uuid;
   v_decision jsonb;
   v_audit_count integer;
+  v_notification_count integer;
   v_action_participants_before bigint;
   v_action_participants_after bigint;
 begin
@@ -158,6 +160,15 @@ begin
   if v_decision ->> 'status' <> 'cancelled' then
     raise exception 'owner cancellation did not resolve the request';
   end if;
+  select count(*) into v_notification_count
+    from public.app_notifications
+   where user_id = 'cancel-owner'
+     and type = 'action_event'
+     and payload ->> 'subtype' = 'spogomi_admission_decision'
+     and payload ->> 'requestId' = v_cancel_request_id::text;
+  if v_notification_count <> 1 then
+    raise exception 'admission cancellation did not emit one private notification';
+  end if;
   select decided_at into v_decided_at
     from public.spogomi_team_join_requests where id = v_cancel_request_id;
   v_decision := public.transition_spogomi_admission_request(
@@ -168,6 +179,15 @@ begin
     from public.spogomi_team_join_requests where id = v_cancel_request_id;
   if v_replay_decided_at <> v_decided_at or v_decision ->> 'status' <> 'cancelled' then
     raise exception 'owner cancellation replay changed the persisted decision';
+  end if;
+  select count(*) into v_notification_count
+    from public.app_notifications
+   where user_id = 'cancel-owner'
+     and type = 'action_event'
+     and payload ->> 'subtype' = 'spogomi_admission_decision'
+     and payload ->> 'requestId' = v_cancel_request_id::text;
+  if v_notification_count <> 1 then
+    raise exception 'admission cancellation replay duplicated the notification';
   end if;
   begin
     perform public.transition_spogomi_admission_request(
@@ -203,6 +223,15 @@ begin
   if v_decision ->> 'status' <> 'approved' then
     raise exception 'admin approval did not resolve the request';
   end if;
+  select count(*) into v_notification_count
+    from public.app_notifications
+   where user_id = 'admission-owner'
+     and type = 'action_event'
+     and payload ->> 'subtype' = 'spogomi_admission_decision'
+     and payload ->> 'requestId' = v_registration_request_id::text;
+  if v_notification_count <> 1 then
+    raise exception 'admission approval did not emit one private notification';
+  end if;
   select decided_at into v_decided_at
     from public.spogomi_team_join_requests where id = v_registration_request_id;
   v_decision := public.transition_spogomi_admission_request(
@@ -213,6 +242,15 @@ begin
     from public.spogomi_team_join_requests where id = v_registration_request_id;
   if v_decision ->> 'status' <> 'approved' or v_replay_decided_at <> v_decided_at then
     raise exception 'admin approval replay changed the persisted decision';
+  end if;
+  select count(*) into v_notification_count
+    from public.app_notifications
+   where user_id = 'admission-owner'
+     and type = 'action_event'
+     and payload ->> 'subtype' = 'spogomi_admission_decision'
+     and payload ->> 'requestId' = v_registration_request_id::text;
+  if v_notification_count <> 1 then
+    raise exception 'admission approval replay duplicated the notification';
   end if;
   select count(*) into v_action_participants_after from public.action_participants;
   if v_action_participants_after <> v_action_participants_before then
@@ -237,6 +275,9 @@ begin
     from public.create_spogomi_admission_request(
       v_event_id, null, 'reject-owner', 'registration', v_casual_id, 'Reject me'
     );
+  insert into public.notification_preferences (user_id, informational_enabled)
+  values ('reject-owner', false)
+  on conflict (user_id) do update set informational_enabled = excluded.informational_enabled;
   v_decision := public.transition_spogomi_admission_request(
     v_rejected_request_id, v_event_id, 'rejected', 'admin', 'admin-1', 'admin',
     null, null, 'Not eligible', 'Registration rejected'
@@ -247,6 +288,15 @@ begin
   );
   if v_decision ->> 'status' <> 'rejected' then
     raise exception 'admin rejection replay did not remain rejected';
+  end if;
+  select count(*) into v_notification_count
+    from public.app_notifications
+   where user_id = 'reject-owner'
+     and type = 'action_event'
+     and payload ->> 'subtype' = 'spogomi_admission_decision'
+     and payload ->> 'requestId' = v_rejected_request_id::text;
+  if v_notification_count <> 0 then
+    raise exception 'disabled informational preference did not suppress admission notification';
   end if;
   begin
     perform public.transition_spogomi_admission_request(

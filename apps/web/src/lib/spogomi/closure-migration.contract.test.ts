@@ -5,6 +5,7 @@ const decisionsMigration = readFileSync(new URL("../../../supabase/migrations/20
 const consolidationMigration = readFileSync(new URL("../../../supabase/migrations/20261015000027_spogomi_closure_publication_guards.sql", import.meta.url), "utf8");
 const rankingMigration = readFileSync(new URL("../../../supabase/migrations/20261015000028_spogomi_ranking_closure_guard.sql", import.meta.url), "utf8");
 const correctionMigration = readFileSync(new URL("../../../supabase/migrations/20261015000029_spogomi_closure_republication_safety.sql", import.meta.url), "utf8");
+const admissionNotificationMigration = readFileSync(new URL("../../../supabase/migrations/20261015000030_spogomi_admission_decision_notifications.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI closure STATIC_CONTRACT", () => {
   it("keeps explicit statuses, independent environmental eligibility and append-only replay", () => {
@@ -56,5 +57,18 @@ describe("SPOGOMI closure STATIC_CONTRACT", () => {
     expect(correctionMigration).toContain("spogomi_total_mass_grams = null");
     expect(correctionMigration).toContain("preparation_data - 'spogomiConsolidation' - 'spogomiOfficialReference'");
     expect(correctionMigration).not.toMatch(/volunteers_count\s*=\s*coalesce\([^\n]+,\s*0\)/);
+  });
+
+  it("projects admission decisions through the canonical private notification inbox", () => {
+    expect(admissionNotificationMigration).toContain("app_notifications_spogomi_admission_decision_event_unique_idx");
+    expect(admissionNotificationMigration).toContain("emit_spogomi_admission_decision_notification");
+    expect(admissionNotificationMigration).toContain("security definer");
+    expect(admissionNotificationMigration).toContain("set search_path = public, pg_catalog");
+    expect(admissionNotificationMigration).toContain("auth.role()), '') <> 'service_role'");
+    expect(admissionNotificationMigration).toContain("informational_enabled");
+    expect(admissionNotificationMigration).toContain("old.status = 'pending' and new.status in ('approved', 'rejected', 'cancelled')");
+    expect(admissionNotificationMigration).toContain("on conflict do nothing");
+    expect(admissionNotificationMigration).toContain("grant execute on function public.emit_spogomi_admission_decision_notification()");
+    expect(admissionNotificationMigration).toContain("spogomi_admission_decision_notification");
   });
 });

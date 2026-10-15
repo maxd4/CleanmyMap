@@ -378,6 +378,13 @@ la lecture de la file, du compte demandeur et du roster reste server-only et
 réservée à `admin|max`. Les codes individuels restent la première méthode de
 liaison et conservent leurs garanties existantes.
 
+Une décision `approved`, `rejected` ou `cancelled` d'une demande d'admission
+est également projetée dans la boîte `app_notifications` du compte demandeur,
+avec le sous-type `spogomi_admission_decision` et une clé d'événement stable.
+La projection est privée, idempotente et respecte `notification_preferences`;
+elle ne crée aucune notification pour une personne restée sans compte et ne
+modifie ni l'identité terrain, ni la présence, ni `action_participants`.
+
 Cette liaison met à jour uniquement l'identité `spogomi_participants`. Elle ne
 atteste ni la présence ni la participation CleanMyMap. Après liaison, le serveur
 réutilise le parcours canonique de l'action : `action_registrations` en phase
