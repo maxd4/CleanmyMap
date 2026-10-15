@@ -237,13 +237,17 @@ La présence d'un fichier SQL, un test de chaînes, un audit d'arbre ou un
 effectivement exécuté sur les deux parcours, conserver explicitement
 `DB_SEMANTICS_NOT_EXECUTED` ; le dry-run ne valide pas la convergence des bases.
 
-En FULL, `scripts/ci/audit-supabase-release.mjs` exige un
-`SUPABASE_PROJECT_REF` explicitement fourni, vérifie la visibilité du projet,
-les branches, l'historique des migrations, le dry-run et les advisors security
-et performance. La santé et les logs doivent être observés par une interface
+En FULL, `scripts/ci/audit-supabase-release.mjs` résout
+`SUPABASE_PROJECT_REF` dans cet ordre : argument `--project-ref`, variable
+d'environnement du processus, puis, en exécution locale uniquement, la seule
+clé de même nom dans `apps/web/.env.local`. Il ne charge pas les autres secrets
+de ce fichier et ne déduit jamais la cible depuis une URL, un projet lié ou une
+liste de projets. L'audit vérifie ensuite la visibilité du projet, les
+branches, l'historique des migrations, le dry-run et les advisors security et
+performance. La santé et les logs doivent être observés par une interface
 autorisée puis fournis sous forme d'une preuve JSON liée au même project ref
-via `SUPABASE_HEALTH_LOG_REPORT`. Sans accès ou sans preuve correspondante, le
-résultat est `BLOCKED_ACCESS` et `RELEASE_READY` reste `NO`.
+via `SUPABASE_HEALTH_LOG_REPORT`. Sans référence valide, accès ou preuve
+correspondante, le résultat est `BLOCKED_ACCESS` et `RELEASE_READY` reste `NO`.
 
 ## Trois modes canoniques
 

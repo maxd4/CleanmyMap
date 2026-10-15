@@ -7,13 +7,59 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const webRoot = path.join(repoRoot, "apps", "web");
+const localEnvPath = path.join(webRoot, ".env.local");
+const projectRefPattern = /^[a-z0-9]{20}$/;
 
-function parseArgs(argv = []) {
-  const projectArg = argv.find((arg) => arg.startsWith("--project-ref="));
+function normalizeProjectRef(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function isValidProjectRef(value) {
+  return projectRefPattern.test(normalizeProjectRef(value));
+}
+
+function readProjectRefFromLocalEnv(filePath) {
+  if (!fs.existsSync(filePath)) return "";
+
+  const line = fs.readFileSync(filePath, "utf8")
+    .split(/\r?\n/)
+    .find((entry) => /^\s*(?:export\s+)?SUPABASE_PROJECT_REF\s*=/.test(entry));
+  if (!line) return "";
+
+  const rawValue = line.replace(/^\s*(?:export\s+)?SUPABASE_PROJECT_REF\s*=\s*/, "").trim();
+  return rawValue.replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, (_, doubleQuoted, singleQuoted) => doubleQuoted ?? singleQuoted);
+}
+
+function readProjectRefArgument(argv = []) {
+  const equalsArg = argv.find((arg) => arg.startsWith("--project-ref="));
+  if (equalsArg) return equalsArg.slice("--project-ref=".length);
+
+  const index = argv.indexOf("--project-ref");
+  return index >= 0 ? argv[index + 1] ?? "" : undefined;
+}
+
+function isLocalExecution(env) {
+  return env?.CI !== "true" && env?.CI !== "1" && env?.GITHUB_ACTIONS !== "true";
+}
+
+export function resolveProjectRef({ argv = [], env = process.env, envPath = localEnvPath, localExecution = isLocalExecution(env) } = {}) {
+  const explicitProjectRef = readProjectRefArgument(argv);
+  if (explicitProjectRef !== undefined) return isValidProjectRef(explicitProjectRef) ? normalizeProjectRef(explicitProjectRef) : "";
+
+  if (env && Object.prototype.hasOwnProperty.call(env, "SUPABASE_PROJECT_REF")) {
+    return isValidProjectRef(env.SUPABASE_PROJECT_REF) ? normalizeProjectRef(env.SUPABASE_PROJECT_REF) : "";
+  }
+
+  if (!localExecution) return "";
+  const localProjectRef = readProjectRefFromLocalEnv(envPath);
+  return isValidProjectRef(localProjectRef) ? normalizeProjectRef(localProjectRef) : "";
+}
+
+export function parseArgs(argv = [], options = {}) {
   const healthArg = argv.find((arg) => arg.startsWith("--health-report="));
   return {
-    projectRef: projectArg?.slice("--project-ref=".length) || process.env.SUPABASE_PROJECT_REF?.trim(),
-    healthReport: healthArg?.slice("--health-report=".length) || process.env.SUPABASE_HEALTH_LOG_REPORT?.trim(),
+    projectRef: resolveProjectRef({ argv, ...options }),
+    healthReport: healthArg?.slice("--health-report=".length) || options.env?.SUPABASE_HEALTH_LOG_REPORT?.trim() || process.env.SUPABASE_HEALTH_LOG_REPORT?.trim(),
   };
 }
 
@@ -67,9 +113,9 @@ export function evaluateSupabaseRelease({ projectRef, projects, commands, health
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  if (!args.projectRef) {
+  if (!isValidProjectRef(args.projectRef)) {
     console.error("CONTROL_STATUS: BLOCKED_ACCESS");
-    console.error("SUPABASE_PROJECT_REF is required; the target project must be identified explicitly.");
+    console.error("SUPABASE_PROJECT_REF is required and must be a valid explicit project reference.");
     process.exitCode = 1;
     return;
   }
