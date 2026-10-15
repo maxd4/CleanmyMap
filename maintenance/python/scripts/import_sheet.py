@@ -2,7 +2,6 @@ import pandas as pd
 import requests
 import json
 import os
-import re
 import time
 from datetime import datetime
 

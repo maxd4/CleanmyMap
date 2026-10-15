@@ -233,7 +233,7 @@ function readCoverage(root, scope, requestedStatus, auditedSha) {
   const currentHead = git(["rev-parse", "HEAD"], root);
   const worktreeClean = git(["status", "--short"], root).length === 0;
   let attestationStatus = "NOT_ATTESTED";
-  let reason = "COVERAGE_EVIDENCE_MISSING";
+  let reason;
 
   if (scope !== "web") {
     reason = "NO_CANONICAL_MOBILE_COVERAGE_ATTESTATION";
