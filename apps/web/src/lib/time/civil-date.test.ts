@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isCivilDate, parseCivilDateAsUtc } from "./civil-date";
+import { formatCivilDateInTimeZone, isCivilDate, parseDateTimeLocalInTimeZone, parseCivilDateAsUtc } from "./civil-date";
 
 describe("civil date adapter", () => {
   it.each(["America/Los_Angeles", "Europe/Paris"])(
@@ -22,5 +22,38 @@ describe("civil date adapter", () => {
   it("rejects non-civil-date inputs instead of inventing an instant", () => {
     expect(parseCivilDateAsUtc("2026-01-02T12:00:00Z")).toBeNull();
     expect(parseCivilDateAsUtc(null)).toBeNull();
+  });
+
+  it.each([
+    ["Paris", "2026-07-14T10:30", "2026-07-14T08:30:00.000Z"],
+    ["Lyon", "2026-01-14T10:30", "2026-01-14T09:30:00.000Z"],
+    ["Marseille", "2026-06-01T00:30", "2026-05-31T22:30:00.000Z"],
+    ["Lille", "2026-12-01T10:30", "2026-12-01T09:30:00.000Z"],
+    ["Corse", "2026-08-15T10:30", "2026-08-15T08:30:00.000Z"],
+  ])("interprets the %s wall clock in Europe/Paris", (_city, local, instant) => {
+    expect(parseDateTimeLocalInTimeZone(local).toISOString()).toBe(instant);
+  });
+
+  it("preserves the Paris civil day when the instant is near UTC midnight", () => {
+    expect(formatCivilDateInTimeZone("2026-06-30T23:30:00.000Z")).toBe("2026-07-01");
+    expect(formatCivilDateInTimeZone("2026-06-30T23:30:00.000Z", "UTC")).toBe("2026-06-30");
+  });
+
+  it.each([
+    ["spring-forward nonexistent", "2026-03-29T02:30", /nonexistent|inexistante/i],
+    ["fall-back ambiguous", "2026-10-25T02:30", /ambiguous|ambiguë/i],
+  ])("rejects a %s local time", (_label, local, message) => {
+    expect(() => parseDateTimeLocalInTimeZone(local)).toThrow(message);
+  });
+
+  it("does not consult the host timezone for an explicit Paris conversion", () => {
+    const previous = process.env.TZ;
+    process.env.TZ = "America/Los_Angeles";
+    try {
+      expect(parseDateTimeLocalInTimeZone("2026-07-14T10:30").toISOString()).toBe("2026-07-14T08:30:00.000Z");
+    } finally {
+      if (previous === undefined) delete process.env.TZ;
+      else process.env.TZ = previous;
+    }
   });
 });

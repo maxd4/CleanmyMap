@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { formatCivilDateInTimeZone } from "@/lib/time/civil-date";
 import { loadCurrentGamificationFacts } from "@/lib/gamification/gamification-facts-loader";
 import { reconcileUserGamification } from "@/lib/gamification/gamification-reconciliation";
 import type { GamificationFacts } from "@/lib/gamification/gamification-reconstruction";
@@ -49,7 +50,7 @@ export function getSpogomiRecognitionPartialDetails(error: unknown) {
 
 function localEventDate(startsAt: string, timezone: string): string {
   try {
-    return new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(startsAt));
+    return formatCivilDateInTimeZone(startsAt, timezone);
   } catch {
     throw new Error("Validation: le fuseau officiel SPOGOMI est invalide.");
   }

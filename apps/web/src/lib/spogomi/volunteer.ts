@@ -6,6 +6,7 @@ import { readAllSpogomiPages } from "./pagination";
 import type { SpogomiCollection, SpogomiCollectionAward } from "./collection";
 import { loadSpogomiCollectionForUser } from "./recognition-service";
 import type { SpogomiRecognitionKind } from "./recognition";
+import { formatCivilDateInTimeZone } from "@/lib/time/civil-date";
 
 type Row = Record<string, unknown>;
 
@@ -78,7 +79,7 @@ export type SpogomiVolunteerContributionStatus =
 
 function localDate(startsAt: string, timezone: string): string {
   try {
-    return new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(startsAt));
+    return formatCivilDateInTimeZone(startsAt, timezone);
   } catch {
     return startsAt.slice(0, 10);
   }

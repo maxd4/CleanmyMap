@@ -20,6 +20,7 @@ function event(overrides: Partial<EventRow> = {}): EventRow {
     state: "draft",
     starts_at: "2026-10-13T10:00:00.000Z",
     ends_at: null,
+    official_timezone: "Europe/Paris",
     team_size_config: { casual: { minMembers: 3, maxMembers: 5 } },
     creation_state: "ready",
     event_slug: "spogomi",

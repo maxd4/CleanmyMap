@@ -9,7 +9,9 @@ describe("SPOGOMI organizer creation contract", () => {
     expect(source).toContain('method: "POST"');
     expect(source).toContain("reuseOrCreateSpogomiCreationAttempt");
     expect(source).toContain("creationAttemptRef.current = null");
-    expect(source).toContain("startsAtDate.toISOString()");
+    expect(source).toContain("startsAt,");
+    expect(source).toContain("endsAt || null");
+    expect(source).not.toContain("new Date(startsAt)");
     expect(source).toContain("router.refresh()");
     expect(source).not.toContain("casualTeamSize");
     expect(source).not.toContain("Taille d’équipe");

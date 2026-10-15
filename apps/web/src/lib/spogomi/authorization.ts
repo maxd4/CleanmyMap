@@ -17,7 +17,7 @@ export type SpogomiEventAccessRole = "organizer" | "referee" | "observer" | "che
 export type SpogomiAssignedAccessRole = Exclude<SpogomiEventAccessRole, "organizer" | "participant">;
 
 export type SpogomiEventAccessDecision = {
-  event: Pick<EventRow, "id" | "action_id" | "created_by_clerk_id" | "name" | "event_slug" | "mode" | "state" | "starts_at" | "ends_at" | "public_visibility" | "public_results_visibility">;
+  event: Pick<EventRow, "id" | "action_id" | "created_by_clerk_id" | "name" | "event_slug" | "mode" | "state" | "starts_at" | "ends_at" | "official_timezone" | "public_visibility" | "public_results_visibility">;
   userId: string;
   role: SpogomiEventAccessRole | null;
   isOrganizer: boolean;
@@ -27,7 +27,7 @@ export type SpogomiEventAccessDecision = {
 };
 
 const EVENT_ACCESS_SELECT =
-  "id, action_id, created_by_clerk_id, name, event_slug, mode, state, starts_at, ends_at, public_visibility, public_results_visibility";
+  "id, action_id, created_by_clerk_id, name, event_slug, mode, state, starts_at, ends_at, official_timezone, public_visibility, public_results_visibility";
 
 export function hasSpogomiCapability(
   access: Pick<SpogomiEventAccessDecision, "capabilities"> | null | undefined,

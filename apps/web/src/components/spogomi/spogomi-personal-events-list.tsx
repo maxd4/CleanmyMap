@@ -8,6 +8,7 @@ import type {
   SpogomiPersonalEvent,
   SpogomiPersonalRelation,
 } from "@/lib/spogomi/personal-events-service";
+import { formatDateTimeInTimeZone } from "@/lib/time/civil-date";
 
 type FilterKey = "all" | SpogomiPersonalRelation;
 
@@ -36,14 +37,19 @@ const ACCESS_LABELS = {
   participate: "Parcours personnel",
 } as const;
 
-function formatDateRange(startsAt: string, endsAt: string | null): string {
-  const starts = new Date(startsAt);
-  if (Number.isNaN(starts.getTime())) return "Dates indisponibles";
-  const formatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
-  const startLabel = formatter.format(starts);
+function formatDateRange(startsAt: string, endsAt: string | null, timeZone: string): string {
+  let startLabel: string;
+  try {
+    startLabel = formatDateTimeInTimeZone(startsAt, timeZone, { dateStyle: "medium", timeStyle: "short" });
+  } catch {
+    return "Dates indisponibles";
+  }
   if (!endsAt) return `Début : ${startLabel}`;
-  const ends = new Date(endsAt);
-  return Number.isNaN(ends.getTime()) ? `Début : ${startLabel} · fin indisponible` : `${startLabel} → ${formatter.format(ends)}`;
+  try {
+    return `${startLabel} → ${formatDateTimeInTimeZone(endsAt, timeZone, { dateStyle: "medium", timeStyle: "short" })}`;
+  } catch {
+    return `Début : ${startLabel} · fin indisponible`;
+  }
 }
 
 function modeLabel(mode: SpogomiPersonalEvent["mode"]): string {
@@ -85,7 +91,7 @@ function PersonalEventCard({ event }: { event: SpogomiPersonalEvent }) {
       </div>
 
       <div className="space-y-2 text-sm text-slate-800">
-        <p className="flex items-start gap-2"><CalendarDays size={16} className="mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" />{formatDateRange(event.startsAt, event.endsAt)}</p>
+        <p className="flex items-start gap-2"><CalendarDays size={16} className="mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" />{formatDateRange(event.startsAt, event.endsAt, event.officialTimezone)}</p>
         <div className="flex flex-wrap gap-2" aria-label="Relations vérifiées">
           {event.relations.map((relation) => (
             <span key={relation} className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-900">

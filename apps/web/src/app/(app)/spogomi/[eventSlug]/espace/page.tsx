@@ -51,6 +51,7 @@ export default async function SpogomiEventSpacePage({ params }: Props) {
           state: effectiveEvent.state,
           startsAt: effectiveEvent.starts_at,
           endsAt: effectiveEvent.ends_at,
+          officialTimezone: effectiveEvent.official_timezone,
           publicVisibility: effectiveEvent.public_visibility,
         }}
         role={eventAccess?.role ?? null}

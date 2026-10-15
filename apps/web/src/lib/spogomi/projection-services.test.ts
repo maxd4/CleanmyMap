@@ -50,7 +50,7 @@ const event = {
   id: "event-1", action_id: "action-1", created_by_clerk_id: "owner", name: "SPOGOMI Paris", location_label: "Paris",
   mode: "mixed" as const, team_size_config: {}, creation_state: "event_ready", event_slug: "paris",
   public_visibility: "private" as const, public_results_visibility: "hidden" as const,
-  starts_at: "2026-10-12T09:00:00Z", ends_at: null, state: "running", environmental_mapping_version: "v1", updated_at: "now",
+  starts_at: "2026-10-12T09:00:00Z", ends_at: null, official_timezone: "Europe/Paris", state: "running", environmental_mapping_version: "v1", updated_at: "now",
 };
 
 describe("SPOGOMI management projection", () => {

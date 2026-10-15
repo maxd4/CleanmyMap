@@ -4,10 +4,12 @@ import { createAction } from "@/lib/actions/store-create";
 import { createActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { canManageAction, type ActionPermissionIdentity } from "@/lib/actions/permissions";
+import { formatCivilDateInTimeZone, isDateTimeLocalValue, parseDateTimeLocalInTimeZone } from "@/lib/time/civil-date";
 import type { SpogomiEventMode } from "./types";
 import { isReservedSpogomiEventSlug, normalizeSpogomiEventSlug } from "./public-service";
 
 const CREATION_LEASE_MS = 2 * 60 * 1000;
+const SPOGOMI_DEFAULT_TIME_ZONE = "Europe/Paris";
 const EVENT_SELECT = "id, action_id, created_by_clerk_id, idempotency_key, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility, composition_revision";
 
 type CreationInput = {
@@ -47,11 +49,18 @@ function conflict(message: string): Error {
 }
 
 function parseCreationDate(value: string, label: "début" | "fin"): Date {
-  const parsed = new Date(value);
-  if (!value || Number.isNaN(parsed.valueOf())) {
-    throw new Error(`Validation: date de ${label} d'événement invalide.`);
+  try {
+    const parsed = isDateTimeLocalValue(value)
+      ? parseDateTimeLocalInTimeZone(value, SPOGOMI_DEFAULT_TIME_ZONE)
+      : new Date(value);
+    if (!value || Number.isNaN(parsed.valueOf())) throw new RangeError("Invalid event date.");
+    return parsed;
+  } catch (error) {
+    const detail = error instanceof RangeError && /Ambiguous|Nonexistent/i.test(error.message)
+      ? ` (${error.message === "Ambiguous local time in timezone." ? "heure locale ambiguë" : "heure locale inexistante"})`
+      : "";
+    throw new Error(`Validation: date de ${label} d'événement invalide${detail}.`);
   }
-  return parsed;
 }
 
 function canonicalCreationInput(input: CreationInput) {
@@ -318,7 +327,7 @@ async function createSpogomiAction(params: {
     userId,
     payload: {
       actorName: displayName,
-      actionDate: canonical.startsAt.slice(0, 10),
+      actionDate: formatCivilDateInTimeZone(canonical.startsAt, SPOGOMI_DEFAULT_TIME_ZONE),
       locationLabel: canonical.locationLabel,
       actionPhase: "pre_action",
       preparationData: { interventionMode: createActionInterventionMode("fixed_area"), spogomiCreationKey: input.idempotencyKey, spogomiCreationFingerprint: proof.fingerprint },

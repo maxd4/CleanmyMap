@@ -347,6 +347,16 @@ describe("SPOGOMI persistence routes", () => {
     expect(mocks.createSpogomiEvent).toHaveBeenCalledWith(expect.objectContaining({ userId: "user-1" }));
     expect(mocks.createSpogomiEvent.mock.calls[0]?.[0].input).not.toHaveProperty("casualTeamSize");
 
+    const localCreated = await events.POST(jsonRequest("http://localhost/api/spogomi/events", {
+      idempotencyKey: "idempotency-local-1",
+      name: "SPOGOMI Lyon",
+      locationLabel: "Lyon",
+      mode: "casual",
+      startsAt: "2026-07-14T10:30",
+    }));
+    expect(localCreated.status).toBe(201);
+    expect(mocks.createSpogomiEvent.mock.calls[1]?.[0].input.startsAt).toBe("2026-07-14T10:30");
+
     const eventRoute = await import("./events/[eventId]/route");
     expect((await eventRoute.GET(new Request("http://localhost"), eventContext)).status).toBe(200);
     expect((await eventRoute.PATCH(jsonRequest("http://localhost", { name: "SPOGOMI Paris 2" }, "PATCH"), eventContext)).status).toBe(200);

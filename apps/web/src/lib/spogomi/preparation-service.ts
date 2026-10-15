@@ -25,6 +25,7 @@ export type EventRow = {
   state: string;
   starts_at: string;
   ends_at: string | null;
+  official_timezone: string;
   team_size_config: { casual?: { minMembers?: number | null; maxMembers?: number | null } };
   creation_state: string;
   event_slug: string | null;

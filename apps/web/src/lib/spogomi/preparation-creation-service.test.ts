@@ -228,6 +228,40 @@ describe("SPOGOMI event creation contract", () => {
     expect(store.events[0]).not.toHaveProperty("team_size_config.casual");
   });
 
+  it.each([
+    ["Paris", "2026-07-14T10:30", "2026-07-14T08:30:00.000Z"],
+    ["Lyon", "2026-01-14T10:30", "2026-01-14T09:30:00.000Z"],
+    ["Marseille", "2026-06-01T00:30", "2026-05-31T22:30:00.000Z"],
+    ["Lille", "2026-12-01T10:30", "2026-12-01T09:30:00.000Z"],
+    ["Corse", "2026-08-15T10:30", "2026-08-15T08:30:00.000Z"],
+  ])("stores the %s datetime-local input as a Paris instant", async (_city, startsAt, expectedInstant) => {
+    const store = new CreationStore();
+    installActionFactory(store);
+
+    await createSpogomiEvent({ supabase: store as never, userId: "user-1", input: input({ idempotencyKey: `spogomi-local-${_city}`, locationLabel: _city, startsAt }) });
+
+    expect(store.events[0]?.starts_at).toBe(expectedInstant);
+  });
+
+  it("derives action_date from the Paris civil day instead of the UTC date", async () => {
+    const store = new CreationStore();
+    installActionFactory(store);
+
+    await createSpogomiEvent({ supabase: store as never, userId: "user-1", input: input({ idempotencyKey: "spogomi-paris-civil-day", startsAt: "2026-06-30T23:30:00.000Z" }) });
+
+    expect(store.actions[0]?.action_date).toBe("2026-07-01");
+  });
+
+  it.each([
+    ["inexistent", "2026-03-29T02:30"],
+    ["ambiguous", "2026-10-25T02:30"],
+  ])("rejects a %s Paris datetime-local input", async (_label, startsAt) => {
+    const store = new CreationStore();
+
+    await expect(createSpogomiEvent({ supabase: store as never, userId: "user-1", input: input({ idempotencyKey: `spogomi-${_label}-local`, startsAt }) })).rejects.toThrow(/heure locale/i);
+    expect(store.attempts).toHaveLength(0);
+  });
+
   it("creates a private mixed edition through one parent action and materializes both divisions idempotently", async () => {
     const store = new CreationStore();
     installActionFactory(store);

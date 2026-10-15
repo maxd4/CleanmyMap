@@ -23,6 +23,7 @@ export type SpogomiFieldOperationsAccess = {
     state: string;
     starts_at: string;
     ends_at: string | null;
+    official_timezone: string;
     public_visibility: string;
     public_results_visibility: string;
   };
@@ -32,7 +33,7 @@ export type SpogomiFieldOperationsAccess = {
   capabilities: ReadonlySet<SpogomiFieldOperationsCapability>;
 };
 
-const EVENT_SELECT = "id, action_id, created_by_clerk_id, name, event_slug, mode, state, starts_at, ends_at, public_visibility, public_results_visibility";
+const EVENT_SELECT = "id, action_id, created_by_clerk_id, name, event_slug, mode, state, starts_at, ends_at, official_timezone, public_visibility, public_results_visibility";
 const OPERATIONAL_ROLES = ["timekeeper", "weigher", "data_entry", "arbiter", "certifier"] as const;
 
 export function spogomiFieldCapabilitiesForRoles(roles: string[], isOrganizer: boolean): Set<SpogomiFieldOperationsCapability> {

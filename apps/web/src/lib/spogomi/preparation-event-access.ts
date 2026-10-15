@@ -5,7 +5,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { EventRow } from "./preparation-service";
 
 export const SPOGOMI_ORGANIZER_EVENT_SELECT =
-  "id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility, composition_revision";
+  "id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, official_timezone, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility, composition_revision";
 
 function actionIdentity(identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>): ActionPermissionIdentity {
   return { userId: identity?.userId ?? "", role: identity?.role ?? null, activeRole: identity?.activeRole ?? null };

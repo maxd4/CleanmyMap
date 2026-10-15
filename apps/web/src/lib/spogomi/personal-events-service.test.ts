@@ -55,6 +55,7 @@ const event = (id: string, actionId: string, visibility: "private" | "published"
   state: "draft",
   starts_at: `2026-06-${id === "event-a" ? "02" : "03"}T10:00:00.000Z`,
   ends_at: null,
+  official_timezone: "Europe/Paris",
   public_visibility: visibility,
   public_results_visibility: "hidden",
 });

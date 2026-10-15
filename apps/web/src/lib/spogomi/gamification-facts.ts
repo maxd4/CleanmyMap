@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { GamificationSourceFact } from "@/lib/gamification/gamification-reconstruction";
 import { readAllSpogomiPages } from "./pagination";
 import { isEligibleSpogomiMissionParticipant, type SpogomiRecognitionParticipant } from "./recognition";
+import { formatCivilDateInTimeZone } from "@/lib/time/civil-date";
 
 type Row = Record<string, unknown>;
 
@@ -75,7 +76,7 @@ export async function loadSpogomiFirstRefereeFact(supabase: SupabaseClient, user
     const startsAt = typeof event.starts_at === "string" ? event.starts_at : String(mission.certified_at ?? "9999-12-31");
     const timezone = typeof event.official_timezone === "string" ? event.official_timezone : "UTC";
     let localDate = "9999-12-31";
-    try { localDate = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(startsAt)); } catch { /* invalid legacy timezone falls behind valid official facts */ }
+    try { localDate = formatCivilDateInTimeZone(startsAt, timezone); } catch { /* invalid legacy timezone falls behind valid official facts */ }
     return { mission, event, startsAt, localDate };
   }).sort((left, right) => `${left.localDate}:${left.startsAt}:${String(left.mission.certified_at ?? "")}:${String(left.mission.id)}`.localeCompare(`${right.localDate}:${right.startsAt}:${String(right.mission.certified_at ?? "")}:${String(right.mission.id)}`));
   const mission = ordered[0]?.mission;

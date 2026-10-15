@@ -45,6 +45,7 @@ export type SpogomiPublicEvent = {
   lifecycle: SpogomiPublicLifecycle;
   startsAt: string;
   endsAt: string | null;
+  officialTimezone: string;
   actionHref: string | null;
   divisions: SpogomiPublicDivision[];
   teams: SpogomiPublicTeam[];
@@ -63,6 +64,7 @@ type PublicEventRow = {
   state: SpogomiEventState;
   starts_at: string;
   ends_at: string | null;
+  official_timezone: string | null;
   action_id: string;
   public_results_visibility: "hidden" | "provisional" | "certified";
 };
@@ -145,6 +147,7 @@ function mapEvent(
     lifecycle: classifySpogomiPublicLifecycle(row.starts_at, row.ends_at, row.state),
     startsAt: row.starts_at,
     endsAt: row.ends_at,
+    officialTimezone: row.official_timezone || "Europe/Paris",
     actionHref: publishableActionIds.has(row.action_id)
       ? `/actions/map?actionId=${encodeURIComponent(row.action_id)}`
       : null,
@@ -160,7 +163,7 @@ function mapEvent(
 async function loadPublishedRows(supabase: SupabaseClient, slug?: string): Promise<PublicEventRow[]> {
   let query = supabase
     .from("spogomi_events")
-    .select("id, event_slug, name, location_label, mode, state, starts_at, ends_at, action_id, public_results_visibility")
+    .select("id, event_slug, name, location_label, mode, state, starts_at, ends_at, official_timezone, action_id, public_results_visibility")
     .eq("public_visibility", "published")
     .neq("state", "cancelled")
     .not("event_slug", "is", null)

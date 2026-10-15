@@ -7,16 +7,20 @@ import { ArrowRight, CalendarDays, MapPin, Plus, ShieldCheck } from "lucide-reac
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import type { EventRow } from "@/lib/spogomi/preparation-service";
+import { formatDateTimeInTimeZone } from "@/lib/time/civil-date";
 import {
   reuseOrCreateSpogomiCreationAttempt,
   type SpogomiCreationAttempt,
   type SpogomiCreationPayload,
 } from "./spogomi-organizer-dashboard.creation";
 
-function formatDate(value: string | null) {
+function formatDate(value: string | null, timeZone: string | null | undefined) {
   if (!value) return "Date à préciser";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Date indisponible" : new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(date);
+  try {
+    return formatDateTimeInTimeZone(value, timeZone || "Europe/Paris", { dateStyle: "long", timeStyle: "short" });
+  } catch {
+    return "Date indisponible";
+  }
 }
 
 function inputClassName() {
@@ -51,15 +55,13 @@ export function SpogomiOrganizerDashboard({
     const form = new FormData(formElement);
     const startsAt = String(form.get("startsAt") ?? "");
     const endsAt = String(form.get("endsAt") ?? "");
-    const startsAtDate = new Date(startsAt);
-    const endsAtDate = endsAt ? new Date(endsAt) : null;
-    if (!startsAt || Number.isNaN(startsAtDate.getTime()) || (endsAt && Number.isNaN(endsAtDate?.getTime()))) {
+    if (!startsAt) {
       setError("Saisissez une date de début valide et, si nécessaire, une date de fin valide.");
       submissionInFlightRef.current = false;
       setPending(false);
       return;
     }
-    if (endsAtDate && endsAtDate < startsAtDate) {
+    if (endsAt && endsAt < startsAt) {
       setError("La date de fin doit être postérieure ou égale au début.");
       submissionInFlightRef.current = false;
       setPending(false);
@@ -70,8 +72,8 @@ export function SpogomiOrganizerDashboard({
       name: String(form.get("name") ?? ""),
       locationLabel: String(form.get("locationLabel") ?? ""),
       mode: String(form.get("mode") ?? "casual") as SpogomiCreationPayload["mode"],
-      startsAt: startsAtDate.toISOString(),
-      endsAt: endsAtDate ? endsAtDate.toISOString() : null,
+      startsAt,
+      endsAt: endsAt || null,
     };
     const attempt = reuseOrCreateSpogomiCreationAttempt(
       creationAttemptRef.current,
@@ -153,7 +155,7 @@ export function SpogomiOrganizerDashboard({
                   <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700">{event.mode === "mixed" ? "Casual & World Cup" : event.mode === "world_cup" ? "World Cup" : "Casual"}</span>
                 </div>
                 <div className="space-y-2 text-sm text-slate-700">
-                  <p className="flex items-center gap-2"><CalendarDays size={15} className="text-emerald-700" />{formatDate(event.starts_at)}</p>
+                  <p className="flex items-center gap-2"><CalendarDays size={15} className="text-emerald-700" />{formatDate(event.starts_at, event.official_timezone)}</p>
                   <p className="flex items-center gap-2"><MapPin size={15} className="text-emerald-700" />{event.location_label}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">

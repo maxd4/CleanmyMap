@@ -8,7 +8,7 @@ import type { SpogomiEventMode } from "./types";
 const EVENT_ID_BATCH_SIZE = 100;
 
 const PERSONAL_EVENT_SELECT =
-  "id, action_id, name, event_slug, mode, state, starts_at, ends_at, public_visibility, public_results_visibility";
+  "id, action_id, name, event_slug, mode, state, starts_at, ends_at, official_timezone, public_visibility, public_results_visibility";
 
 type PersonalEventRow = {
   id: string;
@@ -19,6 +19,7 @@ type PersonalEventRow = {
   state: string;
   starts_at: string;
   ends_at: string | null;
+  official_timezone: string | null;
   public_visibility: "private" | "published";
   public_results_visibility: "hidden" | "provisional" | "certified";
 };
@@ -49,6 +50,7 @@ export type SpogomiPersonalEvent = {
   state: string;
   startsAt: string;
   endsAt: string | null;
+  officialTimezone: string;
   publicVisibility: "private" | "published";
   publicResultsVisibility: "hidden" | "provisional" | "certified";
   relations: readonly SpogomiPersonalRelation[];
@@ -216,6 +218,7 @@ function toPersonalEvent(
     state: String(event.state),
     startsAt: String(event.starts_at),
     endsAt: event.ends_at ? String(event.ends_at) : null,
+    officialTimezone: event.official_timezone || "Europe/Paris",
     publicVisibility: event.public_visibility,
     publicResultsVisibility: event.public_results_visibility,
     relations: orderedRelations,

@@ -15,6 +15,7 @@ import { getServerLocale } from "@/lib/server-preferences";
 import { SPOGOMI_EXTERNAL_EVENTS, SPOGOMI_INTERNATIONAL_NEWS, SPOGOMI_INTERNATIONAL_SOURCES } from "@/lib/spogomi/international-content";
 import { listPublishedSpogomiEvents, type SpogomiPublicLifecycle } from "@/lib/spogomi/public-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
+import { formatDateTimeInTimeZone } from "@/lib/time/civil-date";
 
 export const metadata: Metadata = {
   title: "Événements SPOGOMI",
@@ -29,8 +30,8 @@ const lifecycleLabels: Record<SpogomiPublicLifecycle, string> = {
   finished: "Terminé",
 };
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(new Date(value));
+function formatDate(value: string, timeZone: string) {
+  return formatDateTimeInTimeZone(value, timeZone, { dateStyle: "long" });
 }
 
 export default async function SpogomiIndexPage() {
@@ -97,7 +98,7 @@ export default async function SpogomiIndexPage() {
                     </span>
                   </div>
                   <div className="space-y-2 text-sm text-slate-700">
-                    <p className="flex items-center gap-2"><CalendarDays size={15} className="text-emerald-700" />{formatDate(event.startsAt)}</p>
+                    <p className="flex items-center gap-2"><CalendarDays size={15} className="text-emerald-700" />{formatDate(event.startsAt, event.officialTimezone)}</p>
                     <p className="flex items-center gap-2"><MapPin size={15} className="text-emerald-700" />{event.locationLabel}</p>
                   </div>
                   <Link href={`/spogomi/${encodeURIComponent(event.slug)}`} className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">

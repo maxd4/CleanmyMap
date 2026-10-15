@@ -15,6 +15,7 @@ function event(id: string, relations: SpogomiPersonalEvent["relations"]): Spogom
     state: "draft",
     startsAt: "2026-06-02T10:00:00.000Z",
     endsAt: "2026-06-02T12:00:00.000Z",
+    officialTimezone: "Europe/Paris",
     publicVisibility: "private",
     publicResultsVisibility: "hidden",
     relations,
