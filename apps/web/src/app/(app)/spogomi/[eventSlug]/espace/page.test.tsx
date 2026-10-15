@@ -4,11 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccess: vi.fn(),
+  getCurrentUserActiveRole: vi.fn(),
   getSupabaseServerClient: vi.fn(),
   resolveSpogomiEventAccessBySlug: vi.fn(),
 }));
 
-vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
+vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess, getCurrentUserActiveRole: mocks.getCurrentUserActiveRole }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: mocks.getSupabaseServerClient }));
 vi.mock("@/lib/spogomi/authorization", () => ({
   hasSpogomiCapability: (access: { capabilities: Set<string> }, capability: string) => access.capabilities.has(capability),
@@ -26,6 +27,7 @@ import SpogomiEventSpacePage from "./page";
 describe("/spogomi/[eventSlug]/espace", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.getCurrentUserActiveRole.mockResolvedValue("benevole");
     mocks.getSupabaseServerClient.mockReturnValue({ server: true });
   });
 

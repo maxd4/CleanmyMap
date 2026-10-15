@@ -51,11 +51,12 @@ function modeLabel(value: string): string {
   return "Casual";
 }
 
-export function SpogomiEventCockpit({ event, role, capabilities }: { event: CockpitEvent; role: SpogomiEventAccessRole | null; capabilities: readonly SpogomiCapability[] }) {
+export function SpogomiEventCockpit({ event, role, capabilities, activeRole }: { event: CockpitEvent; role: SpogomiEventAccessRole | null; capabilities: readonly SpogomiCapability[]; activeRole?: string | null }) {
   const capabilitySet = useMemo(() => new Set(capabilities), [capabilities]);
   const organizer = capabilitySet.has("manage");
   const referee = capabilitySet.has("arbitrate");
   const observer = capabilitySet.has("observe");
+  const showAdminTeamJoinRequests = activeRole === "admin" || activeRole === "max";
   const [activeSection, setActiveSection] = useState<CockpitSection>("presentation");
   const sections = useMemo<CockpitSection[]>(() => {
     const next: CockpitSection[] = ["presentation"];
@@ -87,7 +88,7 @@ export function SpogomiEventCockpit({ event, role, capabilities }: { event: Cock
       {sections.includes("results") ? <section id="results" hidden={activeSection !== "results"} aria-labelledby="spogomi-results-title"><h2 id="spogomi-results-title" className="sr-only">Résultats</h2>{activeSection === "results" ? (organizer ? <SpogomiPreparationWorkspace eventId={event.id} section="results" showHeader={false} /> : <SpogomiObserverCockpitPanel eventId={event.id} view="results" />) : null}</section> : null}
       {sections.includes("arbitration") ? <section id="arbitration" hidden={activeSection !== "arbitration"} aria-labelledby="spogomi-arbitration-title"><h2 id="spogomi-arbitration-title" className="sr-only">Arbitrage</h2>{activeSection === "arbitration" ? (organizer ? <SpogomiPreparationWorkspace eventId={event.id} section="arbitration" showHeader={false} /> : <CmmCard tone="emerald" variant="glass" className="space-y-4 p-5"><SpogomiResultReviewPanel eventId={event.id} allowMutations={referee} allowDivisionSelection /></CmmCard>) : null}</section> : null}
       {sections.includes("bilan") ? <section id="bilan" hidden={activeSection !== "bilan"} aria-labelledby="spogomi-bilan-title"><h2 id="spogomi-bilan-title" className="sr-only">Bilan</h2>{activeSection === "bilan" ? <SpogomiPreparationWorkspace eventId={event.id} section="bilan" showHeader={false} /> : null}</section> : null}
-      {sections.includes("settings") ? <section id="settings" hidden={activeSection !== "settings"} aria-labelledby="spogomi-settings-title"><h2 id="spogomi-settings-title" className="sr-only">Paramètres</h2>{activeSection === "settings" ? <SpogomiPreparationWorkspace eventId={event.id} section="settings" showHeader={false} /> : null}</section> : null}
+      {sections.includes("settings") ? <section id="settings" hidden={activeSection !== "settings"} aria-labelledby="spogomi-settings-title"><h2 id="spogomi-settings-title" className="sr-only">Paramètres</h2>{activeSection === "settings" ? <SpogomiPreparationWorkspace eventId={event.id} section="settings" showHeader={false} showAdminTeamJoinRequests={showAdminTeamJoinRequests} /> : null}</section> : null}
     </div>
   </main>;
 }

@@ -13,6 +13,7 @@ import type { SpogomiPublicGalleryPhoto } from "./photo-gallery";
 export type SpogomiPublicLifecycle = "upcoming" | "in_progress" | "finished";
 
 type SpogomiPublicTeam = {
+  id: string;
   divisionId: string;
   divisionType: "casual" | "world_cup";
   teamNumber: number;
@@ -190,7 +191,7 @@ export async function loadPublishedSpogomiEventBySlug(
     supabase.from("spogomi_divisions").select("id, division_type").eq("event_id", row.id).order("division_type"),
     supabase
       .from("spogomi_teams")
-      .select("division_id, team_number, public_name, composition_state")
+      .select("id, division_id, team_number, public_name, composition_state")
       .eq("event_id", row.id)
       .order("team_number", { ascending: true }),
     supabase
@@ -224,6 +225,7 @@ export async function loadPublishedSpogomiEventBySlug(
     row,
     actionIds,
     (teamsResult.data ?? []).map((team) => ({
+      id: String(team.id),
       divisionId: String(team.division_id),
       divisionType: (divisionsResult.data ?? []).find((division) => String(division.id) === String(team.division_id))?.division_type === "world_cup" ? "world_cup" as const : "casual" as const,
       teamNumber: Number(team.team_number),

@@ -8,6 +8,7 @@ import { SpogomiIdentityLinkCard } from "@/components/spogomi/spogomi-identity-l
 import { SpogomiVolunteerContributionsCard } from "@/components/spogomi/spogomi-volunteer-contributions-card";
 import { SpogomiPublicResults } from "@/components/spogomi/spogomi-public-results";
 import { SpogomiPhotoGallery } from "@/components/spogomi/spogomi-photo-gallery";
+import { SpogomiTeamJoinButton } from "@/components/spogomi/spogomi-team-join-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { loadPublishedSpogomiEventBySlug } from "@/lib/spogomi/public-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -72,7 +73,7 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
             ) : null}
             <CmmCard tone="emerald" variant="glass" className="space-y-4 p-5">
               <div><h2 className="text-xl font-black text-emerald-950">Équipes</h2><p className="cmm-text-body mt-1 text-slate-900">Seuls les noms publics d’équipe sont affichés. Le roster nominatif reste privé.</p></div>
-              {event.teams.length ? <div className="grid gap-3 sm:grid-cols-2">{event.teams.map((team) => <div key={`${team.divisionId}-${team.teamNumber}`} className="rounded-xl border border-emerald-100 bg-white/75 p-3"><p className="text-xs font-black uppercase tracking-wide text-emerald-700">{team.divisionType === "world_cup" ? "World Cup" : "Casual"}</p><p className="font-bold text-slate-900">{team.publicName}</p><p className="mt-1 text-xs text-slate-500">Équipe {team.teamNumber}</p></div>)}</div> : <p className="rounded-xl border border-dashed border-emerald-200 p-4 text-sm text-slate-600">La composition publique n’est pas encore disponible.</p>}
+              {event.teams.length ? <div className="grid gap-3 sm:grid-cols-2">{event.teams.map((team) => <div key={`${team.divisionId}-${team.teamNumber}`} className="rounded-xl border border-emerald-100 bg-white/75 p-3"><p className="text-xs font-black uppercase tracking-wide text-emerald-700">{team.divisionType === "world_cup" ? "World Cup" : "Casual"}</p><p className="font-bold text-slate-900">{team.publicName}</p><p className="mt-1 text-xs text-slate-500">Équipe {team.teamNumber}</p><div className="mt-3"><SpogomiTeamJoinButton eventId={event.id} teamId={team.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} /></div></div>)}</div> : <p className="rounded-xl border border-dashed border-emerald-200 p-4 text-sm text-slate-600">La composition publique n’est pas encore disponible.</p>}
             </CmmCard>
             {event.route ? <CmmCard tone="amber" variant="glass" className="space-y-3 p-5"><h2 className="text-xl font-black text-amber-950">Parcours officiel de référence</h2><p className="cmm-text-body text-slate-900">{event.route.fileName} · {event.route.referenceDistanceKm} km calculés depuis le fichier. Cette géométrie ne constitue pas une trace réellement parcourue.</p><SpogomiPublicRouteMap coordinates={event.route.coordinates} /></CmmCard> : <CmmCard tone="slate" variant="glass" className="border-dashed p-5"><p className="font-bold text-slate-900">Aucun parcours officiel publié.</p></CmmCard>}
             <SpogomiPublicResults eventSlug={event.slug} initial={event.results} />

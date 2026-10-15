@@ -313,6 +313,32 @@ aucune recherche par nom/prénom, lecture du fichier Excel ou exposition d'email
 ne participe à la décision. L'organisateur habilité peut émettre un code depuis
 son parcours privé, et sa remise reste manuelle/hors bande.
 
+Une seconde voie, distincte de l'assistance « code perdu », permet depuis une
+fiche d'événement publiée de demander à rejoindre une équipe publique. Elle
+requiert AuthN et ne crée ni participant ni équipe : la demande reste `pending`,
+est personnelle au compte et à l'événement, peut être annulée par son auteur et
+ne modifie aucun score, classement, présence, badge ou total environnemental.
+La file privée est réservée aux rôles actifs `admin` et `max` ; un organisateur,
+coorganisateur, arbitre, observateur ou coordinateur non admin ne peut ni
+accepter ni refuser cette demande.
+
+L'acceptation exige la sélection d'une identité `spogomi_participants` déjà
+existante et appartenant à l'équipe demandée, ainsi qu'une note de vérification
+indépendante. Le nom, le prénom, l'adresse électronique ou une référence de
+billet peuvent orienter une recherche privée, mais ne constituent jamais une
+preuve automatique. La transaction vérifie aussi l'événement, l'équipe, le
+statut d'inscription, l'absence de liaison concurrente et l'unicité du compte
+dans l'événement ; elle lie uniquement `clerk_id` et `account_link_status` de
+l'identité sélectionnée, sans modifier `team_id`, les compositions verrouillées,
+les résultats ou `action_participants`. Les transitions et la liaison sont
+auditées ensemble, avec reprise idempotente et protection contre les courses.
+
+Les événements privés ne sont jamais énumérés par cette voie. L'API publique
+retourne seulement l'état personnel de la demande pour un compte authentifié ;
+la lecture de la file, du compte demandeur et du roster reste server-only et
+réservée à `admin|max`. Les codes individuels restent la première méthode de
+liaison et conservent leurs garanties existantes.
+
 Cette liaison met à jour uniquement l'identité `spogomi_participants`. Elle ne
 atteste ni la présence ni la participation CleanMyMap. Après liaison, le serveur
 réutilise le parcours canonique de l'action : `action_registrations` en phase

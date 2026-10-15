@@ -53,7 +53,7 @@ function makeSupabase() {
       then: (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => {
         if (table === "spogomi_events") return Promise.resolve({ data: [row], error: null }).then(resolve, reject);
         if (table === "actions") return Promise.resolve({ data: [{ id: "action-1", status: "approved", published_at: "2026-09-01", moderation_visibility: "public" }], error: null }).then(resolve, reject);
-        if (table === "spogomi_teams") return Promise.resolve({ data: [{ team_number: 1, public_name: "Alpha", composition_state: "locked" }], error: null }).then(resolve, reject);
+        if (table === "spogomi_teams") return Promise.resolve({ data: [{ id: "team-1", division_id: "division-1", team_number: 1, public_name: "Alpha", composition_state: "locked" }], error: null }).then(resolve, reject);
         return Promise.resolve({ data: [], error: null }).then(resolve, reject);
       },
     };

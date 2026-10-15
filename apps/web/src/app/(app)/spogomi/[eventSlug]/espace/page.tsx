@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { SpogomiEventCockpit } from "@/components/spogomi/spogomi-event-cockpit";
-import { requireAuthenticatedAccess } from "@/lib/authz";
+import { getCurrentUserActiveRole, requireAuthenticatedAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSpogomiCapability, resolveSpogomiEventAccessBySlug } from "@/lib/spogomi/authorization";
 
@@ -23,6 +23,7 @@ export default async function SpogomiEventSpacePage({ params }: Props) {
     userId: access.userId,
   });
   if (!eventAccess || (!hasSpogomiCapability(eventAccess, "observe") && !hasSpogomiCapability(eventAccess, "manage"))) notFound();
+  const activeRole = await getCurrentUserActiveRole();
 
   return (
     <>
@@ -44,6 +45,7 @@ export default async function SpogomiEventSpacePage({ params }: Props) {
         }}
         role={eventAccess.role}
         capabilities={[...eventAccess.capabilities]}
+        activeRole={activeRole}
       />
     </>
   );
