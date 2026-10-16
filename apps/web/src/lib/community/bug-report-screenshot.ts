@@ -241,7 +241,7 @@ async function clearScreenshotColumns(
   supabase: SupabaseClient,
   feedbackId: string,
   expected: { path: string; state: "pending" | "failed" } | undefined = undefined,
-): Promise<void> {
+): Promise<boolean> {
   let query = supabase
     .from("community_bug_reports")
     .update({
@@ -260,39 +260,60 @@ async function clearScreenshotColumns(
       .eq("screenshot_upload_state", expected.state)
       .eq("screenshot_storage_path", expected.path);
   }
-  const result = await query;
+  const result = await query.select("id").maybeSingle();
   if (result.error) {
     throw storageError("La référence de capture ne peut pas être nettoyée.");
   }
+  return Boolean(result.data);
 }
 
 async function markScreenshotFailed(
   supabase: SupabaseClient,
   feedbackId: string,
   path: string,
-): Promise<void> {
+): Promise<boolean> {
   const result = await supabase
     .from("community_bug_reports")
     .update({ screenshot_upload_state: "failed" })
     .eq("id", feedbackId)
     .eq("screenshot_upload_state", "pending")
-    .eq("screenshot_storage_path", path);
+    .eq("screenshot_storage_path", path)
+    .select("id")
+    .maybeSingle();
   if (result.error) {
     throw storageError("L'état de la capture ne peut pas être mis à jour.");
   }
+  return Boolean(result.data);
 }
 
 async function markFailedAndCleanup(
   supabase: SupabaseClient,
   feedbackId: string,
+  attemptId: string,
   path: string,
 ): Promise<void> {
-  const removed = await removeStorageObject(supabase, path).catch(() => false);
-  if (removed) {
-    await clearScreenshotColumns(supabase, feedbackId, { path, state: "pending" });
-    return;
+  const markedFailed = await markScreenshotFailed(supabase, feedbackId, path);
+  if (!markedFailed) {
+    let latest: BugReportScreenshotRow | null = null;
+    try {
+      latest = await loadReportForAttempt(
+        supabase,
+        feedbackId,
+        attemptId,
+      );
+    } catch (error) {
+      if (!(error instanceof BugReportScreenshotError) || error.code !== "not_found") {
+        throw error;
+      }
+    }
+    if (!latest || latest.screenshot_upload_state !== "failed") return;
   }
-  await markScreenshotFailed(supabase, feedbackId, path);
+
+  const removed = await removeStorageObject(supabase, path).catch(() => false);
+  if (!removed) {
+    throw storageError("La capture échouée ne peut pas être supprimée.");
+  }
+  await clearScreenshotColumns(supabase, feedbackId, { path, state: "failed" });
 }
 
 async function removeAllBugReportScreenshotObjects(
@@ -478,7 +499,7 @@ export async function createBugReportScreenshotUploadIntent(
       row.screenshot_storage_path,
     ).catch(() => false);
     if (!oldObjectRemoved) {
-      await markFailedAndCleanup(supabase, params.feedbackId, path);
+      await markFailedAndCleanup(supabase, params.feedbackId, attemptId, path);
       throw storageError("La capture précédente ne peut pas être nettoyée.");
     }
   }
@@ -487,7 +508,7 @@ export async function createBugReportScreenshotUploadIntent(
     .from(BUG_REPORT_SCREENSHOT_BUCKET)
     .createSignedUploadUrl(path, { upsert: false });
   if (signedUpload.error || !signedUpload.data?.token) {
-    await markFailedAndCleanup(supabase, params.feedbackId, path);
+    await markFailedAndCleanup(supabase, params.feedbackId, attemptId, path);
     throw storageError("La capture ne peut pas recevoir son accès d'upload.");
   }
 
@@ -518,7 +539,12 @@ export async function finalizeBugReportScreenshot(
   try {
     await validateStoredObject(supabase, row);
   } catch (error) {
-    await markFailedAndCleanup(supabase, params.feedbackId, row.screenshot_storage_path);
+    await markFailedAndCleanup(
+      supabase,
+      params.feedbackId,
+      params.attemptId,
+      row.screenshot_storage_path,
+    );
     throw error;
   }
 
@@ -604,15 +630,32 @@ export async function cleanupBugReportScreenshotAttempt(
     throw new BugReportScreenshotError("La tentative de capture n'est plus nettoyable.", "not_found");
   }
 
-  const removed = await removeStorageObject(supabase, row.screenshot_storage_path);
-  if (removed) {
-    await clearScreenshotColumns(supabase, params.feedbackId, {
-      path: row.screenshot_storage_path,
-      state: row.screenshot_upload_state,
-    });
-    return;
+  if (row.screenshot_upload_state === "pending") {
+    const markedFailed = await markScreenshotFailed(
+      supabase,
+      params.feedbackId,
+      row.screenshot_storage_path,
+    );
+    if (!markedFailed) {
+      const latest = await loadReportForAttempt(supabase, params.feedbackId, params.attemptId);
+      if (latest.screenshot_upload_state !== "failed") {
+        throw new BugReportScreenshotError(
+          "La tentative de capture n'est plus nettoyable.",
+          "not_found",
+        );
+      }
+    }
   }
-  await markScreenshotFailed(supabase, params.feedbackId, row.screenshot_storage_path);
+
+  const removed = await removeStorageObject(supabase, row.screenshot_storage_path).catch(() => false);
+  if (!removed) {
+    throw storageError("La capture échouée ne peut pas être supprimée.");
+  }
+  const cleared = await clearScreenshotColumns(supabase, params.feedbackId, {
+    path: row.screenshot_storage_path,
+    state: "failed",
+  });
+  if (!cleared) return;
 }
 
 export async function removeBugReportScreenshotForDeletedReport(
