@@ -9,9 +9,10 @@ import {
   type SetStateAction,
 } from "react";
 import { useUser } from "@clerk/nextjs";
-import { ArrowRight, Mic, Square } from "lucide-react";
+import { ArrowRight, BadgeCheck, Mic, Square } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
 import type { QuestionnaireConfig } from "./questionnaire-config";
@@ -299,6 +300,61 @@ export function QuestionnaireCard({
       {isLoaded && isSignedIn ? (
         <form onSubmit={handleSubmit} className="space-y-4">
           {questionnaire.id !== "collaboration" ? (
+            <div className="rounded-2xl border border-amber-200/70 bg-amber-50/70 px-4 py-3 text-slate-700" role="note">
+              <div className="flex items-start gap-3">
+                <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-slate-900">
+                    {locale === "fr" ? "Votre contribution peut être récompensée" : "Your contribution may be rewarded"}
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed">
+                    {locale === "fr"
+                      ? "Un bug ou une amélioration jugé pertinent par l'équipe CleanMyMap compte dans votre progression Amélioration du produit. Débloquez des badges et gagnez des XP en atteignant de nouveaux paliers."
+                      : "A bug or improvement judged relevant by the CleanMyMap team counts toward your Product improvement progression. Unlock badges and earn XP by reaching new tiers."}
+                  </p>
+                  <CmmDisclosure
+                    tone="amber"
+                    size="sm"
+                    className="mt-2"
+                    summary={locale === "fr" ? "Conditions de reconnaissance" : "Recognition conditions"}
+                  >
+                    <ul className="mt-2 list-disc space-y-1 pl-5 leading-relaxed">
+                      <li>
+                        {locale === "fr"
+                          ? "Le retour doit être utile et suffisamment précis."
+                          : "The feedback must be useful and sufficiently precise."}
+                      </li>
+                      <li>
+                        {locale === "fr"
+                          ? "La pertinence est validée par le compte autorisé max."
+                          : "Relevance is reviewed by the authorized max account."}
+                      </li>
+                      <li>
+                        {locale === "fr"
+                          ? "Les doublons et les propositions non retenues ne comptent pas."
+                          : "Duplicates and proposals that are not retained do not count."}
+                      </li>
+                      <li>
+                        {locale === "fr"
+                          ? "L'envoi seul ne garantit ni badge ni XP : les XP sont attribués aux paliers prévus par les règles actuelles."
+                          : "Sending alone does not guarantee a badge or XP: XP is awarded at the tiers defined by the current rules."}
+                      </li>
+                    </ul>
+                  </CmmDisclosure>
+                  <CmmButton
+                    href="/sections/gamification"
+                    tone="secondary"
+                    variant="pill"
+                    className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-xl border border-amber-300/80 bg-white/70 px-3 py-1.5 text-xs font-bold text-amber-900 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+                  >
+                    {locale === "fr" ? "Découvrir les badges" : "Discover badges"}
+                    <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </CmmButton>
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {questionnaire.id !== "collaboration" ? (
             <div className="space-y-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <p className="text-sm leading-relaxed text-slate-300">
                 {locale === "fr"
@@ -487,11 +543,27 @@ export function QuestionnaireCard({
               aria-live="polite"
             >
               {questionnaire.success[locale]}
+              {questionnaire.id !== "collaboration" ? (
+                <span className="mt-1 block text-emerald-100/90">
+                  {locale === "fr"
+                    ? "Il sera examiné pour déterminer s'il peut être comptabilisé dans votre progression Amélioration du produit."
+                    : "It will be reviewed to determine whether it can count toward your Product improvement progression."}
+                </span>
+              ) : null}
               {requestId ? (
                 <span className="mt-1 block text-emerald-100/80">
                   {locale === "fr" ? "Référence" : "Reference"}: {requestId}
                 </span>
               ) : null}
+              <CmmButton
+                href="/sections/feedback#mes-retours"
+                tone="secondary"
+                variant="pill"
+                className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-xl border border-emerald-200/50 bg-white/10 px-3 py-1.5 text-xs font-bold text-emerald-50 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/60"
+              >
+                {locale === "fr" ? "Voir mes retours" : "View my feedback"}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </CmmButton>
               {screenshotError ? (
                 <span className="mt-2 block text-amber-100" role="alert">
                   Le retour a été transmis, mais la capture n&apos;a pas pu être jointe : {screenshotError}

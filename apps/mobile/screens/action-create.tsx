@@ -59,6 +59,7 @@ const EMPTY: Draft = {
 export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
   const [section, setSection] = useState<Section>('essentiel')
   const [draft, setDraft] = useState<Draft>(EMPTY)
+  const [draftHydrated, setDraftHydrated] = useState(false)
   const [actionId, setActionId] = useState<string | null>(null)
   const [published, setPublished] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -66,21 +67,31 @@ export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    void AsyncStorage.getItem(STORAGE_KEY).then((value) => {
-      if (!value) return
+    let active = true
+    const restoreDraft = async () => {
       try {
-        const parsed = JSON.parse(value) as { draft?: Draft; actionId?: string | null; section?: Section; published?: boolean }
-        if (parsed.draft) setDraft({ ...EMPTY, ...parsed.draft })
-        if (parsed.actionId) setActionId(parsed.actionId)
-        if (parsed.section && SECTIONS.some((item) => item.id === parsed.section)) setSection(parsed.section)
-        if (parsed.published) setPublished(true)
-      } catch { /* A malformed local draft must not block a new server-backed draft. */ }
-    })
+        const value = await AsyncStorage.getItem(STORAGE_KEY)
+        if (!active || !value) return
+        try {
+          const parsed = JSON.parse(value) as { draft?: Draft; actionId?: string | null; section?: Section; published?: boolean }
+          if (parsed.draft) setDraft({ ...EMPTY, ...parsed.draft })
+          if (parsed.actionId) setActionId(parsed.actionId)
+          if (parsed.section && SECTIONS.some((item) => item.id === parsed.section)) setSection(parsed.section)
+          if (parsed.published) setPublished(true)
+        } catch { /* A malformed local draft must not block a new server-backed draft. */ }
+      } catch { /* A read failure leaves the empty draft available for a retry. */ }
+      finally {
+        if (active) setDraftHydrated(true)
+      }
+    }
+    void restoreDraft()
+    return () => { active = false }
   }, [])
 
   useEffect(() => {
+    if (!draftHydrated) return
     void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ draft, actionId, section, published }))
-  }, [actionId, draft, published, section])
+  }, [actionId, draft, draftHydrated, published, section])
 
   const update = (key: keyof Draft, value: string) => setDraft((current) => ({ ...current, [key]: value }))
   const sectionIndex = SECTIONS.findIndex((item) => item.id === section)

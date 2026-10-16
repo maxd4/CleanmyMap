@@ -161,11 +161,11 @@ function FeedbackHistoryItem({ item, locale }: { item: PersonalFeedbackItem; loc
           <p className="mt-2 text-sm font-semibold text-slate-700">
             {FEEDBACK_QUALIFICATION_LABELS[item.qualificationStatus][locale]}
           </p>
-          {item.qualificationStatus === "accepted" ? (
+          {item.qualificationStatus === "accepted" && item.type !== "collaboration" ? (
             <p className="mt-1 text-xs font-medium text-slate-600">
               {locale === "fr"
-                ? "Comptabilisé dans la progression Amélioration du produit."
-                : "Counted in the Product improvement progression."}
+                ? "Contribution reconnue pour la progression Amélioration du produit."
+                : "Contribution recognized for the Product improvement progression."}
             </p>
           ) : null}
           {item.qualificationReason ? (

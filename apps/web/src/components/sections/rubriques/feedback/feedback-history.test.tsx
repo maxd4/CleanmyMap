@@ -94,7 +94,7 @@ describe("FeedbackHistory", () => {
     });
 
     expect(textOf(renderer)).toContain("Répondu");
-    expect(textOf(renderer)).toContain("Comptabilisé dans la progression Amélioration du produit.");
+    expect(textOf(renderer)).toContain("Contribution reconnue pour la progression Amélioration du produit.");
     expect(textOf(renderer)).not.toContain("private@example.com");
     const loadMore = renderer.root.findAllByType("button").find((button) =>
       String(button.props.children).includes("Voir plus"),
@@ -141,6 +141,39 @@ describe("FeedbackHistory", () => {
     });
     expect(textOf(renderer)).toContain("Impossible de charger vos retours.");
     expect(textOf(renderer)).not.toContain("private storage provider detail");
+  });
+
+  it("does not present collaboration as product-feedback recognition", async () => {
+    useUserMock.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: true,
+      user: { id: "owner-1" },
+    });
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({
+        status: "ok",
+        items: [{
+          id: "collaboration-1",
+          title: "Partenariat local",
+          type: "collaboration",
+          createdAt: "2026-08-27T11:00:00.000Z",
+          status: "treated",
+          qualificationStatus: "accepted",
+          qualificationReason: "Demande reçue.",
+        }],
+        nextCursor: null,
+        hasMore: false,
+      }),
+    );
+
+    let renderer!: ReactTestRenderer;
+    await act(async () => {
+      renderer = create(<FeedbackHistory locale="fr" />);
+      await Promise.resolve();
+    });
+
+    expect(textOf(renderer)).toContain("Pertinent");
+    expect(textOf(renderer)).not.toContain("Contribution reconnue pour la progression Amélioration du produit.");
   });
 
   it("does not render a previous owner's history while identities change", async () => {

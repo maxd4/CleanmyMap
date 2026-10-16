@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { Flag, Sparkles, Target, TrendingUp } from "lucide-react";
+import { ArrowRight, BadgeCheck, Flag, Sparkles, Target, TrendingUp } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { GamificationPanelLoading, SectionLabel } from "./gamification-shell";
 import { focusGamificationTarget } from "./gamification-focus";
 import type {
@@ -145,6 +146,35 @@ function ProgressionRewardDetails({ item, fr }: { item: GamificationSummaryProgr
   );
 }
 
+function ProductFeedbackGuidance({ fr }: { fr: boolean }) {
+  return (
+    <div className="mt-4 rounded-2xl border border-[#f1d9a9] bg-[#fffaf0] p-3 text-xs leading-5 text-[#765f59]">
+      <div className="flex items-start gap-2.5">
+        <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#b7791f]" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="font-bold text-[#5c3d1d]">
+            {fr ? "Comment contribuer" : "How to contribute"}
+          </p>
+          <p className="mt-1">
+            {fr
+              ? "Envoyez un Bug, une Idée ou une Amélioration utile et suffisamment précise. La pertinence est validée par le compte autorisé max ; les doublons et propositions non retenues ne comptent pas. L'envoi seul ne donne pas d'XP."
+              : "Send a useful and sufficiently precise Bug, Idea or Improvement. Relevance is reviewed by the authorized max account; duplicates and proposals that are not retained do not count. Sending alone does not grant XP."}
+          </p>
+          <CmmButton
+            href="/sections/feedback#bug"
+            tone="secondary"
+            variant="pill"
+            className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-xl border border-[#e4c27d] bg-white px-3 py-1.5 text-xs font-bold text-[#7a4d13] transition hover:bg-[#fffdf7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c58a2e]/50"
+          >
+            {fr ? "Envoyer un feedback" : "Send feedback"}
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </CmmButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProgressionItem({ item, fr }: { item: GamificationSummaryProgression; fr: boolean }) {
   return (
     <article id={`progression-${item.id}`} tabIndex={-1} className="scroll-mt-8 rounded-[1.35rem] border border-[#f1dfd8] bg-white p-4 shadow-[0_8px_24px_rgba(126,31,20,0.04)] transition-shadow">
@@ -157,6 +187,7 @@ function ProgressionItem({ item, fr }: { item: GamificationSummaryProgression; f
         isNewSinceLastRulesMigration={item.isNewSinceLastRulesMigration}
         fr={fr}
       />
+      {item.id === "product_feedback" ? <ProductFeedbackGuidance fr={fr} /> : null}
       <ProgressionTierProgress item={item} fr={fr} />
       <ProgressionRewardDetails item={item} fr={fr} />
     </article>

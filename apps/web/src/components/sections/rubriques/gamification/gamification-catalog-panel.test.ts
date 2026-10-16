@@ -37,6 +37,25 @@ function progression(id: "participation" | "organisation" | "exploration", state
   } as const;
 }
 
+function productFeedbackProgression() {
+  return {
+    id: "product_feedback",
+    label: "Amélioration du produit",
+    description: "Retours acceptés.",
+    currentValue: 1,
+    metricLabel: "Feedbacks acceptés",
+    awardCategory: "XP_PROGRESSION",
+    grantsXp: true,
+    xpContribution: 1,
+    currentBadge: { id: "product-feedback-1", label: "Premier retour" },
+    nextBadge: { id: "product-feedback-5", label: "Retour engagé" },
+    progressPercent: 0,
+    state: "in_progress",
+    introducedInRulesRevision: 15,
+    isNewSinceLastRulesMigration: false,
+  } as const;
+}
+
 describe("buildCatalogGroups", () => {
   it("keeps the canonical state while isolating only new untouched mechanics", () => {
     const groups = buildCatalogGroups(summary({
@@ -172,5 +191,20 @@ describe("buildCatalogGroups", () => {
     expect(markup).toContain("+1 XP");
     expect(markup).not.toContain("+0 XP");
     expect(markup).toContain("sans XP supplémentaire");
+  });
+
+  it("explains product feedback criteria and links to the canonical feedback form", () => {
+    const markup = renderToStaticMarkup(createElement(GamificationCatalogPanel, {
+      summary: summary({ progressions: [productFeedbackProgression()] }),
+      loading: false,
+      error: null,
+      locale: "fr",
+    }));
+
+    expect(markup).toContain("Comment contribuer");
+    expect(markup).toContain("La pertinence est validée par le compte autorisé max");
+    expect(markup.replaceAll("&#x27;", "'")).toContain("L'envoi seul ne donne pas d'XP");
+    expect(markup).toContain('href="/sections/feedback#bug"');
+    expect(markup).toContain("Envoyer un feedback");
   });
 });

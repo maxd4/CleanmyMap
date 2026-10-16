@@ -142,7 +142,7 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
   defineCurrentProgression({
     id: "product_feedback",
     label: "Amélioration du produit",
-    description: "Retours Bug, Idée et Amélioration acceptés par la qualification produit.",
+    description: "Retours Bug, Idée et Amélioration suffisamment précis et acceptés par la qualification produit ; les doublons et propositions non retenues ne comptent pas.",
     metric: "accepted_product_feedbacks",
     metricLabel: "Feedbacks acceptés",
     sourceDomain: "community_bug_reports.qualification_status=accepted.distinct(id)",

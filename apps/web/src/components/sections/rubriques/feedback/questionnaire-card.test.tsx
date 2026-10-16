@@ -189,6 +189,75 @@ describe("QuestionnaireCard serialized description validation", () => {
     expect(collaborationRenderer.root.findAllByType("button").filter((button) => button.props.ariaLabel === "Dicter")).toHaveLength(0);
   });
 
+  it("explains product-feedback recognition only on eligible questionnaires", () => {
+    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    const collaborationQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "collaboration")!;
+    let bugRenderer!: ReactTestRenderer;
+    let collaborationRenderer!: ReactTestRenderer;
+
+    act(() => {
+      bugRenderer = create(
+        <QuestionnaireCard
+          questionnaire={bugQuestionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+        />,
+      );
+      collaborationRenderer = create(
+        <QuestionnaireCard
+          questionnaire={collaborationQuestionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+        />,
+      );
+    });
+
+    expect(JSON.stringify(bugRenderer.toJSON())).toContain("Votre contribution peut être récompensée");
+    expect(JSON.stringify(bugRenderer.toJSON())).toContain("Découvrir les badges");
+    expect(
+      bugRenderer.root.findAllByType("button").some(
+        (button) => button.props.href === "/sections/gamification",
+      ),
+    ).toBe(true);
+    expect(JSON.stringify(collaborationRenderer.toJSON())).not.toContain("Votre contribution peut être récompensée");
+    expect(JSON.stringify(collaborationRenderer.toJSON())).not.toContain("Découvrir les badges");
+  });
+
+  it("adds the cautious recognition note after an eligible submission without promising XP", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ requestId: "feedback-1" }),
+    })));
+    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(
+        <QuestionnaireCard
+          questionnaire={bugQuestionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+          initialValues={{
+            context: "J'ouvrais la carte",
+            steps: "La carte ne s'affichait pas",
+            expected: "La carte devait s'afficher",
+          }}
+        />,
+      );
+    });
+
+    await act(async () => {
+      renderer.root.findByType("form").props.onSubmit({ preventDefault: () => undefined });
+      await Promise.resolve();
+    });
+
+    const markup = JSON.stringify(renderer.toJSON());
+    expect(markup).toContain("Il sera examiné pour déterminer s'il peut être comptabilisé");
+    expect(markup).toContain("Voir mes retours");
+    expect(markup).toContain("feedback#mes-retours");
+    expect(markup).not.toContain("+1 XP");
+  });
+
   it("keeps the four collaboration fields and adds an optional editable title", () => {
     const collaboration = QUESTIONNAIRES.find((candidate) => candidate.id === "collaboration")!;
 
