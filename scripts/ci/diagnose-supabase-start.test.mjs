@@ -53,6 +53,20 @@ test("classifies a failed start without exposing the raw Docker message", () => 
   assert.doesNotMatch(diagnostic, /private\/image|super-secret-jwt|secret-build/);
 });
 
+test("keeps classification safe when bounded startup evidence is absent", () => {
+  const input = { log: "opaque startup failure", exitCode: 1 };
+
+  assert.equal(classifySupabaseStartFailure({ ...input, evidence: null }), SUPABASE_START_CATEGORIES.UNCLASSIFIED);
+  assert.equal(classifySupabaseStartFailure(input), SUPABASE_START_CATEGORIES.UNCLASSIFIED);
+  assert.equal(
+    classifySupabaseStartFailure({
+      ...input,
+      evidence: { durationSeconds: 95, dockerContainers: 0, supabaseStatus: "unavailable" },
+    }),
+    SUPABASE_START_CATEGORIES.START_TIMEOUT,
+  );
+});
+
 test("classifies Docker, port, healthcheck, resources and CLI failures", () => {
   const cases = [
     ["Cannot connect to the Docker daemon", SUPABASE_START_CATEGORIES.DOCKER_UNAVAILABLE],

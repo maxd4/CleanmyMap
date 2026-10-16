@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { pageFileToRoute } from "../checks/pages-site-route-drift-routes.mjs";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const OUTPUT_PATH = "documentation/architecture/product-surface-accessibility-audit.md";
@@ -20,7 +21,7 @@ const HUMAN_BEGIN = "<!-- PRODUCT_SURFACE_AUDIT:HUMAN_DECISIONS:BEGIN -->";
 const HUMAN_END = "<!-- PRODUCT_SURFACE_AUDIT:HUMAN_DECISIONS:END -->";
 
 function git(args, root = REPOSITORY_ROOT) {
-  return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+  return execFileSync(gitExecutable(), args, { cwd: root, encoding: "utf8" }).trim();
 }
 
 function resolveRef(ref, root = REPOSITORY_ROOT) {
@@ -118,12 +119,19 @@ function extractRegistryEntries(content, routeConstants = new Map()) {
   const entries = [];
   const lines = String(content).split(/\r?\n/);
   const blocks = [];
-  for (let index = 0; index < lines.length; index += 1) {
-    if (lines[index] !== "  {") continue;
-    const end = lines.findIndex((line, candidate) => candidate > index && (line === "  }," || line === "  }"));
-    if (end === -1) continue;
-    blocks.push(lines.slice(index + 1, end).join("\n"));
-    index = end;
+  let cursor = 0;
+  while (cursor < lines.length) {
+    if (lines[cursor] !== "  {") {
+      cursor += 1;
+      continue;
+    }
+    const end = lines.findIndex((line, candidate) => candidate > cursor && (line === "  }," || line === "  }"));
+    if (end === -1) {
+      cursor += 1;
+      continue;
+    }
+    blocks.push(lines.slice(cursor + 1, end).join("\n"));
+    cursor = end + 1;
   }
   for (const block of blocks) {
     const readProperty = (property) => {

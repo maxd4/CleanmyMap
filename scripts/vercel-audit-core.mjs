@@ -199,6 +199,26 @@ function resolveLocalImport(filePath, specifier, filesByRelPath, view = null) {
   return null;
 }
 
+function isHorizontalWhitespace(character) {
+  return character === " " || character === "\t";
+}
+
+function findFromSpecifier(body) {
+  let cursor = 0;
+  while (cursor < body.length) {
+    while (cursor < body.length && isHorizontalWhitespace(body[cursor])) cursor += 1;
+    const tokenStart = cursor;
+    while (cursor < body.length && !isHorizontalWhitespace(body[cursor])) cursor += 1;
+    if (body.slice(tokenStart, cursor) !== "from") continue;
+    while (cursor < body.length && isHorizontalWhitespace(body[cursor])) cursor += 1;
+    const quote = body[cursor];
+    if (quote !== "'" && quote !== '"') continue;
+    const end = body.indexOf(quote, cursor + 1);
+    return end < 0 ? null : body.slice(cursor + 1, end);
+  }
+  return null;
+}
+
 function collectLocalDependencies(filePath, content, filesByRelPath, view = null) {
   const dependencies = new Set();
 
@@ -208,15 +228,10 @@ function collectLocalDependencies(filePath, content, filesByRelPath, view = null
       const separator = trimmed[keyword.length];
       if (!trimmed.startsWith(keyword) || (separator !== " " && separator !== "\t")) continue;
       const body = trimmed.slice(keyword.length).trimStart();
-      if (/^type(?:[ \t]|$)/.test(body)) continue;
-      const fromMatch = body.match(/[ \t]+from[ \t]+/);
-      if (!fromMatch || fromMatch.index === undefined) continue;
-      const quoted = body.slice(fromMatch.index + fromMatch[0].length).trim();
-      const quote = quoted[0];
-      if (quote !== "'" && quote !== "\"") continue;
-      const end = quoted.indexOf(quote, 1);
-      if (end < 0) continue;
-      const resolved = resolveLocalImport(filePath, quoted.slice(1, end), filesByRelPath, view);
+      if (body === "type" || body.startsWith("type ") || body.startsWith("type\t")) continue;
+      const specifier = findFromSpecifier(body);
+      if (!specifier) continue;
+      const resolved = resolveLocalImport(filePath, specifier, filesByRelPath, view);
       if (resolved) dependencies.add(resolved);
     }
   }

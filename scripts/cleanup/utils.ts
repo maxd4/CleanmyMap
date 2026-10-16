@@ -27,12 +27,10 @@ const CSS_DARK_PATTERNS: Array<[RegExp, DarkReferenceKind]> = [
   [/html\[data-theme=["']dark["']\]/g, 'CSS_SELECTOR'],
   // @custom-variant dark
   [/@custom-variant\s+dark/g, 'CSS_SELECTOR'],
-  // Variables glass dark
-  [/--glass-bg-dark|--glass-border-dark/g, 'CSS_GLASS_DARK'],
   // Classes utilitaires dark dans CSS (ex: .dark:bg-*)
   [/\.dark:/g, 'CSS_UTILITY_CLASS'],
-  // Tokens dark dans @theme inline
-  [/--[^\r\n]*-dark\b/g, 'CSS_GLASS_DARK'],
+  // Tokens dark déclarés comme propriétés CSS, dans une longueur bornée.
+  [/--[A-Za-z0-9_-]{1,128}-dark(?=\s*:)/g, 'CSS_GLASS_DARK'],
 ];
 
 /**

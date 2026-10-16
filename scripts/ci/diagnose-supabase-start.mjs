@@ -49,8 +49,10 @@ export function classifySupabaseStartFailure({
   if (!dockerCommandAvailable || !dockerDaemonAvailable || dockerUnavailablePattern.test(log)) return SUPABASE_START_CATEGORIES.DOCKER_UNAVAILABLE;
   if (!supabaseCliAvailable) return SUPABASE_START_CATEGORIES.CLI_CONFIGURATION_INCOMPATIBILITY;
   for (const [category, pattern] of categoryPatterns) if (pattern.test(log)) return category;
-  if (evidence?.portState === "conflict") return SUPABASE_START_CATEGORIES.PORT_CONFLICT;
-  if (evidence?.durationSeconds >= 90 && evidence.dockerContainers === 0 && evidence.supabaseStatus === "unavailable") return SUPABASE_START_CATEGORIES.START_TIMEOUT;
+  if (evidence && typeof evidence === "object") {
+    if (evidence.portState === "conflict") return SUPABASE_START_CATEGORIES.PORT_CONFLICT;
+    if (evidence.durationSeconds >= 90 && evidence.dockerContainers === 0 && evidence.supabaseStatus === "unavailable") return SUPABASE_START_CATEGORIES.START_TIMEOUT;
+  }
   return SUPABASE_START_CATEGORIES.UNCLASSIFIED;
 }
 
