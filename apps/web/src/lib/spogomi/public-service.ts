@@ -89,7 +89,11 @@ function normalizeSlugPart(value: string): string {
     }
   }
 
-  return slug.slice(0, 72);
+  let truncatedSlug = slug.slice(0, 72);
+  while (truncatedSlug.endsWith("-")) {
+    truncatedSlug = truncatedSlug.slice(0, -1);
+  }
+  return truncatedSlug;
 }
 
 const SPOGOMI_RESERVED_EVENT_SLUGS = new Set(["nouveau", "mes-evenements"]);

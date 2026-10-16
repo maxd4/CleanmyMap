@@ -69,6 +69,9 @@ describe("SPOGOMI public identity and lifecycle", () => {
     expect(normalizeSpogomiEventSlug("***")).toBe("evenement-spogomi");
     expect(normalizeSpogomiEventSlug("")).toBe("evenement-spogomi");
     expect(normalizeSpogomiEventSlug(`${"!".repeat(10_000)}Été---Paris${"!".repeat(10_000)}`)).toBe("ete-paris");
+    expect(normalizeSpogomiEventSlug(`${"a".repeat(71)}--b`)).toBe("a".repeat(71));
+    expect(normalizeSpogomiEventSlug("a".repeat(72))).toBe("a".repeat(72));
+    expect(normalizeSpogomiEventSlug("Été___---Paris")).toBe("ete-paris");
     expect(isReservedSpogomiEventSlug("nouveau")).toBe(true);
     expect(isReservedSpogomiEventSlug("mes-evenements")).toBe(true);
     expect(isReservedSpogomiEventSlug("paris-2026")).toBe(false);
