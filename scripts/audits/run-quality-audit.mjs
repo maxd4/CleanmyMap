@@ -148,6 +148,40 @@ function statusForAudit(audit, result) {
   return result.status ?? "PASS";
 }
 
+function isComplexityResult(result) {
+  return Boolean(result)
+    && (result.status === "PASS" || result.status === "FAIL")
+    && Array.isArray(result.metrics)
+    && Array.isArray(result.result?.failures)
+    && Array.isArray(result.result?.reviews)
+    && Array.isArray(result.result?.improvements)
+    && Array.isArray(result.result?.stale);
+}
+
+function isCycleResult(result) {
+  return Boolean(result)
+    && typeof result.gateStatus === "string"
+    && result.baseline
+    && result.report
+    && Array.isArray(result.cycles)
+    && Array.isArray(result.cycleObjects)
+    && Array.isArray(result.comparison?.added)
+    && Array.isArray(result.comparison?.stale);
+}
+
+function preserveMalformedAsyncResult(audit, result) {
+  return {
+    ...(result && typeof result === "object" ? result : {}),
+    status: "FAIL",
+    error: {
+      name: "QualityAuditError",
+      message: `Résultat ${audit} absent ou malformé.`,
+      code: "MALFORMED_RESULT",
+    },
+    readProvenance: "WORKTREE_LIVE",
+  };
+}
+
 export function attentionRequired(audit, result) {
   if (!result || result.error) return true;
   if (audit === "dead-code") {
@@ -323,8 +357,18 @@ export async function executeAudit(
     const enrichedResult = { ...result, evaluation };
     return { ...enrichedResult, status: statusForAudit(audit, enrichedResult), readProvenance: "COMMITTED_SNAPSHOT" };
   }
-  if (audit === "complexity") return { ...(await complexityRunner()), readProvenance: "WORKTREE_LIVE" };
-  if (audit === "cycles") return { ...(await cycleRunner()), readProvenance: "WORKTREE_LIVE" };
+  if (audit === "complexity") {
+    const result = await complexityRunner();
+    return isComplexityResult(result)
+      ? { ...result, readProvenance: "WORKTREE_LIVE" }
+      : preserveMalformedAsyncResult(audit, result);
+  }
+  if (audit === "cycles") {
+    const result = await cycleRunner();
+    return isCycleResult(result)
+      ? { ...result, readProvenance: "WORKTREE_LIVE" }
+      : preserveMalformedAsyncResult(audit, result);
+  }
   throw new QualityAuditError(`Unknown audit: ${audit}`, "INVALID_MODE");
 }
 

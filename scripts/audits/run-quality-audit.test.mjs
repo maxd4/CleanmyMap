@@ -260,6 +260,42 @@ test("une promesse asynchrone rejetée produit un FAIL diagnostiqué et laisse l
   }
 });
 
+test("un résultat asynchrone malformé produit un FAIL diagnostiqué pour les deux branches réelles", async () => {
+  const root = tempRoot();
+  try {
+    const result = await runQualityAudit("all", {
+      root,
+      snapshot: () => stableSnapshot,
+      engine: async (audit, engineRoot, context) => {
+        if (audit === "complexity") {
+          return executeAudit(audit, engineRoot, {
+            ...context,
+            complexityRunner: async () => ({ status: "PASS" }),
+          });
+        }
+        if (audit === "cycles") {
+          return executeAudit(audit, engineRoot, {
+            ...context,
+            cycleRunner: async () => ({ gateStatus: "PASS" }),
+          });
+        }
+        return fixtureResult(audit);
+      },
+    });
+
+    for (const audit of ["complexity", "cycles"]) {
+      const entry = result.results.find((candidate) => candidate.audit === audit);
+      const report = JSON.parse(fs.readFileSync(entry.paths.report, "utf8"));
+      assert.equal(entry.status, "FAIL");
+      assert.equal(report.status, "FAIL");
+      assert.equal(report.error.code, "MALFORMED_RESULT");
+    }
+    assert.equal(result.status, "FAIL");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("all runs each engine once, aggregates statuses and retains other results after failure", async () => {
   const root = tempRoot();
   const calls = [];
