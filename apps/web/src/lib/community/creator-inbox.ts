@@ -193,13 +193,16 @@ export function buildFeedbackInboxItem(record: BugReportRecord): CreatorInboxIte
     sourceStatus,
     priority: "normal",
     context: record.description,
-    details: buildCommonDetails({
-      sourceLabel: SOURCE_LABELS.feedback.fr,
-      sourceStatus,
-      pagePath: record.pagePath,
-      createdAt: record.createdAt,
-      authorRole: record.submittedByRole,
-    }),
+    details: [
+      { label: "Provenance du formulaire", value: record.source },
+      ...buildCommonDetails({
+        sourceLabel: SOURCE_LABELS.feedback.fr,
+        sourceStatus,
+        pagePath: record.pagePath,
+        createdAt: record.createdAt,
+        authorRole: record.submittedByRole,
+      }),
+    ],
     canDelete: true,
     canReview: false,
     hasReplyTarget: Boolean(record.submittedByEmail),

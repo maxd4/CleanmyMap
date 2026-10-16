@@ -25,6 +25,10 @@ describe("creator inbox helpers", () => {
     });
 
     expect(item.privateReplyTargetUserId).toBe("user_1");
+    expect(item.details).toContainEqual({
+      label: "Provenance du formulaire",
+      value: "feedback_section",
+    });
     expect(
       buildFeedbackInboxItem({
         id: "feedback-2",
