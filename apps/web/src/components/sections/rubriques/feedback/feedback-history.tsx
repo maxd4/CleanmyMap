@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import {
+  isPersonalFeedbackQualificationStatus,
   isPersonalFeedbackStatus,
   type PersonalFeedbackItem,
   type PersonalFeedbackPage,
@@ -26,6 +27,17 @@ const FEEDBACK_STATUS_LABELS: Record<PersonalFeedbackStatus, { fr: string; en: s
   treated: { fr: "Traité", en: "Treated" },
   archived: { fr: "Archivé", en: "Archived" },
 };
+
+const FEEDBACK_QUALIFICATION_LABELS = {
+  pending: { fr: "En attente d'examen", en: "Awaiting review" },
+  needs_info: {
+    fr: "Informations complémentaires demandées",
+    en: "More information requested",
+  },
+  accepted: { fr: "Pertinent", en: "Relevant" },
+  duplicate: { fr: "Doublon", en: "Duplicate" },
+  rejected: { fr: "Non retenu", en: "Not retained" },
+} as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
@@ -54,7 +66,10 @@ function parsePersonalFeedbackPage(value: unknown): PersonalFeedbackPage {
       typeof item.title !== "string" ||
       typeof item.createdAt !== "string" ||
       !isPersonalFeedbackStatus(item.status) ||
-      !isPersonalFeedbackType(item.type)
+      !isPersonalFeedbackType(item.type) ||
+      !isPersonalFeedbackQualificationStatus(item.qualificationStatus) ||
+      (item.qualificationReason !== null &&
+        typeof item.qualificationReason !== "string")
     ) {
       throw new Error("Invalid personal feedback item.");
     }
@@ -64,6 +79,8 @@ function parsePersonalFeedbackPage(value: unknown): PersonalFeedbackPage {
       type: item.type,
       createdAt: item.createdAt,
       status: item.status,
+      qualificationStatus: item.qualificationStatus,
+      qualificationReason: item.qualificationReason,
     };
   });
 
@@ -141,6 +158,14 @@ function FeedbackHistoryItem({ item, locale }: { item: PersonalFeedbackItem; loc
           <p className="mt-1 text-sm text-slate-600">
             {FEEDBACK_TYPE_LABELS[item.type][locale]} · {formatFeedbackDate(item.createdAt, locale)}
           </p>
+          <p className="mt-2 text-sm font-semibold text-slate-700">
+            {FEEDBACK_QUALIFICATION_LABELS[item.qualificationStatus][locale]}
+          </p>
+          {item.qualificationReason ? (
+            <p className="mt-1 cmm-text-small leading-relaxed cmm-text-secondary">
+              {item.qualificationReason}
+            </p>
+          ) : null}
         </div>
         <span className="inline-flex w-fit shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-pink-700">
           {FEEDBACK_STATUS_LABELS[item.status][locale]}

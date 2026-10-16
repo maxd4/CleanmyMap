@@ -3,6 +3,7 @@ import { buildFeedbackInboxItem } from "@/lib/community/creator-inbox";
 import {
   deleteCommunityBugReport,
   getCommunityBugReportById,
+  qualifyCommunityBugReport,
   updateCommunityBugReportStatus,
 } from "@/lib/community/bug-reports-store";
 import {
@@ -28,6 +29,43 @@ type FeedbackStateMutationParams = {
   reason: string;
   targetUserId?: string;
 };
+
+type FeedbackQualificationParams = CreatorInboxHandlerParams & {
+  qualification: {
+    decision: "pending" | "needs_info" | "accepted" | "duplicate" | "rejected";
+    duplicateFeedbackId: string | null;
+  };
+};
+
+async function qualifyFeedbackInboxItem(params: FeedbackQualificationParams) {
+  let result: Awaited<ReturnType<typeof qualifyCommunityBugReport>>;
+  try {
+    result = await qualifyCommunityBugReport({
+      reportId: params.itemId,
+      decision: params.qualification.decision,
+      reason: params.reason.trim() || null,
+      duplicateFeedbackId: params.qualification.duplicateFeedbackId,
+      actorUserId: params.actorUserId,
+      operationId: params.operationId,
+    });
+  } catch {
+    return mutationErrorResponse();
+  }
+  if (result.status === "not_found") {
+    return NextResponse.json({ error: "Report not found" }, { status: 404 });
+  }
+  if (result.status === "duplicate_not_found") {
+    return NextResponse.json({ error: "Duplicate feedback not found" }, { status: 400 });
+  }
+  if (!result.record) {
+    return mutationErrorResponse();
+  }
+  return NextResponse.json({
+    status: "ok",
+    qualificationStatus: result.status,
+    item: buildFeedbackInboxItem(result.record),
+  });
+}
 
 async function deleteFeedbackInboxItem(params: {
   itemId: string;
@@ -152,9 +190,13 @@ async function archiveFeedbackInboxItem(params: FeedbackStateMutationParams) {
 }
 
 export async function handleCreatorInboxFeedback(
-  params: CreatorInboxHandlerParams,
+  params: CreatorInboxHandlerParams | FeedbackQualificationParams,
 ) {
   const { itemId, action, reason } = params;
+
+  if (action === "qualify" && "qualification" in params) {
+    return qualifyFeedbackInboxItem(params);
+  }
 
   const audit = createCreatorInboxAudit(params);
 

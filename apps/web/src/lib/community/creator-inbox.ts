@@ -1,4 +1,7 @@
-import type { BugReportRecord } from "@/lib/community/bug-reports-store";
+import type {
+  BugReportRecord,
+  FeedbackQualificationStatus,
+} from "@/lib/community/bug-reports-store";
 import type { PromotionRequestRecord } from "@/lib/admin/promotion-requests-store";
 import type { PartnerOnboardingRequestRecord } from "@/lib/partners/onboarding-requests-store";
 import type { ClerkUserIdentity } from "@/lib/services/clerk";
@@ -51,6 +54,12 @@ export type CreatorInboxItem = {
   hasReplyTarget: boolean;
   hasScreenshot?: boolean;
   privateReplyTargetUserId?: string | null;
+  qualification?: {
+    status: FeedbackQualificationStatus;
+    reason: string | null;
+    decidedAt: string | null;
+    duplicateFeedbackId: string | null;
+  };
 };
 
 const STATUS_LABELS: Record<CreatorInboxStatus, { fr: string; en: string }> = {
@@ -211,6 +220,12 @@ export function buildFeedbackInboxItem(record: BugReportRecord): CreatorInboxIte
       record.submittedByUserId.trim() && record.submittedByUserId.trim() !== "unknown"
         ? record.submittedByUserId.trim()
         : null,
+    qualification: {
+      status: record.qualificationStatus ?? "pending",
+      reason: record.qualificationReason ?? null,
+      decidedAt: record.qualificationDecidedAt ?? null,
+      duplicateFeedbackId: record.qualificationDuplicateFeedbackId ?? null,
+    },
   };
 }
 

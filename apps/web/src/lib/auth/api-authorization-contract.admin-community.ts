@@ -23,10 +23,10 @@ export const adminCommunityAuthorizationContract = {
       evidence: ["requireAdminAccess"],
     },
     PATCH: {
-      expected: "Admin-like access with admin-operation audit",
-      dimensions: ["admin/creator role", "audit"],
-      actual: "requireAdminAccess + appendDecisionAudit (encapsulates appendAdminOperationAudit)",
-      evidence: ["requireAdminAccess", "appendDecisionAudit"],
+      expected: "Admin-like inbox actions with audit; feedback qualification reserved to the canonical max identity",
+      dimensions: ["admin/creator role", "ownership", "audit"],
+      actual: "requireAdminAccess + isImuOwnerIdentity for qualification + transactional qualifyCommunityBugReport; other inbox actions use appendDecisionAudit",
+      evidence: ["requireAdminAccess", "isImuOwnerIdentity", "handleCreatorInboxFeedback", "appendDecisionAudit"],
     },
   },
   "admin/legal-content-reports/decision": {
@@ -152,7 +152,7 @@ export const adminCommunityAuthorizationContract = {
     GET: {
       expected: "Authenticated owner-only feedback history with minimal projection",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess + server-bound submittedByUserId + bounded keyset pagination",
+      actual: "requireAuthenticatedAccess + server-bound submittedByUserId + bounded keyset pagination + public-safe qualification projection",
       evidence: ["requireAuthenticatedAccess", "submittedByUserId", "listCommunityBugReportsForUser"],
     },
     POST: {

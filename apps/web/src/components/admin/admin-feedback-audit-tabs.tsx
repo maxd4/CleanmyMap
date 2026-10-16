@@ -12,11 +12,13 @@ export function AdminFeedbackAuditTabs({
   initialHasMore,
   initialNextCursor,
   auditEntries,
+  canQualify = false,
 }: {
   feedbackItems: CreatorInboxItem[] | CreatorInboxPage;
   initialHasMore?: boolean;
   initialNextCursor?: string | null;
   auditEntries: AdminOperationAuditEntry[];
+  canQualify?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<"feedback" | "audit">("feedback");
   const initialItems = Array.isArray(feedbackItems) ? feedbackItems : feedbackItems.items;
@@ -62,6 +64,7 @@ export function AdminFeedbackAuditTabs({
             initialItems={initialItems}
             initialHasMore={pageHasMore}
             initialNextCursor={pageNextCursor}
+            canQualify={canQualify}
           />
         </div>
       ) : (

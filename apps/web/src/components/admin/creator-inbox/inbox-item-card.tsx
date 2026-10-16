@@ -10,6 +10,7 @@ import { InboxItemProcessingActions } from "./inbox-item-processing-actions";
 import { InboxItemProcessingReason } from "./inbox-item-processing-reason";
 import { InboxItemRequestDetails } from "./inbox-item-request-details";
 import { InboxItemReviewActions } from "./inbox-item-review-actions";
+import { FeedbackQualificationControls } from "./feedback-qualification-controls";
 
 type InboxItemCardProps = {
   item: CreatorInboxItem;
@@ -30,6 +31,13 @@ type InboxItemCardProps = {
   onRejectPartner: (item: CreatorInboxItem) => void;
   onApplyInboxAction: (params: InboxActionParams) => void;
   onLegalDecision?: (params: LegalDecisionParams) => void;
+  canQualify?: boolean;
+  feedbackOptions?: CreatorInboxItem[];
+  onQualifyFeedback?: (params: {
+    decision: "pending" | "needs_info" | "accepted" | "duplicate" | "rejected";
+    reason: string;
+    duplicateFeedbackId: string | null;
+  }) => void;
 };
 
 export function InboxItemCard({
@@ -51,13 +59,30 @@ export function InboxItemCard({
   onRejectPartner,
   onApplyInboxAction,
   onLegalDecision,
+  canQualify,
+  feedbackOptions,
+  onQualifyFeedback,
 }: InboxItemCardProps) {
+  const qualificationEnabled = canQualify ?? false;
+  const qualificationOptions = feedbackOptions ?? [];
+  const qualify = onQualifyFeedback ?? (() => undefined);
   return (
     <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <InboxItemRequestDetails item={item} locale={locale} copy={copy} />
 
       {item.source === "feedback" ? (
         <FeedbackExportActions item={item} locale={locale} />
+      ) : null}
+
+      {item.source === "feedback" && qualificationEnabled ? (
+        <FeedbackQualificationControls
+          item={item}
+          feedbackOptions={qualificationOptions}
+          locale={locale}
+          copy={copy}
+          busy={actionBusy(item.source, item.sourceRecordId, "qualify")}
+          onQualify={qualify}
+        />
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">

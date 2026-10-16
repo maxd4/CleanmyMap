@@ -104,6 +104,23 @@ describe("InboxItemCard state actions", () => {
     expect(markup).not.toContain("Marquer répondu");
   });
 
+  it("shows qualification controls only when the canonical max capability is enabled", () => {
+    const markup = renderCard(feedbackItem, {
+      canQualify: true,
+      feedbackOptions: [
+        feedbackItem,
+        { ...feedbackItem, id: "feedback-feedback-2", sourceRecordId: "feedback-2", title: "Other feedback" },
+      ],
+      onQualifyFeedback: vi.fn(),
+    });
+
+    expect(markup).toContain("Qualification max");
+    expect(markup).toContain("En attente");
+    expect(markup).toContain("Pertinent");
+    expect(markup).toContain("Demander des précisions");
+    expect(renderCard(feedbackItem)).not.toContain("Qualification max");
+  });
+
   it("labels email as an opening action without implying that it was sent", () => {
     const markup = renderCard({
       ...feedbackItem,

@@ -33,7 +33,23 @@ const STORE_FILE = join(
   "community_bug_reports.json",
 );
 const SUPABASE_BUG_REPORT_COLUMNS =
-  "id, created_at, submitted_by_user_id, submitted_by_display_name, submitted_by_email, submitted_by_role, report_type, title, description, page_path, source, status, creator_state, screenshot_upload_state";
+  "id, created_at, submitted_by_user_id, submitted_by_display_name, submitted_by_email, submitted_by_role, report_type, title, description, page_path, source, status, creator_state, screenshot_upload_state, qualification_status, qualification_reason, qualification_decided_at, qualification_decided_by_user_id, qualification_duplicate_feedback_id";
+
+export const FEEDBACK_QUALIFICATION_STATUSES = [
+  "pending",
+  "needs_info",
+  "accepted",
+  "duplicate",
+  "rejected",
+] as const;
+
+export type FeedbackQualificationStatus =
+  (typeof FEEDBACK_QUALIFICATION_STATUSES)[number];
+
+export type FeedbackQualificationDecision = Exclude<
+  FeedbackQualificationStatus,
+  "pending"
+> | "pending";
 
 export type BugReportInput = {
   reportType: "bug" | "idea" | "improvement" | "collaboration";
@@ -57,6 +73,11 @@ export type BugReportRecord = BugReportInput & {
   status: "open" | "treated" | "archived";
   creatorState: "new" | "pending" | "responded" | "treated" | "archived";
   screenshotUploadState?: "pending" | "ready" | "failed" | null;
+  qualificationStatus?: FeedbackQualificationStatus;
+  qualificationReason?: string | null;
+  qualificationDecidedAt?: string | null;
+  qualificationDecidedByUserId?: string | null;
+  qualificationDuplicateFeedbackId?: string | null;
 };
 
 export const COMMUNITY_BUG_REPORTS_HISTORY_DEFAULT_LIMIT = 20;
@@ -201,6 +222,16 @@ function normalizeScreenshotUploadState(
   return value === "pending" || value === "ready" || value === "failed" ? value : null;
 }
 
+function normalizeFeedbackQualificationStatus(
+  value: unknown,
+): FeedbackQualificationStatus {
+  return FEEDBACK_QUALIFICATION_STATUSES.includes(
+    value as FeedbackQualificationStatus,
+  )
+    ? (value as FeedbackQualificationStatus)
+    : "pending";
+}
+
 function normalizeBugReportRecord(record: unknown): BugReportRecord | null {
   if (!record || typeof record !== "object") {
     return null;
@@ -239,6 +270,19 @@ function normalizeBugReportRecord(record: unknown): BugReportRecord | null {
     status,
     creatorState,
     screenshotUploadState: normalizeScreenshotUploadState(raw["screenshotUploadState"]),
+    qualificationStatus: normalizeFeedbackQualificationStatus(
+      raw["qualificationStatus"],
+    ),
+    qualificationReason: normalizeOptionalTextField(raw["qualificationReason"]),
+    qualificationDecidedAt: normalizeOptionalTextField(
+      raw["qualificationDecidedAt"],
+    ),
+    qualificationDecidedByUserId: normalizeOptionalTextField(
+      raw["qualificationDecidedByUserId"],
+    ),
+    qualificationDuplicateFeedbackId: normalizeOptionalTextField(
+      raw["qualificationDuplicateFeedbackId"],
+    ),
     reportType: rawReportType as BugReportRecord["reportType"],
     title,
     description,
@@ -262,6 +306,11 @@ function fromSupabaseRow(row: Record<string, unknown>): BugReportRecord | null {
     status: row.status,
     creatorState: row.creator_state,
     screenshotUploadState: row.screenshot_upload_state,
+    qualificationStatus: row.qualification_status,
+    qualificationReason: row.qualification_reason,
+    qualificationDecidedAt: row.qualification_decided_at,
+    qualificationDecidedByUserId: row.qualification_decided_by_user_id,
+    qualificationDuplicateFeedbackId: row.qualification_duplicate_feedback_id,
   });
 }
 
@@ -288,6 +337,67 @@ function toSupabaseRow(record: BugReportRecord): Record<string, unknown> {
     source: record.source,
     status: record.status,
     creator_state: record.creatorState,
+    qualification_status: record.qualificationStatus ?? "pending",
+    qualification_reason: record.qualificationReason ?? null,
+    qualification_decided_at: record.qualificationDecidedAt ?? null,
+    qualification_decided_by_user_id: record.qualificationDecidedByUserId ?? null,
+    qualification_duplicate_feedback_id:
+      record.qualificationDuplicateFeedbackId ?? null,
+  };
+}
+
+export type CommunityBugReportQualificationResult = {
+  record: BugReportRecord | null;
+  status: "updated" | "unchanged" | "not_found" | "duplicate_not_found";
+};
+
+export async function qualifyCommunityBugReport(params: {
+  reportId: string;
+  decision: FeedbackQualificationDecision;
+  reason: string | null;
+  duplicateFeedbackId: string | null;
+  actorUserId: string;
+  operationId: string;
+}): Promise<CommunityBugReportQualificationResult> {
+  assertPersistenceAvailable("community_bug_reports");
+
+  if (!canUseSupabaseServerPersistence()) {
+    throw new Error(
+      "Feedback qualification requires transactional Supabase persistence.",
+    );
+  }
+
+  const result = await getSupabaseServerClient(true).rpc(
+    "qualify_community_bug_report",
+    {
+      p_feedback_id: params.reportId,
+      p_decision: params.decision,
+      p_reason: params.reason,
+      p_duplicate_feedback_id: params.duplicateFeedbackId,
+      p_actor_user_id: params.actorUserId,
+      p_operation_id: params.operationId,
+    },
+  );
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  const payload = result.data as {
+    status?: CommunityBugReportQualificationResult["status"];
+    item?: Record<string, unknown> | null;
+  } | null;
+  const status = payload?.status;
+  if (
+    status !== "updated" &&
+    status !== "unchanged" &&
+    status !== "not_found" &&
+    status !== "duplicate_not_found"
+  ) {
+    throw new Error("Invalid feedback qualification result.");
+  }
+  return {
+    status,
+    record: payload?.item ? fromSupabaseRow(payload.item) : null,
   };
 }
 

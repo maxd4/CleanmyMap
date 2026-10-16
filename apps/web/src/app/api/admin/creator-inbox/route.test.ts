@@ -5,6 +5,7 @@ const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 const getCommunityBugReportByIdMock = vi.hoisted(() => vi.fn());
 const updateCommunityBugReportStatusMock = vi.hoisted(() => vi.fn());
+const qualifyCommunityBugReportMock = vi.hoisted(() => vi.fn());
 const updateCommunityBugReportCreatorStateMock = vi.hoisted(() => vi.fn());
 const getPromotionRequestByIdMock = vi.hoisted(() => vi.fn());
 const updatePromotionRequestCreatorStateMock = vi.hoisted(() => vi.fn());
@@ -22,6 +23,10 @@ vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
 }));
 
+vi.mock("@/lib/env", () => ({
+  env: { CLERK_IMU_OWNER_USER_ID: "max-owner" },
+}));
+
 vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,
 }));
@@ -31,6 +36,7 @@ vi.mock("@/lib/community/bug-reports-store", () => ({
   getCommunityBugReportById: getCommunityBugReportByIdMock,
   updateCommunityBugReportCreatorState: updateCommunityBugReportCreatorStateMock,
   updateCommunityBugReportStatus: updateCommunityBugReportStatusMock,
+  qualifyCommunityBugReport: qualifyCommunityBugReportMock,
 }));
 
 vi.mock("@/lib/admin/promotion-requests-store", () => ({
@@ -123,6 +129,18 @@ describe("PATCH /api/admin/creator-inbox", () => {
         creatorState: status === "treated" ? "treated" : "archived",
       }),
     );
+    qualifyCommunityBugReportMock.mockResolvedValue({
+      status: "updated",
+      record: {
+        ...feedbackRecord,
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        qualificationStatus: "accepted",
+        qualificationReason: "Retour pertinent.",
+        qualificationDecidedAt: "2026-10-16T12:00:00.000Z",
+        qualificationDecidedByUserId: "max-owner",
+        qualificationDuplicateFeedbackId: null,
+      },
+    });
     getPromotionRequestByIdMock.mockResolvedValue(promotionRecord);
     updatePromotionRequestCreatorStateMock.mockImplementation(
       async ({ creatorState }: { creatorState: string }) => ({
@@ -724,6 +742,102 @@ describe("PATCH /api/admin/creator-inbox", () => {
 
     expect(response.status).toBe(403);
     expect(getCommunityBugReportByIdMock).not.toHaveBeenCalled();
+  });
+
+  it("allows only the canonical max identity to qualify feedback", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "max-owner",
+      role: "max",
+      activeRole: "max",
+    });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "feedback",
+        itemId: "550e8400-e29b-41d4-a716-446655440000",
+        action: "qualify",
+        decision: "accepted",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(qualifyCommunityBugReportMock).toHaveBeenCalledWith({
+      reportId: "550e8400-e29b-41d4-a716-446655440000",
+      decision: "accepted",
+      reason: null,
+      duplicateFeedbackId: null,
+      actorUserId: "max-owner",
+      operationId: expect.any(String),
+    });
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { role: "admin", activeRole: "admin" },
+    { role: "max", activeRole: "max", userId: "other-user" },
+  ] as const)("rejects a non-canonical qualification actor: $role/$userId", async (actor) => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: actor.userId ?? "admin-user",
+      role: actor.role,
+      activeRole: actor.activeRole,
+    });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "feedback",
+        itemId: "550e8400-e29b-41d4-a716-446655440000",
+        action: "qualify",
+        decision: "accepted",
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(qualifyCommunityBugReportMock).not.toHaveBeenCalled();
+    expect(getCommunityBugReportByIdMock).not.toHaveBeenCalled();
+  });
+
+  it("requires a reason and duplicate reference for a duplicate decision", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "max-owner",
+      role: "max",
+      activeRole: "max",
+    });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "feedback",
+        itemId: "550e8400-e29b-41d4-a716-446655440000",
+        action: "qualify",
+        decision: "duplicate",
+        reason: "court",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(qualifyCommunityBugReportMock).not.toHaveBeenCalled();
+  });
+
+  it("returns an explicit error when the transactional qualification fails", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "max-owner",
+      role: "max",
+      activeRole: "max",
+    });
+    qualifyCommunityBugReportMock.mockRejectedValueOnce(new Error("database failure"));
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "feedback",
+        itemId: "550e8400-e29b-41d4-a716-446655440000",
+        action: "qualify",
+        decision: "accepted",
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: "Unable to update creator inbox item.",
+    });
   });
 
   it("returns a bounded page and its continuation cursor for administrators", async () => {

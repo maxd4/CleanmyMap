@@ -19,6 +19,9 @@ import {
 } from "@/components/admin/moderation-by-block-panel";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
 import { getCurrentUserIdentity } from "@/lib/authz";
+import { env } from "@/lib/env";
+import { isImuOwnerIdentity } from "@/lib/auth/role-resolution";
+import { canUseSupabaseServerPersistence } from "@/lib/persistence/runtime-store";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import {
@@ -198,6 +201,10 @@ export default async function AdminPage({
             <AdminFeedbackAuditTabs
               feedbackItems={adminSources.creatorInbox.data}
               auditEntries={adminSources.audit.data}
+              canQualify={
+                isImuOwnerIdentity(identity, env.CLERK_IMU_OWNER_USER_ID) &&
+                canUseSupabaseServerPersistence()
+              }
             />
           ) : (
             <AdminInfoBanner

@@ -12,6 +12,7 @@ La rubrique `Feedback` centralise les retours d'usage, les idées d'amélioratio
 - un contact direct par mail quand le formulaire n'est pas suffisant
 - un message factuel indiquant que le retour est transmis à CleanMyMap pour examen
 - un bloc authentifié `Mes retours`, limité aux retours du compte courant, avec référence, titre, type, date et état persistant
+- une qualification métier séparée du statut de traitement (`pending`, `needs_info`, `accepted`, `duplicate`, `rejected`) ; elle est réservée au compte `max` canonique et son résultat public est visible dans `Mes retours`
 - pour le questionnaire Bug uniquement, une capture facultative JPEG, PNG ou WebP (5 Mo maximum), prévisualisée localement avant l'envoi
 - des questionnaires courts : trois observations humaines pour un bug, problème/proposition pour une idée ou amélioration avec bénéfice facultatif, et champs métier spécifiques conservés pour la collaboration
 - un titre facultatif proposé depuis les réponses et toujours modifiable avant l'envoi
@@ -28,6 +29,7 @@ La rubrique `Feedback` centralise les retours d'usage, les idées d'amélioratio
 
 - ne pas transformer la page en support ticketing
 - ne pas transformer `Mes retours` en CRM, file de support ou seconde messagerie
+- ne pas confondre une qualification `accepted` avec une correction ou une livraison ; les changements restent pilotés par les actions administratives existantes
 - ne jamais accepter un identifiant utilisateur fourni par le navigateur pour filtrer l'historique ; l'ownership est résolu côté serveur
 - conserver la pagination bornée et la projection minimale de `GET /api/community/bug-reports`
 - garder le contact mail secondaire par rapport aux formulaires

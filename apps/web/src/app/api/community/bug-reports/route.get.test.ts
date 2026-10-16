@@ -147,6 +147,8 @@ describe("GET /api/community/bug-reports", () => {
         type: "bug",
         createdAt: records.responded.createdAt,
         status: "responded",
+        qualificationStatus: "pending",
+        qualificationReason: null,
       },
       {
         id: "report-treated",
@@ -154,6 +156,8 @@ describe("GET /api/community/bug-reports", () => {
         type: "idea",
         createdAt: records.treated.createdAt,
         status: "treated",
+        qualificationStatus: "pending",
+        qualificationReason: null,
       },
     ]);
     expect(body.items[0]).not.toHaveProperty("submittedByEmail");

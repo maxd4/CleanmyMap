@@ -67,6 +67,8 @@ function projectPersonalFeedback(
   type: report.reportType,
   createdAt: report.createdAt,
   status: report.creatorState,
+   qualificationStatus: report.qualificationStatus ?? "pending",
+   qualificationReason: report.qualificationReason ?? null,
  };
 }
 

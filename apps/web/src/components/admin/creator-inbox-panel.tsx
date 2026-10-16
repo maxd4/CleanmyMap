@@ -10,14 +10,16 @@ type CreatorInboxPanelProps = {
   initialItems: CreatorInboxItem[];
   initialHasMore?: boolean;
   initialNextCursor?: string | null;
+  canQualify?: boolean;
 };
 
 export function CreatorInboxPanel({
   initialItems,
   initialHasMore,
   initialNextCursor,
+  canQualify = false,
 }: CreatorInboxPanelProps) {
-  const inbox = useCreatorInbox({ initialItems, initialHasMore, initialNextCursor });
+  const inbox = useCreatorInbox({ initialItems, initialHasMore, initialNextCursor, initialCanQualify: canQualify });
 
   return (
     <AdminPanelShell
@@ -113,6 +115,11 @@ export function CreatorInboxPanel({
                   })
                 }
                 onLegalDecision={(params) => void inbox.decideLegalReport(params)}
+                canQualify={inbox.canQualify}
+                feedbackOptions={inbox.items.filter((option) => option.source === "feedback")}
+                onQualifyFeedback={(params) =>
+                  void inbox.qualifyFeedback({ item, ...params })
+                }
               />
             ))
           ) : (

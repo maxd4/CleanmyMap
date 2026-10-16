@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getCurrentUserIdentity, requireAdminAccess } from "@/lib/authz";
+import { env } from "@/lib/env";
+import { isImuOwnerIdentity } from "@/lib/auth/role-resolution";
+import { canUseSupabaseServerPersistence } from "@/lib/persistence/runtime-store";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import {
   loadCreatorInboxPage,
@@ -22,6 +25,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: access.status });
   }
 
+  const identity = await getCurrentUserIdentity();
+  const canQualify =
+    isImuOwnerIdentity(identity, env.CLERK_IMU_OWNER_USER_ID) &&
+    canUseSupabaseServerPersistence();
+
   try {
     const url = new URL(request.url);
     const rawLimit = url.searchParams.get("limit");
@@ -35,7 +43,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Invalid pagination cursor" }, { status: 400 });
     }
     const page = await loadCreatorInboxPage({ limit, cursor });
-    return NextResponse.json({ status: "ok", ...page });
+    return NextResponse.json({ status: "ok", ...page, canQualify });
   } catch {
     return NextResponse.json(
       { error: "Unable to load creator inbox." },
@@ -73,6 +81,24 @@ export async function PATCH(request: Request) {
     );
   }
 
+  if (parsed.data.action === "qualify") {
+    if (!isImuOwnerIdentity(identity, env.CLERK_IMU_OWNER_USER_ID)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return handleCreatorInboxFeedback({
+      operationId: randomUUID(),
+      actorUserId: identity.userId,
+      itemId: parsed.data.itemId,
+      action: parsed.data.action,
+      reason: parsed.data.reason ?? "",
+      appendDecisionAudit: async () => undefined,
+      qualification: {
+        decision: parsed.data.decision!,
+        duplicateFeedbackId: parsed.data.duplicateFeedbackId ?? null,
+      },
+    });
+  }
+
   const appendDecisionAudit: DecisionAuditAppender = async (params) => {
     await appendAdminOperationAudit({
       operationId: params.operationId,
@@ -91,7 +117,7 @@ export async function PATCH(request: Request) {
     actorUserId: identity.userId,
     itemId,
     action,
-    reason,
+    reason: reason!,
     appendDecisionAudit,
   };
 

@@ -373,6 +373,24 @@ client privilégié. Les tests doivent couvrir les chemins anonyme, refusé,
 scopé et autorisé selon le contrat, et démontrer qu'aucun accès privilégié
 n'est exécuté après un refus.
 
+### Qualification canonique des feedbacks
+
+La qualification métier d'un feedback est distincte de son statut technique
+de traitement. Les décisions autorisées sont `pending`, `needs_info`,
+`accepted`, `duplicate` et `rejected`. La capacité de décision est réservée
+au compte `max` canonique : rôle `max`, rôle actif `max` et identifiant égal à
+`CLERK_IMU_OWNER_USER_ID`. Un compte admin, `elu`, un autre compte `max`, un
+utilisateur ordinaire ou un visiteur anonyme ne peut pas qualifier un retour.
+
+La route HTTP conserve la garde admin commune pour la boîte créateur, puis
+applique cette vérification d'identité avant toute lecture du feedback. La
+mutation passe par la RPC serveur transactionnelle, qui verrouille le retour,
+écrit la décision et son audit, puis crée au besoin la notification
+`app_notifications` de manière idempotente. Le repli local est interdit pour
+cette capacité afin de ne jamais enregistrer une décision sans audit ni
+notification atomiques. Le motif est obligatoire pour `needs_info`,
+`duplicate` et `rejected`; `duplicate` exige une référence distincte.
+
 ### `PUBLIC_LEADERBOARD_EXCEPTION`
 
 `GET /api/gamification/leaderboard/public` est une lecture publique

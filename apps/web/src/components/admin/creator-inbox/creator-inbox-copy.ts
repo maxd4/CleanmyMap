@@ -64,6 +64,8 @@ type CreatorInboxCopy = {
     clipboardError: string;
     unexpectedError: string;
     partnerConfirmMismatch: string;
+    qualificationSuccess: string;
+    qualificationError: string;
   };
 };
 
@@ -130,6 +132,8 @@ const COPY: Record<CreatorInboxLocale, CreatorInboxCopy> = {
       unexpectedError: "Une erreur inattendue est survenue.",
       partnerConfirmMismatch:
         'Renseigne exactement "CONFIRMER PARTENAIRE" pour valider cette revue.',
+      qualificationSuccess: "Qualification enregistrée.",
+      qualificationError: "Qualification impossible.",
     },
   },
   en: {
@@ -194,6 +198,8 @@ const COPY: Record<CreatorInboxLocale, CreatorInboxCopy> = {
       unexpectedError: "An unexpected error occurred.",
       partnerConfirmMismatch:
         'Type exactly "CONFIRMER PARTENAIRE" to confirm this review.',
+      qualificationSuccess: "Qualification saved.",
+      qualificationError: "Unable to save the qualification.",
     },
   },
 };

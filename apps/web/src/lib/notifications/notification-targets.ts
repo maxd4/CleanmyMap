@@ -20,6 +20,7 @@ function isInternalNotificationHref(href: string): boolean {
         "/sections/gamification",
         "/sections/messagerie",
         "/sections/community",
+        "/sections/feedback",
         "/sections/rejoindre-une-action",
         "/sections/trash-spotter",
         "/signalement",

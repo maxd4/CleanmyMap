@@ -19,6 +19,7 @@ type UseCreatorInboxParams = {
   initialItems: CreatorInboxItem[];
   initialHasMore?: boolean;
   initialNextCursor?: string | null;
+  initialCanQualify?: boolean;
 };
 
 type Summary = {
@@ -49,6 +50,7 @@ function buildCreatorInboxSummary(items: CreatorInboxItem[]): Summary {
 export function useCreatorInbox({
   initialItems,
   initialHasMore = false, initialNextCursor = null,
+  initialCanQualify = false,
 }: UseCreatorInboxParams) {
   const { locale } = useSitePreferences();
   const inboxLocale: CreatorInboxLocale = locale === "fr" ? "fr" : "en";
@@ -64,6 +66,7 @@ export function useCreatorInbox({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [partnerConfirm, setPartnerConfirm] = useState("");
+  const [canQualify, setCanQualify] = useState(initialCanQualify);
   const [partnerReason, setPartnerReason] = useState<Record<string, string>>({});
   const [actionReasons, setActionReasons] = useState<Record<string, string>>({});
 
@@ -131,6 +134,9 @@ export function useCreatorInbox({
       if (!pagination.replacePage(page, replacementGeneration)) {
         return;
       }
+      if (page.canQualify !== undefined) {
+        setCanQualify(page.canQualify);
+      }
       setSuccessMessage(copy.messages.refreshSuccess);
       window.setTimeout(() => setSuccessMessage(null), 1800);
     } catch (error) {
@@ -166,6 +172,50 @@ export function useCreatorInbox({
       window.setTimeout(() => setSuccessMessage(null), 1800);
     } catch (error) {
       setErrorMessage(resolveInboxMessage(error, copy.messages.actionError));
+    } finally {
+      setUpdatingKey(null);
+    }
+  }
+
+  async function qualifyFeedback(params: {
+    item: CreatorInboxItem;
+    decision: "pending" | "needs_info" | "accepted" | "duplicate" | "rejected";
+    reason: string;
+    duplicateFeedbackId: string | null;
+  }) {
+    const reason = params.reason.trim();
+    if (["needs_info", "duplicate", "rejected"].includes(params.decision) && reason.length < 5) {
+      setErrorMessage(
+        inboxLocale === "fr"
+          ? "Un motif d'au moins 5 caractères est requis pour cette décision."
+          : "A reason of at least 5 characters is required for this decision.",
+      );
+      return;
+    }
+    if (params.decision === "duplicate" && !params.duplicateFeedbackId) {
+      setErrorMessage(
+        inboxLocale === "fr"
+          ? "Sélectionnez le retour doublon concerné."
+          : "Select the duplicate feedback.",
+      );
+      return;
+    }
+    setUpdatingKey(`feedback:${params.item.sourceRecordId}:qualify`);
+    setErrorMessage(null);
+    try {
+      const payload = await applyCreatorInboxAction({
+        source: "feedback",
+        itemId: params.item.sourceRecordId,
+        action: "qualify",
+        reason,
+        decision: params.decision,
+        duplicateFeedbackId: params.duplicateFeedbackId,
+      });
+      setItems((current) => refreshList(current, payload.item ?? null));
+      setSuccessMessage(copy.messages.qualificationSuccess);
+      window.setTimeout(() => setSuccessMessage(null), 1800);
+    } catch (error) {
+      setErrorMessage(resolveInboxMessage(error, copy.messages.qualificationError));
     } finally {
       setUpdatingKey(null);
     }
@@ -347,6 +397,7 @@ export function useCreatorInbox({
     sortMode,
     setSortMode,
     refreshing,
+    canQualify,
     loadingNextPage: pagination.loadingNextPage,
     hasMore: pagination.hasMore,
     loadNextPage: pagination.loadNextPage,
@@ -372,5 +423,6 @@ export function useCreatorInbox({
     acceptPartner,
     rejectPartner,
     decideLegalReport,
+    qualifyFeedback,
   };
 }

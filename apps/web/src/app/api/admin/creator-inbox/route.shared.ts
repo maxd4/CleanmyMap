@@ -1,12 +1,45 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import type { CreatorInboxSource } from "@/lib/community/creator-inbox";
+import { z } from "zod";
 
-export const actionSchema = z.object({
+const baseActionSchema = z.object({
   source: z.enum(["feedback", "promotion", "partner"]),
   itemId: z.string().trim().min(1),
-  action: z.enum(["mark_treated", "responded", "archive", "delete"]),
-  reason: z.string().trim().min(5).max(500),
+  action: z.enum(["mark_treated", "responded", "archive", "delete", "qualify"]),
+  reason: z.string().trim().max(500).optional(),
+  decision: z.enum(["pending", "needs_info", "accepted", "duplicate", "rejected"]).optional(),
+  duplicateFeedbackId: z.string().trim().min(1).max(128).optional().nullable(),
+});
+
+export const actionSchema = baseActionSchema.superRefine((value, context) => {
+  if (value.action === "qualify") {
+    if (value.source !== "feedback") {
+      context.addIssue({ code: "custom", path: ["source"], message: "Qualification is limited to feedback." });
+    }
+    if (!value.decision) {
+      context.addIssue({ code: "custom", path: ["decision"], message: "Qualification decision is required." });
+    }
+    if (["needs_info", "duplicate", "rejected"].includes(value.decision ?? "") && (value.reason?.length ?? 0) < 5) {
+      context.addIssue({ code: "custom", path: ["reason"], message: "A reason of at least 5 characters is required." });
+    }
+    if (value.reason && value.reason.length > 500) {
+      context.addIssue({ code: "custom", path: ["reason"], message: "Qualification reason is too long." });
+    }
+    if (value.decision === "duplicate" && !value.duplicateFeedbackId) {
+      context.addIssue({ code: "custom", path: ["duplicateFeedbackId"], message: "A duplicate feedback reference is required." });
+    }
+    if (value.decision !== "duplicate" && value.duplicateFeedbackId) {
+      context.addIssue({ code: "custom", path: ["duplicateFeedbackId"], message: "Duplicate feedback reference is only valid for duplicate decisions." });
+    }
+    return;
+  }
+
+  if (!value.reason || value.reason.length < 5) {
+    context.addIssue({ code: "custom", path: ["reason"], message: "A reason of at least 5 characters is required." });
+  }
+  if (value.decision || value.duplicateFeedbackId) {
+    context.addIssue({ code: "custom", path: ["decision"], message: "Qualification fields are not valid for this action." });
+  }
 });
 
 export type CreatorInboxAction = z.infer<typeof actionSchema>;

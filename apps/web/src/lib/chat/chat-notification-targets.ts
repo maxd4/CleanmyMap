@@ -25,6 +25,7 @@ export type ChatNotificationPayload = {
   recipientId?: string;
   recipientLabel?: string;
   recipientHandle?: string;
+  feedbackId?: string;
 };
 
 function readString(value: unknown): string | null {
@@ -133,6 +134,7 @@ export function normalizeChatNotificationPayload(
     recipientId: readString(raw["recipientId"]) ?? undefined,
     recipientLabel: readString(raw["recipientLabel"]) ?? undefined,
     recipientHandle: readString(raw["recipientHandle"]) ?? undefined,
+    feedbackId: readString(raw["feedbackId"]) ?? undefined,
   };
 }
 
@@ -154,6 +156,10 @@ function appendDmNotificationParams(
   const handle = normalized.conversationPartnerHandle ?? normalized.recipientHandle;
   if (handle) {
     params.set("recipientHandle", handle);
+  }
+
+  if (normalized.feedbackId) {
+    params.set("feedbackId", normalized.feedbackId);
   }
 }
 

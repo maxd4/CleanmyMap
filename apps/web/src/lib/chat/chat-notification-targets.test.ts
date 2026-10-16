@@ -73,6 +73,13 @@ describe("chat notification targets", () => {
     ).toBe(
       "/sections/messagerie?channel=dm&recipientId=user_2&recipientLabel=Alex&recipientHandle=alex",
     );
+    expect(
+      buildChatNotificationHref({
+        channelType: "dm",
+        recipientId: "user_2",
+        feedbackId: "feedback-1",
+      }),
+    ).toBe("/sections/messagerie?channel=dm&recipientId=user_2&feedbackId=feedback-1");
   });
 
   it("rejects an incompatible topic instead of navigating to a fabricated room", () => {

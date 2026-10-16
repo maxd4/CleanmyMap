@@ -182,6 +182,25 @@ la mutation demandée.
 | Profil | `public.profiles` | modèle Profile |
 | Mission GPS | `public.missions` | types de `apps/mobile/types/mission.ts` |
 | Point GPS | `public.gps_points` | types mission/location |
+| Feedback communautaire | `public.community_bug_reports` | statut technique et qualification métier séparés ; décision/audit/notification via RPC serveur |
+
+### Qualification des feedbacks
+
+La qualification d'un feedback est une dimension métier unique portée par
+`community_bug_reports.qualification_status`, avec son motif public, sa date,
+l'identité canonique du décideur et, pour un doublon, la référence du feedback
+source. Elle ne remplace ni `status` ni `creator_state` et ne signifie pas
+qu'une correction ou une livraison a eu lieu.
+
+La mutation passe par la RPC serveur
+`public.qualify_community_bug_report`, réservée au `service_role` après la
+garde HTTP du compte `max` canonique. La RPC verrouille le feedback, écrit la
+décision et `admin_operations_audit`, puis la notification `app_notifications`
+dans la même transaction. Un repli dans le store local est refusé pour cette
+capacité, car il ne pourrait pas garantir ces effets atomiques. L'historique
+personnel ne projette que le statut de qualification et le motif public du
+propriétaire authentifié ; les données privées, les emails et les identifiants
+internes ne sont pas ajoutés à cette projection.
 
 ## Contrat de gouvernance SPOGOMI
 

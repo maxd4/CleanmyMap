@@ -40,6 +40,7 @@ export type CreatorInboxPagePayload = {
   count: number;
   hasMore: boolean;
   nextCursor: string | null;
+  canQualify?: boolean;
 };
 
 export async function fetchCreatorInboxPage(params?: {
@@ -61,6 +62,7 @@ export async function fetchCreatorInboxPage(params?: {
     typeof payload.count !== "number" ||
     typeof payload.hasMore !== "boolean" ||
     (payload.nextCursor !== null && typeof payload.nextCursor !== "string")
+    || (payload.canQualify !== undefined && typeof payload.canQualify !== "boolean")
   ) {
     throw new Error("Invalid creator inbox page.");
   }
@@ -70,8 +72,10 @@ export async function fetchCreatorInboxPage(params?: {
 export async function applyCreatorInboxAction(params: {
   source: CreatorInboxSource;
   itemId: string;
-  action: "mark_treated" | "responded" | "archive" | "delete";
+  action: "mark_treated" | "responded" | "archive" | "delete" | "qualify";
   reason: string;
+  decision?: "pending" | "needs_info" | "accepted" | "duplicate" | "rejected";
+  duplicateFeedbackId?: string | null;
 }): Promise<{ item?: CreatorInboxItem; deletedId?: string }> {
   const response = await fetch("/api/admin/creator-inbox", {
     method: "PATCH",

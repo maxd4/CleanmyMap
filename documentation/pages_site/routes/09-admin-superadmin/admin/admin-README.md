@@ -70,6 +70,14 @@ La réponse par email ouvre le client de messagerie et ne confirme pas l'envoi.
 La réponse privée réutilise le DM existant (`app_messages`, canal `dm` et
 `ChatShell`) et cible exclusivement `submittedByUserId` résolu côté serveur.
 
+La qualification métier des feedbacks reste dans cette même boîte, sans
+seconde file : `pending`, `needs_info`, `accepted`, `duplicate` ou `rejected`.
+Seul le compte `max` canonique (rôle et rôle actif `max`, identifiant
+`CLERK_IMU_OWNER_USER_ID`) voit et exécute cette commande. Le motif est requis
+pour une demande de précisions, un doublon ou un refus ; la décision, son audit
+et la notification du propriétaire sont persistés atomiquement. `accepted`
+n'est jamais présenté comme une correction ou une livraison.
+
 Un utilisateur canonique absent désactive cette possibilité. Le feedback ne
 devient `responded` qu'après l'envoi réussi du message ; l'ouverture du DM ou
 un clic seul ne suffit pas. L'événement borné
