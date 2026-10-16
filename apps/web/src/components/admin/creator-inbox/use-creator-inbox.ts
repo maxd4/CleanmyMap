@@ -1,11 +1,8 @@
 "use client";
 
 import {
-  useCallback,
   useMemo,
   useState,
-  type Dispatch,
-  type SetStateAction,
 } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { summarizeCreatorInboxItem, type CreatorInboxItem, type CreatorInboxSource, type CreatorInboxStatus } from "@/lib/community/creator-inbox";
@@ -56,27 +53,6 @@ export function useCreatorInbox({
   const { locale } = useSitePreferences();
   const inboxLocale: CreatorInboxLocale = locale === "fr" ? "fr" : "en";
   const copy = getCreatorInboxCopy(inboxLocale);
-  const [itemsState, setItemsState] = useState(() => ({
-    source: initialItems,
-    value: initialItems,
-  }));
-  const items = itemsState.source === initialItems ? itemsState.value : initialItems;
-  const setItems = useCallback<Dispatch<SetStateAction<CreatorInboxItem[]>>>(
-    (nextValue) => {
-      setItemsState((current) => {
-        const currentItems =
-          current.source === initialItems ? current.value : initialItems;
-        return {
-          source: initialItems,
-          value:
-            typeof nextValue === "function"
-              ? nextValue(currentItems)
-              : nextValue,
-        };
-      });
-    },
-    [initialItems],
-  );
   const [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState<"all" | CreatorInboxSource>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | CreatorInboxStatus>("all");
@@ -92,11 +68,13 @@ export function useCreatorInbox({
   const [actionReasons, setActionReasons] = useState<Record<string, string>>({});
 
   const pagination = useCreatorInboxPagination({
-    setItems,
+    initialItems,
     initialHasMore,
     initialNextCursor,
     onError: (error) => setErrorMessage(resolveInboxMessage(error, copy.messages.refreshError)),
   });
+  const items = pagination.items;
+  const setItems = pagination.setItems;
   const [promotionReasons, setPromotionReasons] = useState<Record<string, string>>({});
 
   const summary = useMemo(() => buildCreatorInboxSummary(items), [items]);
@@ -145,15 +123,20 @@ export function useCreatorInbox({
   }, [items, priorityFilter, query, sortMode, sourceFilter, statusFilter]);
 
   async function refreshInbox() {
+    const replacementGeneration = pagination.beginReplacement();
     setRefreshing(true);
     setErrorMessage(null);
     try {
       const page = await fetchCreatorInboxPage();
-      pagination.replacePage(page);
+      if (!pagination.replacePage(page, replacementGeneration)) {
+        return;
+      }
       setSuccessMessage(copy.messages.refreshSuccess);
       window.setTimeout(() => setSuccessMessage(null), 1800);
     } catch (error) {
-      setErrorMessage(resolveInboxMessage(error, copy.messages.refreshError));
+      if (pagination.cancelReplacement(replacementGeneration)) {
+        setErrorMessage(resolveInboxMessage(error, copy.messages.refreshError));
+      }
     } finally {
       setRefreshing(false);
     }
