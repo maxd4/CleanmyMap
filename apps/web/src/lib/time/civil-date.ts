@@ -1,5 +1,9 @@
 const CIVIL_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const LOCAL_DATE_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d)(?:\.(\d{1,3}))?)?$/;
+const DEFAULT_DATE_TIME_FORMAT_OPTIONS = Object.freeze({
+  dateStyle: "medium",
+  timeStyle: "short",
+} satisfies Intl.DateTimeFormatOptions);
 
 type ZonedDateTimeParts = {
   year: number;
@@ -58,7 +62,7 @@ export function formatCivilDateInTimeZone(
 export function formatDateTimeInTimeZone(
   value: string | Date,
   timeZone = "Europe/Paris",
-  options: Intl.DateTimeFormatOptions = { dateStyle: "medium", timeStyle: "short" },
+  options: Intl.DateTimeFormatOptions = DEFAULT_DATE_TIME_FORMAT_OPTIONS,
 ): string {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.valueOf())) throw new RangeError("Invalid instant.");

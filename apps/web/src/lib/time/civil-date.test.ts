@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { formatCivilDateInTimeZone, isCivilDate, parseDateTimeLocalInTimeZone, parseCivilDateAsUtc } from "./civil-date";
+import { formatCivilDateInTimeZone, formatDateTimeInTimeZone, isCivilDate, parseDateTimeLocalInTimeZone, parseCivilDateAsUtc } from "./civil-date";
 
 describe("civil date adapter", () => {
   it.each(["America/Los_Angeles", "Europe/Paris"])(
@@ -37,6 +37,23 @@ describe("civil date adapter", () => {
   it("preserves the Paris civil day when the instant is near UTC midnight", () => {
     expect(formatCivilDateInTimeZone("2026-06-30T23:30:00.000Z")).toBe("2026-07-01");
     expect(formatCivilDateInTimeZone("2026-06-30T23:30:00.000Z", "UTC")).toBe("2026-06-30");
+  });
+
+  it("keeps the default and explicit date-time formats tied to the requested timezone", () => {
+    const instant = "2026-06-30T23:30:00.000Z";
+    expect(formatDateTimeInTimeZone(instant)).toBe(
+      new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Paris" }).format(new Date(instant)),
+    );
+    expect(formatDateTimeInTimeZone(instant, "UTC", { dateStyle: "full", timeStyle: "long" })).toBe(
+      new Intl.DateTimeFormat("fr-FR", { dateStyle: "full", timeStyle: "long", timeZone: "UTC" }).format(new Date(instant)),
+    );
+  });
+
+  it("preserves the DST transition when formatting an instant in an IANA timezone", () => {
+    const before = formatDateTimeInTimeZone("2026-03-29T00:30:00.000Z", "Europe/Paris", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+    const after = formatDateTimeInTimeZone("2026-03-29T01:30:00.000Z", "Europe/Paris", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+    expect(before).toBe("01:30");
+    expect(after).toBe("03:30");
   });
 
   it.each([

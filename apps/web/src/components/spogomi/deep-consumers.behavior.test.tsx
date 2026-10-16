@@ -69,6 +69,42 @@ describe("SPOGOMI deep consumer states", () => {
     renderer.unmount();
   });
 
+  it("keeps field-operation controls busy until a mutation settles", async () => {
+    let resolvePost!: (value: Response) => void;
+    fetchMock.mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") return new Promise<Response>((resolve) => { resolvePost = resolve; });
+      return Promise.resolve(response(dashboard));
+    });
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiFieldOperationsPanel eventId="event-1" capabilities={["timing"]} />); });
+    await settle();
+    const phaseButton = renderer.root.findAllByType("button").find((button) => button.props.children === "collection");
+    expect(phaseButton?.props.disabled).toBe(false);
+    await act(async () => { phaseButton?.props.onClick(); await Promise.resolve(); });
+    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "collection")?.props.disabled).toBe(true);
+    resolvePost(response({}));
+    await settle();
+    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "collection")?.props.disabled).toBe(false);
+    expect(renderer.root.findByProps({ role: "status" }).props.children).toBe("Décision enregistrée avec sa provenance.");
+    renderer.unmount();
+  });
+
+  it("surfaces a mutation rejection and releases the busy state", async () => {
+    fetchMock.mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") return Promise.reject(new Error("Échec réseau synthétique"));
+      return Promise.resolve(response(dashboard));
+    });
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiFieldOperationsPanel eventId="event-1" capabilities={["timing"]} />); });
+    await settle();
+    const phaseButton = renderer.root.findAllByType("button").find((button) => button.props.children === "collection");
+    await act(async () => { phaseButton?.props.onClick(); await Promise.resolve(); });
+    await settle();
+    expect(renderer.root.findByProps({ role: "status" }).props.children).toBe("Échec réseau synthétique");
+    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "collection")?.props.disabled).toBe(false);
+    renderer.unmount();
+  });
+
   it("loads attendance and sends revision-aware status mutations", async () => {
     fetchMock.mockResolvedValueOnce(response({ participants: [{ id: "participant-1", divisionId: "division-1", displayName: "Participant synthétique", externalReference: "P-1", place: 1, team: null, attendanceStatus: "unknown", registrationStatus: "registered", updatedAt: "revision-1" }], total: 1 }));
     let renderer!: ReturnType<typeof create>;

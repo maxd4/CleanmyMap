@@ -128,7 +128,7 @@ function isRenderableDrawing(drawing) {
   );
 }
 
-function parseDrawingFromGeoJson(geojson, kindHint = null) {
+export function parseDrawingFromGeoJson(geojson, kindHint = null) {
   if (!geojson || typeof geojson !== "string") return null;
   try {
     const parsed = JSON.parse(geojson);
