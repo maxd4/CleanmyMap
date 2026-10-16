@@ -5,6 +5,7 @@ vi.mock("@/lib/authz", () => ({ requireAdminAccess: requireAdminAccessMock }));
 
 import {
   buildBugReportScreenshotPath,
+  cleanupBugReportScreenshotAttempt,
   createBugReportScreenshotUploadIntent,
   deleteBugReportScreenshot,
   finalizeBugReportScreenshot,
@@ -15,6 +16,12 @@ import {
 import { BUG_REPORT_SCREENSHOT_BUCKET } from "./bug-report-screenshot-contract";
 
 const feedbackId = "11111111-1111-4111-8111-111111111111";
+const attemptA = "22222222-2222-4222-8222-222222222222";
+const attemptB = "33333333-3333-4333-8333-333333333333";
+
+function attemptPath(attemptId: string): string {
+  return `feedback/${feedbackId}/screenshot/${attemptId}`;
+}
 
 function makeSupabase(overrides: {
   row?: Record<string, unknown>;
@@ -153,6 +160,9 @@ describe("bug report screenshot security contract", () => {
       bucket: BUG_REPORT_SCREENSHOT_BUCKET,
       uploadState: "pending",
     });
+    expect((intent as { attemptId: string }).attemptId).toMatch(
+      /^[0-9a-f-]{36}$/i,
+    );
     expect((intent as { path: string }).path).toMatch(
       new RegExp(`^feedback/${feedbackId}/screenshot/[0-9a-f-]{36}$`),
     );
@@ -185,7 +195,7 @@ describe("bug report screenshot security contract", () => {
   });
 
   it("uses a new immutable path after a failed attempt and removes the old object", async () => {
-    const oldPath = `feedback/${feedbackId}/screenshot/22222222-2222-4222-8222-222222222222`;
+    const oldPath = attemptPath(attemptA);
     const supabase = makeSupabase({
       row: {
         screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
@@ -205,6 +215,9 @@ describe("bug report screenshot security contract", () => {
     });
 
     expect((intent as { path: string }).path).not.toBe(oldPath);
+    expect((intent as { attemptId: string }).attemptId).toBe(
+      (intent as { path: string }).path.split("/").at(-1),
+    );
     expect(supabase.storageApi.remove).toHaveBeenCalledWith([oldPath]);
     expect(supabase.state.row.screenshot_upload_state).toBe("pending");
   });
@@ -213,7 +226,7 @@ describe("bug report screenshot security contract", () => {
     const supabase = makeSupabase({
       row: {
         screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
-        screenshot_storage_path: `feedback/${feedbackId}/screenshot`,
+        screenshot_storage_path: attemptPath(attemptA),
         screenshot_original_name: "capture.jpg",
         screenshot_mime_type: "image/jpeg",
         screenshot_size_bytes: 4,
@@ -225,6 +238,7 @@ describe("bug report screenshot security contract", () => {
     await expect(finalizeBugReportScreenshot(supabase as never, {
       userId: "owner-1",
       feedbackId,
+      attemptId: attemptA,
     })).rejects.toMatchObject({ code: "storage_invalid" });
     expect(supabase.state.row.screenshot_upload_state).toBeNull();
   });
@@ -234,7 +248,7 @@ describe("bug report screenshot security contract", () => {
     const supabase = makeSupabase({
       row: {
         screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
-        screenshot_storage_path: `feedback/${feedbackId}/screenshot`,
+        screenshot_storage_path: attemptPath(attemptA),
         screenshot_original_name: "capture.png",
         screenshot_mime_type: "image/png",
         screenshot_size_bytes: png.byteLength,
@@ -246,6 +260,7 @@ describe("bug report screenshot security contract", () => {
     const finalized = await finalizeBugReportScreenshot(supabase as never, {
       userId: "owner-1",
       feedbackId,
+      attemptId: attemptA,
     });
     expect(finalized.screenshot.uploadState).toBe("ready");
 
@@ -270,8 +285,8 @@ describe("bug report screenshot security contract", () => {
 
   it("does not let a stale finalization replace a newer ready attempt", async () => {
     const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-    const oldPath = `feedback/${feedbackId}/screenshot/44444444-4444-4444-8444-444444444444`;
-    const newPath = `feedback/${feedbackId}/screenshot/55555555-5555-4555-8555-555555555555`;
+    const oldPath = attemptPath(attemptA);
+    const newPath = attemptPath(attemptB);
     const supabase = makeSupabase({
       row: {
         screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
@@ -296,17 +311,145 @@ describe("bug report screenshot security contract", () => {
     await expect(finalizeBugReportScreenshot(supabase as never, {
       userId: "owner-1",
       feedbackId,
+      attemptId: attemptA,
     })).rejects.toMatchObject({ code: "storage_error" });
     expect(supabase.state.row.screenshot_storage_path).toBe(newPath);
     expect(supabase.state.row.screenshot_upload_state).toBe("ready");
+    expect(supabase.state.row.screenshot_original_name).toBe("new.png");
+    expect(supabase.state.row.screenshot_size_bytes).toBe(png.byteLength);
     expect(supabase.storageApi.remove).toHaveBeenCalledWith([oldPath]);
+  });
+
+  it("ignores a late finalization for A while B is pending", async () => {
+    const supabase = makeSupabase({
+      row: {
+        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+        screenshot_storage_path: attemptPath(attemptB),
+        screenshot_original_name: "b.png",
+        screenshot_mime_type: "image/png",
+        screenshot_size_bytes: 12,
+        screenshot_upload_state: "pending",
+      },
+    });
+
+    await expect(finalizeBugReportScreenshot(supabase as never, {
+      userId: "owner-1",
+      feedbackId,
+      attemptId: attemptA,
+    })).rejects.toMatchObject({ code: "not_found" });
+    expect(supabase.state.row).toMatchObject({
+      screenshot_storage_path: attemptPath(attemptB),
+      screenshot_upload_state: "pending",
+      screenshot_size_bytes: 12,
+    });
+    expect(supabase.storageApi.info).not.toHaveBeenCalled();
+    expect(supabase.storageApi.download).not.toHaveBeenCalled();
+    expect(supabase.storageApi.remove).not.toHaveBeenCalled();
+  });
+
+  it("ignores a late finalization for A after B is ready", async () => {
+    const supabase = makeSupabase({
+      row: {
+        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+        screenshot_storage_path: attemptPath(attemptB),
+        screenshot_original_name: "b.png",
+        screenshot_mime_type: "image/png",
+        screenshot_size_bytes: 12,
+        screenshot_upload_state: "ready",
+      },
+    });
+
+    await expect(finalizeBugReportScreenshot(supabase as never, {
+      userId: "owner-1",
+      feedbackId,
+      attemptId: attemptA,
+    })).rejects.toMatchObject({ code: "not_found" });
+    expect(supabase.state.row).toMatchObject({
+      screenshot_storage_path: attemptPath(attemptB),
+      screenshot_upload_state: "ready",
+      screenshot_original_name: "b.png",
+      screenshot_size_bytes: 12,
+    });
+    expect(supabase.storageApi.info).not.toHaveBeenCalled();
+    expect(supabase.storageApi.remove).not.toHaveBeenCalled();
+  });
+
+  it("cleans a failed attempt only when its path is still current", async () => {
+    const supabase = makeSupabase({
+      row: {
+        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+        screenshot_storage_path: attemptPath(attemptA),
+        screenshot_original_name: "a.png",
+        screenshot_mime_type: "image/png",
+        screenshot_size_bytes: 12,
+        screenshot_upload_state: "failed",
+      },
+    });
+
+    await expect(cleanupBugReportScreenshotAttempt(supabase as never, {
+      userId: "owner-1",
+      feedbackId,
+      attemptId: attemptA,
+    })).resolves.toBeUndefined();
+    expect(supabase.storageApi.remove).toHaveBeenCalledWith([attemptPath(attemptA)]);
+    expect(supabase.state.row.screenshot_storage_path).toBeNull();
+    expect(supabase.state.row.screenshot_upload_state).toBeNull();
+  });
+
+  it("does not let late cleanup for A touch pending or ready B", async () => {
+    for (const state of ["pending", "ready"] as const) {
+      const supabase = makeSupabase({
+        row: {
+          screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+          screenshot_storage_path: attemptPath(attemptB),
+          screenshot_original_name: "b.png",
+          screenshot_mime_type: "image/png",
+          screenshot_size_bytes: 12,
+          screenshot_upload_state: state,
+        },
+      });
+
+      await expect(cleanupBugReportScreenshotAttempt(supabase as never, {
+        userId: "owner-1",
+        feedbackId,
+        attemptId: attemptA,
+      })).rejects.toMatchObject({ code: "not_found" });
+      expect(supabase.state.row).toMatchObject({
+        screenshot_storage_path: attemptPath(attemptB),
+        screenshot_upload_state: state,
+        screenshot_original_name: "b.png",
+        screenshot_size_bytes: 12,
+      });
+      expect(supabase.storageApi.remove).not.toHaveBeenCalled();
+    }
+  });
+
+  it("rejects absent or malformed attempt identifiers before Storage access", async () => {
+    const supabase = makeSupabase({
+      row: {
+        screenshot_storage_path: attemptPath(attemptB),
+        screenshot_upload_state: "pending",
+      },
+    });
+    await expect(finalizeBugReportScreenshot(supabase as never, {
+      userId: "owner-1",
+      feedbackId,
+      attemptId: "not-an-attempt",
+    })).rejects.toMatchObject({ code: "validation" });
+    await expect(cleanupBugReportScreenshotAttempt(supabase as never, {
+      userId: "owner-1",
+      feedbackId,
+      attemptId: undefined as never,
+    })).rejects.toMatchObject({ code: "validation" });
+    expect(supabase.storageApi.info).not.toHaveBeenCalled();
+    expect(supabase.storageApi.remove).not.toHaveBeenCalled();
   });
 
   it("removes the Storage object before clearing the attachment reference", async () => {
     const supabase = makeSupabase({
       row: {
         screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
-        screenshot_storage_path: `feedback/${feedbackId}/screenshot`,
+        screenshot_storage_path: attemptPath(attemptA),
         screenshot_original_name: "capture.png",
         screenshot_mime_type: "image/png",
         screenshot_size_bytes: 8,
@@ -320,10 +463,10 @@ describe("bug report screenshot security contract", () => {
   });
 
   it("cleans orphaned attempt objects when the feedback is deleted", async () => {
-    const attemptPath = `feedback/${feedbackId}/screenshot/33333333-3333-4333-8333-333333333333`;
+    const orphanPath = attemptPath(attemptB);
     const supabase = makeSupabase({
       row: {
-        screenshot_storage_path: attemptPath,
+        screenshot_storage_path: orphanPath,
         screenshot_upload_state: "failed",
       },
     });
@@ -333,6 +476,6 @@ describe("bug report screenshot security contract", () => {
         feedbackId,
       ),
     ).resolves.toBeUndefined();
-    expect(supabase.storageApi.remove).toHaveBeenCalledWith([attemptPath]);
+    expect(supabase.storageApi.remove).toHaveBeenCalledWith([orphanPath]);
   });
 });

@@ -43,6 +43,7 @@ type BugReportScreenshotRow = {
 
 export type BugReportScreenshotUploadIntent = {
   feedbackId: string;
+  attemptId: string;
   bucket: typeof BUG_REPORT_SCREENSHOT_BUCKET;
   path: string;
   token: string;
@@ -175,6 +176,27 @@ async function loadReport(
   return result.data as unknown as BugReportScreenshotRow;
 }
 
+async function loadReportForAttempt(
+  supabase: SupabaseClient,
+  feedbackId: string,
+  attemptId: string,
+): Promise<BugReportScreenshotRow> {
+  const path = buildBugReportScreenshotAttemptPath(feedbackId, attemptId);
+  const result = await supabase
+    .from("community_bug_reports")
+    .select(BUG_REPORT_SCREENSHOT_COLUMNS)
+    .eq("id", feedbackId)
+    .eq("screenshot_storage_path", path)
+    .maybeSingle();
+  if (result.error) {
+    throw new BugReportScreenshotError("La tentative de capture ne peut pas être vérifiée.", "storage_error");
+  }
+  if (!result.data) {
+    throw new BugReportScreenshotError("La tentative de capture n'est plus active.", "not_found");
+  }
+  return result.data as unknown as BugReportScreenshotRow;
+}
+
 async function assertOwner(
   userId: string,
   row: BugReportScreenshotRow,
@@ -218,7 +240,7 @@ async function removeStorageObject(
 async function clearScreenshotColumns(
   supabase: SupabaseClient,
   feedbackId: string,
-  expected: { path: string; state: "pending" } | undefined = undefined,
+  expected: { path: string; state: "pending" | "failed" } | undefined = undefined,
 ): Promise<void> {
   let query = supabase
     .from("community_bug_reports")
@@ -430,10 +452,8 @@ export async function createBugReportScreenshotUploadIntent(
     throw storageError("Une capture est déjà en cours de préparation.");
   }
 
-  const path = buildBugReportScreenshotAttemptPath(
-    params.feedbackId,
-    crypto.randomUUID(),
-  );
+  const attemptId = crypto.randomUUID();
+  const path = buildBugReportScreenshotAttemptPath(params.feedbackId, attemptId);
   const updated = await claimScreenshotUpload(supabase, {
     feedbackId: params.feedbackId,
     expectedState: row.screenshot_upload_state,
@@ -473,6 +493,7 @@ export async function createBugReportScreenshotUploadIntent(
 
   return {
     feedbackId: params.feedbackId,
+    attemptId,
     bucket: BUG_REPORT_SCREENSHOT_BUCKET,
     path,
     token: signedUpload.data.token,
@@ -482,9 +503,9 @@ export async function createBugReportScreenshotUploadIntent(
 
 export async function finalizeBugReportScreenshot(
   supabase: SupabaseClient,
-  params: { userId: string; feedbackId: string },
+  params: { userId: string; feedbackId: string; attemptId: string },
 ): Promise<{ screenshot: BugReportScreenshotRecord; alreadyReady: boolean }> {
-  const row = await loadReport(supabase, params.feedbackId);
+  const row = await loadReportForAttempt(supabase, params.feedbackId, params.attemptId);
   await assertOwner(params.userId, row);
   assertBugReport(row);
   if (row.screenshot_upload_state === "ready") {
@@ -570,6 +591,28 @@ export async function deleteBugReportScreenshot(
   if (row.screenshot_storage_path) {
     await clearScreenshotColumns(supabase, params.feedbackId);
   }
+}
+
+export async function cleanupBugReportScreenshotAttempt(
+  supabase: SupabaseClient,
+  params: { userId: string; feedbackId: string; attemptId: string },
+): Promise<void> {
+  const row = await loadReportForAttempt(supabase, params.feedbackId, params.attemptId);
+  await assertOwner(params.userId, row);
+  assertBugReport(row);
+  if (!row.screenshot_storage_path || (row.screenshot_upload_state !== "pending" && row.screenshot_upload_state !== "failed")) {
+    throw new BugReportScreenshotError("La tentative de capture n'est plus nettoyable.", "not_found");
+  }
+
+  const removed = await removeStorageObject(supabase, row.screenshot_storage_path);
+  if (removed) {
+    await clearScreenshotColumns(supabase, params.feedbackId, {
+      path: row.screenshot_storage_path,
+      state: row.screenshot_upload_state,
+    });
+    return;
+  }
+  await markScreenshotFailed(supabase, params.feedbackId, row.screenshot_storage_path);
 }
 
 export async function removeBugReportScreenshotForDeletedReport(

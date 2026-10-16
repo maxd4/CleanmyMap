@@ -38,10 +38,11 @@ async function readError(response: Response, fallback: string): Promise<string> 
   }
 }
 
-async function cleanupFailedUpload(feedbackId: string): Promise<void> {
+async function cleanupFailedUpload(feedbackId: string, attemptId: string): Promise<void> {
   await fetch(`/api/community/bug-reports/${encodeURIComponent(feedbackId)}/screenshot`, {
     method: "DELETE",
-    headers: { Accept: "application/json" },
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify({ attemptId }),
   }).catch(() => undefined);
 }
 
@@ -90,6 +91,7 @@ export async function uploadFeedbackScreenshot(
   const intentBody = (await intentResponse.json()) as {
     intent?: {
       feedbackId: string;
+      attemptId: string;
       bucket: string;
       path: string;
       token: string;
@@ -102,7 +104,11 @@ export async function uploadFeedbackScreenshot(
     throw new FeedbackScreenshotUploadError("La réponse d'upload est incomplète.");
   }
   if (intent.uploadState === "ready") return;
-  if (intent.bucket !== BUG_REPORT_SCREENSHOT_BUCKET || intent.feedbackId !== feedbackId) {
+  if (
+    intent.bucket !== BUG_REPORT_SCREENSHOT_BUCKET ||
+    intent.feedbackId !== feedbackId ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(intent.attemptId)
+  ) {
     throw new FeedbackScreenshotUploadError("La destination privée de la capture est invalide.");
   }
 
@@ -127,7 +133,11 @@ export async function uploadFeedbackScreenshot(
 
     const finalizeResponse = await fetch(
       `/api/community/bug-reports/${encodeURIComponent(feedbackId)}/screenshot/finalize`,
-      { method: "POST", headers: { Accept: "application/json" } },
+      {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ attemptId: intent.attemptId }),
+      },
     );
     if (!finalizeResponse.ok) {
       throw new FeedbackScreenshotUploadError(
@@ -135,7 +145,7 @@ export async function uploadFeedbackScreenshot(
       );
     }
   } catch (error) {
-    await cleanupFailedUpload(feedbackId);
+    await cleanupFailedUpload(feedbackId, intent.attemptId);
     if (error instanceof FeedbackScreenshotUploadError) throw error;
     throw new FeedbackScreenshotUploadError("La transmission de la capture a échoué.");
   }

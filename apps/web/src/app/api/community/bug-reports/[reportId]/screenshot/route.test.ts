@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const requireActionRequestAccessMock = vi.hoisted(() => vi.fn());
 const getBugReportScreenshotMock = vi.hoisted(() => vi.fn());
 const deleteBugReportScreenshotMock = vi.hoisted(() => vi.fn());
+const cleanupBugReportScreenshotAttemptMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/auth/action-request-access", () => ({
@@ -10,6 +11,7 @@ vi.mock("@/lib/auth/action-request-access", () => ({
 }));
 vi.mock("@/lib/community/bug-report-screenshot", () => ({
   BugReportScreenshotError: class BugReportScreenshotError extends Error {},
+  cleanupBugReportScreenshotAttempt: cleanupBugReportScreenshotAttemptMock,
   getBugReportScreenshot: getBugReportScreenshotMock,
   deleteBugReportScreenshot: deleteBugReportScreenshotMock,
 }));
@@ -31,6 +33,7 @@ describe("community feedback screenshot read boundary", () => {
       signedUrlExpiresAt: "2026-10-16T12:05:00.000Z",
     });
     deleteBugReportScreenshotMock.mockResolvedValue(undefined);
+    cleanupBugReportScreenshotAttemptMock.mockResolvedValue(undefined);
   });
 
   it("rejects an anonymous read before the storage service is called", async () => {
@@ -67,5 +70,38 @@ describe("community feedback screenshot read boundary", () => {
       userId: "owner-1",
       feedbackId: "feedback-1",
     });
+  });
+
+  it("routes technical cleanup through the attempt-bound operation", async () => {
+    const attemptId = "22222222-2222-4222-8222-222222222222";
+    const response = await DELETE(
+      new Request("https://cleanmymap.test/api/community/bug-reports/feedback-1/screenshot", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attemptId }),
+      }),
+      { params: Promise.resolve({ reportId: "feedback-1" }) },
+    );
+    expect(response.status).toBe(200);
+    expect(cleanupBugReportScreenshotAttemptMock).toHaveBeenCalledWith({}, {
+      userId: "owner-1",
+      feedbackId: "feedback-1",
+      attemptId,
+    });
+    expect(deleteBugReportScreenshotMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid technical cleanup identifier without deleting anything", async () => {
+    const response = await DELETE(
+      new Request("https://cleanmymap.test/api/community/bug-reports/feedback-1/screenshot", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attemptId: "stale-or-malformed" }),
+      }),
+      { params: Promise.resolve({ reportId: "feedback-1" }) },
+    );
+    expect(response.status).toBe(422);
+    expect(cleanupBugReportScreenshotAttemptMock).not.toHaveBeenCalled();
+    expect(deleteBugReportScreenshotMock).not.toHaveBeenCalled();
   });
 });

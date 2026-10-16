@@ -20,6 +20,7 @@ import {
 } from "./feedback-screenshot-client";
 
 const feedbackId = "11111111-1111-4111-8111-111111111111";
+const attemptId = "22222222-2222-4222-8222-222222222222";
 
 function pngFile(size = 8) {
   return new File([new Uint8Array(size)], "capture.png", { type: "image/png" });
@@ -42,8 +43,9 @@ describe("feedback screenshot browser upload contract", () => {
           JSON.stringify({
             intent: {
               feedbackId,
+              attemptId,
               bucket: "signalement-evidence",
-              path: `feedback/${feedbackId}/screenshot`,
+              path: `feedback/${feedbackId}/screenshot/${attemptId}`,
               token: "signed-upload-token",
               uploadState: "pending",
             },
@@ -65,6 +67,7 @@ describe("feedback screenshot browser upload contract", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0][0]).toContain("/screenshot/intent");
     expect(fetchMock.mock.calls[1][0]).toContain("/screenshot/finalize");
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body as string)).toEqual({ attemptId });
     vi.unstubAllGlobals();
   });
 
@@ -77,8 +80,9 @@ describe("feedback screenshot browser upload contract", () => {
           JSON.stringify({
             intent: {
               feedbackId,
+              attemptId,
               bucket: "signalement-evidence",
-              path: `feedback/${feedbackId}/screenshot`,
+              path: `feedback/${feedbackId}/screenshot/${attemptId}`,
               token: "signed-upload-token",
               uploadState: "pending",
             },
@@ -94,7 +98,10 @@ describe("feedback screenshot browser upload contract", () => {
     );
     expect(fetchMock).toHaveBeenLastCalledWith(
       `/api/community/bug-reports/${feedbackId}/screenshot`,
-      expect.objectContaining({ method: "DELETE" }),
+      expect.objectContaining({
+        method: "DELETE",
+        body: JSON.stringify({ attemptId }),
+      }),
     );
     vi.unstubAllGlobals();
   });
