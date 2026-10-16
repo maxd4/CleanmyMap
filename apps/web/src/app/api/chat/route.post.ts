@@ -18,6 +18,7 @@ import {
 } from "./route.post-context";
 import {
   resolveFeedbackReplyContext,
+  validateOwnerFeedbackContext,
   getChatSupabaseOrResponse,
   mapActionDiscussionAccessError,
   resolvePublicSharedAction,
@@ -37,11 +38,15 @@ async function processValidatedChatPost({
   const { data, isExternalActionShare } = validated;
   const serviceSupabase = getSupabaseServerClient(true);
   let feedbackReplyContext: FeedbackReplyContext | null = null;
-  if (data.feedbackId) {
-    if (!["admin", "max"].includes(identity.activeRole)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const isPrivilegedFeedbackReply =
+    Boolean(data.feedbackId) && ["admin", "max"].includes(identity.activeRole);
+  if (isPrivilegedFeedbackReply) {
     const feedbackContext = await resolveFeedbackReplyContext(data);
     if (feedbackContext instanceof Response) return feedbackContext;
     feedbackReplyContext = feedbackContext;
+  } else if (data.feedbackId) {
+    const ownerContextError = await validateOwnerFeedbackContext(data, userId);
+    if (ownerContextError) return ownerContextError;
   }
   const sharedActionResult = await resolvePublicSharedAction(serviceSupabase, data, isExternalActionShare);
   if (sharedActionResult instanceof Response) return sharedActionResult;

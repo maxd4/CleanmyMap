@@ -67,6 +67,37 @@ export async function resolveFeedbackReplyContext(
   return { feedbackId: data.feedbackId!, targetUserId };
 }
 
+export async function validateOwnerFeedbackContext(
+  data: ValidatedChatPost["data"],
+  userId: string,
+): Promise<Response | null> {
+  if (
+    data.channelType !== "dm" ||
+    data.messageKind !== "message" ||
+    !data.operationId
+  ) {
+    return NextResponse.json({ error: "Contexte feedback invalide" }, { status: 400 });
+  }
+
+  const feedback = await getCommunityBugReportById(data.feedbackId!);
+  const submittedByUserId = feedback?.submittedByUserId?.trim();
+  const decisionActorUserId = feedback?.qualificationDecidedByUserId?.trim();
+  const recipientId = data.recipientId?.trim();
+  if (
+    !feedback ||
+    !submittedByUserId ||
+    submittedByUserId !== userId ||
+    !decisionActorUserId ||
+    decisionActorUserId === "unknown" ||
+    !recipientId ||
+    recipientId !== decisionActorUserId
+  ) {
+    return NextResponse.json({ error: "Destinataire feedback invalide" }, { status: 403 });
+  }
+
+  return null;
+}
+
 export async function resolvePublicSharedAction(
   serviceSupabase: ServiceSupabaseClient,
   data: ValidatedChatPost["data"],

@@ -181,7 +181,10 @@ export function buildChatNotificationHref(payload: unknown): string | null {
     return null;
   }
 
-  if (normalized.href) {
+  // A DM payload is contextual: its recipient and feedback reference must win
+  // over the aggregate legacy href, otherwise the owner is sent to a generic
+  // inbox and the feedback context is lost.
+  if (normalized.href && normalized.channelType !== "dm") {
     return normalized.href;
   }
 

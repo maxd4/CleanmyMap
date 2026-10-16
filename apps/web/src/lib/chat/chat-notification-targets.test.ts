@@ -82,6 +82,17 @@ describe("chat notification targets", () => {
     ).toBe("/sections/messagerie?channel=dm&recipientId=user_2&feedbackId=feedback-1");
   });
 
+  it("does not let a legacy aggregate href hide a contextual feedback DM", () => {
+    expect(
+      buildChatNotificationHref({
+        href: "/sections/messagerie",
+        channelType: "dm",
+        recipientId: "max-1",
+        feedbackId: "feedback-1",
+      }),
+    ).toBe("/sections/messagerie?channel=dm&recipientId=max-1&feedbackId=feedback-1");
+  });
+
   it("rejects an incompatible topic instead of navigating to a fabricated room", () => {
     expect(
       normalizeChatNotificationPayload({

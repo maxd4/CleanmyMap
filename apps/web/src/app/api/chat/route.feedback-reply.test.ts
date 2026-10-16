@@ -63,22 +63,25 @@ function buildFeedbackMessage(): ChatMessageRow {
 function configureFeedbackRoute(options: {
   activeRole?: string;
   submittedByUserId?: string;
+  qualificationDecidedByUserId?: string;
+  userId?: string;
   rpc?: ReturnType<typeof vi.fn>;
 }) {
+  const userId = options.userId ?? "admin-1";
   const supabaseMock = buildSupabaseMock({
     profile: {
-      id: "admin-1",
-      display_name: "Admin",
-      handle: "admin",
+      id: userId,
+      display_name: userId === "admin-1" ? "Admin" : "Owner",
+      handle: userId === "admin-1" ? "admin" : "owner",
       paris_arrondissement: null,
-      role_label: "admin",
+      role_label: options.activeRole ?? "admin",
       metadata: null,
     },
     messages: [],
     insertedMessage: buildFeedbackMessage(),
   });
 
-  authMock.mockResolvedValue({ userId: "admin-1" });
+  authMock.mockResolvedValue({ userId });
   getCurrentUserIdentityMock.mockResolvedValue({
     role: options.activeRole ?? "admin",
     activeRole: options.activeRole ?? "admin",
@@ -86,6 +89,7 @@ function configureFeedbackRoute(options: {
   getCommunityBugReportByIdMock.mockResolvedValue({
     id: feedbackId,
     submittedByUserId: options.submittedByUserId ?? "user-2",
+    qualificationDecidedByUserId: options.qualificationDecidedByUserId ?? "admin-1",
     creatorState: "new",
   });
   getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
@@ -161,6 +165,27 @@ describe("POST /api/chat — réponse privée à un feedback", () => {
 
     expect(response.status).toBe(403);
     expect(supabaseMock.serviceRpc).not.toHaveBeenCalled();
+  });
+
+  it("laisse le propriétaire répondre en DM standard sans appeler la RPC privée", async () => {
+    const supabaseMock = configureFeedbackRoute({
+      activeRole: "benevole",
+      userId: "user-2",
+    });
+    const response = await POST(feedbackRequest({ recipientId: "admin-1" }));
+
+    expect(response.status).toBe(201);
+    expect(supabaseMock.serviceRpc).not.toHaveBeenCalledWith(
+      "send_feedback_private_reply",
+      expect.anything(),
+    );
+    expect(supabaseMock.appMessagesTable.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sender_id: "user-2",
+        recipient_id: "admin-1",
+        channel_type: "dm",
+      }),
+    );
   });
 
   it("refuse un feedback sans auteur canonique", async () => {
