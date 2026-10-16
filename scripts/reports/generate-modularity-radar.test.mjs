@@ -136,7 +136,27 @@ test("the migrated registry preserves every human decision and manual field", ()
     isFile: (file) => file === "documentation/architecture/modularity-decisions.md",
     readText: () => registry,
   };
-  assert.throws(() => readHumanDecisionsFromView(view, { requireRegistry: true }), /incohérence résumé\/détail/);
+  const result = readHumanDecisionsFromView(view, { requireRegistry: true });
+  assert.equal(result.legacy, false);
+  assert.equal(result.decisions.length, 47);
+  const summaryRows = extractHumanDecisions(registry)
+    .split(/\r?\n/)
+    .filter((line) => /^\| `[^`]+` \|/.test(line));
+  assert.equal(summaryRows.length, 47);
+  const decisionsByFile = new Map(result.decisions.map((entry) => [entry.file, entry]));
+  for (const row of summaryRows) {
+    const [fileCell, architectureDecision, priority, dependency, nextTrigger] = row
+      .slice(1, -1)
+      .split("|")
+      .map((cell) => cell.trim());
+    const file = fileCell.slice(1, -1);
+    const decision = decisionsByFile.get(file);
+    assert.ok(decision, `decision absente pour ${file}`);
+    assert.equal(decision.ARCHITECTURE_DECISION, architectureDecision, file);
+    assert.equal(decision.PRIORITY, priority, file);
+    assert.equal(decision.DEPENDENCY_OR_BLOCKER, dependency, file);
+    assert.equal(decision.NEXT_TRIGGER, nextTrigger, file);
+  }
 });
 
 test("the current registry validates its markers and structure without a fixed decision count", () => {
