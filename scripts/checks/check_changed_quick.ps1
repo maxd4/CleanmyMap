@@ -93,7 +93,6 @@ $webSourceFiles = @($changedFiles | Where-Object {
     })
 
 $webTestFiles = @($webSourceFiles | Where-Object { $_ -match "(\.test|\.spec)\.(ts|tsx|js|jsx)$" })
-$webSourceFilesRelative = @($webSourceFiles | ForEach-Object { $_ -replace '^apps/web/', '' })
 $webTestFilesRelative = @($webTestFiles | ForEach-Object { $_ -replace '^apps/web/', '' })
 $npmCommand = Get-NpmCommand
 
@@ -111,7 +110,10 @@ Write-Host "[quick] changed python files: $($pythonFiles.Count)"
 
 if ($webSourceFiles.Count -gt 0) {
     Invoke-Step "eslint (changed web files)" {
-        & $npmCommand --prefix apps/web run lint -- @webSourceFilesRelative
+        # The package lint script intentionally owns the full `src` scope.
+        # A staged check must invoke ESLint directly so foreign Web files are
+        # not pulled into the candidate by that script's fixed argument.
+        & $npmCommand exec -- eslint --max-warnings=0 --config apps/web/eslint.config.mjs @webSourceFiles
     }
 } else {
     Write-Host "[quick] Skip eslint (no changed web source files)."

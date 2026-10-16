@@ -8,7 +8,6 @@ Push-Location $RepoRoot
 
 try {
     $GitIndexFile = $env:GIT_INDEX_FILE
-    Remove-Item Env:GIT_INDEX_FILE -ErrorAction SilentlyContinue
 
     function Invoke-GuardStep {
         param(

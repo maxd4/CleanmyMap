@@ -86,6 +86,36 @@ function createNpmStub() {
   return binRoot;
 }
 
+function createLoggingNpmStub() {
+  const binRoot = mkdtempSync(join(tmpdir(), "cleanmymap-guard-npm-log-"));
+  writeFileSync(
+    join(binRoot, "npm-stub.cjs"),
+    `const fs = require("node:fs");
+const args = process.argv.slice(2);
+fs.writeFileSync(process.env.CMM_GUARD_NPM_LOG, JSON.stringify(args), "utf8");
+const failOn = process.env.CMM_GUARD_NPM_FAIL_ARG;
+process.exit(failOn && args.includes(failOn) ? 1 : 0);
+`,
+    "utf8",
+  );
+  if (process.platform === "win32") {
+    writeFileSync(
+      join(binRoot, "npm.cmd"),
+      "@echo off\r\nnode \"%~dp0npm-stub.cjs\" %*\r\nexit /b %errorlevel%\r\n",
+      "utf8",
+    );
+  } else {
+    const npmPath = join(binRoot, "npm");
+    writeFileSync(npmPath, "#!/bin/sh\nexec node \"$(dirname \"$0\")/npm-stub.cjs\" \"$@\"\n", "utf8");
+    chmodSync(npmPath, 0o755);
+  }
+  return { binRoot, logPath: join(binRoot, "npm-args.json") };
+}
+
+function readLoggedNpmArgs(logPath) {
+  return JSON.parse(readFileSync(logPath, "utf8"));
+}
+
 function createStressFixture() {
   mkdirSync(STRESS_DIR, { recursive: true });
   for (let index = 0; index < 1500; index += 1) {
@@ -211,6 +241,169 @@ describe("generated artifact guard boundaries", { concurrency: 1 }, () => {
       assert.doesNotMatch(output, /dirty route/);
     } finally {
       rmSync(binRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("passes only staged files to direct ESLint for an ordinary shared index", () => {
+    const fixtureRoot = createQuickCheckFixture();
+    const { binRoot, logPath } = createLoggingNpmStub();
+    try {
+      const candidate = join(fixtureRoot, "apps", "web", "src", "components", "candidate.ts");
+      const foreign = join(fixtureRoot, "apps", "web", "src", "components", "foreign.ts");
+      writeFileSync(candidate, "export const candidate = true;\n");
+      writeFileSync(foreign, "export const foreign = true;\n");
+      runGitAt(fixtureRoot, ["add", "--", "apps/web/src/components/candidate.ts"]);
+
+      const result = runPowerShell(
+        join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
+        ["-StagedOnly"],
+        {
+          ...withoutCandidateGitEnvironment(),
+          PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}`,
+          CMM_GUARD_NPM_LOG: logPath,
+        },
+        fixtureRoot,
+      );
+      const output = `${result.stdout}\n${result.stderr}`;
+      assert.equal(result.status, 0, output);
+      assert.match(output, /changed total: 1/);
+      const args = readLoggedNpmArgs(logPath);
+      assert.deepEqual(args, [
+        "exec",
+        "--",
+        "eslint",
+        "--max-warnings=0",
+        "--config",
+        "apps/web/eslint.config.mjs",
+        "apps/web/src/components/candidate.ts",
+      ]);
+      assert.equal(args.includes("run"), false);
+      assert.equal(args.includes("lint"), false);
+      assert.equal(args.includes("apps/web/src/components/foreign.ts"), false);
+    } finally {
+      rmSync(binRoot, { recursive: true, force: true });
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("uses a temporary candidate index instead of foreign staged files", () => {
+    const fixtureRoot = createQuickCheckFixture();
+    const { binRoot, logPath } = createLoggingNpmStub();
+    const indexRoot = mkdtempSync(join(tmpdir(), "cleanmymap-guard-candidate-index-"));
+    try {
+      const candidate = join(fixtureRoot, "apps", "web", "src", "components", "candidate.ts");
+      const foreign = join(fixtureRoot, "apps", "web", "src", "components", "foreign.ts");
+      writeFileSync(candidate, "export const candidate = true;\n");
+      writeFileSync(foreign, "export const foreign = true;\n");
+      runGitAt(fixtureRoot, ["add", "--", "apps/web/src/components/foreign.ts"]);
+
+      const env = {
+        ...withoutCandidateGitEnvironment({
+          PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}`,
+          CMM_GUARD_NPM_LOG: logPath,
+        }),
+        GIT_INDEX_FILE: join(indexRoot, "index"),
+      };
+      runGitAt(fixtureRoot, ["read-tree", "HEAD"], env);
+      runGitAt(fixtureRoot, ["add", "--", "apps/web/src/components/candidate.ts"], env);
+
+      const result = runPowerShell(
+        join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
+        ["-StagedOnly"],
+        env,
+        fixtureRoot,
+      );
+      const output = `${result.stdout}\n${result.stderr}`;
+      assert.equal(result.status, 0, output);
+      assert.match(output, /changed total: 1/);
+      const args = readLoggedNpmArgs(logPath);
+      assert.equal(args.includes("apps/web/src/components/candidate.ts"), true);
+      assert.equal(args.includes("apps/web/src/components/foreign.ts"), false);
+    } finally {
+      rmSync(binRoot, { recursive: true, force: true });
+      rmSync(indexRoot, { recursive: true, force: true });
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails when ESLint fails for a candidate and ignores a failing foreign file", () => {
+    const fixtureRoot = createQuickCheckFixture();
+    const { binRoot, logPath } = createLoggingNpmStub();
+    const indexRoot = mkdtempSync(join(tmpdir(), "cleanmymap-guard-failure-index-"));
+    try {
+      const candidate = join(fixtureRoot, "apps", "web", "src", "components", "candidate.ts");
+      const foreign = join(fixtureRoot, "apps", "web", "src", "components", "foreign.ts");
+      writeFileSync(candidate, "export const candidate = true;\n");
+      writeFileSync(foreign, "export const foreign = true;\n");
+
+      const candidateEnv = {
+        ...withoutCandidateGitEnvironment({
+          PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}`,
+          CMM_GUARD_NPM_LOG: logPath,
+          CMM_GUARD_NPM_FAIL_ARG: "apps/web/src/components/candidate.ts",
+        }),
+        GIT_INDEX_FILE: join(indexRoot, "candidate-index"),
+      };
+      runGitAt(fixtureRoot, ["read-tree", "HEAD"], candidateEnv);
+      runGitAt(fixtureRoot, ["add", "--", "apps/web/src/components/candidate.ts"], candidateEnv);
+      const candidateResult = runPowerShell(
+        join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
+        ["-StagedOnly"],
+        candidateEnv,
+        fixtureRoot,
+      );
+      assert.notEqual(candidateResult.status, 0);
+      assert.match(`${candidateResult.stdout}\n${candidateResult.stderr}`, /eslint \(changed web files\) failed/);
+
+      const foreignEnv = {
+        ...withoutCandidateGitEnvironment({
+          PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}`,
+          CMM_GUARD_NPM_LOG: logPath,
+          CMM_GUARD_NPM_FAIL_ARG: "apps/web/src/components/foreign.ts",
+        }),
+        GIT_INDEX_FILE: join(indexRoot, "foreign-index"),
+      };
+      runGitAt(fixtureRoot, ["read-tree", "HEAD"], foreignEnv);
+      runGitAt(fixtureRoot, ["add", "--", "apps/web/src/components/candidate.ts"], foreignEnv);
+      const foreignResult = runPowerShell(
+        join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
+        ["-StagedOnly"],
+        foreignEnv,
+        fixtureRoot,
+      );
+      assert.equal(foreignResult.status, 0, `${foreignResult.stdout}\n${foreignResult.stderr}`);
+      assert.equal(readLoggedNpmArgs(logPath).includes("apps/web/src/components/foreign.ts"), false);
+    } finally {
+      rmSync(binRoot, { recursive: true, force: true });
+      rmSync(indexRoot, { recursive: true, force: true });
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps the exact temporary index across the full pre-commit guard", () => {
+    const candidate = join(WEB_SOURCE, "components", "ui", "__codex-pre-commit-index.ts");
+    const indexRoot = mkdtempSync(join(tmpdir(), "cleanmymap-precommit-index-"));
+    const env = {
+      ...withoutCandidateGitEnvironment(),
+      GIT_INDEX_FILE: join(indexRoot, "index"),
+    };
+    try {
+      writeFileSync(candidate, "export const preCommitCandidate = true;\n");
+      runGit(["read-tree", "HEAD"], env);
+      runGit(["add", "--", candidate.slice(ROOT.length + 1).replaceAll("\\", "/")], env);
+      const result = runPowerShell(join(ROOT, "scripts", "ci", "pre_commit_guard.ps1"), [], env);
+      const output = `${result.stdout}\n${result.stderr}`;
+      assert.equal(result.status, 0, output);
+      assert.match(output, /staged canonical workspace sentinels/);
+      assert.match(output, /changed total: 1/);
+      assert.match(output, /staged readable typography/);
+      assert.match(output, /staged secret audit/);
+      assert.match(output, /staged Supabase migration history/);
+      assert.match(output, /staged diff check/);
+      assert.match(output, /Pre-commit guardrail passed/);
+    } finally {
+      rmSync(candidate, { force: true });
+      rmSync(indexRoot, { recursive: true, force: true });
     }
   });
 

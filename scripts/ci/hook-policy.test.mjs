@@ -23,6 +23,8 @@ test("pre-commit uses the changed-surface guard without DEVELOPMENT quality ratc
   assert.doesNotMatch(guard, /workspace-coordination|CMM_WORKSPACE_RUN_ID|check-staged/);
   assert.match(guard, /npm run security:secrets -- --staged-only/);
   assert.match(guard, /git diff --cached --check/);
+  assert.doesNotMatch(guard, /Remove-Item Env:GIT_INDEX_FILE/);
+  assert.match(guard, /\$GitIndexFile = \$env:GIT_INDEX_FILE/);
   assert.doesNotMatch(guard, /npm run checks:changed:quick/);
   assert.doesNotMatch(guard, /npm run security:secrets\s*\}/);
   assert.doesNotMatch(guard, /git diff --check\s*\}/);
