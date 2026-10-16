@@ -17,6 +17,37 @@ import { isAboveReview } from "../checks/top-heavy-policy.mjs";
 const SHA_A = "a".repeat(40);
 const SHA_B = "b".repeat(40);
 
+function canonicalRegistry(file = "src/deferred.ts") {
+  const fields = [
+    ["RESPONSIBILITIES", "responsabilité"],
+    ["PUBLIC_CONTRACTS", "contrat public"],
+    ["SIDE_EFFECTS", "aucun"],
+    ["MAIN_CONSUMERS", "consommateurs"],
+    ["TEST_BOUNDARY", "tests ciblés"],
+    ["COUPLING", "couplage local"],
+    ["NATURAL_EXTRACTION_BOUNDARY", "aucune"],
+    ["ARCHITECTURE_DECISION", "DEFERRED_SPLIT"],
+    ["RATIONALE", "décision justifiée"],
+    ["PRIORITY", "LATER"],
+    ["DEPENDENCY_OR_BLOCKER", "aucun"],
+    ["NEXT_TRIGGER", "évolution"],
+  ];
+  const tick = String.fromCharCode(96);
+  return [
+    "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->",
+    "| PATH | ARCHITECTURE_DECISION | PRIORITY | DEPENDENCY_OR_BLOCKER | NEXT_TRIGGER |",
+    "| --- | --- | --- | --- | --- |",
+    "| " + tick + file + tick + " | DEFERRED_SPLIT | LATER | aucun | évolution |",
+    "",
+    "#### " + tick + file + tick,
+    "",
+    "| Champ | Valeur |",
+    "| --- | --- |",
+    ...fields.map(([field, value]) => "| " + field + " | " + value + " |"),
+    "<!-- RADAR:HUMAN_DECISIONS:END -->",
+  ].join("\n");
+}
+
 function metric() {
   return { total: 1, covered: 1, pct: 100 };
 }
@@ -84,7 +115,7 @@ test("freshness assertion rejects an artifact attached to another SHA", () => {
 
 test("architecture audit reads deferred decisions from the separate registry", () => {
   const radar = "`RADAR_REF=" + SHA_A + "`\n[modularity-decisions.md](./modularity-decisions.md)";
-  const registry = "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->\n| PATH | DECISION | PRIORITY | SIGNALS | BLOCKER / NEXT_TRIGGER |\n| --- | --- | --- | --- | --- |\n| `src/deferred.ts` | DEFERRED_SPLIT | LATER | — | wait |\n<!-- RADAR:HUMAN_DECISIONS:END -->";
+  const registry = canonicalRegistry();
   const view = {
     isFile: (file) => file === "documentation/architecture/monolith-split-plan.md" || file === "documentation/architecture/modularity-decisions.md",
     readText: (file) => file.endsWith("monolith-split-plan.md") ? radar : registry,

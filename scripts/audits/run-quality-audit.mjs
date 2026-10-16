@@ -336,6 +336,8 @@ export async function executeAudit(
     auditedHead,
     complexityRunner = runComplexityPolicy,
     cycleRunner = runCycleGate,
+    topHeavyRunner = runTopHeavyPolicy,
+    repositoryViewFactory = createRepositoryView,
   } = {},
 ) {
   if (audit === "dead-code") {
@@ -348,8 +350,8 @@ export async function executeAudit(
   }
   if (audit === "top-heavy") {
     const ref = auditedHead || "HEAD";
-    const result = runTopHeavyPolicy({ root, args: [`--ref=${ref}`, "--enforce"] });
-    const view = createRepositoryView({ root, ref });
+    const result = topHeavyRunner({ root, args: [`--ref=${ref}`, "--enforce"] });
+    const view = repositoryViewFactory({ root, ref });
     const humanDecisions = readHumanDecisionsFromView(view);
     const humanDecisionsByFile = buildHumanDecisionsByFile(humanDecisions.markdown);
     const evaluation = enrichTopHeavyEvaluation(result.evaluation, humanDecisionsByFile);

@@ -18,6 +18,53 @@ import {
 } from "./generate-modularity-radar.mjs";
 
 const currentRef = "a".repeat(40);
+const HUMAN_FIELDS = [
+  "RESPONSIBILITIES",
+  "PUBLIC_CONTRACTS",
+  "SIDE_EFFECTS",
+  "MAIN_CONSUMERS",
+  "TEST_BOUNDARY",
+  "COUPLING",
+  "NATURAL_EXTRACTION_BOUNDARY",
+  "ARCHITECTURE_DECISION",
+  "RATIONALE",
+  "PRIORITY",
+  "DEPENDENCY_OR_BLOCKER",
+  "NEXT_TRIGGER",
+];
+
+function canonicalRegistry({ file = "src/current.ts", decision = "COHESIVE_SINGLE_FILE", priority = "NONE", detailDecision = decision, detailPriority = priority, dependency = "aucun", nextTrigger = "nouveau contrat" } = {}) {
+  const values = {
+    RESPONSIBILITIES: "responsabilité",
+    PUBLIC_CONTRACTS: "contrat public",
+    SIDE_EFFECTS: "aucun",
+    MAIN_CONSUMERS: "consommateurs",
+    TEST_BOUNDARY: "tests ciblés",
+    COUPLING: "couplage local",
+    NATURAL_EXTRACTION_BOUNDARY: "aucune",
+    ARCHITECTURE_DECISION: detailDecision,
+    RATIONALE: "décision justifiée",
+    PRIORITY: detailPriority,
+    DEPENDENCY_OR_BLOCKER: dependency,
+    NEXT_TRIGGER: nextTrigger,
+  };
+  const details = HUMAN_FIELDS.map((field) => "| " + field + " | " + values[field] + " |").join("\n");
+  const tick = String.fromCharCode(96);
+  return [
+    "# Registre canonique",
+    "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->",
+    "| PATH | ARCHITECTURE_DECISION | PRIORITY | DEPENDENCY_OR_BLOCKER | NEXT_TRIGGER |",
+    "| --- | --- | --- | --- | --- |",
+    "| " + tick + file + tick + " | " + decision + " | " + priority + " | " + dependency + " | " + nextTrigger + " |",
+    "",
+    "#### " + tick + file + tick,
+    "",
+    "| Champ | Valeur |",
+    "| --- | --- |",
+    details,
+    "<!-- RADAR:HUMAN_DECISIONS:END -->",
+  ].join("\n");
+}
 
 function row(file, kind = "runtime") {
   return {
@@ -85,6 +132,41 @@ test("the migrated registry preserves every human decision and manual field", ()
   assert.equal(decisions.length, 47);
   assert.ok(decisions.every((entry) => JSON.stringify(Object.keys(entry).sort()) === JSON.stringify(expectedKeys)));
   assert.ok(decisions.every((entry) => entry.file && entry.ARCHITECTURE_DECISION && entry.PRIORITY));
+  const view = {
+    isFile: (file) => file === "documentation/architecture/modularity-decisions.md",
+    readText: () => registry,
+  };
+  assert.throws(() => readHumanDecisionsFromView(view, { requireRegistry: true }), /incohérence résumé\/détail/);
+});
+
+test("the current registry validates its markers and structure without a fixed decision count", () => {
+  const registry = canonicalRegistry({ file: "src/current.ts" });
+  const view = {
+    isFile: (file) => file === "documentation/architecture/modularity-decisions.md",
+    readText: () => registry,
+  };
+  const result = readHumanDecisionsFromView(view, { requireRegistry: true });
+  assert.equal(result.legacy, false);
+  assert.deepEqual(result.decisions.map((entry) => entry.file), ["src/current.ts"]);
+});
+
+test("the current registry rejects empty, truncated, duplicate and inconsistent data", () => {
+  const valid = canonicalRegistry();
+  const cases = [
+    ["empty", "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->\n<!-- RADAR:HUMAN_DECISIONS:END -->"],
+    ["missing begin", valid.replace("<!-- RADAR:HUMAN_DECISIONS:BEGIN -->\n", "")],
+    ["missing end", valid.replace("\n<!-- RADAR:HUMAN_DECISIONS:END -->", "")],
+    ["truncated detail", valid.replace("| RATIONALE | décision justifiée |", "")],
+    ["duplicate path", valid.replace("| `src/current.ts` | COHESIVE_SINGLE_FILE | NONE | aucun | nouveau contrat |", "| `src/current.ts` | COHESIVE_SINGLE_FILE | NONE | aucun | nouveau contrat |\\n| `src/current.ts` | COHESIVE_SINGLE_FILE | NONE | aucun | nouveau contrat |")],
+    ["summary/detail mismatch", canonicalRegistry({ detailDecision: "DEFERRED_SPLIT" })],
+  ];
+  for (const [label, markdown] of cases) {
+    const view = {
+      isFile: (file) => file === "documentation/architecture/modularity-decisions.md",
+      readText: () => markdown,
+    };
+    assert.throws(() => readHumanDecisionsFromView(view, { requireRegistry: true }), /Registre canonique des décisions illisible/, label);
+  }
 });
 
 test("the current contract requires the separate registry while legacy snapshots remain readable", () => {

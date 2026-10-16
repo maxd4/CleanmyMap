@@ -265,14 +265,144 @@ export function extractHumanDecisions(markdown) {
 
 const EMPTY_HUMAN_DECISIONS = "_Aucune décision humaine enregistrée._";
 
+function canonicalRegistryError(reason) {
+  return new Error("Registre canonique des décisions illisible (" + MODULARITY_DECISIONS_PATH + "): " + reason);
+}
+
+function canonicalMarkerBlock(markdown) {
+  if (typeof markdown !== "string" || markdown.trim() === "") {
+    throw canonicalRegistryError("contenu vide");
+  }
+
+  const begin = markdown.indexOf(HUMAN_BEGIN);
+  const end = markdown.indexOf(HUMAN_END);
+  if (begin < 0) throw canonicalRegistryError("marqueur de début manquant");
+  if (end < 0) throw canonicalRegistryError("marqueur de fin manquant");
+  if (markdown.lastIndexOf(HUMAN_BEGIN) !== begin) throw canonicalRegistryError("marqueur de début dupliqué");
+  if (markdown.lastIndexOf(HUMAN_END) !== end) throw canonicalRegistryError("marqueur de fin dupliqué");
+  if (end <= begin) throw canonicalRegistryError("ordre des marqueurs incohérent");
+
+  const block = markdown.slice(begin + HUMAN_BEGIN.length, end).trim();
+  if (!block || block === EMPTY_HUMAN_DECISIONS) throw canonicalRegistryError("registre vide");
+  return block;
+}
+
+function isTableSeparator(cells, expectedLength) {
+  return cells.length === expectedLength && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+}
+
+function parseCanonicalSummary(humanBlock) {
+  const expectedHeader = ["PATH", "ARCHITECTURE_DECISION", "PRIORITY", "DEPENDENCY_OR_BLOCKER", "NEXT_TRIGGER"];
+  const lines = humanBlock.split(/\r?\n/);
+  const headerIndexes = lines.flatMap((line, index) => JSON.stringify(splitTableRow(line)) === JSON.stringify(expectedHeader) ? [index] : []);
+  if (headerIndexes.length !== 1) throw canonicalRegistryError("tableau récapitulatif absent ou dupliqué");
+
+  const headerIndex = headerIndexes[0];
+  if (lines.slice(0, headerIndex).some((line) => line.trim() !== "")) {
+    throw canonicalRegistryError("contenu inattendu avant le tableau récapitulatif");
+  }
+  if (!isTableSeparator(splitTableRow(lines[headerIndex + 1] ?? ""), expectedHeader.length)) {
+    throw canonicalRegistryError("séparateur du tableau récapitulatif manquant ou invalide");
+  }
+
+  const firstDetailIndex = lines.findIndex((line, index) => index > headerIndex + 1 && /^#### \x60[^\x60]+\x60\s*$/.test(line));
+  const summaryLines = lines.slice(headerIndex + 2, firstDetailIndex >= 0 ? firstDetailIndex : lines.length);
+  const entries = [];
+  const files = new Set();
+  for (const line of summaryLines) {
+    if (line.trim() === "" || line.trim() === "### Décisions établies — grille détaillée") continue;
+    const cells = splitTableRow(line);
+    if (cells.length !== expectedHeader.length || cells.some((cell) => cell === "")) {
+      throw canonicalRegistryError("entrée récapitulative invalide: " + line);
+    }
+    if (!/^\x60[^\x60]+\x60$/.test(cells[0])) throw canonicalRegistryError("chemin récapitulatif invalide: " + cells[0]);
+    const file = cells[0].slice(1, -1);
+    if (files.has(file)) throw canonicalRegistryError("chemin dupliqué dans le résumé: " + file);
+    files.add(file);
+    entries.push({ file, decision: cells[1], priority: cells[2], dependency: cells[3], nextTrigger: cells[4] });
+  }
+  if (entries.length === 0) throw canonicalRegistryError("aucune décision dans le tableau récapitulatif");
+  return entries;
+}
+
+function parseCanonicalDetails(humanBlock) {
+  const headings = [...humanBlock.matchAll(/^#### \x60([^\x60]+)\x60\s*$/gm)];
+  if (headings.length === 0) throw canonicalRegistryError("fiches détaillées absentes");
+
+  const details = new Map();
+  for (let index = 0; index < headings.length; index += 1) {
+    const file = headings[index][1];
+    if (details.has(file)) throw canonicalRegistryError("fiche détaillée dupliquée: " + file);
+    const start = headings[index].index + headings[index][0].length;
+    const end = headings[index + 1]?.index ?? humanBlock.length;
+    const lines = humanBlock.slice(start, end).split(/\r?\n/);
+    const headerIndexes = lines.flatMap((line, lineIndex) => JSON.stringify(splitTableRow(line)) === JSON.stringify(["Champ", "Valeur"]) ? [lineIndex] : []);
+    if (headerIndexes.length !== 1) throw canonicalRegistryError("tableau détaillé absent ou dupliqué: " + file);
+    const headerIndex = headerIndexes[0];
+    if (!isTableSeparator(splitTableRow(lines[headerIndex + 1] ?? ""), 2)) throw canonicalRegistryError("séparateur du tableau détaillé invalide: " + file);
+
+    const fields = new Map();
+    for (const line of lines.slice(headerIndex + 2)) {
+      if (line.trim() === "") continue;
+      const cells = splitTableRow(line);
+      if (cells.length !== 2 || cells[0] === "") throw canonicalRegistryError("champ détaillé invalide pour " + file + ": " + line);
+      if (fields.has(cells[0])) throw canonicalRegistryError("champ détaillé dupliqué pour " + file + ": " + cells[0]);
+      fields.set(cells[0], cells[1]);
+    }
+    for (const field of HUMAN_FIELDS) {
+      if (!fields.has(field)) throw canonicalRegistryError("champ détaillé manquant pour " + file + ": " + field);
+    }
+    if (!fields.get("ARCHITECTURE_DECISION") || !fields.get("PRIORITY")) {
+      throw canonicalRegistryError("décision ou priorité vide pour " + file);
+    }
+    details.set(file, fields);
+  }
+  return details;
+}
+
+function parseCanonicalRegistry(markdown) {
+  const humanBlock = canonicalMarkerBlock(markdown);
+  const summaries = parseCanonicalSummary(humanBlock);
+  const details = parseCanonicalDetails(humanBlock);
+  const summaryFiles = new Set(summaries.map((entry) => entry.file));
+  for (const file of summaryFiles) {
+    if (!details.has(file)) throw canonicalRegistryError("fiche détaillée absente pour " + file);
+  }
+  for (const file of details.keys()) {
+    if (!summaryFiles.has(file)) throw canonicalRegistryError("fiche détaillée sans résumé: " + file);
+  }
+  for (const summary of summaries) {
+    const fields = details.get(summary.file);
+    const comparisons = [
+      ["ARCHITECTURE_DECISION", summary.decision],
+      ["PRIORITY", summary.priority],
+      ["DEPENDENCY_OR_BLOCKER", summary.dependency],
+      ["NEXT_TRIGGER", summary.nextTrigger],
+    ];
+    for (const [field, expected] of comparisons) {
+      if (fields.get(field) !== expected) {
+        throw canonicalRegistryError("incohérence résumé/détail pour " + summary.file + ": " + field);
+      }
+    }
+  }
+  const decisions = parseHumanDecisions(humanBlock);
+  if (decisions.length !== summaries.length) throw canonicalRegistryError("nombre de décisions incohérent après analyse");
+  return decisions;
+}
+
 export function readHumanDecisionsFromView(view, { requireRegistry = false } = {}) {
   if (view.isFile(MODULARITY_DECISIONS_PATH)) {
-    const markdown = view.readText(MODULARITY_DECISIONS_PATH);
+    let markdown;
+    try {
+      markdown = view.readText(MODULARITY_DECISIONS_PATH);
+    } catch (error) {
+      throw canonicalRegistryError("lecture impossible: " + (error?.message ?? String(error)));
+    }
     return {
       sourcePath: MODULARITY_DECISIONS_PATH,
       legacy: false,
       markdown,
-      decisions: parseHumanDecisions(markdown),
+      decisions: parseCanonicalRegistry(markdown),
     };
   }
 
@@ -281,7 +411,7 @@ export function readHumanDecisionsFromView(view, { requireRegistry = false } = {
     : "";
   const legacyBlock = extractHumanDecisions(legacyMarkdown);
   const pointsToSeparateRegistry = legacyMarkdown.includes("modularity-decisions.md");
-  if (requireRegistry || (pointsToSeparateRegistry && legacyBlock === EMPTY_HUMAN_DECISIONS)) {
+  if (requireRegistry || pointsToSeparateRegistry) {
     throw new Error(`Registre canonique des décisions absent: ${MODULARITY_DECISIONS_PATH}`);
   }
 

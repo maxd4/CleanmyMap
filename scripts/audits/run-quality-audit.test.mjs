@@ -499,4 +499,6 @@ test("serializes metrics and diagnostic error fields", () => {
   });
 });
 
+test("executeAudit propagates malformed current registry errors", async () => { const root = tempRoot(); try { const malformed = "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->\n| PATH | ARCHITECTURE_DECISION | PRIORITY | DEPENDENCY_OR_BLOCKER | NEXT_TRIGGER |\n| --- | --- | --- | --- | --- |\n<!-- RADAR:HUMAN_DECISIONS:END -->"; const view = { isFile: (file) => file === "documentation/architecture/modularity-decisions.md", readText: () => malformed }; await assert.rejects(() => executeAudit("top-heavy", root, { auditedHead: sha, topHeavyRunner: () => fixtureResult("top-heavy"), repositoryViewFactory: () => view }), /Registre canonique des décisions illisible/); } finally { fs.rmSync(root, { recursive: true, force: true }); } });
+
 // End-to-end engine execution belongs to the audit commands, not this plumbing suite.
