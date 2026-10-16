@@ -9,7 +9,7 @@ import {
   type SetStateAction,
 } from "react";
 import { useUser } from "@clerk/nextjs";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Mic, Square } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -25,6 +25,7 @@ import {
   FEEDBACK_SCREENSHOT_ACCEPT,
   validateFeedbackScreenshotFile,
 } from "./feedback-screenshot-client";
+import { useSpeechRecognition } from "./use-speech-recognition";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
@@ -113,12 +114,43 @@ export function QuestionnaireCard({
     setValues((current) => ({ ...current, [fieldKey]: value }));
   }
 
+  function appendSpeechTranscript(fieldKey: string, transcript: string) {
+    const normalizedTranscript = transcript.trim().replace(/\s+/g, " ");
+    if (!normalizedTranscript) return;
+    if (submitState !== "idle") {
+      setSubmitState("idle");
+      setErrorMessage(null);
+      setRequestId(null);
+    }
+    setValues((current) => {
+      const existingValue = current[fieldKey]?.trimEnd() ?? "";
+      if (
+        existingValue === normalizedTranscript ||
+        existingValue.endsWith(` ${normalizedTranscript}`)
+      ) {
+        return current;
+      }
+      return {
+        ...current,
+        [fieldKey]: existingValue
+          ? `${existingValue} ${normalizedTranscript}`
+          : normalizedTranscript,
+      };
+    });
+  }
+
+  const speech = useSpeechRecognition({
+    locale,
+    onFinalTranscript: appendSpeechTranscript,
+  });
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) {
       return;
     }
 
+    speech.stop();
     setSubmitState("submitting");
     setErrorMessage(null);
 
@@ -272,27 +304,92 @@ export function QuestionnaireCard({
 
       {isLoaded && isSignedIn ? (
         <form onSubmit={handleSubmit} className="space-y-4">
+          {questionnaire.id !== "collaboration" ? (
+            <div className="space-y-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+              <p className="text-sm leading-relaxed text-slate-300">
+                {locale === "fr"
+                  ? "La dictée utilise la reconnaissance vocale du navigateur. Selon le navigateur, un fournisseur externe peut être utilisé ; aucun audio n'est enregistré par CleanMyMap."
+                  : "Dictation uses your browser's speech recognition. Depending on the browser, an external provider may be used; CleanMyMap does not record audio."}
+              </p>
+              {speech.supportKnown && !speech.isSupported ? (
+                <p className="text-sm text-amber-100" role="status">
+                  {speech.unsupportedMessage}
+                </p>
+              ) : null}
+              {speech.errorMessage ? (
+                <p className="text-sm text-rose-100" role="alert">
+                  {speech.errorMessage}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="grid gap-3">
-            {questionnaire.fields.map((field) => (
-              <label key={field.key} className="block space-y-1.5">
+            {questionnaire.fields.map((field) => {
+              const fieldId = `feedback-${questionnaire.id}-${field.key}`;
+              const canDictate = questionnaire.id !== "collaboration" && field.rows !== undefined;
+              const fieldIsListening = speech.isListening && speech.activeFieldKey === field.key;
+
+              return (
+              <div key={field.key} className="block space-y-1.5">
+                <label htmlFor={fieldId} className="block">
                 <span className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-slate-200">
                   {field.label[locale]}
                 </span>
+                </label>
                 <textarea
+                  id={fieldId}
                   value={values[field.key] ?? ""}
                   onChange={(event) => updateField(field.key, event.target.value)}
+                  onFocus={() => speech.stopIfOtherField(field.key)}
                   placeholder={field.placeholder[locale]}
                   rows={field.rows ?? 2}
                   maxLength={800}
                   className="min-h-[88px] w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-white placeholder:text-slate-400 focus:border-cyan-300/50 focus:outline-none focus:ring-2 focus:ring-cyan-300/20"
                 />
+                {canDictate ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CmmButton
+                      type="button"
+                      ariaLabel={fieldIsListening
+                        ? locale === "fr" ? "Arrêter la dictée" : "Stop dictation"
+                        : locale === "fr" ? "Dicter" : "Dictate"}
+                      ariaControls={fieldId}
+                      title={speech.supportKnown && !speech.isSupported ? speech.unsupportedMessage : undefined}
+                      disabled={speech.isListening
+                        ? false
+                        : !speech.supportKnown || !speech.isSupported || submitState === "submitting"}
+                      onClick={() => {
+                        if (fieldIsListening) {
+                          speech.stop();
+                        } else {
+                          speech.start(field.key);
+                        }
+                      }}
+                      tone="secondary"
+                      variant="pill"
+                      className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/15 bg-white/[0.06] px-3 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 disabled:cursor-not-allowed disabled:opacity-55"
+                    >
+                      {fieldIsListening ? <Square className="h-4 w-4" aria-hidden="true" /> : <Mic className="h-4 w-4" aria-hidden="true" />}
+                      {fieldIsListening
+                        ? locale === "fr" ? "Arrêter" : "Stop"
+                        : locale === "fr" ? "Dicter" : "Dictate"}
+                    </CmmButton>
+                    {fieldIsListening && speech.interimTranscript ? (
+                      <p className="text-sm text-cyan-100" aria-live="polite">
+                        {locale === "fr" ? "En cours : " : "In progress: "}
+                        {speech.interimTranscript}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
                 {field.helper ? (
                   <p className="cmm-text-caption text-slate-400">
                     {field.helper[locale]}
                   </p>
                 ) : null}
-              </label>
-            ))}
+              </div>
+              );
+            })}
           </div>
 
           {questionnaire.id === "bug" ? (

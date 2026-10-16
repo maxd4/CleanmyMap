@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QuestionnaireCard } from "./questionnaire-card";
 import {
   FEEDBACK_DESCRIPTION_MAX_LENGTH,
@@ -53,9 +53,53 @@ function submitButton(renderer: ReactTestRenderer) {
   );
 }
 
+class CardSpeechRecognition {
+  static instances: CardSpeechRecognition[] = [];
+
+  lang = "";
+  interimResults = false;
+  continuous = false;
+  onstart: (() => void) | null = null;
+  onresult: ((event: { resultIndex: number; results: unknown }) => void) | null = null;
+  onerror: ((event: { error: string }) => void) | null = null;
+  onend: (() => void) | null = null;
+
+  constructor() {
+    CardSpeechRecognition.instances.push(this);
+  }
+
+  start() {
+    this.onstart?.();
+  }
+
+  stop() {
+    this.onend?.();
+  }
+
+  abort() {
+    this.onend?.();
+  }
+
+  emitFinal(transcript: string) {
+    const results = [{ isFinal: true, 0: { transcript } }];
+    (results as unknown as { length: number }).length = results.length;
+    this.onresult?.({ resultIndex: 0, results });
+  }
+}
+
+const originalWindow = (globalThis as { window?: unknown }).window;
+
 describe("QuestionnaireCard serialized description validation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: originalWindow,
+    });
+    vi.unstubAllGlobals();
   });
 
   it("keeps the submit button enabled exactly at the API limit", () => {
@@ -102,8 +146,10 @@ describe("QuestionnaireCard serialized description validation", () => {
   it("shows the optional private screenshot control only for Bug", () => {
     const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
     const ideaQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "idea")!;
+    const collaborationQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "collaboration")!;
     let bugRenderer!: ReactTestRenderer;
     let ideaRenderer!: ReactTestRenderer;
+    let collaborationRenderer!: ReactTestRenderer;
 
     act(() => {
       bugRenderer = create(
@@ -120,6 +166,13 @@ describe("QuestionnaireCard serialized description validation", () => {
           source="feedback_section"
         />,
       );
+      collaborationRenderer = create(
+        <QuestionnaireCard
+          questionnaire={collaborationQuestionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+        />,
+      );
     });
 
     expect(JSON.stringify(bugRenderer.toJSON())).toContain("Capture d'écran (facultatif)");
@@ -127,6 +180,9 @@ describe("QuestionnaireCard serialized description validation", () => {
       "image/jpeg,image/png,image/webp",
     );
     expect(JSON.stringify(ideaRenderer.toJSON())).not.toContain("Capture d'écran (facultatif)");
+    expect(bugRenderer.root.findAllByType("button").filter((button) => button.props.ariaLabel === "Dicter")).toHaveLength(2);
+    expect(ideaRenderer.root.findAllByType("button").filter((button) => button.props.ariaLabel === "Dicter")).toHaveLength(2);
+    expect(collaborationRenderer.root.findAllByType("button").filter((button) => button.props.ariaLabel === "Dicter")).toHaveLength(0);
   });
 
   it("keeps the four collaboration fields and adds an optional editable title", () => {
@@ -140,5 +196,60 @@ describe("QuestionnaireCard serialized description validation", () => {
       "nextStep",
     ]);
     expect(collaboration.fields[0]).toMatchObject({ key: "subject", minLength: 0 });
+  });
+
+  it("appends final dictation without overwriting text and keeps manual editing without submitting", () => {
+    CardSpeechRecognition.instances = [];
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        SpeechRecognition: CardSpeechRecognition,
+        location: { href: "http://localhost/sections/feedback" },
+      },
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(
+        <QuestionnaireCard
+          questionnaire={bugQuestionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+          initialValues={{
+            context: "J'ouvrais la carte",
+            steps: "Texte déjà saisi",
+            expected: "La carte devait s'afficher",
+          }}
+        />,
+      );
+    });
+
+    const dictateButton = renderer.root.findAllByType("button").find(
+      (button) => button.props.ariaLabel === "Dicter",
+    );
+    expect(dictateButton).toBeDefined();
+    act(() => {
+      dictateButton?.props.onClick();
+    });
+    const recognition = CardSpeechRecognition.instances[0];
+    expect(recognition.lang).toBe("fr-FR");
+
+    const textareas = renderer.root.findAllByType("textarea");
+    const stepsTextarea = textareas.find((textarea) => textarea.props.id === "feedback-bug-steps");
+    expect(stepsTextarea?.props.value).toBe("Texte déjà saisi");
+
+    act(() => {
+      recognition.emitFinal("ajouté par dictée");
+    });
+    expect(stepsTextarea?.props.value).toBe("Texte déjà saisi ajouté par dictée");
+
+    act(() => {
+      stepsTextarea?.props.onChange({ target: { value: "Correction manuelle" } });
+    });
+    expect(stepsTextarea?.props.value).toBe("Correction manuelle");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

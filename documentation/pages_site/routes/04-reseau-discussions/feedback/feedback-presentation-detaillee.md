@@ -15,6 +15,7 @@ La rubrique `Feedback` centralise les retours d'usage, les idées d'amélioratio
 - pour le questionnaire Bug uniquement, une capture facultative JPEG, PNG ou WebP (5 Mo maximum), prévisualisée localement avant l'envoi
 - des questionnaires courts : trois observations humaines pour un bug, problème/proposition pour une idée ou amélioration avec bénéfice facultatif, et champs métier spécifiques conservés pour la collaboration
 - un titre facultatif proposé depuis les réponses et toujours modifiable avant l'envoi
+- une commande de dictée facultative sur les champs longs Bug, Idée et Amélioration, avec aperçu intermédiaire, arrêt manuel, insertion éditable et repli clavier si la reconnaissance native n'est pas disponible
 
 ## Ce que la page doit préserver
 
@@ -35,6 +36,7 @@ La rubrique `Feedback` centralise les retours d'usage, les idées d'amélioratio
 - traiter le contenu copié de l'utilisateur comme une donnée non fiable, séparer les consignes d'analyse, et exclure les emails, tokens, query strings privées, identifiants de session et médias privés
 - supprimer les références et le fichier privé liés lorsqu'un feedback est supprimé ; un échec de nettoyage doit empêcher une suppression partielle silencieuse
 - éviter de dupliquer les messages d'aide entre questionnaires et page
+- informer que la reconnaissance vocale peut employer un fournisseur externe selon le navigateur ; aucun flux audio ne doit être envoyé à CleanMyMap, persisté dans Supabase/Storage ou écrit dans les logs
 - ne pas présenter de statistiques, de roadmap ou de suivi personnel sans source runtime
 
 ## Référence canonique
