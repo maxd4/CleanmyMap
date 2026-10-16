@@ -7,6 +7,12 @@ export type FeedbackSubmissionResult = {
   requestId: string | null;
 };
 
+export const FEEDBACK_DESCRIPTION_MAX_LENGTH = 3000;
+
+export function isFeedbackDescriptionWithinLimit(description: string): boolean {
+  return description.length <= FEEDBACK_DESCRIPTION_MAX_LENGTH;
+}
+
 export function formatQuestionnaireDescription(
   questionnaire: QuestionnaireConfig,
   values: Record<string, string>,
@@ -36,6 +42,21 @@ export async function submitFeedbackQuestionnaire(params: {
   submittedAt: number;
 }): Promise<FeedbackSubmissionResult> {
   const questionnairePagePath = `${params.pagePath}#${params.questionnaire.id}`;
+  const description = formatQuestionnaireDescription(
+    params.questionnaire,
+    params.values,
+    questionnairePagePath,
+    params.locale,
+  );
+
+  if (!isFeedbackDescriptionWithinLimit(description)) {
+    throw new Error(
+      params.locale === "fr"
+        ? "Votre retour est trop long. Raccourcissez-le avant de l'envoyer."
+        : "Your feedback is too long. Shorten it before sending.",
+    );
+  }
+
   const response = await fetch("/api/community/bug-reports", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -43,12 +64,7 @@ export async function submitFeedbackQuestionnaire(params: {
       reportType: params.questionnaire.id,
       title:
         params.values.subject?.trim() || params.questionnaire.title[params.locale],
-      description: formatQuestionnaireDescription(
-        params.questionnaire,
-        params.values,
-        questionnairePagePath,
-        params.locale,
-      ),
+      description,
       pagePath: questionnairePagePath,
       source: params.source,
       honeypot: params.honeypot,

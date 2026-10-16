@@ -1,9 +1,34 @@
 import { describe, expect, it, vi } from "vitest";
 import { buildFeedbackCanonicalHref } from "../feedback-section.shared";
-import { formatQuestionnaireDescription, submitFeedbackQuestionnaire } from "./feedback-submission";
+import {
+  FEEDBACK_DESCRIPTION_MAX_LENGTH,
+  formatQuestionnaireDescription,
+  isFeedbackDescriptionWithinLimit,
+  submitFeedbackQuestionnaire,
+} from "./feedback-submission";
 import { QUESTIONNAIRES } from "./questionnaire-config";
 
 describe("feedback submission contract", () => {
+  function valuesForDescriptionLength(
+    type: (typeof QUESTIONNAIRES)[number]["id"],
+    targetLength: number,
+  ) {
+    const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === type)!;
+    const values = Object.fromEntries(
+      questionnaire.fields.map((field) => [field.key, "x".repeat(field.minLength ?? 1)]),
+    );
+    const pagePath = `/sections/feedback#${type}`;
+    const currentLength = formatQuestionnaireDescription(
+      questionnaire,
+      values,
+      pagePath,
+      "fr",
+    ).length;
+    const firstField = questionnaire.fields[0].key;
+    values[firstField] += "x".repeat(targetLength - currentLength);
+    return { questionnaire, values, pagePath };
+  }
+
   it.each(["bug", "idea", "improvement", "collaboration"] as const)(
     "formats the %s questionnaire for the existing API contract",
     (type) => {
@@ -72,6 +97,46 @@ describe("feedback submission contract", () => {
       "/api/community/bug-reports",
       expect.objectContaining({ method: "POST" }),
     );
+
+    vi.unstubAllGlobals();
+  });
+
+  it("accepts a serialized description exactly at the API limit", () => {
+    const { questionnaire, values, pagePath } = valuesForDescriptionLength(
+      "improvement",
+      FEEDBACK_DESCRIPTION_MAX_LENGTH,
+    );
+    const description = formatQuestionnaireDescription(
+      questionnaire,
+      values,
+      pagePath,
+      "fr",
+    );
+
+    expect(description).toHaveLength(FEEDBACK_DESCRIPTION_MAX_LENGTH);
+    expect(isFeedbackDescriptionWithinLimit(description)).toBe(true);
+  });
+
+  it("blocks a serialized description one character over the API limit before fetch", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const { questionnaire, values } = valuesForDescriptionLength(
+      "improvement",
+      FEEDBACK_DESCRIPTION_MAX_LENGTH + 1,
+    );
+
+    await expect(
+      submitFeedbackQuestionnaire({
+        questionnaire,
+        values,
+        pagePath: "/sections/feedback",
+        source: "feedback_section",
+        locale: "fr",
+        honeypot: "",
+        submittedAt: Date.now(),
+      }),
+    ).rejects.toThrow("Votre retour est trop long");
+    expect(fetchMock).not.toHaveBeenCalled();
 
     vi.unstubAllGlobals();
   });

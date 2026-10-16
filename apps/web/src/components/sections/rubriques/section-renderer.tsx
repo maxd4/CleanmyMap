@@ -16,6 +16,7 @@ type SectionRendererProps = {
   section: SectionRubriqueDefinition;
   fundingOnParticipeUrl?: string;
   publicInitialData?: PublicSectionInitialData;
+  initialSearchParams?: FeedbackSectionProps["initialSearchParams"];
 };
 
 const CommunitySection = dynamic(() =>
@@ -93,7 +94,12 @@ function OpenDataFundingLink() {
 
 export const FINALIZED_SECTION_RENDERERS = {
   community: () => <CommunitySection />,
-  feedback: () => <FeedbackSection />,
+  feedback: (_fundingOnParticipeUrl, _publicInitialData, initialSearchParams) => (
+    <FeedbackSection
+      key={JSON.stringify(initialSearchParams ?? {})}
+      initialSearchParams={initialSearchParams}
+    />
+  ),
   gamification: () => <GamificationSection />,
   leaderboard: () => <LeaderboardSection />,
   actors: (_fundingOnParticipeUrl, initialData) => (
@@ -133,6 +139,7 @@ export const FINALIZED_SECTION_RENDERERS = {
   (
     fundingOnParticipeUrl?: string,
     publicInitialData?: PublicSectionInitialData,
+    initialSearchParams?: FeedbackSectionProps["initialSearchParams"],
   ) => ReactNode
 >;
 
@@ -140,6 +147,7 @@ export function SectionRenderer({
   section,
   fundingOnParticipeUrl,
   publicInitialData,
+  initialSearchParams,
 }: SectionRendererProps) {
   if (section.implementation === "pending") {
     return (
@@ -159,5 +167,5 @@ export function SectionRenderer({
       ? fundingOnParticipeUrl
       : undefined;
 
-  return <>{renderSection(exposeFundingUrl, publicInitialData)}</>;
+  return <>{renderSection(exposeFundingUrl, publicInitialData, initialSearchParams)}</>;
 }

@@ -22,6 +22,18 @@ export type SupportLink = {
 export type FeedbackSectionProps = {
   pagePath?: string;
   source?: FeedbackSource;
+  initialSearchParams?: FeedbackSectionSearchParams;
+};
+
+export type FeedbackSectionSearchParams = Record<
+  string,
+  string | string[] | undefined
+>;
+
+export type FeedbackSectionUrlState = {
+  pathname?: string;
+  searchParams?: URLSearchParams | FeedbackSectionSearchParams;
+  hash?: string;
 };
 
 export type FeedbackSectionContext = {
@@ -116,29 +128,36 @@ export function buildFeedbackCanonicalHref(params: {
   return `/sections/feedback?${searchParams.toString()}#${params.type}`;
 }
 
-export function resolveFeedbackSectionContext(
-  pagePathOverride?: string,
-): FeedbackSectionContext {
-  const pagePath =
-    pagePathOverride ??
-    (typeof window === "undefined" ? "/sections/feedback" : window.location.pathname);
-
-  if (typeof window === "undefined") {
-    return {
-      pagePath,
-      supportPrefill: null,
-      initialType: "idea",
-      source: "feedback_section",
-    };
+function toSearchParams(
+  input: FeedbackSectionUrlState["searchParams"],
+): URLSearchParams {
+  if (input instanceof URLSearchParams) {
+    return new URLSearchParams(input);
   }
 
-  const params = new URLSearchParams(window.location.search);
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(input ?? {})) {
+    if (Array.isArray(value)) {
+      for (const item of value) searchParams.append(key, item);
+    } else if (value !== undefined) {
+      searchParams.set(key, value);
+    }
+  }
+  return searchParams;
+}
+
+export function resolveFeedbackSectionContext(
+  pagePathOverride?: string,
+  urlState: FeedbackSectionUrlState = {},
+): FeedbackSectionContext {
+  const pagePath = pagePathOverride ?? urlState.pathname ?? "/sections/feedback";
+  const params = toSearchParams(urlState.searchParams);
   const hasPrefill =
     params.has("subject") ||
     params.has("context") ||
     params.has("steps") ||
     params.has("expected");
-  const hashType = parseFeedbackType(window.location.hash.replace(/^#/, ""));
+  const hashType = parseFeedbackType((urlState.hash ?? "").replace(/^#/, ""));
 
   return {
     pagePath,

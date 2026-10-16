@@ -93,7 +93,11 @@ export function FeedbackSectionDashboardForm({
           </div>
 
           <QuestionnaireCard
-            key={selectedQuestionnaire.id}
+            key={`${selectedQuestionnaire.id}:${
+              selectedQuestionnaire.id === "bug"
+                ? JSON.stringify(supportPrefill ?? null)
+                : "no-prefill"
+            }`}
             questionnaire={selectedQuestionnaire}
             pagePath={pagePath}
             source={source}

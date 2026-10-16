@@ -16,7 +16,11 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
 import type { QuestionnaireConfig } from "./questionnaire-config";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
-import { submitFeedbackQuestionnaire } from "./feedback-submission";
+import {
+  FEEDBACK_DESCRIPTION_MAX_LENGTH,
+  formatQuestionnaireDescription,
+  submitFeedbackQuestionnaire,
+} from "./feedback-submission";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
@@ -53,6 +57,19 @@ export function QuestionnaireCard({
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
+  const questionnairePagePath = `${pagePath}#${questionnaire.id}`;
+  const serializedDescription = useMemo(
+    () =>
+      formatQuestionnaireDescription(
+        questionnaire,
+        values,
+        questionnairePagePath,
+        locale,
+      ),
+    [locale, questionnaire, questionnairePagePath, values],
+  );
+  const descriptionTooLong =
+    serializedDescription.length > FEEDBACK_DESCRIPTION_MAX_LENGTH;
 
   useEffect(() => {
     formStartedAt.current = Date.now();
@@ -61,7 +78,7 @@ export function QuestionnaireCard({
   const canSubmit = questionnaire.fields.every((field) => {
     const value = values[field.key]?.trim() ?? "";
     return value.length >= (field.minLength ?? 1);
-  }) && submitState !== "submitting";
+  }) && !descriptionTooLong && submitState !== "submitting";
 
   function updateField(fieldKey: string, value: string) {
     if (submitState !== "idle") {
@@ -236,6 +253,14 @@ export function QuestionnaireCard({
               </label>
             ))}
           </div>
+
+          {descriptionTooLong ? (
+            <p role="alert" className="rounded-xl border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
+              {locale === "fr"
+                ? `Votre retour dépasse la limite de ${FEEDBACK_DESCRIPTION_MAX_LENGTH} caractères (${serializedDescription.length}). Raccourcissez-le pour pouvoir l'envoyer.`
+                : `Your feedback exceeds the ${FEEDBACK_DESCRIPTION_MAX_LENGTH}-character limit (${serializedDescription.length}). Shorten it before sending.`}
+            </p>
+          ) : null}
 
           <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="cmm-text-caption text-slate-300">

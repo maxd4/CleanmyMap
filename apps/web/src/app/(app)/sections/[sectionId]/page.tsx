@@ -119,12 +119,15 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
   const publicInitialData = await loadPublicSectionInitialData(section.id);
 
   if (accessMode === "visible") {
+    const initialSearchParams =
+      section.id === "feedback" ? await searchParams : undefined;
     return (
       <Suspense fallback={null}>
         <SectionRenderer
           section={section}
           fundingOnParticipeUrl={fundingOnParticipeUrl}
           publicInitialData={publicInitialData}
+          initialSearchParams={initialSearchParams}
         />
       </Suspense>
     );
