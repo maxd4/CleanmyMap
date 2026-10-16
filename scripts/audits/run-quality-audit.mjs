@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
@@ -59,7 +60,13 @@ function git(args, root) {
 
 export function captureRepositorySnapshot({ root = REPOSITORY_ROOT, gitRunner = git } = {}) {
   const auditedHead = gitRunner(["rev-parse", "HEAD"], root);
-  const originMain = gitRunner(["rev-parse", "origin/main"], root);
+  let originMain = null;
+  try {
+    originMain = gitRunner(["rev-parse", "origin/main"], root);
+  } catch {
+    // A missing or temporarily unavailable tracking ref is evidence that the
+    // baseline is not canonical, not a reason to discard the local audit.
+  }
   const worktree = gitRunner(["status", "--short"], root);
   return {
     auditedHead,
@@ -70,11 +77,17 @@ export function captureRepositorySnapshot({ root = REPOSITORY_ROOT, gitRunner = 
   };
 }
 
-export function createAuditPaths({ root = REPOSITORY_ROOT, auditedHead, audit }) {
+export function createAuditPaths({ root = REPOSITORY_ROOT, auditedHead, audit, runId } = {}) {
   const shaRoot = path.join(root, QUALITY_AUDIT_ROOT, auditedHead);
-  const auditRoot = audit === "all" ? shaRoot : path.join(shaRoot, audit);
+  if (runId !== undefined && (typeof runId !== "string" || !/^[A-Za-z0-9_-]+$/.test(runId))) {
+    throw new QualityAuditError(`Identifiant d'exécution invalide: ${runId}`, "INVALID_RUN_ID");
+  }
+  const runRoot = runId ? path.join(shaRoot, runId) : shaRoot;
+  const auditRoot = audit === "all" ? runRoot : path.join(runRoot, audit);
   return {
     shaRoot,
+    runRoot,
+    runId: runId ?? null,
     auditRoot,
     manifest: path.join(auditRoot, "manifest.json"),
     report: path.join(auditRoot, "report.json"),
@@ -232,6 +245,10 @@ function makeSummary({ audit, manifest, result, paths }) {
     `- origin/main: \`${manifest.originMain}\``,
     `- Baseline stable: **${manifest.baselineStable ? "yes" : "no"}**`,
     `- Worktree clean: **${manifest.worktreeClean ? "yes" : "no"}**`,
+    `- Read provenance: **${manifest.readProvenance}**`,
+    `- Reproducible: **${manifest.reproducible ? "yes" : "no"}**`,
+    `- Result class: **${manifest.resultClass}**`,
+    `- Worktree changed during run: **${manifest.worktreeChanged ? "yes" : "no"}**`,
     `- Status: **${manifest.status}**`,
     `- Attention required: **${manifest.attentionRequired ? "yes" : "no"}**`,
     `- Raw report: \`${path.relative(path.dirname(paths.summary), paths.report).replaceAll("\\", "/")}\``,
@@ -277,40 +294,52 @@ function makeSummary({ audit, manifest, result, paths }) {
   return `${lines.join("\n")}\n`;
 }
 
-async function executeAudit(audit, root) {
+async function executeAudit(audit, root, { auditedHead } = {}) {
   if (audit === "dead-code") {
     const result = runDeadCodePolicy({ report: runKnipReport() });
-    return { ...result, status: statusForAudit(audit, result), formatted: formatDeadCodeReport(result) };
+    return { ...result, status: statusForAudit(audit, result), formatted: formatDeadCodeReport(result), readProvenance: "WORKTREE_LIVE" };
   }
   if (audit === "duplication") {
     const result = runDuplicationPolicy();
-    return { ...result, status: statusForAudit(audit, result), formatted: formatDuplicationReport(result) };
+    return { ...result, status: statusForAudit(audit, result), formatted: formatDuplicationReport(result), readProvenance: "WORKTREE_LIVE" };
   }
   if (audit === "top-heavy") {
-    const result = runTopHeavyPolicy({ root, args: ["--ref=HEAD", "--enforce"] });
-    const view = createRepositoryView({ root, ref: "HEAD" });
+    const ref = auditedHead || "HEAD";
+    const result = runTopHeavyPolicy({ root, args: [`--ref=${ref}`, "--enforce"] });
+    const view = createRepositoryView({ root, ref });
     const humanDecisionsByFile = view.isFile(HUMAN_DECISIONS_PATH)
       ? buildHumanDecisionsByFile(view.readText(HUMAN_DECISIONS_PATH))
       : {};
     const evaluation = enrichTopHeavyEvaluation(result.evaluation, humanDecisionsByFile);
     const enrichedResult = { ...result, evaluation };
-    return { ...enrichedResult, status: statusForAudit(audit, enrichedResult) };
+    return { ...enrichedResult, status: statusForAudit(audit, enrichedResult), readProvenance: "COMMITTED_SNAPSHOT" };
   }
-  if (audit === "complexity") return runComplexityPolicy();
-  if (audit === "cycles") return runCycleGate();
+  if (audit === "complexity") return { ...runComplexityPolicy(), readProvenance: "WORKTREE_LIVE" };
+  if (audit === "cycles") return { ...runCycleGate(), readProvenance: "WORKTREE_LIVE" };
   throw new QualityAuditError(`Unknown audit: ${audit}`, "INVALID_MODE");
 }
 
-function sameSnapshot(left, right) {
-  return left.auditedHead === right.auditedHead
-    && left.originMain === right.originMain
-    && left.worktree === right.worktree
-    && left.baselineStable === right.baselineStable;
+function snapshotChanged(left, right) {
+  return left.auditedHead !== right.auditedHead
+    || left.originMain !== right.originMain
+    || left.worktree !== right.worktree
+    || left.worktreeClean !== right.worktreeClean;
 }
 
-export function isAuditBaselineStable(audit, snapshot) {
-  return snapshot.auditedHead === snapshot.originMain
-    && (audit === "duplication" || snapshot.worktreeClean);
+export function isAuditBaselineStable(snapshot) {
+  return Boolean(snapshot.worktreeClean && snapshot.originMain && snapshot.auditedHead === snapshot.originMain);
+}
+
+function classifyEvidence({ readProvenance, start, worktreeChanged, status }) {
+  const reproducible = readProvenance === "COMMITTED_SNAPSHOT"
+    ? Boolean(start.auditedHead)
+    : start.worktreeClean && !worktreeChanged;
+  return {
+    readProvenance,
+    worktreeChanged,
+    reproducible,
+    resultClass: status === "FAIL" ? "FAILURE" : reproducible ? "REPRODUCIBLE" : "INFORMATIVE",
+  };
 }
 
 export async function runQualityAudit(mode, {
@@ -319,22 +348,17 @@ export async function runQualityAudit(mode, {
   engine = executeAudit,
   fsApi = fs,
   now = () => new Date().toISOString(),
+  runId = randomUUID(),
 } = {}) {
   if (!AUDIT_MODES.includes(mode)) throw new QualityAuditError(`Mode d'audit inconnu. ${usage()}`, "INVALID_MODE");
   const audits = mode === "all" ? AUDIT_MODES.slice(0, -1) : [mode];
   const start = snapshot();
-  if (!isAuditBaselineStable(mode, start)) {
-    const requirement = mode === "duplication"
-      ? "HEAD must equal origin/main"
-      : "worktree must be clean and HEAD must equal origin/main";
-    throw new QualityAuditError(`BASELINE_STABLE=false: ${requirement}. ${usage()}`, "BASELINE_UNSTABLE");
-  }
 
   const results = [];
   for (const audit of audits) {
     let raw;
     try {
-      raw = await engine(audit, root);
+      raw = await engine(audit, root, { auditedHead: start.auditedHead, snapshot: start });
     } catch (error) {
       raw = { status: "FAIL", error: { name: error?.name ?? "Error", message: error?.message ?? String(error), code: error?.code } };
     }
@@ -361,22 +385,25 @@ export async function runQualityAudit(mode, {
   }
 
   const end = snapshot();
-  if (!sameSnapshot(start, end)) {
-    throw new QualityAuditError("BASELINE_STABLE=false: repository changed during the audit; no canonical result was published.", "BASELINE_CHANGED");
-  }
+  const worktreeChanged = snapshotChanged(start, end);
 
   const generatedAt = now();
   const manifests = [];
   for (const entry of results) {
-    const paths = createAuditPaths({ root, auditedHead: start.auditedHead, audit: entry.audit });
+    const readProvenance = entry.result?.readProvenance ?? "WORKTREE_LIVE";
+    const evidence = classifyEvidence({ readProvenance, start, worktreeChanged, status: entry.status });
+    const paths = createAuditPaths({ root, auditedHead: start.auditedHead, audit: entry.audit, runId });
     fsApi.mkdirSync(paths.auditRoot, { recursive: true });
     const manifest = {
       schemaVersion: 1,
       audit: entry.audit,
+      runId,
       auditedHead: start.auditedHead,
       originMain: start.originMain,
       baselineStable: start.baselineStable,
       worktreeClean: start.worktreeClean,
+      initialWorktreeClean: start.worktreeClean,
+      ...evidence,
       status: entry.status,
       attentionRequired: entry.attentionRequired,
       generatedAt,
@@ -384,7 +411,7 @@ export async function runQualityAudit(mode, {
     writeJson(paths.report, entry.result, fsApi);
     fsApi.writeFileSync(paths.summary, makeSummary({ audit: entry.audit, manifest, result: entry.result, paths }), "utf8");
     writeJson(paths.manifest, manifest, fsApi);
-    manifests.push({ ...entry, paths, manifest });
+    manifests.push({ ...entry, paths, manifest, ...evidence });
   }
 
   const overallStatus = manifests.some((entry) => entry.status === "FAIL")
@@ -394,19 +421,36 @@ export async function runQualityAudit(mode, {
       : "PASS";
   const overallAttention = manifests.some((entry) => entry.attentionRequired);
   if (mode === "all") {
-    const paths = createAuditPaths({ root, auditedHead: start.auditedHead, audit: "all" });
+    const paths = createAuditPaths({ root, auditedHead: start.auditedHead, audit: "all", runId });
+    const aggregateEvidence = {
+      readProvenance: manifests.every((entry) => entry.readProvenance === "COMMITTED_SNAPSHOT")
+        ? "COMMITTED_SNAPSHOT"
+        : "MIXED",
+      worktreeChanged,
+      reproducible: manifests.every((entry) => entry.reproducible),
+      resultClass: overallStatus === "FAIL"
+        ? "FAILURE"
+        : manifests.every((entry) => entry.reproducible) ? "REPRODUCIBLE" : "INFORMATIVE",
+    };
     const manifest = {
       schemaVersion: 1,
       audit: "all",
+      runId,
       auditedHead: start.auditedHead,
       originMain: start.originMain,
       baselineStable: start.baselineStable,
       worktreeClean: start.worktreeClean,
+      initialWorktreeClean: start.worktreeClean,
+      ...aggregateEvidence,
       status: overallStatus,
       attentionRequired: overallAttention,
       generatedAt,
     };
-    writeJson(paths.report, { status: overallStatus, attentionRequired: overallAttention, audits: manifests.map(({ audit, status, attentionRequired: attention }) => ({ audit, status, attentionRequired: attention })) }, fsApi);
+    writeJson(paths.report, {
+      status: overallStatus,
+      attentionRequired: overallAttention,
+      audits: manifests.map(({ audit, status, attentionRequired: attention, readProvenance, reproducible, resultClass }) => ({ audit, status, attentionRequired: attention, readProvenance, reproducible, resultClass })),
+    }, fsApi);
     fsApi.writeFileSync(paths.summary, [
       "# Quality audit — all",
       "",
@@ -419,7 +463,19 @@ export async function runQualityAudit(mode, {
     writeJson(paths.manifest, manifest, fsApi);
   }
 
-  return { mode, status: overallStatus, attentionRequired: overallAttention, auditedHead: start.auditedHead, originMain: start.originMain, results: manifests };
+  return {
+    mode,
+    runId,
+    status: overallStatus,
+    attentionRequired: overallAttention,
+    auditedHead: start.auditedHead,
+    originMain: start.originMain,
+    baselineStable: start.baselineStable,
+    worktreeClean: start.worktreeClean,
+    worktreeChanged,
+    allPaths: mode === "all" ? createAuditPaths({ root, auditedHead: start.auditedHead, audit: "all", runId }) : null,
+    results: manifests,
+  };
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {

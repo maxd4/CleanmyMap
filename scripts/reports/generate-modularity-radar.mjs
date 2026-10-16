@@ -9,7 +9,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -177,19 +177,50 @@ function readFilesystemJson(root, relativePath) {
   }
 }
 
-export function loadQualityAuditArtifacts({ root = REPOSITORY_ROOT, auditedSha }) {
-  if (!/^[0-9a-f]{40}$/i.test(auditedSha ?? "")) return createEmptyCorrelationSignals("RADAR_REF incomplet");
-  const reports = {};
-  for (const audit of QUALITY_AUDITS) {
-    const base = `artifacts/quality-audits/${auditedSha}/${audit}`;
-    const manifest = readFilesystemJson(root, `${base}/manifest.json`);
-    const report = readFilesystemJson(root, `${base}/report.json`);
-    if (!manifest || manifest.schemaVersion !== 1 || manifest.audit !== audit || manifest.auditedHead !== auditedSha || manifest.originMain !== auditedSha || manifest.baselineStable !== true || manifest.worktreeClean !== true || !report) {
-      return createEmptyCorrelationSignals(`preuve quality incomplète ou non stable pour ${auditedSha}`);
-    }
-    reports[audit] = report;
+function qualityManifestIsReproducible(manifest, audit, auditedSha) {
+  return manifest
+    && manifest.schemaVersion === 1
+    && manifest.audit === audit
+    && manifest.auditedHead === auditedSha
+    && manifest.originMain === auditedSha
+    && manifest.baselineStable === true
+    && manifest.worktreeClean === true
+    && (manifest.reproducible === undefined || manifest.reproducible === true)
+    && (manifest.resultClass === undefined || manifest.resultClass === "REPRODUCIBLE");
+}
+
+function qualityAuditRunIds(root, auditedSha) {
+  const shaRoot = path.join(root, "artifacts", "quality-audits", auditedSha);
+  let entries = [];
+  try {
+    entries = readdirSync(shaRoot, { withFileTypes: true });
+  } catch {
+    return [null];
   }
-  return createCorrelationSignalsFromAuditResults(reports);
+  return [null, ...entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name)];
+}
+
+export function loadQualityAuditArtifacts({ root = REPOSITORY_ROOT, auditedSha, runId } = {}) {
+  if (!/^[0-9a-f]{40}$/i.test(auditedSha ?? "")) return createEmptyCorrelationSignals("RADAR_REF incomplet");
+  const candidateRunIds = runId === undefined ? qualityAuditRunIds(root, auditedSha) : [runId];
+  for (const candidateRunId of candidateRunIds) {
+    const reports = {};
+    let valid = true;
+    for (const audit of QUALITY_AUDITS) {
+      const base = candidateRunId
+        ? `artifacts/quality-audits/${auditedSha}/${candidateRunId}/${audit}`
+        : `artifacts/quality-audits/${auditedSha}/${audit}`;
+      const manifest = readFilesystemJson(root, `${base}/manifest.json`);
+      const report = readFilesystemJson(root, `${base}/report.json`);
+      if (!qualityManifestIsReproducible(manifest, audit, auditedSha) || !report) {
+        valid = false;
+        break;
+      }
+      reports[audit] = report;
+    }
+    if (valid) return createCorrelationSignalsFromAuditResults(reports);
+  }
+  return createEmptyCorrelationSignals(`preuve quality incomplète ou non stable pour ${auditedSha}`);
 }
 
 function signalForRow(row, correlations) {

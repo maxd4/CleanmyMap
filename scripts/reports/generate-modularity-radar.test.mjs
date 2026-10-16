@@ -255,6 +255,35 @@ test("missing or other-SHA artifact proof remains NOT_MEASURED", () => {
   }
 });
 
+test("loads a reproducible quality run from its isolated runId directory", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-radar-run-"));
+  const auditedSha = "c".repeat(40);
+  const runId = "run-isolated";
+  try {
+    const base = path.join(root, "artifacts", "quality-audits", auditedSha, runId);
+    for (const audit of ["dead-code", "duplication", "top-heavy", "complexity", "cycles"]) {
+      const target = path.join(base, audit);
+      fs.mkdirSync(target, { recursive: true });
+      fs.writeFileSync(path.join(target, "manifest.json"), JSON.stringify({
+        schemaVersion: 1,
+        audit,
+        runId,
+        auditedHead: auditedSha,
+        originMain: auditedSha,
+        baselineStable: true,
+        worktreeClean: true,
+        reproducible: true,
+        resultClass: "REPRODUCIBLE",
+      }));
+      fs.writeFileSync(path.join(target, "report.json"), JSON.stringify(auditResults()[audit]));
+    }
+    const loaded = loadQualityAuditArtifacts({ root, auditedSha });
+    assert.equal(loaded.measured, true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("NONE and NOT_MEASURED stay distinct and only PRESENT signals count", () => {
   const none = row("apps/web/src/none.ts");
   none.signals = {

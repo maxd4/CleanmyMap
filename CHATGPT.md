@@ -912,6 +912,17 @@ PUSH_CANDIDATE  = refs et ranges réellement transmis par le protocole pre-push
                   Git, exclusivement depuis ses arguments et son stdin
 ```
 
+Le runner `audit:quality` est une analyse non bloquante du checkout partagé :
+il capture le SHA au démarrage sans exiger `HEAD == origin/main` ni un
+worktree propre, conserve les échecs de chaque engine et publie une provenance
+par engine (`COMMITTED_SNAPSHOT` ou `WORKTREE_LIVE`). Une modification pendant
+l'exécution rend la sortie informative et non reproductible lorsque la lecture
+était live ; elle ne doit pas effacer le résultat ni l'attribuer au nouveau
+SHA. Chaque exécution écrit dans un répertoire identifié par un `runId` pour
+éviter l'écrasement concurrent. Les rapports informatifs ne remplacent jamais
+une preuve `PUSH_CANDIDATE` ou une baseline stable et aucune baseline ou
+justification n'est mise à jour automatiquement.
+
 Le vrai hook pre-push ne doit jamais déduire son périmètre de `HEAD` global,
 `origin/main`, du dirty state, des fichiers staged ou des commits locaux non
 envoyés. Il doit afficher et utiliser explicitement le scope `PUSH_CANDIDATE`.

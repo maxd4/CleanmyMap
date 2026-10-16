@@ -138,6 +138,10 @@ Le workflow courant est `MAIN-ONLY / MULTI-WRITER COORDONNÉ`.
   relus et réconciliés explicitement ;
 - aucun nouveau worktree, clone, branche de chantier, claim ou coordinateur
   persistant n’est créé pour le workflow normal ;
+- un checkout partagé peut rester dirty, contenir des fichiers untracked, des
+  commits locaux non publiés ou évoluer pendant une analyse ; ces conditions
+  sont normales en multi-writer et ne bloquent pas une lecture ou une
+  validation indépendante ;
 - main publié = référence versionnée ;
 - une candidate locale explicitement fournie ou produite pour le lot courant
   est autoritative pour ce lot jusqu’à intégration ;
@@ -213,7 +217,15 @@ Plusieurs responsabilités peuvent coexister dans le même checkout ou dans un
 commit lorsque leurs changements sont explicitement identifiés, préservés et
 validés ; une présence étrangère n’est pas, à elle seule, un motif de blocage.
 
-### Propreté obligatoire du worktree
+### Propreté du lot courant et état partagé
+
+La propreté du worktree n'est pas une condition générale de démarrage d'un
+audit. Un audit doit capturer immédiatement le SHA lu, conserver l'état dirty
+initial et signaler toute évolution de `HEAD`, de l'index ou du worktree. Il
+ne doit ni attribuer silencieusement des fichiers locaux à un SHA Git, ni
+supprimer les résultats parce qu'un autre writer a travaillé en parallèle.
+La synchronisation avec `origin/main` est une exigence de réconciliation et de
+publication, pas un prérequis pour commencer une analyse locale.
 
 Une exécution ne doit jamais se terminer avec un fichier `dirty` ou `untracked`
 introduit par le lot courant, ni avec un changement pertinent laissé hors du
@@ -239,8 +251,10 @@ pas établie.
 - si un fichier ou un contrat est modifié concurremment, relire le diff courant
   et réconcilier explicitement avant de le modifier ou de le committer ;
 - une divergence d’index, de `HEAD` ou de branche distante doit être traitée
-  par attente bornée, refetch et intégration non destructive ; un conflit non
-  résolu reste bloquant et ne doit jamais être masqué.
+  par attente bornée, refetch et intégration non destructive lorsqu'une
+  publication ou une réconciliation est demandée ; elle ne bloque pas une
+  analyse indépendante. Un conflit non résolu reste bloquant pour la
+  publication et ne doit jamais être masqué.
 
 Un fichier supplémentaire directement nécessaire à la même responsabilité
 n’est pas un nouveau chantier : adapter callers, consommateurs, tests, types ou

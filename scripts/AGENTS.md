@@ -62,6 +62,26 @@ guards CURRENT.
 
 ## Portée Git des contrôles
 
+### Audits quality en checkout partagé
+
+`npm run audit:quality -- <mode>` peut démarrer dans un checkout dirty ou
+concurrent, avec des fichiers untracked, des commits locaux non publiés ou
+`HEAD != origin/main`. Le runner capture le SHA immédiatement, ne prend pas
+ces états comme une autorisation d'attribuer le worktree au SHA, et conserve
+dans chaque manifeste l'état initial, les changements observés, le statut de
+l'engine et sa provenance de lecture. Les engines qui lisent un arbre Git
+immuable portent `COMMITTED_SNAPSHOT`; ceux qui lisent le checkout courant
+portent `WORKTREE_LIVE`. Une évolution du dépôt pendant l'exécution produit
+une sortie informative ou en échec, jamais une suppression silencieuse des
+résultats.
+
+Les exécutions utilisent un `runId` dans
+`artifacts/quality-audits/<SHA>/<runId>/` afin que deux audits parallèles ne
+s'écrasent pas. `baselineStable` est descriptif et non bloquant pour ce
+runner. Les résultats `INFORMATIVE` ne constituent pas une preuve de candidat
+publié et aucun audit ne modifie automatiquement une baseline, une
+justification ou un seuil.
+
 - les contrôles manuels de changements peuvent utiliser la portée `WORKTREE` ;
   le contrôle de pré-commit doit utiliser exclusivement la portée `STAGED`,
   issue de `git diff --cached`, et ignorer le dirty state et les untracked

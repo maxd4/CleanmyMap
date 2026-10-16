@@ -53,18 +53,24 @@ test("artifact paths are deterministic and SHA-scoped", () => {
 test("a single audit writes manifest, raw report and generated summary only below the artifact root", async () => {
   const root = tempRoot();
   try {
-    const result = await runQualityAudit("dead-code", { root, snapshot: () => stableSnapshot, engine: async () => fixtureResult("dead-code"), now: () => "2026-10-04T00:00:00.000Z" });
-    const auditRoot = path.join(root, "artifacts", "quality-audits", sha, "dead-code");
+    const result = await runQualityAudit("dead-code", { root, runId: "run-single", snapshot: () => stableSnapshot, engine: async () => fixtureResult("dead-code"), now: () => "2026-10-04T00:00:00.000Z" });
+    const auditRoot = result.results[0].paths.auditRoot;
     assert.equal(result.status, "PASS");
     assert.deepEqual(fs.readdirSync(auditRoot).sort(), ["manifest.json", "report.json", "summary.md"]);
     const manifest = JSON.parse(fs.readFileSync(path.join(auditRoot, "manifest.json"), "utf8"));
     assert.deepEqual(manifest, {
       schemaVersion: 1,
       audit: "dead-code",
+      runId: "run-single",
       auditedHead: sha,
       originMain: sha,
       baselineStable: true,
       worktreeClean: true,
+      initialWorktreeClean: true,
+      readProvenance: "WORKTREE_LIVE",
+      worktreeChanged: false,
+      reproducible: true,
+      resultClass: "REPRODUCIBLE",
       status: "PASS",
       attentionRequired: false,
       generatedAt: "2026-10-04T00:00:00.000Z",
@@ -165,7 +171,7 @@ test("all runs each engine once, aggregates statuses and retains other results a
     assert.equal(result.status, "FAIL");
     assert.equal(result.results.find((entry) => entry.audit === "duplication").status, "FAIL");
     assert.equal(result.results.find((entry) => entry.audit === "cycles").status, "PASS");
-    assert.ok(fs.existsSync(path.join(root, "artifacts", "quality-audits", sha, "manifest.json")));
+    assert.ok(fs.existsSync(result.allPaths.manifest));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -199,7 +205,7 @@ test("duplication audit accepts a stable dirty worktree and records it as non-cl
       snapshot: () => dirtySnapshot,
       engine: async () => fixtureResult("duplication"),
     });
-    const manifest = JSON.parse(fs.readFileSync(path.join(root, "artifacts", "quality-audits", sha, "duplication", "manifest.json"), "utf8"));
+    const manifest = JSON.parse(fs.readFileSync(result.results[0].paths.manifest, "utf8"));
     assert.equal(result.status, "PASS");
     assert.equal(manifest.baselineStable, false);
     assert.equal(manifest.worktreeClean, false);
@@ -207,19 +213,90 @@ test("duplication audit accepts a stable dirty worktree and records it as non-cl
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
-test("unstable start and end snapshots stop without publishing a canonical result", async () => {
+
+test("all audits accept a stable dirty worktree and record non-clean evidence", async () => {
+  const root = tempRoot();
+  const dirtySnapshot = { ...stableSnapshot, worktree: " M src/dirty.ts", worktreeClean: false, baselineStable: false };
+  try {
+    const result = await runQualityAudit("all", {
+      root,
+      snapshot: () => dirtySnapshot,
+      engine: async (audit) => fixtureResult(audit),
+    });
+    const manifest = JSON.parse(fs.readFileSync(result.allPaths.manifest, "utf8"));
+    assert.equal(result.status, "PASS");
+    assert.equal(manifest.baselineStable, false);
+    assert.equal(manifest.worktreeClean, false);
+    assert.equal(manifest.audit, "all");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("divergent start and changed snapshots remain published as informative evidence", async () => {
   const root = tempRoot();
   try {
-    await assert.rejects(
-      () => runQualityAudit("dead-code", { root, snapshot: () => ({ ...stableSnapshot, worktree: " M foreign.ts", worktreeClean: false, baselineStable: false }), engine: async () => fixtureResult("dead-code") }),
-      (error) => error.code === "BASELINE_UNSTABLE",
-    );
     let snapshotCount = 0;
-    await assert.rejects(
-      () => runQualityAudit("dead-code", { root, snapshot: () => (++snapshotCount === 1 ? stableSnapshot : { ...stableSnapshot, auditedHead: "b".repeat(40), baselineStable: false }), engine: async () => fixtureResult("dead-code") }),
-      (error) => error.code === "BASELINE_CHANGED",
-    );
-    assert.equal(fs.existsSync(path.join(root, "artifacts")), false);
+    const changed = {
+      ...stableSnapshot,
+      auditedHead: "b".repeat(40),
+      originMain: "c".repeat(40),
+      worktree: " M src/audited.ts\n?? foreign.txt",
+      worktreeClean: false,
+      baselineStable: false,
+    };
+    const result = await runQualityAudit("dead-code", {
+      root,
+      runId: "run-changed",
+      snapshot: () => (++snapshotCount === 1 ? { ...stableSnapshot, originMain: "c".repeat(40), baselineStable: false, worktree: "?? foreign.txt", worktreeClean: false } : changed),
+      engine: async () => fixtureResult("dead-code"),
+    });
+    const manifest = JSON.parse(fs.readFileSync(result.results[0].paths.manifest, "utf8"));
+    assert.equal(result.status, "PASS");
+    assert.equal(manifest.auditedHead, sha);
+    assert.equal(manifest.baselineStable, false);
+    assert.equal(manifest.initialWorktreeClean, false);
+    assert.equal(manifest.worktreeChanged, true);
+    assert.equal(manifest.reproducible, false);
+    assert.equal(manifest.resultClass, "INFORMATIVE");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("HEAD divergence without worktree edits is accepted and remains reproducible locally", async () => {
+  const root = tempRoot();
+  try {
+    const localSnapshot = { ...stableSnapshot, originMain: "c".repeat(40), baselineStable: false };
+    const result = await runQualityAudit("dead-code", { root, runId: "run-local-commit", snapshot: () => localSnapshot, engine: async () => fixtureResult("dead-code") });
+    const manifest = JSON.parse(fs.readFileSync(result.results[0].paths.manifest, "utf8"));
+    assert.equal(result.status, "PASS");
+    assert.equal(manifest.baselineStable, false);
+    assert.equal(manifest.reproducible, true);
+    assert.equal(manifest.resultClass, "REPRODUCIBLE");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("each engine retains provenance and concurrent runs use distinct artifact roots", async () => {
+  const root = tempRoot();
+  try {
+    const engine = async (audit) => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      return { ...fixtureResult(audit), readProvenance: audit === "top-heavy" ? "COMMITTED_SNAPSHOT" : "WORKTREE_LIVE" };
+    };
+    const [first, second] = await Promise.all([
+      runQualityAudit("all", { root, runId: "run-a", snapshot: () => stableSnapshot, engine }),
+      runQualityAudit("all", { root, runId: "run-b", snapshot: () => stableSnapshot, engine }),
+    ]);
+    assert.notEqual(first.allPaths.runRoot, second.allPaths.runRoot);
+    assert.ok(fs.existsSync(first.allPaths.manifest));
+    assert.ok(fs.existsSync(second.allPaths.manifest));
+    const topHeavy = first.results.find((entry) => entry.audit === "top-heavy");
+    assert.equal(topHeavy.readProvenance, "COMMITTED_SNAPSHOT");
+    assert.equal(topHeavy.reproducible, true);
+    assert.equal(first.results.find((entry) => entry.audit === "dead-code").readProvenance, "WORKTREE_LIVE");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

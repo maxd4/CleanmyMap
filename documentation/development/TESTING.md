@@ -1089,27 +1089,29 @@ npm run audit:quality -- cycles
 npm run audit:quality -- all
 ```
 
-Les audits exigent au début et à la fin `HEAD == origin/main`. Les audits
-`dead-code`, `top-heavy`, `complexity`, `cycles` et `all` exigent en plus un
-worktree propre. L’audit `duplication` peut être exécuté sur le worktree
-courant lorsqu’il est dirty afin de mesurer les changements locaux ; son
-`manifest.json` conserve alors `baselineStable: false` et `worktreeClean: false`
-et cette sortie ne constitue pas une preuve FULL réutilisable pour un candidat
-propre. Toute modification du worktree pendant l’exécution arrête l’audit et
-aucun résultat n’est publié. Les audits sont exécutés séquentiellement ; `all`
-exécute chaque engine une seule fois et conserve les autres résultats lorsqu’un
-engine échoue.
+Les audits capturent immédiatement `auditedHead` et peuvent démarrer dans un
+checkout dirty, avec des fichiers untracked, des commits locaux non publiés,
+`HEAD != origin/main` ou un autre writer actif. Aucun de ces états ne bloque
+le runner. `manifest.json` conserve notamment `baselineStable`, l’état dirty
+initial, `worktreeChanged`, le statut de chaque engine et la provenance de
+lecture : `COMMITTED_SNAPSHOT` pour un arbre Git immuable explicitement ciblé,
+`WORKTREE_LIVE` pour le checkout courant. Une modification détectée pendant
+l’exécution conserve les résultats mais les classe `INFORMATIVE` lorsque la
+lecture live n’est plus reproductible ; les échecs restent `FAILURE`.
 
 Les artefacts locaux régénérables sont écrits sous
-`artifacts/quality-audits/<auditedHead>/<audit>/` : `manifest.json` contient la
-baseline et le statut, `report.json` conserve le résultat brut de la gate et
-`summary.md` en est la projection lisible. Le mode `all` ajoute les mêmes
-fichiers au niveau `<auditedHead>/`. Ces artefacts ne sont pas versionnés et ne
-sont pas une source de vérité ; les baselines, justifications et seuils des
-engines restent les seules sources normatives. `attentionRequired: false`
-signifie qu’aucun delta top-heavy ni REVIEW non qualifié nécessitant une
-nouvelle analyse n’a été observé, pas que la dette historique de fichiers
-volumineux est absente.
+`artifacts/quality-audits/<auditedHead>/<runId>/<audit>/` : `manifest.json`
+contient la baseline descriptive, la provenance et le statut, `report.json`
+conserve le résultat brut de la gate et `summary.md` en est la projection
+lisible. Le mode `all` ajoute les mêmes fichiers au niveau
+`<auditedHead>/<runId>/`. Le `runId` empêche deux exécutions concurrentes de
+s’écraser. Ces artefacts ne sont pas versionnés et ne sont pas une source de
+vérité ; les baselines, justifications et seuils des engines restent les
+seules sources normatives. Une sortie `REPRODUCIBLE` locale ne remplace pas
+une preuve `PUSH_CANDIDATE` ou FULL, et aucune baseline ou justification n’est
+mise à jour automatiquement. `attentionRequired: false` signifie qu’aucun
+delta top-heavy ni REVIEW non qualifié nécessitant une nouvelle analyse n’a
+été observé, pas que la dette historique de fichiers volumineux est absente.
 
 L’audit architectural ponctuel est distinct du radar top-heavy :
 
