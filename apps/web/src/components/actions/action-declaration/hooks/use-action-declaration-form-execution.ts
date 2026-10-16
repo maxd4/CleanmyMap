@@ -20,6 +20,7 @@ type ActionDeclarationFormExecutionParams = {
   setForm: Dispatch<SetStateAction<FormState>>;
   declarationMode: "complete";
   isAuthenticated: boolean;
+  draftStorageReadError: boolean;
   initialActionId: string | null;
   linkedEventId?: string;
   userMetadata: ActionDeclarationUserMetadata;
@@ -49,6 +50,7 @@ export function useActionDeclarationFormExecution({
   setForm,
   declarationMode,
   isAuthenticated,
+  draftStorageReadError,
   initialActionId,
   linkedEventId,
   userMetadata,
@@ -103,6 +105,7 @@ export function useActionDeclarationFormExecution({
     form,
     declarationMode,
     isAuthenticated,
+    draftStorageReadError,
     initialActionId,
     loadedActionPhase,
     setLoadedActionPhase,

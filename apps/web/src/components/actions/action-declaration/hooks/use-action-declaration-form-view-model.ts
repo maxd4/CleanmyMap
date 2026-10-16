@@ -96,15 +96,17 @@ export function useActionDeclarationFormViewModel(
     initialActionId: props.initialActionId,
     loadedActionPhase,
   });
-  const isCompletionBlocked = !props.isAuthenticated;
+  const draftRecoveryBlocked = !props.initialActionId && state.draftStorageReadError;
+  const isCompletionBlocked = !props.isAuthenticated || draftRecoveryBlocked;
   const sections = buildActionDeclarationSectionProps(props, state, presentation);
 
   function onSubmit(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
-    if (isCompletionBlocked) {
+    if (!props.isAuthenticated) {
       setShowRestrictionDialog(true);
       return;
     }
+    if (draftRecoveryBlocked) return;
     state.setShowConfirmation(true);
   }
 

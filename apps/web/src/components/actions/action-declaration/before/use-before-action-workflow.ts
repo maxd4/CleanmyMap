@@ -371,6 +371,7 @@ export function useBeforeActionFieldUpdates({
   creationRequestId,
   linkedEventId,
   submissionState,
+  persistenceStatus,
   isAuthenticated,
   setForm,
   onFormChange,
@@ -385,6 +386,7 @@ export function useBeforeActionFieldUpdates({
   creationRequestId: string | null;
   linkedEventId?: string;
   submissionState: SubmissionState;
+  persistenceStatus: BeforeActionPersistenceStatus;
   isAuthenticated: boolean;
   setForm: StateSetter<FormState>;
   onFormChange?: (form: FormState) => void;
@@ -409,7 +411,13 @@ export function useBeforeActionFieldUpdates({
     applyOrganizerFormUpdates(nextForm, form, updates);
     setForm(nextForm); onFormChange?.(nextForm);
     const savedAt = saveDraft(nextForm, undefined, null, draftActionId ?? null, creationRequestId);
-    setPersistenceStatus(savedAt ? (draftActionId && isAuthenticated ? "unsaved" : "local") : "error");
+    setPersistenceStatus(
+      persistenceStatus === "read-error"
+        ? "read-error"
+        : savedAt
+          ? (draftActionId && isAuthenticated ? "unsaved" : "local")
+          : "error",
+    );
     if (submissionState === "error") { setSubmissionState("idle"); setErrorMessage(null); setValidationIssues([]); setValidationIssueFields([]); }
   };
   const updateField: BeforeActionFieldUpdater = (key, value) => updateFields({ [key]: value } as Partial<FormState>);
@@ -424,6 +432,7 @@ export function useBeforeActionSubmission({
   linkedEventId,
   userMetadata,
   isAuthenticated,
+  persistenceStatus,
   setSubmissionState,
   setPersistenceStatus,
   setErrorMessage,
@@ -441,6 +450,7 @@ export function useBeforeActionSubmission({
   linkedEventId?: string;
   userMetadata: ActionBeforeDeclarationFormProps["userMetadata"];
   isAuthenticated: boolean;
+  persistenceStatus: BeforeActionPersistenceStatus;
   setSubmissionState: StateSetter<SubmissionState>;
   setPersistenceStatus: StateSetter<BeforeActionPersistenceStatus>;
   setErrorMessage: StateSetter<string | null>;
@@ -454,6 +464,13 @@ export function useBeforeActionSubmission({
   async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
     if (submissionState === "pending") return;
+    if (persistenceStatus === "read-error" && !actionId) {
+      setSubmissionState("error");
+      setErrorMessage(
+        "La lecture du brouillon local doit réussir avant de créer une nouvelle action. Réessayez sa lecture puis confirmez l’envoi.",
+      );
+      return;
+    }
     const issues = validateBeforeActionForm(form);
     if (issues.length > 0) {
       setValidationIssues(issues.map((issue) => issue.message)); setValidationIssueFields(issues.map((issue) => issue.field)); setErrorMessage(issues[0]?.message ?? "Complétez les informations connues avant de continuer."); setSubmissionState("error"); return;

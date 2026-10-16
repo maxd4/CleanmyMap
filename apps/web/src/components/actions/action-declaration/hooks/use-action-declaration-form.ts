@@ -65,6 +65,7 @@ export function useActionDeclarationForm({
     setForm,
     declarationMode,
     isAuthenticated,
+    draftStorageReadError: draft.draftStorageReadError,
     initialActionId,
     linkedEventId,
     userMetadata,

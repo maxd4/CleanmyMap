@@ -2,7 +2,12 @@ import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateActio
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 import type { FormState } from "../model";
-import { createActionCreationRequestId, loadDraftSnapshot, saveDraft } from "../draft-storage";
+import {
+  createActionCreationRequestId,
+  loadDraftSnapshot,
+  loadDraftSnapshotResult,
+  saveDraft,
+} from "../draft-storage";
 import {
   buildPreActionSummaryNote,
   sanitizePreActionForm,
@@ -32,6 +37,8 @@ function useBeforeActionDraftHydration({
   form,
   setForm,
   onFormChange,
+  retryGeneration,
+  setCreationRequestId,
 }: {
   initialActionId?: string | null;
   initialRecordType: "action";
@@ -40,30 +47,29 @@ function useBeforeActionDraftHydration({
   form: FormState;
   setForm: Dispatch<SetStateAction<FormState>>;
   onFormChange?: (form: FormState) => void;
+  retryGeneration: number;
+  setCreationRequestId: Dispatch<SetStateAction<string | null>>;
 }) {
   const fallbackFormRef = useRef(fallbackForm);
   const currentFormRef = useRef(form);
   const onFormChangeRef = useRef(onFormChange);
-  const hydratedRef = useRef(false);
-  // A new form has no remote record to await. Keep its first server render
-  // useful while the effect still restores a local draft after mount.
-  const [hydrationReady, setHydrationReady] = useState(
-    !initialActionId && !duplicateFromActionId,
-  );
-
+  const lastHydrationAttemptRef = useRef<number | null>(null);
   useEffect(() => {
     currentFormRef.current = form;
     onFormChangeRef.current = onFormChange;
   }, [form, onFormChange]);
 
   useEffect(() => {
-    if (initialActionId || duplicateFromActionId || hydratedRef.current) {
-      setHydrationReady(true);
+    if (initialActionId || duplicateFromActionId) {
       return;
     }
-    hydratedRef.current = true;
-    const snapshot = loadDraftSnapshot(fallbackFormRef.current, initialRecordType, null);
+    if (lastHydrationAttemptRef.current === retryGeneration) return;
+    lastHydrationAttemptRef.current = retryGeneration;
+    const snapshot = loadDraftSnapshotResult(fallbackFormRef.current, initialRecordType, null).snapshot;
     if (snapshot) {
+      if (snapshot.creationRequestId) {
+        setCreationRequestId((current) => snapshot.creationRequestId ?? current);
+      }
       const nextForm = mergeBeforeActionHydrationWithLocalChanges(
         fallbackFormRef.current,
         currentFormRef.current,
@@ -72,10 +78,11 @@ function useBeforeActionDraftHydration({
       setForm(nextForm);
       onFormChangeRef.current?.(nextForm);
     }
-    setHydrationReady(true);
-  }, [duplicateFromActionId, initialActionId, initialRecordType, setForm]);
+  }, [duplicateFromActionId, initialActionId, initialRecordType, retryGeneration, setCreationRequestId, setForm]);
 
-  return hydrationReady;
+  // A new form has no remote record to await; server hydration has its own
+  // state, and a local draft is restored without hiding the form.
+  return true;
 }
 
 function continueToComplete(
@@ -113,11 +120,11 @@ function useBeforeActionFormRuntime({
   const resolvedDefaultActorName = actorNameOptions.includes(defaultActorName) ? defaultActorName : actorNameOptions[0] ?? userMetadata.userId;
   const fallbackForm = buildBeforeActionFallbackForm(actorNameOptions, resolvedDefaultActorName, initialRecordType);
   const initialDraft = loadDraftSnapshot(fallbackForm, initialRecordType, initialActionId ?? null);
-  const [creationRequestId] = useState<string | null>(
+  const [creationRequestId, setCreationRequestId] = useState<string | null>(
     () => initialDraft?.creationRequestId ?? createActionCreationRequestId(),
   );
   const [form, setForm] = useState<FormState>(() => fallbackForm);
-  const { persistenceStatus, setPersistenceStatus, retryDraftPersistence } = useBeforeActionPersistence({ fallbackForm, initialActionId });
+  const { persistenceStatus, setPersistenceStatus, retryGeneration, retryDraftPersistence } = useBeforeActionPersistence({ fallbackForm, initialActionId });
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -147,7 +154,7 @@ function useBeforeActionFormRuntime({
     onFormChangeRef.current = onFormChange;
   }, [form, onFormChange]);
 
-  const draftHydrationReady = useBeforeActionDraftHydration({ initialActionId, initialRecordType, duplicateFromActionId, fallbackForm, form, setForm, onFormChange });
+  const draftHydrationReady = useBeforeActionDraftHydration({ initialActionId, initialRecordType, duplicateFromActionId, fallbackForm, form, setForm, onFormChange, retryGeneration, setCreationRequestId });
   const isHydratingAction = useBeforeActionHydration({ resolvedDefaultActorName, initialActionId, initialRecordType, form, setForm, onFormChange, setCreatedId, createdId, setPublishedAction, setInvitationStatuses, setPublishedAt, setTerminalActionStatus, setSubmissionState, errorMessage, setErrorMessage, setPersistenceStatus, preparationContext });
   useEffect(() => {
     if (!duplicateFromActionId || initialActionId) {
@@ -183,8 +190,8 @@ function useBeforeActionFormRuntime({
     duplicateSyncSourceRef.current = duplicateFromActionId;
     onFormChangeRef.current?.(form);
   }, [duplicateFromActionId, duplicateLoadedFor, form, initialActionId]);
-  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, draftActionId: persistedActionId, creationRequestId, linkedEventId, submissionState, isAuthenticated, setForm, onFormChange, setPersistenceStatus, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
-  const handleSubmit = useBeforeActionSubmission({ form, submissionState, actionId: persistedActionId, creationRequestId, linkedEventId, userMetadata, isAuthenticated, setSubmissionState, setPersistenceStatus, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
+  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, draftActionId: persistedActionId, creationRequestId, linkedEventId, submissionState, persistenceStatus, isAuthenticated, setForm, onFormChange, setPersistenceStatus, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
+  const handleSubmit = useBeforeActionSubmission({ form, submissionState, actionId: persistedActionId, creationRequestId, linkedEventId, userMetadata, isAuthenticated, persistenceStatus, setSubmissionState, setPersistenceStatus, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
   const { requestPublish, cancelPublication, confirmPublish } = useBeforeActionPublication({ createdId, publishedAt, publicationState, setForm, setPublishedAction, setCreatedId, setPublishedAt, setPublicationState, setPublicationError, setPublicationConfirmationOpen });
   const shareLink = createdId ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}` : null;
   const summaryNote = useMemo(() => buildPreActionSummaryNote(form), [form]);

@@ -39,6 +39,7 @@ type UseActionDeclarationSubmissionParams = {
   form: FormState;
   declarationMode: "complete";
   isAuthenticated: boolean;
+  draftStorageReadError: boolean;
   initialActionId?: string | null;
   loadedActionPhase: LoadedActionPhase;
   manualDrawingEnabled: boolean;
@@ -65,6 +66,7 @@ export function useActionDeclarationSubmission({
   form,
   declarationMode,
   isAuthenticated,
+  draftStorageReadError,
   initialActionId,
   loadedActionPhase,
   manualDrawingEnabled,
@@ -114,6 +116,14 @@ export function useActionDeclarationSubmission({
 
   async function handleConfirmSubmit() {
     if (submissionState === "pending") return;
+    if (draftStorageReadError && !initialActionId) {
+      setErrorMessage(
+        "La lecture du brouillon local doit réussir avant de créer une nouvelle action. Réessayez sa lecture puis confirmez l’envoi.",
+      );
+      setSubmissionState("error");
+      setShowConfirmation(false);
+      return;
+    }
     const validationIssuesForSubmission = getActionDeclarationSubmissionIssues({
       form,
       payload,
