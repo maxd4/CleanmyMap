@@ -34,6 +34,7 @@ import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { logWarning } from "@/lib/logging/failure-log";
 
 export const runtime ="nodejs";
+// Justification Vercel: cet historique de feedback est authentifié, lié à l'utilisateur courant et doit relire l'état métier à chaque requête.
 export const dynamic = "force-dynamic";
 
 const payloadSchema = z.object({
@@ -222,6 +223,7 @@ export async function GET(request: Request) {
      : null,
     hasMore: page.hasMore,
    },
+   // Justification Vercel: la projection d'historique est privée et ne doit jamais être partagée ou servie depuis un cache périmé.
    { headers: { "Cache-Control": "private, no-store" } },
   );
  } catch (error) {
