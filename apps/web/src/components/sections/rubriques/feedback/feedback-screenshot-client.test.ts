@@ -56,6 +56,12 @@ describe("feedback screenshot browser upload contract", () => {
 
     await expect(uploadFeedbackScreenshot(feedbackId, pngFile())).resolves.toBeUndefined();
     expect(uploadToSignedUrlMock).toHaveBeenCalledOnce();
+    expect(uploadToSignedUrlMock).toHaveBeenCalledWith(
+      expect.any(String),
+      "signed-upload-token",
+      expect.any(File),
+      expect.objectContaining({ upsert: false }),
+    );
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0][0]).toContain("/screenshot/intent");
     expect(fetchMock.mock.calls[1][0]).toContain("/screenshot/finalize");

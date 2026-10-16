@@ -111,7 +111,7 @@ export async function uploadFeedbackScreenshot(
     const upload = await storage.storage
       .from(BUG_REPORT_SCREENSHOT_BUCKET)
       .uploadToSignedUrl(intent.path, intent.token, preparedFile, {
-        upsert: true,
+        upsert: false,
         contentType: preparedFile.type,
         cacheControl: "3600",
         metadata: buildStorageBusinessMetadata({

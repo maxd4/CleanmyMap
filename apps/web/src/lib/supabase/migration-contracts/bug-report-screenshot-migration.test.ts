@@ -5,6 +5,10 @@ const migration = readFileSync(
   new URL("../../../../supabase/migrations/20261016000001_feedback_bug_screenshot_evidence.sql", import.meta.url),
   "utf8",
 );
+const attemptPathMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261016000002_feedback_bug_screenshot_attempt_paths.sql", import.meta.url),
+  "utf8",
+);
 
 describe("feedback bug screenshot migration contract", () => {
   it("reuses the private bucket without adding public grants or a second storage source", () => {
@@ -22,5 +26,15 @@ describe("feedback bug screenshot migration contract", () => {
     expect(migration).toContain("between 1 and 5242880");
     expect(migration).toContain("'image/jpeg', 'image/png', 'image/webp'");
     expect(migration).toContain("screenshot_upload_state in ('pending', 'ready', 'failed')");
+  });
+
+  it("preserves legacy paths while allowing immutable retry attempt paths", () => {
+    expect(attemptPathMigration).toContain(
+      "^feedback/[0-9a-fA-F-]{36}/screenshot(/[0-9a-fA-F-]{36})?$",
+    );
+    expect(attemptPathMigration).toContain(
+      "drop constraint if exists community_bug_reports_screenshot_path_check",
+    );
+    expect(attemptPathMigration).not.toContain("create policy");
   });
 });

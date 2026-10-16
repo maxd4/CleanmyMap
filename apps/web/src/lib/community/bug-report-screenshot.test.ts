@@ -38,26 +38,72 @@ function makeSupabase(overrides: {
       ...overrides.row,
     } as Record<string, unknown>,
   };
-  const query = {} as Record<string, ReturnType<typeof vi.fn>>;
-  query.select = vi.fn(() => query);
-  query.eq = vi.fn(() => query);
-  query.update = vi.fn((payload: Record<string, unknown>) => {
-    Object.assign(state.row, payload);
-    return query;
-  });
-  query.maybeSingle = vi.fn(async () => ({ data: state.row, error: null }));
-  query.single = vi.fn(async () => ({ data: state.row, error: null }));
-  const storageFrom = vi.fn(() => ({
+  const storedPaths = new Set<string>();
+  if (typeof state.row.screenshot_storage_path === "string") {
+    storedPaths.add(state.row.screenshot_storage_path);
+  }
+  const storageApi = {
     createSignedUploadUrl: vi.fn(async () => ({ data: { token: "upload-token" }, error: null })),
     info: vi.fn(async () => ({ data: overrides.info ?? { size: Number(state.row.screenshot_size_bytes ?? 0) }, error: null })),
     download: vi.fn(async () => ({ data: overrides.download ?? new Blob(), error: null })),
     createSignedUrl: vi.fn(async () => ({ data: { signedUrl: overrides.signedUrl ?? "https://signed.test/screenshot" }, error: null })),
-    remove: vi.fn(async () => ({ data: [], error: null })),
-  }));
+    list: vi.fn(async (prefix: string) => ({
+      data: Array.from(storedPaths)
+        .filter((path) => path.startsWith(`${prefix}/`))
+        .map((path) => ({ name: path.slice(prefix.length + 1) })),
+      error: null,
+    })),
+    remove: vi.fn(async (paths: string[]) => {
+      for (const path of paths) storedPaths.delete(path);
+      return { data: [], error: null };
+    }),
+  };
+  const storageFrom = vi.fn(() => storageApi);
+  function createQuery() {
+    const filters: Array<{ type: "eq" | "is"; column: string; value: unknown }> = [];
+    let updatePayload: Record<string, unknown> | null = null;
+    const matches = () => filters.every((filter) =>
+      filter.type === "is"
+        ? state.row[filter.column] === filter.value
+        : state.row[filter.column] === filter.value,
+    );
+    const executeUpdate = () => {
+      const matched = matches();
+      if (updatePayload && matched) Object.assign(state.row, updatePayload);
+      return { data: matched ? { ...state.row } : null, error: null };
+    };
+    const query = {} as Record<string, ReturnType<typeof vi.fn>> & {
+      then?: (resolve: (value: unknown) => unknown) => Promise<unknown>;
+    };
+    query.select = vi.fn(() => query);
+    query.eq = vi.fn((column: string, value: unknown) => {
+      filters.push({ type: "eq", column, value });
+      return query;
+    });
+    query.is = vi.fn((column: string, value: unknown) => {
+      filters.push({ type: "is", column, value });
+      return query;
+    });
+    query.update = vi.fn((payload: Record<string, unknown>) => {
+      updatePayload = payload;
+      return query;
+    });
+    query.maybeSingle = vi.fn(async () => {
+      if (updatePayload) return executeUpdate();
+      return { data: matches() ? { ...state.row } : null, error: null };
+    });
+    query.single = vi.fn(async () => {
+      if (updatePayload) return executeUpdate();
+      return { data: matches() ? { ...state.row } : null, error: null };
+    });
+    query.then = (resolve) => Promise.resolve(executeUpdate()).then(resolve);
+    return query;
+  }
   return {
     state,
-    from: vi.fn(() => query),
+    from: vi.fn(() => createQuery()),
     storage: { from: storageFrom },
+    storageApi,
   };
 }
 
@@ -105,9 +151,61 @@ describe("bug report screenshot security contract", () => {
     expect(intent).toMatchObject({
       feedbackId,
       bucket: BUG_REPORT_SCREENSHOT_BUCKET,
-      path: `feedback/${feedbackId}/screenshot`,
       uploadState: "pending",
     });
+    expect((intent as { path: string }).path).toMatch(
+      new RegExp(`^feedback/${feedbackId}/screenshot/[0-9a-f-]{36}$`),
+    );
+    expect(supabase.state.row.screenshot_upload_state).toBe("pending");
+    expect(supabase.storageApi.createSignedUploadUrl).toHaveBeenCalledWith(
+      (intent as { path: string }).path,
+      { upsert: false },
+    );
+  });
+
+  it("allows only one concurrent pending attempt and leaves the winner authoritative", async () => {
+    const supabase = makeSupabase();
+    const params = {
+      userId: "owner-1",
+      feedbackId,
+      originalName: "capture.png",
+      mimeType: "image/png",
+      sizeBytes: 100,
+    };
+
+    const results = await Promise.allSettled([
+      createBugReportScreenshotUploadIntent(supabase as never, params),
+      createBugReportScreenshotUploadIntent(supabase as never, params),
+    ]);
+
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(1);
+    expect(supabase.storageApi.createSignedUploadUrl).toHaveBeenCalledTimes(1);
+    expect(supabase.state.row.screenshot_upload_state).toBe("pending");
+  });
+
+  it("uses a new immutable path after a failed attempt and removes the old object", async () => {
+    const oldPath = `feedback/${feedbackId}/screenshot/22222222-2222-4222-8222-222222222222`;
+    const supabase = makeSupabase({
+      row: {
+        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+        screenshot_storage_path: oldPath,
+        screenshot_original_name: "old.png",
+        screenshot_mime_type: "image/png",
+        screenshot_size_bytes: 100,
+        screenshot_upload_state: "failed",
+      },
+    });
+    const intent = await createBugReportScreenshotUploadIntent(supabase as never, {
+      userId: "owner-1",
+      feedbackId,
+      originalName: "retry.png",
+      mimeType: "image/png",
+      sizeBytes: 100,
+    });
+
+    expect((intent as { path: string }).path).not.toBe(oldPath);
+    expect(supabase.storageApi.remove).toHaveBeenCalledWith([oldPath]);
     expect(supabase.state.row.screenshot_upload_state).toBe("pending");
   });
 
@@ -170,6 +268,40 @@ describe("bug report screenshot security contract", () => {
     })).rejects.toMatchObject({ code: "forbidden" });
   });
 
+  it("does not let a stale finalization replace a newer ready attempt", async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const oldPath = `feedback/${feedbackId}/screenshot/44444444-4444-4444-8444-444444444444`;
+    const newPath = `feedback/${feedbackId}/screenshot/55555555-5555-4555-8555-555555555555`;
+    const supabase = makeSupabase({
+      row: {
+        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+        screenshot_storage_path: oldPath,
+        screenshot_original_name: "old.png",
+        screenshot_mime_type: "image/png",
+        screenshot_size_bytes: png.byteLength,
+        screenshot_upload_state: "pending",
+      },
+      info: { size: png.byteLength },
+      download: new Blob([png]),
+    });
+    supabase.storageApi.info.mockImplementationOnce(async () => {
+      Object.assign(supabase.state.row, {
+        screenshot_storage_path: newPath,
+        screenshot_original_name: "new.png",
+        screenshot_upload_state: "ready",
+      });
+      return { data: { size: png.byteLength }, error: null };
+    });
+
+    await expect(finalizeBugReportScreenshot(supabase as never, {
+      userId: "owner-1",
+      feedbackId,
+    })).rejects.toMatchObject({ code: "storage_error" });
+    expect(supabase.state.row.screenshot_storage_path).toBe(newPath);
+    expect(supabase.state.row.screenshot_upload_state).toBe("ready");
+    expect(supabase.storageApi.remove).toHaveBeenCalledWith([oldPath]);
+  });
+
   it("removes the Storage object before clearing the attachment reference", async () => {
     const supabase = makeSupabase({
       row: {
@@ -184,5 +316,23 @@ describe("bug report screenshot security contract", () => {
     await deleteBugReportScreenshot(supabase as never, { userId: "owner-1", feedbackId });
     expect(supabase.state.row.screenshot_storage_path).toBeNull();
     expect(supabase.storage.from).toHaveBeenCalledWith(BUG_REPORT_SCREENSHOT_BUCKET);
+    expect(supabase.storageApi.list).toHaveBeenCalled();
+  });
+
+  it("cleans orphaned attempt objects when the feedback is deleted", async () => {
+    const attemptPath = `feedback/${feedbackId}/screenshot/33333333-3333-4333-8333-333333333333`;
+    const supabase = makeSupabase({
+      row: {
+        screenshot_storage_path: attemptPath,
+        screenshot_upload_state: "failed",
+      },
+    });
+    await expect(
+      (await import("./bug-report-screenshot")).removeBugReportScreenshotForDeletedReport(
+        supabase as never,
+        feedbackId,
+      ),
+    ).resolves.toBeUndefined();
+    expect(supabase.storageApi.remove).toHaveBeenCalledWith([attemptPath]);
   });
 });

@@ -10,6 +10,7 @@ import {
 } from "@/lib/community/bug-report-screenshot";
 
 export const runtime = "nodejs";
+// Justification Vercel: la lecture et la suppression de la capture privée relisent l'état Storage/feedback à chaque requête et ne doivent pas être pré-rendues.
 export const dynamic = "force-dynamic";
 
 function errorResponse(error: unknown) {
@@ -37,6 +38,7 @@ export async function GET(
     });
     return NextResponse.json(
       { status: "ok", screenshot },
+      // Justification Vercel: l'URL signée est privée, courte et liée à l'état courant ; elle ne doit jamais être servie depuis un cache.
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {

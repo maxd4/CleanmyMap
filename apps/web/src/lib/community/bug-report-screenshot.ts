@@ -118,6 +118,20 @@ export function buildBugReportScreenshotPath(feedbackId: string): string {
   return `feedback/${feedbackId}/screenshot`;
 }
 
+function buildBugReportScreenshotAttemptPath(
+  feedbackId: string,
+  attemptId: string,
+): string {
+  assertFeedbackId(feedbackId);
+  assertFeedbackId(attemptId);
+  return `feedback/${feedbackId}/screenshot/${attemptId}`;
+}
+
+function buildBugReportScreenshotPrefix(feedbackId: string): string {
+  assertFeedbackId(feedbackId);
+  return `feedback/${feedbackId}/screenshot`;
+}
+
 function toRecord(row: BugReportScreenshotRow): BugReportScreenshotRecord {
   if (
     row.screenshot_storage_bucket !== BUG_REPORT_SCREENSHOT_BUCKET ||
@@ -204,8 +218,9 @@ async function removeStorageObject(
 async function clearScreenshotColumns(
   supabase: SupabaseClient,
   feedbackId: string,
+  expected: { path: string; state: "pending" } | undefined = undefined,
 ): Promise<void> {
-  const result = await supabase
+  let query = supabase
     .from("community_bug_reports")
     .update({
       screenshot_storage_bucket: null,
@@ -218,8 +233,30 @@ async function clearScreenshotColumns(
       screenshot_upload_state: null,
     })
     .eq("id", feedbackId);
+  if (expected) {
+    query = query
+      .eq("screenshot_upload_state", expected.state)
+      .eq("screenshot_storage_path", expected.path);
+  }
+  const result = await query;
   if (result.error) {
     throw storageError("La référence de capture ne peut pas être nettoyée.");
+  }
+}
+
+async function markScreenshotFailed(
+  supabase: SupabaseClient,
+  feedbackId: string,
+  path: string,
+): Promise<void> {
+  const result = await supabase
+    .from("community_bug_reports")
+    .update({ screenshot_upload_state: "failed" })
+    .eq("id", feedbackId)
+    .eq("screenshot_upload_state", "pending")
+    .eq("screenshot_storage_path", path);
+  if (result.error) {
+    throw storageError("L'état de la capture ne peut pas être mis à jour.");
   }
 }
 
@@ -230,13 +267,74 @@ async function markFailedAndCleanup(
 ): Promise<void> {
   const removed = await removeStorageObject(supabase, path).catch(() => false);
   if (removed) {
-    await clearScreenshotColumns(supabase, feedbackId);
+    await clearScreenshotColumns(supabase, feedbackId, { path, state: "pending" });
     return;
   }
-  await supabase
+  await markScreenshotFailed(supabase, feedbackId, path);
+}
+
+async function removeAllBugReportScreenshotObjects(
+  supabase: SupabaseClient,
+  feedbackId: string,
+  knownPath?: string | null,
+): Promise<boolean> {
+  const prefix = buildBugReportScreenshotPrefix(feedbackId);
+  const paths = new Set<string>();
+  if (knownPath) paths.add(knownPath);
+  const pageSize = 100;
+  for (let offset = 0; ; offset += pageSize) {
+    const listed = await supabase.storage
+      .from(BUG_REPORT_SCREENSHOT_BUCKET)
+      .list(prefix, { limit: pageSize, offset });
+    if (listed.error) return false;
+    for (const file of listed.data ?? []) {
+      if (file.name?.trim()) paths.add(`${prefix}/${file.name}`);
+    }
+    if (!listed.data || listed.data.length < pageSize) break;
+  }
+  if (paths.size === 0) return true;
+  const removed = await supabase.storage
+    .from(BUG_REPORT_SCREENSHOT_BUCKET)
+    .remove(Array.from(paths));
+  return !removed.error;
+}
+
+async function claimScreenshotUpload(
+  supabase: SupabaseClient,
+  params: {
+    feedbackId: string;
+    expectedState: null | "failed";
+    path: string;
+    originalName: string;
+    mimeType: BugReportScreenshotMimeType;
+    sizeBytes: number;
+    width?: number | null;
+    height?: number | null;
+  },
+): Promise<BugReportScreenshotRow | null> {
+  let query = supabase
     .from("community_bug_reports")
-    .update({ screenshot_upload_state: "failed" })
-    .eq("id", feedbackId);
+    .update({
+      screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+      screenshot_storage_path: params.path,
+      screenshot_original_name: params.originalName,
+      screenshot_mime_type: params.mimeType,
+      screenshot_size_bytes: params.sizeBytes,
+      screenshot_width: params.width ?? null,
+      screenshot_height: params.height ?? null,
+      screenshot_upload_state: "pending",
+    })
+    .eq("id", params.feedbackId);
+  if (params.expectedState === null) {
+    query = query.is("screenshot_upload_state", null);
+  } else {
+    query = query.eq("screenshot_upload_state", params.expectedState);
+  }
+  const result = await query.select(BUG_REPORT_SCREENSHOT_COLUMNS).maybeSingle();
+  if (result.error) {
+    throw storageError("La capture ne peut pas être préparée.");
+  }
+  return (result.data as unknown as BugReportScreenshotRow | null) ?? null;
 }
 
 function detectImageMimeType(bytes: Uint8Array): BugReportScreenshotMimeType | null {
@@ -328,35 +426,48 @@ export async function createBugReportScreenshotUploadIntent(
   if (row.screenshot_upload_state === "ready") {
     return { feedbackId: params.feedbackId, uploadState: "ready" };
   }
+  if (row.screenshot_upload_state === "pending") {
+    throw storageError("Une capture est déjà en cours de préparation.");
+  }
 
-  const path = buildBugReportScreenshotPath(params.feedbackId);
-  const updated = await supabase
-    .from("community_bug_reports")
-    .update({
-      screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
-      screenshot_storage_path: path,
-      screenshot_original_name: params.originalName.trim(),
-      screenshot_mime_type: params.mimeType,
-      screenshot_size_bytes: params.sizeBytes,
-      screenshot_width: params.width ?? null,
-      screenshot_height: params.height ?? null,
-      screenshot_upload_state: "pending",
-    })
-    .eq("id", params.feedbackId)
-    .select(BUG_REPORT_SCREENSHOT_COLUMNS)
-    .single();
-  if (updated.error || !updated.data) {
-    throw storageError("La capture ne peut pas être préparée.");
+  const path = buildBugReportScreenshotAttemptPath(
+    params.feedbackId,
+    crypto.randomUUID(),
+  );
+  const updated = await claimScreenshotUpload(supabase, {
+    feedbackId: params.feedbackId,
+    expectedState: row.screenshot_upload_state,
+    path,
+    originalName: params.originalName.trim(),
+    mimeType: params.mimeType,
+    sizeBytes: params.sizeBytes,
+    width: params.width,
+    height: params.height,
+  });
+  if (!updated) {
+    const latest = await loadReport(supabase, params.feedbackId);
+    if (latest.screenshot_upload_state === "ready") {
+      return { feedbackId: params.feedbackId, uploadState: "ready" };
+    }
+    throw storageError("Une autre tentative de capture est déjà active.");
+  }
+
+  if (row.screenshot_storage_path) {
+    const oldObjectRemoved = await removeStorageObject(
+      supabase,
+      row.screenshot_storage_path,
+    ).catch(() => false);
+    if (!oldObjectRemoved) {
+      await markFailedAndCleanup(supabase, params.feedbackId, path);
+      throw storageError("La capture précédente ne peut pas être nettoyée.");
+    }
   }
 
   const signedUpload = await supabase.storage
     .from(BUG_REPORT_SCREENSHOT_BUCKET)
-    .createSignedUploadUrl(path, { upsert: true });
+    .createSignedUploadUrl(path, { upsert: false });
   if (signedUpload.error || !signedUpload.data?.token) {
-    await supabase
-      .from("community_bug_reports")
-      .update({ screenshot_upload_state: "failed" })
-      .eq("id", params.feedbackId);
+    await markFailedAndCleanup(supabase, params.feedbackId, path);
     throw storageError("La capture ne peut pas recevoir son accès d'upload.");
   }
 
@@ -394,10 +505,25 @@ export async function finalizeBugReportScreenshot(
     .from("community_bug_reports")
     .update({ screenshot_upload_state: "ready" })
     .eq("id", params.feedbackId)
+    .eq("screenshot_upload_state", "pending")
+    .eq("screenshot_storage_path", row.screenshot_storage_path)
     .select(BUG_REPORT_SCREENSHOT_COLUMNS)
-    .single();
-  if (updated.error || !updated.data) {
-    await markFailedAndCleanup(supabase, params.feedbackId, row.screenshot_storage_path);
+    .maybeSingle();
+  if (updated.error) {
+    throw storageError("La capture ne peut pas être finalisée.");
+  }
+  if (!updated.data) {
+    let latest: BugReportScreenshotRow | null = null;
+    try {
+      latest = await loadReport(supabase, params.feedbackId);
+    } catch (error) {
+      if (!(error instanceof BugReportScreenshotError) || error.code !== "not_found") {
+        throw error;
+      }
+    }
+    if (!latest || latest.screenshot_storage_path !== row.screenshot_storage_path) {
+      await removeStorageObject(supabase, row.screenshot_storage_path).catch(() => undefined);
+    }
     throw storageError("La capture ne peut pas être finalisée.");
   }
   return { screenshot: toRecord(updated.data as unknown as BugReportScreenshotRow), alreadyReady: false };
@@ -433,12 +559,17 @@ export async function deleteBugReportScreenshot(
 ): Promise<void> {
   const row = await loadReport(supabase, params.feedbackId);
   await assertOwner(params.userId, row);
-  if (!row.screenshot_storage_path) return;
-  const removed = await removeStorageObject(supabase, row.screenshot_storage_path);
+  const removed = await removeAllBugReportScreenshotObjects(
+    supabase,
+    params.feedbackId,
+    row.screenshot_storage_path,
+  );
   if (!removed) {
     throw storageError("La capture ne peut pas être supprimée.");
   }
-  await clearScreenshotColumns(supabase, params.feedbackId);
+  if (row.screenshot_storage_path) {
+    await clearScreenshotColumns(supabase, params.feedbackId);
+  }
 }
 
 export async function removeBugReportScreenshotForDeletedReport(
@@ -449,13 +580,19 @@ export async function removeBugReportScreenshotForDeletedReport(
   try {
     row = await loadReport(supabase, feedbackId);
   } catch (error) {
-    if (error instanceof BugReportScreenshotError && error.code === "not_found") {
-      return;
+    if (!(error instanceof BugReportScreenshotError) || error.code !== "not_found") {
+      throw error;
     }
-    throw error;
+    if (!(await removeAllBugReportScreenshotObjects(supabase, feedbackId))) {
+      throw storageError("Les captures liées au feedback ne peuvent pas être supprimées.");
+    }
+    return;
   }
-  if (!row.screenshot_storage_path) return;
-  const removed = await removeStorageObject(supabase, row.screenshot_storage_path);
+  const removed = await removeAllBugReportScreenshotObjects(
+    supabase,
+    feedbackId,
+    row.screenshot_storage_path,
+  );
   if (!removed) {
     throw storageError("La capture liée au feedback ne peut pas être supprimée.");
   }

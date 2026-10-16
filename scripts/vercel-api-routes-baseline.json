@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-15T16:44:22.000Z",
-  "apiRouteCount": 170,
+  "generatedAt": "2026-10-16T17:00:00.000Z",
+  "apiRouteCount": 173,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -141,6 +141,27 @@
       "reason": "Confirmation authentifiée d'un aperçu de mesures SPOGOMI, réservée à l'organisateur ou aux capacités measurement_entry/weighing et soumise à la division de l'import.",
       "costContract": "POST borné par eventId UUID, divisionId UUID, importId UUID et une liste facultative de numéros de ligne positifs ; seules les lignes admissibles sélectionnées de l'import sont transmises une par une à la RPC de mesure, avec reprise idempotente si l'import est déjà confirmé. Aucun rate limit applicatif n'est ajouté par ce handler.",
       "reviewedAt": "2026-10-15"
+    },
+    {
+      "route": "apps/web/src/app/api/community/bug-reports/[reportId]/screenshot/route.ts",
+      "introducedBy": "1cd24dce6f9dcfbdd5aae726a149ed32fe763c5c",
+      "reason": "Lecture et suppression authentifiées de la capture privée facultative attachée à un feedback Bug, avec nettoyage des objets Storage liés.",
+      "costContract": "GET/DELETE bornés à un reportId UUID et à l'identité Clerk courante, lecture avec URL signée de cinq minutes et réponse privée no-store ; DELETE supprime les tentatives connues avant de retirer la référence métier, sans exposition de contenu public.",
+      "reviewedAt": "2026-10-16"
+    },
+    {
+      "route": "apps/web/src/app/api/community/bug-reports/[reportId]/screenshot/intent/route.ts",
+      "introducedBy": "1cd24dce6f9dcfbdd5aae726a149ed32fe763c5c",
+      "reason": "Création authentifiée d'une intention d'upload pour la capture Bug facultative, avec chemin Storage privé immuable par tentative.",
+      "costContract": "POST borné à un reportId UUID, à l'identité Clerk propriétaire et à des métadonnées d'image limitées ; une seule transition conditionnelle vers pending émet une URL signée sans upsert et aucune donnée binaire ne transite par la route.",
+      "reviewedAt": "2026-10-16"
+    },
+    {
+      "route": "apps/web/src/app/api/community/bug-reports/[reportId]/screenshot/finalize/route.ts",
+      "introducedBy": "1cd24dce6f9dcfbdd5aae726a149ed32fe763c5c",
+      "reason": "Finalisation authentifiée de la capture Bug après vérification binaire et transition conditionnelle vers ready.",
+      "costContract": "POST borné à un reportId UUID et à l'identité Clerk propriétaire ; chaque appel relit et télécharge un seul objet privé borné par la taille contractuelle, puis ne marque ready que si le chemin pending courant correspond.",
+      "reviewedAt": "2026-10-16"
     }
   ],
   "apiRoutes": [
@@ -198,6 +219,9 @@
     "apps/web/src/app/api/chat/search/route.ts",
     "apps/web/src/app/api/chat/share-destinations/route.ts",
     "apps/web/src/app/api/chat/users/route.ts",
+    "apps/web/src/app/api/community/bug-reports/[reportId]/screenshot/finalize/route.ts",
+    "apps/web/src/app/api/community/bug-reports/[reportId]/screenshot/intent/route.ts",
+    "apps/web/src/app/api/community/bug-reports/[reportId]/screenshot/route.ts",
     "apps/web/src/app/api/community/bug-reports/route.ts",
     "apps/web/src/app/api/community/events/ops/route.ts",
     "apps/web/src/app/api/community/events/route.ts",

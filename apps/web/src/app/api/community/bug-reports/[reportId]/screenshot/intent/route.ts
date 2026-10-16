@@ -10,6 +10,7 @@ import {
 } from "@/lib/community/bug-report-screenshot";
 
 export const runtime = "nodejs";
+// Justification Vercel: l'intention d'upload dépend de l'identité Clerk, de l'état du feedback et d'un chemin Storage immuable généré à la demande.
 export const dynamic = "force-dynamic";
 
 const intentSchema = z.object({

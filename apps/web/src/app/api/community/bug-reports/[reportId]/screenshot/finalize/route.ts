@@ -9,6 +9,7 @@ import {
 } from "@/lib/community/bug-report-screenshot";
 
 export const runtime = "nodejs";
+// Justification Vercel: la finalisation vérifie les octets privés dans Storage et effectue une transition conditionnelle du feedback à chaque appel.
 export const dynamic = "force-dynamic";
 
 function errorResponse(error: unknown) {
