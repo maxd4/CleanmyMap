@@ -195,20 +195,43 @@ test("refuses a concurrent replacement with a different file identity", async ()
 test("resolves PowerShell only from the trusted Windows system directory", () => {
   assert.equal(
     resolvePowerShellExecutable({ platform: "win32", env: { SystemRoot: "C:\\Windows" } }),
-    path.join("C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
+    path.win32.join("C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
   );
+  assert.equal(
+    resolvePowerShellExecutable({ platform: "win32", env: { SystemRoot: "C:/Windows" } }),
+    "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+  );
+  assert.equal(resolvePowerShellExecutable({ platform: "win32", env: { SystemRoot: "Windows" } }), null);
+  assert.equal(resolvePowerShellExecutable({ platform: "win32", env: { SystemRoot: "C:Windows" } }), null);
   assert.equal(resolvePowerShellExecutable({ platform: "win32", env: {} }), null);
-  assert.equal(resolvePowerShellExecutable({ platform: "linux", env: { SystemRoot: "/tmp" } }), null);
+  assert.equal(resolvePowerShellExecutable({ platform: "linux", env: { SystemRoot: "C:\\Windows" } }), null);
 });
 
-test("fails closed when PowerShell cannot be resolved or executed", () => {
+test("keeps editor protection fail-closed for missing, invalid or ambiguous PowerShell results", () => {
   assert.equal(hasActiveEditorProcesses({ platform: "win32", env: {}, spawn: () => { throw new Error("not called"); } }), true);
+  assert.equal(hasActiveEditorProcesses({ platform: "linux", env: {}, spawn: () => { throw new Error("not called"); } }), true);
+
+  const options = { platform: "win32", env: { SystemRoot: "C:\\Windows" } };
+  assert.equal(hasActiveEditorProcesses({ ...options, spawn: () => ({ status: 0, stdout: "0" }) }), false);
+  assert.equal(hasActiveEditorProcesses({ ...options, spawn: () => ({ status: 0, stdout: "2" }) }), true);
+
+  for (const stdout of ["", "not-a-number", "2 processes", "0x2", "2.0", "-1"]) {
+    assert.equal(
+      hasActiveEditorProcesses({ ...options, spawn: () => ({ status: 0, stdout }) }),
+      true,
+      `ambiguous PowerShell output must keep cleanup blocked: ${JSON.stringify(stdout)}`,
+    );
+  }
+
   assert.equal(
     hasActiveEditorProcesses({
-      platform: "win32",
-      env: { SystemRoot: "C:\\Windows" },
-      spawn: () => ({ error: new Error("missing"), status: null, stdout: "" }),
+      ...options,
+      spawn: () => ({ error: new Error("missing"), status: null, stdout: "0" }),
     }),
+    true,
+  );
+  assert.equal(
+    hasActiveEditorProcesses({ ...options, spawn: () => { throw new Error("launch failed"); } }),
     true,
   );
 });

@@ -77,11 +77,12 @@ export function resolvePowerShellExecutable({ platform = process.platform, env =
   }
 
   const systemRoot = typeof env.SystemRoot === "string" ? env.SystemRoot.trim() : "";
-  if (!systemRoot || !path.isAbsolute(systemRoot)) {
+  const windowsPath = path.win32;
+  if (!systemRoot || !windowsPath.isAbsolute(systemRoot)) {
     return null;
   }
 
-  return path.join(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+  return windowsPath.join(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
 }
 
 export function hasActiveEditorProcesses({ spawn = spawnSync, platform = process.platform, env = process.env } = {}) {
@@ -90,21 +91,32 @@ export function hasActiveEditorProcesses({ spawn = spawnSync, platform = process
     return true;
   }
 
-  const result = spawn(
-    executable,
-    [
-      "-NoProfile",
-      "-Command",
-      `@(Get-Process -Name ${activeSafeAppNames.map((name) => `'${name}'`).join(",")} -ErrorAction SilentlyContinue).Count`,
-    ],
-    { encoding: "utf8", windowsHide: true },
-  );
-
-  if (result.error || result.status !== 0) {
+  let result;
+  try {
+    result = spawn(
+      executable,
+      [
+        "-NoProfile",
+        "-Command",
+        `@(Get-Process -Name ${activeSafeAppNames.map((name) => `'${name}'`).join(",")} -ErrorAction SilentlyContinue).Count`,
+      ],
+      { encoding: "utf8", windowsHide: true },
+    );
+  } catch {
     return true;
   }
 
-  return Number.parseInt(String(result.stdout).trim(), 10) > 0;
+  if (result?.error || result?.status !== 0) {
+    return true;
+  }
+
+  const output = String(result.stdout ?? "").trim();
+  if (!/^\d+$/.test(output)) {
+    return true;
+  }
+
+  const count = Number(output);
+  return Number.isSafeInteger(count) && count >= 0 ? count > 0 : true;
 }
 
 function hasSameFileIdentity(left, right) {
