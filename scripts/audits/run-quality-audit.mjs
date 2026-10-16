@@ -295,7 +295,15 @@ function makeSummary({ audit, manifest, result, paths }) {
   return `${lines.join("\n")}\n`;
 }
 
-async function executeAudit(audit, root, { auditedHead } = {}) {
+export async function executeAudit(
+  audit,
+  root,
+  {
+    auditedHead,
+    complexityRunner = runComplexityPolicy,
+    cycleRunner = runCycleGate,
+  } = {},
+) {
   if (audit === "dead-code") {
     const result = runDeadCodePolicy({ report: runKnipReport() });
     return { ...result, status: statusForAudit(audit, result), formatted: formatDeadCodeReport(result), readProvenance: "WORKTREE_LIVE" };
@@ -315,8 +323,8 @@ async function executeAudit(audit, root, { auditedHead } = {}) {
     const enrichedResult = { ...result, evaluation };
     return { ...enrichedResult, status: statusForAudit(audit, enrichedResult), readProvenance: "COMMITTED_SNAPSHOT" };
   }
-  if (audit === "complexity") return { ...runComplexityPolicy(), readProvenance: "WORKTREE_LIVE" };
-  if (audit === "cycles") return { ...runCycleGate(), readProvenance: "WORKTREE_LIVE" };
+  if (audit === "complexity") return { ...(await complexityRunner()), readProvenance: "WORKTREE_LIVE" };
+  if (audit === "cycles") return { ...(await cycleRunner()), readProvenance: "WORKTREE_LIVE" };
   throw new QualityAuditError(`Unknown audit: ${audit}`, "INVALID_MODE");
 }
 

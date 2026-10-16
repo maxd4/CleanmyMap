@@ -10,6 +10,7 @@ import {
   buildHumanDecisionsByFile,
   enrichTopHeavyEvaluation,
   createAuditPaths,
+  executeAudit,
   parseAuditMode,
   runQualityAudit,
   serialize,
@@ -38,6 +39,26 @@ function fixtureResult(audit) {
   if (audit === "top-heavy") return { status: "PASS", rows: [], proximityRows: [], radarProjection: { rows: [] }, evaluation: { blockingFindings: [], reviewWarnings: [], reviewImprovements: [], staleReviewBaselineEntries: [], staleBaselineEntries: [] } };
   if (audit === "complexity") return { status: "PASS", metrics: [], result: { failures: [], stale: [], improvements: [], reviews: [] } };
   return { gateStatus: "PASS", cycles: [], cycleObjects: [], comparison: { added: [], stale: [] } };
+}
+
+function complexityEngineResult() {
+  return {
+    baseline: { entries: [] },
+    metrics: [{ metric: "complexity", path: "apps/web/src/fixture.ts", value: 23 }],
+    result: { failures: [{ key: "fixture-complexity" }], reviews: [], improvements: [], stale: [] },
+    status: "FAIL",
+  };
+}
+
+function cycleEngineResult() {
+  return {
+    baseline: { cycles: [] },
+    report: { status: "clean", enumeration: "complete", cycles: [] },
+    cycles: ["fixture-cycle"],
+    cycleObjects: [],
+    comparison: { added: [], stale: [] },
+    gateStatus: "PASS",
+  };
 }
 
 test("CLI parser accepts exactly the six audit modes and rejects unknown input", () => {
@@ -151,6 +172,92 @@ test("la projection humaine associe les décisions du bloc canonique aux chemins
   assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].architectureDecision, "ALREADY_MODULARIZED");
   assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].decisionAcquired, true);
   assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].priority, "NONE");
+});
+
+test("executeAudit attend la promesse de complexité et conserve ses métriques", async () => {
+  const root = tempRoot();
+  try {
+    const result = await executeAudit("complexity", root, {
+      complexityRunner: async () => complexityEngineResult(),
+    });
+    assert.equal(result.status, "FAIL");
+    assert.equal(result.readProvenance, "WORKTREE_LIVE");
+    assert.equal(result.metrics[0].value, 23);
+    assert.deepEqual(result.result.failures, [{ key: "fixture-complexity" }]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("executeAudit attend la promesse de cycles et conserve le gate et la comparaison", async () => {
+  const root = tempRoot();
+  try {
+    const result = await executeAudit("cycles", root, {
+      cycleRunner: async () => cycleEngineResult(),
+    });
+    assert.equal(result.gateStatus, "PASS");
+    assert.deepEqual(result.cycles, ["fixture-cycle"]);
+    assert.deepEqual(result.comparison, { added: [], stale: [] });
+    assert.equal(result.readProvenance, "WORKTREE_LIVE");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("une promesse asynchrone rejetée produit un FAIL diagnostiqué et laisse les engines suivants s'exécuter", async () => {
+  const root = tempRoot();
+  let snapshotCount = 0;
+  const startSnapshot = { ...stableSnapshot, worktree: " M foreign.ts", worktreeClean: false, baselineStable: false };
+  const endSnapshot = { ...startSnapshot, worktree: " M foreign.ts\n?? another-foreign.ts" };
+  const calls = [];
+  try {
+    const result = await runQualityAudit("all", {
+      root,
+      snapshot: () => (++snapshotCount === 1 ? startSnapshot : endSnapshot),
+      engine: async (audit, engineRoot, context) => {
+        if (audit === "complexity") {
+          return executeAudit(audit, engineRoot, {
+            ...context,
+            complexityRunner: async () => {
+              calls.push("complexity");
+              const error = new Error("fixture complexity failure");
+              error.code = "FIXTURE_COMPLEXITY_FAILED";
+              throw error;
+            },
+          });
+        }
+        if (audit === "cycles") {
+          return executeAudit(audit, engineRoot, {
+            ...context,
+            cycleRunner: async () => {
+              calls.push("cycles");
+              return cycleEngineResult();
+            },
+          });
+        }
+        calls.push(audit);
+        return fixtureResult(audit);
+      },
+    });
+
+    const complexity = result.results.find((entry) => entry.audit === "complexity");
+    const cycles = result.results.find((entry) => entry.audit === "cycles");
+    const complexityReport = JSON.parse(fs.readFileSync(complexity.paths.report, "utf8"));
+    const cyclesReport = JSON.parse(fs.readFileSync(cycles.paths.report, "utf8"));
+    const manifest = JSON.parse(fs.readFileSync(result.allPaths.manifest, "utf8"));
+
+    assert.deepEqual(calls, ["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
+    assert.equal(complexity.status, "FAIL");
+    assert.equal(complexityReport.status, "FAIL");
+    assert.equal(complexityReport.error.code, "FIXTURE_COMPLEXITY_FAILED");
+    assert.equal(complexityReport.error.message, "fixture complexity failure");
+    assert.equal(cycles.status, "PASS");
+    assert.equal(cyclesReport.gateStatus, "PASS");
+    assert.equal(manifest.worktreeChanged, true);
+    assert.equal(manifest.worktreeClean, false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("all runs each engine once, aggregates statuses and retains other results after failure", async () => {
