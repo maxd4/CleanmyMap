@@ -78,4 +78,36 @@ describe('mobile actions transport', () => {
     expect(requestMock).toHaveBeenNthCalledWith(2, '/api/spots', { method: 'POST', body: JSON.stringify({ type: 'spot', label: 'Parc', latitude: 48.8, longitude: 2.3, wasteCategories: ['plastic'] }) })
     expect(requestMock).toHaveBeenNthCalledWith(3, '/api/signalements/me?limit=100')
   })
+
+  it('sends the stable creation key as transport metadata for retries', async () => {
+    const actionPayload = {
+      actionDate: '2026-10-10',
+      locationLabel: 'Paris',
+      associationName: 'CleanMyMap',
+      organizerType: 'association' as const,
+      groupJoinEnabled: true,
+      actionPhase: 'pre_action' as const,
+      submissionMode: 'complete' as const,
+      routeTopology: 'loop' as const,
+      routeStyle: 'direct' as const,
+      wasteKg: 0,
+      cigaretteButts: 0,
+      volunteersCount: 4,
+      durationMinutes: 60,
+      wasteMeasurementMethod: null,
+      preparationData: {},
+      clientRequestId: 'action-create-2026-10-10-0001',
+    }
+
+    await createMobileAction(actionPayload)
+
+    expect(requestMock).toHaveBeenCalledWith('/api/actions', {
+      method: 'POST',
+      headers: { 'Idempotency-Key': actionPayload.clientRequestId },
+      body: JSON.stringify({
+        ...actionPayload,
+        clientRequestId: undefined,
+      }),
+    })
+  })
 })

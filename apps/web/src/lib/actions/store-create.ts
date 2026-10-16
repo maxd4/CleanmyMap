@@ -98,6 +98,29 @@ type ResolvedCreateActionDrawing = {
   origin: [number, number] | null;
 };
 
+type ActionCreationResult = {
+  id: string;
+  replayed?: true;
+};
+
+function isUniqueViolation(error: { code?: string; message?: string } | null): boolean {
+  return error?.code === "23505" || /duplicate key|unique constraint/i.test(error?.message ?? "");
+}
+
+async function findActionByClientRequestId(
+  supabase: SupabaseClient,
+  params: { userId: string; clientRequestId: string },
+): Promise<string | null> {
+  const result = await supabase
+    .from("actions")
+    .select("id")
+    .eq("created_by_clerk_id", params.userId)
+    .eq("client_request_id", params.clientRequestId)
+    .maybeSingle();
+  if (result.error) throw result.error;
+  return result.data?.id ? String(result.data.id) : null;
+}
+
 export async function resolveCreateActionDrawing(
   payload: CreateActionPayload,
 ): Promise<ResolvedCreateActionDrawing> {
@@ -156,14 +179,16 @@ async function insertCreatedAction(
     finalDrawing: ActionDrawing | null;
     routeGeometry?: RouteGeometry | null;
     status: Exclude<ActionStatus, "cancelled"> | undefined;
+    clientRequestId?: string;
   },
-): Promise<string> {
+): Promise<ActionCreationResult> {
   const baseInsert = buildActionInsertPayload(params);
 
   const insertWithPhase = {
     ...baseInsert,
     action_phase: params.payload.actionPhase ?? "post_action_complete",
     preparation_data: buildActionInsertPayload(params).preparation_data,
+    ...(params.clientRequestId ? { client_request_id: params.clientRequestId } : {}),
   };
 
   let inserted = await supabase.from("actions").insert(insertWithPhase).select("id").single();
@@ -198,10 +223,17 @@ async function insertCreatedAction(
   }
 
   if (inserted.error) {
+    if (params.clientRequestId && isUniqueViolation(inserted.error)) {
+      const existingId = await findActionByClientRequestId(supabase, {
+        userId: params.userId,
+        clientRequestId: params.clientRequestId,
+      });
+      if (existingId) return { id: existingId, replayed: true };
+    }
     throw inserted.error;
   }
 
-  return inserted.data.id;
+  return { id: inserted.data.id };
 }
 
 export async function createAction(
@@ -217,8 +249,17 @@ export async function createAction(
       trust: "trusted";
       source: "admin_import";
     };
+    clientRequestId?: string;
   },
-): Promise<{ id: string }> {
+): Promise<ActionCreationResult> {
+  if (params.clientRequestId) {
+    const existingId = await findActionByClientRequestId(supabase, {
+      userId: params.userId,
+      clientRequestId: params.clientRequestId,
+    });
+    if (existingId) return { id: existingId, replayed: true };
+  }
+
   params.payload = await resolveCanonicalCreateActionPayload({
     supabase,
     payload: params.payload,
@@ -287,17 +328,20 @@ export async function createAction(
     departmentCode: department.departmentCode ?? undefined,
     departmentName: department.departmentName ?? undefined,
   };
-  const actionId = await insertCreatedAction(supabase, {
+  const created = await insertCreatedAction(supabase, {
     userId: params.userId,
     payload: payloadWithDepartment,
     persistedGeometry,
     finalDrawing,
     routeGeometry: resolvedDrawing.routeGeometry,
     status: params.status,
+    clientRequestId: params.clientRequestId,
   });
 
+  if (created.replayed) return created;
+
   await persistCreatedActionData(supabase, {
-    actionId,
+    actionId: created.id,
     creatorUserId: params.userId,
     organizers: params.organizers,
     organizerRequirement: params.organizerRequirement,
@@ -306,5 +350,5 @@ export async function createAction(
     status: params.status,
   });
 
-  return { id: String(actionId) };
+  return { id: String(created.id) };
 }

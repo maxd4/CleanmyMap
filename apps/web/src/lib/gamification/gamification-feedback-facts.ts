@@ -5,6 +5,7 @@ import type { GamificationSourceFact } from "./gamification-reconstruction";
 
 const PRODUCT_FEEDBACK_THRESHOLDS = [1, 5, 10] as const;
 const PRODUCT_FEEDBACK_TYPES = new Set(["bug", "idea", "improvement"]);
+export const PRODUCT_FEEDBACK_QUERY_PAGE_SIZE = 1_000;
 
 type ProductFeedbackRow = {
   id?: string | null;
@@ -80,18 +81,39 @@ export function buildProductFeedbackFacts(rows: unknown): ProductFeedbackFacts {
   return { count: acceptedRows.length, facts };
 }
 
+async function loadProductFeedbackRows(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ProductFeedbackRow[]> {
+  const rows: ProductFeedbackRow[] = [];
+
+  for (let from = 0; ; from += PRODUCT_FEEDBACK_QUERY_PAGE_SIZE) {
+    const result = await supabase
+      .from("community_bug_reports")
+      .select("id, created_at, report_type, status, qualification_status, qualification_decided_at")
+      .eq("submitted_by_user_id", userId)
+      .eq("qualification_status", "accepted")
+      .order("qualification_decided_at", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + PRODUCT_FEEDBACK_QUERY_PAGE_SIZE - 1);
+    if (result.error) throw new Error(result.error.message);
+
+    const page = Array.isArray(result.data)
+      ? (result.data as ProductFeedbackRow[])
+      : [];
+    rows.push(...page);
+    if (page.length < PRODUCT_FEEDBACK_QUERY_PAGE_SIZE) break;
+  }
+
+  return rows;
+}
+
 export async function loadProductFeedbackFacts(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<ProductFeedbackFacts> {
-  const result = await supabase
-    .from("community_bug_reports")
-    .select("id, created_at, report_type, status, qualification_status, qualification_decided_at")
-    .eq("submitted_by_user_id", userId)
-    .eq("qualification_status", "accepted")
-    .limit(10000);
-  if (result.error) throw new Error(result.error.message);
-  return buildProductFeedbackFacts(result.data);
+  return buildProductFeedbackFacts(await loadProductFeedbackRows(supabase, userId));
 }
 
 export { PRODUCT_FEEDBACK_THRESHOLDS };

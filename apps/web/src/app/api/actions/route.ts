@@ -350,6 +350,17 @@ export async function POST(request: Request) {
   }
   const { userId } = access;
 
+  const rawIdempotencyKey = request.headers.get("Idempotency-Key");
+  const idempotencyKey = rawIdempotencyKey?.trim() || undefined;
+  if (
+    rawIdempotencyKey &&
+    (!idempotencyKey || idempotencyKey.length < 16 || idempotencyKey.length > 160)
+  ) {
+    return validationErrorResponse({
+      idempotencyKey: ["La clé de retry doit contenir entre 16 et 160 caractères."],
+    });
+  }
+
   const parsed = await parseJsonBodyWithValidation(request, createActionSchema);
   if (!parsed.ok) return parsed.response;
 
@@ -399,6 +410,7 @@ export async function POST(request: Request) {
         supabase,
         userId,
         payload: normalizedPayload,
+        idempotencyKey,
         creator: {
           userId,
           displayName: resolvedIdentity.displayName,

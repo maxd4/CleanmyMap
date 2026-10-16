@@ -90,8 +90,13 @@ cinq destinations primaires sans accès secondaire explicite.
 - `Rejoindre une action` est natif et passe par la frontière HTTP mobile
   `/api/mobile/actions` ;
 - `Organiser une action` réutilise les validations Actions côté serveur. Le
-  brouillon local est une aide de reprise ; la publication n'est confirmée
-  qu'après réponse serveur.
+  brouillon local est une aide de reprise ; une lecture AsyncStorage échouée
+  bloque toute écriture locale jusqu'à une récupération explicite, et la
+  publication n'est confirmée qu'après réponse serveur. Chaque brouillon
+  conserve une clé de création stable, envoyée dans `Idempotency-Key` lors du
+  POST `/api/actions` ; le serveur la rattache au créateur et à l'action via
+  une unicité PostgreSQL pour qu'une réponse perdue soit rejouable sans créer
+  de doublon.
 - `Signaler un déchet` écrit uniquement dans `trash_spotter_spots`, transmet les
   photos via les intents média canoniques et n'affiche jamais un statut avant
   confirmation serveur.

@@ -65,6 +65,8 @@ export type MobileActionEditor = MobileActionItem & {
 }
 
 export type MobileActionDraftPayload = {
+  /** Stable per-draft key used by the server to make POST retries idempotent. */
+  clientRequestId?: string
   actionDate: string
   locationLabel: string
   latitude?: number
@@ -158,9 +160,11 @@ export async function reviewActionRequest(actionId: string, participantId: strin
 }
 
 export async function createMobileAction(payload: MobileActionDraftPayload) {
+  const { clientRequestId, ...body } = payload
   return mobileRequest<{ status: string; id: string; source: string }>('/api/actions', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    ...(clientRequestId ? { headers: { 'Idempotency-Key': clientRequestId } } : {}),
+    body: JSON.stringify(body),
   })
 }
 

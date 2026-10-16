@@ -91,6 +91,57 @@ describe('mobile action creation runtime', () => {
     expect(state.setItem).toHaveBeenCalled()
   })
 
+  it('does not write an empty draft after a rejected local read', async () => {
+    state.getItem.mockRejectedValueOnce(new Error('storage indisponible'))
+    const renderer = await renderScreen()
+
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+
+    expect(state.setItem).not.toHaveBeenCalled()
+    expect(renderer.root.findAll((node) => textContent(node).includes('Le brouillon local n’a pas pu être relu'))).not.toHaveLength(0)
+  })
+
+  it('recovers explicitly after a rejected local read without overwriting the restored draft', async () => {
+    state.getItem.mockRejectedValueOnce(new Error('storage indisponible')).mockResolvedValueOnce(JSON.stringify({
+      draft: { title: 'Récupération après erreur', location: 'Parc repris' },
+    }))
+    const renderer = await renderScreen()
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    expect(state.setItem).not.toHaveBeenCalled()
+
+    const retry = findButton(renderer, 'Réessayer la récupération locale')
+    await act(async () => { await retry?.props.onPress(); await Promise.resolve(); await Promise.resolve() })
+
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }).props.value).toBe('Récupération après erreur')
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Lieu' }).props.value).toBe('Parc repris')
+    expect(state.setItem).toHaveBeenCalled()
+  })
+
+  it('does not persist after unmount while a local read is pending', async () => {
+    let resolveRead!: (value: string | null) => void
+    state.getItem.mockReturnValue(new Promise((resolve) => { resolveRead = resolve }))
+    const renderer = await renderScreen()
+
+    await act(async () => { renderer.unmount() })
+    await act(async () => {
+      resolveRead(JSON.stringify({ draft: { title: 'Ne pas appliquer' } }))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(state.setItem).not.toHaveBeenCalled()
+  })
+
+  it('surfaces a local write failure without an unhandled rejection', async () => {
+    state.getItem.mockResolvedValue(null)
+    state.setItem.mockRejectedValueOnce(new Error('quota local dépassé'))
+    const renderer = await renderScreen()
+
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+
+    expect(renderer.root.findAll((node) => textContent(node).includes('Le brouillon local n’a pas pu être sauvegardé'))).not.toHaveLength(0)
+  })
+
   it('keeps the local draft visible after a save error and retries without creating a second action after success', async () => {
     state.getItem.mockResolvedValue(null)
     state.createMobileAction.mockRejectedValueOnce(new Error('réseau indisponible')).mockResolvedValueOnce({ status: 'created', id: 'action-1', source: 'actions' })

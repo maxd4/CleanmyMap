@@ -4,6 +4,7 @@ import * as Location from 'expo-location'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { createLinkedMission } from '../lib/linked-mission-service'
+import { createLocalIdentifier } from '../lib/local-identifier'
 import {
   createMobileAction,
   loadMobileActionDay,
@@ -60,6 +61,10 @@ export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
   const [section, setSection] = useState<Section>('essentiel')
   const [draft, setDraft] = useState<Draft>(EMPTY)
   const [draftHydrated, setDraftHydrated] = useState(false)
+  const [draftReadAttempt, setDraftReadAttempt] = useState(0)
+  const [draftReadError, setDraftReadError] = useState(false)
+  const [draftWriteError, setDraftWriteError] = useState(false)
+  const [clientRequestId, setClientRequestId] = useState(() => createLocalIdentifier('action-create'))
   const [actionId, setActionId] = useState<string | null>(null)
   const [published, setPublished] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -68,30 +73,46 @@ export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
 
   useEffect(() => {
     let active = true
+    let readSucceeded = false
+    setDraftHydrated(false)
+    setDraftReadError(false)
     const restoreDraft = async () => {
       try {
         const value = await AsyncStorage.getItem(STORAGE_KEY)
-        if (!active || !value) return
+        if (!active) return
+        if (!value) {
+          readSucceeded = true
+          return
+        }
         try {
-          const parsed = JSON.parse(value) as { draft?: Draft; actionId?: string | null; section?: Section; published?: boolean }
+          const parsed = JSON.parse(value) as { draft?: Draft; actionId?: string | null; section?: Section; published?: boolean; clientRequestId?: string }
           if (parsed.draft) setDraft({ ...EMPTY, ...parsed.draft })
           if (parsed.actionId) setActionId(parsed.actionId)
           if (parsed.section && SECTIONS.some((item) => item.id === parsed.section)) setSection(parsed.section)
           if (parsed.published) setPublished(true)
+          if (typeof parsed.clientRequestId === 'string' && parsed.clientRequestId.trim()) setClientRequestId(parsed.clientRequestId)
         } catch { /* A malformed local draft must not block a new server-backed draft. */ }
-      } catch { /* A read failure leaves the empty draft available for a retry. */ }
+        readSucceeded = true
+      } catch {
+        if (active) setDraftReadError(true)
+      }
       finally {
-        if (active) setDraftHydrated(true)
+        if (active && readSucceeded) setDraftHydrated(true)
       }
     }
     void restoreDraft()
     return () => { active = false }
-  }, [])
+  }, [draftReadAttempt])
 
   useEffect(() => {
     if (!draftHydrated) return
-    void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ draft, actionId, section, published }))
-  }, [actionId, draft, draftHydrated, published, section])
+    let active = true
+    setDraftWriteError(false)
+    void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ draft, actionId, section, published, clientRequestId })).catch(() => {
+      if (active) setDraftWriteError(true)
+    })
+    return () => { active = false }
+  }, [actionId, clientRequestId, draft, draftHydrated, published, section])
 
   const update = (key: keyof Draft, value: string) => setDraft((current) => ({ ...current, [key]: value }))
   const sectionIndex = SECTIONS.findIndex((item) => item.id === section)
@@ -105,6 +126,7 @@ export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
   }
 
   const payload = useMemo<MobileActionDraftPayload>(() => ({
+    clientRequestId,
     actionDate: draft.date,
     locationLabel: draft.location,
     latitude: draft.latitude ? Number(draft.latitude) : undefined,
@@ -146,7 +168,7 @@ export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
       preparationChecklist: draft.checklist.split('\n').map((label, index) => ({ key: `mobile-${index + 1}`, label: label.trim(), checked: false })).filter((item) => item.label).slice(0, 12),
       routeTopology: draft.routeTopology,
     },
-  }), [draft])
+  }), [clientRequestId, draft])
 
   function handleError(value: unknown) {
     if ((value as { status?: number }).status === 401) onSessionExpired()
@@ -210,6 +232,8 @@ export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
     <View style={styles.steps} accessibilityRole="tablist">
       {SECTIONS.map((item, index) => <TouchableOpacity key={item.id} onPress={() => setSection(item.id)} accessibilityRole="tab" accessibilityState={{ selected: section === item.id }} style={[styles.step, section === item.id && styles.stepSelected]}><Text style={[styles.stepNumber, section === item.id && styles.stepNumberSelected]}>{index + 1}</Text><Text style={[styles.stepLabel, section === item.id && styles.stepLabelSelected]}>{item.label}</Text></TouchableOpacity>)}
     </View>
+    {draftReadError ? <View style={styles.error}><Text style={styles.errorText}>Le brouillon local n’a pas pu être relu. Il reste protégé tant que la récupération n’a pas réussi.</Text><TouchableOpacity style={styles.outlineButton} onPress={() => setDraftReadAttempt((attempt) => attempt + 1)} accessibilityRole="button"><Text style={styles.secondaryLabel}>Réessayer la récupération locale</Text></TouchableOpacity></View> : null}
+    {draftWriteError ? <Text style={styles.error} accessibilityRole="alert">Le brouillon local n’a pas pu être sauvegardé. Vos saisies restent visibles ; réessayez.</Text> : null}
     {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
     {message ? <Text style={styles.success}>{message}</Text> : null}
     {section === 'essentiel' ? <Essentiel draft={draft} update={update} onPosition={getCurrentPosition} /> : null}
@@ -233,5 +257,5 @@ function Equipe({ draft, update }: { draft: Draft; update: (key: keyof Draft, va
 function Verification({ draft, actionId, published, onLinkGps, onLoadDay }: { draft: Draft; actionId: string | null; published: boolean; onLinkGps: () => void; onLoadDay: () => void }) { return <Card title="Vérifier et publier"><Text style={styles.reviewLine}>Action : {draft.title || 'À compléter'}</Text><Text style={styles.reviewLine}>Date : {draft.date || 'À compléter'} · {draft.location || 'Lieu à compléter'}</Text><Text style={styles.reviewLine}>Équipe : {draft.participants || '0'} bénévole(s) · {draft.duration || '0'} min</Text><Text style={styles.helper}>La publication peut être refusée par les formalités ou les permissions réelles. Aucun succès n’est affiché avant confirmation serveur.</Text>{actionId ? <><Text style={styles.serverRef}>Référence serveur : {actionId}</Text><TouchableOpacity style={styles.outlineButton} onPress={onLinkGps} accessibilityRole="button"><Ionicons name="footsteps-outline" size={18} color="#a7f3d0" /><Text style={styles.secondaryLabel}>Relier une activité GPS</Text></TouchableOpacity><TouchableOpacity style={styles.outlineButton} onPress={onLoadDay} accessibilityRole="button"><Ionicons name="calendar-outline" size={18} color="#a7f3d0" /><Text style={styles.secondaryLabel}>Ouvrir Préparer / Jour J</Text></TouchableOpacity></> : null}{published ? <Text style={styles.success}>Action publiée. Le serveur reste la source des statuts et indicateurs.</Text> : null}</Card> }
 
 const styles = StyleSheet.create({
-  root: { paddingBottom: 16 }, eyebrow: { color: '#34d399', fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 8 }, title: { color: '#f8fafc', fontSize: 30, fontWeight: '900', marginBottom: 12 }, body: { color: '#cbd5e1', fontSize: 14, lineHeight: 21, marginBottom: 16 }, steps: { gap: 6, marginBottom: 14 }, step: { alignItems: 'center', backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: 12, borderWidth: 1, flexDirection: 'row', padding: 10 }, stepSelected: { backgroundColor: '#064e3b', borderColor: '#34d399' }, stepNumber: { color: '#94a3b8', fontWeight: '900', marginRight: 10 }, stepNumberSelected: { color: '#34d399' }, stepLabel: { color: '#cbd5e1', fontSize: 12, fontWeight: '800' }, stepLabelSelected: { color: '#ecfdf5' }, card: { backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: 18, borderWidth: 1, padding: 16, marginBottom: 14 }, cardTitle: { color: '#e2e8f0', fontSize: 17, fontWeight: '900', marginBottom: 14 }, field: { flex: 1, marginBottom: 12 }, label: { color: '#a7f3d0', fontSize: 11, fontWeight: '800', marginBottom: 6 }, input: { backgroundColor: '#020617', borderColor: '#334155', borderRadius: 10, borderWidth: 1, color: '#f8fafc', minHeight: 44, paddingHorizontal: 12, paddingVertical: 10 }, multiline: { minHeight: 76, textAlignVertical: 'top' }, row: { flexDirection: 'row', gap: 10 }, helper: { color: '#94a3b8', fontSize: 12, lineHeight: 18, marginBottom: 12 }, outlineButton: { alignItems: 'center', borderColor: '#475569', borderRadius: 10, borderWidth: 1, flexDirection: 'row', gap: 8, justifyContent: 'center', marginBottom: 12, padding: 12 }, topologySelected: { backgroundColor: '#064e3b', borderColor: '#34d399' }, secondaryLabel: { color: '#a7f3d0', fontSize: 12, fontWeight: '800' }, reviewLine: { color: '#e2e8f0', fontSize: 14, lineHeight: 23 }, serverRef: { color: '#64748b', fontFamily: 'monospace', fontSize: 11, marginTop: 12 }, success: { backgroundColor: '#064e3b', borderRadius: 10, color: '#d1fae5', fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 }, error: { backgroundColor: '#451a1a', borderRadius: 10, color: '#fecaca', fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }, primaryButton: { alignItems: 'center', backgroundColor: '#34d399', borderRadius: 12, justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 13 }, primaryLabel: { color: '#022c22', fontSize: 12, fontWeight: '900' }, secondaryButton: { alignItems: 'center', borderColor: '#475569', borderRadius: 12, borderWidth: 1, justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 12 }, disabled: { opacity: 0.5 }, review: { color: '#cbd5e1' },
+  root: { paddingBottom: 16 }, eyebrow: { color: '#34d399', fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 8 }, title: { color: '#f8fafc', fontSize: 30, fontWeight: '900', marginBottom: 12 }, body: { color: '#cbd5e1', fontSize: 14, lineHeight: 21, marginBottom: 16 }, steps: { gap: 6, marginBottom: 14 }, step: { alignItems: 'center', backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: 12, borderWidth: 1, flexDirection: 'row', padding: 10 }, stepSelected: { backgroundColor: '#064e3b', borderColor: '#34d399' }, stepNumber: { color: '#94a3b8', fontWeight: '900', marginRight: 10 }, stepNumberSelected: { color: '#34d399' }, stepLabel: { color: '#cbd5e1', fontSize: 12, fontWeight: '800' }, stepLabelSelected: { color: '#ecfdf5' }, card: { backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: 18, borderWidth: 1, padding: 16, marginBottom: 14 }, cardTitle: { color: '#e2e8f0', fontSize: 17, fontWeight: '900', marginBottom: 14 }, field: { flex: 1, marginBottom: 12 }, label: { color: '#a7f3d0', fontSize: 11, fontWeight: '800', marginBottom: 6 }, input: { backgroundColor: '#020617', borderColor: '#334155', borderRadius: 10, borderWidth: 1, color: '#f8fafc', minHeight: 44, paddingHorizontal: 12, paddingVertical: 10 }, multiline: { minHeight: 76, textAlignVertical: 'top' }, row: { flexDirection: 'row', gap: 10 }, helper: { color: '#94a3b8', fontSize: 12, lineHeight: 18, marginBottom: 12 }, outlineButton: { alignItems: 'center', borderColor: '#475569', borderRadius: 10, borderWidth: 1, flexDirection: 'row', gap: 8, justifyContent: 'center', marginBottom: 12, padding: 12 }, topologySelected: { backgroundColor: '#064e3b', borderColor: '#34d399' }, secondaryLabel: { color: '#a7f3d0', fontSize: 12, fontWeight: '800' }, reviewLine: { color: '#e2e8f0', fontSize: 14, lineHeight: 23 }, serverRef: { color: '#64748b', fontFamily: 'monospace', fontSize: 11, marginTop: 12 }, success: { backgroundColor: '#064e3b', borderRadius: 10, color: '#d1fae5', fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 }, error: { backgroundColor: '#451a1a', borderRadius: 10, color: '#fecaca', fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }, primaryButton: { alignItems: 'center', backgroundColor: '#34d399', borderRadius: 12, justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 13 }, primaryLabel: { color: '#022c22', fontSize: 12, fontWeight: '900' }, secondaryButton: { alignItems: 'center', borderColor: '#475569', borderRadius: 12, borderWidth: 1, justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 12 }, disabled: { opacity: 0.5 }, review: { color: '#cbd5e1' }, errorText: { color: '#fecaca', fontSize: 12, lineHeight: 18, marginBottom: 12 },
 })

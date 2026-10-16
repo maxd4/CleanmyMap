@@ -54,6 +54,8 @@ export type CreateActionSubmissionParams = {
   supabase: SupabaseClient;
   userId: string;
   payload: CreateActionPayload;
+  /** Request correlation supplied by retry-capable clients; never action content. */
+  idempotencyKey?: string;
   creator: CreatorIdentity;
   isCreatorGlobalAdmin: boolean;
   consentGranted: boolean;
@@ -320,6 +322,7 @@ async function persistStandardActionSubmission(params: {
   supabase: SupabaseClient;
   userId: string;
   payload: CreateActionPayload;
+  idempotencyKey?: string;
   organizerResolution: OrganizerResolution;
   participantResolution: ParticipantResolution;
 }): Promise<Extract<CreateActionSubmissionResult, { kind: "action" }>> {
@@ -332,12 +335,22 @@ async function persistStandardActionSubmission(params: {
       organizerRequirement: resolveOrganizerRequirement(params.payload, params.organizerResolution),
       manualParticipants: params.participantResolution.participants,
       status: "pending",
+      clientRequestId: params.idempotencyKey,
     });
   } catch (error) {
     if (error instanceof ActionRouteReconstructionError) {
       throw new ActionCreationValidationError(error.fieldErrors);
     }
     throw error;
+  }
+
+  if (created.replayed) {
+    return {
+      kind: "action",
+      id: created.id,
+      source: "actions",
+      retentionLoop: null,
+    };
   }
 
   if (params.payload.actionPhase === "pre_action") {
@@ -460,6 +473,7 @@ export async function createActionSubmission(
     supabase: params.supabase,
     userId: params.userId,
     payload: context.payload,
+    idempotencyKey: params.idempotencyKey,
     organizerResolution: context.organizerResolution,
     participantResolution: context.participantResolution,
   });

@@ -6,6 +6,7 @@ import {
 import {
   buildPostActionRetentionLoopMock,
   buildQuickPreActionPayload,
+  buildSubmitPayload,
   createActionMock,
   invalidateSnapshotsMock,
   mockAdminIdentity,
@@ -93,6 +94,26 @@ describe("POST /api/actions — création standard et pré-action", () => {
       actionId: "action-test-1",
     });
     expect(trackServerEventMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("forwards the authenticated retry key without using it as action content", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        headers: { "Idempotency-Key": "action-create-retry-key-1" },
+        body: JSON.stringify(buildSubmitPayload()),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        clientRequestId: "action-create-retry-key-1",
+        payload: expect.not.objectContaining({ clientRequestId: "action-create-retry-key-1" }),
+      }),
+    );
   }, 15000);
 
   it("keeps an admin complete action in the normal moderation flow", async () => {
