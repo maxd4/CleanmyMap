@@ -11,9 +11,44 @@ export type FeedbackSubmissionResult = {
 };
 
 export const FEEDBACK_DESCRIPTION_MAX_LENGTH = 3000;
+const FEEDBACK_TITLE_MAX_LENGTH = 160;
+
+const TITLE_SOURCE_KEYS: Record<
+  QuestionnaireConfig["id"],
+  readonly string[]
+> = {
+  bug: ["context", "steps"],
+  idea: ["proposal"],
+  improvement: ["friction", "proposal"],
+  collaboration: ["organization", "purpose"],
+};
 
 export function isFeedbackDescriptionWithinLimit(description: string): boolean {
   return description.length <= FEEDBACK_DESCRIPTION_MAX_LENGTH;
+}
+
+export function buildSuggestedFeedbackTitle(
+  questionnaire: QuestionnaireConfig,
+  values: Record<string, string>,
+  locale: Locale,
+): string {
+  const editedTitle = values.subject?.trim();
+  if (editedTitle) {
+    return editedTitle.slice(0, FEEDBACK_TITLE_MAX_LENGTH);
+  }
+
+  const source = TITLE_SOURCE_KEYS[questionnaire.id]
+    .map((key) => values[key]?.trim())
+    .find(Boolean)
+    ?.replace(/\s+/g, " ");
+  if (!source) {
+    return questionnaire.title[locale];
+  }
+
+  return `${questionnaire.title[locale]} — ${source}`.slice(
+    0,
+    FEEDBACK_TITLE_MAX_LENGTH,
+  );
 }
 
 export function formatQuestionnaireDescription(
@@ -66,8 +101,11 @@ export async function submitFeedbackQuestionnaire(params: {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       reportType: params.questionnaire.id,
-      title:
-        params.values.subject?.trim() || params.questionnaire.title[params.locale],
+      title: buildSuggestedFeedbackTitle(
+        params.questionnaire,
+        params.values,
+        params.locale,
+      ),
       description,
       pagePath: questionnairePagePath,
       source: params.source,

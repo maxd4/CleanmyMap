@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { buildFeedbackCanonicalHref } from "../feedback-section.shared";
 import {
+  buildSuggestedFeedbackTitle,
   FEEDBACK_DESCRIPTION_MAX_LENGTH,
   formatQuestionnaireDescription,
   isFeedbackDescriptionWithinLimit,
@@ -66,6 +67,31 @@ describe("feedback submission contract", () => {
     ).toBe(
       "/sections/feedback?type=bug&subject=Carte+bloqu%C3%A9e&context=Mobile&steps=Ouvrir+la+carte&expected=La+carte+s%27affiche&source=feedback_discussion#bug",
     );
+  });
+
+  it("suggests an editable title from the first useful answer when the title is blank", () => {
+    const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    const values = {
+      subject: "",
+      context: "J'ouvrais la carte depuis Missions",
+      steps: "La carte restait vide",
+      expected: "La carte devait apparaître",
+    };
+
+    expect(buildSuggestedFeedbackTitle(questionnaire, values, "fr")).toBe(
+      "Bug signalé — J'ouvrais la carte depuis Missions",
+    );
+  });
+
+  it("keeps an explicitly edited title instead of replacing it", () => {
+    const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    expect(
+      buildSuggestedFeedbackTitle(
+        questionnaire,
+        { subject: "Titre choisi", context: "Autre contexte" },
+        "fr",
+      ),
+    ).toBe("Titre choisi");
   });
 
   it("returns the request id from the existing API response", async () => {
