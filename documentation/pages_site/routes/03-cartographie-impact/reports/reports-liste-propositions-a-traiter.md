@@ -1,26 +1,28 @@
 # Rapports d'impact - Liste des propositions à traiter
 
-## Préconfiguration depuis une action validée — PLAN
+## Préconfiguration depuis une action validée — IMPLÉMENTÉE EN CODE
 
-Une action validée pourrait proposer « Générer un rapport d'impact » en ouvrant
+Une action validée propose désormais « Générer un rapport d'impact » en ouvrant
 le générateur canonique de `/reports` avec un périmètre préparé sur cette seule
-action. Ce point d'entrée ne doit pas créer un second moteur de rapport.
+action. Ce point d'entrée ne crée pas de second moteur de rapport.
 
-Le contrat devra transmettre de manière typée l'identifiant canonique de
-l'action, par exemple :
+Le contrat transmet de manière typée l'identifiant canonique de l'action :
 
 ```txt
-scope:
+input:
   type: single_action
   actionId: <id canonique>
 ```
 
-Le backend devra résoudre l'identifiant, vérifier l'admissibilité de l'action
-et sélectionner exactement son périmètre. La forme finale de l'URL, le schéma
-SQL, les migrations, le design du bouton et le niveau de détail par défaut
-restent à définir dans un lot ultérieur. Le même contrat pourra ensuite servir
-à des entrées préremplies pour une campagne, une organisation, un événement,
-un territoire ou un objectif mesurable.
+Le backend résout l'identifiant côté serveur, vérifie l'authentification,
+l'admissibilité, la publication et la visibilité, puis sélectionne exactement
+son périmètre. La génération réutilise l'historique et le renderer existants ;
+le snapshot mono-action porte `snapshotSchemaVersion: 1` et les snapshots
+historiques sans version restent compatibles. Une preuve réelle Supabase et un
+E2E authentifié restent nécessaires avant de classer cette proposition
+`CURRENT`. Le même contrat pourra ensuite servir à des entrées préremplies
+pour une campagne, une organisation, un événement, un territoire ou un
+objectif mesurable, hors de ce lot.
 
 ## Versioning et reproductibilité des générations dérivées — PLAN
 

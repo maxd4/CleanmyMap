@@ -40,6 +40,8 @@ export type PdfReportPayload = {
   periode: string;
   organizationType: string;
   organizationName?: string;
+  /** Minimal immutable snapshot contract version; absent on legacy snapshots. */
+  snapshotSchemaVersion?: 1;
   provenance?: {
     type: "single_action";
     actionId: string;

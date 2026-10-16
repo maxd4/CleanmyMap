@@ -170,12 +170,15 @@ export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
     },
   }), [clientRequestId, draft])
 
+  const mutationsBlocked = !draftHydrated || draftReadError || busy
+
   function handleError(value: unknown) {
     if ((value as { status?: number }).status === 401) onSessionExpired()
     else setError(value instanceof Error ? value.message : 'La sauvegarde n’a pas abouti.')
   }
 
   async function saveDraft() {
+    if (mutationsBlocked) return
     setBusy(true); setError(null); setMessage(null)
     try {
       const result = actionId
@@ -187,6 +190,7 @@ export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
   }
 
   async function publish() {
+    if (mutationsBlocked || published) return
     setBusy(true); setError(null); setMessage(null)
     try {
       if (!actionId) {
@@ -241,9 +245,9 @@ export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
     {section === 'equipe' ? <Equipe draft={draft} update={update} /> : null}
     {section === 'verification' ? <Verification draft={draft} actionId={actionId} published={published} onLinkGps={() => void linkGps()} onLoadDay={() => void loadDayBriefing()} /> : null}
     <View style={styles.actions}>
-      <TouchableOpacity style={styles.secondaryButton} disabled={busy} onPress={() => void saveDraft()} accessibilityRole="button"><Text style={styles.secondaryLabel}>{busy ? '...' : 'Enregistrer le brouillon'}</Text></TouchableOpacity>
+      <TouchableOpacity style={styles.secondaryButton} disabled={mutationsBlocked} onPress={() => void saveDraft()} accessibilityRole="button" accessibilityState={{ disabled: mutationsBlocked }}><Text style={styles.secondaryLabel}>{busy ? '...' : 'Enregistrer le brouillon'}</Text></TouchableOpacity>
       {sectionIndex > 0 ? <TouchableOpacity style={styles.secondaryButton} disabled={busy} onPress={() => setSection(SECTIONS[sectionIndex - 1].id)} accessibilityRole="button"><Text style={styles.secondaryLabel}>Précédent</Text></TouchableOpacity> : null}
-      {section !== 'verification' ? <TouchableOpacity style={styles.primaryButton} disabled={busy} onPress={() => setSection(SECTIONS[sectionIndex + 1].id)} accessibilityRole="button"><Text style={styles.primaryLabel}>Continuer</Text></TouchableOpacity> : <TouchableOpacity style={[styles.primaryButton, published && styles.disabled]} disabled={busy || published} onPress={() => void publish()} accessibilityRole="button"><Text style={styles.primaryLabel}>{published ? 'Publiée' : busy ? '...' : 'Publier'}</Text></TouchableOpacity>}
+      {section !== 'verification' ? <TouchableOpacity style={styles.primaryButton} disabled={busy} onPress={() => setSection(SECTIONS[sectionIndex + 1].id)} accessibilityRole="button"><Text style={styles.primaryLabel}>Continuer</Text></TouchableOpacity> : <TouchableOpacity style={[styles.primaryButton, (published || mutationsBlocked) && styles.disabled]} disabled={mutationsBlocked || published} onPress={() => void publish()} accessibilityRole="button" accessibilityState={{ disabled: mutationsBlocked || published }}><Text style={styles.primaryLabel}>{published ? 'Publiée' : busy ? '...' : 'Publier'}</Text></TouchableOpacity>}
     </View>
     {busy ? <ActivityIndicator color="#34d399" /> : null}
   </View>

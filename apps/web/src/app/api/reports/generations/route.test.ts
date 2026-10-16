@@ -380,4 +380,31 @@ describe("POST /api/reports/generations", () => {
     expect(resolveSingleActionReportContractMock).not.toHaveBeenCalled();
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
   });
+
+  it("does not fall back to the legacy payload contract when a single-action selector is malformed", async () => {
+    const response = await POST(new Request("http://localhost/api/reports/generations", {
+      method: "POST",
+      body: JSON.stringify({
+        ...validPayload,
+        input: {
+          type: "single_action",
+          actionId: "11111111-1111-4111-8111-111111111111",
+          injected: "must not be ignored",
+        },
+        payload: { ...validPayload.payload, title: "Valeur injectée" },
+      }),
+    }));
+
+    expect(response.status).toBe(400);
+    expect(resolveSingleActionReportContractMock).not.toHaveBeenCalled();
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+      outcome: "error",
+      details: expect.objectContaining({
+        stage: "validation",
+        code: "invalid_single_action_input",
+      }),
+    }));
+  });
 });

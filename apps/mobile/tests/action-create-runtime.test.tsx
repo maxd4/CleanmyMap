@@ -101,6 +101,18 @@ describe('mobile action creation runtime', () => {
     expect(renderer.root.findAll((node) => textContent(node).includes('Le brouillon local n’a pas pu être relu'))).not.toHaveLength(0)
   })
 
+  it('does not POST while local draft recovery is blocked', async () => {
+    state.getItem.mockRejectedValueOnce(new Error('storage indisponible'))
+    const renderer = await renderScreen()
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+
+    const save = findButton(renderer, 'Enregistrer le brouillon')
+    await act(async () => { await save?.props.onPress() })
+
+    expect(state.createMobileAction).not.toHaveBeenCalled()
+    expect(state.updateMobileAction).not.toHaveBeenCalled()
+  })
+
   it('recovers explicitly after a rejected local read without overwriting the restored draft', async () => {
     state.getItem.mockRejectedValueOnce(new Error('storage indisponible')).mockResolvedValueOnce(JSON.stringify({
       draft: { title: 'Récupération après erreur', location: 'Parc repris' },
@@ -115,6 +127,24 @@ describe('mobile action creation runtime', () => {
     expect(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }).props.value).toBe('Récupération après erreur')
     expect(renderer.root.findByProps({ accessibilityLabel: 'Lieu' }).props.value).toBe('Parc repris')
     expect(state.setItem).toHaveBeenCalled()
+  })
+
+  it('preserves the resumed action and request identities before saving again', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({
+      actionId: 'action-resumed',
+      clientRequestId: 'request-resumed-123456',
+      draft: { title: 'Action reprise', location: 'Parc repris' },
+    }))
+    const renderer = await renderScreen()
+
+    const save = findButton(renderer, 'Enregistrer le brouillon')
+    await act(async () => { await save?.props.onPress() })
+
+    expect(state.createMobileAction).not.toHaveBeenCalled()
+    expect(state.updateMobileAction).toHaveBeenCalledWith(
+      'action-resumed',
+      expect.objectContaining({ clientRequestId: 'request-resumed-123456' }),
+    )
   })
 
   it('does not persist after unmount while a local read is pending', async () => {

@@ -27,6 +27,8 @@ vi.mock("@/components/ui/cmm-button", () => ({
 }));
 vi.mock("./feedback/feedback-history", () => ({
   FeedbackHistory: () => <div data-testid="feedback-history" />,
+}));
+vi.mock("./feedback/feedback-history-loader", () => ({
   fetchPersonalFeedbackPage: fetchPersonalFeedbackPageMock,
 }));
 vi.mock("./feedback-section-dashboard-guidance", () => ({

@@ -11,7 +11,7 @@ import {
 
 export const FEEDBACK_SCREENSHOT_ACCEPT = BUG_REPORT_SCREENSHOT_ALLOWED_MIME_TYPES.join(",");
 
-export class FeedbackScreenshotUploadError extends Error {
+class FeedbackScreenshotUploadError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "FeedbackScreenshotUploadError";

@@ -91,6 +91,7 @@ describe("single-action report server boundary", () => {
 
     expect(input.scopeKind).toBe("single_action");
     expect(input.scopeValue).toBe(actionId);
+    expect(input.payload.snapshotSchemaVersion).toBe(1);
     expect(input.payload.provenance).toEqual({
       type: "single_action",
       actionId,

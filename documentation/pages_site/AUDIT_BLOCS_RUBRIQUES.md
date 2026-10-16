@@ -1,5 +1,31 @@
 # Audit des Blocs et Rubriques — Guide de Production
 
+> **Statut documentaire : `AUDIT` historique, non normatif.**
+>
+> Ce document conserve une ancienne méthode de production UI et ses prompts.
+> Ses consignes, inventaires, priorités, estimations et exemples de code sont
+> des éléments de contexte, pas des instructions `CURRENT` à exécuter.
+> La mention « non négociable » ci-dessous appartient à l'audit d'origine et
+> ne crée aucune obligation dans le projet actuel.
+>
+> **Contrats à lire pour un nouveau chantier :**
+> [`INDEX.md`](./INDEX.md), [`PAGE_FAMILIES.md`](./PAGE_FAMILIES.md),
+> les fiches de [`routes/`](./routes/),
+> [`BLOC_COLOR_SYSTEM_PREMIUM.md`](../design-system/BLOC_COLOR_SYSTEM_PREMIUM.md),
+> [`DISPLAY_MODES_CANONICAL.md`](../design-system/DISPLAY_MODES_CANONICAL.md),
+> puis les composants et tests réellement consommés dans le runtime.
+>
+> **Ne pas réutiliser directement les prompts de ce document.** Ils contiennent
+> notamment des prescriptions de fond `slate-950`, d'accent unique et de
+> visualisation systématique des chiffres qui ne constituent pas les contrats
+> visuels actuels. La consigne historique autorisant à retourner `null` en
+> mode sobre ne doit jamais masquer un contenu ou une fonctionnalité :
+> les modes d'affichage ne changent que la présentation.
+>
+> Les mentions de lots « produits », « terminés » ou « prochain à traiter »
+> sont des observations historiques, à requalifier depuis `main` avant tout
+> nouveau travail. Conserver le texte d'origine ci-dessous pour la traçabilité.
+
 ---
 
 ## Statut de production (mis à jour manuellement)

@@ -4,10 +4,10 @@ type FeedbackExportMode = "markdown" | "ai";
 
 const MAX_EXPORTED_TEXT_LENGTH = 4_000;
 const PRIVATE_EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
-const PRIVATE_QUERY_PATTERN = /([?&](?:[^\s&#=]+)=(?:[^\s&#]+))/gi;
 const PRIVATE_TOKEN_PATTERN = /\b(?:bearer\s+|(?:token|session|cookie|secret|api[_-]?key)\s*[:=]\s*)[^\s,;]+/gi;
-const UNTRUSTED_EXPORT_DELIMITER_PATTERN =
-  /<\s*\/?\s*(?:user-content|work-instructions)(?=[\s/>])[^>]*>/gi;
+const PRIVATE_QUERY_REPLACEMENT = "[paramètre privé supprimé]";
+const UNTRUSTED_DELIMITER_REPLACEMENT = "[délimiteur neutralisé]";
+const UNTRUSTED_DELIMITER_NAMES = ["user-content", "work-instructions"] as const;
 const PUBLIC_FEEDBACK_ANCHORS = new Set([
   "#bug",
   "#idea",
@@ -15,27 +15,143 @@ const PUBLIC_FEEDBACK_ANCHORS = new Set([
   "#collaboration",
 ]);
 
+function isWhitespace(character: string): boolean {
+  return character.length > 0 && character.trim() === "";
+}
+
 function redactPrivateText(value: string): string {
-  return value
-    .replace(PRIVATE_EMAIL_PATTERN, "[email privé supprimé]")
-    .replace(PRIVATE_QUERY_PATTERN, "[paramètre privé supprimé]")
-    .replace(PRIVATE_TOKEN_PATTERN, "[jeton privé supprimé]");
+  return redactPrivateQueryParameters(
+    value.replace(PRIVATE_EMAIL_PATTERN, "[email privé supprimé]"),
+  ).replace(PRIVATE_TOKEN_PATTERN, "[jeton privé supprimé]");
+}
+
+function redactPrivateQueryParameters(value: string): string {
+  const output: string[] = [];
+  let literalStart = 0;
+  let cursor = 0;
+
+  while (cursor < value.length) {
+    if (value[cursor] !== "?" && value[cursor] !== "&") {
+      cursor += 1;
+      continue;
+    }
+
+    const keyStart = cursor + 1;
+    let keyEnd = keyStart;
+    while (
+      keyEnd < value.length
+      && !isWhitespace(value[keyEnd])
+      && !["&", "#", "="].includes(value[keyEnd])
+    ) {
+      keyEnd += 1;
+    }
+
+    if (keyEnd === keyStart || value[keyEnd] !== "=") {
+      cursor += 1;
+      continue;
+    }
+
+    const valueStart = keyEnd + 1;
+    let valueEnd = valueStart;
+    while (
+      valueEnd < value.length
+      && !isWhitespace(value[valueEnd])
+      && value[valueEnd] !== "&"
+      && value[valueEnd] !== "#"
+    ) {
+      valueEnd += 1;
+    }
+
+    if (valueEnd === valueStart) {
+      cursor += 1;
+      continue;
+    }
+
+    output.push(value.slice(literalStart, cursor), PRIVATE_QUERY_REPLACEMENT);
+    cursor = valueEnd;
+    literalStart = cursor;
+  }
+
+  output.push(value.slice(literalStart));
+  return output.join("");
+}
+
+function stripUnsafeControlCharacters(value: string): string {
+  const output: string[] = [];
+  for (const character of value) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    const isUnsafe = codePoint <= 0x08
+      || codePoint === 0x0B
+      || codePoint === 0x0C
+      || (codePoint >= 0x0E && codePoint <= 0x1F)
+      || codePoint === 0x7F;
+    if (!isUnsafe) output.push(character);
+  }
+  return output.join("");
 }
 
 function normalizeExportText(value: string | null | undefined): string {
-  const normalized = redactPrivateText(value ?? "")
-    .replace(/\u0000/g, "")
-    .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
-    .trim();
+  const normalized = stripUnsafeControlCharacters(redactPrivateText(value ?? "")).trim();
   return normalized.length > MAX_EXPORTED_TEXT_LENGTH
     ? `${normalized.slice(0, MAX_EXPORTED_TEXT_LENGTH)}\n[contenu tronqué]`
     : normalized;
 }
 
+function delimiterNameAt(value: string, start: number): number | null {
+  for (const name of UNTRUSTED_DELIMITER_NAMES) {
+    if (value.slice(start, start + name.length).toLocaleLowerCase("en-US") === name) {
+      return start + name.length;
+    }
+  }
+  return null;
+}
+
+function neutralizeUntrustedDelimiters(value: string): string {
+  const output: string[] = [];
+  let literalStart = 0;
+  let cursor = 0;
+  let nextClosingBracket = value.indexOf(">");
+
+  while (cursor < value.length) {
+    if (value[cursor] !== "<") {
+      cursor += 1;
+      continue;
+    }
+
+    let tagStart = cursor + 1;
+    while (tagStart < value.length && isWhitespace(value[tagStart])) tagStart += 1;
+    if (value[tagStart] === "/") tagStart += 1;
+    while (tagStart < value.length && isWhitespace(value[tagStart])) tagStart += 1;
+
+    const tagNameEnd = delimiterNameAt(value, tagStart);
+    if (tagNameEnd === null) {
+      cursor += 1;
+      continue;
+    }
+
+    const nextCharacter = value[tagNameEnd];
+    if (nextCharacter && !isWhitespace(nextCharacter) && nextCharacter !== "/" && nextCharacter !== ">") {
+      cursor += 1;
+      continue;
+    }
+
+    while (nextClosingBracket !== -1 && nextClosingBracket < cursor) {
+      nextClosingBracket = value.indexOf(">", nextClosingBracket + 1);
+    }
+    const delimiterEnd = nextClosingBracket === -1 ? tagNameEnd : nextClosingBracket + 1;
+    output.push(value.slice(literalStart, cursor), UNTRUSTED_DELIMITER_REPLACEMENT);
+    literalStart = delimiterEnd;
+    cursor = delimiterEnd;
+  }
+
+  output.push(value.slice(literalStart));
+  return output.join("");
+}
+
 function quoteUntrustedText(value: string | null | undefined): string {
-  return normalizeExportText(value)
-    .replace(/~~~/g, "~ ~ ~")
-    .replace(UNTRUSTED_EXPORT_DELIMITER_PATTERN, "[délimiteur neutralisé]");
+  return neutralizeUntrustedDelimiters(
+    normalizeExportText(value).replace(/~~~/g, "~ ~ ~"),
+  );
 }
 
 function quoteInlineUntrustedText(value: string | null | undefined): string {

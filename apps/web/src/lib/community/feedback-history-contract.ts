@@ -1,4 +1,4 @@
-export const PERSONAL_FEEDBACK_STATUSES = [
+const PERSONAL_FEEDBACK_STATUSES = [
   "new",
   "pending",
   "responded",
@@ -6,7 +6,7 @@ export const PERSONAL_FEEDBACK_STATUSES = [
   "archived",
 ] as const;
 
-export const PERSONAL_FEEDBACK_QUALIFICATION_STATUSES = [
+const PERSONAL_FEEDBACK_QUALIFICATION_STATUSES = [
   "pending",
   "needs_info",
   "accepted",
@@ -19,7 +19,7 @@ export type PersonalFeedbackQualificationStatus =
 
 export type PersonalFeedbackStatus = (typeof PERSONAL_FEEDBACK_STATUSES)[number];
 
-export const PERSONAL_FEEDBACK_TRACKING_STATUSES = [
+const PERSONAL_FEEDBACK_TRACKING_STATUSES = [
   "not_planned",
   "under_study",
   "planned",

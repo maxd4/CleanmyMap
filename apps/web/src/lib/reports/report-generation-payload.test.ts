@@ -55,6 +55,7 @@ describe("report generation payload contract", () => {
     const singleActionPayload = {
       ...payload,
       organizationType: "single_action",
+      snapshotSchemaVersion: 1 as const,
       provenance: {
         type: "single_action",
         actionId: "11111111-1111-4111-8111-111111111111",
@@ -64,6 +65,7 @@ describe("report generation payload contract", () => {
     };
 
     expect(parseReportGenerationPayload(singleActionPayload)).toEqual(singleActionPayload);
+    expect(singleActionPayload.snapshotSchemaVersion).toBe(1);
     expect(parseReportGenerationPayload(payload)).toEqual(payload);
   });
 });

@@ -95,8 +95,10 @@ cinq destinations primaires sans accès secondaire explicite.
   publication n'est confirmée qu'après réponse serveur. Chaque brouillon
   conserve une clé de création stable, envoyée dans `Idempotency-Key` lors du
   POST `/api/actions` ; le serveur la rattache au créateur et à l'action via
-  une unicité PostgreSQL pour qu'une réponse perdue soit rejouable sans créer
-  de doublon.
+  une unicité PostgreSQL et une RPC transactionnelle qui persiste aussi les
+  organisateurs et inscriptions initiales. Une réponse perdue est donc
+  rejouable sans succès prématuré ni doublon ; une migration absente bloque la
+  création au lieu de réactiver un chemin non idempotent.
 - `Signaler un déchet` écrit uniquement dans `trash_spotter_spots`, transmet les
   photos via les intents média canoniques et n'affiche jamais un statut avant
   confirmation serveur.

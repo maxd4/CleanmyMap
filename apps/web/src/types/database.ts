@@ -80,6 +80,7 @@ export type ActionRow = {
   updated_at?: string;
   created_by_clerk_id: string;
   client_request_id?: string | null;
+  client_request_fingerprint?: string | null;
   actor_name: string | null;
   organizer_type?: OrganizerType | null;
   organizer_id?: string | null;

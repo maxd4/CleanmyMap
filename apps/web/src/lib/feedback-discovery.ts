@@ -1,6 +1,6 @@
 import { readLocalStorageJson, writeLocalStorageJson } from "./storage/local-storage";
 
-export const FEEDBACK_DISCOVERY_STORAGE_KEY = "cleanmymap_feedback_discovery_v1";
+const FEEDBACK_DISCOVERY_STORAGE_KEY = "cleanmymap_feedback_discovery_v1";
 export const FEEDBACK_DISCOVERY_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type FeedbackDiscoveryState = {

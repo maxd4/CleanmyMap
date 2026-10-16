@@ -1,13 +1,30 @@
 # Plan de correction UI / contenu
 
-Ce plan découpe les corrections en lots sûrs, à exécuter progressivement à partir de l'index maître et de la charte des pages hors blocs.
+> **Statut documentaire : `PLAN` à requalifier, non exécutable globalement.**
+>
+> Les mentions « exécuté », « non exécuté », « terminé » et les priorités ci-dessous
+> décrivent l'état de ce plan lors de sa rédaction. Elles ne prouvent ni
+> l'absence ni la présence d'un défaut dans le runtime actuel.
+> Chaque lot doit être ouvert uniquement à partir d'une anomalie encore
+> reproductible sur `main`, des consommateurs réels et de la fiche canonique.
+> La charte historique des pages hors blocs est un `AUDIT` non normatif.
 
-Références de départ:
+Ce plan conserve les corrections envisagées par lots. Pour un nouveau chantier,
+les références responsables sont :
 
-- [`INDEX.md`](./INDEX.md)
-- [`charte-pages-hors-blocs.md`](./charte-pages-hors-blocs.md)
+- [`INDEX.md`](./INDEX.md) et les fiches de [`routes/`](./routes/) pour les routes et les usages ;
+- [`PAGE_FAMILIES.md`](./PAGE_FAMILIES.md) et le resolver runtime pour les familles ;
+- [`BLOC_COLOR_SYSTEM_PREMIUM.md`](../design-system/BLOC_COLOR_SYSTEM_PREMIUM.md) et les contrats du design system pour le rendu ;
+- [`charte-pages-hors-blocs.md`](./charte-pages-hors-blocs.md) seulement pour l'historique des arbitrages.
 
-## État d'avancement
+## Condition d'ouverture d'un lot
+
+1. Identifier un écart concret et encore visible ou démontrable sur `main`.
+2. Vérifier le comportement, les composants et les tests concernés avant de reprendre une solution ancienne.
+3. Limiter le lot à la page ou au flux responsable ; ne pas réexécuter une correction déjà livrée.
+4. Vérifier mobile, accessibilité et non-régression selon le périmètre, puis maintenir la fiche canonique concernée.
+
+## État d'avancement lors de la rédaction du plan (historique, non vérifié sur `main`)
 
 - Lot 1: exécuté sur les pages rendues du lot, avec `/actions/map` déjà corrigée et les autres surfaces visibles du lot réalignées sur leurs palettes attendues.
 - Lot 2: exécuté sur les 4 routes auth, avec `/sign-in` comme page de référence, `/onboarding` comme page unique de configuration initiale et `/onboarding/localisation` réduit à une redirection historique.
@@ -27,7 +44,7 @@ Références de départ:
 - La configuration initiale doit tenir sur une seule page après authentification; les anciennes sous-routes d'onboarding doivent devenir des redirections si elles n'apportent pas d'UI propre.
 - Traiter les pages hors blocs avec leur palette attendue propre avant toute homogénéisation.
 - Ne pas mélanger correction UI et correction de contenu dans un même lot si une séparation est possible.
-- Ne jamais toucher aux pages déjà déclarées terminées ou explicitement hors scope.
+- Ne pas relancer un lot ancien, même sur une page auparavant déclarée terminée, sans défaut actuel reproduit et périmètre justifié.
 
 ## Lot 1 — Pages critiques visibles
 

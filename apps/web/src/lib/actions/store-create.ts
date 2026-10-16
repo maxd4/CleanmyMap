@@ -5,14 +5,13 @@ import type {
   CreateActionPayload,
 } from "@/lib/actions/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createHash } from "node:crypto";
 import type {
   ResolvedActionOrganizer,
   ResolvedActionParticipant,
 } from "@/lib/actions/participation/organizers";
 import {
   buildInitialActionRegistrationRows,
-  insertCreatedActionOrganizers,
-  insertCreatedActionRegistrations,
 } from "./store-participants";
 import { reconstructActionRoute } from "@/lib/actions/geometry/route-reconstruction";
 import {
@@ -29,7 +28,6 @@ import {
   resolveActionDepartmentForPersistence,
   resolveTrustedActionDepartmentForPersistence,
 } from "@/lib/geo/action-department-resolver";
-import { isMissingActionColumnError } from "./store-selects";
 import {
   recordCreateActionTrainingExample,
   recordRepollutionPredictionEvaluationForAction,
@@ -43,45 +41,14 @@ import { resolveCanonicalCreateActionPayload } from "./organizer-directory-regis
 
 export { buildActionInsertPayload, buildCreateActionGeometry } from "./store-create-contract";
 
-async function persistActionOrganizers(
-  supabase: SupabaseClient,
-  actionId: string,
-  organizers: ResolvedActionOrganizer[],
-  requirement: "required" | "optional" | undefined,
-): Promise<void> {
-  if (requirement !== "optional" || organizers.length > 0) {
-    await insertCreatedActionOrganizers(supabase, actionId, organizers);
-  }
-}
-
-async function persistCreatedActionData(
+async function persistCreatedActionPostProcessing(
   supabase: SupabaseClient,
   params: {
     actionId: string;
-    creatorUserId: string;
-    organizers: ResolvedActionOrganizer[];
-    organizerRequirement?: "required" | "optional";
-    manualParticipants: ResolvedActionParticipant[];
     payload: CreateActionPayload;
     status?: Exclude<ActionStatus, "cancelled">;
   },
 ): Promise<void> {
-  await persistActionOrganizers(
-    supabase,
-    params.actionId,
-    params.organizers,
-    params.organizerRequirement,
-  );
-  await insertCreatedActionRegistrations(
-    supabase,
-    params.actionId,
-    buildInitialActionRegistrationRows({
-      actionId: params.actionId,
-      creatorUserId: params.creatorUserId,
-      organizers: params.organizers,
-      manualParticipants: params.manualParticipants,
-    }),
-  );
   await recordCreateActionTrainingExample(supabase, {
     actionId: params.actionId,
     payload: params.payload,
@@ -103,22 +70,103 @@ type ActionCreationResult = {
   replayed?: true;
 };
 
-function isUniqueViolation(error: { code?: string; message?: string } | null): boolean {
-  return error?.code === "23505" || /duplicate key|unique constraint/i.test(error?.message ?? "");
+export class ActionCreationPersistenceError extends Error {
+  constructor(message: string, public readonly cause?: unknown) {
+    super(message);
+    this.name = "ActionCreationPersistenceError";
+  }
 }
 
-async function findActionByClientRequestId(
+function buildCreationFingerprint(params: {
+  action: Record<string, unknown>;
+  organizers: ResolvedActionOrganizer[];
+  registrations: Array<{
+    user_id: string;
+    registration_status: string;
+    registration_source: string;
+  }>;
+}): string {
+  return createHash("sha256")
+    .update(JSON.stringify({
+      action: params.action,
+      organizers: params.organizers.map((organizer) => ({
+        userId: organizer.userId,
+        displayName: organizer.displayName,
+        handle: organizer.handle,
+        isPrimary: organizer.isPrimary,
+      })),
+      registrations: params.registrations.map((registration) => ({
+        user_id: registration.user_id,
+        registration_status: registration.registration_status,
+        registration_source: registration.registration_source,
+      })),
+    }))
+    .digest("hex");
+}
+
+function isMissingAtomicCreationRpc(error: { code?: string; message?: string } | null): boolean {
+  return error?.code === "42883" || error?.code === "PGRST202" ||
+    /create_action_with_relations.*(does not exist|not found)/i.test(error?.message ?? "");
+}
+
+export async function persistActionWithRelations(
   supabase: SupabaseClient,
-  params: { userId: string; clientRequestId: string },
-): Promise<string | null> {
-  const result = await supabase
-    .from("actions")
-    .select("id")
-    .eq("created_by_clerk_id", params.userId)
-    .eq("client_request_id", params.clientRequestId)
-    .maybeSingle();
-  if (result.error) throw result.error;
-  return result.data?.id ? String(result.data.id) : null;
+  params: {
+    userId: string;
+    baseInsert: Record<string, unknown>;
+    organizers: ResolvedActionOrganizer[];
+    organizerRequirement?: "required" | "optional";
+    manualParticipants: ResolvedActionParticipant[];
+    clientRequestId?: string;
+  },
+): Promise<ActionCreationResult> {
+  const registrations = buildInitialActionRegistrationRows({
+    actionId: "pending",
+    creatorUserId: params.userId,
+    organizers: params.organizers,
+    manualParticipants: params.manualParticipants,
+  });
+  const action = {
+    ...params.baseInsert,
+    client_request_id: params.clientRequestId ?? null,
+  };
+  const fingerprint = params.clientRequestId
+    ? buildCreationFingerprint({
+        action,
+        organizers: params.organizers,
+        registrations,
+      })
+    : null;
+  const result = await supabase.rpc("create_action_with_relations", {
+    p_action: action,
+    p_organizers: params.organizers.map((organizer) => ({
+      organizer_clerk_id: organizer.userId,
+      organizer_label: organizer.displayName,
+      organizer_handle: organizer.handle,
+      is_primary: organizer.isPrimary,
+    })),
+    p_registrations: registrations,
+    p_creator_id: params.userId,
+    p_client_request_id: params.clientRequestId ?? null,
+    p_client_request_fingerprint: fingerprint,
+    p_organizer_required: params.organizerRequirement !== "optional" || params.organizers.length > 0,
+  });
+  if (result.error) {
+    if (isMissingAtomicCreationRpc(result.error)) {
+      throw new ActionCreationPersistenceError(
+        "La migration de création atomique des actions est absente : aucune création non idempotente ne sera tentée.",
+        result.error,
+      );
+    }
+    throw result.error;
+  }
+  const row = Array.isArray(result.data) ? result.data[0] : result.data;
+  if (!row || typeof row.action_id !== "string") {
+    throw new ActionCreationPersistenceError(
+      "La création atomique de l’action n’a pas renvoyé de référence persistée.",
+    );
+  }
+  return row.replayed ? { id: row.action_id, replayed: true } : { id: row.action_id };
 }
 
 export async function resolveCreateActionDrawing(
@@ -170,72 +218,6 @@ export async function resolveCreateActionDrawing(
     : { drawing: null, geometrySource: null, routeGeometry: null, origin: null };
 }
 
-async function insertCreatedAction(
-  supabase: SupabaseClient,
-  params: {
-    userId: string;
-    payload: CreateActionPayload;
-    persistedGeometry: ReturnType<typeof buildCreateActionGeometry>;
-    finalDrawing: ActionDrawing | null;
-    routeGeometry?: RouteGeometry | null;
-    status: Exclude<ActionStatus, "cancelled"> | undefined;
-    clientRequestId?: string;
-  },
-): Promise<ActionCreationResult> {
-  const baseInsert = buildActionInsertPayload(params);
-
-  const insertWithPhase = {
-    ...baseInsert,
-    action_phase: params.payload.actionPhase ?? "post_action_complete",
-    preparation_data: buildActionInsertPayload(params).preparation_data,
-    ...(params.clientRequestId ? { client_request_id: params.clientRequestId } : {}),
-  };
-
-  let inserted = await supabase.from("actions").insert(insertWithPhase).select("id").single();
-
-  if (inserted.error && isMissingActionColumnError(inserted.error)) {
-    const errorMessage = inserted.error.message?.toLowerCase() ?? "";
-    const retryPayload: Record<string, unknown> = { ...insertWithPhase };
-    if (errorMessage.includes("department_")) {
-      delete retryPayload.department_code;
-      delete retryPayload.department_name;
-    }
-    if (errorMessage.includes("event_start_time")) {
-      delete retryPayload.event_start_time;
-    }
-    if (errorMessage.includes("event_end_time")) {
-      delete retryPayload.event_end_time;
-    }
-    if (errorMessage.includes("action_phase")) {
-      delete retryPayload.action_phase;
-    }
-    if (errorMessage.includes("preparation_data")) {
-      delete retryPayload.preparation_data;
-    }
-    if (errorMessage.includes("published_at")) {
-      delete retryPayload.published_at;
-    }
-    inserted = await supabase
-      .from("actions")
-      .insert(retryPayload)
-      .select("id")
-      .single();
-  }
-
-  if (inserted.error) {
-    if (params.clientRequestId && isUniqueViolation(inserted.error)) {
-      const existingId = await findActionByClientRequestId(supabase, {
-        userId: params.userId,
-        clientRequestId: params.clientRequestId,
-      });
-      if (existingId) return { id: existingId, replayed: true };
-    }
-    throw inserted.error;
-  }
-
-  return { id: inserted.data.id };
-}
-
 export async function createAction(
   supabase: SupabaseClient,
   params: {
@@ -252,14 +234,6 @@ export async function createAction(
     clientRequestId?: string;
   },
 ): Promise<ActionCreationResult> {
-  if (params.clientRequestId) {
-    const existingId = await findActionByClientRequestId(supabase, {
-      userId: params.userId,
-      clientRequestId: params.clientRequestId,
-    });
-    if (existingId) return { id: existingId, replayed: true };
-  }
-
   params.payload = await resolveCanonicalCreateActionPayload({
     supabase,
     payload: params.payload,
@@ -328,24 +302,30 @@ export async function createAction(
     departmentCode: department.departmentCode ?? undefined,
     departmentName: department.departmentName ?? undefined,
   };
-  const created = await insertCreatedAction(supabase, {
+  const baseInsert = buildActionInsertPayload({
     userId: params.userId,
     payload: payloadWithDepartment,
     persistedGeometry,
     finalDrawing,
     routeGeometry: resolvedDrawing.routeGeometry,
     status: params.status,
+  });
+  const created = await persistActionWithRelations(supabase, {
+    userId: params.userId,
+    baseInsert: {
+      ...baseInsert,
+      action_phase: payloadWithDepartment.actionPhase ?? "post_action_complete",
+    },
+    organizers: params.organizers,
+    organizerRequirement: params.organizerRequirement,
+    manualParticipants: params.manualParticipants ?? [],
     clientRequestId: params.clientRequestId,
   });
 
   if (created.replayed) return created;
 
-  await persistCreatedActionData(supabase, {
+  await persistCreatedActionPostProcessing(supabase, {
     actionId: created.id,
-    creatorUserId: params.userId,
-    organizers: params.organizers,
-    organizerRequirement: params.organizerRequirement,
-    manualParticipants: params.manualParticipants ?? [],
     payload: payloadWithDepartment,
     status: params.status,
   });

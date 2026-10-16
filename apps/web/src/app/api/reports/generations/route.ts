@@ -57,6 +57,14 @@ type ReportGenerationPayload = z.infer<typeof createPayloadSchema>;
 type ReportGenerationReservation = Awaited<ReturnType<typeof reserveReportExportSlot>>;
 type ReportGenerationItem = Awaited<ReturnType<typeof persistReportGeneration>>;
 
+function hasTypedScopeSelector(value: unknown): boolean {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      Object.prototype.hasOwnProperty.call(value, "input"),
+  );
+}
+
 function auditReportGenerationError(
   operationId: string,
   actorUserId: string,
@@ -92,6 +100,16 @@ async function parseReportGenerationRequest(
   }
 
   const singleAction = singleActionRequestSchema.safeParse(body.data);
+  if (hasTypedScopeSelector(body.data) && !singleAction.success) {
+    await auditReportGenerationError(operationId, actorUserId, {
+      stage: "validation",
+      code: "invalid_single_action_input",
+    });
+    return {
+      response: NextResponse.json({ error: "Invalid single-action input" }, { status: 400 }),
+    };
+  }
+
   if (singleAction.success) {
     try {
       const contract = await resolveSingleActionReportContract(singleAction.data.input.actionId);

@@ -12,7 +12,7 @@ globalement sans un lot explicitement autorisé.
 
 ## Statut
 
-Backlog visuel exécutable pour GPT-5.4 mini, par lots séparés.
+Backlog d’hypothèses d’amélioration visuelle à requalifier par page sur le runtime actuel, indépendamment du modèle d’agent utilisé.
 
 Ce plan ne doit pas être exécuté comme une refonte globale. Il complète `documentation/pages_site/plan-correction-ui-contenu.md` et ne le remplace pas.
 
@@ -155,7 +155,7 @@ Si une réponse manque, ne pas implémenter l'idée.
 - accessibilité et mobile sont vérifiés ;
 - la fiche `pages_site` ou la liste de propositions locale est mise à jour si nécessaire.
 
-## Prompt exécutable
+## Exemple d’instruction pour un lot préalablement validé
 
 ```text
 Améliore visuellement une seule page CleanMyMap à partir de ce plan.

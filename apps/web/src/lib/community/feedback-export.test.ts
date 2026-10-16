@@ -99,11 +99,13 @@ describe("feedback exports", () => {
   });
 
   it("omits sensitive fragments while preserving public Feedback anchors", () => {
-    const publicOutput = buildFeedbackAiExport({
-      ...item,
-      pagePath: "/sections/feedback#bug",
-    });
-    expect(publicOutput).toContain("- Route / rubrique : /sections/feedback#bug");
+    for (const anchor of ["bug", "idea", "improvement", "collaboration"]) {
+      const publicOutput = buildFeedbackAiExport({
+        ...item,
+        pagePath: `/sections/feedback#${anchor}`,
+      });
+      expect(publicOutput).toContain(`- Route / rubrique : /sections/feedback#${anchor}`);
+    }
 
     for (const pagePath of [
       "/sections/feedback#access_token=example-secret",
@@ -124,6 +126,43 @@ describe("feedback exports", () => {
         expect(output).not.toContain("session_id");
         expect(output).not.toContain("example-session");
       }
+    }
+  });
+
+  it("redacts long adversarial query and delimiter inputs without leaking fragments", () => {
+    const longSecret = "secret-value-" + "x".repeat(100_000);
+    const output = buildFeedbackAiExport({
+      ...item,
+      title: `< user-content ${"a".repeat(100_000)}`,
+      context: [
+        `?token=${longSecret}&session=${longSecret}&email=alice@example.com&url=https://example.com/private`,
+        `<WORK-INSTRUCTIONS ${"b".repeat(100_000)}`,
+      ].join("\n"),
+    });
+
+    expect(output).not.toContain("secret-value-");
+    expect(output).not.toContain("alice@example.com");
+    expect(output).not.toContain("< user-content");
+    expect(output).not.toContain("<WORK-INSTRUCTIONS");
+    expect(output.length).toBeLessThan(20_000);
+  });
+
+  it("removes dangerous control characters while preserving ordinary text", () => {
+    const output = buildFeedbackMarkdownExport({
+      ...item,
+      title: "avant\u0000\u0001\u000B\u000C\u000E\u001F\u007F après",
+    });
+
+    expect(output).toContain("avant après");
+    for (const character of output) {
+      const codePoint = character.codePointAt(0) ?? 0;
+      expect(
+        codePoint <= 0x08
+          || codePoint === 0x0B
+          || codePoint === 0x0C
+          || (codePoint >= 0x0E && codePoint <= 0x1F)
+          || codePoint === 0x7F,
+      ).toBe(false);
     }
   });
 

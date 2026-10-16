@@ -25,7 +25,7 @@ export type FeedbackSectionProps = {
   initialSearchParams?: FeedbackSectionSearchParams;
 };
 
-export type FeedbackSectionSearchParams = Record<
+type FeedbackSectionSearchParams = Record<
   string,
   string | string[] | undefined
 >;

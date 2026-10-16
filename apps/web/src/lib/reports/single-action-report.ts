@@ -7,6 +7,7 @@ import { computeReportAccountScopeCoverage } from "@/lib/reports/scope";
 import { toReportsExportRow } from "@/lib/reports/page-data-export";
 import { buildPdfData, buildReportTitle, type DetailLevelId, type ModuleState } from "@/lib/reports/report-pdf-data";
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
+import { REPORT_SNAPSHOT_SCHEMA_VERSION } from "@/lib/reports/report-generation-payload";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 
@@ -142,6 +143,7 @@ export function buildSingleActionReportGenerationInput(params: {
       periode: "full_history",
       organizationType: "single_action",
       organizationName: scopeLabel,
+      snapshotSchemaVersion: REPORT_SNAPSHOT_SCHEMA_VERSION,
       provenance: {
         type: "single_action",
         actionId: request.actionId,

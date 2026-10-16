@@ -1,5 +1,22 @@
 # Audit `documentation/pages_site` ↔ code runtime
 
+> **Statut documentaire : `AUDIT` historique, non normatif.**
+>
+> Tous les constats, niveaux P0/P1/P2, chemins proposés et lots ci-dessous
+> concernent exclusivement le commit précisé dans la section « Référence ».
+> Ils ne sont ni un état des lieux de `main` aujourd'hui ni un backlog actif.
+> Plusieurs mesures proposées dans cet audit sont désormais présentes dans le
+> dépôt, notamment le générateur converti en audit non destructif et le contrôle
+> `check-pages-site-route-drift.mjs` ; leur bon fonctionnement n'est pas prouvé
+> par le seul constat de leur présence.
+>
+> Avant d'ouvrir une correction : reproduire le problème sur `main`, vérifier
+> le runtime et les tests, puis consulter [`INDEX.md`](./INDEX.md),
+> [`PAGE_FAMILIES.md`](./PAGE_FAMILIES.md), les fiches de
+> [`routes/`](./routes/) et la gouvernance documentaire. Ne pas relancer
+> les anciens lots par défaut ni réécrire automatiquement les fiches enrichies.
+> Le texte original est maintenu ci-dessous comme trace de l'audit.
+
 ## Référence
 
 ```txt

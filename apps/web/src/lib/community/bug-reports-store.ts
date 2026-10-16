@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { join } from "node:path";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
@@ -9,394 +8,51 @@ import {
   persistSupabaseRecord,
   readSupabaseRecord,
   readSupabaseRecords,
-  replaceAndPersistRecord,
 } from "@/lib/persistence/runtime-store";
-import {
-  normalizeOptionalTextField,
-  normalizeTextField,
-} from "@/lib/persistence/record-normalizers";
-import {
-  readLocalRecordStore,
-  writeLocalRecordStore,
-} from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { removeBugReportScreenshotForDeletedReport } from "./bug-report-screenshot";
+import {
+  clampCommunityBugReportsHistoryLimit,
+  compareHistoryKeys,
+  toHistoryPage,
+  type BugReportInput,
+  type BugReportRecord,
+  type CommunityBugReportHistoryCursor,
+  type CommunityBugReportHistoryPage,
+  type FeedbackQualificationDecision,
+  type FeedbackTrackingStatus,
+} from "./bug-reports-store-contract";
+import {
+  fromSupabaseRow,
+  toSupabaseRow,
+} from "./bug-reports-store-normalization";
+import {
+  readStore,
+  SUPABASE_BUG_REPORT_COLUMNS,
+  writeStore,
+} from "./bug-reports-store-persistence";
 import {
   compareCreatorInboxRecordCursors,
   type CreatorInboxRecordCursor,
 } from "./creator-inbox-pagination";
 
-const STORE_FILE = join(
-  process.cwd(),
-  "data",
-  "local-db",
-  "community_bug_reports.json",
-);
-const SUPABASE_BUG_REPORT_COLUMNS =
-  "id, created_at, submitted_by_user_id, submitted_by_display_name, submitted_by_email, submitted_by_role, report_type, title, description, page_path, source, status, creator_state, screenshot_upload_state, qualification_status, qualification_reason, qualification_decided_at, qualification_decided_by_user_id, qualification_duplicate_feedback_id, tracking_status, tracking_public_summary, tracking_reference, tracking_shipped_on, tracking_shipped_notification_at, tracking_updated_at, tracking_updated_by_user_id";
-
-export const FEEDBACK_QUALIFICATION_STATUSES = [
-  "pending",
-  "needs_info",
-  "accepted",
-  "duplicate",
-  "rejected",
-] as const;
-
-export type FeedbackQualificationStatus =
-  (typeof FEEDBACK_QUALIFICATION_STATUSES)[number];
-
-export type FeedbackQualificationDecision = Exclude<
+export type {
+  BugReportInput,
+  BugReportRecord,
+  CommunityBugReportFollowUpMetrics,
+  CommunityBugReportHistoryCursor,
+  CommunityBugReportHistoryPage,
+  FeedbackQualificationDecision,
   FeedbackQualificationStatus,
-  "pending"
-> | "pending";
-
-export const FEEDBACK_TRACKING_STATUSES = [
-  "not_planned",
-  "under_study",
-  "planned",
-  "in_progress",
-  "shipped",
-] as const;
-
-export type FeedbackTrackingStatus = (typeof FEEDBACK_TRACKING_STATUSES)[number];
-
-export type FeedbackTracking = {
-  status: FeedbackTrackingStatus;
-  publicSummary: string | null;
-  reference: string | null;
-  shippedOn: string | null;
-  shippedNotificationAt: string | null;
-  updatedAt: string | null;
-  updatedByUserId: string | null;
-};
-
-export type BugReportInput = {
-  reportType: "bug" | "idea" | "improvement" | "collaboration";
-  title: string;
-  description: string;
-  pagePath: string | null;
-  source?: "discussion_form" | "feedback_section" | "feedback_discussion";
-  submittedByDisplayName?: string;
-  submittedByEmail?: string | null;
-  submittedByRole?: string | null;
-};
-
-export type BugReportRecord = BugReportInput & {
-  id: string;
-  createdAt: string;
-  submittedByUserId: string;
-  submittedByDisplayName: string;
-  submittedByEmail: string | null;
-  submittedByRole: string | null;
-  source: "discussion_form" | "feedback_section" | "feedback_discussion";
-  status: "open" | "treated" | "archived";
-  creatorState: "new" | "pending" | "responded" | "treated" | "archived";
-  screenshotUploadState?: "pending" | "ready" | "failed" | null;
-  qualificationStatus?: FeedbackQualificationStatus;
-  qualificationReason?: string | null;
-  qualificationDecidedAt?: string | null;
-  qualificationDecidedByUserId?: string | null;
-  qualificationDuplicateFeedbackId?: string | null;
-  tracking?: FeedbackTracking;
-};
-
-export const COMMUNITY_BUG_REPORTS_HISTORY_DEFAULT_LIMIT = 20;
-export const COMMUNITY_BUG_REPORTS_HISTORY_MAX_LIMIT = 50;
-
-export type CommunityBugReportHistoryCursor = {
-  createdAt: string;
-  id: string;
-};
-
-export type CommunityBugReportHistoryPage = {
-  items: BugReportRecord[];
-  nextCursor: CommunityBugReportHistoryCursor | null;
-  hasMore: boolean;
-};
-
-const COMMUNITY_BUG_REPORT_HISTORY_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
-
-type StorePayload = {
-  updatedAt: string;
-  records: BugReportRecord[];
-};
-
-export function clampCommunityBugReportsHistoryLimit(
-  value: number | null | undefined,
-): number {
-  if (value === null || value === undefined || !Number.isFinite(value)) {
-    return COMMUNITY_BUG_REPORTS_HISTORY_DEFAULT_LIMIT;
-  }
-  return Math.min(
-    COMMUNITY_BUG_REPORTS_HISTORY_MAX_LIMIT,
-    Math.max(1, Math.trunc(value)),
-  );
-}
-
-export function parseCommunityBugReportHistoryCursor(
-  value: string | null | undefined,
-): CommunityBugReportHistoryCursor | null {
-  if (!value) return null;
-  const separatorIndex = value.lastIndexOf("|");
-  if (separatorIndex <= 0 || separatorIndex === value.length - 1) {
-    return null;
-  }
-
-  const createdAt = value.slice(0, separatorIndex);
-  const id = value.slice(separatorIndex + 1).trim();
-  const timestamp = Date.parse(createdAt);
-  if (!COMMUNITY_BUG_REPORT_HISTORY_ID_PATTERN.test(id) || !Number.isFinite(timestamp)) {
-    return null;
-  }
-
-  return { createdAt: new Date(timestamp).toISOString(), id };
-}
-
-export function buildCommunityBugReportHistoryCursor(
-  cursor: CommunityBugReportHistoryCursor,
-): string {
-  return `${cursor.createdAt}|${cursor.id}`;
-}
-
-function compareHistoryKeys(
-  left: CommunityBugReportHistoryCursor,
-  right: CommunityBugReportHistoryCursor,
-): number {
-  const leftTime = Date.parse(left.createdAt);
-  const rightTime = Date.parse(right.createdAt);
-  if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) {
-    return leftTime - rightTime;
-  }
-  if (left.createdAt !== right.createdAt) {
-    return left.createdAt.localeCompare(right.createdAt);
-  }
-  return left.id.localeCompare(right.id);
-}
-
-function toHistoryPage(
-  records: BugReportRecord[],
-  limit: number,
-): CommunityBugReportHistoryPage {
-  const hasMore = records.length > limit;
-  const items = records.slice(0, limit);
-  const lastItem = items.at(-1);
-  return {
-    items,
-    nextCursor:
-      hasMore && lastItem
-        ? { createdAt: lastItem.createdAt, id: lastItem.id }
-        : null,
-    hasMore,
-  };
-}
-
-function isBugReportType(
-  value: unknown,
-): value is BugReportRecord["reportType"] {
-  return (
-    value === "bug" ||
-    value === "idea" ||
-    value === "improvement" ||
-    value === "collaboration"
-  );
-}
-
-function normalizeBugReportSource(
-  value: unknown,
-): BugReportRecord["source"] {
-  return value === "feedback_section" || value === "feedback_discussion"
-    ? value
-    : "discussion_form";
-}
-
-function normalizeBugReportStatus(
-  value: unknown,
-): BugReportRecord["status"] {
-  return value === "treated" || value === "archived" ? value : "open";
-}
-
-function normalizeBugReportCreatorState(
-  value: unknown,
-  status: BugReportRecord["status"],
-): BugReportRecord["creatorState"] {
-  if (
-    value === "pending" ||
-    value === "responded" ||
-    value === "treated" ||
-    value === "archived"
-  ) {
-    return value;
-  }
-  if (status === "treated") {
-    return "treated";
-  }
-  if (status === "archived") {
-    return "archived";
-  }
-  return "new";
-}
-
-function normalizeScreenshotUploadState(
-  value: unknown,
-): BugReportRecord["screenshotUploadState"] {
-  return value === "pending" || value === "ready" || value === "failed" ? value : null;
-}
-
-function normalizeFeedbackQualificationStatus(
-  value: unknown,
-): FeedbackQualificationStatus {
-  return FEEDBACK_QUALIFICATION_STATUSES.includes(
-    value as FeedbackQualificationStatus,
-  )
-    ? (value as FeedbackQualificationStatus)
-    : "pending";
-}
-
-function normalizeFeedbackTrackingStatus(value: unknown): FeedbackTrackingStatus {
-  return FEEDBACK_TRACKING_STATUSES.includes(value as FeedbackTrackingStatus)
-    ? (value as FeedbackTrackingStatus)
-    : "not_planned";
-}
-
-function normalizeBugReportRecord(record: unknown): BugReportRecord | null {
-  if (!record || typeof record !== "object") {
-    return null;
-  }
-
-  const raw = record as Record<string, unknown>;
-  if (!isBugReportType(raw["reportType"])) {
-    return null;
-  }
-
-  const title = normalizeTextField(raw["title"]);
-  const description = normalizeTextField(raw["description"]);
-  const pagePath = normalizeOptionalTextField(raw["pagePath"]);
-  const submittedByUserId =
-    typeof raw["submittedByUserId"] === "string" ? raw["submittedByUserId"] : "unknown";
-  const submittedByDisplayName =
-    normalizeOptionalTextField(raw["submittedByDisplayName"]) ?? submittedByUserId;
-  const submittedByEmail = normalizeOptionalTextField(raw["submittedByEmail"]);
-  const submittedByRole = normalizeOptionalTextField(raw["submittedByRole"]);
-  const id = typeof raw["id"] === "string" ? raw["id"] : randomUUID();
-  const createdAt =
-    typeof raw["createdAt"] === "string" ? raw["createdAt"] : new Date().toISOString();
-  const source = normalizeBugReportSource(raw["source"]);
-  const status = normalizeBugReportStatus(raw["status"]);
-  const creatorState = normalizeBugReportCreatorState(raw["creatorState"], status);
-  const rawReportType = raw["reportType"];
-
-  return {
-    id,
-    createdAt,
-    submittedByUserId,
-    submittedByDisplayName,
-    submittedByEmail,
-    submittedByRole,
-    source,
-    status,
-    creatorState,
-    screenshotUploadState: normalizeScreenshotUploadState(raw["screenshotUploadState"]),
-    qualificationStatus: normalizeFeedbackQualificationStatus(
-      raw["qualificationStatus"],
-    ),
-    qualificationReason: normalizeOptionalTextField(raw["qualificationReason"]),
-    qualificationDecidedAt: normalizeOptionalTextField(
-      raw["qualificationDecidedAt"],
-    ),
-    qualificationDecidedByUserId: normalizeOptionalTextField(
-      raw["qualificationDecidedByUserId"],
-    ),
-    qualificationDuplicateFeedbackId: normalizeOptionalTextField(
-      raw["qualificationDuplicateFeedbackId"],
-    ),
-    tracking: {
-      status: normalizeFeedbackTrackingStatus(raw["trackingStatus"]),
-      publicSummary: normalizeOptionalTextField(raw["trackingPublicSummary"]),
-      reference: normalizeOptionalTextField(raw["trackingReference"]),
-      shippedOn: normalizeOptionalTextField(raw["trackingShippedOn"]),
-      shippedNotificationAt: normalizeOptionalTextField(
-        raw["trackingShippedNotificationAt"],
-      ),
-      updatedAt: normalizeOptionalTextField(raw["trackingUpdatedAt"]),
-      updatedByUserId: normalizeOptionalTextField(raw["trackingUpdatedByUserId"]),
-    },
-    reportType: rawReportType as BugReportRecord["reportType"],
-    title,
-    description,
-    pagePath,
-  };
-}
-
-function fromSupabaseRow(row: Record<string, unknown>): BugReportRecord | null {
-  return normalizeBugReportRecord({
-    id: row.id,
-    createdAt: row.created_at,
-    submittedByUserId: row.submitted_by_user_id,
-    submittedByDisplayName: row.submitted_by_display_name,
-    submittedByEmail: row.submitted_by_email,
-    submittedByRole: row.submitted_by_role,
-    reportType: row.report_type,
-    title: row.title,
-    description: row.description,
-    pagePath: row.page_path,
-    source: row.source,
-    status: row.status,
-    creatorState: row.creator_state,
-    screenshotUploadState: row.screenshot_upload_state,
-    qualificationStatus: row.qualification_status,
-    qualificationReason: row.qualification_reason,
-    qualificationDecidedAt: row.qualification_decided_at,
-    qualificationDecidedByUserId: row.qualification_decided_by_user_id,
-    qualificationDuplicateFeedbackId: row.qualification_duplicate_feedback_id,
-    trackingStatus: row.tracking_status,
-    trackingPublicSummary: row.tracking_public_summary,
-    trackingReference: row.tracking_reference,
-    trackingShippedOn: row.tracking_shipped_on,
-    trackingShippedNotificationAt: row.tracking_shipped_notification_at,
-    trackingUpdatedAt: row.tracking_updated_at,
-    trackingUpdatedByUserId: row.tracking_updated_by_user_id,
-  });
-}
-
-async function readStore(): Promise<StorePayload> {
-  return readLocalRecordStore(STORE_FILE, (record) => normalizeBugReportRecord(record));
-}
-
-async function writeStore(store: StorePayload): Promise<void> {
-  await writeLocalRecordStore(STORE_FILE, store.records);
-}
-
-function toSupabaseRow(record: BugReportRecord): Record<string, unknown> {
-  return {
-    id: record.id,
-    created_at: record.createdAt,
-    submitted_by_user_id: record.submittedByUserId,
-    submitted_by_display_name: record.submittedByDisplayName,
-    submitted_by_email: record.submittedByEmail,
-    submitted_by_role: record.submittedByRole,
-    report_type: record.reportType,
-    title: record.title,
-    description: record.description,
-    page_path: record.pagePath,
-    source: record.source,
-    status: record.status,
-    creator_state: record.creatorState,
-    qualification_status: record.qualificationStatus ?? "pending",
-    qualification_reason: record.qualificationReason ?? null,
-    qualification_decided_at: record.qualificationDecidedAt ?? null,
-    qualification_decided_by_user_id: record.qualificationDecidedByUserId ?? null,
-    qualification_duplicate_feedback_id:
-      record.qualificationDuplicateFeedbackId ?? null,
-    tracking_status: record.tracking?.status ?? "not_planned",
-    tracking_public_summary: record.tracking?.publicSummary ?? null,
-    tracking_reference: record.tracking?.reference ?? null,
-    tracking_shipped_on: record.tracking?.shippedOn ?? null,
-    tracking_shipped_notification_at: record.tracking?.shippedNotificationAt ?? null,
-    tracking_updated_at: record.tracking?.updatedAt ?? null,
-    tracking_updated_by_user_id: record.tracking?.updatedByUserId ?? null,
-  };
-}
+  FeedbackTracking,
+  FeedbackTrackingStatus,
+} from "./bug-reports-store-contract";
+export {
+  buildCommunityBugReportHistoryCursor,
+  clampCommunityBugReportsHistoryLimit,
+  parseCommunityBugReportHistoryCursor,
+} from "./bug-reports-store-contract";
+export { loadCommunityBugReportFollowUpMetrics } from "./bug-reports-store-metrics";
 
 export type CommunityBugReportQualificationResult = {
   record: BugReportRecord | null;
@@ -430,9 +86,7 @@ export async function qualifyCommunityBugReport(params: {
       p_operation_id: params.operationId,
     },
   );
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
+  if (result.error) throw new Error(result.error.message);
 
   const payload = result.data as {
     status?: CommunityBugReportQualificationResult["status"];
@@ -505,71 +159,6 @@ export async function updateCommunityBugReportTracking(params: {
   };
 }
 
-export type CommunityBugReportFollowUpMetrics = {
-  received: number;
-  pendingQualification: number;
-  accepted: number;
-  duplicate: number;
-  rejected: number;
-  shipped: number;
-  period: "all_time";
-  scope: "community_bug_reports";
-};
-
-export async function loadCommunityBugReportFollowUpMetrics(): Promise<CommunityBugReportFollowUpMetrics> {
-  assertPersistenceAvailable("community_bug_reports");
-
-  if (canUseSupabaseServerPersistence()) {
-    const supabase = getSupabaseServerClient(true);
-    const [received, pendingQualification, accepted, duplicate, rejected, shipped] =
-      await Promise.all([
-        supabase.from("community_bug_reports").select("id", { count: "exact", head: true }),
-        supabase.from("community_bug_reports").select("id", { count: "exact", head: true }).eq("qualification_status", "pending"),
-        supabase.from("community_bug_reports").select("id", { count: "exact", head: true }).eq("qualification_status", "accepted"),
-        supabase.from("community_bug_reports").select("id", { count: "exact", head: true }).eq("qualification_status", "duplicate"),
-        supabase.from("community_bug_reports").select("id", { count: "exact", head: true }).eq("qualification_status", "rejected"),
-        supabase.from("community_bug_reports").select("id", { count: "exact", head: true }).eq("tracking_status", "shipped"),
-      ]);
-    const results = [received, pendingQualification, accepted, duplicate, rejected, shipped];
-    const failure = results.find((result) => result.error);
-    if (failure?.error) throw new Error(failure.error.message);
-    return {
-      received: received.count ?? 0,
-      pendingQualification: pendingQualification.count ?? 0,
-      accepted: accepted.count ?? 0,
-      duplicate: duplicate.count ?? 0,
-      rejected: rejected.count ?? 0,
-      shipped: shipped.count ?? 0,
-      period: "all_time",
-      scope: "community_bug_reports",
-    };
-  }
-
-  const store = await readStore();
-  return store.records.reduce<CommunityBugReportFollowUpMetrics>(
-    (metrics, record) => {
-      metrics.received += 1;
-      const qualificationStatus = record.qualificationStatus ?? "pending";
-      if (qualificationStatus === "pending") metrics.pendingQualification += 1;
-      if (qualificationStatus === "accepted") metrics.accepted += 1;
-      if (qualificationStatus === "duplicate") metrics.duplicate += 1;
-      if (qualificationStatus === "rejected") metrics.rejected += 1;
-      if (record.tracking?.status === "shipped") metrics.shipped += 1;
-      return metrics;
-    },
-    {
-      received: 0,
-      pendingQualification: 0,
-      accepted: 0,
-      duplicate: 0,
-      rejected: 0,
-      shipped: 0,
-      period: "all_time",
-      scope: "community_bug_reports",
-    },
-  );
-}
-
 export async function appendCommunityBugReport(params: {
   submittedByUserId: string;
   input: BugReportInput;
@@ -577,14 +166,12 @@ export async function appendCommunityBugReport(params: {
   assertPersistenceAvailable("community_bug_reports");
 
   const { source, ...restInput } = params.input;
-
   const record: BugReportRecord = {
     id: randomUUID(),
     createdAt: new Date().toISOString(),
     ...restInput,
     submittedByUserId: params.submittedByUserId,
-    submittedByDisplayName:
-      restInput.submittedByDisplayName ?? params.submittedByUserId,
+    submittedByDisplayName: restInput.submittedByDisplayName ?? params.submittedByUserId,
     submittedByEmail: restInput.submittedByEmail ?? null,
     submittedByRole: restInput.submittedByRole ?? null,
     source: source ?? "discussion_form",
@@ -620,10 +207,10 @@ export async function listCommunityBugReports(
 
   if (canUseSupabaseServerPersistence()) {
     let query = getSupabaseServerClient(true)
-        .from("community_bug_reports")
-        .select(SUPABASE_BUG_REPORT_COLUMNS)
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false });
+      .from("community_bug_reports")
+      .select(SUPABASE_BUG_REPORT_COLUMNS)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
     if (beforeCursor) {
       query = query.or(
         `created_at.lt.${beforeCursor.createdAt},and(created_at.eq.${beforeCursor.createdAt},id.lt.${beforeCursor.id})`,
@@ -639,7 +226,9 @@ export async function listCommunityBugReports(
         !beforeCursor ||
         compareCreatorInboxRecordCursors(record, beforeCursor) < 0,
     )
-    .sort((left, right) => compareCreatorInboxRecordCursors(right, left))
+    .sort((left, right) =>
+      compareCreatorInboxRecordCursors(right, left),
+    )
     .slice(0, normalizedLimit);
 }
 
@@ -655,7 +244,6 @@ export async function listCommunityBugReportsForUser(params: {
   }
 
   const limit = clampCommunityBugReportsHistoryLimit(params.limit);
-
   if (canUseSupabaseServerPersistence()) {
     let query = getSupabaseServerClient(true)
       .from("community_bug_reports")
@@ -699,7 +287,6 @@ export async function getCommunityBugReportById(
   reportId: string,
 ): Promise<BugReportRecord | null> {
   assertPersistenceAvailable("community_bug_reports");
-
   if (canUseSupabaseServerPersistence()) {
     return readSupabaseRecord(
       getSupabaseServerClient(true)
@@ -710,7 +297,6 @@ export async function getCommunityBugReportById(
       fromSupabaseRow,
     );
   }
-
   const store = await readStore();
   return findRecordInList(store.records, (record) => record.id === reportId);
 }
@@ -741,14 +327,9 @@ export async function updateCommunityBugReportStatus(params: {
 
   const store = await readStore();
   const index = store.records.findIndex((record) => record.id === params.reportId);
-  if (index < 0) {
-    return null;
-  }
-
+  if (index < 0) return null;
   const current = store.records[index];
-  if (!current) {
-    return null;
-  }
+  if (!current) return null;
 
   const updated: BugReportRecord = {
     ...current,
@@ -760,53 +341,30 @@ export async function updateCommunityBugReportStatus(params: {
           ? "treated"
           : "archived",
   };
-
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
   return updated;
 }
 
-export async function deleteCommunityBugReport(
-  reportId: string,
-): Promise<boolean> {
+export async function deleteCommunityBugReport(reportId: string): Promise<boolean> {
   assertPersistenceAvailable("community_bug_reports");
-
   if (canUseSupabaseServerPersistence()) {
     await removeBugReportScreenshotForDeletedReport(
       getSupabaseServerClient(true),
       reportId,
     );
-    return deleteSupabaseRecordById(getSupabaseServerClient(true), "community_bug_reports", reportId);
-  }
-
-  const store = await readStore();
-  return deleteAndPersistRecord(store.records, (record) => record.id === reportId, (records) => writeStore({ updatedAt: new Date().toISOString(), records }));
-}
-
-export async function updateCommunityBugReportCreatorState(params: {
-  reportId: string;
-  creatorState: "new" | "pending" | "responded" | "treated" | "archived";
-}): Promise<BugReportRecord | null> {
-  assertPersistenceAvailable("community_bug_reports");
-
-  if (canUseSupabaseServerPersistence()) {
-    return readSupabaseRecord(
-      getSupabaseServerClient(true)
-        .from("community_bug_reports")
-        .update({ creator_state: params.creatorState })
-        .eq("id", params.reportId)
-        .select(SUPABASE_BUG_REPORT_COLUMNS)
-        .maybeSingle(),
-      fromSupabaseRow,
+    return deleteSupabaseRecordById(
+      getSupabaseServerClient(true),
+      "community_bug_reports",
+      reportId,
     );
   }
 
   const store = await readStore();
-  return replaceAndPersistRecord(
+  return deleteAndPersistRecord(
     store.records,
-    (record) => record.id === params.reportId,
-    (current) => ({ ...current, creatorState: params.creatorState }),
+    (record) => record.id === reportId,
     (records) => writeStore({ updatedAt: new Date().toISOString(), records }),
   );
 }

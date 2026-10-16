@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 
+export const REPORT_SNAPSHOT_SCHEMA_VERSION = 1 as const;
+
 const pdfReportColumnSchema = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
@@ -40,6 +42,7 @@ export const reportGenerationPayloadSchema = z.object({
   periode: z.enum(["six_months", "current_year", "full_history"]),
   organizationType: z.string().trim().min(1).max(180),
   organizationName: z.string().trim().max(180).optional(),
+  snapshotSchemaVersion: z.literal(REPORT_SNAPSHOT_SCHEMA_VERSION).optional(),
   provenance: z.object({
     type: z.literal("single_action"),
     actionId: z.string().uuid(),
