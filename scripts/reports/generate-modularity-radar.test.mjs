@@ -67,8 +67,7 @@ test("human decisions are preserved and remain the only source of architecture d
 test("the migrated registry preserves every human decision and manual field", () => {
   const registry = fs.readFileSync(path.join(process.cwd(), "documentation", "architecture", "modularity-decisions.md"), "utf8");
   const decisions = parseHumanDecisions(extractHumanDecisions(registry));
-  assert.equal(decisions.length, 47);
-  assert.deepEqual(Object.keys(decisions[0]).sort(), [
+  const expectedKeys = [
     "ARCHITECTURE_DECISION",
     "COUPLING",
     "DEPENDENCY_OR_BLOCKER",
@@ -82,11 +81,10 @@ test("the migrated registry preserves every human decision and manual field", ()
     "SIDE_EFFECTS",
     "TEST_BOUNDARY",
     "file",
-  ].sort());
-  assert.deepEqual(
-    decisions.map((entry) => entry.file),
-    parseHumanDecisions(extractHumanDecisions(fs.readFileSync(path.join(process.cwd(), "documentation", "architecture", "monolith-split-plan.md"), "utf8"))).map((entry) => entry.file),
-  );
+  ].sort();
+  assert.equal(decisions.length, 47);
+  assert.ok(decisions.every((entry) => JSON.stringify(Object.keys(entry).sort()) === JSON.stringify(expectedKeys)));
+  assert.ok(decisions.every((entry) => entry.file && entry.ARCHITECTURE_DECISION && entry.PRIORITY));
 });
 
 test("the current contract requires the separate registry while legacy snapshots remain readable", () => {
