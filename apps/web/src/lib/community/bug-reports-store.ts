@@ -20,6 +20,7 @@ import {
   writeLocalRecordStore,
 } from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { removeBugReportScreenshotForDeletedReport } from "./bug-report-screenshot";
 import {
   compareCreatorInboxRecordCursors,
   type CreatorInboxRecordCursor,
@@ -32,7 +33,7 @@ const STORE_FILE = join(
   "community_bug_reports.json",
 );
 const SUPABASE_BUG_REPORT_COLUMNS =
-  "id, created_at, submitted_by_user_id, submitted_by_display_name, submitted_by_email, submitted_by_role, report_type, title, description, page_path, source, status, creator_state";
+  "id, created_at, submitted_by_user_id, submitted_by_display_name, submitted_by_email, submitted_by_role, report_type, title, description, page_path, source, status, creator_state, screenshot_upload_state";
 
 export type BugReportInput = {
   reportType: "bug" | "idea" | "improvement" | "collaboration";
@@ -55,6 +56,7 @@ export type BugReportRecord = BugReportInput & {
   source: "discussion_form" | "feedback_section" | "feedback_discussion";
   status: "open" | "treated" | "archived";
   creatorState: "new" | "pending" | "responded" | "treated" | "archived";
+  screenshotUploadState?: "pending" | "ready" | "failed" | null;
 };
 
 export const COMMUNITY_BUG_REPORTS_HISTORY_DEFAULT_LIMIT = 20;
@@ -193,6 +195,12 @@ function normalizeBugReportCreatorState(
   return "new";
 }
 
+function normalizeScreenshotUploadState(
+  value: unknown,
+): BugReportRecord["screenshotUploadState"] {
+  return value === "pending" || value === "ready" || value === "failed" ? value : null;
+}
+
 function normalizeBugReportRecord(record: unknown): BugReportRecord | null {
   if (!record || typeof record !== "object") {
     return null;
@@ -230,6 +238,7 @@ function normalizeBugReportRecord(record: unknown): BugReportRecord | null {
     source,
     status,
     creatorState,
+    screenshotUploadState: normalizeScreenshotUploadState(raw["screenshotUploadState"]),
     reportType: rawReportType as BugReportRecord["reportType"],
     title,
     description,
@@ -252,6 +261,7 @@ function fromSupabaseRow(row: Record<string, unknown>): BugReportRecord | null {
     source: row.source,
     status: row.status,
     creatorState: row.creator_state,
+    screenshotUploadState: row.screenshot_upload_state,
   });
 }
 
@@ -301,6 +311,7 @@ export async function appendCommunityBugReport(params: {
     source: source ?? "discussion_form",
     status: "open",
     creatorState: "new",
+    screenshotUploadState: null,
   };
 
   if (canUseSupabaseServerPersistence()) {
@@ -483,6 +494,10 @@ export async function deleteCommunityBugReport(
   assertPersistenceAvailable("community_bug_reports");
 
   if (canUseSupabaseServerPersistence()) {
+    await removeBugReportScreenshotForDeletedReport(
+      getSupabaseServerClient(true),
+      reportId,
+    );
     return deleteSupabaseRecordById(getSupabaseServerClient(true), "community_bug_reports", reportId);
   }
 

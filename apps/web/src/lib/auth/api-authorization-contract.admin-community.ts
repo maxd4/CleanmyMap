@@ -168,6 +168,36 @@ export const adminCommunityAuthorizationContract = {
       evidence: ["getCurrentUserActiveRole", "appendAdminOperationAudit"],
     },
   },
+  "community/bug-reports/[reportId]/screenshot": {
+    GET: {
+      expected: "Feedback screenshot read by its owner or an authorized admin, with a short-lived signed URL",
+      dimensions: ["authentication", "ownership", "admin/creator role"],
+      actual: "requireActionRequestAccess + getBugReportScreenshot owner/admin check",
+      evidence: ["requireActionRequestAccess", "getBugReportScreenshot"],
+    },
+    DELETE: {
+      expected: "Screenshot deletion by the feedback owner only",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireActionRequestAccess + deleteBugReportScreenshot owner check",
+      evidence: ["requireActionRequestAccess", "deleteBugReportScreenshot"],
+    },
+  },
+  "community/bug-reports/[reportId]/screenshot/intent": {
+    POST: {
+      expected: "Bug feedback owner receives a bounded signed upload intent",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireActionRequestAccess + createBugReportScreenshotUploadIntent owner and server-side file validation",
+      evidence: ["requireActionRequestAccess", "createBugReportScreenshotUploadIntent"],
+    },
+  },
+  "community/bug-reports/[reportId]/screenshot/finalize": {
+    POST: {
+      expected: "Bug feedback owner finalizes only after server-side Storage content verification",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireActionRequestAccess + finalizeBugReportScreenshot storage verification",
+      evidence: ["requireActionRequestAccess", "finalizeBugReportScreenshot"],
+    },
+  },
   "community/events/ops": {
     POST: {
       expected: "Admin-like role",

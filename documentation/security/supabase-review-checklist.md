@@ -26,6 +26,8 @@
 ## Storage
 
 - [ ] la taille des uploads est bornée
+- [ ] une capture Bug reste dans le bucket privé `signalement-evidence`, avec validation serveur du type réel (signature binaire), de la taille et de l'ownership ; les lectures passent par une URL signée à durée limitée
+- [ ] les échecs d'upload et la suppression d'un feedback nettoient le fichier privé avant de supprimer sa référence métier
 - [ ] les buckets publics ne permettent pas le listing complet sans besoin métier
 - [ ] les exports et nettoyages de bucket restent dans des scripts d'administration
 - [ ] aucun téléchargement massif n'a été ajouté sur un parcours utilisateur

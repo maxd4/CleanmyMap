@@ -49,6 +49,7 @@ export type CreatorInboxItem = {
   canDelete: boolean;
   canReview: boolean;
   hasReplyTarget: boolean;
+  hasScreenshot?: boolean;
   privateReplyTargetUserId?: string | null;
 };
 
@@ -202,6 +203,7 @@ export function buildFeedbackInboxItem(record: BugReportRecord): CreatorInboxIte
     canDelete: true,
     canReview: false,
     hasReplyTarget: Boolean(record.submittedByEmail),
+    hasScreenshot: record.reportType === "bug" && record.screenshotUploadState === "ready",
     privateReplyTargetUserId:
       record.submittedByUserId.trim() && record.submittedByUserId.trim() !== "unknown"
         ? record.submittedByUserId.trim()

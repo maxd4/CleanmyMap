@@ -21,6 +21,10 @@ import {
   formatQuestionnaireDescription,
   submitFeedbackQuestionnaire,
 } from "./feedback-submission";
+import {
+  FEEDBACK_SCREENSHOT_ACCEPT,
+  validateFeedbackScreenshotFile,
+} from "./feedback-screenshot-client";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
@@ -57,6 +61,10 @@ export function QuestionnaireCard({
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState<string | null>(null);
+  const screenshotPreviewUrlRef = useRef<string | null>(null);
+  const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const questionnairePagePath = `${pagePath}#${questionnaire.id}`;
   const serializedDescription = useMemo(
     () =>
@@ -74,6 +82,22 @@ export function QuestionnaireCard({
   useEffect(() => {
     formStartedAt.current = Date.now();
   }, []);
+
+  useEffect(() => () => {
+    if (screenshotPreviewUrlRef.current) {
+      URL.revokeObjectURL(screenshotPreviewUrlRef.current);
+    }
+  }, []);
+
+  function replaceScreenshotFile(file: File | null) {
+    if (screenshotPreviewUrlRef.current) {
+      URL.revokeObjectURL(screenshotPreviewUrlRef.current);
+    }
+    const previewUrl = file ? URL.createObjectURL(file) : null;
+    screenshotPreviewUrlRef.current = previewUrl;
+    setScreenshotPreviewUrl(previewUrl);
+    setScreenshotFile(file);
+  }
 
   const canSubmit = questionnaire.fields.every((field) => {
     const value = values[field.key]?.trim() ?? "";
@@ -107,10 +131,12 @@ export function QuestionnaireCard({
         locale,
         honeypot,
         submittedAt: formStartedAt.current ?? Date.now(),
+        screenshotFile: questionnaire.id === "bug" ? screenshotFile : null,
       });
 
       setSubmitState("success");
       setRequestId(result.requestId);
+      setScreenshotError(result.screenshotError);
       setValues(
         Object.fromEntries(questionnaire.fields.map((field) => [field.key, ""])),
       );
@@ -124,6 +150,21 @@ export function QuestionnaireCard({
             : "An unexpected error occurred.",
       );
     }
+  }
+
+  function handleScreenshotChange(file: File | undefined) {
+    setScreenshotError(null);
+    if (!file) {
+      replaceScreenshotFile(null);
+      return;
+    }
+    const validationError = validateFeedbackScreenshotFile(file);
+    if (validationError) {
+      replaceScreenshotFile(null);
+      setScreenshotError(validationError);
+      return;
+    }
+    replaceScreenshotFile(file);
   }
 
   const Icon = questionnaire.icon;
@@ -254,6 +295,65 @@ export function QuestionnaireCard({
             ))}
           </div>
 
+          {questionnaire.id === "bug" ? (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-slate-200">
+                    Capture d&apos;écran (facultatif)
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-300">
+                    Ajoutez une image pour aider à comprendre le bug. JPEG, PNG ou WebP, 5 Mo maximum.
+                  </p>
+                </div>
+                <label
+                  htmlFor="feedback-bug-screenshot"
+                  className="inline-flex min-h-10 cursor-pointer items-center rounded-xl border border-rose-300/30 bg-rose-400/10 px-3 py-2 text-sm font-semibold text-rose-50 transition hover:bg-rose-400/20 focus-within:outline-none focus-within:ring-2 focus-within:ring-rose-300/50"
+                >
+                  Choisir une image
+                </label>
+              </div>
+              <input
+                id="feedback-bug-screenshot"
+                type="file"
+                accept={FEEDBACK_SCREENSHOT_ACCEPT}
+                onChange={(event) => handleScreenshotChange(event.target.files?.[0])}
+                className="sr-only"
+              />
+              {screenshotFile && screenshotPreviewUrl ? (
+                <div className="mt-4 flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/30 p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={screenshotPreviewUrl}
+                    alt={`Aperçu de ${screenshotFile.name}`}
+                    className="h-20 w-20 rounded-lg object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-100">{screenshotFile.name}</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {Math.ceil(screenshotFile.size / 1024)} Ko · aperçu local uniquement avant l&apos;envoi
+                    </p>
+                    <button
+                      type="button"
+                      className="mt-2 text-sm font-semibold text-rose-200 underline-offset-2 hover:underline"
+                      onClick={() => {
+                        replaceScreenshotFile(null);
+                        setScreenshotError(null);
+                      }}
+                    >
+                      Retirer la capture
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              {screenshotError ? (
+                <p className="mt-3 text-sm text-rose-100" role="alert">
+                  {screenshotError}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
           {descriptionTooLong ? (
             <p role="alert" className="rounded-xl border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
               {locale === "fr"
@@ -299,6 +399,11 @@ export function QuestionnaireCard({
               {requestId ? (
                 <span className="mt-1 block text-emerald-100/80">
                   {locale === "fr" ? "Référence" : "Reference"}: {requestId}
+                </span>
+              ) : null}
+              {screenshotError ? (
+                <span className="mt-2 block text-amber-100" role="alert">
+                  Le retour a été transmis, mais la capture n&apos;a pas pu être jointe : {screenshotError}
                 </span>
               ) : null}
             </div>

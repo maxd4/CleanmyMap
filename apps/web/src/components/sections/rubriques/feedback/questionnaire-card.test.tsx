@@ -98,4 +98,34 @@ describe("QuestionnaireCard serialized description validation", () => {
       "Votre retour dépasse la limite de 3000 caractères",
     );
   });
+
+  it("shows the optional private screenshot control only for Bug", () => {
+    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    const ideaQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "idea")!;
+    let bugRenderer!: ReactTestRenderer;
+    let ideaRenderer!: ReactTestRenderer;
+
+    act(() => {
+      bugRenderer = create(
+        <QuestionnaireCard
+          questionnaire={bugQuestionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+        />,
+      );
+      ideaRenderer = create(
+        <QuestionnaireCard
+          questionnaire={ideaQuestionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+        />,
+      );
+    });
+
+    expect(JSON.stringify(bugRenderer.toJSON())).toContain("Capture d'écran (facultatif)");
+    expect(bugRenderer.root.findByProps({ type: "file" }).props.accept).toBe(
+      "image/jpeg,image/png,image/webp",
+    );
+    expect(JSON.stringify(ideaRenderer.toJSON())).not.toContain("Capture d'écran (facultatif)");
+  });
 });

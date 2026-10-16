@@ -1,10 +1,13 @@
 import type { Locale } from "../feedback-section.shared";
 import type { QuestionnaireConfig } from "./questionnaire-config";
+import { uploadFeedbackScreenshot } from "./feedback-screenshot-client";
 
 export type FeedbackSubmissionSource = "feedback_section" | "feedback_discussion";
 
 export type FeedbackSubmissionResult = {
   requestId: string | null;
+  screenshot: "not_requested" | "uploaded" | "failed";
+  screenshotError: string | null;
 };
 
 export const FEEDBACK_DESCRIPTION_MAX_LENGTH = 3000;
@@ -40,6 +43,7 @@ export async function submitFeedbackQuestionnaire(params: {
   locale: Locale;
   honeypot: string;
   submittedAt: number;
+  screenshotFile?: File | null;
 }): Promise<FeedbackSubmissionResult> {
   const questionnairePagePath = `${params.pagePath}#${params.questionnaire.id}`;
   const description = formatQuestionnaireDescription(
@@ -86,7 +90,25 @@ export async function submitFeedbackQuestionnaire(params: {
     );
   }
 
-  return {
-    requestId: typeof body?.requestId === "string" ? body.requestId : null,
-  };
+  const requestId = typeof body?.requestId === "string" ? body.requestId : null;
+  if (params.questionnaire.id !== "bug" || !params.screenshotFile) {
+    return { requestId, screenshot: "not_requested", screenshotError: null };
+  }
+
+  try {
+    if (!requestId) {
+      throw new Error("La référence du signalement est absente.");
+    }
+    await uploadFeedbackScreenshot(requestId, params.screenshotFile);
+    return { requestId, screenshot: "uploaded", screenshotError: null };
+  } catch (error) {
+    return {
+      requestId,
+      screenshot: "failed",
+      screenshotError:
+        error instanceof Error
+          ? error.message
+          : "La capture n'a pas pu être jointe au signalement.",
+    };
+  }
 }

@@ -4,6 +4,7 @@ import {
   type CreatorInboxItem,
 } from "@/lib/community/creator-inbox";
 import type { CreatorInboxCopy, CreatorInboxLocale } from "./creator-inbox-copy";
+import { FeedbackScreenshotViewer } from "./feedback-screenshot-viewer";
 
 type InboxItemRequestDetailsProps = {
   item: CreatorInboxItem;
@@ -54,6 +55,10 @@ export function InboxItemRequestDetails({
           </div>
         ))}
       </div>
+
+      {item.source === "feedback" && item.hasScreenshot ? (
+        <FeedbackScreenshotViewer feedbackId={item.sourceRecordId} />
+      ) : null}
 
       <div className="mt-3 flex flex-wrap items-center gap-2 cmm-text-caption cmm-text-muted">
         <span>{new Date(item.createdAt).toLocaleString(locale === "fr" ? "fr-FR" : "en-US")}</span>

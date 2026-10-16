@@ -51,6 +51,16 @@ de la page chargée, pas un total implicite. Une page suivante disponible est
 signalée explicitement ; une erreur de lecture reste un état indisponible et
 n'est jamais présentée comme une file vide.
 
+Pour un feedback Bug qui possède une capture prête, la liste n'en charge pas le
+contenu automatiquement. L'administrateur autorisé déclenche explicitement le
+chargement depuis le détail du feedback ; le serveur vérifie le rôle et délivre
+alors une URL signée courte du bucket privé existant. Ni l'URL permanente ni le
+contenu de la capture ne figurent dans les audits, emails ou journaux.
+
+La suppression d'un feedback supprime d'abord le fichier privé lié puis la
+référence métier ; un échec de nettoyage empêche la suppression de laisser un
+fichier orphelin non référencé.
+
 Les états persistés du feedback (`new`, `pending`, `responded`, `treated`,
 `archived`) restent distincts du statut métier (`open`, `treated`, `archived`).
 L'archivage passe par une seule mutation canonique qui maintient ces deux

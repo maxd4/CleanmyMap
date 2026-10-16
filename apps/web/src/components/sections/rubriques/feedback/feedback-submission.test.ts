@@ -92,7 +92,11 @@ describe("feedback submission contract", () => {
         honeypot: "",
         submittedAt: Date.now(),
       }),
-    ).resolves.toEqual({ requestId: "report-42" });
+    ).resolves.toEqual({
+      requestId: "report-42",
+      screenshot: "not_requested",
+      screenshotError: null,
+    });
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/community/bug-reports",
       expect.objectContaining({ method: "POST" }),
