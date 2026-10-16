@@ -18,8 +18,8 @@ sur une fiche `CURRENT` divergente.
 
 - [`gamification/README.md`](./gamification/README.md) — index des contrats et
   propriétaires de la progression.
-- [`gamification/GAMIFICATION_ENGINE.md`](./gamification/GAMIFICATION_ENGINE.md)
-  — point d’entrée technique, réconciliation et compatibilités.
+- [`gamification/GAMIFICATION_ENGINE.md`](./gamification/GAMIFICATION_ENGINE.md) —
+  point d’entrée technique, réconciliation et compatibilités.
 - [Spécification fonctionnelle canonique](../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md)
   — règles fonctionnelles et comportements exposés.
 - [Gamification non compétitive](../product/gamification-non-competitive.md)
@@ -68,16 +68,22 @@ elles ne justifient pas une seconde copie physique des documents.
 
 ### `CURRENT`
 
-- [`reports/README.md`](./reports/README.md) — distinction entre génération,
-  modèle courant et plan.
-- [`reports/master-pack.md`](./reports/master-pack.md) — chapitres et points
-  vérifiés du Master Pack.
+- [`reports/README.md`](./reports/README.md) — index, frontières des moteurs,
+  contrats de page et plans spécialisés.
+- [`reports/master-pack.md`](./reports/master-pack.md) — chapitres déclarés du
+  Master Pack et distinction d'avec le PDF réellement servi par `/reports`.
 
 ### `PLAN`
 
+- [`reports/reports-generation-parameters.md`](./reports/reports-generation-parameters.md)
+  — paramètres et filtres, hors promesse de disponibilité non vérifiée.
+- [`reports/impact-goals-and-progression.md`](./reports/impact-goals-and-progression.md)
+  — futurs objectifs configurables, distincts du moteur de génération.
+
+### `COMPATIBILITY`
+
 - [`reports/reports-parameters-and-objectives.md`](./reports/reports-parameters-and-objectives.md)
-  — cible des paramètres et objectifs de `/reports` qui ne sont pas tous
-  implémentés.
+  — ancien chemin, renvoyant aux deux plans spécialisés.
 
 Les formules et données restent dans `apps/web/src/lib/reports/` et ses tests.
 
@@ -109,7 +115,8 @@ moteur canonique.
 | Revoir la banque ou ses métriques | [`quiz/quiz-bank-admin.md`](./quiz/quiz-bank-admin.md) | métriques, code admin et tests |
 | Évaluer l’état du quiz | [`quiz/quiz-system-audit.md`](./quiz/quiz-system-audit.md) | runtime et audits, jamais le snapshot seul |
 | Modifier le Master Pack | [`reports/master-pack.md`](./reports/master-pack.md) | `apps/web/src/lib/reports/master-pack/`, modèle et tests |
-| Étudier une évolution de `/reports` | [`reports/reports-parameters-and-objectives.md`](./reports/reports-parameters-and-objectives.md) | code courant, en conservant le statut `PLAN` |
+| Étudier les paramètres de génération | [`reports/reports-generation-parameters.md`](./reports/reports-generation-parameters.md) | code courant, contrat d'accès et statut `PLAN` |
+| Étudier les objectifs configurables | [`reports/impact-goals-and-progression.md`](./reports/impact-goals-and-progression.md) | métriques canoniques et décision produit requise |
 | Intégrer une référence SPOGOMI | [`spogomi-references/README.md`](./spogomi-references/README.md) | contrat [`spogomi.md`](./spogomi.md), code et tests |
 
 Les règles générales de documentation sont définies par

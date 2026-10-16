@@ -3,15 +3,15 @@
 <!-- RADAR:GENERATED:BEGIN -->
 ## A. En-tête snapshot
 
-`RADAR_REF=38e695cc3efb0bd405d6cc208be7fcfa7b589229`<br>
-`RADAR_GENERATED_AT=2026-10-11T11:07:59.313Z`<br>
+`RADAR_REF=b87470c8265db82e370c5ba68277d0b0cbd6248a`<br>
+`RADAR_GENERATED_AT=2026-10-16T15:17:05.739Z`<br>
 `RADAR_STATUS=CURRENT_AT_GENERATION`
 
 Commandes réellement utilisées :
 
 `node scripts/reports/generate-modularity-radar.mjs --ref=HEAD`
 
-Le snapshot lit l'arbre Git exact de 38e695cc3efb0bd405d6cc208be7fcfa7b589229. Le statut
+Le snapshot lit l'arbre Git exact de b87470c8265db82e370c5ba68277d0b0cbd6248a. Le statut
 CURRENT_AT_GENERATION décrit l'instant de génération ; un document commité
 peut donc rester un snapshot reproductible de cette ref sans prétendre suivre
 automatiquement un HEAD ultérieur.
@@ -20,8 +20,8 @@ automatiquement un HEAD ultérieur.
 
 | Mesure factuelle | Valeur |
 | --- | ---: |
-| Fichiers mesurés | 3126 |
-| Surveillance préventive informative (runtime/tests) | 219 |
+| Fichiers mesurés | 3485 |
+| Surveillance préventive informative (runtime/tests) | 236 |
 | REVIEW architectural (runtime + data/config) | 15 |
 | HARD contrôlé | 0 |
 | Tests volumineux | 0 |
@@ -96,13 +96,13 @@ du catalogue, sans seuil numérique automatique.
 | `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | owner unique du modèle de preuve/confiance/serviceabilité ; nouveau type de preuve autonome ou changement indépendant de matérialisation |
 | `apps/web/src/app/api/chat/route.post.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | aucun ; la frontière serveur reste séparée du client et les contrats POST sont préservés ; nouvelle responsabilité autonome réintroduite dans la route ou opacification d'une décision AuthN/AuthZ |
 | `apps/web/src/lib/impact/impact-terrain-2026.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | owner canonique de la méthodologie scientifique versionnée ; nouvelle version méthodologique ou famille de calculs réellement indépendante |
-| `apps/web/src/components/chat/discussion-guidance.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | catalogue bilingue unique topics/canaux/guidance ; source de contenu externe ou catalogues par canal réellement autonomes |
+| `apps/web/src/components/chat/discussion-guidance.ts` | COHESIVE_SINGLE_FILE | NONE | NONE | signaux complémentaires non mesurés | catalogue bilingue unique topics/canaux/guidance ; source de contenu externe ou catalogues par canal réellement autonomes |
 | `apps/web/src/lib/actions/exports/export-form-media.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver IDs presets/bundles, textes, noms de fichiers, dimensions/formats et API publique ; nouvelle responsabilité substantielle réintroduite dans la façade ou couplage anormal entre sous-modules |
 | `apps/web/src/app/api/reports/elus-dossier/route.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver AuthN/AuthZ, scope, cache, storage, headers et formats ; nouvelle responsabilité métier/stockage ajoutée directement au handler |
 | `apps/web/src/components/sections/rubriques/weather-section.conditions.tsx` | COHESIVE_SINGLE_FILE | NONE | NONE | signaux complémentaires non mesurés | un seul ConditionsPanel et état météo fortement partagé ; éviter prop drilling ; nouvelle famille de conditions avec état/cycle de vie autonome |
 | `apps/web/src/lib/pdf-export/official-report-html.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver échappement HTML, Markdown, tableaux, callouts et PdfReportPayload ; nouvelle responsabilité indépendante ajoutée au compositeur |
 | `apps/web/src/lib/auth/sync.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver scope utilisateur, service-role server-only, idempotence et ordre d'upsert ; nouvelle responsabilité autonome réintroduite dans la façade ou opacification AuthN/AuthZ |
-| `apps/web/src/components/actions/action-creation-shell.tsx` | DEFERRED_SPLIT | PRESENT — REVIEW | AFTER_ACTIVE_CHANGES | signaux complémentaires non mesurés | préserver l'isolation par `actionId`, les transitions d'état et l'URL reprenable ; frontière indépendante et testée entre navigation/sections, état workflow et orchestration de persistance |
+| `apps/web/src/components/actions/action-creation-shell.tsx` | DEFERRED_SPLIT | NONE | AFTER_ACTIVE_CHANGES | signaux complémentaires non mesurés | préserver l'isolation par `actionId`, les transitions d'état et l'URL reprenable ; frontière indépendante et testée entre navigation/sections, état workflow et orchestration de persistance |
 | `apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts` | DEFERRED_SPLIT | PRESENT — REVIEW | AFTER_ACTIVE_CHANGES | signaux complémentaires non mesurés | préserver les modifications utilisateur, le premier identifiant persistant et la publication toujours explicite ; cycles de vie hydration/champs/persistance-publication indépendants avec contrats de reprise démontrés |
 
 ## E. Décisions établies
@@ -922,50 +922,50 @@ ceux effectivement attribués par les rapports quality disponibles à la ref.
 | PATH | KIND | LINES | KiB | DISTANCE_REVIEW | SIGNAUX_MESURÉS | DÉCISION_EXISTANTE |
 | --- | --- | ---: | ---: | --- | --- | --- |
 | `apps/web/src/app/api/actions/[actionId]/group-join/route.post.test.ts` | test | 809 | 27.6 KiB | 191 lignes / 22.4 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/app/api/admin/creator-inbox/route.test.ts` | test | 781 | 25.5 KiB | 219 lignes / 24.5 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/app/api/route/recommend/route.response.test.ts` | test | 746 | 24.8 KiB | 254 lignes / 25.2 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
-| `apps/web/src/app/api/admin/creator-inbox/route.test.ts` | test | 688 | 22.7 KiB | 312 lignes / 27.3 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/lib/environmental-impact-estimator/project-signals.test.ts` | test | 688 | 21.8 KiB | 312 lignes / 28.2 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/lib/actions/store.test.ts` | test | 682 | 19.6 KiB | 318 lignes / 30.4 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/app/api/actions/[actionId]/group-join/route.test.helpers.ts` | test | 669 | 26.4 KiB | 331 lignes / 23.6 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/components/actions/map/layers/map-layers.test.ts` | test | 649 | 18.9 KiB | 351 lignes / 31.1 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/app/api/spogomi/routes.behavior.test.ts` | test | 640 | 36.8 KiB | 360 lignes / 13.2 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.test.ts` | test | 620 | 18.5 KiB | 380 lignes / 31.5 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/lib/governance/governance-monthly-report-store.ts` | runtime | 500 | 15.9 KiB | 0 lignes / 24.1 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/lib/actions/formalities-qualification.ts` | runtime | 498 | 17.2 KiB | 2 lignes / 22.8 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
-| `apps/web/src/app/api/chat/route.get.ts` | runtime | 496 | 15.4 KiB | 4 lignes / 24.6 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
-| `apps/web/src/lib/actions/map/map-http.ts` | runtime | 495 | 15.5 KiB | 5 lignes / 24.5 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/actions/map/map-http.ts` | runtime | 496 | 15.6 KiB | 4 lignes / 24.4 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/lib/actions/pollution/repollution-prediction-evaluation.ts` | runtime | 493 | 15.5 KiB | 7 lignes / 24.5 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/components/admin/admin-dashboard-ui.tsx` | runtime | 490 | 13.2 KiB | 10 lignes / 26.8 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/components/reports/admin-workflow/step-confirm.tsx` | runtime | 488 | 16.2 KiB | 12 lignes / 23.8 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/actions/metadata.ts` | runtime | 487 | 14.7 KiB | 13 lignes / 25.3 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/lib/route/route-multi-route.ts` | runtime | 485 | 18.1 KiB | 15 lignes / 21.9 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
-| `apps/web/src/lib/actions/metadata.ts` | runtime | 483 | 14.5 KiB | 17 lignes / 25.5 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/spogomi/results-projection.ts` | runtime | 483 | 26.3 KiB | 17 lignes / 13.7 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/lib/environmental-impact-estimator/codex-usage-store.ts` | runtime | 482 | 17.2 KiB | 18 lignes / 22.8 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/lib/pdf-export/report-pdf-theme.ts` | runtime | 482 | 11.6 KiB | 18 lignes / 28.4 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/components/actions/organizer-combobox.tsx` | runtime | 481 | 16.6 KiB | 19 lignes / 23.4 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/spogomi/preparation-service.ts` | runtime | 480 | 28.1 KiB | 20 lignes / 11.9 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/spogomi/consolidation.ts` | runtime | 480 | 18.3 KiB | 20 lignes / 21.7 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/lib/learning/gestes-propres/gestes-propres-barometer.ts` | runtime | 479 | 16.8 KiB | 21 lignes / 23.2 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 | `apps/web/src/lib/partners/published-annuaire-entries-store.ts` | runtime | 477 | 15.2 KiB | 23 lignes / 24.8 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
-| `apps/web/src/app/api/actions/[actionId]/route.ts` | runtime | 475 | 15.9 KiB | 25 lignes / 24.1 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
-| `apps/web/src/components/learn/quiz/quiz-session-panel.tsx` | runtime | 473 | 20.0 KiB | 27 lignes / 20.0 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
-| `apps/web/src/lib/learning/quiz/quiz-bank-admin.ts` | runtime | 473 | 16.8 KiB | 27 lignes / 23.2 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
 
 ### Radar architectural — top 25
 
 | PATH | REF | LINES | BYTES | KIND | SIZE_SIGNAL | CORRELATIONS | DECISION |
 | --- | --- | ---: | ---: | --- | --- | --- | --- |
-| `apps/web/src/lib/actions/pollution/current-place-state.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 647 | 19737 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 615 | 21712 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 613 | 24198 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/route/route-trace.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 605 | 20034 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/ui/button-theme.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 603 | 17967 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/route/route-group-partition.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 596 | 22351 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/learning/quiz/quiz-quality-audit.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 590 | 16820 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 588 | 21807 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 578 | 16037 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/lib/actions/pollution/corridor-history.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 550 | 16245 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 537 | 20096 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/impact/impact-terrain-2026.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 521 | 26764 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/components/chat/discussion-guidance.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 518 | 20555 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/components/actions/action-creation-shell.tsx` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 504 | 41272 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts` | `38e695cc3efb0bd405d6cc208be7fcfa7b589229` | 502 | 21231 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/lib/actions/pollution/current-place-state.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 647 | 19737 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 615 | 21871 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 613 | 24198 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/route/route-trace.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 605 | 20034 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/ui/button-theme.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 603 | 17967 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/community/bug-report-screenshot.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 600 | 19688 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/lib/route/route-group-partition.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 596 | 22351 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/learning/quiz/quiz-quality-audit.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 590 | 16820 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 588 | 21807 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 578 | 16037 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/lib/actions/pollution/corridor-history.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 569 | 16868 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 537 | 20096 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/community/bug-reports-store.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 534 | 16370 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/lib/impact/impact-terrain-2026.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 521 | 26764 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts` | `b87470c8265db82e370c5ba68277d0b0cbd6248a` | 512 | 21463 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
 
 ### Tests volumineux — top 25
 
