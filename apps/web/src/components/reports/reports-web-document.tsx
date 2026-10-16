@@ -54,6 +54,7 @@ import { loadHistoricalReportSnapshot } from "@/lib/reports/historical-report-cl
 import { replayHistoricalReport } from "@/lib/reports/historical-report-replay";
 import { filterReportGenerationContracts } from "@/lib/reports/generation-period";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
+import { isReportGenerationPayload } from "@/lib/reports/report-generation-payload";
 
 export type ReportsWebDocumentProps = {
   contracts: ActionDataContract[];
@@ -64,6 +65,7 @@ export type ReportsWebDocumentProps = {
   initialRecentRows?: ReportGenerationHistoryRow[];
   initialHistoryAvailability?: "available" | "unavailable";
   dailyExportAvailability?: ReportExportAvailability;
+  singleAction?: { actionId: string; scopeLabel: string };
 };
 
 export function ReportsWebDocument({
@@ -75,6 +77,7 @@ export function ReportsWebDocument({
   initialRecentRows = [],
   initialHistoryAvailability = "available",
   dailyExportAvailability: initialDailyExportAvailability = "unavailable",
+  singleAction,
 }: ReportsWebDocumentProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -86,7 +89,9 @@ export function ReportsWebDocument({
   const [historyWarning, setHistoryWarning] = useState<string | null>(null);
   const [dailyExportAvailability, setDailyExportAvailability] =
     useState<ReportExportAvailability>(initialDailyExportAvailability);
-  const [period, setPeriod] = useState<SelectedPeriodId>(DEFAULT_REPORT_GENERATION_PERIOD);
+  const [period, setPeriod] = useState<SelectedPeriodId>(
+    singleAction ? "full_history" : DEFAULT_REPORT_GENERATION_PERIOD,
+  );
   const detailLevel: DetailLevelId = DEFAULT_REPORT_DETAIL_LEVEL;
   const [modules, setModules] = useState<ModuleState>(DEFAULT_REPORT_MODULES);
   const reportNow = useMemo(() => new Date(), []);
@@ -112,11 +117,13 @@ export function ReportsWebDocument({
   );
 
   const report = model.report;
-  const activeScopeLabel = model.activeScopeLabel;
+  const activeScopeLabel = singleAction?.scopeLabel ?? model.activeScopeLabel;
   const surfaceProxy =
     report.totals.kg * IMPACT_PROXY_CONFIG.factors.surfaceM2PerWasteKg +
     report.totals.hours * 60 * IMPACT_PROXY_CONFIG.factors.surfaceM2PerVolunteerMinute;
-  const selectedScopeValue = buildScopeSelectValue(model.scopeKind, model.scopeValue);
+  const selectedScopeValue = singleAction
+    ? "single_action"
+    : buildScopeSelectValue(model.scopeKind, model.scopeValue);
   const defaultTitle = buildReportTitle(activeScopeLabel, detailLevel);
   const pdfData = useMemo(
     () =>
@@ -134,19 +141,31 @@ export function ReportsWebDocument({
   );
 
   async function generateReportOnServer(payload: PdfReportPayload): Promise<void> {
-    const response = await fetch("/api/reports/generations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+    const requestBody = singleAction
+      ? {
+          input: { type: "single_action" as const, actionId: singleAction.actionId },
+          detailLevel,
+          modules,
+        }
+      : {
           payload,
           scopeKind: model.scopeKind,
           scopeValue: model.scopeValue,
           scopeLabel: activeScopeLabel,
           detailLevel,
           modules,
-        }),
-      });
-    const body = (await response.json().catch(() => null)) as { item?: unknown; error?: unknown } | null;
+        };
+    const response = await fetch("/api/reports/generations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    });
+    const body = (await response.json().catch(() => null)) as {
+      item?: unknown;
+      error?: unknown;
+      payload?: unknown;
+      filename?: unknown;
+    } | null;
     if (!response.ok) {
       if (response.status === 429) {
         setDailyExportAvailability("used");
@@ -165,7 +184,18 @@ export function ReportsWebDocument({
     setRecentRows((current) => [historyRow, ...current].slice(0, REPORT_GENERATION_HISTORY_LIMIT));
     setHistoryAvailability("available");
     setDailyExportAvailability("used");
-    openOrDownloadReport(payload, buildPdfReportFilename(payload));
+    const generatedPayload = singleAction
+      ? isReportGenerationPayload(body?.payload)
+        ? body.payload
+        : null
+      : payload;
+    if (!generatedPayload) {
+      throw new Error("Le snapshot serveur du rapport mono-action est invalide.");
+    }
+    openOrDownloadReport(
+      generatedPayload,
+      typeof body?.filename === "string" ? body.filename : buildPdfReportFilename(generatedPayload),
+    );
   }
 
   async function handleHistoricalAction(
@@ -331,6 +361,7 @@ export function ReportsWebDocument({
           }}
           modules={modules}
           onModuleToggle={toggleModule}
+          singleAction={singleAction}
         />
 
         <section

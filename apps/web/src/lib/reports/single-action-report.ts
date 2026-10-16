@@ -60,7 +60,7 @@ function buildWasteProfile(contract: ActionDataContract) {
   };
 }
 
-function actionLabel(contract: ActionDataContract): string {
+export function getSingleActionReportScopeLabel(contract: ActionDataContract): string {
   const preparedTitle = contract.metadata.preparationData?.actionTitle;
   return typeof preparedTitle === "string" && preparedTitle.trim()
     ? preparedTitle.trim()
@@ -101,7 +101,7 @@ export function buildSingleActionReportGenerationInput(params: {
     ? report.totals.kg * IMPACT_PROXY_CONFIG.factors.surfaceM2PerWasteKg +
       report.totals.hours * 60 * IMPACT_PROXY_CONFIG.factors.surfaceM2PerVolunteerMinute
     : null;
-  const scopeLabel = actionLabel(contract);
+  const scopeLabel = getSingleActionReportScopeLabel(contract);
   const generatedAt = now.toISOString();
   const payloadData = buildPdfData({
     reportTitle: buildReportTitle(scopeLabel, detailLevel),

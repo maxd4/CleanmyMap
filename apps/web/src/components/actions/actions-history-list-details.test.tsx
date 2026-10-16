@@ -4,14 +4,23 @@ import { describe, expect, it, vi } from "vitest";
 import type { ActionsHistoryListDetailsProps } from "./actions-history-list-details";
 import { ActionsHistoryListDetails } from "./actions-history-list-details";
 
-function buildProps(type: "action" | "spot" | "clean_place"): ActionsHistoryListDetailsProps {
+function buildProps(
+  type: "action" | "spot" | "clean_place",
+  eligibleForSingleActionReport = false,
+): ActionsHistoryListDetailsProps {
   return {
     selectedItem: {
       id: `history-${type}`,
       location_label: "Quai de test",
+      status: eligibleForSingleActionReport ? "approved" : null,
+      published_at: eligibleForSingleActionReport ? "2026-08-27T10:00:00.000Z" : null,
+      record_type: eligibleForSingleActionReport ? "action" : type,
       contract: {
         type,
-        metadata: { placeType: "Quai" },
+        metadata: {
+          placeType: "Quai",
+          actionPhase: eligibleForSingleActionReport ? "post_action_complete" : null,
+        },
       },
     },
     selectedQuality: {
@@ -44,6 +53,18 @@ describe("actions history signalement media entry point", () => {
 
     expect(markup).not.toContain("Preuves terrain");
     expect(markup).not.toContain("Voir les preuves photo");
+  });
+
+  it("exposes the mono-action report CTA only for an eligible completed action", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(
+        ActionsHistoryListDetails,
+        buildProps("action", true),
+      ),
+    );
+
+    expect(markup).toContain("Générer un rapport d&#x27;impact");
+    expect(markup).toContain("/reports?tab=generation&amp;actionId=history-action");
   });
 
   it.each(["spot", "clean_place"] as const)(

@@ -6,6 +6,7 @@ import { resolveReportsTab } from "@/components/reports/page-sections/reports-pa
 import { ReportsAnalysisDashboard } from "@/components/reports/reports-analysis-dashboard";
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { CTAGroup, SectionHeader } from "@/components/ui/page-structure";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
@@ -33,9 +34,20 @@ import {
   getReportExportAvailability,
 } from "@/lib/reports/report-export-quota";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
+import type { ActionDataContract } from "@/lib/actions/data-contract";
+import {
+  getSingleActionReportScopeLabel,
+  resolveSingleActionReportContract,
+} from "@/lib/reports/single-action-report";
 
 type ReportsPageProps = {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; actionId?: string }>;
+};
+
+type SingleActionReportPageContext = {
+  actionId: string;
+  contract: ActionDataContract;
+  scopeLabel: string;
 };
 
 type ReportsAnalysisContentParams = {
@@ -144,13 +156,45 @@ function buildReportsGenerationContent({
   generationData,
   historyResult,
   dailyExportAvailability,
+  singleAction,
+  singleActionError,
 }: {
   generationData: Awaited<ReturnType<typeof loadReportsGenerationData>> | null;
   historyResult: Awaited<ReturnType<typeof listReportGenerationHistory>> extends infer Rows
     ? { rows: Rows; availability: "available" | "unavailable" }
     : never;
   dailyExportAvailability: ReportExportAvailability;
+  singleAction?: Pick<SingleActionReportPageContext, "actionId" | "scopeLabel"> | null;
+  singleActionError?: boolean;
 }) {
+  if (singleActionError) {
+    return (
+      <section
+        role="alert"
+        data-testid="single-action-report-unavailable"
+        className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 shadow-[0_10px_24px_-18px_rgba(180,83,9,0.25)]"
+      >
+        <p className="text-sm font-black uppercase tracking-[0.16em] text-amber-700">
+          Action non admissible
+        </p>
+        <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+          Ce rapport mono-action n&apos;est pas disponible
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-amber-900">
+          L&apos;action doit être terminée, approuvée et publiquement visible. Aucun quota n&apos;a été consommé.
+        </p>
+        <CmmButton
+          href="/actions/history"
+          tone="secondary"
+          variant="pill"
+          className="mt-4 min-h-11 border-amber-300 text-amber-900 hover:bg-amber-100"
+        >
+          Revenir à l&apos;historique
+        </CmmButton>
+      </section>
+    );
+  }
+
   return generationData ? (
     <DeferredReportsWebDocument
       contracts={generationData.contracts}
@@ -161,6 +205,7 @@ function buildReportsGenerationContent({
       initialRecentRows={historyResult.rows}
       initialHistoryAvailability={historyResult.availability}
       dailyExportAvailability={dailyExportAvailability}
+      singleAction={singleAction ?? undefined}
     />
   ) : (
     <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">
@@ -277,8 +322,43 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   }
 
   if (activeTab === "generation") {
+    const requestedActionId = resolvedSearchParams.actionId?.trim() || null;
+    let singleAction: SingleActionReportPageContext | null = null;
+    let singleActionError = false;
+    if (requestedActionId) {
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedActionId)) {
+        singleActionError = true;
+      } else {
+        try {
+          const contract = await resolveSingleActionReportContract(requestedActionId);
+          singleAction = {
+            actionId: requestedActionId,
+            contract,
+            scopeLabel: getSingleActionReportScopeLabel(contract),
+          };
+        } catch {
+          singleActionError = true;
+        }
+      }
+    }
+
     const [generationData, historyResult, dailyExportAvailability] = await Promise.all([
-      loadReportsGenerationData().catch(() => null),
+      singleActionError
+        ? Promise.resolve(null)
+        : singleAction
+        ? Promise.resolve({
+            contracts: [singleAction.contract],
+            isTruncated: false,
+            sourceHealth: {
+              partial: false,
+              failedSources: [],
+              availableSources: ["actions" as const],
+              warnings: [],
+            },
+            communityEvents: [],
+            communityEventsAvailability: "unavailable" as const,
+          })
+        : loadReportsGenerationData().catch(() => null),
       listReportGenerationHistory(userId)
         .then((rows) => ({ rows, availability: "available" as const }))
         .catch(() => ({ rows: [], availability: "unavailable" as const })),
@@ -291,6 +371,8 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       generationData,
       historyResult,
       dailyExportAvailability,
+      singleAction,
+      singleActionError,
     });
 
     return (

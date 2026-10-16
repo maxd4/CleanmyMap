@@ -25,6 +25,7 @@ export type ReportsWebDocumentPreparationProps = {
     arrondissements: ScopeChoice[];
   };
   onScopeChange: (value: string) => void;
+  singleAction?: { actionId: string; scopeLabel: string };
   modules: ModuleState;
   onModuleToggle: (key: keyof ModuleState) => void;
 };
@@ -35,6 +36,7 @@ export function ReportsWebDocumentPreparation({
   selectedScopeValue,
   scopeOptions,
   onScopeChange,
+  singleAction,
   modules,
   onModuleToggle,
 }: ReportsWebDocumentPreparationProps) {
@@ -56,7 +58,15 @@ export function ReportsWebDocumentPreparation({
       <div className="mt-5 space-y-5">
         <div className="space-y-3">
           <label htmlFor="reports-web-document-period" className="block text-sm font-black text-slate-900">Période</label>
-          <div className="relative">
+          {singleAction ? (
+            <div
+              id="reports-web-document-period"
+              role="status"
+              className="flex min-h-12 items-center rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-950"
+            >
+              Historique complet · action sélectionnée
+            </div>
+          ) : <div className="relative">
             <CalendarDays
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               size={18}
@@ -71,13 +81,22 @@ export function ReportsWebDocumentPreparation({
               <option value="current_year">Année en cours</option>
               <option value="full_history">Historique complet</option>
             </select>
-          </div>
+          </div>}
 
         </div>
 
         <div className="space-y-3">
           <label htmlFor="reports-web-document-scope" className="block text-sm font-black text-slate-900">Périmètre du rapport</label>
-          <div className="relative">
+          {singleAction ? (
+            <div
+              id="reports-web-document-scope"
+              role="status"
+              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-950"
+            >
+              <span className="block font-bold">{singleAction.scopeLabel}</span>
+              <span className="mt-1 block break-all text-xs text-red-800">Action {singleAction.actionId}</span>
+            </div>
+          ) : <div className="relative">
             <MapPin
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               size={18}
@@ -114,7 +133,7 @@ export function ReportsWebDocumentPreparation({
                 ))}
               </optgroup>
             </select>
-          </div>
+          </div>}
         </div>
 
         <div className="space-y-3">

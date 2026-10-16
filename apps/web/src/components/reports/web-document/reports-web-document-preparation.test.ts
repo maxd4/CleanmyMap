@@ -171,6 +171,30 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(markup).not.toContain("Étape 1");
   });
 
+  it("locks the period and scope to the server-resolved action", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ReportsWebDocumentPreparation, {
+        ...preparationProps,
+        period: "full_history",
+        singleAction: { actionId: "action-1", scopeLabel: "Action terrain canonique" },
+      }),
+    );
+
+    const elements = collectDomElements(
+      React.createElement(ReportsWebDocumentPreparation, {
+        ...preparationProps,
+        period: "full_history",
+        singleAction: { actionId: "action-1", scopeLabel: "Action terrain canonique" },
+      }),
+    );
+
+    expect(markup).toContain("Historique complet · action sélectionnée");
+    expect(markup).toContain("Action terrain canonique");
+    expect(markup).toContain("Action action-1");
+    expect(elements.filter((element) => element.type === "select")).toHaveLength(0);
+    expect(elements.filter((element) => element.type === "input" && element.props.type === "checkbox")).toHaveLength(4);
+  });
+
   it("propagates the final payload to history after a successful PDF generation", async () => {
     mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
     mocks.usePdfExport.mockReturnValue({
@@ -270,6 +294,81 @@ describe("ReportsWebDocumentPreparation", () => {
       "Données & cartographie, Transparence & méthodes, Fichiers détaillés",
     );
     expect(previewProps?.isTruncated).toBe(true);
+  });
+
+  it("sends only the typed single-action request and opens the server snapshot", async () => {
+    mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
+    mocks.usePdfExport.mockReturnValue({
+      state: "idle",
+      message: null,
+      copy: { pendingLabel: "Génération en cours" },
+      hasData: true,
+      isDisabled: false,
+      exportRubriquePdf: vi.fn(),
+    });
+
+    renderToStaticMarkup(
+      React.createElement(ReportsWebDocument, {
+        contracts: [{ id: "action-1", status: "approved", dates: { observedAt: "2026-08-01" } }],
+        communityEvents: [],
+        singleAction: { actionId: "11111111-1111-4111-8111-111111111111", scopeLabel: "Action canonique" },
+      } as unknown as ReportsWebDocumentProps),
+    );
+
+    const exportOptions = mocks.usePdfExport.mock.calls[0]?.[0];
+    const serverPayload = {
+      title: "Rapport d'impact - Action canonique - Par défaut",
+      rubrique: "reporting",
+      periode: "full_history",
+      organizationType: "single_action",
+      provenance: {
+        type: "single_action",
+        actionId: "11111111-1111-4111-8111-111111111111",
+        source: "public.actions",
+        resolvedAt: "2026-08-27T10:30:00.000Z",
+      },
+      data: { generatedAt: "2026-08-27T10:30:00.000Z" },
+    };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        item: {
+          id: "generation-single",
+          report: serverPayload.title,
+          period: "Historique complet",
+          perimeter: "Action canonique",
+          detail: "Par défaut",
+          generatedAt: "27/08/2026 12:30",
+        },
+        payload: serverPayload,
+        filename: "rapport_reporting_full_history.pdf",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      exportOptions.onGenerate({
+        title: "Valeur navigateur ignorée",
+        rubrique: "reporting",
+        periode: "six_months",
+        organizationType: "Global",
+        data: { generatedAt: "2026-08-27T10:30:00.000Z" },
+      }),
+    ).resolves.toBeUndefined();
+
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(JSON.parse(String(request.body))).toEqual({
+      input: { type: "single_action", actionId: "11111111-1111-4111-8111-111111111111" },
+      detailLevel: "default",
+      modules: {
+        dataAndCartography: true,
+        transparencyAndMethods: true,
+        rawData: false,
+        detailedFiles: true,
+      },
+    });
+    expect(String(request.body)).not.toContain("Valeur navigateur ignorée");
+    vi.unstubAllGlobals();
   });
 
   it("does not fail an already successful PDF when history persistence fails", async () => {

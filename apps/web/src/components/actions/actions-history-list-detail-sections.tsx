@@ -27,8 +27,19 @@ export type SelectedOperationalContext = {
 export type ActionHistorySelectedItem = {
   id: string;
   location_label: string | null;
-  contract?: { type?: string; metadata: { placeType?: string | null } } | null;
+  status?: string | null;
+  published_at?: string | null;
+  record_type?: string | null;
+  contract?: { type?: string; metadata: { placeType?: string | null; actionPhase?: string | null } } | null;
 };
+
+export function isSingleActionReportEligible(item: ActionHistorySelectedItem): boolean {
+  return item.status === "approved" &&
+    item.record_type === "action" &&
+    Boolean(item.published_at) &&
+    item.contract?.type === "action" &&
+    item.contract.metadata.actionPhase === "post_action_complete";
+}
 
 export function ActionHistoryQualitySection({
   selectedItem,

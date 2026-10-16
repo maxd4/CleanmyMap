@@ -10,6 +10,15 @@ au runtime et à ses tests, pas à une copie documentaire.
   chapitres et constantes vérifiés.
 - Le modèle et le moteur sont dans `apps/web/src/lib/reports/report-model/`
   et `apps/web/src/lib/reports/master-pack/`.
+- Depuis `/actions/history`, une action approuvée, publiée et terminée expose
+  le CTA `Générer un rapport d’impact`. Il ouvre
+  `/reports?tab=generation&actionId=<id canonique>` ; `/reports` résout alors
+  l’action côté serveur et verrouille le périmètre mono-action avant génération.
+- Le rapport mono-action réutilise le renderer PDF et l’historique existants.
+  Le navigateur envoie seulement le type de périmètre, l’identifiant de
+  l’action, le niveau de détail et les modules ; le payload final est celui
+  résolu et renvoyé par le serveur. La consultation et le réexport historiques
+  relisent le snapshot immuable sans recalcul.
 
 ## `PLAN`
 

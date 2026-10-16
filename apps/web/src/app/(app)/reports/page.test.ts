@@ -17,6 +17,8 @@ const mocks = vi.hoisted(() => ({
   listReportGenerationHistory: vi.fn(),
   loadLandingSummary: vi.fn(),
   getReportExportAvailability: vi.fn(),
+  resolveSingleActionReportContract: vi.fn(),
+  getSingleActionReportScopeLabel: vi.fn(),
 }));
 
 const profileAction = {
@@ -69,9 +71,11 @@ vi.mock("@/components/reports/deferred-reports-web-document", () => ({
   DeferredReportsWebDocument: ({
     isTruncated,
     initialHistoryAvailability,
+    singleAction,
   }: {
     isTruncated?: boolean;
     initialHistoryAvailability?: string;
+    singleAction?: { actionId: string; scopeLabel: string };
   }) =>
     React.createElement(
       "section",
@@ -79,6 +83,8 @@ vi.mock("@/components/reports/deferred-reports-web-document", () => ({
         "data-testid": "report-generation",
         "data-truncated": isTruncated ? "true" : "false",
         "data-history-availability": initialHistoryAvailability,
+        "data-single-action-id": singleAction?.actionId,
+        "data-single-action-scope": singleAction?.scopeLabel,
       },
       "Génération",
     ),
@@ -196,6 +202,11 @@ vi.mock("@/lib/reports/report-export-quota", () => ({
   getReportExportAvailability: mocks.getReportExportAvailability,
 }));
 
+vi.mock("@/lib/reports/single-action-report", () => ({
+  resolveSingleActionReportContract: mocks.resolveSingleActionReportContract,
+  getSingleActionReportScopeLabel: mocks.getSingleActionReportScopeLabel,
+}));
+
 import ReportsPage from "./page";
 
 describe("/reports page contract", () => {
@@ -226,6 +237,8 @@ describe("/reports page contract", () => {
       activity: { visibleActions: 1, distinctLocations: 1, items: [] },
     });
     mocks.getReportExportAvailability.mockResolvedValue("available");
+    mocks.resolveSingleActionReportContract.mockResolvedValue(contract);
+    mocks.getSingleActionReportScopeLabel.mockReturnValue("Action canonique");
   });
 
   it("renders a public summary without loading authenticated reports", async () => {
@@ -322,6 +335,42 @@ describe("/reports page contract", () => {
     expect(markup).not.toContain("Génération réservée");
     expect(markup).not.toContain('data-testid="csv-export"');
     expect(mocks.listReportGenerationHistory).toHaveBeenCalledWith("user-1");
+  });
+
+  it("resolves an action-specific generation page from the canonical action id", async () => {
+    const markup = renderToStaticMarkup(
+      await ReportsPage({
+        searchParams: Promise.resolve({
+          tab: "generation",
+          actionId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }),
+    );
+
+    expect(mocks.resolveSingleActionReportContract).toHaveBeenCalledWith(
+      "11111111-1111-4111-8111-111111111111",
+    );
+    expect(mocks.fetchCachedUnifiedActionContracts).not.toHaveBeenCalled();
+    expect(markup).toContain('data-testid="report-generation"');
+    expect(markup).toContain('data-single-action-id="11111111-1111-4111-8111-111111111111"');
+    expect(markup).toContain('data-single-action-scope="Action canonique"');
+  });
+
+  it("shows a non-admissible state without falling back to the global report", async () => {
+    mocks.resolveSingleActionReportContract.mockRejectedValueOnce(new Error("not eligible"));
+
+    const markup = renderToStaticMarkup(
+      await ReportsPage({
+        searchParams: Promise.resolve({
+          tab: "generation",
+          actionId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }),
+    );
+
+    expect(markup).toContain('data-testid="single-action-report-unavailable"');
+    expect(markup).toContain("Action non admissible");
+    expect(mocks.fetchCachedUnifiedActionContracts).not.toHaveBeenCalled();
   });
 
   it("propagates a truncated generation dataset to the report document", async () => {
