@@ -31,6 +31,14 @@ const page = {
   hasMore: true,
 };
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
 describe("FeedbackHistory", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -50,7 +58,11 @@ describe("FeedbackHistory", () => {
   });
 
   it("loads persisted statuses and requests the next page with the returned cursor", async () => {
-    useUserMock.mockReturnValue({ isLoaded: true, isSignedIn: true });
+    useUserMock.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: true,
+      user: { id: "owner-1" },
+    });
     const fetchMock = vi.mocked(fetch);
     fetchMock
       .mockResolvedValueOnce(Response.json(page))
@@ -99,7 +111,11 @@ describe("FeedbackHistory", () => {
   });
 
   it("renders an empty state and a safe error state", async () => {
-    useUserMock.mockReturnValue({ isLoaded: true, isSignedIn: true });
+    useUserMock.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: true,
+      user: { id: "owner-1" },
+    });
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(
       Response.json({ status: "ok", items: [], nextCursor: null, hasMore: false }),
@@ -120,5 +136,204 @@ describe("FeedbackHistory", () => {
     });
     expect(textOf(renderer)).toContain("Impossible de charger vos retours.");
     expect(textOf(renderer)).not.toContain("private storage provider detail");
+  });
+
+  it("does not render a previous owner's history while identities change", async () => {
+    const ownerARequest = deferred<Response>();
+    const ownerBRequest = deferred<Response>();
+    useUserMock.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: true,
+      user: { id: "owner-a" },
+    });
+    const fetchMock = vi.mocked(fetch);
+    fetchMock
+      .mockReturnValueOnce(ownerARequest.promise)
+      .mockReturnValueOnce(ownerBRequest.promise);
+
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<FeedbackHistory locale="fr" />);
+    });
+
+    useUserMock.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: true,
+      user: { id: "owner-b" },
+    });
+    act(() => {
+      renderer.update(<FeedbackHistory locale="fr" />);
+    });
+    expect(textOf(renderer)).not.toContain("Retour du compte A");
+    expect(textOf(renderer)).toContain("Chargement de vos retours...");
+
+    await act(async () => {
+      ownerARequest.resolve(
+        Response.json({
+          status: "ok",
+          items: [
+            {
+              id: "owner-a-report",
+              title: "Retour du compte A",
+              type: "bug",
+              createdAt: "2026-08-27T11:00:00.000Z",
+              status: "new",
+            },
+          ],
+          nextCursor: null,
+          hasMore: false,
+        }),
+      );
+      await Promise.resolve();
+    });
+    expect(textOf(renderer)).not.toContain("Retour du compte A");
+
+    await act(async () => {
+      ownerBRequest.resolve(
+        Response.json({
+          status: "ok",
+          items: [
+            {
+              id: "owner-b-report",
+              title: "Retour du compte B",
+              type: "idea",
+              createdAt: "2026-08-27T12:00:00.000Z",
+              status: "treated",
+            },
+          ],
+          nextCursor: null,
+          hasMore: false,
+        }),
+      );
+      await Promise.resolve();
+    });
+    expect(textOf(renderer)).toContain("Retour du compte B");
+    expect(textOf(renderer)).not.toContain("Retour du compte A");
+  });
+
+  it("hides personal data immediately on sign-out and ignores its late response", async () => {
+    const ownerRequest = deferred<Response>();
+    useUserMock.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: true,
+      user: { id: "owner-a" },
+    });
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockReturnValueOnce(ownerRequest.promise);
+
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<FeedbackHistory locale="fr" />);
+    });
+
+    useUserMock.mockReturnValue({ isLoaded: true, isSignedIn: false, user: null });
+    act(() => {
+      renderer.update(<FeedbackHistory locale="fr" />);
+    });
+    expect(textOf(renderer)).toContain("Connectez-vous pour consulter vos retours.");
+    expect(textOf(renderer)).not.toContain("Retour du compte A");
+
+    await act(async () => {
+      ownerRequest.resolve(
+        Response.json({
+          status: "ok",
+          items: [
+            {
+              id: "owner-a-report",
+              title: "Retour du compte A",
+              type: "bug",
+              createdAt: "2026-08-27T11:00:00.000Z",
+              status: "new",
+            },
+          ],
+          nextCursor: null,
+          hasMore: false,
+        }),
+      );
+      await Promise.resolve();
+    });
+    expect(textOf(renderer)).not.toContain("Retour du compte A");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not append a late pagination response from the previous owner", async () => {
+    const ownerAPageTwo = deferred<Response>();
+    useUserMock.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: true,
+      user: { id: "owner-a" },
+    });
+    const fetchMock = vi.mocked(fetch);
+    fetchMock
+      .mockResolvedValueOnce(Response.json(page))
+      .mockReturnValueOnce(ownerAPageTwo.promise)
+      .mockResolvedValueOnce(
+        Response.json({
+          status: "ok",
+          items: [
+            {
+              id: "owner-b-report",
+              title: "Retour du compte B",
+              type: "idea",
+              createdAt: "2026-08-27T12:00:00.000Z",
+              status: "new",
+            },
+          ],
+          nextCursor: null,
+          hasMore: false,
+        }),
+      );
+
+    let renderer!: ReactTestRenderer;
+    await act(async () => {
+      renderer = create(<FeedbackHistory locale="fr" />);
+      await Promise.resolve();
+    });
+    const loadMore = renderer.root.findAllByType("button").find((button) =>
+      String(button.props.children).includes("Voir plus"),
+    );
+    expect(loadMore).toBeDefined();
+
+    await act(async () => {
+      loadMore?.props.onClick();
+      await Promise.resolve();
+    });
+
+    useUserMock.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: true,
+      user: { id: "owner-b" },
+    });
+    act(() => {
+      renderer.update(<FeedbackHistory locale="fr" />);
+    });
+    expect(textOf(renderer)).not.toContain("Retour du compte A");
+
+    await act(async () => {
+      ownerAPageTwo.resolve(
+        Response.json({
+          status: "ok",
+          items: [
+            {
+              id: "owner-a-page-two",
+              title: "Page 2 du compte A",
+              type: "idea",
+              createdAt: "2026-08-27T10:00:00.000Z",
+              status: "treated",
+            },
+          ],
+          nextCursor: null,
+          hasMore: false,
+        }),
+      );
+      await Promise.resolve();
+    });
+    expect(textOf(renderer)).not.toContain("Page 2 du compte A");
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(textOf(renderer)).toContain("Retour du compte B");
+    expect(textOf(renderer)).not.toContain("Page 2 du compte A");
   });
 });
