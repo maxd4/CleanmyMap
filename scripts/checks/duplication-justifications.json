@@ -75,14 +75,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "d0e18a6e24f0895c",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les champs Zod anti-spam répétés restent reliés aux primitives anti-abus canoniques de chaque formulaire ; leur proximité syntaxique ne justifie pas une abstraction qui mélangerait les contrats de soumission community et newsletter.",
-      "evidence": "apps/web/src/app/api/community/promotion-requests/route.ts:22-27 et apps/web/src/app/api/newsletter/subscribe/route.ts:15-20 ; les schémas alimentent deux flux anti-abus distincts.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "a54fde3f5fd3a3d0",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les champs Zod anti-spam sont volontairement proches mais restent attachés aux primitives anti-abus et aux contrats métier propres aux signalements légaux et aux demandes partenaires ; aucune centralisation sûre n'est démontrée.",
@@ -523,38 +515,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "5f7a59d5ffb671e0",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/admin/creator-inbox/route.test.ts:281-294 et app/api/admin/creator-inbox/route.test.ts:308-321 protègent des transitions creator-inbox et des audits de non-exposition ; les différences de source, statut et partialMutation doivent rester visibles.",
-      "evidence": "app/api/admin/creator-inbox/route.test.ts:281-294 et app/api/admin/creator-inbox/route.test.ts:308-321 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "21858b1db2517870",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/admin/creator-inbox/route.test.ts:290-299 et app/api/admin/creator-inbox/route.test.ts:570-578 protègent des transitions creator-inbox et des audits de non-exposition ; les différences de source, statut et partialMutation doivent rester visibles.",
-      "evidence": "app/api/admin/creator-inbox/route.test.ts:290-299 et app/api/admin/creator-inbox/route.test.ts:570-578 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "17d48049e2d7da89",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/admin/creator-inbox/route.test.ts:345-351 et app/api/admin/creator-inbox/route.test.ts:383-389 protègent des transitions creator-inbox et des audits de non-exposition ; les différences de source, statut et partialMutation doivent rester visibles.",
-      "evidence": "app/api/admin/creator-inbox/route.test.ts:345-351 et app/api/admin/creator-inbox/route.test.ts:383-389 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "03cb0f0e1b5b5cd8",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/admin/creator-inbox/route.test.ts:345-351 et app/api/admin/creator-inbox/route.test.ts:456-462 protègent des transitions creator-inbox et des audits de non-exposition ; les différences de source, statut et partialMutation doivent rester visibles.",
-      "evidence": "app/api/admin/creator-inbox/route.test.ts:345-351 et app/api/admin/creator-inbox/route.test.ts:456-462 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "caa28ddbe706d917",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/admin/creator-inbox/route.test.ts:436-446 et app/api/admin/creator-inbox/route.test.ts:477-487 protègent des transitions creator-inbox et des audits de non-exposition ; les différences de source, statut et partialMutation doivent rester visibles.",
@@ -931,14 +891,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "7f9aac61ce200ecb",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT lib/authz.creator-email.test.ts:82-95 ; symboles: user_max, primaryEmailAddress, emailAddress, user et lib/authz.creator-email.test.ts:104-117 ; symboles: user_admin, primaryEmailAddress, emailAddress, user restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "lib/authz.creator-email.test.ts:82-95 et lib/authz.creator-email.test.ts:104-117 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "4820caf1cc3f6b73",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT lib/supabase/clerk-rls.test.ts:4-17 ; symboles: createClientMock, hoisted, clerk, nextjs et lib/supabase/client.test.ts:14-27 ; symboles: clerk, nextjs, server, auth appartiennent à des consumers distincts ; chacune protège le scénario ou le contrat de sa suite, et leur séparation conserve une preuve locale sans façade de test ou d’exécution transverse.",
@@ -971,14 +923,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "e591554f60991554",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/chat/polls/[messageId]/vote/route.ts:127-146 ; symboles: validationErrorResponse, parsed, error, flatten et app/api/chat/polls/[messageId]/vote/route.ts:196-215 ; symboles: unauthorizedJsonResponse, messageId, context, supabase restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "apps/web/src/app/api/chat/polls/[messageId]/vote/route.ts:127-146 et apps/web/src/app/api/chat/polls/[messageId]/vote/route.ts:196-215 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "ef2c4a06c2b97a69",
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre app/api/email/test/route.ts:1-14 ; symboles: NextResponse, next, server, requireAdminAccess et app/api/send/route.ts:2-15 ; symboles: NextResponse, next, server, requireAdminAccess reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
@@ -999,14 +943,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre app/api/users/profile/display-name-mode/route.ts:51-61 ; symboles: userId, identity, unauthorizedJsonResponse, payload et app/api/users/profile/handle/route.ts:16-26 ; symboles: userId, auth, unauthorizedJsonResponse, payload reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
       "evidence": "apps/web/src/app/api/users/profile/display-name-mode/route.ts:51-61 et apps/web/src/app/api/users/profile/handle/route.ts:16-26 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "6af458b67c7bfd57",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre app/docs/[...segments]/route-markdown.ts:16-29 ; symboles: renderInlineMarkdown, escaped, withCode, withLinks et lib/pdf-export/official-report-markdown.ts:12-25 ; symboles: items, item, renderInlineMarkdown, join reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/app/docs/[...segments]/route-markdown.ts:16-29 et apps/web/src/lib/pdf-export/official-report-markdown.ts:12-25 ; pair CURRENT relu avec les symboles et le consumer distingué dans la raison.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
     },
     {
@@ -1119,14 +1055,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre components/missions/deferred-mission-panels.tsx:24-41 ; symboles: type, MissionPoint, latitude, longitude et components/missions/mission-map.tsx:12-29 ; symboles: type, Point, latitude, longitude reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
       "evidence": "apps/web/src/components/missions/deferred-mission-panels.tsx:24-41 et apps/web/src/components/missions/mission-map.tsx:12-29 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "71e2ec3385a1e868",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT components/navigation/app-navigation-ribbon-theme.ts:99-104 ; symboles: length, parseInt, charAt et components/navigation/app-navigation-ribbon-theme.ts:107-112 ; symboles: length, parseInt, charAt restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "apps/web/src/components/navigation/app-navigation-ribbon-theme.ts:99-104 et apps/web/src/components/navigation/app-navigation-ribbon-theme.ts:107-112 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
     },
     {
@@ -1499,22 +1427,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "86bb72f732eb3a2c",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/chat/admin-elu-topics.test.ts:6-11 et app/api/chat/search/route.test.ts:16-22 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/chat/admin-elu-topics.test.ts:6-11 et app/api/chat/search/route.test.ts:16-22 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "d8f603eff798286f",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/chat/admin-elu-topics.test.ts:17-22 et app/api/chat/search/route.test.ts:22-28 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/chat/admin-elu-topics.test.ts:17-22 et app/api/chat/search/route.test.ts:22-28 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "0b53cb39e9c9fb2e",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT app/api/chat/admin-elu-topics.test.ts:23-34 et app/api/chat/route.feedback-reply.test.ts:28-39 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
@@ -1555,26 +1467,10 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "e4848197cf0db99a",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/chat/route.get.test.ts:170-186 ; symboles: supabaseMock, buildSupabaseMock, profile, user et app/api/chat/route.get.test.ts:246-262 ; symboles: supabaseMock, buildSupabaseMock, profile, user restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "app/api/chat/route.get.test.ts:170-186 et app/api/chat/route.get.test.ts:246-262 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "0329db8fa7dab136",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/chat/route.test.ts:54-67 ; symboles: actorUserId, spoofed, browser, actor et app/api/chat/route.test.ts:150-162 ; symboles: content, participe, message, ChatMessageRow restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
       "evidence": "app/api/chat/route.test.ts:54-67 et app/api/chat/route.test.ts:150-162 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "0258656d114fb063",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/chat/route.test.ts:135-153 ; symboles: loadActionByIdMock, actionId, approved, getSupabaseClerkRlsClientMock et app/api/chat/route.test.ts:208-226 ; symboles: loadActionByIdMock, actionId, cancelled, getSupabaseClerkRlsClientMock restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "app/api/chat/route.test.ts:135-153 et app/api/chat/route.test.ts:208-226 ; pair CURRENT relu.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
     },
     {
@@ -2451,14 +2347,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "a31decf23b490aec",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/audit/route.test.ts:88-102 et app/api/actions/[actionId]/audit/route.test.ts:188-202 vérifient des décisions d'accès (propriétaire, organisateur, rôle actif) et des projections du journal d'audit ; les attentes restent séparées pour conserver la preuve AuthN/AuthZ lisible.",
-      "evidence": "app/api/actions/[actionId]/audit/route.test.ts:88-102 et app/api/actions/[actionId]/audit/route.test.ts:188-202 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "56233920440898b0",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/actions/[actionId]/audit/route.test.ts:89-98 et app/api/actions/[actionId]/audit/route.test.ts:151-160 vérifient des décisions d'accès (propriétaire, organisateur, rôle actif) et des projections du journal d'audit ; les attentes restent séparées pour conserver la preuve AuthN/AuthZ lisible.",
@@ -2543,14 +2431,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:237-248 et app/api/actions/[actionId]/formalities/route.test.ts:302-313 couvrent des branches de territoire, qualification et workflow des formalités ; les valeurs répétées sont le contexte de preuve et les attentes métier restent explicites dans chaque scénario.",
       "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:237-248 et app/api/actions/[actionId]/formalities/route.test.ts:302-313 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "386e530a42c4dada",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/route.active-role.test.ts:155-163 et app/api/actions/[actionId]/route.impact-override.test.ts:110-118 vérifient des frontières AuthZ et des snapshots d'audit d'override ; les raisons, rôles et champs protégés restent spécifiques au scénario.",
-      "evidence": "app/api/actions/[actionId]/route.active-role.test.ts:155-163 et app/api/actions/[actionId]/route.impact-override.test.ts:110-118 ; pair CURRENT relu.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
     },
     {
@@ -2683,22 +2563,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "32e5d71b79006d49",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les réponses d'erreur de consolidation et de galerie appartiennent à deux routes SPOGOMI distinctes ; la répétition locale conserve leurs permissions propres.",
-      "evidence": "app/api/spogomi/events/[eventId]/consolidation/route.ts:37-44 et app/api/spogomi/events/[eventId]/gallery/route.ts:43-50 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "319c20f03debe388",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les routes de consolidation et de résultats ont des contrats de lecture différents ; garder l'erreur localisée évite de masquer leur contrôle d'accès.",
-      "evidence": "app/api/spogomi/events/[eventId]/consolidation/route.ts:37-44 et app/api/spogomi/events/[eventId]/results/route.ts:30-37 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "91e8597ea18faf09",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Export XLSX et rankings exposent deux DTO distincts et conservent volontairement leur propre réponse d'erreur côté route.",
@@ -2715,14 +2579,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "bf0fbe062f3934d7",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les routes galerie et résultats gardent leur réponse d'échec locale afin de préserver des contrats de lecture séparés.",
-      "evidence": "app/api/spogomi/events/[eventId]/gallery/route.ts:32-38 et app/api/spogomi/events/[eventId]/results/route.ts:18-24 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "e603506317f04852",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Galerie et reviewers ont des permissions et DTO indépendants ; la construction d'erreur reste volontairement visible dans chaque handler.",
@@ -2735,14 +2591,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les deux branches du flux identity-link convertissent des erreurs de persistance différentes ; leur proximité est du bruit textuel sans abstraction métier sûre.",
       "evidence": "app/api/spogomi/events/[eventId]/identity-link/route.ts:76-84 et app/api/spogomi/events/[eventId]/identity-link/route.ts:92-100 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "7fb315d158f8a10d",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Import et attestation gardent des gardes d'autorisation explicites dans des mutations sensibles distinctes ; une extraction masquerait la frontière de sécurité.",
-      "evidence": "app/api/spogomi/events/[eventId]/imports/confirm/route.ts:17-22 et app/api/spogomi/events/[eventId]/recognition/attestations/route.ts:17-22 ; pair CURRENT relu.",
       "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
     },
     {
@@ -2787,14 +2635,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "65aef06272cfdebb",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les deux opérations reviewers ont des mutations opposées et des contrats de réponse séparés ; le clone est du boilerplate local sans owner commun.",
-      "evidence": "app/api/spogomi/events/[eventId]/reviewers/route.ts:16-23 et app/api/spogomi/events/[eventId]/reviewers/route.ts:31-38 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "a5b8363f965e7923",
       "classification": "KEEP_INTENTIONAL",
       "reason": "POST et DELETE sur l'accès d'équipe ont des effets et validations opposés ; la duplication de réponse conserve la lisibilité de chaque mutation.",
@@ -2808,22 +2648,6 @@
       "reason": "Les mutations POST et DELETE partagent une forme d'erreur mais pas la sémantique d'accès ; une extraction réduirait la visibilité de la permission concernée.",
       "evidence": "app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts:14-22 et app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts:33-41 ; pair CURRENT relu.",
       "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "4a5eed33aa605913",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Lock et move sont deux mutations d'équipe avec des validations indépendantes ; leurs réponses d'erreur doivent rester locales au contrat consommé.",
-      "evidence": "apps/web/src/app/api/spogomi/events/[eventId]/teams/lock/route.ts:13-18 et apps/web/src/app/api/spogomi/events/[eventId]/teams/move/route.ts:13-18 ; pair CURRENT relu.",
-      "reviewedRef": "f88e1e5be378e5130b8ada9bfb5dba567728b1d7"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "6f71f528def1b86b",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les catchs de lock et move traduisent des erreurs dans deux mutations distinctes ; leur extraction ne centraliserait aucune règle durable.",
-      "evidence": "apps/web/src/app/api/spogomi/events/[eventId]/teams/lock/route.ts:23-28 et apps/web/src/app/api/spogomi/events/[eventId]/teams/move/route.ts:23-28 ; pair CURRENT relu.",
-      "reviewedRef": "f88e1e5be378e5130b8ada9bfb5dba567728b1d7"
     },
     {
       "scope": "runtime",
