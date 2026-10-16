@@ -25,7 +25,7 @@ export type QuestionnaireConfig = {
 export const QUESTIONNAIRES = [
   {
     id: "bug",
-    title: { fr: "Bug", en: "Bug" },
+    title: { fr: "Bug signalé", en: "Reported bug" },
     intro: {
       fr: "Décris précisément ce qui casse pour qu'on puisse reproduire et corriger vite.",
       en: "Describe what breaks so we can reproduce it and fix it quickly.",
@@ -39,47 +39,51 @@ export const QUESTIONNAIRES = [
     fields: [
       {
         key: "subject",
-        label: { fr: "Sujet", en: "Subject" },
+        label: { fr: "Titre (facultatif)", en: "Title (optional)" },
         placeholder: {
-          fr: "Ex: La carte se fige sur mobile",
-          en: "E.g. The map freezes on mobile",
+          fr: "Laissez vide pour utiliser un titre proposé",
+          en: "Leave blank to use a suggested title",
         },
-        minLength: 4,
+        helper: {
+          fr: "Vous pouvez le modifier ou le laisser vide.",
+          en: "You can edit it or leave it blank.",
+        },
+        minLength: 0,
       },
       {
         key: "context",
-        label: { fr: "Contexte", en: "Context" },
+        label: { fr: "Quelle action effectuiez-vous ?", en: "What action were you taking?" },
         placeholder: {
-          fr: "Page, profil, appareil ou navigateur concerné",
-          en: "Page, profile, device or browser involved",
+          fr: "Ex: J'ouvrais la carte depuis la rubrique Missions",
+          en: "E.g. I opened the map from the Missions section",
         },
-        minLength: 4,
+        minLength: 3,
       },
       {
         key: "steps",
-        label: { fr: "Étapes pour reproduire", en: "Steps to reproduce" },
+        label: { fr: "Qu'est-ce qui s'est produit ?", en: "What happened?" },
         placeholder: {
-          fr: "1. ... 2. ... 3. ...",
-          en: "1. ... 2. ... 3. ...",
+          fr: "Décrivez brièvement ce que vous avez vu",
+          en: "Briefly describe what you saw",
         },
         rows: 4,
-        minLength: 10,
+        minLength: 3,
       },
       {
         key: "expected",
-        label: { fr: "Résultat attendu", en: "Expected result" },
+        label: { fr: "Qu'auriez-vous dû observer ?", en: "What should you have observed?" },
         placeholder: {
           fr: "Ce qui devrait se passer normalement",
           en: "What should happen normally",
         },
         rows: 3,
-        minLength: 10,
+        minLength: 3,
       },
     ],
   },
   {
     id: "idea",
-    title: { fr: "Idée", en: "Idea" },
+    title: { fr: "Idée proposée", en: "Suggested idea" },
     intro: {
       fr: "Partage une idée ou une observation en quelques réponses.",
       en: "Share an idea or observation in a few answers.",
@@ -98,7 +102,7 @@ export const QUESTIONNAIRES = [
           fr: "Ex: Ajouter un filtre par quartier",
           en: "E.g. Add a neighbourhood filter",
         },
-        minLength: 4,
+        minLength: 0,
       },
       {
         key: "proposal",
@@ -108,7 +112,7 @@ export const QUESTIONNAIRES = [
           en: "Briefly describe what you would like to see.",
         },
         rows: 4,
-        minLength: 10,
+        minLength: 3,
       },
       {
         key: "benefit",
@@ -118,13 +122,13 @@ export const QUESTIONNAIRES = [
           en: "Who would this idea help?",
         },
         rows: 3,
-        minLength: 10,
+        minLength: 0,
       },
     ],
   },
   {
     id: "improvement",
-    title: { fr: "Amélioration", en: "Improvement" },
+    title: { fr: "Amélioration proposée", en: "Suggested improvement" },
     intro: {
       fr: "Partage une idée concrète pour simplifier une action ou augmenter l'impact.",
       en: "Share a concrete idea to simplify an action or increase impact.",
@@ -143,7 +147,7 @@ export const QUESTIONNAIRES = [
           fr: "Ex: Raccourcir le formulaire de déclaration",
           en: "E.g. Shorten the declaration form",
         },
-        minLength: 4,
+        minLength: 0,
       },
       {
         key: "friction",
@@ -153,7 +157,7 @@ export const QUESTIONNAIRES = [
           en: "What takes too long or creates confusion",
         },
         rows: 3,
-        minLength: 10,
+        minLength: 3,
       },
       {
         key: "proposal",
@@ -163,7 +167,7 @@ export const QUESTIONNAIRES = [
           en: "Describe the change you want to see",
         },
         rows: 4,
-        minLength: 10,
+        minLength: 3,
       },
       {
         key: "impact",
@@ -173,13 +177,13 @@ export const QUESTIONNAIRES = [
           en: "What it would improve for the field or the team",
         },
         rows: 3,
-        minLength: 10,
+        minLength: 0,
       },
     ],
   },
   {
     id: "collaboration",
-    title: { fr: "Collaboration", en: "Collaboration" },
+    title: { fr: "Collaboration proposée", en: "Suggested collaboration" },
     intro: {
       fr: "Propose un partenariat, une mise en lien ou un échange terrain.",
       en: "Propose a partnership, introduction or field exchange.",
@@ -198,7 +202,7 @@ export const QUESTIONNAIRES = [
           fr: "Nom de l'association, collectivité, école ou collectif",
           en: "Association, city, school or collective name",
         },
-        minLength: 4,
+        minLength: 3,
       },
       {
         key: "purpose",
@@ -208,7 +212,7 @@ export const QUESTIONNAIRES = [
           en: "E.g. awareness, logistics, content, event",
         },
         rows: 3,
-        minLength: 10,
+        minLength: 3,
       },
       {
         key: "contribution",
@@ -218,7 +222,7 @@ export const QUESTIONNAIRES = [
           en: "Resource, venue, network, skill or support",
         },
         rows: 4,
-        minLength: 10,
+        minLength: 3,
       },
       {
         key: "nextStep",
@@ -228,7 +232,7 @@ export const QUESTIONNAIRES = [
           en: "Call, meeting, email exchange, warm introduction",
         },
         rows: 3,
-        minLength: 10,
+        minLength: 3,
       },
     ],
   },

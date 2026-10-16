@@ -3,6 +3,7 @@
 import type { CreatorInboxItem, CreatorInboxSource } from "@/lib/community/creator-inbox";
 import type { CreatorInboxCopy, CreatorInboxLocale } from "./creator-inbox-copy";
 import { InboxItemContextualActions } from "./inbox-item-contextual-actions";
+import { FeedbackExportActions } from "./feedback-export-actions";
 import type { InboxActionParams, LegalDecisionParams } from "./inbox-item-card.types";
 import { InboxItemLegalDecision } from "./inbox-item-legal-decision";
 import { InboxItemProcessingActions } from "./inbox-item-processing-actions";
@@ -54,6 +55,10 @@ export function InboxItemCard({
   return (
     <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <InboxItemRequestDetails item={item} locale={locale} copy={copy} />
+
+      {item.source === "feedback" ? (
+        <FeedbackExportActions item={item} locale={locale} />
+      ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
         {item.source === "legal_content_report" && onLegalDecision ? (
