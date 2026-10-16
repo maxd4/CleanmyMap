@@ -43,6 +43,14 @@ la recherche et le tri permettent de retrouver les feedbacks nouveaux sans
 créer une file parallèle. Un feedback sans qualification de sévérité fiable
 reste en priorité normale ; un bug n'est pas urgent par défaut.
 
+La boîte est lue par pages côté serveur. La page initiale contient au maximum
+50 éléments et le bouton `Charger la page suivante` utilise un curseur opaque
+par source ; l'ordre reste stable par date de création, source puis identifiant.
+Les compteurs affichés dans la boîte et dans le cockpit décrivent les éléments
+de la page chargée, pas un total implicite. Une page suivante disponible est
+signalée explicitement ; une erreur de lecture reste un état indisponible et
+n'est jamais présentée comme une file vide.
+
 Les états persistés du feedback (`new`, `pending`, `responded`, `treated`,
 `archived`) restent distincts du statut métier (`open`, `treated`, `archived`).
 L'archivage passe par une seule mutation canonique qui maintient ces deux
@@ -75,7 +83,7 @@ nouveau partage, et sa discussion reste consultable en lecture historique
 sans accepter de nouveau message. `cancelled` n'est jamais assimilé à
 `rejected` ou à une action réalisée.
 - Les quatre indicateurs opérationnels sont : `Agir à traiter` (actions + participations), `Signalements à traiter` (spots / lieux propres), `Réseau à traiter` (inbox créateur + publications pending_admin_review) et `Incidents récents` (audit outcome=error). Une dépendance indisponible est affichée comme `Partiel` ou `Indisponible`.
-- L’alerte principale suit l’ordre indisponibilité des sources, incidents d’audit, backlog réel, puis absence d’urgence lorsque toutes les lectures ont réussi et que les files sont vides.
+- L’alerte principale suit l’ordre indisponibilité des sources, incidents d’audit, éléments visibles à traiter, puis absence d’urgence lorsque toutes les lectures ont réussi et que les pages chargées sont vides.
 - Les quatre files visibles sont `Agir`, `Cartographie & Impact`, `Réseau & Discussions` et `Audit & supervision`. La file d’audit conserve l’id interne `accueil-pilotage` pour préserver le contrat existant. Le journal utilise le deep-link `#workflow-administration`; Cartographie & Impact conserve `/admin?moderation=signalements#workflow-administration`.
 - Les blocs fictifs `Apprendre` et `Classement global` ne font pas partie de cette surface.
 - **Bulles / cartes / contextes trop nombreux** : la hiérarchie du cockpit a été resserrée dans ce lot ; les écrans détaillés de services, godmode et workflow restent volontairement denses.

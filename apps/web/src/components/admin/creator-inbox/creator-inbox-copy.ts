@@ -10,6 +10,9 @@ type CreatorInboxCopy = {
     title: string;
     description: string;
     itemCountSuffix: string;
+    pageCountLabel: string;
+    nextPageLabel: string;
+    loadingNextPageLabel: string;
     feedbackLabel: string;
     promotionLabel: string;
     partnerLabel: string;
@@ -72,6 +75,9 @@ const COPY: Record<CreatorInboxLocale, CreatorInboxCopy> = {
       description:
         "Feedback, promotion, partenariat, événements et notifications de contenu arrivent dans le même espace, avec les bons contacts, les bonnes dates et les bons statuts.",
       itemCountSuffix: "élément(s)",
+      pageCountLabel: "Cette page",
+      nextPageLabel: "Charger la page suivante",
+      loadingNextPageLabel: "Chargement de la page suivante...",
       feedbackLabel: "Feedback",
       promotionLabel: "Promo",
       partnerLabel: "Partenariat",
@@ -133,6 +139,9 @@ const COPY: Record<CreatorInboxLocale, CreatorInboxCopy> = {
       description:
         "Feedback, promotion, partnerships, events and content notifications arrive in one space with the right contacts, dates and statuses.",
       itemCountSuffix: "item(s)",
+      pageCountLabel: "This page",
+      nextPageLabel: "Load next page",
+      loadingNextPageLabel: "Loading next page...",
       feedbackLabel: "Feedback",
       promotionLabel: "Promo",
       partnerLabel: "Partner",

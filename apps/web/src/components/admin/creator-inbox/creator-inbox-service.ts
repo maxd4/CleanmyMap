@@ -35,13 +35,36 @@ async function postJson<T>(url: string, body: unknown, fallback: string): Promis
   return payload;
 }
 
-export async function fetchCreatorInboxItems(): Promise<CreatorInboxItem[]> {
-  const response = await fetch("/api/admin/creator-inbox");
+export type CreatorInboxPagePayload = {
+  items: CreatorInboxItem[];
+  count: number;
+  hasMore: boolean;
+  nextCursor: string | null;
+};
+
+export async function fetchCreatorInboxPage(params?: {
+  limit?: number;
+  cursor?: string | null;
+}): Promise<CreatorInboxPagePayload> {
+  const search = new URLSearchParams();
+  if (params?.limit !== undefined) search.set("limit", String(params.limit));
+  if (params?.cursor) search.set("cursor", params.cursor);
+  const query = search.toString();
+  const response = await fetch(`/api/admin/creator-inbox${query ? `?${query}` : ""}`);
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, "Unable to refresh inbox."));
   }
-  const payload = await readJson<{ items?: CreatorInboxItem[] }>(response);
-  return payload?.items ?? [];
+  const payload = await readJson<Partial<CreatorInboxPagePayload>>(response);
+  if (
+    !payload ||
+    !Array.isArray(payload.items) ||
+    typeof payload.count !== "number" ||
+    typeof payload.hasMore !== "boolean" ||
+    (payload.nextCursor !== null && typeof payload.nextCursor !== "string")
+  ) {
+    throw new Error("Invalid creator inbox page.");
+  }
+  return payload as CreatorInboxPagePayload;
 }
 
 export async function applyCreatorInboxAction(params: {

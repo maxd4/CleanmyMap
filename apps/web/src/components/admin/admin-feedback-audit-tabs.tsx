@@ -3,17 +3,27 @@
 import { useState } from "react";
 import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
 import type { CreatorInboxItem } from "@/lib/community/creator-inbox";
+import type { CreatorInboxPage } from "@/lib/community/creator-inbox-loader";
 import { CreatorInboxPanel } from "./creator-inbox-panel";
 import { AdminOperationsAuditPanel } from "./admin-operations-audit-panel";
 
 export function AdminFeedbackAuditTabs({
   feedbackItems,
+  initialHasMore,
+  initialNextCursor,
   auditEntries,
 }: {
-  feedbackItems: CreatorInboxItem[];
+  feedbackItems: CreatorInboxItem[] | CreatorInboxPage;
+  initialHasMore?: boolean;
+  initialNextCursor?: string | null;
   auditEntries: AdminOperationAuditEntry[];
 }) {
   const [activeTab, setActiveTab] = useState<"feedback" | "audit">("feedback");
+  const initialItems = Array.isArray(feedbackItems) ? feedbackItems : feedbackItems.items;
+  const pageHasMore = Array.isArray(feedbackItems) ? initialHasMore : feedbackItems.hasMore;
+  const pageNextCursor = Array.isArray(feedbackItems)
+    ? initialNextCursor
+    : feedbackItems.nextCursor;
 
   return (
     <section aria-label="Boîte créateur unifiée et journal administrateurs">
@@ -48,7 +58,11 @@ export function AdminFeedbackAuditTabs({
 
       {activeTab === "feedback" ? (
         <div role="tabpanel" aria-label="Boîte créateur unifiée">
-          <CreatorInboxPanel initialItems={feedbackItems} />
+          <CreatorInboxPanel
+            initialItems={initialItems}
+            initialHasMore={pageHasMore}
+            initialNextCursor={pageNextCursor}
+          />
         </div>
       ) : (
         <div role="tabpanel" aria-label="Journal administrateurs">

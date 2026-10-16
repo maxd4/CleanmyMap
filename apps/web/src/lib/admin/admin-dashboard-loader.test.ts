@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const runActionQueryMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
-const loadCreatorInboxItemsMock = vi.hoisted(() => vi.fn());
+const loadCreatorInboxPageMock = vi.hoisted(() => vi.fn());
 const listModeratableSignalementsMock = vi.hoisted(() => vi.fn());
 const listPublishedPartnerAnnuaireEntriesMock = vi.hoisted(() => vi.fn());
 const listAdminOperationAuditMock = vi.hoisted(() => vi.fn());
@@ -12,7 +12,7 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
 vi.mock("@/lib/community/creator-inbox-loader", () => ({
-  loadCreatorInboxItems: loadCreatorInboxItemsMock,
+  loadCreatorInboxPage: loadCreatorInboxPageMock,
 }));
 vi.mock("@/lib/admin/moderation/signalement-moderation", () => ({
   listModeratableSignalements: listModeratableSignalementsMock,
@@ -50,7 +50,7 @@ describe("loadAdminSources", () => {
     getSupabaseServerClientMock.mockReturnValue(createSupabaseMock());
     runActionQueryMock.mockResolvedValue([]);
     listModeratableSignalementsMock.mockResolvedValue({ items: [], count: 0 });
-    loadCreatorInboxItemsMock.mockRejectedValue(new Error("creator inbox unavailable"));
+    loadCreatorInboxPageMock.mockRejectedValue(new Error("creator inbox unavailable"));
     listPublishedPartnerAnnuaireEntriesMock.mockResolvedValue([]);
     listAdminOperationAuditMock.mockResolvedValue([]);
   });

@@ -13,6 +13,10 @@ import {
 } from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
+  compareCreatorInboxRecordCursors,
+  type CreatorInboxRecordCursor,
+} from "@/lib/community/creator-inbox-pagination";
+import {
   LEGAL_CONTENT_REPORT_MAX_IDENTITY_EXCEPTION_REASON_LENGTH,
   LEGAL_CONTENT_REPORT_MAX_REASON_LENGTH,
   normalizeLegalContentReportUrl,
@@ -168,16 +172,25 @@ export async function appendLegalContentReport(
   return record;
 }
 
-export async function listLegalContentReports(limit = 200): Promise<LegalContentReportRecord[]> {
+export async function listLegalContentReports(
+  limit = 200,
+  beforeCursor?: CreatorInboxRecordCursor | null,
+): Promise<LegalContentReportRecord[]> {
   assertPersistenceAvailable("legal_content_reports");
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
+    let query = getSupabaseServerClient(true)
       .from("legal_content_reports")
       .select(SUPABASE_REPORT_COLUMNS)
       .order("created_at", { ascending: false })
-      .limit(normalizedLimit);
+      .order("id", { ascending: false });
+    if (beforeCursor) {
+      query = query.or(
+        `created_at.lt.${beforeCursor.createdAt},and(created_at.eq.${beforeCursor.createdAt},id.lt.${beforeCursor.id})`,
+      );
+    }
+    const result = await query.limit(normalizedLimit);
     if (result.error) {
       throw new Error(result.error.message);
     }
@@ -193,8 +206,16 @@ export async function listLegalContentReports(limit = 200): Promise<LegalContent
   }
 
   const store = await readStore();
+  const records = store.records
+    .filter(
+      (record) =>
+        !beforeCursor ||
+        compareCreatorInboxRecordCursors(record, beforeCursor) < 0,
+    )
+    .sort((left, right) => compareCreatorInboxRecordCursors(right, left))
+    .slice(0, normalizedLimit);
   return Promise.all(
-    store.records.slice(0, normalizedLimit).map(async (record) => ({
+    records.map(async (record) => ({
       ...record,
       latestDecision: await getLatestLegalContentReportDecision(record.id),
     })),

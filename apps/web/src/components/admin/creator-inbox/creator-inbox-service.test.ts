@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { applyCreatorInboxAction } from "./creator-inbox-service";
+import { applyCreatorInboxAction, fetchCreatorInboxPage } from "./creator-inbox-service";
 
 describe("creator inbox action service", () => {
   afterEach(() => {
@@ -28,5 +28,17 @@ describe("creator inbox action service", () => {
       action: "mark_treated",
       reason: "Traitement documenté",
     });
+  });
+
+  it("rejects a successful response that is not a real page", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ status: "ok" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchCreatorInboxPage()).rejects.toThrow("Invalid creator inbox page.");
   });
 });

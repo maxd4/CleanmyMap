@@ -1,6 +1,9 @@
 import { runActionQuery } from "@/lib/actions/query";
 import type { CreatorInboxItem } from "@/lib/community/creator-inbox";
-import { loadCreatorInboxItems } from "@/lib/community/creator-inbox-loader";
+import {
+  loadCreatorInboxPage,
+  type CreatorInboxPage,
+} from "@/lib/community/creator-inbox-loader";
 import { listAdminOperationAudit, type AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
 import {
   listModeratableSignalements,
@@ -41,10 +44,16 @@ export type AdminSources = {
     items: ModeratableSignalement[];
     count: number;
   }>;
-  creatorInbox: AdminSource<CreatorInboxItem[]>;
+  creatorInbox: AdminSource<CreatorInboxItem[] | CreatorInboxPage>;
   publishedEntries: AdminSource<PublishedPartnerAnnuaireEntry[]>;
   audit: AdminSource<AdminOperationAuditEntry[]>;
 };
+
+function getCreatorInboxItems(
+  data: CreatorInboxItem[] | CreatorInboxPage,
+): CreatorInboxItem[] {
+  return Array.isArray(data) ? data : data.items;
+}
 
 export type AdminAlert = {
   title: string;
@@ -129,7 +138,7 @@ export async function loadAdminSources(): Promise<AdminSources> {
       readAdminSource(loadPendingActions),
       readAdminSource(loadPendingGroupJoinRequests),
       readAdminSource(loadPendingSignalements),
-      readAdminSource(() => loadCreatorInboxItems()),
+      readAdminSource(() => loadCreatorInboxPage()),
       readAdminSource(() => listPublishedPartnerAnnuaireEntries()),
       readAdminSource(() => listAdminOperationAudit(25)),
     ]);
@@ -191,7 +200,7 @@ export function buildAdminMetricItems(
   sources: AdminSources,
 ): AdminOperationalMetricItem[] {
   const creatorInboxNeedsAttention = isAvailable(sources.creatorInbox)
-    ? getCreatorInboxNeedsAttention(sources.creatorInbox.data)
+    ? getCreatorInboxNeedsAttention(getCreatorInboxItems(sources.creatorInbox.data))
     : null;
   const pendingPublishedEntries = isAvailable(sources.publishedEntries)
     ? getPendingPublishedEntries(sources.publishedEntries.data)
@@ -234,7 +243,8 @@ export function buildAdminMetricItems(
       label: "Réseau à traiter",
       value: combinedCount(networkSources),
       availability: combineAvailability(networkSources),
-      description: "Inbox créateur nécessitant attention et publications pending_admin_review.",
+       description:
+         "Éléments visibles de la page inbox nécessitant attention et publications pending_admin_review.",
     },
     {
       id: "audit-incidents",
@@ -282,12 +292,13 @@ export function buildAdminAlert(sources: AdminSources): AdminAlert {
     sources.actions.data.count +
     sources.groupJoin.data.count +
     sources.signalements.data.count +
-    getCreatorInboxNeedsAttention(sources.creatorInbox.data).length +
+    getCreatorInboxNeedsAttention(getCreatorInboxItems(sources.creatorInbox.data)).length +
     getPendingPublishedEntries(sources.publishedEntries.data).length;
   if (pendingCount > 0) {
     return {
       title: `${pendingCount} élément${pendingCount > 1 ? "s" : ""} à traiter dans les files de modération`,
-      detail: "Le backlog réel des files disponibles nécessite une action administrative.",
+      detail:
+        "Les éléments visibles des files disponibles nécessitent une action administrative ; chargez les pages suivantes pour poursuivre la revue.",
       action: { href: "#moderation-par-bloc", label: "Voir les files" },
     };
   }
@@ -302,7 +313,7 @@ export function buildModerationBlockSummaries(
   sources: AdminSources,
 ): ModerationBlockSummary[] {
   const creatorInboxNeedsAttention = isAvailable(sources.creatorInbox)
-    ? getCreatorInboxNeedsAttention(sources.creatorInbox.data)
+    ? getCreatorInboxNeedsAttention(getCreatorInboxItems(sources.creatorInbox.data))
     : null;
   const pendingPublishedEntries = isAvailable(sources.publishedEntries)
     ? getPendingPublishedEntries(sources.publishedEntries.data)
@@ -327,13 +338,13 @@ export function buildModerationBlockSummaries(
           : null,
       availability: networkAvailability,
       description:
-        "Les demandes liées aux échanges, aux promotions et aux fiches partenaires restent centralisées ici.",
+        "Les demandes liées aux échanges, aux promotions et aux fiches partenaires restent centralisées ici ; le compteur inbox porte sur la page chargée.",
       href: "/admin/services",
       ctaLabel: "Ouvrir la revue",
       accent: "indigo",
       details: [
         creatorInboxNeedsAttention
-          ? `${creatorInboxNeedsAttention.length} éléments de l’inbox créateur à traiter.`
+          ? `${creatorInboxNeedsAttention.length} éléments visibles de l’inbox créateur à traiter.`
           : "Inbox créateur indisponible.",
         pendingPublishedEntries
           ? `${pendingPublishedEntries.length} publications partenaires à revoir.`

@@ -9,9 +9,10 @@ import {
 } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { summarizeCreatorInboxItem, type CreatorInboxItem, type CreatorInboxSource, type CreatorInboxStatus } from "@/lib/community/creator-inbox";
-import { acceptPartnerRequest, acceptPromotionRequest, applyCreatorInboxAction, decideLegalContentReport, fetchCreatorInboxItems, rejectPartnerRequest, rejectPromotionRequest } from "./creator-inbox-service";
+import { acceptPartnerRequest, acceptPromotionRequest, applyCreatorInboxAction, decideLegalContentReport, fetchCreatorInboxPage, rejectPartnerRequest, rejectPromotionRequest } from "./creator-inbox-service";
 import { refreshList } from "./inbox-constants";
 import { getCreatorInboxCopy, PARTNER_CONFIRM_PHRASE, type CreatorInboxLocale } from "./creator-inbox-copy";
+import { useCreatorInboxPagination } from "./use-creator-inbox-pagination";
 import type {
   LegalContentReportDecisionAction,
   LegalContentReportDecisionOrigin,
@@ -19,6 +20,8 @@ import type {
 
 type UseCreatorInboxParams = {
   initialItems: CreatorInboxItem[];
+  initialHasMore?: boolean;
+  initialNextCursor?: string | null;
 };
 
 type Summary = {
@@ -29,11 +32,30 @@ type Summary = {
   legalContentReport: number;
 };
 
-export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
+function resolveInboxMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+  return fallback;
+}
+
+function buildCreatorInboxSummary(items: CreatorInboxItem[]): Summary {
+  return {
+    feedback: items.filter((item) => item.source === "feedback").length,
+    promotion: items.filter((item) => item.source === "promotion").length,
+    partner: items.filter((item) => item.source === "partner").length,
+    event: items.filter((item) => item.source === "event").length,
+    legalContentReport: items.filter((item) => item.source === "legal_content_report").length,
+  };
+}
+
+export function useCreatorInbox({
+  initialItems,
+  initialHasMore = false, initialNextCursor = null,
+}: UseCreatorInboxParams) {
   const { locale } = useSitePreferences();
   const inboxLocale: CreatorInboxLocale = locale === "fr" ? "fr" : "en";
   const copy = getCreatorInboxCopy(inboxLocale);
-
   const [itemsState, setItemsState] = useState(() => ({
     source: initialItems,
     value: initialItems,
@@ -68,18 +90,16 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
   const [partnerConfirm, setPartnerConfirm] = useState("");
   const [partnerReason, setPartnerReason] = useState<Record<string, string>>({});
   const [actionReasons, setActionReasons] = useState<Record<string, string>>({});
+
+  const pagination = useCreatorInboxPagination({
+    setItems,
+    initialHasMore,
+    initialNextCursor,
+    onError: (error) => setErrorMessage(resolveInboxMessage(error, copy.messages.refreshError)),
+  });
   const [promotionReasons, setPromotionReasons] = useState<Record<string, string>>({});
 
-  const summary: Summary = useMemo(
-    () => ({
-      feedback: items.filter((item) => item.source === "feedback").length,
-      promotion: items.filter((item) => item.source === "promotion").length,
-      partner: items.filter((item) => item.source === "partner").length,
-      event: items.filter((item) => item.source === "event").length,
-      legalContentReport: items.filter((item) => item.source === "legal_content_report").length,
-    }),
-    [items],
-  );
+  const summary = useMemo(() => buildCreatorInboxSummary(items), [items]);
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -115,28 +135,25 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
     }).sort((left, right) =>
       sortMode === "priority"
         ? Number(right.priority === "high") - Number(left.priority === "high") ||
-          Date.parse(right.createdAt) - Date.parse(left.createdAt)
-        : Date.parse(right.createdAt) - Date.parse(left.createdAt),
+          Date.parse(right.createdAt) - Date.parse(left.createdAt) ||
+          left.source.localeCompare(right.source) ||
+          right.sourceRecordId.localeCompare(left.sourceRecordId)
+        : Date.parse(right.createdAt) - Date.parse(left.createdAt) ||
+          left.source.localeCompare(right.source) ||
+          right.sourceRecordId.localeCompare(left.sourceRecordId),
     );
   }, [items, priorityFilter, query, sortMode, sourceFilter, statusFilter]);
-
-  function resolveMessage(error: unknown, fallback: string): string {
-    if (error instanceof Error && error.message.trim().length > 0) {
-      return error.message;
-    }
-    return fallback;
-  }
 
   async function refreshInbox() {
     setRefreshing(true);
     setErrorMessage(null);
     try {
-      const nextItems = await fetchCreatorInboxItems();
-      setItems(nextItems);
+      const page = await fetchCreatorInboxPage();
+      pagination.replacePage(page);
       setSuccessMessage(copy.messages.refreshSuccess);
       window.setTimeout(() => setSuccessMessage(null), 1800);
     } catch (error) {
-      setErrorMessage(resolveMessage(error, copy.messages.refreshError));
+      setErrorMessage(resolveInboxMessage(error, copy.messages.refreshError));
     } finally {
       setRefreshing(false);
     }
@@ -165,7 +182,7 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
       setSuccessMessage(copy.messages.actionSuccess);
       window.setTimeout(() => setSuccessMessage(null), 1800);
     } catch (error) {
-      setErrorMessage(resolveMessage(error, copy.messages.actionError));
+      setErrorMessage(resolveInboxMessage(error, copy.messages.actionError));
     } finally {
       setUpdatingKey(null);
     }
@@ -187,7 +204,7 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
       await acceptPromotionRequest({ requestId: item.sourceRecordId, reason });
       await refreshInbox();
     } catch (error) {
-      setErrorMessage(resolveMessage(error, copy.messages.approvalError));
+      setErrorMessage(resolveInboxMessage(error, copy.messages.approvalError));
     } finally {
       setUpdatingKey(null);
     }
@@ -209,7 +226,7 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
       await rejectPromotionRequest({ requestId: item.sourceRecordId, reason });
       await refreshInbox();
     } catch (error) {
-      setErrorMessage(resolveMessage(error, copy.messages.rejectionError));
+      setErrorMessage(resolveInboxMessage(error, copy.messages.rejectionError));
     } finally {
       setUpdatingKey(null);
     }
@@ -240,7 +257,7 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
       });
       await refreshInbox();
     } catch (error) {
-      setErrorMessage(resolveMessage(error, copy.messages.approvalError));
+      setErrorMessage(resolveInboxMessage(error, copy.messages.approvalError));
     } finally {
       setUpdatingKey(null);
     }
@@ -271,7 +288,7 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
       });
       await refreshInbox();
     } catch (error) {
-      setErrorMessage(resolveMessage(error, copy.messages.rejectionError));
+      setErrorMessage(resolveInboxMessage(error, copy.messages.rejectionError));
     } finally {
       setUpdatingKey(null);
     }
@@ -325,14 +342,10 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
       );
       window.setTimeout(() => setSuccessMessage(null), 2400);
     } catch (error) {
-      setErrorMessage(resolveMessage(error, copy.messages.actionError));
+      setErrorMessage(resolveInboxMessage(error, copy.messages.actionError));
     } finally {
       setUpdatingKey(null);
     }
-  }
-
-  function actionBusy(source: CreatorInboxSource, id: string, action: string) {
-    return updatingKey === `${source}:${id}:${action}`;
   }
 
   return {
@@ -351,6 +364,9 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
     sortMode,
     setSortMode,
     refreshing,
+    loadingNextPage: pagination.loadingNextPage,
+    hasMore: pagination.hasMore,
+    loadNextPage: pagination.loadNextPage,
     refreshInbox,
     partnerConfirm,
     setPartnerConfirm,
@@ -365,7 +381,8 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
     successMessage,
     copiedKey,
     copySummary,
-    actionBusy,
+    actionBusy: (source: CreatorInboxSource, id: string, action: string) =>
+      updatingKey === `${source}:${id}:${action}`,
     applyInboxAction,
     acceptPromotion,
     rejectPromotion,

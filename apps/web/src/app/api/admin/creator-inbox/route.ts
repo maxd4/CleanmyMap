@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getCurrentUserIdentity, requireAdminAccess } from "@/lib/authz";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
-import { loadCreatorInboxItems } from "@/lib/community/creator-inbox-loader";
+import {
+  loadCreatorInboxPage,
+  parseCreatorInboxPageCursor,
+} from "@/lib/community/creator-inbox-loader";
 import {
   actionSchema,
   type DecisionAuditAppender,
@@ -13,15 +16,26 @@ import { handleCreatorInboxPromotion } from "./route.promotion";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request: Request) {
   const access = await requireAdminAccess();
   if (!access.ok) {
     return NextResponse.json({ error: "Forbidden" }, { status: access.status });
   }
 
   try {
-    const items = await loadCreatorInboxItems();
-    return NextResponse.json({ status: "ok", count: items.length, items });
+    const url = new URL(request.url);
+    const rawLimit = url.searchParams.get("limit");
+    const limit = rawLimit === null ? undefined : Number(rawLimit);
+    if (rawLimit !== null && (!Number.isFinite(limit) || !Number.isInteger(limit))) {
+      return NextResponse.json({ error: "Invalid pagination limit" }, { status: 400 });
+    }
+    const cursorValue = url.searchParams.get("cursor");
+    const cursor = parseCreatorInboxPageCursor(cursorValue);
+    if (!cursor) {
+      return NextResponse.json({ error: "Invalid pagination cursor" }, { status: 400 });
+    }
+    const page = await loadCreatorInboxPage({ limit, cursor });
+    return NextResponse.json({ status: "ok", ...page });
   } catch {
     return NextResponse.json(
       { error: "Unable to load creator inbox." },

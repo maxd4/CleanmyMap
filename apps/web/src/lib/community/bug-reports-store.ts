@@ -20,6 +20,10 @@ import {
   writeLocalRecordStore,
 } from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  compareCreatorInboxRecordCursors,
+  type CreatorInboxRecordCursor,
+} from "./creator-inbox-pagination";
 
 const STORE_FILE = join(
   process.cwd(),
@@ -319,23 +323,34 @@ export async function appendCommunityBugReport(params: {
 
 export async function listCommunityBugReports(
   limit = 100,
+  beforeCursor?: CreatorInboxRecordCursor | null,
 ): Promise<BugReportRecord[]> {
   assertPersistenceAvailable("community_bug_reports");
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    return readSupabaseRecords(
-      getSupabaseServerClient(true)
+    let query = getSupabaseServerClient(true)
         .from("community_bug_reports")
         .select(SUPABASE_BUG_REPORT_COLUMNS)
         .order("created_at", { ascending: false })
-        .limit(normalizedLimit),
-      fromSupabaseRow,
-    );
+        .order("id", { ascending: false });
+    if (beforeCursor) {
+      query = query.or(
+        `created_at.lt.${beforeCursor.createdAt},and(created_at.eq.${beforeCursor.createdAt},id.lt.${beforeCursor.id})`,
+      );
+    }
+    return readSupabaseRecords(query.limit(normalizedLimit), fromSupabaseRow);
   }
 
   const store = await readStore();
-  return store.records.slice(0, normalizedLimit);
+  return store.records
+    .filter(
+      (record) =>
+        !beforeCursor ||
+        compareCreatorInboxRecordCursors(record, beforeCursor) < 0,
+    )
+    .sort((left, right) => compareCreatorInboxRecordCursors(right, left))
+    .slice(0, normalizedLimit);
 }
 
 export async function listCommunityBugReportsForUser(params: {

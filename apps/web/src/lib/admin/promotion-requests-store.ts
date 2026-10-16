@@ -14,6 +14,10 @@ import {
 } from "@/lib/persistence/local-record-store";
 import type { AppProfile } from "@/lib/profiles";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  compareCreatorInboxRecordCursors,
+  type CreatorInboxRecordCursor,
+} from "@/lib/community/creator-inbox-pagination";
 
 type PromotionRequestTargetRole = "elu" | "admin";
 
@@ -225,12 +229,19 @@ export async function appendPromotionRequest(params: {
 async function loadPromotionRequestsFromSupabase(
   limit: number,
   submittedByUserId?: string,
+  beforeCursor?: CreatorInboxRecordCursor | null,
 ): Promise<PromotionRequestRecord[]> {
-  const baseQuery = getSupabaseServerClient(true)
+  let baseQuery = getSupabaseServerClient(true)
     .from("promotion_requests")
     .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .order("id", { ascending: false });
+  if (beforeCursor) {
+    baseQuery = baseQuery.or(
+      `created_at.lt.${beforeCursor.createdAt},and(created_at.eq.${beforeCursor.createdAt},id.lt.${beforeCursor.id})`,
+    );
+  }
+  baseQuery = baseQuery.limit(limit);
   const result = submittedByUserId
     ? await baseQuery.eq("submitted_by_user_id", submittedByUserId)
     : await baseQuery;
@@ -242,16 +253,24 @@ async function loadPromotionRequestsFromSupabase(
 
 export async function listPromotionRequests(
   limit = 100,
+  beforeCursor?: CreatorInboxRecordCursor | null,
 ): Promise<PromotionRequestRecord[]> {
   assertPersistenceAvailable("promotion_requests");
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    return loadPromotionRequestsFromSupabase(normalizedLimit);
+    return loadPromotionRequestsFromSupabase(normalizedLimit, undefined, beforeCursor);
   }
 
   const store = await readStore();
-  return store.records.slice(0, normalizedLimit);
+  return store.records
+    .filter(
+      (record) =>
+        !beforeCursor ||
+        compareCreatorInboxRecordCursors(record, beforeCursor) < 0,
+    )
+    .sort((left, right) => compareCreatorInboxRecordCursors(right, left))
+    .slice(0, normalizedLimit);
 }
 
 /**

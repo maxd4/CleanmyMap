@@ -25,6 +25,10 @@ import { appendPublishedPartnerAnnuaireEntry } from "./published-annuaire-entrie
 import {
   getSupabaseServerClient,
 } from "@/lib/supabase/server";
+import {
+  compareCreatorInboxRecordCursors,
+  type CreatorInboxRecordCursor,
+} from "@/lib/community/creator-inbox-pagination";
 
 const STORE_FILE = join(
   process.cwd(),
@@ -266,24 +270,35 @@ export async function appendPartnerOnboardingRequest(params: {
 
 export async function listPartnerOnboardingRequests(
   limit = 100,
+  beforeCursor?: CreatorInboxRecordCursor | null,
 ): Promise<PartnerOnboardingRequestRecord[]> {
   assertPersistenceAvailable("partner_onboarding_requests");
 
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    return readSupabaseRecords(
-      getSupabaseServerClient(true)
+    let query = getSupabaseServerClient(true)
         .from("partner_onboarding_requests")
         .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
         .order("created_at", { ascending: false })
-        .limit(normalizedLimit),
-      fromSupabaseRow,
-    );
+        .order("id", { ascending: false });
+    if (beforeCursor) {
+      query = query.or(
+        `created_at.lt.${beforeCursor.createdAt},and(created_at.eq.${beforeCursor.createdAt},id.lt.${beforeCursor.id})`,
+      );
+    }
+    return readSupabaseRecords(query.limit(normalizedLimit), fromSupabaseRow);
   }
 
   const store = await readStore();
-  return store.records.slice(0, normalizedLimit);
+  return store.records
+    .filter(
+      (record) =>
+        !beforeCursor ||
+        compareCreatorInboxRecordCursors(record, beforeCursor) < 0,
+    )
+    .sort((left, right) => compareCreatorInboxRecordCursors(right, left))
+    .slice(0, normalizedLimit);
 }
 
 export async function getPartnerOnboardingRequestById(

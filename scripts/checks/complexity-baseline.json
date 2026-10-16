@@ -537,15 +537,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/components/admin/feedback-requests-panel.tsx",
-      "line": 237,
-      "category": "React/JSX",
-      "ceiling": 26,
-      "status": "LEGACY",
-      "functionIdentity": "callback:filteredItems . map:0:#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/components/admin/free-plan-services-panel.tsx",
       "line": 42,
       "category": "React/JSX",
@@ -3000,15 +2991,6 @@
       "ceiling": 346,
       "status": "LEGACY",
       "functionIdentity": "named:EnvironmentalImpactCapturePanel#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/admin/feedback-requests-panel.tsx",
-      "line": 42,
-      "category": "React/JSX",
-      "ceiling": 278,
-      "status": "LEGACY",
-      "functionIdentity": "named:FeedbackRequestsPanel#1"
     },
     {
       "metric": "functionLength",

@@ -51,8 +51,17 @@ vi.mock("@/lib/community/creator-inbox", () => ({
   buildPromotionInboxItem: buildPromotionInboxItemMock,
 }));
 
+const loadCreatorInboxPageMock = vi.hoisted(() => vi.fn());
+
 vi.mock("@/lib/community/creator-inbox-loader", () => ({
-  loadCreatorInboxItems: vi.fn(),
+  loadCreatorInboxPage: loadCreatorInboxPageMock,
+  parseCreatorInboxPageCursor: vi.fn(() => ({
+    feedback: null,
+    promotion: null,
+    partner: null,
+    legal_content_report: null,
+    event: null,
+  })),
 }));
 
 const feedbackRecord = {
@@ -715,5 +724,57 @@ describe("PATCH /api/admin/creator-inbox", () => {
 
     expect(response.status).toBe(403);
     expect(getCommunityBugReportByIdMock).not.toHaveBeenCalled();
+  });
+
+  it("returns a bounded page and its continuation cursor for administrators", async () => {
+    loadCreatorInboxPageMock.mockResolvedValueOnce({
+      items: [{ id: "feedback-1" }],
+      count: 1,
+      hasMore: true,
+      nextCursor: "next-page",
+    });
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/admin/creator-inbox?limit=2"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(loadCreatorInboxPageMock).toHaveBeenCalledWith({
+      limit: 2,
+      cursor: {
+        feedback: null,
+        promotion: null,
+        partner: null,
+        legal_content_report: null,
+        event: null,
+      },
+    });
+    await expect(response.json()).resolves.toMatchObject({
+      status: "ok",
+      count: 1,
+      hasMore: true,
+      nextCursor: "next-page",
+    });
+  });
+
+  it("rejects malformed page sizes instead of reading a misleading page", async () => {
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/admin/creator-inbox?limit=not-a-number"),
+    );
+
+    expect(response.status).toBe(400);
+    expect(loadCreatorInboxPageMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses paginated inbox reads without administrator access", async () => {
+    requireCreatorAccessMock.mockResolvedValueOnce({ ok: false, status: 403 });
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/admin/creator-inbox?limit=2"),
+    );
+
+    expect(response.status).toBe(403);
+    expect(loadCreatorInboxPageMock).not.toHaveBeenCalled();
   });
 });

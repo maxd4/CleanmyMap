@@ -8,10 +8,16 @@ import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
 
 type CreatorInboxPanelProps = {
   initialItems: CreatorInboxItem[];
+  initialHasMore?: boolean;
+  initialNextCursor?: string | null;
 };
 
-export function CreatorInboxPanel({ initialItems }: CreatorInboxPanelProps) {
-  const inbox = useCreatorInbox({ initialItems });
+export function CreatorInboxPanel({
+  initialItems,
+  initialHasMore,
+  initialNextCursor,
+}: CreatorInboxPanelProps) {
+  const inbox = useCreatorInbox({ initialItems, initialHasMore, initialNextCursor });
 
   return (
     <AdminPanelShell
@@ -23,7 +29,7 @@ export function CreatorInboxPanel({ initialItems }: CreatorInboxPanelProps) {
             {inbox.items.length} {inbox.copy.panel.itemCountSuffix}
           </p>
           <p className="cmm-text-caption font-medium text-slate-600">
-            F: {inbox.summary.feedback} · P: {inbox.summary.promotion} · S: {inbox.summary.partner} · L: {inbox.summary.legalContentReport}
+            {inbox.copy.panel.pageCountLabel}: F: {inbox.summary.feedback} · P: {inbox.summary.promotion} · S: {inbox.summary.partner} · L: {inbox.summary.legalContentReport}
           </p>
         </div>
       }
@@ -120,6 +126,18 @@ export function CreatorInboxPanel({ initialItems }: CreatorInboxPanelProps) {
             </div>
           )}
         </div>
+        {inbox.hasMore ? (
+          <button
+            type="button"
+            onClick={() => void inbox.loadNextPage()}
+            disabled={inbox.loadingNextPage}
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 cmm-text-small font-semibold cmm-text-secondary hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {inbox.loadingNextPage
+              ? inbox.copy.panel.loadingNextPageLabel
+              : inbox.copy.panel.nextPageLabel}
+          </button>
+        ) : null}
       </div>
     </AdminPanelShell>
   );

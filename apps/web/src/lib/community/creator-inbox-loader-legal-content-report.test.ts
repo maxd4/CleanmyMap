@@ -48,11 +48,13 @@ describe("creator inbox loader legal content integration", () => {
     ]);
     getSupabaseServerClientMock.mockReturnValue({
       from: () => ({
-        select: () => ({
-          order: () => ({
+        select: () => {
+          const query = {
+            order: () => query,
             limit: async () => ({ data: [], error: null }),
-          }),
-        }),
+          };
+          return query;
+        },
       }),
     });
   });
@@ -61,7 +63,7 @@ describe("creator inbox loader legal content integration", () => {
     const { loadCreatorInboxItems } = await import("./creator-inbox-loader");
     const items = await loadCreatorInboxItems();
 
-    expect(listLegalReportsMock).toHaveBeenCalledWith(200);
+    expect(listLegalReportsMock).toHaveBeenCalledWith(51, null);
     expect(items).toHaveLength(1);
     expect(items[0]?.source).toBe("legal_content_report");
     expect(items[0]?.canReview).toBe(true);

@@ -35,14 +35,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "b60caef890a905b3",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les deux panneaux partagent volontairement uniquement leur enveloppe de présentation admin, mais leurs workflows restent distincts : feedback qualité d'un côté, revue de promotion de rôle de l'autre. Une extraction paramétrée couplerait des contrats métier, des payloads et des décisions d'administration qui doivent rester explicites.",
-      "evidence": "apps/web/src/components/admin/feedback-requests-panel.tsx:149-161 et apps/web/src/components/admin/promotion-requests-panel.tsx:141-153 ; les tests associés vérifient des payloads et des contrats différents dans feedback-requests-panel.test.tsx:28-49 et promotion-requests-panel.test.tsx:29-56.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "65e4850ea310062a",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les gardes d'accès restent autonomes aux frontières d'administration et de publication ; leur répétition explicite facilite la revue des politiques AuthN/AuthZ sans moteur générique opaque.",
@@ -1087,38 +1079,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre components/admin/creator-inbox/inbox-filter-bar.tsx:67-74 ; symboles: SOURCE_FILTERS, option, value, label et components/partners/onboarding/sections/general-info-section.tsx:53-60 ; symboles: TYPE_OPTIONS, option, value, label reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
       "evidence": "apps/web/src/components/admin/creator-inbox/inbox-filter-bar.tsx:67-74 et apps/web/src/components/partners/onboarding/sections/general-info-section.tsx:53-60 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "4fd9bbe62674fe9b",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/admin/feedback-requests-panel.tsx:106-113 ; symboles: JSON, stringify, requestPayload, catch et components/admin/promotion-requests-panel.tsx:89-96 ; symboles: catch, error, throw, Impossible reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/admin/feedback-requests-panel.tsx:106-113 et apps/web/src/components/admin/promotion-requests-panel.tsx:89-96 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "a6600717b6e39a6a",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/admin/feedback-requests-panel.tsx:185-194 ; symboles: label, className, space, span et components/admin/promotion-requests-panel.tsx:165-174 ; symboles: label, className, block, space reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/admin/feedback-requests-panel.tsx:185-194 et apps/web/src/components/admin/promotion-requests-panel.tsx:165-174 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "29c0a410b82c86eb",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/admin/feedback-requests-panel.tsx:226-245 ; symboles: span, Collaborations, summary, collaboration et components/admin/promotion-requests-panel.tsx:179-198 ; symboles: label, errorMessage, className, rounded reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/admin/feedback-requests-panel.tsx:226-245 et apps/web/src/components/admin/promotion-requests-panel.tsx:179-198 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "256a376f33407cf5",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/admin/feedback-requests-panel.tsx:293-304 ; symboles: href, mailto, item, submittedByEmail et components/admin/promotion-requests-panel.tsx:223-235 ; symboles: href, mailto, item, submittedByEmail reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/admin/feedback-requests-panel.tsx:293-304 et apps/web/src/components/admin/promotion-requests-panel.tsx:223-235 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
     },
     {
