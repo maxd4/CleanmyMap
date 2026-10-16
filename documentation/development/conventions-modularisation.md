@@ -144,6 +144,41 @@ substantiellement du code, répondre à cette question :
    ajouterait davantage d'indirection, d'exports, de couplage ou de navigation
    que de cohésion, testabilité ou clarté.
 
+#### Décision obligatoire et vérification finale
+
+Avant la première écriture substantielle, consigner dans le compte rendu de la
+tâche l'option `EXTEND_EXISTING`, `CREATE_MODULE` ou `RESTRUCTURE_FIRST`, avec
+la responsabilité apportée, l'owner, la taille et la croissance attendue du
+fichier cible, ses responsabilités existantes, puis les invariants, effets,
+consommateurs, état, lifecycle et tests propres à la nouvelle responsabilité.
+Ces identifiants décrivent une décision de conception ; ils ne constituent ni
+un statut persistant ni un nouveau contrôle de qualité.
+
+Après l'implémentation, vérifier la taille avant/après, les responsabilités
+nouvelles, les fonctions et unités de logique touchées, les imports,
+consommateurs et duplications, ainsi que l'absence d'un monolithe déplacé dans
+un helper. Si une responsabilité autonome est apparue dans l'owner existant,
+réorganiser la zone dans le même lot avant sa clôture. Pour un changement
+substantiel, le compte rendu final utilise le bloc court
+`PREVENTIVE_MODULARITY_REVIEW` ; il reste éphémère et ne crée pas de registre.
+
+#### Exemples de décisions
+
+- **A — `CREATE_MODULE`** : un composant de 350 lignes doit gérer une
+  synchronisation réseau indépendante et sa reprise. Créer ou réutiliser le
+  service ou hook approprié plutôt que d'ajouter cette responsabilité au JSX
+  principal.
+- **B — `EXTEND_EXISTING`** : un module de 420 lignes reçoit une validation de
+  quelques lignes qui relève directement de son contrat actuel. La conserver
+  localement si la cohésion et la complexité restent maîtrisées.
+- **C — `RESTRUCTURE_FIRST`** : un fichier mélange parsing, métier,
+  persistance et réponse HTTP, et la nouvelle fonctionnalité ajouterait une
+  responsabilité supplémentaire. Identifier les owners puis intégrer la
+  fonctionnalité dans la couche appropriée avant de poursuivre.
+- **D — ne pas surmodulariser** : une fonction algorithmique cohésive de 120
+  lignes, testée et sans frontière indépendante, reste en place. Ne pas la
+  fragmenter artificiellement pour satisfaire un objectif de taille.
+
 Les seuils préventifs (`>=300` lignes runtime et `>=600` lignes de test) sont
 des signaux pour approfondir cette analyse, pas des déclencheurs de création
 de fichier. Une extension cohésive peut rester dans un fichier long ; une

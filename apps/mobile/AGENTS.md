@@ -74,6 +74,23 @@ essentiels restent présents tant qu'une décision d'architecture explicite ne
 les retire pas simultanément avec les contrats, la documentation et les
 consommateurs concernés.
 
+## Modularité préventive mobile
+
+Avant d'ajouter une fonctionnalité substantielle, décider `EXTEND_EXISTING`,
+`CREATE_MODULE` ou `RESTRUCTURE_FIRST` après avoir distingué l'écran, la
+navigation, l'état et le lifecycle, l'accès natif, la synchronisation et la
+logique métier. Vérifier la taille et la croissance du fichier cible, ainsi
+que les invariants, effets, consommateurs et tests propres à la responsabilité
+nouvelle. Une responsabilité autonome rejoint son owner définitif ; elle ne
+doit pas grossir un écran ou un store historique par commodité.
+
+Les modèles, services et contrats web/backend canoniques restent les owners
+préférés. Ne pas créer un second modèle mobile ou une abstraction générique
+pour obtenir une séparation de fichiers artificielle. Après l'implémentation,
+relire les tailles avant/après, les composants, hooks, services et effets
+touchés, puis vérifier qu'aucune responsabilité autonome n'a été oubliée ni
+qu'un monolithe n'a simplement été déplacé dans un helper.
+
 ## Identité et accès
 
 - Clerk est l'identité canonique web et mobile ;

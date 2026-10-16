@@ -687,6 +687,15 @@ plutôt qu'une implémentation monolithique suivie d'un chantier de découpage.
 Cette obligation n'impose ni fichier miroir, ni micro-module, ni nouvelle
 source de vérité lorsque la frontière serait artificielle.
 
+La décision doit utiliser l'un des identifiants de compte rendu suivants :
+`EXTEND_EXISTING`, `CREATE_MODULE` ou `RESTRUCTURE_FIRST`. Avant l'écriture,
+le prompt doit faire examiner la taille et la croissance attendue du fichier
+cible, ses responsabilités déjà présentes, ainsi que les invariants, effets,
+consommateurs, état, lifecycle et tests propres à la responsabilité nouvelle.
+Après l'implémentation, le compte rendu doit recontrôler ces éléments et
+indiquer explicitement toute frontière autonome oubliée ou toute croissance
+conservée dans l'owner existant.
+
 Le prompt doit également demander :
 
 1. la revue des fonctions, méthodes, composants et handlers nouveaux,
@@ -725,6 +734,14 @@ responsabilités de modules claires
 Cette STOP CONDITION complète les critères généraux de clôture ci-dessous ;
 la méthode détaillée et les critères d'analyse restent dans la convention
 canonique de modularisation.
+
+Pour un changement substantiel, le compte rendu final ajoute un bloc court
+`PREVENTIVE_MODULARITY_REVIEW` indiquant les modules examinés, la décision
+retenue pour chaque responsabilité nouvelle, les tailles avant/après, les
+modules autonomes créés le cas échéant, la justification d'une croissance
+conservée et l'absence de frontière autonome oubliée ou la réserve restante.
+Ce bloc reste dans le compte rendu de la tâche et ne devient pas un artefact
+persistant du dépôt.
 
 ## 16. Dead code, legacy et suppressions
 
@@ -912,7 +929,7 @@ PUSH_CANDIDATE  = refs et ranges réellement transmis par le protocole pre-push
                   Git, exclusivement depuis ses arguments et son stdin
 ```
 
-Le runner `audit:quality` est une analyse non bloquante du checkout partagé :
+Le runner `audit:quality` est une analyse non bloquante du checkout canonique :
 il capture le SHA au démarrage sans exiger `HEAD == origin/main` ni un
 worktree propre, conserve les échecs de chaque engine et publie une provenance
 par engine (`COMMITTED_SNAPSHOT` ou `WORKTREE_LIVE`). Une modification pendant

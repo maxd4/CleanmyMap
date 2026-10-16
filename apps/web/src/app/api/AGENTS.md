@@ -90,6 +90,14 @@ normale. La règle détaillée est documentée dans
 
 ## Routes API modulaires dès la conception
 
+Avant d'ajouter une responsabilité substantielle à une route, décider
+`EXTEND_EXISTING`, `CREATE_MODULE` ou `RESTRUCTURE_FIRST` en examinant la taille
+et la croissance du handler, ses responsabilités déjà présentes, ainsi que
+les invariants, effets, consommateurs, reprise et tests propres à la nouvelle
+logique. Une responsabilité métier autonome rejoint son service ou owner
+canonique dès l'implémentation ; elle ne doit pas grossir `route.ts` parce que
+celui-ci est le point d'entrée historique.
+
 - `route.ts` reste prioritairement une frontière HTTP/Next et non le conteneur
   de tout le domaine ;
 - une route simple peut rester dans un fichier ;
@@ -115,6 +123,11 @@ normale. La règle détaillée est documentée dans
   contrats publics ;
 - les tests de route continuent à couvrir le contrat HTTP public même si
   l'implémentation devient modulaire.
+
+Après l'implémentation, vérifier les tailles avant/après, les handlers et
+fonctions touchés, les imports et consommateurs, la séparation transport /
+AuthN-AuthZ / validation / métier / effets, et l'absence de logique métier
+autonome oubliée ou de monolithe simplement déplacé dans un helper.
 
 ## Tests de frontière
 

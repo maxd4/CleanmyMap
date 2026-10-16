@@ -80,6 +80,28 @@ Avant une modification :
   ancienne version Git sur une entrée utilisateur explicitement fournie pour le
   lot courant.
 
+### Décision préventive obligatoire avant d’écrire du code
+
+Pour toute nouvelle fonctionnalité ou modification substantielle, décider avant
+la première écriture :
+
+1. la responsabilité ajoutée ou modifiée ;
+2. son owner canonique actuel ;
+3. les responsabilités déjà présentes dans le fichier cible ;
+4. sa taille actuelle et sa proximité avec la zone préventive ;
+5. la croissance approximative introduite ;
+6. ses invariants, effets, consommateurs, état, lifecycle et tests propres ;
+7. s’il faut **`EXTEND_EXISTING`**, **`CREATE_MODULE`** ou
+   **`RESTRUCTURE_FIRST`**.
+
+Une responsabilité autonome rejoint directement son module définitif ; elle ne
+doit pas grossir un point d’entrée historique par commodité. Cette décision est
+une trace de conception dans le compte rendu Codex, pas un nouveau statut, une
+baseline ou un contrôle bloquant. Elle est recontrôlée après l’implémentation
+sur les tailles avant/après, les nouvelles responsabilités, les fonctions et
+les dépendances ; une frontière autonome découverte après coup est traitée
+dans le même lot avant sa clôture.
+
 Toujours distinguer :
 
 ```text
@@ -138,7 +160,7 @@ Le workflow courant est `MAIN-ONLY / MULTI-WRITER COORDONNÉ`.
   relus et réconciliés explicitement ;
 - aucun nouveau worktree, clone, branche de chantier, claim ou coordinateur
   persistant n’est créé pour le workflow normal ;
-- un checkout partagé peut rester dirty, contenir des fichiers untracked, des
+- le checkout canonique peut rester dirty, contenir des fichiers untracked, des
   commits locaux non publiés ou évoluer pendant une analyse ; ces conditions
   sont normales en multi-writer et ne bloquent pas une lecture ou une
   validation indépendante ;
@@ -430,6 +452,14 @@ consommateur. Les nouvelles frontières doivent rester compatibles avec les
 contrats AuthN/AuthZ, serveur/client, persistance et présentation existants.
 La convention détaillée, ses exemples et sa vérification vivent dans
 `documentation/development/conventions-modularisation.md`.
+
+Les seuils de surveillance restent ceux du contrôle canonique : runtime à
+partir de 300 lignes, tests à partir de 600 lignes, et revue qualitative pour
+data/config ; REVIEW reste au-delà de 500 lignes ou 40 KiB pour le runtime,
+au-delà de 1 000 lignes ou 50 KiB pour les tests, et selon les seuils existants
+pour data/config. Ce sont des signaux de revue, jamais des déclencheurs
+automatiques de découpage. Une croissance fonctionnelle significative dans la
+zone préventive exige toutefois une décision explicite avant acceptation.
 
 La réduction de la taille d'un fichier n'est jamais une preuve suffisante de
 modularisation. Toute création, modification substantielle, extraction ou

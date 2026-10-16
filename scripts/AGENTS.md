@@ -21,6 +21,21 @@ identique déjà réussie sur le même SHA sans justification liée au candidat 
 réserver les audits globaux aux changements transversaux. La relecture de
 `main`, des règles scoped, du code et des tests concernés reste obligatoire.
 
+### Modularité préventive des scripts
+
+Avant d'ajouter un traitement substantiel à un script, décider
+`EXTEND_EXISTING`, `CREATE_MODULE` ou `RESTRUCTURE_FIRST` en distinguant
+l'orchestration CLI, le parsing, le traitement métier, les accès filesystem,
+les processus externes et les diagnostics. Vérifier la taille et la croissance
+du fichier, son owner, ses consommateurs, ses effets et ses tests. Une
+responsabilité autonome rejoint directement son module définitif ; elle ne doit
+pas grossir un runner historique ni être déplacée intacte dans un helper.
+
+Après l'implémentation, relire les tailles avant/après, les fonctions et
+processus touchés, les imports et consommateurs, puis vérifier qu'aucune
+frontière autonome n'a été oubliée. Les seuils de qualité restent des signaux
+de revue : cette règle ne crée ni nouveau seuil bloquant ni nouvelle baseline.
+
 ## Modèle canonique de développement
 
 `MAIN-ONLY / MULTI-WRITER COORDONNÉ` est le workflow CURRENT pour les scripts
@@ -62,7 +77,7 @@ guards CURRENT.
 
 ## Portée Git des contrôles
 
-### Audits quality en checkout partagé
+### Audits quality dans le checkout canonique
 
 `npm run audit:quality -- <mode>` peut démarrer dans un checkout dirty ou
 concurrent, avec des fichiers untracked, des commits locaux non publiés ou

@@ -125,6 +125,15 @@ Dans le rapport, classifier tout blocage parmi `AUTH_SESSION`,
 
 ## Modularité préventive web
 
+Avant d'écrire une fonctionnalité substantielle ou d'ajouter une responsabilité
+à un fichier web, décider explicitement `EXTEND_EXISTING`, `CREATE_MODULE` ou
+`RESTRUCTURE_FIRST` après avoir vérifié la taille et la croissance attendue du
+fichier, ses responsabilités existantes, ainsi que les invariants, effets,
+consommateurs, état, lifecycle et tests propres à la nouvelle responsabilité.
+Une responsabilité autonome rejoint directement son owner définitif ; elle ne
+doit pas être ajoutée au composant, hook ou point d'entrée historique par seule
+commodité.
+
 - avant l'implémentation d'une fonctionnalité substantielle, identifier sa
   responsabilité, son owner canonique, les responsabilités déjà présentes,
   les consommateurs et les frontières d'effets ; décider explicitement entre
@@ -162,6 +171,12 @@ Dans le rapport, classifier tout blocage parmi `AUTH_SESSION`,
 La modularisation utile fait partie de l'implémentation de la fonctionnalité ;
 elle n'est pas un chantier facultatif à reporter après livraison lorsque les
 frontières sont déjà prévisibles.
+
+Après l'implémentation, relire les tailles avant/après, les responsabilités
+nouvelles, les fonctions et composants touchés, les imports et consommateurs,
+ainsi que la séparation Server/Client. Vérifier qu'aucune responsabilité
+autonome n'a été oubliée et qu'aucun monolithe n'a seulement été déplacé dans
+un hook, controller, helper ou sous-composant.
 
 Lorsqu'un lot a explicitement pour objectif de modulariser un fichier
 top-heavy, la modularisation n'est terminée que si le fichier atteint au plus

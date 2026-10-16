@@ -37,6 +37,17 @@ Les artefacts générés doivent être écrits dans l'emplacement prévu par le
 script ou dans un dossier technique existant (`artifacts/`, `backups/` ou autre
 chemin documenté), jamais à la racine par commodité.
 
+## Modularité préventive des scripts web
+
+Avant d'ajouter un traitement substantiel, décider `EXTEND_EXISTING`,
+`CREATE_MODULE` ou `RESTRUCTURE_FIRST` en distinguant orchestration CLI,
+parsing, traitement métier, filesystem, processus externes et diagnostics.
+Vérifier la taille et la croissance du script, son owner, ses consommateurs,
+effets et tests. Après l'écriture, relire les tailles avant/après et vérifier
+qu'aucune responsabilité autonome n'a été oubliée ni déplacée intacte dans un
+helper ; ces seuils restent des signaux de revue et ne créent pas de baseline
+ou de contrôle bloquant supplémentaire.
+
 Validation des scripts lorsque des tests existent :
 
 ```bash
