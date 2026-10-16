@@ -46,7 +46,9 @@ type ActiveSession = {
   id: number;
   owner: object;
   recognition: SpeechRecognitionLike;
+  status: "active" | "stopping";
   deactivate: () => void;
+  markStopping: () => void;
 };
 
 let nextSessionId = 0;
@@ -92,26 +94,49 @@ function unsupportedMessage(locale: "fr" | "en"): string {
     : "Dictation is not available in this browser. You can type the text instead.";
 }
 
-function stopActiveSession(): void {
+function cancelActiveSession(): void {
   const session = activeSession;
   if (!session) return;
 
   activeSession = null;
   session.deactivate();
   try {
-    session.recognition.stop();
+    if (session.recognition.abort) {
+      session.recognition.abort();
+    } else {
+      session.recognition.stop();
+    }
   } catch {
     try {
-      session.recognition.abort?.();
+      session.recognition.stop();
     } catch {
       // The browser may already have ended the session.
     }
   }
 }
 
+function stopActiveSession(): void {
+  const session = activeSession;
+  if (!session || session.status === "stopping") return;
+
+  session.status = "stopping";
+  session.markStopping();
+  try {
+    session.recognition.stop();
+  } catch {
+    cancelActiveSession();
+  }
+}
+
 function stopOwnedSession(owner: object): void {
   if (activeSession?.owner === owner) {
     stopActiveSession();
+  }
+}
+
+function cancelOwnedSession(owner: object): void {
+  if (activeSession?.owner === owner) {
+    cancelActiveSession();
   }
 }
 
@@ -133,6 +158,7 @@ export function useSpeechRecognition({
     getSpeechSupportServerSnapshot,
   );
   const [isListening, setIsListening] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
   const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null);
   const [interimTranscript, setInterimTranscript] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -146,9 +172,13 @@ export function useSpeechRecognition({
     stopOwnedSession(ownerRef.current);
   }, []);
 
+  const cancel = useCallback(() => {
+    cancelOwnedSession(ownerRef.current);
+  }, []);
+
   const stopIfOtherField = useCallback((fieldKey: string) => {
     if (activeSession && activeFieldKey !== fieldKey) {
-      stopActiveSession();
+      cancelActiveSession();
     }
   }, [activeFieldKey]);
 
@@ -160,7 +190,8 @@ export function useSpeechRecognition({
       return;
     }
 
-    stopActiveSession();
+    if (activeSession?.status === "stopping") return;
+    cancelActiveSession();
     let recognition: SpeechRecognitionLike;
     try {
       recognition = new Recognition();
@@ -174,9 +205,16 @@ export function useSpeechRecognition({
       id: sessionId,
       owner: ownerRef.current,
       recognition,
+      status: "active",
       deactivate: () => {
         setIsListening(false);
+        setIsStopping(false);
         setActiveFieldKey(null);
+        setInterimTranscript("");
+      },
+      markStopping: () => {
+        setIsListening(false);
+        setIsStopping(true);
         setInterimTranscript("");
       },
     };
@@ -187,8 +225,9 @@ export function useSpeechRecognition({
     recognition.interimResults = true;
     recognition.continuous = true;
     recognition.onstart = () => {
-      if (!isCurrentSession()) return;
+      if (!isCurrentSession() || session.status === "stopping") return;
       setIsListening(true);
+      setIsStopping(false);
       setActiveFieldKey(fieldKey);
       setInterimTranscript("");
       setErrorMessage(null);
@@ -214,13 +253,7 @@ export function useSpeechRecognition({
     recognition.onerror = (event) => {
       if (!isCurrentSession()) return;
       setErrorMessage(messageForError(event.error, locale));
-      activeSession = null;
-      session.deactivate();
-      try {
-        recognition.abort?.();
-      } catch {
-        // The browser may already have terminated the session.
-      }
+      cancelActiveSession();
     };
     recognition.onend = () => {
       if (!isCurrentSession()) return;
@@ -232,8 +265,7 @@ export function useSpeechRecognition({
       recognition.start();
     } catch {
       if (isCurrentSession()) {
-        activeSession = null;
-        session.deactivate();
+        cancelActiveSession();
         setErrorMessage(messageForError(undefined, locale));
       }
     }
@@ -242,7 +274,7 @@ export function useSpeechRecognition({
   useEffect(() => {
     const owner = ownerRef.current;
     return () => {
-      stopOwnedSession(owner);
+      cancelOwnedSession(owner);
     };
   }, []);
 
@@ -251,10 +283,12 @@ export function useSpeechRecognition({
     errorMessage,
     interimTranscript,
     isListening,
+    isStopping,
     isSupported,
     supportKnown,
     start,
     stop,
+    cancel,
     stopIfOtherField,
     unsupportedMessage: unsupportedMessage(locale),
   };

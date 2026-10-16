@@ -80,10 +80,14 @@ class CardSpeechRecognition {
     this.onend?.();
   }
 
-  emitFinal(transcript: string) {
-    const results = [{ isFinal: true, 0: { transcript } }];
+  emitFinal(transcript: string, resultIndex = 0) {
+    const results = Array.from({ length: resultIndex + 1 }, () => ({
+      isFinal: false,
+      0: { transcript: "" },
+    }));
+    results[resultIndex] = { isFinal: true, 0: { transcript } };
     (results as unknown as { length: number }).length = results.length;
-    this.onresult?.({ resultIndex: 0, results });
+    this.onresult?.({ resultIndex, results });
   }
 }
 
@@ -243,13 +247,73 @@ describe("QuestionnaireCard serialized description validation", () => {
 
     act(() => {
       recognition.emitFinal("ajouté par dictée");
+      recognition.emitFinal("ajouté par dictée");
+      recognition.emitFinal("ajouté par dictée", 1);
     });
-    expect(stepsTextarea?.props.value).toBe("Texte déjà saisi ajouté par dictée");
+    expect(stepsTextarea?.props.value).toBe(
+      "Texte déjà saisi ajouté par dictée ajouté par dictée",
+    );
 
     act(() => {
       stepsTextarea?.props.onChange({ target: { value: "Correction manuelle" } });
     });
     expect(stepsTextarea?.props.value).toBe("Correction manuelle");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("cancels dictation before submission so a late result is not inserted", async () => {
+    CardSpeechRecognition.instances = [];
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        SpeechRecognition: CardSpeechRecognition,
+        location: { href: "http://localhost/sections/feedback" },
+      },
+    });
+    let resolveFetch!: (response: { ok: boolean; json: () => Promise<{ requestId: string }> }) => void;
+    vi.stubGlobal("fetch", vi.fn(() => new Promise((resolve) => {
+      resolveFetch = resolve;
+    })));
+    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(
+        <QuestionnaireCard
+          questionnaire={bugQuestionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+          initialValues={{
+            context: "J'ouvrais la carte",
+            steps: "Texte déjà saisi",
+            expected: "La carte devait s'afficher",
+          }}
+        />,
+      );
+    });
+
+    act(() => {
+      renderer.root.findAllByType("button").find(
+        (button) => button.props.ariaLabel === "Dicter",
+      )?.props.onClick();
+    });
+    const recognition = CardSpeechRecognition.instances[0];
+    const form = renderer.root.findByType("form");
+
+    await act(async () => {
+      void form.props.onSubmit({ preventDefault: () => undefined });
+      await Promise.resolve();
+    });
+    act(() => {
+      recognition.emitFinal("résultat tardif");
+    });
+
+    const stepsTextarea = renderer.root.findAllByType("textarea").find(
+      (textarea) => textarea.props.id === "feedback-bug-steps",
+    );
+    expect(stepsTextarea?.props.value).toBe("Texte déjà saisi");
+
+    await act(async () => {
+      resolveFetch({ ok: true, json: async () => ({ requestId: "req-1" }) });
+    });
   });
 });

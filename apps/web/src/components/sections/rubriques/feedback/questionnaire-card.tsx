@@ -124,12 +124,6 @@ export function QuestionnaireCard({
     }
     setValues((current) => {
       const existingValue = current[fieldKey]?.trimEnd() ?? "";
-      if (
-        existingValue === normalizedTranscript ||
-        existingValue.endsWith(` ${normalizedTranscript}`)
-      ) {
-        return current;
-      }
       return {
         ...current,
         [fieldKey]: existingValue
@@ -150,7 +144,7 @@ export function QuestionnaireCard({
       return;
     }
 
-    speech.stop();
+    speech.cancel();
     setSubmitState("submitting");
     setErrorMessage(null);
 
@@ -355,9 +349,9 @@ export function QuestionnaireCard({
                         : locale === "fr" ? "Dicter" : "Dictate"}
                       ariaControls={fieldId}
                       title={speech.supportKnown && !speech.isSupported ? speech.unsupportedMessage : undefined}
-                      disabled={speech.isListening
+                      disabled={speech.isStopping || (speech.isListening
                         ? false
-                        : !speech.supportKnown || !speech.isSupported || submitState === "submitting"}
+                        : !speech.supportKnown || !speech.isSupported || submitState === "submitting")}
                       onClick={() => {
                         if (fieldIsListening) {
                           speech.stop();
