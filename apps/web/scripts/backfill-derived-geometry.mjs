@@ -134,9 +134,19 @@ export function parseDrawingFromGeoJson(geojson, kindHint = null) {
     const parsed = JSON.parse(geojson);
     if (!parsed || typeof parsed !== "object") return null;
     const geometryType = typeof parsed.type === "string" ? parsed.type : null;
-    const isLine = geometryType === "LineString" || kindHint === "polyline";
-    const isPolygon = geometryType === "Polygon" || kindHint === "polygon";
-    if (!isLine && !isPolygon) return null;
+    const hasExplicitType = parsed.type !== undefined && parsed.type !== null;
+    const drawingKind =
+      geometryType === "LineString"
+        ? "polyline"
+        : geometryType === "Polygon"
+          ? "polygon"
+          : hasExplicitType
+            ? null
+            : kindHint === "polyline" || kindHint === "polygon"
+              ? kindHint
+              : null;
+    if (!drawingKind) return null;
+    const isPolygon = drawingKind === "polygon";
     const points = isPolygon ? parsed.coordinates?.[0] : parsed.coordinates;
     if (!Array.isArray(points)) return null;
     const coordinates = points.map((point) =>
@@ -153,10 +163,23 @@ export function parseDrawingFromGeoJson(geojson, kindHint = null) {
         ? coordinates.slice(0, -1)
         : coordinates;
     const drawing = {
-      kind: isPolygon ? "polygon" : "polyline",
+      kind: drawingKind,
       coordinates: normalized,
     };
     return isRenderableDrawing(drawing) ? drawing : null;
+  } catch {
+    return null;
+  }
+}
+
+function getExplicitGeoJsonKind(geojson) {
+  if (typeof geojson !== "string") return null;
+  try {
+    const parsed = JSON.parse(geojson);
+    if (!parsed || typeof parsed !== "object") return null;
+    if (parsed.type === "LineString") return "polyline";
+    if (parsed.type === "Polygon") return "polygon";
+    return null;
   } catch {
     return null;
   }
@@ -206,6 +229,12 @@ function parsePreparationData(value) {
 function readStoredGeometry(row) {
   const hasGeoJson = typeof row.derived_geometry_geojson === "string";
   const hasDrawingMarker = normalizeLabel(row.notes).includes(DRAWING_NOTE_PREFIX);
+  const explicitGeoJsonKind = getExplicitGeoJsonKind(row.derived_geometry_geojson);
+  const metadataMismatch = Boolean(
+    explicitGeoJsonKind &&
+      row.derived_geometry_kind &&
+      row.derived_geometry_kind !== explicitGeoJsonKind,
+  );
   const derived = parseDrawingFromGeoJson(
     row.derived_geometry_geojson,
     row.derived_geometry_kind ?? null,
@@ -216,6 +245,7 @@ function readStoredGeometry(row) {
     hasStoredGeometry: hasGeoJson || hasDrawingMarker,
     invalidStoredGeometry: (hasGeoJson || hasDrawingMarker) && !derived && !fromNotes,
     fromNotes: Boolean(fromNotes && !derived),
+    metadataMismatch,
   };
 }
 
@@ -345,20 +375,30 @@ function classifyAction(row) {
 
   if (
     source &&
+    !stored.metadataMismatch &&
     hasValidPointGeometry(row) &&
     sourceAcceptsKind(source, "point")
   ) {
     return decision(row, "actions", "PRESERVE");
   }
-  if (source && (!VALID_SOURCES.has(source) || stored.invalidStoredGeometry)) {
-    return decision(row, "actions", stored.invalidStoredGeometry ? "INVALID" : "AMBIGUOUS");
+  if (
+    source &&
+    (!VALID_SOURCES.has(source) || stored.invalidStoredGeometry || stored.metadataMismatch)
+  ) {
+    return decision(
+      row,
+      "actions",
+      stored.invalidStoredGeometry || stored.metadataMismatch ? "INVALID" : "AMBIGUOUS",
+    );
   }
   if (source && drawing && sourceAcceptsKind(source, drawing.kind)) {
     return decision(row, "actions", "PRESERVE");
   }
   if (source && drawing) return decision(row, "actions", "INVALID");
   if (source) return decision(row, "actions", "INVALID");
-  if (stored.invalidStoredGeometry) return decision(row, "actions", "INVALID");
+  if (stored.invalidStoredGeometry || stored.metadataMismatch) {
+    return decision(row, "actions", "INVALID");
+  }
 
   const gpx = preparationData.gpxImport;
   if (
@@ -432,15 +472,23 @@ function classifySignalement(row) {
   const stored = readStoredGeometry(row);
   const drawing = stored.drawing;
 
-  if (source && hasValidPointGeometry(row) && sourceAcceptsKind(source, "point")) {
+  if (
+    source &&
+    !stored.metadataMismatch &&
+    hasValidPointGeometry(row) &&
+    sourceAcceptsKind(source, "point")
+  ) {
     return decision(row, "trash_spotter_spots", "PRESERVE");
   }
 
-  if (source && (!VALID_SOURCES.has(source) || stored.invalidStoredGeometry)) {
+  if (
+    source &&
+    (!VALID_SOURCES.has(source) || stored.invalidStoredGeometry || stored.metadataMismatch)
+  ) {
     return decision(
       row,
       "trash_spotter_spots",
-      stored.invalidStoredGeometry ? "INVALID" : "AMBIGUOUS",
+      stored.invalidStoredGeometry || stored.metadataMismatch ? "INVALID" : "AMBIGUOUS",
     );
   }
   if (source && drawing && sourceAcceptsKind(source, drawing.kind)) {
@@ -448,7 +496,9 @@ function classifySignalement(row) {
   }
   if (source && drawing) return decision(row, "trash_spotter_spots", "INVALID");
   if (source) return decision(row, "trash_spotter_spots", "INVALID");
-  if (stored.invalidStoredGeometry) return decision(row, "trash_spotter_spots", "INVALID");
+  if (stored.invalidStoredGeometry || stored.metadataMismatch) {
+    return decision(row, "trash_spotter_spots", "INVALID");
+  }
 
   const latitude = Number(row.latitude);
   const longitude = Number(row.longitude);

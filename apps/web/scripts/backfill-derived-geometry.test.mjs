@@ -33,6 +33,20 @@ test("distinguishes observed GeoJSON LineString and Polygon types with strict co
   assert.notDeepEqual(polygon?.coordinates[0], polygon?.coordinates.at(-1));
 });
 
+test("gives an explicit GeoJSON type priority over a contradictory hint", () => {
+  const line = parseDrawingFromGeoJson(
+    geojson("LineString", [[2.3, 48.8], [2.4, 48.9]]),
+    "polygon",
+  );
+  const polygon = parseDrawingFromGeoJson(
+    geojson("Polygon", [[[2.3, 48.8], [2.4, 48.8], [2.4, 48.9], [2.3, 48.8]]]),
+    "polyline",
+  );
+
+  assert.equal(line?.kind, "polyline");
+  assert.equal(polygon?.kind, "polygon");
+});
+
 test("uses kindHint only when the observed GeoJSON type is absent", () => {
   const hintedLine = geojson(undefined, [[2.3, 48.8], [2.4, 48.9]]).replace("undefined", "null");
   const line = parseDrawingFromGeoJson(hintedLine, "polyline");
@@ -46,6 +60,30 @@ test("uses kindHint only when the observed GeoJSON type is absent", () => {
     geometry_source: "gpx_import",
   }));
   assert.equal(action.classification, "PRESERVE");
+});
+
+test("rejects an unsupported explicit GeoJSON type even with a valid hint", () => {
+  assert.equal(parseDrawingFromGeoJson(geojson("MultiLineString", [[2.3, 48.8]]), "polyline"), null);
+});
+
+test("classifies contradictory persisted geometry metadata as INVALID without an update", () => {
+  const invalid = classifyGeometryRow(row({
+    derived_geometry_kind: "polygon",
+    derived_geometry_geojson: geojson("LineString", [[2.3, 48.8], [2.4, 48.9]]),
+    geometry_source: "gpx_import",
+  }));
+  const invalidPoint = classifyGeometryRow(row({
+    latitude: 48.8,
+    longitude: 2.3,
+    derived_geometry_kind: "point",
+    derived_geometry_geojson: geojson("LineString", [[2.3, 48.8], [2.4, 48.9]]),
+    geometry_source: "manual",
+  }));
+
+  assert.equal(invalid.classification, "INVALID");
+  assert.equal(invalid.update, null);
+  assert.equal(invalidPoint.classification, "INVALID");
+  assert.equal(invalidPoint.update, null);
 });
 
 test("rejects malformed, invalid and unsupported geometries without proposing updates", () => {
