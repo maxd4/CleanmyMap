@@ -8,13 +8,16 @@ import type {
   FeedbackSectionContext,
   Locale,
 } from "./feedback-section.shared";
+import type { FeedbackType } from "./feedback/questionnaire-config";
 
 export type FeedbackSectionDashboardProps = Pick<
   FeedbackSectionContext,
-  "pagePath" | "supportPrefill" | "initialType"
+  "pagePath" | "supportPrefill"
 > & {
   source: NonNullable<FeedbackSectionProps["source"]>;
   locale: Locale;
+  selectedType: FeedbackType;
+  onSelectType: (type: FeedbackType) => void;
 };
 
 export function FeedbackSectionDashboard(props: FeedbackSectionDashboardProps) {
@@ -29,7 +32,8 @@ function FeedbackDashboardMode(props: FeedbackSectionDashboardProps) {
         locale={props.locale}
         source={props.source}
         supportPrefill={props.supportPrefill}
-        initialType={props.initialType}
+        selectedType={props.selectedType}
+        onSelectType={props.onSelectType}
       />
       <FeedbackHistory locale={props.locale} />
       <FeedbackSectionDashboardGuidance locale={props.locale} fr={props.locale === "fr"} />

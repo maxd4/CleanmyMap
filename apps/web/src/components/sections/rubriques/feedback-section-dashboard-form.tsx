@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { localize, type FeedbackSource, type Locale } from "./feedback-section.shared";
 import { FeedbackSectionDashboardHeader } from "./feedback-section-dashboard-header";
 import { QUESTIONNAIRES, type FeedbackType } from "./feedback/questionnaire-config";
@@ -11,28 +10,19 @@ export function FeedbackSectionDashboardForm({
   locale,
   source,
   supportPrefill,
-  initialType,
+  selectedType,
+  onSelectType,
 }: {
   pagePath: string;
   locale: Locale;
   source: FeedbackSource;
   supportPrefill: Partial<Record<string, string>> | null;
-  initialType: FeedbackType;
+  selectedType: FeedbackType;
+  onSelectType: (type: FeedbackType) => void;
 }) {
-  const [selectedType, setSelectedType] = useState<FeedbackType>(initialType);
   const selectedQuestionnaire =
     QUESTIONNAIRES.find((questionnaire) => questionnaire.id === selectedType) ??
     QUESTIONNAIRES[0];
-
-  function selectQuestionnaire(type: FeedbackType) {
-    setSelectedType(type);
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      url.searchParams.set("type", type);
-      url.hash = type;
-      window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
-    }
-  }
 
   return (
     <>
@@ -64,8 +54,9 @@ export function FeedbackSectionDashboardForm({
                   key={questionnaire.id}
                   id={questionnaire.id === "bug" ? undefined : questionnaire.id}
                   type="button"
+                  data-feedback-type={questionnaire.id}
                   aria-pressed={isSelected}
-                  onClick={() => selectQuestionnaire(questionnaire.id)}
+                  onClick={() => onSelectType(questionnaire.id)}
                   className={[
                     "flex min-h-24 items-start gap-3 rounded-2xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400",
                     isSelected

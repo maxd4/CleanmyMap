@@ -6,6 +6,7 @@ import {
   resolveFeedbackSectionContext,
   type FeedbackSectionProps,
 } from "./feedback-section.shared";
+import type { FeedbackType } from "./feedback/questionnaire-config";
 import { FeedbackSectionDashboard } from "./feedback-section-dashboard";
 import { FeedbackSectionDiscussion } from "./feedback-section-discussion";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -20,16 +21,19 @@ export function FeedbackSection({
     searchParams: initialSearchParams,
   });
   const [context, setContext] = useState(initialContext);
+  const [selectedType, setSelectedType] = useState<FeedbackType>(
+    initialContext.initialType,
+  );
 
   useEffect(() => {
     const synchronizeWithBrowserUrl = () => {
-      setContext(
-        resolveFeedbackSectionContext(pagePathOverride, {
-          pathname: window.location.pathname,
-          searchParams: new URLSearchParams(window.location.search),
-          hash: window.location.hash,
-        }),
-      );
+      const nextContext = resolveFeedbackSectionContext(pagePathOverride, {
+        pathname: window.location.pathname,
+        searchParams: new URLSearchParams(window.location.search),
+        hash: window.location.hash,
+      });
+      setContext(nextContext);
+      setSelectedType(nextContext.initialType);
     };
 
     synchronizeWithBrowserUrl();
@@ -37,10 +41,21 @@ export function FeedbackSection({
     return () => window.removeEventListener("popstate", synchronizeWithBrowserUrl);
   }, [pagePathOverride]);
 
+  function selectFeedbackType(type: FeedbackType) {
+    setSelectedType(type);
+    setContext((current) => ({ ...current, initialType: type }));
+
+    if (typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("type", type);
+    url.hash = type;
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
   const {
     pagePath,
     supportPrefill,
-    initialType,
     source: sourceFromUrl,
   } = context;
 
@@ -64,7 +79,8 @@ export function FeedbackSection({
         source={resolvedSource}
         supportPrefill={supportPrefill}
         locale={locale}
-        initialType={initialType}
+        selectedType={selectedType}
+        onSelectType={selectFeedbackType}
       />
     </SectionShell>
   );
