@@ -27,7 +27,11 @@ test("keeps the 491-finding inventory unique and reconciles the security lot", (
   const tracking = fs.readFileSync(trackingPath, "utf8");
   const securityLot = fs.readFileSync(securityLotPath, "utf8");
   const inventoryIds = inventory.unresolvedIssues.map((issue) => issue.key);
-  const securityIds = uniqueFindingIds(securityLot);
+  const historicalSecurityLot = securityLot.match(
+    /^[\s\S]*?(?=^## Lot L02 —)/m,
+  )?.[0];
+  assert.ok(historicalSecurityLot, "security lot must contain its historical section");
+  const securityIds = uniqueFindingIds(historicalSecurityLot);
   const securitySection = tracking.match(
     /## Lot sécurité historique — 21 findings[\s\S]*?(?=## Lot 2A —)/,
   )?.[0];
