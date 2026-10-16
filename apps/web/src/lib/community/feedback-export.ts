@@ -6,6 +6,14 @@ const MAX_EXPORTED_TEXT_LENGTH = 4_000;
 const PRIVATE_EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
 const PRIVATE_QUERY_PATTERN = /([?&](?:[^\s&#=]+)=(?:[^\s&#]+))/gi;
 const PRIVATE_TOKEN_PATTERN = /\b(?:bearer\s+|(?:token|session|cookie|secret|api[_-]?key)\s*[:=]\s*)[^\s,;]+/gi;
+const UNTRUSTED_EXPORT_DELIMITER_PATTERN =
+  /<\s*\/?\s*(?:user-content|work-instructions)(?=[\s/>])[^>]*>/gi;
+const PUBLIC_FEEDBACK_ANCHORS = new Set([
+  "#bug",
+  "#idea",
+  "#improvement",
+  "#collaboration",
+]);
 
 function redactPrivateText(value: string): string {
   return value
@@ -27,7 +35,7 @@ function normalizeExportText(value: string | null | undefined): string {
 function quoteUntrustedText(value: string | null | undefined): string {
   return normalizeExportText(value)
     .replace(/~~~/g, "~ ~ ~")
-    .replace(/<\/?(?:user-content|work-instructions)>/gi, "[délimiteur neutralisé]");
+    .replace(UNTRUSTED_EXPORT_DELIMITER_PATTERN, "[délimiteur neutralisé]");
 }
 
 function quoteInlineUntrustedText(value: string | null | undefined): string {
@@ -60,7 +68,10 @@ function canonicalRoute(pagePath: string | null): string {
   if (!value.startsWith("/")) return "Non communiquée";
   try {
     const url = new URL(value, "https://cleanmymap.invalid");
-    return `${url.pathname}${url.hash}`;
+    const hash = url.hash.toLocaleLowerCase("en-US");
+    if (!hash) return url.pathname;
+    if (PUBLIC_FEEDBACK_ANCHORS.has(hash)) return `${url.pathname}${hash}`;
+    return `${url.pathname} (ancre non communiquée)`;
   } catch {
     return "Non communiquée";
   }
