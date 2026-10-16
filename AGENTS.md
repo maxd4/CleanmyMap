@@ -157,7 +157,12 @@ Le workflow courant est `MAIN-ONLY / MULTI-WRITER COORDONNÉ`.
   ne doivent jamais écraser silencieusement les changements d’un autre writer ;
 - les modifications sur des fichiers distincts peuvent progresser en parallèle ;
   un même fichier, l’index, `HEAD` et les opérations Git mutantes doivent être
-  relus et réconciliés explicitement ;
+  relus et coordonnés explicitement ; la coordination des références Git ne
+  donne jamais le droit de réconcilier ou d’écraser le contenu dirty d’un autre
+  writer ;
+- tout fichier dirty préexistant qui n’est pas explicitement attribué au lot
+  courant est présumé appartenir à un autre writer ; ne pas le restaurer,
+  supprimer, réécrire, stasher, déplacer ou réconcilier ;
 - aucun nouveau worktree, clone, branche de chantier, claim ou coordinateur
   persistant n’est créé pour le workflow normal ;
 - le checkout canonique peut rester dirty, contenir des fichiers untracked, des
@@ -270,8 +275,13 @@ pas établie.
 - ne jamais utiliser reset destructif, clean, stash ou force-push pour masquer
   un conflit ou un changement étranger ;
 - une erreur étrangère est signalée, pas réparée opportunistement ;
-- si un fichier ou un contrat est modifié concurremment, relire le diff courant
-  et réconcilier explicitement avant de le modifier ou de le committer ;
+- si un chemin ciblé est dirty et n’est pas explicitement attribué au lot
+  courant, ne pas écrire dessus ni reprendre le chantier ; signaler simplement
+  que le chemin est indisponible et préserver son contenu ;
+- la protection des chemins dirty et untracked étrangers est distincte de la
+  synchronisation de l’index, de `HEAD` et des références distantes : seules
+  ces références peuvent être réconciliées pour une publication demandée, sans
+  modifier les fichiers étrangers ;
 - une divergence d’index, de `HEAD` ou de branche distante doit être traitée
   par attente bornée, refetch et intégration non destructive lorsqu'une
   publication ou une réconciliation est demandée ; elle ne bloque pas une

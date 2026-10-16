@@ -825,6 +825,16 @@ relire tout fichier partagé avant modification et sérialiser les mutations de
 l’index, de `HEAD` et des références Git ; aucun writer ne peut écraser
 silencieusement le travail d’un autre.
 
+Tout fichier dirty préexistant qui n’est pas explicitement attribué au lot
+courant est présumé appartenir à un autre writer. Les prompts Codex ne doivent
+donc jamais demander de nettoyer, restaurer, supprimer, stasher, déplacer ou
+réconcilier le dirty state étranger, ni de reprendre son chantier. Un worktree
+dirty n’empêche ni l’analyse, ni les travaux sur des chemins indépendants, ni
+la publication d’un candidat valide ; seuls les contrôles du candidat exact
+peuvent bloquer le lot. La réconciliation autorisée pour publier concerne les
+références Git, l’index et l’ascendance nécessaires, sans modifier les fichiers
+étrangers.
+
 Lorsque l'utilisateur demande explicitement le mode de développement rapide,
 appliquer le protocole borné de
 [`documentation/development/rapid-development-mode.md`](documentation/development/rapid-development-mode.md) :

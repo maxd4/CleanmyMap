@@ -42,8 +42,12 @@ de revue : cette règle ne crée ni nouveau seuil bloquant ni nouvelle baseline.
 et leurs consommateurs : `CleanmyMap-main` reste sur `main`, plusieurs writers
 peuvent travailler sur des fichiers distincts, et les analyses read-only
 peuvent être parallèles. Les fichiers partagés, l’index et les références Git
-doivent être relus et mutés de façon coordonnée. Aucun nouveau worktree, clone,
-claim, coordinateur persistant ou branche de chantier n'est créé.
+doivent être relus et mutés de façon coordonnée. Tout fichier dirty préexistant
+non explicitement attribué au lot courant est présumé appartenir à un autre
+writer : il ne doit pas être nettoyé, restauré, supprimé, réécrit, stashed,
+déplacé ou réconcilié par ce lot. La coordination des références Git ne permet
+pas de modifier le contenu dirty étranger. Aucun nouveau worktree, clone, claim,
+coordinateur persistant ou branche de chantier n'est créé.
 
 Chaque lot fait `git fetch origin main`, vérifie `main`, stage une allowlist,
 valide `STAGED` et crée un commit local dont les fichiers et validations sont
@@ -97,13 +101,16 @@ runner. Les résultats `INFORMATIVE` ne constituent pas une preuve de candidat
 publié et aucun audit ne modifie automatiquement une baseline, une
 justification ou un seuil.
 
-- les contrôles manuels de changements peuvent utiliser la portée `WORKTREE` ;
-  le contrôle de pré-commit doit utiliser exclusivement la portée `STAGED`,
-  issue de `git diff --cached`, et ignorer le dirty state et les untracked
-  étrangers ;
+- les contrôles manuels de changements peuvent utiliser la portée `WORKTREE` :
+  c’est l’état partagé et évolutif du checkout, qui peut inclure le dirty state
+  et les untracked étrangers ; ce scope n’autorise pas à modifier un chemin
+  étranger et ne constitue pas une preuve de commit ou de publication ;
+- le contrôle de pré-commit doit utiliser exclusivement la portée `STAGED`,
+  c’est-à-dire le contenu exact issu de `git diff --cached`, en ignorant le
+  dirty state et les untracked étrangers ;
 - le contrôle de pré-push réel doit utiliser exclusivement la portée
-  `PUSH_CANDIDATE`, construite à partir des refs et des lignes stdin fournies
-  par le protocole pre-push Git ; il doit scanner les ranges effectivement
+  `PUSH_CANDIDATE`, c’est-à-dire les références et commits effectivement
+  transmis par le protocole pre-push Git ; il doit scanner les ranges réellement
   envoyés plutôt que `HEAD`, `origin/main` ou le checkout courant ;
 - chaque check statique du pre-push doit recevoir `--ref=<local-sha>` et lire
   l'arbre Git exact correspondant, sans staged, unstaged, untracked ni commit
@@ -167,11 +174,14 @@ justification ou un seuil.
   un candidat non validé. Les validations larges relèvent de la CI ou d'une
   préparation explicite de release ;
 - `npm run checks:changed` reste l'alias `WORKTREE` du mode `DEVELOPMENT` de
-  développement et ne constitue pas une preuve de publication. Un échec prouvé étranger peut être
-  classé `SKIPPED_PARALLEL_CHANTIER` si `STAGED` et `PUSH_CANDIDATE` restent
-  verts ; une violation du candidat demeure bloquante ;
-- `STAGED` et `PUSH_CANDIDATE` sont distincts : le premier décrit le candidat
-  du commit, le second les refs réellement transmises au push ;
+  développement et ne constitue pas une preuve de publication. Un échec
+  attribuable à un chantier parallèle peut être classé
+  `SKIPPED_PARALLEL_CHANTIER` si `STAGED` et `PUSH_CANDIDATE` restent verts ;
+  une violation du candidat demeure bloquante et aucun fichier étranger ne doit
+  être modifié pour faire disparaître l’échec ;
+- `STAGED` et `PUSH_CANDIDATE` sont distincts : le premier décrit le contenu
+  exact candidat du commit, le second les refs et commits effectivement
+  publiés par le push ;
 - toute modification d'un hook ou d'un script de scope doit préserver ces
   frontières, ne jamais utiliser `git add -A` et tester au moins un fichier du
   candidat et un fichier étranger hors candidat lorsque pertinent.
