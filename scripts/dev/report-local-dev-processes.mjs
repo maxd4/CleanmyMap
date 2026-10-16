@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
+import { resolvePowerShellExecutable } from "./clean-local-temp.mjs";
 
 const repoRoot = resolve(process.cwd());
 const scriptName = "report-local-dev-processes.mjs";
@@ -72,8 +73,13 @@ const psScript = [
   "  ConvertTo-Json -Depth 4",
 ].join("\n");
 
+const powershell = resolvePowerShellExecutable();
+if (!powershell) {
+  throw new Error("HOST_ENVIRONMENT: Windows PowerShell was not found in the trusted system directory.");
+}
+
 const raw = execFileSync(
-  "powershell.exe",
+  powershell,
   ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript],
   {
     cwd: repoRoot,

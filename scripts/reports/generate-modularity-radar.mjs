@@ -13,6 +13,7 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+import { gitExecutable } from "../ci/git-executable.mjs";
 import {
   createRepositoryView,
   parseRepositoryRef,
@@ -54,7 +55,7 @@ const HUMAN_FIELDS = Object.freeze([
 ]);
 
 function git(args, root = REPOSITORY_ROOT) {
-  return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+  return execFileSync(gitExecutable(), args, { cwd: root, encoding: "utf8" }).trim();
 }
 
 export function resolveRadarRef(ref, root = REPOSITORY_ROOT) {

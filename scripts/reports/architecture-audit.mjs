@@ -5,6 +5,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import { gitExecutable } from "../ci/git-executable.mjs";
 import { createRepositoryView, parseRepositoryRef } from "../checks/repository-view.mjs";
 import { collectArchitectureRows } from "../checks/top-heavy-measurement.mjs";
 import { isAboveHard, isAboveReview } from "../checks/top-heavy-policy.mjs";
@@ -33,7 +34,7 @@ const MODULARITY_PLAN = "documentation/architecture/monolith-split-plan.md";
 const ACTION_CREATION_SHELL = "apps/web/src/components/actions/action-creation-shell.tsx";
 
 function git(args, root) {
-  return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+  return execFileSync(gitExecutable(), args, { cwd: root, encoding: "utf8" }).trim();
 }
 
 function isSha(value) {

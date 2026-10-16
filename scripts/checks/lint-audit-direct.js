@@ -4,7 +4,7 @@
  * Script d'audit ESLint qui exécute directement ESLint dans apps/web
  */
 
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -309,13 +309,18 @@ function main() {
   let exitCode = 0;
 
   try {
-    fullOutput = execSync('npx eslint src --max-warnings=1000', {
+    const eslintScript = path.join(webDir, '..', '..', 'node_modules', 'eslint', 'bin', 'eslint.js');
+    if (!fs.statSync(eslintScript).isFile()) {
+      throw new Error(`HOST_ENVIRONMENT: local ESLint was not found at ${eslintScript}; PATH is intentionally not used.`);
+    }
+    fullOutput = execFileSync(process.execPath, [eslintScript, 'src', '--max-warnings=1000'], {
       encoding: 'utf8',
       cwd: webDir,
       stdio: 'pipe'
     });
   } catch (error) {
-    fullOutput = (error.stdout || '') + '\n' + (error.stderr || '');
+    const message = error instanceof Error ? error.message : String(error);
+    fullOutput = `${error.stdout?.toString?.() || ''}\n${error.stderr?.toString?.() || ''}\n${message}`;
     exitCode = error.status || 1;
   }
 

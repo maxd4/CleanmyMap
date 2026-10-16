@@ -8,8 +8,10 @@ import test from "node:test";
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const GUARD_PATH = join(REPO_ROOT, "scripts", "ci", "pre_push_guard.ps1");
 const POLICY_PATH = join(REPO_ROOT, "scripts", "checks", "validation-policy.mjs");
+const VALIDATION_PROCESS_PATH = join(REPO_ROOT, "scripts", "ci", "validation-process.mjs");
 const GUARD_SOURCE = readFileSync(GUARD_PATH, "utf8");
 const POLICY_SOURCE = readFileSync(POLICY_PATH, "utf8");
+const VALIDATION_PROCESS_SOURCE = readFileSync(VALIDATION_PROCESS_PATH, "utf8");
 const POWER_SHELL_COMMAND = process.platform === "win32" ? "powershell.exe" : "pwsh";
 
 function withoutCandidateGitEnvironment(extra = {}) {
@@ -132,6 +134,7 @@ function runGuard({
     writeFileSync(join(testRoot, "apps", "web", "src", "foreign-invalid.test.ts"), "this is not valid TypeScript\n");
   }
   writeFileSync(join(scriptsRoot, "pre_push_guard.ps1"), GUARD_SOURCE);
+  writeFileSync(join(scriptsRoot, "validation-process.mjs"), VALIDATION_PROCESS_SOURCE);
   writeFileSync(join(checksRoot, "validation-policy.mjs"), POLICY_SOURCE);
   writeCommandStub(binRoot, "npm", [
     ...(secretAuditExit === 0

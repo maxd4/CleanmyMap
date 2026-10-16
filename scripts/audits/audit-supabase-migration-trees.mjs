@@ -5,6 +5,7 @@ import {
   createRepositoryView,
   parseRepositoryRef,
 } from "../checks/repository-view.mjs";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 const repoRoot = process.cwd();
 const canonicalDir = "apps/web/supabase/migrations";
@@ -92,7 +93,7 @@ function readHistoricalMigrationContents(repoRoot, baseRef, migrationNames) {
   const contentsByPath = new Map();
   for (const name of migrationNames) {
     const path = `${canonicalDir}/${name}`;
-    const commits = execFileSync("git", ["rev-list", baseRef, "--", path], {
+    const commits = execFileSync(gitExecutable(), ["rev-list", baseRef, "--", path], {
       cwd: repoRoot,
       encoding: "utf8",
     })
@@ -102,7 +103,7 @@ function readHistoricalMigrationContents(repoRoot, baseRef, migrationNames) {
     contentsByPath.set(
       name,
       commits.map((commit) =>
-        normalizeMigrationContent(execFileSync("git", ["show", `${commit}:${path}`], {
+        normalizeMigrationContent(execFileSync(gitExecutable(), ["show", `${commit}:${path}`], {
           cwd: repoRoot,
           encoding: "utf8",
         })),

@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveValidationCommand } from "./validation-process.mjs";
 
 const GITNEXUS_VERSION = "1.6.12";
 const LADYBUG_VERSION = "0.18.3";
@@ -104,7 +105,12 @@ function runNpmScript(directory, scriptName) {
     return;
   }
 
-  execFileSync("npm", ["run", scriptName, "--prefix", directory], {
+  const command = resolveValidationCommand(
+    { executable: "npm", args: ["run", scriptName, "--prefix", directory] },
+    process.platform,
+    process.execPath,
+  );
+  execFileSync(command.executable, command.args, {
     cwd: directory,
     stdio: "inherit",
   });

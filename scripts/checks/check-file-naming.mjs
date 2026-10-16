@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 export const DEFAULT_BASELINE_PATH = "scripts/checks/file-naming-baseline.json";
@@ -199,7 +200,7 @@ export function validateNaming({ trackedFiles, baseline }) {
 }
 
 export function listTrackedFiles(root = repositoryRoot) {
-  return execFileSync("git", ["ls-files", "-z", "--"], { cwd: root })
+  return execFileSync(gitExecutable(), ["ls-files", "-z", "--"], { cwd: root })
     .toString("utf8").split("\0").filter(Boolean).map(normalizePath).sort((left, right) => left.localeCompare(right, "en"));
 }
 

@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { execFileSync } from "node:child_process";
 import ts from "typescript";
+import { gitExecutable } from "../ci/git-executable.mjs";
 import { createRepositoryView, parseRepositoryRef } from "../checks/repository-view.mjs";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
@@ -38,7 +39,7 @@ function createSurfaces(root) {
 }
 
 function git(args, cwd = repositoryRoot) {
-  return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+  return execFileSync(gitExecutable(), args, { cwd, encoding: "utf8" }).trim();
 }
 
 function normalizePath(filePath, root = repositoryRoot) {

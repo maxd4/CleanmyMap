@@ -3,6 +3,7 @@ import { existsSync, lstatSync, readdirSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "../..");
@@ -186,7 +187,7 @@ function loadTrackedPaths(root = repoRoot) {
   }
 
   try {
-    const output = execFileSync("git", ["ls-files", "-z"], {
+    const output = execFileSync(gitExecutable(), ["ls-files", "-z"], {
       cwd: root,
       encoding: "utf8",
       maxBuffer: 1024 * 1024 * 64,

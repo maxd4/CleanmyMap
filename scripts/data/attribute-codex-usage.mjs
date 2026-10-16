@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 const NA = "NA";
 const TOKEN_FIELDS = [
@@ -91,7 +92,7 @@ function sameOrInside(candidate, root) {
 
 function runGit(cwd, args) {
   if (!cwd || !fs.existsSync(cwd)) return null;
-  const result = spawnSync("git", ["-C", cwd, ...args], {
+  const result = spawnSync(gitExecutable(), ["-C", cwd, ...args], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
     windowsHide: true,

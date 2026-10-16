@@ -13,6 +13,7 @@ import {
   readJscpdMetrics,
   readJscpdOccurrences,
 } from "../checks/duplication-policy.mjs";
+import { gitExecutable } from "../ci/git-executable.mjs";
 import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
 import { createGitRepositoryView } from "../checks/repository-view.mjs";
 
@@ -24,7 +25,7 @@ const SOURCE_ROOTS = ["apps/web/src", "apps/mobile", "scripts"];
 const IGNORED_PARTS = new Set(["node_modules", ".next", "dist", "build", "coverage", "vendor", "android"]);
 
 function git(args, root) {
-  return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+  return execFileSync(gitExecutable(), args, { cwd: root, encoding: "utf8" }).trim();
 }
 
 function normalize(value) {

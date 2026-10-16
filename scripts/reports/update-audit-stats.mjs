@@ -3,6 +3,7 @@ import path from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { readImpactReportDocuments } from './impact-report-files.mjs';
+import { gitExecutable } from '../ci/git-executable.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -217,14 +218,14 @@ function collectRasterStats(dir) {
 
 function collectGitHistory(sinceDate) {
   const commitCount = Number(
-    execFileSync('git', ['rev-list', '--count', `--since=${sinceDate}`, 'HEAD'], {
+    execFileSync(gitExecutable(), ['rev-list', '--count', `--since=${sinceDate}`, 'HEAD'], {
       cwd: rootDir,
       encoding: 'utf8',
     }).trim(),
   );
 
   const numstat = execFileSync(
-    'git',
+    gitExecutable(),
     ['log', `--since=${sinceDate}`, '--numstat', '--pretty=tformat:'],
     {
       cwd: rootDir,

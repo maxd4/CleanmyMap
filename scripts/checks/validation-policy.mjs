@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { resolveValidationCommand } from "../ci/validation-process.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const WEB_ROOT = path.join(REPO_ROOT, "apps", "web");
@@ -306,26 +307,12 @@ function runVitest({ groups, testFiles }) {
 
   const args = ["run", "test", "-w", "apps/web", "--", ...files];
   let result;
-  if (process.platform === "win32") {
-    // The desktop runner cannot spawn .cmd files directly with Node. Invoke
-    // cmd.exe explicitly while keeping every argument quoted as a data value.
-    const quoteCmdArg = (value) => {
-      const text = String(value);
-      return /^[A-Za-z0-9_./:-]+$/.test(text)
-        ? text
-        : `"${text.replaceAll('"', '\\"')}"`;
-    };
-    const commandLine = ["npm.cmd", ...args.map(quoteCmdArg)].join(" ");
-    result = spawnSync(process.env.ComSpec || "cmd.exe", ["/d", "/s", "/c", commandLine], {
-      cwd: REPO_ROOT,
-      stdio: "inherit",
-    });
-  } else {
-    result = spawnSync("npm", args, {
-      cwd: REPO_ROOT,
-      stdio: "inherit",
-    });
-  }
+  const command = resolveValidationCommand({ executable: "npm", args }, process.platform, process.execPath);
+  result = spawnSync(command.executable, command.args, {
+    cwd: REPO_ROOT,
+    stdio: "inherit",
+    windowsHide: true,
+  });
   if (result.error) {
     throw result.error;
   }

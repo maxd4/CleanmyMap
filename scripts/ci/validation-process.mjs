@@ -1,24 +1,65 @@
+import fs from "node:fs";
 import { execFileSync, spawn } from "node:child_process";
 import path from "node:path";
 
-export function resolveValidationCommand(command, platform, execPath) {
-  if (platform === "win32" && (command.executable === "npm" || command.executable === "npx")) {
-    const pathApi = path.win32;
-    const cliName = command.executable === "npm" ? "npm-cli.js" : "npx-cli.js";
-    const npmBin = pathApi.join(pathApi.dirname(execPath), "node_modules", "npm", "bin");
-    return {
-      executable: execPath,
-      args: [pathApi.join(npmBin, cliName), ...(command.args ?? [])],
-    };
+function existingFile(filePath) {
+  try {
+    return fs.statSync(filePath).isFile();
+  } catch {
+    return false;
   }
-  return command;
+}
+
+function npmBinCandidates(execPath, platform) {
+  const pathApi = platform === "win32" ? path.win32 : path.posix;
+  const nodeDirectory = pathApi.dirname(execPath);
+  const candidates = [pathApi.join(nodeDirectory, "node_modules", "npm", "bin")];
+  if (platform !== "win32") {
+    candidates.push(
+      pathApi.join(nodeDirectory, "..", "lib", "node_modules", "npm", "bin"),
+      pathApi.join(nodeDirectory, "..", "share", "nodejs", "npm", "bin"),
+    );
+  }
+  return candidates;
+}
+
+export function resolveValidationCommand(
+  command,
+  platform = process.platform,
+  execPath = process.execPath,
+  fileExists = existingFile,
+) {
+  if (command.executable !== "npm" && command.executable !== "npx") return command;
+
+  const pathApi = platform === "win32" ? path.win32 : path.posix;
+  const cliName = command.executable === "npm" ? "npm-cli.js" : "npx-cli.js";
+  const cliPath = npmBinCandidates(execPath, platform)
+    .map((npmBin) => pathApi.join(npmBin, cliName))
+    .find(fileExists);
+  if (!cliPath) {
+    throw new Error(`HOST_ENVIRONMENT: ${command.executable} CLI was not found beside Node for ${platform}. PATH is intentionally not used.`);
+  }
+  return { executable: execPath, args: [cliPath, ...(command.args ?? [])] };
+}
+
+export function resolveWindowsSystemExecutable(
+  executableName,
+  { platform = process.platform, env = process.env, fileExists = existingFile } = {},
+) {
+  if (platform !== "win32") return null;
+  const systemRoot = typeof env.SystemRoot === "string" ? env.SystemRoot.trim() : "";
+  if (!systemRoot || !path.win32.isAbsolute(systemRoot)) return null;
+  const executablePath = path.win32.join(systemRoot, "System32", executableName);
+  return fileExists(executablePath) ? executablePath : null;
 }
 
 function terminateProcessTree(pid) {
   if (!pid) return;
   if (process.platform === "win32") {
+    const taskkill = resolveWindowsSystemExecutable("taskkill.exe");
+    if (!taskkill) throw new Error("HOST_ENVIRONMENT: Windows taskkill was not found in the trusted system directory.");
     try {
-      execFileSync("taskkill", ["/PID", String(pid), "/T", "/F"], {
+      execFileSync(taskkill, ["/PID", String(pid), "/T", "/F"], {
         stdio: "ignore",
         windowsHide: true,
       });

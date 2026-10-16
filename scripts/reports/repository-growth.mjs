@@ -13,6 +13,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { gitExecutable } from "../ci/git-executable.mjs";
 import { createGitRepositoryView } from "../checks/repository-view.mjs";
 import {
   collectMeasuredRows,
@@ -66,7 +67,7 @@ const DEFINITIONS = Object.freeze({
 });
 
 function git(args, root = REPOSITORY_ROOT) {
-  return execFileSync("git", args, {
+  return execFileSync(gitExecutable(), args, {
     cwd: root,
     encoding: "utf8",
     maxBuffer: 128 * 1024 * 1024,

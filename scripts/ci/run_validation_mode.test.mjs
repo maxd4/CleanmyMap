@@ -17,6 +17,7 @@ import {
 } from "./validation-evidence.mjs";
 import {
   resolveValidationCommand,
+  resolveWindowsSystemExecutable,
   runCommandWithTimeout,
 } from "./validation-process.mjs";
 
@@ -25,6 +26,7 @@ test("resolves npm through Node and npm-cli.js on Windows", () => {
     { executable: "npm", args: ["run", "test"] },
     "win32",
     "C:\\Program Files\\nodejs\\node.exe",
+    () => true,
   );
 
   assert.deepEqual(command, {
@@ -42,6 +44,7 @@ test("resolves npx through Node and npx-cli.js on Windows", () => {
     { executable: "npx", args: ["eslint", "apps/web"] },
     "win32",
     "C:\\Program Files\\nodejs\\node.exe",
+    () => true,
   );
 
   assert.deepEqual(command, {
@@ -54,10 +57,16 @@ test("resolves npx through Node and npx-cli.js on Windows", () => {
   });
 });
 
-test("keeps npm unchanged on non-Windows platforms", () => {
-  const original = { executable: "npm", args: ["run", "test"] };
-
-  assert.equal(resolveValidationCommand(original, "linux", "/usr/bin/node"), original);
+test("resolves npm through Node and npm-cli.js on POSIX", () => {
+  assert.deepEqual(resolveValidationCommand(
+    { executable: "npm", args: ["run", "test"] },
+    "linux",
+    "/usr/bin/node",
+    () => true,
+  ), {
+    executable: "/usr/bin/node",
+    args: ["/usr/bin/node_modules/npm/bin/npm-cli.js", "run", "test"],
+  });
 });
 
 test("keeps executables other than npm and npx unchanged", () => {
@@ -85,6 +94,7 @@ test("keeps arguments containing spaces as separate arguments", () => {
     { executable: "npm", args: ["run", "check", "path with spaces/file.mjs"] },
     "win32",
     "C:\\Program Files\\nodejs\\node.exe",
+    () => true,
   );
 
   assert.deepEqual(command.args, [
@@ -93,6 +103,23 @@ test("keeps arguments containing spaces as separate arguments", () => {
     "check",
     "path with spaces/file.mjs",
   ]);
+});
+
+test("refuses npm when the deterministic CLI path is absent", () => {
+  assert.throws(
+    () => resolveValidationCommand({ executable: "npm", args: [] }, "linux", "/usr/bin/node", () => false),
+    /PATH is intentionally not used/,
+  );
+});
+
+test("resolves Windows system tools without consulting PATH", () => {
+  assert.equal(
+    resolveWindowsSystemExecutable("taskkill.exe", { platform: "win32", env: { SystemRoot: "C:/Windows" }, fileExists: () => true }),
+    "C:\\Windows\\System32\\taskkill.exe",
+  );
+  assert.equal(resolveWindowsSystemExecutable("taskkill.exe", { platform: "linux", env: { SystemRoot: "C:\\Windows" } }), null);
+  assert.equal(resolveWindowsSystemExecutable("taskkill.exe", { platform: "win32", env: { SystemRoot: "Windows" }, fileExists: () => true }), null);
+  assert.equal(resolveWindowsSystemExecutable("taskkill.exe", { platform: "win32", env: { SystemRoot: "C:/Windows" }, fileExists: () => false }), null);
 });
 
 function makeRepository() {

@@ -6,6 +6,7 @@ import process from "node:process";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import { gitExecutable } from "../ci/git-executable.mjs";
 import { runCommandWithTimeout } from "../ci/validation-process.mjs";
 import {
   createCandidateFingerprint,
@@ -132,7 +133,7 @@ function stepLabel(args) {
 
 function readCurrentHead(repoDirectory) {
   try {
-    return execFileSync("git", ["rev-parse", "HEAD"], {
+    return execFileSync(gitExecutable(), ["rev-parse", "HEAD"], {
       cwd: repoDirectory,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
@@ -144,7 +145,7 @@ function readCurrentHead(repoDirectory) {
 
 function isWorktreeClean(repoDirectory) {
   try {
-    return execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], {
+    return execFileSync(gitExecutable(), ["status", "--porcelain", "--untracked-files=all"], {
       cwd: repoDirectory,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],

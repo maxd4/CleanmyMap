@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { gitExecutable } from "../ci/git-executable.mjs";
 import { sessionMemoryStatus } from "./update_session_memory.mjs";
 
 const ROOT = process.cwd();
@@ -28,7 +29,7 @@ if (!sessionMemory.valid) {
   throw new Error(`Invalid session memory format: ${sessionMemory.errors.join("; ")}`);
 }
 
-const branch = execFileSync("git", ["branch", "--show-current"], { cwd: ROOT, encoding: "utf8" }).trim();
+const branch = execFileSync(gitExecutable(), ["branch", "--show-current"], { cwd: ROOT, encoding: "utf8" }).trim();
 if (branch !== "main") {
   throw new Error(`MAIN_ONLY_MULTI_WRITER requires branch main; found ${branch || "detached HEAD"}.`);
 }

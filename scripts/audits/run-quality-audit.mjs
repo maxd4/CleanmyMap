@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { gitExecutable } from "../ci/git-executable.mjs";
 import {
   formatDeadCodeReport,
   hasBlockingDeadCodeFindings,
@@ -55,7 +56,7 @@ export function parseAuditMode(argv = process.argv.slice(2)) {
 }
 
 function git(args, root) {
-  return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+  return execFileSync(gitExecutable(), args, { cwd: root, encoding: "utf8" }).trim();
 }
 
 export function captureRepositorySnapshot({ root = REPOSITORY_ROOT, gitRunner = git } = {}) {
