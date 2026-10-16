@@ -23,7 +23,8 @@ Lire d'abord :
 | `modules-cles-et-dependances.md` | Modules structurants |
 | `section-ownership-boundaries.md` | Ownership app/registry/UI |
 | `traceability-matrix.md` | Rattachement code/documentation |
-| `monolith-split-plan.md` | Plan courant de modularisation |
+| `monolith-split-plan.md` | Radar généré et snapshot des métriques de modularisation |
+| `modularity-decisions.md` | Registre canonique des décisions architecturales humaines |
 | `refactor-priorities-plan.md` | Plan courant des priorités de refactoring |
 
 ## ADR
@@ -87,11 +88,12 @@ documentation/security/authz-authn-regles.md
 
 Pour un gros fichier :
 
-1. lire `monolith-split-plan.md` ;
-2. une cible par lot ;
-3. conserver props, exports, routes et comportement public ;
-4. ajouter ou maintenir les tests ;
-5. supprimer l'ancien chemin seulement après validation.
+1. lire `monolith-split-plan.md` pour les mesures et le radar généré ;
+2. lire `modularity-decisions.md` pour les décisions architecturales et leurs invariants ;
+3. une cible par lot ;
+4. conserver props, exports, routes et comportement public ;
+5. ajouter ou maintenir les tests ;
+6. supprimer l'ancien chemin seulement après validation.
 
 ## Validation
 

@@ -23,12 +23,12 @@ import {
   createRadarRows,
   extractHumanDecisions,
   parseHumanDecisions,
+  readHumanDecisionsFromView,
 } from "../reports/generate-modularity-radar.mjs";
 
 export const AUDIT_MODES = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "all"]);
 export const QUALITY_AUDIT_ROOT = "artifacts/quality-audits";
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const HUMAN_DECISIONS_PATH = "documentation/architecture/monolith-split-plan.md";
 const ACQUIRED_ARCHITECTURE_DECISIONS = new Set([
   "PROACTIVE_SPLIT",
   "COHESIVE_SINGLE_FILE",
@@ -350,9 +350,8 @@ export async function executeAudit(
     const ref = auditedHead || "HEAD";
     const result = runTopHeavyPolicy({ root, args: [`--ref=${ref}`, "--enforce"] });
     const view = createRepositoryView({ root, ref });
-    const humanDecisionsByFile = view.isFile(HUMAN_DECISIONS_PATH)
-      ? buildHumanDecisionsByFile(view.readText(HUMAN_DECISIONS_PATH))
-      : {};
+    const humanDecisions = readHumanDecisionsFromView(view);
+    const humanDecisionsByFile = buildHumanDecisionsByFile(humanDecisions.markdown);
     const evaluation = enrichTopHeavyEvaluation(result.evaluation, humanDecisionsByFile);
     const enrichedResult = { ...result, evaluation };
     return { ...enrichedResult, status: statusForAudit(audit, enrichedResult), readProvenance: "COMMITTED_SNAPSHOT" };

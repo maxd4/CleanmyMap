@@ -9,6 +9,7 @@ import {
   classifySourceRevision,
   collectImportGraph,
   coverageAvailability,
+  readModularitySnapshot,
 } from "./architecture-audit.mjs";
 import { collectArchitectureRows, collectMeasuredRows } from "../checks/top-heavy-measurement.mjs";
 import { isAboveReview } from "../checks/top-heavy-policy.mjs";
@@ -79,6 +80,37 @@ test("freshness assertion rejects an artifact attached to another SHA", () => {
   assert.equal(assertArchitectureAuditFresh(artifact, sha), artifact);
   assert.throws(() => assertArchitectureAuditFresh(artifact, "b".repeat(40)), /not current/);
   assert.throws(() => assertArchitectureAuditFresh({ ...artifact, freshness: { status: "HISTORICAL_SNAPSHOT" } }, sha), /not current/);
+});
+
+test("architecture audit reads deferred decisions from the separate registry", () => {
+  const radar = "`RADAR_REF=" + SHA_A + "`\n[modularity-decisions.md](./modularity-decisions.md)";
+  const registry = "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->\n| PATH | DECISION | PRIORITY | SIGNALS | BLOCKER / NEXT_TRIGGER |\n| --- | --- | --- | --- | --- |\n| `src/deferred.ts` | DEFERRED_SPLIT | LATER | — | wait |\n<!-- RADAR:HUMAN_DECISIONS:END -->";
+  const view = {
+    isFile: (file) => file === "documentation/architecture/monolith-split-plan.md" || file === "documentation/architecture/modularity-decisions.md",
+    readText: (file) => file.endsWith("monolith-split-plan.md") ? radar : registry,
+  };
+  const snapshot = readModularitySnapshot(view, SHA_A);
+  assert.equal(snapshot.decisionSource, "documentation/architecture/modularity-decisions.md");
+  assert.deepEqual(snapshot.deferredSplit, ["src/deferred.ts"]);
+});
+
+test("architecture audit keeps reading legacy integrated decisions for old snapshots", () => {
+  const radar = "`RADAR_REF=" + SHA_B + "`\n<!-- RADAR:HUMAN_DECISIONS:BEGIN -->\n| PATH | DECISION | PRIORITY | SIGNALS | BLOCKER / NEXT_TRIGGER |\n| --- | --- | --- | --- | --- |\n| `src/legacy.ts` | DEFERRED_SPLIT | LATER | — | wait |\n<!-- RADAR:HUMAN_DECISIONS:END -->";
+  const view = {
+    isFile: (file) => file === "documentation/architecture/monolith-split-plan.md",
+    readText: () => radar,
+  };
+  const snapshot = readModularitySnapshot(view, SHA_B);
+  assert.equal(snapshot.decisionSource, "documentation/architecture/monolith-split-plan.md");
+  assert.deepEqual(snapshot.deferredSplit, ["src/legacy.ts"]);
+});
+
+test("architecture audit fails explicitly when a new radar has no registry", () => {
+  const view = {
+    isFile: (file) => file === "documentation/architecture/monolith-split-plan.md",
+    readText: () => "`RADAR_REF=" + SHA_A + "`\n[modularity-decisions.md](./modularity-decisions.md)",
+  };
+  assert.throws(() => readModularitySnapshot(view, SHA_A), /Registre canonique/);
 });
 
 test("import graph reports resolved relative and alias edges without claiming external modules", () => {

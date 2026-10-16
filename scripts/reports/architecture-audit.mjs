@@ -11,7 +11,7 @@ import { collectArchitectureRows } from "../checks/top-heavy-measurement.mjs";
 import { isAboveHard, isAboveReview } from "../checks/top-heavy-policy.mjs";
 import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
 import { aggregateCoverage } from "../checks/coverage-policy.mjs";
-import { extractHumanDecisions, parseHumanDecisions } from "./generate-modularity-radar.mjs";
+import { readHumanDecisionsFromView } from "./generate-modularity-radar.mjs";
 
 export const ARCHITECTURE_AUDIT_SCHEMA_VERSION = 2;
 export const ARCHITECTURE_AUDIT_ROOT = "artifacts/architecture";
@@ -200,16 +200,20 @@ function readBaselineInventory(view, auditedSha, classify) {
   }));
 }
 
-function readModularitySnapshot(view, auditedSha) {
+export function readModularitySnapshot(view, auditedSha) {
   const markdown = view.isFile(MODULARITY_PLAN) ? view.readText(MODULARITY_PLAN) : "";
   const sourceRef = markdown.match(/`RADAR_REF=([0-9a-f]{40})`/m)?.[1] ?? null;
-  const decisions = parseHumanDecisions(extractHumanDecisions(markdown));
-  const deferred = decisions.filter((entry) => entry.ARCHITECTURE_DECISION === "DEFERRED_SPLIT").map((entry) => entry.file).sort((left, right) => left.localeCompare(right, "en"));
+  const decisionSource = readHumanDecisionsFromView(view, { requireRegistry: markdown.includes("modularity-decisions.md") });
+  const deferred = decisionSource.decisions
+    .filter((entry) => entry.ARCHITECTURE_DECISION === "DEFERRED_SPLIT")
+    .map((entry) => entry.file)
+    .sort((left, right) => left.localeCompare(right, "en"));
   return {
     sourceSha: sourceRef,
     status: classifySnapshotSource(sourceRef, auditedSha),
     sourceRef,
     generatedAt: markdown.match(/`RADAR_GENERATED_AT=([^`]+)`/m)?.[1] ?? null,
+    decisionSource: decisionSource.sourcePath,
     deferredSplit: deferred,
   };
 }

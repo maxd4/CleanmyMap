@@ -43,7 +43,7 @@ domaines métier.
 | Architecture globale | `architecture/master-architecture.md` |
 | Vue système | `architecture/system-overview.md` |
 | ADR | `architecture/adr/` |
-| Refactors structurels | `architecture/refactor-priorities-plan.md` et `architecture/monolith-split-plan.md` |
+| Refactors structurels | `architecture/refactor-priorities-plan.md`, `architecture/monolith-split-plan.md` (radar généré) et `architecture/modularity-decisions.md` (décisions humaines) |
 | Données | `database/README.md` |
 | Design system | `design-system/README.md` |
 | Développement | `development/README.md` |

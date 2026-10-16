@@ -11,8 +11,10 @@ une source plus spécialisée.
 
 Il ne remplace pas :
 
-- [`monolith-split-plan.md`](./monolith-split-plan.md) pour le radar et le
-  découpage des fichiers lourds ;
+- [`monolith-split-plan.md`](./monolith-split-plan.md) pour le radar généré et
+  les mesures des fichiers lourds ;
+- [`modularity-decisions.md`](./modularity-decisions.md) pour les décisions
+  architecturales humaines et leurs déclencheurs ;
 - [`../development/TESTING.md`](../development/TESTING.md) pour les validations
   et regression gates ;
 - [`../security/README.md`](../security/README.md) pour les chantiers de
@@ -134,8 +136,9 @@ Ces règles ne justifient aucune abstraction préventive : une nouvelle
 
 ## P2 — monolithes
 
-La source de vérité est
-[`monolith-split-plan.md`](./monolith-split-plan.md).
+Le radar généré est dans
+[`monolith-split-plan.md`](./monolith-split-plan.md) et les décisions humaines
+associées dans [`modularity-decisions.md`](./modularity-decisions.md).
 
 Ne pas maintenir ici une seconde liste de fichiers.
 

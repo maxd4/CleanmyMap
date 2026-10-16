@@ -166,8 +166,8 @@ test("top-heavy distingue les décisions acquises, REVIEW_REQUIRED et les deltas
   assert.equal(attentionRequired("top-heavy", { evaluation: improvement }), true);
 });
 
-test("la projection humaine associe les décisions du bloc canonique aux chemins", () => {
-  const markdown = fs.readFileSync(path.join(process.cwd(), "documentation", "architecture", "monolith-split-plan.md"), "utf8");
+test("la projection humaine associe le registre canonique aux chemins", () => {
+  const markdown = fs.readFileSync(path.join(process.cwd(), "documentation", "architecture", "modularity-decisions.md"), "utf8");
   const decisions = buildHumanDecisionsByFile(markdown);
   assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].architectureDecision, "ALREADY_MODULARIZED");
   assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].decisionAcquired, true);

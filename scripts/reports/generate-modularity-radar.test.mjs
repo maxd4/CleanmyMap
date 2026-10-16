@@ -13,6 +13,7 @@ import {
   loadQualityAuditArtifacts,
   parseHumanDecisions,
   parseDecisionSummary,
+  readHumanDecisionsFromView,
   resolveRadarRef,
 } from "./generate-modularity-radar.mjs";
 
@@ -61,6 +62,48 @@ test("human decisions are preserved and remain the only source of architecture d
     RATIONALE: "the file is cohesive",
   }]);
   assert.equal(extractHumanDecisions(`before\n<!-- RADAR:HUMAN_DECISIONS:BEGIN -->\n${human}\n<!-- RADAR:HUMAN_DECISIONS:END -->`), human);
+});
+
+test("the migrated registry preserves every human decision and manual field", () => {
+  const registry = fs.readFileSync(path.join(process.cwd(), "documentation", "architecture", "modularity-decisions.md"), "utf8");
+  const decisions = parseHumanDecisions(extractHumanDecisions(registry));
+  assert.equal(decisions.length, 47);
+  assert.deepEqual(Object.keys(decisions[0]).sort(), [
+    "ARCHITECTURE_DECISION",
+    "COUPLING",
+    "DEPENDENCY_OR_BLOCKER",
+    "MAIN_CONSUMERS",
+    "NATURAL_EXTRACTION_BOUNDARY",
+    "NEXT_TRIGGER",
+    "PRIORITY",
+    "PUBLIC_CONTRACTS",
+    "RATIONALE",
+    "RESPONSIBILITIES",
+    "SIDE_EFFECTS",
+    "TEST_BOUNDARY",
+    "file",
+  ].sort());
+  assert.deepEqual(
+    decisions.map((entry) => entry.file),
+    parseHumanDecisions(extractHumanDecisions(fs.readFileSync(path.join(process.cwd(), "documentation", "architecture", "monolith-split-plan.md"), "utf8"))).map((entry) => entry.file),
+  );
+});
+
+test("the current contract requires the separate registry while legacy snapshots remain readable", () => {
+  const currentView = {
+    isFile: (file) => file === "documentation/architecture/monolith-split-plan.md",
+    readText: () => "[modularity-decisions.md](./modularity-decisions.md)",
+  };
+  assert.throws(() => readHumanDecisionsFromView(currentView, { requireRegistry: true }), /Registre canonique/);
+
+  const legacy = "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->\n| PATH | DECISION | PRIORITY | SIGNALS | BLOCKER / NEXT_TRIGGER |\n| --- | --- | --- | --- | --- |\n| `src/legacy.ts` | DEFERRED_SPLIT | LATER | — | wait |\n<!-- RADAR:HUMAN_DECISIONS:END -->";
+  const legacyView = {
+    isFile: (file) => file === "documentation/architecture/monolith-split-plan.md",
+    readText: () => legacy,
+  };
+  const result = readHumanDecisionsFromView(legacyView);
+  assert.equal(result.legacy, true);
+  assert.equal(result.decisions[0].file, "src/legacy.ts");
 });
 
 test("rendering reuses the policy by KIND and keeps correlation textual", () => {
@@ -147,11 +190,11 @@ test("fresh measurements replace stale machine fields while human rationale surv
     generatedAt: "2026-01-01T00:00:00.000Z",
     top: 1,
   });
-  const preserved = markdown.slice(markdown.indexOf("RADAR:HUMAN_DECISIONS:BEGIN"), markdown.indexOf("RADAR:HUMAN_DECISIONS:END"));
   assert.match(markdown, /COHESIVE_SINGLE_FILE établi/);
   assert.match(markdown, /\| `apps\/web\/src\/app\/learn\/ressources\/learn-ressources-client\.data\.ts` \| COHESIVE_SINGLE_FILE \| NONE \|/);
-  assert.match(preserved, /catalogue cohésif/);
-  assert.doesNotMatch(preserved, /old-ref|999 \/ 999 \/ runtime|\| SIGNALS \|/);
+  assert.match(markdown, /modularity-decisions\.md/);
+  assert.doesNotMatch(markdown, /<!-- RADAR:HUMAN_DECISIONS:BEGIN -->/);
+  assert.doesNotMatch(markdown, /catalogue cohésif|old-ref|999 \/ 999 \/ runtime/);
   assert.doesNotMatch(markdown, /learn-ressources-client\.data\.ts` \| 677 \| 27122 \| data\/config \| PRESENT/);
 });
 

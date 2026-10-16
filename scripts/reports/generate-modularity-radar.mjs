@@ -4,8 +4,8 @@
  *
  * Ce rapport orchestre des sources existantes. Il ne recalcule pas la
  * politique top-heavy et ne fusionne pas les gates de qualité en un score.
- * Les décisions et leurs justifications sont conservées dans le document
- * entre les marqueurs RADAR:HUMAN_DECISIONS.
+ * Les décisions et leurs justifications vivent dans le registre canonique
+ * modularity-decisions.md et ne sont jamais recopiées dans le radar généré.
  */
 
 import { execFileSync } from "node:child_process";
@@ -33,6 +33,8 @@ import { getRadarGroups } from "./analyze-heavy-files.mjs";
 
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const OUTPUT_PATH = "documentation/architecture/monolith-split-plan.md";
+export const MODULARITY_DECISIONS_PATH = "documentation/architecture/modularity-decisions.md";
+const LEGACY_MODULARITY_PLAN_PATH = OUTPUT_PATH;
 const SCAN_ROOTS = ["apps/web/src"];
 const HUMAN_BEGIN = "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->";
 const HUMAN_END = "<!-- RADAR:HUMAN_DECISIONS:END -->";
@@ -261,6 +263,36 @@ export function extractHumanDecisions(markdown) {
   return (nextHeading >= 0 ? after.slice(0, nextHeading) : after).trim();
 }
 
+const EMPTY_HUMAN_DECISIONS = "_Aucune décision humaine enregistrée._";
+
+export function readHumanDecisionsFromView(view, { requireRegistry = false } = {}) {
+  if (view.isFile(MODULARITY_DECISIONS_PATH)) {
+    const markdown = view.readText(MODULARITY_DECISIONS_PATH);
+    return {
+      sourcePath: MODULARITY_DECISIONS_PATH,
+      legacy: false,
+      markdown,
+      decisions: parseHumanDecisions(markdown),
+    };
+  }
+
+  const legacyMarkdown = view.isFile(LEGACY_MODULARITY_PLAN_PATH)
+    ? view.readText(LEGACY_MODULARITY_PLAN_PATH)
+    : "";
+  const legacyBlock = extractHumanDecisions(legacyMarkdown);
+  const pointsToSeparateRegistry = legacyMarkdown.includes("modularity-decisions.md");
+  if (requireRegistry || (pointsToSeparateRegistry && legacyBlock === EMPTY_HUMAN_DECISIONS)) {
+    throw new Error(`Registre canonique des décisions absent: ${MODULARITY_DECISIONS_PATH}`);
+  }
+
+  return {
+    sourcePath: LEGACY_MODULARITY_PLAN_PATH,
+    legacy: true,
+    markdown: legacyBlock,
+    decisions: parseHumanDecisions(legacyBlock),
+  };
+}
+
 export function parseDecisionSummary(humanBlock) {
   const entries = [];
   for (const line of humanBlock.split(/\r?\n/)) {
@@ -424,41 +456,8 @@ function countStructuralSignals(row) {
     .filter((item) => item.state === "PRESENT").length;
 }
 
-function renderHumanSection(entries) {
-  const summary = [
-    "| PATH | ARCHITECTURE_DECISION | PRIORITY | DEPENDENCY_OR_BLOCKER | NEXT_TRIGGER |",
-    "| --- | --- | --- | --- | --- |",
-    ...entries.map((entry) => `| \`${entry.file}\` | ${entry.ARCHITECTURE_DECISION} | ${entry.PRIORITY} | ${entry.DEPENDENCY_OR_BLOCKER || "—"} | ${entry.NEXT_TRIGGER || "—"} |`),
-  ];
-  const details = entries.flatMap((entry) => [
-    `#### \`${entry.file}\``,
-    "",
-    "| Champ | Valeur |",
-    "| --- | --- |",
-    ...HUMAN_FIELDS
-      .filter((field) => entry[field])
-      .map((field) => `| ${field} | ${entry[field]} |`),
-    "",
-  ]);
-  return `${HUMAN_BEGIN}\n${summary.join("\n")}\n\n### Décisions établies — grille détaillée\n\n${details.join("\n").trim()}\n${HUMAN_END}`;
-}
-
-function renderPreservedHumanSection(humanBlock) {
-  if (humanBlock && humanBlock !== "_Aucune décision humaine enregistrée._") {
-    if (/^\| PATH \| ARCHITECTURE_DECISION \| PRIORITY \| DEPENDENCY_OR_BLOCKER \| NEXT_TRIGGER \|$/m.test(humanBlock)) {
-      const sanitized = humanBlock.split(/\r?\n/).filter((line) => {
-        const cells = splitTableRow(line);
-        return cells.length !== 2 || cells[0] === "Champ" || /^-+$/.test(cells[0]) || HUMAN_FIELDS.includes(cells[0]);
-      }).join("\n");
-      return `${HUMAN_BEGIN}\n${sanitized.trim()}\n${HUMAN_END}`;
-    }
-    return renderHumanSection(parseHumanDecisions(humanBlock));
-  }
-  return renderHumanSection([]);
-}
-
-export function buildRadarMarkdown({ report, refInfo, humanBlock, top = DEFAULT_TOP, generatedAt = new Date().toISOString() }) {
-  const humanEntries = parseHumanDecisions(humanBlock);
+export function buildRadarMarkdown({ report, refInfo, humanBlock, humanDecisions, top = DEFAULT_TOP, generatedAt = new Date().toISOString() }) {
+  const humanEntries = humanDecisions ?? parseHumanDecisions(humanBlock ?? EMPTY_HUMAN_DECISIONS);
   const humanByFile = new Map(humanEntries.map((entry) => [entry.file, entry]));
   const radarByFile = new Map(report.radarRows.map((row) => [row.file, row]));
   const rows = report.rows;
@@ -529,9 +528,13 @@ du catalogue, sans seuil numérique automatique.
 
 ${renderPriorities(humanEntries, radarByFile)}
 
-## E. Décisions établies
+## E. Registre des décisions humaines
 
-${renderPreservedHumanSection(humanBlock)}
+Les décisions architecturales, leurs rationales, contrats, consommateurs,
+frontières d'extraction et déclencheurs sont conservés dans le registre
+canonique [\`modularity-decisions.md\`](./modularity-decisions.md). Le radar
+utilise ce registre pour ses priorités et classifications, sans recopier les
+fiches détaillées.
 
 ## F. Radar brut à auditer
 
@@ -614,11 +617,12 @@ apps/web/src, lus depuis la ref exacte affichée en tête. Pour régénérer un
 snapshot courant, utiliser --ref=HEAD ; une ref ancienne est signalée
 HISTORICAL_SNAPSHOT et ne peut pas être présentée comme courante.
 
-Le bloc entre RADAR:HUMAN_DECISIONS:BEGIN/END conserve uniquement les
-interprétations humaines et les décisions d'architecture. REF, LINES, BYTES,
-KIND, SIZE_SIGNAL et les signaux automatiques sont toujours régénérés depuis
-RADAR_REF ; ils ne sont jamais lus depuis ce bloc. refactor-priorities-plan.md
-renvoie vers ce document sans recopier sa liste.
+Les décisions humaines sont lues depuis le registre canonique lié dans la
+section E. REF, LINES, BYTES, KIND, SIZE_SIGNAL et les signaux automatiques
+sont toujours régénérés depuis RADAR_REF ; ils ne sont jamais copiés depuis
+le registre. Les snapshots historiques antérieurs à cette séparation peuvent
+encore lire leur bloc humain intégré. refactor-priorities-plan.md renvoie vers
+ce document sans recopier sa liste.
 <!-- RADAR:GENERATED:END -->
 `;
 }
@@ -626,6 +630,7 @@ renvoie vers ce document sans recopier sa liste.
 export function createRadarReport({ root = REPOSITORY_ROOT, ref }) {
   const refInfo = resolveRadarRef(ref, root);
   const view = createRepositoryView({ root, ref: refInfo.resolved });
+  const human = readHumanDecisionsFromView(view, { requireRegistry: refInfo.status === "CURRENT_AT_GENERATION" });
   const rows = collectMeasuredRows(view, SCAN_ROOTS);
   const correlations = loadQualityAuditArtifacts({ root, auditedSha: refInfo.resolved });
   const radarRows = createRadarRows(rows, correlations).map((row) => ({
@@ -633,7 +638,7 @@ export function createRadarReport({ root = REPOSITORY_ROOT, ref }) {
     ref: refInfo.resolved,
   }));
   const groups = getRadarGroups(rows);
-  return { refInfo, view, rows, radarRows, correlations, ...groups };
+  return { refInfo, view, rows, radarRows, correlations, humanDecisions: human.decisions, humanDecisionSource: human.sourcePath, ...groups };
 }
 
 function getOption(args, name) {
@@ -648,12 +653,10 @@ export function main(args = process.argv.slice(2)) {
     const refInfo = resolveRadarRef(requestedRef);
     const report = createRadarReport({ ref: requestedRef });
     const outputPath = path.resolve(REPOSITORY_ROOT, getOption(args, "output") ?? OUTPUT_PATH);
-    const existing = viewDocument(outputPath);
-    const humanBlock = extractHumanDecisions(existing);
     const markdown = buildRadarMarkdown({
       report,
       refInfo,
-      humanBlock,
+      humanDecisions: report.humanDecisions,
       top: Number(getOption(args, "top") ?? DEFAULT_TOP),
     });
 
@@ -671,14 +674,6 @@ export function main(args = process.argv.slice(2)) {
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
-  }
-}
-
-function viewDocument(outputPath) {
-  try {
-    return readFileSync(outputPath, "utf8");
-  } catch {
-    return "";
   }
 }
 

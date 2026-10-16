@@ -6,8 +6,10 @@ Ce document définit les conventions durables de modularisation de CleanMyMap.
 Il ne maintient pas de backlog de fichiers à découper et ne fixe pas de taille
 cible universelle.
 
-La liste courante des monolithes et leur état mesuré vivent dans
-`documentation/architecture/monolith-split-plan.md`.
+Le radar généré des monolithes et leur état mesuré vivent dans
+`documentation/architecture/monolith-split-plan.md`. Les décisions humaines,
+leurs rationales, contrats et déclencheurs vivent exclusivement dans
+`documentation/architecture/modularity-decisions.md`.
 
 ## Principe directeur
 
@@ -487,4 +489,7 @@ Valider proportionnellement au risque :
 - build uniquement lorsque le périmètre le justifie.
 
 Pour le radar courant et le choix de la prochaine cible, utiliser
-`documentation/architecture/monolith-split-plan.md`.
+`documentation/architecture/monolith-split-plan.md`, puis consulter
+`documentation/architecture/modularity-decisions.md` pour la décision et ses
+invariants. Le radar est `GENERATED`/`SNAPSHOT`; le registre est humain et
+canonique.
