@@ -76,7 +76,7 @@ describe("CURRENT gamification registry", () => {
     expect(GAMIFICATION_REGISTRY.filter((entry) => entry.id.startsWith("spogomi_") && entry.id !== "spogomi_first_referee")).toHaveLength(10);
     expect(GAMIFICATION_REGISTRY.filter((entry) => entry.id.startsWith("spogomi_") && entry.id !== "spogomi_first_referee").every((entry) => entry.category === "BADGE_ONLY" && entry.xpPolicy.kind === "none")).toBe(true);
 
-    expect(CURRENT_INFINITE_PROGRESSIONS).toHaveLength(9);
+    expect(CURRENT_INFINITE_PROGRESSIONS).toHaveLength(10);
     expect(CURRENT_INFINITE_PROGRESSIONS.every((entry) =>
       entry.category === "XP_PROGRESSION" &&
       entry.progressionId === entry.id &&
@@ -86,6 +86,8 @@ describe("CURRENT gamification registry", () => {
       .toMatchObject({ visibility: "authorized_moderation" });
     expect(CURRENT_INFINITE_PROGRESSIONS.find((entry) => entry.id === "cartography"))
       .toMatchObject({ label: "Contribution cartographique", metric: "verified_geometry_contributions" });
+    expect(CURRENT_INFINITE_PROGRESSIONS.find((entry) => entry.id === "product_feedback"))
+      .toMatchObject({ label: "Amélioration du produit", metric: "accepted_product_feedbacks" });
 
     expect(CURRENT_MILESTONES).toHaveLength(16);
     expect(CURRENT_MILESTONES.every((entry) =>

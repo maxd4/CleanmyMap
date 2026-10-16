@@ -18,7 +18,7 @@ spécification canonique.
 La taxonomie CURRENT à utiliser dans cet inventaire est celle du registre
 `GAMIFICATION_REGISTRY` dans `apps/web/src/lib/gamification/progression-utils.ts`
 et de la [spécification canonique](../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md);
-elle contient exactement huit progressions infinies:
+elle contient exactement dix progressions infinies:
 
 - `Participation`;
 - `Organisation`;
@@ -27,7 +27,8 @@ elle contient exactement huit progressions infinies:
 - `Régularité`;
 - `Polyvalence`;
 - `Apprentissage`;
-- `Modération` (réservée aux comptes autorisés par AuthZ).
+- `Modération` (réservée aux comptes autorisés par AuthZ);
+- `Amélioration du produit`.
 
 Les jalons one-shot CURRENT sont ceux du registre : `Première trace utile`,
 `Trace fondatrice`, `Boucle bouclée`, `Mobilisateur`, `Donnée exemplaire`,
@@ -64,7 +65,7 @@ ou aux rapports. Elles ne créent aucune récompense CURRENT par elles-mêmes.
 | --- | --- | --- | --- | --- |
 | Accueil perso | objectif infini + régulier | C est le point d entree naturel vers la progression personnelle | Niveau courant, niveau potentiel, prochaine etape, retour d impact | Barre de progression vers le prochain palier, badge de reprise de session, rappel d objectif du jour |
 | Dashboard | objectif infini + régulier | C est la synthese de la vie du compte | Barre de progression, badges, objectif du jour ou du mois | Bloc "prochain palier", carte de badge evolutif, resume d impact, regularite mensuelle et zone sensible apaisée |
-| Profil & impact | objectif infini + régulier | L impact personnel doit rester lisible sans transformer les mesures en score | Progressions CURRENT, jalons et métriques d impact séparées | Les huit progressions CURRENT, les jalons one-shot et les indicateurs d impact conservés à part; pas de rang XP de confiance |
+| Profil & impact | objectif infini + régulier | L impact personnel doit rester lisible sans transformer les mesures en score | Progressions CURRENT, jalons et métriques d impact séparées | Les dix progressions CURRENT, les jalons one-shot et les indicateurs d impact conservés à part; pas de rang XP de confiance |
 | Connexion / inscription | one-shot | Le premier passage d activation est un jalon fort | Badge de premiere connexion utile, puis orientation vers la premiere action | Badge de demarrage, message de bienvenue, redirection vers l action suivante |
 | Onboarding localisation | one-shot | C est un jalon de mise en route, pas une habitude | Badge de configuration terminee, puis disparition du rappel | Badge de localisation validee, etat "pret a contribuer" |
 | Parcours | régulier | Le parcours utilisateur sert a maintenir le retour | Etape suivante, objectif de reprise, repere de session | Prochaine etape visible, compteur de progression de parcours, rappel de reprise |
@@ -95,7 +96,7 @@ ou aux rapports. Elles ne créent aucune récompense CURRENT par elles-mêmes.
 | Observatoire public | autre | La lecture publique doit rester informative, pas ludifiee | Pas de score; seulement des repères de lecture et de qualite | Aucune gamification directe; seulement des repères de fiabilite et de lecture |
 | Rapports d impact | one-shot + objectif infini | Le rapport partageable est un jalon, mais la maitrise peut progresser | Badge de livrable genere, puis palier de qualite de restitution | Badge de rapport genere, badge de qualite de restitution, progression de niveau d impact |
 | Profil impact | autre | L impact personnel doit rester descriptif et traçable | Métriques d impact, couverture et méthodologie | Kg, mégots et proxies affichés comme mesures ou estimations, jamais comme unités XP |
-| Progression & Badges | objectif infini | C est la colonne vertébrale du systeme | Niveaux, badges evolutifs, contrat commun des huit progressions | Participation, Organisation, Exploration, Zones propres, Régularité, Polyvalence, Apprentissage et Modération autorisée |
+| Progression & Badges | objectif infini | C est la colonne vertébrale du systeme | Niveaux, badges evolutifs, contrat commun des dix progressions | Participation, Organisation, Exploration, Zones propres, Régularité, Polyvalence, Apprentissage, Modération autorisée et Amélioration du produit |
 | Historique des actions | régulier | Le retour sur l historique soutient la retention et la relecture | Jalons de regularite, recap de periode, reflexion post-action | Recap mensuel, streak de contributions utiles, badge de regularité mensuelle |
 
 ### Bloc Réseau & Discussions

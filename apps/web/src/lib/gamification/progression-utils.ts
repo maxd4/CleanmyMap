@@ -212,11 +212,11 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   },
   form_tier_unlock: {
     classification: "non_progression",
-    reason: "Événement Forms historique COMPATIBILITY, hors des neuf progressions CURRENT.",
+    reason: "Événement Forms historique COMPATIBILITY, hors des progressions CURRENT.",
   },
   form_bonus: {
     classification: "non_progression",
-    reason: "Bonus Forms historique COMPATIBILITY, hors des neuf progressions CURRENT.",
+    reason: "Bonus Forms historique COMPATIBILITY, hors des progressions CURRENT.",
   },
   participant_tier_unlock: {
     classification: "progression",
@@ -258,6 +258,10 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   moderation_multi_family: {
     classification: "milestone",
     milestoneId: "moderateur_polyvalent",
+  },
+  product_feedback_accepted: {
+    classification: "progression",
+    progressionId: "product_feedback",
   },
   spogomi_first_referee_certified: {
     classification: "milestone",

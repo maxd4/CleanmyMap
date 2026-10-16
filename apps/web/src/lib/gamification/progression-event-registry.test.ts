@@ -23,6 +23,7 @@ const RUNTIME_PROGRESSION_WRITERS = [
   "gamification-action-facts.ts",
   "gamification-clean-zone-facts.ts",
   "gamification-community-facts.ts",
+  "gamification-feedback-facts.ts",
   "gamification-geometry-facts.ts",
   "gamification-moderation-facts.ts",
   "gamification-quiz-facts.ts",
@@ -98,6 +99,7 @@ describe("progression event registry", () => {
       "moderation_multi_family",
       "moderation_tier_unlock",
       "verified_geometry_contribution",
+      "product_feedback_accepted",
     ].sort());
 
     for (const eventType of runtimeEventTypes) {
@@ -116,8 +118,9 @@ describe("progression event registry", () => {
       "learning",
       "moderation",
       "cartography",
+      "product_feedback",
     ]);
-    expect(currentInfiniteProgressions()).toHaveLength(9);
+    expect(currentInfiniteProgressions()).toHaveLength(10);
     expect(currentInfiniteProgressions().map((progression) => progression.id)).toEqual(
       [...CURRENT_INFINITE_PROGRESSION_IDS],
     );
@@ -165,6 +168,7 @@ describe("progression event registry", () => {
       "moderation_first_participation",
       "moderation_multi_family",
       "moderation_tier_unlock",
+      "product_feedback_accepted",
       "new_place_discovered",
       "new_place_milestone",
       "participant_tier_unlock",
@@ -247,6 +251,7 @@ describe("progression event registry", () => {
       "learning",
       "moderation",
         "cartography",
+        "product_feedback",
       ]),
     );
     expect(CURRENT_INFINITE_PROGRESSION_IDS).toContain("versatility");

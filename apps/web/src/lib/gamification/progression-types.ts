@@ -13,7 +13,7 @@ import type {
 export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
 export const CURRENT_GAMIFICATION_RULES_VERSION = "gamification-2026.10-v1" as const;
-export const CURRENT_GAMIFICATION_RULES_REVISION = 14 as const;
+export const CURRENT_GAMIFICATION_RULES_REVISION = 15 as const;
 
 export type GamificationCategory =
   | "XP_PROGRESSION"
@@ -103,6 +103,7 @@ export type ProgressionEventType =
   | "moderation_first_participation"
   | "moderation_first_impact_correction"
   | "moderation_multi_family"
+  | "product_feedback_accepted"
   | "spogomi_first_referee_certified";
 
 export const CURRENT_INFINITE_PROGRESSION_IDS = [
@@ -115,6 +116,7 @@ export const CURRENT_INFINITE_PROGRESSION_IDS = [
   "learning",
   "moderation",
   "cartography",
+  "product_feedback",
 ] as const;
 
 export type CurrentInfiniteProgressionId =

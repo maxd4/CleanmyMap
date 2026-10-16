@@ -39,9 +39,9 @@ réconciliations sans changement visible ne créent ni reçu ni notification.
 le tableau de bord ; le compteur associé désigne les mises à jour non encore
 consultées.
 
-Le catalogue distingue explicitement les sept axes généraux `Participation`,
-`Organisation`, `Exploration`, `Zones propres`, `Régularité`, `Polyvalence` et
-`Apprentissage`. `Modération` n'est ajoutée que pour le compte courant lorsque
+Le catalogue distingue explicitement les huit axes généraux `Participation`,
+`Organisation`, `Exploration`, `Zones propres`, `Régularité`, `Polyvalence`,
+`Apprentissage` et `Amélioration du produit`. `Modération` n'est ajoutée que pour le compte courant lorsque
 l'AuthZ autorise réellement cette capacité. Chaque entrée d'API porte
 `awardCategory`, `grantsXp` et `xpContribution` ; les jalons avec XP et les
 jalons de reconnaissance sont présentés dans deux groupes distincts. Les

@@ -56,7 +56,7 @@ Le code et les tests priment si une divergence apparaît.
   produit `verified_geometry_contribution` dans `progression_events` ; ni un
   fichier, ni une distance, ni une reconstruction ne crée directement une
   unité XP supplémentaire.
-- la métrique `Zone sensible apaisée` reste hors des neuf progressions infinies :
+- la métrique `Zone sensible apaisée` reste hors des dix progressions infinies :
   sa qualification est figée à la validation dans `progression_events`, puis
   ses seuils gemme canoniques `1, 3, 5, 8, 10, 15, 20, puis +5` sont projetés
   par des événements idempotents `sensitive_zone_milestone` à `+1 XP` ; l'état
@@ -77,9 +77,9 @@ Le code et les tests priment si une divergence apparaît.
   `introducedInRulesRevision`.
   Une donnée disponible mais non récompensée est donc une décision
   `NON_GAMIFIED` explicite, jamais un backlog implicite.
-- Les neuf progressions infinies sont `participation`, `organisation`,
+- Les dix progressions infinies sont `participation`, `organisation`,
   `exploration`, `clean_zones`, `regularity`, `versatility`, `learning`,
-  `moderation` et `cartography` (la modération restant limitée aux comptes
+  `moderation`, `cartography` et `product_feedback` (la modération restant limitée aux comptes
   autorisés par AuthZ).
 - Les jalons CURRENT avec XP sont `Première trace utile`, `Parrainage utile`,
   `Boucle bouclée`, `Mobilisateur`, `Donnée exemplaire` et `Modérateur
@@ -99,7 +99,7 @@ Le code et les tests priment si une divergence apparaît.
   un solde séparé.
 - `/api/gamification/me` expose `progression.summary`, la lecture
   utilisateur canonique consommée par les surfaces Gamification et profil.
-  Elle est construite depuis le registre CURRENT et distingue les neuf
+  Elle est construite depuis le registre CURRENT et distingue les dix
   progressions infinies des jalons one-shot `XP_MILESTONE` ou `BADGE_ONLY` ;
   les entrées `NON_GAMIFIED` en sont exclues. `summary.xpTotal` est la somme
   du ledger `progression_events`, et chaque progression/jalon porte sa
@@ -143,7 +143,7 @@ Le code et les tests priment si une divergence apparaît.
   `clean_zones`; elles partagent ce contrat sans partager leur compteur ni
   leur famille de badges.
 - L'XP globale est calculée à partir de la somme des événements actifs des
-  neuf progressions, des événements one-shot et des récompenses historiques
+  dix progressions, des événements one-shot et des récompenses historiques
   explicitement conservées en compatibilité, comme `sensitive_zone_milestone`. Aucun
   `progression_id` SQL supplémentaire n'est requis : la classification est
   dérivée de manière déterministe du registre des `event_type`.
@@ -321,8 +321,9 @@ d'un delta de profil isolé.
 SPOGOMI utilise les propriétaires CURRENT existants avec une extension bornée.
 `progression_events` reste l'unique ledger XP, `progression_profiles` la
 projection globale, `GAMIFICATION_REGISTRY` le registre des mécaniques et
-`badge-catalog.ts` le propriétaire des identités de badges. Les neuf
-progressions infinies ne changent pas.
+`badge-catalog.ts` le propriétaire des identités de badges. Les dix
+progressions infinies restent celles du registre CURRENT, avec
+`product_feedback` pour les retours produit acceptés.
 
 Les dix distinctions répétables (`spogomi_collector`, `spogomi_referee`, les
 six médailles, `spogomi_double_podium` et `spogomi_organizer`) sont des

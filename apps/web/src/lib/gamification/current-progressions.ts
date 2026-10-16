@@ -139,4 +139,16 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     infinite: true,
     introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
   }),
+  defineCurrentProgression({
+    id: "product_feedback",
+    label: "Amélioration du produit",
+    description: "Retours Bug, Idée et Amélioration acceptés par la qualification produit.",
+    metric: "accepted_product_feedbacks",
+    metricLabel: "Feedbacks acceptés",
+    sourceDomain: "community_bug_reports.qualification_status=accepted.distinct(id)",
+    badgeFamily: "product-feedback",
+    scale: "gem",
+    infinite: true,
+    introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
+  }),
 ] as const satisfies readonly GamificationProgressionDefinition[];

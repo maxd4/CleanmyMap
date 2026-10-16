@@ -94,6 +94,7 @@ describe("FeedbackHistory", () => {
     });
 
     expect(textOf(renderer)).toContain("Répondu");
+    expect(textOf(renderer)).toContain("Comptabilisé dans la progression Amélioration du produit.");
     expect(textOf(renderer)).not.toContain("private@example.com");
     const loadMore = renderer.root.findAllByType("button").find((button) =>
       String(button.props.children).includes("Voir plus"),

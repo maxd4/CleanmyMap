@@ -18,6 +18,7 @@ type Fixture = {
   user_visited_places: FixtureRow[];
   quiz_type_progress: FixtureRow[];
   trash_spotter_spots: FixtureRow[];
+  community_bug_reports: FixtureRow[];
 };
 
 type QueryCall = {
@@ -42,6 +43,7 @@ function emptyFixture(): Fixture {
     user_visited_places: [],
     quiz_type_progress: [],
     trash_spotter_spots: [],
+    community_bug_reports: [],
   };
 }
 

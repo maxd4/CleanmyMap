@@ -43,7 +43,7 @@ describe("Mohs impact progression", () => {
   });
 
   it("does not add Mohs to the CURRENT behavioural progressions", () => {
-    expect(CURRENT_INFINITE_PROGRESSION_IDS).toHaveLength(9);
+    expect(CURRENT_INFINITE_PROGRESSION_IDS).toHaveLength(10);
     expect(CURRENT_INFINITE_PROGRESSION_IDS).not.toContain("mohs_waste" as never);
     expect(CURRENT_INFINITE_PROGRESSION_IDS).not.toContain("mohs_butts" as never);
   });

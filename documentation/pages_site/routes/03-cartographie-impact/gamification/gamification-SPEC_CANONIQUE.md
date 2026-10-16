@@ -266,7 +266,7 @@ Une donnée disponible mais volontairement exclue est donc enregistrée comme
 `NON_GAMIFIED`, avec sa raison CURRENT. Elle ne constitue ni une proposition,
 ni un TODO, ni un signal « à traiter plus tard ».
 
-Les neuf progressions infinies sont :
+Les dix progressions infinies sont :
 
 | ID stable | Libellé | Métrique métier | Domaine source | Famille / échelle |
 | --- | --- | --- | --- | --- |
@@ -279,6 +279,7 @@ Les neuf progressions infinies sont :
 | `learning` | Apprentissage | `validated_learning_events` | quiz et contenus d'apprentissage | `learning` / `learning` |
 | `moderation` | Modération | `resolvedModerationCases` | `admin_operations_audit` (`moderation` / `success`) | `moderation` / `gem` |
 | `cartography` | Contribution cartographique | `verified_geometry_contributions` | `action_geometry_contributions.accepted`, distinct par `action_id` et utilisateur | `cartography` / `cartography` |
+| `product_feedback` | Amélioration du produit | `accepted_product_feedbacks` | `community_bug_reports.qualification_status=accepted`, distinct par `id` et propriétaire | `product-feedback` / `gem` |
 
 Chaque progression suit le contrat commun `GamificationProgressionState` :
 `id`, `label`, `description`, `metric`, `sourceDomain`, `badgeFamily`,
@@ -308,7 +309,7 @@ Les anciens `classification = impact_badge`, `form_*` et
 données déjà écrites. Ils ne sont pas une cinquième catégorie CURRENT et ne
 créent aucune décision implicite pour de nouveaux signaux.
 
-Le total XP global est la somme des événements actifs des neuf progressions et
+Le total XP global est la somme des événements actifs des dix progressions et
 des jalons `XP_MILESTONE` autorisés par le registre. Aucun event type ne crée
 un second ledger ou une balance par famille.
 
@@ -320,6 +321,28 @@ contribution ; les doublons, retries et reconstructions ne créent aucun nouvel
 `action_geometry_contributions`, puis la réconciliation écrit l'événement
 `verified_geometry_contribution` dans `progression_events`. Il n'y a ni XP par
 fichier, ni XP par kilomètre, ni XP fondée sur une simple distance cumulée.
+
+### Amélioration du produit
+
+La progression `product_feedback` mesure les retours Bug, Idée et Amélioration
+dont la qualification persistée est `accepted` par le workflow produit autorisé.
+Les collaborations restent dans le contrat métier du formulaire mais ne sont
+pas comptées dans cette progression. La source est filtrée par le propriétaire
+du feedback ; un compte de revue ne reçoit donc aucun crédit pour les retours
+d'autres utilisateurs.
+
+Chaque identifiant `community_bug_reports.id` est compté une seule fois. Les
+états `pending`, `needs_info`, `duplicate` et `rejected`, un formulaire
+simplement rempli et une ligne supprimée sont exclus. L'archivage d'un retour
+déjà accepté ne retire pas sa preuve tant que la ligne métier existe.
+
+Les paliers sont `1`, `5`, `10`, puis tous les cinq retours. Chaque palier
+attribue `+1 XP` dans le ledger `progression_events`; un retour accepté ne
+promet pas un XP individuel. La réconciliation reconstruite trie les preuves
+par date de décision, date de création et identifiant, puis utilise le retour
+franchissant le palier comme source stable de l'événement. Une révocation,
+une suppression ou une correction de qualification est donc répercutée par le
+rebuild idempotent sans second ledger.
 
 ## Données disponibles mais volontairement non gamifiées
 

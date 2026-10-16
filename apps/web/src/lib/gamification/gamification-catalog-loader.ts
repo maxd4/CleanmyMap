@@ -35,6 +35,10 @@ import {
   type GamificationCatalogProgressionFact,
 } from "./gamification-catalog";
 import { loadActionRowsForUser } from "./progression-data";
+import {
+  loadProductFeedbackFacts,
+  PRODUCT_FEEDBACK_THRESHOLDS,
+} from "./gamification-feedback-facts";
 import type {
   ActionRow,
   CurrentInfiniteProgressionId,
@@ -55,6 +59,7 @@ export type CatalogProgressionInputs = {
   regularity: ReturnType<typeof computeMonthlyRegularitySummary>;
   balance: Awaited<ReturnType<typeof loadActionBalanceSummary>>;
   cartographyCount: number;
+  productFeedbackCount?: number;
 };
 
 type GamificationCatalogOptions = {
@@ -84,6 +89,7 @@ const BASE_CURRENT_PROGRESSION_IDS = [
   "versatility",
   "learning",
   "cartography",
+  "product_feedback",
 ] as const;
 
 const CARTOGRAPHY_TIERS = [
@@ -92,6 +98,12 @@ const CARTOGRAPHY_TIERS = [
   { id: "cartographe-10", label: "Cartographe 10", threshold: 10 },
   { id: "cartographe-25", label: "Cartographe 25", threshold: 25 },
 ] as const;
+
+const PRODUCT_FEEDBACK_TIER_LABELS: Record<number, string> = {
+  1: "Premier retour",
+  5: "Retour engagé",
+  10: "Voix du produit",
+};
 
 function progressionTiersFromGemConfig(
   config: Parameters<typeof buildInfiniteGemGradeCatalog>[1],
@@ -156,6 +168,7 @@ function buildPrimaryProgressionFacts({
   counters,
   cleanZoneSources,
   cartographyCount,
+  productFeedbackCount,
 }: CatalogProgressionInputs): Record<string, GamificationCatalogProgressionFact> {
   return {
     participation: {
@@ -186,6 +199,16 @@ function buildPrimaryProgressionFacts({
       started: cartographyCount > 0,
       tiers: progressionTiersFromLabeled(CARTOGRAPHY_TIERS),
       continuationTitle: (threshold: number) => `Cartographe ${threshold}`,
+    },
+    product_feedback: {
+      currentValue: productFeedbackCount ?? 0,
+      started: (productFeedbackCount ?? 0) > 0,
+      tiers: PRODUCT_FEEDBACK_THRESHOLDS.map((threshold) => ({
+        id: `product-feedback-${threshold}`,
+        title: PRODUCT_FEEDBACK_TIER_LABELS[threshold] ?? `Retour accepté ${threshold}`,
+        threshold,
+      })),
+      continuationTitle: (threshold: number) => `Retour accepté ${threshold}`,
     },
   };
 }
@@ -231,7 +254,7 @@ async function loadCatalogDependencies(
   const actionRowsPromise = options?.actionRows
     ? Promise.resolve(options.actionRows)
     : loadActionRowsForUser(supabase, userId);
-  const [counters, cleanZoneSources, learning, regularity, balance, cartographyResult, referral, eventsResult, identity, rulesMigrationState] =
+  const [counters, cleanZoneSources, learning, regularity, balance, cartographyResult, productFeedback, referral, eventsResult, identity, rulesMigrationState] =
     await Promise.all([
       loadGamificationUserCounters(supabase, userId),
       loadCleanZoneSourcesForUser(supabase, userId),
@@ -248,6 +271,7 @@ async function loadCatalogDependencies(
         .eq("contributor_clerk_id", userId)
         .eq("validation_state", "accepted")
         .limit(10000),
+      loadProductFeedbackFacts(supabase, userId),
       loadReferralSummary(supabase, userId),
       options?.progressionEvents ?? loadGamificationLedgerEvents(supabase, userId),
       getCurrentUserIdentity({ userId }).catch(() => null),
@@ -269,6 +293,7 @@ async function loadCatalogDependencies(
         .map((row) => (row as { action_id?: string | null }).action_id)
         .filter((actionId): actionId is string => Boolean(actionId)),
     ).size,
+    productFeedbackCount: productFeedback.count,
     referral,
     eventsResult,
     identity,
@@ -332,6 +357,7 @@ export async function loadGamificationCatalog(
     regularity,
     balance,
     cartographyCount,
+    productFeedbackCount,
     referral,
     eventsResult,
     identity,
@@ -345,6 +371,7 @@ export async function loadGamificationCatalog(
     regularity,
     balance,
     cartographyCount,
+    productFeedbackCount,
     referral,
     eventsResult,
     identity,

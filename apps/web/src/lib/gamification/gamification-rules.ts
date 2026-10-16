@@ -19,6 +19,7 @@ import {
   type GamificationXpPolicy,
   type ProgressionEventType,
 } from "./progression-types";
+import { PRODUCT_FEEDBACK_THRESHOLDS } from "./gamification-feedback-facts";
 
 type GamificationAwardPolicy =
   | { kind: "fixed"; amount: number }
@@ -65,6 +66,7 @@ function thresholdsForProgression(id: string): readonly number[] {
       ...QUIZ_PROGRESS_MILESTONES.map((milestone) => milestone.threshold),
       ...QUIZ_BALANCE_MILESTONES.map((milestone) => milestone.threshold),
     ])].sort((left, right) => left - right);
+    case "product_feedback": return PRODUCT_FEEDBACK_THRESHOLDS;
     default: return [];
   }
 }

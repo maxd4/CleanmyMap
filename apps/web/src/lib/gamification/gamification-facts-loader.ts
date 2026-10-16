@@ -4,6 +4,7 @@ import { appendCounterFacts } from "./gamification-counter-facts";
 import { loadCleanZoneFacts } from "./gamification-clean-zone-facts";
 import { buildActionFacts } from "./gamification-action-facts";
 import { buildParticipationReferralFacts } from "./gamification-community-facts";
+import { loadProductFeedbackFacts } from "./gamification-feedback-facts";
 import { loadGeometryContributionFacts } from "./gamification-geometry-facts";
 import { loadModerationFacts } from "./gamification-moderation-facts";
 import { buildQuizFacts } from "./gamification-quiz-facts";
@@ -26,13 +27,14 @@ async function loadCurrentGamificationFacts(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<GamificationFacts> {
-  const [actions, counters, visitedResult, quizResult, participantResult, geometryContributionFacts] = await Promise.all([
+  const [actions, counters, visitedResult, quizResult, participantResult, geometryContributionFacts, productFeedback] = await Promise.all([
     loadActionRowsForUser(supabase, userId),
     loadGamificationUserCounters(supabase, userId),
     supabase.from("user_visited_places").select("place_label, created_at").eq("user_id", userId).limit(10000),
     supabase.from("quiz_type_progress").select("question_type, correct_count, updated_at").eq("user_id", userId).limit(100),
     supabase.from("action_participants").select("action_id, joined_at, updated_at, participation_source").eq("user_id", userId).eq("participation_status", "confirmed").limit(10000),
     loadGeometryContributionFacts(supabase, userId),
+    loadProductFeedbackFacts(supabase, userId),
   ]);
   if (visitedResult.error) throw new Error(visitedResult.error.message);
   if (quizResult.error) throw new Error(quizResult.error.message);
@@ -42,7 +44,7 @@ async function loadCurrentGamificationFacts(
     actionRows: actions,
   });
   const actionState = await buildActionFacts(supabase, userId, actions, validatedActionIds);
-  const facts: GamificationSourceFact[] = [...actionState.facts, ...geometryContributionFacts];
+  const facts: GamificationSourceFact[] = [...actionState.facts, ...geometryContributionFacts, ...productFeedback.facts];
   const spogomiFirstReferee = await loadSpogomiFirstRefereeFact(supabase, userId);
   if (spogomiFirstReferee) facts.push(spogomiFirstReferee);
   const participantRows = (participantResult.data ?? []) as unknown[];
@@ -80,6 +82,7 @@ async function loadCurrentGamificationFacts(
       versatility: actionState.balance.balancedCycles,
       learning: quizState.totalCorrectAnswers,
       cartography: geometryContributionFacts.length,
+      product_feedback: productFeedback.count,
     },
     applicableMechanicIds,
   };

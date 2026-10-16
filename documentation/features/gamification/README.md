@@ -12,9 +12,9 @@ recopie ni les seuils de progression ni les familles de badges.
 - Le moteur de progression est détenu par `apps/web/src/lib/gamification/`.
   `GAMIFICATION_REGISTRY` dans `progression-utils.ts` est le catalogue de
   décision des mécaniques.
-- Les neuf progressions infinies sont `participation`, `organisation`,
+- Les dix progressions infinies sont `participation`, `organisation`,
   `exploration`, `clean_zones`, `regularity`, `versatility`, `learning`,
-  `moderation` et `cartography`.
+  `moderation`, `cartography` et `product_feedback`.
 - Les faits métier restent dans leurs sources. `progression_events` est le
   ledger XP CURRENT et `progression_profiles` sa projection persistante.
 - Les identités et collections de badges sont détenues par
