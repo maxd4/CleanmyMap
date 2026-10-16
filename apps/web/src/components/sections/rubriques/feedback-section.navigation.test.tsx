@@ -145,7 +145,7 @@ describe("FeedbackSection URL synchronization", () => {
     });
 
     expect(selectedFeedbackType(renderer)).toBe("bug");
-    expect(textOf(renderer)).toContain("Étapes pour reproduire");
+    expect(textOf(renderer)).toContain("Qu'est-ce qui s'est produit ?");
     expect(textareaValues(renderer)).toEqual([
       "Carte bloquée",
       "Mobile",
@@ -210,7 +210,7 @@ describe("FeedbackSection URL synchronization", () => {
     expect(location.search).toBe("?type=bug");
     expect(location.hash).toBe("#bug");
     expect(selectedFeedbackType(renderer)).toBe("bug");
-    expect(textOf(renderer)).toContain("Résultat attendu");
+    expect(textOf(renderer)).toContain("Qu'auriez-vous dû observer ?");
 
     location.search = "";
     location.hash = "#collaboration";

@@ -128,4 +128,17 @@ describe("QuestionnaireCard serialized description validation", () => {
     );
     expect(JSON.stringify(ideaRenderer.toJSON())).not.toContain("Capture d'écran (facultatif)");
   });
+
+  it("keeps the four collaboration fields and adds an optional editable title", () => {
+    const collaboration = QUESTIONNAIRES.find((candidate) => candidate.id === "collaboration")!;
+
+    expect(collaboration.fields.map((field) => field.key)).toEqual([
+      "subject",
+      "organization",
+      "purpose",
+      "contribution",
+      "nextStep",
+    ]);
+    expect(collaboration.fields[0]).toMatchObject({ key: "subject", minLength: 0 });
+  });
 });

@@ -30,6 +30,10 @@ function quoteUntrustedText(value: string | null | undefined): string {
     .replace(/<\/?(?:user-content|work-instructions)>/gi, "[délimiteur neutralisé]");
 }
 
+function quoteInlineUntrustedText(value: string | null | undefined): string {
+  return quoteUntrustedText(value).replace(/\r?\n/g, " ");
+}
+
 function findDetail(item: CreatorInboxItem, label: string): string | null {
   return item.details.find((detail) => detail.label === label)?.value ?? null;
 }
@@ -75,7 +79,9 @@ function expectedObservation(item: CreatorInboxItem): string {
   return (
     extractContextField(item.context, [
       "Résultat attendu",
+      "Qu'auriez-vous dû observer ?",
       "Expected result",
+      "What should you have observed?",
       "Impact attendu",
       "Expected impact",
       "Bénéfice attendu",
@@ -109,13 +115,13 @@ function buildSafeRecord(item: CreatorInboxItem): {
 
 function formatRecord(record: ReturnType<typeof buildSafeRecord>): string {
   return [
-    `## ${record.title}`,
+    `## ${quoteInlineUntrustedText(record.title)}`,
     "",
-    `- Type : ${record.type}`,
-    `- Route / rubrique : ${record.route}`,
-    `- Provenance du formulaire : ${record.formSource}`,
-    `- Référence : ${record.reference}`,
-    `- Date : ${record.date}`,
+    `- Type : ${quoteInlineUntrustedText(record.type)}`,
+    `- Route / rubrique : ${quoteInlineUntrustedText(record.route)}`,
+    `- Provenance du formulaire : ${quoteInlineUntrustedText(record.formSource)}`,
+    `- Référence : ${quoteInlineUntrustedText(record.reference)}`,
+    `- Date : ${quoteInlineUntrustedText(record.date)}`,
     "",
     "### Observations utilisateur",
     "",

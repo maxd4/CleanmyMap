@@ -196,6 +196,19 @@ export const QUESTIONNAIRES = [
     accent: "emerald",
     fields: [
       {
+        key: "subject",
+        label: { fr: "Titre (facultatif)", en: "Title (optional)" },
+        placeholder: {
+          fr: "Laissez vide pour utiliser un titre proposé",
+          en: "Leave blank to use a suggested title",
+        },
+        helper: {
+          fr: "Vous pouvez le modifier ou le laisser vide.",
+          en: "You can edit it or leave it blank.",
+        },
+        minLength: 0,
+      },
+      {
         key: "organization",
         label: { fr: "Structure ou personne", en: "Organization or person" },
         placeholder: {

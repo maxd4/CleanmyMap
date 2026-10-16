@@ -94,6 +94,58 @@ describe("feedback submission contract", () => {
     ).toBe("Titre choisi");
   });
 
+  it("submits an explicitly edited collaboration title", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ requestId: "collaboration-42" }), { status: 201 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "collaboration")!;
+    const values = Object.fromEntries(
+      questionnaire.fields.map((field) => [field.key, `Valeur ${field.key}`]),
+    );
+    values.subject = "Partenariat terrain choisi";
+
+    await submitFeedbackQuestionnaire({
+      questionnaire,
+      values,
+      pagePath: "/sections/feedback",
+      source: "feedback_section",
+      locale: "fr",
+      honeypot: "",
+      submittedAt: Date.now(),
+    });
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string) as { title: string };
+    expect(body.title).toBe("Partenariat terrain choisi");
+    vi.unstubAllGlobals();
+  });
+
+  it("suggests a collaboration title when the optional title is absent", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ requestId: "collaboration-43" }), { status: 201 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "collaboration")!;
+    const values = Object.fromEntries(
+      questionnaire.fields.map((field) => [field.key, `Valeur ${field.key}`]),
+    );
+    values.subject = "";
+
+    await submitFeedbackQuestionnaire({
+      questionnaire,
+      values,
+      pagePath: "/sections/feedback",
+      source: "feedback_section",
+      locale: "fr",
+      honeypot: "",
+      submittedAt: Date.now(),
+    });
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string) as { title: string };
+    expect(body.title).toBe("Collaboration proposée — Valeur organization");
+    vi.unstubAllGlobals();
+  });
+
   it("returns the request id from the existing API response", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ status: "queued", requestId: "report-42" }), {
