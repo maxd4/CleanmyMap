@@ -97,12 +97,17 @@ function classifyAuditResult(result) {
     throw cycleGateError("TIMEOUT", "GitNexus audit process timed out or was interrupted.");
   }
   const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
+  const failedStep = output.match(/GITNEXUS_STEP_FAILED: ([^\r\n]+)/);
+  if (failedStep) {
+    throw cycleGateError("HOST_ENVIRONMENT", `GitNexus phase failed before cycle report: ${failedStep[1]}.`);
+  }
   const runnerMissing = output.match(/GITNEXUS_STATUS: RUNNER_MISSING|HOST_ENVIRONMENT: GitNexus runner missing/);
   if (runnerMissing) throw cycleGateError("RUNNER_MISSING", runnerMissing[0]);
   const timeout = output.match(/HOST_ENVIRONMENT: GitNexus (?:step|command) timed out[^\r\n]*/);
   if (timeout) throw cycleGateError("TIMEOUT", timeout[0]);
   const hostEnvironment = output.match(/HOST_ENVIRONMENT:[^\r\n]*/);
   if (hostEnvironment) throw cycleGateError("HOST_ENVIRONMENT", hostEnvironment[0]);
+  if (result.error) throw cycleGateError("HOST_ENVIRONMENT", `GitNexus audit process could not start: ${result.error.message}`);
 }
 
 async function runAuditProcess() {
@@ -119,10 +124,16 @@ async function runAuditProcess() {
   });
   return {
     status: result.exitCode ?? 1,
+    processStatus: result.status,
+    exitCode: result.exitCode,
     stdout: result.stdout ?? "",
     stderr: result.stderr ?? "",
+    elapsedSeconds: result.elapsedSeconds,
     timedOut: result.timedOut,
     interrupted: result.interrupted,
+    error: result.error
+      ? { name: result.error.name, message: result.error.message, code: result.error.code }
+      : null,
   };
 }
 
@@ -148,10 +159,16 @@ export async function runCycleGate({ runAudit = runAuditProcess, baseline: suppl
   try {
     report = parseCycleReport(result.stdout ?? "");
   } catch (error) {
+    if (result.status !== 0) {
+      throw cycleGateError(
+        "HOST_ENVIRONMENT",
+        `GitNexus audit exited with code ${result.status} before producing a cycle report: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
     throw cycleGateError("MALFORMED_REPORT", error instanceof Error ? error.message : String(error));
   }
   if (result.status !== 0 && report.status !== "cycles_found") {
-    throw cycleGateError("MALFORMED_REPORT", `GitNexus cycle check failed with exit ${result.status}: ${result.stderr || result.stdout}`);
+    throw cycleGateError("HOST_ENVIRONMENT", `GitNexus cycle check failed with exit ${result.status}: ${result.stderr || result.stdout}`);
   }
   let cycles;
   try {

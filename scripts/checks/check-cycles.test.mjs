@@ -39,10 +39,30 @@ test("a new cycle fails with a stable fingerprint and readable files", async () 
   assert.equal(result.gateStatus, "FAIL_NEW_CYCLE");
 });
 
-test("a real tool error is classified as a malformed report", async () => {
+test("a failed GitNexus process without a report is classified as host environment", async () => {
   await assert.rejects(
     () => runCycleGate({ runAudit: () => ({ status: 1, stdout: "", stderr: "GitNexus crashed" }) }),
-    /no JSON report/,
+    (error) => error.code === "HOST_ENVIRONMENT" && /exited with code 1/.test(error.message),
+  );
+});
+
+test("a successful GitNexus process without a report remains a malformed report", async () => {
+  await assert.rejects(
+    () => runCycleGate({ runAudit: () => ({ status: 0, stdout: "", stderr: "" }) }),
+    (error) => error.code === "MALFORMED_REPORT" && /no JSON report/.test(error.message),
+  );
+});
+
+test("a failed analyze phase is classified before cycle JSON parsing", async () => {
+  await assert.rejects(
+    () => runCycleGate({
+      runAudit: () => ({
+        status: 1,
+        stdout: "GITNEXUS_STEP_FAILED: analyze --index-only\n",
+        stderr: "",
+      }),
+    }),
+    (error) => error.code === "HOST_ENVIRONMENT" && /analyze --index-only/.test(error.message),
   );
 });
 

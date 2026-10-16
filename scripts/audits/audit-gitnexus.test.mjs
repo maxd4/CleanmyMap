@@ -42,6 +42,37 @@ test("GitNexus preflight fails immediately when the local runner is missing", as
   assert.ok(diagnostics.includes("SETUP_CANONICAL: npm install --global gitnexus@1.6.12"));
 });
 
+test("GitNexus audit refuses a concurrent index producer", async (t) => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-lock-"));
+  const runnerPath = path.join(repoRoot, ".gitnexus", "run.cjs");
+  fs.mkdirSync(path.dirname(runnerPath), { recursive: true });
+  fs.writeFileSync(runnerPath, "process.stdout.write('runner\\n');\\n");
+  fs.writeFileSync(path.join(repoRoot, ".gitnexus", "quality-audit.lock"), "{\"pid\":123}");
+  t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
+
+  const diagnostics = [];
+  assert.equal(await main([], repoRoot, { writeDiagnostic: (line) => diagnostics.push(line) }), 1);
+  assert.ok(diagnostics.includes("GITNEXUS_STATUS: HOST_ENVIRONMENT"));
+  assert.ok(diagnostics.includes("HOST_ENVIRONMENT: another GitNexus audit holds the index lock."));
+});
+
+test("GitNexus phase failures identify the failed phase", async (t) => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-phase-failure-"));
+  const runnerPath = path.join(repoRoot, ".gitnexus", "run.cjs");
+  fs.mkdirSync(path.dirname(runnerPath), { recursive: true });
+  fs.writeFileSync(
+    runnerPath,
+    String.raw`if (process.argv[2] === 'analyze') process.exitCode = 7; else process.stdout.write('status\\n');
+`,
+  );
+  t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
+
+  const diagnostics = [];
+  assert.equal(await main([], repoRoot, { writeDiagnostic: (line) => diagnostics.push(line) }), 7);
+  assert.ok(diagnostics.includes("GITNEXUS_STEP_FAILED: analyze --index-only"));
+  assert.ok(diagnostics.includes("GITNEXUS_STATUS: HOST_ENVIRONMENT"));
+});
+
 test("GitNexus audit reports visible steps and PASS for a controlled runner", async (t) => {
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-audit-"));
   const runnerPath = path.join(repoRoot, ".gitnexus", "run.cjs");
@@ -156,6 +187,7 @@ test("GitNexus index reuse requires the same candidate, version, and index confi
   assert.equal(canReuseGitNexusIndex(metadata, { candidate: "candidate-b" }), false);
   assert.equal(canReuseGitNexusIndex(metadata, { candidate: "candidate-a", expectedVersion: "1.6.13" }), false);
   assert.equal(canReuseGitNexusIndex({ ...metadata, schemaFingerprint: "" }, { candidate: "candidate-a" }), false);
+  assert.equal(canReuseGitNexusIndex({ ...metadata, incrementalInProgress: { phase: "load-graph" } }, { candidate: "candidate-a" }), false);
 });
 
 test("GitNexus freshness status is deterministic for current, partial, stale, and unavailable indexes", () => {

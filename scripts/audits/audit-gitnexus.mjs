@@ -19,6 +19,7 @@ import {
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const runnerRelativePath = ".gitnexus/run.cjs";
 const indexMetadataRelativePath = ".gitnexus/gitnexus.json";
+const auditLockRelativePath = ".gitnexus/quality-audit.lock";
 export const GITNEXUS_EXPECTED_VERSION = "1.6.12";
 export const GITNEXUS_INDEX_STATUSES = Object.freeze([
   "INDEX_CURRENT",
@@ -178,7 +179,8 @@ export function canReuseGitNexusIndex(
       && metadata.contentRetention === "full"
       && metadata.ftsProfile === "full"
       && typeof metadata.schemaFingerprint === "string"
-      && metadata.schemaFingerprint.length > 0,
+      && metadata.schemaFingerprint.length > 0
+      && !metadata.incrementalInProgress,
   );
 }
 
@@ -238,14 +240,74 @@ export async function runGitNexusCommand(
   });
 
   writeDiagnostic(`GITNEXUS_STEP_DONE: ${label} elapsed=${result.elapsedSeconds.toFixed(1)}s`);
+  writeDiagnostic(`GITNEXUS_STEP_EXIT_CODE: ${result.exitCode ?? "null"}`);
   return {
     status: result.exitCode ?? 1,
+    processStatus: result.status,
+    exitCode: result.exitCode,
     stdout: result.stdout ?? "",
     stderr: result.stderr ?? "",
     elapsedSeconds: result.elapsedSeconds,
     timedOut: result.status === "TIME_BUDGET_EXCEEDED",
     interrupted: result.status === "INTERRUPTED",
+    error: result.error
+      ? { name: result.error.name, message: result.error.message, code: result.error.code }
+      : null,
   };
+}
+
+function isCompleteCycleReport(stdout = "") {
+  const jsonStarts = [...stdout.matchAll(/\{\s*"status"\s*:/g)].map((match) => match.index ?? -1);
+  const jsonStart = jsonStarts.at(-1) ?? -1;
+  if (jsonStart < 0) return false;
+  try {
+    const report = JSON.parse(stdout.slice(jsonStart));
+    return report.status === "cycles_found"
+      && report.enumeration === "complete"
+      && Array.isArray(report.cycles);
+  } catch {
+    return false;
+  }
+}
+
+function hasStaleStatus(stdout = "") {
+  return /Status:\s*.*stale/i.test(stdout) || /Index incomplete reasons:/i.test(stdout);
+}
+
+function acquireAuditLock(repoDirectory) {
+  const lockPath = path.join(repoDirectory, auditLockRelativePath);
+  const token = `${process.pid}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  let descriptor;
+  try {
+    descriptor = fs.openSync(lockPath, "wx");
+    fs.writeSync(descriptor, JSON.stringify({ pid: process.pid, token, startedAt: new Date().toISOString() }));
+    return { lockPath, token };
+  } catch (error) {
+    if (error?.code === "EEXIST") return null;
+    throw error;
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+}
+
+function releaseAuditLock(lock) {
+  if (!lock) return;
+  try {
+    const current = JSON.parse(fs.readFileSync(lock.lockPath, "utf8"));
+    if (current.token === lock.token) fs.unlinkSync(lock.lockPath);
+  } catch {
+    // A competing process owns the lock or the repository disappeared.
+  }
+}
+
+function readIndexStatus(repoDirectory, candidate) {
+  const metadata = readGitNexusIndexMetadata(repoDirectory);
+  return classifyGitNexusIndex({
+    metadata,
+    candidate,
+    worktreeDirty: !isWorktreeClean(repoDirectory),
+    runnerPresent: preflightGitNexus(repoDirectory).present,
+  });
 }
 
 function printPreflight(preflight, writeDiagnostic) {
@@ -279,10 +341,11 @@ export async function main(
 
   const startedAt = performance.now();
   const commands = [];
+  const candidateAtStart = readCurrentHead(repoDirectory);
   const metadataBeforeAnalysis = readGitNexusIndexMetadata(repoDirectory);
   const indexStatus = classifyGitNexusIndex({
     metadata: metadataBeforeAnalysis,
-    candidate: readCurrentHead(repoDirectory),
+    candidate: candidateAtStart,
     worktreeDirty: !isWorktreeClean(repoDirectory),
     runnerPresent: preflight.present,
   });
@@ -305,30 +368,81 @@ export async function main(
   }
   if (options.cycles) commands.push(["check", "--cycles", "--json"]);
 
-  for (const args of commands) {
-    const result = await runGitNexusCommand(repoDirectory, args, { writeDiagnostic });
-    if (result.timedOut) {
-      writeDiagnostic("GITNEXUS_STATUS: TIMEOUT");
-      writeDiagnostic("HOST_ENVIRONMENT: GitNexus step timed out");
-      writeDiagnostic(`STEP: ${stepLabel(args)}`);
-      writeDiagnostic(`ELAPSED_SECONDS: ${Math.ceil(result.elapsedSeconds)}`);
+  let lock = null;
+  if (commands.length > 0) {
+    try {
+      lock = acquireAuditLock(repoDirectory);
+    } catch (error) {
+      writeDiagnostic("GITNEXUS_STATUS: HOST_ENVIRONMENT");
+      writeDiagnostic(`HOST_ENVIRONMENT: GitNexus audit lock could not be created: ${error.message}`);
       return 1;
     }
-    if (result.interrupted) {
+    if (!lock) {
       writeDiagnostic("GITNEXUS_STATUS: HOST_ENVIRONMENT");
-      writeDiagnostic("HOST_ENVIRONMENT: GitNexus step interrupted");
-      writeDiagnostic(`STEP: ${stepLabel(args)}`);
-      writeDiagnostic(`ELAPSED_SECONDS: ${Math.ceil(result.elapsedSeconds)}`);
-      return 130;
+      writeDiagnostic("HOST_ENVIRONMENT: another GitNexus audit holds the index lock.");
+      return 1;
     }
-    if (result.status !== 0) return result.status;
-    if (args[0] === "analyze") writeGitNexusEvidence(repoDirectory, readGitNexusIndexMetadata(repoDirectory), GITNEXUS_ANALYZE_CHECK);
-    if (args[0] === "status") writeGitNexusEvidence(repoDirectory, readGitNexusIndexMetadata(repoDirectory), GITNEXUS_STATUS_CHECK);
+    writeDiagnostic("GITNEXUS_LOCK_ACQUIRED");
   }
 
-  writeDiagnostic(`GITNEXUS_TOTAL_ELAPSED_SECONDS: ${((performance.now() - startedAt) / 1000).toFixed(1)}`);
-  writeDiagnostic("GITNEXUS_STATUS: PASS");
-  return 0;
+  try {
+    for (const args of commands) {
+      const result = await runGitNexusCommand(repoDirectory, args, { writeDiagnostic });
+      const candidateAfter = readCurrentHead(repoDirectory);
+      if (candidateAfter !== candidateAtStart) {
+        writeDiagnostic("GITNEXUS_STATUS: HOST_ENVIRONMENT");
+        writeDiagnostic(`HOST_ENVIRONMENT: GitNexus candidate changed during ${stepLabel(args)}.`);
+        writeDiagnostic(`CANDIDATE_START: ${candidateAtStart ?? "unavailable"}`);
+        writeDiagnostic(`CANDIDATE_END: ${candidateAfter ?? "unavailable"}`);
+        return 1;
+      }
+      if (result.timedOut) {
+        writeDiagnostic("GITNEXUS_STATUS: TIMEOUT");
+        writeDiagnostic("HOST_ENVIRONMENT: GitNexus step timed out");
+        writeDiagnostic(`STEP: ${stepLabel(args)}`);
+        writeDiagnostic(`ELAPSED_SECONDS: ${Math.ceil(result.elapsedSeconds)}`);
+        return 1;
+      }
+      if (result.interrupted) {
+        writeDiagnostic("GITNEXUS_STATUS: HOST_ENVIRONMENT");
+        writeDiagnostic("HOST_ENVIRONMENT: GitNexus step interrupted");
+        writeDiagnostic(`STEP: ${stepLabel(args)}`);
+        writeDiagnostic(`ELAPSED_SECONDS: ${Math.ceil(result.elapsedSeconds)}`);
+        return 130;
+      }
+      if (result.status !== 0 && !(args[0] === "check" && isCompleteCycleReport(result.stdout))) {
+        writeDiagnostic("GITNEXUS_STATUS: HOST_ENVIRONMENT");
+        writeDiagnostic(`GITNEXUS_STEP_FAILED: ${stepLabel(args)}`);
+        writeDiagnostic(`HOST_ENVIRONMENT: GitNexus phase exited with code ${result.status}.`);
+        return result.status;
+      }
+      if (args[0] === "analyze") {
+        const indexAfterAnalyze = readIndexStatus(repoDirectory, candidateAtStart);
+        writeDiagnostic(`GITNEXUS_INDEX_STATUS_AFTER_ANALYZE: ${indexAfterAnalyze}`);
+        if (candidateAtStart && !["INDEX_CURRENT", "INDEX_PARTIALLY_STALE"].includes(indexAfterAnalyze)) {
+          writeDiagnostic("GITNEXUS_STATUS: HOST_ENVIRONMENT");
+          writeDiagnostic("HOST_ENVIRONMENT: GitNexus analyze did not produce an index attributable to the candidate.");
+          return 1;
+        }
+        writeGitNexusEvidence(repoDirectory, readGitNexusIndexMetadata(repoDirectory), GITNEXUS_ANALYZE_CHECK);
+      }
+      if (args[0] === "status") {
+        if (hasStaleStatus(result.stdout)) {
+          writeDiagnostic("GITNEXUS_INDEX_STATUS: INDEX_STALE");
+          writeDiagnostic("GITNEXUS_STATUS: HOST_ENVIRONMENT");
+          writeDiagnostic("HOST_ENVIRONMENT: GitNexus status reports an incomplete or stale index.");
+          return 1;
+        }
+        writeGitNexusEvidence(repoDirectory, readGitNexusIndexMetadata(repoDirectory), GITNEXUS_STATUS_CHECK);
+      }
+    }
+
+    writeDiagnostic(`GITNEXUS_TOTAL_ELAPSED_SECONDS: ${((performance.now() - startedAt) / 1000).toFixed(1)}`);
+    writeDiagnostic("GITNEXUS_STATUS: PASS");
+    return 0;
+  } finally {
+    releaseAuditLock(lock);
+  }
 }
 
 const currentFile = path.resolve(fileURLToPath(import.meta.url));
