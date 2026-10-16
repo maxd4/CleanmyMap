@@ -61,6 +61,12 @@
   manquantes restent `n/a`/inconnues et les indicateurs dérivés restent
   étiquetés comme proxies.
 
+  L'aperçu navigateur reçoit une projection publique de cette action : les
+  identifiants privés et les données internes de préparation, notamment les
+  notes logistiques et les formalités, restent côté serveur. La projection
+  réutilise l'allowlist publique cartographique existante ; le contrat complet
+  reste réservé à la résolution et aux calculs serveur.
+
   L'historique « Mes rapports récents » ne contient que les générations réellement
   persistées par le compte connecté dans `public.report_generations`, au maximum
   les 12 plus récentes de ce compte.

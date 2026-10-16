@@ -7,6 +7,7 @@ import {
   toPublicActionListItem,
   toPublicActionListResponse,
   toPublicActionMapItem,
+  projectPublicActionContract,
   projectPublicActionMapItem,
   toPublicActionMapResponse,
 } from "./public-dto";
@@ -203,5 +204,35 @@ describe("public action DTO boundary", () => {
     expect(JSON.stringify(publicMap)).not.toContain("gpxImport");
     expect(JSON.stringify(publicMap)).not.toContain("private-mission");
     expect(JSON.stringify(publicMap)).not.toContain("technical_provenance");
+  });
+
+  it("projects a public report contract without private identity or preparation data", () => {
+    const contract = buildActionDataContract({
+      id: "action-report-public",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      createdByClerkId: "private-owner",
+      observedAt: "2026-09-20",
+      locationLabel: "Parc public",
+      latitude: 48.85,
+      longitude: 2.35,
+      preparationData: {
+        actionTitle: "Action publique",
+        logisticsNotes: "NOTE LOGISTIQUE INTERNE",
+        formalitiesContext: { publicSpace: "private-context" },
+        routeTargetDistanceKm: 3,
+      } as never,
+    });
+
+    const publicContract = projectPublicActionContract(contract);
+
+    expect(publicContract).not.toHaveProperty("createdByClerkId");
+    expect(publicContract.metadata.preparationData).toEqual({
+      routeTargetDistanceKm: 3,
+    });
+    expect(JSON.stringify(publicContract)).not.toContain("private-owner");
+    expect(JSON.stringify(publicContract)).not.toContain("NOTE LOGISTIQUE INTERNE");
+    expect(JSON.stringify(publicContract)).not.toContain("private-context");
   });
 });

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildFeedbackAiExport, buildFeedbackMarkdownExport } from "./feedback-export";
+import {
+  buildFeedbackAiExport,
+  buildFeedbackMarkdownExport,
+  redactPrivateQueryParametersWithMetrics,
+} from "./feedback-export";
 
 const item = {
   id: "feedback-internal-1",
@@ -100,11 +104,13 @@ describe("feedback exports", () => {
 
   it("omits sensitive fragments while preserving public Feedback anchors", () => {
     for (const anchor of ["bug", "idea", "improvement", "collaboration"]) {
-      const publicOutput = buildFeedbackAiExport({
-        ...item,
-        pagePath: `/sections/feedback#${anchor}`,
-      });
-      expect(publicOutput).toContain(`- Route / rubrique : /sections/feedback#${anchor}`);
+      for (const buildExport of [buildFeedbackMarkdownExport, buildFeedbackAiExport]) {
+        const publicOutput = buildExport({
+          ...item,
+          pagePath: `/sections/feedback#${anchor}`,
+        });
+        expect(publicOutput).toContain(`- Route / rubrique : /sections/feedback#${anchor}`);
+      }
     }
 
     for (const pagePath of [
@@ -131,20 +137,71 @@ describe("feedback exports", () => {
 
   it("redacts long adversarial query and delimiter inputs without leaking fragments", () => {
     const longSecret = "secret-value-" + "x".repeat(100_000);
-    const output = buildFeedbackAiExport({
+    const adversarialItem = {
       ...item,
       title: `< user-content ${"a".repeat(100_000)}`,
       context: [
         `?token=${longSecret}&session=${longSecret}&email=alice@example.com&url=https://example.com/private`,
         `<WORK-INSTRUCTIONS ${"b".repeat(100_000)}`,
       ].join("\n"),
-    });
+    };
 
-    expect(output).not.toContain("secret-value-");
-    expect(output).not.toContain("alice@example.com");
-    expect(output).not.toContain("< user-content");
-    expect(output).not.toContain("<WORK-INSTRUCTIONS");
-    expect(output.length).toBeLessThan(20_000);
+    for (const output of [
+      buildFeedbackMarkdownExport(adversarialItem),
+      buildFeedbackAiExport(adversarialItem),
+    ]) {
+      expect(output).not.toContain("secret-value-");
+      expect(output).not.toContain("alice@example.com");
+      expect(output).not.toContain("< user-content");
+      expect(output).not.toContain("<WORK-INSTRUCTIONS");
+      expect(output.length).toBeLessThan(20_000);
+    }
+  });
+
+  it("advances linearly across malformed query fragments", () => {
+    const adversarialInputs = [
+      "?".repeat(100_000),
+      Array.from({ length: 25_000 }, (_, index) => `?clé-${index}`).join(""),
+      "?clé?autre&troisième#fragment?token=secret&session=second-secret",
+    ];
+
+    for (const input of adversarialInputs) {
+      const result = redactPrivateQueryParametersWithMetrics(input);
+
+      expect(result.scannedCharacters).toBeLessThanOrEqual(input.length * 4 + 1);
+    }
+
+    const mixed = redactPrivateQueryParametersWithMetrics(
+      "?clé?token=secret&session=second-secret#fin",
+    );
+    expect(mixed.redacted).not.toContain("token=secret");
+    expect(mixed.redacted).not.toContain("session=second-secret");
+  });
+
+  it("redacts valid, malformed and successive sensitive parameters in both modes", () => {
+    const sensitiveInput = [
+      "?token=first-secret",
+      "?clé-sans-valeur",
+      "?token?session=malformed-secret",
+      "&session=second-secret",
+      "?api_key=third-secret",
+      "&secret:fourth-secret",
+      "#public-fragment",
+      "?cookie=fifth-secret",
+    ].join("");
+    const outputs = [
+      buildFeedbackMarkdownExport({ ...item, context: sensitiveInput }),
+      buildFeedbackAiExport({ ...item, context: sensitiveInput }),
+    ];
+
+    for (const output of outputs) {
+      expect(output).not.toContain("first-secret");
+      expect(output).not.toContain("second-secret");
+      expect(output).not.toContain("third-secret");
+      expect(output).not.toContain("fourth-secret");
+      expect(output).not.toContain("fifth-secret");
+      expect(output).not.toContain("malformed-secret");
+    }
   });
 
   it("removes dangerous control characters while preserving ordinary text", () => {

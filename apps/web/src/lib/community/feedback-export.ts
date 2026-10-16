@@ -15,6 +15,12 @@ const PUBLIC_FEEDBACK_ANCHORS = new Set([
   "#collaboration",
 ]);
 
+type QueryScanMetrics = {
+  cursorSteps: number;
+  keySteps: number;
+  valueSteps: number;
+};
+
 function isWhitespace(character: string): boolean {
   return character.length > 0 && character.trim() === "";
 }
@@ -25,12 +31,16 @@ function redactPrivateText(value: string): string {
   ).replace(PRIVATE_TOKEN_PATTERN, "[jeton privé supprimé]");
 }
 
-function redactPrivateQueryParameters(value: string): string {
+function redactPrivateQueryParameters(
+  value: string,
+  metrics?: QueryScanMetrics,
+): string {
   const output: string[] = [];
   let literalStart = 0;
   let cursor = 0;
 
   while (cursor < value.length) {
+    if (metrics) metrics.cursorSteps += 1;
     if (value[cursor] !== "?" && value[cursor] !== "&") {
       cursor += 1;
       continue;
@@ -41,13 +51,14 @@ function redactPrivateQueryParameters(value: string): string {
     while (
       keyEnd < value.length
       && !isWhitespace(value[keyEnd])
-      && !["&", "#", "="].includes(value[keyEnd])
+      && !["?", "&", "#", "="].includes(value[keyEnd])
     ) {
+      if (metrics) metrics.keySteps += 1;
       keyEnd += 1;
     }
 
     if (keyEnd === keyStart || value[keyEnd] !== "=") {
-      cursor += 1;
+      cursor = keyEnd;
       continue;
     }
 
@@ -59,6 +70,7 @@ function redactPrivateQueryParameters(value: string): string {
       && value[valueEnd] !== "&"
       && value[valueEnd] !== "#"
     ) {
+      if (metrics) metrics.valueSteps += 1;
       valueEnd += 1;
     }
 
@@ -74,6 +86,17 @@ function redactPrivateQueryParameters(value: string): string {
 
   output.push(value.slice(literalStart));
   return output.join("");
+}
+
+export function redactPrivateQueryParametersWithMetrics(value: string): {
+  redacted: string;
+  scannedCharacters: number;
+} {
+  const metrics: QueryScanMetrics = { cursorSteps: 0, keySteps: 0, valueSteps: 0 };
+  return {
+    redacted: redactPrivateQueryParameters(value, metrics),
+    scannedCharacters: metrics.cursorSteps + metrics.keySteps + metrics.valueSteps,
+  };
 }
 
 function stripUnsafeControlCharacters(value: string): string {

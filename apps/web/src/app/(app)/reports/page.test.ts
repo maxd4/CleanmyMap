@@ -73,10 +73,12 @@ vi.mock("@/components/reports/deferred-reports-web-document", () => ({
     isTruncated,
     initialHistoryAvailability,
     singleAction,
+    contracts,
   }: {
     isTruncated?: boolean;
     initialHistoryAvailability?: string;
     singleAction?: { actionId: string; scopeLabel: string };
+    contracts?: unknown[];
   }) =>
     React.createElement(
       "section",
@@ -86,6 +88,7 @@ vi.mock("@/components/reports/deferred-reports-web-document", () => ({
         "data-history-availability": initialHistoryAvailability,
         "data-single-action-id": singleAction?.actionId,
         "data-single-action-scope": singleAction?.scopeLabel,
+        "data-single-action-contract": singleAction ? JSON.stringify(contracts?.[0] ?? null) : undefined,
       },
       "Génération",
     ),
@@ -356,6 +359,37 @@ describe("/reports page contract", () => {
     expect(markup).toContain('data-testid="report-generation"');
     expect(markup).toContain('data-single-action-id="11111111-1111-4111-8111-111111111111"');
     expect(markup).toContain('data-single-action-scope="Action canonique"');
+  });
+
+  it("passes only the public action projection to the browser document", async () => {
+    mocks.resolveSingleActionReportContract.mockResolvedValueOnce({
+      ...contract,
+      createdByClerkId: "private-owner",
+      metadata: {
+        ...contract.metadata,
+        preparationData: {
+          actionTitle: "Action canonique",
+          logisticsNotes: "NOTE LOGISTIQUE INTERNE",
+          formalitiesContext: { publicSpace: "private-context" },
+          routeTargetDistanceKm: 3,
+        },
+      },
+    });
+
+    const markup = renderToStaticMarkup(
+      await ReportsPage({
+        searchParams: Promise.resolve({
+          tab: "generation",
+          actionId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }),
+    );
+
+    expect(markup).toContain("Action canonique");
+    expect(markup).toContain("routeTargetDistanceKm");
+    expect(markup).not.toContain("private-owner");
+    expect(markup).not.toContain("NOTE LOGISTIQUE INTERNE");
+    expect(markup).not.toContain("private-context");
   });
 
   it("shows a non-admissible state without falling back to the global report", async () => {

@@ -34,7 +34,10 @@ import {
   getReportExportAvailability,
 } from "@/lib/reports/report-export-quota";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
-import type { ActionDataContract } from "@/lib/actions/data-contract";
+import {
+  projectPublicActionContract,
+  type PublicActionContract,
+} from "@/lib/actions/public-dto";
 import {
   getSingleActionReportScopeLabel,
   resolveSingleActionReportContract,
@@ -47,7 +50,7 @@ type ReportsPageProps = {
 
 type SingleActionReportPageContext = {
   actionId: string;
-  contract: ActionDataContract;
+  contract: PublicActionContract;
   scopeLabel: string;
 };
 
@@ -338,11 +341,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         singleActionError = "not_admissible";
       } else {
         try {
-          const contract = await resolveSingleActionReportContract(requestedActionId);
+          const resolvedContract = await resolveSingleActionReportContract(requestedActionId);
           singleAction = {
             actionId: requestedActionId,
-            contract,
-            scopeLabel: getSingleActionReportScopeLabel(contract),
+            contract: projectPublicActionContract(resolvedContract),
+            scopeLabel: getSingleActionReportScopeLabel(resolvedContract),
           };
         } catch (error) {
           singleActionError = error instanceof SingleActionReportTargetUnavailableError

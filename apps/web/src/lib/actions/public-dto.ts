@@ -11,7 +11,7 @@ import type {
 } from "./types";
 import { sanitizePublicObservedPreparationData } from "./map/public-observed-coverage";
 
-type PublicActionContract = Omit<ActionDataContract, "createdByClerkId">;
+export type PublicActionContract = Omit<ActionDataContract, "createdByClerkId">;
 
 type PublicActionListItem = Omit<
   ActionListItem,
@@ -70,6 +70,27 @@ function projectPublicActionListItem(
   item: ActionListItem,
 ): PublicActionListItem {
   return stripPrivateIdentityKeys(item) as PublicActionListItem;
+}
+
+/**
+ * Projects a canonical action contract for a public consumer.
+ *
+ * The server may need the complete contract to calculate a report, but a
+ * browser-facing public surface receives only the identity-free contract and
+ * the bounded cartographic preparation allowlist.
+ */
+export function projectPublicActionContract(
+  contract: ActionDataContract,
+): PublicActionContract {
+  const projected = stripPrivateIdentityKeys(contract) as PublicActionContract;
+  return {
+    ...projected,
+    metadata: {
+      ...projected.metadata,
+      preparationData:
+        sanitizePublicObservedPreparationData(projected.metadata.preparationData) ?? null,
+    },
+  };
 }
 
 export function toPublicActionListItem(
