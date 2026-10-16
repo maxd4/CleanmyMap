@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   getReportExportAvailability: vi.fn(),
   resolveSingleActionReportContract: vi.fn(),
   getSingleActionReportScopeLabel: vi.fn(),
+  SingleActionReportTargetUnavailableError: class SingleActionReportTargetUnavailableError extends Error {},
 }));
 
 const profileAction = {
@@ -205,6 +206,7 @@ vi.mock("@/lib/reports/report-export-quota", () => ({
 vi.mock("@/lib/reports/single-action-report", () => ({
   resolveSingleActionReportContract: mocks.resolveSingleActionReportContract,
   getSingleActionReportScopeLabel: mocks.getSingleActionReportScopeLabel,
+  SingleActionReportTargetUnavailableError: mocks.SingleActionReportTargetUnavailableError,
 }));
 
 import ReportsPage from "./page";
@@ -357,7 +359,9 @@ describe("/reports page contract", () => {
   });
 
   it("shows a non-admissible state without falling back to the global report", async () => {
-    mocks.resolveSingleActionReportContract.mockRejectedValueOnce(new Error("not eligible"));
+    mocks.resolveSingleActionReportContract.mockRejectedValueOnce(
+      new mocks.SingleActionReportTargetUnavailableError("not eligible"),
+    );
 
     const markup = renderToStaticMarkup(
       await ReportsPage({
