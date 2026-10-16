@@ -3,6 +3,7 @@
 import { Search, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useEffect, useRef } from "react";
 
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
@@ -40,6 +41,11 @@ export function ChatSearchPanel({
 }: ChatSearchPanelProps) {
   const isLight = tone === "light";
   const hasMinimumQuery = query.trim().length >= 2;
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
 
   return (
     <div
@@ -54,7 +60,7 @@ export function ChatSearchPanel({
         </label>
         <input
           id="chat-message-search"
-          autoFocus
+          ref={searchInputRef}
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Rechercher dans ce fil…"

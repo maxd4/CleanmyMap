@@ -1,7 +1,10 @@
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DmInbox } from "./dm-inbox";
 import type { ActionShareContactRequest, DmConversation } from "./chat-types";
+
+Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const conversation: DmConversation = {
   peer: {
@@ -75,6 +78,69 @@ describe("DmInbox count consumers", () => {
     expect(markup).toContain("Rechercher un membre");
     expect(markup).toContain("Alice Test");
     expect(markup).toContain("@alice-test");
+    expect(markup).not.toMatch(/autofocus/i);
+  });
+
+  it("focuses on picker opening and reopening, not on query updates or closing", () => {
+    const focus = vi.fn();
+    const createNodeMock = () => ({ focus });
+    let renderer!: ReactTestRenderer;
+    const baseProps = {
+      conversations: [conversation],
+      activePeerId: null,
+      isLoading: false,
+      onSelectConversation: () => undefined,
+      onStartConversation: () => undefined,
+      onRetry: () => undefined,
+      onRecipientQueryChange: () => undefined,
+      onSelectRecipient: () => undefined,
+    };
+
+    act(() => {
+      renderer = create(<DmInbox {...baseProps} />, { createNodeMock });
+      renderer.update(<DmInbox {...baseProps} isRecipientPickerOpen recipientQuery="" />);
+    });
+    expect(focus).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      renderer.update(<DmInbox {...baseProps} isRecipientPickerOpen recipientQuery="ali" />);
+    });
+    expect(focus).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      renderer.update(<DmInbox {...baseProps} isRecipientPickerOpen={false} />);
+    });
+    expect(focus).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      renderer.update(<DmInbox {...baseProps} isRecipientPickerOpen />);
+    });
+    expect(focus).toHaveBeenCalledTimes(2);
+
+    act(() => renderer.unmount());
+  });
+
+  it("does not focus a hidden picker when a recipient is already selected", () => {
+    const focus = vi.fn();
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(
+        <DmInbox
+          conversations={[conversation]}
+          activePeerId="peer-1"
+          isLoading={false}
+          onSelectConversation={() => undefined}
+          onStartConversation={() => undefined}
+          onRetry={() => undefined}
+          isRecipientPickerOpen
+        />,
+        { createNodeMock: () => ({ focus }) },
+      );
+    });
+
+    expect(focus).not.toHaveBeenCalled();
+    act(() => renderer.unmount());
   });
 
   it("groups first-contact requests without replacing the conversation list", () => {

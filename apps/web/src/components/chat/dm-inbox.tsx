@@ -3,7 +3,7 @@
 import { AlertCircle, MessageCirclePlus, RefreshCw, Search } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-import { memo, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import type { ActionShareContactRequest, ChatUser, DmConversation } from "./chat-types";
 import { ChatAvatar } from "./chat-avatar";
 import { CmmCountBadge } from "@/components/ui/cmm-count-badge";
@@ -64,6 +64,13 @@ export const DmInbox = memo(function DmInbox({
 }: DmInboxProps) {
   const isLight = tone === "light";
   const [respondingRequestId, setRespondingRequestId] = useState<string | null>(null);
+  const recipientSearchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isRecipientPickerOpen && !activePeerId) {
+      recipientSearchInputRef.current?.focus();
+    }
+  }, [activePeerId, isRecipientPickerOpen]);
 
   async function respondToRequest(
     request: ActionShareContactRequest,
@@ -116,7 +123,7 @@ export const DmInbox = memo(function DmInbox({
             <span className="sr-only">Rechercher un membre</span>
             <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
-              autoFocus
+              ref={recipientSearchInputRef}
               value={recipientQuery}
               onChange={(event) => onRecipientQueryChange?.(event.target.value)}
               placeholder="Rechercher un membre"
