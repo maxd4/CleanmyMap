@@ -39,6 +39,7 @@ function useBeforeActionDraftHydration({
   onFormChange,
   retryGeneration,
   setCreationRequestId,
+  creationRequestId,
 }: {
   initialActionId?: string | null;
   initialRecordType: "action";
@@ -49,6 +50,7 @@ function useBeforeActionDraftHydration({
   onFormChange?: (form: FormState) => void;
   retryGeneration: number;
   setCreationRequestId: Dispatch<SetStateAction<string | null>>;
+  creationRequestId: string | null;
 }) {
   const fallbackFormRef = useRef(fallbackForm);
   const currentFormRef = useRef(form);
@@ -65,20 +67,27 @@ function useBeforeActionDraftHydration({
     }
     if (lastHydrationAttemptRef.current === retryGeneration) return;
     lastHydrationAttemptRef.current = retryGeneration;
-    const snapshot = loadDraftSnapshotResult(fallbackFormRef.current, initialRecordType, null).snapshot;
-    if (snapshot) {
-      if (snapshot.creationRequestId) {
-        setCreationRequestId((current) => snapshot.creationRequestId ?? current);
-      }
-      const nextForm = mergeBeforeActionHydrationWithLocalChanges(
-        fallbackFormRef.current,
-        currentFormRef.current,
-        snapshot.form,
-      );
-      setForm(nextForm);
-      onFormChangeRef.current?.(nextForm);
+    const draftResult = loadDraftSnapshotResult(fallbackFormRef.current, initialRecordType, null);
+    if (draftResult.readError || !draftResult.snapshot) return;
+    const snapshot = draftResult.snapshot;
+    if (snapshot.creationRequestId) {
+      setCreationRequestId((current) => snapshot.creationRequestId ?? current);
     }
-  }, [duplicateFromActionId, initialActionId, initialRecordType, retryGeneration, setCreationRequestId, setForm]);
+    const nextForm = mergeBeforeActionHydrationWithLocalChanges(
+      fallbackFormRef.current,
+      currentFormRef.current,
+      snapshot.form,
+    );
+    setForm(nextForm);
+    onFormChangeRef.current?.(nextForm);
+    saveDraft(
+      sanitizePreActionForm(nextForm),
+      undefined,
+      null,
+      null,
+      snapshot.creationRequestId ?? creationRequestId,
+    );
+  }, [creationRequestId, duplicateFromActionId, initialActionId, initialRecordType, retryGeneration, setCreationRequestId, setForm]);
 
   // A new form has no remote record to await; server hydration has its own
   // state, and a local draft is restored without hiding the form.
@@ -154,7 +163,7 @@ function useBeforeActionFormRuntime({
     onFormChangeRef.current = onFormChange;
   }, [form, onFormChange]);
 
-  const draftHydrationReady = useBeforeActionDraftHydration({ initialActionId, initialRecordType, duplicateFromActionId, fallbackForm, form, setForm, onFormChange, retryGeneration, setCreationRequestId });
+  const draftHydrationReady = useBeforeActionDraftHydration({ initialActionId, initialRecordType, duplicateFromActionId, fallbackForm, form, setForm, onFormChange, retryGeneration, setCreationRequestId, creationRequestId });
   const isHydratingAction = useBeforeActionHydration({ resolvedDefaultActorName, initialActionId, initialRecordType, form, setForm, onFormChange, setCreatedId, createdId, setPublishedAction, setInvitationStatuses, setPublishedAt, setTerminalActionStatus, setSubmissionState, errorMessage, setErrorMessage, setPersistenceStatus, preparationContext });
   useEffect(() => {
     if (!duplicateFromActionId || initialActionId) {

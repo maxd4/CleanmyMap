@@ -121,7 +121,7 @@ describe("before-action draft recovery", () => {
     store.set(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify(draft));
 
     let latest!: ReturnType<typeof useBeforeActionForm>;
-    mountForm((value) => { latest = value; });
+    const renderer = mountForm((value) => { latest = value; });
 
     await act(async () => {
       latest.updateField("actionTitle", "Saisie plus récente");
@@ -136,13 +136,20 @@ describe("before-action draft recovery", () => {
     expect(latest.form.actionTitle).toBe("Saisie plus récente");
     expect(latest.form.departureLocationLabel).toBe("Parc central");
 
+    renderer.unmount();
+
+    let remounted!: ReturnType<typeof useBeforeActionForm>;
+    mountForm((value) => { remounted = value; });
+    expect(remounted.form.actionTitle).toBe("Saisie plus récente");
+
     await act(async () => {
-      await latest.handleSubmit();
+      await remounted.handleSubmit();
     });
 
     expect(createActionMock).toHaveBeenCalledWith(expect.anything(), {
       idempotencyKey: "action-create-recovered-42",
     });
+    expect(store.has(ACTION_DECLARATION_DRAFT_KEY)).toBe(false);
   });
 
   it("allows an existing action to update when its local draft read fails", async () => {

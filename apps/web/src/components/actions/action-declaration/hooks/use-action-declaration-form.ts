@@ -117,7 +117,7 @@ export function useActionDeclarationForm({
     showConfirmation: submission.showConfirmation,
     setShowConfirmation: submission.setShowConfirmation,
     pendingDraftSavedAt: draft.pendingDraft?.savedAt ?? null,
-    showDraftBanner: Boolean(draft.pendingDraft),
+    showDraftBanner: Boolean(draft.pendingDraft && !draft.isDraftResumed),
     draftStorageReadError: draft.draftStorageReadError,
     retryDraftLoad: draft.retryDraftLoad,
     isCleanPlaceMode,

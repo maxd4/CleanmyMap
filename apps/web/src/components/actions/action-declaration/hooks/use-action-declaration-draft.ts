@@ -58,6 +58,7 @@ export function useActionDeclarationDraft({
   const [creationRequestId, setCreationRequestId] = useState<string | null>(
     () => initialActionId ? null : pendingDraft?.creationRequestId ?? createActionCreationRequestId(),
   );
+  const [isDraftResumed, setIsDraftResumed] = useState(false);
   const plannerHandoffConsumedRef = useRef<boolean>(false);
 
   useEffect(() => {
@@ -74,13 +75,13 @@ export function useActionDeclarationDraft({
 
   const handleResumeDraft = useCallback(() => {
     if (!pendingDraft) return;
+    setIsDraftResumed(true);
     if (pendingDraft.creationRequestId && pendingDraft.creationRequestId !== creationRequestId) {
       setCreationRequestId(pendingDraft.creationRequestId);
     }
     setForm(pendingDraft.form);
     setManualDrawingState(pendingDraft.manualDrawing ?? null);
     setManualDrawingSource(pendingDraft.manualDrawingSource ?? null);
-    clearDraft();
     setHasAttemptedSubmit(false);
   }, [
     creationRequestId,
@@ -93,6 +94,7 @@ export function useActionDeclarationDraft({
 
   const handleIgnoreDraft = useCallback(() => {
     clearDraft();
+    setIsDraftResumed(false);
     setCreationRequestId(createActionCreationRequestId());
     setForm(createCleanForm());
     setHasAttemptedSubmit(false);
@@ -104,15 +106,16 @@ export function useActionDeclarationDraft({
       draftGeometry?: ActionDeclarationDraftGeometry,
       shouldSave = true,
     ) => {
-      if (!pendingDraft && shouldSave) {
+      if ((!pendingDraft || isDraftResumed) && shouldSave) {
         saveDraft(form, undefined, draftGeometry, null, creationRequestId);
       }
     },
-    [creationRequestId, pendingDraft],
+    [creationRequestId, isDraftResumed, pendingDraft],
   );
 
   return {
     pendingDraft,
+    isDraftResumed,
     creationRequestId,
     draftStorageReadError: draftLoadResult.readError,
     retryDraftLoad,
