@@ -79,6 +79,7 @@ export function useActionDeclarationForm({
     setLoadedActionPhase: hydration.setLoadedActionPhase,
     setHasAttemptedSubmit,
     clearDraft: draft.clearDraft,
+    creationRequestId: draft.creationRequestId,
     persistedDrawing,
     setPersistedDrawing,
     setPersistedDrawingSource,
@@ -116,6 +117,8 @@ export function useActionDeclarationForm({
     setShowConfirmation: submission.setShowConfirmation,
     pendingDraftSavedAt: draft.pendingDraft?.savedAt ?? null,
     showDraftBanner: Boolean(draft.pendingDraft),
+    draftStorageReadError: draft.draftStorageReadError,
+    retryDraftLoad: draft.retryDraftLoad,
     isCleanPlaceMode,
 
     // Computed & payload

@@ -135,6 +135,56 @@ describe("createAction", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expectFetchPostMethods(fetchMock);
   });
+
+  it("sends the same idempotency key on the contract and legacy retry", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: "Validation failed" }), { status: 400 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "created", id: "action-1" }), { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await createAction(
+      {
+        actionDate: "2026-04-22",
+        locationLabel: "Test lieu",
+        wasteKg: 1,
+        cigaretteButts: 0,
+        volunteersCount: 1,
+        durationMinutes: 30,
+      },
+      { idempotencyKey: "action-create-retry-key-42" },
+    );
+
+    expect(fetchMock.mock.calls.map((call) => (call[1] as RequestInit).headers)).toEqual([
+      expect.objectContaining({ "Idempotency-Key": "action-create-retry-key-42" }),
+      expect.objectContaining({ "Idempotency-Key": "action-create-retry-key-42" }),
+    ]);
+  });
+
+  it("allows the caller to retry a lost response with the same server correlation key", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("network response lost"))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "created", id: "action-created-once" }), { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const payload = {
+      actionDate: "2026-04-22",
+      locationLabel: "Test lieu",
+      wasteKg: 1,
+      cigaretteButts: 0,
+      volunteersCount: 1,
+      durationMinutes: 30,
+    };
+
+    await expect(createAction(payload, { idempotencyKey: "action-create-lost-response-42" })).rejects.toThrow("network response lost");
+    await expect(createAction(payload, { idempotencyKey: "action-create-lost-response-42" })).resolves.toMatchObject({ id: "action-created-once" });
+    expect((fetchMock.mock.calls[0]?.[1] as RequestInit).headers).toEqual(
+      expect.objectContaining({ "Idempotency-Key": "action-create-lost-response-42" }),
+    );
+    expect((fetchMock.mock.calls[1]?.[1] as RequestInit).headers).toEqual(
+      expect.objectContaining({ "Idempotency-Key": "action-create-lost-response-42" }),
+    );
+  });
 });
 
 describe("buildMapActionsQueryString", () => {

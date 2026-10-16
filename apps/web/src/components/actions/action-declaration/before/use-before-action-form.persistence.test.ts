@@ -31,4 +31,22 @@ describe("before-action persistence path", () => {
     expect(create).toHaveBeenCalledWith(payload);
     expect(update).not.toHaveBeenCalled();
   });
+
+  it("reuses the creation correlation key for a retry after a lost response", async () => {
+    const create = vi.fn().mockResolvedValue({ id: "action-new" });
+    const update = vi.fn();
+
+    await expect(
+      persistBeforeAction(
+        null,
+        payload,
+        { create, update },
+        "action-create-before-retry-42",
+      ),
+    ).resolves.toEqual({ actionId: "action-new", created: true });
+
+    expect(create).toHaveBeenCalledWith(payload, {
+      idempotencyKey: "action-create-before-retry-42",
+    });
+  });
 });

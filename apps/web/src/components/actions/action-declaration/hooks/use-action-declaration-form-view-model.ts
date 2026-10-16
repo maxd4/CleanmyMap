@@ -133,10 +133,12 @@ export function useActionDeclarationFormViewModel(
     surface: {
       actClasses: getBlockClasses("act"),
       showDraftBanner: state.showDraftBanner,
+      draftStorageReadError: state.draftStorageReadError,
       isCompletionBlocked,
       formattedPendingDraftSavedAt: formatDraftDate(state.pendingDraftSavedAt),
       onResumeDraft: state.handleResumeDraft,
       onIgnoreDraft: state.handleIgnoreDraft,
+      onRetryDraftLoad: state.retryDraftLoad,
       onSubmit,
       sections: {
         ...sections,

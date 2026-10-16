@@ -3,11 +3,14 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
   useSyncExternalStore,
 } from "react";
 import {
   clearDraft,
-  loadDraftSnapshot,
+  createActionCreationRequestId,
+  loadDraftSnapshotResult,
+  retryDraftLoad,
   saveDraft,
   subscribeToDraftChanges,
   type ActionDeclarationDraftGeometry,
@@ -28,6 +31,8 @@ type UseActionDeclarationDraftParams = {
   setHasAttemptedSubmit: Dispatch<SetStateAction<boolean>>;
 };
 
+const EMPTY_DRAFT_LOAD_RESULT = { snapshot: null, readError: false } as const;
+
 export function useActionDeclarationDraft({
   initialActionId,
   createCleanForm,
@@ -36,18 +41,22 @@ export function useActionDeclarationDraft({
   setManualDrawingSource,
   setHasAttemptedSubmit,
 }: UseActionDeclarationDraftParams) {
-  const pendingDraft = useSyncExternalStore(
+  const draftLoadResult = useSyncExternalStore(
     subscribeToDraftChanges,
     () => {
       if (initialActionId) {
-        return null;
+        return EMPTY_DRAFT_LOAD_RESULT;
       }
       // /actions/new is an action-only entry point. Historical clean_place
       // records remain readable when explicitly hydrated by id, but a local
       // draft cannot turn this form back into an observation entry point.
-      return loadDraftSnapshot(createCleanForm(), "action");
+      return loadDraftSnapshotResult(createCleanForm(), "action");
     },
-    () => null,
+    () => EMPTY_DRAFT_LOAD_RESULT,
+  );
+  const pendingDraft = draftLoadResult.snapshot;
+  const [creationRequestId, setCreationRequestId] = useState<string | null>(
+    () => initialActionId ? null : pendingDraft?.creationRequestId ?? createActionCreationRequestId(),
   );
   const plannerHandoffConsumedRef = useRef<boolean>(false);
 
@@ -65,12 +74,16 @@ export function useActionDeclarationDraft({
 
   const handleResumeDraft = useCallback(() => {
     if (!pendingDraft) return;
+    if (pendingDraft.creationRequestId && pendingDraft.creationRequestId !== creationRequestId) {
+      setCreationRequestId(pendingDraft.creationRequestId);
+    }
     setForm(pendingDraft.form);
     setManualDrawingState(pendingDraft.manualDrawing ?? null);
     setManualDrawingSource(pendingDraft.manualDrawingSource ?? null);
     clearDraft();
     setHasAttemptedSubmit(false);
   }, [
+    creationRequestId,
     pendingDraft,
     setForm,
     setHasAttemptedSubmit,
@@ -80,6 +93,7 @@ export function useActionDeclarationDraft({
 
   const handleIgnoreDraft = useCallback(() => {
     clearDraft();
+    setCreationRequestId(createActionCreationRequestId());
     setForm(createCleanForm());
     setHasAttemptedSubmit(false);
   }, [createCleanForm, setForm, setHasAttemptedSubmit]);
@@ -91,14 +105,17 @@ export function useActionDeclarationDraft({
       shouldSave = true,
     ) => {
       if (!pendingDraft && shouldSave) {
-        saveDraft(form, undefined, draftGeometry);
+        saveDraft(form, undefined, draftGeometry, null, creationRequestId);
       }
     },
-    [pendingDraft],
+    [creationRequestId, pendingDraft],
   );
 
   return {
     pendingDraft,
+    creationRequestId,
+    draftStorageReadError: draftLoadResult.readError,
+    retryDraftLoad,
     saveDraftIfAllowed,
     clearDraft,
     handleResumeDraft,

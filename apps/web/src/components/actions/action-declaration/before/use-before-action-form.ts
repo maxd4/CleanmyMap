@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateActio
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 import type { FormState } from "../model";
-import { loadDraftSnapshot, saveDraft } from "../draft-storage";
+import { createActionCreationRequestId, loadDraftSnapshot, saveDraft } from "../draft-storage";
 import {
   buildPreActionSummaryNote,
   sanitizePreActionForm,
@@ -82,10 +82,11 @@ function continueToComplete(
   form: FormState,
   createdId: string | null,
   actionId: string | null | undefined,
+  creationRequestId: string | null,
   onPassToComplete: (actionId: string) => void | Promise<void>,
 ): void | Promise<void> {
   if (!createdId) return;
-  saveDraft(sanitizePreActionForm(form), undefined, null, actionId ?? createdId);
+  saveDraft(sanitizePreActionForm(form), undefined, null, actionId ?? createdId, creationRequestId);
   return onPassToComplete(createdId);
 }
 
@@ -111,8 +112,12 @@ function useBeforeActionFormRuntime({
 }: UseBeforeActionFormProps) {
   const resolvedDefaultActorName = actorNameOptions.includes(defaultActorName) ? defaultActorName : actorNameOptions[0] ?? userMetadata.userId;
   const fallbackForm = buildBeforeActionFallbackForm(actorNameOptions, resolvedDefaultActorName, initialRecordType);
+  const initialDraft = loadDraftSnapshot(fallbackForm, initialRecordType, initialActionId ?? null);
+  const [creationRequestId] = useState<string | null>(
+    () => initialDraft?.creationRequestId ?? createActionCreationRequestId(),
+  );
   const [form, setForm] = useState<FormState>(() => fallbackForm);
-  const { persistenceStatus, setPersistenceStatus } = useBeforeActionPersistence({ fallbackForm, initialActionId });
+  const { persistenceStatus, setPersistenceStatus, retryDraftPersistence } = useBeforeActionPersistence({ fallbackForm, initialActionId });
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -178,12 +183,12 @@ function useBeforeActionFormRuntime({
     duplicateSyncSourceRef.current = duplicateFromActionId;
     onFormChangeRef.current?.(form);
   }, [duplicateFromActionId, duplicateLoadedFor, form, initialActionId]);
-  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, draftActionId: persistedActionId, linkedEventId, submissionState, isAuthenticated, setForm, onFormChange, setPersistenceStatus, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
-  const handleSubmit = useBeforeActionSubmission({ form, submissionState, actionId: persistedActionId, linkedEventId, userMetadata, isAuthenticated, setSubmissionState, setPersistenceStatus, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
+  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, draftActionId: persistedActionId, creationRequestId, linkedEventId, submissionState, isAuthenticated, setForm, onFormChange, setPersistenceStatus, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
+  const handleSubmit = useBeforeActionSubmission({ form, submissionState, actionId: persistedActionId, creationRequestId, linkedEventId, userMetadata, isAuthenticated, setSubmissionState, setPersistenceStatus, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
   const { requestPublish, cancelPublication, confirmPublish } = useBeforeActionPublication({ createdId, publishedAt, publicationState, setForm, setPublishedAction, setCreatedId, setPublishedAt, setPublicationState, setPublicationError, setPublicationConfirmationOpen });
   const shareLink = createdId ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}` : null;
   const summaryNote = useMemo(() => buildPreActionSummaryNote(form), [form]);
-  const onContinueComplete = () => continueToComplete(form, createdId, persistedActionId, onPassToComplete);
+  const onContinueComplete = () => continueToComplete(form, createdId, persistedActionId, creationRequestId, onPassToComplete);
 
-  return { form, submissionState, errorMessage, createdId, publishedAction, invitationStatuses, terminalActionStatus, publishedAt, publicationState, publicationError, publicationConfirmationOpen, isHydratingAction: !draftHydrationReady || isHydratingAction || Boolean(duplicateFromActionId && duplicateLoadedFor !== duplicateFromActionId), validationIssues, validationIssueFields, showGroupJoinHelp, setShowGroupJoinHelp, shareLink, summaryNote, updateField, updateFields, handleSubmit, requestPublish, cancelPublication, confirmPublish, onContinueComplete, persistenceStatus };
+  return { form, submissionState, errorMessage, createdId, publishedAction, invitationStatuses, terminalActionStatus, publishedAt, publicationState, publicationError, publicationConfirmationOpen, isHydratingAction: !draftHydrationReady || isHydratingAction || Boolean(duplicateFromActionId && duplicateLoadedFor !== duplicateFromActionId), validationIssues, validationIssueFields, showGroupJoinHelp, setShowGroupJoinHelp, shareLink, summaryNote, updateField, updateFields, handleSubmit, requestPublish, cancelPublication, confirmPublish, onContinueComplete, persistenceStatus, retryDraftPersistence };
 }

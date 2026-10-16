@@ -16,8 +16,14 @@ export type ActionDeclarationDraftSnapshot = {
   form: FormState;
   savedAt: string | null;
   actionId?: string | null;
+  creationRequestId?: string | null;
   manualDrawing?: ActionDrawing;
   manualDrawingSource?: "gpx_import";
+};
+
+export type ActionDeclarationDraftLoadResult = {
+  snapshot: ActionDeclarationDraftSnapshot | null;
+  readError: boolean;
 };
 
 export type ActionDeclarationDraftGeometry = {
@@ -27,7 +33,10 @@ export type ActionDeclarationDraftGeometry = {
 
 type DraftSnapshotCacheEntry = {
   key: string;
+  storageKey: string;
   snapshot: ActionDeclarationDraftSnapshot | null;
+  readError: boolean;
+  result: ActionDeclarationDraftLoadResult;
 };
 
 const FORM_STATE_KEYS = [
@@ -186,10 +195,13 @@ function buildDraftSnapshotCacheKey(
 
 function cacheDraftSnapshot(
   key: string,
+  storageKey: string,
   snapshot: ActionDeclarationDraftSnapshot | null,
-): ActionDeclarationDraftSnapshot | null {
-  cachedDraftSnapshot = { key, snapshot };
-  return snapshot;
+  readError = false,
+): ActionDeclarationDraftLoadResult {
+  const result = { snapshot, readError };
+  cachedDraftSnapshot = { key, storageKey, snapshot, readError, result };
+  return result;
 }
 
 function getCachedDraftSnapshot(
@@ -199,6 +211,14 @@ function getCachedDraftSnapshot(
     return cachedDraftSnapshot.snapshot;
   }
   return undefined;
+}
+
+function getCachedDraftLoadResult(
+  storageKey: string,
+): ActionDeclarationDraftLoadResult | undefined {
+  return cachedDraftSnapshot?.storageKey === storageKey
+    ? cachedDraftSnapshot.result
+    : undefined;
 }
 
 function emitDraftChange(): void {
@@ -249,13 +269,29 @@ export function clearDraft(actionId: string | null = null): void {
   }
 }
 
+export function retryDraftLoad(): void {
+  cachedDraftSnapshot = null;
+  emitDraftChange();
+}
+
+export function createActionCreationRequestId(): string {
+  const randomUuid = globalThis.crypto?.randomUUID?.();
+  if (randomUuid) return `action-create-${randomUuid}`;
+  return `action-create-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function saveDraft(
   form: FormState,
   savedAt = new Date().toISOString(),
   geometry: ActionDeclarationDraftGeometry = null,
   actionId: string | null = null,
+  creationRequestId: string | null = null,
 ): string | null {
   if (typeof window === "undefined") return null;
+  const storageKey = scopedDraftKey(actionId);
+  if (cachedDraftSnapshot?.storageKey === storageKey && cachedDraftSnapshot.readError) {
+    return null;
+  }
   const draftPayload: Record<string, unknown> = {};
   for (const key of FORM_STATE_KEYS) {
     draftPayload[key] = form[key];
@@ -270,9 +306,10 @@ export function saveDraft(
     draftPayload.manualDrawing = drawing;
     draftPayload.manualDrawingSource = "gpx_import";
   }
+  if (creationRequestId) draftPayload.creationRequestId = creationRequestId;
 
   try {
-    window.localStorage.setItem(scopedDraftKey(actionId), JSON.stringify(draftPayload));
+    window.localStorage.setItem(storageKey, JSON.stringify(draftPayload));
     window.localStorage.setItem(scopedDraftDateKey(actionId), savedAt);
     cachedDraftSnapshot = null;
     emitDraftChange();
@@ -287,12 +324,24 @@ export function loadDraftSnapshot(
   recordTypeOverride: FormState["recordType"] | null = null,
   actionId: string | null = null,
 ): ActionDeclarationDraftSnapshot | null {
+  return loadDraftSnapshotResult(fallback, recordTypeOverride, actionId).snapshot;
+}
+
+export function loadDraftSnapshotResult(
+  fallback: FormState,
+  recordTypeOverride: FormState["recordType"] | null = null,
+  actionId: string | null = null,
+): ActionDeclarationDraftLoadResult {
   if (typeof window === "undefined") {
-    return null;
+    return { snapshot: null, readError: false };
   }
 
+  const storageKey = scopedDraftKey(actionId);
+  const cachedReadError = getCachedDraftLoadResult(storageKey);
+  if (cachedReadError?.readError) {
+    return cachedReadError;
+  }
   try {
-    const storageKey = scopedDraftKey(actionId);
     const saved = window.localStorage.getItem(storageKey);
     const savedAt = getDraftSavedAtForAction(actionId);
     const cacheKey = buildDraftSnapshotCacheKey(
@@ -304,16 +353,16 @@ export function loadDraftSnapshot(
     );
     const cached = getCachedDraftSnapshot(cacheKey);
     if (cached !== undefined) {
-      return cached;
+      return getCachedDraftLoadResult(storageKey) ?? { snapshot: cached, readError: false };
     }
 
     if (!saved) {
-      return cacheDraftSnapshot(cacheKey, null);
+      return cacheDraftSnapshot(cacheKey, storageKey, null);
     }
 
     const parsed: unknown = JSON.parse(saved);
     if (!isRecord(parsed)) {
-      return cacheDraftSnapshot(cacheKey, null);
+      return cacheDraftSnapshot(cacheKey, storageKey, null);
     }
 
     const next = { ...fallback } as FormState & Record<string, unknown>;
@@ -342,10 +391,14 @@ export function loadDraftSnapshot(
       recordType: next.recordType,
     });
 
-    return cacheDraftSnapshot(cacheKey, {
+    return cacheDraftSnapshot(cacheKey, storageKey, {
       form: next as FormState,
       savedAt,
       actionId,
+      creationRequestId:
+        typeof parsed.creationRequestId === "string" && parsed.creationRequestId.trim()
+          ? parsed.creationRequestId
+          : null,
       ...(hasGpxPair && manualDrawing
         ? { manualDrawing, manualDrawingSource: "gpx_import" as const }
         : {}),
@@ -358,6 +411,6 @@ export function loadDraftSnapshot(
       null,
       actionId,
     );
-    return cacheDraftSnapshot(cacheKey, null);
+    return cacheDraftSnapshot(cacheKey, storageKey, null, true);
   }
 }

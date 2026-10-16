@@ -34,6 +34,7 @@ type ActionDeclarationFormExecutionParams = {
   setLoadedActionPhase: Dispatch<SetStateAction<LoadedActionPhase>>;
   setHasAttemptedSubmit: Dispatch<SetStateAction<boolean>>;
   clearDraft: () => void;
+  creationRequestId: string | null;
   persistedDrawing: ActionDrawing | null;
   setPersistedDrawing: Dispatch<SetStateAction<ActionDrawing | null>>;
   setPersistedDrawingSource: Dispatch<SetStateAction<ActionGeometrySource | null>>;
@@ -62,6 +63,7 @@ export function useActionDeclarationFormExecution({
   setLoadedActionPhase,
   setHasAttemptedSubmit,
   clearDraft,
+  creationRequestId,
   persistedDrawing,
   setPersistedDrawing,
   setPersistedDrawingSource,
@@ -120,6 +122,7 @@ export function useActionDeclarationFormExecution({
     visionEstimate,
     userMetadata,
     clearDraft,
+    creationRequestId,
   });
   const updates = useActionDeclarationFormUpdates({
     form,

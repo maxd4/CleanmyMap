@@ -5,22 +5,31 @@ import {
   ACTION_DECLARATION_DRAFT_KEY,
   clearDraft,
   loadDraftSnapshot,
+  loadDraftSnapshotResult,
+  retryDraftLoad,
   saveDraft,
 } from "./draft-storage";
 
-function installLocalStorage() {
+function installLocalStorage({
+  getItem,
+  setItem,
+}: {
+  getItem?: (key: string) => string | null;
+  setItem?: (key: string, value: string) => void;
+} = {}) {
   const store = new Map<string, string>();
   const localStorage = {
-    getItem: (key: string) => store.get(key) ?? null,
-    setItem: (key: string, value: string) => {
+    getItem: getItem ?? ((key: string) => store.get(key) ?? null),
+    setItem: setItem ?? ((key: string, value: string) => {
       store.set(key, value);
-    },
+    }),
     removeItem: (key: string) => {
       store.delete(key);
     },
   };
 
   vi.stubGlobal("window", { localStorage });
+  retryDraftLoad();
 
   return { store, localStorage };
 }
@@ -61,6 +70,15 @@ describe("action declaration draft storage", () => {
     expect(snapshot?.form.organizerName).toBe("Alice");
     expect(snapshot?.form).not.toHaveProperty("preparationState");
     expect(snapshot?.form.wasteKg).toBe("12");
+  });
+
+  it("keeps the creation request id when a draft is resumed", () => {
+    installLocalStorage();
+    const draft = createInitialFormState("Alice");
+
+    saveDraft(draft, "2026-05-13T10:45:00.000Z", null, null, "action-create-request-42");
+
+    expect(loadDraftSnapshot(createInitialFormState("Fallback"))?.creationRequestId).toBe("action-create-request-42");
   });
 
   it("keeps persisted-action drafts isolated by action id", () => {
@@ -225,6 +243,39 @@ describe("action declaration draft storage", () => {
     });
 
     expect(() => clearDraft()).not.toThrow();
+  });
+
+  it("does not overwrite a draft after a read failure until an explicit retry succeeds", () => {
+    const store = new Map([[ACTION_DECLARATION_DRAFT_KEY, JSON.stringify({ actionTitle: "Brouillon existant" })]]);
+    let readsAvailable = false;
+    const setItem = vi.fn((key: string, value: string) => store.set(key, value));
+    installLocalStorage({
+      getItem: (key) => {
+        if (!readsAvailable) throw new Error("storage temporarily unavailable");
+        return store.get(key) ?? null;
+      },
+      setItem,
+    });
+
+    expect(loadDraftSnapshotResult(createInitialFormState("Alice")).readError).toBe(true);
+    expect(saveDraft({ ...createInitialFormState("Alice"), actionTitle: "Remplacement" })).toBeNull();
+    expect(setItem).not.toHaveBeenCalled();
+    expect(store.get(ACTION_DECLARATION_DRAFT_KEY)).toContain("Brouillon existant");
+
+    readsAvailable = true;
+    retryDraftLoad();
+    expect(loadDraftSnapshotResult(createInitialFormState("Alice")).readError).toBe(false);
+    expect(saveDraft({ ...createInitialFormState("Alice"), actionTitle: "Remplacement" })).not.toBeNull();
+  });
+
+  it("swallows local write failures without rejecting the form update", () => {
+    const setItem = vi.fn(() => {
+      throw new Error("quota exceeded");
+    });
+    installLocalStorage({ setItem });
+
+    expect(() => saveDraft(createInitialFormState("Alice"))).not.toThrow();
+    expect(setItem).toHaveBeenCalledTimes(1);
   });
 
   it("ignores malformed stored drafts instead of restoring fallback silently", () => {

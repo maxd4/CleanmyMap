@@ -56,6 +56,7 @@ type UseActionDeclarationSubmissionParams = {
   visionEstimate: ActionVisionEstimate | null;
   userMetadata: ActionDeclarationUserMetadata;
   clearDraft: () => void;
+  creationRequestId: string | null;
   setLoadedActionPhase: Dispatch<SetStateAction<LoadedActionPhase>>;
   setHasAttemptedSubmit: Dispatch<SetStateAction<boolean>>;
 };
@@ -81,6 +82,7 @@ export function useActionDeclarationSubmission({
   visionEstimate,
   userMetadata,
   clearDraft,
+  creationRequestId,
   setLoadedActionPhase,
   setHasAttemptedSubmit,
 }: UseActionDeclarationSubmissionParams) {
@@ -157,7 +159,9 @@ export function useActionDeclarationSubmission({
           : submissionPayload;
       const result = initialActionId
         ? await updateAction(initialActionId, effectiveSubmissionPayload)
-        : await createAction(effectiveSubmissionPayload);
+        : await createAction(effectiveSubmissionPayload, {
+            idempotencyKey: creationRequestId ?? undefined,
+          });
       const persistedActionId = "id" in result ? result.id : result.actionId;
       setCreatedId(persistedActionId);
       setRetentionLoop(

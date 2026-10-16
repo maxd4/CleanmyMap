@@ -129,10 +129,12 @@ export function ActionDeclarationFormOverlays({
 type SurfaceProps = {
   actClasses: ReturnType<typeof getBlockClasses>;
   showDraftBanner: boolean;
+  draftStorageReadError: boolean;
   isCompletionBlocked: boolean;
   formattedPendingDraftSavedAt: string | null;
   onResumeDraft: () => void;
   onIgnoreDraft: () => void;
+  onRetryDraftLoad: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   sections: SurfaceSectionProps;
   feedback: React.ComponentProps<typeof ActionDeclarationFormFeedback>;
@@ -142,10 +144,12 @@ type SurfaceProps = {
 export function ActionDeclarationFormSurface({
   actClasses,
   showDraftBanner,
+  draftStorageReadError,
   isCompletionBlocked,
   formattedPendingDraftSavedAt,
   onResumeDraft,
   onIgnoreDraft,
+  onRetryDraftLoad,
   onSubmit,
   sections,
   feedback,
@@ -160,6 +164,15 @@ export function ActionDeclarationFormSurface({
         <div className="absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-teal-100/45 blur-[120px]" />
       </div>
       <div className="cmm-page-width relative flex flex-col gap-6">
+        {draftStorageReadError ? (
+          <div role="alert" className="flex flex-col gap-3 rounded-[2rem] border border-rose-200/80 bg-rose-50 px-4 py-3 text-rose-950 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold">Le brouillon local n&apos;a pas pu être lu.</p>
+              <p className="mt-0.5 text-xs font-medium">Aucune nouvelle sauvegarde locale ne sera faite tant que la lecture n&apos;est pas rétablie.</p>
+            </div>
+            <button type="button" onClick={onRetryDraftLoad} className="self-start rounded-full border border-rose-300 bg-white px-4 py-2 text-xs font-black text-rose-900 transition hover:bg-rose-100 sm:self-auto">Réessayer la lecture</button>
+          </div>
+        ) : null}
         {showDraftBanner && !isCompletionBlocked ? (
           <div className="flex flex-col gap-3 rounded-[2rem] border border-amber-200/80 bg-[#F3FBF6] px-4 py-3 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.22)] sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-2">

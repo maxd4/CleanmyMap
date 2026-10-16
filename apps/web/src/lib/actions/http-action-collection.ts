@@ -63,6 +63,7 @@ function parseActionCreationResponse(body: unknown): ActionCreationResponse | nu
 
 export async function createAction(
   payload: CreateActionPayload,
+  options: { idempotencyKey?: string } = {},
 ): Promise<{
   id: string;
   retentionLoop?: {
@@ -77,7 +78,12 @@ export async function createAction(
   const postPayload = async (bodyPayload: unknown) => {
     const response = await fetch("/api/actions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.idempotencyKey
+          ? { "Idempotency-Key": options.idempotencyKey }
+          : {}),
+      },
       body: JSON.stringify(bodyPayload),
     });
     const body = await parseJsonSafely(response);

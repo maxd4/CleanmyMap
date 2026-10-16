@@ -90,8 +90,13 @@ export async function persistBeforeAction(
   actionId: string | null | undefined,
   payload: CreateActionPayload,
   dependencies: BeforeActionPersistenceDependencies = DEFAULT_BEFORE_ACTION_PERSISTENCE_DEPENDENCIES,
+  creationRequestId?: string | null,
 ): Promise<{ actionId: string; created: boolean }> {
-  const result = actionId ? await dependencies.update(actionId, payload) : await dependencies.create(payload);
+  const result = actionId
+    ? await dependencies.update(actionId, payload)
+    : creationRequestId
+      ? await dependencies.create(payload, { idempotencyKey: creationRequestId })
+      : await dependencies.create(payload);
   return { actionId: "id" in result ? result.id : result.actionId, created: !actionId };
 }
 
@@ -363,6 +368,7 @@ export function useBeforeActionHydration({
 export function useBeforeActionFieldUpdates({
   form,
   draftActionId,
+  creationRequestId,
   linkedEventId,
   submissionState,
   isAuthenticated,
@@ -376,6 +382,7 @@ export function useBeforeActionFieldUpdates({
 }: {
   form: FormState;
   draftActionId?: string | null;
+  creationRequestId: string | null;
   linkedEventId?: string;
   submissionState: SubmissionState;
   isAuthenticated: boolean;
@@ -401,7 +408,7 @@ export function useBeforeActionFieldUpdates({
     }
     applyOrganizerFormUpdates(nextForm, form, updates);
     setForm(nextForm); onFormChange?.(nextForm);
-    const savedAt = saveDraft(nextForm, undefined, null, draftActionId ?? null);
+    const savedAt = saveDraft(nextForm, undefined, null, draftActionId ?? null, creationRequestId);
     setPersistenceStatus(savedAt ? (draftActionId && isAuthenticated ? "unsaved" : "local") : "error");
     if (submissionState === "error") { setSubmissionState("idle"); setErrorMessage(null); setValidationIssues([]); setValidationIssueFields([]); }
   };
@@ -413,6 +420,7 @@ export function useBeforeActionSubmission({
   form,
   submissionState,
   actionId,
+  creationRequestId,
   linkedEventId,
   userMetadata,
   isAuthenticated,
@@ -429,6 +437,7 @@ export function useBeforeActionSubmission({
   form: FormState;
   submissionState: SubmissionState;
   actionId?: string | null;
+  creationRequestId: string | null;
   linkedEventId?: string;
   userMetadata: ActionBeforeDeclarationFormProps["userMetadata"];
   isAuthenticated: boolean;
@@ -453,7 +462,12 @@ export function useBeforeActionSubmission({
     const payload = buildBeforeActionPayload({ form: normalizedForm, linkedEventId, userMetadata });
     setSubmissionState("pending"); setErrorMessage(null); setValidationIssues([]); setValidationIssueFields([]);
     try {
-      const result = await persistBeforeAction(actionId, payload);
+      const result = await persistBeforeAction(
+        actionId,
+        payload,
+        DEFAULT_BEFORE_ACTION_PERSISTENCE_DEPENDENCIES,
+        creationRequestId,
+      );
       setCreatedId(result.actionId); onActionPersisted?.(result.actionId);
       if (actionId) { const canonicalAction = await fetchActionById(result.actionId); setPublishedAction(canonicalAction); setPublishedAt(canonicalAction.publishedAt ?? null); }
       setSubmissionState("success");

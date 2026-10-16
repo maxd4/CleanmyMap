@@ -73,6 +73,7 @@ export function ActionBeforeDeclarationForm({
     confirmPublish,
     onContinueComplete,
     persistenceStatus = "clean",
+    retryDraftPersistence,
   } = useBeforeActionForm({ actorNameOptions, defaultActorName, isAuthenticated, userMetadata, linkedEventId, initialActionId, duplicateFromActionId, initialRecordType, onPassToComplete, onFormChange, onActionPersisted, preparationContext });
 
   useEffect(() => {
@@ -92,8 +93,8 @@ export function ActionBeforeDeclarationForm({
   if (isHydratingAction) return <ActionBeforeHydrationView />;
   if (terminalActionStatus) return <ActionBeforeTerminalView status={terminalActionStatus} createdId={createdId} />;
   if (submissionState === "success") {
-    return <><ActionBeforePersistenceStatus status={persistenceStatus} /><ActionBeforePublicationView form={form} publishedAction={publishedAction} createdId={createdId} publishedAt={publishedAt} publicationState={publicationState} publicationError={publicationError} publicationConfirmationOpen={publicationConfirmationOpen} guidedWorkflow={guidedWorkflow} guidedReadiness={guidedReadiness} shareActionId={shareActionId} onRequestPublish={requestPublish} onCancelPublication={cancelPublication} onConfirmPublish={confirmPublish} onContinueComplete={onContinueComplete} onShare={setShareActionId} /></>;
+    return <><ActionBeforePersistenceStatus status={persistenceStatus} onRetry={retryDraftPersistence} /><ActionBeforePublicationView form={form} publishedAction={publishedAction} createdId={createdId} publishedAt={publishedAt} publicationState={publicationState} publicationError={publicationError} publicationConfirmationOpen={publicationConfirmationOpen} guidedWorkflow={guidedWorkflow} guidedReadiness={guidedReadiness} shareActionId={shareActionId} onRequestPublish={requestPublish} onCancelPublication={cancelPublication} onConfirmPublish={confirmPublish} onContinueComplete={onContinueComplete} onShare={setShareActionId} /></>;
   }
 
-  return <ActionBeforeFormView activeSection={activeSection} form={form} submissionState={submissionState} validationIssues={validationIssues} validationIssueFields={validationIssueFields} errorMessage={errorMessage} userMetadata={userMetadata} updateField={updateField} updateFields={updateFields} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)} invitationStatuses={invitationStatuses} handleSubmit={handleSubmit} guidedReadiness={guidedReadiness} isAuthenticated={isAuthenticated} signInHref={signInHref} signUpHref={signUpHref} persistenceStatus={persistenceStatus} actionId={createdId} onFormalitiesReadiness={onFormalitiesReadiness} />;
+  return <ActionBeforeFormView activeSection={activeSection} form={form} submissionState={submissionState} validationIssues={validationIssues} validationIssueFields={validationIssueFields} errorMessage={errorMessage} userMetadata={userMetadata} updateField={updateField} updateFields={updateFields} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)} invitationStatuses={invitationStatuses} handleSubmit={handleSubmit} guidedReadiness={guidedReadiness} isAuthenticated={isAuthenticated} signInHref={signInHref} signUpHref={signUpHref} persistenceStatus={persistenceStatus} actionId={createdId} onFormalitiesReadiness={onFormalitiesReadiness} onRetryDraftLoad={retryDraftPersistence} />;
 }
