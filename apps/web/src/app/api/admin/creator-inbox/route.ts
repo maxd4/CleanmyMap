@@ -43,7 +43,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Invalid pagination cursor" }, { status: 400 });
     }
     const page = await loadCreatorInboxPage({ limit, cursor });
-    return NextResponse.json({ status: "ok", ...page, canQualify });
+    return NextResponse.json({
+      status: "ok",
+      ...page,
+      ...(canQualify ? { feedbackMetrics: page.feedbackMetrics } : {}),
+      canQualify,
+    });
   } catch {
     return NextResponse.json(
       { error: "Unable to load creator inbox." },
@@ -81,7 +86,7 @@ export async function PATCH(request: Request) {
     );
   }
 
-  if (parsed.data.action === "qualify") {
+  if (parsed.data.action === "qualify" || parsed.data.action === "update_tracking") {
     if (!isImuOwnerIdentity(identity, env.CLERK_IMU_OWNER_USER_ID)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -92,10 +97,21 @@ export async function PATCH(request: Request) {
       action: parsed.data.action,
       reason: parsed.data.reason ?? "",
       appendDecisionAudit: async () => undefined,
-      qualification: {
-        decision: parsed.data.decision!,
-        duplicateFeedbackId: parsed.data.duplicateFeedbackId ?? null,
-      },
+      ...(parsed.data.action === "qualify"
+        ? {
+            qualification: {
+              decision: parsed.data.decision!,
+              duplicateFeedbackId: parsed.data.duplicateFeedbackId ?? null,
+            },
+          }
+        : {
+            tracking: {
+              status: parsed.data.trackingStatus!,
+              publicSummary: parsed.data.trackingPublicSummary ?? null,
+              reference: parsed.data.trackingReference ?? null,
+              shippedOn: parsed.data.trackingShippedOn ?? null,
+            },
+          }),
     });
   }
 

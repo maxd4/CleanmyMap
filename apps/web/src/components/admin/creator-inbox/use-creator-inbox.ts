@@ -6,6 +6,7 @@ import {
 } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { summarizeCreatorInboxItem, type CreatorInboxItem, type CreatorInboxSource, type CreatorInboxStatus } from "@/lib/community/creator-inbox";
+import type { CommunityBugReportFollowUpMetrics, FeedbackTrackingStatus } from "@/lib/community/bug-reports-store";
 import { acceptPartnerRequest, acceptPromotionRequest, applyCreatorInboxAction, decideLegalContentReport, fetchCreatorInboxPage, rejectPartnerRequest, rejectPromotionRequest } from "./creator-inbox-service";
 import { refreshList } from "./inbox-constants";
 import { getCreatorInboxCopy, PARTNER_CONFIRM_PHRASE, type CreatorInboxLocale } from "./creator-inbox-copy";
@@ -20,6 +21,7 @@ type UseCreatorInboxParams = {
   initialHasMore?: boolean;
   initialNextCursor?: string | null;
   initialCanQualify?: boolean;
+  initialFeedbackMetrics?: CommunityBugReportFollowUpMetrics;
 };
 
 type Summary = {
@@ -51,6 +53,7 @@ export function useCreatorInbox({
   initialItems,
   initialHasMore = false, initialNextCursor = null,
   initialCanQualify = false,
+  initialFeedbackMetrics,
 }: UseCreatorInboxParams) {
   const { locale } = useSitePreferences();
   const inboxLocale: CreatorInboxLocale = locale === "fr" ? "fr" : "en";
@@ -67,6 +70,7 @@ export function useCreatorInbox({
   const [refreshing, setRefreshing] = useState(false);
   const [partnerConfirm, setPartnerConfirm] = useState("");
   const [canQualify, setCanQualify] = useState(initialCanQualify);
+  const [feedbackMetrics, setFeedbackMetrics] = useState(initialFeedbackMetrics);
   const [partnerReason, setPartnerReason] = useState<Record<string, string>>({});
   const [actionReasons, setActionReasons] = useState<Record<string, string>>({});
 
@@ -137,6 +141,7 @@ export function useCreatorInbox({
       if (page.canQualify !== undefined) {
         setCanQualify(page.canQualify);
       }
+      if (page.feedbackMetrics) setFeedbackMetrics(page.feedbackMetrics);
       setSuccessMessage(copy.messages.refreshSuccess);
       window.setTimeout(() => setSuccessMessage(null), 1800);
     } catch (error) {
@@ -216,6 +221,65 @@ export function useCreatorInbox({
       window.setTimeout(() => setSuccessMessage(null), 1800);
     } catch (error) {
       setErrorMessage(resolveInboxMessage(error, copy.messages.qualificationError));
+    } finally {
+      setUpdatingKey(null);
+    }
+  }
+
+  async function updateFeedbackTracking(params: {
+    item: CreatorInboxItem;
+    status: FeedbackTrackingStatus;
+    publicSummary: string | null;
+    reference: string | null;
+    shippedOn: string | null;
+  }) {
+    if (params.status === "shipped" && (params.publicSummary?.trim().length ?? 0) < 5) {
+      setErrorMessage(
+        inboxLocale === "fr"
+          ? "Un résumé public est requis pour une livraison."
+          : "A public summary is required for delivery.",
+      );
+      return;
+    }
+    if (params.status === "shipped" && !params.shippedOn) {
+      setErrorMessage(
+        inboxLocale === "fr"
+          ? "Une date de livraison confirmée est requise."
+          : "A confirmed delivery date is required.",
+      );
+      return;
+    }
+    setUpdatingKey(`feedback:${params.item.sourceRecordId}:update_tracking`);
+    setErrorMessage(null);
+    try {
+      const payload = await applyCreatorInboxAction({
+        source: "feedback",
+        itemId: params.item.sourceRecordId,
+        action: "update_tracking",
+        reason: "Suivi de réalisation mis à jour",
+        trackingStatus: params.status,
+        trackingPublicSummary: params.publicSummary,
+        trackingReference: params.reference,
+        trackingShippedOn: params.shippedOn,
+      });
+      setItems((current) => refreshList(current, payload.item ?? null));
+      if (feedbackMetrics && payload.item?.tracking) {
+        const wasShipped = params.item.tracking?.status === "shipped";
+        const isShipped = payload.item.tracking.status === "shipped";
+        if (wasShipped !== isShipped) {
+          setFeedbackMetrics((current) =>
+            current
+              ? { ...current, shipped: current.shipped + (isShipped ? 1 : -1) }
+              : current,
+          );
+        }
+      }
+      setSuccessMessage(
+        inboxLocale === "fr" ? "Suivi de réalisation enregistré." : "Product follow-up saved.",
+      );
+      window.setTimeout(() => setSuccessMessage(null), 1800);
+    } catch (error) {
+      setErrorMessage(resolveInboxMessage(error, copy.messages.actionError));
     } finally {
       setUpdatingKey(null);
     }
@@ -386,6 +450,7 @@ export function useCreatorInbox({
     copy,
     items,
     summary,
+    feedbackMetrics,
     query,
     setQuery,
     sourceFilter,
@@ -424,5 +489,6 @@ export function useCreatorInbox({
     rejectPartner,
     decideLegalReport,
     qualifyFeedback,
+    updateFeedbackTracking,
   };
 }

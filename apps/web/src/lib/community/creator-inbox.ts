@@ -1,6 +1,7 @@
 import type {
   BugReportRecord,
   FeedbackQualificationStatus,
+  FeedbackTracking,
 } from "@/lib/community/bug-reports-store";
 import type { PromotionRequestRecord } from "@/lib/admin/promotion-requests-store";
 import type { PartnerOnboardingRequestRecord } from "@/lib/partners/onboarding-requests-store";
@@ -60,6 +61,7 @@ export type CreatorInboxItem = {
     decidedAt: string | null;
     duplicateFeedbackId: string | null;
   };
+  tracking?: FeedbackTracking;
 };
 
 const STATUS_LABELS: Record<CreatorInboxStatus, { fr: string; en: string }> = {
@@ -226,6 +228,7 @@ export function buildFeedbackInboxItem(record: BugReportRecord): CreatorInboxIte
       decidedAt: record.qualificationDecidedAt ?? null,
       duplicateFeedbackId: record.qualificationDuplicateFeedbackId ?? null,
     },
+    tracking: record.tracking,
   };
 }
 

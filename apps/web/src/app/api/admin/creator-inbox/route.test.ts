@@ -6,6 +6,7 @@ const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 const getCommunityBugReportByIdMock = vi.hoisted(() => vi.fn());
 const updateCommunityBugReportStatusMock = vi.hoisted(() => vi.fn());
 const qualifyCommunityBugReportMock = vi.hoisted(() => vi.fn());
+const updateCommunityBugReportTrackingMock = vi.hoisted(() => vi.fn());
 const updateCommunityBugReportCreatorStateMock = vi.hoisted(() => vi.fn());
 const getPromotionRequestByIdMock = vi.hoisted(() => vi.fn());
 const updatePromotionRequestCreatorStateMock = vi.hoisted(() => vi.fn());
@@ -37,6 +38,7 @@ vi.mock("@/lib/community/bug-reports-store", () => ({
   updateCommunityBugReportCreatorState: updateCommunityBugReportCreatorStateMock,
   updateCommunityBugReportStatus: updateCommunityBugReportStatusMock,
   qualifyCommunityBugReport: qualifyCommunityBugReportMock,
+  updateCommunityBugReportTracking: updateCommunityBugReportTrackingMock,
 }));
 
 vi.mock("@/lib/admin/promotion-requests-store", () => ({
@@ -139,6 +141,21 @@ describe("PATCH /api/admin/creator-inbox", () => {
         qualificationDecidedAt: "2026-10-16T12:00:00.000Z",
         qualificationDecidedByUserId: "max-owner",
         qualificationDuplicateFeedbackId: null,
+      },
+    });
+    updateCommunityBugReportTrackingMock.mockResolvedValue({
+      status: "updated",
+      record: {
+        ...feedbackRecord,
+        tracking: {
+          status: "shipped",
+          publicSummary: "Correction livrée.",
+          reference: "2026.10",
+          shippedOn: "2026-10-16",
+          shippedNotificationAt: "2026-10-16T12:00:00.000Z",
+          updatedAt: "2026-10-16T12:00:00.000Z",
+          updatedByUserId: "max-owner",
+        },
       },
     });
     getPromotionRequestByIdMock.mockResolvedValue(promotionRecord);
@@ -869,6 +886,55 @@ describe("PATCH /api/admin/creator-inbox", () => {
       hasMore: true,
       nextCursor: "next-page",
     });
+  });
+
+  it("allows only the canonical max identity to update product tracking", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "max-owner",
+      role: "max",
+      activeRole: "max",
+    });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "feedback",
+        itemId: "feedback-1",
+        action: "update_tracking",
+        trackingStatus: "shipped",
+        trackingPublicSummary: "Correction livrée.",
+        trackingReference: "2026.10",
+        trackingShippedOn: "2026-10-16",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateCommunityBugReportTrackingMock).toHaveBeenCalledWith(expect.objectContaining({
+      reportId: "feedback-1",
+      trackingStatus: "shipped",
+      publicSummary: "Correction livrée.",
+      shippedOn: "2026-10-16",
+      actorUserId: "max-owner",
+    }));
+  });
+
+  it("rejects tracking updates from a non-canonical administrator", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "admin-1",
+      role: "admin",
+      activeRole: "admin",
+    });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "feedback",
+        itemId: "feedback-1",
+        action: "update_tracking",
+        trackingStatus: "planned",
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(updateCommunityBugReportTrackingMock).not.toHaveBeenCalled();
   });
 
   it("rejects malformed page sizes instead of reading a misleading page", async () => {

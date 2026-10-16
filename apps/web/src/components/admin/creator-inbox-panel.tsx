@@ -1,6 +1,7 @@
 "use client";
 
 import type { CreatorInboxItem } from "@/lib/community/creator-inbox";
+import type { CommunityBugReportFollowUpMetrics } from "@/lib/community/bug-reports-store";
 import { InboxFilterBar } from "./creator-inbox/inbox-filter-bar";
 import { InboxItemCard } from "./creator-inbox/inbox-item-card";
 import { useCreatorInbox } from "./creator-inbox/use-creator-inbox";
@@ -11,6 +12,7 @@ type CreatorInboxPanelProps = {
   initialHasMore?: boolean;
   initialNextCursor?: string | null;
   canQualify?: boolean;
+  feedbackMetrics?: CommunityBugReportFollowUpMetrics;
 };
 
 export function CreatorInboxPanel({
@@ -18,8 +20,9 @@ export function CreatorInboxPanel({
   initialHasMore,
   initialNextCursor,
   canQualify = false,
+  feedbackMetrics,
 }: CreatorInboxPanelProps) {
-  const inbox = useCreatorInbox({ initialItems, initialHasMore, initialNextCursor, initialCanQualify: canQualify });
+  const inbox = useCreatorInbox({ initialItems, initialHasMore, initialNextCursor, initialCanQualify: canQualify, initialFeedbackMetrics: feedbackMetrics });
 
   return (
     <AdminPanelShell
@@ -37,6 +40,29 @@ export function CreatorInboxPanel({
       }
     >
       <div className="space-y-6">
+        {inbox.feedbackMetrics ? (
+          <section className="rounded-2xl border border-slate-200 bg-white p-4" aria-label="Indicateurs de suivi des feedbacks">
+            <h2 className="text-sm font-bold text-slate-900">Indicateurs des retours</h2>
+            <p className="mt-1 text-xs text-slate-600">
+              Période : depuis l&apos;origine · périmètre : feedbacks communautaires · les erreurs de lecture restent des erreurs.
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              {[
+                ["Reçus", inbox.feedbackMetrics.received],
+                ["À qualifier", inbox.feedbackMetrics.pendingQualification],
+                ["Pertinents", inbox.feedbackMetrics.accepted],
+                ["Doublons", inbox.feedbackMetrics.duplicate],
+                ["Non retenus", inbox.feedbackMetrics.rejected],
+                ["Livrés", inbox.feedbackMetrics.shipped],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                  <p className="text-xs font-semibold text-slate-500">{label}</p>
+                  <p className="mt-1 text-xl font-black text-slate-900">{value}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
         <InboxFilterBar
           copy={inbox.copy}
           query={inbox.query}
@@ -119,6 +145,9 @@ export function CreatorInboxPanel({
                 feedbackOptions={inbox.items.filter((option) => option.source === "feedback")}
                 onQualifyFeedback={(params) =>
                   void inbox.qualifyFeedback({ item, ...params })
+                }
+                onUpdateFeedbackTracking={(params) =>
+                  void inbox.updateFeedbackTracking({ item, ...params })
                 }
               />
             ))

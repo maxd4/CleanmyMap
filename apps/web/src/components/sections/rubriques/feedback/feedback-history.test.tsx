@@ -384,4 +384,66 @@ describe("FeedbackHistory", () => {
     expect(textOf(renderer)).toContain("Retour du compte B");
     expect(textOf(renderer)).not.toContain("Page 2 du compte A");
   });
+
+  it("shows product delivery proof separately and keeps needs-info in the owner DM", async () => {
+    useUserMock.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: true,
+      user: { id: "owner-1" },
+    });
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({
+        status: "ok",
+        items: [
+          {
+            id: "feedback-shipped",
+            title: "Carte corrigée",
+            type: "improvement",
+            createdAt: "2026-10-16T10:00:00.000Z",
+            status: "treated",
+            qualificationStatus: "accepted",
+            qualificationReason: "Utile",
+            qualificationDecidedByUserId: "max-owner",
+            description: "La carte ne se chargeait pas.",
+            trackingStatus: "shipped",
+            trackingPublicSummary: "Le chargement de la carte est corrigé.",
+            trackingReference: "2026.10",
+            trackingShippedOn: "2026-10-16",
+          },
+          {
+            id: "feedback-needs-info",
+            title: "Précision demandée",
+            type: "bug",
+            createdAt: "2026-10-15T10:00:00.000Z",
+            status: "responded",
+            qualificationStatus: "needs_info",
+            qualificationReason: "Précisez le navigateur.",
+            qualificationDecidedByUserId: "max-owner",
+            description: "Le bouton ne répond pas.",
+            trackingStatus: "not_planned",
+            trackingPublicSummary: null,
+            trackingReference: null,
+            trackingShippedOn: null,
+          },
+        ],
+        nextCursor: null,
+        hasMore: false,
+      }),
+    );
+
+    let renderer!: ReactTestRenderer;
+    await act(async () => {
+      renderer = create(<FeedbackHistory locale="fr" />);
+      await Promise.resolve();
+    });
+
+    expect(textOf(renderer)).toContain("Suivi produit");
+    expect(textOf(renderer)).toContain("Livré");
+    expect(textOf(renderer)).toContain("Le chargement de la carte est corrigé.");
+    expect(textOf(renderer)).toContain("Ajouter une précision dans le DM");
+    expect(renderer.root.findAllByType("a").some((anchor) =>
+      String(anchor.props.href).includes("recipientId=max-owner") &&
+      String(anchor.props.href).includes("feedbackId=feedback-needs-info"),
+    )).toBe(true);
+  });
 });

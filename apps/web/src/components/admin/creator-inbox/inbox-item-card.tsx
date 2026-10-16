@@ -11,6 +11,8 @@ import { InboxItemProcessingReason } from "./inbox-item-processing-reason";
 import { InboxItemRequestDetails } from "./inbox-item-request-details";
 import { InboxItemReviewActions } from "./inbox-item-review-actions";
 import { FeedbackQualificationControls } from "./feedback-qualification-controls";
+import { FeedbackTrackingControls } from "./feedback-tracking-controls";
+import type { FeedbackTrackingStatus } from "@/lib/community/bug-reports-store";
 
 type InboxItemCardProps = {
   item: CreatorInboxItem;
@@ -38,6 +40,12 @@ type InboxItemCardProps = {
     reason: string;
     duplicateFeedbackId: string | null;
   }) => void;
+  onUpdateFeedbackTracking?: (params: {
+    status: FeedbackTrackingStatus;
+    publicSummary: string | null;
+    reference: string | null;
+    shippedOn: string | null;
+  }) => void;
 };
 
 export function InboxItemCard({
@@ -62,10 +70,12 @@ export function InboxItemCard({
   canQualify,
   feedbackOptions,
   onQualifyFeedback,
+  onUpdateFeedbackTracking,
 }: InboxItemCardProps) {
   const qualificationEnabled = canQualify ?? false;
   const qualificationOptions = feedbackOptions ?? [];
   const qualify = onQualifyFeedback ?? (() => undefined);
+  const updateTracking = onUpdateFeedbackTracking ?? (() => undefined);
   return (
     <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <InboxItemRequestDetails item={item} locale={locale} copy={copy} />
@@ -82,6 +92,16 @@ export function InboxItemCard({
           copy={copy}
           busy={actionBusy(item.source, item.sourceRecordId, "qualify")}
           onQualify={qualify}
+        />
+      ) : null}
+
+      {item.source === "feedback" && qualificationEnabled ? (
+        <FeedbackTrackingControls
+          key={`${item.id}:${item.tracking?.updatedAt ?? "initial"}`}
+          item={item}
+          locale={locale}
+          busy={actionBusy(item.source, item.sourceRecordId, "update_tracking")}
+          onUpdate={updateTracking}
         />
       ) : null}
 

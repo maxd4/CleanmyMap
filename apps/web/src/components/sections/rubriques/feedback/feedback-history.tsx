@@ -6,10 +6,12 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import {
   isPersonalFeedbackQualificationStatus,
+  isPersonalFeedbackTrackingStatus,
   isPersonalFeedbackStatus,
   type PersonalFeedbackItem,
   type PersonalFeedbackPage,
   type PersonalFeedbackStatus,
+  type PersonalFeedbackTrackingStatus,
 } from "@/lib/community/feedback-history-contract";
 import type { Locale } from "../feedback-section.shared";
 
@@ -39,6 +41,14 @@ const FEEDBACK_QUALIFICATION_LABELS = {
   rejected: { fr: "Non retenu", en: "Not retained" },
 } as const;
 
+const FEEDBACK_TRACKING_LABELS: Record<PersonalFeedbackTrackingStatus, { fr: string; en: string }> = {
+  not_planned: { fr: "Aucune réalisation décidée", en: "No delivery decided" },
+  under_study: { fr: "À étudier", en: "Under study" },
+  planned: { fr: "Planifié", en: "Planned" },
+  in_progress: { fr: "En cours de développement", en: "In progress" },
+  shipped: { fr: "Livré", en: "Shipped" },
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
 }
@@ -60,6 +70,30 @@ function parsePersonalFeedbackPage(value: unknown): PersonalFeedbackPage {
   }
 
   const items = value.items.map((item) => {
+    const qualificationDecidedByUserId =
+      item && typeof item === "object" && "qualificationDecidedByUserId" in item
+        ? item.qualificationDecidedByUserId
+        : null;
+    const description =
+      item && typeof item === "object" && typeof item.description === "string"
+        ? item.description
+        : "";
+    const trackingStatus =
+      item && typeof item === "object" && "trackingStatus" in item
+        ? item.trackingStatus
+        : "not_planned";
+    const trackingPublicSummary =
+      item && typeof item === "object" && "trackingPublicSummary" in item
+        ? item.trackingPublicSummary
+        : null;
+    const trackingReference =
+      item && typeof item === "object" && "trackingReference" in item
+        ? item.trackingReference
+        : null;
+    const trackingShippedOn =
+      item && typeof item === "object" && "trackingShippedOn" in item
+        ? item.trackingShippedOn
+        : null;
     if (
       !isRecord(item) ||
       typeof item.id !== "string" ||
@@ -68,6 +102,12 @@ function parsePersonalFeedbackPage(value: unknown): PersonalFeedbackPage {
       !isPersonalFeedbackStatus(item.status) ||
       !isPersonalFeedbackType(item.type) ||
       !isPersonalFeedbackQualificationStatus(item.qualificationStatus) ||
+      !isPersonalFeedbackTrackingStatus(trackingStatus) ||
+      (qualificationDecidedByUserId !== null &&
+        typeof qualificationDecidedByUserId !== "string") ||
+      (typeof trackingPublicSummary !== "string" && trackingPublicSummary !== null) ||
+      (typeof trackingReference !== "string" && trackingReference !== null) ||
+      (typeof trackingShippedOn !== "string" && trackingShippedOn !== null) ||
       (item.qualificationReason !== null &&
         typeof item.qualificationReason !== "string")
     ) {
@@ -81,6 +121,12 @@ function parsePersonalFeedbackPage(value: unknown): PersonalFeedbackPage {
       status: item.status,
       qualificationStatus: item.qualificationStatus,
       qualificationReason: item.qualificationReason,
+      qualificationDecidedByUserId,
+      description,
+      trackingStatus,
+      trackingPublicSummary,
+      trackingReference,
+      trackingShippedOn,
     };
   });
 
@@ -172,6 +218,28 @@ function FeedbackHistoryItem({ item, locale }: { item: PersonalFeedbackItem; loc
             <p className="mt-1 cmm-text-small leading-relaxed cmm-text-secondary">
               {item.qualificationReason}
             </p>
+          ) : null}
+          <p className="mt-2 text-sm font-semibold text-slate-700">
+            {locale === "fr" ? "Suivi produit" : "Product follow-up"}: {FEEDBACK_TRACKING_LABELS[item.trackingStatus][locale]}
+          </p>
+          {item.trackingStatus === "shipped" ? (
+            <div className="mt-1 space-y-1 cmm-text-small leading-relaxed cmm-text-secondary">
+              {item.trackingPublicSummary ? <p>{item.trackingPublicSummary}</p> : null}
+              {item.trackingReference ? (
+                <p>{locale === "fr" ? "Référence" : "Reference"}: {item.trackingReference}</p>
+              ) : null}
+              {item.trackingShippedOn ? (
+                <p>{locale === "fr" ? "Livré le" : "Delivered on"}: {item.trackingShippedOn}</p>
+              ) : null}
+            </div>
+          ) : null}
+          {item.qualificationStatus === "needs_info" && item.qualificationDecidedByUserId ? (
+            <a
+              className="mt-2 inline-flex text-xs font-semibold text-pink-700 underline-offset-2 hover:underline"
+              href={`/sections/messagerie?channel=dm&recipientId=${encodeURIComponent(item.qualificationDecidedByUserId)}&feedbackId=${encodeURIComponent(item.id)}`}
+            >
+              {locale === "fr" ? "Ajouter une précision dans le DM" : "Add details in the DM"}
+            </a>
           ) : null}
         </div>
         <span className="inline-flex w-fit shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-pink-700">

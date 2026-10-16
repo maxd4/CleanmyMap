@@ -33,7 +33,7 @@ const STORE_FILE = join(
   "community_bug_reports.json",
 );
 const SUPABASE_BUG_REPORT_COLUMNS =
-  "id, created_at, submitted_by_user_id, submitted_by_display_name, submitted_by_email, submitted_by_role, report_type, title, description, page_path, source, status, creator_state, screenshot_upload_state, qualification_status, qualification_reason, qualification_decided_at, qualification_decided_by_user_id, qualification_duplicate_feedback_id";
+  "id, created_at, submitted_by_user_id, submitted_by_display_name, submitted_by_email, submitted_by_role, report_type, title, description, page_path, source, status, creator_state, screenshot_upload_state, qualification_status, qualification_reason, qualification_decided_at, qualification_decided_by_user_id, qualification_duplicate_feedback_id, tracking_status, tracking_public_summary, tracking_reference, tracking_shipped_on, tracking_shipped_notification_at, tracking_updated_at, tracking_updated_by_user_id";
 
 export const FEEDBACK_QUALIFICATION_STATUSES = [
   "pending",
@@ -50,6 +50,26 @@ export type FeedbackQualificationDecision = Exclude<
   FeedbackQualificationStatus,
   "pending"
 > | "pending";
+
+export const FEEDBACK_TRACKING_STATUSES = [
+  "not_planned",
+  "under_study",
+  "planned",
+  "in_progress",
+  "shipped",
+] as const;
+
+export type FeedbackTrackingStatus = (typeof FEEDBACK_TRACKING_STATUSES)[number];
+
+export type FeedbackTracking = {
+  status: FeedbackTrackingStatus;
+  publicSummary: string | null;
+  reference: string | null;
+  shippedOn: string | null;
+  shippedNotificationAt: string | null;
+  updatedAt: string | null;
+  updatedByUserId: string | null;
+};
 
 export type BugReportInput = {
   reportType: "bug" | "idea" | "improvement" | "collaboration";
@@ -78,6 +98,7 @@ export type BugReportRecord = BugReportInput & {
   qualificationDecidedAt?: string | null;
   qualificationDecidedByUserId?: string | null;
   qualificationDuplicateFeedbackId?: string | null;
+  tracking?: FeedbackTracking;
 };
 
 export const COMMUNITY_BUG_REPORTS_HISTORY_DEFAULT_LIMIT = 20;
@@ -232,6 +253,12 @@ function normalizeFeedbackQualificationStatus(
     : "pending";
 }
 
+function normalizeFeedbackTrackingStatus(value: unknown): FeedbackTrackingStatus {
+  return FEEDBACK_TRACKING_STATUSES.includes(value as FeedbackTrackingStatus)
+    ? (value as FeedbackTrackingStatus)
+    : "not_planned";
+}
+
 function normalizeBugReportRecord(record: unknown): BugReportRecord | null {
   if (!record || typeof record !== "object") {
     return null;
@@ -283,6 +310,17 @@ function normalizeBugReportRecord(record: unknown): BugReportRecord | null {
     qualificationDuplicateFeedbackId: normalizeOptionalTextField(
       raw["qualificationDuplicateFeedbackId"],
     ),
+    tracking: {
+      status: normalizeFeedbackTrackingStatus(raw["trackingStatus"]),
+      publicSummary: normalizeOptionalTextField(raw["trackingPublicSummary"]),
+      reference: normalizeOptionalTextField(raw["trackingReference"]),
+      shippedOn: normalizeOptionalTextField(raw["trackingShippedOn"]),
+      shippedNotificationAt: normalizeOptionalTextField(
+        raw["trackingShippedNotificationAt"],
+      ),
+      updatedAt: normalizeOptionalTextField(raw["trackingUpdatedAt"]),
+      updatedByUserId: normalizeOptionalTextField(raw["trackingUpdatedByUserId"]),
+    },
     reportType: rawReportType as BugReportRecord["reportType"],
     title,
     description,
@@ -311,6 +349,13 @@ function fromSupabaseRow(row: Record<string, unknown>): BugReportRecord | null {
     qualificationDecidedAt: row.qualification_decided_at,
     qualificationDecidedByUserId: row.qualification_decided_by_user_id,
     qualificationDuplicateFeedbackId: row.qualification_duplicate_feedback_id,
+    trackingStatus: row.tracking_status,
+    trackingPublicSummary: row.tracking_public_summary,
+    trackingReference: row.tracking_reference,
+    trackingShippedOn: row.tracking_shipped_on,
+    trackingShippedNotificationAt: row.tracking_shipped_notification_at,
+    trackingUpdatedAt: row.tracking_updated_at,
+    trackingUpdatedByUserId: row.tracking_updated_by_user_id,
   });
 }
 
@@ -343,6 +388,13 @@ function toSupabaseRow(record: BugReportRecord): Record<string, unknown> {
     qualification_decided_by_user_id: record.qualificationDecidedByUserId ?? null,
     qualification_duplicate_feedback_id:
       record.qualificationDuplicateFeedbackId ?? null,
+    tracking_status: record.tracking?.status ?? "not_planned",
+    tracking_public_summary: record.tracking?.publicSummary ?? null,
+    tracking_reference: record.tracking?.reference ?? null,
+    tracking_shipped_on: record.tracking?.shippedOn ?? null,
+    tracking_shipped_notification_at: record.tracking?.shippedNotificationAt ?? null,
+    tracking_updated_at: record.tracking?.updatedAt ?? null,
+    tracking_updated_by_user_id: record.tracking?.updatedByUserId ?? null,
   };
 }
 
@@ -399,6 +451,123 @@ export async function qualifyCommunityBugReport(params: {
     status,
     record: payload?.item ? fromSupabaseRow(payload.item) : null,
   };
+}
+
+export type CommunityBugReportTrackingResult = {
+  record: BugReportRecord | null;
+  status: "updated" | "unchanged" | "not_found";
+};
+
+export async function updateCommunityBugReportTracking(params: {
+  reportId: string;
+  trackingStatus: FeedbackTrackingStatus;
+  publicSummary: string | null;
+  reference: string | null;
+  shippedOn: string | null;
+  actorUserId: string;
+  operationId: string;
+}): Promise<CommunityBugReportTrackingResult> {
+  assertPersistenceAvailable("community_bug_reports");
+
+  if (!canUseSupabaseServerPersistence()) {
+    throw new Error("Feedback tracking requires transactional Supabase persistence.");
+  }
+
+  const result = await getSupabaseServerClient(true).rpc(
+    "update_community_bug_report_tracking",
+    {
+      p_feedback_id: params.reportId,
+      p_tracking_status: params.trackingStatus,
+      p_public_summary: params.publicSummary,
+      p_reference: params.reference,
+      p_shipped_on: params.shippedOn,
+      p_actor_user_id: params.actorUserId,
+      p_operation_id: params.operationId,
+    },
+  );
+  if (result.error) throw new Error(result.error.message);
+
+  const payload = result.data as {
+    status?: CommunityBugReportTrackingResult["status"];
+    item?: Record<string, unknown> | null;
+  } | null;
+  if (
+    payload?.status !== "updated" &&
+    payload?.status !== "unchanged" &&
+    payload?.status !== "not_found"
+  ) {
+    throw new Error("Invalid feedback tracking result.");
+  }
+
+  return {
+    status: payload.status,
+    record: payload.item ? fromSupabaseRow(payload.item) : null,
+  };
+}
+
+export type CommunityBugReportFollowUpMetrics = {
+  received: number;
+  pendingQualification: number;
+  accepted: number;
+  duplicate: number;
+  rejected: number;
+  shipped: number;
+  period: "all_time";
+  scope: "community_bug_reports";
+};
+
+export async function loadCommunityBugReportFollowUpMetrics(): Promise<CommunityBugReportFollowUpMetrics> {
+  assertPersistenceAvailable("community_bug_reports");
+
+  if (canUseSupabaseServerPersistence()) {
+    const supabase = getSupabaseServerClient(true);
+    const [received, pendingQualification, accepted, duplicate, rejected, shipped] =
+      await Promise.all([
+        supabase.from("community_bug_reports").select("id", { count: "exact", head: true }),
+        supabase.from("community_bug_reports").select("id", { count: "exact", head: true }).eq("qualification_status", "pending"),
+        supabase.from("community_bug_reports").select("id", { count: "exact", head: true }).eq("qualification_status", "accepted"),
+        supabase.from("community_bug_reports").select("id", { count: "exact", head: true }).eq("qualification_status", "duplicate"),
+        supabase.from("community_bug_reports").select("id", { count: "exact", head: true }).eq("qualification_status", "rejected"),
+        supabase.from("community_bug_reports").select("id", { count: "exact", head: true }).eq("tracking_status", "shipped"),
+      ]);
+    const results = [received, pendingQualification, accepted, duplicate, rejected, shipped];
+    const failure = results.find((result) => result.error);
+    if (failure?.error) throw new Error(failure.error.message);
+    return {
+      received: received.count ?? 0,
+      pendingQualification: pendingQualification.count ?? 0,
+      accepted: accepted.count ?? 0,
+      duplicate: duplicate.count ?? 0,
+      rejected: rejected.count ?? 0,
+      shipped: shipped.count ?? 0,
+      period: "all_time",
+      scope: "community_bug_reports",
+    };
+  }
+
+  const store = await readStore();
+  return store.records.reduce<CommunityBugReportFollowUpMetrics>(
+    (metrics, record) => {
+      metrics.received += 1;
+      const qualificationStatus = record.qualificationStatus ?? "pending";
+      if (qualificationStatus === "pending") metrics.pendingQualification += 1;
+      if (qualificationStatus === "accepted") metrics.accepted += 1;
+      if (qualificationStatus === "duplicate") metrics.duplicate += 1;
+      if (qualificationStatus === "rejected") metrics.rejected += 1;
+      if (record.tracking?.status === "shipped") metrics.shipped += 1;
+      return metrics;
+    },
+    {
+      received: 0,
+      pendingQualification: 0,
+      accepted: 0,
+      duplicate: 0,
+      rejected: 0,
+      shipped: 0,
+      period: "all_time",
+      scope: "community_bug_reports",
+    },
+  );
 }
 
 export async function appendCommunityBugReport(params: {

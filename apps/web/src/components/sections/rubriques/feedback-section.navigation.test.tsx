@@ -3,6 +3,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useUserMock = vi.hoisted(() => vi.fn());
+const fetchPersonalFeedbackPageMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs", () => ({ useUser: useUserMock }));
 vi.mock("@/components/sections/rubriques/shared", () => ({
@@ -26,6 +27,7 @@ vi.mock("@/components/ui/cmm-button", () => ({
 }));
 vi.mock("./feedback/feedback-history", () => ({
   FeedbackHistory: () => <div data-testid="feedback-history" />,
+  fetchPersonalFeedbackPage: fetchPersonalFeedbackPageMock,
 }));
 vi.mock("./feedback-section-dashboard-guidance", () => ({
   FeedbackSectionDashboardGuidance: () => <div data-testid="feedback-guidance" />,
@@ -110,6 +112,7 @@ function textareaValues(renderer: ReactTestRenderer): string[] {
 describe("FeedbackSection URL synchronization", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    fetchPersonalFeedbackPageMock.mockResolvedValue({ items: [] });
     useUserMock.mockReturnValue({
       isLoaded: true,
       isSignedIn: true,

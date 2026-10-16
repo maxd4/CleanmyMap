@@ -20,8 +20,14 @@ import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import {
   FEEDBACK_DESCRIPTION_MAX_LENGTH,
   formatQuestionnaireDescription,
+  buildSuggestedFeedbackTitle,
   submitFeedbackQuestionnaire,
 } from "./feedback-submission";
+import {
+  fetchPersonalFeedbackPage,
+} from "./feedback-history";
+import type { PersonalFeedbackItem } from "@/lib/community/feedback-history-contract";
+import { findPotentiallySimilarFeedback } from "@/lib/community/feedback-similarity";
 import {
   FEEDBACK_SCREENSHOT_ACCEPT,
   validateFeedbackScreenshotFile,
@@ -42,7 +48,7 @@ export function QuestionnaireCard({
   initialValues?: Partial<Record<string, string>>;
 }) {
   const { locale } = useSitePreferences();
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
   const initialQuestionnaireValues = useMemo(
     () =>
       Object.fromEntries(
@@ -67,6 +73,8 @@ export function QuestionnaireCard({
   const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState<string | null>(null);
   const screenshotPreviewUrlRef = useRef<string | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
+  const [personalFeedback, setPersonalFeedback] = useState<PersonalFeedbackItem[]>([]);
+  const [personalFeedbackOwnerId, setPersonalFeedbackOwnerId] = useState<string | null>(null);
   const questionnairePagePath = `${pagePath}#${questionnaire.id}`;
   const serializedDescription = useMemo(
     () =>
@@ -80,6 +88,43 @@ export function QuestionnaireCard({
   );
   const descriptionTooLong =
     serializedDescription.length > FEEDBACK_DESCRIPTION_MAX_LENGTH;
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || !user?.id || questionnaire.id === "collaboration") {
+      return;
+    }
+    let active = true;
+    void fetchPersonalFeedbackPage(null)
+      .then((page) => {
+        if (active) {
+          setPersonalFeedback(page.items);
+          setPersonalFeedbackOwnerId(user.id);
+        }
+      })
+      .catch(() => {
+        if (active) setPersonalFeedback([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isLoaded, isSignedIn, questionnaire.id, user?.id]);
+
+  const similarFeedback = useMemo(
+    () =>
+      findPotentiallySimilarFeedback(
+        {
+          id: "current-draft",
+          title: buildSuggestedFeedbackTitle(questionnaire, values, locale),
+          text: serializedDescription,
+        },
+        (personalFeedbackOwnerId === user?.id ? personalFeedback : []).map((item) => ({
+          id: item.id,
+          title: item.title,
+          text: item.description,
+        })),
+      ),
+    [locale, personalFeedback, personalFeedbackOwnerId, questionnaire, serializedDescription, user?.id, values],
+  );
 
   useEffect(() => {
     formStartedAt.current = Date.now();
@@ -374,6 +419,32 @@ export function QuestionnaireCard({
             </div>
           ) : null}
           <div className="grid gap-3">
+            {similarFeedback.length > 0 ? (
+              <aside className="rounded-2xl border border-cyan-200/30 bg-cyan-500/10 px-4 py-3 text-slate-100" role="status">
+                <p className="text-sm font-bold">
+                  {locale === "fr"
+                    ? "Des retours personnels semblent proches"
+                    : "Some of your feedback looks similar"}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-300">
+                  {locale === "fr"
+                    ? "Vérifiez vos retours précédents avant d'envoyer. Cette suggestion ne bloque pas la soumission."
+                    : "Check your previous feedback before sending. This suggestion does not block submission."}
+                </p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {similarFeedback.map((match) => (
+                    <li key={match.id}>
+                      <a
+                        href={`/sections/feedback#mes-retours`}
+                        className="font-semibold text-cyan-100 underline-offset-2 hover:underline"
+                      >
+                        {match.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </aside>
+            ) : null}
             {questionnaire.fields.map((field) => {
               const fieldId = `feedback-${questionnaire.id}-${field.key}`;
               const canDictate = questionnaire.id !== "collaboration" && field.rows !== undefined;

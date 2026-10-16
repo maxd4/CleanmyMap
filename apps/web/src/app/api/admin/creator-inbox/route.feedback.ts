@@ -4,8 +4,10 @@ import {
   deleteCommunityBugReport,
   getCommunityBugReportById,
   qualifyCommunityBugReport,
+  updateCommunityBugReportTracking,
   updateCommunityBugReportStatus,
 } from "@/lib/community/bug-reports-store";
+import type { FeedbackTrackingStatus } from "@/lib/community/bug-reports-store";
 import {
   appendCreatorInboxErrorAudit,
   appendCreatorInboxLookupError,
@@ -37,6 +39,15 @@ type FeedbackQualificationParams = CreatorInboxHandlerParams & {
   };
 };
 
+type FeedbackTrackingParams = CreatorInboxHandlerParams & {
+  tracking: {
+    status: FeedbackTrackingStatus;
+    publicSummary: string | null;
+    reference: string | null;
+    shippedOn: string | null;
+  };
+};
+
 async function qualifyFeedbackInboxItem(params: FeedbackQualificationParams) {
   let result: Awaited<ReturnType<typeof qualifyCommunityBugReport>>;
   try {
@@ -63,6 +74,32 @@ async function qualifyFeedbackInboxItem(params: FeedbackQualificationParams) {
   return NextResponse.json({
     status: "ok",
     qualificationStatus: result.status,
+    item: buildFeedbackInboxItem(result.record),
+  });
+}
+
+async function updateFeedbackTracking(params: FeedbackTrackingParams) {
+  let result: Awaited<ReturnType<typeof updateCommunityBugReportTracking>>;
+  try {
+    result = await updateCommunityBugReportTracking({
+      reportId: params.itemId,
+      trackingStatus: params.tracking.status,
+      publicSummary: params.tracking.publicSummary,
+      reference: params.tracking.reference,
+      shippedOn: params.tracking.shippedOn,
+      actorUserId: params.actorUserId,
+      operationId: params.operationId,
+    });
+  } catch {
+    return mutationErrorResponse();
+  }
+  if (result.status === "not_found") {
+    return NextResponse.json({ error: "Report not found" }, { status: 404 });
+  }
+  if (!result.record) return mutationErrorResponse();
+  return NextResponse.json({
+    status: "ok",
+    trackingStatus: result.status,
     item: buildFeedbackInboxItem(result.record),
   });
 }
@@ -190,12 +227,15 @@ async function archiveFeedbackInboxItem(params: FeedbackStateMutationParams) {
 }
 
 export async function handleCreatorInboxFeedback(
-  params: CreatorInboxHandlerParams | FeedbackQualificationParams,
+  params: CreatorInboxHandlerParams | FeedbackQualificationParams | FeedbackTrackingParams,
 ) {
   const { itemId, action, reason } = params;
 
   if (action === "qualify" && "qualification" in params) {
     return qualifyFeedbackInboxItem(params);
+  }
+  if (action === "update_tracking" && "tracking" in params) {
+    return updateFeedbackTracking(params as FeedbackTrackingParams);
   }
 
   const audit = createCreatorInboxAudit(params);

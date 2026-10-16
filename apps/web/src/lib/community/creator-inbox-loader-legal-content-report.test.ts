@@ -4,10 +4,12 @@ const listBugReportsMock = vi.hoisted(() => vi.fn());
 const listPromotionRequestsMock = vi.hoisted(() => vi.fn());
 const listPartnerRequestsMock = vi.hoisted(() => vi.fn());
 const listLegalReportsMock = vi.hoisted(() => vi.fn());
+const loadFeedbackMetricsMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/community/bug-reports-store", () => ({
   listCommunityBugReports: listBugReportsMock,
+  loadCommunityBugReportFollowUpMetrics: loadFeedbackMetricsMock,
 }));
 vi.mock("@/lib/admin/promotion-requests-store", () => ({
   listPromotionRequests: listPromotionRequestsMock,
@@ -27,6 +29,16 @@ describe("creator inbox loader legal content integration", () => {
     vi.resetModules();
     vi.clearAllMocks();
     listBugReportsMock.mockResolvedValue([]);
+    loadFeedbackMetricsMock.mockResolvedValue({
+      received: 0,
+      pendingQualification: 0,
+      accepted: 0,
+      duplicate: 0,
+      rejected: 0,
+      shipped: 0,
+      period: "all_time",
+      scope: "community_bug_reports",
+    });
     listPromotionRequestsMock.mockResolvedValue([]);
     listPartnerRequestsMock.mockResolvedValue([]);
     listLegalReportsMock.mockResolvedValue([

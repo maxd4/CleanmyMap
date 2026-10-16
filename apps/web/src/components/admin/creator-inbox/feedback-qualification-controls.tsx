@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { CreatorInboxItem } from "@/lib/community/creator-inbox";
+import { findPotentiallySimilarFeedback } from "@/lib/community/feedback-similarity";
 import type { CreatorInboxCopy, CreatorInboxLocale } from "./creator-inbox-copy";
 
 type FeedbackQualificationDecision =
@@ -58,6 +59,14 @@ export function FeedbackQualificationControls({
   const reasonRequired = ["needs_info", "duplicate", "rejected"].includes(decision);
   const selectedDuplicate = feedbackOptions.find(
     (option) => option.sourceRecordId === duplicateFeedbackId,
+  );
+  const similarFeedback = findPotentiallySimilarFeedback(
+    { id: item.sourceRecordId, title: item.title, text: item.context },
+    feedbackOptions.map((option) => ({
+      id: option.sourceRecordId,
+      title: option.title,
+      text: option.context,
+    })),
   );
 
   function prepareConfirmation() {
@@ -126,6 +135,21 @@ export function FeedbackQualificationControls({
           </label>
         ) : null}
       </div>
+      {similarFeedback.length > 0 ? (
+        <div className="mt-3 rounded-lg border border-amber-300/70 bg-white/70 p-3 text-xs text-amber-950" role="note">
+          <p className="font-bold">
+            {fr ? "Dossiers potentiellement similaires" : "Potentially similar cases"}
+          </p>
+          <ul className="mt-1 list-disc space-y-1 pl-4">
+            {similarFeedback.map((match) => (
+              <li key={match.id}>{match.title} · {match.id}</li>
+            ))}
+          </ul>
+          <p className="mt-1">
+            {fr ? "Suggestion d'aide uniquement : la décision reste manuelle." : "Assistive suggestion only: the decision remains manual."}
+          </p>
+        </div>
+      ) : null}
       <label className="mt-3 block space-y-1">
         <span className="cmm-text-caption font-semibold cmm-text-secondary">
           {fr ? "Motif public" : "Public reason"}

@@ -8,9 +8,9 @@ import {
 } from "./feedback-submission";
 import { QUESTIONNAIRES } from "./questionnaire-config";
 
-vi.mock("@clerk/nextjs", () => ({
-  useUser: () => ({ isLoaded: true, isSignedIn: true }),
-}));
+const useUserMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@clerk/nextjs", () => ({ useUser: useUserMock }));
 vi.mock("@/components/ui/site-preferences-provider", () => ({
   useSitePreferences: () => ({ locale: "fr" }),
 }));
@@ -96,6 +96,7 @@ const originalWindow = (globalThis as { window?: unknown }).window;
 describe("QuestionnaireCard serialized description validation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useUserMock.mockReturnValue({ isLoaded: true, isSignedIn: true });
   });
 
   afterEach(() => {
@@ -384,5 +385,46 @@ describe("QuestionnaireCard serialized description validation", () => {
     await act(async () => {
       resolveFetch({ ok: true, json: async () => ({ requestId: "req-1" }) });
     });
+  });
+
+  it("offers owner-scoped duplicate suggestions without blocking submission", async () => {
+    useUserMock.mockReturnValue({ isLoaded: true, isSignedIn: true, user: { id: "owner-1" } });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      Response.json({
+        status: "ok",
+        items: [{
+          id: "old-feedback",
+          title: "Bug carte vide",
+          type: "bug",
+          createdAt: "2026-10-15T10:00:00.000Z",
+          status: "new",
+          qualificationStatus: "pending",
+          qualificationReason: null,
+          description: "La carte des déchets reste vide au chargement.",
+        }],
+        nextCursor: null,
+        hasMore: false,
+      }),
+    ));
+    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    let renderer!: ReactTestRenderer;
+    await act(async () => {
+      renderer = create(
+        <QuestionnaireCard
+          questionnaire={bugQuestionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+          initialValues={{
+            context: "J'ouvrais la carte des déchets",
+            steps: "La carte des déchets reste vide au chargement",
+            expected: "La carte devrait afficher les lieux",
+          }}
+        />,
+      );
+      await Promise.resolve();
+    });
+
+    expect(JSON.stringify(renderer.toJSON())).toContain("Des retours personnels semblent proches");
+    expect(submitButton(renderer)?.props.disabled).toBe(false);
   });
 });

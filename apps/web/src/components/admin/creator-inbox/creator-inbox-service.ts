@@ -1,4 +1,5 @@
 import type { CreatorInboxItem, CreatorInboxSource } from "@/lib/community/creator-inbox";
+import type { CommunityBugReportFollowUpMetrics, FeedbackTrackingStatus } from "@/lib/community/bug-reports-store";
 import type {
   LegalContentReportDecisionAction,
   LegalContentReportDecisionOrigin,
@@ -41,7 +42,26 @@ export type CreatorInboxPagePayload = {
   hasMore: boolean;
   nextCursor: string | null;
   canQualify?: boolean;
+  feedbackMetrics?: CommunityBugReportFollowUpMetrics;
 };
+
+function isFeedbackMetrics(value: unknown): value is CommunityBugReportFollowUpMetrics {
+  if (!value || typeof value !== "object") return false;
+  const metrics = value as Record<string, unknown>;
+  return [
+    "received",
+    "pendingQualification",
+    "accepted",
+    "duplicate",
+    "rejected",
+    "shipped",
+  ].every(
+    (key) =>
+      typeof metrics[key] === "number" &&
+      Number.isInteger(metrics[key]) &&
+      (metrics[key] as number) >= 0,
+  ) && metrics.period === "all_time" && metrics.scope === "community_bug_reports";
+}
 
 export async function fetchCreatorInboxPage(params?: {
   limit?: number;
@@ -63,6 +83,7 @@ export async function fetchCreatorInboxPage(params?: {
     typeof payload.hasMore !== "boolean" ||
     (payload.nextCursor !== null && typeof payload.nextCursor !== "string")
     || (payload.canQualify !== undefined && typeof payload.canQualify !== "boolean")
+    || (payload.feedbackMetrics !== undefined && !isFeedbackMetrics(payload.feedbackMetrics))
   ) {
     throw new Error("Invalid creator inbox page.");
   }
@@ -72,10 +93,14 @@ export async function fetchCreatorInboxPage(params?: {
 export async function applyCreatorInboxAction(params: {
   source: CreatorInboxSource;
   itemId: string;
-  action: "mark_treated" | "responded" | "archive" | "delete" | "qualify";
+  action: "mark_treated" | "responded" | "archive" | "delete" | "qualify" | "update_tracking";
   reason: string;
   decision?: "pending" | "needs_info" | "accepted" | "duplicate" | "rejected";
   duplicateFeedbackId?: string | null;
+  trackingStatus?: FeedbackTrackingStatus;
+  trackingPublicSummary?: string | null;
+  trackingReference?: string | null;
+  trackingShippedOn?: string | null;
 }): Promise<{ item?: CreatorInboxItem; deletedId?: string }> {
   const response = await fetch("/api/admin/creator-inbox", {
     method: "PATCH",

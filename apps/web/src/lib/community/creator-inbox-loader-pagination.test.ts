@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const listBugReportsMock = vi.hoisted(() => vi.fn());
+const loadMetricsMock = vi.hoisted(() => vi.fn());
 const listPromotionRequestsMock = vi.hoisted(() => vi.fn());
 const listPartnerRequestsMock = vi.hoisted(() => vi.fn());
 const listLegalReportsMock = vi.hoisted(() => vi.fn());
@@ -8,6 +9,7 @@ const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/community/bug-reports-store", () => ({
   listCommunityBugReports: listBugReportsMock,
+  loadCommunityBugReportFollowUpMetrics: loadMetricsMock,
 }));
 vi.mock("@/lib/admin/promotion-requests-store", () => ({
   listPromotionRequests: listPromotionRequestsMock,
@@ -50,6 +52,16 @@ describe("creator inbox server pagination", () => {
     listPromotionRequestsMock.mockResolvedValue([]);
     listPartnerRequestsMock.mockResolvedValue([]);
     listLegalReportsMock.mockResolvedValue([]);
+    loadMetricsMock.mockResolvedValue({
+      received: 0,
+      pendingQualification: 0,
+      accepted: 0,
+      duplicate: 0,
+      rejected: 0,
+      shipped: 0,
+      period: "all_time",
+      scope: "community_bug_reports",
+    });
     getSupabaseServerClientMock.mockReturnValue({
       from: () => ({
         select: () => {

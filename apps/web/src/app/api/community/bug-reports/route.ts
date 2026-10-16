@@ -69,6 +69,12 @@ function projectPersonalFeedback(
   status: report.creatorState,
    qualificationStatus: report.qualificationStatus ?? "pending",
    qualificationReason: report.qualificationReason ?? null,
+  qualificationDecidedByUserId: report.qualificationDecidedByUserId ?? null,
+  description: report.description,
+  trackingStatus: report.tracking?.status ?? "not_planned",
+  trackingPublicSummary: report.tracking?.publicSummary ?? null,
+  trackingReference: report.tracking?.reference ?? null,
+  trackingShippedOn: report.tracking?.shippedOn ?? null,
  };
 }
 

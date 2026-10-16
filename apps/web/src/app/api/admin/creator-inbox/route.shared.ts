@@ -5,10 +5,14 @@ import { z } from "zod";
 const baseActionSchema = z.object({
   source: z.enum(["feedback", "promotion", "partner"]),
   itemId: z.string().trim().min(1),
-  action: z.enum(["mark_treated", "responded", "archive", "delete", "qualify"]),
+  action: z.enum(["mark_treated", "responded", "archive", "delete", "qualify", "update_tracking"]),
   reason: z.string().trim().max(500).optional(),
   decision: z.enum(["pending", "needs_info", "accepted", "duplicate", "rejected"]).optional(),
   duplicateFeedbackId: z.string().trim().min(1).max(128).optional().nullable(),
+  trackingStatus: z.enum(["not_planned", "under_study", "planned", "in_progress", "shipped"]).optional(),
+  trackingPublicSummary: z.string().trim().max(1000).optional().nullable(),
+  trackingReference: z.string().trim().max(240).optional().nullable(),
+  trackingShippedOn: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
 });
 
 export const actionSchema = baseActionSchema.superRefine((value, context) => {
@@ -30,6 +34,27 @@ export const actionSchema = baseActionSchema.superRefine((value, context) => {
     }
     if (value.decision !== "duplicate" && value.duplicateFeedbackId) {
       context.addIssue({ code: "custom", path: ["duplicateFeedbackId"], message: "Duplicate feedback reference is only valid for duplicate decisions." });
+    }
+    return;
+  }
+
+  if (value.action === "update_tracking") {
+    if (value.source !== "feedback") {
+      context.addIssue({ code: "custom", path: ["source"], message: "Product tracking is limited to feedback." });
+    }
+    if (!value.trackingStatus) {
+      context.addIssue({ code: "custom", path: ["trackingStatus"], message: "Tracking status is required." });
+    }
+    if (value.trackingStatus === "shipped") {
+      if ((value.trackingPublicSummary?.length ?? 0) < 5) {
+        context.addIssue({ code: "custom", path: ["trackingPublicSummary"], message: "A public delivery summary is required." });
+      }
+      if (!value.trackingShippedOn) {
+        context.addIssue({ code: "custom", path: ["trackingShippedOn"], message: "A confirmed delivery date is required." });
+      }
+    }
+    if (value.decision || value.duplicateFeedbackId) {
+      context.addIssue({ code: "custom", path: ["decision"], message: "Qualification fields are not valid for tracking." });
     }
     return;
   }

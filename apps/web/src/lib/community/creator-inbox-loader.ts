@@ -1,6 +1,6 @@
 import { getRoleBadge, getProfileBadge } from "@/lib/authz";
 import { listPromotionRequests } from "@/lib/admin/promotion-requests-store";
-import { listCommunityBugReports } from "@/lib/community/bug-reports-store";
+import { listCommunityBugReports, loadCommunityBugReportFollowUpMetrics, type CommunityBugReportFollowUpMetrics } from "@/lib/community/bug-reports-store";
 import {
   buildEventInboxItem,
   buildFeedbackInboxItem,
@@ -38,6 +38,7 @@ export type CreatorInboxPage = {
   count: number;
   hasMore: boolean;
   nextCursor: string | null;
+  feedbackMetrics?: CommunityBugReportFollowUpMetrics;
 };
 
 const CREATOR_INBOX_DEFAULT_PAGE_SIZE = 50;
@@ -124,12 +125,13 @@ export async function loadCreatorInboxPage(params?: {
   const limit = clampPageSize(params?.limit);
   const cursor = params?.cursor ?? emptyPageCursor();
   const sourceLimit = limit + 1;
-  const [feedback, promotion, partner, legalContentReports, events] = await Promise.all([
+  const [feedback, promotion, partner, legalContentReports, events, feedbackMetrics] = await Promise.all([
     listCommunityBugReports(sourceLimit, cursor.feedback),
     listPromotionRequests(sourceLimit, cursor.promotion),
     listPartnerOnboardingRequests(sourceLimit, cursor.partner),
     listLegalContentReports(sourceLimit, cursor.legal_content_report),
     loadCreatorInboxEvents(sourceLimit, cursor.event),
+    loadCommunityBugReportFollowUpMetrics(),
   ]);
 
   const candidates: InboxCandidate[] = [
@@ -155,7 +157,7 @@ export async function loadCreatorInboxPage(params?: {
   const items = candidates.slice(0, limit).map(({ item }) => item);
   const hasMore = candidates.length > limit;
   if (!hasMore) {
-    return { items, count: items.length, hasMore: false, nextCursor: null };
+    return { items, count: items.length, hasMore: false, nextCursor: null, feedbackMetrics };
   }
 
   const nextCursor = { ...cursor };
@@ -171,6 +173,7 @@ export async function loadCreatorInboxPage(params?: {
     count: items.length,
     hasMore: true,
     nextCursor: encodePageCursor(nextCursor),
+    feedbackMetrics,
   };
 }
 

@@ -78,6 +78,21 @@ pour une demande de précisions, un doublon ou un refus ; la décision, son audi
 et la notification du propriétaire sont persistés atomiquement. `accepted`
 n'est jamais présenté comme une correction ou une livraison.
 
+Le suivi de réalisation est une dimension distincte, réservée au compte `max`
+canonique : `not_planned`, `under_study`, `planned`, `in_progress` et
+`shipped`. Une livraison demande un résumé public et une date confirmée ; une
+référence de version, publication ou commit reste facultative et n'est jamais
+inventée. La première transition vers `shipped` écrit une notification
+idempotente vers le propriétaire et le lien `Mes retours`, sans ajouter d'XP.
+
+La boîte affiche aussi des dossiers potentiellement similaires à titre d'aide
+à la décision. La recherche est bornée, porte uniquement sur les feedbacks
+déjà visibles par `max` et ne rejette ni ne qualifie automatiquement. Les
+indicateurs de suivi sont réservés à `max` et décrivent explicitement la période
+« depuis l'origine », le périmètre `community_bug_reports` et la signification
+des six compteurs : reçus, à qualifier, pertinents, doublons, non retenus et
+livrés. Une erreur de lecture reste un état indisponible, jamais un zéro.
+
 Un utilisateur canonique absent désactive cette possibilité. Le feedback ne
 devient `responded` qu'après l'envoi réussi du message ; l'ouverture du DM ou
 un clic seul ne suffit pas. L'événement borné

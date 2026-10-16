@@ -67,6 +67,7 @@ const records = {
   responded: {
     id: "report-responded",
     title: "Bug traité en réponse privée",
+    description: "La carte ne se charge pas.",
     reportType: "bug" as const,
     createdAt: "2026-08-27T11:00:00.000Z",
     creatorState: "responded" as const,
@@ -77,6 +78,7 @@ const records = {
   treated: {
     id: "report-treated",
     title: "Idée traitée",
+    description: "Ajouter un filtre.",
     reportType: "idea" as const,
     createdAt: "2026-08-27T10:00:00.000Z",
     creatorState: "treated" as const,
@@ -149,6 +151,12 @@ describe("GET /api/community/bug-reports", () => {
         status: "responded",
         qualificationStatus: "pending",
         qualificationReason: null,
+        qualificationDecidedByUserId: null,
+        description: "La carte ne se charge pas.",
+        trackingStatus: "not_planned",
+        trackingPublicSummary: null,
+        trackingReference: null,
+        trackingShippedOn: null,
       },
       {
         id: "report-treated",
@@ -158,6 +166,12 @@ describe("GET /api/community/bug-reports", () => {
         status: "treated",
         qualificationStatus: "pending",
         qualificationReason: null,
+        qualificationDecidedByUserId: null,
+        description: "Ajouter un filtre.",
+        trackingStatus: "not_planned",
+        trackingPublicSummary: null,
+        trackingReference: null,
+        trackingShippedOn: null,
       },
     ]);
     expect(body.items[0]).not.toHaveProperty("submittedByEmail");

@@ -26,6 +26,11 @@ export function AdminFeedbackAuditTabs({
   const pageNextCursor = Array.isArray(feedbackItems)
     ? initialNextCursor
     : feedbackItems.nextCursor;
+  const pageFeedbackMetrics = Array.isArray(feedbackItems)
+    ? undefined
+    : canQualify
+      ? feedbackItems.feedbackMetrics
+      : undefined;
 
   return (
     <section aria-label="Boîte créateur unifiée et journal administrateurs">
@@ -65,6 +70,7 @@ export function AdminFeedbackAuditTabs({
             initialHasMore={pageHasMore}
             initialNextCursor={pageNextCursor}
             canQualify={canQualify}
+            feedbackMetrics={pageFeedbackMetrics}
           />
         </div>
       ) : (

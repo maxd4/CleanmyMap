@@ -194,4 +194,84 @@ describe("community bug report personal history", () => {
     ).rejects.toThrow("transactional Supabase persistence");
     expect(readLocalRecordStoreMock).not.toHaveBeenCalled();
   });
+
+  it("delegates product tracking to the transactional RPC without using the local store", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+    const rpcMock = vi.fn().mockResolvedValue({
+      data: {
+        status: "updated",
+        item: {
+          id: "feedback-1",
+          created_at: "2026-08-27T11:00:00.000Z",
+          submitted_by_user_id: "owner-1",
+          submitted_by_display_name: "Owner",
+          submitted_by_email: null,
+          submitted_by_role: "benevole",
+          report_type: "bug",
+          title: "Bug",
+          description: "A sufficiently detailed feedback message.",
+          page_path: "/sections/feedback",
+          source: "feedback_section",
+          status: "open",
+          creator_state: "new",
+          tracking_status: "shipped",
+          tracking_public_summary: "Le problème de carte est corrigé.",
+          tracking_reference: "2026.10",
+          tracking_shipped_on: "2026-10-16",
+          tracking_shipped_notification_at: "2026-10-16T12:00:00.000Z",
+          tracking_updated_at: "2026-10-16T12:00:00.000Z",
+          tracking_updated_by_user_id: "max-owner",
+        },
+      },
+      error: null,
+    });
+    getSupabaseServerClientMock.mockReturnValue({ rpc: rpcMock });
+
+    const { updateCommunityBugReportTracking } = await import("./bug-reports-store");
+    await expect(
+      updateCommunityBugReportTracking({
+        reportId: "feedback-1",
+        trackingStatus: "shipped",
+        publicSummary: "Le problème de carte est corrigé.",
+        reference: "2026.10",
+        shippedOn: "2026-10-16",
+        actorUserId: "max-owner",
+        operationId: "operation-tracking-1",
+      }),
+    ).resolves.toMatchObject({ status: "updated", record: { tracking: { status: "shipped" } } });
+    expect(rpcMock).toHaveBeenCalledWith("update_community_bug_report_tracking", {
+      p_feedback_id: "feedback-1",
+      p_tracking_status: "shipped",
+      p_public_summary: "Le problème de carte est corrigé.",
+      p_reference: "2026.10",
+      p_shipped_on: "2026-10-16",
+      p_actor_user_id: "max-owner",
+      p_operation_id: "operation-tracking-1",
+    });
+    expect(readLocalRecordStoreMock).not.toHaveBeenCalled();
+  });
+
+  it("computes real local follow-up metrics and never invents missing records", async () => {
+    readLocalRecordStoreMock.mockResolvedValueOnce({
+      updatedAt: "2026-10-16T12:00:00.000Z",
+      records: [
+        { ...ownerRecords[0], qualificationStatus: "pending", tracking: { status: "not_planned" } },
+        { ...ownerRecords[1], qualificationStatus: "accepted", tracking: { status: "shipped" } },
+        { ...ownerRecords[2], qualificationStatus: "duplicate", tracking: { status: "planned" } },
+      ],
+    });
+    canUseSupabaseServerPersistenceMock.mockReturnValue(false);
+
+    const { loadCommunityBugReportFollowUpMetrics } = await import("./bug-reports-store");
+    await expect(loadCommunityBugReportFollowUpMetrics()).resolves.toEqual({
+      received: 3,
+      pendingQualification: 1,
+      accepted: 1,
+      duplicate: 1,
+      rejected: 0,
+      shipped: 1,
+      period: "all_time",
+      scope: "community_bug_reports",
+    });
+  });
 });
