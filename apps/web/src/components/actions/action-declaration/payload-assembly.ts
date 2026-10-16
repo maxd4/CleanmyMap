@@ -1,5 +1,5 @@
 import type { CreateActionPayload } from "../../../lib/actions/types";
-import { normalizeActionDrawing } from "../map/layers/actions-map-geometry.utils";
+import { normalizeActionDrawing } from "../../../lib/actions/geometry/geometry-core";
 import type { CreateActionPayloadParams, CreateActionPayloadParts } from "./payload-contract";
 import { buildCreateActionPayloadIdentityFields, resolveCreateActionIdentityParts } from "./payload-identity";
 import { buildCreateActionPayloadMeasurementFields, resolveCreateActionMeasurementParts } from "./payload-measurements";

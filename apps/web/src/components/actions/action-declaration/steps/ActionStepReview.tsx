@@ -21,10 +21,8 @@ import type { CreateActionPayload } from "@/lib/actions/types";
 import type { ActionDataQualityResult } from "../utils/action-declaration-form.quality";
 import { estimateWasteKg } from "../utils/action-declaration-form.estimation";
 import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
-import {
-  formatGeometryPointCount,
-  summarizeActionDrawingValidation,
-} from "../../map/layers/actions-map-geometry.utils";
+import { summarizeActionDrawingValidation } from "../action-drawing-validation";
+import { formatGeometryPointCount } from "../../map/layers/actions-map-geometry-render";
 
 interface ActionStepReviewProps {
   payload: CreateActionPayload;

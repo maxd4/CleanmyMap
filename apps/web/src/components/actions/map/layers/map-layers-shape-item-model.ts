@@ -10,11 +10,13 @@ import { resolveMapPlaceStateForItem } from "../filters/actions-map-display-stat
 import { resolveActionPollutionScore } from "../scores/pollution-score-scope";
 import {
   resolveActionMapGeometryViewModel,
+  type ActionMapGeometryViewModel,
+} from "./actions-map-geometry.utils";
+import {
   resolveGeometryRenderStyle,
   resolvePolylineDirectionMarkers,
   resolvePolylineEndpointMarkers,
-  type ActionMapGeometryViewModel,
-} from "./actions-map-geometry.utils";
+} from "./actions-map-geometry-render";
 import {
   fitActionGeometryBounds,
   resolvePointColor,

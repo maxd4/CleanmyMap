@@ -4,7 +4,7 @@ import type {
 } from "@/lib/actions/types";
 import { resolveFinalActionGeometry } from "@/lib/actions/geometry/final-geometry";
 import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance";
-import { summarizeActionDrawingValidation } from "../../map/layers/actions-map-geometry.utils";
+import { summarizeActionDrawingValidation } from "../action-drawing-validation";
 import { applyOrganizerFormUpdates } from "../organizer-form-state";
 import { isDrawingValid } from "../payload";
 import type { FormState } from "../model";

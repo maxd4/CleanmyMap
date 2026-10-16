@@ -19,10 +19,8 @@ import {
   resolveClusterIconSize,
   resolveClusterRadius,
 } from "./map-cluster.utils";
-import {
-  resolveActionMapGeometryViewModel,
-  resolveGeometryRenderStyle,
-} from "./actions-map-geometry.utils";
+import { resolveActionMapGeometryViewModel } from "./actions-map-geometry.utils";
+import { resolveGeometryRenderStyle } from "./actions-map-geometry-render";
 import { resolveMapPlaceStateForItem } from "../filters/actions-map-display-state";
 import { useMapSelectableLayerRefs } from "./map-layers-selection";
 import {

@@ -12,8 +12,8 @@ import {
   formatGeometryConfidenceLabel,
   formatGeometryModeLabel,
   formatGeometryPointCount,
-  resolveActionMapGeometryViewModel,
-} from "../layers/actions-map-geometry.utils";
+} from "../layers/actions-map-geometry-render";
+import { resolveActionMapGeometryViewModel } from "../layers/actions-map-geometry.utils";
 
 export type SelectedActionCardModel = {
   id: string;

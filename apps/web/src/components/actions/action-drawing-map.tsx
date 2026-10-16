@@ -9,9 +9,7 @@ import "leaflet-draw/dist/leaflet.draw.css";
 
 import type { ActionDrawing, ActionGeometrySource } from"@/lib/actions/types";
 
-import {
- normalizeActionDrawing,
-} from"./map/layers/actions-map-geometry.utils";
+import { normalizeActionDrawing } from "@/lib/actions/geometry/geometry-core";
 import { resolveDrawnGeometry } from "./action-drawing-map.geometry";
 import { ACTION_DRAWING_EDIT_COLOR } from "./action-drawing-map.presentation";
 import {

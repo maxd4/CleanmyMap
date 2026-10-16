@@ -1,8 +1,6 @@
 import type { ActionDrawing } from "@/lib/actions/types";
-import {
-  formatGeometryPointCount,
-  summarizeActionDrawingValidation,
-} from "../map/layers/actions-map-geometry.utils";
+import { summarizeActionDrawingValidation } from "./action-drawing-validation";
+import { formatGeometryPointCount } from "../map/layers/actions-map-geometry-render";
 import {
   resolveFinalActionGeometry,
   type FinalActionGeometry,

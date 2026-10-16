@@ -1,9 +1,10 @@
 import { Popup, Polyline, Tooltip } from "react-leaflet";
-import type { ActionMapGeometryRenderStyle, ActionMapGeometryViewModel } from "./actions-map-geometry.utils";
+import type { ActionMapGeometryViewModel } from "./actions-map-geometry.utils";
+import type { ActionMapGeometryRenderStyle } from "./actions-map-geometry-render";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { ActionPopupContent } from "../popup/action-popup-content";
 import { GeometryTooltipContent, type GeometryTooltipReading } from "./map-geometry-tooltip-content";
-import { formatActionGeometryTooltipTitle } from "./actions-map-geometry.utils";
+import { formatActionGeometryTooltipTitle } from "./actions-map-geometry-render";
 
 type CoverageGeometryRenderInput = {
   item: ActionMapItem;

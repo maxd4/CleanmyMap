@@ -4,11 +4,13 @@ import { Fragment, type Dispatch, type MutableRefObject, type SetStateAction } f
 import { CircleMarker, Marker, Polygon, Polyline } from "react-leaflet";
 import { divIcon } from "leaflet";
 import type {
-  ActionMapGeometryRenderStyle,
   ActionMapGeometryViewModel,
+} from "./actions-map-geometry.utils";
+import type {
+  ActionMapGeometryRenderStyle,
   ActionPolylineDirectionMarker,
   ActionPolylineEndpointMarkers,
-} from "./actions-map-geometry.utils";
+} from "./actions-map-geometry-render";
 import type { ActionMapItem } from "@/lib/actions/types";
 import type {
   CurrentPlaceState,
@@ -21,7 +23,7 @@ import type { GeometryTooltipReading } from "./map-geometry-tooltip-content";
 import {
   formatGeometryModeLabel,
   formatGeometryPointCount,
-} from "./actions-map-geometry.utils";
+} from "./actions-map-geometry-render";
 import {
   GeometryInteractionOverlays,
   renderCoveragePolylines,

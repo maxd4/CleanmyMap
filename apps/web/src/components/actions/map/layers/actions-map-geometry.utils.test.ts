@@ -2,20 +2,22 @@ import { describe, expect, it } from "vitest";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
 import type { ActionMapItem, ActionObservedCoverage } from "@/lib/actions/types";
 import { getGeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
+import { normalizeActionDrawing } from "@/lib/actions/geometry/geometry-core";
+import { summarizeActionDrawingValidation } from "../../action-declaration/action-drawing-validation";
 import {
   buildDrawingLeafletPositions,
   formatGeometryConfidenceLabel,
   formatGeometryModeLabel,
   formatGeometryPointCount,
   formatActionGeometryTooltipTitle,
-  normalizeActionDrawing,
-  summarizeActionDrawingValidation,
-  resolveActionMapGeometryViewModel,
   resolveGeometryConfidenceLabel,
-  resolveInfrastructureAnchor,
   resolvePolylineDirectionMarkers,
   resolveGeometryRenderStyle,
   resolvePolylineEndpointMarkers,
+} from "./actions-map-geometry-render";
+import {
+  resolveActionMapGeometryViewModel,
+  resolveInfrastructureAnchor,
 } from "./actions-map-geometry.utils";
 
 function buildMapItem(partial: Partial<ActionMapItem>): ActionMapItem {

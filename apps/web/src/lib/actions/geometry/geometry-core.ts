@@ -17,6 +17,8 @@ export type GeoPoint = {
   longitude: number;
 };
 
+type DrawingCoordinate = [number, number];
+
 function isValidCoordinate([latitude, longitude]: readonly [number, number]): boolean {
   return (
     Number.isFinite(latitude) &&
@@ -39,6 +41,59 @@ export function isRenderableDrawing(
     drawing.coordinates.length >= minimumPoints &&
     drawing.coordinates.every(isValidCoordinate)
   );
+}
+
+function areSameCoordinate(
+  left: DrawingCoordinate,
+  right: DrawingCoordinate,
+): boolean {
+  return left[0] === right[0] && left[1] === right[1];
+}
+
+/**
+ * Keeps the canonical latitude/longitude order while removing unusable
+ * coordinates and consecutive duplicates before a drawing is rendered or
+ * persisted.
+ */
+export function normalizeDrawingCoordinates(
+  drawing: Pick<ActionDrawing, "coordinates"> | null | undefined,
+): DrawingCoordinate[] {
+  if (!drawing) {
+    return [];
+  }
+
+  return drawing.coordinates.reduce<DrawingCoordinate[]>((acc, point) => {
+    if (
+      !Array.isArray(point) ||
+      point.length < 2 ||
+      !Number.isFinite(point[0]) ||
+      !Number.isFinite(point[1])
+    ) {
+      return acc;
+    }
+
+    const normalizedPoint: DrawingCoordinate = [point[0], point[1]];
+    const previousPoint = acc[acc.length - 1];
+    if (previousPoint && areSameCoordinate(previousPoint, normalizedPoint)) {
+      return acc;
+    }
+
+    acc.push(normalizedPoint);
+    return acc;
+  }, []);
+}
+
+export function normalizeActionDrawing(
+  drawing: ActionDrawing | null | undefined,
+): ActionDrawing | null {
+  if (!drawing) {
+    return null;
+  }
+
+  const coordinates = normalizeDrawingCoordinates(drawing);
+  return isRenderableDrawing({ kind: drawing.kind, coordinates })
+    ? { kind: drawing.kind, coordinates }
+    : null;
 }
 
 export function toGeoJsonString(drawing: ActionDrawing | null): string | null {

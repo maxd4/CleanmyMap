@@ -2,10 +2,8 @@ import type { FormState } from "../model";
 import { CmmDialog } from "@/components/ui/cmm-dialog";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
-import {
-  formatGeometryPointCount,
-  summarizeActionDrawingValidation,
-} from "../../map/layers/actions-map-geometry.utils";
+import { summarizeActionDrawingValidation } from "../action-drawing-validation";
+import { formatGeometryPointCount } from "../../map/layers/actions-map-geometry-render";
 import { formatKg } from "../utils/harvest-utils";
 import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
 import {

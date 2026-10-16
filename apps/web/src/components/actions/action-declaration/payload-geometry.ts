@@ -8,7 +8,7 @@ import {
   type FinalActionGeometry,
 } from "../../../lib/actions/geometry/final-geometry";
 import { resolveActionRouteTopology } from "../../../lib/actions/route-topology";
-import { normalizeActionDrawing } from "../map/layers/actions-map-geometry.utils";
+import { normalizeActionDrawing } from "../../../lib/actions/geometry/geometry-core";
 import type { CreateActionPayloadParams, CreateActionPayloadParts } from "./payload-contract";
 import { toOptionalNumber } from "./payload-numbers";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";

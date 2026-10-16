@@ -38,8 +38,8 @@ import {
   formatGeometryModeLabel,
   formatGeometryPointCount,
   resolveGeometryConfidenceLabel,
-  resolveActionMapGeometryViewModel,
-} from "../layers/actions-map-geometry.utils";
+} from "../layers/actions-map-geometry-render";
+import { resolveActionMapGeometryViewModel } from "../layers/actions-map-geometry.utils";
 
 type ActionPopupContentProps = {
   item: ActionMapItem;
