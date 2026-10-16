@@ -66,12 +66,35 @@ describe("desktop ribbon control geometry", () => {
     const menusSource = readSource("app-navigation-ribbon-menus.tsx");
     const accountSource = readSource("app-navigation-ribbon-account.tsx");
     const identitySource = readSource("../account/account-identity-chip.tsx");
+    const rightControlZone = shellSource.match(
+      /className="([^\"]*ml-auto[^\"]*)"/,
+    )?.[1];
 
-    expect(shellSource).toContain(
-      'className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:ml-0 xl:justify-end"',
+    expect(rightControlZone).toBeDefined();
+    expect(rightControlZone?.split(/\s+/)).toEqual(
+      expect.arrayContaining([
+        "ml-auto",
+        "flex",
+        "min-w-0",
+        "items-center",
+        "gap-1.5",
+        "sm:gap-2",
+        "lg:gap-2.5",
+        "max-[380px]:gap-1",
+        "xl:col-start-3",
+        "xl:ml-0",
+        "xl:justify-end",
+      ]),
     );
-    expect(menusSource).toContain("xl:w-auto xl:px-3 xl:h-10");
-    expect(menusSource).not.toContain("lg:w-auto lg:px-3");
+    expect(shellSource).toContain("xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]");
+    expect(shellSource).toContain("xl:col-start-1");
+    expect(shellSource).toContain("xl:col-start-2");
+    expect(shellSource).toContain("xl:col-start-3");
+    expect(menusSource).toContain("xl:w-auto");
+    expect(menusSource).toContain("xl:px-3");
+    expect(menusSource).toContain("xl:h-10");
+    expect(menusSource).not.toContain("lg:w-auto");
+    expect(menusSource).not.toContain("lg:px-3");
     expect(accountSource).toContain("hidden min-w-0 flex-1 leading-tight xl:block");
     expect(identitySource).toContain("xl:w-auto xl:min-w-0 xl:px-3 xl:h-10");
   });
