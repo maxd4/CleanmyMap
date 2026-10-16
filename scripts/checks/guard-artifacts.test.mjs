@@ -280,8 +280,135 @@ describe("generated artifact guard boundaries", { concurrency: 1 }, () => {
       assert.equal(args.includes("run"), false);
       assert.equal(args.includes("lint"), false);
       assert.equal(args.includes("apps/web/src/components/foreign.ts"), false);
+      assert.doesNotMatch(output, /STAGED validation refused/);
     } finally {
       rmSync(binRoot, { recursive: true, force: true });
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses a staged candidate when the worktree contains different bytes", () => {
+    const fixtureRoot = createQuickCheckFixture();
+    const binRoot = createNpmStub();
+    const candidate = join(fixtureRoot, "apps", "web", "src", "components", "candidate.ts");
+    try {
+      writeFileSync(candidate, "export const candidate = false;\n");
+      runGitAt(fixtureRoot, ["add", "--", "apps/web/src/components/candidate.ts"]);
+      writeFileSync(candidate, "export const candidate = true;\n");
+
+      const result = runPowerShell(
+        join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
+        ["-StagedOnly"],
+        {
+          ...withoutCandidateGitEnvironment({ PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}` }),
+        },
+        fixtureRoot,
+      );
+      const output = `${result.stdout}\n${result.stderr}`;
+      assert.notEqual(result.status, 0, output);
+      assert.match(output, /STAGED validation refused/);
+      assert.match(output, /apps[\\/]web[\\/]src[\\/]components[\\/]candidate\.ts/);
+      assert.equal(readFileSync(candidate, "utf8"), "export const candidate = true;\n");
+    } finally {
+      rmSync(binRoot, { recursive: true, force: true });
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses a staged candidate when the worktree is invalid", () => {
+    const fixtureRoot = createQuickCheckFixture();
+    const binRoot = createNpmStub();
+    const candidate = join(fixtureRoot, "apps", "web", "src", "components", "candidate.ts");
+    try {
+      writeFileSync(candidate, "export const candidate = true;\n");
+      runGitAt(fixtureRoot, ["add", "--", "apps/web/src/components/candidate.ts"]);
+      writeFileSync(candidate, "export const candidate = ;\n");
+
+      const result = runPowerShell(
+        join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
+        ["-StagedOnly"],
+        {
+          ...withoutCandidateGitEnvironment({ PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}` }),
+        },
+        fixtureRoot,
+      );
+      const output = `${result.stdout}\n${result.stderr}`;
+      assert.notEqual(result.status, 0, output);
+      assert.match(output, /STAGED validation refused/);
+      assert.equal(readFileSync(candidate, "utf8"), "export const candidate = ;\n");
+    } finally {
+      rmSync(binRoot, { recursive: true, force: true });
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("ignores an unstaged foreign worktree change", () => {
+    const fixtureRoot = createQuickCheckFixture();
+    const { binRoot, logPath } = createLoggingNpmStub();
+    const candidate = join(fixtureRoot, "apps", "web", "src", "components", "candidate.ts");
+    const foreign = join(fixtureRoot, "apps", "web", "src", "components", "foreign.ts");
+    try {
+      writeFileSync(foreign, "export const foreign = true;\n");
+      runGitAt(fixtureRoot, ["add", "."]);
+      runGitAt(fixtureRoot, ["commit", "-qm", "foreign baseline"]);
+      writeFileSync(candidate, "export const candidate = true;\n");
+      runGitAt(fixtureRoot, ["add", "--", "apps/web/src/components/candidate.ts"]);
+      writeFileSync(foreign, "export const foreign = ;\n");
+
+      const result = runPowerShell(
+        join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
+        ["-StagedOnly"],
+        {
+          ...withoutCandidateGitEnvironment({
+            PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}`,
+            CMM_GUARD_NPM_LOG: logPath,
+          }),
+        },
+        fixtureRoot,
+      );
+      const output = `${result.stdout}\n${result.stderr}`;
+      assert.equal(result.status, 0, output);
+      const args = readLoggedNpmArgs(logPath);
+      assert.equal(args.includes("apps/web/src/components/candidate.ts"), true);
+      assert.equal(args.includes("apps/web/src/components/foreign.ts"), false);
+      assert.equal(readFileSync(foreign, "utf8"), "export const foreign = ;\n");
+    } finally {
+      rmSync(binRoot, { recursive: true, force: true });
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("applies the same staged-content refusal to a temporary candidate index", () => {
+    const fixtureRoot = createQuickCheckFixture();
+    const binRoot = createNpmStub();
+    const indexRoot = mkdtempSync(join(tmpdir(), "cleanmymap-guard-content-index-"));
+    const candidate = join(fixtureRoot, "apps", "web", "src", "components", "candidate.ts");
+    try {
+      writeFileSync(candidate, "export const candidate = false;\n");
+      const env = {
+        ...withoutCandidateGitEnvironment({ PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}` }),
+        GIT_INDEX_FILE: join(indexRoot, "index"),
+      };
+      runGitAt(fixtureRoot, ["read-tree", "HEAD"], env);
+      runGitAt(fixtureRoot, ["add", "--", "apps/web/src/components/candidate.ts"], env);
+      writeFileSync(candidate, "export const candidate = true;\n");
+
+      const result = runPowerShell(
+        join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
+        ["-StagedOnly"],
+        env,
+        fixtureRoot,
+      );
+      const output = `${result.stdout}\n${result.stderr}`;
+      assert.notEqual(result.status, 0, output);
+      assert.match(output, /STAGED validation refused/);
+      assert.match(output, /candidate\.ts/);
+      const staged = runGitAt(fixtureRoot, ["show", ":apps/web/src/components/candidate.ts"], env);
+      assert.equal(staged.stdout, "export const candidate = false;\n");
+      assert.equal(readFileSync(candidate, "utf8"), "export const candidate = true;\n");
+    } finally {
+      rmSync(binRoot, { recursive: true, force: true });
+      rmSync(indexRoot, { recursive: true, force: true });
       rmSync(fixtureRoot, { recursive: true, force: true });
     }
   });

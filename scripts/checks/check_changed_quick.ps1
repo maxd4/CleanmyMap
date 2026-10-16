@@ -60,6 +60,31 @@ function Invoke-Step([string]$Label, [scriptblock]$Action) {
     }
 }
 
+function Assert-StagedWorktreeMatch([string[]]$Paths) {
+    if (-not $StagedOnly -or $Paths.Count -eq 0) {
+        return
+    }
+
+    $divergentPaths = @()
+    foreach ($path in ($Paths | Sort-Object -Unique)) {
+        # `git diff` without --cached compares the worktree to the current
+        # index. Git reads GIT_INDEX_FILE itself, so this also protects a
+        # temporary commit candidate without touching or replacing it.
+        & git diff --quiet --no-ext-diff -- $path
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -eq 1) {
+            $divergentPaths += $path
+        } elseif ($exitCode -ne 0) {
+            throw "Unable to compare the staged candidate with the worktree for '$path' (git diff exit code $exitCode)."
+        }
+    }
+
+    if ($divergentPaths.Count -gt 0) {
+        $pathsText = $divergentPaths -join ", "
+        throw "STAGED validation refused: candidate/worktree content differs for: $pathsText. Validate the staged bytes directly or reconcile the worktree before running worktree-based quick checks."
+    }
+}
+
 function Get-NpmCommand {
     $npmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
     if ($npmCmd) {
@@ -97,6 +122,8 @@ $webTestFilesRelative = @($webTestFiles | ForEach-Object { $_ -replace '^apps/we
 $npmCommand = Get-NpmCommand
 
 $pythonFiles = @($changedFiles | Where-Object { $_ -match "\.py$" })
+$worktreeReadFiles = @($webSourceFiles) + @($pythonFiles)
+Assert-StagedWorktreeMatch $worktreeReadFiles
 
 if ($StagedOnly) {
     Write-Host "[quick] scope: STAGED"
