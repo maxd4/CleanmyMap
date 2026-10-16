@@ -1,6 +1,7 @@
 import os from "node:os";
 import { spawnSync } from "node:child_process";
-import { lstat, readdir, realpath, rm } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { lstat, mkdir, readdir, realpath, rename, rm, rmdir } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -19,6 +20,8 @@ const trackedFilePatterns = [
   /^[0-9a-f-]+\.tmp\.(?:js|css|mjs|ts|json|map|html)$/i,
   /^__PSScriptPolicyTest_.*\.(?:ps1|psm1)$/i,
 ];
+
+const quarantineDirectoryPrefix = ".cleanmymap-temp-cleanup-";
 
 function defaultTempRoot() {
   return process.env.TEMP || process.env.TMP || os.tmpdir();
@@ -64,24 +67,64 @@ async function assertSafeCandidate(root, candidate) {
   if (!expectedKind) {
     throw new Error(`Temporary entry changed type before cleanup: ${candidatePath}`);
   }
+
+  return candidateStat;
 }
 
-function hasActiveEditorProcesses() {
-  const result = spawnSync(
-    "powershell",
+export function resolvePowerShellExecutable({ platform = process.platform, env = process.env } = {}) {
+  if (platform !== "win32") {
+    return null;
+  }
+
+  const systemRoot = typeof env.SystemRoot === "string" ? env.SystemRoot.trim() : "";
+  if (!systemRoot || !path.isAbsolute(systemRoot)) {
+    return null;
+  }
+
+  return path.join(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+}
+
+export function hasActiveEditorProcesses({ spawn = spawnSync, platform = process.platform, env = process.env } = {}) {
+  const executable = resolvePowerShellExecutable({ platform, env });
+  if (!executable) {
+    return true;
+  }
+
+  const result = spawn(
+    executable,
     [
       "-NoProfile",
       "-Command",
       `@(Get-Process -Name ${activeSafeAppNames.map((name) => `'${name}'`).join(",")} -ErrorAction SilentlyContinue).Count`,
     ],
-    { encoding: "utf8" },
+    { encoding: "utf8", windowsHide: true },
   );
 
-  if (result.status !== 0) {
+  if (result.error || result.status !== 0) {
     return true;
   }
 
   return Number.parseInt(String(result.stdout).trim(), 10) > 0;
+}
+
+function hasSameFileIdentity(left, right) {
+  return left.dev === right.dev && left.ino === right.ino;
+}
+
+async function createQuarantineDirectory(root) {
+  const quarantineDirectory = path.join(root, `${quarantineDirectoryPrefix}${randomUUID()}`);
+  await mkdir(quarantineDirectory, { mode: 0o700 });
+  return quarantineDirectory;
+}
+
+async function removeEmptyQuarantineDirectory(quarantineDirectory) {
+  try {
+    await rmdir(quarantineDirectory);
+  } catch (error) {
+    if (error?.code !== "ENOENT" && error?.code !== "ENOTEMPTY" && error?.code !== "EEXIST") {
+      throw error;
+    }
+  }
 }
 
 export async function directorySize(root) {
@@ -169,7 +212,7 @@ export async function collectCandidates({
   return { tempRoot, candidates };
 }
 
-export async function removeCandidate(root, candidate) {
+export async function removeCandidate(root, candidate, { beforeRename } = {}) {
   const tempRoot = await assertSafeTempRoot(root);
   const isAllowedDirectory = candidate.kind === "directory" && trackedDirectories.has(candidate.name);
   const isAllowedFile = candidate.kind === "file" && trackedFilePatterns.some((pattern) => pattern.test(candidate.name));
@@ -177,8 +220,31 @@ export async function removeCandidate(root, candidate) {
     throw new Error(`Refusing to clean an unallowlisted temporary entry: ${candidate.name}`);
   }
 
-  await assertSafeCandidate(tempRoot, candidate);
-  await rm(candidate.fullPath, { recursive: candidate.kind === "directory", force: true, maxRetries: 2 });
+  const candidateStat = await assertSafeCandidate(tempRoot, candidate);
+  const quarantineDirectory = await createQuarantineDirectory(tempRoot);
+  const quarantinedPath = path.join(quarantineDirectory, candidate.name);
+
+  try {
+    if (beforeRename) {
+      await beforeRename();
+    }
+
+    await assertSafeTempRoot(tempRoot);
+    await rename(candidate.fullPath, quarantinedPath);
+
+    const quarantinedStat = await lstat(quarantinedPath);
+    if (!hasSameFileIdentity(candidateStat, quarantinedStat)) {
+      throw new Error(`Temporary entry changed identity before cleanup: ${candidate.fullPath}`);
+    }
+
+    await rm(quarantinedPath, {
+      recursive: candidate.kind === "directory",
+      force: false,
+      maxRetries: 2,
+    });
+  } finally {
+    await removeEmptyQuarantineDirectory(quarantineDirectory);
+  }
 }
 
 export async function cleanLocalTemp({
