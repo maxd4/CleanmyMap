@@ -60,6 +60,19 @@ describe("app-errors", () => {
     expect(href).not.toContain("mailto:");
   });
 
+  it("does not add identity or session data when runtime context omits it", () => {
+    const href = buildSupportHref({
+      message: "Erreur de rendu",
+      source: "runtime_error_page",
+      userId: null,
+      sessionId: null,
+    });
+
+    expect(href).not.toContain("Identifiant");
+    expect(href).not.toContain("userId");
+    expect(href).not.toContain("sessionId");
+  });
+
   it("normalizes unknown errors into AppError", () => {
     const error = toAppError("Impossible de charger", {
       kind: "server",

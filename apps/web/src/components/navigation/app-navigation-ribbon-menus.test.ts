@@ -31,6 +31,25 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(source).not.toContain("Nous contacter pour travailler ensemble");
   });
 
+  it("uses the critical button treatment only for the Feedback trigger", () => {
+    const source = readSource("app-navigation-ribbon-menus.tsx");
+
+    expect(source).toContain('data-cmm-button-tone="critical"');
+    expect(source).toContain('data-cmm-button-size="md"');
+    expect(source).toContain('data-cmm-button-variant="pill"');
+    expect(source).toContain("...triggerProps");
+    expect(source).toContain("FeedbackDiscoveryCallout");
+    expect(source).not.toContain("max-[380px]:hidden");
+  });
+
+  it("keeps the menu links independent from the critical trigger tone", () => {
+    const source = readSource("ribbon-dropdown-item.tsx");
+
+    expect(source).not.toContain("data-cmm-button-tone");
+    expect(source).toContain("text-white");
+    expect(source).toContain("hover:bg-white/10");
+  });
+
   it("keeps the feedback compact treatment local to RibbonDropdownItem", () => {
     const source = readSource("ribbon-dropdown-item.tsx");
 

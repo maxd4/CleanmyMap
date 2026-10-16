@@ -125,7 +125,7 @@ function AppNavigationRibbonFrame({
         )}
         style={ribbonChrome}
       >
-        <div className="flex w-full min-w-0 items-center gap-2 px-3 py-2.5 sm:px-5 lg:gap-2 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:px-7 xl:py-2">
+        <div className="flex w-full min-w-0 items-center gap-2 px-3 py-2.5 max-[380px]:gap-1 max-[380px]:px-2 sm:px-5 lg:gap-2 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:px-7 xl:py-2">
           <p className="sr-only">
             {locale === "fr" ? "Profil actif" : "Active profile"}: {effectiveProfileLabel}
           </p>
@@ -135,12 +135,12 @@ function AppNavigationRibbonFrame({
               href="/"
               prefetch={false}
               onClick={() => onTrackNavigation("/", "Accueil", null)}
-              className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-[border-color,box-shadow,background-color] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 xl:h-10 xl:min-h-0"
+              className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-[border-color,box-shadow,background-color] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 max-[380px]:min-h-10 max-[380px]:gap-1 max-[380px]:px-2 xl:h-10 xl:min-h-0"
               aria-label="Accueil"
             >
               <BrandLogo
                 alt=""
-                className="h-9 w-9 shrink-0 object-contain"
+                className="h-9 w-9 shrink-0 object-contain max-[380px]:h-8 max-[380px]:w-8"
                 priority
                 sizes="2.25rem"
               />
@@ -180,7 +180,7 @@ function AppNavigationRibbonFrame({
             </nav>
           </div>
 
-          <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:ml-0 xl:justify-end">
+          <div className="ml-auto flex min-w-0 items-center gap-1.5 max-[380px]:gap-1 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:ml-0 xl:justify-end">
             <div className="lg:hidden">
               <AppNavigationTreeMenu
                 key={`mobile-tree-${pathname}`}
@@ -201,6 +201,7 @@ function AppNavigationRibbonFrame({
                 pathname,
                 ribbonChrome,
                 onTrackNavigation,
+                isAuthenticated,
               } as React.ComponentProps<typeof RibbonMenus>)}
             />
 

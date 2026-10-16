@@ -52,13 +52,13 @@ export default function GlobalError({
             title="Une erreur technique bloque l'application."
             message={
               isSentryConfigured
-                ? "Le problème a été signalé automatiquement. Vous pouvez réessayer maintenant ou revenir à l'accueil."
-                : "Vous pouvez réessayer maintenant ou revenir à l'accueil."
+                ? "Le problème a été enregistré automatiquement. Pour compléter le diagnostic, indiquez ce que vous faisiez avant l'erreur."
+                : "Un problème technique a été détecté. Vous pouvez nous aider à le corriger en précisant ce que vous faisiez."
             }
             referenceCode={error.digest}
             onRetry={() => reset()}
             supportHref={supportHref}
-            supportLabel="Contacter le support"
+            supportLabel="Aidez-nous à reproduire ce problème"
           />
         </main>
       </body>
