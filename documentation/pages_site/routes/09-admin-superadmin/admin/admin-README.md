@@ -77,6 +77,22 @@ un clic seul ne suffit pas. L'événement borné
 journaliser le contenu du message. Le journal administrateurs reste en lecture
 seule.
 
+### Export local d'un feedback
+
+Pour un feedback, la boîte créateur affiche `Copier le retour` et `Copier pour
+analyse IA`. Ces actions ne contactent ni OpenAI ni un autre service : elles
+écrivent uniquement dans le presse-papiers local. Le premier export produit un
+Markdown structuré avec le titre, le type, la route/rubrique, les observations,
+le résultat attendu, la référence et la date. Le second reprend ce dossier,
+marque explicitement les données utilisateur comme non fiables et ajoute les
+consignes de relecture de `main`, recherche des callers/dépendances/tests,
+cause racine, correctif ciblé et validation.
+
+Les deux exports excluent les emails, identifiants de session, tokens, query
+strings privées et médias. Une information absente reste indiquée comme non
+communiquée ; aucun chemin, SHA, résultat de test, cause technique ou correctif
+n'est inventé.
+
 ### Annulation d'une action future
 
 Pour une pré-action publiée dont le début est futur, un administrateur

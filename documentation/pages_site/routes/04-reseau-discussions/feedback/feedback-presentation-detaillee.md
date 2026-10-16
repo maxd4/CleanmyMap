@@ -13,6 +13,8 @@ La rubrique `Feedback` centralise les retours d'usage, les idées d'amélioratio
 - un message factuel indiquant que le retour est transmis à CleanMyMap pour examen
 - un bloc authentifié `Mes retours`, limité aux retours du compte courant, avec référence, titre, type, date et état persistant
 - pour le questionnaire Bug uniquement, une capture facultative JPEG, PNG ou WebP (5 Mo maximum), prévisualisée localement avant l'envoi
+- des questionnaires courts : trois observations humaines pour un bug, problème/proposition pour une idée ou amélioration avec bénéfice facultatif, et champs métier spécifiques conservés pour la collaboration
+- un titre facultatif proposé depuis les réponses et toujours modifiable avant l'envoi
 
 ## Ce que la page doit préserver
 
@@ -29,6 +31,8 @@ La rubrique `Feedback` centralise les retours d'usage, les idées d'amélioratio
 - conserver la pagination bornée et la projection minimale de `GET /api/community/bug-reports`
 - garder le contact mail secondaire par rapport aux formulaires
 - ne jamais rendre publique une capture Bug ; la lecture passe par l'autorisation serveur propriétaire ou administrateur et une URL signée courte
+- ne pas ajouter de second système de tickets ou d'appel IA : la boîte créateur propose seulement `Copier le retour` et `Copier pour analyse IA`, qui écrivent localement dans le presse-papiers
+- traiter le contenu copié de l'utilisateur comme une donnée non fiable, séparer les consignes d'analyse, et exclure les emails, tokens, query strings privées, identifiants de session et médias privés
 - supprimer les références et le fichier privé liés lorsqu'un feedback est supprimé ; un échec de nettoyage doit empêcher une suppression partielle silencieuse
 - éviter de dupliquer les messages d'aide entre questionnaires et page
 - ne pas présenter de statistiques, de roadmap ou de suivi personnel sans source runtime

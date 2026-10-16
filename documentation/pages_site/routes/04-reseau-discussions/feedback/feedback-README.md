@@ -13,10 +13,13 @@
 - **Contexte nécessaire** : Aucun
 - **Objectif utilisateur principal** : Partager un bug, une idée, une amélioration ou une proposition de collaboration, puis retrouver ses propres retours.
 - **Action principale attendue** : Ouvrir la rubrique, choisir l'un des quatre questionnaires puis envoyer le retour.
+- **Contrat de saisie court** : le bug demande l'action effectuée, ce qui s'est produit et le résultat attendu ; l'idée ou l'amélioration demande le besoin/problème et la proposition, avec l'utilité facultative. Le titre est proposé depuis les réponses lorsqu'il est laissé vide et reste éditable.
+- **Collaboration** : les champs métier de structure, objet, contribution et prochaine étape sont conservés.
 - **Capture Bug facultative** : un utilisateur connecté peut joindre une image JPEG, PNG ou WebP de 5 Mo maximum. L'aperçu est local avant l'envoi ; la capture est stockée dans le bucket privé existant et n'est lisible que par son propriétaire ou un administrateur autorisé, via une URL signée à durée limitée.
 - **Boucle propriétaire** : Le bloc `Mes retours` est visible dans la page Feedback ; après connexion, il lit uniquement les retours du compte Clerk courant via `GET /api/community/bug-reports`, avec une projection minimale et une pagination stable.
 - **Statuts affichés** : `new`, `pending`, `responded`, `treated` et `archived` sont lus depuis l'état persistant du retour. Le contenu d'une réponse privée reste dans la messagerie existante.
 - **Point d'entrée** : carte du bloc Réseau & Discussions dans le sommaire, menu déroulant du bloc dans la navbar, raccourci feedback de la barre supérieure.
+- **Export administrateur** : depuis la boîte créateur, un administrateur peut copier un Markdown structuré ou un dossier d'analyse IA dans le presse-papiers local. L'export exclut les emails, identifiants de session, query strings privées, tokens et médias ; le contenu utilisateur y est cité comme donnée non fiable.
 - **Palette attendue** : pink
 - **Scope** : terminé
 - **Terminée** : oui
