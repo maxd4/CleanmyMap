@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import { resolveValidationCommand } from "../../../scripts/ci/validation-process.mjs";
+
 export const PERFORMANCE_ADVISOR_COMMAND_OPTIONS = Object.freeze([
   "--type",
   "performance",
@@ -381,15 +383,8 @@ export function parsePerformanceAdvisorArgs(argv) {
 }
 
 function run(command, args, cwd) {
-  if (process.platform === "win32") {
-    const commandLine = [command, ...args].join(" ");
-    return spawnSync("cmd.exe", ["/d", "/s", "/c", commandLine], {
-      cwd,
-      encoding: "utf8",
-      stdio: "pipe",
-    });
-  }
-  return spawnSync(command, args, { cwd, encoding: "utf8", stdio: "pipe" });
+  const resolved = resolveValidationCommand({ executable: command, args });
+  return spawnSync(resolved.executable, resolved.args, { cwd, encoding: "utf8", stdio: "pipe" });
 }
 
 function main() {

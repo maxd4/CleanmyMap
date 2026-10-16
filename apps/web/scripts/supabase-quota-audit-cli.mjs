@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { spawnSync } from "node:child_process";
 
+import { resolveValidationCommand } from "../../../scripts/ci/validation-process.mjs";
 import {
   DB_ADVISOR_TYPES,
   listFilesRecursive,
@@ -53,20 +54,8 @@ function resolveDbUrl(rootDir) {
 }
 
 function run(command, args, cwd) {
-  if (process.platform === "win32") {
-    const escapePowershellArg = (value) => {
-      const text = String(value);
-      return `'${text.replace(/'/g, "''")}'`;
-    };
-    const commandLine = `& ${escapePowershellArg(command)} ${args.map(escapePowershellArg).join(" ")}`;
-    return spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", commandLine], {
-      cwd,
-      encoding: "utf8",
-      stdio: "pipe",
-    });
-  }
-
-  return spawnSync(command, args, {
+  const resolved = resolveValidationCommand({ executable: command, args });
+  return spawnSync(resolved.executable, resolved.args, {
     cwd,
     encoding: "utf8",
     stdio: "pipe",
@@ -74,8 +63,7 @@ function run(command, args, cwd) {
 }
 
 function runSupabase(args, cwd) {
-  const command = process.platform === "win32" ? join(dirname(process.execPath), "npx.ps1") : "npx";
-  return run(command, ["supabase", ...args], cwd);
+  return run("npx", ["supabase", ...args], cwd);
 }
 
 function saveAdvisorSnapshot(rootDir, outputRoot, type, dbUrl) {

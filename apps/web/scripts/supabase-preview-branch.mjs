@@ -3,6 +3,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
+import { gitExecutable } from "../../../scripts/ci/git-executable.mjs";
+import { resolveValidationCommand } from "../../../scripts/ci/validation-process.mjs";
+
 const DEFAULT_MAIN_BRANCHES = new Set(["main", "master", "trunk"]);
 
 function parseArgs(argv) {
@@ -31,17 +34,10 @@ function parseArgs(argv) {
 }
 
 function runCommand(command, args, options = {}) {
-  if (process.platform === "win32") {
-    const quoted = [command, ...args]
-      .map((value) => `'${String(value).replace(/'/g, "''")}'`)
-      .join(" ");
-    return spawnSync("powershell", ["-NoProfile", "-Command", `& ${quoted}`], {
-      cwd: options.cwd,
-      encoding: "utf8",
-    });
-  }
-
-  return spawnSync(command, args, {
+  const resolved = command === "git"
+    ? { executable: gitExecutable(), args }
+    : resolveValidationCommand({ executable: command, args });
+  return spawnSync(resolved.executable, resolved.args, {
     cwd: options.cwd,
     encoding: "utf8",
   });

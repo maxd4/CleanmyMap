@@ -4,6 +4,7 @@ import { basename, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { filterSyncableEnvEntries, isSensitiveEnvKey } from "./lib/vercel-env-policy.mjs";
+import { resolveValidationCommand } from "../../../scripts/ci/validation-process.mjs";
 
 /**
  * CleanMyMap - Vercel Env Sync Tool
@@ -108,17 +109,8 @@ function loadAllowedKeysFromExample(examplePath) {
 }
 
 function runCommand(command, args, options = {}) {
-  if (process.platform === "win32") {
-    // PowerShell execution logic for Windows
-    const quoted = [command, ...args]
-      .map((value) => `'${String(value).replace(/'/g, "''")}'`)
-      .join(" ");
-    return spawnSync("powershell", ["-NoProfile", "-Command", `& ${quoted}`], {
-      cwd: options.cwd,
-      encoding: "utf8",
-    });
-  }
-  return spawnSync(command, args, {
+  const resolved = resolveValidationCommand({ executable: command, args });
+  return spawnSync(resolved.executable, resolved.args, {
     cwd: options.cwd,
     input: options.input,
     encoding: "utf8",
