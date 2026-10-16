@@ -43,10 +43,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Invalid pagination cursor" }, { status: 400 });
     }
     const page = await loadCreatorInboxPage({ limit, cursor });
+    const { feedbackMetrics, ...pageWithoutFeedbackMetrics } = page;
     return NextResponse.json({
       status: "ok",
-      ...page,
-      ...(canQualify ? { feedbackMetrics: page.feedbackMetrics } : {}),
+      ...pageWithoutFeedbackMetrics,
+      ...(canQualify ? { feedbackMetrics } : {}),
       canQualify,
     });
   } catch {

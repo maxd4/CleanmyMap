@@ -17,6 +17,7 @@ const deletePartnerOnboardingRequestMock = vi.hoisted(() => vi.fn());
 const buildFeedbackInboxItemMock = vi.hoisted(() => vi.fn());
 const buildPromotionInboxItemMock = vi.hoisted(() => vi.fn());
 const buildPartnerInboxItemMock = vi.hoisted(() => vi.fn());
+const canUseSupabaseServerPersistenceMock = vi.hoisted(() => vi.fn(() => false));
 
 vi.mock("@/lib/authz", () => ({
   requireCreatorAccess: requireCreatorAccessMock,
@@ -70,6 +71,10 @@ vi.mock("@/lib/community/creator-inbox-loader", () => ({
     legal_content_report: null,
     event: null,
   })),
+}));
+
+vi.mock("@/lib/persistence/runtime-store", () => ({
+  canUseSupabaseServerPersistence: canUseSupabaseServerPersistenceMock,
 }));
 
 const feedbackRecord = {
@@ -885,6 +890,88 @@ describe("PATCH /api/admin/creator-inbox", () => {
       count: 1,
       hasMore: true,
       nextCursor: "next-page",
+    });
+  });
+
+  it("keeps feedback metrics out of GET responses for non-canonical administrators", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "admin-1",
+      role: "admin",
+      activeRole: "admin",
+    });
+    loadCreatorInboxPageMock.mockResolvedValueOnce({
+      items: [{ id: "feedback-1" }],
+      count: 1,
+      hasMore: false,
+      nextCursor: null,
+      feedbackMetrics: {
+        received: 6,
+        pendingQualification: 1,
+        accepted: 2,
+        duplicate: 1,
+        rejected: 1,
+        shipped: 1,
+        period: "all_time",
+        scope: "community_bug_reports",
+      },
+    });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/admin/creator-inbox"),
+    );
+
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload).toMatchObject({
+      status: "ok",
+      canQualify: false,
+      count: 1,
+    });
+    expect(payload).not.toHaveProperty("feedbackMetrics");
+  });
+
+  it("includes all feedback metrics for the canonical max identity", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValueOnce(true);
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "max-owner",
+      role: "max",
+      activeRole: "max",
+    });
+    loadCreatorInboxPageMock.mockResolvedValueOnce({
+      items: [{ id: "feedback-1" }],
+      count: 1,
+      hasMore: false,
+      nextCursor: null,
+      feedbackMetrics: {
+        received: 6,
+        pendingQualification: 1,
+        accepted: 2,
+        duplicate: 1,
+        rejected: 1,
+        shipped: 1,
+        period: "all_time",
+        scope: "community_bug_reports",
+      },
+    });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/admin/creator-inbox"),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      status: "ok",
+      canQualify: true,
+      feedbackMetrics: {
+        received: 6,
+        pendingQualification: 1,
+        accepted: 2,
+        duplicate: 1,
+        rejected: 1,
+        shipped: 1,
+      },
     });
   });
 
