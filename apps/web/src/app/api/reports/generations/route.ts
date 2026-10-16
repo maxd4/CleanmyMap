@@ -16,6 +16,11 @@ import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generati
 import { reportGenerationPayloadSchema } from "@/lib/reports/report-generation-payload";
 import { readJsonBodyWithLimit } from "@/lib/http/request-body";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import {
+  buildSingleActionReportGenerationInput,
+  resolveSingleActionReportContract,
+  SingleActionReportTargetUnavailableError,
+} from "@/lib/reports/single-action-report";
 
 export const runtime = "nodejs";
 const MAX_REPORT_GENERATION_REQUEST_BYTES = 2 * 1024 * 1024;
@@ -29,6 +34,15 @@ const modulesSchema = z.object({
   rawData: z.boolean(),
   detailedFiles: z.boolean(),
 });
+
+const singleActionRequestSchema = z.object({
+  input: z.object({
+    type: z.literal("single_action"),
+    actionId: z.string().uuid(),
+  }).strict(),
+  detailLevel: detailLevelSchema,
+  modules: modulesSchema.strict(),
+}).strict();
 
 const createPayloadSchema = z.object({
   payload: reportGenerationPayloadSchema,
@@ -75,6 +89,35 @@ async function parseReportGenerationRequest(
         { status: body.reason === "too_large" ? 413 : 400 },
       ),
     };
+  }
+
+  const singleAction = singleActionRequestSchema.safeParse(body.data);
+  if (singleAction.success) {
+    try {
+      const contract = await resolveSingleActionReportContract(singleAction.data.input.actionId);
+      return {
+        input: buildSingleActionReportGenerationInput({
+          request: singleAction.data.input,
+          contract,
+          detailLevel: singleAction.data.detailLevel,
+          modules: singleAction.data.modules,
+          now: new Date(),
+        }),
+      };
+    } catch (error) {
+      if (error instanceof SingleActionReportTargetUnavailableError) {
+        await auditReportGenerationError(operationId, actorUserId, {
+          stage: "source",
+          code: "action_unavailable",
+        });
+        return { response: NextResponse.json({ error: "Action indisponible." }, { status: 404 }) };
+      }
+      await auditReportGenerationError(operationId, actorUserId, {
+        stage: "source",
+        code: "action_resolution_failed",
+      });
+      return { response: NextResponse.json({ error: "Action temporairement indisponible." }, { status: 503 }) };
+    }
   }
 
   const parsed = createPayloadSchema.safeParse(body.data);
@@ -224,6 +267,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     item: persisted.item,
+    payload: parsed.input.payload,
     filename: buildPdfReportFilename({
       rubrique: parsed.input.payload.rubrique,
       periode: parsed.input.payload.periode,

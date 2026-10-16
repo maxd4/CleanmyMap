@@ -15,12 +15,14 @@ import {
 const REPORT_GENERATION_HISTORY_METADATA_SELECT =
   "id, generated_at, title, period_id, scope_label, detail_level";
 const REPORT_GENERATION_SNAPSHOT_SELECT =
-  "id, filename, generated_at, snapshot, scope_label, detail_level";
+  "id, filename, generated_at, snapshot, scope_kind, scope_value, scope_label, detail_level";
 
 export type ReportGenerationSnapshotRecord = {
   id: string;
   filename: string;
   generatedAt: string;
+  scopeKind: ReportGenerationHistoryInput["scopeKind"];
+  scopeValue: string;
   scopeLabel: string;
   detailLevel: ReportGenerationHistoryInput["detailLevel"];
   snapshot: ReportGenerationHistoryInput["payload"];
@@ -133,6 +135,8 @@ export async function getReportGenerationSnapshotById(
     id: data.id,
     filename: data.filename,
     generatedAt: data.generated_at,
+    scopeKind: data.scope_kind as ReportGenerationSnapshotRecord["scopeKind"],
+    scopeValue: data.scope_value,
     scopeLabel: data.scope_label,
     detailLevel: data.detail_level as ReportGenerationSnapshotRecord["detailLevel"],
     snapshot,

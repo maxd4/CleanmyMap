@@ -5,6 +5,9 @@ import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 export function toReportsExportRow(contract: ActionDataContract) {
   const operational = getActionOperationalContext(contract);
   const impact = computeActionImpactKpis(contract);
+  const buttsKnown = contract.metadata.cigaretteButts !== null &&
+    contract.metadata.cigaretteButts !== undefined &&
+    Number.isFinite(Number(contract.metadata.cigaretteButts));
   return {
     Date: contract.dates.observedAt,
     Lieu: contract.location.label,
@@ -12,10 +15,10 @@ export function toReportsExportRow(contract: ActionDataContract) {
     Masse_Kg_Declaree: contract.metadata.wasteKg,
     Masse_Kg_Impact: impact.wasteKnown ? impact.wasteKg : null,
     Origine_Masse: impact.wasteKgSource,
-    Megots: contract.metadata.cigaretteButts || 0,
-    Bénévoles: impact.volunteers,
+    Megots: buttsKnown ? impact.butts : null,
+    Bénévoles: impact.volunteersKnown ? impact.volunteers : null,
     CO2e_Proxy_Kg: impact.wasteKnown ? impact.co2AvoidedKg : null,
-    Eau_Proxy_L: impact.waterSavedLiters,
+    Eau_Proxy_L: buttsKnown ? impact.waterSavedLiters : null,
     Economie_Voirie_Proxy_Masse_EUR: impact.wasteKnown
       ? impact.streetCleaningSavings.massEstimateEuros
       : null,

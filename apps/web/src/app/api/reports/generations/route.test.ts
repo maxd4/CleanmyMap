@@ -6,6 +6,11 @@ const persistReportGenerationMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 const reserveReportExportSlotMock = vi.hoisted(() => vi.fn());
 const releaseReportExportSlotMock = vi.hoisted(() => vi.fn());
+const resolveSingleActionReportContractMock = vi.hoisted(() => vi.fn());
+const buildSingleActionReportGenerationInputMock = vi.hoisted(() => vi.fn());
+const SingleActionReportTargetUnavailableErrorMock = vi.hoisted(() =>
+  class SingleActionReportTargetUnavailableError extends Error {},
+);
 
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
@@ -22,6 +27,12 @@ vi.mock("@/lib/admin/audit/operation-audit", () => ({
 vi.mock("@/lib/reports/report-export-quota", () => ({
   reserveReportExportSlot: reserveReportExportSlotMock,
   releaseReportExportSlot: releaseReportExportSlotMock,
+}));
+
+vi.mock("@/lib/reports/single-action-report", () => ({
+  resolveSingleActionReportContract: resolveSingleActionReportContractMock,
+  buildSingleActionReportGenerationInput: buildSingleActionReportGenerationInputMock,
+  SingleActionReportTargetUnavailableError: SingleActionReportTargetUnavailableErrorMock,
 }));
 
 vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
@@ -264,5 +275,109 @@ describe("POST /api/reports/generations", () => {
     expect(response.status).toBe(429);
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toMatchObject({ quotaDay: "2026-08-27" });
+  });
+
+  it("resolves and persists only the typed single-action scope", async () => {
+    const singleInput = {
+      payload: {
+        ...validPayload.payload,
+        title: "Rapport d'impact - Action canonique - Par défaut",
+        organizationType: "single_action",
+        provenance: {
+          type: "single_action",
+          actionId: "11111111-1111-4111-8111-111111111111",
+          source: "public.actions",
+          resolvedAt: "2026-08-27T10:30:00.000Z",
+        },
+      },
+      scopeKind: "single_action",
+      scopeValue: "11111111-1111-4111-8111-111111111111",
+      scopeLabel: "Action canonique",
+      detailLevel: "default",
+      modules: validPayload.modules,
+    };
+    resolveSingleActionReportContractMock.mockResolvedValueOnce({ id: "action-1" });
+    buildSingleActionReportGenerationInputMock.mockReturnValueOnce(singleInput);
+    persistReportGenerationMock.mockResolvedValueOnce({
+      ...validPayload,
+      id: "generation-single",
+      report: singleInput.payload.title,
+      period: "Historique complet",
+      perimeter: singleInput.scopeLabel,
+      detail: "Par défaut",
+      generatedAt: "27/08/2026 12:30",
+    });
+
+    const response = await POST(new Request("http://localhost/api/reports/generations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input: { type: "single_action", actionId: singleInput.scopeValue },
+        detailLevel: "default",
+        modules: validPayload.modules,
+      }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(resolveSingleActionReportContractMock).toHaveBeenCalledWith(singleInput.scopeValue);
+    expect(buildSingleActionReportGenerationInputMock).toHaveBeenCalledWith(expect.objectContaining({
+      request: { type: "single_action", actionId: singleInput.scopeValue },
+      detailLevel: "default",
+    }));
+    expect(persistReportGenerationMock).toHaveBeenCalledWith({
+      createdByClerkId: "user-1",
+      input: singleInput,
+    });
+  });
+
+  it("rejects an invalid action id and never resolves or consumes quota", async () => {
+    const response = await POST(new Request("http://localhost/api/reports/generations", {
+      method: "POST",
+      body: JSON.stringify({
+        input: { type: "single_action", actionId: "not-an-uuid" },
+        detailLevel: "default",
+        modules: validPayload.modules,
+      }),
+    }));
+
+    expect(response.status).toBe(400);
+    expect(resolveSingleActionReportContractMock).not.toHaveBeenCalled();
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 for an absent or ineligible action without consuming quota", async () => {
+    resolveSingleActionReportContractMock.mockRejectedValueOnce(
+      new SingleActionReportTargetUnavailableErrorMock(),
+    );
+
+    const response = await POST(new Request("http://localhost/api/reports/generations", {
+      method: "POST",
+      body: JSON.stringify({
+        input: { type: "single_action", actionId: "11111111-1111-4111-8111-111111111111" },
+        detailLevel: "default",
+        modules: validPayload.modules,
+      }),
+    }));
+
+    expect(response.status).toBe(404);
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects browser-supplied payload data for the single-action contract", async () => {
+    const response = await POST(new Request("http://localhost/api/reports/generations", {
+      method: "POST",
+      body: JSON.stringify({
+        input: { type: "single_action", actionId: "11111111-1111-4111-8111-111111111111" },
+        payload: { ...validPayload.payload, title: "Valeur injectée" },
+        detailLevel: "default",
+        modules: validPayload.modules,
+      }),
+    }));
+
+    expect(response.status).toBe(400);
+    expect(resolveSingleActionReportContractMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
   });
 });

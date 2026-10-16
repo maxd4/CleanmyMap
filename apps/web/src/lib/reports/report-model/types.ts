@@ -54,6 +54,9 @@ export type ReportModel = {
     kg: number;
     knownWasteActions?: number;
     butts: number;
+    buttsKnownActions?: number;
+    buttsActionCount?: number;
+    buttsCoverageRate?: number;
     volunteers: number;
     volunteersKnownActions?: number;
     volunteersActionCount?: number;

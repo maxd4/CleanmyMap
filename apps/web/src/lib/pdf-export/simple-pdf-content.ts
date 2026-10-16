@@ -40,6 +40,12 @@ export type PdfReportPayload = {
   periode: string;
   organizationType: string;
   organizationName?: string;
+  provenance?: {
+    type: "single_action";
+    actionId: string;
+    source: "public.actions";
+    resolvedAt: string;
+  };
   data: PdfReportData;
 };
 

@@ -4,7 +4,7 @@ import {
   type DetailLevelId,
   type ModuleState,
   type PeriodId,
-} from "@/components/reports/web-document/reports-web-document.shared";
+} from "@/lib/reports/report-pdf-data";
 import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 
 export const REPORT_GENERATION_HISTORY_LIMIT = 12;
@@ -20,7 +20,7 @@ export type ReportGenerationHistoryRow = {
 
 export type ReportGenerationHistoryInput = {
   payload: PdfReportPayload;
-  scopeKind: "global" | "account" | "association" | "arrondissement";
+  scopeKind: "global" | "account" | "association" | "arrondissement" | "single_action";
   scopeValue: string;
   scopeLabel: string;
   detailLevel: DetailLevelId;

@@ -439,12 +439,12 @@ du catalogue, sans seuil numérique automatique.
 | MAIN_CONSUMERS | `reports-web-document.tsx`, préparation du rapport, historique de génération et export PDF |
 | TEST_BOUNDARY | `reports-web-document.shared.test.ts`, tests de rendu et d'historique de génération |
 | COUPLING | contrat partagé par plusieurs écrans et la persistance ; risque de cycle si les types sont déplacés sans séparation |
-| NATURAL_EXTRACTION_BOUNDARY | contrat/types, labels/périodes, parsing de scope et construction payload PDF |
-| ARCHITECTURE_DECISION | DEFERRED_SPLIT |
-| RATIONALE | les types et helpers forment actuellement un contrat partagé ; il faut stabiliser la direction de dépendance avant toute extraction |
-| PRIORITY | LATER |
-| DEPENDENCY_OR_BLOCKER | stabiliser les types et préserver une direction de dépendance sans cycle |
-| NEXT_TRIGGER | évolution indépendante des modules, périodes/scopes ou contrat PDF |
+| NATURAL_EXTRACTION_BOUNDARY | contrat/types, labels/périodes et construction payload PDF |
+| ARCHITECTURE_DECISION | EXTRACTED_PURE_CONTRACT |
+| RATIONALE | `report-pdf-data.ts` porte les fonctions pures et peut être consommé par le serveur sans importer un module client ; le fichier `.tsx` conserve les états et helpers UI |
+| PRIORITY | CURRENT |
+| DEPENDENCY_OR_BLOCKER | préserver l'usage du renderer PDF commun et la compatibilité des snapshots historiques |
+| NEXT_TRIGGER | évolution indépendante des modules ou du contrat PDF |
 
 #### `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts`
 

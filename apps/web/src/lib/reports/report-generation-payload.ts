@@ -40,6 +40,12 @@ export const reportGenerationPayloadSchema = z.object({
   periode: z.enum(["six_months", "current_year", "full_history"]),
   organizationType: z.string().trim().min(1).max(180),
   organizationName: z.string().trim().max(180).optional(),
+  provenance: z.object({
+    type: z.literal("single_action"),
+    actionId: z.string().uuid(),
+    source: z.literal("public.actions"),
+    resolvedAt: z.string().datetime(),
+  }).strict().optional(),
   data: pdfReportDataSchema,
 }).passthrough();
 

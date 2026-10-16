@@ -131,10 +131,12 @@ describe("report generation history store", () => {
       id: historicalId,
       filename: historicalRow.filename,
       generatedAt: historicalRow.generated_at,
+      scopeKind: "global",
+      scopeValue: "",
       snapshot: payload,
     });
     expect(select).toHaveBeenCalledWith(
-      "id, filename, generated_at, snapshot, scope_label, detail_level",
+      "id, filename, generated_at, snapshot, scope_kind, scope_value, scope_label, detail_level",
     );
     expect(idEq).toHaveBeenCalledWith("id", historicalId);
     expect(ownerEq).toHaveBeenCalledWith("created_by_clerk_id", "user-1");

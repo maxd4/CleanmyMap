@@ -50,4 +50,20 @@ describe("report generation payload contract", () => {
       isReportGenerationPayload({ ...payload, periode: "rolling_90_days" }),
     ).toBe(false);
   });
+
+  it("accepts immutable single-action provenance while preserving historical payloads", () => {
+    const singleActionPayload = {
+      ...payload,
+      organizationType: "single_action",
+      provenance: {
+        type: "single_action",
+        actionId: "11111111-1111-4111-8111-111111111111",
+        source: "public.actions",
+        resolvedAt: payload.data.generatedAt,
+      },
+    };
+
+    expect(parseReportGenerationPayload(singleActionPayload)).toEqual(singleActionPayload);
+    expect(parseReportGenerationPayload(payload)).toEqual(payload);
+  });
 });

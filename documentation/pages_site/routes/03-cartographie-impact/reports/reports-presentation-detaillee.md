@@ -50,6 +50,17 @@
   dans ce chantier ; le contenu précis des modules et l'effet fonctionnel des
   trois niveaux de détail seront traités séparément.
 
+  Le périmètre typé `single_action` de la génération accepte uniquement
+  `{ input: { type: "single_action", actionId }, detailLevel, modules }`.
+  L'identifiant est résolu côté serveur contre `public.actions` ; seuls une
+  action approuvée, terminée, publiée et explicitement visible sont
+  admissibles. Le payload et les chiffres envoyés par le navigateur sont
+  exclus de ce chemin. Le snapshot est construit avec le `ReportModel` et le
+  composeur PDF commun, porte la provenance `public.actions` et l'identifiant
+  canonique, puis est persisté avec `scope_kind = single_action`. Les valeurs
+  manquantes restent `n/a`/inconnues et les indicateurs dérivés restent
+  étiquetés comme proxies.
+
   L'historique « Mes rapports récents » ne contient que les générations réellement
   persistées par le compte connecté dans `public.report_generations`, au maximum
   les 12 plus récentes de ce compte.

@@ -128,8 +128,9 @@ export function ReportsWebDocument({
         modules,
         model,
         surfaceProxy,
+        generatedAt: reportNow.toISOString(),
       }),
-    [activeScopeLabel, defaultTitle, detailLevel, model, modules, period, surfaceProxy],
+    [activeScopeLabel, defaultTitle, detailLevel, model, modules, period, reportNow, surfaceProxy],
   );
 
   async function generateReportOnServer(payload: PdfReportPayload): Promise<void> {

@@ -15,6 +15,8 @@ const generation = {
   id: "11111111-1111-4111-8111-111111111111",
   filename: "rapport_historique.pdf",
   generatedAt: snapshot.data.generatedAt,
+  scopeKind: "global" as const,
+  scopeValue: "",
   scopeLabel: "Global",
   detailLevel: "default" as const,
   snapshot,
