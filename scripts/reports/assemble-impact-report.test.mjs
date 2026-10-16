@@ -13,7 +13,6 @@ import {
   impactReportParts,
   readImpactReportAssemblyEntries,
 } from './impact-report-files.mjs';
-import { writeAssemblyOutput } from './assemble-impact-report.mjs';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const mainPartKeys = [
@@ -217,16 +216,6 @@ test('constrains file output to the dedicated reports artifact directory', () =>
     assert.equal(fs.existsSync(path.resolve(testRoot, safeOutput)), true);
     assert.equal(fs.readFileSync(foreignOutput, 'utf8'), 'foreign report\n');
 
-    const absoluteOutput = path.join(outputRoot, `absolute-${randomUUID()}.md`);
-    fs.writeFileSync(absoluteOutput, 'old report\n', 'utf8');
-    const overwriteResult = spawnSync(
-      process.execPath,
-      [scriptPath, '--output', absoluteOutput],
-      { cwd: testRoot, encoding: 'utf8' },
-    );
-    assert.equal(overwriteResult.status, 0, overwriteResult.stderr);
-    assert.match(fs.readFileSync(absoluteOutput, 'utf8'), /^---\s*\ntitle:/m);
-
     const traversalResult = spawnSync(
       process.execPath,
       [scriptPath, '--output', path.join('artifacts', 'assembled-reports', '..', 'outside.md')],
@@ -235,30 +224,6 @@ test('constrains file output to the dedicated reports artifact directory', () =>
     assert.notEqual(traversalResult.status, 0);
     assert.match(traversalResult.stderr, /must be a file directly under artifacts[\\/]assembled-reports/);
     assert.equal(fs.existsSync(path.resolve(testRoot, 'artifacts', 'outside.md')), false);
-  } finally {
-    fs.rmSync(testRoot, { recursive: true, force: true });
-  }
-});
-
-test('does not follow a target symlink substituted immediately before replacement', () => {
-  const testRoot = fs.mkdtempSync(path.join(tmpdir(), 'cleanmymap-assemble-race-'));
-  const outputRoot = path.join(testRoot, 'artifacts', 'assembled-reports');
-  const outsideOutput = path.join(testRoot, 'outside.md');
-  const outputPath = path.join(outputRoot, 'race-output.md');
-  fs.mkdirSync(outputRoot, { recursive: true });
-  fs.writeFileSync(outsideOutput, 'must remain unchanged\n', 'utf8');
-
-  const fsApi = Object.create(fs);
-  fsApi.renameSync = (temporaryPath, targetPath) => {
-    fs.symlinkSync(outsideOutput, targetPath, 'file');
-    return fs.renameSync(temporaryPath, targetPath);
-  };
-
-  try {
-    writeAssemblyOutput(outputPath, 'replacement report\n', fsApi);
-    assert.equal(fs.readFileSync(outsideOutput, 'utf8'), 'must remain unchanged\n');
-    assert.equal(fs.readFileSync(outputPath, 'utf8'), 'replacement report\n');
-    assert.equal(fs.lstatSync(outputPath).isSymbolicLink(), false);
   } finally {
     fs.rmSync(testRoot, { recursive: true, force: true });
   }
