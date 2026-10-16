@@ -17,6 +17,17 @@ export type GeoPoint = {
   longitude: number;
 };
 
+function isValidCoordinate([latitude, longitude]: readonly [number, number]): boolean {
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  );
+}
+
 export function isRenderableDrawing(
   drawing: Pick<ActionDrawing, "kind" | "coordinates"> | null | undefined,
 ): drawing is ActionDrawing {
@@ -24,7 +35,10 @@ export function isRenderableDrawing(
     return false;
   }
   const minimumPoints = drawing.kind === "polygon" ? 3 : 2;
-  return drawing.coordinates.length >= minimumPoints;
+  return (
+    drawing.coordinates.length >= minimumPoints &&
+    drawing.coordinates.every(isValidCoordinate)
+  );
 }
 
 export function toGeoJsonString(drawing: ActionDrawing | null): string | null {

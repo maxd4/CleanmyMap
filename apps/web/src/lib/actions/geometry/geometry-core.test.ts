@@ -4,6 +4,7 @@ import {
   buildEllipsePolygon,
   hasCoordinates,
   hasPreciseLocationLabel,
+  isRenderableDrawing,
   toPointCoordinates,
 } from "./geometry-core";
 
@@ -18,6 +19,27 @@ describe("geometry core helpers", () => {
     expect(hasCoordinates(null, 2.35)).toBe(false);
     expect(toPointCoordinates(48.85, 2.35)).toEqual([[48.85, 2.35]]);
     expect(toPointCoordinates(null, 2.35)).toEqual([]);
+  });
+
+  it("rejects persisted drawings with non-finite or out-of-range coordinates", () => {
+    expect(
+      isRenderableDrawing({
+        kind: "polyline",
+        coordinates: [[48.85, 2.35], [48.86, 2.36]],
+      }),
+    ).toBe(true);
+    expect(
+      isRenderableDrawing({
+        kind: "polyline",
+        coordinates: [[91, 2.35], [48.86, 2.36]],
+      }),
+    ).toBe(false);
+    expect(
+      isRenderableDrawing({
+        kind: "polyline",
+        coordinates: [[48.85, Number.NaN], [48.86, 2.36]],
+      }),
+    ).toBe(false);
   });
 
   it("builds reusable ellipse geometries", () => {
