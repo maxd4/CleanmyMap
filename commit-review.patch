@@ -1,0 +1,890 @@
+diff --git a/apps/web/src/components/actions/action-declaration/action-declaration-form-content.tsx b/apps/web/src/components/actions/action-declaration/action-declaration-form-content.tsx
+index 8f403622d..8ffc9d471 100644
+--- a/apps/web/src/components/actions/action-declaration/action-declaration-form-content.tsx
++++ b/apps/web/src/components/actions/action-declaration/action-declaration-form-content.tsx
+@@ -129,10 +129,12 @@ export function ActionDeclarationFormOverlays({
+ type SurfaceProps = {
+   actClasses: ReturnType<typeof getBlockClasses>;
+   showDraftBanner: boolean;
++  draftStorageReadError: boolean;
+   isCompletionBlocked: boolean;
+   formattedPendingDraftSavedAt: string | null;
+   onResumeDraft: () => void;
+   onIgnoreDraft: () => void;
++  onRetryDraftLoad: () => void;
+   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+   sections: SurfaceSectionProps;
+   feedback: React.ComponentProps<typeof ActionDeclarationFormFeedback>;
+@@ -142,10 +144,12 @@ type SurfaceProps = {
+ export function ActionDeclarationFormSurface({
+   actClasses,
+   showDraftBanner,
++  draftStorageReadError,
+   isCompletionBlocked,
+   formattedPendingDraftSavedAt,
+   onResumeDraft,
+   onIgnoreDraft,
++  onRetryDraftLoad,
+   onSubmit,
+   sections,
+   feedback,
+@@ -160,6 +164,15 @@ export function ActionDeclarationFormSurface({
+         <div className="absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-teal-100/45 blur-[120px]" />
+       </div>
+       <div className="cmm-page-width relative flex flex-col gap-6">
++        {draftStorageReadError ? (
++          <div role="alert" className="flex flex-col gap-3 rounded-[2rem] border border-rose-200/80 bg-rose-50 px-4 py-3 text-rose-950 shadow-sm sm:flex-row sm:items-center sm:justify-between">
++            <div>
++              <p className="text-sm font-bold">Le brouillon local n&apos;a pas pu être lu.</p>
++              <p className="mt-0.5 text-xs font-medium">Aucune nouvelle sauvegarde locale ne sera faite tant que la lecture n&apos;est pas rétablie.</p>
++            </div>
++            <button type="button" onClick={onRetryDraftLoad} className="self-start rounded-full border border-rose-300 bg-white px-4 py-2 text-xs font-black text-rose-900 transition hover:bg-rose-100 sm:self-auto">Réessayer la lecture</button>
++          </div>
++        ) : null}
+         {showDraftBanner && !isCompletionBlocked ? (
+           <div className="flex flex-col gap-3 rounded-[2rem] border border-amber-200/80 bg-[#F3FBF6] px-4 py-3 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.22)] sm:flex-row sm:items-center sm:justify-between">
+             <div className="flex items-start gap-2">
+diff --git a/apps/web/src/components/actions/action-declaration/before/action-before-form-view.tsx b/apps/web/src/components/actions/action-declaration/before/action-before-form-view.tsx
+index 1f5c1e1a7..6e0615977 100644
+--- a/apps/web/src/components/actions/action-declaration/before/action-before-form-view.tsx
++++ b/apps/web/src/components/actions/action-declaration/before/action-before-form-view.tsx
+@@ -34,6 +34,7 @@ export function ActionBeforeFormView({
+   persistenceStatus,
+   actionId,
+   onFormalitiesReadiness,
++  onRetryDraftLoad,
+ }: {
+   activeSection: "all" | ActionCreationSectionId;
+   form: FormState;
+@@ -61,6 +62,7 @@ export function ActionBeforeFormView({
+   persistenceStatus: BeforeActionPersistenceStatus;
+   actionId: string | null;
+   onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
++  onRetryDraftLoad?: () => void;
+ }) {
+   const actClasses = getBlockClasses("act");
+   const sectioned = activeSection !== "all";
+@@ -69,7 +71,7 @@ export function ActionBeforeFormView({
+     <div className={cn("relative overflow-hidden px-4 py-6 md:px-6 lg:px-8", actClasses.gradientDeep)}>
+       <div className="pointer-events-none absolute inset-0"><div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-emerald-200/50 blur-[110px]" /><div className="absolute right-0 top-8 h-80 w-80 rounded-full bg-emerald-100/55 blur-[120px]" /></div>
+       <div className="cmm-page-width relative space-y-6">
+-        <ActionBeforePersistenceStatus status={persistenceStatus} />
++        <ActionBeforePersistenceStatus status={persistenceStatus} onRetry={onRetryDraftLoad} />
+         {sectioned ? null : <CmmCard tone="emerald" variant="glass" size="lg"><div className="space-y-3"><h2 className="text-3xl font-black tracking-tight text-emerald-950">Préparer une action future</h2><p className="cmm-text-body cmm-text-primary max-w-3xl">Renseignez les informations utiles avant le terrain. Les champs de récolte, de bilan final et de validation restent réservés au formulaire complet.</p></div></CmmCard>}
+         <form onSubmit={(event) => { void handleSubmit(event); }} className="space-y-6">
+           {sectioned ? (
+diff --git a/apps/web/src/components/actions/action-declaration/before/form.tsx b/apps/web/src/components/actions/action-declaration/before/form.tsx
+index 57ae961d4..213693dfb 100644
+--- a/apps/web/src/components/actions/action-declaration/before/form.tsx
++++ b/apps/web/src/components/actions/action-declaration/before/form.tsx
+@@ -73,6 +73,7 @@ export function ActionBeforeDeclarationForm({
+     confirmPublish,
+     onContinueComplete,
+     persistenceStatus = "clean",
++    retryDraftPersistence,
+   } = useBeforeActionForm({ actorNameOptions, defaultActorName, isAuthenticated, userMetadata, linkedEventId, initialActionId, duplicateFromActionId, initialRecordType, onPassToComplete, onFormChange, onActionPersisted, preparationContext });
+
+   useEffect(() => {
+@@ -92,8 +93,8 @@ export function ActionBeforeDeclarationForm({
+   if (isHydratingAction) return <ActionBeforeHydrationView />;
+   if (terminalActionStatus) return <ActionBeforeTerminalView status={terminalActionStatus} createdId={createdId} />;
+   if (submissionState === "success") {
+-    return <><ActionBeforePersistenceStatus status={persistenceStatus} /><ActionBeforePublicationView form={form} publishedAction={publishedAction} createdId={createdId} publishedAt={publishedAt} publicationState={publicationState} publicationError={publicationError} publicationConfirmationOpen={publicationConfirmationOpen} guidedWorkflow={guidedWorkflow} guidedReadiness={guidedReadiness} shareActionId={shareActionId} onRequestPublish={requestPublish} onCancelPublication={cancelPublication} onConfirmPublish={confirmPublish} onContinueComplete={onContinueComplete} onShare={setShareActionId} /></>;
++    return <><ActionBeforePersistenceStatus status={persistenceStatus} onRetry={retryDraftPersistence} /><ActionBeforePublicationView form={form} publishedAction={publishedAction} createdId={createdId} publishedAt={publishedAt} publicationState={publicationState} publicationError={publicationError} publicationConfirmationOpen={publicationConfirmationOpen} guidedWorkflow={guidedWorkflow} guidedReadiness={guidedReadiness} shareActionId={shareActionId} onRequestPublish={requestPublish} onCancelPublication={cancelPublication} onConfirmPublish={confirmPublish} onContinueComplete={onContinueComplete} onShare={setShareActionId} /></>;
+   }
+
+-  return <ActionBeforeFormView activeSection={activeSection} form={form} submissionState={submissionState} validationIssues={validationIssues} validationIssueFields={validationIssueFields} errorMessage={errorMessage} userMetadata={userMetadata} updateField={updateField} updateFields={updateFields} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)} invitationStatuses={invitationStatuses} handleSubmit={handleSubmit} guidedReadiness={guidedReadiness} isAuthenticated={isAuthenticated} signInHref={signInHref} signUpHref={signUpHref} persistenceStatus={persistenceStatus} actionId={createdId} onFormalitiesReadiness={onFormalitiesReadiness} />;
++  return <ActionBeforeFormView activeSection={activeSection} form={form} submissionState={submissionState} validationIssues={validationIssues} validationIssueFields={validationIssueFields} errorMessage={errorMessage} userMetadata={userMetadata} updateField={updateField} updateFields={updateFields} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)} invitationStatuses={invitationStatuses} handleSubmit={handleSubmit} guidedReadiness={guidedReadiness} isAuthenticated={isAuthenticated} signInHref={signInHref} signUpHref={signUpHref} persistenceStatus={persistenceStatus} actionId={createdId} onFormalitiesReadiness={onFormalitiesReadiness} onRetryDraftLoad={retryDraftPersistence} />;
+ }
+diff --git a/apps/web/src/components/actions/action-declaration/before/persistence-status.tsx b/apps/web/src/components/actions/action-declaration/before/persistence-status.tsx
+index 3ad9aff3d..a5ab12b43 100644
+--- a/apps/web/src/components/actions/action-declaration/before/persistence-status.tsx
++++ b/apps/web/src/components/actions/action-declaration/before/persistence-status.tsx
+@@ -1,23 +1,24 @@
+ import { AlertTriangle, CheckCircle2, Cloud } from "lucide-react";
+ import { CmmPill } from "@/components/ui/cmm-pill";
+
+-export type BeforeActionPersistenceStatus = "clean" | "local" | "account" | "unsaved" | "error";
++export type BeforeActionPersistenceStatus = "clean" | "local" | "account" | "unsaved" | "error" | "read-error";
+
+ const STATUS_COPY: Record<Exclude<BeforeActionPersistenceStatus, "clean">, { label: string; detail: string; tone: "emerald" | "amber" }> = {
+   local: { label: "Brouillon local", detail: "Vos informations restent dans ce navigateur jusqu’à un enregistrement explicite.", tone: "amber" },
+   account: { label: "Enregistré dans mon compte", detail: "Cette action privée est reprise avec son même identifiant.", tone: "emerald" },
+   unsaved: { label: "Modifications non enregistrées", detail: "Les changements sont conservés localement ; enregistrez-les explicitement pour mettre à jour l’action.", tone: "amber" },
+   error: { label: "Erreur d’enregistrement", detail: "La dernière écriture n’a pas abouti. Vos changements locaux sont conservés si le navigateur le permet.", tone: "amber" },
++  "read-error": { label: "Lecture du brouillon impossible", detail: "Aucune nouvelle sauvegarde locale ne sera tentée tant que cette lecture n’a pas réussi.", tone: "amber" },
+ };
+
+-export function ActionBeforePersistenceStatus({ status }: { status: BeforeActionPersistenceStatus }) {
++export function ActionBeforePersistenceStatus({ status, onRetry }: { status: BeforeActionPersistenceStatus; onRetry?: () => void }) {
+   if (status === "clean") return null;
+   const copy = STATUS_COPY[status];
+   const Icon = status === "error" ? AlertTriangle : status === "account" ? CheckCircle2 : Cloud;
+   return (
+-    <div className="flex items-start gap-2 rounded-2xl border border-emerald-100 bg-white/85 px-3 py-2 text-xs leading-5 text-emerald-900/75" role={status === "error" ? "alert" : "status"} data-testid="action-before-persistence-status" data-persistence-status={status}>
++    <div className="flex items-start gap-2 rounded-2xl border border-emerald-100 bg-white/85 px-3 py-2 text-xs leading-5 text-emerald-900/75" role={status === "error" || status === "read-error" ? "alert" : "status"} data-testid="action-before-persistence-status" data-persistence-status={status}>
+       <Icon size={14} className="mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" />
+-      <span className="min-w-0"><CmmPill tone={copy.tone} size="sm">{copy.label}</CmmPill><span className="ml-2">{copy.detail}</span></span>
++      <span className="min-w-0"><CmmPill tone={copy.tone} size="sm">{copy.label}</CmmPill><span className="ml-2">{copy.detail}</span>{status === "read-error" && onRetry ? <button type="button" className="ml-2 font-semibold underline underline-offset-2" onClick={onRetry}>Réessayer la lecture</button> : null}</span>
+     </div>
+   );
+ }
+diff --git a/apps/web/src/components/actions/action-declaration/before/use-before-action-form.persistence.test.ts b/apps/web/src/components/actions/action-declaration/before/use-before-action-form.persistence.test.ts
+index cfd1839c2..223ff9d8f 100644
+--- a/apps/web/src/components/actions/action-declaration/before/use-before-action-form.persistence.test.ts
++++ b/apps/web/src/components/actions/action-declaration/before/use-before-action-form.persistence.test.ts
+@@ -31,4 +31,22 @@ describe("before-action persistence path", () => {
+     expect(create).toHaveBeenCalledWith(payload);
+     expect(update).not.toHaveBeenCalled();
+   });
++
++  it("reuses the creation correlation key for a retry after a lost response", async () => {
++    const create = vi.fn().mockResolvedValue({ id: "action-new" });
++    const update = vi.fn();
++
++    await expect(
++      persistBeforeAction(
++        null,
++        payload,
++        { create, update },
++        "action-create-before-retry-42",
++      ),
++    ).resolves.toEqual({ actionId: "action-new", created: true });
++
++    expect(create).toHaveBeenCalledWith(payload, {
++      idempotencyKey: "action-create-before-retry-42",
++    });
++  });
+ });
+diff --git a/apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts b/apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts
+index 3e0b2818c..8669f1a05 100644
+--- a/apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts
++++ b/apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts
+@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateActio
+ import type { ActionEditorRecord } from "@/lib/actions/http";
+ import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
+ import type { FormState } from "../model";
+-import { loadDraftSnapshot, saveDraft } from "../draft-storage";
++import { createActionCreationRequestId, loadDraftSnapshot, saveDraft } from "../draft-storage";
+ import {
+   buildPreActionSummaryNote,
+   sanitizePreActionForm,
+@@ -82,10 +82,11 @@ function continueToComplete(
+   form: FormState,
+   createdId: string | null,
+   actionId: string | null | undefined,
++  creationRequestId: string | null,
+   onPassToComplete: (actionId: string) => void | Promise<void>,
+ ): void | Promise<void> {
+   if (!createdId) return;
+-  saveDraft(sanitizePreActionForm(form), undefined, null, actionId ?? createdId);
++  saveDraft(sanitizePreActionForm(form), undefined, null, actionId ?? createdId, creationRequestId);
+   return onPassToComplete(createdId);
+ }
+
+@@ -111,8 +112,12 @@ function useBeforeActionFormRuntime({
+ }: UseBeforeActionFormProps) {
+   const resolvedDefaultActorName = actorNameOptions.includes(defaultActorName) ? defaultActorName : actorNameOptions[0] ?? userMetadata.userId;
+   const fallbackForm = buildBeforeActionFallbackForm(actorNameOptions, resolvedDefaultActorName, initialRecordType);
++  const initialDraft = loadDraftSnapshot(fallbackForm, initialRecordType, initialActionId ?? null);
++  const [creationRequestId] = useState<string | null>(
++    () => initialDraft?.creationRequestId ?? createActionCreationRequestId(),
++  );
+   const [form, setForm] = useState<FormState>(() => fallbackForm);
+-  const { persistenceStatus, setPersistenceStatus } = useBeforeActionPersistence({ fallbackForm, initialActionId });
++  const { persistenceStatus, setPersistenceStatus, retryDraftPersistence } = useBeforeActionPersistence({ fallbackForm, initialActionId });
+   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
+   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+   const [createdId, setCreatedId] = useState<string | null>(null);
+@@ -178,12 +183,12 @@ function useBeforeActionFormRuntime({
+     duplicateSyncSourceRef.current = duplicateFromActionId;
+     onFormChangeRef.current?.(form);
+   }, [duplicateFromActionId, duplicateLoadedFor, form, initialActionId]);
+-  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, draftActionId: persistedActionId, linkedEventId, submissionState, isAuthenticated, setForm, onFormChange, setPersistenceStatus, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
+-  const handleSubmit = useBeforeActionSubmission({ form, submissionState, actionId: persistedActionId, linkedEventId, userMetadata, isAuthenticated, setSubmissionState, setPersistenceStatus, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
++  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, draftActionId: persistedActionId, creationRequestId, linkedEventId, submissionState, isAuthenticated, setForm, onFormChange, setPersistenceStatus, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
++  const handleSubmit = useBeforeActionSubmission({ form, submissionState, actionId: persistedActionId, creationRequestId, linkedEventId, userMetadata, isAuthenticated, setSubmissionState, setPersistenceStatus, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
+   const { requestPublish, cancelPublication, confirmPublish } = useBeforeActionPublication({ createdId, publishedAt, publicationState, setForm, setPublishedAction, setCreatedId, setPublishedAt, setPublicationState, setPublicationError, setPublicationConfirmationOpen });
+   const shareLink = createdId ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}` : null;
+   const summaryNote = useMemo(() => buildPreActionSummaryNote(form), [form]);
+-  const onContinueComplete = () => continueToComplete(form, createdId, persistedActionId, onPassToComplete);
++  const onContinueComplete = () => continueToComplete(form, createdId, persistedActionId, creationRequestId, onPassToComplete);
+
+-  return { form, submissionState, errorMessage, createdId, publishedAction, invitationStatuses, terminalActionStatus, publishedAt, publicationState, publicationError, publicationConfirmationOpen, isHydratingAction: !draftHydrationReady || isHydratingAction || Boolean(duplicateFromActionId && duplicateLoadedFor !== duplicateFromActionId), validationIssues, validationIssueFields, showGroupJoinHelp, setShowGroupJoinHelp, shareLink, summaryNote, updateField, updateFields, handleSubmit, requestPublish, cancelPublication, confirmPublish, onContinueComplete, persistenceStatus };
++  return { form, submissionState, errorMessage, createdId, publishedAction, invitationStatuses, terminalActionStatus, publishedAt, publicationState, publicationError, publicationConfirmationOpen, isHydratingAction: !draftHydrationReady || isHydratingAction || Boolean(duplicateFromActionId && duplicateLoadedFor !== duplicateFromActionId), validationIssues, validationIssueFields, showGroupJoinHelp, setShowGroupJoinHelp, shareLink, summaryNote, updateField, updateFields, handleSubmit, requestPublish, cancelPublication, confirmPublish, onContinueComplete, persistenceStatus, retryDraftPersistence };
+ }
+diff --git a/apps/web/src/components/actions/action-declaration/before/use-before-action-persistence.ts b/apps/web/src/components/actions/action-declaration/before/use-before-action-persistence.ts
+index 62de32e1c..048da205c 100644
+--- a/apps/web/src/components/actions/action-declaration/before/use-before-action-persistence.ts
++++ b/apps/web/src/components/actions/action-declaration/before/use-before-action-persistence.ts
+@@ -1,5 +1,5 @@
+ import { startTransition, useEffect, useRef, useState } from "react";
+-import { loadDraftSnapshot } from "../draft-storage";
++import { loadDraftSnapshotResult, retryDraftLoad } from "../draft-storage";
+ import type { FormState } from "../model";
+ import type { BeforeActionPersistenceStatus } from "./persistence-status";
+
+@@ -12,11 +12,27 @@ export function useBeforeActionPersistence({
+ }) {
+   const fallbackFormRef = useRef(fallbackForm);
+   const [persistenceStatus, setPersistenceStatus] = useState<BeforeActionPersistenceStatus>("clean");
++  const [retryGeneration, setRetryGeneration] = useState(0);
+
+   useEffect(() => {
+-    const hasLocalDraft = Boolean(loadDraftSnapshot(fallbackFormRef.current, "action", initialActionId ?? null));
+-    startTransition(() => setPersistenceStatus(hasLocalDraft ? "local" : initialActionId ? "account" : "clean"));
+-  }, [initialActionId]);
++    const draftResult = loadDraftSnapshotResult(fallbackFormRef.current, "action", initialActionId ?? null);
++    startTransition(() => {
++      setPersistenceStatus(draftResult.readError
++        ? "read-error"
++        : draftResult.snapshot
++          ? "local"
++          : initialActionId
++            ? "account"
++            : "clean");
++    });
++  }, [initialActionId, retryGeneration]);
+
+-  return { persistenceStatus, setPersistenceStatus };
++  return {
++    persistenceStatus,
++    setPersistenceStatus,
++    retryDraftPersistence: () => {
++      retryDraftLoad();
++      setRetryGeneration((generation) => generation + 1);
++    },
++  };
+ }
+diff --git a/apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts b/apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts
+index 4e2d7e135..2bde83677 100644
+--- a/apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts
++++ b/apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts
+@@ -90,8 +90,13 @@ export async function persistBeforeAction(
+   actionId: string | null | undefined,
+   payload: CreateActionPayload,
+   dependencies: BeforeActionPersistenceDependencies = DEFAULT_BEFORE_ACTION_PERSISTENCE_DEPENDENCIES,
++  creationRequestId?: string | null,
+ ): Promise<{ actionId: string; created: boolean }> {
+-  const result = actionId ? await dependencies.update(actionId, payload) : await dependencies.create(payload);
++  const result = actionId
++    ? await dependencies.update(actionId, payload)
++    : creationRequestId
++      ? await dependencies.create(payload, { idempotencyKey: creationRequestId })
++      : await dependencies.create(payload);
+   return { actionId: "id" in result ? result.id : result.actionId, created: !actionId };
+ }
+
+@@ -363,6 +368,7 @@ export function useBeforeActionHydration({
+ export function useBeforeActionFieldUpdates({
+   form,
+   draftActionId,
++  creationRequestId,
+   linkedEventId,
+   submissionState,
+   isAuthenticated,
+@@ -376,6 +382,7 @@ export function useBeforeActionFieldUpdates({
+ }: {
+   form: FormState;
+   draftActionId?: string | null;
++  creationRequestId: string | null;
+   linkedEventId?: string;
+   submissionState: SubmissionState;
+   isAuthenticated: boolean;
+@@ -401,7 +408,7 @@ export function useBeforeActionFieldUpdates({
+     }
+     applyOrganizerFormUpdates(nextForm, form, updates);
+     setForm(nextForm); onFormChange?.(nextForm);
+-    const savedAt = saveDraft(nextForm, undefined, null, draftActionId ?? null);
++    const savedAt = saveDraft(nextForm, undefined, null, draftActionId ?? null, creationRequestId);
+     setPersistenceStatus(savedAt ? (draftActionId && isAuthenticated ? "unsaved" : "local") : "error");
+     if (submissionState === "error") { setSubmissionState("idle"); setErrorMessage(null); setValidationIssues([]); setValidationIssueFields([]); }
+   };
+@@ -413,6 +420,7 @@ export function useBeforeActionSubmission({
+   form,
+   submissionState,
+   actionId,
++  creationRequestId,
+   linkedEventId,
+   userMetadata,
+   isAuthenticated,
+@@ -429,6 +437,7 @@ export function useBeforeActionSubmission({
+   form: FormState;
+   submissionState: SubmissionState;
+   actionId?: string | null;
++  creationRequestId: string | null;
+   linkedEventId?: string;
+   userMetadata: ActionBeforeDeclarationFormProps["userMetadata"];
+   isAuthenticated: boolean;
+@@ -453,7 +462,12 @@ export function useBeforeActionSubmission({
+     const payload = buildBeforeActionPayload({ form: normalizedForm, linkedEventId, userMetadata });
+     setSubmissionState("pending"); setErrorMessage(null); setValidationIssues([]); setValidationIssueFields([]);
+     try {
+-      const result = await persistBeforeAction(actionId, payload);
++      const result = await persistBeforeAction(
++        actionId,
++        payload,
++        DEFAULT_BEFORE_ACTION_PERSISTENCE_DEPENDENCIES,
++        creationRequestId,
++      );
+       setCreatedId(result.actionId); onActionPersisted?.(result.actionId);
+       if (actionId) { const canonicalAction = await fetchActionById(result.actionId); setPublishedAction(canonicalAction); setPublishedAt(canonicalAction.publishedAt ?? null); }
+       setSubmissionState("success");
+diff --git a/apps/web/src/components/actions/action-declaration/draft-storage.test.ts b/apps/web/src/components/actions/action-declaration/draft-storage.test.ts
+index 64e57658c..221a7c191 100644
+--- a/apps/web/src/components/actions/action-declaration/draft-storage.test.ts
++++ b/apps/web/src/components/actions/action-declaration/draft-storage.test.ts
+@@ -5,22 +5,31 @@ import {
+   ACTION_DECLARATION_DRAFT_KEY,
+   clearDraft,
+   loadDraftSnapshot,
++  loadDraftSnapshotResult,
++  retryDraftLoad,
+   saveDraft,
+ } from "./draft-storage";
+
+-function installLocalStorage() {
++function installLocalStorage({
++  getItem,
++  setItem,
++}: {
++  getItem?: (key: string) => string | null;
++  setItem?: (key: string, value: string) => void;
++} = {}) {
+   const store = new Map<string, string>();
+   const localStorage = {
+-    getItem: (key: string) => store.get(key) ?? null,
+-    setItem: (key: string, value: string) => {
++    getItem: getItem ?? ((key: string) => store.get(key) ?? null),
++    setItem: setItem ?? ((key: string, value: string) => {
+       store.set(key, value);
+-    },
++    }),
+     removeItem: (key: string) => {
+       store.delete(key);
+     },
+   };
+
+   vi.stubGlobal("window", { localStorage });
++  retryDraftLoad();
+
+   return { store, localStorage };
+ }
+@@ -63,6 +72,15 @@ describe("action declaration draft storage", () => {
+     expect(snapshot?.form.wasteKg).toBe("12");
+   });
+
++  it("keeps the creation request id when a draft is resumed", () => {
++    installLocalStorage();
++    const draft = createInitialFormState("Alice");
++
++    saveDraft(draft, "2026-05-13T10:45:00.000Z", null, null, "action-create-request-42");
++
++    expect(loadDraftSnapshot(createInitialFormState("Fallback"))?.creationRequestId).toBe("action-create-request-42");
++  });
++
+   it("keeps persisted-action drafts isolated by action id", () => {
+     installLocalStorage();
+     const actionDraft = createInitialFormState("Alice");
+@@ -227,6 +245,39 @@ describe("action declaration draft storage", () => {
+     expect(() => clearDraft()).not.toThrow();
+   });
+
++  it("does not overwrite a draft after a read failure until an explicit retry succeeds", () => {
++    const store = new Map([[ACTION_DECLARATION_DRAFT_KEY, JSON.stringify({ actionTitle: "Brouillon existant" })]]);
++    let readsAvailable = false;
++    const setItem = vi.fn((key: string, value: string) => store.set(key, value));
++    installLocalStorage({
++      getItem: (key) => {
++        if (!readsAvailable) throw new Error("storage temporarily unavailable");
++        return store.get(key) ?? null;
++      },
++      setItem,
++    });
++
++    expect(loadDraftSnapshotResult(createInitialFormState("Alice")).readError).toBe(true);
++    expect(saveDraft({ ...createInitialFormState("Alice"), actionTitle: "Remplacement" })).toBeNull();
++    expect(setItem).not.toHaveBeenCalled();
++    expect(store.get(ACTION_DECLARATION_DRAFT_KEY)).toContain("Brouillon existant");
++
++    readsAvailable = true;
++    retryDraftLoad();
++    expect(loadDraftSnapshotResult(createInitialFormState("Alice")).readError).toBe(false);
++    expect(saveDraft({ ...createInitialFormState("Alice"), actionTitle: "Remplacement" })).not.toBeNull();
++  });
++
++  it("swallows local write failures without rejecting the form update", () => {
++    const setItem = vi.fn(() => {
++      throw new Error("quota exceeded");
++    });
++    installLocalStorage({ setItem });
++
++    expect(() => saveDraft(createInitialFormState("Alice"))).not.toThrow();
++    expect(setItem).toHaveBeenCalledTimes(1);
++  });
++
+   it("ignores malformed stored drafts instead of restoring fallback silently", () => {
+     const { store } = installLocalStorage();
+     store.set(ACTION_DECLARATION_DRAFT_KEY, "{not-json");
+diff --git a/apps/web/src/components/actions/action-declaration/draft-storage.ts b/apps/web/src/components/actions/action-declaration/draft-storage.ts
+index 6cb9c4bc0..179d179c3 100644
+--- a/apps/web/src/components/actions/action-declaration/draft-storage.ts
++++ b/apps/web/src/components/actions/action-declaration/draft-storage.ts
+@@ -16,10 +16,16 @@ export type ActionDeclarationDraftSnapshot = {
+   form: FormState;
+   savedAt: string | null;
+   actionId?: string | null;
++  creationRequestId?: string | null;
+   manualDrawing?: ActionDrawing;
+   manualDrawingSource?: "gpx_import";
+ };
+
++export type ActionDeclarationDraftLoadResult = {
++  snapshot: ActionDeclarationDraftSnapshot | null;
++  readError: boolean;
++};
++
+ export type ActionDeclarationDraftGeometry = {
+   drawing: ActionDrawing;
+   source: "gpx_import";
+@@ -27,7 +33,10 @@ export type ActionDeclarationDraftGeometry = {
+
+ type DraftSnapshotCacheEntry = {
+   key: string;
++  storageKey: string;
+   snapshot: ActionDeclarationDraftSnapshot | null;
++  readError: boolean;
++  result: ActionDeclarationDraftLoadResult;
+ };
+
+ const FORM_STATE_KEYS = [
+@@ -186,10 +195,13 @@ function buildDraftSnapshotCacheKey(
+
+ function cacheDraftSnapshot(
+   key: string,
++  storageKey: string,
+   snapshot: ActionDeclarationDraftSnapshot | null,
+-): ActionDeclarationDraftSnapshot | null {
+-  cachedDraftSnapshot = { key, snapshot };
+-  return snapshot;
++  readError = false,
++): ActionDeclarationDraftLoadResult {
++  const result = { snapshot, readError };
++  cachedDraftSnapshot = { key, storageKey, snapshot, readError, result };
++  return result;
+ }
+
+ function getCachedDraftSnapshot(
+@@ -201,6 +213,14 @@ function getCachedDraftSnapshot(
+   return undefined;
+ }
+
++function getCachedDraftLoadResult(
++  storageKey: string,
++): ActionDeclarationDraftLoadResult | undefined {
++  return cachedDraftSnapshot?.storageKey === storageKey
++    ? cachedDraftSnapshot.result
++    : undefined;
++}
++
+ function emitDraftChange(): void {
+   if (
+     typeof window === "undefined" ||
+@@ -249,13 +269,29 @@ export function clearDraft(actionId: string | null = null): void {
+   }
+ }
+
++export function retryDraftLoad(): void {
++  cachedDraftSnapshot = null;
++  emitDraftChange();
++}
++
++export function createActionCreationRequestId(): string {
++  const randomUuid = globalThis.crypto?.randomUUID?.();
++  if (randomUuid) return `action-create-${randomUuid}`;
++  return `action-create-${Date.now()}-${Math.random().toString(36).slice(2)}`;
++}
++
+ export function saveDraft(
+   form: FormState,
+   savedAt = new Date().toISOString(),
+   geometry: ActionDeclarationDraftGeometry = null,
+   actionId: string | null = null,
++  creationRequestId: string | null = null,
+ ): string | null {
+   if (typeof window === "undefined") return null;
++  const storageKey = scopedDraftKey(actionId);
++  if (cachedDraftSnapshot?.storageKey === storageKey && cachedDraftSnapshot.readError) {
++    return null;
++  }
+   const draftPayload: Record<string, unknown> = {};
+   for (const key of FORM_STATE_KEYS) {
+     draftPayload[key] = form[key];
+@@ -270,9 +306,10 @@ export function saveDraft(
+     draftPayload.manualDrawing = drawing;
+     draftPayload.manualDrawingSource = "gpx_import";
+   }
++  if (creationRequestId) draftPayload.creationRequestId = creationRequestId;
+
+   try {
+-    window.localStorage.setItem(scopedDraftKey(actionId), JSON.stringify(draftPayload));
++    window.localStorage.setItem(storageKey, JSON.stringify(draftPayload));
+     window.localStorage.setItem(scopedDraftDateKey(actionId), savedAt);
+     cachedDraftSnapshot = null;
+     emitDraftChange();
+@@ -287,12 +324,24 @@ export function loadDraftSnapshot(
+   recordTypeOverride: FormState["recordType"] | null = null,
+   actionId: string | null = null,
+ ): ActionDeclarationDraftSnapshot | null {
++  return loadDraftSnapshotResult(fallback, recordTypeOverride, actionId).snapshot;
++}
++
++export function loadDraftSnapshotResult(
++  fallback: FormState,
++  recordTypeOverride: FormState["recordType"] | null = null,
++  actionId: string | null = null,
++): ActionDeclarationDraftLoadResult {
+   if (typeof window === "undefined") {
+-    return null;
++    return { snapshot: null, readError: false };
+   }
+
++  const storageKey = scopedDraftKey(actionId);
++  const cachedReadError = getCachedDraftLoadResult(storageKey);
++  if (cachedReadError?.readError) {
++    return cachedReadError;
++  }
+   try {
+-    const storageKey = scopedDraftKey(actionId);
+     const saved = window.localStorage.getItem(storageKey);
+     const savedAt = getDraftSavedAtForAction(actionId);
+     const cacheKey = buildDraftSnapshotCacheKey(
+@@ -304,16 +353,16 @@ export function loadDraftSnapshot(
+     );
+     const cached = getCachedDraftSnapshot(cacheKey);
+     if (cached !== undefined) {
+-      return cached;
++      return getCachedDraftLoadResult(storageKey) ?? { snapshot: cached, readError: false };
+     }
+
+     if (!saved) {
+-      return cacheDraftSnapshot(cacheKey, null);
++      return cacheDraftSnapshot(cacheKey, storageKey, null);
+     }
+
+     const parsed: unknown = JSON.parse(saved);
+     if (!isRecord(parsed)) {
+-      return cacheDraftSnapshot(cacheKey, null);
++      return cacheDraftSnapshot(cacheKey, storageKey, null);
+     }
+
+     const next = { ...fallback } as FormState & Record<string, unknown>;
+@@ -342,10 +391,14 @@ export function loadDraftSnapshot(
+       recordType: next.recordType,
+     });
+
+-    return cacheDraftSnapshot(cacheKey, {
++    return cacheDraftSnapshot(cacheKey, storageKey, {
+       form: next as FormState,
+       savedAt,
+       actionId,
++      creationRequestId:
++        typeof parsed.creationRequestId === "string" && parsed.creationRequestId.trim()
++          ? parsed.creationRequestId
++          : null,
+       ...(hasGpxPair && manualDrawing
+         ? { manualDrawing, manualDrawingSource: "gpx_import" as const }
+         : {}),
+@@ -358,6 +411,6 @@ export function loadDraftSnapshot(
+       null,
+       actionId,
+     );
+-    return cacheDraftSnapshot(cacheKey, null);
++    return cacheDraftSnapshot(cacheKey, storageKey, null, true);
+   }
+ }
+diff --git a/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-draft.ts b/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-draft.ts
+index f9c850317..938df42f6 100644
+--- a/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-draft.ts
++++ b/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-draft.ts
+@@ -3,11 +3,14 @@ import {
+   useCallback,
+   useEffect,
+   useRef,
++  useState,
+   useSyncExternalStore,
+ } from "react";
+ import {
+   clearDraft,
+-  loadDraftSnapshot,
++  createActionCreationRequestId,
++  loadDraftSnapshotResult,
++  retryDraftLoad,
+   saveDraft,
+   subscribeToDraftChanges,
+   type ActionDeclarationDraftGeometry,
+@@ -28,6 +31,8 @@ type UseActionDeclarationDraftParams = {
+   setHasAttemptedSubmit: Dispatch<SetStateAction<boolean>>;
+ };
+
++const EMPTY_DRAFT_LOAD_RESULT = { snapshot: null, readError: false } as const;
++
+ export function useActionDeclarationDraft({
+   initialActionId,
+   createCleanForm,
+@@ -36,18 +41,22 @@ export function useActionDeclarationDraft({
+   setManualDrawingSource,
+   setHasAttemptedSubmit,
+ }: UseActionDeclarationDraftParams) {
+-  const pendingDraft = useSyncExternalStore(
++  const draftLoadResult = useSyncExternalStore(
+     subscribeToDraftChanges,
+     () => {
+       if (initialActionId) {
+-        return null;
++        return EMPTY_DRAFT_LOAD_RESULT;
+       }
+       // /actions/new is an action-only entry point. Historical clean_place
+       // records remain readable when explicitly hydrated by id, but a local
+       // draft cannot turn this form back into an observation entry point.
+-      return loadDraftSnapshot(createCleanForm(), "action");
++      return loadDraftSnapshotResult(createCleanForm(), "action");
+     },
+-    () => null,
++    () => EMPTY_DRAFT_LOAD_RESULT,
++  );
++  const pendingDraft = draftLoadResult.snapshot;
++  const [creationRequestId, setCreationRequestId] = useState<string | null>(
++    () => initialActionId ? null : pendingDraft?.creationRequestId ?? createActionCreationRequestId(),
+   );
+   const plannerHandoffConsumedRef = useRef<boolean>(false);
+
+@@ -65,12 +74,16 @@ export function useActionDeclarationDraft({
+
+   const handleResumeDraft = useCallback(() => {
+     if (!pendingDraft) return;
++    if (pendingDraft.creationRequestId && pendingDraft.creationRequestId !== creationRequestId) {
++      setCreationRequestId(pendingDraft.creationRequestId);
++    }
+     setForm(pendingDraft.form);
+     setManualDrawingState(pendingDraft.manualDrawing ?? null);
+     setManualDrawingSource(pendingDraft.manualDrawingSource ?? null);
+     clearDraft();
+     setHasAttemptedSubmit(false);
+   }, [
++    creationRequestId,
+     pendingDraft,
+     setForm,
+     setHasAttemptedSubmit,
+@@ -80,6 +93,7 @@ export function useActionDeclarationDraft({
+
+   const handleIgnoreDraft = useCallback(() => {
+     clearDraft();
++    setCreationRequestId(createActionCreationRequestId());
+     setForm(createCleanForm());
+     setHasAttemptedSubmit(false);
+   }, [createCleanForm, setForm, setHasAttemptedSubmit]);
+@@ -91,14 +105,17 @@ export function useActionDeclarationDraft({
+       shouldSave = true,
+     ) => {
+       if (!pendingDraft && shouldSave) {
+-        saveDraft(form, undefined, draftGeometry);
++        saveDraft(form, undefined, draftGeometry, null, creationRequestId);
+       }
+     },
+-    [pendingDraft],
++    [creationRequestId, pendingDraft],
+   );
+
+   return {
+     pendingDraft,
++    creationRequestId,
++    draftStorageReadError: draftLoadResult.readError,
++    retryDraftLoad,
+     saveDraftIfAllowed,
+     clearDraft,
+     handleResumeDraft,
+diff --git a/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-execution.ts b/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-execution.ts
+index fc40e2ad4..ba5abd738 100644
+--- a/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-execution.ts
++++ b/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-execution.ts
+@@ -34,6 +34,7 @@ type ActionDeclarationFormExecutionParams = {
+   setLoadedActionPhase: Dispatch<SetStateAction<LoadedActionPhase>>;
+   setHasAttemptedSubmit: Dispatch<SetStateAction<boolean>>;
+   clearDraft: () => void;
++  creationRequestId: string | null;
+   persistedDrawing: ActionDrawing | null;
+   setPersistedDrawing: Dispatch<SetStateAction<ActionDrawing | null>>;
+   setPersistedDrawingSource: Dispatch<SetStateAction<ActionGeometrySource | null>>;
+@@ -62,6 +63,7 @@ export function useActionDeclarationFormExecution({
+   setLoadedActionPhase,
+   setHasAttemptedSubmit,
+   clearDraft,
++  creationRequestId,
+   persistedDrawing,
+   setPersistedDrawing,
+   setPersistedDrawingSource,
+@@ -120,6 +122,7 @@ export function useActionDeclarationFormExecution({
+     visionEstimate,
+     userMetadata,
+     clearDraft,
++    creationRequestId,
+   });
+   const updates = useActionDeclarationFormUpdates({
+     form,
+diff --git a/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-view-model.ts b/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-view-model.ts
+index 03348d6b6..6ffa677c6 100644
+--- a/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-view-model.ts
++++ b/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-view-model.ts
+@@ -133,10 +133,12 @@ export function useActionDeclarationFormViewModel(
+     surface: {
+       actClasses: getBlockClasses("act"),
+       showDraftBanner: state.showDraftBanner,
++      draftStorageReadError: state.draftStorageReadError,
+       isCompletionBlocked,
+       formattedPendingDraftSavedAt: formatDraftDate(state.pendingDraftSavedAt),
+       onResumeDraft: state.handleResumeDraft,
+       onIgnoreDraft: state.handleIgnoreDraft,
++      onRetryDraftLoad: state.retryDraftLoad,
+       onSubmit,
+       sections: {
+         ...sections,
+diff --git a/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts b/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts
+index 404c491ef..ec913c984 100644
+--- a/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts
++++ b/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts
+@@ -79,6 +79,7 @@ export function useActionDeclarationForm({
+     setLoadedActionPhase: hydration.setLoadedActionPhase,
+     setHasAttemptedSubmit,
+     clearDraft: draft.clearDraft,
++    creationRequestId: draft.creationRequestId,
+     persistedDrawing,
+     setPersistedDrawing,
+     setPersistedDrawingSource,
+@@ -116,6 +117,8 @@ export function useActionDeclarationForm({
+     setShowConfirmation: submission.setShowConfirmation,
+     pendingDraftSavedAt: draft.pendingDraft?.savedAt ?? null,
+     showDraftBanner: Boolean(draft.pendingDraft),
++    draftStorageReadError: draft.draftStorageReadError,
++    retryDraftLoad: draft.retryDraftLoad,
+     isCleanPlaceMode,
+
+     // Computed & payload
+diff --git a/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-submission.ts b/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-submission.ts
+index d2a56a2ac..64e7d87f8 100644
+--- a/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-submission.ts
++++ b/apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-submission.ts
+@@ -56,6 +56,7 @@ type UseActionDeclarationSubmissionParams = {
+   visionEstimate: ActionVisionEstimate | null;
+   userMetadata: ActionDeclarationUserMetadata;
+   clearDraft: () => void;
++  creationRequestId: string | null;
+   setLoadedActionPhase: Dispatch<SetStateAction<LoadedActionPhase>>;
+   setHasAttemptedSubmit: Dispatch<SetStateAction<boolean>>;
+ };
+@@ -81,6 +82,7 @@ export function useActionDeclarationSubmission({
+   visionEstimate,
+   userMetadata,
+   clearDraft,
++  creationRequestId,
+   setLoadedActionPhase,
+   setHasAttemptedSubmit,
+ }: UseActionDeclarationSubmissionParams) {
+@@ -157,7 +159,9 @@ export function useActionDeclarationSubmission({
+           : submissionPayload;
+       const result = initialActionId
+         ? await updateAction(initialActionId, effectiveSubmissionPayload)
+-        : await createAction(effectiveSubmissionPayload);
++        : await createAction(effectiveSubmissionPayload, {
++            idempotencyKey: creationRequestId ?? undefined,
++          });
+       const persistedActionId = "id" in result ? result.id : result.actionId;
+       setCreatedId(persistedActionId);
+       setRetentionLoop(
+diff --git a/apps/web/src/lib/actions/http-action-collection.ts b/apps/web/src/lib/actions/http-action-collection.ts
+index 2b9683e5e..700d9ff8f 100644
+--- a/apps/web/src/lib/actions/http-action-collection.ts
++++ b/apps/web/src/lib/actions/http-action-collection.ts
+@@ -63,6 +63,7 @@ function parseActionCreationResponse(body: unknown): ActionCreationResponse | nu
+
+ export async function createAction(
+   payload: CreateActionPayload,
++  options: { idempotencyKey?: string } = {},
+ ): Promise<{
+   id: string;
+   retentionLoop?: {
+@@ -77,7 +78,12 @@ export async function createAction(
+   const postPayload = async (bodyPayload: unknown) => {
+     const response = await fetch("/api/actions", {
+       method: "POST",
+-      headers: { "Content-Type": "application/json" },
++      headers: {
++        "Content-Type": "application/json",
++        ...(options.idempotencyKey
++          ? { "Idempotency-Key": options.idempotencyKey }
++          : {}),
++      },
+       body: JSON.stringify(bodyPayload),
+     });
+     const body = await parseJsonSafely(response);
+diff --git a/apps/web/src/lib/actions/http.test.ts b/apps/web/src/lib/actions/http.test.ts
+index 31e1050a2..73c6bf333 100644
+--- a/apps/web/src/lib/actions/http.test.ts
++++ b/apps/web/src/lib/actions/http.test.ts
+@@ -135,6 +135,56 @@ describe("createAction", () => {
+     expect(fetchMock).toHaveBeenCalledTimes(2);
+     expectFetchPostMethods(fetchMock);
+   });
++
++  it("sends the same idempotency key on the contract and legacy retry", async () => {
++    const fetchMock = vi
++      .fn()
++      .mockResolvedValueOnce(new Response(JSON.stringify({ error: "Validation failed" }), { status: 400 }))
++      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "created", id: "action-1" }), { status: 201 }));
++    vi.stubGlobal("fetch", fetchMock);
++
++    await createAction(
++      {
++        actionDate: "2026-04-22",
++        locationLabel: "Test lieu",
++        wasteKg: 1,
++        cigaretteButts: 0,
++        volunteersCount: 1,
++        durationMinutes: 30,
++      },
++      { idempotencyKey: "action-create-retry-key-42" },
++    );
++
++    expect(fetchMock.mock.calls.map((call) => (call[1] as RequestInit).headers)).toEqual([
++      expect.objectContaining({ "Idempotency-Key": "action-create-retry-key-42" }),
++      expect.objectContaining({ "Idempotency-Key": "action-create-retry-key-42" }),
++    ]);
++  });
++
++  it("allows the caller to retry a lost response with the same server correlation key", async () => {
++    const fetchMock = vi
++      .fn()
++      .mockRejectedValueOnce(new TypeError("network response lost"))
++      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "created", id: "action-created-once" }), { status: 201 }));
++    vi.stubGlobal("fetch", fetchMock);
++    const payload = {
++      actionDate: "2026-04-22",
++      locationLabel: "Test lieu",
++      wasteKg: 1,
++      cigaretteButts: 0,
++      volunteersCount: 1,
++      durationMinutes: 30,
++    };
++
++    await expect(createAction(payload, { idempotencyKey: "action-create-lost-response-42" })).rejects.toThrow("network response lost");
++    await expect(createAction(payload, { idempotencyKey: "action-create-lost-response-42" })).resolves.toMatchObject({ id: "action-created-once" });
++    expect((fetchMock.mock.calls[0]?.[1] as RequestInit).headers).toEqual(
++      expect.objectContaining({ "Idempotency-Key": "action-create-lost-response-42" }),
++    );
++    expect((fetchMock.mock.calls[1]?.[1] as RequestInit).headers).toEqual(
++      expect.objectContaining({ "Idempotency-Key": "action-create-lost-response-42" }),
++    );
++  });
+ });
+
+ describe("buildMapActionsQueryString", () => {

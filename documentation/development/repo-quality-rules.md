@@ -450,3 +450,62 @@ preuve indispensable manquante ne doit pas être masqué sous le verdict
 **Boucle cible :** analyse transversale → intégration → validation → clôture.
 La revue d'un lot terminé n'est pas une autorisation générale de lancer une
 nouvelle suite de correctifs.
+
+### F. Revue à double focale après publication
+
+Après un commit ou une publication, la revue conserve deux contrôles
+complémentaires :
+
+**A — Impact des commits.** Vérifier les modifications de la plage, leurs
+dépendances, les régressions introduites et le résultat observé sur le `HEAD`
+final.
+
+**B — Fiabilité du domaine existant.** Examiner également, de manière
+proportionnée au risque, les implémentations préexistantes encore actives qui
+participent aux mêmes invariants. Lorsque le domaine est concerné, inclure
+notamment :
+
+1. les autres points d'entrée UI et API ;
+2. les services, helpers et contrats partagés ;
+3. les écritures, lectures, RPC, triggers, imports, jobs et transitions d'état ;
+4. les chemins de compatibilité encore consommés ;
+5. les anciens tests, y compris leurs assertions, mocks, scénarios négatifs et
+   limites de preuve ;
+6. les documents canoniques `CURRENT` pertinents et leur cohérence avec le
+   comportement réel ;
+7. les frontières AuthN/AuthZ, les projections publiques et privées, les
+   effets asynchrones et la concurrence lorsqu'ils exposent le même invariant.
+
+La revue distingue explicitement :
+
+- le chemin actuel inspecté et couvert par une preuve pertinente ;
+- le chemin inspecté mais non validé en exécution ;
+- le chemin modifié par la plage ;
+- le chemin exclu, avec sa justification.
+
+Une exploration partielle ne doit jamais être présentée comme un audit
+exhaustif du domaine.
+
+La taxonomie de la section 9.D reste la seule classification des constats.
+Ses conséquences sont les suivantes :
+
+- une régression introduite et démontrée est corrigée lorsqu'elle compromet le
+  contrat du lot ;
+- un défaut préexistant portant sur le même invariant est pris en compte
+  lorsqu'il empêche la `STOP CONDITION` ou contourne la protection apportée par
+  le nouveau code ;
+- un défaut préexistant critique et indépendant peut justifier un chantier
+  distinct et prioritaire ;
+- une amélioration non bloquante ne crée pas automatiquement de prompt ;
+- une hypothèse ou un test absent ne suffit pas à démontrer un défaut.
+
+Lorsque le nouveau code et le code historique partagent la même cause racine,
+produire un seul correctif cohérent couvrant les consommateurs, les tests et
+les documents concernés.
+
+Cette double focale ne déclenche pas un audit systématique de tout le dépôt,
+ne crée ni nouvel outil ni protocole parallèle, ne modifie pas
+rétroactivement les critères d'acceptation et ne répète pas les règles de
+preuve déjà détaillées dans [`TESTING.md`](./TESTING.md). Une correction
+purement locale et sans risque transversal conserve une revue locale
+proportionnée.

@@ -322,9 +322,9 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | COUPLING | couplage fort avec `local-repollution-calibration`, contrats action, historique et projections pollution |
 | NATURAL_EXTRACTION_BOUNDARY | construction des buckets, état observé, projection `projected_today` et adaptation des vues |
 | ARCHITECTURE_DECISION | DEFERRED_SPLIT |
-| RATIONALE | le module est l'owner CURRENT de la résolution d'état d'un lieu ; les étapes privées ne doivent pas être séparées uniquement pour la taille |
+| RATIONALE | le module reste l'owner CURRENT de la résolution d'état d'un lieu : `observed` et `projected_today` partagent les mêmes buckets, identités, historiques et sélection des observations ; aucune évolution indépendante n'est démontrée dans ce lot |
 | PRIORITY | LATER |
-| DEPENDENCY_OR_BLOCKER | owner CURRENT unique de la résolution d'état d'un lieu ; ne pas séparer les étapes privées uniquement pour la taille |
+| DEPENDENCY_OR_BLOCKER | préserver le bucket de lieu et la distinction observation/projection ; ne pas créer une source de vérité commune ni séparer les étapes privées sans contrat indépendant |
 | NEXT_TRIGGER | évolution indépendante des modèles observed/projected_today ou du modèle de repollution |
 
 #### `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts`
@@ -645,9 +645,9 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | COUPLING | helpers géométriques et agrégation fortement cohésifs autour du concept corridor |
 | NATURAL_EXTRACTION_BOUNDARY | aucune extraction obligatoire ; projection et matching forment le cœur du même domaine |
 | ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
-| RATIONALE | owner unique du modèle corridor et de son historique, sans responsabilité étrangère identifiée |
+| RATIONALE | le pipeline projection géographique, sampling, matching, groupement, historique et synthèse de scores reste un contrat corridor unique ; aucun sous-modèle historique ou mode de corridor indépendant n'est démontré dans ce lot |
 | PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | owner unique du modèle corridor et de son historique |
+| DEPENDENCY_OR_BLOCKER | préserver les constantes géographiques, `CorridorPolyline`/`CorridorHistory` et l'ordre matching → historique → score ; ne pas créer une source de vérité commune parallèle |
 | NEXT_TRIGGER | nouveau mode de corridor ou sous-modèle historique indépendant |
 
 #### `apps/web/src/lib/actions/http.ts`
