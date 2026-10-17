@@ -1,5 +1,5 @@
 import { escapeHtml } from "@/lib/security/html-escape";
-import { buildOfficialReportCss } from "./report-pdf-theme";
+import { buildOfficialReportCss, type ReportPdfTheme } from "./report-pdf-theme";
 import { renderInlineMarkdown } from "./official-report-markdown";
 import {
   formatGeneratedAt,
@@ -17,7 +17,10 @@ function renderList(items: string[]): string {
   return `<ul>${items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ul>`;
 }
 
-export function buildOfficialReportHtml(payload: PdfReportPayload): string {
+export function buildOfficialReportHtml(
+  payload: PdfReportPayload,
+  options: { theme?: ReportPdfTheme } = {},
+): string {
   const generatedAt = formatGeneratedAt(payload.data.generatedAt);
   const title = payload.title || payload.data.title || "Rapport CleanMyMap";
   const summary = payload.data.summary?.filter((line) => line.trim().length > 0) ?? [];
@@ -36,7 +39,7 @@ export function buildOfficialReportHtml(payload: PdfReportPayload): string {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(title)}</title>
-  <style>${buildOfficialReportCss()}</style>
+  <style>${buildOfficialReportCss(options.theme)}</style>
 </head>
 <body>
   <main class="cmm-report cmm-web-shell">
@@ -137,7 +140,7 @@ export function buildOfficialReportHtml(payload: PdfReportPayload): string {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(title)}</title>
-  <style>${buildOfficialReportCss()}</style>
+  <style>${buildOfficialReportCss(options.theme)}</style>
 </head>
 <body>
   <main class="cmm-report">

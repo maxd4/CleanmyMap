@@ -1,6 +1,6 @@
 # Reports — deux thèmes PDF comparables et réutilisation scientifique
 
-> **Statut : `PLAN` — spécification produit et critères d'acceptation, non fonctionnalité livrée.**
+> **Statut : `PLAN` — spécification produit et critères d'acceptation ; le prototype technique P est validé, mais aucun sélecteur ni choix de thème n'est livré dans `/reports`.**
 >
 > **Domaine :** générateur `/reports`, rendu PDF et exploitation scientifique des rapports d'impact CleanMyMap.
 >
@@ -144,9 +144,13 @@ Une page *visuellement* sobre n'est pas, en soi, un PDF machine-readable. La liv
 - Ne jamais exposer des médias privés, identifiants personnels non autorisés ou données réservées par un export machine supposé scientifique.
 - Pour les liens de citation, ne jamais rendre public un rapport privé par défaut.
 
-## 7. Prototype de validation à réaliser avant intégration complète
+## 7. Prototype de validation préalable à l'intégration complète
 
 Définir **une seule page commune** de référence avec : en-tête et contexte, grille de 4 KPI, Figure 01 avec légende et source, Tableau 01 avec unités, encadré de limites et pied de page. Construire les deux rendus à partir de **la même fixture de snapshot** ; ne pas ajouter les deux thèmes à tout le produit avant l'évaluation de ce prototype.
+
+Le prototype technique P est validé dans `apps/web/src/lib/pdf-export/report-theme-prototype.ts` et son test d'équivalence associé. Il reste isolé des routes `/reports` et réutilise l'owner de tokens A4 `report-pdf-theme.ts` ; aucune persistance, sélection utilisateur, formule ou source de données supplémentaire n'est introduite.
+
+Sur la fixture déterministe, Chromium produit un PDF A4 d'une page par thème. Les six blocs ont le même ordre, les mêmes géométries de référence, les mêmes valeurs et unités ; Poppler extrait le titre, Figure 01, Tableau 01, le zéro, l'inconnu, les accents et l'identifiant de génération dans les deux fichiers. Les fichiers sont non balisés (`Tagged: no`) : aucune conformité PDF/UA, PDF/A ou ordre de lecture normatif n'est déduite de ce prototype.
 
 Scénarios de validation attendus :
 
@@ -163,9 +167,9 @@ Une capture ou une maquette graphique ne prouve ni le moteur final ni la conform
 
 ## 8. Séquencement et périmètre
 
-**Lot D — présent document uniquement :** enregistrer la direction produit et les contraintes de rendu, sans code, migration, nouvelle route, faux export ni nouveau sélecteur visible.
+**Lot D — présent document :** enregistrer la direction produit et les contraintes de rendu, sans code produit, migration, nouvelle route, faux export ni nouveau sélecteur visible.
 
-**Lot P — futur prototype :** décider les métriques de comparaison, créer la page de référence, tester le support réel de génération PDF et d'extraction ; écarter les solutions qui imposent deux compositions divergentes.
+**Lot P — prototype technique validé :** la page de référence et la fixture sont disponibles dans le module de prototype isolé ; les tests statiques, l'impression Chromium et l'extraction Poppler démontrent la comparabilité sur ce périmètre. Cette preuve ne vaut pas intégration générale ni conformité PDF accessible.
 
 **Lot R — future intégration :** exposer les thèmes sur `/reports` uniquement après prototypes probants, versionner leurs paramètres au bon endroit et conserver la compatibilité historique, les autorisations et les quotas.
 
@@ -197,4 +201,4 @@ Ces publications servent à observer **le langage graphique ou la citabilité**,
 - Les fiches et index nécessaires pointent vers ce document sans recopier le contenu.
 - Aucun document CURRENT ne prétend que le choix de thème, la citation automatique, le Tagged PDF, le PDF/A-3 ou l'export machine associé sont déjà livrés.
 - Le chemin d'implémentation, les limites du renderer actuel, le prototype préalable et les critères de test sont explicités.
-- Aucun nouveau runtime, migration, asset, screenshot ou fichier généré n'est créé dans ce lot.
+- Aucun runtime de production `/reports`, migration, asset, screenshot ou fichier généré n'est créé dans ce lot ; le prototype et ses tests restent explicitement isolés.

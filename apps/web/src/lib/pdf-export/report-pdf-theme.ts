@@ -14,6 +14,55 @@ export const reportPdfColors = {
   ink: "#0F172A",
 } as const;
 
+export type ReportPdfTheme = "impact" | "scientific";
+
+type ReportPdfColorTokens = {
+  [Key in keyof typeof reportPdfColors]: string;
+};
+
+export type ReportPdfThemeTokens = ReportPdfColorTokens & {
+  radius: string;
+  headerBackground: string;
+  accentBackground: string;
+  accentForeground: string;
+  coverBackground: string;
+};
+
+const reportPdfThemeTokens: Record<ReportPdfTheme, ReportPdfThemeTokens> = {
+  impact: {
+    ...reportPdfColors,
+    radius: "3mm",
+    headerBackground: `linear-gradient(135deg, ${reportPdfColors.noteLight}, ${reportPdfColors.white})`,
+    accentBackground: `linear-gradient(135deg, ${reportPdfColors.teal}, ${reportPdfColors.navy})`,
+    accentForeground: reportPdfColors.white,
+    coverBackground: `linear-gradient(135deg, ${reportPdfColors.noteLight}, ${reportPdfColors.white})`,
+  },
+  scientific: {
+    ...reportPdfColors,
+    navy: "#1F2937",
+    blue: "#334155",
+    teal: "#475569",
+    green: "#334155",
+    gray: "#475569",
+    rule: "#94A3B8",
+    light: "#F8FAFC",
+    noteLight: "#FFFFFF",
+    warm: "#475569",
+    warmLight: "#F8FAFC",
+    tableHead: "#F8FAFC",
+    ink: "#111827",
+    radius: "1mm",
+    headerBackground: "#FFFFFF",
+    accentBackground: "#FFFFFF",
+    accentForeground: "#1F2937",
+    coverBackground: "#FFFFFF",
+  },
+};
+
+export function getReportPdfThemeTokens(theme: ReportPdfTheme = "impact"): ReportPdfThemeTokens {
+  return reportPdfThemeTokens[theme];
+}
+
 const reportPdfTypography = {
   family: "Inter, Arial, 'TeX Gyre Heros', system-ui, sans-serif",
   body: "11pt",
@@ -40,8 +89,8 @@ const reportPdfPage = {
   margin: reportPdfSpacing.pageMargin,
 } as const;
 
-export function buildOfficialReportCss(): string {
-  const c = reportPdfColors;
+export function buildOfficialReportCss(theme: ReportPdfTheme = "impact"): string {
+  const c = reportPdfThemeTokens[theme];
   const t = reportPdfTypography;
   const s = reportPdfSpacing;
   const p = reportPdfPage;
@@ -77,8 +126,8 @@ export function buildOfficialReportCss(): string {
     }
     .cmm-web-header {
       border: 1px solid ${c.rule};
-      border-radius: ${s.radius};
-      background: linear-gradient(135deg, ${c.noteLight}, ${c.white});
+      border-radius: ${c.radius};
+      background: ${c.headerBackground};
       padding: 6mm 7mm;
       break-inside: avoid;
       page-break-inside: avoid;
@@ -143,7 +192,7 @@ export function buildOfficialReportCss(): string {
       top: 0;
       align-self: start;
       border: 1px solid ${c.rule};
-      border-radius: ${s.radius};
+      border-radius: ${c.radius};
       padding: 5mm;
       background: ${c.white};
       break-inside: avoid;
@@ -200,7 +249,7 @@ export function buildOfficialReportCss(): string {
     .cmm-web-hero,
     .cmm-web-section {
       border: 1px solid ${c.rule};
-      border-radius: ${s.radius};
+      border-radius: ${c.radius};
       overflow: hidden;
       background: ${c.white};
       break-inside: auto;
@@ -212,8 +261,8 @@ export function buildOfficialReportCss(): string {
     }
     .cmm-web-hero__left {
       padding: 6mm 7mm;
-      color: ${c.white};
-      background: linear-gradient(135deg, ${c.teal}, ${c.navy});
+      color: ${c.accentForeground};
+      background: ${c.accentBackground};
     }
     .cmm-web-hero__right {
       padding: 6mm 7mm;
@@ -221,8 +270,8 @@ export function buildOfficialReportCss(): string {
     }
     .cmm-web-section__header {
       padding: 5mm 6mm;
-      color: ${c.white};
-      background: linear-gradient(135deg, ${c.teal}, ${c.navy});
+      color: ${c.accentForeground};
+      background: ${c.accentBackground};
     }
     .cmm-web-section.is-locked {
       border-color: #D5DEE6;
@@ -241,7 +290,7 @@ export function buildOfficialReportCss(): string {
       gap: 3mm;
     }
     .cmm-web-section__kicker {
-      color: #FFFFFF;
+      color: ${c.accentForeground};
       font-size: ${t.caption};
       font-weight: 700;
       letter-spacing: 0.16em;
@@ -263,7 +312,7 @@ export function buildOfficialReportCss(): string {
     }
     .cmm-web-section__subtitle {
       margin-top: 1.8mm;
-      color: #FFFFFF;
+      color: ${c.accentForeground};
     }
     .cmm-web-section.is-locked .cmm-web-section__subtitle {
       color: #64748B;
@@ -320,7 +369,7 @@ export function buildOfficialReportCss(): string {
       border: 1px solid ${c.rule};
       border-left: 5mm solid ${c.green};
       padding: 18mm;
-      background: linear-gradient(135deg, ${c.noteLight}, ${c.white});
+      background: ${c.coverBackground};
     }
     .cmm-kicker {
       color: ${c.gray};
@@ -353,7 +402,7 @@ export function buildOfficialReportCss(): string {
     }
     .cmm-card {
       border: 1px solid ${c.rule};
-      border-radius: ${s.radius};
+      border-radius: ${c.radius};
       padding: ${s.cardPadding};
       background: ${c.white};
       break-inside: avoid;
@@ -391,7 +440,7 @@ export function buildOfficialReportCss(): string {
     .cmm-callout {
       border-left: 2.5mm solid ${c.blue};
       background: ${c.noteLight};
-      border-radius: ${s.radius};
+      border-radius: ${c.radius};
       padding: 4mm 5mm;
       margin: 4mm 0;
       break-inside: avoid;
@@ -428,7 +477,7 @@ export function buildOfficialReportCss(): string {
     .cmm-table-wrap {
       overflow: visible;
       border: 1px solid ${c.rule};
-      border-radius: ${s.radius};
+      border-radius: ${c.radius};
       break-inside: auto;
       page-break-inside: auto;
     }
