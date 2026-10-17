@@ -70,9 +70,11 @@
   admissibles. Le payload et les chiffres envoyés par le navigateur sont
   exclus de ce chemin. Le snapshot est construit avec le `ReportModel` et le
   composeur PDF commun, porte la provenance `public.actions` et l'identifiant
-  canonique, puis est persisté avec `scope_kind = single_action`. Les valeurs
-  manquantes restent `n/a`/inconnues et les indicateurs dérivés restent
-  étiquetés comme proxies.
+  canonique, puis est persisté avec `scope_kind = single_action`. Dans le PDF,
+  le chapitre de périmètre affiche séparément cet identifiant canonique et le
+  titre lisible de l'action ; les identifiants Clerk et les données de
+  préparation privées ne sont pas exportés. Les valeurs manquantes restent
+  `n/a`/inconnues et les indicateurs dérivés restent étiquetés comme proxies.
 
   Le parcours `multi_action` accepte les scopes `global`, `account`,
   `association` et `arrondissement`, ainsi que les périodes de 30 jours, 3

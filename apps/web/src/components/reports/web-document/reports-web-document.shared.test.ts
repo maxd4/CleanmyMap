@@ -410,7 +410,10 @@ describe("reports web document shared helpers", () => {
       "glossaire-simplifie",
     ]);
     expect(pdf.chapters.find((chapter) => chapter.id === "perimetre-rapport")?.lines).toContain(
-      "Action canonique: Action terrain.",
+      "Action canonique: action-canonique-1.",
+    );
+    expect(pdf.chapters.find((chapter) => chapter.id === "perimetre-rapport")?.lines).toContain(
+      "Titre de l'action: Action terrain.",
     );
     expect(pdf.chapters.find((chapter) => chapter.id === "indicateurs-environnementaux")?.title).toBe(
       "Impacts et proxys qualifiés",
@@ -441,6 +444,47 @@ describe("reports web document shared helpers", () => {
     expect(html.indexOf("Périmètre du rapport")).toBeLessThan(html.indexOf("Impacts et proxys qualifiés"));
     expect(html).not.toContain("Calendrier prévisionnel");
     expect(html).not.toContain("Annexes");
+  });
+
+  it("keeps same-titled mono-action PDFs distinguishable by canonical action id", () => {
+    const buildSingleActionPdf = (actionId: string) => buildPdfData({
+      reportTitle: "Rapport d'impact - Action terrain",
+      scopeLabel: "Action terrain",
+      period: "full_history",
+      detailLevel: "default",
+      modules: {
+        dataAndCartography: false,
+        transparencyAndMethods: true,
+        rawData: false,
+        detailedFiles: false,
+      },
+      surfaceProxy: null,
+      provenance: {
+        type: "single_action",
+        actionId,
+        source: "public.actions",
+        resolvedAt: "2026-08-27T12:00:00.000Z",
+      },
+      model: fixtureModel,
+    });
+
+    const first = buildSingleActionPdf("11111111-1111-4111-8111-111111111111");
+    const second = buildSingleActionPdf("22222222-2222-4222-8222-222222222222");
+    const firstPerimeter = first.chapters.find((chapter) => chapter.id === "perimetre-rapport");
+    const secondPerimeter = second.chapters.find((chapter) => chapter.id === "perimetre-rapport");
+
+    expect(firstPerimeter?.lines).toEqual(expect.arrayContaining([
+      "Action canonique: 11111111-1111-4111-8111-111111111111.",
+      "Titre de l'action: Action terrain.",
+    ]));
+    expect(secondPerimeter?.lines).toEqual(expect.arrayContaining([
+      "Action canonique: 22222222-2222-4222-8222-222222222222.",
+      "Titre de l'action: Action terrain.",
+    ]));
+    expect(firstPerimeter?.lines).not.toContain("22222222-2222-4222-8222-222222222222");
+    expect(secondPerimeter?.lines).not.toContain("11111111-1111-4111-8111-111111111111");
+    expect(JSON.stringify(first)).not.toMatch(/Clerk|preparationData|notes logistiques|Nom privé/i);
+    expect(JSON.stringify(second)).not.toMatch(/Clerk|preparationData|notes logistiques|Nom privé/i);
   });
 
   it("keeps the supported periods and filter labels stable", () => {

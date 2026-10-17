@@ -295,7 +295,10 @@ export function buildPdfData(params: ReportPdfDataOptions) {
       lines: [
         `Période analysée: ${reportPeriodLabel(period, model.dataAvailability?.isTruncated, periodRange)}.`,
         ...(params.provenance?.type === "single_action"
-          ? [`Action canonique: ${scopeLabel}.`]
+          ? [
+              `Action canonique: ${params.provenance.actionId}.`,
+              `Titre de l'action: ${scopeLabel}.`,
+            ]
           : [`Territoire couvert: ${scopeLabel}.`]),
         `Organisation ou collectif concerné: ${scopeLabel === "Global" ? "Collectif CleanMyMap" : scopeLabel}.`,
         `Sources des données: ${Object.keys(report.impactMethodology.sources ?? {}).join(", ")}.`,
