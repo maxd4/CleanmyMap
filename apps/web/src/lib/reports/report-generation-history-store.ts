@@ -246,6 +246,47 @@ export async function getReportGenerationSnapshotById(
   };
 }
 
+export type DerivedReportGenerationPersistenceResolution =
+  | { kind: "not_persisted" }
+  | { kind: "persisted"; item: ReportGenerationHistoryRow }
+  | { kind: "uncertain" };
+
+export async function resolveDerivedReportGenerationPersistence(params: {
+  createdByClerkId: string;
+  generationId: string;
+  sourceGenerationId: string;
+}): Promise<DerivedReportGenerationPersistenceResolution> {
+  try {
+    const generation = await getReportGenerationSnapshotById(
+      params.generationId,
+      params.createdByClerkId,
+    );
+    if (!generation) {
+      return { kind: "not_persisted" };
+    }
+
+    const metadata = generation.snapshot.snapshotMetadata;
+    if (
+      metadata?.generationId !== generation.id ||
+      metadata.sourceGenerationId !== params.sourceGenerationId
+    ) {
+      return { kind: "uncertain" };
+    }
+
+    const item = toReportGenerationHistoryRow({
+      id: generation.id,
+      title: generation.snapshot.title,
+      periodId: generation.snapshot.periode as ReportGenerationHistoryMetadata["periodId"],
+      scopeLabel: generation.scopeLabel,
+      detailLevel: generation.detailLevel,
+      generatedAt: generation.generatedAt,
+    });
+    return item ? { kind: "persisted", item } : { kind: "uncertain" };
+  } catch {
+    return { kind: "uncertain" };
+  }
+}
+
 export async function persistReportGeneration(params: {
   createdByClerkId: string;
   input: ReportGenerationHistoryInput;

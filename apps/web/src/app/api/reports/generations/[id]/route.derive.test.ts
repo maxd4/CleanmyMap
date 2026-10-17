@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getSnapshotMock = vi.hoisted(() => vi.fn());
 const persistDerivedMock = vi.hoisted(() => vi.fn());
+const resolvePersistenceMock = vi.hoisted(() => vi.fn());
 const reserveQuotaMock = vi.hoisted(() => vi.fn());
 const releaseQuotaMock = vi.hoisted(() => vi.fn());
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
@@ -13,6 +14,7 @@ vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: requireAuthenticated
 vi.mock("@/lib/reports/report-generation-history-store", () => ({
   getReportGenerationSnapshotById: getSnapshotMock,
   persistDerivedReportGeneration: persistDerivedMock,
+  resolveDerivedReportGenerationPersistence: resolvePersistenceMock,
   InvalidReportGenerationIdError: class InvalidReportGenerationIdError extends Error {},
 }));
 vi.mock("@/lib/reports/report-export-quota", () => ({
@@ -88,6 +90,7 @@ describe("POST /api/reports/generations/[id]", () => {
     verifyRateLimitMock.mockResolvedValue({ allowed: true, retryAfter: 0 });
     createRateLimitResponseMock.mockReturnValue(null);
     persistDerivedMock.mockResolvedValue(item);
+    resolvePersistenceMock.mockResolvedValue({ kind: "not_persisted" });
     auditMock.mockResolvedValue(undefined);
   });
 
@@ -111,6 +114,7 @@ describe("POST /api/reports/generations/[id]", () => {
       targetId: item.id,
       details: expect.objectContaining({ sourceGenerationId: sourceId }),
     }));
+    expect(releaseQuotaMock).not.toHaveBeenCalled();
   });
 
   it("refuses a third-party or incompatible source before quota", async () => {
@@ -139,5 +143,55 @@ describe("POST /api/reports/generations/[id]", () => {
     persistDerivedMock.mockRejectedValueOnce(new Error("db failure"));
     expect((await POST(request(), { params: Promise.resolve({ id: sourceId }) })).status).toBe(503);
     expect(releaseQuotaMock).toHaveBeenCalledWith({ userId: "user-1", quotaDay: "2026-10-17" });
+    expect(resolvePersistenceMock).toHaveBeenCalledWith(expect.objectContaining({
+      generationId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      sourceGenerationId: sourceId,
+    }));
+  });
+
+  it("keeps the quota and reports persisted state when the success audit fails", async () => {
+    auditMock
+      .mockRejectedValueOnce(new Error("audit unavailable"))
+      .mockResolvedValueOnce(undefined);
+
+    const response = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "audit_failed_after_persistence",
+      persisted: true,
+      generationId: expect.any(String),
+    });
+    expect(persistDerivedMock).toHaveBeenCalledTimes(1);
+    expect(resolvePersistenceMock).not.toHaveBeenCalled();
+    expect(releaseQuotaMock).not.toHaveBeenCalled();
+    expect(auditMock).toHaveBeenCalledTimes(2);
+    expect(auditMock.mock.calls[1]?.[0]).toMatchObject({
+      outcome: "error",
+      targetId: item.id,
+      details: expect.objectContaining({
+        stage: "audit",
+        code: "audit_failed_after_persistence",
+      }),
+    });
+  });
+
+  it("does not release quota when persistence cannot be resolved", async () => {
+    persistDerivedMock.mockRejectedValueOnce(new Error("network timeout"));
+    resolvePersistenceMock.mockResolvedValueOnce({ kind: "uncertain" });
+
+    const response = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "persistence_uncertain",
+      persisted: "unknown",
+    });
+    expect(releaseQuotaMock).not.toHaveBeenCalled();
+    expect(auditMock).toHaveBeenCalledWith(expect.objectContaining({
+      outcome: "error",
+      targetId: expect.any(String),
+      details: expect.objectContaining({ code: "persistence_uncertain" }),
+    }));
   });
 });

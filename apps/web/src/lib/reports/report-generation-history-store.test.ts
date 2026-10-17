@@ -12,6 +12,7 @@ import {
   listReportGenerationHistory,
   persistDerivedReportGeneration,
   persistReportGeneration,
+  resolveDerivedReportGenerationPersistence,
 } from "./report-generation-history-store";
 import { REPORT_ADVANCED_FILTER_DEFAULTS } from "./report-advanced-filters";
 
@@ -237,6 +238,68 @@ describe("report generation history store", () => {
       generatedAt: "2026-08-27T10:30:00.000+00:00",
       snapshot: payload,
     });
+  });
+
+  it("resolves an uncertain derived persistence by its immutable id and lineage", async () => {
+    const targetId = "22222222-2222-4222-8222-222222222222";
+    const generatedAt = "2026-10-17T12:05:00.000Z";
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        ...historicalRow,
+        id: targetId,
+        generated_at: generatedAt,
+        snapshot: {
+          ...payload,
+          data: { ...payload.data, generatedAt },
+          snapshotMetadata: {
+            ...payload.snapshotMetadata,
+            generationId: targetId,
+            sourceGenerationId: historicalId,
+            generatedAt,
+          },
+        },
+      },
+      error: null,
+    });
+    const ownerEq = vi.fn(() => ({ maybeSingle }));
+    const idEq = vi.fn(() => ({ eq: ownerEq }));
+    const select = vi.fn(() => ({ eq: idEq }));
+    getSupabaseAdminClientMock.mockReturnValue({
+      from: vi.fn(() => ({ select })),
+    });
+
+    await expect(resolveDerivedReportGenerationPersistence({
+      createdByClerkId: "user-admin",
+      generationId: targetId,
+      sourceGenerationId: historicalId,
+    })).resolves.toMatchObject({
+      kind: "persisted",
+      item: { id: targetId, report: payload.title },
+    });
+    expect(ownerEq).toHaveBeenCalledWith("created_by_clerk_id", "user-admin");
+  });
+
+  it("distinguishes an absent row from an unreadable persistence result", async () => {
+    const maybeSingle = vi.fn().mockResolvedValueOnce({ data: null, error: null });
+    const ownerEq = vi.fn(() => ({ maybeSingle }));
+    const idEq = vi.fn(() => ({ eq: ownerEq }));
+    const select = vi.fn(() => ({ eq: idEq }));
+    getSupabaseAdminClientMock.mockReturnValue({
+      from: vi.fn(() => ({ select })),
+    });
+
+    await expect(resolveDerivedReportGenerationPersistence({
+      createdByClerkId: "user-admin",
+      generationId: "22222222-2222-4222-8222-222222222222",
+      sourceGenerationId: historicalId,
+    })).resolves.toEqual({ kind: "not_persisted" });
+
+    maybeSingle.mockResolvedValueOnce({ data: null, error: new Error("read failed") });
+    await expect(resolveDerivedReportGenerationPersistence({
+      createdByClerkId: "user-admin",
+      generationId: "22222222-2222-4222-8222-222222222222",
+      sourceGenerationId: historicalId,
+    })).resolves.toEqual({ kind: "uncertain" });
   });
 
   it("accepts equivalent UTC offsets and preserves sub-millisecond precision", async () => {

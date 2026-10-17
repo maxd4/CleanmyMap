@@ -103,6 +103,20 @@ export const platformAuthorizationContract = {
       actual: "requireAuthenticatedAccess before loading the requested generation snapshot",
       evidence: ["requireAuthenticatedAccess", "getReportGenerationSnapshotById"],
     },
+    POST: {
+      expected: "Authenticated owner may derive a compatible Reports generation snapshot with the existing daily quota and audit contract",
+      dimensions: ["authentication", "ownership", "audit"],
+      actual: "requireAuthenticatedAccess + owner-scoped source lookup + atomic daily quota reservation + immutable derived persistence + post-persistence audit",
+      evidence: [
+        "requireAuthenticatedAccess",
+        "getReportGenerationSnapshotById",
+        "reserveReportExportSlot",
+        "persistDerivedReportGeneration",
+        "resolveDerivedReportGenerationPersistence",
+        "releaseReportExportSlot",
+        "appendAdminOperationAudit",
+      ],
+    },
   },
   "reports/elus-dossier": {
     GET: {

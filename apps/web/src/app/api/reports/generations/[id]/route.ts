@@ -8,6 +8,7 @@ import {
   getReportGenerationSnapshotById,
   InvalidReportGenerationIdError,
   persistDerivedReportGeneration,
+  resolveDerivedReportGenerationPersistence,
 } from "@/lib/reports/report-generation-history-store";
 import { InvalidReportGenerationSnapshotError } from "@/lib/reports/report-generation-payload";
 import {
@@ -162,24 +163,89 @@ export async function POST(
 
   const generationId = randomUUID();
   const generatedAt = new Date().toISOString();
+  let item;
   try {
-    const item = await persistDerivedReportGeneration({
+    item = await persistDerivedReportGeneration({
       createdByClerkId: access.userId,
       source,
       generationId,
       generatedAt,
     });
-    const metadata = source.snapshot.snapshotMetadata!;
-    const payload = {
-      ...source.snapshot,
-      snapshotMetadata: {
-        ...metadata,
+  } catch (persistenceError) {
+    const resolution = await resolveDerivedReportGenerationPersistence({
+      createdByClerkId: access.userId,
+      generationId,
+      sourceGenerationId: source.id,
+    });
+    if (resolution.kind === "persisted") {
+      item = resolution.item;
+    } else if (resolution.kind === "uncertain") {
+      console.error("Report derived generation persistence outcome is uncertain", {
+        operationId,
         generationId,
         sourceGenerationId: source.id,
-        generatedAt,
-      },
-      data: { ...source.snapshot.data, generatedAt },
-    };
+        error: persistenceError,
+      });
+      try {
+        await appendAdminOperationAudit({
+          operationId,
+          at: new Date().toISOString(),
+          actorUserId: access.userId,
+          operationType: "admin_operation",
+          outcome: "error",
+          targetId: generationId,
+          details: {
+            operation: "derive_report_generation",
+            stage: "persistence",
+            code: "persistence_uncertain",
+            sourceGenerationId: source.id,
+          },
+        });
+      } catch (auditError) {
+        console.error("Report derived generation uncertainty audit failed", {
+          operationId,
+          generationId,
+          sourceGenerationId: source.id,
+          error: auditError,
+        });
+      }
+      return NextResponse.json(
+        {
+          error: "Le résultat de l'enregistrement est incertain. Ne relancez pas cette action avant vérification.",
+          code: "persistence_uncertain",
+          persisted: "unknown",
+          generationId,
+        },
+        { status: 503 },
+      );
+    } else {
+      await releaseReportExportSlot({ userId: access.userId, quotaDay: reservation.quotaDay }).catch(() => undefined);
+      await appendAdminOperationAudit({
+        operationId,
+        at: new Date().toISOString(),
+        actorUserId: access.userId,
+        operationType: "admin_operation",
+        outcome: "error",
+        targetId: source.id,
+        details: { operation: "derive_report_generation", stage: "persistence", code: "persistence_failed" },
+      });
+      return NextResponse.json({ error: "Impossible d'enregistrer la nouvelle version du rapport." }, { status: 503 });
+    }
+  }
+
+  const metadata = source.snapshot.snapshotMetadata!;
+  const payload = {
+    ...source.snapshot,
+    snapshotMetadata: {
+      ...metadata,
+      generationId,
+      sourceGenerationId: source.id,
+      generatedAt,
+    },
+    data: { ...source.snapshot.data, generatedAt },
+  };
+
+  try {
     await appendAdminOperationAudit({
       operationId,
       at: new Date().toISOString(),
@@ -193,27 +259,55 @@ export async function POST(
         sourceGenerationId: source.id,
       },
     });
-    return NextResponse.json({
-      item,
-      generation: {
-        ...source,
-        id: item.id,
-        filename: buildPdfReportFilename({ rubrique: payload.rubrique, periode: payload.periode }),
-        generatedAt,
-        snapshot: payload,
-      },
-    });
-  } catch {
-    await releaseReportExportSlot({ userId: access.userId, quotaDay: reservation.quotaDay }).catch(() => undefined);
-    await appendAdminOperationAudit({
+  } catch (auditError) {
+    console.error("Report derived generation success audit failed after persistence", {
       operationId,
-      at: new Date().toISOString(),
-      actorUserId: access.userId,
-      operationType: "admin_operation",
-      outcome: "error",
-      targetId: source.id,
-      details: { operation: "derive_report_generation", stage: "persistence", code: "persistence_failed" },
+      generationId: item.id,
+      sourceGenerationId: source.id,
+      error: auditError,
     });
-    return NextResponse.json({ error: "Impossible d'enregistrer la nouvelle version du rapport." }, { status: 503 });
+    try {
+      await appendAdminOperationAudit({
+        operationId,
+        at: new Date().toISOString(),
+        actorUserId: access.userId,
+        operationType: "admin_operation",
+        outcome: "error",
+        targetId: item.id,
+        details: {
+          operation: "derive_report_generation",
+          stage: "audit",
+          code: "audit_failed_after_persistence",
+          sourceGenerationId: source.id,
+        },
+      });
+    } catch (reportingError) {
+      console.error("Report derived generation audit failure could not be recorded", {
+        operationId,
+        generationId: item.id,
+        sourceGenerationId: source.id,
+        error: reportingError,
+      });
+    }
+    return NextResponse.json(
+      {
+        error: "La nouvelle version a été enregistrée, mais son journal d'audit est indisponible. Ne relancez pas cette action.",
+        code: "audit_failed_after_persistence",
+        persisted: true,
+        generationId: item.id,
+      },
+      { status: 503 },
+    );
   }
+
+  return NextResponse.json({
+    item,
+    generation: {
+      ...source,
+      id: item.id,
+      filename: buildPdfReportFilename({ rubrique: payload.rubrique, periode: payload.periode }),
+      generatedAt,
+      snapshot: payload,
+    },
+  });
 }

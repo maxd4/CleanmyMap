@@ -49,8 +49,15 @@ distincte qui vérifie le propriétaire de la source, réserve le quota existant
 crée une nouvelle ligne immutable et conserve la filiation par
 `sourceGenerationId`. Elle réutilise le snapshot source comme base de données,
 préserve les unités, valeurs inconnues et la provenance, et n'écrase jamais
-l'original. L'audit couvre les refus de compatibilité, les échecs de quota et
-les échecs de persistance.
+l'original. Les phases de quota, persistance et audit de succès sont séparées :
+le quota n'est libéré qu'après confirmation de l'absence de ligne persistée ;
+un résultat de persistance incertain conserve le quota et demande une
+vérification avant toute nouvelle tentative. Si l'insertion est confirmée mais
+que l'audit de succès échoue, la réponse indique explicitement que la
+génération existe, le quota reste consommé et une anomalie est journalisée ou
+signalée sans seconde insertion. L'audit couvre les refus de compatibilité,
+les échecs de quota, les échecs de persistance et les anomalies postérieures à
+une insertion.
 
 Le PDF binaire n'est pas stocké. Le renderer vérifie la version enregistrée et
 refuse une paire incompatible ; aucune identité binaire entre deux versions de

@@ -61,7 +61,12 @@ promise sans conserver le renderer correspondant.
 ni quota. « Créer une nouvelle version » consomme le quota existant et crée un
 nouvel enregistrement immuable dont `sourceGenerationId` pointe vers la
 génération source ; les données, unités, valeurs inconnues et la provenance du
-snapshot source sont conservées sans recalcul métier silencieux.
+snapshot source sont conservées sans recalcul métier silencieux. La réservation
+du quota, la persistance et l'audit de succès sont traités séparément : le
+quota n'est libéré qu'après confirmation de l'absence de ligne. Un résultat de
+persistance incertain conserve le quota et interdit une relance aveugle ; une
+insertion confirmée dont l'audit échoue conserve également le quota, expose
+l'état enregistré et signale l'anomalie sans créer une seconde ligne.
 
 ## Contexte historique
 
