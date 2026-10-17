@@ -179,6 +179,7 @@ async function parseReportGenerationRequest(
           detailLevel: multiAction.data.detailLevel,
           modules: multiAction.data.modules,
            generationId,
+          readerUserId: actorUserId,
           now: new Date(),
         }),
       };

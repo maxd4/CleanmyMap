@@ -375,7 +375,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             actionMediaReadyCountByActionId: {},
             actionMediaAvailability: "available" as const,
           })
-        : loadReportsGenerationData().catch(() => null),
+        : loadReportsGenerationData(userId).catch(() => null),
       listReportGenerationHistory(userId)
         .then((rows) => ({ rows, availability: "available" as const }))
         .catch(() => ({ rows: [], availability: "unavailable" as const })),

@@ -27,7 +27,7 @@ Le contrat livré couvre uniquement les champs canoniques suivants :
 - résultats : bornes inclusives de `metadata.wasteKg` et `metadata.cigaretteButts` ; catégories limitées aux champs structurés de `metadata.wasteBreakdown` (`recyclablesKg`, `glassKg`, `householdWasteKg`, `otherWasteKg`) ; les notes et marqueurs textuels ne satisfont aucun filtre de mesure ;
 - preuves : présence ou absence d'une géométrie exploitable et preuve photographique finalisée.
 
-Le filtre photographique ne lit que l'agrégat serveur `public.action_media` (`action_id`, `upload_state = ready`) après les contrôles de lecture du runtime. Aucun objet privé, chemin Storage ou URL signée n'est envoyé au navigateur. Une erreur de cette source rend le filtre photo indisponible et la génération est refusée explicitement plutôt que transformée en absence de preuve. Les seuils actifs ne considèrent jamais `null` comme zéro.
+Le filtre photographique ne lit que l'agrégat serveur `public.action_media` (`action_id`, `upload_state = ready`) après un contrôle explicite du lecteur `created_by_clerk_id`. Une preuve `ready` appartenant à un tiers rend la source indisponible pour ce rapport ; elle n'est pas transformée en absence de preuve. Aucun objet privé, chemin Storage ou URL signée n'est envoyé au navigateur. Une erreur de cette source rend le filtre photo indisponible et la génération est refusée explicitement. Les seuils actifs ne considèrent jamais `null` comme zéro.
 
 Le résumé, l'aperçu, le calcul serveur et le snapshot utilisent le même ensemble d'actions admissibles. Le résultat affiche son nombre d'actions et une couverture complète ou partielle ; une fenêtre tronquée reste partielle après filtrage.
 

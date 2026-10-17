@@ -14,15 +14,19 @@ export type ActionMediaReportReadiness = {
 export async function loadActionMediaReportReadiness(
   supabase: SupabaseClient,
   actionIds: readonly string[],
+  readerUserId?: string,
 ): Promise<ActionMediaReportReadiness> {
   const ids = [...new Set(actionIds.filter((id) => id.trim().length > 0))];
   if (ids.length === 0) {
     return { readyCountByActionId: new Map(), availability: "available" };
   }
+  if (!readerUserId?.trim()) {
+    return { readyCountByActionId: new Map(), availability: "unavailable" };
+  }
 
   const { data, error } = await supabase
     .from("action_media")
-    .select("action_id")
+    .select("action_id, created_by_clerk_id")
     .in("action_id", ids)
     .eq("upload_state", "ready");
 
@@ -31,13 +35,21 @@ export async function loadActionMediaReportReadiness(
   }
 
   const readyCountByActionId = new Map<string, number>();
-  for (const row of data as Array<{ action_id?: unknown }>) {
+  let hasUnreadableEvidence = false;
+  for (const row of data as Array<{ action_id?: unknown; created_by_clerk_id?: unknown }>) {
     if (typeof row.action_id !== "string") continue;
+    if (row.created_by_clerk_id !== readerUserId) {
+      hasUnreadableEvidence = true;
+      continue;
+    }
     readyCountByActionId.set(
       row.action_id,
       (readyCountByActionId.get(row.action_id) ?? 0) + 1,
     );
   }
 
-  return { readyCountByActionId, availability: "available" };
+  return {
+    readyCountByActionId,
+    availability: hasUnreadableEvidence ? "unavailable" : "available",
+  };
 }

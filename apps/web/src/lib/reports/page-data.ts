@@ -80,7 +80,7 @@ export async function loadReportsAnalysisData(now = new Date()) {
   };
 }
 
-export async function loadReportsGenerationData() {
+export async function loadReportsGenerationData(readerUserId?: string) {
   const [contractsResult, communityEventsResult] = await Promise.all([
     import("@/lib/actions/unified-source/unified-source-cache").then(
       ({ fetchCachedUnifiedActionContracts }) =>
@@ -100,6 +100,7 @@ export async function loadReportsGenerationData() {
     .then(() => loadActionMediaReportReadiness(
       getSupabaseServerClient(true),
       contractsResult.items.map((contract) => contract.id),
+      readerUserId,
     ))
     .catch(() => ({
       readyCountByActionId: new Map<string, number>(),

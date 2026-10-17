@@ -169,6 +169,7 @@ export async function buildMultiActionReportGenerationInput(params: {
   modules: ModuleState;
   now: Date;
   generationId?: string;
+  readerUserId?: string;
 }): Promise<ReportGenerationHistoryInput> {
   const { request, detailLevel, modules, now } = params;
   const generationId = params.generationId ?? randomUUID();
@@ -176,7 +177,7 @@ export async function buildMultiActionReportGenerationInput(params: {
     throw new MultiActionReportPeriodInvalidError();
   }
 
-  const generationData = await loadReportsGenerationData();
+  const generationData = await loadReportsGenerationData(params.readerUserId);
   if (generationData.sourceHealth.failedSources.includes("actions")) {
     throw new MultiActionReportSourceUnavailableError();
   }
