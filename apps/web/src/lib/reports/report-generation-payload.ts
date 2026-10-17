@@ -6,6 +6,10 @@ import {
   REPORT_TEMPLATE_VERSION,
 } from "./report-generation-snapshot";
 import { REPORT_GENERATION_FILTERS_VERSION } from "./generation-period";
+import {
+  REPORT_ADVANCED_FILTERS_VERSION,
+  reportAdvancedFiltersSchema,
+} from "./report-advanced-filters";
 
 export { REPORT_SNAPSHOT_SCHEMA_VERSION } from "./report-generation-snapshot";
 
@@ -61,6 +65,8 @@ const snapshotMetadataSchema = z.object({
   generationId: z.string().uuid().optional(),
   sourceGenerationId: z.string().uuid().nullable().optional(),
   filtersVersion: z.string().min(1).optional(),
+  advancedFiltersVersion: z.string().min(1).optional(),
+  filters: reportAdvancedFiltersSchema.optional(),
   generatedAt: z.string().datetime(),
   period: z.object({
     id: z.enum([
@@ -178,7 +184,9 @@ export function parseCurrentReportGenerationPayload(value: unknown): PdfReportPa
     !metadata.sourceGenerationId && metadata.sourceGenerationId !== null ||
     metadata.filtersVersion !== REPORT_GENERATION_FILTERS_VERSION ||
     metadata.templateVersion !== REPORT_TEMPLATE_VERSION ||
-    metadata.rendererVersion !== REPORT_RENDERER_VERSION) {
+    metadata.rendererVersion !== REPORT_RENDERER_VERSION ||
+    (metadata.provenance.type === "multi_action" &&
+      (metadata.advancedFiltersVersion !== REPORT_ADVANCED_FILTERS_VERSION || !metadata.filters))) {
     throw new InvalidReportGenerationSnapshotError();
   }
   return parsed as PdfReportPayload & {

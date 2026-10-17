@@ -13,6 +13,7 @@ import {
   persistDerivedReportGeneration,
   persistReportGeneration,
 } from "./report-generation-history-store";
+import { REPORT_ADVANCED_FILTER_DEFAULTS } from "./report-advanced-filters";
 
 const payload = {
   title: "Rapport d'impact - Paris - Par défaut",
@@ -27,6 +28,8 @@ const payload = {
     generationId: "11111111-1111-4111-8111-111111111111",
     sourceGenerationId: null,
     filtersVersion: "reports-filters-v1",
+    advancedFiltersVersion: "reports-advanced-filters-v1",
+    filters: REPORT_ADVANCED_FILTER_DEFAULTS,
     generatedAt: "2026-08-27T10:30:00.000Z",
     period: { id: "six_months" as const, from: "2026-02-27", to: "2026-08-27", timeZone: "UTC" as const },
     scope: { kind: "global" as const, value: "", label: "Paris" },

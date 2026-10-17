@@ -33,11 +33,17 @@ import {
   type ReportScopeKind,
 } from "@/lib/reports/scope";
 import { randomUUID } from "node:crypto";
+import {
+  filterActionContractsByAdvancedFilters,
+  normalizeReportAdvancedFilters,
+  type ReportAdvancedFilters,
+} from "@/lib/reports/report-advanced-filters";
 
 export type MultiActionReportRequest = {
   type: "multi_action";
   period: ReportGenerationPeriodSelection;
   scope: Partial<ReportScope> & { kind: ReportScopeKind };
+  filters?: ReportAdvancedFilters;
 };
 
 export class MultiActionReportScopeUnavailableError extends Error {
@@ -203,7 +209,18 @@ export async function buildMultiActionReportGenerationInput(params: {
     now,
   );
   const scopedContracts = filterActionContractsByScope(periodContracts, scope);
-  if (scopedContracts.length === 0) {
+  const filters = normalizeReportAdvancedFilters(request.filters);
+  const filteredContracts = filterActionContractsByAdvancedFilters({
+    contracts: scopedContracts,
+    filters,
+    now,
+    actionMediaReadyCountByActionId: new Map(
+      Object.entries(generationData.actionMediaReadyCountByActionId ?? {})
+        .map(([id, count]) => [id, Number(count)] as const),
+    ),
+    actionMediaAvailability: generationData.actionMediaAvailability ?? "available",
+  });
+  if (filteredContracts.length === 0) {
     throw new MultiActionReportEmptyError();
   }
 
@@ -213,22 +230,22 @@ export async function buildMultiActionReportGenerationInput(params: {
     scope,
     now,
   );
-  const listItems = scopedContracts.map((contract) => toActionListItem(contract));
-  const mapItems = scopedContracts.map((contract) => toActionMapItem(contract));
+  const listItems = filteredContracts.map((contract) => toActionListItem(contract));
+  const mapItems = filteredContracts.map((contract) => toActionMapItem(contract));
   const report = computeReportModel({
     allItems: listItems,
     approvedItems: listItems,
     mapItems,
     events: scopedEvents,
-    contracts: scopedContracts,
+    contracts: filteredContracts,
     moderationAvailability: "unavailable",
     now,
   });
   const model = {
     report,
-    wasteProfile: buildWasteProfile(scopedContracts),
+    wasteProfile: buildWasteProfile(filteredContracts),
     accountScopeCoverage: computeReportAccountScopeCoverage(listItems),
-    exportRows: scopedContracts.map((contract) => toReportsExportRow(contract)),
+    exportRows: filteredContracts.map((contract) => toReportsExportRow(contract)),
     dataAvailability: {
       isTruncated: generationData.isTruncated,
       sourceHealth: generationData.sourceHealth,
@@ -294,13 +311,14 @@ export async function buildMultiActionReportGenerationInput(params: {
           type: "multi_action",
           source: "public.actions",
           resolvedAt: generatedAt,
-          actionCount: scopedContracts.length,
+          actionCount: filteredContracts.length,
         },
         methodology: {
           proxyVersion: report.impactMethodology.proxyVersion,
           qualityRulesVersion: report.impactMethodology.qualityRulesVersion,
         },
         dataAvailability: model.dataAvailability,
+        filters,
       }),
       data: payloadData,
     },

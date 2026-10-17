@@ -213,6 +213,8 @@ function buildReportsGenerationContent({
       sourceHealth={generationData.sourceHealth}
       communityEvents={generationData.communityEvents}
       communityEventsAvailability={generationData.communityEventsAvailability}
+      actionMediaReadyCountByActionId={generationData.actionMediaReadyCountByActionId}
+      actionMediaAvailability={generationData.actionMediaAvailability}
       initialRecentRows={historyResult.rows}
       initialHistoryAvailability={historyResult.availability}
       dailyExportAvailability={dailyExportAvailability}
@@ -370,6 +372,8 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             },
             communityEvents: [],
             communityEventsAvailability: "unavailable" as const,
+            actionMediaReadyCountByActionId: {},
+            actionMediaAvailability: "available" as const,
           })
         : loadReportsGenerationData().catch(() => null),
       listReportGenerationHistory(userId)

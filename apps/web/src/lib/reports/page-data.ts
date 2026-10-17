@@ -6,6 +6,8 @@ import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { REPORT_DATA_BUDGET } from "@/lib/reports/budget";
 import { computeReportModel } from "@/lib/reports/report-model";
 import { loadLandingSummary } from "@/lib/accueil/data";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { loadActionMediaReportReadiness } from "@/lib/actions/action-media/action-media-report";
 export { toReportsExportRow } from "./page-data-export";
 
 export type ReportsSummaryKpi = {
@@ -94,6 +96,15 @@ export async function loadReportsGenerationData() {
     loadReportCommunityEventsWithAvailability(REPORT_DATA_BUDGET.communityEvents.limit),
   ]);
   const communityEvents = communityEventsResult.items;
+  const actionMediaReadiness = await Promise.resolve()
+    .then(() => loadActionMediaReportReadiness(
+      getSupabaseServerClient(true),
+      contractsResult.items.map((contract) => contract.id),
+    ))
+    .catch(() => ({
+      readyCountByActionId: new Map<string, number>(),
+      availability: "unavailable" as const,
+    }));
 
   return {
     contracts: contractsResult.items,
@@ -101,6 +112,8 @@ export async function loadReportsGenerationData() {
     sourceHealth: contractsResult.sourceHealth,
     communityEvents,
     communityEventsAvailability: communityEventsResult.availability,
+    actionMediaReadyCountByActionId: Object.fromEntries(actionMediaReadiness.readyCountByActionId),
+    actionMediaAvailability: actionMediaReadiness.availability,
   };
 }
 

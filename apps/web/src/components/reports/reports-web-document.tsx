@@ -31,6 +31,8 @@ import {
   type ModuleState,
   type ReportPdfTheme,
   type SelectedPeriodId,
+  REPORT_ADVANCED_FILTER_DEFAULTS,
+  type ReportAdvancedFilters,
 } from "@/components/reports/web-document/reports-web-document.shared";
 import { usePdfExport } from "@/components/ui/pdf-export/use-pdf-export";
 import {
@@ -76,6 +78,8 @@ export type ReportsWebDocumentProps = {
   initialRecentRows?: ReportGenerationHistoryRow[];
   initialHistoryAvailability?: "available" | "unavailable";
   dailyExportAvailability?: ReportExportAvailability;
+  actionMediaReadyCountByActionId?: Record<string, number>;
+  actionMediaAvailability?: "available" | "unavailable";
   singleAction?: { actionId: string; scopeLabel: string };
 };
 
@@ -88,6 +92,8 @@ export function ReportsWebDocument({
   initialRecentRows = [],
   initialHistoryAvailability = "available",
   dailyExportAvailability: initialDailyExportAvailability = "unavailable",
+  actionMediaReadyCountByActionId = {},
+  actionMediaAvailability = "available",
   singleAction,
 }: ReportsWebDocumentProps) {
   const previewRef = useRef<HTMLDivElement>(null);
@@ -114,15 +120,13 @@ export function ReportsWebDocument({
   const [detailLevel, setDetailLevel] = useState<DetailLevelId>(DEFAULT_REPORT_DETAIL_LEVEL);
   const [reportTheme, setReportTheme] = useState<ReportPdfTheme>(DEFAULT_REPORT_PDF_THEME);
   const [modules, setModules] = useState<ModuleState>(DEFAULT_REPORT_MODULES);
+  const [advancedFilters, setAdvancedFilters] = useState<ReportAdvancedFilters>(REPORT_ADVANCED_FILTER_DEFAULTS);
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const historicalReplayRef = useRef<{ reportWindow: Window; payload: PdfReportPayload } | null>(null);
   const reportNow = useMemo(() => new Date(), []);
   const filteredContracts = useMemo(
     () => filterReportGenerationContracts(contracts, periodSelection, reportNow),
     [contracts, periodSelection, reportNow],
-  );
-  const coverageRangeLabel = useMemo(
-    () => buildCoverageRangeLabel(filteredContracts),
-    [filteredContracts],
   );
   const model = useReportsWebDocumentModel({
     initialContracts: filteredContracts,
@@ -132,7 +136,14 @@ export function ReportsWebDocument({
     initialCommunityEventsAvailability: communityEventsAvailability,
     initialPeriod: periodSelection,
     initialNow: reportNow,
+    advancedFilters,
+    actionMediaReadyCountByActionId,
+    actionMediaAvailability,
   });
+  const coverageRangeLabel = useMemo(
+    () => buildCoverageRangeLabel(model.filteredContracts ?? filteredContracts),
+    [filteredContracts, model.filteredContracts],
+  );
 
   const dataAvailabilityNotices = buildReportDataAvailabilityNotices(
     model.dataAvailability,
@@ -186,6 +197,7 @@ export function ReportsWebDocument({
               kind: model.scopeKind,
               value: model.scopeKind === "global" ? null : model.scopeValue,
             },
+            filters: advancedFilters,
           },
           detailLevel,
           modules,
@@ -433,6 +445,11 @@ export function ReportsWebDocument({
           }}
           modules={modules}
           onModuleToggle={toggleModule}
+          advancedFilters={advancedFilters}
+          onAdvancedFiltersChange={setAdvancedFilters}
+          actionMediaAvailability={actionMediaAvailability}
+          advancedFiltersOpen={advancedFiltersOpen}
+          onAdvancedFiltersToggle={() => setAdvancedFiltersOpen((open) => !open)}
           singleAction={singleAction}
         />
 

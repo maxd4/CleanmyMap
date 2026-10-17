@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   toActionListItem: vi.fn((item: unknown) => item),
   toActionMapItem: vi.fn((item: unknown) => item),
   getActionOperationalContext: vi.fn(),
+  loadActionMediaReportReadiness: vi.fn(),
 }));
 
 vi.mock("@/lib/actions/data-contract", () => ({
@@ -38,6 +39,14 @@ vi.mock("@/lib/pilotage/overview", () => ({
 
 vi.mock("@/lib/reports/report-model", () => ({
   computeReportModel: mocks.computeReportModel,
+}));
+
+vi.mock("@/lib/actions/action-media/action-media-report", () => ({
+  loadActionMediaReportReadiness: mocks.loadActionMediaReportReadiness,
+}));
+
+vi.mock("@/lib/supabase/server", () => ({
+  getSupabaseServerClient: vi.fn(() => ({})),
 }));
 
 import type { ActionDataContract } from "@/lib/actions/data-contract";
@@ -70,6 +79,10 @@ describe("/reports server data budget", () => {
         availableSources: ["actions"],
         warnings: [],
       },
+    });
+    mocks.loadActionMediaReportReadiness.mockResolvedValue({
+      readyCountByActionId: new Map(),
+      availability: "available",
     });
   });
 

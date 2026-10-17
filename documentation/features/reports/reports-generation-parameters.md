@@ -1,6 +1,6 @@
 # CleanMyMap : paramètres de génération des rapports d’impact
 
-> **Statut : `CURRENT`.** Ce document décrit les paramètres effectivement acceptés par le générateur multi-actions. Les familles avancées restent des pistes et ne sont pas exposées par ce contrat.
+> **Statut : `CURRENT`.** Ce document décrit les paramètres effectivement acceptés par le générateur multi-actions. La période, le périmètre et le sous-ensemble borné de filtres avancés décrit ci-dessous sont livrés ; les familles qui exigent encore une relation ou une source canonique supplémentaire restent `PLAN`.
 >
 > **Source antérieure :** `reports-parameters-and-objectives.md`, répartie par responsabilité. La logique des objectifs mesurables figure désormais dans [impact-goals-and-progression.md](./impact-goals-and-progression.md).
 
@@ -15,12 +15,26 @@ Les paramètres de génération déterminent **quelles données entrent dans un 
 
 Le générateur multi-actions accepte les périmètres `global`, `account`, `association` et `arrondissement`, ainsi que `thirty_days`, `three_months`, `six_months`, `twelve_months`, `current_year`, `full_history` et `custom_range`. Les dates personnalisées sont deux dates civiles inclusives `YYYY-MM-DD`, interprétées en UTC sur `dates.observedAt`. Le périmètre `single_action` est un contrat distinct : son identifiant est résolu côté serveur et ses bornes restent verrouillées sur l'action. Pour le fonctionnement courant, voir la [fiche `/reports`](../../pages_site/routes/03-cartographie-impact/reports/reports-README.md) et le code associé.
 
-Pour `POST /api/reports/generations`, le navigateur transmet uniquement `input`, le niveau de détail et la composition des modules. Le serveur recharge les actions publiques admissibles depuis la source canonique avec les critères `status = approved`, `moderation_visibility = visible`, `published_at` non nul et `action_phase = post_action_complete`, valide le scope contre ces identifiants et libellés canoniques, filtre la période, puis calcule `ReportModel` et le PDF. La projection complète est paginée ; si un champ indispensable ou une page échoue, la génération multi-actions est refusée plutôt que présentée comme exhaustive. Le nom libre d'une association ne constitue ni une appartenance ni une permission privée : ce filtre ne porte que sur le corpus public résolu côté serveur.
+Pour `POST /api/reports/generations`, le navigateur transmet l'entrée typée, le niveau de détail, les modules et la sélection avancée. Le serveur recharge les actions publiques admissibles depuis la source canonique avec les critères `status = approved`, `moderation_visibility = visible`, `published_at` non nul et `action_phase = post_action_complete`, valide le scope contre ces identifiants et libellés canoniques, filtre la période puis les filtres avancés, et calcule `ReportModel` et le PDF sur ce même ensemble. La projection complète est paginée ; si un champ indispensable ou une page échoue, la génération multi-actions est refusée plutôt que présentée comme exhaustive. Le nom libre d'une association ne constitue ni une appartenance ni une permission privée : ce filtre ne porte que sur le corpus public résolu côté serveur.
+
+### Filtres avancés CURRENT
+
+Le panneau secondaire **« Filtres avancés »** est fermé par défaut. Sa sélection est validée côté serveur, appliquée après la période et le scope sans jamais élargir ce dernier, puis conservée dans `snapshotMetadata.filters` avec `advancedFiltersVersion = reports-advanced-filters-v1`.
+
+Le contrat livré couvre uniquement les champs canoniques suivants :
+
+- qualité : toutes les données ou aucune anomalie bloquante, niveau de qualité existant (`A`, `B`, `C`), provenance des mesures (`measured`, `derived`, `estimated`, `missing`), coordonnées valides, provenance géométrique et mode de déclaration (`quick` / `complete`) lorsqu'il est renseigné ;
+- résultats : bornes inclusives de `metadata.wasteKg` et `metadata.cigaretteButts` ; catégories limitées aux champs structurés de `metadata.wasteBreakdown` (`recyclablesKg`, `glassKg`, `householdWasteKg`, `otherWasteKg`) ; les notes et marqueurs textuels ne satisfont aucun filtre de mesure ;
+- preuves : présence ou absence d'une géométrie exploitable et preuve photographique finalisée.
+
+Le filtre photographique ne lit que l'agrégat serveur `public.action_media` (`action_id`, `upload_state = ready`) après les contrôles de lecture du runtime. Aucun objet privé, chemin Storage ou URL signée n'est envoyé au navigateur. Une erreur de cette source rend le filtre photo indisponible et la génération est refusée explicitement plutôt que transformée en absence de preuve. Les seuils actifs ne considèrent jamais `null` comme zéro.
+
+Le résumé, l'aperçu, le calcul serveur et le snapshot utilisent le même ensemble d'actions admissibles. Le résultat affiche son nombre d'actions et une couverture complète ou partielle ; une fenêtre tronquée reste partielle après filtrage.
 
 ## Ordre de déploiement proposé
 
-1. **P0 : rapport d'une action validée** avec périmètre exact résolu côté serveur et historique réutilisable. Il ne requiert aucun des nombreux filtres avancés ci-dessous. Voir la [roadmap produit](../../product/roadmap-priorisee.md) et la [proposition mono-action](../../pages_site/routes/03-cartographie-impact/reports/reports-liste-propositions-a-traiter.md).
-2. **Évolutions ultérieures :** paramètres multi-actions à forte utilité vérifiée, d'abord période, territoire et structure, puis filtres spécialisés selon les usages réels.
+1. **P0 livré : rapport d'une action validée** avec périmètre exact résolu côté serveur et historique réutilisable. Voir la [roadmap produit](../../product/roadmap-priorisee.md) et la [proposition mono-action](../../pages_site/routes/03-cartographie-impact/reports/reports-liste-propositions-a-traiter.md).
+2. **CURRENT livré :** paramètres multi-actions avec période, scope et sous-ensemble avancé de qualité, provenance, résultats structurés, géométrie et preuve photo décrit ci-dessus.
 3. **Évolutions conditionnelles :** nouveaux liens métier (GPS, signalements, campagnes, organisations) après inspection de leurs sources et permissions canoniques.
 
 L'interface ne doit pas obliger un organisateur à renseigner toutes les catégories pour exporter le résultat d'une action connue. Préférer un périmètre prérempli, puis des réglages facultatifs accessibles progressivement. Un ID ou une valeur transmis par l'URL ou le client ne constitue jamais une preuve d'accès.
@@ -177,7 +191,7 @@ Cette catégorie filtre les interventions incluses dans le rapport.
 | Action individuelle / collective | selon le mode de participation | Déjà récupérable |
 | Difficulté prévue | facile / modérée / soutenue | Déjà récupérable |
 | Action avec itinéraire | oui / non | Déjà calculable |
-| Action avec photos | oui / non | Déjà calculable |
+| Action avec photos | oui / non | CURRENT via `action_media.ready` côté serveur |
 | Action avec mesure quantitative | oui / non | Déjà calculable |
 
 #### Exemples de filtres
@@ -242,7 +256,7 @@ Cette catégorie filtre les actions selon les déchets collectés, leur caracté
 |---|---|---|
 | Masse collectée | min / max kg | Déjà récupérable |
 | Nombre de mégots | min / max | Déjà récupérable |
-| Catégorie de déchet | plastique, verre, métal, batterie, DEEE, etc. | Présente mais stockage à consolider |
+| Catégorie de déchet | recyclables / verre / déchets ménagers / autres, via `wasteBreakdown` | CURRENT, taxonomie limitée aux champs structurés |
 | Famille de déchets | emballage, dangereux, encombrant… | Calculable |
 | Niveau de danger | faible / précaution / élevé / critique | Calculable |
 | Qualité du tri | faible / moyenne / élevée | Présente mais stockage à consolider |
@@ -294,10 +308,13 @@ action_waste_measurements
 
 ## Partie II — Paramètres avancés
 
-Les paramètres ci-dessous restent des possibilités documentées et ne font pas
-partie de l'entrée typée multi-actions actuelle.
+Les familles ci-dessous restent des possibilités documentées et ne font pas
+partie de l'entrée typée multi-actions actuelle, sauf le sous-ensemble de
+qualité, déchets et preuves explicitement marqué `CURRENT` plus haut.
 
-Les cinq catégories suivantes doivent être accessibles depuis un contrôle du type **« Filtres avancés »** afin de ne pas surcharger le parcours principal.
+Les familles encore non livrées restent décrites ici pour éviter de les
+présenter comme disponibles. Leur implémentation devra réutiliser un owner
+canonique et une preuve de permission réelle.
 
 ---
 
@@ -315,7 +332,7 @@ Cette catégorie permet de relier le rapport d’impact aux signalements et à l
 | Date du signalement | période | Déjà stocké ailleurs, à raccorder |
 | Date du nettoyage | période | Déjà stocké ailleurs, à raccorder |
 | Type | spot / zone propre | Déjà stocké ailleurs, à raccorder |
-| Avec preuve photo | oui / non | Déjà stocké ailleurs, à raccorder |
+| Avec preuve photo | oui / non | CURRENT uniquement via `action_media.ready` pour les actions |
 | Catégorie de déchet | multi-sélection | Présente mais stockage à consolider |
 | Action liée au signalement | oui / non | Nouvelle relation canonique à créer |
 | Délai signalement → nettoyage | durée | Calculable après création du lien canonique |
@@ -390,16 +407,16 @@ Cette catégorie permet de contrôler la qualité scientifique et opérationnell
 
 | Paramètre | Options proposées | État |
 |---|---|---|
-| Toutes les données | aucune restriction | Déjà récupérable |
-| Données sans anomalie bloquante | oui / non | Déjà récupérable |
-| Niveau qualité | OK / avertissement / bloquant | Déjà récupérable |
-| Mesures | mesurées / dérivées / estimées / absentes | Déjà récupérable |
-| Géolocalisation | valide / partielle / absente / invalide | Déjà récupérable |
+| Toutes les données | aucune restriction | CURRENT |
+| Données sans anomalie bloquante | oui / non | CURRENT |
+| Niveau qualité | qualité existante `A` / `B` / `C` (seuil minimal) | CURRENT |
+| Mesures | mesurées / dérivées / estimées / absentes, si la distinction existe | CURRENT |
+| Géolocalisation | valide / partielle / absente / invalide | CURRENT pour le filtre de coordonnées valides |
 | Confiance géométrique | seuil minimal | Déjà récupérable |
-| Avec coordonnées | oui / non | Déjà récupérable |
-| Avec trace | oui / non | Déjà récupérable |
-| Avec preuve photo | oui / non | Déjà récupérable |
-| Source | formulaire / import / Trash Spotter… | Déjà récupérable |
+| Avec coordonnées | oui / non | CURRENT |
+| Avec trace | oui / non | CURRENT via la géométrie du contrat |
+| Avec preuve photo | oui / non | CURRENT via `action_media.ready` côté serveur |
+| Source | formulaire / import / Trash Spotter… | PLAN hors mode de déclaration canonique existant |
 
 #### Principe
 

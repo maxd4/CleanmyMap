@@ -157,6 +157,62 @@ describe("multi-action report server resolver", () => {
     }));
   });
 
+  it("applies advanced filters before the server model and records the exact selection", async () => {
+    mocks.loadReportsGenerationData.mockResolvedValueOnce({
+      contracts: [
+        makeContract("with-ready-media"),
+        makeContract("without-ready-media", { wasteKg: 1 }),
+      ],
+      isTruncated: false,
+      sourceHealth: {
+        partial: false,
+        failedSources: [],
+        availableSources: ["actions"],
+        warnings: [],
+      },
+      communityEvents: [],
+      communityEventsAvailability: "available",
+      actionMediaReadyCountByActionId: { "with-ready-media": 1 },
+      actionMediaAvailability: "available",
+    });
+
+    const filters = {
+      dataQuality: "all" as const,
+      qualityGradeAtLeast: "any" as const,
+      measureProvenance: "any" as const,
+      validCoordinates: "required" as const,
+      geometryProvenance: "any" as const,
+      declarationOrigin: "any" as const,
+      wasteKgMin: 4,
+      wasteKgMax: null,
+      cigaretteButtsMin: null,
+      cigaretteButtsMax: null,
+      wasteCategory: "any" as const,
+      exploitableGeometry: "any" as const,
+      photographicEvidence: "with" as const,
+    };
+    const result = await buildMultiActionReportGenerationInput({
+      request: {
+        type: "multi_action",
+        period: { id: "full_history" },
+        scope: { kind: "global" },
+        filters,
+      },
+      detailLevel: "default",
+      modules,
+      now,
+    });
+
+    expect(mocks.computeReportModel).toHaveBeenCalledWith(expect.objectContaining({
+      contracts: [expect.objectContaining({ id: "with-ready-media" })],
+    }));
+    expect(result.payload.snapshotMetadata).toMatchObject({
+      advancedFiltersVersion: "reports-advanced-filters-v1",
+      filters,
+      provenance: { actionCount: 1 },
+    });
+  });
+
   it("rejects unknown association names instead of treating them as membership", async () => {
     await expect(buildMultiActionReportGenerationInput({
       request: {

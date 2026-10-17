@@ -27,6 +27,10 @@ import {
   MultiActionReportScopeUnavailableError,
   MultiActionReportSourceUnavailableError,
 } from "@/lib/reports/multi-action-report";
+import {
+  reportAdvancedFiltersSchema,
+  ReportAdvancedFilterSourceUnavailableError,
+} from "@/lib/reports/report-advanced-filters";
 
 export const runtime = "nodejs";
 const MAX_REPORT_GENERATION_REQUEST_BYTES = 2 * 1024 * 1024;
@@ -74,6 +78,7 @@ const multiActionRequestSchema = z.object({
       kind: scopeKindSchema,
       value: z.string().trim().max(180).nullable().optional(),
     }).strict(),
+    filters: reportAdvancedFiltersSchema.optional(),
   }).strict(),
   detailLevel: detailLevelSchema,
   modules: modulesSchema.strict(),
@@ -205,6 +210,13 @@ async function parseReportGenerationRequest(
           code: "actions_source_unavailable",
         });
         return { response: NextResponse.json({ error: "Les données canoniques sont temporairement indisponibles." }, { status: 503 }) };
+      }
+      if (error instanceof ReportAdvancedFilterSourceUnavailableError) {
+        await auditReportGenerationError(operationId, actorUserId, {
+          stage: "source",
+          code: "action_media_filter_source_unavailable",
+        });
+        return { response: NextResponse.json({ error: "La preuve photographique canonique est temporairement indisponible." }, { status: 503 }) };
       }
       await auditReportGenerationError(operationId, actorUserId, {
         stage: "source",

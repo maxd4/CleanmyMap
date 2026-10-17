@@ -25,6 +25,11 @@ import {
   filterReportCommunityEventsByPeriod,
   type ReportGenerationPeriodSelection,
 } from "@/lib/reports/generation-period";
+import {
+  filterActionContractsByAdvancedFilters,
+  REPORT_ADVANCED_FILTER_DEFAULTS,
+  type ReportAdvancedFilters,
+} from "@/lib/reports/report-advanced-filters";
 
 type WasteProfileCategory = {
   key: "megotsKg" | "plastiqueKg" | "verreKg" | "metalKg" | "mixteKg";
@@ -41,6 +46,9 @@ type UseReportsWebDocumentModelOptions = {
   initialCommunityEventsAvailability?: CommunityEventsAvailability;
   initialPeriod?: ReportGenerationPeriodSelection;
   initialNow?: Date;
+  advancedFilters?: ReportAdvancedFilters;
+  actionMediaReadyCountByActionId?: Record<string, number>;
+  actionMediaAvailability?: "available" | "unavailable";
 };
 
 export function useReportsWebDocumentModel({
@@ -51,6 +59,9 @@ export function useReportsWebDocumentModel({
   initialCommunityEventsAvailability,
   initialPeriod = { id: "full_history" },
   initialNow,
+  advancedFilters = REPORT_ADVANCED_FILTER_DEFAULTS,
+  actionMediaReadyCountByActionId = {},
+  actionMediaAvailability = "available",
 }: UseReportsWebDocumentModelOptions = {}) {
   const [scopeKind, setScopeKind] = useState<ReportScopeKind>("global");
   const [scopeValue, setScopeValue] = useState<string>("");
@@ -186,6 +197,42 @@ export function useReportsWebDocumentModel({
     () => filterCommunityEventsByScope(periodCommunityEvents, scope),
     [periodCommunityEvents, scope],
   );
+  const advancedFilteredIds = useMemo(() => {
+    if (!initialContracts) return null;
+    const scopedIds = new Set(scopedActionsAll.map((item) => item.id));
+    const scopedContracts = initialContracts.filter((contract) => scopedIds.has(contract.id));
+    return new Set(
+      filterActionContractsByAdvancedFilters({
+        contracts: scopedContracts,
+        filters: advancedFilters,
+        now: initialNow ?? new Date(),
+        actionMediaReadyCountByActionId: new Map(Object.entries(actionMediaReadyCountByActionId)),
+        actionMediaAvailability,
+      }).map((contract) => contract.id),
+    );
+  }, [actionMediaAvailability, actionMediaReadyCountByActionId, advancedFilters, initialContracts, initialNow, scopedActionsAll]);
+  const filteredActionsAll = useMemo(
+    () => advancedFilteredIds === null
+      ? scopedActionsAll
+      : scopedActionsAll.filter((item) => advancedFilteredIds.has(item.id)),
+    [advancedFilteredIds, scopedActionsAll],
+  );
+  const filteredActionsApproved = useMemo(
+    () => advancedFilteredIds === null
+      ? scopedActionsApproved
+      : scopedActionsApproved.filter((item) => advancedFilteredIds.has(item.id)),
+    [advancedFilteredIds, scopedActionsApproved],
+  );
+  const filteredMapAll = useMemo(
+    () => advancedFilteredIds === null
+      ? scopedMapAll
+      : scopedMapAll.filter((item) => advancedFilteredIds.has(item.id)),
+    [advancedFilteredIds, scopedMapAll],
+  );
+  const filteredContracts = useMemo(
+    () => initialContracts?.filter((contract) => advancedFilteredIds?.has(contract.id)) ?? [],
+    [advancedFilteredIds, initialContracts],
+  );
 
   const wasteProfile = useMemo(() => {
     const totals: Record<WasteProfileCategory["key"], WasteProfileCategory> = {
@@ -197,7 +244,7 @@ export function useReportsWebDocumentModel({
     };
 
     let coveredActions = 0;
-    for (const item of scopedActionsApproved) {
+    for (const item of filteredActionsApproved) {
       const breakdown = item.contract?.metadata.wasteBreakdown ?? item.waste_breakdown ?? null;
       if (!breakdown) continue;
       coveredActions += 1;
@@ -218,30 +265,30 @@ export function useReportsWebDocumentModel({
     return {
       categories,
       coveragePercent:
-        scopedActionsApproved.length > 0
-          ? (coveredActions / scopedActionsApproved.length) * 100
+        filteredActionsApproved.length > 0
+          ? (coveredActions / filteredActionsApproved.length) * 100
           : 0,
       dominantLabel: dominant?.label ?? "Déchets non typés",
       dominantKg: dominant?.kg ?? 0,
     };
-  }, [scopedActionsApproved]);
+  }, [filteredActionsApproved]);
 
   const report = useMemo(
     () =>
       computeReportModel({
-        allItems: scopedActionsAll,
-        approvedItems: scopedActionsApproved,
-        mapItems: scopedMapAll,
+        allItems: filteredActionsAll,
+        approvedItems: filteredActionsApproved,
+        mapItems: filteredMapAll,
         events: scopedCommunity,
         moderationAvailability: "unavailable",
         now: initialNow,
       }),
-    [initialNow, scopedActionsAll, scopedActionsApproved, scopedCommunity, scopedMapAll],
+    [filteredActionsAll, filteredActionsApproved, filteredMapAll, initialNow, scopedCommunity],
   );
 
   const exportRows = useMemo(
     () =>
-      scopedActionsApproved.map((item) => {
+      filteredActionsApproved.map((item) => {
         const impact = computeActionImpactKpis(
           item.contract ?? {
             metadata: {
@@ -281,7 +328,7 @@ export function useReportsWebDocumentModel({
           Source: item.source ?? item.contract?.source ?? "web_form",
         };
       }),
-    [scopedActionsApproved],
+    [filteredActionsApproved],
   );
 
   const activeScopeLabel = formatReportScopeLabel(scope, scopeOptions);
@@ -306,5 +353,7 @@ export function useReportsWebDocumentModel({
     dataAvailability,
     isLoading,
     hasError,
+    filteredContracts,
+    admissibleActionCount: filteredContracts.length,
   };
 }

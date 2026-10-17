@@ -3,6 +3,10 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 import {
+  REPORT_ADVANCED_FILTER_DEFAULTS,
+  type ReportAdvancedFilters,
+} from "@/lib/reports/report-advanced-filters";
+import {
   DEFAULT_REPORT_PDF_THEME,
   REPORT_PDF_THEME_OPTIONS,
   type ReportPdfTheme,
@@ -43,9 +47,17 @@ export {
   reportPeriodLabel,
   DEFAULT_REPORT_PDF_THEME,
   REPORT_PDF_THEME_OPTIONS,
+  REPORT_ADVANCED_FILTER_DEFAULTS,
 };
 
-export type { DetailLevelId, ModuleState, PeriodId, SelectedPeriodId, ReportPdfTheme };
+export type {
+  DetailLevelId,
+  ModuleState,
+  PeriodId,
+  SelectedPeriodId,
+  ReportPdfTheme,
+  ReportAdvancedFilters,
+};
 
 export type ReportGenerationUiState = "idle" | "pending" | "success" | "error";
 

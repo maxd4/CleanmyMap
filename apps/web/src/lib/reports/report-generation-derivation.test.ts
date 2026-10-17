@@ -5,6 +5,7 @@ import {
   buildDerivedReportGenerationPayload,
   ReportGenerationDerivationUnavailableError,
 } from "./report-generation-derivation";
+import { REPORT_ADVANCED_FILTER_DEFAULTS } from "./report-advanced-filters";
 
 const sourceGenerationId = "11111111-1111-4111-8111-111111111111";
 const targetGenerationId = "22222222-2222-4222-8222-222222222222";
@@ -24,6 +25,8 @@ function currentPayload(overrides: Partial<PdfReportPayload> = {}): PdfReportPay
       generationId: sourceGenerationId,
       sourceGenerationId: null,
       filtersVersion: "reports-filters-v1",
+      advancedFiltersVersion: "reports-advanced-filters-v1",
+      filters: REPORT_ADVANCED_FILTER_DEFAULTS,
       generatedAt,
       period: { id: "six_months", from: "2026-04-17", to: "2026-10-17", timeZone: "UTC" },
       scope: { kind: "global", value: "", label: "Global" },

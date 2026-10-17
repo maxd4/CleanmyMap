@@ -15,6 +15,7 @@ import { REPORT_GENERATION_TIME_ZONE, getReportGenerationPeriodDateBounds } from
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { randomUUID } from "node:crypto";
+import { REPORT_ADVANCED_FILTER_DEFAULTS } from "@/lib/reports/report-advanced-filters";
 
 export type SingleActionReportRequest = {
   type: "single_action";
@@ -177,6 +178,7 @@ export function buildSingleActionReportGenerationInput(params: {
           proxyVersion: report.impactMethodology.proxyVersion,
           qualityRulesVersion: report.impactMethodology.qualityRulesVersion,
         },
+        filters: REPORT_ADVANCED_FILTER_DEFAULTS,
         dataAvailability: {
           isTruncated: false,
           sourceHealth: {

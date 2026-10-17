@@ -1,6 +1,10 @@
 import type { ReportDataAvailability } from "@/lib/reports/data-availability";
 import type { DetailLevelId, ModuleState, PeriodId } from "@/lib/reports/report-pdf-data";
 import { REPORT_GENERATION_FILTERS_VERSION } from "@/lib/reports/generation-period";
+import {
+  REPORT_ADVANCED_FILTERS_VERSION,
+  type ReportAdvancedFilters,
+} from "@/lib/reports/report-advanced-filters";
 
 export const REPORT_SNAPSHOT_SCHEMA_VERSION = 2 as const;
 export const REPORT_TEMPLATE_VERSION = "reports-template-v1" as const;
@@ -37,6 +41,10 @@ export type ReportGenerationSnapshotMetadata = {
   sourceGenerationId?: string | null;
   /** Optional on historical v2 rows created before filter versioning was added. */
   filtersVersion?: string;
+  /** Present on versioned multi-action generations; absent on older snapshots. */
+  advancedFiltersVersion?: string;
+  /** The exact advanced selection applied to the canonical action corpus. */
+  filters?: ReportAdvancedFilters;
   generatedAt: string;
   period: {
     id: PeriodId;
@@ -74,6 +82,7 @@ export function buildReportGenerationSnapshotMetadata(params: {
   modules: ModuleState;
   provenance: ReportGenerationSnapshotProvenance;
   methodology: ReportGenerationSnapshotMetadata["methodology"];
+  filters: ReportAdvancedFilters;
   dataAvailability: ReportDataAvailability & {
     communityEventsAvailability: NonNullable<ReportDataAvailability["communityEventsAvailability"]>;
     sourceHealth: NonNullable<ReportDataAvailability["sourceHealth"]>;
@@ -86,6 +95,8 @@ export function buildReportGenerationSnapshotMetadata(params: {
     generationId: params.generationId,
     sourceGenerationId: params.sourceGenerationId ?? null,
     filtersVersion: REPORT_GENERATION_FILTERS_VERSION,
+    advancedFiltersVersion: REPORT_ADVANCED_FILTERS_VERSION,
+    filters: params.filters,
     generatedAt: params.generatedAt,
     period: params.period,
     scope: params.scope,

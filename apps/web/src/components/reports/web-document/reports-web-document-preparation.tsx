@@ -4,6 +4,7 @@ import {
   CalendarDays,
   MapPin,
 } from "lucide-react";
+import { ReportsAdvancedFiltersPanel } from "./reports-advanced-filters-panel";
 import {
   DETAIL_LEVEL_OPTIONS,
   REPORT_MODULE_DEFINITIONS,
@@ -13,6 +14,7 @@ import {
   type DetailLevelId,
   type ReportPdfTheme,
   type SelectedPeriodId,
+  type ReportAdvancedFilters,
 } from "./reports-web-document.shared";
 
 type ScopeChoice = {
@@ -39,6 +41,11 @@ export type ReportsWebDocumentPreparationProps = {
   singleAction?: { actionId: string; scopeLabel: string };
   modules: ModuleState;
   onModuleToggle: (key: keyof ModuleState) => void;
+  advancedFilters: ReportAdvancedFilters;
+  onAdvancedFiltersChange: (filters: ReportAdvancedFilters) => void;
+  actionMediaAvailability?: "available" | "unavailable";
+  advancedFiltersOpen?: boolean;
+  onAdvancedFiltersToggle?: () => void;
 };
 
 export function ReportsWebDocumentPreparation({
@@ -56,6 +63,11 @@ export function ReportsWebDocumentPreparation({
   singleAction,
   modules,
   onModuleToggle,
+  advancedFilters,
+  onAdvancedFiltersChange,
+  actionMediaAvailability = "available",
+  advancedFiltersOpen = false,
+  onAdvancedFiltersToggle = () => undefined,
 }: ReportsWebDocumentPreparationProps) {
   return (
     <section
@@ -136,6 +148,28 @@ export function ReportsWebDocumentPreparation({
           ) : null}
 
         </div>
+
+        {!singleAction ? (
+          <div className="rounded-xl border border-slate-200 bg-slate-50/70">
+            <button
+              type="button"
+              aria-expanded={advancedFiltersOpen}
+              aria-controls="reports-advanced-filters"
+              onClick={onAdvancedFiltersToggle}
+              className="flex min-h-12 w-full items-center justify-between px-4 text-left text-sm font-black text-slate-900"
+            >
+              <span>Filtres avancés</span>
+              <span aria-hidden="true" className="text-slate-500">{advancedFiltersOpen ? "−" : "+"}</span>
+            </button>
+            {advancedFiltersOpen ? (
+              <ReportsAdvancedFiltersPanel
+                filters={advancedFilters}
+                onChange={onAdvancedFiltersChange}
+                actionMediaAvailability={actionMediaAvailability}
+              />
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="space-y-2">
           <label htmlFor="reports-web-document-detail-level" className="block text-sm font-black text-slate-900">

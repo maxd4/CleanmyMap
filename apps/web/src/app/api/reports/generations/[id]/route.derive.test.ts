@@ -26,6 +26,7 @@ vi.mock("@/lib/rate-limit/server", () => ({
 vi.mock("@/lib/admin/audit/operation-audit", () => ({ appendAdminOperationAudit: auditMock }));
 
 import { POST } from "./route";
+import { REPORT_ADVANCED_FILTER_DEFAULTS } from "@/lib/reports/report-advanced-filters";
 
 const sourceId = "11111111-1111-4111-8111-111111111111";
 const source = {
@@ -49,6 +50,8 @@ const source = {
       generationId: sourceId,
       sourceGenerationId: null,
       filtersVersion: "reports-filters-v1",
+      advancedFiltersVersion: "reports-advanced-filters-v1",
+      filters: REPORT_ADVANCED_FILTER_DEFAULTS,
       generatedAt: "2026-10-17T12:00:00.000Z",
       period: { id: "six_months" as const, from: "2026-04-17", to: "2026-10-17", timeZone: "UTC" as const },
       scope: { kind: "global" as const, value: "", label: "Global" },

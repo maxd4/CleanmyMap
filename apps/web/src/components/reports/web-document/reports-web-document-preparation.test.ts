@@ -9,6 +9,7 @@ import {
   ReportsWebDocument,
   type ReportsWebDocumentProps,
 } from "../reports-web-document";
+import { REPORT_ADVANCED_FILTER_DEFAULTS } from "./reports-web-document.shared";
 import { collectDomElements } from "./__tests__/reports-web-document.test-support";
 
 const mocks = vi.hoisted(() => ({
@@ -77,6 +78,8 @@ const preparationProps: ReportsWebDocumentPreparationProps = {
     detailedFiles: true,
   },
   onModuleToggle: vi.fn(),
+  advancedFilters: REPORT_ADVANCED_FILTER_DEFAULTS,
+  onAdvancedFiltersChange: vi.fn(),
 };
 
 const reportModel = {
@@ -203,6 +206,24 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(markup).not.toContain("Étape 1");
   });
 
+  it("keeps advanced filters closed until explicitly opened", () => {
+    const onAdvancedFiltersToggle = vi.fn();
+    const props = { ...preparationProps, onAdvancedFiltersToggle };
+    const markup = renderToStaticMarkup(
+      React.createElement(ReportsWebDocumentPreparation, props),
+    );
+    const elements = collectDomElements(
+      React.createElement(ReportsWebDocumentPreparation, props),
+    );
+    const toggle = elements.find((element) => element.type === "button" && (element.props as Record<string, unknown>)["aria-controls"] === "reports-advanced-filters");
+
+    expect(markup).toContain("Filtres avancés");
+    expect(markup).not.toContain("Sans anomalie bloquante");
+    expect((toggle?.props as Record<string, unknown> | undefined)?.["aria-expanded"]).toBe(false);
+    toggle?.props.onClick?.();
+    expect(onAdvancedFiltersToggle).toHaveBeenCalledTimes(1);
+  });
+
   it("locks the period and scope to the server-resolved action", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ReportsWebDocumentPreparation, {
@@ -324,6 +345,21 @@ describe("ReportsWebDocumentPreparation", () => {
         type: "multi_action",
         period: { id: "six_months" },
         scope: { kind: "global", value: null },
+        filters: {
+          dataQuality: "all",
+          qualityGradeAtLeast: "any",
+          measureProvenance: "any",
+          validCoordinates: "any",
+          geometryProvenance: "any",
+          declarationOrigin: "any",
+          wasteKgMin: null,
+          wasteKgMax: null,
+          cigaretteButtsMin: null,
+          cigaretteButtsMax: null,
+          wasteCategory: "any",
+          exploitableGeometry: "any",
+          photographicEvidence: "any",
+        },
       },
       detailLevel: "default",
       modules: {
