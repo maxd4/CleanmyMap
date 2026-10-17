@@ -138,6 +138,7 @@ describe("ReportsWebDocumentDelivery", () => {
     expect(markup).toContain("Actions");
     expect(markup).toContain("Voir");
     expect(markup).toContain("Télécharger à nouveau");
+    expect(markup).toContain("Créer une nouvelle version");
     expect(markup).not.toContain("Réexporter");
     expect(markup).toContain('min-h-11');
   });

@@ -38,7 +38,30 @@ Les contenus chiffrés proviennent du code métier et de ses tests, non de cette
 
 ## Reproductibilité
 
-Le snapshot JSON historisé est la source de données de la relecture et du réexport existants ; les nouvelles générations portent un snapshot v2 avec les versions de template et renderer réellement utilisées, sans stocker le PDF binaire. Le contrat garantit la reproductibilité sémantique des données et libellés du snapshot, pas les mêmes octets lorsque le renderer ou l'environnement évolue. Les templates alternatifs, générations dérivées et l'identité binaire restent planifiés dans les [propositions futures](../../pages_site/routes/03-cartographie-impact/reports/reports-liste-propositions-a-traiter.md).
+Le snapshot JSON historisé est la source de données de la relecture, du
+réexport et d'une éventuelle nouvelle version. Les nouvelles générations
+portent un snapshot v2 avec `generationId`, `sourceGenerationId` (`null` pour
+une génération directe), `templateVersion`, `rendererVersion`,
+`filtersVersion`, la provenance canonique et les versions réellement produites
+par les owners méthodologiques (`proxyVersion` et `qualityRulesVersion`). Les
+facteurs ne sont pas recopiés en dur dans le contrat de persistance : leur
+version et leurs sources restent celles de `impact-proxy-config.ts` et de la
+méthodologie construite par le runtime.
+
+`public.report_generations` conserve le snapshot et ses métadonnées, pas un PDF
+binaire. Les lignes historiques sans version, v1 et les anciens v2 incomplets
+restent lisibles en compatibilité ; ils ne sont pas silencieusement mis à
+niveau et ne peuvent être dérivés que si leur contrat est complet et compatible
+avec le template et le renderer courants. Le renderer courant est identifié par
+`reports-template-v1` et `official-report-html-v1`. Une version historique
+incompatible est refusée explicitement : aucune identité binaire ne peut être
+promise sans conserver le renderer correspondant.
+
+« Voir » et « Télécharger à nouveau » relisent le snapshot sans nouvelle ligne
+ni quota. « Créer une nouvelle version » consomme le quota existant et crée un
+nouvel enregistrement immuable dont `sourceGenerationId` pointe vers la
+génération source ; les données, unités, valeurs inconnues et la provenance du
+snapshot source sont conservées sans recalcul métier silencieux.
 
 ## Contexte historique
 

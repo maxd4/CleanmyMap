@@ -13,6 +13,9 @@ import {
   parseReportGenerationPayload,
 } from "./report-generation-payload";
 import type { ModuleState } from "./report-pdf-data";
+import {
+  buildDerivedReportGenerationPayload,
+} from "./report-generation-derivation";
 
 const REPORT_GENERATION_HISTORY_METADATA_SELECT =
   "id, generated_at, title, period_id, scope_label, detail_level";
@@ -118,6 +121,7 @@ function haveSameReportGenerationInstant(left: unknown, right: unknown): boolean
 function assertSnapshotMatchesHistoryRow(
   snapshot: ReturnType<typeof parseReportGenerationPayload>,
   row: {
+    id: string;
     generated_at: string;
     period_id: string;
     scope_kind: string;
@@ -141,6 +145,9 @@ function assertSnapshotMatchesHistoryRow(
       metadata.scope.label !== row.scope_label ||
       metadata.detailLevel !== row.detail_level ||
       !hasSameModules(metadata.modules, row.modules)) {
+      throw new InvalidReportGenerationSnapshotError();
+    }
+    if (metadata.generationId && metadata.generationId !== row.id) {
       throw new InvalidReportGenerationSnapshotError();
     }
   }
@@ -276,6 +283,7 @@ export async function persistReportGeneration(params: {
     periode: params.input.payload.periode,
   });
   const row = {
+    id: metadata.generationId,
     created_by_clerk_id: params.createdByClerkId,
     generated_at: generatedAt,
     title: payload.title,
@@ -302,6 +310,56 @@ export async function persistReportGeneration(params: {
   const historyRow = toHistoryRow(data as ReportGenerationDbMetadataRow);
   if (!historyRow) {
     throw new Error("Report generation history row has an invalid generated_at.");
+  }
+  return historyRow;
+}
+
+export async function persistDerivedReportGeneration(params: {
+  createdByClerkId: string;
+  source: ReportGenerationSnapshotRecord;
+  generationId: string;
+  generatedAt: string;
+}): Promise<ReportGenerationHistoryRow> {
+  const payload = buildDerivedReportGenerationPayload({
+    source: params.source.snapshot,
+    generationId: params.generationId,
+    sourceGenerationId: params.source.id,
+    generatedAt: params.generatedAt,
+  });
+  const current = parseCurrentReportGenerationPayload(payload);
+  const metadata = current.snapshotMetadata;
+  const filename = buildPdfReportFilename({
+    rubrique: current.rubrique,
+    periode: current.periode,
+  });
+  const row = {
+    id: metadata.generationId,
+    created_by_clerk_id: params.createdByClerkId,
+    generated_at: params.generatedAt,
+    title: current.title,
+    filename,
+    period_id: current.periode,
+    scope_kind: metadata.scope.kind,
+    scope_value: metadata.scope.value,
+    scope_label: metadata.scope.label,
+    detail_level: metadata.detailLevel,
+    modules: metadata.modules,
+    snapshot: current,
+  };
+
+  const { data, error } = await getSupabaseAdminClient()
+    .from("report_generations")
+    .insert(row)
+    .select(REPORT_GENERATION_HISTORY_METADATA_SELECT)
+    .single();
+
+  if (error || !data) {
+    throw error ?? new Error("Derived report generation row was not returned.");
+  }
+
+  const historyRow = toHistoryRow(data as ReportGenerationDbMetadataRow);
+  if (!historyRow) {
+    throw new Error("Derived report generation row has an invalid generated_at.");
   }
   return historyRow;
 }

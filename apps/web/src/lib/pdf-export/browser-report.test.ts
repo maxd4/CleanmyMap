@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { openPrintableReport } from "./browser-report";
+import {
+  IncompatibleReportRendererError,
+  openPrintableReport,
+} from "./browser-report";
 import type { PdfReportPayload } from "./simple-pdf";
 
 const payload = {
@@ -75,5 +78,23 @@ describe("browser report delivery", () => {
     );
     expect(reportWindow.document.write).toHaveBeenCalledWith(expect.stringContaining("Résumé fidèle."));
     expect(reportWindow.document.write).toHaveBeenCalledWith(expect.stringContaining("@page { size: A4 portrait;"));
+  });
+
+  it("refuses a snapshot whose recorded template or renderer is unavailable", () => {
+    const reportWindow = createReportWindow();
+    vi.stubGlobal("window", { open: vi.fn().mockReturnValue(reportWindow) });
+    const incompatible = {
+      ...payload,
+      snapshotSchemaVersion: 2 as const,
+      snapshotMetadata: {
+        templateVersion: "reports-template-v9",
+        rendererVersion: "official-report-html-v9",
+      },
+    } as typeof payload;
+
+    expect(() => openPrintableReport(incompatible, "rapport_test.pdf", undefined, reportWindow)).toThrow(
+      IncompatibleReportRendererError,
+    );
+    expect(reportWindow.document.write).not.toHaveBeenCalled();
   });
 });

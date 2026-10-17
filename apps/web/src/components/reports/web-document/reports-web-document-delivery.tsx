@@ -37,10 +37,11 @@ export type ReportsWebDocumentDeliveryHistoryProps = {
   actionStateById?: Record<string, ReportGenerationHistoryActionState>;
   onView: (id: string) => void;
   onReexport: (id: string) => void;
+  onDerive?: (id: string) => void;
 };
 
 export type ReportGenerationHistoryActionState = {
-  action: "view" | "reexport";
+  action: "view" | "reexport" | "derive";
   state: "pending" | "success" | "error";
   message: string;
 };
@@ -50,11 +51,13 @@ function HistoryActionButtons({
   actionState,
   onView,
   onReexport,
+  onDerive = () => undefined,
 }: {
   rowId: string;
   actionState?: ReportGenerationHistoryActionState;
   onView: (id: string) => void;
   onReexport: (id: string) => void;
+  onDerive: (id: string) => void;
 }) {
   const isPending = actionState?.state === "pending";
 
@@ -79,6 +82,16 @@ function HistoryActionButtons({
         className="min-h-11"
       >
         Télécharger à nouveau
+      </CmmButton>
+      <CmmButton
+        disabled={isPending}
+        onClick={() => onDerive(rowId)}
+        tone="tertiary"
+        variant="ghost"
+        size="md"
+        className="min-h-11"
+      >
+        Créer une nouvelle version
       </CmmButton>
     </div>
   );
@@ -174,6 +187,7 @@ export function ReportsWebDocumentDeliveryHistory({
   actionStateById = {},
   onView,
   onReexport,
+  onDerive = () => undefined,
 }: ReportsWebDocumentDeliveryHistoryProps) {
   return (
     <section
@@ -233,6 +247,7 @@ export function ReportsWebDocumentDeliveryHistory({
                         actionState={actionStateById[row.id]}
                         onView={onView}
                         onReexport={onReexport}
+                        onDerive={onDerive}
                       />
                       <HistoryActionFeedback actionState={actionStateById[row.id]} />
                     </td>
@@ -274,6 +289,7 @@ export function ReportsWebDocumentDeliveryHistory({
                     actionState={actionStateById[row.id]}
                     onView={onView}
                     onReexport={onReexport}
+                    onDerive={onDerive}
                   />
                   <HistoryActionFeedback actionState={actionStateById[row.id]} />
                 </div>

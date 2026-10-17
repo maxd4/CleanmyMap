@@ -27,22 +27,38 @@ persistance en production. Le même contrat pourra ensuite servir à des entrée
 pour une campagne, une organisation, un événement, un territoire ou un
 objectif mesurable, hors de ce lot.
 
-## Versioning et reproductibilité des générations dérivées — PLAN
+## Versioning et reproductibilité des générations dérivées — CURRENT
 
-Le snapshot JSON immuable et la relecture sémantique des générations courantes
-sont livrés. Restent planifiées les capacités qui nécessiteraient un nouveau
-contrat : dériver une nouvelle génération liée à une source avec
-`sourceGenerationId`, faire varier un template alternatif ou une méthodologie
-sans ambiguïté, et éventuellement versionner des filtres supplémentaires
-(`filtersVersion`) lorsqu’un owner canonique sera défini. Aucune version
-scientifique ou facteur n’est inventé pour ce lot.
+Le contrat est livré pour le template et le renderer courants. Chaque nouvelle
+génération porte `snapshotSchemaVersion: 2`, un `generationId`,
+`sourceGenerationId`, `templateVersion`, `rendererVersion`, `filtersVersion`,
+la provenance et les versions méthodologiques réellement produites par leurs
+owners. Les versions `proxyVersion` et `qualityRulesVersion` viennent du
+runtime existant ; aucun facteur ou version scientifique n'est inventé ni
+recopié en dur.
 
-Une régénération avec un template plus récent devra créer une nouvelle
-génération liée à la source, sans écraser l'historique ni inventer de données
-manquantes. Elle reste distincte de l'action actuelle « Réexporter », qui
-réutilise le snapshot sans créer de nouvelle ligne. Les trois niveaux
-`Concis`, `Par défaut` et `Exhaustif` sont déjà livrés dans le moteur commun ;
-les templates alternatifs et générations dérivées restent dans ce PLAN.
+Les snapshots sans version, v1 et les anciens v2 incomplets restent lisibles en
+compatibilité explicite. Ils ne sont pas silencieusement mis à niveau. Une
+génération historique ne peut être dérivée que si son snapshot est complet et
+compatible avec `reports-template-v1`, `official-report-html-v1` et
+`reports-filters-v1`; sinon l'API refuse explicitement l'opération.
+
+« Voir » et « Télécharger à nouveau » relisent le snapshot immuable, sans
+nouvelle génération ni quota. « Créer une nouvelle version » est l'opération
+distincte qui vérifie le propriétaire de la source, réserve le quota existant,
+crée une nouvelle ligne immutable et conserve la filiation par
+`sourceGenerationId`. Elle réutilise le snapshot source comme base de données,
+préserve les unités, valeurs inconnues et la provenance, et n'écrase jamais
+l'original. L'audit couvre les refus de compatibilité, les échecs de quota et
+les échecs de persistance.
+
+Le PDF binaire n'est pas stocké. Le renderer vérifie la version enregistrée et
+refuse une paire incompatible ; aucune identité binaire entre deux versions de
+renderer n'est promise sans capacité de rendu historique conservée. Les trois
+niveaux `Concis`, `Par défaut` et `Exhaustif` restent ceux du moteur commun ;
+les templates alternatifs et les versions scientifiques supplémentaires restent
+des propositions tant qu'un owner et un renderer correspondants ne sont pas
+livrés.
 
 Les habillages PDF `Impact` et `Scientifique` relèvent d'une spécification
 graphique distincte, [documentée en PLAN](../../../../features/reports/report-pdf-themes-and-reuse.md),

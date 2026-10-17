@@ -109,6 +109,7 @@ async function parseReportGenerationRequest(
   request: Request,
   operationId: string,
   actorUserId: string,
+  generationId: string,
 ): Promise<{ input: ReportGenerationHistoryInput } | { response: NextResponse }> {
   const body = await readJsonBodyWithLimit(request, MAX_REPORT_GENERATION_REQUEST_BYTES);
   if (!body.ok) {
@@ -145,6 +146,7 @@ async function parseReportGenerationRequest(
           contract,
           detailLevel: singleAction.data.detailLevel,
           modules: singleAction.data.modules,
+           generationId,
           now: new Date(),
         }),
       };
@@ -171,6 +173,7 @@ async function parseReportGenerationRequest(
           request: multiAction.data.input,
           detailLevel: multiAction.data.detailLevel,
           modules: multiAction.data.modules,
+           generationId,
           now: new Date(),
         }),
       };
@@ -328,8 +331,9 @@ export async function POST(request: Request) {
   }
 
   const operationId = `report-generation-${randomUUID()}`;
+  const generationId = randomUUID();
 
-  const parsed = await parseReportGenerationRequest(request, operationId, access.userId);
+  const parsed = await parseReportGenerationRequest(request, operationId, access.userId, generationId);
   if ("response" in parsed) return parsed.response;
 
   const quota = await reserveReportGenerationQuota(operationId, access.userId);

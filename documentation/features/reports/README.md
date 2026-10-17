@@ -18,13 +18,16 @@ au runtime et à ses tests, pas à une copie documentaire.
   Le navigateur envoie seulement le type de périmètre, l’identifiant de
   l’action, le niveau de détail et les modules ; le payload final est celui
   résolu et renvoyé par le serveur. Les nouvelles générations portent
-  `snapshotSchemaVersion: 2` et un `snapshotMetadata` complet : template,
-  renderer HTML officiel, `generatedAt`, période et timezone UTC, scope,
+  `snapshotSchemaVersion: 2` et un `snapshotMetadata` complet : identifiant de
+  génération, éventuelle lignée `sourceGenerationId`, template, renderer HTML
+  officiel, `filtersVersion`, `generatedAt`, période et timezone UTC, scope,
   niveau, modules, provenance, versions proxy/règles qualité et disponibilité
   des sources. Les snapshots historiques sans version ou en v1 restent
   compatibles à la lecture ; ils ne sont pas silencieusement mis à niveau.
   La consultation et le réexport historiques relisent le snapshot immuable
-  sans recalcul.
+  sans recalcul ni quota. « Créer une nouvelle version » est une opération
+  distincte : elle est autorisée seulement pour un snapshot complet compatible,
+  consomme le quota existant et crée une nouvelle ligne liée à sa source.
 
 - La reproductibilité livrée est sémantique : les mêmes données, libellés,
   unités, limites et date de génération sont relus depuis le snapshot. Le PDF
@@ -38,6 +41,10 @@ au runtime et à ses tests, pas à une copie documentaire.
   sont rendus avec le thème choisi, Impact par défaut. Changer de thème lors de
   la consultation ou du réexport ne refait pas la génération et ne consomme
   pas de quota.
+- Le renderer historique vérifie la paire de versions enregistrée. Une paire
+  incompatible est refusée explicitement ; le système ne promet pas une
+  identité binaire entre deux versions de renderer et ne stocke pas de PDF
+  binaire comme substitut du snapshot.
 - [`report-pdf-themes-and-reuse.md`](./report-pdf-themes-and-reuse.md) — contrat
   CURRENT des deux habillages et de leur réutilisation sur les snapshots ; les
   capacités de citabilité, Tagged PDF et export machine restent PLAN.

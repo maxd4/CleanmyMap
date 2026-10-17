@@ -5,6 +5,7 @@ import {
   REPORT_RENDERER_VERSION,
   REPORT_TEMPLATE_VERSION,
 } from "./report-generation-snapshot";
+import { REPORT_GENERATION_FILTERS_VERSION } from "./generation-period";
 
 export { REPORT_SNAPSHOT_SCHEMA_VERSION } from "./report-generation-snapshot";
 
@@ -55,8 +56,11 @@ const moduleStateSchema = z.object({
 
 const snapshotMetadataSchema = z.object({
   snapshotSchemaVersion: z.literal(REPORT_SNAPSHOT_SCHEMA_VERSION),
-  templateVersion: z.literal(REPORT_TEMPLATE_VERSION),
-  rendererVersion: z.literal(REPORT_RENDERER_VERSION),
+  templateVersion: z.string().min(1),
+  rendererVersion: z.string().min(1),
+  generationId: z.string().uuid().optional(),
+  sourceGenerationId: z.string().uuid().nullable().optional(),
+  filtersVersion: z.string().min(1).optional(),
   generatedAt: z.string().datetime(),
   period: z.object({
     id: z.enum([
@@ -167,7 +171,14 @@ export function parseCurrentReportGenerationPayload(value: unknown): PdfReportPa
   snapshotMetadata: NonNullable<PdfReportPayload["snapshotMetadata"]>;
 } {
   const parsed = parseReportGenerationPayload(value);
-  if (parsed.snapshotSchemaVersion !== REPORT_SNAPSHOT_SCHEMA_VERSION || !parsed.snapshotMetadata) {
+  const metadata = parsed.snapshotMetadata;
+  if (parsed.snapshotSchemaVersion !== REPORT_SNAPSHOT_SCHEMA_VERSION ||
+    !metadata ||
+    !metadata.generationId ||
+    !metadata.sourceGenerationId && metadata.sourceGenerationId !== null ||
+    metadata.filtersVersion !== REPORT_GENERATION_FILTERS_VERSION ||
+    metadata.templateVersion !== REPORT_TEMPLATE_VERSION ||
+    metadata.rendererVersion !== REPORT_RENDERER_VERSION) {
     throw new InvalidReportGenerationSnapshotError();
   }
   return parsed as PdfReportPayload & {

@@ -2,6 +2,7 @@ import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { CommunityEventItem } from "@/lib/community/http";
 
 export const REPORT_GENERATION_TIME_ZONE = "UTC" as const;
+export const REPORT_GENERATION_FILTERS_VERSION = "reports-filters-v1" as const;
 
 export type ReportGenerationPeriodId =
   | "thirty_days"

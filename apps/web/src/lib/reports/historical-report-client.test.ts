@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { loadHistoricalReportSnapshot } from "./historical-report-client";
+import { deriveHistoricalReportSnapshot, loadHistoricalReportSnapshot } from "./historical-report-client";
 
 const generation = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -80,5 +80,25 @@ describe("historical report client", () => {
       `/api/reports/generations/${generation.id}`,
       `/api/reports/generations/${secondId}`,
     ]);
+  });
+
+  it("uses POST only for an explicit new-version action and returns the new history row", async () => {
+    const item = {
+      id: "22222222-2222-4222-8222-222222222222",
+      report: "Rapport historique",
+      period: "Six mois",
+      perimeter: "Global",
+      detail: "Par défaut",
+      generatedAt: "17/10/2026 14:05",
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ generation, item }), { status: 200 }),
+    );
+
+    await expect(deriveHistoricalReportSnapshot(generation.id, fetchMock)).resolves.toEqual({ generation, item });
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/reports/generations/${generation.id}`,
+      expect.objectContaining({ method: "POST", credentials: "same-origin", cache: "no-store" }),
+    );
   });
 });

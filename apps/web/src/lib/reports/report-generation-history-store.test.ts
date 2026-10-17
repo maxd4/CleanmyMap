@@ -10,6 +10,7 @@ import {
   getReportGenerationSnapshotById,
   InvalidReportGenerationIdError,
   listReportGenerationHistory,
+  persistDerivedReportGeneration,
   persistReportGeneration,
 } from "./report-generation-history-store";
 
@@ -21,8 +22,11 @@ const payload = {
   snapshotSchemaVersion: 2 as const,
   snapshotMetadata: {
     snapshotSchemaVersion: 2 as const,
-    templateVersion: "reports-template-v1" as const,
-    rendererVersion: "official-report-html-v1" as const,
+    templateVersion: "reports-template-v1",
+    rendererVersion: "official-report-html-v1",
+    generationId: "11111111-1111-4111-8111-111111111111",
+    sourceGenerationId: null,
+    filtersVersion: "reports-filters-v1",
     generatedAt: "2026-08-27T10:30:00.000Z",
     period: { id: "six_months" as const, from: "2026-02-27", to: "2026-08-27", timeZone: "UTC" as const },
     scope: { kind: "global" as const, value: "", label: "Paris" },
@@ -36,7 +40,7 @@ const payload = {
 };
 
 const dbRow = {
-  id: "generation-1",
+  id: "11111111-1111-4111-8111-111111111111",
   created_at: "2026-08-27T10:30:01.000Z",
   generated_at: "2026-08-27T10:30:00.000Z",
   created_by_clerk_id: "user-admin",
@@ -78,7 +82,7 @@ describe("report generation history store", () => {
 
     await expect(listReportGenerationHistory("user-1", 99)).resolves.toMatchObject([
       {
-        id: "generation-1",
+        id: "11111111-1111-4111-8111-111111111111",
         period: "Six mois",
         perimeter: "Paris",
         detail: "Par défaut",
@@ -117,7 +121,7 @@ describe("report generation history store", () => {
           },
         },
       }),
-    ).resolves.toMatchObject({ id: "generation-1", report: payload.title });
+    ).resolves.toMatchObject({ id: "11111111-1111-4111-8111-111111111111", report: payload.title });
 
     expect(select).toHaveBeenCalledWith(
       "id, generated_at, title, period_id, scope_label, detail_level",
@@ -130,6 +134,65 @@ describe("report generation history store", () => {
         snapshot: payload,
       }),
     );
+  });
+
+  it("persists a derived immutable row with source lineage", async () => {
+    const targetId = "22222222-2222-4222-8222-222222222222";
+    const generatedAt = "2026-10-17T12:05:00.000Z";
+    const derivedRow = {
+      ...dbRow,
+      id: targetId,
+      generated_at: generatedAt,
+      snapshot: {
+        ...payload,
+        data: { ...payload.data, generatedAt },
+        snapshotMetadata: {
+          ...payload.snapshotMetadata,
+          generationId: targetId,
+          sourceGenerationId: historicalId,
+          generatedAt,
+        },
+      },
+    };
+    const single = vi.fn().mockResolvedValue({ data: derivedRow, error: null });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    getSupabaseAdminClientMock.mockReturnValue({
+      from: vi.fn(() => ({ insert })),
+    });
+    const source = {
+      id: historicalId,
+      filename: historicalRow.filename,
+      generatedAt: historicalRow.generated_at,
+      scopeKind: "global" as const,
+      scopeValue: "",
+      scopeLabel: "Paris",
+      detailLevel: "default" as const,
+      snapshot: payload,
+    };
+
+    await expect(
+      persistDerivedReportGeneration({
+        createdByClerkId: "user-admin",
+        source,
+        generationId: targetId,
+        generatedAt,
+      }),
+    ).resolves.toMatchObject({ id: targetId, report: payload.title });
+
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({
+      id: targetId,
+      created_by_clerk_id: "user-admin",
+      generated_at: generatedAt,
+      snapshot: expect.objectContaining({
+        snapshotMetadata: expect.objectContaining({
+          generationId: targetId,
+          sourceGenerationId: historicalId,
+        }),
+        data: expect.objectContaining({ generatedAt }),
+      }),
+    }));
+    expect(payload.snapshotMetadata.sourceGenerationId).toBeNull();
   });
 
   it("loads only the requested snapshot by validated UUID", async () => {

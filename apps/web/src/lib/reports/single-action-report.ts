@@ -14,6 +14,7 @@ import {
 import { REPORT_GENERATION_TIME_ZONE, getReportGenerationPeriodDateBounds } from "@/lib/reports/generation-period";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
+import { randomUUID } from "node:crypto";
 
 export type SingleActionReportRequest = {
   type: "single_action";
@@ -78,8 +79,10 @@ export function buildSingleActionReportGenerationInput(params: {
   detailLevel: DetailLevelId;
   modules: ModuleState;
   now: Date;
+  generationId?: string;
 }): ReportGenerationHistoryInput {
   const { contract, detailLevel, modules, now, request } = params;
+  const generationId = params.generationId ?? randomUUID();
   const listItem = toActionListItem(contract);
   const mapItem = toActionMapItem(contract);
   const report = computeReportModel({
@@ -149,6 +152,7 @@ export function buildSingleActionReportGenerationInput(params: {
       organizationName: scopeLabel,
       snapshotSchemaVersion: REPORT_SNAPSHOT_SCHEMA_VERSION,
       snapshotMetadata: buildReportGenerationSnapshotMetadata({
+        generationId,
         generatedAt,
         period: {
           id: "full_history",

@@ -1,5 +1,6 @@
 import type { ReportDataAvailability } from "@/lib/reports/data-availability";
 import type { DetailLevelId, ModuleState, PeriodId } from "@/lib/reports/report-pdf-data";
+import { REPORT_GENERATION_FILTERS_VERSION } from "@/lib/reports/generation-period";
 
 export const REPORT_SNAPSHOT_SCHEMA_VERSION = 2 as const;
 export const REPORT_TEMPLATE_VERSION = "reports-template-v1" as const;
@@ -28,8 +29,14 @@ export type ReportGenerationSnapshotProvenance =
 
 export type ReportGenerationSnapshotMetadata = {
   snapshotSchemaVersion: typeof REPORT_SNAPSHOT_SCHEMA_VERSION;
-  templateVersion: typeof REPORT_TEMPLATE_VERSION;
-  rendererVersion: typeof REPORT_RENDERER_VERSION;
+  templateVersion: string;
+  rendererVersion: string;
+  /** Optional on historical v2 rows created before generation identities were added. */
+  generationId?: string;
+  /** Null for a direct generation; set to the immediate source for a derivation. */
+  sourceGenerationId?: string | null;
+  /** Optional on historical v2 rows created before filter versioning was added. */
+  filtersVersion?: string;
   generatedAt: string;
   period: {
     id: PeriodId;
@@ -58,6 +65,8 @@ export type ReportGenerationSnapshotMetadata = {
 };
 
 export function buildReportGenerationSnapshotMetadata(params: {
+  generationId: string;
+  sourceGenerationId?: string | null;
   generatedAt: string;
   period: ReportGenerationSnapshotMetadata["period"];
   scope: ReportGenerationSnapshotMetadata["scope"];
@@ -74,6 +83,9 @@ export function buildReportGenerationSnapshotMetadata(params: {
     snapshotSchemaVersion: REPORT_SNAPSHOT_SCHEMA_VERSION,
     templateVersion: REPORT_TEMPLATE_VERSION,
     rendererVersion: REPORT_RENDERER_VERSION,
+    generationId: params.generationId,
+    sourceGenerationId: params.sourceGenerationId ?? null,
+    filtersVersion: REPORT_GENERATION_FILTERS_VERSION,
     generatedAt: params.generatedAt,
     period: params.period,
     scope: params.scope,

@@ -53,7 +53,10 @@ import {
   type ReportGenerationHistoryRow,
 } from "@/lib/reports/report-generation-history-contract";
 import type { ReportGenerationHistoryActionState } from "./web-document/reports-web-document-delivery";
-import { loadHistoricalReportSnapshot } from "@/lib/reports/historical-report-client";
+import {
+  deriveHistoricalReportSnapshot,
+  loadHistoricalReportSnapshot,
+} from "@/lib/reports/historical-report-client";
 import { replayHistoricalReport } from "@/lib/reports/historical-report-replay";
 import {
   filterReportGenerationContracts,
@@ -244,7 +247,11 @@ export function ReportsWebDocument({
       [id]: {
         action,
         state: "pending",
-        message: action === "view" ? "Ouverture du rapport historique..." : "Préparation du téléchargement...",
+         message: action === "view"
+           ? "Ouverture du rapport historique..."
+           : action === "reexport"
+             ? "Préparation du téléchargement..."
+             : "Création d'une nouvelle version...",
       },
     }));
 
@@ -262,12 +269,22 @@ export function ReportsWebDocument({
     }
 
     try {
-      const generation = await loadHistoricalReportSnapshot(id);
+      const derived = action === "derive"
+        ? await deriveHistoricalReportSnapshot(id)
+        : null;
+      const generation = derived?.generation ?? await loadHistoricalReportSnapshot(id);
       historicalReplayRef.current = { reportWindow: reportWindow!, payload: generation.snapshot };
-      replayHistoricalReport(action, generation, {
-        view: (payload) => renderReportWindow(reportWindow!, payload, { theme: reportTheme }),
-        reexport: (payload) => renderReportWindow(reportWindow!, payload, { theme: reportTheme }),
-      });
+      if (derived) {
+        setRecentRows((current) => [derived.item, ...current].slice(0, REPORT_GENERATION_HISTORY_LIMIT));
+        setHistoryAvailability("available");
+        setDailyExportAvailability("used");
+        renderReportWindow(reportWindow!, generation.snapshot, { theme: reportTheme });
+      } else if (action === "view" || action === "reexport") {
+        replayHistoricalReport(action, generation, {
+          view: (payload) => renderReportWindow(reportWindow!, payload, { theme: reportTheme }),
+          reexport: (payload) => renderReportWindow(reportWindow!, payload, { theme: reportTheme }),
+        });
+      }
 
       setHistoryActionStateById((current) => ({
         ...current,
@@ -275,11 +292,13 @@ export function ReportsWebDocument({
           action,
           state: "success",
           message:
-            action === "view"
-              ? "Rapport historique ouvert depuis le snapshot enregistré."
-              : "Rapport historique ouvert pour impression depuis le snapshot enregistré (" +
-                generation.filename +
-                "). Utilisez Enregistrer en PDF dans la fenêtre d'impression. Aucune nouvelle génération n'a été créée et aucun nouveau quota n'a été consommé.",
+             action === "view"
+               ? "Rapport historique ouvert depuis le snapshot enregistré."
+               : action === "reexport"
+                 ? "Rapport historique ouvert pour impression depuis le snapshot enregistré (" +
+                   generation.filename +
+                   "). Utilisez Enregistrer en PDF dans la fenêtre d'impression. Aucune nouvelle génération n'a été créée et aucun nouveau quota n'a été consommé."
+                 : "Nouvelle version créée depuis le snapshot source. Le snapshot d'origine reste inchangé et le quota a été consommé.",
         },
       }));
     } catch (error) {
@@ -454,6 +473,7 @@ export function ReportsWebDocument({
         actionStateById={historyActionStateById}
         onView={(id) => void handleHistoricalAction(id, "view")}
         onReexport={(id) => void handleHistoricalAction(id, "reexport")}
+        onDerive={(id) => void handleHistoricalAction(id, "derive")}
       />
     </section>
   );

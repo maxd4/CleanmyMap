@@ -32,6 +32,7 @@ import {
   type ReportScope,
   type ReportScopeKind,
 } from "@/lib/reports/scope";
+import { randomUUID } from "node:crypto";
 
 export type MultiActionReportRequest = {
   type: "multi_action";
@@ -161,8 +162,10 @@ export async function buildMultiActionReportGenerationInput(params: {
   detailLevel: DetailLevelId;
   modules: ModuleState;
   now: Date;
+  generationId?: string;
 }): Promise<ReportGenerationHistoryInput> {
   const { request, detailLevel, modules, now } = params;
+  const generationId = params.generationId ?? randomUUID();
   if (!isValidReportGenerationPeriodSelection(request.period)) {
     throw new MultiActionReportPeriodInvalidError();
   }
@@ -272,6 +275,7 @@ export async function buildMultiActionReportGenerationInput(params: {
       organizationName: scopeLabel,
       snapshotSchemaVersion: REPORT_SNAPSHOT_SCHEMA_VERSION,
       snapshotMetadata: buildReportGenerationSnapshotMetadata({
+        generationId,
         generatedAt,
         period: {
           id: request.period.id,
