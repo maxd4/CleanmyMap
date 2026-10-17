@@ -3,6 +3,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 export const REPORT_PDF_ARTIFACT_BUCKET = "reports" as const;
 export const REPORT_PDF_ARTIFACT_RENDERER_VERSION = "chromium-official-report-pdf-v1" as const;
 export const REPORT_PDF_ARTIFACT_WAIT_MS = 5_000;
+export const REPORT_PDF_ARTIFACT_RENDERING_LEASE_MS = 90_000;
 
 export type ReportPdfArtifactTheme = "impact" | "scientific";
 export type ReportPdfArtifactStatus = "rendering" | "ready" | "failed";
@@ -16,6 +17,7 @@ export type ReportPdfArtifact = {
   storagePath: string;
   status: ReportPdfArtifactStatus;
   byteSize: number | null;
+  updatedAt: string;
 };
 
 type ReportPdfArtifactRow = {
@@ -27,9 +29,10 @@ type ReportPdfArtifactRow = {
   storage_path: string;
   status: ReportPdfArtifactStatus;
   byte_size: number | null;
+  updated_at: string;
 };
 
-const SELECT = "id, generation_id, created_by_clerk_id, theme, renderer_version, storage_path, status, byte_size";
+const SELECT = "id, generation_id, created_by_clerk_id, theme, renderer_version, storage_path, status, byte_size, updated_at";
 
 function toArtifact(row: ReportPdfArtifactRow): ReportPdfArtifact {
   return {
@@ -41,6 +44,7 @@ function toArtifact(row: ReportPdfArtifactRow): ReportPdfArtifact {
     storagePath: row.storage_path,
     status: row.status,
     byteSize: row.byte_size,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -77,6 +81,12 @@ export type ReportPdfArtifactClaim =
   | { kind: "owner"; artifact: ReportPdfArtifact }
   | { kind: "ready"; artifact: ReportPdfArtifact }
   | { kind: "rendering"; artifact: ReportPdfArtifact };
+
+function isRenderingLeaseExpired(updatedAt: string, now = Date.now()): boolean {
+  const updatedAtMilliseconds = Date.parse(updatedAt);
+  return Number.isFinite(updatedAtMilliseconds) &&
+    updatedAtMilliseconds <= now - REPORT_PDF_ARTIFACT_RENDERING_LEASE_MS;
+}
 
 export async function claimReportPdfArtifact(params: {
   generationId: string;
@@ -133,6 +143,26 @@ export async function claimReportPdfArtifact(params: {
     if (retry.data) return { kind: "owner", artifact: toArtifact(retry.data as ReportPdfArtifactRow) };
   }
 
+  if (existing.status === "rendering" && isRenderingLeaseExpired(existing.updatedAt)) {
+    const recovered = await client
+      .from("report_generation_pdf_artifacts")
+      .update({
+        status: "rendering",
+        byte_size: null,
+        last_error_code: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existing.id)
+      .eq("generation_id", params.generationId)
+      .eq("created_by_clerk_id", params.createdByClerkId)
+      .eq("status", "rendering")
+      .lt("updated_at", existing.updatedAt)
+      .select(SELECT)
+      .maybeSingle();
+    if (recovered.error) throw recovered.error;
+    if (recovered.data) return { kind: "owner", artifact: toArtifact(recovered.data as ReportPdfArtifactRow) };
+  }
+
   const current = await findArtifact({
     generationId: params.generationId,
     theme: params.theme,
@@ -142,6 +172,40 @@ export async function claimReportPdfArtifact(params: {
   return current.status === "ready"
     ? { kind: "ready", artifact: current }
     : { kind: "rendering", artifact: current };
+}
+
+export async function reclaimMissingReportPdfArtifact(params: {
+  artifactId: string;
+  generationId: string;
+  createdByClerkId: string;
+  theme: ReportPdfArtifactTheme;
+  rendererVersion?: string;
+}): Promise<ReportPdfArtifactClaim> {
+  const rendererVersion = params.rendererVersion ?? REPORT_PDF_ARTIFACT_RENDERER_VERSION;
+  const client = getSupabaseAdminClient();
+  const repaired = await client
+    .from("report_generation_pdf_artifacts")
+    .update({
+      status: "rendering",
+      byte_size: null,
+      last_error_code: "storage_object_missing",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", params.artifactId)
+    .eq("generation_id", params.generationId)
+    .eq("created_by_clerk_id", params.createdByClerkId)
+    .eq("status", "ready")
+    .select(SELECT)
+    .maybeSingle();
+  if (repaired.error) throw repaired.error;
+  if (repaired.data) return { kind: "owner", artifact: toArtifact(repaired.data as ReportPdfArtifactRow) };
+
+  return claimReportPdfArtifact({
+    generationId: params.generationId,
+    createdByClerkId: params.createdByClerkId,
+    theme: params.theme,
+    rendererVersion,
+  });
 }
 
 export async function waitForReportPdfArtifact(params: {

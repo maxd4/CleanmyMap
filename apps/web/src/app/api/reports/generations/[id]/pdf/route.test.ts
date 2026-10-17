@@ -6,6 +6,7 @@ const claimMock = vi.hoisted(() => vi.fn());
 const waitMock = vi.hoisted(() => vi.fn());
 const readyMock = vi.hoisted(() => vi.fn());
 const failedMock = vi.hoisted(() => vi.fn());
+const reclaimMock = vi.hoisted(() => vi.fn());
 const renderMock = vi.hoisted(() => vi.fn());
 const auditMock = vi.hoisted(() => vi.fn());
 const downloadMock = vi.hoisted(() => vi.fn());
@@ -26,6 +27,7 @@ vi.mock("@/lib/reports/report-generation-pdf-artifact-store", () => ({
   waitForReportPdfArtifact: waitMock,
   markReportPdfArtifactReady: readyMock,
   markReportPdfArtifactFailed: failedMock,
+  reclaimMissingReportPdfArtifact: reclaimMock,
 }));
 vi.mock("@/lib/reports/report-pdf-renderer", () => ({ renderOfficialReportPdf: renderMock }));
 vi.mock("@/lib/admin/audit/operation-audit", () => ({ appendAdminOperationAudit: auditMock }));
@@ -65,6 +67,7 @@ const artifact = {
   storagePath: `report-generations/${generationId}/chromium-official-report-pdf-v1/impact.pdf`,
   status: "rendering" as const,
   byteSize: null,
+  updatedAt: "2026-10-18T08:00:00.000Z",
 };
 
 function request(theme = "impact") {
@@ -80,6 +83,7 @@ describe("GET /api/reports/generations/[id]/pdf", () => {
     waitMock.mockResolvedValue({ ...artifact, status: "ready", byteSize: 3 });
     readyMock.mockResolvedValue({ ...artifact, status: "ready", byteSize: 3 });
     failedMock.mockResolvedValue(undefined);
+    reclaimMock.mockResolvedValue({ kind: "owner", artifact });
     renderMock.mockResolvedValue(Buffer.from("%PDF-1.7"));
     auditMock.mockResolvedValue(undefined);
     uploadMock.mockResolvedValue({ error: null });
@@ -153,6 +157,79 @@ describe("GET /api/reports/generations/[id]/pdf", () => {
     expect(response.status).toBe(503);
     expect(failedMock).toHaveBeenCalledWith({ artifactId: artifact.id, errorCode: "pdf_render_failed" });
     expect(renderMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("repairs a ready artifact after Storage confirms that its object is absent", async () => {
+    claimMock.mockResolvedValueOnce({ kind: "ready", artifact: { ...artifact, status: "ready", byteSize: 8 } });
+    downloadMock
+      .mockResolvedValueOnce({ data: null, error: { statusCode: 404, code: "not_found" } })
+      .mockResolvedValueOnce({ data: new Blob(["%PDF-repaired"], { type: "application/pdf" }), error: null });
+    reclaimMock.mockResolvedValueOnce({ kind: "owner", artifact });
+
+    const response = await GET(request(), { params: Promise.resolve({ id: generationId }) });
+
+    expect(response.status).toBe(200);
+    expect(reclaimMock).toHaveBeenCalledWith(expect.objectContaining({
+      artifactId: artifact.id,
+      generationId,
+      createdByClerkId: "user-1",
+    }));
+    expect(renderMock).toHaveBeenCalledTimes(1);
+    expect(uploadMock).toHaveBeenCalledWith(
+      artifact.storagePath,
+      expect.any(Blob),
+      expect.objectContaining({ upsert: false }),
+    );
+  });
+
+  it("does not invalidate a ready artifact when Storage is temporarily unavailable", async () => {
+    claimMock.mockResolvedValueOnce({ kind: "ready", artifact: { ...artifact, status: "ready", byteSize: 8 } });
+    downloadMock.mockResolvedValueOnce({ data: null, error: { status: 503, code: "service_unavailable" } });
+
+    const response = await GET(request(), { params: Promise.resolve({ id: generationId }) });
+
+    expect(response.status).toBe(503);
+    expect(reclaimMock).not.toHaveBeenCalled();
+    expect(renderMock).not.toHaveBeenCalled();
+    expect(failedMock).not.toHaveBeenCalled();
+  });
+
+  it("reconciles an already uploaded object without overwriting it", async () => {
+    uploadMock.mockResolvedValueOnce({ error: { status: 409, code: "already_exists" } });
+    downloadMock.mockResolvedValueOnce({
+      data: new Blob(["%PDF-existing"], { type: "application/pdf" }),
+      error: null,
+    });
+
+    const response = await GET(request(), { params: Promise.resolve({ id: generationId }) });
+
+    expect(response.status).toBe(200);
+    expect(uploadMock).toHaveBeenCalledWith(
+      artifact.storagePath,
+      expect.any(Blob),
+      expect.objectContaining({ upsert: false }),
+    );
+    expect(downloadMock).toHaveBeenCalledTimes(2);
+    expect(readyMock).toHaveBeenCalledWith({ artifactId: artifact.id, byteSize: 13 });
+    expect(failedMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps an uncertain ready confirmation recoverable without downgrading or rerendering", async () => {
+    readyMock.mockRejectedValueOnce(new Error("confirmation response lost"));
+
+    const firstResponse = await GET(request(), { params: Promise.resolve({ id: generationId }) });
+
+    expect(firstResponse.status).toBe(503);
+    expect(failedMock).not.toHaveBeenCalled();
+    expect(renderMock).toHaveBeenCalledTimes(1);
+    expect(uploadMock).toHaveBeenCalledTimes(1);
+
+    claimMock.mockResolvedValueOnce({ kind: "ready", artifact: { ...artifact, status: "ready", byteSize: 8 } });
+    const secondResponse = await GET(request(), { params: Promise.resolve({ id: generationId }) });
+
+    expect(secondResponse.status).toBe(200);
+    expect(renderMock).toHaveBeenCalledTimes(1);
+    expect(uploadMock).toHaveBeenCalledTimes(1);
   });
 
   it("refuses a source that is not owned or a renderer that is no longer available", async () => {

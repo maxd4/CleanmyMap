@@ -12,6 +12,7 @@ import {
   claimReportPdfArtifact,
   markReportPdfArtifactFailed,
   markReportPdfArtifactReady,
+  reclaimMissingReportPdfArtifact,
   REPORT_PDF_ARTIFACT_BUCKET,
   REPORT_PDF_ARTIFACT_RENDERER_VERSION,
   type ReportPdfArtifactTheme,
@@ -54,6 +55,80 @@ async function auditFailure(params: {
   }
 }
 
+type ReportPdfDownloadResult = {
+  data: Blob | null;
+  error: unknown;
+};
+
+async function downloadReportPdfArtifact(storagePath: string): Promise<ReportPdfDownloadResult> {
+  const supabase = (await import("@/lib/supabase/server")).getSupabaseAdminClient();
+  const downloaded = await supabase.storage.from(REPORT_PDF_ARTIFACT_BUCKET).download(storagePath);
+  return { data: downloaded.data, error: downloaded.error };
+}
+
+function isConfirmedStorageObjectAbsence(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { status?: unknown; statusCode?: unknown; code?: unknown };
+  return candidate.status === 404 ||
+    candidate.status === "404" ||
+    candidate.statusCode === 404 ||
+    candidate.statusCode === "404" ||
+    candidate.code === "404" ||
+    candidate.code === "not_found";
+}
+
+async function renderOwnedReportPdf(params: {
+  operationId: string;
+  generationId: string;
+  artifactId: string;
+  storagePath: string;
+  payload: Parameters<typeof renderOfficialReportPdf>[0]["payload"];
+  theme: ReportPdfArtifactTheme;
+}) {
+  let storedByteSize: number;
+  try {
+    const bytes = await renderOfficialReportPdf({ payload: params.payload, theme: params.theme });
+    const supabase = (await import("@/lib/supabase/server")).getSupabaseAdminClient();
+    const pdfBlob = new Blob([
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
+    ], { type: "application/pdf" });
+    const upload = await supabase.storage.from(REPORT_PDF_ARTIFACT_BUCKET).upload(
+      params.storagePath,
+      pdfBlob,
+      { contentType: "application/pdf", cacheControl: "31536000", upsert: false },
+    );
+    storedByteSize = bytes.byteLength;
+    if (upload.error) {
+      const existing = await downloadReportPdfArtifact(params.storagePath);
+      if (existing.error || !existing.data) throw upload.error;
+      storedByteSize = existing.data.size;
+    }
+  } catch (error) {
+    try {
+      await markReportPdfArtifactFailed({ artifactId: params.artifactId, errorCode: "pdf_render_failed" });
+    } catch (statusError) {
+      console.error("Report PDF artifact failure state could not be persisted", {
+        operationId: params.operationId,
+        generationId: params.generationId,
+        statusError,
+      });
+    }
+    throw error;
+  }
+
+  try {
+    return await markReportPdfArtifactReady({ artifactId: params.artifactId, byteSize: storedByteSize });
+  } catch (error) {
+    console.error("Report PDF artifact ready confirmation is uncertain", {
+      operationId: params.operationId,
+      generationId: params.generationId,
+      artifactId: params.artifactId,
+      error,
+    });
+    throw error;
+  }
+}
+
 export async function GET(request: Request, { params }: ReportPdfRouteContext) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse({ hint: access.error });
@@ -89,58 +164,62 @@ export async function GET(request: Request, { params }: ReportPdfRouteContext) {
   }
 
   try {
-    const claim = await claimReportPdfArtifact({
+    let claim = await claimReportPdfArtifact({
       generationId: generation.id,
       createdByClerkId: access.userId,
       theme,
       rendererVersion: REPORT_PDF_ARTIFACT_RENDERER_VERSION,
     });
     let artifact = claim.artifact;
-    if (claim.kind === "rendering") {
-      const completed = await waitForReportPdfArtifact({
+    let downloaded: ReportPdfDownloadResult | null = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (claim.kind === "rendering") {
+        const completed = await waitForReportPdfArtifact({
+          generationId: generation.id,
+          theme,
+          rendererVersion: REPORT_PDF_ARTIFACT_RENDERER_VERSION,
+        });
+        if (!completed || completed.status !== "ready") {
+          return NextResponse.json(
+            { error: "Le PDF est en cours de préparation. Réessayez dans quelques instants.", code: "pdf_render_in_progress" },
+            { status: 202, headers: { "Retry-After": "2" } },
+          );
+        }
+        artifact = completed;
+        claim = { kind: "ready", artifact: completed };
+        continue;
+      }
+
+      if (claim.kind === "owner") {
+        artifact = await renderOwnedReportPdf({
+          operationId,
+          generationId: generation.id,
+          artifactId: artifact.id,
+          storagePath: artifact.storagePath,
+          payload: generation.snapshot,
+          theme,
+        });
+        claim = { kind: "ready", artifact };
+        continue;
+      }
+
+      downloaded = await downloadReportPdfArtifact(artifact.storagePath);
+      if (downloaded.data) break;
+      if (!isConfirmedStorageObjectAbsence(downloaded.error)) {
+        throw downloaded.error ?? new Error("PDF artifact is unavailable.");
+      }
+
+      claim = await reclaimMissingReportPdfArtifact({
+        artifactId: artifact.id,
         generationId: generation.id,
+        createdByClerkId: access.userId,
         theme,
         rendererVersion: REPORT_PDF_ARTIFACT_RENDERER_VERSION,
       });
-      if (!completed || completed.status !== "ready") {
-        return NextResponse.json(
-          { error: "Le PDF est en cours de préparation. Réessayez dans quelques instants.", code: "pdf_render_in_progress" },
-          { status: 202, headers: { "Retry-After": "2" } },
-        );
-      }
-      artifact = completed;
-    } else if (claim.kind === "owner") {
-      try {
-        const bytes = await renderOfficialReportPdf({ payload: generation.snapshot, theme });
-        const supabase = (await import("@/lib/supabase/server")).getSupabaseAdminClient();
-        const pdfBlob = new Blob([
-          bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
-        ], { type: "application/pdf" });
-        const upload = await supabase.storage.from(REPORT_PDF_ARTIFACT_BUCKET).upload(
-          artifact.storagePath,
-          pdfBlob,
-          { contentType: "application/pdf", cacheControl: "31536000", upsert: false },
-        );
-        let storedByteSize = bytes.byteLength;
-        if (upload.error) {
-          const existing = await supabase.storage.from(REPORT_PDF_ARTIFACT_BUCKET).download(artifact.storagePath);
-          if (existing.error || !existing.data) throw upload.error;
-          storedByteSize = existing.data.size;
-        }
-        artifact = await markReportPdfArtifactReady({ artifactId: artifact.id, byteSize: storedByteSize });
-      } catch (error) {
-        try {
-          await markReportPdfArtifactFailed({ artifactId: artifact.id, errorCode: "pdf_render_failed" });
-        } catch (statusError) {
-          console.error("Report PDF artifact failure state could not be persisted", { operationId, generationId: generation.id, statusError });
-        }
-        throw error;
-      }
+      artifact = claim.artifact;
     }
 
-    const supabase = (await import("@/lib/supabase/server")).getSupabaseAdminClient();
-    const downloaded = await supabase.storage.from(REPORT_PDF_ARTIFACT_BUCKET).download(artifact.storagePath);
-    if (downloaded.error || !downloaded.data) throw downloaded.error ?? new Error("PDF artifact is unavailable.");
+    if (!downloaded?.data) throw new Error("PDF artifact recovery did not complete.");
     try {
       await appendAdminOperationAudit({
         operationId,
