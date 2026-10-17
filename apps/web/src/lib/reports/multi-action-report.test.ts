@@ -141,6 +141,11 @@ describe("multi-action report server resolver", () => {
     expect(result.scopeValue).toBe("Association Canonique");
     expect(result.payload.organizationType).toBe("multi_action");
     expect(result.payload.data).not.toHaveProperty("forgedKpi");
+    expect(mocks.buildPdfData).toHaveBeenCalledWith(expect.objectContaining({
+      model: expect.objectContaining({
+        dataAvailability: expect.objectContaining({ communityEventsAvailability: "partial" }),
+      }),
+    }));
   });
 
   it("rejects unknown association names instead of treating them as membership", async () => {

@@ -244,10 +244,12 @@ export function buildPdfData(params: ReportPdfDataOptions) {
     ? true
     : report.totals.buttsKnownActions > 0;
   const volunteersKnown = (report.totals.volunteersKnownActions ?? 0) > 0;
-  const totalEvents = model.dataAvailability?.communityEventsAvailability === "unavailable"
+  const communityEventsUnavailable = model.dataAvailability?.communityEventsAvailability === "unavailable" ||
+    model.dataAvailability?.communityEventsAvailability === "partial";
+  const totalEvents = communityEventsUnavailable
     ? "n/a"
     : report.community.totalEvents;
-  const participationRate = model.dataAvailability?.communityEventsAvailability === "unavailable"
+  const participationRate = communityEventsUnavailable
     ? "n/a"
     : `${report.community.participationRate.toFixed(1)}%`;
 

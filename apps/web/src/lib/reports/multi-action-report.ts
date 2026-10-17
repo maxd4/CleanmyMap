@@ -140,6 +140,19 @@ function filterPeriodEvents(
   );
 }
 
+function resolveCommunityEventsAvailability(
+  availability: Awaited<ReturnType<typeof loadReportsGenerationData>>["communityEventsAvailability"],
+  scope: ReportScope,
+) {
+  if (availability === "unavailable" || scope.kind === "global") {
+    return availability;
+  }
+  if (scope.kind === "association") {
+    return "partial" as const;
+  }
+  return availability;
+}
+
 export async function buildMultiActionReportGenerationInput(params: {
   request: MultiActionReportRequest;
   detailLevel: DetailLevelId;
@@ -213,7 +226,10 @@ export async function buildMultiActionReportGenerationInput(params: {
     dataAvailability: {
       isTruncated: generationData.isTruncated,
       sourceHealth: generationData.sourceHealth,
-      communityEventsAvailability: generationData.communityEventsAvailability,
+      communityEventsAvailability: resolveCommunityEventsAvailability(
+        generationData.communityEventsAvailability,
+        scope,
+      ),
     },
   };
   const impactKnown = (report.totals.knownWasteActions ?? 0) > 0 &&

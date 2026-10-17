@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
   aggregateMonthlyAnalytics: vi.fn(),
   computeReportModel: vi.fn(),
   fetchCachedUnifiedActionContracts: vi.fn(),
-  loadCachedReportCommunityEvents: vi.fn(),
+  loadCachedReportCommunityEventsWithAvailability: vi.fn(),
   loadPilotageOverview: vi.fn(),
   toActionListItem: vi.fn((item: unknown) => item),
   toActionMapItem: vi.fn((item: unknown) => item),
@@ -25,7 +25,7 @@ vi.mock("@/lib/actions/unified-source/unified-source-cache", () => ({
 }));
 
 vi.mock("@/lib/community/report-events", () => ({
-  loadCachedReportCommunityEvents: mocks.loadCachedReportCommunityEvents,
+  loadCachedReportCommunityEventsWithAvailability: mocks.loadCachedReportCommunityEventsWithAvailability,
 }));
 
 vi.mock("@/lib/pilotage/analytics-data-utils", () => ({
@@ -54,7 +54,10 @@ function contractAt(observedAt: string, id: string): ActionDataContract {
 describe("/reports server data budget", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.loadCachedReportCommunityEvents.mockResolvedValue([]);
+    mocks.loadCachedReportCommunityEventsWithAvailability.mockResolvedValue({
+      items: [],
+      availability: "available",
+    });
     mocks.loadPilotageOverview.mockResolvedValue({ contracts: [], periodDays: 90 });
     mocks.computeReportModel.mockReturnValue({});
     mocks.aggregateMonthlyAnalytics.mockReturnValue([]);
@@ -77,7 +80,7 @@ describe("/reports server data budget", () => {
       periodDays: 90,
       limit: 2200,
     });
-    expect(mocks.loadCachedReportCommunityEvents).toHaveBeenCalledWith(120);
+    expect(mocks.loadCachedReportCommunityEventsWithAvailability).toHaveBeenCalledWith(120);
     expect(result.communityEvents).toEqual([]);
     expect(result.communityEventsAvailability).toBe("available");
     expect(mocks.computeReportModel).toHaveBeenCalledWith({
@@ -131,7 +134,7 @@ describe("/reports server data budget", () => {
   });
 
   it("keeps an empty events array but exposes event loading failure", async () => {
-    mocks.loadCachedReportCommunityEvents.mockRejectedValueOnce(
+    mocks.loadCachedReportCommunityEventsWithAvailability.mockRejectedValueOnce(
       new Error("community events unavailable"),
     );
 
@@ -139,7 +142,7 @@ describe("/reports server data budget", () => {
 
     expect(result.communityEvents).toEqual([]);
     expect(result.communityEventsAvailability).toBe("unavailable");
-    expect(mocks.loadCachedReportCommunityEvents).toHaveBeenCalledTimes(1);
+    expect(mocks.loadCachedReportCommunityEventsWithAvailability).toHaveBeenCalledTimes(1);
   });
 
   it("propagates generation truncation metadata without another read", async () => {

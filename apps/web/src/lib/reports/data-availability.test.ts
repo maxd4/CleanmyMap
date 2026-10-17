@@ -41,4 +41,14 @@ describe("report data availability notices", () => {
       "Certaines sources sont indisponibles : les indicateurs ne sont pas exhaustifs.",
     ]);
   });
+
+  it("marks a scope with incomplete community attribution without turning it into zero", () => {
+    expect(
+      buildReportDataAvailabilityNotices({
+        communityEventsAvailability: "partial",
+      }),
+    ).toEqual([
+      "Les événements communautaires ne peuvent pas être attribués entièrement à ce périmètre ; leurs indicateurs sont indisponibles.",
+    ]);
+  });
 });

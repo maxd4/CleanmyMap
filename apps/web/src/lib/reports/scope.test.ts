@@ -158,6 +158,37 @@ it("filters contracts and community events by scope", () => {
   ).toHaveLength(1);
 });
 
+it("does not attribute an event to an association from free text", () => {
+  const event = {
+    id: "event-association-text",
+    createdAt: "2026-04-01T10:00:00Z",
+    organizerClerkId: "other-organizer",
+    canEditOwnOps: false,
+    title: "Collectif Test - nettoyage",
+    eventDate: "2026-04-10",
+    locationLabel: "Paris 11e",
+    location: { label: "Paris 11e", latitude: null, longitude: null, source: null },
+    description: "Événement mentionnant Collectif Test sans rattachement canonique.",
+    capacityTarget: null,
+    attendanceCount: null,
+    postMortem: null,
+    cleanupObjective: null,
+    cleanupZone: null,
+    cleanupLogisticsNeeds: null,
+    cleanupSupportLevel: null,
+    cleanupWasteTypesExpected: [],
+    rsvpCounts: { yes: 2, maybe: 0, no: 0, total: 2 },
+    myRsvpStatus: null,
+  };
+
+  expect(
+    filterCommunityEventsByScope([event], {
+      kind: "association",
+      value: "Collectif Test",
+    }),
+  ).toEqual([]);
+});
+
 it("computes account coverage for created_by_clerk_id", () => {
   const coverage = computeReportAccountScopeCoverage([
     {

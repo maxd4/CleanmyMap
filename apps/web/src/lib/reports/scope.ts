@@ -310,21 +310,6 @@ export function filterActionContractsByScope(
   );
 }
 
-function matchesCommunityAssociationFallback(
-  item: CommunityEventItem,
-  target: string,
-): boolean {
-  const haystack = [
-    item.organizer?.displayName,
-    item.title,
-    item.description,
-  ]
-    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(target.trim().toLowerCase());
-}
-
 export function filterCommunityEventsByScope(
   items: CommunityEventItem[],
   scope: ReportScope,
@@ -343,9 +328,9 @@ export function filterCommunityEventsByScope(
       return arrondissement !== null && String(arrondissement) === scope.value;
     });
   }
-  return items.filter((item) =>
-    matchesCommunityAssociationFallback(item, scope.value ?? ""),
-  );
+  // community_events has no canonical association or action relation. A name
+  // in organizer metadata, title, or description is not proof of membership.
+  return [];
 }
 
 function contractToScopeSource(

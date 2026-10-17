@@ -1,5 +1,5 @@
 import { toActionListItem, toActionMapItem } from "@/lib/actions/data-contract";
-import { loadCachedReportCommunityEvents } from "@/lib/community/report-events";
+import { loadCachedReportCommunityEventsWithAvailability } from "@/lib/community/report-events";
 import { aggregateMonthlyAnalytics } from "@/lib/pilotage/analytics-data-utils";
 import { filterContractsToWindow } from "@/lib/pilotage/metrics";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
@@ -26,9 +26,10 @@ export type ReportsPublicSummary = {
 };
 
 async function loadReportCommunityEventsWithAvailability(limit: number) {
-  return loadCachedReportCommunityEvents(limit)
-    .then((items) => ({ items, availability: "available" as const }))
-    .catch(() => ({ items: [], availability: "unavailable" as const }));
+  return loadCachedReportCommunityEventsWithAvailability(limit).catch(() => ({
+    items: [],
+    availability: "unavailable" as const,
+  }));
 }
 
 export async function loadReportsPublicSummary(): Promise<ReportsPublicSummary> {

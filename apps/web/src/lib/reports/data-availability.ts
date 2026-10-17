@@ -1,6 +1,6 @@
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 
-export type CommunityEventsAvailability = "available" | "unavailable";
+export type CommunityEventsAvailability = "available" | "partial" | "unavailable";
 
 export type ReportDataAvailability = {
   isTruncated?: boolean;
@@ -31,6 +31,12 @@ export function buildReportDataAvailabilityNotices(
   if (availability.communityEventsAvailability === "unavailable") {
     notices.push(
       "Les événements communautaires sont indisponibles ; leur absence ne vaut pas zéro.",
+    );
+  }
+
+  if (availability.communityEventsAvailability === "partial") {
+    notices.push(
+      "Les événements communautaires ne peuvent pas être attribués entièrement à ce périmètre ; leurs indicateurs sont indisponibles.",
     );
   }
 
