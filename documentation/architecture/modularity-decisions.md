@@ -20,7 +20,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | `apps/web/src/app/docs/[...segments]/route.ts` | ALREADY_MODULARIZED | NONE | préserver résolution anti-path-traversal, MIME, headers et contrat SEO | nouvelle responsabilité autonome réintroduite dans la façade ou croissance substantielle d'un des owners extraits |
 | `apps/web/src/lib/validation/action.ts` | ALREADY_MODULARIZED | NONE | préserver l'owner unique des schémas create/update et l'ordre des validations | nouvelle responsabilité indépendante réintroduite dans la façade ou couplage anormal entre sous-modules |
 | `apps/web/src/lib/pdf-export/simple-pdf.ts` | ALREADY_MODULARIZED | NONE | préserver octets PDF, format des lignes et PdfReportPayload | nouvelle responsabilité substantielle réintroduite dans la façade ou couplage anormal entre sous-modules |
-| `apps/web/src/lib/actions/pollution/current-place-state.ts` | DEFERRED_SPLIT | LATER | owner CURRENT unique de la résolution d'état d'un lieu ; ne pas séparer les étapes privées uniquement pour la taille | évolution indépendante des modèles observed/projected_today ou du modèle de repollution |
+| `apps/web/src/lib/actions/pollution/current-place-state.ts` | DEFERRED_SPLIT | LATER | préserver le bucket de lieu et la distinction observation/projection ; ne pas créer une source de vérité commune ni séparer les étapes privées sans contrat indépendant | évolution indépendante des modèles observed/projected_today ou du modèle de repollution |
 | `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | ALREADY_MODULARIZED | NONE | préserver matching spatial, complétude, confiance et projections | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/lib/route/route-predicted-targets.ts` | ALREADY_MODULARIZED | NONE | préserver budgets planner, audits et contrats API route | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/sections/rubriques/route/route-section.tsx` | ALREADY_MODULARIZED | NONE | préserver les textes, états async, origine carte, deep-links et CTA planner | nouvelle responsabilité autonome réintroduite dans RouteSection ou couplage anormal entre owners |
@@ -35,11 +35,11 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | `apps/web/src/lib/route/route-group-partition.ts` | COHESIVE_SINGLE_FILE | NONE | pipeline unique de partitionnement et métriques | nouvelle stratégie de partition autonome ou nouveau contrat planner |
 | `apps/web/src/lib/learning/quiz/quiz-quality-audit.ts` | COHESIVE_SINGLE_FILE | NONE | moteur unique de critères et rapport d'audit | nouveau domaine de qualité indépendant |
 | `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | COHESIVE_SINGLE_FILE | NONE | owner unique de l'estimation infrastructure ; calculs internes au même modèle | nouvelle famille de service réellement autonome ou API publique indépendante |
-| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | DEFERRED_SPLIT | AFTER_ACTIVE_CHANGES | owner transversal map/déclaration ; éviter cycles et divergence des formats | stabilisation du parcours déclaration/map puis évolution indépendante de normalisation, markers ou view-model |
+| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | ALREADY_MODULARIZED | NONE | préserver les conventions de coordonnées, la provenance géométrique, les contrats render/presentation et l'absence de logique de normalisation/validation dupliquée | nouvelle responsabilité autonome réintroduite dans le view-model ou dégradation démontrée des frontières entre domaine, validation, rendu et view-model |
 | `apps/web/src/components/actions/action-declaration/before/sections.tsx` | ALREADY_MODULARIZED | NONE | préserver la façade d'exports, BaseSectionProps, validation, focus et updateField | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 | `apps/web/src/app/api/route/recommend/route.response.ts` | ALREADY_MODULARIZED | NONE | préserver DTO, planner proof/snapshot, calibration et la façade `buildRouteRecommendationResponse` | nouveau mode de réponse ou sous-contrat consommé indépendamment |
 | `apps/web/src/lib/actions/participation/group-participation-review.ts` | ALREADY_MODULARIZED | NONE | préserver AuthZ, ownership, idempotence, audit et ordre des mutations | nouvelle responsabilité autonome réintroduite dans la façade ou divergence de contrat |
-| `apps/web/src/lib/actions/pollution/corridor-history.ts` | COHESIVE_SINGLE_FILE | NONE | owner unique du modèle corridor et de son historique | nouveau mode de corridor ou sous-modèle historique indépendant |
+| `apps/web/src/lib/actions/pollution/corridor-history.ts` | COHESIVE_SINGLE_FILE | NONE | préserver les constantes géographiques, `CorridorPolyline`/`CorridorHistory` et l'ordre matching → historique → score ; ne pas créer une source de vérité commune parallèle | nouveau mode de corridor ou sous-modèle historique indépendant |
 | `apps/web/src/lib/actions/http.ts` | ALREADY_MODULARIZED | NONE | préserver URL, méthode, payload et erreurs de chaque famille endpoint | nouvelle famille de contrat réintroduite dans la façade ou divergence URL/méthode/payload |
 | `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts` | COHESIVE_SINGLE_FILE | NONE | owner unique du modèle de preuve/confiance/serviceabilité | nouveau type de preuve autonome ou changement indépendant de matérialisation |
 | `apps/web/src/app/api/chat/route.post.ts` | ALREADY_MODULARIZED | NONE | aucun ; la frontière serveur reste séparée du client et les contrats POST sont préservés | nouvelle responsabilité autonome réintroduite dans la route ou opacification d'une décision AuthN/AuthZ |
@@ -569,18 +569,18 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 
 | Champ | Valeur |
 | --- | --- |
-| RESPONSIBILITIES | normalisation de dessins, validation géométrique, styles, labels, confiance, marqueurs de polyligne, view-model map et ancrage infrastructure |
-| PUBLIC_CONTRACTS | types `ActionMapGeometry*` et helpers consommés par map, popup et déclaration |
+| RESPONSIBILITIES | view-model cartographique d'un item d'action, conversion des positions Leaflet, couverture observée et ancrage infrastructure |
+| PUBLIC_CONTRACTS | type `ActionMapGeometryViewModel`, `resolveActionMapGeometryViewModel`, `resolveInfrastructureAnchor` |
 | SIDE_EFFECTS | aucun effet externe ; transformations et view-models purs |
-| MAIN_CONSUMERS | couches map, popup, sélection, déclaration, dessin et marqueurs infrastructure |
-| TEST_BOUNDARY | `actions-map-geometry.utils.test.ts`, tests map layers, popup et déclaration |
-| COUPLING | très fort couplage cross-surface ; le même contrat sert affichage, édition et payload |
-| NATURAL_EXTRACTION_BOUNDARY | normalisation/validation, labels/confiance, marqueurs directionnels et view-model map |
-| ARCHITECTURE_DECISION | DEFERRED_SPLIT |
-| RATIONALE | les frontières existent mais le module est actuellement l'owner partagé d'un contrat géométrique transversal ; extraction prématurée à risque de cycles/divergences |
-| PRIORITY | AFTER_ACTIVE_CHANGES |
-| DEPENDENCY_OR_BLOCKER | owner transversal map/déclaration ; éviter cycles et divergence des formats |
-| NEXT_TRIGGER | stabilisation du parcours déclaration/map puis évolution indépendante de normalisation, markers ou view-model |
+| MAIN_CONSUMERS | couches map, popup, sélection, marqueurs de points, couverture et infrastructure |
+| TEST_BOUNDARY | `actions-map-geometry.utils.test.ts`, `map-layers.test.ts`, `action-popup-content.test.ts`, tests de sélection et consommateurs de géométrie |
+| COUPLING | couplage avec `ActionMapItem`, `geometry-presentation`, `geometry-metrics` et les owners render ; le view-model consomme leurs contrats sans porter la normalisation métier ni la validation du formulaire |
+| NATURAL_EXTRACTION_BOUNDARY | aucune extraction supplémentaire obligatoire ; normalisation, validation, rendu et view-model sont déjà portés par leurs owners spécialisés |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | les responsabilités autonomes de normalisation, validation du formulaire et rendu/styles/marqueurs ont été extraites ; ce fichier reste l'owner du view-model cartographique et de l'ancrage infrastructure |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver les conventions de coordonnées, la provenance géométrique, les contrats render/presentation et l'absence de logique de normalisation/validation dupliquée |
+| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans le view-model ou dégradation démontrée des frontières entre domaine, validation, rendu et view-model |
 
 #### `apps/web/src/components/actions/action-declaration/before/sections.tsx`
 
