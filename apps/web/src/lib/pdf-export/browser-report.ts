@@ -1,5 +1,10 @@
 import type { PdfReportPayload } from "./simple-pdf";
 import { buildOfficialReportHtml } from "./official-report-html";
+import type { ReportPdfTheme } from "./report-pdf-theme";
+
+export type ReportBrowserRenderOptions = {
+  theme?: ReportPdfTheme;
+};
 
 export function prepareReportWindow(): Window | null {
   return window.open("", "_blank");
@@ -8,8 +13,9 @@ export function prepareReportWindow(): Window | null {
 export function renderReportWindow(
   reportWindow: Window,
   payload: PdfReportPayload,
+  options: ReportBrowserRenderOptions = {},
 ): void {
-  renderReportHtmlWindow(reportWindow, buildOfficialReportHtml(payload));
+  renderReportHtmlWindow(reportWindow, buildOfficialReportHtml(payload, options));
 }
 
 function renderReportHtmlWindow(reportWindow: Window, html: string): void {
@@ -32,10 +38,11 @@ export function openPrintableReport(
   _filename: string,
   buildPrintableHtml?: (payload: PdfReportPayload) => string,
   reportWindow?: Window | null,
+  options: ReportBrowserRenderOptions = {},
 ): "opened" | "blocked" {
   const html = buildPrintableHtml
     ? buildPrintableHtml(payload)
-    : buildOfficialReportHtml(payload);
+    : buildOfficialReportHtml(payload, options);
   const targetWindow = reportWindow ?? prepareReportWindow();
   if (!targetWindow) return "blocked";
 

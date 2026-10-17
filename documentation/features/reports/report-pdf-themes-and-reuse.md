@@ -1,6 +1,6 @@
 # Reports — deux thèmes PDF comparables et réutilisation scientifique
 
-> **Statut : `PLAN` — spécification produit et critères d'acceptation ; le prototype technique P est validé, mais aucun sélecteur ni choix de thème n'est livré dans `/reports`.**
+> **Statut : `CURRENT` pour les deux thèmes et leur sélecteur/relecture ; `PLAN` pour les capacités scientifiques et d'export explicitement futures.** Le prototype technique P est validé et le renderer officiel de `/reports` réutilise la même composition sous les thèmes `Impact` et `Scientifique`.
 >
 > **Domaine :** générateur `/reports`, rendu PDF et exploitation scientifique des rapports d'impact CleanMyMap.
 >
@@ -139,16 +139,16 @@ Une page *visuellement* sobre n'est pas, en soi, un PDF machine-readable. La liv
 - Le thème est orthogonal au niveau de détail, à `ModuleState`, au scope, à la période, au quota et aux autorisations.
 - Ne pas créer un second moteur, une seconde source de données ni de formule scientifique alternative.
 - Le rendu d'un même snapshot sous deux thèmes ne doit pas modifier les chiffres ni recalculer silencieusement les actions.
-- Une génération historisée doit conserver les informations nécessaires pour rendre **le thème initial** si le thème devient une propriété persistée. Prévoir une lecture explicite de la valeur legacy (rendu historique actuel) sans migrer à l'aveugle.
-- « Voir » / « Télécharger à nouveau » doivent rester des relectures, sans nouvelle génération ni consommation de quota, selon les garanties existantes. Changer vers un nouveau thème après coup n'est pas automatiquement un simple réexport : décider ce contrat lors du chantier de versionnement.
+- Le thème est une préférence de présentation côté client, non une donnée métier : il n'est ni envoyé à la génération ni persisté dans le snapshot. Les snapshots legacy/v1/v2 sans thème explicite restent compatibles et utilisent le thème choisi au rendu, avec `Impact` par défaut.
+- « Voir » / « Télécharger à nouveau » restent des relectures, sans nouvelle génération, recalcul, modification du snapshot ou consommation de quota. Changer de thème après coup repeint le même snapshot historique et ne relit pas les données runtime actuelles.
 - Ne jamais exposer des médias privés, identifiants personnels non autorisés ou données réservées par un export machine supposé scientifique.
 - Pour les liens de citation, ne jamais rendre public un rapport privé par défaut.
 
 ## 7. Prototype de validation préalable à l'intégration complète
 
-Définir **une seule page commune** de référence avec : en-tête et contexte, grille de 4 KPI, Figure 01 avec légende et source, Tableau 01 avec unités, encadré de limites et pied de page. Construire les deux rendus à partir de **la même fixture de snapshot** ; ne pas ajouter les deux thèmes à tout le produit avant l'évaluation de ce prototype.
+La page commune de référence comprend : en-tête et contexte, grille de 4 KPI, Figure 01 avec légende et source, Tableau 01 avec unités, encadré de limites et pied de page. Le prototype et le renderer officiel construisent les deux rendus à partir de la même composition et des mêmes données ; toute différence observée doit rester une différence de présentation.
 
-Le prototype technique P est validé dans `apps/web/src/lib/pdf-export/report-theme-prototype.ts` et son test d'équivalence associé. Il reste isolé des routes `/reports` et réutilise l'owner de tokens A4 `report-pdf-theme.ts` ; aucune persistance, sélection utilisateur, formule ou source de données supplémentaire n'est introduite.
+Le prototype technique P est validé dans `apps/web/src/lib/pdf-export/report-theme-prototype.ts` et son test d'équivalence associé. L'intégration CURRENT réutilise l'owner de tokens A4 `report-pdf-theme.ts`, `buildOfficialReportHtml()` et `browser-report.ts` ; aucune persistance, formule ou source de données supplémentaire n'est introduite.
 
 Sur la fixture déterministe, Chromium produit un PDF A4 d'une page par thème. Les six blocs ont le même ordre, les mêmes géométries de référence, les mêmes valeurs et unités ; Poppler extrait le titre, Figure 01, Tableau 01, le zéro, l'inconnu, les accents et l'identifiant de génération dans les deux fichiers. Les fichiers sont non balisés (`Tagged: no`) : aucune conformité PDF/UA, PDF/A ou ordre de lecture normatif n'est déduite de ce prototype.
 
@@ -167,15 +167,15 @@ Une capture ou une maquette graphique ne prouve ni le moteur final ni la conform
 
 ## 8. Séquencement et périmètre
 
-**Lot D — présent document :** enregistrer la direction produit et les contraintes de rendu, sans code produit, migration, nouvelle route, faux export ni nouveau sélecteur visible.
+**Lot D — présent document :** enregistrer la direction produit et les contraintes de rendu, sans code produit, migration, nouvelle route ni faux export.
 
 **Lot P — prototype technique validé :** la page de référence et la fixture sont disponibles dans le module de prototype isolé ; les tests statiques, l'impression Chromium et l'extraction Poppler démontrent la comparabilité sur ce périmètre. Cette preuve ne vaut pas intégration générale ni conformité PDF accessible.
 
-**Lot R — future intégration :** exposer les thèmes sur `/reports` uniquement après prototypes probants, versionner leurs paramètres au bon endroit et conserver la compatibilité historique, les autorisations et les quotas.
+**Lot R — livré CURRENT :** exposer les thèmes sur `/reports` après le prototype probant, avec un sélecteur de configuration et une relecture historique sans persistance de thème, recalcul, changement de snapshot ni quota supplémentaire. Les autorisations et le périmètre métier restent ceux du rapport existant.
 
 **Lot S — futur renforcement scientifique :** PDF balisé vérifié, métadonnées citables, export structuré du snapshot et éventuellement PDF/A-3 ; séparer les capacités réellement validées des cibles ultérieures.
 
-Le présent lot n'autorise pas l'exécution des lots P/R/S. Les travaux de versionnement et de génération dérivée déjà planifiés restent une responsabilité distincte et une dépendance à coordonner, pas une nouvelle base de données à créer ici.
+Le lot S et les travaux de versionnement scientifique ou de génération dérivée restent une responsabilité distincte et une dépendance à coordonner, pas une nouvelle base de données à créer ici.
 
 ## 9. Références d'inspiration — non normatives
 
@@ -197,8 +197,8 @@ Ces publications servent à observer **le langage graphique ou la citabilité**,
 
 ## 10. Conditions de clôture de cette spécification documentaire
 
-- Le contrat **deux thèmes / une composition** est localisé dans cette source PLAN unique, sans contradiction avec les niveaux de détail et modules `CURRENT`.
+- Le contrat **deux thèmes / une composition** est localisé dans cette source, sans contradiction avec les niveaux de détail et modules `CURRENT`.
 - Les fiches et index nécessaires pointent vers ce document sans recopier le contenu.
-- Aucun document CURRENT ne prétend que le choix de thème, la citation automatique, le Tagged PDF, le PDF/A-3 ou l'export machine associé sont déjà livrés.
+- Les documents CURRENT décrivent le choix de thème livré et ne présentent pas la citabilité automatique, le Tagged PDF, le PDF/A-3 ou l'export machine associé comme déjà livrés.
 - Le chemin d'implémentation, les limites du renderer actuel, le prototype préalable et les critères de test sont explicités.
-- Aucun runtime de production `/reports`, migration, asset, screenshot ou fichier généré n'est créé dans ce lot ; le prototype et ses tests restent explicitement isolés.
+- Aucun moteur PDF parallèle, migration, asset, screenshot ou fichier généré n'est créé pour cette capacité ; le prototype et le renderer officiel partagent leurs tokens et leur composition.

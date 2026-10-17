@@ -18,6 +18,7 @@ import {
   DEFAULT_REPORT_MODULES,
   DEFAULT_REPORT_DETAIL_LEVEL,
   DEFAULT_REPORT_GENERATION_PERIOD,
+  DEFAULT_REPORT_PDF_THEME,
   buildCoverageRangeLabel,
   buildModuleSelectionLabel,
   buildPdfData,
@@ -28,6 +29,7 @@ import {
   resolveReportExportStatus,
   type DetailLevelId,
   type ModuleState,
+  type ReportPdfTheme,
   type SelectedPeriodId,
 } from "@/components/reports/web-document/reports-web-document.shared";
 import { usePdfExport } from "@/components/ui/pdf-export/use-pdf-export";
@@ -107,7 +109,9 @@ export function ReportsWebDocument({
   );
   const periodSelectionValid = isValidReportGenerationPeriodSelection(periodSelection);
   const [detailLevel, setDetailLevel] = useState<DetailLevelId>(DEFAULT_REPORT_DETAIL_LEVEL);
+  const [reportTheme, setReportTheme] = useState<ReportPdfTheme>(DEFAULT_REPORT_PDF_THEME);
   const [modules, setModules] = useState<ModuleState>(DEFAULT_REPORT_MODULES);
+  const historicalReplayRef = useRef<{ reportWindow: Window; payload: PdfReportPayload } | null>(null);
   const reportNow = useMemo(() => new Date(), []);
   const filteredContracts = useMemo(
     () => filterReportGenerationContracts(contracts, periodSelection, reportNow),
@@ -218,11 +222,13 @@ export function ReportsWebDocument({
     if (!generatedPayload) {
       throw new Error("Le snapshot serveur du rapport est invalide.");
     }
+    historicalReplayRef.current = null;
     const renderResult = openPrintableReport(
       generatedPayload,
       typeof body?.filename === "string" ? body.filename : buildPdfReportFilename(generatedPayload),
       undefined,
       reportWindow,
+      { theme: reportTheme },
     );
     if (renderResult === "blocked") {
       throw new Error("La fenêtre du rapport a été bloquée. Autorisez les fenêtres contextuelles puis réessayez depuis l'historique.");
@@ -257,9 +263,10 @@ export function ReportsWebDocument({
 
     try {
       const generation = await loadHistoricalReportSnapshot(id);
+      historicalReplayRef.current = { reportWindow: reportWindow!, payload: generation.snapshot };
       replayHistoricalReport(action, generation, {
-        view: (payload) => renderReportWindow(reportWindow!, payload),
-        reexport: (payload) => renderReportWindow(reportWindow!, payload),
+        view: (payload) => renderReportWindow(reportWindow!, payload, { theme: reportTheme }),
+        reexport: (payload) => renderReportWindow(reportWindow!, payload, { theme: reportTheme }),
       });
 
       setHistoryActionStateById((current) => ({
@@ -285,6 +292,14 @@ export function ReportsWebDocument({
           message: error instanceof Error ? error.message : "Impossible de charger le rapport historique.",
         },
       }));
+    }
+  }
+
+  function handleThemeChange(theme: ReportPdfTheme): void {
+    setReportTheme(theme);
+    const historicalReplay = historicalReplayRef.current;
+    if (historicalReplay && !historicalReplay.reportWindow.closed) {
+      renderReportWindow(historicalReplay.reportWindow, historicalReplay.payload, { theme });
     }
   }
 
@@ -386,6 +401,8 @@ export function ReportsWebDocument({
           onPeriodChange={setPeriod}
           detailLevel={detailLevel}
           onDetailLevelChange={setDetailLevel}
+          theme={reportTheme}
+          onThemeChange={handleThemeChange}
           customRange={customRange}
           onCustomRangeChange={setCustomRange}
           selectedScopeValue={selectedScopeValue}

@@ -3,6 +3,11 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 import {
+  DEFAULT_REPORT_PDF_THEME,
+  REPORT_PDF_THEME_OPTIONS,
+  type ReportPdfTheme,
+} from "@/lib/pdf-export/report-pdf-theme";
+import {
   DEFAULT_REPORT_DETAIL_LEVEL,
   DEFAULT_REPORT_GENERATION_PERIOD,
   DEFAULT_REPORT_MODULES,
@@ -36,9 +41,11 @@ export {
   detailLevelDescription,
   periodLabel,
   reportPeriodLabel,
+  DEFAULT_REPORT_PDF_THEME,
+  REPORT_PDF_THEME_OPTIONS,
 };
 
-export type { DetailLevelId, ModuleState, PeriodId, SelectedPeriodId };
+export type { DetailLevelId, ModuleState, PeriodId, SelectedPeriodId, ReportPdfTheme };
 
 export type ReportGenerationUiState = "idle" | "pending" | "success" | "error";
 

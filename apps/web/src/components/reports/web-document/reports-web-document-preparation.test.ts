@@ -17,6 +17,8 @@ const mocks = vi.hoisted(() => ({
   preview: vi.fn(() => null),
   delivery: vi.fn(() => "Générer le rapport"),
   deliveryHistory: vi.fn(() => null),
+  renderReportWindow: vi.fn(),
+  prepareReportWindow: vi.fn(),
   openPrintableReport: vi.fn(),
 }));
 
@@ -38,9 +40,9 @@ vi.mock("@/components/ui/pdf-export/use-pdf-export", () => ({
 }));
 
 vi.mock("@/lib/pdf-export/browser-report", () => ({
-  renderReportWindow: vi.fn(),
+  renderReportWindow: mocks.renderReportWindow,
   openPrintableReport: mocks.openPrintableReport,
-  prepareReportWindow: vi.fn(),
+  prepareReportWindow: mocks.prepareReportWindow,
 }));
 
 vi.mock("@/components/reports/web-document/report-cover", () => ({
@@ -63,6 +65,8 @@ const preparationProps: ReportsWebDocumentPreparationProps = {
   onPeriodChange: vi.fn(),
   detailLevel: "default",
   onDetailLevelChange: vi.fn(),
+  theme: "impact",
+  onThemeChange: vi.fn(),
   selectedScopeValue: "global",
   scopeOptions,
   onScopeChange: vi.fn(),
@@ -129,6 +133,7 @@ describe("ReportsWebDocumentPreparation", () => {
       ...preparationProps,
       onPeriodChange: vi.fn(),
       onDetailLevelChange: vi.fn(),
+      onThemeChange: vi.fn(),
       onScopeChange: vi.fn(),
       onModuleToggle: vi.fn(),
     };
@@ -142,13 +147,15 @@ describe("ReportsWebDocumentPreparation", () => {
 
     selects[0]?.props.onChange?.({ target: { value: "current_year" } });
     selects[1]?.props.onChange?.({ target: { value: "exhaustif" } });
-    selects[2]?.props.onChange?.({ target: { value: "account:account-1" } });
+    selects[2]?.props.onChange?.({ target: { value: "scientific" } });
+    selects[3]?.props.onChange?.({ target: { value: "account:account-1" } });
     moduleInputs.forEach((input) => input.props.onChange?.());
 
     expect(props.onPeriodChange).toHaveBeenCalledWith("current_year");
     expect(props.onDetailLevelChange).toHaveBeenCalledWith("exhaustif");
+    expect(props.onThemeChange).toHaveBeenCalledWith("scientific");
     expect(props.onScopeChange).toHaveBeenCalledWith("account:account-1");
-    expect(selects).toHaveLength(3);
+    expect(selects).toHaveLength(4);
     expect(props.onModuleToggle).toHaveBeenCalledTimes(4);
     expect(props.onModuleToggle.mock.calls.map(([key]) => key)).toEqual([
       "dataAndCartography",
@@ -189,6 +196,9 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(markup).toContain('id="reports-web-document-period"');
     expect(markup).toContain('for="reports-web-document-scope"');
     expect(markup).toContain('id="reports-web-document-scope"');
+    expect(markup).toContain("Thème PDF");
+    expect(markup).toContain("Habillage éditorial et institutionnel");
+    expect(markup).toContain('id="reports-web-document-theme-description"');
     expect(markup).toContain('id="reports-web-document-module-dataAndCartography"');
     expect(markup).not.toContain("Étape 1");
   });
@@ -214,7 +224,7 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(markup).toContain("Action terrain canonique");
     expect(markup).toContain("Action sélectionnée · résolution serveur à la génération");
     expect(markup).not.toContain("action-1");
-    expect(elements.filter((element) => element.type === "select")).toHaveLength(1);
+    expect(elements.filter((element) => element.type === "select")).toHaveLength(2);
     expect(elements.filter((element) => element.type === "input" && element.props.type === "checkbox")).toHaveLength(4);
   });
 
@@ -324,6 +334,7 @@ describe("ReportsWebDocumentPreparation", () => {
       },
     });
     expect(String(request.body)).not.toContain("Masse_Kg");
+    expect(mocks.openPrintableReport.mock.calls.at(-1)?.[4]).toEqual({ theme: "impact" });
     vi.unstubAllGlobals();
 
     const previewProps = (
@@ -414,6 +425,78 @@ describe("ReportsWebDocumentPreparation", () => {
       },
     });
     expect(String(request.body)).not.toContain("Valeur navigateur ignorée");
+    expect(mocks.openPrintableReport.mock.calls.at(-1)?.[4]).toEqual({ theme: "impact" });
+    vi.unstubAllGlobals();
+  });
+
+  it("replays a historical snapshot with the selected theme without a new generation", async () => {
+    mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
+    mocks.usePdfExport.mockReturnValue({
+      state: "idle",
+      message: null,
+      copy: { pendingLabel: "Génération en cours" },
+      hasData: true,
+      isDisabled: false,
+      exportRubriquePdf: vi.fn(),
+    });
+    const reportWindow = { closed: false } as Window;
+    mocks.prepareReportWindow.mockReturnValue(reportWindow);
+    const snapshot = {
+      title: "Rapport historique",
+      rubrique: "reporting",
+      periode: "six_months",
+      organizationType: "Global",
+      data: { generatedAt: "2026-08-27T10:30:00.000Z", summary: ["Historique"] },
+    };
+    const historyRow = {
+      id: "generation-theme",
+      report: "Rapport historique",
+      period: "Six mois",
+      perimeter: "Global",
+      detail: "Par défaut",
+      generatedAt: "27/08/2026 12:30",
+    };
+    const props = {
+      contracts: [],
+      communityEvents: [],
+      initialRecentRows: [historyRow],
+    } as unknown as ReportsWebDocumentProps;
+    renderToStaticMarkup(React.createElement(ReportsWebDocument, props));
+    const historyCall = mocks.deliveryHistory.mock.calls.at(-1) as unknown as [
+      { onView: (id: string) => void },
+    ] | undefined;
+    const historyProps = historyCall?.[0] as {
+      onView: (id: string) => void;
+    };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        generation: {
+          id: "generation-theme",
+          filename: "rapport_historique.pdf",
+          generatedAt: "2026-08-27T10:30:00.000Z",
+          scopeLabel: "Global",
+          detailLevel: "default",
+          snapshot,
+        },
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    historyProps.onView("generation-theme");
+    await vi.waitFor(() => expect(mocks.renderReportWindow).toHaveBeenCalledWith(
+      reportWindow,
+      snapshot,
+      { theme: "impact" },
+    ));
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/reports/generations/generation-theme",
+      expect.objectContaining({ method: "GET" }),
+    );
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      "/api/reports/generations",
+      expect.objectContaining({ method: "POST" }),
+    );
     vi.unstubAllGlobals();
   });
 

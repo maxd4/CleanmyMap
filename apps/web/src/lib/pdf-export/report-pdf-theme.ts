@@ -16,6 +16,25 @@ export const reportPdfColors = {
 
 export type ReportPdfTheme = "impact" | "scientific";
 
+export const REPORT_PDF_THEME_OPTIONS = [
+  {
+    id: "impact",
+    label: "Impact",
+    description: "Habillage éditorial et institutionnel, avec accents de marque.",
+  },
+  {
+    id: "scientific",
+    label: "Scientifique",
+    description: "Habillage sobre, blanc dominant et priorité à la référence.",
+  },
+] as const satisfies ReadonlyArray<{
+  id: ReportPdfTheme;
+  label: string;
+  description: string;
+}>;
+
+export const DEFAULT_REPORT_PDF_THEME: ReportPdfTheme = "impact";
+
 type ReportPdfColorTokens = {
   [Key in keyof typeof reportPdfColors]: string;
 };

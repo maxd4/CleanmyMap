@@ -7,9 +7,11 @@ import {
 import {
   DETAIL_LEVEL_OPTIONS,
   REPORT_MODULE_DEFINITIONS,
+  REPORT_PDF_THEME_OPTIONS,
   detailLevelDescription,
   type ModuleState,
   type DetailLevelId,
+  type ReportPdfTheme,
   type SelectedPeriodId,
 } from "./reports-web-document.shared";
 
@@ -23,6 +25,8 @@ export type ReportsWebDocumentPreparationProps = {
   onPeriodChange: (period: SelectedPeriodId) => void;
   detailLevel: DetailLevelId;
   onDetailLevelChange: (detailLevel: DetailLevelId) => void;
+  theme: ReportPdfTheme;
+  onThemeChange: (theme: ReportPdfTheme) => void;
   customRange?: { from: string; to: string };
   onCustomRangeChange?: (range: { from: string; to: string }) => void;
   selectedScopeValue: string;
@@ -42,6 +46,8 @@ export function ReportsWebDocumentPreparation({
   onPeriodChange,
   detailLevel,
   onDetailLevelChange,
+  theme,
+  onThemeChange,
   customRange = { from: "", to: "" },
   onCustomRangeChange = () => undefined,
   selectedScopeValue,
@@ -150,6 +156,28 @@ export function ReportsWebDocumentPreparation({
           </select>
           <p id="reports-web-document-detail-level-description" className="text-xs leading-5 text-slate-500">
             {detailLevelDescription(detailLevel)}
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="reports-web-document-theme" className="block text-sm font-black text-slate-900">
+            Thème PDF
+          </label>
+          <select
+            id="reports-web-document-theme"
+            value={theme}
+            onChange={(event) => onThemeChange(event.target.value as ReportPdfTheme)}
+            aria-describedby="reports-web-document-theme-description"
+            className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
+          >
+            {REPORT_PDF_THEME_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p id="reports-web-document-theme-description" className="text-xs leading-5 text-slate-500">
+            {REPORT_PDF_THEME_OPTIONS.find((option) => option.id === theme)?.description}
           </p>
         </div>
 

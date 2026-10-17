@@ -30,16 +30,23 @@ au runtime et à ses tests, pas à une copie documentaire.
   unités, limites et date de génération sont relus depuis le snapshot. Le PDF
   binaire n’est pas conservé ; une identité octet pour octet n’est donc pas
   garantie lorsque le renderer ou l’environnement évolue.
+- Les thèmes PDF `Impact` et `Scientifique` sont CURRENT dans le générateur :
+  le sélecteur ne modifie que le CSS du renderer HTML officiel. La composition,
+  les données, les KPI, les modules et les niveaux de détail restent identiques.
+  Le thème n'est ni un paramètre de génération ni une propriété du snapshot ;
+  les snapshots historiques sans thème explicite restent donc compatibles et
+  sont rendus avec le thème choisi, Impact par défaut. Changer de thème lors de
+  la consultation ou du réexport ne refait pas la génération et ne consomme
+  pas de quota.
+- [`report-pdf-themes-and-reuse.md`](./report-pdf-themes-and-reuse.md) — contrat
+  CURRENT des deux habillages et de leur réutilisation sur les snapshots ; les
+  capacités de citabilité, Tagged PDF et export machine restent PLAN.
 
 ## `PLAN`
 
 - [`reports-generation-parameters.md`](./reports-generation-parameters.md)
   — contrat CURRENT des paramètres et filtres effectivement acceptés par le
   générateur multi-actions ; les extensions avancées restent planifiées.
-- [`report-pdf-themes-and-reuse.md`](./report-pdf-themes-and-reuse.md)
-  — spécification PLAN de deux habillages PDF, Impact et Scientifique, pour
-  une composition logique unique, avec citabilité et extraction scientifique
-  futures ; elle ne livre aucun sélecteur ni export machine.
 - [`impact-goals-and-progression.md`](./impact-goals-and-progression.md)
   — futurs objectifs configurables, distincts du moteur de génération.
 

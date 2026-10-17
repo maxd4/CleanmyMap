@@ -59,4 +59,21 @@ describe("browser report delivery", () => {
     expect(open).not.toHaveBeenCalled();
     expect(reportWindow.document.write).toHaveBeenCalledWith(expect.stringContaining("Rapport test"));
   });
+
+  it.each([
+    ["impact", "linear-gradient"],
+    ["scientific", 'data-report-theme="scientific"'],
+  ] as const)("passes the selected %s theme to the official renderer", (theme, marker) => {
+    const reportWindow = createReportWindow();
+    vi.stubGlobal("window", { open: vi.fn().mockReturnValue(reportWindow) });
+
+    expect(openPrintableReport(payload, "rapport_test.pdf", undefined, reportWindow, { theme })).toBe("opened");
+
+    expect(reportWindow.document.write).toHaveBeenCalledWith(expect.stringContaining(marker));
+    expect(reportWindow.document.write).toHaveBeenCalledWith(
+      expect.stringContaining('data-report-theme="' + theme + '"'),
+    );
+    expect(reportWindow.document.write).toHaveBeenCalledWith(expect.stringContaining("Résumé fidèle."));
+    expect(reportWindow.document.write).toHaveBeenCalledWith(expect.stringContaining("@page { size: A4 portrait;"));
+  });
 });

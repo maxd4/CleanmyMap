@@ -44,7 +44,7 @@ export function buildOfficialReportHtml(
   <style>${buildOfficialReportCss(options.theme)}</style>
 </head>
 <body>
-  <main class="cmm-report cmm-web-shell">
+  <main class="cmm-report cmm-web-shell" data-report-theme="${options.theme ?? "impact"}">
     <section class="cmm-web-header">
       <div class="cmm-web-header__top">
         <div>
@@ -145,7 +145,7 @@ export function buildOfficialReportHtml(
   <style>${buildOfficialReportCss(options.theme)}</style>
 </head>
 <body>
-  <main class="cmm-report">
+  <main class="cmm-report" data-report-theme="${options.theme ?? "impact"}">
     <section class="cmm-page cmm-cover">
       <div>
         <p class="cmm-kicker">Livrable officiel CleanMyMap</p>

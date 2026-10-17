@@ -500,6 +500,44 @@ describe("reports web document shared helpers", () => {
     expect(detailLevelLabel("default")).not.toMatch(/pages/i);
   });
 
+  it("renders the complete report under both themes without changing content", () => {
+    const pdf = buildPdfDataWithModules({
+      dataAndCartography: true,
+      transparencyAndMethods: true,
+      rawData: true,
+      detailedFiles: true,
+    });
+    const payload = {
+      title: pdf.title,
+      rubrique: "reporting" as const,
+      periode: "full_history" as const,
+      organizationType: "multi_action",
+      data: pdf,
+    };
+    const rendered = (['impact', 'scientific'] as const).map((theme) =>
+      buildOfficialReportHtml(payload, { theme }),
+    );
+    const normalize = (html: string) => html
+      .replace(/<style>[\s\S]*?<\/style>/, "<style />")
+      .replace(/data-report-theme="(?:impact|scientific)"/, 'data-report-theme="same"');
+
+    expect(normalize(rendered[0])).toBe(normalize(rendered[1]));
+    expect(rendered[0]).toContain('data-report-theme="impact"');
+    expect(rendered[1]).toContain('data-report-theme="scientific"');
+    expect(rendered[0]).toContain("0");
+    expect(rendered[1]).toContain("0");
+    expect(rendered[0]).toContain("n/a");
+    expect(rendered[1]).toContain("n/a");
+    expect(rendered[0]).toContain("Résumé contrôlé.");
+    expect(rendered[1]).toContain("Résumé contrôlé.");
+    expect(rendered[0]).toContain("@page { size: A4 portrait;");
+    expect(rendered[1]).toContain("@page { size: A4 portrait;");
+    expect(rendered[0]).toContain("Données visibles");
+    expect(rendered[1]).toContain("Données visibles");
+    expect(rendered[0]).toContain("Paris");
+    expect(rendered[1]).toContain("Paris");
+  });
+
   it.each([
     ["available", "ready", "Prêt à générer"],
     ["used", "quota-used", "Quota quotidien atteint"],
