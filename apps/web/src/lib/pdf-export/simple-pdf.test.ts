@@ -11,6 +11,10 @@ import {
   renderOfficialMarkdown,
 } from "./official-report-html";
 import { UnsupportedPdfTextError } from "./simple-pdf-primitives";
+import {
+  measureSimplePdfText,
+  SIMPLE_PDF_TEXT_MAX_WIDTH,
+} from "./simple-pdf-serialization";
 
 const payload: PdfReportPayload = {
   title: "Rapport test",
@@ -30,6 +34,47 @@ const payload: PdfReportPayload = {
     generatedAt: "2026-05-10T08:00:00.000Z",
   },
 };
+
+type PdfTextOperator = {
+  x: number;
+  y: number;
+  text: string;
+};
+
+function decodePdfLiteral(value: string): string {
+  const bytes: number[] = [];
+  for (let index = 0; index < value.length; index += 1) {
+    if (value[index] !== "\\") {
+      bytes.push(value.charCodeAt(index));
+      continue;
+    }
+
+    const octal = value.slice(index + 1, index + 4);
+    if (/^[0-7]{3}$/.test(octal)) {
+      bytes.push(Number.parseInt(octal, 8));
+      index += 3;
+      continue;
+    }
+
+    const escaped = value[index + 1];
+    if (escaped !== undefined) {
+      bytes.push(escaped.charCodeAt(0));
+      index += 1;
+    }
+  }
+  return new TextDecoder("windows-1252").decode(Uint8Array.from(bytes));
+}
+
+function extractTextOperators(pdf: Uint8Array): PdfTextOperator[] {
+  const source = new TextDecoder().decode(pdf);
+  return Array.from(source.matchAll(/1 0 0 1 (\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) Tm \((.*)\) Tj/g)).map(
+    (match) => ({
+      x: Number(match[1]),
+      y: Number(match[2]),
+      text: decodePdfLiteral(match[3] ?? ""),
+    }),
+  );
+}
 
 describe("simple PDF export", () => {
   it("builds the expected report filename", () => {
@@ -118,6 +163,37 @@ describe("simple PDF export", () => {
     expect(buildSimplePdf(lines).byteLength).toBeGreaterThan(200);
   });
 
+  it.each([
+    ["wide uppercase glyphs", "W".repeat(96)],
+    ["narrow lowercase glyphs", "a".repeat(96)],
+    ["French sentence", "Une phrase française longue conserve les espaces, la ponctuation et les unités de mesure sans débordement."],
+    ["long identifier", "https://cleanmymap.example.org/rapports/action/2026/une-reference-sans-espace-".repeat(3)],
+    ["WinAnsi scientific text", "É µ 20° 42 € l’action d’exemple"],
+  ])("wraps %s using generated PDF text positions", (_label, value) => {
+    const operators = extractTextOperators(buildSimplePdf([value]));
+
+    expect(operators.length).toBeGreaterThan(0);
+    expect(operators.map((operator) => operator.text).join("")).toBe(value);
+    for (const operator of operators) {
+      expect(operator.x).toBe(40);
+      expect(operator.x + measureSimplePdfText(operator.text)).toBeLessThanOrEqual(40 + SIMPLE_PDF_TEXT_MAX_WIDTH + 0.001);
+    }
+  });
+
+  it("keeps long banner text inside the banner width and preserves its fragments", () => {
+    const value = "Bandeau de gouvernance : " + "W".repeat(96);
+    const operators = extractTextOperators(buildSimplePdf([`!! ${value}`]));
+
+    expect(operators.map((operator) => operator.text).join("")).toBe(value);
+    expect(operators.every((operator) => operator.x + measureSimplePdfText(operator.text) <= 555.001)).toBe(true);
+  });
+
+  it("paginates according to the additional width-constrained fragments", () => {
+    const pdf = buildSimplePdf(Array.from({ length: 30 }, () => "W".repeat(96)));
+
+    expect(new TextDecoder().decode(pdf)).toContain("/Count 2");
+  });
+
   it("keeps a measured zero distinct from an unavailable value", () => {
     const lines = buildPdfReportLines({
       ...payload,
@@ -137,7 +213,7 @@ describe("simple PDF export", () => {
   it("encodes supported French and scientific characters and rejects unsupported glyphs", () => {
     const unicodeLines = buildPdfReportLines({
       ...payload,
-      data: { ...payload.data, summary: ["Élève — µ 20° … l’action"] },
+      data: { ...payload.data, summary: ["Élève — µ 20° € … l’action"] },
     });
     const encodedPdf = new TextDecoder().decode(buildSimplePdf(unicodeLines));
 
@@ -145,6 +221,7 @@ describe("simple PDF export", () => {
     expect(encodedPdf).toContain("\\227");
     expect(encodedPdf).toContain("\\265");
     expect(encodedPdf).toContain("\\260");
+    expect(encodedPdf).toContain("\\200");
     expect(encodedPdf).toContain("\\205");
     expect(encodedPdf).toContain("\\222");
     expect(() => buildSimplePdf(buildPdfReportLines({

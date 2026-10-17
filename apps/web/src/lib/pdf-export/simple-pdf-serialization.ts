@@ -12,7 +12,179 @@ const MARGIN_TOP = 40;
 const LINE_HEIGHT = 14;
 const BANNER_LINE_HEIGHT = 20;
 const MAX_LINES_PER_PAGE = Math.max(20, Math.floor((PAGE_HEIGHT - MARGIN_TOP * 2) / LINE_HEIGHT));
-const MAX_TEXT_CHARS_PER_LINE = 96;
+const TEXT_FONT_SIZE = 11;
+const TEXT_MAX_WIDTH = PAGE_WIDTH - MARGIN_X * 2;
+
+/**
+ * Standard Helvetica widths from the PDF Type 1 font metrics, in 1/1000 em.
+ * Keeping these metrics beside the serializer avoids character-count guesses
+ * while retaining the existing lightweight PDF writer.
+ */
+const HELVETICA_WIDTHS = new Map<number, number>();
+
+function registerHelveticaWidth(characters: string, width: number): void {
+  for (const character of characters) {
+    HELVETICA_WIDTHS.set(character.codePointAt(0) ?? 0, width);
+  }
+}
+
+registerHelveticaWidth(" !", 278);
+registerHelveticaWidth('"', 355);
+registerHelveticaWidth("#$", 556);
+registerHelveticaWidth("%", 889);
+registerHelveticaWidth("&", 667);
+registerHelveticaWidth("'", 191);
+registerHelveticaWidth("()", 333);
+registerHelveticaWidth("*", 389);
+registerHelveticaWidth("+", 584);
+registerHelveticaWidth(",", 278);
+registerHelveticaWidth("-", 333);
+registerHelveticaWidth(".", 278);
+registerHelveticaWidth("/", 278);
+registerHelveticaWidth("0123456789", 556);
+registerHelveticaWidth(":;", 278);
+registerHelveticaWidth("<=>", 584);
+registerHelveticaWidth("?", 556);
+registerHelveticaWidth("@", 1015);
+registerHelveticaWidth("[]", 278);
+registerHelveticaWidth("\\", 278);
+registerHelveticaWidth("^", 469);
+registerHelveticaWidth("_", 556);
+registerHelveticaWidth("`", 333);
+registerHelveticaWidth("{}", 334);
+registerHelveticaWidth("|", 280);
+registerHelveticaWidth("~", 584);
+registerHelveticaWidth("ABHNR", 667);
+registerHelveticaWidth("C", 722);
+registerHelveticaWidth("D", 722);
+registerHelveticaWidth("E", 667);
+registerHelveticaWidth("F", 611);
+registerHelveticaWidth("G", 778);
+registerHelveticaWidth("I", 278);
+registerHelveticaWidth("J", 500);
+registerHelveticaWidth("K", 667);
+registerHelveticaWidth("L", 556);
+registerHelveticaWidth("M", 833);
+registerHelveticaWidth("OQ", 778);
+registerHelveticaWidth("P", 667);
+registerHelveticaWidth("S", 667);
+registerHelveticaWidth("T", 611);
+registerHelveticaWidth("U", 722);
+registerHelveticaWidth("V", 667);
+registerHelveticaWidth("W", 944);
+registerHelveticaWidth("X", 667);
+registerHelveticaWidth("Y", 667);
+registerHelveticaWidth("Z", 611);
+registerHelveticaWidth("abcdeghnopq", 556);
+registerHelveticaWidth("f", 278);
+registerHelveticaWidth("ijkl", 222);
+registerHelveticaWidth("m", 833);
+registerHelveticaWidth("r", 333);
+registerHelveticaWidth("s", 500);
+registerHelveticaWidth("t", 278);
+registerHelveticaWidth("uvw", 556);
+registerHelveticaWidth("xyz", 500);
+
+// Latin-1 and WinAnsi glyphs used by the existing encoder.
+registerHelveticaWidth("\u00a0", 278);
+registerHelveticaWidth("¡", 333);
+registerHelveticaWidth("¢£¤¥", 556);
+registerHelveticaWidth("¦", 260);
+registerHelveticaWidth("§", 556);
+registerHelveticaWidth("¨", 333);
+registerHelveticaWidth("©", 737);
+registerHelveticaWidth("ª", 333);
+registerHelveticaWidth("«", 333);
+registerHelveticaWidth("¬", 556);
+registerHelveticaWidth("®", 737);
+registerHelveticaWidth("¯", 333);
+registerHelveticaWidth("°", 400);
+registerHelveticaWidth("±", 549);
+registerHelveticaWidth("²³´", 333);
+registerHelveticaWidth("µ", 556);
+registerHelveticaWidth("¶", 537);
+registerHelveticaWidth("·", 278);
+registerHelveticaWidth("¸", 333);
+registerHelveticaWidth("¹", 333);
+registerHelveticaWidth("º", 365);
+registerHelveticaWidth("»", 333);
+registerHelveticaWidth("¼½¾", 834);
+registerHelveticaWidth("¿", 611);
+registerHelveticaWidth("ÀÁÂÃÄÅ", 667);
+registerHelveticaWidth("Æ", 1000);
+registerHelveticaWidth("Ç", 667);
+registerHelveticaWidth("ÈÉÊË", 667);
+registerHelveticaWidth("ÌÍÎÏ", 278);
+registerHelveticaWidth("Ð", 722);
+registerHelveticaWidth("Ñ", 722);
+registerHelveticaWidth("ÒÓÔÕÖØ", 778);
+registerHelveticaWidth("×", 584);
+registerHelveticaWidth("ÙÚÛÜ", 722);
+registerHelveticaWidth("Ý", 667);
+registerHelveticaWidth("Þ", 667);
+registerHelveticaWidth("ß", 611);
+registerHelveticaWidth("àáâãäå", 556);
+registerHelveticaWidth("æ", 667);
+registerHelveticaWidth("ç", 500);
+registerHelveticaWidth("èéêë", 556);
+registerHelveticaWidth("ìíîï", 222);
+registerHelveticaWidth("ð", 556);
+registerHelveticaWidth("ñ", 556);
+registerHelveticaWidth("òóôõöø", 556);
+registerHelveticaWidth("÷", 584);
+registerHelveticaWidth("ùúûü", 556);
+registerHelveticaWidth("ýÿ", 500);
+registerHelveticaWidth("þ", 556);
+
+// WinAnsi special glyphs not covered by the Latin-1 range.
+registerHelveticaWidth("€", 556);
+registerHelveticaWidth("‚„", 222);
+registerHelveticaWidth("ƒ", 556);
+registerHelveticaWidth("…", 1000);
+registerHelveticaWidth("†‡", 556);
+registerHelveticaWidth("ˆ˜", 333);
+registerHelveticaWidth("‰", 1000);
+registerHelveticaWidth("Š", 667);
+registerHelveticaWidth("‹›", 333);
+registerHelveticaWidth("Œ", 1000);
+registerHelveticaWidth("Ž", 611);
+registerHelveticaWidth("‘’", 222);
+registerHelveticaWidth("“”", 333);
+registerHelveticaWidth("•", 350);
+registerHelveticaWidth("–", 556);
+registerHelveticaWidth("—", 1000);
+registerHelveticaWidth("™", 1000);
+registerHelveticaWidth("š", 500);
+registerHelveticaWidth("œ", 667);
+registerHelveticaWidth("ž", 500);
+registerHelveticaWidth("Ÿ", 667);
+
+function measureHelveticaText(value: string): number {
+  let width = 0;
+  for (const character of value) {
+    // Validate through the canonical WinAnsi encoder before measuring. This
+    // preserves the explicit unsupported-glyph failure contract.
+    escapePdfText(character);
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (codePoint === 0x09 || codePoint === 0x202f) {
+      width += (278 * TEXT_FONT_SIZE) / 1000;
+      continue;
+    }
+    if (codePoint === 0x0a || codePoint === 0x0c || codePoint === 0x0d) continue;
+    const glyphWidth = HELVETICA_WIDTHS.get(codePoint);
+    if (glyphWidth === undefined) {
+      throw new Error(`Helvetica metric missing for supported PDF glyph U+${codePoint.toString(16).toUpperCase()}.`);
+    }
+    width += glyphWidth;
+  }
+  return (width * TEXT_FONT_SIZE) / 1000;
+}
+
+export const SIMPLE_PDF_TEXT_MAX_WIDTH = TEXT_MAX_WIDTH;
+
+export function measureSimplePdfText(value: string): number {
+  return measureHelveticaText(value);
+}
 
 type PageState = {
   pages: Array<PdfContentEntry[]>;
@@ -40,13 +212,42 @@ function commitChartBlock(state: PageState): void {
 }
 
 function splitTextLine(value: string): string[] {
-  const characters = Array.from(value);
-  if (characters.length <= MAX_TEXT_CHARS_PER_LINE) return [value];
+  if (measureHelveticaText(value) <= TEXT_MAX_WIDTH) return [value];
 
+  const characters = Array.from(value);
   const chunks: string[] = [];
-  for (let start = 0; start < characters.length; start += MAX_TEXT_CHARS_PER_LINE) {
-    chunks.push(characters.slice(start, start + MAX_TEXT_CHARS_PER_LINE).join(""));
+  let start = 0;
+  let index = 0;
+  let width = 0;
+  let lastBreakAfter = -1;
+
+  while (index < characters.length) {
+    const character = characters[index]!;
+    const characterWidth = measureHelveticaText(character);
+    const nextWidth = width + characterWidth;
+
+    if (nextWidth <= TEXT_MAX_WIDTH || index === start) {
+      width = nextWidth;
+      index += 1;
+      if (/\s/.test(character)) lastBreakAfter = index;
+      continue;
+    }
+
+    if (lastBreakAfter > start) {
+      chunks.push(characters.slice(start, lastBreakAfter).join(""));
+      start = lastBreakAfter;
+      index = start;
+      width = 0;
+      lastBreakAfter = -1;
+      continue;
+    }
+
+    chunks.push(characters.slice(start, index).join(""));
+    start = index;
+    width = 0;
+    lastBreakAfter = -1;
   }
+  if (start < characters.length) chunks.push(characters.slice(start).join(""));
   return chunks;
 }
 
