@@ -7,7 +7,18 @@ type ActionMediaStorageObjectInfo = {
   metadata?: Record<string, unknown> | null;
 };
 
-export type ActionMediaStorageVerification = "valid" | "missing" | "invalid";
+export type ActionMediaStorageVerification = "valid" | "missing" | "invalid" | "error";
+
+function isMissingObjectError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { status?: unknown; statusCode?: unknown; code?: unknown };
+  return (
+    candidate.status === 404 ||
+    candidate.statusCode === 404 ||
+    candidate.code === "404" ||
+    candidate.code === "not_found"
+  );
+}
 
 function storageMimeType(data: ActionMediaStorageObjectInfo): string | null {
   const metadataMimeType = data.metadata?.mimetype ?? data.metadata?.contentType;
@@ -28,7 +39,8 @@ export async function verifyActionMediaStorageObject(
   const objectInfo = await supabase.storage
     .from(ACTION_MEDIA_BUCKET)
     .info(params.storagePath);
-  if (objectInfo.error || !objectInfo.data) return "missing";
+  if (objectInfo.error) return isMissingObjectError(objectInfo.error) ? "missing" : "error";
+  if (!objectInfo.data) return "missing";
 
   const data = objectInfo.data as ActionMediaStorageObjectInfo;
   return storageSizeBytes(data) === params.sizeBytes && storageMimeType(data) === params.mimeType

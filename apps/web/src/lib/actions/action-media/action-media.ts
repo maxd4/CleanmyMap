@@ -8,11 +8,19 @@ import {
   ACTION_MEDIA_MAX_SIZE_BYTES,
   ACTION_MEDIA_SIGNED_URL_TTL_SECONDS,
   type ActionMediaMimeType,
-  type ActionMediaReadItem,
   type ActionMediaRecord,
-  type ActionMediaUploadState,
+  type ActionMediaReadItem,
 } from "./action-media-contract";
 import { verifyActionMediaStorageObject } from "./action-media-storage";
+import {
+  markActionMediaFailedIfCurrent,
+  markActionMediaReady,
+  prepareRetryState,
+  type ActionMediaReadyResult,
+  type ActionMediaRow,
+} from "./action-media-transitions";
+
+export type { ActionMediaReadyResult } from "./action-media-transitions";
 
 export type ActionMediaUploadIntent = {
   mediaId: string;
@@ -22,33 +30,11 @@ export type ActionMediaUploadIntent = {
   uploadState: "pending";
 };
 
-export type ActionMediaReadyResult = {
-  media: ActionMediaRecord;
-  alreadyReady: boolean;
-};
-
 type ActionMediaParent = {
   id: string;
   created_by_clerk_id: string;
   action_phase: "pre_action" | "post_action_complete" | null;
   status: string;
-};
-
-type ActionMediaRow = {
-  id: string;
-  action_id: string;
-  created_at: string;
-  created_by_clerk_id: string;
-  client_upload_id: string;
-  storage_bucket: typeof ACTION_MEDIA_BUCKET;
-  storage_path: string;
-  original_name: string;
-  mime_type: ActionMediaMimeType;
-  size_bytes: number;
-  width: number | null;
-  height: number | null;
-  sort_order: number;
-  upload_state: ActionMediaUploadState;
 };
 
 export class ActionMediaError extends Error {
@@ -233,7 +219,16 @@ async function verifyStoredActionMediaObject(
       "storage_invalid",
     );
   }
+  if (verification === "error") {
+    throw new ActionMediaError("Le stockage ne peut pas être vérifié pour le moment.", "storage_error");
+  }
 }
+
+const transitionDependencies = {
+  storageError,
+  verifyStoredActionMediaObject,
+  toRecord,
+};
 
 function assertImmutableRetryMetadata(
   actionId: string,
@@ -267,32 +262,6 @@ function assertImmutableRetryMetadata(
       "conflict",
     );
   }
-}
-
-async function markActionMediaReady(
-  supabase: SupabaseClient,
-  row: ActionMediaRow,
-): Promise<ActionMediaReadyResult> {
-  const updated = await supabase
-    .from("action_media")
-    .update({ upload_state: "ready", failure_reason: null })
-    .eq("id", row.id)
-    .eq("action_id", row.action_id)
-    .select("*")
-    .single();
-  if (updated.error || !updated.data) {
-    const reread = await supabase
-      .from("action_media")
-      .select("*")
-      .eq("id", row.id)
-      .eq("action_id", row.action_id)
-      .maybeSingle();
-    if (!reread.error && reread.data && (reread.data as ActionMediaRow).upload_state === "ready") {
-      return { media: toRecord(reread.data as ActionMediaRow), alreadyReady: true };
-    }
-    throw storageError("La photo ne peut pas être marquée comme prête.");
-  }
-  return { media: toRecord(updated.data as ActionMediaRow), alreadyReady: false };
 }
 
 export async function createActionMediaUploadIntent(
@@ -389,7 +358,7 @@ export async function createActionMediaUploadIntent(
 
     try {
       await verifyStoredActionMediaObject(supabase, row);
-      const ready = await markActionMediaReady(supabase, row);
+      const ready = await markActionMediaReady(supabase, row, transitionDependencies);
       return { mediaId: ready.media.id, uploadState: "ready" };
     } catch (error) {
       if (!(error instanceof ActionMediaError) || error.code !== "storage_missing") {
@@ -397,27 +366,27 @@ export async function createActionMediaUploadIntent(
       }
     }
 
-    const pending = await supabase
-      .from("action_media")
-      .update({ upload_state: "pending", failure_reason: null })
-      .eq("id", row.id)
-      .eq("action_id", params.actionId)
-      .select("*")
-      .single();
-    if (pending.error || !pending.data) {
-      throw storageError("La nouvelle tentative photo ne peut pas être préparée.");
-    }
-    row = pending.data as ActionMediaRow;
+    const prepared = await prepareRetryState(supabase, row, transitionDependencies);
+    if ("media" in prepared) return { mediaId: prepared.media.id, uploadState: "ready" };
+    row = prepared;
   }
 
-  const signedUpload = await supabase.storage
-    .from(ACTION_MEDIA_BUCKET)
-    .createSignedUploadUrl(row.storage_path);
+  let signedUpload: { data: { token?: string } | null; error: unknown };
+  try {
+    signedUpload = await supabase.storage
+      .from(ACTION_MEDIA_BUCKET)
+      .createSignedUploadUrl(row.storage_path);
+  } catch (error) {
+    signedUpload = { data: null, error };
+  }
   if (signedUpload.error || !signedUpload.data?.token) {
-    await supabase
-      .from("action_media")
-      .update({ upload_state: "failed", failure_reason: "signed_upload_failed" })
-      .eq("id", row.id);
+    const ready = await markActionMediaFailedIfCurrent(
+      supabase,
+      row,
+      "signed_upload_failed",
+      transitionDependencies,
+    );
+    if (ready) return { mediaId: ready.media.id, uploadState: "ready" };
     throw storageError("La photo ne peut pas recevoir son accès d'upload.");
   }
 
@@ -465,20 +434,26 @@ export async function finalizeActionMedia(
     await verifyStoredActionMediaObject(supabase, row);
   } catch (error) {
     if (error instanceof ActionMediaError && error.code === "storage_missing") {
-      await supabase
-        .from("action_media")
-        .update({ upload_state: "failed", failure_reason: "object_missing" })
-        .eq("id", row.id);
+      const ready = await markActionMediaFailedIfCurrent(
+        supabase,
+        row,
+        "object_missing",
+        transitionDependencies,
+      );
+      if (ready) return ready;
     } else if (error instanceof ActionMediaError && error.code === "storage_invalid") {
-      await supabase
-        .from("action_media")
-        .update({ upload_state: "failed", failure_reason: "object_metadata_mismatch" })
-        .eq("id", row.id);
+      const ready = await markActionMediaFailedIfCurrent(
+        supabase,
+        row,
+        "object_metadata_mismatch",
+        transitionDependencies,
+      );
+      if (ready) return ready;
     }
     throw error;
   }
 
-  return markActionMediaReady(supabase, row);
+  return markActionMediaReady(supabase, row, transitionDependencies);
 }
 
 export async function listActionMedia(
