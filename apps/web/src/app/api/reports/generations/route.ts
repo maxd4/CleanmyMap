@@ -9,6 +9,8 @@ import {
   persistReportGeneration,
 } from "@/lib/reports/report-generation-history-store";
 import {
+  getReportExportAvailability,
+  getReportExportQuotaDay,
   releaseReportExportSlot,
   reserveReportExportSlot,
 } from "@/lib/reports/report-export-quota";
@@ -86,6 +88,9 @@ const multiActionRequestSchema = z.object({
 
 type ReportGenerationReservation = Awaited<ReturnType<typeof reserveReportExportSlot>>;
 type ReportGenerationItem = Awaited<ReturnType<typeof persistReportGeneration>>;
+type ParsedReportGenerationRequest =
+  | { kind: "single_action"; request: z.infer<typeof singleActionRequestSchema> }
+  | { kind: "multi_action"; request: z.infer<typeof multiActionRequestSchema> };
 
 function hasTypedInput(value: unknown): boolean {
   return Boolean(
@@ -114,8 +119,7 @@ async function parseReportGenerationRequest(
   request: Request,
   operationId: string,
   actorUserId: string,
-  generationId: string,
-): Promise<{ input: ReportGenerationHistoryInput } | { response: NextResponse }> {
+): Promise<{ request: ParsedReportGenerationRequest } | { response: NextResponse }> {
   const body = await readJsonBodyWithLimit(request, MAX_REPORT_GENERATION_REQUEST_BYTES);
   if (!body.ok) {
     await auditReportGenerationError(operationId, actorUserId, {
@@ -143,88 +147,11 @@ async function parseReportGenerationRequest(
   }
 
   if (singleAction.success) {
-    try {
-      const contract = await resolveSingleActionReportContract(singleAction.data.input.actionId);
-      return {
-        input: buildSingleActionReportGenerationInput({
-          request: singleAction.data.input,
-          contract,
-          detailLevel: singleAction.data.detailLevel,
-          modules: singleAction.data.modules,
-           generationId,
-          now: new Date(),
-        }),
-      };
-    } catch (error) {
-      if (error instanceof SingleActionReportTargetUnavailableError) {
-        await auditReportGenerationError(operationId, actorUserId, {
-          stage: "source",
-          code: "action_unavailable",
-        });
-        return { response: NextResponse.json({ error: "Action indisponible." }, { status: 404 }) };
-      }
-      await auditReportGenerationError(operationId, actorUserId, {
-        stage: "source",
-        code: "action_resolution_failed",
-      });
-      return { response: NextResponse.json({ error: "Action temporairement indisponible." }, { status: 503 }) };
-    }
+    return { request: { kind: "single_action", request: singleAction.data } };
   }
 
   if (multiAction.success) {
-    try {
-      return {
-        input: await buildMultiActionReportGenerationInput({
-          request: multiAction.data.input,
-          detailLevel: multiAction.data.detailLevel,
-          modules: multiAction.data.modules,
-           generationId,
-          readerUserId: actorUserId,
-          now: new Date(),
-        }),
-      };
-    } catch (error) {
-      if (error instanceof MultiActionReportPeriodInvalidError) {
-        await auditReportGenerationError(operationId, actorUserId, {
-          stage: "validation",
-          code: "invalid_period",
-        });
-        return { response: NextResponse.json({ error: "Période invalide." }, { status: 400 }) };
-      }
-      if (error instanceof MultiActionReportScopeUnavailableError) {
-        await auditReportGenerationError(operationId, actorUserId, {
-          stage: "authorization",
-          code: "scope_unavailable",
-        });
-        return { response: NextResponse.json({ error: "Périmètre indisponible." }, { status: 422 }) };
-      }
-      if (error instanceof MultiActionReportEmptyError) {
-        await auditReportGenerationError(operationId, actorUserId, {
-          stage: "source",
-          code: "empty_report_window",
-        });
-        return { response: NextResponse.json({ error: "Aucune action admissible sur cette période." }, { status: 422 }) };
-      }
-      if (error instanceof MultiActionReportSourceUnavailableError) {
-        await auditReportGenerationError(operationId, actorUserId, {
-          stage: "source",
-          code: "actions_source_unavailable",
-        });
-        return { response: NextResponse.json({ error: "Les données canoniques sont temporairement indisponibles." }, { status: 503 }) };
-      }
-      if (error instanceof ReportAdvancedFilterSourceUnavailableError) {
-        await auditReportGenerationError(operationId, actorUserId, {
-          stage: "source",
-          code: "action_media_filter_source_unavailable",
-        });
-        return { response: NextResponse.json({ error: "La preuve photographique canonique est temporairement indisponible." }, { status: 503 }) };
-      }
-      await auditReportGenerationError(operationId, actorUserId, {
-        stage: "source",
-        code: "multi_action_resolution_failed",
-      });
-      return { response: NextResponse.json({ error: "Le rapport multi-actions est temporairement indisponible." }, { status: 503 }) };
-    }
+    return { request: { kind: "multi_action", request: multiAction.data } };
   }
 
   if (body.data && typeof body.data === "object" && "payload" in body.data) {
@@ -244,6 +171,96 @@ async function parseReportGenerationRequest(
   return {
     response: NextResponse.json({ error: "Invalid report generation input" }, { status: 400 }),
   };
+}
+
+async function resolveReportGenerationInput(
+  parsed: ParsedReportGenerationRequest,
+  operationId: string,
+  actorUserId: string,
+  generationId: string,
+): Promise<{ input: ReportGenerationHistoryInput } | { response: NextResponse }> {
+  if (parsed.kind === "single_action") {
+    try {
+      const contract = await resolveSingleActionReportContract(parsed.request.input.actionId);
+      return {
+        input: buildSingleActionReportGenerationInput({
+          request: parsed.request.input,
+          contract,
+          detailLevel: parsed.request.detailLevel,
+          modules: parsed.request.modules,
+          generationId,
+          now: new Date(),
+        }),
+      };
+    } catch (error) {
+      if (error instanceof SingleActionReportTargetUnavailableError) {
+        await auditReportGenerationError(operationId, actorUserId, {
+          stage: "source",
+          code: "action_unavailable",
+        });
+        return { response: NextResponse.json({ error: "Action indisponible." }, { status: 404 }) };
+      }
+      await auditReportGenerationError(operationId, actorUserId, {
+        stage: "source",
+        code: "action_resolution_failed",
+      });
+      return { response: NextResponse.json({ error: "Action temporairement indisponible." }, { status: 503 }) };
+    }
+  }
+
+  try {
+    return {
+      input: await buildMultiActionReportGenerationInput({
+        request: parsed.request.input,
+        detailLevel: parsed.request.detailLevel,
+        modules: parsed.request.modules,
+        generationId,
+        readerUserId: actorUserId,
+        now: new Date(),
+      }),
+    };
+  } catch (error) {
+    if (error instanceof MultiActionReportPeriodInvalidError) {
+      await auditReportGenerationError(operationId, actorUserId, {
+        stage: "validation",
+        code: "invalid_period",
+      });
+      return { response: NextResponse.json({ error: "Période invalide." }, { status: 400 }) };
+    }
+    if (error instanceof MultiActionReportScopeUnavailableError) {
+      await auditReportGenerationError(operationId, actorUserId, {
+        stage: "authorization",
+        code: "scope_unavailable",
+      });
+      return { response: NextResponse.json({ error: "Périmètre indisponible." }, { status: 422 }) };
+    }
+    if (error instanceof MultiActionReportEmptyError) {
+      await auditReportGenerationError(operationId, actorUserId, {
+        stage: "source",
+        code: "empty_report_window",
+      });
+      return { response: NextResponse.json({ error: "Aucune action admissible sur cette période." }, { status: 422 }) };
+    }
+    if (error instanceof MultiActionReportSourceUnavailableError) {
+      await auditReportGenerationError(operationId, actorUserId, {
+        stage: "source",
+        code: "actions_source_unavailable",
+      });
+      return { response: NextResponse.json({ error: "Les données canoniques sont temporairement indisponibles." }, { status: 503 }) };
+    }
+    if (error instanceof ReportAdvancedFilterSourceUnavailableError) {
+      await auditReportGenerationError(operationId, actorUserId, {
+        stage: "source",
+        code: "action_media_filter_source_unavailable",
+      });
+      return { response: NextResponse.json({ error: "La preuve photographique canonique est temporairement indisponible." }, { status: 503 }) };
+    }
+    await auditReportGenerationError(operationId, actorUserId, {
+      stage: "source",
+      code: "multi_action_resolution_failed",
+    });
+    return { response: NextResponse.json({ error: "Le rapport multi-actions est temporairement indisponible." }, { status: 503 }) };
+  }
 }
 
 async function reserveReportGenerationQuota(
@@ -346,8 +363,38 @@ export async function POST(request: Request) {
   const operationId = `report-generation-${randomUUID()}`;
   const generationId = randomUUID();
 
-  const parsed = await parseReportGenerationRequest(request, operationId, access.userId, generationId);
+  const parsed = await parseReportGenerationRequest(request, operationId, access.userId);
   if ("response" in parsed) return parsed.response;
+
+  const availability = await getReportExportAvailability(access.userId).catch((error: unknown) => {
+    console.error("Report export quota availability precheck failed; continuing to atomic reservation", {
+      operationId,
+      userId: access.userId,
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
+    return null;
+  });
+  if (availability === "used") {
+    await auditReportGenerationError(operationId, access.userId, {
+      stage: "quota",
+      code: "daily_quota_exceeded",
+    });
+    return NextResponse.json(
+      {
+        error: "Un export détaillé a déjà été utilisé aujourd'hui.",
+        quotaDay: getReportExportQuotaDay(),
+      },
+      { status: 429 },
+    );
+  }
+
+  const resolved = await resolveReportGenerationInput(
+    parsed.request,
+    operationId,
+    access.userId,
+    generationId,
+  );
+  if ("response" in resolved) return resolved.response;
 
   const quota = await reserveReportGenerationQuota(operationId, access.userId);
   if ("response" in quota) return quota.response;
@@ -355,19 +402,19 @@ export async function POST(request: Request) {
   const persisted = await persistReportGenerationWithQuota(
     operationId,
     access.userId,
-    parsed.input,
+    resolved.input,
     quota.reservation,
   );
   if ("response" in persisted) return persisted.response;
 
-  await auditReportGenerationSuccess(operationId, access.userId, persisted.item, parsed.input);
+  await auditReportGenerationSuccess(operationId, access.userId, persisted.item, resolved.input);
 
   return NextResponse.json({
     item: persisted.item,
-    payload: parsed.input.payload,
+    payload: resolved.input.payload,
     filename: buildPdfReportFilename({
-      rubrique: parsed.input.payload.rubrique,
-      periode: parsed.input.payload.periode,
+      rubrique: resolved.input.payload.rubrique,
+      periode: resolved.input.payload.periode,
     }),
   });
 }

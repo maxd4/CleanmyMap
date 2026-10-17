@@ -4,6 +4,8 @@ import { createRateLimitModule, mockAllowedRateLimit, mockRejectedRateLimit } fr
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const persistReportGenerationMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
+const getReportExportAvailabilityMock = vi.hoisted(() => vi.fn());
+const getReportExportQuotaDayMock = vi.hoisted(() => vi.fn());
 const reserveReportExportSlotMock = vi.hoisted(() => vi.fn());
 const releaseReportExportSlotMock = vi.hoisted(() => vi.fn());
 const resolveSingleActionReportContractMock = vi.hoisted(() => vi.fn());
@@ -38,6 +40,8 @@ vi.mock("@/lib/admin/audit/operation-audit", () => ({
 }));
 
 vi.mock("@/lib/reports/report-export-quota", () => ({
+  getReportExportAvailability: getReportExportAvailabilityMock,
+  getReportExportQuotaDay: getReportExportQuotaDayMock,
   reserveReportExportSlot: reserveReportExportSlotMock,
   releaseReportExportSlot: releaseReportExportSlotMock,
 }));
@@ -103,6 +107,8 @@ describe("POST /api/reports/generations", () => {
       generatedAt: "27/08/2026 12:30",
     });
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
+    getReportExportAvailabilityMock.mockResolvedValue("available");
+    getReportExportQuotaDayMock.mockReturnValue("2026-08-27");
     reserveReportExportSlotMock.mockResolvedValue({ allowed: true, quotaDay: "2026-08-27" });
     releaseReportExportSlotMock.mockResolvedValue(undefined);
     buildMultiActionReportGenerationInputMock.mockResolvedValue(multiInput);
@@ -237,6 +243,46 @@ describe("POST /api/reports/generations", () => {
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
   });
 
+  it("rejects an exhausted daily quota before resolving costly report sources", async () => {
+    getReportExportAvailabilityMock.mockResolvedValueOnce("used");
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(getReportExportAvailabilityMock).toHaveBeenCalledWith("user-1");
+    expect(buildMultiActionReportGenerationInputMock).not.toHaveBeenCalled();
+    expect(resolveSingleActionReportContractMock).not.toHaveBeenCalled();
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({ quotaDay: "2026-08-27" });
+  });
+
+  it("falls back to the atomic reservation when the availability precheck fails", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    getReportExportAvailabilityMock.mockRejectedValueOnce(new Error("quota read unavailable"));
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(buildMultiActionReportGenerationInputMock).toHaveBeenCalled();
+    expect(reserveReportExportSlotMock).toHaveBeenCalledWith("user-1");
+    expect(consoleError).toHaveBeenCalledWith(
+      "Report export quota availability precheck failed; continuing to atomic reservation",
+      expect.objectContaining({ userId: "user-1" }),
+    );
+    consoleError.mockRestore();
+  });
+
   it("rejects malformed typed inputs without persistence", async () => {
     const response = await POST(
       new Request("http://localhost/api/reports/generations", {
@@ -247,6 +293,7 @@ describe("POST /api/reports/generations", () => {
 
     expect(response.status).toBe(400);
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
+    expect(getReportExportAvailabilityMock).not.toHaveBeenCalled();
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
     expect(appendAdminOperationAuditMock.mock.calls[0]?.[0]).toMatchObject({
       outcome: "error",
@@ -356,6 +403,8 @@ describe("POST /api/reports/generations", () => {
 
     expect(response.status).toBe(429);
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
+    expect(getReportExportAvailabilityMock).toHaveBeenCalledWith("user-1");
+    expect(buildMultiActionReportGenerationInputMock).toHaveBeenCalled();
     await expect(response.json()).resolves.toMatchObject({ quotaDay: "2026-08-27" });
   });
 
