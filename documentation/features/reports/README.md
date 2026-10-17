@@ -24,9 +24,22 @@ au runtime et à ses tests, pas à une copie documentaire.
 
 ## `PLAN`
 
+- [`reports-generation-parameters.md`](./reports-generation-parameters.md)
+  — contrat CURRENT des paramètres et filtres effectivement acceptés par le
+  générateur multi-actions ; les extensions avancées restent planifiées.
+- [`report-pdf-themes-and-reuse.md`](./report-pdf-themes-and-reuse.md)
+  — spécification PLAN de deux habillages PDF, Impact et Scientifique, pour
+  une composition logique unique, avec citabilité et extraction scientifique
+  futures ; elle ne livre aucun sélecteur ni export machine.
+- [`impact-goals-and-progression.md`](./impact-goals-and-progression.md)
+  — futurs objectifs configurables, distincts du moteur de génération.
+
+## `COMPATIBILITY`
+
 - [`reports-parameters-and-objectives.md`](./reports-parameters-and-objectives.md)
-  — spécification cible des paramètres de `/reports` et des objectifs dont
-  l’implémentation doit encore être vérifiée ou complétée.
+  — ancienne façade documentaire conservée pour compatibilité, sans seconde
+  source de vérité ; les paramètres actuels sont décrits dans
+  `reports-generation-parameters.md` et les objectifs dans leur fiche PLAN.
 
 Le statut `PLAN` ne doit pas être interprété comme une description du rapport
 effectivement généré. Pour les fiches de pages et le contexte produit, suivre

@@ -16,6 +16,7 @@ Ce dossier sépare les contrats observables (`CURRENT`), les évolutions encore 
 - **Entrée mono-action :** depuis `/actions/history`, une action `action` terminée, approuvée, publiée et visible ouvre ce même générateur avec un scope typé `single_action`. Le serveur résout l'action depuis `public.actions`, rejette un changement de statut/visibilité ou une fraude d'identifiant, et réserve le quota une seule fois avant la persistance du snapshot.
 - **Relecture :** la première page affichée est un aperçu partiel, distinct du PDF complet. « Mes rapports récents », « Voir » et « Télécharger à nouveau » relisent le snapshot serveur ; la relecture ne recalcule pas les données actuelles et ne consomme pas de nouveau quota.
 - [Paramètres de génération](../../../../features/reports/reports-generation-parameters.md) : contrat CURRENT de filtrage des rapports multi-actions ; les familles avancées non exposées restent explicitement PLAN dans ce document.
+- [Deux thèmes PDF et réutilisation scientifique](../../../../features/reports/report-pdf-themes-and-reuse.md) : spécification PLAN de deux habillages, Impact et Scientifique, appliqués à une composition logique unique ; ils restent indépendants du niveau de détail et des modules, sans sélecteur ni export machine livré à ce stade.
 
 ## `PLAN`
 

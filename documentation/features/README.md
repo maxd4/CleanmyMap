@@ -79,6 +79,9 @@ elles ne justifient pas une seconde copie physique des documents.
   — paramètres et filtres, hors promesse de disponibilité non vérifiée.
 - [`reports/impact-goals-and-progression.md`](./reports/impact-goals-and-progression.md)
   — futurs objectifs configurables, distincts du moteur de génération.
+- [`reports/report-pdf-themes-and-reuse.md`](./reports/report-pdf-themes-and-reuse.md)
+  — direction PLAN pour deux habillages PDF comparables et la réutilisation
+  scientifique du même snapshot.
 
 ### `COMPATIBILITY`
 
@@ -115,7 +118,7 @@ moteur canonique.
 | Revoir la banque ou ses métriques | [`quiz/quiz-bank-admin.md`](./quiz/quiz-bank-admin.md) | métriques, code admin et tests |
 | Évaluer l’état du quiz | [`quiz/quiz-system-audit.md`](./quiz/quiz-system-audit.md) | runtime et audits, jamais le snapshot seul |
 | Modifier le Master Pack | [`reports/master-pack.md`](./reports/master-pack.md) | `apps/web/src/lib/reports/master-pack/`, modèle et tests |
-| Étudier les paramètres de génération | [`reports/reports-generation-parameters.md`](./reports/reports-generation-parameters.md) | code courant, contrat d'accès et statut `PLAN` |
+| Étudier les paramètres de génération | [`reports/reports-generation-parameters.md`](./reports/reports-generation-parameters.md) | code courant et contrat CURRENT d'accès |
 | Étudier les objectifs configurables | [`reports/impact-goals-and-progression.md`](./reports/impact-goals-and-progression.md) | métriques canoniques et décision produit requise |
 | Intégrer une référence SPOGOMI | [`spogomi-references/README.md`](./spogomi-references/README.md) | contrat [`spogomi.md`](./spogomi.md), code et tests |
 

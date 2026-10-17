@@ -43,6 +43,10 @@ créer de nouvelle ligne. La composition précise des niveaux `Concis`,
 `Par défaut` et `Exhaustif`, ainsi que les générations dérivées, seront traitées
 dans un chantier séparé.
 
+Les habillages PDF `Impact` et `Scientifique` relèvent d'une spécification
+graphique distincte, [documentée en PLAN](../../../../features/reports/report-pdf-themes-and-reuse.md),
+et ne constituent pas une nouvelle version de génération.
+
 ## Règle de traitement
 
 - Conserver ici les propositions propres aux rapports d'impact.

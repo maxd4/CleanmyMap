@@ -28,7 +28,7 @@ Ces intitulés sont des **déclarations de structure**. Ils ne garantissent ni l
 
 ## Contrat distinct de `/reports`
 
-La [fiche CURRENT de `/reports`](../../pages_site/routes/03-cartographie-impact/reports/reports-README.md) décrit les chapitres cœur et les modules facultatifs réellement prévus par l'interface actuelle. Le niveau de détail `concis`, `default` ou `exhaustif` est conservé dans les contrats historiques, mais ses effets ne sont pas encore différenciés et son sélecteur reste masqué.
+La [fiche CURRENT de `/reports`](../../pages_site/routes/03-cartographie-impact/reports/reports-README.md) décrit les chapitres cœur et les modules facultatifs réellement prévus par l'interface actuelle. Les niveaux de détail `concis`, `default` et `exhaustif` sont livrés avec des compositions distinctes et leur sélecteur est exposé par la configuration Reports. Les futurs habillages `Impact` et `Scientifique` restent orthogonaux à ces niveaux et appartiennent à la [spécification PLAN dédiée](./report-pdf-themes-and-reuse.md), pas à ce Master Pack.
 
 Les contenus chiffrés proviennent du code métier et de ses tests, non de cette table de titres. Pour modifier le PDF exposé, identifier d'abord le chemin de génération réellement appelé, puis ses consommateurs, les tests de composition, l'historique et les règles de données.
 
