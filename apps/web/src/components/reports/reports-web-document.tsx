@@ -410,6 +410,7 @@ export function ReportsWebDocument({
 
       <ReportsWebDocumentDeliveryHistory
         recentRows={recentRows}
+        theme={reportTheme}
         historyAvailability={historyAvailability}
         actionStateById={historyActionStateById}
         onView={(id) => void historicalActions.handleHistoricalAction(id, "view", historicalReplayRef)}

@@ -135,6 +135,14 @@ Une page *visuellement* sobre n'est pas, en soi, un PDF machine-readable. La liv
 - Une réservation `rendering` est bornée par le lease porté par `updated_at` : seule une réservation expirée peut être reprise par une mise à jour conditionnelle, tandis qu'une réservation active reste servie en attente. Une ligne `ready` n'est réparée qu'après confirmation d'une absence Storage (`404`/`not_found`) ; une indisponibilité temporaire reste une erreur et n'invalide pas l'artefact. `upsert: false` et la clé déterministe réconcilient un objet déjà présent après interruption sans écrasement ni suppression.
 - Les exports JSON/CSV et la référence sont `CURRENT`. Les tags PDF, PDF/UA, PDF/A et l'ordre de lecture normatif restent non revendiqués tant qu'une validation dédiée du binaire final n'est pas exécutée.
 
+### Partage externe volontaire des PDF historiques
+
+Le partage externe est `CURRENT` uniquement pour les fichiers PDF déjà rendus et explicitement sélectionnés par leur propriétaire depuis l'historique. L'interface présente avant création le titre, la génération, la période, le périmètre, le thème, la version du renderer et l'état de la variante ; elle rappelle que seul ce PDF sera communiqué, sans JSON, CSV, recalcul ou accès aux actions. Une durée bornée de 1 heure à 30 jours est imposée côté serveur.
+
+La table technique dédiée `report_generation_pdf_shares` conserve l'ownership, l'artefact exact, le thème, le renderer, l'expiration, la révocation et un hash SHA-256 du token. Le token aléatoire en clair n'est renvoyé qu'à la création pour construire le lien ; il n'est ni relu, ni journalisé, ni conservé dans l'interface après fermeture. Le bucket `reports` reste privé : l'endpoint bearer vérifie côté serveur le hash, l'existence, l'expiration, la révocation et la correspondance `generationId`/artefact/thème/renderer avant de lire Storage et renvoie directement `application/pdf` avec `Cache-Control: private, no-store`, `noindex` et `Referrer-Policy: no-referrer`. Une panne Storage reste une indisponibilité et n'est pas interprétée comme une absence de preuve.
+
+La révocation owner-scoped empêche tout nouvel accès via CleanMyMap ; le téléchargement privé normal et le partage natif du fichier restent distincts. Le lien est un secret bearer : toute personne qui le possède peut lire le PDF jusqu'à son expiration ou sa révocation. L'URL ne doit donc pas être publiée dans un espace indexé, un ticket ou un journal. Cette capacité ne crée ni portail public, ni nouveau calcul scientifique, ni quota de génération supplémentaire. Les contrôles d'AuthN/AuthZ et l'audit de création/révocation restent côté serveur ; si un audit échoue après la persistance du lien, l'opération reste signalée comme persistée et aucune seconde création n'est tentée.
+
 ## 6. Contrats de sélection, historique et sécurité
 
 - Le thème est orthogonal au niveau de détail, à `ModuleState`, au scope, à la période, au quota et aux autorisations.

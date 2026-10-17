@@ -9,6 +9,8 @@ import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { SystemStateLayout, SystemStateTitle } from "@/components/ui/system-state";
 import type { ReportGenerationHistoryRow } from "@/lib/reports/report-generation-history-contract";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
+import { ReportsWebDocumentHistorySharing } from "../reports-web-document-history-sharing";
+import type { ReportPdfTheme } from "./reports-web-document.shared";
 
 export type ReportsWebDocumentExportStatus = {
   icon: LucideIcon;
@@ -33,6 +35,7 @@ export type ReportsWebDocumentDeliveryProps = {
 
 export type ReportsWebDocumentDeliveryHistoryProps = {
   recentRows: ReportGenerationHistoryRow[];
+  theme?: ReportPdfTheme;
   historyAvailability?: "available" | "unavailable";
   actionStateById?: Record<string, ReportGenerationHistoryActionState>;
   onView: (id: string) => void;
@@ -51,6 +54,8 @@ export type ReportGenerationHistoryActionState = {
 };
 
 function HistoryActionButtons({
+  row,
+  theme,
   rowId,
   actionState,
   onView,
@@ -61,6 +66,8 @@ function HistoryActionButtons({
   onExportJson = () => undefined,
   onExportCsv = () => undefined,
 }: {
+  row: ReportGenerationHistoryRow;
+  theme: ReportPdfTheme;
   rowId: string;
   actionState?: ReportGenerationHistoryActionState;
   onView: (id: string) => void;
@@ -146,6 +153,7 @@ function HistoryActionButtons({
       >
         Exporter CSV
       </CmmButton>
+      <ReportsWebDocumentHistorySharing row={row} theme={theme} />
     </div>
   );
 }
@@ -236,6 +244,7 @@ export function ReportsWebDocumentDelivery({
 
 export function ReportsWebDocumentDeliveryHistory({
   recentRows,
+  theme = "impact",
   historyAvailability = "available",
   actionStateById = {},
   onView,
@@ -300,6 +309,8 @@ export function ReportsWebDocumentDeliveryHistory({
                     <td className="break-words text-sm text-slate-600">{row.generatedAt}</td>
                     <td>
                       <HistoryActionButtons
+                        row={row}
+                        theme={theme}
                         rowId={row.id}
                         actionState={actionStateById[row.id]}
                         onView={onView}
@@ -346,6 +357,8 @@ export function ReportsWebDocumentDeliveryHistory({
                 </dl>
                 <div className="mt-4">
                   <HistoryActionButtons
+                    row={row}
+                    theme={theme}
                     rowId={row.id}
                     actionState={actionStateById[row.id]}
                     onView={onView}

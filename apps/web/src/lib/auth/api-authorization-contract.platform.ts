@@ -149,6 +149,39 @@ export const platformAuthorizationContract = {
       evidence: ["requireAuthenticatedAccess", "getReportGenerationSnapshotById", "buildReportScientificCsv"],
     },
   },
+  "reports/generations/[id]/share": {
+    GET: {
+      expected: "Authenticated owner may inspect the exact PDF variant and the revocable share metadata for their historical generation",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + owner-scoped snapshot and artifact lookup + owner-scoped share listing",
+      evidenceScope: "module",
+      evidence: ["requireAuthenticatedAccess", "getReportGenerationSnapshotById", "getReportPdfArtifactForOwner", "listReportPdfSharesForOwner"],
+    },
+    POST: {
+      expected: "Authenticated owner may create a bounded expiring bearer link only for an already-ready private PDF artifact",
+      dimensions: ["authentication", "ownership", "audit"],
+      actual: "requireAuthenticatedAccess + authenticated rate limit + owner-scoped snapshot/artifact lookup + hashed-token persistence + post-persistence audit",
+      evidenceScope: "module",
+      evidence: ["requireAuthenticatedAccess", "enforceServerRateLimitForAuthenticatedUser", "getReportGenerationSnapshotById", "getReportPdfArtifactForOwner", "createReportPdfShare", "appendAdminOperationAudit"],
+    },
+  },
+  "reports/generations/[id]/share/[shareId]": {
+    DELETE: {
+      expected: "Authenticated owner may revoke only their own report share link",
+      dimensions: ["authentication", "ownership", "audit"],
+      actual: "requireAuthenticatedAccess + owner-scoped share update + revocation audit",
+      evidence: ["requireAuthenticatedAccess", "revokeReportPdfShare", "appendAdminOperationAudit"],
+    },
+  },
+  "reports/shared/[token]": {
+    GET: {
+      expected: "An anonymous bearer may download only the explicitly shared, unexpired, non-revoked PDF variant",
+      dimensions: ["bearer token"],
+      actual: "anonymous server rate limit + SHA-256 token lookup with expiry/revocation checks + exact artifact/generation/theme/renderer binding + private Storage read",
+      evidence: ["enforceServerRateLimit", "hashReportPdfShareToken", "findActiveReportPdfShareByTokenHash", "getReportPdfArtifactById", "downloadReportPdfArtifact"],
+      handlerEvidence: ["enforceServerRateLimit", "hashReportPdfShareToken", "findActiveReportPdfShareByTokenHash", "getReportPdfArtifactById"],
+    },
+  },
   "reports/elus-dossier": {
     GET: {
       expected: "Any authenticated user may generate the bounded dossier export, subject to the server quota/cache contract",

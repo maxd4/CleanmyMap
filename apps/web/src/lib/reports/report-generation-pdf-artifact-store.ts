@@ -65,16 +65,56 @@ async function findArtifact(params: {
   generationId: string;
   theme: ReportPdfArtifactTheme;
   rendererVersion: string;
+  createdByClerkId?: string;
+}): Promise<ReportPdfArtifact | null> {
+  let query = getSupabaseAdminClient()
+    .from("report_generation_pdf_artifacts")
+    .select(SELECT)
+    .eq("generation_id", params.generationId)
+    .eq("theme", params.theme)
+    .eq("renderer_version", params.rendererVersion);
+  if (params.createdByClerkId) {
+    query = query.eq("created_by_clerk_id", params.createdByClerkId);
+  }
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
+  return data ? toArtifact(data as ReportPdfArtifactRow) : null;
+}
+
+export function getReportPdfArtifactForOwner(params: {
+  generationId: string;
+  createdByClerkId: string;
+  theme: ReportPdfArtifactTheme;
+  rendererVersion?: string;
+}): Promise<ReportPdfArtifact | null> {
+  return findArtifact({
+    generationId: params.generationId,
+    createdByClerkId: params.createdByClerkId,
+    theme: params.theme,
+    rendererVersion: params.rendererVersion ?? REPORT_PDF_ARTIFACT_RENDERER_VERSION,
+  });
+}
+
+export async function getReportPdfArtifactById(params: {
+  artifactId: string;
+  generationId: string;
+  theme: ReportPdfArtifactTheme;
+  rendererVersion: string;
 }): Promise<ReportPdfArtifact | null> {
   const { data, error } = await getSupabaseAdminClient()
     .from("report_generation_pdf_artifacts")
     .select(SELECT)
+    .eq("id", params.artifactId)
     .eq("generation_id", params.generationId)
     .eq("theme", params.theme)
     .eq("renderer_version", params.rendererVersion)
     .maybeSingle();
   if (error) throw error;
   return data ? toArtifact(data as ReportPdfArtifactRow) : null;
+}
+
+export function downloadReportPdfArtifact(storagePath: string) {
+  return getSupabaseAdminClient().storage.from(REPORT_PDF_ARTIFACT_BUCKET).download(storagePath);
 }
 
 export type ReportPdfArtifactClaim =

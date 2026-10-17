@@ -10,6 +10,7 @@ import {
 } from "@/lib/reports/report-generation-history-store";
 import {
   claimReportPdfArtifact,
+  downloadReportPdfArtifact,
   markReportPdfArtifactFailed,
   markReportPdfArtifactReady,
   reclaimMissingReportPdfArtifact,
@@ -53,17 +54,6 @@ async function auditFailure(params: {
   } catch (error) {
     console.error("Report PDF artifact failure audit failed", { ...params, error });
   }
-}
-
-type ReportPdfDownloadResult = {
-  data: Blob | null;
-  error: unknown;
-};
-
-async function downloadReportPdfArtifact(storagePath: string): Promise<ReportPdfDownloadResult> {
-  const supabase = (await import("@/lib/supabase/server")).getSupabaseAdminClient();
-  const downloaded = await supabase.storage.from(REPORT_PDF_ARTIFACT_BUCKET).download(storagePath);
-  return { data: downloaded.data, error: downloaded.error };
 }
 
 function isConfirmedStorageObjectAbsence(error: unknown): boolean {
@@ -171,7 +161,7 @@ export async function GET(request: Request, { params }: ReportPdfRouteContext) {
       rendererVersion: REPORT_PDF_ARTIFACT_RENDERER_VERSION,
     });
     let artifact = claim.artifact;
-    let downloaded: ReportPdfDownloadResult | null = null;
+    let downloaded: Awaited<ReturnType<typeof downloadReportPdfArtifact>> | null = null;
     for (let attempt = 0; attempt < 3; attempt += 1) {
       if (claim.kind === "rendering") {
         const completed = await waitForReportPdfArtifact({

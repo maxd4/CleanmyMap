@@ -9,6 +9,7 @@ export type ApiHttpMethod =
 
 type ApiAuthorizationDimension =
   | "public-safe"
+  | "bearer token"
   | "authentication"
   | "admin/creator role"
   | "business permission"

@@ -24,6 +24,7 @@ vi.mock("@/lib/reports/report-generation-pdf-artifact-store", () => ({
   REPORT_PDF_ARTIFACT_BUCKET: "reports",
   REPORT_PDF_ARTIFACT_RENDERER_VERSION: "chromium-official-report-pdf-v1",
   claimReportPdfArtifact: claimMock,
+  downloadReportPdfArtifact: downloadMock,
   waitForReportPdfArtifact: waitMock,
   markReportPdfArtifactReady: readyMock,
   markReportPdfArtifactFailed: failedMock,
