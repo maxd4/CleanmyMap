@@ -477,9 +477,6 @@ export function buildPdfData(params: ReportPdfDataOptions) {
     ? buildExhaustiveSupplementalChapters({
         report,
         modules,
-        wasteKnown,
-        buttsKnown,
-        volunteersKnown,
       })
     : [];
   const visibleChapterIds = new Set([

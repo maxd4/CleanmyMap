@@ -11,9 +11,6 @@ export type ReportDetailModuleFlags = {
 type ReportDetailLevelContext = {
   report: ReportModel;
   modules: ReportDetailModuleFlags;
-  wasteKnown: boolean;
-  buttsKnown: boolean;
-  volunteersKnown: boolean;
 };
 
 function formatNumber(value: number | undefined, digits = 1): string {
@@ -22,15 +19,13 @@ function formatNumber(value: number | undefined, digits = 1): string {
 
 function buildSpatialDetailChapter(
   report: ReportModel,
-  wasteKnown: boolean,
-  buttsKnown: boolean,
 ): PdfReportChapter {
   const routeSteps = report.routeSteps ?? [];
   const rows = routeSteps.map((step) => ({
     Étape: step.index,
     Zone: step.label,
-    "Masse (kg)": wasteKnown ? formatNumber(step.kg) : "n/a",
-    Mégots: buttsKnown ? step.butts : "n/a",
+    "Masse (kg)": step.wasteKnown === true ? formatNumber(step.kg) : "n/a",
+    Mégots: step.buttsKnown === true ? step.butts : "n/a",
     "Segment (km)": formatNumber(step.segmentKm, 2),
     Latitude: formatNumber(step.latitude, 5),
     Longitude: formatNumber(step.longitude, 5),
@@ -82,17 +77,15 @@ function buildMethodDetailChapter(report: ReportModel): PdfReportChapter {
 
 function buildMonthlyDetailChapter(
   report: ReportModel,
-  buttsKnown: boolean,
-  volunteersKnown: boolean,
 ): PdfReportChapter {
   const rows = (report.monthRows12 ?? []).map((row) => ({
     Mois: row.month,
     Actions: row.actions,
-    "Masse (kg)": row.knownWasteActions === undefined || row.knownWasteActions > 0
+    "Masse (kg)": row.knownWasteActions !== undefined && row.knownWasteActions > 0
       ? formatNumber(row.kg)
       : "n/a",
-    Mégots: buttsKnown ? row.butts : "n/a",
-    Bénévoles: volunteersKnown ? row.volunteers : "n/a",
+    Mégots: row.buttsKnownActions !== undefined && row.buttsKnownActions > 0 ? row.butts : "n/a",
+    Bénévoles: row.volunteersKnownActions !== undefined && row.volunteersKnownActions > 0 ? row.volunteers : "n/a",
     "Durée (min)": row.minutes,
   }));
 
@@ -117,13 +110,11 @@ function buildMonthlyDetailChapter(
 
 function buildHighlightedActionsChapter(
   report: ReportModel,
-  wasteKnown: boolean,
-  buttsKnown: boolean,
 ): PdfReportChapter {
   const rows = (report.highlightActions ?? []).map((action) => ({
     Lieu: action.label,
-    "Masse (kg)": wasteKnown ? formatNumber(action.kg) : "n/a",
-    Mégots: buttsKnown ? action.butts : "n/a",
+    "Masse (kg)": action.wasteKnown === true ? formatNumber(action.kg) : "n/a",
+    Mégots: action.buttsKnown === true ? action.butts : "n/a",
     "Photos disponibles": action.photos.length,
   }));
 
@@ -147,13 +138,13 @@ function buildHighlightedActionsChapter(
 export function buildExhaustiveSupplementalChapters(
   context: ReportDetailLevelContext,
 ): PdfReportChapter[] {
-  const { report, modules, wasteKnown, buttsKnown, volunteersKnown } = context;
+  const { report, modules } = context;
   const chapters: PdfReportChapter[] = [];
 
-  if (modules.dataAndCartography) chapters.push(buildSpatialDetailChapter(report, wasteKnown, buttsKnown));
+  if (modules.dataAndCartography) chapters.push(buildSpatialDetailChapter(report));
   if (modules.transparencyAndMethods) chapters.push(buildMethodDetailChapter(report));
-  if (modules.rawData) chapters.push(buildMonthlyDetailChapter(report, buttsKnown, volunteersKnown));
-  if (modules.detailedFiles) chapters.push(buildHighlightedActionsChapter(report, wasteKnown, buttsKnown));
+  if (modules.rawData) chapters.push(buildMonthlyDetailChapter(report));
+  if (modules.detailedFiles) chapters.push(buildHighlightedActionsChapter(report));
 
   return chapters;
 }

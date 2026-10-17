@@ -84,15 +84,20 @@ function buildReportHighlights(approvedActions: ActionListItem[]) {
   const highlightActions = approvedActions
     .filter((item) => (item.contract?.metadata.photos?.length ?? 0) > 0)
     .slice(0, 4)
-    .map((item) => ({
-      id: item.id,
-      label: item.location_label,
-      kg: computeActionImpactKpis(toActionImpactInput(item)).wasteKg,
-      butts: computeActionImpactKpis(toActionImpactInput(item)).butts,
-      photos: item.contract?.metadata.photos
-        ?.map((photo) => safeImageSource(photo.dataUrl))
-        .filter((url): url is string => Boolean(url)) ?? [],
-    }));
+    .map((item) => {
+      const impact = computeActionImpactKpis(toActionImpactInput(item));
+      return {
+        id: item.id,
+        label: item.location_label,
+        kg: impact.wasteKg,
+        wasteKnown: impact.wasteKnown,
+        butts: impact.butts,
+        buttsKnown: impact.buttsKnown,
+        photos: item.contract?.metadata.photos
+          ?.map((photo) => safeImageSource(photo.dataUrl))
+          .filter((url): url is string => Boolean(url)) ?? [],
+      };
+    });
 
   const highlightPhotos: Array<{ url: string; label: string; date: string }> = [];
   highlightActions.forEach((action) => {

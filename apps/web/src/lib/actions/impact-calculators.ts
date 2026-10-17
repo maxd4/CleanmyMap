@@ -32,6 +32,7 @@ export type ActionImpactKpis = {
   wasteKnown: boolean;
   wasteKgSource: ActionWasteKgSource;
   butts: number;
+  buttsKnown: boolean;
   volunteers: number;
   volunteersKnown: boolean;
   co2AvoidedKg: number;
@@ -45,6 +46,9 @@ export type ActionImpactTotals = Omit<ActionImpactKpis, "wasteKgSource"> & {
   wasteKnownActions: number;
   wasteActionCount: number;
   wasteCoverageRate: number;
+  buttsKnownActions: number;
+  buttsActionCount: number;
+  buttsCoverageRate: number;
   volunteersKnownActions: number;
   volunteersActionCount: number;
   volunteersCoverageRate: number;
@@ -98,7 +102,13 @@ export function computeActionImpactKpis(
   const measuredWasteKg = estimateActionWasteKg(contract);
   const wasteKnown = measuredWasteKg !== null;
   const wasteKg = measuredWasteKg ?? 0;
-  const butts = Math.max(0, Number(contract.metadata.cigaretteButts || 0));
+  const rawButts = contract.metadata.cigaretteButts;
+  const buttsKnown =
+    rawButts !== null &&
+    rawButts !== undefined &&
+    Number.isFinite(Number(rawButts)) &&
+    Number(rawButts) >= 0;
+  const butts = buttsKnown ? Number(rawButts) : 0;
   const volunteersKnown =
     contract.metadata.volunteersCount !== null &&
     contract.metadata.volunteersCount !== undefined &&
@@ -118,6 +128,7 @@ export function computeActionImpactKpis(
     wasteKnown,
     wasteKgSource: resolveActionWasteKgSource(contract),
     butts,
+    buttsKnown,
     volunteers,
     volunteersKnown,
     co2AvoidedKg: wasteKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg,
@@ -138,6 +149,10 @@ export function sumActionImpactKpis(
     wasteKnownActions: 0,
     wasteActionCount: 0,
     wasteCoverageRate: 0,
+    buttsKnownActions: 0,
+    buttsActionCount: 0,
+    buttsCoverageRate: 0,
+    buttsKnown: false,
     volunteersKnownActions: 0,
     volunteersActionCount: 0,
     volunteersCoverageRate: 0,
@@ -155,6 +170,8 @@ export function sumActionImpactKpis(
   let totalDurationMinutes = 0;
   let wasteKnownActions = 0;
   let wasteActionCount = 0;
+  let buttsKnownActions = 0;
+  let buttsActionCount = 0;
   let volunteersKnownActions = 0;
   let volunteersActionCount = 0;
 
@@ -164,6 +181,10 @@ export function sumActionImpactKpis(
     totals.wasteKg += impact.wasteKg;
     if (impact.wasteKnown) {
       wasteKnownActions += 1;
+    }
+    buttsActionCount += 1;
+    if (impact.buttsKnown) {
+      buttsKnownActions += 1;
     }
     totals.butts += impact.butts;
     totals.volunteers += impact.volunteers;
@@ -193,6 +214,11 @@ export function sumActionImpactKpis(
   totals.wasteCoverageRate =
     wasteActionCount > 0 ? (wasteKnownActions / wasteActionCount) * 100 : 0;
   totals.wasteKnown = wasteKnownActions > 0;
+  totals.buttsKnownActions = buttsKnownActions;
+  totals.buttsActionCount = buttsActionCount;
+  totals.buttsCoverageRate =
+    buttsActionCount > 0 ? (buttsKnownActions / buttsActionCount) * 100 : 0;
+  totals.buttsKnown = buttsKnownActions > 0;
   totals.volunteersKnownActions = volunteersKnownActions;
   totals.volunteersActionCount = volunteersActionCount;
   totals.volunteersCoverageRate =

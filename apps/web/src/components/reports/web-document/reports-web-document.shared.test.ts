@@ -36,7 +36,20 @@ const fixtureModel = {
       evidence: [],
       headline: "Impact suivi",
     },
-    totals: { actions: 2, kg: 4.5, volunteers: 3, butts: 1, hours: 2 },
+    totals: {
+      actions: 2,
+      kg: 4.5,
+      knownWasteActions: 1,
+      volunteers: 3,
+      volunteersKnownActions: 1,
+      volunteersActionCount: 2,
+      volunteersCoverageRate: 50,
+      butts: 1,
+      buttsKnownActions: 1,
+      buttsActionCount: 2,
+      buttsCoverageRate: 50,
+      hours: 2,
+    },
     map: { geoCoverage: 80, traceCoverage: 75, points: 5 },
     terrain: { spotCount: 1 },
     climate: { co2AvoidedKg: 2.5, waterProtectedLiters: 10 },
@@ -54,6 +67,77 @@ const fixtureModel = {
     trendPercent: 4,
     moderation: { approved: 2, rejected: 0, delayDays: 1 },
     calendar: [],
+    routeDistance: 1.2,
+    routeSteps: [
+      {
+        index: 1,
+        label: "Action sans mesure",
+        kg: 0,
+        wasteKnown: false,
+        butts: 0,
+        buttsKnown: false,
+        segmentKm: 0,
+        latitude: 48.85,
+        longitude: 2.35,
+      },
+      {
+        index: 2,
+        label: "Action mesurée",
+        kg: 4.5,
+        wasteKnown: true,
+        butts: 0,
+        buttsKnown: true,
+        segmentKm: 1.2,
+        latitude: 48.86,
+        longitude: 2.36,
+      },
+    ],
+    monthRows6: [],
+    monthRows12: [
+      {
+        month: "2026-01",
+        actions: 1,
+        kg: 0,
+        knownWasteActions: 0,
+        butts: 0,
+        buttsKnownActions: 0,
+        volunteers: 0,
+        volunteersKnownActions: 0,
+        minutes: 30,
+      },
+      {
+        month: "2026-02",
+        actions: 1,
+        kg: 4.5,
+        knownWasteActions: 1,
+        butts: 0,
+        buttsKnownActions: 1,
+        volunteers: 3,
+        volunteersKnownActions: 1,
+        minutes: 60,
+      },
+    ],
+    highlightActions: [
+      {
+        id: "unknown-highlight",
+        label: "Action sans mesure",
+        kg: 0,
+        wasteKnown: false,
+        butts: 0,
+        buttsKnown: false,
+        photos: ["data:image/png;base64,fixture"],
+      },
+      {
+        id: "measured-highlight",
+        label: "Action mesurée",
+        kg: 4.5,
+        wasteKnown: true,
+        butts: 0,
+        buttsKnown: true,
+        photos: ["data:image/png;base64,fixture"],
+      },
+    ],
+    highlightPhotos: [],
   },
 } as unknown as Parameters<typeof buildPdfData>[0]["model"];
 
@@ -209,6 +293,51 @@ describe("reports web document shared helpers", () => {
     expect(conciseRawOnly.chapters.map((chapter) => chapter.id)).not.toContain(
       "tendance-mensuelle-detaillee",
     );
+  });
+
+  it("uses row-level availability in every exhaustive table", () => {
+    const pdf = buildPdfData({
+      reportTitle: "Rapport d'impact - Paris - Exhaustif",
+      scopeLabel: "Paris",
+      period: "full_history",
+      detailLevel: "exhaustif",
+      modules: {
+        dataAndCartography: true,
+        transparencyAndMethods: true,
+        rawData: true,
+        detailedFiles: true,
+      },
+      surfaceProxy: 42,
+      model: fixtureModel,
+    });
+
+    const spatialRows = pdf.chapters.find((chapter) => chapter.id === "details-spatiaux")?.rows;
+    expect(spatialRows).toEqual([
+      expect.objectContaining({ Zone: "Action sans mesure", "Masse (kg)": "n/a", Mégots: "n/a" }),
+      expect.objectContaining({ "Masse (kg)": "4.5", Mégots: 0 }),
+    ]);
+
+    const monthlyRows = pdf.chapters.find((chapter) => chapter.id === "tendance-mensuelle-detaillee")?.rows;
+    expect(monthlyRows).toEqual([
+      expect.objectContaining({ Mois: "2026-01", "Masse (kg)": "n/a", Mégots: "n/a", Bénévoles: "n/a" }),
+      expect.objectContaining({ Mois: "2026-02", "Masse (kg)": "4.5", Mégots: 0, Bénévoles: 3 }),
+    ]);
+
+    const highlightedRows = pdf.chapters.find((chapter) => chapter.id === "actions-mises-en-avant")?.rows;
+    expect(highlightedRows).toEqual([
+      expect.objectContaining({ Lieu: "Action sans mesure", "Masse (kg)": "n/a", Mégots: "n/a" }),
+      expect.objectContaining({ Lieu: "Action mesurée", "Masse (kg)": "4.5", Mégots: 0 }),
+    ]);
+
+    const rendered = buildOfficialReportHtml({
+      title: pdf.title,
+      rubrique: "reporting",
+      periode: "full_history",
+      organizationType: "multi_action",
+      data: pdf,
+    });
+    expect(rendered).toContain("Action sans mesure");
+    expect(rendered).toContain("n/a");
   });
 
   it("supports a custom combination with the same selection contract used by the PDF summary", () => {

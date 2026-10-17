@@ -142,6 +142,44 @@ function makeEvent(overrides: Partial<CommunityEventItem> = {}): CommunityEventI
  };
 }
 
+function withMeasuredFields(
+ item: ActionListItem,
+ fields: {
+   wasteKg: number | null;
+   cigaretteButts: number | null;
+   volunteersCount: number | null;
+   photo?: boolean;
+ },
+): ActionListItem {
+ const photo = fields.photo
+   ? [{
+       id: `${item.id}-photo`,
+       name: "fixture.png",
+       mimeType: "image/png",
+       size: 1,
+       width: 1,
+       height: 1,
+       dataUrl: "data:image/png;base64,fixture",
+     }]
+   : null;
+ return {
+   ...item,
+   waste_kg: fields.wasteKg,
+   cigarette_butts: fields.cigaretteButts,
+   volunteers_count: fields.volunteersCount,
+   contract: {
+     ...item.contract!,
+     metadata: {
+       ...item.contract!.metadata,
+       wasteKg: fields.wasteKg,
+       cigaretteButts: fields.cigaretteButts,
+       volunteersCount: fields.volunteersCount,
+       photos: photo,
+     },
+   },
+ } as ActionListItem;
+}
+
 describe("reports web analytics", () => {
  it("keeps report totals and climate proxies aligned with the canonical contract corpus", () => {
  const baseContract = makeListItem().contract!;
@@ -207,6 +245,59 @@ describe("reports web analytics", () => {
  expect(rows).toHaveLength(2);
  expect(rows[0]?.kg).toBe(20);
  expect(rows[1]?.kg).toBe(10);
+ });
+
+ it("preserves row-level availability across the report model projections", () => {
+ const measured = withMeasuredFields(
+   makeListItem({ id: "measured", action_date: "2026-01-05" }),
+   { wasteKg: 4.5, cigaretteButts: 12, volunteersCount: 5, photo: true },
+ );
+ const unknown = withMeasuredFields(
+   makeListItem({ id: "unknown", action_date: "2026-02-05" }),
+   { wasteKg: null, cigaretteButts: null, volunteersCount: null, photo: true },
+ );
+ const zero = withMeasuredFields(
+   makeListItem({ id: "zero", action_date: "2026-03-05" }),
+   { wasteKg: 0, cigaretteButts: 0, volunteersCount: 0, photo: true },
+ );
+ const mapContract = (item: ActionListItem, label: string, latitude: number, longitude: number) => ({
+   ...item.contract!,
+   location: { ...item.contract!.location, label, latitude, longitude },
+ });
+ const report = computeReportModel({
+   allItems: [measured, unknown, zero],
+   approvedItems: [measured, unknown, zero],
+   mapItems: [
+     makeMapItem({ id: "measured-map", contract: mapContract(measured, "Mesurée", 48.85, 2.35) }),
+     makeMapItem({ id: "unknown-map", waste_kg: null, cigarette_butts: null, contract: mapContract(unknown, "Inconnue", 48.86, 2.36) }),
+     makeMapItem({ id: "zero-map", contract: mapContract(zero, "Zéro mesuré", 48.87, 2.37) }),
+   ],
+   events: [],
+   now: new Date("2026-03-25T12:00:00.000Z"),
+ });
+
+ expect(report.totals).toMatchObject({
+   kg: 4.5,
+   knownWasteActions: 2,
+   butts: 12,
+   buttsKnownActions: 2,
+   volunteers: 5,
+   volunteersKnownActions: 2,
+ });
+ expect(report.monthRows12).toEqual(expect.arrayContaining([
+   expect.objectContaining({ month: "2026-01", kg: 4.5, knownWasteActions: 1, buttsKnownActions: 1, volunteersKnownActions: 1 }),
+   expect.objectContaining({ month: "2026-02", kg: 0, knownWasteActions: 0, buttsKnownActions: 0, volunteersKnownActions: 0 }),
+   expect.objectContaining({ month: "2026-03", kg: 0, knownWasteActions: 1, buttsKnownActions: 1, volunteersKnownActions: 1 }),
+ ]));
+ expect(report.routeSteps).toEqual(expect.arrayContaining([
+   expect.objectContaining({ label: "Mesurée", wasteKnown: true, buttsKnown: true }),
+   expect.objectContaining({ label: "Inconnue", wasteKnown: false, buttsKnown: false }),
+   expect.objectContaining({ label: "Zéro mesuré", wasteKnown: true, buttsKnown: true, kg: 0, butts: 0 }),
+ ]));
+ expect(report.highlightActions).toEqual(expect.arrayContaining([
+   expect.objectContaining({ id: "measured", wasteKnown: true, buttsKnown: true }),
+   expect.objectContaining({ id: "unknown", wasteKnown: false, buttsKnown: false }),
+ ]));
  });
 
  it("builds route steps with positive segment distances", () => {

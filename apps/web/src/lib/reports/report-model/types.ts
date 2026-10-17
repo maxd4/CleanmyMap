@@ -31,7 +31,9 @@ export type RouteStep = {
   index: number;
   label: string;
   kg: number;
+  wasteKnown?: boolean;
   butts: number;
+  buttsKnown?: boolean;
   segmentKm: number;
   latitude: number;
   longitude: number;
@@ -43,7 +45,9 @@ export type MonthRow = {
   kg: number;
   knownWasteActions?: number;
   butts: number;
+  buttsKnownActions?: number;
   volunteers: number;
+  volunteersKnownActions?: number;
   minutes: number;
 };
 
@@ -122,7 +126,15 @@ export type ReportModel = {
   annualRows: string[][];
   calendar: Array<[string, string, string, string]>;
   highlightPhotos: Array<{ url: string; label: string; date: string }>;
-  highlightActions: Array<{ id: string; label: string; kg: number; butts: number; photos: string[] }>;
+  highlightActions: Array<{
+    id: string;
+    label: string;
+    kg: number;
+    wasteKnown?: boolean;
+    butts: number;
+    buttsKnown?: boolean;
+    photos: string[];
+  }>;
   executive: ReportExecutiveNarrative;
 };
 

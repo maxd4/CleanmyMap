@@ -140,6 +140,7 @@ describe("canonical action impact calculation", () => {
       wasteKnown: false,
       wasteKgSource: "none",
       butts: 0,
+      buttsKnown: false,
       volunteers: 0,
       volunteersKnown: false,
       co2AvoidedKg: 0,
@@ -181,6 +182,10 @@ describe("canonical action impact calculation", () => {
       wasteKnownActions: 1,
       wasteActionCount: 2,
       wasteCoverageRate: 50,
+      buttsKnownActions: 2,
+      buttsActionCount: 2,
+      buttsCoverageRate: 100,
+      buttsKnown: true,
       butts: 2600,
       volunteers: 3,
       volunteersKnown: true,
@@ -223,6 +228,21 @@ describe("canonical action impact calculation", () => {
       volunteersKnownActions: 2,
       volunteersActionCount: 3,
       volunteersCoverageRate: (2 / 3) * 100,
+    });
+  });
+
+  it("distinguishes an unknown butt measure from an explicitly measured zero", () => {
+    expect(computeActionImpactKpis(makeContract({ cigaretteButts: null })).buttsKnown).toBe(false);
+    expect(computeActionImpactKpis(makeContract({ cigaretteButts: 0 })).buttsKnown).toBe(true);
+    expect(sumActionImpactKpis([
+      makeContract({ cigaretteButts: null }),
+      makeContract({ cigaretteButts: 0 }),
+    ])).toMatchObject({
+      butts: 0,
+      buttsKnown: true,
+      buttsKnownActions: 1,
+      buttsActionCount: 2,
+      buttsCoverageRate: 50,
     });
   });
 

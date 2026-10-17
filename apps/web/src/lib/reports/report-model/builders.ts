@@ -35,8 +35,7 @@ export function buildRouteSteps(items: ActionMapItem[], maxStops: number): Route
       return {
         item,
         label: mapItemLocationLabel(item),
-        kg: computeActionImpactKpis(toImpactInput(item)).wasteKg,
-        butts: computeActionImpactKpis(toImpactInput(item)).butts,
+        impact: computeActionImpactKpis(toImpactInput(item)),
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
       };
@@ -47,13 +46,15 @@ export function buildRouteSteps(items: ActionMapItem[], maxStops: number): Route
       ): entry is {
         item: ActionMapItem;
         label: string;
-        kg: number;
-        butts: number;
+        impact: ReturnType<typeof computeActionImpactKpis>;
         latitude: number;
         longitude: number;
       } => entry.latitude !== null && entry.longitude !== null,
     )
-    .sort((a, b) => scoreAction(b.kg, b.butts) - scoreAction(a.kg, a.butts))
+    .sort((a, b) =>
+      scoreAction(b.impact.wasteKg, b.impact.butts) -
+      scoreAction(a.impact.wasteKg, a.impact.butts),
+    )
     .slice(0, maxStops);
 
   const ordered = [...geolocated].sort((a, b) => {
@@ -72,8 +73,10 @@ export function buildRouteSteps(items: ActionMapItem[], maxStops: number): Route
     return {
       index: index + 1,
       label: entry.label,
-      kg: entry.kg,
-      butts: entry.butts,
+      kg: entry.impact.wasteKg,
+      wasteKnown: entry.impact.wasteKnown,
+      butts: entry.impact.butts,
+      buttsKnown: entry.impact.buttsKnown,
       segmentKm,
       latitude: entry.latitude,
       longitude: entry.longitude,
@@ -91,7 +94,9 @@ export function buildMonthRows(items: ActionListItem[]): MonthRow[] {
       kg: 0,
       knownWasteActions: 0,
       butts: 0,
+      buttsKnownActions: 0,
       volunteers: 0,
+      volunteersKnownActions: 0,
       minutes: 0,
     };
     previous.actions += 1;
@@ -101,8 +106,12 @@ export function buildMonthRows(items: ActionListItem[]): MonthRow[] {
       previous.knownWasteActions = (previous.knownWasteActions ?? 0) + 1;
     }
     previous.butts += impact.butts;
+    if (impact.buttsKnown) {
+      previous.buttsKnownActions = (previous.buttsKnownActions ?? 0) + 1;
+    }
     if (impact.volunteersKnown) {
       previous.volunteers += impact.volunteers;
+      previous.volunteersKnownActions = (previous.volunteersKnownActions ?? 0) + 1;
     }
     previous.minutes += Number(
       item.contract?.metadata.durationMinutes ?? item.duration_minutes ?? 0,
