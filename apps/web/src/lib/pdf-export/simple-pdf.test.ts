@@ -10,6 +10,7 @@ import {
   buildOfficialReportHtml,
   renderOfficialMarkdown,
 } from "./official-report-html";
+import { UnsupportedPdfTextError } from "./simple-pdf-primitives";
 
 const payload: PdfReportPayload = {
   title: "Rapport test",
@@ -61,6 +62,95 @@ describe("simple PDF export", () => {
 
     expect(new TextDecoder().decode(pdf.slice(0, 8))).toBe("%PDF-1.4");
     expect(pdf.byteLength).toBeGreaterThan(200);
+  });
+
+  it("keeps all chapter and global rows in both report representations", () => {
+    const chapterRows = Array.from({ length: 41 }, (_, index) => ({
+      id: `chapter-${index + 1}`,
+      value: `Valeur chapitre ${index + 1}`,
+    }));
+    const globalRows = Array.from({ length: 81 }, (_, index) => ({
+      id: `global-${index + 1}`,
+      value: `Valeur globale ${index + 1}`,
+    }));
+    const report = {
+      ...payload,
+      data: {
+        ...payload.data,
+        chapters: [
+          { title: "Synthèse exécutive", lines: ["Résumé"] },
+          {
+            title: "Tableau de chapitre",
+            rows: chapterRows,
+            columns: [
+              { key: "id", label: "Identifiant" },
+              { key: "value", label: "Valeur" },
+            ],
+          },
+        ],
+        rows: globalRows,
+        columns: [
+          { key: "id", label: "Identifiant" },
+          { key: "value", label: "Valeur" },
+        ],
+      },
+    } satisfies PdfReportPayload;
+
+    const html = buildOfficialReportHtml(report);
+    const lines = buildPdfReportLines(report);
+
+    expect(html).toContain("chapter-41");
+    expect(html).toContain("global-81");
+    expect(html).not.toContain("ligne(s) supplémentaire(s) non affichée(s)");
+    expect(lines).toContain("  chapter-41 | Valeur chapitre 41");
+    expect(lines).toContain("global-81 | Valeur globale 81");
+    expect(lines.some((line) => line.includes("supplementaire(s) non affichee(s)"))).toBe(false);
+  });
+
+  it("wraps long simple-PDF lines without truncating their source content", () => {
+    const longText = "Texte de méthode ".repeat(20);
+    const lines = buildPdfReportLines({
+      ...payload,
+      data: { ...payload.data, summary: [longText] },
+    });
+
+    expect(lines).toContain(`- ${longText.trim()}`);
+    expect(buildSimplePdf(lines).byteLength).toBeGreaterThan(200);
+  });
+
+  it("keeps a measured zero distinct from an unavailable value", () => {
+    const lines = buildPdfReportLines({
+      ...payload,
+      data: {
+        ...payload.data,
+        rows: [{ measured: 0, unavailable: null }],
+        columns: [
+          { key: "measured", label: "Mesuré" },
+          { key: "unavailable", label: "Indisponible" },
+        ],
+      },
+    });
+
+    expect(lines).toContain("0 | ");
+  });
+
+  it("encodes supported French and scientific characters and rejects unsupported glyphs", () => {
+    const unicodeLines = buildPdfReportLines({
+      ...payload,
+      data: { ...payload.data, summary: ["Élève — µ 20° … l’action"] },
+    });
+    const encodedPdf = new TextDecoder().decode(buildSimplePdf(unicodeLines));
+
+    expect(encodedPdf).toContain("\\311");
+    expect(encodedPdf).toContain("\\227");
+    expect(encodedPdf).toContain("\\265");
+    expect(encodedPdf).toContain("\\260");
+    expect(encodedPdf).toContain("\\205");
+    expect(encodedPdf).toContain("\\222");
+    expect(() => buildSimplePdf(buildPdfReportLines({
+      ...payload,
+      data: { ...payload.data, summary: ["Caractère non supporté 🙂"] },
+    }))).toThrow(UnsupportedPdfTextError);
   });
 
   it("builds an official printable report html", () => {

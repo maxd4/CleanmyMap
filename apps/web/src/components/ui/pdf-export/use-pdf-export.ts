@@ -5,7 +5,7 @@ import {
   type PdfReportData,
   type PdfReportPayload,
 } from "@/lib/pdf-export/simple-pdf";
-import { openOrDownloadReport } from "@/lib/pdf-export/browser-report";
+import { openPrintableReport, prepareReportWindow } from "@/lib/pdf-export/browser-report";
 import { buildExportUiCopy } from "@/lib/reports/export-ui";
 import { createClientIdentifier } from "@/lib/client-identifier";
 
@@ -23,7 +23,7 @@ type UsePdfExportParams = {
   defaultTitle: string;
   data?: PdfReportData | null;
   disabled?: boolean;
-  onGenerate?: (payload: PdfReportPayload) => void | Promise<void>;
+  onGenerate?: (payload: PdfReportPayload, reportWindow?: Window | null) => void | Promise<void>;
   onExportSuccess?: (payload: PdfReportPayload) => void | Promise<void>;
   buildPrintableHtml?: (payload: PdfReportPayload) => string;
 };
@@ -91,6 +91,13 @@ export function usePdfExport(params: UsePdfExportParams) {
     setState("pending");
     setMessage(null);
 
+    const reportWindow = typeof window === "undefined" ? null : prepareReportWindow();
+    if (typeof window !== "undefined" && !reportWindow) {
+      setState("error");
+      setMessage("La fenêtre du rapport a été bloquée. Autorisez les fenêtres contextuelles puis réessayez.");
+      return;
+    }
+
     const generatedAt = new Date().toISOString();
     const payload: PdfReportPayload = {
       title,
@@ -106,9 +113,12 @@ export function usePdfExport(params: UsePdfExportParams) {
 
     try {
       if (params.onGenerate) {
-        await params.onGenerate(payload);
+        await params.onGenerate(payload, reportWindow);
       } else {
-        openOrDownloadReport(payload, filename, params.buildPrintableHtml);
+        const result = openPrintableReport(payload, filename, params.buildPrintableHtml, reportWindow);
+        if (result === "blocked") {
+          throw new Error("La fenêtre du rapport a été bloquée. Autorisez les fenêtres contextuelles puis réessayez.");
+        }
       }
 
       await params.onExportSuccess?.(payload);
@@ -119,10 +129,11 @@ export function usePdfExport(params: UsePdfExportParams) {
         ...prev,
       ]);
       setState("success");
-      setMessage("Rapport ouvert. Utilisez Enregistrer en PDF dans la fenêtre d'impression.");
-    } catch {
+      setMessage("Rapport imprimable ouvert. Utilisez Enregistrer en PDF dans la fenêtre d'impression.");
+    } catch (error) {
+      reportWindow?.close();
       setState("error");
-      setMessage(copy.errorMessage);
+      setMessage(error instanceof Error ? error.message : copy.errorMessage);
     }
   }
 

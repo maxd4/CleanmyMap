@@ -12,6 +12,7 @@ const MARGIN_TOP = 40;
 const LINE_HEIGHT = 14;
 const BANNER_LINE_HEIGHT = 20;
 const MAX_LINES_PER_PAGE = Math.max(20, Math.floor((PAGE_HEIGHT - MARGIN_TOP * 2) / LINE_HEIGHT));
+const MAX_TEXT_CHARS_PER_LINE = 96;
 
 type PageState = {
   pages: Array<PdfContentEntry[]>;
@@ -38,13 +39,27 @@ function commitChartBlock(state: PageState): void {
   state.currentSlots += slots;
 }
 
+function splitTextLine(value: string): string[] {
+  const characters = Array.from(value);
+  if (characters.length <= MAX_TEXT_CHARS_PER_LINE) return [value];
+
+  const chunks: string[] = [];
+  for (let start = 0; start < characters.length; start += MAX_TEXT_CHARS_PER_LINE) {
+    chunks.push(characters.slice(start, start + MAX_TEXT_CHARS_PER_LINE).join(""));
+  }
+  return chunks;
+}
+
 function appendTextEntry(state: PageState, line: string): void {
   const banner = line.startsWith("!! ");
   const text = banner ? line.slice(3) : line;
-  const slots = banner ? 2 : 1;
-  if (state.currentSlots + slots > MAX_LINES_PER_PAGE) flushPage(state);
-  state.currentPage.push({ kind: "text", text, banner });
-  state.currentSlots += slots;
+  splitTextLine(text).forEach((chunk, index) => {
+    const isBanner = banner && index === 0;
+    const slots = isBanner ? 2 : 1;
+    if (state.currentSlots + slots > MAX_LINES_PER_PAGE) flushPage(state);
+    state.currentPage.push({ kind: "text", text: chunk, banner: isBanner });
+    state.currentSlots += slots;
+  });
 }
 
 function collectPdfPages(lines: string[]): Array<PdfContentEntry[]> {
@@ -160,7 +175,10 @@ function buildPdfObjectMap(pages: Array<PdfContentEntry[]>): {
       `<< /Length ${streamContent.length} >>\nstream\n${streamContent}\nendstream`,
     );
   });
-  objectById.set(fontObjectId, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+  objectById.set(
+    fontObjectId,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+  );
   return { objectById, fontObjectId };
 }
 

@@ -88,13 +88,15 @@
   Il expose le titre, la période, le périmètre, le niveau de détail et la date
   réelle. L'état vide affiche « Aucun rapport généré ». Le snapshot JSON final
   et les modules sont stockés sans binaire PDF ; le quota est réservé côté
-  serveur avant l'ouverture du rendu. Les actions « Voir » et « Télécharger à
+  serveur avant le rendu du document dans la fenêtre préouverte. Les actions « Voir » et « Télécharger à
   nouveau »
-  chargent le snapshot par ID à la demande. Elles rendent/réexportent ce
-  payload immuable sans données actuelles, en conservant son `generatedAt` et
-  son filename ; le téléchargement à nouveau ne crée pas de nouvelle
-  génération, ne consomme pas de nouveau quota et aucune durée de conservation
-  n'est annoncée. L'aperçu est fermé par défaut et rend uniquement la première
+  chargent le snapshot par ID à la demande. Elles rendent ce payload immuable
+  dans le document HTML imprimable sans relire les données actuelles, en
+  conservant son `generatedAt` et son filename ; « Télécharger à nouveau »
+  ouvre également ce document pour impression, au lieu d'annoncer un
+  téléchargement binaire. Cette relecture ne crée pas de nouvelle génération,
+  ne consomme pas de nouveau quota et aucune durée de conservation n'est
+  annoncée. L'aperçu est fermé par défaut et rend uniquement la première
   page via `ReportCover`, jamais un aperçu complet du PDF. Une couverture
   tronquée est signalée comme partielle avec sa plage réellement disponible.
 

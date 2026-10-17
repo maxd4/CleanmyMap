@@ -42,8 +42,6 @@ export function renderRows(payload: PdfReportPayload): string {
   const columns =
     payload.data.columns ??
     Object.keys(rows[0] ?? {}).map((key) => ({ key, label: key }));
-  const visibleRows = rows.slice(0, 80);
-
   return `
     <section class="cmm-section">
       <h2 class="cmm-section-title">Données visibles</h2>
@@ -53,7 +51,7 @@ export function renderRows(payload: PdfReportPayload): string {
             <tr>${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}</tr>
           </thead>
           <tbody>
-            ${visibleRows
+            ${rows
               .map(
                 (row) => `
                   <tr>
@@ -65,11 +63,6 @@ export function renderRows(payload: PdfReportPayload): string {
           </tbody>
         </table>
       </div>
-      ${
-        rows.length > visibleRows.length
-          ? `<p class="cmm-muted">${rows.length - visibleRows.length} ligne(s) supplémentaire(s) non affichée(s) dans cette version PDF.</p>`
-          : ""
-      }
     </section>
   `;
 }
@@ -114,7 +107,6 @@ function renderChapterRows(chapter: PdfReportChapter, isLocked: boolean): string
             <thead><tr>${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}</tr></thead>
             <tbody>
               ${chapter.rows
-                .slice(0, 40)
                 .map(
                   (row) => `
                     <tr>
@@ -176,6 +168,7 @@ export function renderWebHero(chapter: PdfReportChapter, payload: PdfReportPaylo
             )
             .join("")}
         </div>
+        ${renderChapterRows(chapter, false)}
       </div>
       <div class="cmm-web-hero__right">
         <article class="cmm-card">

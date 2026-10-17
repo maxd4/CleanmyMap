@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   preview: vi.fn(() => null),
   delivery: vi.fn(() => "Générer le rapport"),
   deliveryHistory: vi.fn(() => null),
+  openPrintableReport: vi.fn(),
 }));
 
 vi.mock("@/components/reports/web-document/use-reports-web-document-model", () => ({
@@ -38,7 +39,8 @@ vi.mock("@/components/ui/pdf-export/use-pdf-export", () => ({
 
 vi.mock("@/lib/pdf-export/browser-report", () => ({
   renderReportWindow: vi.fn(),
-  openOrDownloadReport: vi.fn(),
+  openPrintableReport: mocks.openPrintableReport,
+  prepareReportWindow: vi.fn(),
 }));
 
 vi.mock("@/components/reports/web-document/report-cover", () => ({
@@ -419,7 +421,7 @@ describe("ReportsWebDocumentPreparation", () => {
     mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
     mocks.usePdfExport.mockReturnValue({
       state: "success",
-      message: "Rapport ouvert.",
+      message: "Rapport imprimable ouvert.",
       copy: { pendingLabel: "Génération en cours" },
       hasData: true,
       isDisabled: false,
@@ -447,6 +449,65 @@ describe("ReportsWebDocumentPreparation", () => {
         data: { generatedAt: "2026-08-27T10:30:00.000Z" },
       }),
     ).rejects.toThrow("unavailable");
+    vi.unstubAllGlobals();
+  });
+
+  it("surfaces a render failure after persistence without pretending the report opened", async () => {
+    mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
+    mocks.usePdfExport.mockReturnValue({
+      state: "idle",
+      message: null,
+      copy: { pendingLabel: "Génération en cours" },
+      hasData: true,
+      isDisabled: false,
+      exportRubriquePdf: vi.fn(),
+    });
+    mocks.openPrintableReport.mockReturnValue("blocked");
+
+    renderToStaticMarkup(
+      React.createElement(ReportsWebDocument, {
+        contracts: [],
+        communityEvents: [],
+      } as ReportsWebDocumentProps),
+    );
+    const exportOptions = mocks.usePdfExport.mock.calls[0]?.[0];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          item: {
+            id: "generation-after-persistence",
+            report: "Rapport",
+            period: "Six mois",
+            perimeter: "Global",
+            detail: "Par défaut",
+            generatedAt: "27/08/2026 12:30",
+          },
+          payload: {
+            title: "Rapport",
+            rubrique: "reporting",
+            periode: "six_months",
+            organizationType: "multi_action",
+            data: { generatedAt: "2026-08-27T10:30:00.000Z" },
+          },
+        }),
+      }),
+    );
+
+    await expect(
+      exportOptions.onGenerate(
+        {
+          title: "Rapport",
+          rubrique: "reporting",
+          periode: "six_months",
+          organizationType: "Global",
+          data: { generatedAt: "2026-08-27T10:30:00.000Z" },
+        },
+        {} as Window,
+      ),
+    ).rejects.toThrow("fenêtre du rapport a été bloquée");
+    expect(mocks.openPrintableReport).toHaveBeenCalledTimes(1);
     vi.unstubAllGlobals();
   });
 });

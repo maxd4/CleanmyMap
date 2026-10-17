@@ -76,7 +76,7 @@ export function resolveReportExportStatus({
     return { kind: "loading", label: "Génération en cours", description: "Préparation du PDF en cours." };
   }
   if (state === "success") {
-    return { kind: "success", label: "Rapport généré", description: "PDF ouvert." };
+    return { kind: "success", label: "Rapport généré", description: "Rapport imprimable ouvert." };
   }
   if (state === "error") {
     return { kind: "error", label: "Erreur d’export", description: message ?? "Une erreur empêche l’export." };

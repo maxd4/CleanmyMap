@@ -1,24 +1,8 @@
-import {
-  buildPdfReportLines,
-  buildSimplePdf,
-  type PdfReportPayload,
-} from "./simple-pdf";
+import type { PdfReportPayload } from "./simple-pdf";
 import { buildOfficialReportHtml } from "./official-report-html";
 
-function downloadPdf(filename: string, lines: string[]): void {
-  const bytes = buildSimplePdf(lines);
-  const blob = new Blob(
-    [(bytes.buffer as ArrayBuffer).slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)],
-    { type: "application/pdf" },
-  );
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  URL.revokeObjectURL(url);
+export function prepareReportWindow(): Window | null {
+  return window.open("", "_blank");
 }
 
 export function renderReportWindow(
@@ -36,27 +20,25 @@ function renderReportHtmlWindow(reportWindow: Window, html: string): void {
 }
 
 export function openPrintableHtmlWindow(html: string): boolean {
-  const reportWindow = window.open("", "_blank");
+  const reportWindow = prepareReportWindow();
   if (!reportWindow) return false;
 
   renderReportHtmlWindow(reportWindow, html);
   return true;
 }
 
-export function openOrDownloadReport(
+export function openPrintableReport(
   payload: PdfReportPayload,
-  filename: string,
+  _filename: string,
   buildPrintableHtml?: (payload: PdfReportPayload) => string,
-): "opened" | "downloaded" {
+  reportWindow?: Window | null,
+): "opened" | "blocked" {
   const html = buildPrintableHtml
     ? buildPrintableHtml(payload)
     : buildOfficialReportHtml(payload);
-  const reportWindow = window.open("", "_blank");
-  if (reportWindow) {
-    renderReportHtmlWindow(reportWindow, html);
-    return "opened";
-  }
+  const targetWindow = reportWindow ?? prepareReportWindow();
+  if (!targetWindow) return "blocked";
 
-  downloadPdf(filename, buildPdfReportLines(payload));
-  return "downloaded";
+  renderReportHtmlWindow(targetWindow, html);
+  return "opened";
 }

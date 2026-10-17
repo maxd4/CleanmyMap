@@ -41,7 +41,7 @@ function createStatus(
     return {
       icon: FileText,
       label: "Rapport généré",
-      description: "PDF ouvert.",
+      description: "Rapport imprimable ouvert.",
       tone: "success-tone",
       iconTone: "success-icon-tone",
     };

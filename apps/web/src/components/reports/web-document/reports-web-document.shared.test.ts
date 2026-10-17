@@ -299,7 +299,7 @@ describe("reports web document shared helpers", () => {
         hasError: false,
         dailyExportAvailability: "used",
       }),
-    ).toMatchObject({ kind: "success", label: "Rapport généré", description: "PDF ouvert." });
+    ).toMatchObject({ kind: "success", label: "Rapport généré", description: "Rapport imprimable ouvert." });
   });
 
   it("builds PDF payloads with the selected period and detail level", () => {

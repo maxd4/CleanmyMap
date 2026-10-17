@@ -131,7 +131,7 @@ function appendChapterRows(lines: string[], chapter: PdfReportChapter): void {
   const columns =
     chapter.columns ?? Object.keys(chapter.rows[0] ?? {}).map((key) => ({ key, label: key }));
   lines.push(`  ${columns.map((column) => column.label).join(" | ")}`);
-  for (const row of chapter.rows.slice(0, 40)) {
+  for (const row of chapter.rows) {
     lines.push(`  ${columns.map((column) => formatPdfValue(row[column.key])).join(" | ")}`);
   }
 }
@@ -149,11 +149,8 @@ function appendRows(
 ): void {
   if (!rows?.length) return;
   lines.push("Donnees visibles", columns.map((column) => column.label).join(" | "));
-  for (const row of rows.slice(0, 80)) {
+  for (const row of rows) {
     lines.push(columns.map((column) => formatPdfValue(row[column.key])).join(" | "));
-  }
-  if (rows.length > 80) {
-    lines.push(`... ${rows.length - 80} ligne(s) supplementaire(s) non affichee(s).`);
   }
 }
 
@@ -172,5 +169,5 @@ export function buildPdfReportLines(payload: PdfReportPayload): string[] {
   appendChapters(lines, payload.data.chapters);
   appendRows(lines, payload.data.rows, columns);
 
-  return lines.filter((line) => line.length <= 180).map((line) => line.slice(0, 180));
+  return lines;
 }

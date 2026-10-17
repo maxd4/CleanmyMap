@@ -123,6 +123,7 @@ export function buildOfficialReportHtml(payload: PdfReportPayload): string {
       <div class="cmm-web-main">
         ${renderWebHero(heroChapter, payload)}
         ${sectionChapters.map((chapter, index) => renderChapter(chapter, index + 2)).join("\n")}
+        ${renderRows(payload)}
       </div>
     </div>
   </main>

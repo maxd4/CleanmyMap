@@ -203,8 +203,8 @@ export function buildOfficialReportCss(): string {
       border-radius: ${s.radius};
       overflow: hidden;
       background: ${c.white};
-      break-inside: avoid;
-      page-break-inside: avoid;
+      break-inside: auto;
+      page-break-inside: auto;
     }
     .cmm-web-hero {
       display: grid;
@@ -374,8 +374,8 @@ export function buildOfficialReportCss(): string {
     }
     .cmm-section {
       margin-bottom: ${s.block};
-      break-inside: avoid;
-      page-break-inside: avoid;
+      break-inside: auto;
+      page-break-inside: auto;
     }
     .cmm-section-title {
       font-size: ${t.subsection};
@@ -426,17 +426,22 @@ export function buildOfficialReportCss(): string {
       margin-bottom: 2mm;
     }
     .cmm-table-wrap {
-      overflow: hidden;
+      overflow: visible;
       border: 1px solid ${c.rule};
       border-radius: ${s.radius};
-      break-inside: avoid;
-      page-break-inside: avoid;
+      break-inside: auto;
+      page-break-inside: auto;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: ${t.small};
+      break-inside: auto;
+      page-break-inside: auto;
     }
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
     th {
       text-align: left;
       background: ${c.tableHead};

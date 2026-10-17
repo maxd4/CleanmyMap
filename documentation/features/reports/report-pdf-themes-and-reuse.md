@@ -130,7 +130,7 @@ Une page *visuellement* sobre n'est pas, en soi, un PDF machine-readable. La liv
 ### Limites observables du pipeline actuel
 
 - Le parcours courant ouvre principalement **un HTML imprimable**, pas un binaire PDF généré côté serveur.
-- Une voie de secours fabrique un PDF textuel simplifié. Elle n'implémente pas à elle seule un arbre de tags sémantiques ni l'intégration de fichiers JSON/CSV ; sa primitive d'échappement textuel dégrade actuellement les caractères hors ASCII.
+- Le renderer PDF textuel simplifié reste utilisé par des consommateurs distincts, mais n'est plus une voie de secours automatique de `/reports`. Il restitue les caractères couverts par l'encodage PDF standard et refuse explicitement les glyphes non supportés au lieu de les remplacer silencieusement ; il n'implémente pas à lui seul un arbre de tags sémantiques ni l'intégration de fichiers JSON/CSV.
 - Les snapshots historiques permettent déjà la relecture sans recalcul des actions, mais ne constituent pas une preuve de conformité PDF/UA ou PDF/A-3.
 - Les exigences de ce document sont **PLAN** tant qu'elles ne sont pas exercées, vérifiées et documentées comme `CURRENT`.
 

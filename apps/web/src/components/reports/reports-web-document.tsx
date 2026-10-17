@@ -33,9 +33,10 @@ import {
 import { usePdfExport } from "@/components/ui/pdf-export/use-pdf-export";
 import {
   renderReportWindow,
-  openOrDownloadReport,
+  openPrintableReport,
+  prepareReportWindow,
 } from "@/lib/pdf-export/browser-report";
-import { buildPdfReportFilename } from "@/lib/pdf-export/simple-pdf";
+import { buildPdfReportFilename, type PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import type { CommunityEventItem } from "@/lib/community/http";
@@ -157,7 +158,10 @@ export function ReportsWebDocument({
     [activeScopeLabel, customRange.from, customRange.to, defaultTitle, detailLevel, model, modules, period, periodSelectionValid, reportNow, surfaceProxy],
   );
 
-  async function generateReportOnServer(): Promise<void> {
+  async function generateReportOnServer(
+    _payload: PdfReportPayload,
+    reportWindow?: Window | null,
+  ): Promise<void> {
     const requestBody = singleAction
       ? {
           input: { type: "single_action" as const, actionId: singleAction.actionId },
@@ -211,10 +215,15 @@ export function ReportsWebDocument({
     if (!generatedPayload) {
       throw new Error("Le snapshot serveur du rapport est invalide.");
     }
-    openOrDownloadReport(
+    const renderResult = openPrintableReport(
       generatedPayload,
       typeof body?.filename === "string" ? body.filename : buildPdfReportFilename(generatedPayload),
+      undefined,
+      reportWindow,
     );
+    if (renderResult === "blocked") {
+      throw new Error("La fenêtre du rapport a été bloquée. Autorisez les fenêtres contextuelles puis réessayez depuis l'historique.");
+    }
   }
 
   async function handleHistoricalAction(
@@ -230,8 +239,8 @@ export function ReportsWebDocument({
       },
     }));
 
-    const reportWindow = action === "view" ? window.open("", "_blank") : null;
-    if (action === "view" && !reportWindow) {
+    const reportWindow = prepareReportWindow();
+    if (!reportWindow) {
       setHistoryActionStateById((current) => ({
         ...current,
         [id]: {
@@ -247,7 +256,7 @@ export function ReportsWebDocument({
       const generation = await loadHistoricalReportSnapshot(id);
       replayHistoricalReport(action, generation, {
         view: (payload) => renderReportWindow(reportWindow!, payload),
-        reexport: (payload, filename) => openOrDownloadReport(payload, filename),
+        reexport: (payload) => renderReportWindow(reportWindow!, payload),
       });
 
       setHistoryActionStateById((current) => ({
@@ -258,9 +267,9 @@ export function ReportsWebDocument({
           message:
             action === "view"
               ? "Rapport historique ouvert depuis le snapshot enregistré."
-              : "Téléchargement à nouveau effectué depuis le snapshot enregistré (" +
+              : "Rapport historique ouvert pour impression depuis le snapshot enregistré (" +
                 generation.filename +
-                "). Aucune nouvelle génération n'a été créée et aucun nouveau quota n'a été consommé.",
+                "). Utilisez Enregistrer en PDF dans la fenêtre d'impression. Aucune nouvelle génération n'a été créée et aucun nouveau quota n'a été consommé.",
         },
       }));
     } catch (error) {
