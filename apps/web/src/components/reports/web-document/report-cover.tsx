@@ -20,9 +20,13 @@ export function ReportCover({
 }: ReportCoverProps) {
   const narrative = buildExecutiveNarrative(report);
   const topArea = report.areas[0];
+  const wasteKnown = report.totals.knownWasteActions === undefined
+    ? true
+    : report.totals.knownWasteActions > 0;
+  const wasteLabel = wasteKnown ? `${toFrNumber(report.totals.kg)} kg` : "Non renseignée";
   const keyFigures = [
     `Actions validées: ${toFrInt(report.totals.actions)}`,
-    `Masse collectée: ${toFrNumber(report.totals.kg)} kg`,
+    `Masse collectée: ${wasteLabel}`,
     `Bénévoles mobilisés: ${report.totals.volunteersKnownActions === 0 ? "n/a" : toFrInt(report.totals.volunteers)}`,
     `Couverture géographique: ${toFrNumber(report.map.geoCoverage)}%`,
   ];
@@ -70,7 +74,7 @@ export function ReportCover({
             />
             <MetricCard
               label="Volume collecte"
-              value={`${toFrNumber(report.totals.kg)} kg`}
+              value={wasteLabel}
               tone="accent"
             />
             <MetricCard

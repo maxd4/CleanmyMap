@@ -59,6 +59,8 @@ const scopeOptions = {
 const preparationProps: ReportsWebDocumentPreparationProps = {
   period: "six_months",
   onPeriodChange: vi.fn(),
+  detailLevel: "default",
+  onDetailLevelChange: vi.fn(),
   selectedScopeValue: "global",
   scopeOptions,
   onScopeChange: vi.fn(),
@@ -124,6 +126,7 @@ describe("ReportsWebDocumentPreparation", () => {
     const props = {
       ...preparationProps,
       onPeriodChange: vi.fn(),
+      onDetailLevelChange: vi.fn(),
       onScopeChange: vi.fn(),
       onModuleToggle: vi.fn(),
     };
@@ -136,12 +139,14 @@ describe("ReportsWebDocumentPreparation", () => {
     );
 
     selects[0]?.props.onChange?.({ target: { value: "current_year" } });
-    selects[1]?.props.onChange?.({ target: { value: "account:account-1" } });
+    selects[1]?.props.onChange?.({ target: { value: "exhaustif" } });
+    selects[2]?.props.onChange?.({ target: { value: "account:account-1" } });
     moduleInputs.forEach((input) => input.props.onChange?.());
 
     expect(props.onPeriodChange).toHaveBeenCalledWith("current_year");
+    expect(props.onDetailLevelChange).toHaveBeenCalledWith("exhaustif");
     expect(props.onScopeChange).toHaveBeenCalledWith("account:account-1");
-    expect(selects).toHaveLength(2);
+    expect(selects).toHaveLength(3);
     expect(props.onModuleToggle).toHaveBeenCalledTimes(4);
     expect(props.onModuleToggle.mock.calls.map(([key]) => key)).toEqual([
       "dataAndCartography",
@@ -160,7 +165,22 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(markup).not.toContain("plafonné à");
     expect(markup).not.toContain("1000 actions approuvées");
     expect(markup).toContain("Périmètre du rapport");
-    expect(markup).not.toContain("Niveau de détail");
+    expect(markup).toContain("Niveau de détail");
+    expect(markup).toContain("Composition de référence");
+    const detailSelect = collectDomElements(
+      React.createElement(ReportsWebDocumentPreparation, preparationProps),
+    ).find(
+      (element) =>
+        (element.props as { id?: string }).id === "reports-web-document-detail-level",
+    );
+    expect(
+      (detailSelect?.props as { [key: string]: unknown } | undefined)?.[
+        "aria-describedby"
+      ],
+    ).toBe(
+      "reports-web-document-detail-level-description",
+    );
+    expect(markup).toContain('id="reports-web-document-detail-level-description"');
     expect(markup).not.toMatch(/6 à 8 pages|12 à 16 pages|20 à 28 pages/);
     expect(markup).toContain("Modules optionnels");
     expect(markup).toContain('for="reports-web-document-period"');
@@ -192,7 +212,7 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(markup).toContain("Action terrain canonique");
     expect(markup).toContain("Action sélectionnée · résolution serveur à la génération");
     expect(markup).not.toContain("action-1");
-    expect(elements.filter((element) => element.type === "select")).toHaveLength(0);
+    expect(elements.filter((element) => element.type === "select")).toHaveLength(1);
     expect(elements.filter((element) => element.type === "input" && element.props.type === "checkbox")).toHaveLength(4);
   });
 

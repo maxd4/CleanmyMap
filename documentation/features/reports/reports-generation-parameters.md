@@ -9,7 +9,7 @@
 Les paramètres de génération déterminent **quelles données entrent dans un rapport**. Ils sont indépendants :
 
 - des **modules et chapitres** qui déterminent le contenu rendu ;
-- du **niveau de détail** qui ne doit pas être présenté comme opérationnel avant d'influencer réellement la sortie ;
+- du **niveau de détail** (`concis`, `default`, `exhaustif`), qui modifie réellement la densité du PDF sans changer les calculateurs, les KPI communs ni l'état des modules ;
 - des **objectifs mesurables**, qui sont des objets métier persistants distincts ;
 - de la **preuve de fiabilité** des données, qui dépend du serveur et des contrats canoniques.
 

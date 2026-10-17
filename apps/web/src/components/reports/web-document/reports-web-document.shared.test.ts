@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildOfficialReportHtml } from "@/lib/pdf-export/official-report-html";
 import {
   DEFAULT_REPORT_DETAIL_LEVEL,
   DEFAULT_REPORT_GENERATION_PERIOD,
@@ -12,6 +13,7 @@ import {
   reportPeriodLabel,
   parseScopeSelectValue,
   detailLevelLabel,
+  detailLevelDescription,
   resolveReportExportStatus,
 } from "./reports-web-document.shared";
 
@@ -57,10 +59,10 @@ const fixtureModel = {
 
 function buildPdfDataWithModules(modules: ModuleState) {
   return buildPdfData({
-    reportTitle: "Rapport d'impact - Paris - Exhaustif",
+    reportTitle: "Rapport d'impact - Paris - Par défaut",
     scopeLabel: "Paris",
     period: "full_history",
-    detailLevel: "exhaustif",
+    detailLevel: "default",
     modules,
     surfaceProxy: 42,
     model: fixtureModel,
@@ -89,7 +91,7 @@ describe("reports web document shared helpers", () => {
     });
   });
 
-  it("keeps the current default composition independent from detail level", () => {
+  it("produces distinct document densities without changing common KPI values", () => {
     expect(DEFAULT_REPORT_MODULES).toEqual({
       dataAndCartography: true,
       transparencyAndMethods: true,
@@ -108,22 +110,32 @@ describe("reports web document shared helpers", () => {
         model: fixtureModel,
       }),
     );
-    const expectedChapterIds = outputs[0]?.chapters.map((chapter) => chapter.id);
-
-    expect(outputs.map((output) => output.chapters.map((chapter) => chapter.id))).toEqual(
-      [expectedChapterIds, expectedChapterIds, expectedChapterIds],
+    const [concise, standard, exhaustive] = outputs;
+    expect(concise?.chapters.map((chapter) => chapter.id)).toEqual(
+      standard?.chapters.map((chapter) => chapter.id),
     );
+    expect(exhaustive?.chapters.length).toBeGreaterThan(standard?.chapters.length ?? 0);
+    expect(concise?.rows).toEqual([]);
+    expect(concise?.columns).toEqual([]);
+    expect(JSON.stringify(concise)).not.toBe(JSON.stringify(standard));
+    expect(JSON.stringify(standard)).not.toBe(JSON.stringify(exhaustive));
+    const rendered = outputs.map((data) => buildOfficialReportHtml({
+      title: data.title,
+      rubrique: "reporting",
+      periode: "full_history",
+      organizationType: "multi_action",
+      data,
+    }));
+    expect(rendered[0]).not.toContain("Détails spatiaux");
+    expect(rendered[1]).not.toContain("Détails spatiaux");
+    expect(rendered[2]).toContain("Détails spatiaux");
     expect(outputs.every((output) => output.chapters.every((chapter) => !chapter.locked))).toBe(true);
-    expect(outputs.map((output) => output.rows)).toEqual([
-      outputs[0]?.rows,
-      outputs[0]?.rows,
-      outputs[0]?.rows,
-    ]);
-    expect(outputs.map((output) => output.columns)).toEqual([
-      outputs[0]?.columns,
-      outputs[0]?.columns,
-      outputs[0]?.columns,
-    ]);
+
+    for (const label of ["Actions", "Masse collectée", "Mégots", "Bénévoles"]) {
+      const values = outputs.map((output) => output.stats.find((stat) => stat.label === label)?.value);
+      expect(values[0]).toBe(values[1]);
+      expect(values[1]).toBe(values[2]);
+    }
   });
 
   it("keeps the three core chapters and removes every disabled module from PDF chapters and raw rows", () => {
@@ -154,6 +166,49 @@ describe("reports web document shared helpers", () => {
     expect(noModulesPdf.summary).toContain("Modules optionnels inclus: aucun module optionnel.");
     expect(noModulesPdf.summary.join(" ")).not.toContain("Qualité de données:");
     expect(noModulesPdf.stats.map((stat) => stat.label)).not.toContain("Couverture géographique");
+  });
+
+  it("keeps exhaustive supplements independent from module activation", () => {
+    const exhaustiveRawOnly = buildPdfData({
+      reportTitle: "Rapport d'impact - Paris - Exhaustif",
+      scopeLabel: "Paris",
+      period: "full_history",
+      detailLevel: "exhaustif",
+      modules: {
+        dataAndCartography: false,
+        transparencyAndMethods: false,
+        rawData: true,
+        detailedFiles: false,
+      },
+      surfaceProxy: 42,
+      model: fixtureModel,
+    });
+    const rawOnlyChapterIds = exhaustiveRawOnly.chapters.map((chapter) => chapter.id);
+
+    expect(rawOnlyChapterIds).toContain("tendance-mensuelle-detaillee");
+    expect(rawOnlyChapterIds).not.toContain("details-spatiaux");
+    expect(rawOnlyChapterIds).not.toContain("sources-et-limites");
+    expect(rawOnlyChapterIds).not.toContain("actions-mises-en-avant");
+
+    const conciseRawOnly = buildPdfData({
+      reportTitle: "Rapport d'impact - Paris - Concis",
+      scopeLabel: "Paris",
+      period: "full_history",
+      detailLevel: "concis",
+      modules: {
+        dataAndCartography: false,
+        transparencyAndMethods: false,
+        rawData: true,
+        detailedFiles: false,
+      },
+      surfaceProxy: 42,
+      model: fixtureModel,
+    });
+
+    expect(conciseRawOnly.rows).toEqual([]);
+    expect(conciseRawOnly.chapters.map((chapter) => chapter.id)).not.toContain(
+      "tendance-mensuelle-detaillee",
+    );
   });
 
   it("supports a custom combination with the same selection contract used by the PDF summary", () => {
@@ -192,6 +247,8 @@ describe("reports web document shared helpers", () => {
     expect(periodLabel("full_history")).toBe("Historique complet");
     expect(reportPeriodLabel("full_history", true)).toBe("Historique complet");
     expect(detailLevelLabel("default")).toBe("Par défaut");
+    expect(detailLevelDescription("concis")).toContain("Résultats principaux");
+    expect(detailLevelDescription("exhaustif")).toContain("Sources");
     expect(detailLevelLabel("default")).not.toMatch(/pages/i);
   });
 

@@ -5,12 +5,28 @@ import {
   buildReportDataAvailabilityNotices,
   type ReportDataAvailability,
 } from "@/lib/reports/data-availability";
+import {
+  buildConciseChapter,
+  buildExhaustiveSupplementalChapters,
+} from "@/lib/reports/report-detail-level";
 import type { ReportGenerationPeriodSelection } from "@/lib/reports/generation-period";
 
-const DETAIL_LEVEL_OPTIONS = [
-  { id: "concis", label: "Concis" },
-  { id: "default", label: "Par défaut" },
-  { id: "exhaustif", label: "Exhaustif" },
+export const DETAIL_LEVEL_OPTIONS = [
+  {
+    id: "concis",
+    label: "Concis",
+    description: "Résultats principaux, périmètre et limites essentielles.",
+  },
+  {
+    id: "default",
+    label: "Par défaut",
+    description: "Composition de référence avec méthode, résultats et détails disponibles.",
+  },
+  {
+    id: "exhaustif",
+    label: "Exhaustif",
+    description: "Sources, limites et données complémentaires disponibles dans les modules activés.",
+  },
 ] as const;
 
 export type DetailLevelId = (typeof DETAIL_LEVEL_OPTIONS)[number]["id"];
@@ -146,6 +162,10 @@ export function reportPeriodLabel(
 
 export function detailLevelLabel(id: DetailLevelId): string {
   return DETAIL_LEVEL_OPTIONS.find((entry) => entry.id === id)?.label ?? "";
+}
+
+export function detailLevelDescription(id: DetailLevelId): string {
+  return DETAIL_LEVEL_OPTIONS.find((entry) => entry.id === id)?.description ?? "";
 }
 
 function detailLevelShortLabel(id: DetailLevelId): string {
@@ -453,10 +473,25 @@ export function buildPdfData(params: ReportPdfDataOptions) {
       ],
     },
   ];
-  const visibleChapterIds = getVisibleReportChapterIds(modules);
-  const chapters = allChapters
+  const supplementalChapters = detailLevel === "exhaustif"
+    ? buildExhaustiveSupplementalChapters({
+        report,
+        modules,
+        wasteKnown,
+        buttsKnown,
+        volunteersKnown,
+      })
+    : [];
+  const visibleChapterIds = new Set([
+    ...getVisibleReportChapterIds(modules),
+    ...supplementalChapters.map((chapter) => chapter.id).filter((id): id is string => Boolean(id)),
+  ]);
+  const chaptersForDetail = detailLevel === "concis"
+    ? allChapters.map(buildConciseChapter)
+    : [...allChapters, ...supplementalChapters];
+  const chapters = chaptersForDetail
     .map((chapter) => ({
-      id: chapter.id,
+      id: chapter.id ?? "",
       title: chapter.title,
       subtitle: chapter.subtitle,
       lines: chapter.lines,
@@ -476,21 +511,31 @@ export function buildPdfData(params: ReportPdfDataOptions) {
       `Chapitres cœur inclus: Synthèse exécutive, Périmètre du rapport, Résultats terrain.`,
       `Modules optionnels inclus: ${buildModuleSelectionLabel(modules)}.`,
       `Actions consolidées: ${report.totals.actions}`,
+      ...(detailLevel === "concis"
+        ? ["Les indicateurs prioritaires sont conservés ; les détails tabulaires sont omis."]
+        : detailLevel === "exhaustif"
+          ? ["Les sources, limites et données complémentaires disponibles sont détaillées dans les modules activés."]
+          : []),
       ...(modules.transparencyAndMethods
         ? [`Qualité de données: ${report.quality.completenessScore.toFixed(0)}% de complétude, ${report.quality.coherenceScore.toFixed(0)}% de cohérence.`]
         : []),
     ],
-    stats: [
+    stats: (detailLevel === "concis" ? [
+      { label: "Actions", value: report.totals.actions },
+      { label: "Masse collectée", value: wasteKnown ? `${report.totals.kg.toFixed(1)} kg` : "n/a" },
+      { label: "Mégots", value: buttsKnown ? report.totals.butts : "n/a" },
+      { label: "Bénévoles", value: volunteersKnown ? report.totals.volunteers : "n/a" },
+    ] : [
       { label: "Actions", value: report.totals.actions },
       { label: "Masse collectée", value: wasteKnown ? `${report.totals.kg.toFixed(1)} kg` : "n/a" },
       { label: "Mégots", value: buttsKnown ? report.totals.butts : "n/a" },
       { label: "Bénévoles", value: volunteersKnown ? report.totals.volunteers : "n/a" },
       ...(modules.dataAndCartography ? [{ label: "Couverture géographique", value: `${report.map.geoCoverage.toFixed(1)}%` }] : []),
       { label: "Événements communauté", value: totalEvents },
-    ],
+    ]),
     chapters,
-    rows: modules.rawData ? model.exportRows : [],
-    columns: modules.rawData
+    rows: detailLevel === "concis" ? [] : modules.rawData ? model.exportRows : [],
+    columns: detailLevel === "concis" ? [] : modules.rawData
       ? [
           { key: "Date", label: "Date" },
           { key: "Lieu", label: "Lieu" },

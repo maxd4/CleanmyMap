@@ -15,10 +15,12 @@
 - **Contexte nécessaire** : Compte Clerk connecté ; le rappel de complétion du compte reste non bloquant. Les fonctions de supervision et d'audit appliquent leurs autorisations propres.
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; l'historique reste soumis à l'authentification et à ses contrôles propres.
 - **Objectif utilisateur principal** : Consulter les enregistrements accessibles, leur qualité et les corrections à effectuer.
-- **Action principale attendue** : Filtrer et inspecter les lignes, consulter le détail qualité/contexte, les photos de bilan d'une action ou les preuves photo d'un signalement lorsque demandé, l'audit autorisé et exporter les lignes approuvées filtrées en PDF.
+- **Action principale attendue** : Filtrer et inspecter les lignes, consulter le détail qualité/contexte, ouvrir le rapport d'impact mono-action lorsqu'une action est terminée, approuvée, publiée et visible, consulter les photos de bilan d'une action ou les preuves photo d'un signalement lorsque demandé, l'audit autorisé et exporter les lignes approuvées filtrées en PDF.
 - **Palette attendue** : emerald
 - **Scope** : historique et supervision des enregistrements d'actions et de signalements accessibles au compte connecté, avec filtres de statut/qualité, recherche, correction prioritaire, détail, preuves et export.
 - **Terminée** : oui pour le périmètre actuellement livré ; les évolutions non implémentées restent dans la liste PLAN.
+- **Rapport mono-action** : le CTA « Générer un rapport d'impact » n'est rendu que pour une action `action` admissible (`approved`, publiée, `post_action_complete`). Il ouvre `/reports?tab=generation&actionId=...` avec une intention d'URL ; le serveur résout à nouveau l'action et ses droits avant toute génération.
+- **Données et états** : RSVP/inscription, présence et contribution post-action restent des concepts distincts. Une donnée de mesure absente reste non renseignée ; elle n'est pas convertie en zéro pour le rapport.
 - **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen : le vert doit rester distinct des panneaux de support et des surfaces techniques.

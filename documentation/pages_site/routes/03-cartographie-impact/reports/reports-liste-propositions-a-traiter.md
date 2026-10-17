@@ -1,6 +1,6 @@
 # Rapports d'impact - Liste des propositions à traiter
 
-## Préconfiguration depuis une action validée — IMPLÉMENTÉE EN CODE
+## CURRENT — Préconfiguration depuis une action validée — LIVRÉE
 
 Une action validée propose désormais « Générer un rapport d'impact » en ouvrant
 le générateur canonique de `/reports` avec un périmètre préparé sur cette seule
@@ -18,9 +18,10 @@ Le backend résout l'identifiant côté serveur, vérifie l'authentification,
 l'admissibilité, la publication et la visibilité, puis sélectionne exactement
 son périmètre. La génération réutilise l'historique et le renderer existants ;
 le snapshot mono-action porte `snapshotSchemaVersion: 1` et les snapshots
-historiques sans version restent compatibles. Une preuve réelle Supabase et un
-E2E authentifié restent nécessaires avant de classer cette proposition
-`CURRENT`. Le même contrat pourra ensuite servir à des entrées préremplies
+historiques sans version restent compatibles. Le parcours couvert par le code
+et les tests ciblés est livré ; la preuve Supabase réelle et l'E2E authentifié
+restent des validations d'environnement à exécuter avant une attestation de
+persistance en production. Le même contrat pourra ensuite servir à des entrées préremplies
 pour une campagne, une organisation, un événement, un territoire ou un
 objectif mesurable, hors de ce lot.
 

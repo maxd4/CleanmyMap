@@ -33,22 +33,25 @@
   12 mois glissants, tandis que la comparaison oppose la fenêtre courante aux
   90 jours précédents selon les bornes de `computePilotageComparison()`.
 
-  La Génération conserve trois paramètres internes distincts : période,
-  périmètre et niveau de détail. Le sélecteur de niveau de détail est
-  temporairement retiré de l'UI, car les sorties des trois niveaux ne sont pas
-  encore différenciées ; `detailLevel="default"` reste conservé dans les
-  payloads, l'API, l'historique et les snapshots pour compatibilité. Ce
-  paramètre ne sélectionne, ne désélectionne et ne verrouille aucun module ou
-  chapitre.
+  La Génération conserve trois paramètres distincts : période, périmètre et
+  niveau de détail. Le sélecteur accessible expose `concis`, `default` et
+  `exhaustif` avec une description courte. `concis` conserve les résultats,
+  unités, périmètre et limites essentielles tout en omettant les détails
+  tabulaires ; `default` conserve la composition de référence ; `exhaustif`
+  ajoute les sources, limites, séries et données complémentaires disponibles
+  dans les modules activés. Les trois niveaux utilisent les mêmes calculateurs
+  et ne sélectionnent, ne désélectionnent ni ne verrouillent aucun module.
+  `detailLevel` reste conservé dans les payloads, l'API, l'historique et les
+  snapshots pour compatibilité.
   Un `ModuleState` unique porte la composition sélectionnée par les cases de
   modules pour le preview et le résumé,
-  `buildPdfData()` et le PDF. Les trois chapitres cœur restent présents ;
+  `buildPdfData()` et le PDF. Les trois chapitres cœur restent présents à tous
+  les niveaux ;
   `dataAndCartography`, `transparencyAndMethods`, `rawData` et
   `detailedFiles` contrôlent respectivement leur contenu cartographique,
   transparence/méthodes, données brutes et annexes. Un module désactivé est
-  réellement absent, sans placeholder. La composition actuelle est conservée
-  dans ce chantier ; le contenu précis des modules et l'effet fonctionnel des
-  trois niveaux de détail seront traités séparément.
+  réellement absent, sans placeholder. Les tableaux complémentaires du niveau
+  exhaustif n'apparaissent que lorsque leur module est activé.
 
   Le périmètre typé `single_action` de la génération accepte uniquement
   `{ input: { type: "single_action", actionId }, detailLevel, modules }`.

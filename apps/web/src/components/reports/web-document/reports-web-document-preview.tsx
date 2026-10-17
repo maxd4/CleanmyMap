@@ -108,7 +108,7 @@ export function ReportsWebDocumentPreview({
               Première page du PDF
             </h4>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Synthèse exécutive, chiffres clés et sommaire cliquable.
+              Aperçu partiel de la première page uniquement ; ce n&apos;est pas le PDF complet.
             </p>
           </div>
           <ReportCover

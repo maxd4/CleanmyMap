@@ -105,7 +105,7 @@ export function ReportsWebDocument({
     [customRange.from, customRange.to, period],
   );
   const periodSelectionValid = isValidReportGenerationPeriodSelection(periodSelection);
-  const detailLevel: DetailLevelId = DEFAULT_REPORT_DETAIL_LEVEL;
+  const [detailLevel, setDetailLevel] = useState<DetailLevelId>(DEFAULT_REPORT_DETAIL_LEVEL);
   const [modules, setModules] = useState<ModuleState>(DEFAULT_REPORT_MODULES);
   const reportNow = useMemo(() => new Date(), []);
   const filteredContracts = useMemo(
@@ -372,6 +372,8 @@ export function ReportsWebDocument({
         <ReportsWebDocumentPreparation
           period={period}
           onPeriodChange={setPeriod}
+          detailLevel={detailLevel}
+          onDetailLevelChange={setDetailLevel}
           customRange={customRange}
           onCustomRangeChange={setCustomRange}
           selectedScopeValue={selectedScopeValue}

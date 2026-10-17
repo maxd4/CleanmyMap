@@ -67,6 +67,17 @@ describe("actions history signalement media entry point", () => {
     expect(markup).toContain("/reports?tab=generation&amp;actionId=history-action");
   });
 
+  it("does not expose the report CTA for an action that is not completed and published", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(
+        ActionsHistoryListDetails,
+        buildProps("action", false),
+      ),
+    );
+
+    expect(markup).not.toContain("Générer un rapport d&#x27;impact");
+  });
+
   it.each(["spot", "clean_place"] as const)(
     "exposes the explicit media control for %s without fetching on selection",
     (type) => {

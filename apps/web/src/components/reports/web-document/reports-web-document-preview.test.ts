@@ -74,6 +74,8 @@ describe("ReportsWebDocumentPreview", () => {
     );
     expect(openMarkup).toContain("Masquer l’aperçu de la première page");
     expect(openMarkup).toContain("Première page du PDF");
+    expect(openMarkup).toContain("Aperçu partiel de la première page uniquement");
+    expect(openMarkup).toContain("ce n&#x27;est pas le PDF complet");
   });
 
   it("passes the unchanged report-cover contract and preserves the executive id", () => {
