@@ -12,6 +12,7 @@ import {
   listReportGenerationHistory,
   persistDerivedReportGeneration,
   persistReportGeneration,
+  resolveDirectReportGenerationPersistence,
   resolveDerivedReportGenerationPersistence,
 } from "./report-generation-history-store";
 import { REPORT_ADVANCED_FILTER_DEFAULTS } from "./report-advanced-filters";
@@ -299,6 +300,43 @@ describe("report generation history store", () => {
       createdByClerkId: "user-admin",
       generationId: "22222222-2222-4222-8222-222222222222",
       sourceGenerationId: historicalId,
+    })).resolves.toEqual({ kind: "uncertain" });
+  });
+
+  it("reconciles a direct persistence only for the owner and a null source lineage", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: historicalRow, error: null });
+    const ownerEq = vi.fn(() => ({ maybeSingle }));
+    const idEq = vi.fn(() => ({ eq: ownerEq }));
+    const select = vi.fn(() => ({ eq: idEq }));
+    getSupabaseAdminClientMock.mockReturnValue({
+      from: vi.fn(() => ({ select })),
+    });
+
+    await expect(resolveDirectReportGenerationPersistence({
+      createdByClerkId: "user-admin",
+      generationId: historicalId,
+    })).resolves.toMatchObject({
+      kind: "persisted",
+      item: { id: historicalId, report: payload.title },
+    });
+    expect(ownerEq).toHaveBeenCalledWith("created_by_clerk_id", "user-admin");
+
+    maybeSingle.mockResolvedValueOnce({
+      data: {
+        ...historicalRow,
+        snapshot: {
+          ...payload,
+          snapshotMetadata: {
+            ...payload.snapshotMetadata,
+            sourceGenerationId: "22222222-2222-4222-8222-222222222222",
+          },
+        },
+      },
+      error: null,
+    });
+    await expect(resolveDirectReportGenerationPersistence({
+      createdByClerkId: "user-admin",
+      generationId: historicalId,
     })).resolves.toEqual({ kind: "uncertain" });
   });
 

@@ -3,18 +3,19 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { buildPdfReportFilename } from "@/lib/pdf-export/simple-pdf";
-import {
-  persistReportGeneration,
-} from "@/lib/reports/report-generation-history-store";
 import {
   getReportExportAvailability,
   getReportExportQuotaDay,
-  releaseReportExportSlot,
   reserveReportExportSlot,
 } from "@/lib/reports/report-export-quota";
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
+import {
+  auditReportGenerationError,
+  auditReportGenerationSuccess,
+  persistReportGenerationWithQuota,
+  type ReportGenerationReservation,
+} from "./route.persistence";
 import { readJsonBodyWithLimit } from "@/lib/http/request-body";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import {
@@ -86,8 +87,6 @@ const multiActionRequestSchema = z.object({
   modules: modulesSchema.strict(),
 }).strict();
 
-type ReportGenerationReservation = Awaited<ReturnType<typeof reserveReportExportSlot>>;
-type ReportGenerationItem = Awaited<ReturnType<typeof persistReportGeneration>>;
 type ParsedReportGenerationRequest =
   | { kind: "single_action"; request: z.infer<typeof singleActionRequestSchema> }
   | { kind: "multi_action"; request: z.infer<typeof multiActionRequestSchema> };
@@ -98,21 +97,6 @@ function hasTypedInput(value: unknown): boolean {
       typeof value === "object" &&
       Object.prototype.hasOwnProperty.call(value, "input"),
   );
-}
-
-function auditReportGenerationError(
-  operationId: string,
-  actorUserId: string,
-  details: Record<string, unknown>,
-) {
-  return appendAdminOperationAudit({
-    operationId,
-    at: new Date().toISOString(),
-    actorUserId,
-    operationType: "admin_operation",
-    outcome: "error",
-    details: { operation: "persist_report_generation", ...details },
-  });
 }
 
 async function parseReportGenerationRequest(
@@ -299,51 +283,6 @@ async function reserveReportGenerationQuota(
   return { reservation };
 }
 
-async function persistReportGenerationWithQuota(
-  operationId: string,
-  actorUserId: string,
-  input: ReportGenerationHistoryInput,
-  reservation: ReportGenerationReservation,
-): Promise<{ item: ReportGenerationItem } | { response: NextResponse }> {
-  try {
-    return { item: await persistReportGeneration({ createdByClerkId: actorUserId, input }) };
-  } catch {
-    await releaseReportExportSlot({ userId: actorUserId, quotaDay: reservation.quotaDay }).catch(() => undefined);
-    await auditReportGenerationError(operationId, actorUserId, {
-      stage: "persistence",
-      code: "persistence_failed",
-    });
-    return {
-      response: NextResponse.json(
-        { error: "Impossible d'enregistrer l'historique du rapport." },
-        { status: 503 },
-      ),
-    };
-  }
-}
-
-function auditReportGenerationSuccess(
-  operationId: string,
-  actorUserId: string,
-  item: ReportGenerationItem,
-  input: ReportGenerationHistoryInput,
-) {
-  return appendAdminOperationAudit({
-    operationId,
-    at: new Date().toISOString(),
-    actorUserId,
-    operationType: "admin_operation",
-    outcome: "success",
-    targetId: item.id,
-    details: {
-      operation: "persist_report_generation",
-      stage: "persistence",
-      scopeKind: input.scopeKind,
-      detailLevel: input.detailLevel,
-    },
-  });
-}
-
 export async function POST(request: Request) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) {
@@ -399,15 +338,52 @@ export async function POST(request: Request) {
   const quota = await reserveReportGenerationQuota(operationId, access.userId);
   if ("response" in quota) return quota.response;
 
-  const persisted = await persistReportGenerationWithQuota(
+  const persisted = await persistReportGenerationWithQuota({
     operationId,
-    access.userId,
-    resolved.input,
-    quota.reservation,
-  );
+    actorUserId: access.userId,
+    input: resolved.input,
+    reservation: quota.reservation,
+    generationId,
+  });
   if ("response" in persisted) return persisted.response;
 
-  await auditReportGenerationSuccess(operationId, access.userId, persisted.item, resolved.input);
+  try {
+    await auditReportGenerationSuccess(
+      operationId,
+      access.userId,
+      persisted.item,
+      resolved.input,
+      persisted.persistenceReconciled,
+    );
+  } catch (auditError) {
+    console.error("Report generation success audit failed after persistence", {
+      operationId,
+      generationId: persisted.item.id,
+      error: auditError instanceof Error ? auditError.message : "unknown_error",
+    });
+    try {
+      await auditReportGenerationError(operationId, access.userId, {
+        stage: "audit",
+        code: "audit_failed_after_persistence",
+        generationId: persisted.item.id,
+      }, persisted.item.id);
+    } catch (reportingError) {
+      console.error("Report generation audit failure could not be recorded", {
+        operationId,
+        generationId: persisted.item.id,
+        error: reportingError instanceof Error ? reportingError.message : "unknown_error",
+      });
+    }
+    return NextResponse.json(
+      {
+        error: "Le rapport a été enregistré, mais son journal d'audit est indisponible. Ne relancez pas cette action.",
+        code: "audit_failed_after_persistence",
+        persisted: true,
+        generationId: persisted.item.id,
+      },
+      { status: 503 },
+    );
+  }
 
   return NextResponse.json({
     item: persisted.item,

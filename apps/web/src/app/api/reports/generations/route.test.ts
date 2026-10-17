@@ -3,6 +3,7 @@ import { createRateLimitModule, mockAllowedRateLimit, mockRejectedRateLimit } fr
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const persistReportGenerationMock = vi.hoisted(() => vi.fn());
+const resolveDirectReportGenerationPersistenceMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 const getReportExportAvailabilityMock = vi.hoisted(() => vi.fn());
 const getReportExportQuotaDayMock = vi.hoisted(() => vi.fn());
@@ -33,6 +34,7 @@ vi.mock("@/lib/authz", () => ({
 
 vi.mock("@/lib/reports/report-generation-history-store", () => ({
   persistReportGeneration: persistReportGenerationMock,
+  resolveDirectReportGenerationPersistence: resolveDirectReportGenerationPersistenceMock,
 }));
 
 vi.mock("@/lib/admin/audit/operation-audit", () => ({
@@ -107,6 +109,7 @@ describe("POST /api/reports/generations", () => {
       generatedAt: "27/08/2026 12:30",
     });
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
+    resolveDirectReportGenerationPersistenceMock.mockResolvedValue({ kind: "not_persisted" });
     getReportExportAvailabilityMock.mockResolvedValue("available");
     getReportExportQuotaDayMock.mockReturnValue("2026-08-27");
     reserveReportExportSlotMock.mockResolvedValue({ allowed: true, quotaDay: "2026-08-27" });
@@ -370,6 +373,10 @@ describe("POST /api/reports/generations", () => {
     );
 
     expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "persistence_failed",
+      persisted: false,
+    });
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
     const audit = appendAdminOperationAuditMock.mock.calls[0]?.[0];
     expect(audit).toMatchObject({
@@ -386,6 +393,122 @@ describe("POST /api/reports/generations", () => {
       userId: "user-1",
       quotaDay: "2026-08-27",
     });
+  });
+
+  it("reconciles an apparent persistence failure after direct insertion without reinserting or releasing quota", async () => {
+    const reconciledItem = {
+      id: "generation-reconciled",
+      report: validSnapshotPayload.title,
+      period: "Six mois",
+      perimeter: "Paris",
+      detail: "Par défaut (12 à 16 pages)",
+      generatedAt: "27/08/2026 12:30",
+    };
+    persistReportGenerationMock.mockRejectedValueOnce(new Error("lost insert response"));
+    resolveDirectReportGenerationPersistenceMock.mockResolvedValueOnce({
+      kind: "persisted",
+      item: reconciledItem,
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(persistReportGenerationMock).toHaveBeenCalledTimes(1);
+    expect(resolveDirectReportGenerationPersistenceMock).toHaveBeenCalledWith({
+      createdByClerkId: "user-1",
+      generationId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+    });
+    expect(releaseReportExportSlotMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+      outcome: "success",
+      targetId: reconciledItem.id,
+      details: expect.objectContaining({ persistenceReconciled: true }),
+    }));
+  });
+
+  it("keeps quota and exposes an unknown persistence result when the owner-scoped reread is uncertain", async () => {
+    persistReportGenerationMock.mockRejectedValueOnce(new Error("persistence response unavailable"));
+    resolveDirectReportGenerationPersistenceMock.mockResolvedValueOnce({ kind: "uncertain" });
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "persistence_uncertain",
+      persisted: "unknown",
+      generationId: expect.any(String),
+    });
+    expect(persistReportGenerationMock).toHaveBeenCalledTimes(1);
+    expect(releaseReportExportSlotMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+      outcome: "error",
+      details: expect.objectContaining({ code: "persistence_uncertain" }),
+    }));
+  });
+
+  it("keeps quota and reports persisted state when the post-insertion audit fails", async () => {
+    appendAdminOperationAuditMock
+      .mockRejectedValueOnce(new Error("audit unavailable"))
+      .mockResolvedValueOnce(undefined);
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "audit_failed_after_persistence",
+      persisted: true,
+      generationId: "generation-1",
+    });
+    expect(persistReportGenerationMock).toHaveBeenCalledTimes(1);
+    expect(resolveDirectReportGenerationPersistenceMock).not.toHaveBeenCalled();
+    expect(releaseReportExportSlotMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(2);
+    expect(appendAdminOperationAuditMock.mock.calls[1]?.[0]).toMatchObject({
+      outcome: "error",
+      targetId: "generation-1",
+      details: {
+        operation: "persist_report_generation",
+        stage: "audit",
+        code: "audit_failed_after_persistence",
+      },
+    });
+  });
+
+  it("does not hide a post-insertion audit failure when its replacement audit also fails", async () => {
+    appendAdminOperationAuditMock
+      .mockRejectedValueOnce(new Error("audit unavailable"))
+      .mockRejectedValueOnce(new Error("replacement audit unavailable"));
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "audit_failed_after_persistence",
+      persisted: true,
+    });
+    expect(persistReportGenerationMock).toHaveBeenCalledTimes(1);
+    expect(releaseReportExportSlotMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(2);
   });
 
   it("rejects a second export for the same civil day before persistence", async () => {

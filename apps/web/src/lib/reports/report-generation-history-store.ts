@@ -246,16 +246,18 @@ export async function getReportGenerationSnapshotById(
   };
 }
 
-export type DerivedReportGenerationPersistenceResolution =
+export type ReportGenerationPersistenceResolution =
   | { kind: "not_persisted" }
   | { kind: "persisted"; item: ReportGenerationHistoryRow }
   | { kind: "uncertain" };
 
-export async function resolveDerivedReportGenerationPersistence(params: {
+export type DerivedReportGenerationPersistenceResolution = ReportGenerationPersistenceResolution;
+
+async function resolveReportGenerationPersistence(params: {
   createdByClerkId: string;
   generationId: string;
-  sourceGenerationId: string;
-}): Promise<DerivedReportGenerationPersistenceResolution> {
+  expectedSourceGenerationId: string | null;
+}): Promise<ReportGenerationPersistenceResolution> {
   try {
     const generation = await getReportGenerationSnapshotById(
       params.generationId,
@@ -268,7 +270,7 @@ export async function resolveDerivedReportGenerationPersistence(params: {
     const metadata = generation.snapshot.snapshotMetadata;
     if (
       metadata?.generationId !== generation.id ||
-      metadata.sourceGenerationId !== params.sourceGenerationId
+      metadata.sourceGenerationId !== params.expectedSourceGenerationId
     ) {
       return { kind: "uncertain" };
     }
@@ -285,6 +287,28 @@ export async function resolveDerivedReportGenerationPersistence(params: {
   } catch {
     return { kind: "uncertain" };
   }
+}
+
+export function resolveDirectReportGenerationPersistence(params: {
+  createdByClerkId: string;
+  generationId: string;
+}): Promise<ReportGenerationPersistenceResolution> {
+  return resolveReportGenerationPersistence({
+    ...params,
+    expectedSourceGenerationId: null,
+  });
+}
+
+export function resolveDerivedReportGenerationPersistence(params: {
+  createdByClerkId: string;
+  generationId: string;
+  sourceGenerationId: string;
+}): Promise<DerivedReportGenerationPersistenceResolution> {
+  return resolveReportGenerationPersistence({
+    createdByClerkId: params.createdByClerkId,
+    generationId: params.generationId,
+    expectedSourceGenerationId: params.sourceGenerationId,
+  });
 }
 
 export async function persistReportGeneration(params: {
