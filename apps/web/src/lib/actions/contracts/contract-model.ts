@@ -96,6 +96,7 @@ export type ActionDataContract = {
   sourceStatus?: string | null;
   createdByClerkId?: string | null;
   publishedAt?: string | null;
+  moderationVisibility?: "visible" | "hidden" | null;
   location: ActionDataLocation;
   geometry: ActionDataGeometry;
   dates: ActionDataDates;
@@ -111,6 +112,7 @@ export type BuildActionContractParams = {
   sourceStatus?: string | null;
   createdByClerkId?: string | null;
   publishedAt?: string | null;
+  moderationVisibility?: "visible" | "hidden" | null;
   observedAt: string;
   createdAt?: string | null;
   importedAt?: string | null;
@@ -387,6 +389,7 @@ export function buildActionDataContract(
     sourceStatus: params.sourceStatus ?? params.status,
     createdByClerkId: params.createdByClerkId ?? null,
     publishedAt: params.publishedAt ?? null,
+    moderationVisibility: params.moderationVisibility ?? null,
     location: {
       label: params.locationLabel,
       latitude,

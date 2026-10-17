@@ -24,6 +24,7 @@ import {
   filterActionContractsByScope,
   filterCommunityEventsByScope,
   formatReportScopeLabel,
+  InvalidReportScopeError,
   normalizeReportScope,
   type ReportScope,
   type ReportScopeKind,
@@ -105,7 +106,11 @@ function buildWasteProfile(contracts: ActionDataContract[]) {
   };
 }
 function isEligibleMultiActionContract(contract: ActionDataContract): boolean {
-  return contract.type === "action" && contract.status === "approved";
+  return contract.type === "action" &&
+    contract.status === "approved" &&
+    contract.metadata.actionPhase === "post_action_complete" &&
+    Boolean(contract.publishedAt) &&
+    contract.moderationVisibility === "visible";
 }
 
 function hasScopeValue(
@@ -152,7 +157,15 @@ export async function buildMultiActionReportGenerationInput(params: {
   }
 
   const canonicalContracts = generationData.contracts.filter(isEligibleMultiActionContract);
-  const scope = normalizeReportScope(request.scope);
+  let scope: ReportScope;
+  try {
+    scope = normalizeReportScope(request.scope);
+  } catch (error) {
+    if (error instanceof InvalidReportScopeError) {
+      throw new MultiActionReportScopeUnavailableError();
+    }
+    throw error;
+  }
   const scopeOptions = buildReportScopeOptions(
     canonicalContracts.map((contract) => ({
       created_by_clerk_id: contract.createdByClerkId,
@@ -189,7 +202,7 @@ export async function buildMultiActionReportGenerationInput(params: {
     mapItems,
     events: scopedEvents,
     contracts: scopedContracts,
-    moderationAvailability: "available",
+    moderationAvailability: "unavailable",
     now,
   });
   const model = {

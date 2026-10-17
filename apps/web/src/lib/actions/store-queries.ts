@@ -44,19 +44,27 @@ type ActionListParams = {
   futureOnly?: boolean;
   floorDate?: string;
   requireCoordinates?: boolean;
+  requirePublicCompletedActions?: boolean;
   viewport?: ActionMapViewportQuery;
 };
+
+const PUBLIC_ACTION_PAGE_SIZE = 1000;
 
 function buildActionListQuery(
   query: ActionQuery,
   params: ActionListParams,
   selectFields: string,
+  pageRange?: { from: number; to: number },
 ) {
   let nextQuery = query
     .select(selectFields)
-    .order("action_date", { ascending: false });
+    .order("action_date", { ascending: false })
+    .order("id", { ascending: false });
   if (params.limit !== null) {
     nextQuery = nextQuery.limit(params.limit);
+  }
+  if (pageRange) {
+    nextQuery = nextQuery.range(pageRange.from, pageRange.to);
   }
   if (params.actionId) {
     nextQuery = nextQuery.eq("id", params.actionId);
@@ -69,7 +77,13 @@ function buildActionListQuery(
     nextQuery = nextQuery.eq("moderation_visibility", "visible");
   }
 
-  if (params.includeFuturePublicActions && params.status === "approved") {
+  if (params.requirePublicCompletedActions) {
+    nextQuery = nextQuery
+      .eq("status", "approved")
+      .eq("action_phase", "post_action_complete")
+      .not("published_at", "is", null)
+      .eq("moderation_visibility", "visible");
+  } else if (params.includeFuturePublicActions && params.status === "approved") {
     const today = getActionParisDate();
     nextQuery = nextQuery.or(
       `and(status.eq.approved,action_phase.neq.pre_action),and(action_phase.eq.pre_action,published_at.not.is.null,status.in.(approved,pending),action_date.gte.${today})`,
@@ -107,15 +121,33 @@ export async function fetchActionRows(
   }
 
   try {
-    const rows = await runActionQuery<ActionRow>(supabase, (query) =>
-      buildActionListQuery(query, params, ACTION_SELECT_FIELDS_WITH_PHASE),
-    );
+    const rows: ActionRow[] = [];
+    if (params.requirePublicCompletedActions && params.limit === null) {
+      for (let offset = 0; ; offset += PUBLIC_ACTION_PAGE_SIZE) {
+        const page = await runActionQuery<ActionRow>(supabase, (query) =>
+          buildActionListQuery(
+            query,
+            params,
+            ACTION_SELECT_FIELDS_WITH_PHASE,
+            { from: offset, to: offset + PUBLIC_ACTION_PAGE_SIZE - 1 },
+          ),
+        );
+        rows.push(...page);
+        if (page.length < PUBLIC_ACTION_PAGE_SIZE) break;
+      }
+    } else {
+      rows.push(
+        ...(await runActionQuery<ActionRow>(supabase, (query) =>
+          buildActionListQuery(query, params, ACTION_SELECT_FIELDS_WITH_PHASE),
+        )),
+      );
+    }
     const normalized = rows.map(normalizeStoredAction);
     return params.futureOnly
       ? normalized.filter((row) => isPublishedFuturePreAction(row))
       : normalized;
   } catch (error) {
-    if (!isMissingActionColumnError(error)) {
+    if (!isMissingActionColumnError(error) || params.requirePublicCompletedActions) {
       throw error;
     }
 

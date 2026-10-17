@@ -65,6 +65,7 @@ function canUseLocalActionFallback(
 ): boolean {
   return (
     wantsActions &&
+    !params.requirePublicCompletedActions &&
     params.actionIds == null &&
     remoteRowsResult.status === "rejected" &&
     allowLocalActionStoreInCurrentRuntime()
@@ -95,6 +96,7 @@ export async function loadUnifiedActionSourceData(
           futureOnly: params.futureOnly,
           floorDate: params.floorDate ?? undefined,
           requireCoordinates: params.requireCoordinates,
+          requirePublicCompletedActions: params.requirePublicCompletedActions,
           viewport: params.viewport,
         })
       : Promise.resolve([]),

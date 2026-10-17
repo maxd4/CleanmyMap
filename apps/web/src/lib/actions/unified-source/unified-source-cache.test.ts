@@ -99,4 +99,25 @@ describe("unified source cache key", () => {
       actionIds: ["A", "a", "_"],
     }));
   });
+
+  it("keeps the fail-closed public completed corpus in a separate cache lane", () => {
+    const publicComplete = buildUnifiedActionContractsCacheKey({
+      limit: null,
+      status: "approved",
+      floorDate: null,
+      requireCoordinates: false,
+      types: ["action"],
+      requirePublicCompletedActions: true,
+    });
+    const regularApproved = buildUnifiedActionContractsCacheKey({
+      limit: null,
+      status: "approved",
+      floorDate: null,
+      requireCoordinates: false,
+      types: ["action"],
+    });
+
+    expect(publicComplete).not.toBe(regularApproved);
+    expect(publicComplete).toContain("publicComplete:1");
+  });
 });

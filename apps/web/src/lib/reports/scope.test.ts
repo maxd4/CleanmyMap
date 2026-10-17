@@ -6,6 +6,7 @@ import {
   filterActionContractsByScope,
   filterCommunityEventsByScope,
   formatReportScopeLabel,
+  normalizeReportScope,
 } from "./scope";
 
 const contract: ActionDataContract = {
@@ -80,6 +81,15 @@ it("builds readable labels from available options", () => {
       options,
     ),
   ).toBe("Alice");
+});
+
+it.each([
+  { kind: "account", value: null },
+  { kind: "association", value: "" },
+  { kind: "arrondissement", value: undefined },
+  { kind: "not-a-scope", value: "value" },
+])("rejects invalid non-global scope input", (input) => {
+  expect(() => normalizeReportScope(input as never)).toThrow("scope is invalid");
 });
 
 it("ignores non-Paris arrondissement labels in scope buckets", () => {

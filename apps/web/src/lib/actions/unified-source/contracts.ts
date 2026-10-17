@@ -110,6 +110,7 @@ function toActionContractFromRow(
     sourceStatus: row.status,
     createdByClerkId: row.created_by_clerk_id,
     publishedAt: row.published_at ?? null,
+    moderationVisibility: row.moderation_visibility ?? null,
     observedAt: row.action_date,
     createdAt: row.created_at,
     importedAt: row.updated_at ?? null,

@@ -22,6 +22,8 @@ export type UnifiedActionContractsParams = {
   floorDate: string | null;
   requireCoordinates: boolean;
   types: ActionEntityType[] | null;
+  /** Require the complete public post-action projection; missing columns fail closed. */
+  requirePublicCompletedActions?: boolean;
   viewport?: ActionMapViewportQuery;
 };
 

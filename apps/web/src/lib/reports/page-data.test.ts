@@ -174,6 +174,7 @@ describe("/reports server data budget", () => {
       floorDate: null,
       requireCoordinates: false,
       types: ["action"],
+      requirePublicCompletedActions: true,
     });
     expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();

@@ -87,6 +87,7 @@ export async function loadReportsGenerationData() {
           floorDate: null,
           requireCoordinates: false,
           types: ["action"],
+          requirePublicCompletedActions: true,
         }),
     ),
     loadReportCommunityEventsWithAvailability(REPORT_DATA_BUDGET.communityEvents.limit),

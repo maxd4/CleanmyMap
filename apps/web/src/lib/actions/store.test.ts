@@ -541,6 +541,93 @@ describe("fetchActions", () => {
     expect(eqCalls).toContainEqual(["moderation_visibility", "visible"]);
     expect(eqCalls).toContainEqual(["status", "approved"]);
   });
+
+  it("paginates the complete public action corpus beyond the Supabase page cap", async () => {
+    const rangeCalls: unknown[][] = [];
+    const makeRow = (index: number) => ({
+      id: `action-${index}`,
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: null,
+      created_by_clerk_id: "user-1",
+      actor_name: "Test",
+      action_date: "2026-01-02",
+      location_label: "Parc",
+      latitude: null,
+      longitude: null,
+      derived_geometry_kind: null,
+      derived_geometry_geojson: null,
+      geometry_confidence: null,
+      geometry_source: null,
+      waste_kg: 1,
+      cigarette_butts: 0,
+      volunteers_count: 1,
+      duration_minutes: 30,
+      notes: null,
+      status: "approved",
+      published_at: "2026-01-03T00:00:00.000Z",
+      moderation_visibility: "visible",
+      action_phase: "post_action_complete",
+      preparation_data: {},
+    });
+    const pages = [
+      Array.from({ length: 1000 }, (_, index) => makeRow(index)),
+      [makeRow(1000)],
+    ];
+    let pageIndex = 0;
+    const query = {
+      select: () => query,
+      order: () => query,
+      range: (...args: unknown[]) => {
+        rangeCalls.push(args);
+        return query;
+      },
+      limit: () => query,
+      eq: () => query,
+      or: () => query,
+      gte: () => query,
+      not: () => query,
+      then: (resolve: (value: unknown) => void) => resolve({ data: pages[pageIndex++] ?? [], error: null }),
+    };
+
+    const rows = await fetchActions({ from: () => query } as never, {
+      limit: null,
+      status: "approved",
+      requireCoordinates: false,
+      requirePublicCompletedActions: true,
+    });
+
+    expect(rows).toHaveLength(1001);
+    expect(rangeCalls).toEqual([[0, 999], [1000, 1999]]);
+  });
+
+  it("fails closed instead of using a legacy projection for public completed reports", async () => {
+    let selectCount = 0;
+    const query = {
+      select: () => {
+        selectCount += 1;
+        return query;
+      },
+      order: () => query,
+      range: () => query,
+      limit: () => query,
+      eq: () => query,
+      or: () => query,
+      gte: () => query,
+      not: () => query,
+      then: (resolve: (value: unknown) => void) => resolve({
+        data: null,
+        error: { message: "column actions.moderation_visibility does not exist" },
+      }),
+    };
+
+    await expect(fetchActions({ from: () => query } as never, {
+      limit: null,
+      status: "approved",
+      requireCoordinates: false,
+      requirePublicCompletedActions: true,
+    })).rejects.toThrow("moderation_visibility");
+    expect(selectCount).toBe(1);
+  });
 });
 
 describe("buildInitialActionRegistrationRows", () => {

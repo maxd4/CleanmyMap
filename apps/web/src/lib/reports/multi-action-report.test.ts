@@ -52,6 +52,7 @@ function makeContract(id: string, overrides: Record<string, unknown> = {}) {
     source: "actions",
     sourceStatus: "approved",
     createdByClerkId: "user-1",
+    publishedAt: "2026-08-16T12:00:00.000Z",
     observedAt: "2026-08-15T12:00:00.000Z",
     createdAt: "2026-08-15T12:00:00.000Z",
     importedAt: null,
@@ -65,6 +66,7 @@ function makeContract(id: string, overrides: Record<string, unknown> = {}) {
     actorName: "Alice",
     associationName: "Association Canonique",
     actionPhase: "post_action_complete",
+    moderationVisibility: "visible",
     ...overrides,
   });
 }
@@ -152,6 +154,62 @@ describe("multi-action report server resolver", () => {
       modules,
       now,
     })).rejects.toBeInstanceOf(MultiActionReportScopeUnavailableError);
+  });
+
+  it.each([
+    ["account", null],
+    ["association", ""],
+    ["arrondissement", undefined],
+  ] as const)("rejects a non-global scope without a canonical value (%s)", async (kind, value) => {
+    await expect(buildMultiActionReportGenerationInput({
+      request: {
+        type: "multi_action",
+        period: { id: "six_months" },
+        scope: { kind, value },
+      },
+      detailLevel: "default",
+      modules,
+      now,
+    })).rejects.toBeInstanceOf(MultiActionReportScopeUnavailableError);
+    expect(mocks.computeReportModel).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["unpublished", { publishedAt: null }],
+    ["draft", { actionPhase: "post_action_draft" }],
+    ["hidden", { moderationVisibility: "hidden" }],
+  ] as const)("excludes %s actions from the public completed corpus", async (_label, overrides) => {
+    mocks.loadReportsGenerationData.mockResolvedValueOnce({
+      contracts: [makeContract("ineligible", overrides)],
+      isTruncated: false,
+      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
+      communityEvents: [],
+      communityEventsAvailability: "available",
+    });
+
+    await expect(buildMultiActionReportGenerationInput({
+      request: { type: "multi_action", period: { id: "six_months" }, scope: { kind: "global" } },
+      detailLevel: "default",
+      modules,
+      now,
+    })).rejects.toBeInstanceOf(MultiActionReportEmptyError);
+  });
+
+  it("keeps approved-only reports from fabricating moderation statistics", async () => {
+    await buildMultiActionReportGenerationInput({
+      request: {
+        type: "multi_action",
+        period: { id: "six_months" },
+        scope: { kind: "global" },
+      },
+      detailLevel: "default",
+      modules,
+      now,
+    });
+
+    expect(mocks.computeReportModel).toHaveBeenCalledWith(expect.objectContaining({
+      moderationAvailability: "unavailable",
+    }));
   });
 
   it("keeps source, empty-window and truncation states explicit", async () => {

@@ -9,6 +9,7 @@ export type CachedUnifiedActionContractsParams = {
   floorDate: string | null;
   requireCoordinates: boolean;
   types: ActionEntityType[] | null;
+  requirePublicCompletedActions?: boolean;
 };
 
 function compareCanonicalStrings(left: string, right: string): number {
@@ -42,5 +43,6 @@ export function buildUnifiedActionContractsCacheKey(
     `floor:${params.floorDate ?? "all"}`,
     `coords:${params.requireCoordinates ? "1" : "0"}`,
     `types:${buildTypesCacheKey(params.types)}`,
+    `publicComplete:${params.requirePublicCompletedActions ? "1" : "0"}`,
   ].join("|");
 }

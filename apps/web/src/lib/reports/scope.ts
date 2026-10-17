@@ -16,6 +16,13 @@ export type ReportScope = {
   value: string | null;
 };
 
+export class InvalidReportScopeError extends Error {
+  constructor() {
+    super("The requested report scope is invalid.");
+    this.name = "InvalidReportScopeError";
+  }
+}
+
 export type ReportScopeChoice = {
   value: string;
   label: string;
@@ -120,10 +127,18 @@ export function normalizeReportScope(
   if (!input || !input.kind || input.kind === "global") {
     return DEFAULT_REPORT_SCOPE;
   }
+  if (
+    input.kind !== "account" &&
+    input.kind !== "association" &&
+    input.kind !== "arrondissement"
+  ) {
+    throw new InvalidReportScopeError();
+  }
   const value = trimValue(input.value ?? null);
-  return value.length > 0
-    ? { kind: input.kind, value }
-    : DEFAULT_REPORT_SCOPE;
+  if (value.length === 0) {
+    throw new InvalidReportScopeError();
+  }
+  return { kind: input.kind, value };
 }
 
 export function formatReportScopeLabel(
