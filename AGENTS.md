@@ -180,42 +180,54 @@ Le workflow courant est `MAIN-ONLY / MULTI-WRITER COORDONNÉ`.
 
 Hors mode de développement rapide :
 
-```text
-validation → commit isolé → push main → vérification de convergence
-```
-
-Mode de développement rapide explicitement activé :
+`Hors mode de développement rapide : validation → commit isolé → push main → vérification de convergence.`
 
 ```text
-commit local selon son protocole, sans push tant que le mode reste actif
+validation → staging allowlist complet → vérification staged/ascendance →
+commit isolé → push fast-forward main → fetch → convergence HEAD/origin/main 0/0
 ```
 
-L’absence de push d’un lot précédent ne bloque pas un nouveau lot local cohérent.
+Pour chaque lot validé, tous les fichiers attribués au lot courant doivent être
+stages par allowlist, committés puis poussés sur `main`. Une exécution ne peut
+laisser dirty ou untracked un fichier qu'elle a introduit ou modifié. Une
+instruction explicite de ne pas committer ou de ne pas pousser reste prioritaire.
+
+L’absence de push d’un lot précédent ne dispense pas le lot courant de son
+propre commit et de son propre push lorsqu'il est validé.
+
+Mode de développement rapide explicitement activé : commit local selon son
+protocole, sans push tant que le mode reste actif. Cette exception doit être
+explicitement activée et ne s'applique pas au workflow normal d'un lot validé.
 
 Lors du push :
 
 - auditer toute l’ascendance locale non publiée, y compris les commits d’autres
   writers ;
-- vérifier `git diff --cached --name-only` avant le commit et
-  `git log --oneline origin/main..HEAD` avant la publication ;
+- vérifier le diff staged complet, `git diff --cached --name-only`, les fichiers
+  inclus et `git log --oneline origin/main..HEAD` avant le commit et la
+  publication ;
 - identifier les fichiers et validations de chaque commit local ; un commit
   multi-responsabilités est publiable seulement si toutes ses parties sont
   identifiées, préservées et validées ;
 - appliquer les validations de publication définies par la gouvernance
   spécialisée ;
-- si `origin/main` avance pendant le push, attendre de façon bornée, refetcher,
-  relire l’ascendance puis resynchroniser sans perte avant une nouvelle tentative
-  fast-forward ; ne jamais forcer le push ;
-- après publication, vérifier la convergence locale/distante.
+- si `origin/main` diverge ou avance après la capture de référence, arrêter la
+  publication, refetcher uniquement pour établir la preuve de divergence et la
+  signaler ; aucune intégration silencieuse, aucun force-push et aucun nouveau
+  commit de réconciliation ne sont autorisés dans cette exécution ;
+- après publication, faire un `fetch` puis vérifier explicitement
+  `HEAD = origin/main` et ahead/behind `0/0`.
 
 ### Autorisation ChatGPT Web
 
 ChatGPT Web/Codex est un writer autorisé de ce dépôt. Pour un lot demandé ou
-validé par l’utilisateur, il peut créer le ou les commits correspondant(s) et
-pousser normalement sur `origin/main` après les validations requises. Avant le
-push, il doit vérifier le périmètre staged, l’ascendance de tous les commits
-non publiés, l’absence de conflit non résolu et la divergence distante ; après
-le push, il doit vérifier la convergence entre `HEAD` et `origin/main`.
+validé par l’utilisateur, il doit staging par allowlist l’intégralité des
+fichiers du lot, créer le commit correspondant et pousser normalement sur
+`origin/main` après les validations requises. Avant le commit, il doit vérifier
+le diff staged, l’ascendance locale et les fichiers inclus. Avant le push, il
+doit vérifier l’absence de conflit non résolu et de divergence distante ; après
+le push, il doit faire un `fetch` puis vérifier la convergence entre `HEAD` et
+`origin/main` à `0/0`.
 
 Cette autorisation ne couvre ni le force-push, ni la réécriture d’historique, ni
 la suppression distante, ni un déploiement ou une autre mutation externe non
@@ -254,39 +266,43 @@ supprimer les résultats parce qu'un autre writer a travaillé en parallèle.
 La synchronisation avec `origin/main` est une exigence de réconciliation et de
 publication, pas un prérequis pour commencer une analyse locale.
 
-Une exécution ne doit jamais se terminer avec un fichier `dirty` ou `untracked`
-introduit par le lot courant, ni avec un changement pertinent laissé hors du
-commit. Tout fichier pertinent pour le lot courant doit être stagé explicitement
-et inclus dans son commit. Les fichiers `dirty` ou `untracked` préexistants et
-hors périmètre doivent être préservés, signalés et ne constituent pas un
-candidat implicite. Un fichier untracked non pertinent à publier ne peut être
-traité par `.gitignore` qu'après vérification qu'il s'agit bien d'un artefact
-non canonique, régénérable ou local ; l'entrée `.gitignore` doit elle-même être
-ciblée et committée avec le lot. Ne jamais utiliser `.gitignore` pour masquer du
-code source, une modification utilisateur ou une dette dont la provenance n'est
-pas établie.
+Une exécution doit capturer immédiatement la liste des chemins dirty et
+untracked, puis figer une allowlist du lot courant. Elle ne doit jamais se
+terminer avec un fichier dirty ou untracked introduit par le lot courant, ni
+avec un changement pertinent laissé hors du commit. Tout fichier pertinent
+pour le lot courant doit être stagé explicitement et inclus dans son commit.
+Tout fichier dirty ou untracked préexistant ou concurrent doit être signalé
+explicitement dans le bilan. Un fichier dirty ne peut être modifié que si son
+appartenance au lot est établie ou si son contenu a été explicitement fourni
+pour ce lot. Un fichier apparu après la capture de l'allowlist n'est pas inclus
+dans le staging ou le commit de cette exécution. Un fichier untracked non
+pertinent à publier ne peut être traité par `.gitignore` qu'après vérification
+qu'il s'agit bien d'un artefact non canonique, régénérable ou local ; l'entrée
+`.gitignore` doit elle-même être ciblée et committée avec le lot. Ne jamais
+utiliser `.gitignore` pour masquer du code source, une modification utilisateur
+ou une dette dont la provenance n'est pas établie.
 
 - préserver les changements dirty, staged et untracked hors périmètre ;
-- les modifications locales non stagées hors périmètre ne bloquent ni le commit
-  ni le push lorsqu’elles ne sont pas écrasées et que le candidat exact reste
-  vérifiable ;
-- stage uniquement les fichiers du candidat courant ;
+- les fichiers dirty ou untracked hors périmètre sont préservés et signalés ;
+  ils ne deviennent jamais un candidat implicite ;
+- stage uniquement les fichiers du candidat courant, avec une allowlist figée
+  avant la première mutation ;
 - ne jamais utiliser `git add -A` par commodité ;
 - ne jamais utiliser reset destructif, clean, stash ou force-push pour masquer
   un conflit ou un changement étranger ;
 - une erreur étrangère est signalée, pas réparée opportunistement ;
 - si un chemin ciblé est dirty et n’est pas explicitement attribué au lot
-  courant, ne pas écrire dessus ni reprendre le chantier ; signaler simplement
-  que le chemin est indisponible et préserver son contenu ;
+  courant, ne pas écrire dessus ni reprendre le chantier ; signaler que le
+  chemin est indisponible et préserver son contenu ;
 - la protection des chemins dirty et untracked étrangers est distincte de la
   synchronisation de l’index, de `HEAD` et des références distantes : seules
   ces références peuvent être réconciliées pour une publication demandée, sans
   modifier les fichiers étrangers ;
-- une divergence d’index, de `HEAD` ou de branche distante doit être traitée
-  par attente bornée, refetch et intégration non destructive lorsqu'une
-  publication ou une réconciliation est demandée ; elle ne bloque pas une
-  analyse indépendante. Un conflit non résolu reste bloquant pour la
-  publication et ne doit jamais être masqué.
+- une validation bloquante, un conflit d’attribution, une régression de
+  sécurité, une divergence de `HEAD`/index ou une divergence distante restent
+  des conditions d’arrêt pour le commit et le push ; dans ces cas, aucun commit
+  ou push forcé ne doit être effectué ;
+- un conflit non résolu ne doit jamais être masqué ou intégré silencieusement.
 
 Un fichier supplémentaire directement nécessaire à la même responsabilité
 n’est pas un nouveau chantier : adapter callers, consommateurs, tests, types ou
