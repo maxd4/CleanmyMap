@@ -32,6 +32,7 @@ test("architecture graph resolves relative, alias, facade, test and type-only im
   const graph = fixtureGraph();
   const allowed = edge(graph, "components/allowed.ts", "lib/actions/workflow.ts");
   const inverted = edge(graph, "components/inverted.ts", "lib/supabase/adapter.ts");
+  const route = edge(graph, "app/route.ts", "lib/supabase/adapter.ts");
   const aliased = edge(graph, "components/alias.ts", "lib/domain/contracts.ts");
   const testTypeOnly = edge(graph, "components/fixture.test.ts", "lib/domain/contracts.ts");
   const ownFacade = edge(graph, "lib/domain/facade-internal.ts", "lib/domain/index.ts");
@@ -41,6 +42,8 @@ test("architecture graph resolves relative, alias, facade, test and type-only im
   assert.equal(allowed?.kind, "runtime");
   assert.equal(allowed?.uiToInfrastructure, false);
   assert.equal(inverted?.uiToInfrastructure, true);
+  assert.equal(route?.fromLayer, "application");
+  assert.equal(route?.uiToInfrastructure, false);
   assert.equal(aliased?.specifier, "@/lib/domain/contracts");
   assert.equal(testTypeOnly?.sourceKind, "test");
   assert.equal(testTypeOnly?.kind, "type-only");

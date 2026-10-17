@@ -137,7 +137,11 @@ function classifyLayer(surface, filePath, root = repositoryRoot) {
   const first = relative[0] ?? "";
   const second = relative[1] ?? "";
   if (surface.id === "web") {
-    if (["app", "components", "hooks"].includes(first)) return "ui";
+    // Next route/page entrypoints execute on the server boundary. They may
+    // compose application and infrastructure owners; client-facing UI stays
+    // under components/hooks and remains subject to UI boundary checks.
+    if (first === "app") return "application";
+    if (["components", "hooks"].includes(first)) return "ui";
     if (first === "lib" && ["actions", "account", "admin", "chat", "community", "dashboard", "funding", "gamification", "missions", "notifications", "pilotage", "route", "spogomi", "spots"].includes(second)) return "application";
     if (first === "lib" && ["auth", "backpressure", "botid", "browser", "github", "http", "logging", "maps", "media", "observability", "persistence", "posthog", "rate-limit", "security", "storage", "supabase"].includes(second)) return "infrastructure";
     if (first === "lib" && ["domain", "contracts", "data", "geo", "impact", "learning", "reports", "sections-registry", "validation", "waste"].includes(second)) return "domain";
@@ -149,6 +153,16 @@ function classifyLayer(surface, filePath, root = repositoryRoot) {
   if (first === "security") return "infrastructure";
   if (first === "types") return "domain";
   return "domain";
+}
+
+const UI_SAFE_SHARED_MODULES = new Set([
+  "apps/web/src/lib/auth/redirect-url.ts",
+  "apps/web/src/lib/media/image-compression.ts",
+  "apps/web/src/lib/supabase/storage-business-classification.ts",
+]);
+
+function isUiSafeSharedModule(relativePath) {
+  return UI_SAFE_SHARED_MODULES.has(relativePath);
 }
 
 function parseImportKind(node) {
@@ -339,7 +353,9 @@ export function buildArchitectureImportGraph({ source = "worktree", root = repos
           crossDomain: node.domain !== targetNode.domain,
           targetsPublicFacade: targetNode.publicFacade,
           importsOwnFacade: targetNode.publicFacade && targetNode.facadeOwner && node.path.startsWith(`${targetNode.facadeOwner}/`) && node.path !== targetNode.path,
-          uiToInfrastructure: node.layer === "ui" && targetNode.layer === "infrastructure",
+          uiToInfrastructure: node.layer === "ui"
+            && targetNode.layer === "infrastructure"
+            && !isUiSafeSharedModule(targetRelative),
           domainToUi: node.layer === "domain" && targetNode.layer === "ui",
           invertedLayer: node.sourceKind === "runtime" && node.layer !== "test" && targetNode.layer !== "test" && ["ui", "application", "domain", "infrastructure", "external-services"].indexOf(node.layer) > ["ui", "application", "domain", "infrastructure", "external-services"].indexOf(targetNode.layer),
         };

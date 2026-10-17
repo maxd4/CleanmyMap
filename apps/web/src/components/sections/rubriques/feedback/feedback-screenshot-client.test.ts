@@ -17,7 +17,7 @@ vi.mock("@/lib/supabase/client", () => ({
 import {
   uploadFeedbackScreenshot,
   validateFeedbackScreenshotFile,
-} from "./feedback-screenshot-client";
+} from "@/lib/community/feedback-screenshot-client";
 
 const feedbackId = "11111111-1111-4111-8111-111111111111";
 const attemptId = "22222222-2222-4222-8222-222222222222";

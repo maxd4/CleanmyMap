@@ -24,7 +24,7 @@ import {
   submitFeedbackQuestionnaire,
 } from "./feedback-submission";
 import { fetchPersonalFeedbackPage } from "./feedback-history-loader";
-import { validateFeedbackScreenshotFile } from "./feedback-screenshot-client";
+import { validateFeedbackScreenshotFile } from "@/lib/community/feedback-screenshot-client";
 import { findPotentiallySimilarFeedback } from "@/lib/community/feedback-similarity";
 import { useSpeechRecognition } from "./use-speech-recognition";
 import {

@@ -239,6 +239,7 @@ Il n'existe actuellement aucune page canonique `/learn`. Les pages
 | `/spogomi/[eventSlug]/espace` | [Gestion SPOGOMI](./routes/02-agir/spogomi-gestion/spogomi-gestion-README.md) | `protected` ; organisateur habilité pour l'événement | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/espace/page.tsx` |
 | `/spogomi/[eventSlug]/gestion` | — | `redirect` vers `/spogomi/[eventSlug]/espace` | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/gestion/page.tsx` |
 | `/spogomi/[eventSlug]/equipe` | [Saisie équipe SPOGOMI](./routes/02-agir/spogomi-team/spogomi-team-README.md) | `partner-session` ; session d'équipe limitée et révocable | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/equipe/page.tsx` |
+| `/spogomi/assistance` | [Assistance de rattachement SPOGOMI](./routes/02-agir/spogomi-assistance/spogomi-assistance-README.md) | `protected` ; invitation explicite et session contrôlée côté serveur | agir | `apps/web/src/app/(app)/spogomi/assistance/page.tsx` |
 
 ### Entrées visibles du bloc
 

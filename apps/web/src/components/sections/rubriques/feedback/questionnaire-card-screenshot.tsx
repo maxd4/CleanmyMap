@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import { FEEDBACK_SCREENSHOT_ACCEPT } from "./feedback-screenshot-client";
+import { FEEDBACK_SCREENSHOT_ACCEPT } from "@/lib/community/feedback-screenshot-client";
 
 export function QuestionnaireScreenshotField({
   file,

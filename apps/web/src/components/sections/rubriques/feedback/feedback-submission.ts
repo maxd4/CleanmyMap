@@ -1,6 +1,6 @@
 import type { Locale } from "../feedback-section.shared";
 import type { QuestionnaireConfig } from "./questionnaire-config";
-import { uploadFeedbackScreenshot } from "./feedback-screenshot-client";
+import { uploadFeedbackScreenshot } from "@/lib/community/feedback-screenshot-client";
 
 export type FeedbackSubmissionSource = "feedback_section" | "feedback_discussion";
 
