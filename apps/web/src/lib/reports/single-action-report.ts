@@ -7,7 +7,11 @@ import { computeReportAccountScopeCoverage } from "@/lib/reports/scope";
 import { toReportsExportRow } from "@/lib/reports/page-data-export";
 import { buildPdfData, buildReportTitle, type DetailLevelId, type ModuleState } from "@/lib/reports/report-pdf-data";
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
-import { REPORT_SNAPSHOT_SCHEMA_VERSION } from "@/lib/reports/report-generation-payload";
+import {
+  buildReportGenerationSnapshotMetadata,
+  REPORT_SNAPSHOT_SCHEMA_VERSION,
+} from "@/lib/reports/report-generation-snapshot";
+import { REPORT_GENERATION_TIME_ZONE, getReportGenerationPeriodDateBounds } from "@/lib/reports/generation-period";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 
@@ -144,6 +148,42 @@ export function buildSingleActionReportGenerationInput(params: {
       organizationType: "single_action",
       organizationName: scopeLabel,
       snapshotSchemaVersion: REPORT_SNAPSHOT_SCHEMA_VERSION,
+      snapshotMetadata: buildReportGenerationSnapshotMetadata({
+        generatedAt,
+        period: {
+          id: "full_history",
+          from: null,
+          to: getReportGenerationPeriodDateBounds({ id: "full_history" }, now).to,
+          timeZone: REPORT_GENERATION_TIME_ZONE,
+        },
+        scope: {
+          kind: "single_action",
+          value: request.actionId,
+          label: scopeLabel,
+        },
+        detailLevel,
+        modules,
+        provenance: {
+          type: "single_action",
+          actionId: request.actionId,
+          source: "public.actions",
+          resolvedAt: generatedAt,
+        },
+        methodology: {
+          proxyVersion: report.impactMethodology.proxyVersion,
+          qualityRulesVersion: report.impactMethodology.qualityRulesVersion,
+        },
+        dataAvailability: {
+          isTruncated: false,
+          sourceHealth: {
+            partial: false,
+            failedSources: [],
+            availableSources: ["actions"],
+            warnings: [],
+          },
+          communityEventsAvailability: "unavailable",
+        },
+      }),
       provenance: {
         type: "single_action",
         actionId: request.actionId,

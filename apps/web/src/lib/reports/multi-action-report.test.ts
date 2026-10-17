@@ -107,6 +107,7 @@ describe("multi-action report server resolver", () => {
         volunteersKnownActions: 1,
         hours: 0.5,
       },
+      impactMethodology: { proxyVersion: "impact-proxy-v1", qualityRulesVersion: "quality-v1" },
     });
     mocks.buildPdfData.mockReturnValue({
       title: "Rapport - Association Canonique",
@@ -140,6 +141,14 @@ describe("multi-action report server resolver", () => {
     expect(result.scopeKind).toBe("association");
     expect(result.scopeValue).toBe("Association Canonique");
     expect(result.payload.organizationType).toBe("multi_action");
+    expect(result.payload.snapshotSchemaVersion).toBe(2);
+    expect(result.payload.snapshotMetadata).toMatchObject({
+      templateVersion: "reports-template-v1",
+      rendererVersion: "official-report-html-v1",
+      scope: { kind: "association", value: "Association Canonique" },
+      provenance: { type: "multi_action", actionCount: 1 },
+      modules,
+    });
     expect(result.payload.data).not.toHaveProperty("forgedKpi");
     expect(mocks.buildPdfData).toHaveBeenCalledWith(expect.objectContaining({
       model: expect.objectContaining({

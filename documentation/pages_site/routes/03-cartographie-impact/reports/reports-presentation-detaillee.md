@@ -90,7 +90,10 @@
   et les modules sont stockés sans binaire PDF ; le quota est réservé côté
   serveur avant le rendu du document dans la fenêtre préouverte. Les actions « Voir » et « Télécharger à
   nouveau »
-  chargent le snapshot par ID à la demande. Elles rendent ce payload immuable
+  chargent le snapshot par ID à la demande. Les nouvelles générations portent
+  un snapshot v2 avec métadonnées de template, renderer, provenance, période,
+  scope, modules et disponibilité des sources ; les snapshots legacy restent
+  lisibles ou sont rejetés avec une erreur d'incompatibilité explicite. Elles rendent ce payload immuable
   dans le document HTML imprimable sans relire les données actuelles, en
   conservant son `generatedAt` et son filename ; « Télécharger à nouveau »
   ouvre également ce document pour impression, au lieu d'annoncer un

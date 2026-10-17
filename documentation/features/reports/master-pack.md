@@ -34,7 +34,7 @@ Les contenus chiffrés proviennent du code métier et de ses tests, non de cette
 
 ## Reproductibilité
 
-Le snapshot JSON historisé est la source de données de la relecture et du réexport existants ; le PDF binaire n'est pas persisté dans ce contrat. Refaire le rendu depuis un snapshot peut préserver les données sans garantir les mêmes octets lorsque le renderer évolue. Toute promesse de versionnement du template ou d'identité binaire du livrable appartient à un chantier distinct, décrit dans les [propositions futures](../../pages_site/routes/03-cartographie-impact/reports/reports-liste-propositions-a-traiter.md).
+Le snapshot JSON historisé est la source de données de la relecture et du réexport existants ; les nouvelles générations portent un snapshot v2 avec les versions de template et renderer réellement utilisées, sans stocker le PDF binaire. Le contrat garantit la reproductibilité sémantique des données et libellés du snapshot, pas les mêmes octets lorsque le renderer ou l'environnement évolue. Les templates alternatifs, générations dérivées et l'identité binaire restent planifiés dans les [propositions futures](../../pages_site/routes/03-cartographie-impact/reports/reports-liste-propositions-a-traiter.md).
 
 ## Contexte historique
 

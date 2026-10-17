@@ -1,7 +1,12 @@
 import { z } from "zod";
 import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
+import {
+  REPORT_SNAPSHOT_SCHEMA_VERSION,
+  REPORT_RENDERER_VERSION,
+  REPORT_TEMPLATE_VERSION,
+} from "./report-generation-snapshot";
 
-export const REPORT_SNAPSHOT_SCHEMA_VERSION = 1 as const;
+export { REPORT_SNAPSHOT_SCHEMA_VERSION } from "./report-generation-snapshot";
 
 const pdfReportColumnSchema = z.object({
   key: z.string().min(1),
@@ -41,6 +46,65 @@ const pdfReportDataSchema = z.object({
   }).strict().optional(),
 }).passthrough();
 
+const moduleStateSchema = z.object({
+  dataAndCartography: z.boolean(),
+  transparencyAndMethods: z.boolean(),
+  rawData: z.boolean(),
+  detailedFiles: z.boolean(),
+}).strict();
+
+const snapshotMetadataSchema = z.object({
+  snapshotSchemaVersion: z.literal(REPORT_SNAPSHOT_SCHEMA_VERSION),
+  templateVersion: z.literal(REPORT_TEMPLATE_VERSION),
+  rendererVersion: z.literal(REPORT_RENDERER_VERSION),
+  generatedAt: z.string().datetime(),
+  period: z.object({
+    id: z.enum([
+      "thirty_days",
+      "three_months",
+      "six_months",
+      "twelve_months",
+      "current_year",
+      "full_history",
+      "custom_range",
+    ]),
+    from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+    to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    timeZone: z.literal("UTC"),
+  }).strict(),
+  scope: z.object({
+    kind: z.enum(["global", "account", "association", "arrondissement", "single_action"]),
+    value: z.string(),
+    label: z.string().min(1),
+  }).strict(),
+  detailLevel: z.enum(["concis", "default", "exhaustif"]),
+  modules: moduleStateSchema,
+  provenance: z.union([
+    z.object({
+      type: z.literal("single_action"),
+      actionId: z.string().uuid(),
+      source: z.literal("public.actions"),
+      resolvedAt: z.string().datetime(),
+    }).strict(),
+    z.object({
+      type: z.literal("multi_action"),
+      source: z.literal("public.actions"),
+      resolvedAt: z.string().datetime(),
+      actionCount: z.number().int().positive(),
+    }).strict(),
+  ]),
+  methodology: z.object({
+    proxyVersion: z.string().min(1),
+    qualityRulesVersion: z.string().min(1),
+  }).strict(),
+  dataAvailability: z.object({
+    truncated: z.boolean(),
+    availableSources: z.array(z.string()),
+    failedSources: z.array(z.string()),
+    communityEvents: z.enum(["available", "partial", "unavailable"]),
+  }).strict(),
+}).strict();
+
 export const reportGenerationPayloadSchema = z.object({
   title: z.string().trim().min(1).max(240),
   rubrique: z.literal("reporting"),
@@ -55,7 +119,8 @@ export const reportGenerationPayloadSchema = z.object({
   ]),
   organizationType: z.string().trim().min(1).max(180),
   organizationName: z.string().trim().max(180).optional(),
-  snapshotSchemaVersion: z.literal(REPORT_SNAPSHOT_SCHEMA_VERSION).optional(),
+  snapshotSchemaVersion: z.union([z.literal(1), z.literal(REPORT_SNAPSHOT_SCHEMA_VERSION)]).optional(),
+  snapshotMetadata: snapshotMetadataSchema.optional(),
   provenance: z.object({
     type: z.literal("single_action"),
     actionId: z.string().uuid(),
@@ -63,7 +128,19 @@ export const reportGenerationPayloadSchema = z.object({
     resolvedAt: z.string().datetime(),
   }).strict().optional(),
   data: pdfReportDataSchema,
-}).passthrough();
+}).passthrough().superRefine((value, context) => {
+  if (value.snapshotSchemaVersion === REPORT_SNAPSHOT_SCHEMA_VERSION) {
+    if (!value.snapshotMetadata) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Current snapshots require complete metadata." });
+      return;
+    }
+    if (value.snapshotMetadata.generatedAt !== value.data.generatedAt) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Snapshot metadata generatedAt must match the report data." });
+    }
+  } else if (value.snapshotMetadata) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Snapshot metadata requires the current snapshot schema version." });
+  }
+});
 
 export class InvalidReportGenerationSnapshotError extends Error {
   constructor() {
@@ -83,4 +160,18 @@ export function parseReportGenerationPayload(value: unknown): PdfReportPayload {
 
 export function isReportGenerationPayload(value: unknown): value is PdfReportPayload {
   return reportGenerationPayloadSchema.safeParse(value).success;
+}
+
+export function parseCurrentReportGenerationPayload(value: unknown): PdfReportPayload & {
+  snapshotSchemaVersion: typeof REPORT_SNAPSHOT_SCHEMA_VERSION;
+  snapshotMetadata: NonNullable<PdfReportPayload["snapshotMetadata"]>;
+} {
+  const parsed = parseReportGenerationPayload(value);
+  if (parsed.snapshotSchemaVersion !== REPORT_SNAPSHOT_SCHEMA_VERSION || !parsed.snapshotMetadata) {
+    throw new InvalidReportGenerationSnapshotError();
+  }
+  return parsed as PdfReportPayload & {
+    snapshotSchemaVersion: typeof REPORT_SNAPSHOT_SCHEMA_VERSION;
+    snapshotMetadata: NonNullable<PdfReportPayload["snapshotMetadata"]>;
+  };
 }

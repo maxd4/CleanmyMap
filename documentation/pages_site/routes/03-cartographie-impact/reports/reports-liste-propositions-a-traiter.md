@@ -17,8 +17,10 @@ input:
 Le backend résout l'identifiant côté serveur, vérifie l'authentification,
 l'admissibilité, la publication et la visibilité, puis sélectionne exactement
 son périmètre. La génération réutilise l'historique et le renderer existants ;
-le snapshot mono-action porte `snapshotSchemaVersion: 1` et les snapshots
-historiques sans version restent compatibles. Le parcours couvert par le code
+le snapshot mono-action porte désormais `snapshotSchemaVersion: 2` avec ses
+métadonnées de période, scope, provenance, modules, versions réellement
+disponibles et état des sources ; les snapshots historiques sans version ou v1
+restent compatibles en lecture. Le parcours couvert par le code
 et les tests ciblés est livré ; la preuve Supabase réelle et l'E2E authentifié
 restent des validations d'environnement à exécuter avant une attestation de
 persistance en production. Le même contrat pourra ensuite servir à des entrées préremplies
@@ -27,21 +29,20 @@ objectif mesurable, hors de ce lot.
 
 ## Versioning et reproductibilité des générations dérivées — PLAN
 
-Un futur mécanisme devra conserver, pour chaque génération, un snapshot JSON
-immuable et suffisamment complet pour reproduire le document sans relire ni
-recalculer silencieusement les données runtime. Le contrat conceptuel devra
-versionner séparément les données historiques, le template, les méthodologies,
-les facteurs de calcul et le renderer, avec notamment `generationId`,
-`generatedAt`, `templateVersion`, `detailLevel`, `snapshotSchemaVersion`,
-`filtersVersion`, `provenance` et `sourceGenerationId` lorsque nécessaire.
+Le snapshot JSON immuable et la relecture sémantique des générations courantes
+sont livrés. Restent planifiées les capacités qui nécessiteraient un nouveau
+contrat : dériver une nouvelle génération liée à une source avec
+`sourceGenerationId`, faire varier un template alternatif ou une méthodologie
+sans ambiguïté, et éventuellement versionner des filtres supplémentaires
+(`filtersVersion`) lorsqu’un owner canonique sera défini. Aucune version
+scientifique ou facteur n’est inventé pour ce lot.
 
-La relecture historique devra utiliser le snapshot d'origine. Une régénération
-avec un template plus récent devra créer une nouvelle génération liée à la
-source, sans écraser l'historique ni inventer de données manquantes. Elle reste
-distincte de l'action actuelle « Réexporter », qui réutilise le snapshot sans
-créer de nouvelle ligne. La composition précise des niveaux `Concis`,
-`Par défaut` et `Exhaustif`, ainsi que les générations dérivées, seront traitées
-dans un chantier séparé.
+Une régénération avec un template plus récent devra créer une nouvelle
+génération liée à la source, sans écraser l'historique ni inventer de données
+manquantes. Elle reste distincte de l'action actuelle « Réexporter », qui
+réutilise le snapshot sans créer de nouvelle ligne. Les trois niveaux
+`Concis`, `Par défaut` et `Exhaustif` sont déjà livrés dans le moteur commun ;
+les templates alternatifs et générations dérivées restent dans ce PLAN.
 
 Les habillages PDF `Impact` et `Scientifique` relèvent d'une spécification
 graphique distincte, [documentée en PLAN](../../../../features/reports/report-pdf-themes-and-reuse.md),

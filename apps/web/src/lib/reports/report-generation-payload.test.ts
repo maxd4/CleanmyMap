@@ -81,4 +81,42 @@ describe("report generation payload contract", () => {
 
     expect(parseReportGenerationPayload(custom)).toEqual(custom);
   });
+
+  it("accepts a complete current snapshot and preserves its replay metadata", () => {
+    const current = {
+      ...payload,
+      snapshotSchemaVersion: 2 as const,
+      snapshotMetadata: {
+        snapshotSchemaVersion: 2 as const,
+        templateVersion: "reports-template-v1" as const,
+        rendererVersion: "official-report-html-v1" as const,
+        generatedAt: payload.data.generatedAt,
+        period: { id: "six_months" as const, from: "2026-02-27", to: "2026-08-27", timeZone: "UTC" as const },
+        scope: { kind: "global" as const, value: "", label: "Global" },
+        detailLevel: "default" as const,
+        modules: { dataAndCartography: true, transparencyAndMethods: true, rawData: false, detailedFiles: true },
+        provenance: { type: "multi_action" as const, source: "public.actions" as const, resolvedAt: payload.data.generatedAt, actionCount: 3 },
+        methodology: { proxyVersion: "impact-proxy-v1", qualityRulesVersion: "quality-v1" },
+        dataAvailability: { truncated: false, availableSources: ["actions"], failedSources: [], communityEvents: "available" as const },
+      },
+    };
+
+    expect(parseReportGenerationPayload(current)).toEqual(current);
+    expect(isReportGenerationPayload(current)).toBe(true);
+  });
+
+  it("rejects an unknown or incomplete current snapshot version", () => {
+    expect(isReportGenerationPayload({ ...payload, snapshotSchemaVersion: 99 })).toBe(false);
+    expect(isReportGenerationPayload({ ...payload, snapshotSchemaVersion: 2 })).toBe(false);
+    expect(isReportGenerationPayload({
+      ...payload,
+      snapshotSchemaVersion: 2,
+      snapshotMetadata: {
+        snapshotSchemaVersion: 2,
+        templateVersion: "reports-template-v1",
+        rendererVersion: "official-report-html-v1",
+        generatedAt: "2026-08-27T11:30:00.000Z",
+      },
+    })).toBe(false);
+  });
 });

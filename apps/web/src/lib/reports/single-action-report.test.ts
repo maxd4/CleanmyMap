@@ -91,7 +91,15 @@ describe("single-action report server boundary", () => {
 
     expect(input.scopeKind).toBe("single_action");
     expect(input.scopeValue).toBe(actionId);
-    expect(input.payload.snapshotSchemaVersion).toBe(1);
+    expect(input.payload.snapshotSchemaVersion).toBe(2);
+    expect(input.payload.snapshotMetadata).toMatchObject({
+      templateVersion: "reports-template-v1",
+      rendererVersion: "official-report-html-v1",
+      generatedAt: "2026-08-27T12:30:00.000Z",
+      scope: { kind: "single_action", value: actionId },
+      provenance: { type: "single_action", actionId },
+      modules,
+    });
     expect(input.payload.provenance).toEqual({
       type: "single_action",
       actionId,

@@ -9,13 +9,15 @@ import {
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import {
   InvalidReportGenerationSnapshotError,
+  parseCurrentReportGenerationPayload,
   parseReportGenerationPayload,
 } from "./report-generation-payload";
+import type { ModuleState } from "./report-pdf-data";
 
 const REPORT_GENERATION_HISTORY_METADATA_SELECT =
   "id, generated_at, title, period_id, scope_label, detail_level";
 const REPORT_GENERATION_SNAPSHOT_SELECT =
-  "id, filename, generated_at, snapshot, scope_kind, scope_value, scope_label, detail_level";
+  "id, filename, generated_at, snapshot, period_id, scope_kind, scope_value, scope_label, detail_level, modules";
 
 export type ReportGenerationSnapshotRecord = {
   id: string;
@@ -47,6 +49,46 @@ type ReportGenerationDbMetadataRow = {
   scope_label: string;
   detail_level: ReportGenerationHistoryInput["detailLevel"];
 };
+
+function hasSameModules(left: ModuleState, right: unknown): boolean {
+  if (!right || typeof right !== "object") return false;
+  const candidate = right as Record<string, unknown>;
+  return left.dataAndCartography === candidate.dataAndCartography &&
+    left.transparencyAndMethods === candidate.transparencyAndMethods &&
+    left.rawData === candidate.rawData &&
+    left.detailedFiles === candidate.detailedFiles;
+}
+
+function assertSnapshotMatchesHistoryRow(
+  snapshot: ReturnType<typeof parseReportGenerationPayload>,
+  row: {
+    generated_at: string;
+    period_id: string;
+    scope_kind: string;
+    scope_value: string;
+    scope_label: string;
+    detail_level: string;
+    modules: unknown;
+  },
+): void {
+  if (snapshot.data.generatedAt !== row.generated_at) {
+    throw new InvalidReportGenerationSnapshotError();
+  }
+
+  if (snapshot.snapshotSchemaVersion === 2) {
+    const metadata = snapshot.snapshotMetadata;
+    if (!metadata ||
+      metadata.generatedAt !== row.generated_at ||
+      metadata.period.id !== row.period_id ||
+      metadata.scope.kind !== row.scope_kind ||
+      metadata.scope.value !== row.scope_value ||
+      metadata.scope.label !== row.scope_label ||
+      metadata.detailLevel !== row.detail_level ||
+      !hasSameModules(metadata.modules, row.modules)) {
+      throw new InvalidReportGenerationSnapshotError();
+    }
+  }
+}
 
 function normalizeLimit(limit: number): number {
   if (!Number.isFinite(limit)) {
@@ -127,9 +169,7 @@ export async function getReportGenerationSnapshotById(
     throw new InvalidReportGenerationSnapshotError();
   }
 
-  if (snapshot.data.generatedAt !== data.generated_at) {
-    throw new InvalidReportGenerationSnapshotError();
-  }
+  assertSnapshotMatchesHistoryRow(snapshot, data);
 
   return {
     id: data.id,
@@ -147,9 +187,32 @@ export async function persistReportGeneration(params: {
   createdByClerkId: string;
   input: ReportGenerationHistoryInput;
 }): Promise<ReportGenerationHistoryRow> {
-  const generatedAt = params.input.payload.data.generatedAt;
-  if (!generatedAt) {
-    throw new Error("Report generation snapshot is missing generatedAt.");
+  let payload;
+  try {
+    payload = parseCurrentReportGenerationPayload(params.input.payload);
+  } catch (error) {
+    if (error instanceof InvalidReportGenerationSnapshotError) {
+      throw error;
+    }
+    throw new InvalidReportGenerationSnapshotError();
+  }
+  const metadata = payload.snapshotMetadata;
+  const generatedAt = payload.data.generatedAt;
+  const expectedPeriodRange = payload.periode === "custom_range"
+    ? payload.data.periodRange
+    : undefined;
+  if (metadata.period.id !== payload.periode ||
+    metadata.scope.kind !== params.input.scopeKind ||
+    metadata.scope.value !== params.input.scopeValue ||
+    metadata.scope.label !== params.input.scopeLabel ||
+    metadata.detailLevel !== params.input.detailLevel ||
+    !hasSameModules(metadata.modules, params.input.modules) ||
+    (payload.periode === "custom_range" &&
+      (!expectedPeriodRange ||
+        metadata.period.from !== expectedPeriodRange.from ||
+        metadata.period.to !== expectedPeriodRange.to ||
+        expectedPeriodRange.timeZone !== "UTC"))) {
+    throw new InvalidReportGenerationSnapshotError();
   }
 
   const filename = buildPdfReportFilename({
@@ -159,15 +222,15 @@ export async function persistReportGeneration(params: {
   const row = {
     created_by_clerk_id: params.createdByClerkId,
     generated_at: generatedAt,
-    title: params.input.payload.title,
+    title: payload.title,
     filename,
-    period_id: params.input.payload.periode,
+    period_id: payload.periode,
     scope_kind: params.input.scopeKind,
     scope_value: params.input.scopeValue,
     scope_label: params.input.scopeLabel,
     detail_level: params.input.detailLevel,
     modules: params.input.modules,
-    snapshot: params.input.payload,
+    snapshot: payload,
   };
 
   const { data, error } = await getSupabaseAdminClient()

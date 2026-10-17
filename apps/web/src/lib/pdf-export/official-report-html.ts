@@ -10,8 +10,10 @@ import {
 } from "./official-report-sections";
 import { formatPdfValue } from "./format-pdf-value";
 import type { PdfReportPayload } from "./simple-pdf";
+import { REPORT_RENDERER_VERSION } from "@/lib/reports/report-generation-snapshot";
 
 export { renderOfficialMarkdown } from "./official-report-markdown";
+export { REPORT_RENDERER_VERSION };
 
 function renderList(items: string[]): string {
   return `<ul>${items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ul>`;

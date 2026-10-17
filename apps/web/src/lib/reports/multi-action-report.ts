@@ -14,7 +14,10 @@ import {
   type ReportGenerationPeriodSelection,
 } from "@/lib/reports/generation-period";
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
-import { REPORT_SNAPSHOT_SCHEMA_VERSION } from "@/lib/reports/report-generation-payload";
+import {
+  buildReportGenerationSnapshotMetadata,
+  REPORT_SNAPSHOT_SCHEMA_VERSION,
+} from "@/lib/reports/report-generation-snapshot";
 import { toReportsExportRow } from "@/lib/reports/page-data-export";
 import { loadReportsGenerationData } from "@/lib/reports/page-data";
 import { computeReportModel } from "@/lib/reports/report-model";
@@ -268,6 +271,33 @@ export async function buildMultiActionReportGenerationInput(params: {
       organizationType: "multi_action",
       organizationName: scopeLabel,
       snapshotSchemaVersion: REPORT_SNAPSHOT_SCHEMA_VERSION,
+      snapshotMetadata: buildReportGenerationSnapshotMetadata({
+        generatedAt,
+        period: {
+          id: request.period.id,
+          from: periodBounds.from,
+          to: periodBounds.to,
+          timeZone: REPORT_GENERATION_TIME_ZONE,
+        },
+        scope: {
+          kind: scope.kind,
+          value: scope.value ?? "",
+          label: scopeLabel,
+        },
+        detailLevel,
+        modules,
+        provenance: {
+          type: "multi_action",
+          source: "public.actions",
+          resolvedAt: generatedAt,
+          actionCount: scopedContracts.length,
+        },
+        methodology: {
+          proxyVersion: report.impactMethodology.proxyVersion,
+          qualityRulesVersion: report.impactMethodology.qualityRulesVersion,
+        },
+        dataAvailability: model.dataAvailability,
+      }),
       data: payloadData,
     },
     scopeKind: scope.kind as ReportGenerationHistoryInput["scopeKind"],

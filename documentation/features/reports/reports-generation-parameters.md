@@ -505,7 +505,11 @@ sans bricolage basé sur le nom d’un organisateur ou une chaîne de texte.
 - **Périmètre exact :** un rapport `single_action` ne peut contenir que l'action choisie. Les autres filtres ne doivent pas élargir silencieusement ce périmètre.
 - **Traçabilité :** chaque indicateur conserve sa provenance, son unité, sa période et son statut (`mesuré`, `dérivé`, `proxy` ou `inconnu`). Les valeurs absentes ne deviennent pas des zéros.
 - **Qualité des résultats :** distinguer données réelles, données partielles et source indisponible ; ne jamais afficher « complet » sur une fenêtre tronquée.
-- **Reproductibilité :** séparer la stabilité des données du snapshot et celle du rendu PDF. Le réexport historique ne recalcule pas les données de l'action.
+- **Reproductibilité :** les nouvelles générations utilisent un snapshot v2 qui
+  conserve les métadonnées de période, scope, provenance, modules, sources et
+  versions proxy/règles qualité. Le réexport historique ne recalcule pas les
+  données et ne crée pas de nouvelle génération ; la garantie est sémantique,
+  pas binaire, car le PDF n'est pas stocké.
 - **Unicité :** aucune nouvelle table, formule ni relation ne doit doubler une source canonique existante.
 
 ## Hors périmètre de ce document

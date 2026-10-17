@@ -1,4 +1,5 @@
 import { normalizeDeliverableRubrique } from "@/lib/reports/deliverable-name";
+import type { ReportGenerationSnapshotMetadata } from "@/lib/reports/report-generation-snapshot";
 import { formatPdfValue } from "./format-pdf-value";
 
 type PdfReportColumn = {
@@ -45,8 +46,9 @@ export type PdfReportPayload = {
   periode: string;
   organizationType: string;
   organizationName?: string;
-  /** Minimal immutable snapshot contract version; absent on legacy snapshots. */
-  snapshotSchemaVersion?: 1;
+  /** Immutable snapshot contract version; absent on legacy snapshots. */
+  snapshotSchemaVersion?: 1 | 2;
+  snapshotMetadata?: ReportGenerationSnapshotMetadata;
   provenance?: {
     type: "single_action";
     actionId: string;

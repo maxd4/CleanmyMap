@@ -17,10 +17,19 @@ au runtime et à ses tests, pas à une copie documentaire.
 - Le rapport mono-action réutilise le renderer PDF et l’historique existants.
   Le navigateur envoie seulement le type de périmètre, l’identifiant de
   l’action, le niveau de détail et les modules ; le payload final est celui
-  résolu et renvoyé par le serveur. Les nouveaux snapshots mono-action portent
-  la version minimale `snapshotSchemaVersion: 1`, tandis que les snapshots
-  historiques sans version restent compatibles. La consultation et le
-  réexport historiques relisent le snapshot immuable sans recalcul.
+  résolu et renvoyé par le serveur. Les nouvelles générations portent
+  `snapshotSchemaVersion: 2` et un `snapshotMetadata` complet : template,
+  renderer HTML officiel, `generatedAt`, période et timezone UTC, scope,
+  niveau, modules, provenance, versions proxy/règles qualité et disponibilité
+  des sources. Les snapshots historiques sans version ou en v1 restent
+  compatibles à la lecture ; ils ne sont pas silencieusement mis à niveau.
+  La consultation et le réexport historiques relisent le snapshot immuable
+  sans recalcul.
+
+- La reproductibilité livrée est sémantique : les mêmes données, libellés,
+  unités, limites et date de génération sont relus depuis le snapshot. Le PDF
+  binaire n’est pas conservé ; une identité octet pour octet n’est donc pas
+  garantie lorsque le renderer ou l’environnement évolue.
 
 ## `PLAN`
 
