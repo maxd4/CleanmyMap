@@ -30,6 +30,9 @@ function errorResponse(error: unknown) {
     if (error.code === "not_found") return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
     if (error.code === "not_admissible") return NextResponse.json({ error: error.message, code: error.code }, { status: 409 });
     if (error.code === "limit_reached") return NextResponse.json({ error: error.message, code: error.code }, { status: 409 });
+    if (error.code === "conflict") return NextResponse.json({ error: error.message, code: error.code }, { status: 409 });
+    if (error.code === "storage_missing") return NextResponse.json({ error: error.message, code: error.code }, { status: 422 });
+    if (error.code === "storage_invalid") return NextResponse.json({ error: error.message, code: error.code }, { status: 422 });
   }
   return handleApiError(error, "action-media-intent");
 }

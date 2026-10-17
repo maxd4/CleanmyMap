@@ -847,14 +847,24 @@ devient pas organisateur par défaut ; un profil global suit les contrôles
 canoniques existants.
 
 Le quota est de trois médias actifs par action, avec un `clientUploadId`
-idempotent dans le périmètre action + utilisateur. Une ligne ne passe à
-`ready` qu'après vérification de l'objet Storage ; les lignes `pending` ou
-`failed` ne sont jamais retournées par la lecture. Les URLs signées sont
+idempotent dans le périmètre action + utilisateur. L'identité constitutive
+d'une tentative (nom, MIME, taille, dimensions déclarées, ordre et chemin
+serveur) est immuable ; une retry incompatible est refusée et ne modifie pas
+la ligne. Une tentative vérifie d'abord si l'objet attendu est déjà présent,
+et ne demande pas un nouvel upload dans ce cas. Une ligne ne passe à `ready`
+qu'après vérification de l'objet Storage, de sa taille et de son type contre
+les métadonnées enregistrées ; les dimensions restent déclaratives côté
+navigateur et ne sont pas vérifiées par décodage d'image serveur. Une ligne
+`ready` est relue avec ces mêmes contrôles avant d'être rendue, afin qu'un
+ancien jeton ne puisse pas la remplacer silencieusement. Les lignes `pending`
+ou `failed` ne sont jamais retournées par la lecture. Les URLs signées sont
 éphémères et aucune URL, image binaire ou `dataUrl` n'est persistée dans les
 notes ou `preparation_data`. Une action publiée n'accorde aucune lecture
 publique. La suppression du parent cascade sur les métadonnées ; le nettoyage
 des objets abandonnés reste une responsabilité serveur dédiée et aucune
-suppression autonome d'une preuve `ready` n'est exposée au client.
+suppression autonome d'une preuve `ready` n'est exposée au client. Le parcours
+`signalement_media` reste séparé ; son upload signé conserve son contrat
+historique `upsert` et n'est pas corrigé par ce lot.
 
 ## Lecture propriétaire des missions GPS
 

@@ -15,6 +15,7 @@ function errorResponse(error: unknown) {
     if (error.code === "not_found") return NextResponse.json({ error: "Photo introuvable." }, { status: 404 });
     if (error.code === "not_admissible") return NextResponse.json({ error: error.message, code: error.code }, { status: 409 });
     if (error.code === "storage_missing") return NextResponse.json({ error: "La photo n'a pas été reçue par le stockage." }, { status: 422 });
+    if (error.code === "storage_invalid") return NextResponse.json({ error: error.message, code: error.code }, { status: 422 });
   }
   return handleApiError(error, "action-media-finalize");
 }

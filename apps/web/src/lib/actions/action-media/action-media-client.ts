@@ -49,7 +49,7 @@ async function uploadOne(actionId: string, asset: ActionPhotoAsset, sortOrder: n
   if (intent.bucket !== ACTION_MEDIA_BUCKET) throw new Error("Le bucket photo retourné est invalide.");
 
   const upload = await getSupabaseBrowserClient().storage.from(ACTION_MEDIA_BUCKET).uploadToSignedUrl(intent.path, intent.token, file, {
-    upsert: true,
+    upsert: false,
     contentType: asset.mimeType,
     cacheControl: "3600",
     metadata: buildStorageBusinessMetadata({
