@@ -118,6 +118,20 @@ export const platformAuthorizationContract = {
       ],
     },
   },
+  "reports/generations/[id]/pdf": {
+    GET: {
+      expected: "Authenticated owner may download the immutable PDF artifact for their Reports generation snapshot",
+      dimensions: ["authentication", "ownership", "audit"],
+      actual: "requireAuthenticatedAccess + owner-scoped snapshot lookup + private Storage artifact claim/read + audit",
+      evidence: [
+        "requireAuthenticatedAccess",
+        "getReportGenerationSnapshotById",
+        "claimReportPdfArtifact",
+        "REPORT_PDF_ARTIFACT_BUCKET",
+        "appendAdminOperationAudit",
+      ],
+    },
+  },
   "reports/elus-dossier": {
     GET: {
       expected: "Any authenticated user may generate the bounded dossier export, subject to the server quota/cache contract",

@@ -99,17 +99,20 @@
   les 12 plus récentes de ce compte.
   Il expose le titre, la période, le périmètre, le niveau de détail et la date
   réelle. L'état vide affiche « Aucun rapport généré ». Le snapshot JSON final
-  et les modules sont stockés sans binaire PDF ; le quota est réservé côté
+  et les modules sont stockés séparément de l'artefact PDF ; le quota est réservé côté
   serveur avant le rendu du document dans la fenêtre préouverte. Les actions « Voir » et « Télécharger à
   nouveau »
-  chargent le snapshot par ID à la demande. Les nouvelles générations portent
+  chargent le snapshot par ID à la demande. « Télécharger PDF » appelle
+  l'endpoint owner-scoped qui rend une fois le HTML officiel en A4 par Chromium,
+  conserve le binaire dans `reports` par génération, thème et version de renderer,
+  puis réutilise ce fichier sans quota. Sur mobile, le même fichier est partagé
+  via l'API native lorsqu'elle accepte les fichiers, sinon téléchargé. Les nouvelles générations portent
   un snapshot v2 avec métadonnées de template, renderer, provenance, période,
   scope, modules et disponibilité des sources ; les snapshots legacy restent
   lisibles ou sont rejetés avec une erreur d'incompatibilité explicite. Elles rendent ce payload immuable
-  dans le document HTML imprimable sans relire les données actuelles, en
-  conservant son `generatedAt` et son filename ; « Télécharger à nouveau »
-  ouvre également ce document pour impression, au lieu d'annoncer un
-  téléchargement binaire. Cette relecture ne crée pas de nouvelle génération,
+  dans le document HTML imprimable et dans le PDF téléchargé sans relire les données actuelles, en
+  conservant son `generatedAt` et son filename ; « Imprimer » reste le parcours
+  HTML d'impression, distinct du téléchargement PDF binaire. Cette relecture ne crée pas de nouvelle génération,
   ne consomme pas de nouveau quota et aucune durée de conservation n'est
   annoncée. L'aperçu est fermé par défaut et rend uniquement la première
   page via `ReportCover`, jamais un aperçu complet du PDF. Une couverture

@@ -1,0 +1,167 @@
+import type { Dispatch, MutableRefObject, SetStateAction } from "react";
+import {
+  renderReportWindow,
+  prepareReportWindow,
+} from "@/lib/pdf-export/browser-report";
+import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
+import { downloadOrShareReportPdf } from "@/components/reports/report-pdf-actions";
+import type { ReportGenerationHistoryActionState } from "./web-document/reports-web-document-delivery";
+import {
+  deriveHistoricalReportSnapshot,
+  loadHistoricalReportSnapshot,
+} from "@/lib/reports/historical-report-client";
+import { replayHistoricalReport } from "@/lib/reports/historical-report-replay";
+import {
+  REPORT_GENERATION_HISTORY_LIMIT,
+  type ReportGenerationHistoryRow,
+} from "@/lib/reports/report-generation-history-contract";
+import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
+import type { ReportPdfTheme } from "./web-document/reports-web-document.shared";
+
+type HistoricalReplay = { reportWindow: Window; payload: PdfReportPayload };
+
+type HistoryActionsParams = {
+  reportTheme: ReportPdfTheme;
+  setRecentRows: Dispatch<SetStateAction<ReportGenerationHistoryRow[]>>;
+  setHistoryAvailability: Dispatch<SetStateAction<"available" | "unavailable">>;
+  setDailyExportAvailability: Dispatch<SetStateAction<ReportExportAvailability>>;
+  setHistoryActionStateById: Dispatch<SetStateAction<Record<string, ReportGenerationHistoryActionState>>>;
+};
+
+type HistoricalReplayRef = MutableRefObject<HistoricalReplay | null>;
+
+export function createReportsWebDocumentHistoryActions(params: HistoryActionsParams) {
+  async function handleHistoricalAction(
+    id: string,
+    action: ReportGenerationHistoryActionState["action"],
+    historicalReplayRef: HistoricalReplayRef,
+  ): Promise<void> {
+    params.setHistoryActionStateById((current) => ({
+      ...current,
+      [id]: {
+        action,
+        state: "pending",
+        message: action === "view"
+          ? "Ouverture du rapport historique..."
+          : action === "reexport"
+            ? "Préparation du fichier PDF..."
+            : "Création d'une nouvelle version...",
+      },
+    }));
+
+    if (action === "reexport") {
+      try {
+        const result = await downloadOrShareReportPdf({ generationId: id, theme: params.reportTheme });
+        params.setHistoryActionStateById((current) => ({
+          ...current,
+          [id]: {
+            action,
+            state: "success",
+            message: result === "shared"
+              ? "Le fichier PDF a été transmis au partage natif. Aucun nouveau quota n’a été consommé."
+              : "Le fichier PDF a été téléchargé depuis le snapshot enregistré. Aucun nouveau quota n’a été consommé.",
+          },
+        }));
+      } catch (error) {
+        params.setHistoryActionStateById((current) => ({
+          ...current,
+          [id]: {
+            action,
+            state: "error",
+            message: error instanceof Error ? error.message : "Impossible de télécharger le PDF historique.",
+          },
+        }));
+      }
+      return;
+    }
+
+    const reportWindow = prepareReportWindow();
+    if (!reportWindow) {
+      params.setHistoryActionStateById((current) => ({
+        ...current,
+        [id]: {
+          action,
+          state: "error",
+          message: "La fenêtre du rapport a été bloquée. Autorisez les fenêtres puis réessayez.",
+        },
+      }));
+      return;
+    }
+
+    try {
+      const derived = action === "derive" ? await deriveHistoricalReportSnapshot(id) : null;
+      const generation = derived?.generation ?? await loadHistoricalReportSnapshot(id);
+      historicalReplayRef.current = { reportWindow, payload: generation.snapshot };
+      if (derived) {
+        params.setRecentRows((current) => [derived.item, ...current].slice(0, REPORT_GENERATION_HISTORY_LIMIT));
+        params.setHistoryAvailability("available");
+        params.setDailyExportAvailability("used");
+        renderReportWindow(reportWindow, generation.snapshot, { theme: params.reportTheme });
+      } else if (action === "view") {
+        replayHistoricalReport(action, generation, {
+          view: (payload) => renderReportWindow(reportWindow, payload, { theme: params.reportTheme }),
+          reexport: (payload) => renderReportWindow(reportWindow, payload, { theme: params.reportTheme }),
+        });
+      }
+
+      params.setHistoryActionStateById((current) => ({
+        ...current,
+        [id]: {
+          action,
+          state: "success",
+          message: action === "view"
+            ? "Rapport historique ouvert depuis le snapshot enregistré."
+            : "Nouvelle version créée depuis le snapshot source. Le snapshot d'origine reste inchangé et le quota a été consommé.",
+        },
+      }));
+    } catch (error) {
+      reportWindow.close();
+      params.setHistoryActionStateById((current) => ({
+        ...current,
+        [id]: {
+          action,
+          state: "error",
+          message: error instanceof Error ? error.message : "Impossible de charger le rapport historique.",
+        },
+      }));
+    }
+  }
+
+  async function handleHistoricalPrint(id: string): Promise<void> {
+    params.setHistoryActionStateById((current) => ({
+      ...current,
+      [id]: { action: "print", state: "pending", message: "Préparation de l’impression..." },
+    }));
+    const reportWindow = prepareReportWindow();
+    if (!reportWindow) {
+      params.setHistoryActionStateById((current) => ({
+        ...current,
+        [id]: { action: "print", state: "error", message: "La fenêtre du rapport a été bloquée. Autorisez les fenêtres puis réessayez." },
+      }));
+      return;
+    }
+    try {
+      const generation = await loadHistoricalReportSnapshot(id);
+      renderReportWindow(reportWindow, generation.snapshot, { theme: params.reportTheme });
+      window.setTimeout(() => reportWindow.print(), 250);
+      params.setHistoryActionStateById((current) => ({
+        ...current,
+        [id]: { action: "print", state: "success", message: "Fenêtre d’impression ouverte depuis le snapshot enregistré." },
+      }));
+    } catch (error) {
+      reportWindow.close();
+      params.setHistoryActionStateById((current) => ({
+        ...current,
+        [id]: { action: "print", state: "error", message: error instanceof Error ? error.message : "Impossible d’imprimer le rapport historique." },
+      }));
+    }
+  }
+
+  function handleThemeChange(theme: ReportPdfTheme, historicalReplayRef: HistoricalReplayRef): void {
+    if (historicalReplayRef.current && !historicalReplayRef.current.reportWindow.closed) {
+      renderReportWindow(historicalReplayRef.current.reportWindow, historicalReplayRef.current.payload, { theme });
+    }
+  }
+
+  return { handleHistoricalAction, handleHistoricalPrint, handleThemeChange };
+}

@@ -4,7 +4,7 @@
 >
 > **Domaine :** générateur `/reports`, rendu PDF et exploitation scientifique des rapports d'impact CleanMyMap.
 >
-> **Frontière :** ce document ne définit aucune formule KPI, aucune table Supabase, aucune autorisation, aucun nouveau niveau de détail et aucun second moteur PDF. Les comportements `CURRENT` demeurent décrits dans la [fiche `/reports`](../../pages_site/routes/03-cartographie-impact/reports/reports-README.md), le [modèle Reports](../../../apps/web/src/lib/reports/report-model/README.md) et les contrats runtime.
+> **Frontière :** ce document ne définit aucune formule KPI, aucune autorisation, aucun nouveau niveau de détail et aucun second moteur PDF. Le cache d'artefacts PDF est une persistance technique du renderer Chromium, pas une source de données métier. Les comportements `CURRENT` demeurent décrits dans la [fiche `/reports`](../../pages_site/routes/03-cartographie-impact/reports/reports-README.md), le [modèle Reports](../../../apps/web/src/lib/reports/report-model/README.md) et les contrats runtime.
 
 ## 1. Décision produit
 
@@ -129,9 +129,9 @@ Une page *visuellement* sobre n'est pas, en soi, un PDF machine-readable. La liv
 
 ### Limites observables du pipeline actuel
 
-- Le parcours courant ouvre principalement **un HTML imprimable**, pas un binaire PDF généré côté serveur.
+- Le parcours courant conserve **un HTML imprimable** pour consulter et imprimer ; le téléchargement passe par un endpoint Node owner-scoped qui convertit le même HTML officiel en PDF A4 par Chromium et conserve l'artefact dans le bucket privé `reports`.
 - Le renderer PDF textuel simplifié reste utilisé par des consommateurs distincts, mais n'est plus une voie de secours automatique de `/reports`. Il restitue les caractères couverts par l'encodage PDF standard et refuse explicitement les glyphes non supportés au lieu de les remplacer silencieusement ; il n'implémente pas à lui seul un arbre de tags sémantiques ni l'intégration de fichiers JSON/CSV.
-- Les snapshots historiques permettent déjà la relecture sans recalcul des actions, mais ne constituent pas une preuve de conformité PDF/UA ou PDF/A-3.
+- Les snapshots historiques permettent la relecture et le rendu PDF sans recalcul des actions. Le cache technique `report_generation_pdf_artifacts` déduplique la paire génération/thème/version de renderer sans modifier le snapshot et sans constituer une preuve de conformité PDF/UA ou PDF/A-3.
 - Les exigences de ce document sont **PLAN** tant qu'elles ne sont pas exercées, vérifiées et documentées comme `CURRENT`.
 
 ## 6. Contrats de sélection, historique et sécurité
@@ -139,8 +139,8 @@ Une page *visuellement* sobre n'est pas, en soi, un PDF machine-readable. La liv
 - Le thème est orthogonal au niveau de détail, à `ModuleState`, au scope, à la période, au quota et aux autorisations.
 - Ne pas créer un second moteur, une seconde source de données ni de formule scientifique alternative.
 - Le rendu d'un même snapshot sous deux thèmes ne doit pas modifier les chiffres ni recalculer silencieusement les actions.
-- Le thème est une préférence de présentation côté client, non une donnée métier : il n'est ni envoyé à la génération ni persisté dans le snapshot. Les snapshots legacy/v1/v2 sans thème explicite restent compatibles et utilisent le thème choisi au rendu, avec `Impact` par défaut.
-- « Voir » / « Télécharger à nouveau » restent des relectures, sans nouvelle génération, recalcul, modification du snapshot ou consommation de quota. Changer de thème après coup repeint le même snapshot historique et ne relit pas les données runtime actuelles.
+- Le thème est une préférence de présentation, non une donnée métier : il n'est ni envoyé à la génération ni persisté dans le snapshot. Les snapshots legacy/v1/v2 sans thème explicite restent compatibles et utilisent le thème choisi au rendu, avec `Impact` par défaut. La métadonnée d'artefact conserve néanmoins le thème et `chromium-official-report-pdf-v1` pour distinguer les binaires.
+- « Voir », « Télécharger PDF » et « Imprimer » restent des relectures, sans nouvelle génération, recalcul, modification du snapshot ou consommation de quota. Changer de thème après coup utilise une autre clé d'artefact pour le même snapshot historique et ne relit pas les données runtime actuelles.
 - Ne jamais exposer des médias privés, identifiants personnels non autorisés ou données réservées par un export machine supposé scientifique.
 - Pour les liens de citation, ne jamais rendre public un rapport privé par défaut.
 
@@ -149,6 +149,8 @@ Une page *visuellement* sobre n'est pas, en soi, un PDF machine-readable. La liv
 La page commune de référence comprend : en-tête et contexte, grille de 4 KPI, Figure 01 avec légende et source, Tableau 01 avec unités, encadré de limites et pied de page. Le prototype et le renderer officiel construisent les deux rendus à partir de la même composition et des mêmes données ; toute différence observée doit rester une différence de présentation.
 
 Le prototype technique P est validé dans `apps/web/src/lib/pdf-export/report-theme-prototype.ts` et son test d'équivalence associé. L'intégration CURRENT réutilise l'owner de tokens A4 `report-pdf-theme.ts`, `buildOfficialReportHtml()` et `browser-report.ts` ; aucune persistance, formule ou source de données supplémentaire n'est introduite.
+
+La faisabilité du renderer serveur a été mesurée avant intégration : le projet Vercel est configuré en Node `24.x`, `@sparticuz/chromium@153.0.0` occupe 66,84 MiB installé et `puppeteer-core@25.14.0` 5,91 MiB. Ces tailles restent sous la limite de bundle Node Vercel de 250 MB ; le renderer est exécuté dans un handler Node avec un plafond de 60 secondes. Sur le Chromium local de référence, les fixtures `concis`, `default` et `exhaustif` ont produit respectivement 128 879, 140 006 et 288 974 octets en 405, 103 et 343 ms, avec une variation RSS du processus Node de 0,85, 1,08 et 2,77 MiB. Cette mesure locale ne constitue pas une mesure de production Vercel et n'inclut pas la mémoire du processus Chromium enfant ; la compatibilité de déploiement est établie par le runtime Node, le tracing Next et le préflight source, pas par une prétention de test distant.
 
 Sur la fixture déterministe, Chromium produit un PDF A4 d'une page par thème. Les six blocs ont le même ordre, les mêmes géométries de référence, les mêmes valeurs et unités ; Poppler extrait le titre, Figure 01, Tableau 01, le zéro, l'inconnu, les accents et l'identifiant de génération dans les deux fichiers. Les fichiers sont non balisés (`Tagged: no`) : aucune conformité PDF/UA, PDF/A ou ordre de lecture normatif n'est déduite de ce prototype.
 
@@ -171,7 +173,7 @@ Une capture ou une maquette graphique ne prouve ni le moteur final ni la conform
 
 **Lot P — prototype technique validé :** la page de référence et la fixture sont disponibles dans le module de prototype isolé ; les tests statiques, l'impression Chromium et l'extraction Poppler démontrent la comparabilité sur ce périmètre. Cette preuve ne vaut pas intégration générale ni conformité PDF accessible.
 
-**Lot R — livré CURRENT :** exposer les thèmes sur `/reports` après le prototype probant, avec un sélecteur de configuration et une relecture historique sans persistance de thème, recalcul, changement de snapshot ni quota supplémentaire. Les autorisations et le périmètre métier restent ceux du rapport existant.
+**Lot R — livré CURRENT :** exposer les thèmes sur `/reports` après le prototype probant, avec un sélecteur de configuration, un endpoint PDF A4 Chromium owner-scoped et une relecture historique sans persistance de thème dans le snapshot, recalcul, changement de snapshot ni quota supplémentaire. Les artefacts sont dédupliqués par génération, thème et renderer dans le bucket privé `reports`. Les autorisations et le périmètre métier restent ceux du rapport existant.
 
 **Lot S — futur renforcement scientifique :** PDF balisé vérifié, métadonnées citables, export structuré du snapshot et éventuellement PDF/A-3 ; séparer les capacités réellement validées des cibles ultérieures.
 

@@ -37,11 +37,12 @@ export type ReportsWebDocumentDeliveryHistoryProps = {
   actionStateById?: Record<string, ReportGenerationHistoryActionState>;
   onView: (id: string) => void;
   onReexport: (id: string) => void;
+  onPrint?: (id: string) => void;
   onDerive?: (id: string) => void;
 };
 
 export type ReportGenerationHistoryActionState = {
-  action: "view" | "reexport" | "derive";
+  action: "view" | "reexport" | "print" | "derive";
   state: "pending" | "success" | "error";
   message: string;
 };
@@ -51,12 +52,14 @@ function HistoryActionButtons({
   actionState,
   onView,
   onReexport,
+  onPrint,
   onDerive = () => undefined,
 }: {
   rowId: string;
   actionState?: ReportGenerationHistoryActionState;
   onView: (id: string) => void;
   onReexport: (id: string) => void;
+  onPrint: (id: string) => void;
   onDerive: (id: string) => void;
 }) {
   const isPending = actionState?.state === "pending";
@@ -81,7 +84,18 @@ function HistoryActionButtons({
         size="md"
         className="min-h-11"
       >
-        Télécharger à nouveau
+        <span className="md:hidden">Partager le PDF</span>
+        <span className="hidden md:inline">Télécharger PDF</span>
+      </CmmButton>
+      <CmmButton
+        disabled={isPending}
+        onClick={() => onPrint(rowId)}
+        tone="tertiary"
+        variant="ghost"
+        size="md"
+        className="hidden min-h-11 md:inline-flex"
+      >
+        Imprimer
       </CmmButton>
       <CmmButton
         disabled={isPending}
@@ -187,6 +201,7 @@ export function ReportsWebDocumentDeliveryHistory({
   actionStateById = {},
   onView,
   onReexport,
+  onPrint = () => undefined,
   onDerive = () => undefined,
 }: ReportsWebDocumentDeliveryHistoryProps) {
   return (
@@ -247,6 +262,7 @@ export function ReportsWebDocumentDeliveryHistory({
                         actionState={actionStateById[row.id]}
                         onView={onView}
                         onReexport={onReexport}
+                        onPrint={onPrint}
                         onDerive={onDerive}
                       />
                       <HistoryActionFeedback actionState={actionStateById[row.id]} />
@@ -289,6 +305,7 @@ export function ReportsWebDocumentDeliveryHistory({
                     actionState={actionStateById[row.id]}
                     onView={onView}
                     onReexport={onReexport}
+                    onPrint={onPrint}
                     onDerive={onDerive}
                   />
                   <HistoryActionFeedback actionState={actionStateById[row.id]} />

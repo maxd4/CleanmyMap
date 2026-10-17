@@ -43,8 +43,9 @@ génération historique ne peut être dérivée que si son snapshot est complet 
 compatible avec `reports-template-v1`, `official-report-html-v1` et
 `reports-filters-v1`; sinon l'API refuse explicitement l'opération.
 
-« Voir » et « Télécharger à nouveau » relisent le snapshot immuable, sans
-nouvelle génération ni quota. « Créer une nouvelle version » est l'opération
+« Voir », « Télécharger PDF » et « Imprimer » relisent le snapshot immuable, sans
+nouvelle génération ni quota ; le premier téléchargement crée l'artefact PDF et
+les suivants récupèrent le même fichier. « Créer une nouvelle version » est l'opération
 distincte qui vérifie le propriétaire de la source, réserve le quota existant,
 crée une nouvelle ligne immutable et conserve la filiation par
 `sourceGenerationId`. Elle réutilise le snapshot source comme base de données,
@@ -59,8 +60,10 @@ signalée sans seconde insertion. L'audit couvre les refus de compatibilité,
 les échecs de quota, les échecs de persistance et les anomalies postérieures à
 une insertion.
 
-Le PDF binaire n'est pas stocké. Le renderer vérifie la version enregistrée et
-refuse une paire incompatible ; aucune identité binaire entre deux versions de
+Le snapshot JSON ne contient pas le PDF binaire : le téléchargement produit et
+conserve séparément un artefact PDF A4 dans le bucket privé `reports`, indexé par
+génération, thème et version effective du renderer. Le renderer vérifie la version
+enregistrée et refuse une paire incompatible ; aucune identité binaire entre deux versions de
 renderer n'est promise sans capacité de rendu historique conservée. Les trois
 niveaux `Concis`, `Par défaut` et `Exhaustif` restent ceux du moteur commun ;
 les templates alternatifs et les versions scientifiques supplémentaires restent
@@ -68,8 +71,8 @@ des propositions tant qu'un owner et un renderer correspondants ne sont pas
 livrés.
 
 Les habillages PDF `Impact` et `Scientifique` relèvent d'une spécification
-graphique distincte, [documentée en PLAN](../../../../features/reports/report-pdf-themes-and-reuse.md),
-et ne constituent pas une nouvelle version de génération.
+graphique distincte, [documentée en CURRENT](../../../../features/reports/report-pdf-themes-and-reuse.md),
+et ne constituent pas une nouvelle version de génération ; ils distinguent les artefacts PDF sans modifier le snapshot.
 
 ## Règle de traitement
 

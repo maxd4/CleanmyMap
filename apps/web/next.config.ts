@@ -33,7 +33,12 @@ const nextConfig: NextConfig = {
     "/docs/*": PUBLIC_DOCUMENTATION_TRACE_FILES.docs,
     "/api/documentation/*": PUBLIC_DOCUMENTATION_TRACE_FILES.api,
   },
-  serverExternalPackages: ["@prisma/instrumentation", "@fastify/otel"],
+  serverExternalPackages: [
+    "@prisma/instrumentation",
+    "@fastify/otel",
+    "@sparticuz/chromium",
+    "puppeteer-core",
+  ],
   compress: true,
   generateEtags: true,
   poweredByHeader: false,

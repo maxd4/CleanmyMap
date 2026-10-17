@@ -36,9 +36,7 @@ import {
 } from "@/components/reports/web-document/reports-web-document.shared";
 import { usePdfExport } from "@/components/ui/pdf-export/use-pdf-export";
 import {
-  renderReportWindow,
   openPrintableReport,
-  prepareReportWindow,
 } from "@/lib/pdf-export/browser-report";
 import { buildPdfReportFilename, type PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
@@ -56,11 +54,6 @@ import {
 } from "@/lib/reports/report-generation-history-contract";
 import type { ReportGenerationHistoryActionState } from "./web-document/reports-web-document-delivery";
 import {
-  deriveHistoricalReportSnapshot,
-  loadHistoricalReportSnapshot,
-} from "@/lib/reports/historical-report-client";
-import { replayHistoricalReport } from "@/lib/reports/historical-report-replay";
-import {
   filterReportGenerationContracts,
   isValidReportGenerationPeriodSelection,
   REPORT_GENERATION_TIME_ZONE,
@@ -68,6 +61,7 @@ import {
 } from "@/lib/reports/generation-period";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 import { isReportGenerationPayload } from "@/lib/reports/report-generation-payload";
+import { createReportsWebDocumentHistoryActions } from "@/components/reports/reports-web-document-history-actions";
 
 export type ReportsWebDocumentProps = {
   contracts: ActionDataContract[];
@@ -123,6 +117,13 @@ export function ReportsWebDocument({
   const [advancedFilters, setAdvancedFilters] = useState<ReportAdvancedFilters>(REPORT_ADVANCED_FILTER_DEFAULTS);
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const historicalReplayRef = useRef<{ reportWindow: Window; payload: PdfReportPayload } | null>(null);
+  const historicalActions = createReportsWebDocumentHistoryActions({
+    reportTheme,
+    setRecentRows,
+    setHistoryAvailability,
+    setDailyExportAvailability,
+    setHistoryActionStateById,
+  });
   const reportNow = useMemo(() => new Date(), []);
   const filteredContracts = useMemo(
     () => filterReportGenerationContracts(contracts, periodSelection, reportNow),
@@ -250,88 +251,8 @@ export function ReportsWebDocument({
     }
   }
 
-  async function handleHistoricalAction(
-    id: string,
-    action: ReportGenerationHistoryActionState["action"],
-  ): Promise<void> {
-    setHistoryActionStateById((current) => ({
-      ...current,
-      [id]: {
-        action,
-        state: "pending",
-         message: action === "view"
-           ? "Ouverture du rapport historique..."
-           : action === "reexport"
-             ? "Préparation du téléchargement..."
-             : "Création d'une nouvelle version...",
-      },
-    }));
-
-    const reportWindow = prepareReportWindow();
-    if (!reportWindow) {
-      setHistoryActionStateById((current) => ({
-        ...current,
-        [id]: {
-          action,
-          state: "error",
-          message: "La fenêtre du rapport a été bloquée. Autorisez les fenêtres contextuelles puis réessayez.",
-        },
-      }));
-      return;
-    }
-
-    try {
-      const derived = action === "derive"
-        ? await deriveHistoricalReportSnapshot(id)
-        : null;
-      const generation = derived?.generation ?? await loadHistoricalReportSnapshot(id);
-      historicalReplayRef.current = { reportWindow: reportWindow!, payload: generation.snapshot };
-      if (derived) {
-        setRecentRows((current) => [derived.item, ...current].slice(0, REPORT_GENERATION_HISTORY_LIMIT));
-        setHistoryAvailability("available");
-        setDailyExportAvailability("used");
-        renderReportWindow(reportWindow!, generation.snapshot, { theme: reportTheme });
-      } else if (action === "view" || action === "reexport") {
-        replayHistoricalReport(action, generation, {
-          view: (payload) => renderReportWindow(reportWindow!, payload, { theme: reportTheme }),
-          reexport: (payload) => renderReportWindow(reportWindow!, payload, { theme: reportTheme }),
-        });
-      }
-
-      setHistoryActionStateById((current) => ({
-        ...current,
-        [id]: {
-          action,
-          state: "success",
-          message:
-             action === "view"
-               ? "Rapport historique ouvert depuis le snapshot enregistré."
-               : action === "reexport"
-                 ? "Rapport historique ouvert pour impression depuis le snapshot enregistré (" +
-                   generation.filename +
-                   "). Utilisez Enregistrer en PDF dans la fenêtre d'impression. Aucune nouvelle génération n'a été créée et aucun nouveau quota n'a été consommé."
-                 : "Nouvelle version créée depuis le snapshot source. Le snapshot d'origine reste inchangé et le quota a été consommé.",
-        },
-      }));
-    } catch (error) {
-      reportWindow?.close();
-      setHistoryActionStateById((current) => ({
-        ...current,
-        [id]: {
-          action,
-          state: "error",
-          message: error instanceof Error ? error.message : "Impossible de charger le rapport historique.",
-        },
-      }));
-    }
-  }
-
   function handleThemeChange(theme: ReportPdfTheme): void {
     setReportTheme(theme);
-    const historicalReplay = historicalReplayRef.current;
-    if (historicalReplay && !historicalReplay.reportWindow.closed) {
-      renderReportWindow(historicalReplay.reportWindow, historicalReplay.payload, { theme });
-    }
   }
 
   const {
@@ -433,7 +354,10 @@ export function ReportsWebDocument({
           detailLevel={detailLevel}
           onDetailLevelChange={setDetailLevel}
           theme={reportTheme}
-          onThemeChange={handleThemeChange}
+          onThemeChange={(theme) => {
+            handleThemeChange(theme);
+            historicalActions.handleThemeChange(theme, historicalReplayRef);
+          }}
           customRange={customRange}
           onCustomRangeChange={setCustomRange}
           selectedScopeValue={selectedScopeValue}
@@ -488,9 +412,10 @@ export function ReportsWebDocument({
         recentRows={recentRows}
         historyAvailability={historyAvailability}
         actionStateById={historyActionStateById}
-        onView={(id) => void handleHistoricalAction(id, "view")}
-        onReexport={(id) => void handleHistoricalAction(id, "reexport")}
-        onDerive={(id) => void handleHistoricalAction(id, "derive")}
+        onView={(id) => void historicalActions.handleHistoricalAction(id, "view", historicalReplayRef)}
+        onReexport={(id) => void historicalActions.handleHistoricalAction(id, "reexport", historicalReplayRef)}
+        onPrint={(id) => void historicalActions.handleHistoricalPrint(id)}
+        onDerive={(id) => void historicalActions.handleHistoricalAction(id, "derive", historicalReplayRef)}
       />
     </section>
   );

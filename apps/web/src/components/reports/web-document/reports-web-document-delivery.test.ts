@@ -137,7 +137,9 @@ describe("ReportsWebDocumentDelivery", () => {
     expect(markup).toContain("01/08/2026 12:00");
     expect(markup).toContain("Actions");
     expect(markup).toContain("Voir");
-    expect(markup).toContain("Télécharger à nouveau");
+    expect(markup).toContain("Télécharger PDF");
+    expect(markup).toContain("Partager le PDF");
+    expect(markup).toContain("Imprimer");
     expect(markup).toContain("Créer une nouvelle version");
     expect(markup).not.toContain("Réexporter");
     expect(markup).toContain('min-h-11');

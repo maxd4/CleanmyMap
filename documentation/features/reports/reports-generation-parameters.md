@@ -526,8 +526,10 @@ sans bricolage basé sur le nom d’un organisateur ou une chaîne de texte.
   conserve les métadonnées de période, scope, provenance, modules, sources et
   versions proxy/règles qualité. Le réexport historique ne recalcule pas les
   données et ne crée pas de nouvelle génération ; la garantie est sémantique,
-  pas binaire, car le PDF n'est pas stocké.
-- **Unicité :** aucune nouvelle table, formule ni relation ne doit doubler une source canonique existante.
+  tandis que le PDF demandé est conservé séparément comme artefact versionné
+  dans le bucket privé `reports`, sans promettre une identité binaire entre
+  versions de renderer.
+- **Unicité :** aucune nouvelle table, formule ni relation ne doit doubler une source canonique métier ; la table technique de déduplication PDF reste limitée aux artefacts binaires.
 
 ## Hors périmètre de ce document
 
