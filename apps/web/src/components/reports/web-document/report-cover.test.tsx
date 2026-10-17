@@ -37,8 +37,8 @@ describe("ReportCover", () => {
       }),
     );
 
-    expect(markup).toContain("Masse collectée: Non renseignée");
-    expect(markup).toContain("une masse non renseignée");
+    expect(markup).toContain("Masse impact (calculée): Non renseignée");
+    expect(markup).toContain("une masse d’impact non renseignée");
     expect(markup).not.toContain("Masse collectée: 0 kg");
   });
 });

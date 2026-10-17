@@ -37,6 +37,7 @@ function createProps(
     isTruncated: false,
     modulesLabel: "Données & cartographie",
     dataStatusLabel: "Données disponibles",
+    chapterCount: 6,
     ...overrides,
   };
 }

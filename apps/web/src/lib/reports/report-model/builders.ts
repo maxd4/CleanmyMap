@@ -197,7 +197,7 @@ export function buildExecutiveNarrative(report: ReportModel): ExecutiveNarrative
 
   const topArea = report.areas[0];
   const topAreaSummary = topArea
-    ? `${topArea.area} concentre ${wasteKnown ? `${toFrNumber(topArea.kg)} kg` : "une masse non renseignée"} sur ${toFrInt(topArea.actions)} actions et reste la zone la plus sensible.`
+    ? `${topArea.area} concentre ${wasteKnown ? `${toFrNumber(topArea.kg)} kg d’impact calculé` : "une masse d’impact non renseignée"} sur ${toFrInt(topArea.actions)} actions et reste la zone la plus sensible.`
     : "Aucune zone prioritaire n'est ressortie sur la fenêtre analysée.";
 
   const summary = [
@@ -212,7 +212,7 @@ export function buildExecutiveNarrative(report: ReportModel): ExecutiveNarrative
     summary,
     evidence: [
       `${toFrInt(report.totals.actions)} actions validées`,
-      wasteKnown ? `${toFrNumber(report.totals.kg)} kg collectés` : "Masse collectée non renseignée",
+      wasteKnown ? `${toFrNumber(report.totals.kg)} kg d’impact calculé` : "Masse d’impact non renseignée",
       `${toFrNumber(report.map.geoCoverage)}% de géolocalisation`,
       `${toFrNumber(report.quality.coherenceScore)}% de cohérence`,
     ],

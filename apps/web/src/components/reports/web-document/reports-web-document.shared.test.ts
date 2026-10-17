@@ -215,7 +215,7 @@ describe("reports web document shared helpers", () => {
     expect(rendered[2]).toContain("Détails spatiaux");
     expect(outputs.every((output) => output.chapters.every((chapter) => !chapter.locked))).toBe(true);
 
-    for (const label of ["Actions", "Masse collectée", "Mégots", "Bénévoles"]) {
+    for (const label of ["Actions", "Masse impact (calculée)", "Mégots", "Bénévoles"]) {
       const values = outputs.map((output) => output.stats.find((stat) => stat.label === label)?.value);
       expect(values[0]).toBe(values[1]);
       expect(values[1]).toBe(values[2]);
@@ -351,13 +351,11 @@ describe("reports web document shared helpers", () => {
 
     expect(chapterIds).toEqual([
       "synthese-executive",
-      "perimetre-rapport",
       "resultats-terrain",
+      "perimetre-rapport",
       "cartographie-impact",
       "contexte-local",
       "communaute-mobilisation",
-      "recommandations-operationnelles",
-      "calendrier-previsionnel",
     ]);
     expect(chapterIds).not.toContain("indicateurs-environnementaux");
     expect(chapterIds).not.toContain("methodologie-fiabilite");
@@ -366,6 +364,83 @@ describe("reports web document shared helpers", () => {
     expect(chapterIds).not.toContain("annexes");
     expect(pdf.rows).toEqual(fixtureModel.exportRows);
     expect(pdf.summary).toContain("Modules optionnels inclus: Données & cartographie, Données brutes.");
+  });
+
+  it("keeps the shareable hierarchy factual and does not expose participant names", () => {
+    const pdf = buildPdfData({
+      reportTitle: "Rapport d'impact - Action terrain",
+      scopeLabel: "Action terrain",
+      period: "full_history",
+      detailLevel: "default",
+      modules: {
+        dataAndCartography: false,
+        transparencyAndMethods: true,
+        rawData: true,
+        detailedFiles: true,
+      },
+      surfaceProxy: null,
+      provenance: {
+        type: "single_action",
+        actionId: "action-canonique-1",
+        source: "public.actions",
+        resolvedAt: "2026-08-27T12:00:00.000Z",
+      },
+      model: {
+        ...fixtureModel,
+        report: {
+          ...fixtureModel.report,
+          areas: [],
+          calendar: [],
+          community: {
+            ...fixtureModel.report.community,
+            topLeaderboard: [{ name: "Nom privé", actions: 1, kg: 2, butts: 3 }],
+          },
+        },
+      },
+    });
+
+    expect(pdf.chapters.map((chapter) => chapter.id)).toEqual([
+      "synthese-executive",
+      "resultats-terrain",
+      "perimetre-rapport",
+      "indicateurs-environnementaux",
+      "gouvernance-transparence",
+      "methodologie-fiabilite",
+      "communaute-mobilisation",
+      "glossaire-simplifie",
+    ]);
+    expect(pdf.chapters.find((chapter) => chapter.id === "perimetre-rapport")?.lines).toContain(
+      "Action canonique: Action terrain.",
+    );
+    expect(pdf.chapters.find((chapter) => chapter.id === "indicateurs-environnementaux")?.title).toBe(
+      "Impacts et proxys qualifiés",
+    );
+    expect(pdf.chapters.find((chapter) => chapter.id === "gouvernance-transparence")?.title).toBe(
+      "Qualité, couverture et transparence",
+    );
+    expect(pdf.chapters.find((chapter) => chapter.id === "indicateurs-environnementaux")?.lines).toContain(
+      "Les valeurs CO2e, eau, voirie et surface sont des proxys ; elles ne constituent pas des mesures physiques directes.",
+    );
+    expect(pdf.chapters.find((chapter) => chapter.id === "communaute-mobilisation")?.rows).toBeUndefined();
+    expect(JSON.stringify(pdf)).not.toContain("Nom privé");
+    expect(JSON.stringify(pdf)).not.toContain("recommandations-operationnelles");
+
+    const html = buildOfficialReportHtml({
+      title: pdf.title,
+      rubrique: "reporting",
+      periode: "full_history",
+      organizationType: "single_action",
+      organizationName: "Action terrain",
+      data: pdf,
+    });
+    expect(html).toContain("Sommaire cliquable");
+    expect(html).toContain("Impacts et proxys qualifiés");
+    expect(html).not.toContain("Nom privé");
+    expect(html).not.toContain("Recommandations opérationnelles");
+    expect(html.indexOf("Résultats terrain")).toBeLessThan(html.indexOf("Périmètre du rapport"));
+    expect(html.indexOf("Périmètre du rapport")).toBeLessThan(html.indexOf("Impacts et proxys qualifiés"));
+    expect(html).not.toContain("Calendrier prévisionnel");
+    expect(html).not.toContain("Annexes");
   });
 
   it("keeps the supported periods and filter labels stable", () => {
@@ -453,7 +528,9 @@ describe("reports web document shared helpers", () => {
     expect(pdf.chapters[0]?.lines).toContain(
       "Période: Historique complet · Exhaustif.",
     );
-    expect(pdf.chapters[1]?.lines).toContain("Période analysée: Historique complet.");
+    expect(pdf.chapters.find((chapter) => chapter.id === "perimetre-rapport")?.lines).toContain(
+      "Période analysée: Historique complet.",
+    );
     expect(JSON.stringify(pdf)).not.toMatch(/weather|météo/i);
     expect(pdf.chapters[0]?.lines).toContain(
       "Données potentiellement partielles : la limite de chargement a été atteinte.",

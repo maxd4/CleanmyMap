@@ -101,13 +101,29 @@ export const REPORT_MODULE_DEFINITIONS = [
 
 export const REQUIRED_CORE_CHAPTER_IDS = [
   "synthese-executive",
-  "perimetre-rapport",
   "resultats-terrain",
+  "perimetre-rapport",
 ] as const;
 
-const ALWAYS_INCLUDED_CHAPTER_IDS = [
-  ...REQUIRED_CORE_CHAPTER_IDS,
-  "recommandations-operationnelles",
+const ALWAYS_INCLUDED_CHAPTER_IDS = [...REQUIRED_CORE_CHAPTER_IDS] as const;
+
+const REPORT_CHAPTER_ORDER = [
+  "synthese-executive",
+  "resultats-terrain",
+  "perimetre-rapport",
+  "indicateurs-environnementaux",
+  "cartographie-impact",
+  "contexte-local",
+  "gouvernance-transparence",
+  "methodologie-fiabilite",
+  "sources-et-limites",
+  "communaute-mobilisation",
+  "details-spatiaux",
+  "tendance-mensuelle-detaillee",
+  "actions-mises-en-avant",
+  "calendrier-previsionnel",
+  "glossaire-simplifie",
+  "annexes",
 ] as const;
 
 function getEnabledReportModules(modules: ModuleState) {
@@ -278,7 +294,9 @@ export function buildPdfData(params: ReportPdfDataOptions) {
       subtitle: "Période analysée, territoire couvert et sources des données",
       lines: [
         `Période analysée: ${reportPeriodLabel(period, model.dataAvailability?.isTruncated, periodRange)}.`,
-        `Territoire couvert: ${scopeLabel}.`,
+        ...(params.provenance?.type === "single_action"
+          ? [`Action canonique: ${scopeLabel}.`]
+          : [`Territoire couvert: ${scopeLabel}.`]),
         `Organisation ou collectif concerné: ${scopeLabel === "Global" ? "Collectif CleanMyMap" : scopeLabel}.`,
         `Sources des données: ${Object.keys(report.impactMethodology.sources ?? {}).join(", ")}.`,
       ],
@@ -289,7 +307,7 @@ export function buildPdfData(params: ReportPdfDataOptions) {
       subtitle: "Actions, déchets, bénévoles et zones traitées",
       lines: [
         `Zones traitées: ${report.areas.length}.`,
-        `Zones restantes (proxy): ${Math.max(0, 100 - report.map.geoCoverage).toFixed(1)}%.`,
+        `Couverture GPS: ${report.map.geoCoverage.toFixed(1)}% · traces exploitables: ${report.map.traceCoverage.toFixed(1)}%.`,
       ],
       stats: [
         { label: "Actions recensées", value: report.totals.actions },
@@ -329,20 +347,21 @@ export function buildPdfData(params: ReportPdfDataOptions) {
     },
     {
       id: "indicateurs-environnementaux",
-      title: "Indicateurs environnementaux",
-      subtitle: "Proxy eau, CO2, surface et pollution",
+      title: "Impacts et proxys qualifiés",
+      subtitle: "Valeurs calculées, proxys et unités disponibles",
       stats: [
-        { label: "Impact estimé", value: wasteKnown ? `${report.totals.kg.toFixed(1)} kg` : "n/a" },
+        { label: "Masse d’impact (calculée)", value: wasteKnown ? `${report.totals.kg.toFixed(1)} kg` : "n/a" },
         { label: "Émissions évitées (proxy)", value: wasteKnown ? `${report.climate.co2AvoidedKg.toFixed(1)} kg` : "n/a" },
-        { label: "Eau préservée (proxy)", value: buttsKnown ? `${report.climate.waterProtectedLiters.toFixed(0)} L` : "n/a" },
+        { label: "Eau estimée (proxy)", value: buttsKnown ? `${report.climate.waterProtectedLiters.toFixed(0)} L` : "n/a" },
         { label: "Économie de voirie (proxy)", value: wasteKnown && report.climate.streetCleaningSavings
           ? `${report.climate.streetCleaningSavings.lowerBoundEuros.toFixed(0)}–${report.climate.streetCleaningSavings.upperBoundEuros.toFixed(0)} €`
           : "n/a" },
         { label: "Indice de pollution", value: formatScorePercent(report.impactMethodology.pollutionScoreAverage, 1) },
       ],
       lines: [
-        `Surface d’action proxy: ${surfaceProxy === null ? "n/a" : `${surfaceProxy.toFixed(1)} m²`}.`,
+        `Surface d’action (proxy): ${surfaceProxy === null ? "n/a" : `${surfaceProxy.toFixed(1)} m²`}.`,
         `Indice de tri propre: ${formatScorePercent(report.recycling.triIndex, 1)}.`,
+        "Les valeurs CO2e, eau, voirie et surface sont des proxys ; elles ne constituent pas des mesures physiques directes.",
       ],
     },
     {
@@ -370,20 +389,11 @@ export function buildPdfData(params: ReportPdfDataOptions) {
       subtitle: "Bénévoles, partenaires et contribution citoyenne",
       stats: [
         { label: "Événements", value: totalEvents },
-        { label: "RSVP oui", value: participationRate },
+        { label: "RSVP « oui » parmi les réponses", value: participationRate },
         { label: "Bénévoles", value: volunteersKnown ? report.totals.volunteers : "n/a" },
       ],
-      rows: report.community.topLeaderboard.slice(0, 5).map((entry) => ({
-        Contributeur: entry.name,
-        Actions: entry.actions,
-        Kg: wasteKnown ? entry.kg.toFixed(1) : "n/a",
-        Mégots: buttsKnown ? entry.butts : "n/a",
-      })),
-      columns: [
-        { key: "Contributeur", label: "Contributeur" },
-        { key: "Actions", label: "Actions" },
-        { key: "Kg", label: "Kg" },
-        { key: "Mégots", label: "Mégots" },
+      lines: [
+        `La valeur RSVP décrit des réponses déclarées et ne constitue pas un taux de présence constatée.`,
       ],
     },
     {
@@ -394,6 +404,8 @@ export function buildPdfData(params: ReportPdfDataOptions) {
         `Version proxy: ${report.impactMethodology.proxyVersion}.`,
         `Règles qualité: ${report.impactMethodology.qualityRulesVersion}.`,
         `Complétude: ${report.quality.completenessScore.toFixed(1)}%. Cohérence: ${report.quality.coherenceScore.toFixed(1)}%.`,
+        `Sources de référence: ${Object.keys(report.impactMethodology.sources ?? {}).join(", ") || "n/a"}.`,
+        "Les valeurs absentes restent n/a ; les proxys ne remplacent pas une mesure instrumentale.",
       ],
       rows: report.impactMethodology.formulas.map((formula) => ({
         Formule: formula.label,
@@ -408,19 +420,13 @@ export function buildPdfData(params: ReportPdfDataOptions) {
     },
     {
       id: "gouvernance-transparence",
-      title: "Gouvernance et transparence",
+      title: "Qualité, couverture et transparence",
       subtitle: "Validation, modération et traçabilité",
       lines: [
         `Couverture compte: ${model.accountScopeCoverage.coveragePercent.toFixed(1)}%.`,
         `Modération: ${report.moderation.approved} approuvés / ${report.moderation.rejected === null ? "indisponible" : `${report.moderation.rejected} rejetés`}.`,
         `Délai moyen: ${toFrOptionalNumber(report.moderation.delayDays)} jours.`,
       ],
-    },
-    {
-      id: "recommandations-operationnelles",
-      title: "Recommandations opérationnelles",
-      subtitle: "Court terme, moyen terme et priorités",
-      lines: executive.budgetUseCases.concat([`Zone prioritaire: ${report.areas[0]?.area ?? "n/a"}.`]),
     },
     {
       id: "calendrier-previsionnel",
@@ -481,14 +487,20 @@ export function buildPdfData(params: ReportPdfDataOptions) {
         modules,
       })
     : [];
+  const relevantSupplementalChapters = supplementalChapters.filter((chapter) =>
+    !["details-spatiaux", "tendance-mensuelle-detaillee", "actions-mises-en-avant"].includes(chapter.id ?? "") ||
+    Boolean(chapter.rows?.length),
+  );
   const visibleChapterIds = new Set([
     ...getVisibleReportChapterIds(modules),
-    ...supplementalChapters.map((chapter) => chapter.id).filter((id): id is string => Boolean(id)),
+    ...relevantSupplementalChapters.map((chapter) => chapter.id).filter((id): id is string => Boolean(id)),
   ]);
   const chaptersForDetail = detailLevel === "concis"
     ? allChapters.map(buildConciseChapter)
-    : [...allChapters, ...supplementalChapters];
+    : [...allChapters, ...relevantSupplementalChapters];
+  const chapterOrder = new Map<string, number>(REPORT_CHAPTER_ORDER.map((id, index) => [id, index]));
   const chapters = chaptersForDetail
+    .sort((left, right) => (chapterOrder.get(left.id ?? "") ?? Number.MAX_SAFE_INTEGER) - (chapterOrder.get(right.id ?? "") ?? Number.MAX_SAFE_INTEGER))
     .map((chapter) => ({
       id: chapter.id ?? "",
       title: chapter.title,
@@ -500,14 +512,18 @@ export function buildPdfData(params: ReportPdfDataOptions) {
       locked: false,
       requiredDetailLevelLabel: undefined,
     }))
-    .filter((chapter) => visibleChapterIds.has(chapter.id));
+    .filter((chapter) => visibleChapterIds.has(chapter.id))
+    .filter((chapter) => {
+      if (chapter.id !== "annexes" && chapter.id !== "calendrier-previsionnel") return true;
+      return Boolean(allChapters.find((candidate) => candidate.id === chapter.id)?.rows?.length);
+    });
 
   return {
     title: reportTitle,
     summary: [
       `Périmètre: ${scopeLabel}`,
       `Niveau de détail: ${detailLevelLabel(detailLevel)}.`,
-      `Chapitres cœur inclus: Synthèse exécutive, Périmètre du rapport, Résultats terrain.`,
+      `Chapitres cœur inclus: Synthèse exécutive, Résultats terrain, Périmètre du rapport.`,
       `Modules optionnels inclus: ${buildModuleSelectionLabel(modules)}.`,
       `Actions consolidées: ${report.totals.actions}`,
       ...(detailLevel === "concis"
@@ -521,12 +537,12 @@ export function buildPdfData(params: ReportPdfDataOptions) {
     ],
     stats: (detailLevel === "concis" ? [
       { label: "Actions", value: report.totals.actions },
-      { label: "Masse collectée", value: wasteKnown ? `${report.totals.kg.toFixed(1)} kg` : "n/a" },
+      { label: "Masse impact (calculée)", value: wasteKnown ? `${report.totals.kg.toFixed(1)} kg` : "n/a" },
       { label: "Mégots", value: buttsKnown ? report.totals.butts : "n/a" },
       { label: "Bénévoles", value: volunteersKnown ? report.totals.volunteers : "n/a" },
     ] : [
       { label: "Actions", value: report.totals.actions },
-      { label: "Masse collectée", value: wasteKnown ? `${report.totals.kg.toFixed(1)} kg` : "n/a" },
+      { label: "Masse impact (calculée)", value: wasteKnown ? `${report.totals.kg.toFixed(1)} kg` : "n/a" },
       { label: "Mégots", value: buttsKnown ? report.totals.butts : "n/a" },
       { label: "Bénévoles", value: volunteersKnown ? report.totals.volunteers : "n/a" },
       ...(modules.dataAndCartography ? [{ label: "Couverture géographique", value: `${report.map.geoCoverage.toFixed(1)}%` }] : []),

@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, FileText, ShieldCheck, Target, TriangleAlert } from "lucide-react";
+import { BarChart3, ShieldCheck, Target, TriangleAlert } from "lucide-react";
 import { MetricCard } from "./ui";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 import { buildExecutiveNarrative } from "@/lib/reports/report-model/builders";
@@ -11,12 +11,14 @@ type ReportCoverProps = {
   id?: string;
   report: ReportModel;
   activeScopeLabel: string;
+  chapterCount?: number;
 };
 
 export function ReportCover({
   id = "synthese-executive",
   report,
   activeScopeLabel,
+  chapterCount,
 }: ReportCoverProps) {
   const narrative = buildExecutiveNarrative(report);
   const topArea = report.areas[0];
@@ -26,12 +28,11 @@ export function ReportCover({
   const wasteLabel = wasteKnown ? `${toFrNumber(report.totals.kg)} kg` : "Non renseignée";
   const keyFigures = [
     `Actions validées: ${toFrInt(report.totals.actions)}`,
-    `Masse collectée: ${wasteLabel}`,
+    `Masse impact (calculée): ${wasteLabel}`,
     `Bénévoles mobilisés: ${report.totals.volunteersKnownActions === 0 ? "n/a" : toFrInt(report.totals.volunteers)}`,
     `Couverture géographique: ${toFrNumber(report.map.geoCoverage)}%`,
   ];
   const conclusions = narrative.watchouts.slice(0, 3);
-  const recommendations = narrative.budgetUseCases.slice(0, 3);
 
   return (
     <section
@@ -101,7 +102,7 @@ export function ReportCover({
             <p className="mt-2 cmm-text-small cmm-text-secondary">{narrative.summary}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 cmm-text-caption font-semibold cmm-text-secondary">
-                12 sections détaillées
+                {chapterCount === undefined ? "Structure sélectionnée" : `${chapterCount} sections détaillées`}
               </span>
               <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 cmm-text-caption font-semibold cmm-text-secondary">
                 Sommaire cliquable
@@ -146,24 +147,6 @@ export function ReportCover({
               </ul>
             </article>
           </div>
-
-          <article
-            id="executive-recommendations"
-            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-          >
-            <div className="flex items-center gap-2 cmm-text-primary">
-              <FileText size={16} className="text-cyan-600" />
-              <p className="cmm-text-small font-semibold">Recommandations prioritaires</p>
-            </div>
-            <ul className="mt-3 space-y-2 cmm-text-small cmm-text-secondary">
-              {recommendations.map((line) => (
-                <li key={line} className="flex gap-2">
-                  <BarChart3 size={16} className="mt-0.5 shrink-0 text-cyan-600" />
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
 
           <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
             <div className="flex items-center gap-2 text-cyan-900">

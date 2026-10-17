@@ -17,6 +17,7 @@ export type ReportsWebDocumentPreviewProps = {
   isTruncated: boolean;
   modulesLabel: string;
   dataStatusLabel: string;
+  chapterCount: number;
 };
 
 function SummaryValue({ label, value }: { label: string; value: string }) {
@@ -39,6 +40,7 @@ export function ReportsWebDocumentPreview({
   isTruncated,
   modulesLabel,
   dataStatusLabel,
+  chapterCount,
 }: ReportsWebDocumentPreviewProps) {
   useEffect(() => {
     if (!showPreview) {
@@ -115,6 +117,7 @@ export function ReportsWebDocumentPreview({
             id="synthese-executive"
             report={report}
             activeScopeLabel={activeScopeLabel}
+            chapterCount={chapterCount}
           />
         </div>
       ) : null}

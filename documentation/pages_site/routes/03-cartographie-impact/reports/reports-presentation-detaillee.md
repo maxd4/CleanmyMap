@@ -53,6 +53,16 @@
   réellement absent, sans placeholder. Les tableaux complémentaires du niveau
   exhaustif n'apparaissent que lorsque leur module est activé.
 
+  Dans le document imprimable, la composition lisible suit la hiérarchie
+  synthèse exécutive, résultats terrain, périmètre/identification,
+  impacts/proxys, qualité/couverture, méthode/limites, puis annexes ou données
+  complémentaires lorsqu'elles contiennent réellement des lignes utiles.
+  `buildOfficialReportHtml()` rend le `PdfReportPayload` issu de
+  `buildPdfData()` avec son sommaire ancré. Le chapitre de recommandations
+  génériques n'est pas produit ; les valeurs RSVP sont explicitement décrites
+  comme des réponses et non comme des présences. Les tableaux partageables
+  n'exposent pas les noms du leaderboard ni les identifiants privés.
+
   Le périmètre typé `single_action` de la génération accepte uniquement
   `{ input: { type: "single_action", actionId }, detailLevel, modules }`.
   L'identifiant est résolu côté serveur contre `public.actions` ; seuls une

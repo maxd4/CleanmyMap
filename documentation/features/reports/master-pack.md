@@ -30,6 +30,10 @@ Ces intitulés sont des **déclarations de structure**. Ils ne garantissent ni l
 
 La [fiche CURRENT de `/reports`](../../pages_site/routes/03-cartographie-impact/reports/reports-README.md) décrit les chapitres cœur et les modules facultatifs réellement prévus par l'interface actuelle. Les niveaux de détail `concis`, `default` et `exhaustif` sont livrés avec des compositions distinctes et leur sélecteur est exposé par la configuration Reports. Les futurs habillages `Impact` et `Scientifique` restent orthogonaux à ces niveaux et appartiennent à la [spécification PLAN dédiée](./report-pdf-themes-and-reuse.md), pas à ce Master Pack.
 
+Pour le PDF produit par `/reports`, `buildPdfData()` ordonne les chapitres lorsque les données et les modules les rendent pertinents : synthèse exécutive, résultats terrain, périmètre/identification, impacts et proxys qualifiés, cartographie et contexte lorsqu'ils sont activés, qualité/couverture, méthode et limites, puis données communautaires ou annexes disponibles. Les recommandations génériques ne sont pas un chapitre de ce flux. Les calendriers et annexes vides sont omis ; les modules désactivés restent absents. Les noms de participants du leaderboard ne sont pas exportés dans le document partageable.
+
+Le renderer réellement appelé est `buildOfficialReportHtml()` via `browser-report.ts`. Il produit le HTML imprimable avec un sommaire ancré et les chapitres de `PdfReportPayload`; `simple-pdf` en porte les types et le contrat historique. `generate-pdf-html.ts` reste le constructeur HTML de la famille Master Pack, utile pour ce contrat distinct, mais sa présence ne fait pas de lui le renderer courant de `/reports`.
+
 Les contenus chiffrés proviennent du code métier et de ses tests, non de cette table de titres. Pour modifier le PDF exposé, identifier d'abord le chemin de génération réellement appelé, puis ses consommateurs, les tests de composition, l'historique et les règles de données.
 
 ## Reproductibilité

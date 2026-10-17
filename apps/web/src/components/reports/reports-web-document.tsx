@@ -133,9 +133,12 @@ export function ReportsWebDocument({
 
   const report = model.report;
   const activeScopeLabel = singleAction?.scopeLabel ?? model.activeScopeLabel;
-  const surfaceProxy =
-    report.totals.kg * IMPACT_PROXY_CONFIG.factors.surfaceM2PerWasteKg +
-    report.totals.hours * 60 * IMPACT_PROXY_CONFIG.factors.surfaceM2PerVolunteerMinute;
+  const wasteKnown = report.totals.knownWasteActions === undefined || report.totals.knownWasteActions > 0;
+  const volunteersKnown = (report.totals.volunteersKnownActions ?? 0) > 0;
+  const surfaceProxy = wasteKnown && volunteersKnown
+    ? report.totals.kg * IMPACT_PROXY_CONFIG.factors.surfaceM2PerWasteKg +
+      report.totals.hours * 60 * IMPACT_PROXY_CONFIG.factors.surfaceM2PerVolunteerMinute
+    : null;
   const selectedScopeValue = singleAction
     ? "single_action"
     : buildScopeSelectValue(model.scopeKind, model.scopeValue);
@@ -412,6 +415,7 @@ export function ReportsWebDocument({
             isTruncated={Boolean(model.dataAvailability.isTruncated)}
             modulesLabel={buildModuleSelectionLabel(modules)}
             dataStatusLabel={dataStatusLabel}
+            chapterCount={pdfData.chapters.length}
           />
 
           <ReportsWebDocumentDelivery
