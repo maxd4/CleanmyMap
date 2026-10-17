@@ -123,6 +123,7 @@ export const platformAuthorizationContract = {
       expected: "Authenticated owner may download the immutable PDF artifact for their Reports generation snapshot",
       dimensions: ["authentication", "ownership", "audit"],
       actual: "requireAuthenticatedAccess + owner-scoped snapshot lookup + private Storage artifact claim/read + audit",
+      evidenceScope: "module",
       evidence: [
         "requireAuthenticatedAccess",
         "getReportGenerationSnapshotById",
@@ -130,6 +131,22 @@ export const platformAuthorizationContract = {
         "REPORT_PDF_ARTIFACT_BUCKET",
         "appendAdminOperationAudit",
       ],
+    },
+  },
+  "reports/generations/[id]/json": {
+    GET: {
+      expected: "Authenticated owner may export the structured JSON projection of their immutable Reports snapshot",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess before owner-scoped snapshot lookup and scientific export projection",
+      evidence: ["requireAuthenticatedAccess", "getReportGenerationSnapshotById", "buildReportScientificExport"],
+    },
+  },
+  "reports/generations/[id]/csv": {
+    GET: {
+      expected: "Authenticated owner may export the tabular CSV projection of their immutable Reports snapshot",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess before owner-scoped snapshot lookup and scientific CSV projection",
+      evidence: ["requireAuthenticatedAccess", "getReportGenerationSnapshotById", "buildReportScientificCsv"],
     },
   },
   "reports/elus-dossier": {

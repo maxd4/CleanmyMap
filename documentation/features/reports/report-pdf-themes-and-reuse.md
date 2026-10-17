@@ -1,6 +1,6 @@
 # Reports — deux thèmes PDF comparables et réutilisation scientifique
 
-> **Statut : `CURRENT` pour les deux thèmes et leur sélecteur/relecture ; `PLAN` pour les capacités scientifiques et d'export explicitement futures.** Le prototype technique P est validé et le renderer officiel de `/reports` réutilise la même composition sous les thèmes `Impact` et `Scientifique`.
+> **Statut : `CURRENT` pour les deux thèmes, la relecture, la référence bibliographique et les exports JSON/CSV historiques ; `PLAN` pour les capacités PDF balisé et de conformité non validées.** Le prototype technique P est validé et le renderer officiel de `/reports` réutilise la même composition sous les thèmes `Impact` et `Scientifique`.
 >
 > **Domaine :** générateur `/reports`, rendu PDF et exploitation scientifique des rapports d'impact CleanMyMap.
 >
@@ -94,9 +94,9 @@ Le thème Impact peut utiliser davantage de couleurs ou de textures, mais ne doi
 
 Les modes globaux d'affichage du site (`sobre`, `minimaliste`, etc.) ne sont **pas** les identifiants de ces deux thèmes PDF.
 
-## 4. Citabilité scientifique — exigences de la future livraison
+## 4. Citabilité scientifique — contrat livré
 
-Chaque rapport généré devrait permettre de construire une référence stable à partir de **métadonnées véridiques** :
+Depuis l'historique, chaque rapport permet de copier une référence stable à partir de **métadonnées véridiques** :
 
 - Titre exact du rapport et éditeur/organisation effectivement identifiable ; ne pas inventer d'auteur.
 - Date de génération, période et périmètre étudiés, et si nécessaire convention de timezone.
@@ -106,7 +106,7 @@ Chaque rapport généré devrait permettre de construire une référence stable 
 - Numérotation stable des figures, tableaux et sections entre thèmes, indépendamment des couleurs.
 - Identifiants machine stables par indicateur/figure/tableau, distincts des titres traduits ou des positions dans un tableau.
 
-### Référence prête à copier — modèle conceptuel
+### Référence prête à copier — format livré
 
 ```text
 [Éditeur attesté]. ([Année]). [Titre du rapport].
@@ -114,7 +114,7 @@ CleanMyMap, génération [identifiant], [version de données si connue].
 [Périmètre], [période]. [URL pérenne si autorisée et effectivement résoluble].
 ```
 
-Il s'agit d'un **gabarit**, pas d'une citation déjà disponible. Aucune URL publique permanente ne doit être fabriquée pour un rapport privé ; les accès restent owner-scoped et régis par l'AuthZ existante. Aucun DOI n'est émis sans enregistrement réel auprès d'un organisme habilité et landing page maintenue. Un UUID interne n'est pas un DOI.
+Le bouton d'historique **Copier la référence** produit ce texte depuis le snapshot owner-scoped, sans URL publique ni auteur inventé. Aucun DOI n'est émis sans enregistrement réel auprès d'un organisme habilité et landing page maintenue. Un UUID interne n'est pas un DOI. Les versions absentes d'un snapshot legacy restent indiquées comme indisponibles.
 
 ## 5. Exploitabilité machine et accessibilité
 
@@ -123,7 +123,7 @@ Une page *visuellement* sobre n'est pas, en soi, un PDF machine-readable. La liv
 1. **Texte extractible et Unicode fiable** : texte réel sélectionnable et recherchable, accents et caractères non ASCII préservés ; pas de rapport intégral en image.
 2. **Structure sémantique du PDF** : titres, paragraphes, listes, tableaux avec en-têtes, figures, textes alternatifs lorsque requis, liens, signets et ordre de lecture cohérent ; viser une sortie *Tagged PDF* vérifiable et étudier PDF/UA selon les outils réellement disponibles.
 3. **Tabulaires et unités** : données et légendes extractibles sans deviner les colonnes, absence distincte du zéro réel, identifiants stables, provenance et unités liées à chaque métrique.
-4. **Données structurées associées** : préférer un export JSON/CSV réellement construit depuis le **même snapshot immuable** que le PDF, avec un schéma versionné, plutôt qu'un OCR ou une reconstitution postérieure du PDF. Toute donnée exportée doit respecter les droits, les projections publiques et les restrictions existantes.
+4. **Données structurées associées — livré** : `GET /api/reports/generations/[id]/json` et `/csv` exportent le **même snapshot immuable** que le PDF, avec le schéma `reports-scientific-export-v1`. Le JSON conserve le snapshot, les références, les versions, les tables et les limites ; le CSV est une projection longue des cellules effectivement rendues, avec identifiant, unité, valeur et statut. Toute donnée exportée respecte l'ownership historique et ne reconstruit pas les actions.
 5. **Liens entre représentations** : relier de façon vérifiable les valeurs du PDF, les séries de figures/tableaux et les entrées JSON/CSV (mêmes métriques et unités, mêmes filtres, même provenance).
 6. **Pérennité optionnelle** : évaluer PDF/A-3 avec fichiers associés pour des packages autoportants, *après* preuve de compatibilité et validation ; PDF/A-3 seul ne garantit pas les tags, l'accessibilité ni l'extraction correcte. Ne pas annoncer PDF/A, PDF/UA ou conformité WCAG sans test adapté.
 
@@ -133,7 +133,7 @@ Une page *visuellement* sobre n'est pas, en soi, un PDF machine-readable. La liv
 - Le renderer PDF textuel simplifié reste utilisé par des consommateurs distincts, mais n'est plus une voie de secours automatique de `/reports`. Il restitue les caractères couverts par l'encodage PDF standard et refuse explicitement les glyphes non supportés au lieu de les remplacer silencieusement ; il n'implémente pas à lui seul un arbre de tags sémantiques ni l'intégration de fichiers JSON/CSV.
 - Les snapshots historiques permettent la relecture et le rendu PDF sans recalcul des actions. Le cache technique `report_generation_pdf_artifacts` déduplique la paire génération/thème/version de renderer sans modifier le snapshot et sans constituer une preuve de conformité PDF/UA ou PDF/A-3.
 - Une réservation `rendering` est bornée par le lease porté par `updated_at` : seule une réservation expirée peut être reprise par une mise à jour conditionnelle, tandis qu'une réservation active reste servie en attente. Une ligne `ready` n'est réparée qu'après confirmation d'une absence Storage (`404`/`not_found`) ; une indisponibilité temporaire reste une erreur et n'invalide pas l'artefact. `upsert: false` et la clé déterministe réconcilient un objet déjà présent après interruption sans écrasement ni suppression.
-- Les exigences de ce document sont **PLAN** tant qu'elles ne sont pas exercées, vérifiées et documentées comme `CURRENT`.
+- Les exports JSON/CSV et la référence sont `CURRENT`. Les tags PDF, PDF/UA, PDF/A et l'ordre de lecture normatif restent non revendiqués tant qu'une validation dédiée du binaire final n'est pas exécutée.
 
 ## 6. Contrats de sélection, historique et sécurité
 
@@ -202,6 +202,6 @@ Ces publications servent à observer **le langage graphique ou la citabilité**,
 
 - Le contrat **deux thèmes / une composition** est localisé dans cette source, sans contradiction avec les niveaux de détail et modules `CURRENT`.
 - Les fiches et index nécessaires pointent vers ce document sans recopier le contenu.
-- Les documents CURRENT décrivent le choix de thème livré et ne présentent pas la citabilité automatique, le Tagged PDF, le PDF/A-3 ou l'export machine associé comme déjà livrés.
+- Les documents CURRENT décrivent la citabilité et l'export JSON/CSV livrés ; ils ne présentent pas le Tagged PDF, le PDF/A-3 ou une conformité PDF/UA comme déjà livrés.
 - Le chemin d'implémentation, les limites du renderer actuel, le prototype préalable et les critères de test sont explicités.
 - Aucun moteur PDF parallèle, migration, asset, screenshot ou fichier généré n'est créé pour cette capacité ; le prototype et le renderer officiel partagent leurs tokens et leur composition.

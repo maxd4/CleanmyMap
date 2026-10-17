@@ -39,10 +39,13 @@ export type ReportsWebDocumentDeliveryHistoryProps = {
   onReexport: (id: string) => void;
   onPrint?: (id: string) => void;
   onDerive?: (id: string) => void;
+  onCopyReference?: (id: string) => void;
+  onExportJson?: (id: string) => void;
+  onExportCsv?: (id: string) => void;
 };
 
 export type ReportGenerationHistoryActionState = {
-  action: "view" | "reexport" | "print" | "derive";
+  action: "view" | "reexport" | "print" | "derive" | "reference" | "json" | "csv";
   state: "pending" | "success" | "error";
   message: string;
 };
@@ -54,6 +57,9 @@ function HistoryActionButtons({
   onReexport,
   onPrint,
   onDerive = () => undefined,
+  onCopyReference = () => undefined,
+  onExportJson = () => undefined,
+  onExportCsv = () => undefined,
 }: {
   rowId: string;
   actionState?: ReportGenerationHistoryActionState;
@@ -61,6 +67,9 @@ function HistoryActionButtons({
   onReexport: (id: string) => void;
   onPrint: (id: string) => void;
   onDerive: (id: string) => void;
+  onCopyReference: (id: string) => void;
+  onExportJson: (id: string) => void;
+  onExportCsv: (id: string) => void;
 }) {
   const isPending = actionState?.state === "pending";
 
@@ -106,6 +115,36 @@ function HistoryActionButtons({
         className="min-h-11"
       >
         Créer une nouvelle version
+      </CmmButton>
+      <CmmButton
+        disabled={isPending}
+        onClick={() => onCopyReference(rowId)}
+        tone="tertiary"
+        variant="ghost"
+        size="md"
+        className="min-h-11"
+      >
+        Copier la référence
+      </CmmButton>
+      <CmmButton
+        disabled={isPending}
+        onClick={() => onExportJson(rowId)}
+        tone="tertiary"
+        variant="ghost"
+        size="md"
+        className="min-h-11"
+      >
+        Exporter JSON
+      </CmmButton>
+      <CmmButton
+        disabled={isPending}
+        onClick={() => onExportCsv(rowId)}
+        tone="tertiary"
+        variant="ghost"
+        size="md"
+        className="min-h-11"
+      >
+        Exporter CSV
       </CmmButton>
     </div>
   );
@@ -203,6 +242,9 @@ export function ReportsWebDocumentDeliveryHistory({
   onReexport,
   onPrint = () => undefined,
   onDerive = () => undefined,
+  onCopyReference = () => undefined,
+  onExportJson = () => undefined,
+  onExportCsv = () => undefined,
 }: ReportsWebDocumentDeliveryHistoryProps) {
   return (
     <section
@@ -264,6 +306,9 @@ export function ReportsWebDocumentDeliveryHistory({
                         onReexport={onReexport}
                         onPrint={onPrint}
                         onDerive={onDerive}
+                        onCopyReference={onCopyReference}
+                        onExportJson={onExportJson}
+                        onExportCsv={onExportCsv}
                       />
                       <HistoryActionFeedback actionState={actionStateById[row.id]} />
                     </td>
@@ -307,6 +352,9 @@ export function ReportsWebDocumentDeliveryHistory({
                     onReexport={onReexport}
                     onPrint={onPrint}
                     onDerive={onDerive}
+                    onCopyReference={onCopyReference}
+                    onExportJson={onExportJson}
+                    onExportCsv={onExportCsv}
                   />
                   <HistoryActionFeedback actionState={actionStateById[row.id]} />
                 </div>

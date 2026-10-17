@@ -54,3 +54,27 @@ export async function downloadOrShareReportPdf(params: {
   triggerBrowserDownload(blob, filename);
   return "downloaded";
 }
+
+export async function downloadHistoricalReportData(params: {
+  generationId: string;
+  format: "json" | "csv";
+}): Promise<void> {
+  const response = await fetch(
+    `/api/reports/generations/${encodeURIComponent(params.generationId)}/${params.format}`,
+    { method: "GET", cache: "no-store" },
+  );
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as { error?: unknown } | null;
+    throw new Error(typeof body?.error === "string" ? body.error : "L’export historique est indisponible pour le moment.");
+  }
+  const expectedType = params.format === "json" ? "application/json" : "text/csv";
+  if (!response.headers.get("Content-Type")?.toLowerCase().startsWith(expectedType)) {
+    throw new Error("La réponse de l’export historique n’est pas dans le format demandé.");
+  }
+  const blob = await response.blob();
+  const filename = getFilename(
+    response.headers.get("Content-Disposition"),
+    `rapport_historique.${params.format}`,
+  );
+  triggerBrowserDownload(blob, filename);
+}

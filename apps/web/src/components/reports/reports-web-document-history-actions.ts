@@ -4,12 +4,16 @@ import {
   prepareReportWindow,
 } from "@/lib/pdf-export/browser-report";
 import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
-import { downloadOrShareReportPdf } from "@/components/reports/report-pdf-actions";
+import {
+  downloadHistoricalReportData,
+  downloadOrShareReportPdf,
+} from "@/components/reports/report-pdf-actions";
 import type { ReportGenerationHistoryActionState } from "./web-document/reports-web-document-delivery";
 import {
   deriveHistoricalReportSnapshot,
   loadHistoricalReportSnapshot,
 } from "@/lib/reports/historical-report-client";
+import { buildReportScientificReference } from "@/lib/reports/report-scientific-export";
 import { replayHistoricalReport } from "@/lib/reports/historical-report-replay";
 import {
   REPORT_GENERATION_HISTORY_LIMIT,
@@ -45,6 +49,10 @@ export function createReportsWebDocumentHistoryActions(params: HistoryActionsPar
           ? "Ouverture du rapport historique..."
           : action === "reexport"
             ? "Préparation du fichier PDF..."
+            : action === "reference"
+              ? "Préparation de la référence bibliographique..."
+              : action === "json" || action === "csv"
+                ? "Préparation de l’export structuré..."
             : "Création d'une nouvelle version...",
       },
     }));
@@ -70,6 +78,46 @@ export function createReportsWebDocumentHistoryActions(params: HistoryActionsPar
             state: "error",
             message: error instanceof Error ? error.message : "Impossible de télécharger le PDF historique.",
           },
+        }));
+      }
+      return;
+    }
+
+    if (action === "reference") {
+      try {
+        const generation = await loadHistoricalReportSnapshot(id);
+        if (!navigator.clipboard?.writeText) {
+          throw new Error("La copie dans le presse-papiers n’est pas disponible dans ce navigateur.");
+        }
+        await navigator.clipboard.writeText(buildReportScientificReference(generation).citationText);
+        params.setHistoryActionStateById((current) => ({
+          ...current,
+          [id]: { action, state: "success", message: "Référence bibliographique copiée depuis le snapshot historique." },
+        }));
+      } catch (error) {
+        params.setHistoryActionStateById((current) => ({
+          ...current,
+          [id]: { action, state: "error", message: error instanceof Error ? error.message : "Impossible de copier la référence bibliographique." },
+        }));
+      }
+      return;
+    }
+
+    if (action === "json" || action === "csv") {
+      try {
+        await downloadHistoricalReportData({ generationId: id, format: action });
+        params.setHistoryActionStateById((current) => ({
+          ...current,
+          [id]: {
+            action,
+            state: "success",
+            message: `Export ${action.toUpperCase()} téléchargé depuis le snapshot historique. Aucun nouveau calcul métier ni quota de génération n’a été utilisé.`,
+          },
+        }));
+      } catch (error) {
+        params.setHistoryActionStateById((current) => ({
+          ...current,
+          [id]: { action, state: "error", message: error instanceof Error ? error.message : "Impossible d’exporter le snapshot historique." },
         }));
       }
       return;

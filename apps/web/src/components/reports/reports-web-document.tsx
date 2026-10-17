@@ -416,6 +416,9 @@ export function ReportsWebDocument({
         onReexport={(id) => void historicalActions.handleHistoricalAction(id, "reexport", historicalReplayRef)}
         onPrint={(id) => void historicalActions.handleHistoricalPrint(id)}
         onDerive={(id) => void historicalActions.handleHistoricalAction(id, "derive", historicalReplayRef)}
+        onCopyReference={(id) => void historicalActions.handleHistoricalAction(id, "reference", historicalReplayRef)}
+        onExportJson={(id) => void historicalActions.handleHistoricalAction(id, "json", historicalReplayRef)}
+        onExportCsv={(id) => void historicalActions.handleHistoricalAction(id, "csv", historicalReplayRef)}
       />
     </section>
   );

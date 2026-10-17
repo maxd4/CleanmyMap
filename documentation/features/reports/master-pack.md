@@ -70,6 +70,25 @@ persistance incertain conserve le quota et interdit une relance aveugle ; une
 insertion confirmée dont l'audit échoue conserve également le quota, expose
 l'état enregistré et signale l'anomalie sans créer une seconde ligne.
 
+## Exploitabilité scientifique du snapshot
+
+Depuis l'historique, la référence bibliographique, le JSON et le CSV sont
+produits depuis la ligne `public.report_generations` owner-scoped, sans relire
+les actions ni recalculer les KPI. Le JSON porte le schéma versionné
+`reports-scientific-export-v1`, le snapshot source, les tables visibles, les
+unités connues, les versions réellement présentes et les limites. Le CSV est
+une projection longue des cellules des mêmes tables, avec identifiant stable,
+unité, valeur et statut ; une cellule absente reste vide avec `NA`, jamais
+zéro. Les statuts `OBSERVED`, `DERIVED`, `DECLARED`, `ASSUMPTION`, `PROXY` et
+`NA` ne sont exportés que lorsqu'ils sont connus du snapshot ou de la
+projection canonique ; les statuts non historisés restent explicitement
+inconnus. Les snapshots legacy restent lisibles, mais leurs versions et leur
+filiation manquantes sont signalées.
+
+Les routes `GET /api/reports/generations/[id]/json` et `/csv` réutilisent le
+contrôle owner-scoped de l'historique. Elles ne publient ni objets Storage,
+ni nouvelles sources privées, ni promesse de conformité PDF/UA ou PDF/A.
+
 ## Contexte historique
 
 Le [document conceptuel ancien](../../sessions/history/master-pack-concept-historical.md) reste utile pour comprendre les intentions initiales, sans devenir un contrat CURRENT des KPI, scores ou chapitres rendus.

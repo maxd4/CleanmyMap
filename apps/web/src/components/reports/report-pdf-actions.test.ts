@@ -6,7 +6,7 @@ vi.mock("@/components/reports/admin-workflow/services", () => ({
   triggerBrowserDownload: triggerBrowserDownloadMock,
 }));
 
-import { downloadOrShareReportPdf } from "./report-pdf-actions";
+import { downloadHistoricalReportData, downloadOrShareReportPdf } from "./report-pdf-actions";
 
 const fetchMock = vi.fn();
 
@@ -74,6 +74,41 @@ describe("downloadOrShareReportPdf", () => {
       generationId: "generation-1",
       theme: "impact",
     })).rejects.toThrow("La réponse du téléchargement n’est pas un fichier PDF.");
+    expect(triggerBrowserDownloadMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("downloadHistoricalReportData", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  it("downloads the owner-scoped JSON response using the server filename", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("{}", {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Disposition": "attachment; filename=\"rapport.json\"",
+      },
+    }));
+
+    await expect(downloadHistoricalReportData({ generationId: "generation-1", format: "json" })).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/reports/generations/generation-1/json",
+      { method: "GET", cache: "no-store" },
+    );
+    expect(triggerBrowserDownloadMock).toHaveBeenCalledWith(expect.any(Blob), "rapport.json");
+  });
+
+  it("rejects a wrong content type instead of downloading an HTML error page", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("<html />", {
+      status: 200,
+      headers: { "Content-Type": "text/html" },
+    }));
+
+    await expect(downloadHistoricalReportData({ generationId: "generation-1", format: "csv" }))
+      .rejects.toThrow("La réponse de l’export historique n’est pas dans le format demandé.");
     expect(triggerBrowserDownloadMock).not.toHaveBeenCalled();
   });
 });

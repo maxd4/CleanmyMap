@@ -141,6 +141,9 @@ describe("ReportsWebDocumentDelivery", () => {
     expect(markup).toContain("Partager le PDF");
     expect(markup).toContain("Imprimer");
     expect(markup).toContain("Créer une nouvelle version");
+    expect(markup).toContain("Copier la référence");
+    expect(markup).toContain("Exporter JSON");
+    expect(markup).toContain("Exporter CSV");
     expect(markup).not.toContain("Réexporter");
     expect(markup).toContain('min-h-11');
   });
