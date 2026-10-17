@@ -157,6 +157,87 @@ describe("report generation history store", () => {
     expect(maybeSingle).toHaveBeenCalledTimes(1);
   });
 
+  it("reads a current snapshot when PostgREST returns the equivalent UTC offset", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { ...historicalRow, generated_at: "2026-08-27T10:30:00.000+00:00" },
+      error: null,
+    });
+    const ownerEq = vi.fn(() => ({ maybeSingle }));
+    const idEq = vi.fn(() => ({ eq: ownerEq }));
+    const select = vi.fn(() => ({ eq: idEq }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
+
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).resolves.toMatchObject({
+      generatedAt: "2026-08-27T10:30:00.000+00:00",
+      snapshot: payload,
+    });
+  });
+
+  it("accepts equivalent UTC offsets and preserves sub-millisecond precision", async () => {
+    const generatedAt = "2026-08-27T10:30:00.123456Z";
+    const fractionalPayload = {
+      ...payload,
+      snapshotMetadata: { ...payload.snapshotMetadata, generatedAt },
+      data: { ...payload.data, generatedAt },
+    };
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        ...historicalRow,
+        generated_at: "2026-08-27T11:30:00.123456+01:00",
+        snapshot: fractionalPayload,
+      },
+      error: null,
+    });
+    const ownerEq = vi.fn(() => ({ maybeSingle }));
+    const idEq = vi.fn(() => ({ eq: ownerEq }));
+    const select = vi.fn(() => ({ eq: idEq }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
+
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).resolves.toMatchObject({
+      snapshot: fractionalPayload,
+    });
+  });
+
+  it("rejects a stored snapshot when fractional instants differ", async () => {
+    const generatedAt = "2026-08-27T10:30:00.123456Z";
+    const fractionalPayload = {
+      ...payload,
+      snapshotMetadata: { ...payload.snapshotMetadata, generatedAt },
+      data: { ...payload.data, generatedAt },
+    };
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        ...historicalRow,
+        generated_at: "2026-08-27T10:30:00.123457+00:00",
+        snapshot: fractionalPayload,
+      },
+      error: null,
+    });
+    const ownerEq = vi.fn(() => ({ maybeSingle }));
+    const idEq = vi.fn(() => ({ eq: ownerEq }));
+    const select = vi.fn(() => ({ eq: idEq }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
+
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow(
+      "invalid or incompatible",
+    );
+  });
+
+  it("rejects a stored snapshot with an invalid generated_at format", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { ...historicalRow, generated_at: "not-an-instant" },
+      error: null,
+    });
+    const ownerEq = vi.fn(() => ({ maybeSingle }));
+    const idEq = vi.fn(() => ({ eq: ownerEq }));
+    const select = vi.fn(() => ({ eq: idEq }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
+
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow(
+      "invalid or incompatible",
+    );
+  });
+
   it("rejects an invalid UUID before querying Supabase", async () => {
     await expect(getReportGenerationSnapshotById("not-a-uuid", "user-1")).rejects.toBeInstanceOf(
       InvalidReportGenerationIdError,

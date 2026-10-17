@@ -59,6 +59,62 @@ function hasSameModules(left: ModuleState, right: unknown): boolean {
     left.detailedFiles === candidate.detailedFiles;
 }
 
+const REPORT_GENERATION_INSTANT_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(Z|([+-])(\d{2}):(\d{2}))$/;
+
+type ReportGenerationInstant = {
+  epochMilliseconds: number;
+  subMillisecondNanoseconds: number;
+};
+
+function parseReportGenerationInstant(value: unknown): ReportGenerationInstant | null {
+  if (typeof value !== "string") return null;
+  const match = REPORT_GENERATION_INSTANT_PATTERN.exec(value);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+  const offsetSign = match[9];
+  const offsetHour = Number(match[10] ?? 0);
+  const offsetMinute = Number(match[11] ?? 0);
+  if (hour > 23 || minute > 59 || second > 59 || offsetHour > 23 || offsetMinute > 59) {
+    return null;
+  }
+
+  const date = new Date(0);
+  date.setUTCFullYear(year, month - 1, day);
+  date.setUTCHours(hour, minute, second, 0);
+  if (date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day ||
+    date.getUTCHours() !== hour ||
+    date.getUTCMinutes() !== minute ||
+    date.getUTCSeconds() !== second) {
+    return null;
+  }
+
+  const offsetMilliseconds = (offsetHour * 60 + offsetMinute) * 60 * 1000;
+  const signedOffsetMilliseconds = offsetSign === "-" ? -offsetMilliseconds : offsetMilliseconds;
+  const fraction = match[7] ?? "";
+  const fractionNanoseconds = Number(fraction.padEnd(9, "0"));
+  return {
+    epochMilliseconds: date.getTime() - signedOffsetMilliseconds + Math.trunc(fractionNanoseconds / 1_000_000),
+    subMillisecondNanoseconds: fractionNanoseconds % 1_000_000,
+  };
+}
+
+function haveSameReportGenerationInstant(left: unknown, right: unknown): boolean {
+  const leftInstant = parseReportGenerationInstant(left);
+  const rightInstant = parseReportGenerationInstant(right);
+  return leftInstant !== null && rightInstant !== null &&
+    leftInstant.epochMilliseconds === rightInstant.epochMilliseconds &&
+    leftInstant.subMillisecondNanoseconds === rightInstant.subMillisecondNanoseconds;
+}
+
 function assertSnapshotMatchesHistoryRow(
   snapshot: ReturnType<typeof parseReportGenerationPayload>,
   row: {
@@ -71,14 +127,14 @@ function assertSnapshotMatchesHistoryRow(
     modules: unknown;
   },
 ): void {
-  if (snapshot.data.generatedAt !== row.generated_at) {
+  if (!haveSameReportGenerationInstant(snapshot.data.generatedAt, row.generated_at)) {
     throw new InvalidReportGenerationSnapshotError();
   }
 
   if (snapshot.snapshotSchemaVersion === 2) {
     const metadata = snapshot.snapshotMetadata;
     if (!metadata ||
-      metadata.generatedAt !== row.generated_at ||
+      !haveSameReportGenerationInstant(metadata.generatedAt, row.generated_at) ||
       metadata.period.id !== row.period_id ||
       metadata.scope.kind !== row.scope_kind ||
       metadata.scope.value !== row.scope_value ||
