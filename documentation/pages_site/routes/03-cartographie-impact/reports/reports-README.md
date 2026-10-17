@@ -9,12 +9,17 @@ Ce dossier sépare les contrats observables (`CURRENT`), les évolutions encore 
 - Cette fiche est la référence canonique de `/reports` : accès, onglets, modules réellement exposés, quota, historique et états.
 - **Modèle et calculs :** `apps/web/src/lib/reports/report-model/` et `apps/web/src/lib/reports/master-pack/`, selon les consommateurs réels.
 - **Génération et historique `/reports` :** `apps/web/src/components/reports/reports-web-document.tsx`, `apps/web/src/lib/pdf-export/`, `apps/web/src/app/api/reports/generations/` et tests associés. Les frontières client/serveur comptent pour la confiance accordée aux résultats.
+- **Génération multi-actions CURRENT :** `POST /api/reports/generations` reçoit une entrée `multi_action` typée avec période, scope et composition uniquement. Les actions publiques admissibles, les événements, les filtres et les KPI sont résolus et calculés côté serveur depuis les sources canoniques ; les KPI ou snapshots envoyés par le navigateur sont rejetés.
+- **Périodes CURRENT :** `thirty_days`, `three_months`, `six_months`, `twelve_months`, `current_year`, `full_history` et `custom_range`. Une période personnalisée porte des bornes civiles inclusives `YYYY-MM-DD`, interprétées en UTC sur la date métier `dates.observedAt`.
+- **Scopes CURRENT :** `global`, `account`, `association` et `arrondissement`. Un scope est accepté seulement s'il existe dans le corpus public résolu côté serveur. Un nom d'association n'établit aucune appartenance organisationnelle ni permission privée.
+- **Entrée mono-action :** depuis `/actions/history`, une action `action` terminée, approuvée, publiée et visible ouvre ce même générateur avec un scope typé `single_action`. Le serveur résout l'action depuis `public.actions`, rejette un changement de statut/visibilité ou une fraude d'identifiant, et réserve le quota une seule fois avant la persistance du snapshot.
+- **Relecture :** la première page affichée est un aperçu partiel, distinct du PDF complet. « Mes rapports récents », « Voir » et « Télécharger à nouveau » relisent le snapshot serveur ; la relecture ne recalcule pas les données actuelles et ne consomme pas de nouveau quota.
+- [Paramètres de génération](../../../../features/reports/reports-generation-parameters.md) : contrat CURRENT de filtrage des rapports multi-actions ; les familles avancées non exposées restent explicitement PLAN dans ce document.
 
 ## `PLAN`
 
-- [Paramètres de génération](../../../../features/reports/reports-generation-parameters.md) : paramètres de filtrage des rapports, inventaire des sources et séquencement du P0 vers les rapports multi-actions.
 - [Objectifs et progression](../../../../features/reports/impact-goals-and-progression.md) : **autre responsabilité métier**, objectifs persistants, progression collective et surface UX restant à arbitrer.
-- [Propositions propres à `/reports`](./reports-liste-propositions-a-traiter.md) : périmètre `single_action`, futur versionnement et générations dérivées.
+- [Propositions propres à `/reports`](./reports-liste-propositions-a-traiter.md) : futur versionnement et générations dérivées ; l'ancien périmètre `single_action` y est marqué livré.
 - [Roadmap priorisée](../../../../product/roadmap-priorisee.md) : ordre et conditions de clôture des chantiers.
 
 ## `COMPATIBILITY`
@@ -25,5 +30,6 @@ Ce dossier sépare les contrats observables (`CURRENT`), les évolutions encore 
 
 - Une fonction présente dans le code ne suffit pas à prouver qu'elle est appelée par la page `/reports`.
 - Le snapshot de données historiques et l'identité binaire du PDF sont deux garanties différentes.
-- Le futur scope `single_action` exige une résolution canonique côté serveur ; les chiffres fournis par le client ne prouvent pas une action réelle.
+- Le scope `single_action` exige une résolution canonique côté serveur et reste verrouillé sur l'action choisie ; les chiffres fournis par le client ne prouvent pas une action réelle.
+- Une fenêtre tronquée ou une source optionnelle indisponible reste signalée dans le snapshot ; la source canonique des actions doit être disponible et une fenêtre sans action admissible est refusée avant quota.
 - Ni les cibles d'objectifs, ni les campagnes ni les nouvelles migrations proposées ne sont requises pour le premier rapport mono-action.

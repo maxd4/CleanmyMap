@@ -1,6 +1,6 @@
 # CleanMyMap : paramètres de génération des rapports d’impact
 
-> **Statut : `PLAN`.** Ce document décrit les possibilités de filtrage et leurs dépendances. Il ne constitue ni une preuve de disponibilité des données ni le contrat runtime courant de `/reports`.
+> **Statut : `CURRENT`.** Ce document décrit les paramètres effectivement acceptés par le générateur multi-actions. Les familles avancées restent des pistes et ne sont pas exposées par ce contrat.
 >
 > **Source antérieure :** `reports-parameters-and-objectives.md`, répartie par responsabilité. La logique des objectifs mesurables figure désormais dans [impact-goals-and-progression.md](./impact-goals-and-progression.md).
 
@@ -13,7 +13,9 @@ Les paramètres de génération déterminent **quelles données entrent dans un 
 - des **objectifs mesurables**, qui sont des objets métier persistants distincts ;
 - de la **preuve de fiabilité** des données, qui dépend du serveur et des contrats canoniques.
 
-L'état observé à la préparation du présent découpage comprend les périmètres `global`, `account`, `association` et `arrondissement`, ainsi que les périodes `six_months`, `current_year` et `full_history`. Le périmètre `single_action` relève encore du `PLAN`. Pour le fonctionnement véritablement courant, voir la [fiche `/reports`](../../pages_site/routes/03-cartographie-impact/reports/reports-README.md) et le code associé.
+Le générateur multi-actions accepte les périmètres `global`, `account`, `association` et `arrondissement`, ainsi que `thirty_days`, `three_months`, `six_months`, `twelve_months`, `current_year`, `full_history` et `custom_range`. Les dates personnalisées sont deux dates civiles inclusives `YYYY-MM-DD`, interprétées en UTC sur `dates.observedAt`. Le périmètre `single_action` est un contrat distinct : son identifiant est résolu côté serveur et ses bornes restent verrouillées sur l'action. Pour le fonctionnement courant, voir la [fiche `/reports`](../../pages_site/routes/03-cartographie-impact/reports/reports-README.md) et le code associé.
+
+Pour `POST /api/reports/generations`, le navigateur transmet uniquement `input`, le niveau de détail et la composition des modules. Le serveur recharge les actions publiques admissibles depuis les sources canoniques, valide le scope contre ces identifiants et libellés canoniques, filtre la période, puis calcule `ReportModel` et le PDF. Le nom libre d'une association ne constitue ni une appartenance ni une permission privée : ce filtre ne porte que sur le corpus public résolu côté serveur.
 
 ## Ordre de déploiement proposé
 
@@ -39,8 +41,8 @@ La période est le filtre temporel principal du rapport.
 
 | Paramètre | Options proposées | État |
 |---|---|---|
-| Période prédéfinie | 30 jours / 3 mois / 6 mois / 12 mois / année en cours / historique complet | Déjà récupérable |
-| Dates personnalisées | Du `JJ/MM/AAAA` au `JJ/MM/AAAA` | Déjà récupérable |
+| Période prédéfinie | `thirty_days` / `three_months` / `six_months` / `twelve_months` / `current_year` / `full_history` | CURRENT |
+| Dates personnalisées | `custom_range` avec `from` et `to` en `YYYY-MM-DD`, bornes inclusives UTC | CURRENT |
 | Année | 2025, 2026, etc. | Déjà récupérable |
 | Trimestre | T1 / T2 / T3 / T4 | Calculable |
 | Mois | janvier → décembre | Calculable |
@@ -291,6 +293,9 @@ action_waste_measurements
 ---
 
 ## Partie II — Paramètres avancés
+
+Les paramètres ci-dessous restent des possibilités documentées et ne font pas
+partie de l'entrée typée multi-actions actuelle.
 
 Les cinq catégories suivantes doivent être accessibles depuis un contrôle du type **« Filtres avancés »** afin de ne pas surcharger le parcours principal.
 

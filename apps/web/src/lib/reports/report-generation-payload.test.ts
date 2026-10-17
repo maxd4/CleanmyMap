@@ -68,4 +68,17 @@ describe("report generation payload contract", () => {
     expect(singleActionPayload.snapshotSchemaVersion).toBe(1);
     expect(parseReportGenerationPayload(payload)).toEqual(payload);
   });
+
+  it("accepts a custom civil period in a server-generated snapshot", () => {
+    const custom = {
+      ...payload,
+      periode: "custom_range",
+      data: {
+        ...payload.data,
+        periodRange: { from: "2026-08-01", to: "2026-08-31", timeZone: "UTC" as const },
+      },
+    };
+
+    expect(parseReportGenerationPayload(custom)).toEqual(custom);
+  });
 });

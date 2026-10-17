@@ -21,6 +21,10 @@ import {
   normalizeReportScope,
   type ReportScopeKind,
 } from "@/lib/reports/scope";
+import {
+  filterReportCommunityEventsByPeriod,
+  type ReportGenerationPeriodSelection,
+} from "@/lib/reports/generation-period";
 
 type WasteProfileCategory = {
   key: "megotsKg" | "plastiqueKg" | "verreKg" | "metalKg" | "mixteKg";
@@ -35,6 +39,7 @@ type UseReportsWebDocumentModelOptions = {
   initialSourceHealth?: UnifiedSourceHealth;
   initialCommunityEvents?: CommunityEventItem[];
   initialCommunityEventsAvailability?: CommunityEventsAvailability;
+  initialPeriod?: ReportGenerationPeriodSelection;
   initialNow?: Date;
 };
 
@@ -44,6 +49,7 @@ export function useReportsWebDocumentModel({
   initialSourceHealth,
   initialCommunityEvents,
   initialCommunityEventsAvailability,
+  initialPeriod = { id: "full_history" },
   initialNow,
 }: UseReportsWebDocumentModelOptions = {}) {
   const [scopeKind, setScopeKind] = useState<ReportScopeKind>("global");
@@ -104,6 +110,14 @@ export function useReportsWebDocumentModel({
   const communityEvents = useMemo(
     () => initialCommunityEvents ?? community.data?.items ?? [],
     [community.data?.items, initialCommunityEvents],
+  );
+  const periodCommunityEvents = useMemo(
+    () => filterReportCommunityEventsByPeriod(
+      communityEvents,
+      initialPeriod,
+      initialNow ?? new Date(),
+    ),
+    [communityEvents, initialNow, initialPeriod],
   );
   const communityEventsAvailability =
     initialCommunityEventsAvailability ??
@@ -169,8 +183,8 @@ export function useReportsWebDocumentModel({
     [mapItems, scope],
   );
   const scopedCommunity = useMemo(
-    () => filterCommunityEventsByScope(communityEvents, scope),
-    [communityEvents, scope],
+    () => filterCommunityEventsByScope(periodCommunityEvents, scope),
+    [periodCommunityEvents, scope],
   );
 
   const wasteProfile = useMemo(() => {

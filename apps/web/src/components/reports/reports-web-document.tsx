@@ -35,7 +35,7 @@ import {
   renderReportWindow,
   openOrDownloadReport,
 } from "@/lib/pdf-export/browser-report";
-import { buildPdfReportFilename, type PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
+import { buildPdfReportFilename } from "@/lib/pdf-export/simple-pdf";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import type { CommunityEventItem } from "@/lib/community/http";
@@ -52,7 +52,12 @@ import {
 import type { ReportGenerationHistoryActionState } from "./web-document/reports-web-document-delivery";
 import { loadHistoricalReportSnapshot } from "@/lib/reports/historical-report-client";
 import { replayHistoricalReport } from "@/lib/reports/historical-report-replay";
-import { filterReportGenerationContracts } from "@/lib/reports/generation-period";
+import {
+  filterReportGenerationContracts,
+  isValidReportGenerationPeriodSelection,
+  REPORT_GENERATION_TIME_ZONE,
+  type ReportGenerationPeriodSelection,
+} from "@/lib/reports/generation-period";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 import { isReportGenerationPayload } from "@/lib/reports/report-generation-payload";
 
@@ -92,12 +97,20 @@ export function ReportsWebDocument({
   const [period, setPeriod] = useState<SelectedPeriodId>(
     singleAction ? "full_history" : DEFAULT_REPORT_GENERATION_PERIOD,
   );
+  const [customRange, setCustomRange] = useState({ from: "", to: "" });
+  const periodSelection = useMemo<ReportGenerationPeriodSelection>(
+    () => period === "custom_range"
+      ? { id: "custom_range", from: customRange.from, to: customRange.to }
+      : { id: period },
+    [customRange.from, customRange.to, period],
+  );
+  const periodSelectionValid = isValidReportGenerationPeriodSelection(periodSelection);
   const detailLevel: DetailLevelId = DEFAULT_REPORT_DETAIL_LEVEL;
   const [modules, setModules] = useState<ModuleState>(DEFAULT_REPORT_MODULES);
   const reportNow = useMemo(() => new Date(), []);
   const filteredContracts = useMemo(
-    () => filterReportGenerationContracts(contracts, period, reportNow),
-    [contracts, period, reportNow],
+    () => filterReportGenerationContracts(contracts, periodSelection, reportNow),
+    [contracts, periodSelection, reportNow],
   );
   const coverageRangeLabel = useMemo(
     () => buildCoverageRangeLabel(filteredContracts),
@@ -109,6 +122,7 @@ export function ReportsWebDocument({
     initialSourceHealth: sourceHealth,
     initialCommunityEvents: communityEvents,
     initialCommunityEventsAvailability: communityEventsAvailability,
+    initialPeriod: periodSelection,
     initialNow: reportNow,
   });
 
@@ -131,16 +145,19 @@ export function ReportsWebDocument({
         reportTitle: defaultTitle,
         scopeLabel: activeScopeLabel,
         period,
+        periodRange: period === "custom_range" && periodSelectionValid
+          ? { from: customRange.from, to: customRange.to, timeZone: REPORT_GENERATION_TIME_ZONE }
+          : undefined,
         detailLevel,
         modules,
         model,
         surfaceProxy,
         generatedAt: reportNow.toISOString(),
       }),
-    [activeScopeLabel, defaultTitle, detailLevel, model, modules, period, reportNow, surfaceProxy],
+    [activeScopeLabel, customRange.from, customRange.to, defaultTitle, detailLevel, model, modules, period, periodSelectionValid, reportNow, surfaceProxy],
   );
 
-  async function generateReportOnServer(payload: PdfReportPayload): Promise<void> {
+  async function generateReportOnServer(): Promise<void> {
     const requestBody = singleAction
       ? {
           input: { type: "single_action" as const, actionId: singleAction.actionId },
@@ -148,10 +165,14 @@ export function ReportsWebDocument({
           modules,
         }
       : {
-          payload,
-          scopeKind: model.scopeKind,
-          scopeValue: model.scopeValue,
-          scopeLabel: activeScopeLabel,
+          input: {
+            type: "multi_action" as const,
+            period: periodSelection,
+            scope: {
+              kind: model.scopeKind,
+              value: model.scopeKind === "global" ? null : model.scopeValue,
+            },
+          },
           detailLevel,
           modules,
         };
@@ -184,13 +205,11 @@ export function ReportsWebDocument({
     setRecentRows((current) => [historyRow, ...current].slice(0, REPORT_GENERATION_HISTORY_LIMIT));
     setHistoryAvailability("available");
     setDailyExportAvailability("used");
-    const generatedPayload = singleAction
-      ? isReportGenerationPayload(body?.payload)
-        ? body.payload
-        : null
-      : payload;
+    const generatedPayload = isReportGenerationPayload(body?.payload)
+      ? body.payload
+      : null;
     if (!generatedPayload) {
-      throw new Error("Le snapshot serveur du rapport mono-action est invalide.");
+      throw new Error("Le snapshot serveur du rapport est invalide.");
     }
     openOrDownloadReport(
       generatedPayload,
@@ -274,6 +293,7 @@ export function ReportsWebDocument({
     disabled:
       model.isLoading ||
       model.hasError ||
+      !periodSelectionValid ||
       dailyExportAvailability !== "available",
   });
 
@@ -352,6 +372,8 @@ export function ReportsWebDocument({
         <ReportsWebDocumentPreparation
           period={period}
           onPeriodChange={setPeriod}
+          customRange={customRange}
+          onCustomRangeChange={setCustomRange}
           selectedScopeValue={selectedScopeValue}
           scopeOptions={model.scopeOptions}
           onScopeChange={(value) => {

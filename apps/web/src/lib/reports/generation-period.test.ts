@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import {
   filterReportGenerationContracts,
+  getReportGenerationPeriodDateBounds,
   getReportGenerationPeriodBounds,
 } from "./generation-period";
 
@@ -65,5 +66,40 @@ describe("report generation period", () => {
       Date.parse("2026-01-01T00:00:00.000Z"),
     );
     expect(getReportGenerationPeriodBounds("full_history", now).lowerBound).toBeNull();
+  });
+
+  it("supports the added rolling windows", () => {
+    const contracts = [
+      contractAt("2026-05-30T12:00:00.000Z", "outside-three-months"),
+      contractAt("2026-05-31T00:00:00.000Z", "at-three-month-floor"),
+      contractAt("2026-08-31T12:00:00.000Z", "today"),
+    ];
+
+    expect(
+      filterReportGenerationContracts(contracts, "three_months", now).map((contract) => contract.id),
+    ).toEqual(["at-three-month-floor", "today"]);
+    expect(getReportGenerationPeriodBounds("twelve_months", now).lowerBound).toBe(
+      Date.parse("2025-08-31T00:00:00.000Z"),
+    );
+  });
+
+  it("treats custom bounds as inclusive UTC civil dates and rejects reversed dates", () => {
+    const selection = { id: "custom_range" as const, from: "2026-08-01", to: "2026-08-31" };
+    const contracts = [
+      contractAt("2026-07-31T23:59:59.999Z", "outside"),
+      contractAt("2026-08-01T00:00:00.000Z", "from"),
+      contractAt("2026-08-31T23:59:59.999Z", "to"),
+      contractAt("2026-09-01T00:00:00.000Z", "future"),
+    ];
+
+    expect(filterReportGenerationContracts(contracts, selection, now).map((contract) => contract.id)).toEqual([
+      "from",
+      "to",
+    ]);
+    expect(() => getReportGenerationPeriodDateBounds(selection, now)).not.toThrow();
+    expect(() => getReportGenerationPeriodDateBounds(
+      { id: "custom_range", from: "2026-09-01", to: "2026-08-01" },
+      now,
+    )).toThrow(RangeError);
   });
 });

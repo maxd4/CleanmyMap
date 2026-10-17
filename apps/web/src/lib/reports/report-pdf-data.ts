@@ -5,6 +5,7 @@ import {
   buildReportDataAvailabilityNotices,
   type ReportDataAvailability,
 } from "@/lib/reports/data-availability";
+import type { ReportGenerationPeriodSelection } from "@/lib/reports/generation-period";
 
 const DETAIL_LEVEL_OPTIONS = [
   { id: "concis", label: "Concis" },
@@ -13,7 +14,14 @@ const DETAIL_LEVEL_OPTIONS = [
 ] as const;
 
 export type DetailLevelId = (typeof DETAIL_LEVEL_OPTIONS)[number]["id"];
-export type PeriodId = "six_months" | "current_year" | "full_history";
+export type PeriodId =
+  | "thirty_days"
+  | "three_months"
+  | "six_months"
+  | "twelve_months"
+  | "current_year"
+  | "full_history"
+  | "custom_range";
 export type SelectedPeriodId = PeriodId;
 
 export const DEFAULT_REPORT_GENERATION_PERIOD: SelectedPeriodId = "six_months";
@@ -107,17 +115,32 @@ export function buildModuleSelectionLabel(modules: ModuleState): string {
 
 export function periodLabel(period: PeriodId): string {
   switch (period) {
+    case "thirty_days":
+      return "30 jours";
+    case "three_months":
+      return "3 mois";
     case "six_months":
       return "Six mois";
+    case "twelve_months":
+      return "12 mois";
     case "current_year":
       return "Année en cours";
     case "full_history":
       return "Historique complet";
+    case "custom_range":
+      return "Intervalle personnalisé";
   }
 }
 
-export function reportPeriodLabel(period: PeriodId, _isTruncated = false): string {
+export function reportPeriodLabel(
+  period: PeriodId,
+  _isTruncated = false,
+  periodRange?: Pick<ReportGenerationPeriodSelection & { id: "custom_range" }, "from" | "to">,
+): string {
   void _isTruncated;
+  if (period === "custom_range" && periodRange) {
+    return `${periodLabel(period)} (${periodRange.from} → ${periodRange.to})`;
+  }
   return periodLabel(period);
 }
 
@@ -161,6 +184,11 @@ export type ReportPdfDataOptions = {
   model: ReportsWebDocumentModelLike;
   surfaceProxy: number | null;
   generatedAt?: string;
+  periodRange?: {
+    from: string;
+    to: string;
+    timeZone: string;
+  };
   provenance?: {
     type: "single_action";
     actionId: string;
@@ -174,7 +202,16 @@ function knownOrUnknown(value: number, known: boolean): string | number {
 }
 
 export function buildPdfData(params: ReportPdfDataOptions) {
-  const { model, detailLevel, modules, period, reportTitle, scopeLabel, surfaceProxy } = params;
+  const {
+    model,
+    detailLevel,
+    modules,
+    period,
+    reportTitle,
+    scopeLabel,
+    surfaceProxy,
+    periodRange,
+  } = params;
   const report = model.report;
   const dataAvailabilityNotices = buildReportDataAvailabilityNotices(
     model.dataAvailability ?? {},
@@ -203,7 +240,8 @@ export function buildPdfData(params: ReportPdfDataOptions) {
         ...dataAvailabilityNotices,
         executive.summary,
         `Lecture: ${executive.readinessLabel}.`,
-        `Période: ${reportPeriodLabel(period, model.dataAvailability?.isTruncated)} · ${detailLevelLabel(detailLevel)}.`,
+        `Période: ${reportPeriodLabel(period, model.dataAvailability?.isTruncated, periodRange)} · ${detailLevelLabel(detailLevel)}.`,
+        ...(periodRange ? [`Bornes civiles: ${periodRange.from} → ${periodRange.to} (${periodRange.timeZone}).`] : []),
       ],
       stats: [
         { label: "Actions validées", value: report.totals.actions },
@@ -217,7 +255,7 @@ export function buildPdfData(params: ReportPdfDataOptions) {
       title: "Périmètre du rapport",
       subtitle: "Période analysée, territoire couvert et sources des données",
       lines: [
-        `Période analysée: ${reportPeriodLabel(period, model.dataAvailability?.isTruncated)}.`,
+        `Période analysée: ${reportPeriodLabel(period, model.dataAvailability?.isTruncated, periodRange)}.`,
         `Territoire couvert: ${scopeLabel}.`,
         `Organisation ou collectif concerné: ${scopeLabel === "Global" ? "Collectif CleanMyMap" : scopeLabel}.`,
         `Sources des données: ${Object.keys(report.impactMethodology.sources ?? {}).join(", ")}.`,
@@ -473,6 +511,7 @@ export function buildPdfData(params: ReportPdfDataOptions) {
         ]
       : [],
     generatedAt: params.generatedAt ?? report.generatedAt,
+    ...(periodRange ? { periodRange } : {}),
     provenance: params.provenance,
   };
 }

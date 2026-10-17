@@ -18,6 +18,8 @@ type ScopeChoice = {
 export type ReportsWebDocumentPreparationProps = {
   period: SelectedPeriodId;
   onPeriodChange: (period: SelectedPeriodId) => void;
+  customRange?: { from: string; to: string };
+  onCustomRangeChange?: (range: { from: string; to: string }) => void;
   selectedScopeValue: string;
   scopeOptions: {
     accounts: ScopeChoice[];
@@ -33,6 +35,8 @@ export type ReportsWebDocumentPreparationProps = {
 export function ReportsWebDocumentPreparation({
   period,
   onPeriodChange,
+  customRange = { from: "", to: "" },
+  onCustomRangeChange = () => undefined,
   selectedScopeValue,
   scopeOptions,
   onScopeChange,
@@ -77,11 +81,46 @@ export function ReportsWebDocumentPreparation({
               onChange={(event) => onPeriodChange(event.target.value as SelectedPeriodId)}
               className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
             >
+              <option value="thirty_days">30 jours</option>
+              <option value="three_months">3 mois</option>
               <option value="six_months">Six mois</option>
+              <option value="twelve_months">12 mois</option>
               <option value="current_year">Année en cours</option>
               <option value="full_history">Historique complet</option>
+              <option value="custom_range">Dates personnalisées</option>
             </select>
           </div>}
+          {!singleAction && period === "custom_range" ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-xs font-semibold text-slate-600">
+                Du
+                <input
+                  type="date"
+                  value={customRange.from}
+                  onChange={(event) => onCustomRangeChange({ ...customRange, from: event.target.value })}
+                  className="mt-1 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-red-300"
+                />
+              </label>
+              <label className="text-xs font-semibold text-slate-600">
+                Au
+                <input
+                  type="date"
+                  value={customRange.to}
+                  min={customRange.from || undefined}
+                  onChange={(event) => onCustomRangeChange({ ...customRange, to: event.target.value })}
+                  className="mt-1 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-red-300"
+                />
+              </label>
+              {customRange.from && customRange.to && customRange.from > customRange.to ? (
+                <p role="alert" className="text-xs font-semibold text-red-700 sm:col-span-2">
+                  La date de début doit précéder la date de fin.
+                </p>
+              ) : null}
+              <p className="text-xs leading-5 text-slate-500 sm:col-span-2">
+                Dates civiles inclusives, interprétées en UTC sur la date métier de l&apos;action.
+              </p>
+            </div>
+          ) : null}
 
         </div>
 
@@ -94,7 +133,7 @@ export function ReportsWebDocumentPreparation({
               className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-950"
             >
               <span className="block font-bold">{singleAction.scopeLabel}</span>
-              <span className="mt-1 block break-all text-xs text-red-800">Action {singleAction.actionId}</span>
+              <span className="mt-1 block text-xs text-red-800">Action sélectionnée · résolution serveur à la génération</span>
             </div>
           ) : <div className="relative">
             <MapPin

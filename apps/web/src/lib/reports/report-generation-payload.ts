@@ -34,12 +34,25 @@ const pdfReportDataSchema = z.object({
   rows: z.array(z.record(z.string(), z.unknown())).optional(),
   columns: z.array(pdfReportColumnSchema).optional(),
   generatedAt: z.string().datetime(),
+  periodRange: z.object({
+    from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    timeZone: z.literal("UTC"),
+  }).strict().optional(),
 }).passthrough();
 
 export const reportGenerationPayloadSchema = z.object({
   title: z.string().trim().min(1).max(240),
   rubrique: z.literal("reporting"),
-  periode: z.enum(["six_months", "current_year", "full_history"]),
+  periode: z.enum([
+    "thirty_days",
+    "three_months",
+    "six_months",
+    "twelve_months",
+    "current_year",
+    "full_history",
+    "custom_range",
+  ]),
   organizationType: z.string().trim().min(1).max(180),
   organizationName: z.string().trim().max(180).optional(),
   snapshotSchemaVersion: z.literal(REPORT_SNAPSHOT_SCHEMA_VERSION).optional(),

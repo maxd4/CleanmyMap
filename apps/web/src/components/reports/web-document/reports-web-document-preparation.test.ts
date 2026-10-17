@@ -190,7 +190,8 @@ describe("ReportsWebDocumentPreparation", () => {
 
     expect(markup).toContain("Historique complet · action sélectionnée");
     expect(markup).toContain("Action terrain canonique");
-    expect(markup).toContain("Action action-1");
+    expect(markup).toContain("Action sélectionnée · résolution serveur à la génération");
+    expect(markup).not.toContain("action-1");
     expect(elements.filter((element) => element.type === "select")).toHaveLength(0);
     expect(elements.filter((element) => element.type === "input" && element.props.type === "checkbox")).toHaveLength(4);
   });
@@ -262,6 +263,13 @@ describe("ReportsWebDocumentPreparation", () => {
           detail: "Par défaut (12 à 16 pages)",
           generatedAt: "27/08/2026 12:30",
         },
+        payload: {
+          title: "Rapport d'impact - Global - Par défaut",
+          rubrique: "reporting",
+          periode: "six_months",
+          organizationType: "multi_action",
+          data: { generatedAt: "2026-08-27T10:30:00.000Z" },
+        },
       }),
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -278,6 +286,22 @@ describe("ReportsWebDocumentPreparation", () => {
       "/api/reports/generations",
       expect.objectContaining({ method: "POST" }),
     );
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(JSON.parse(String(request.body))).toEqual({
+      input: {
+        type: "multi_action",
+        period: { id: "six_months" },
+        scope: { kind: "global", value: null },
+      },
+      detailLevel: "default",
+      modules: {
+        dataAndCartography: true,
+        transparencyAndMethods: true,
+        rawData: false,
+        detailedFiles: true,
+      },
+    });
+    expect(String(request.body)).not.toContain("Masse_Kg");
     vi.unstubAllGlobals();
 
     const previewProps = (

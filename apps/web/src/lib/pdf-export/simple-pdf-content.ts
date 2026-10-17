@@ -32,6 +32,11 @@ export type PdfReportData = {
   rows?: Record<string, unknown>[];
   columns?: PdfReportColumn[];
   generatedAt?: string;
+  periodRange?: {
+    from: string;
+    to: string;
+    timeZone: string;
+  };
 };
 
 export type PdfReportPayload = {

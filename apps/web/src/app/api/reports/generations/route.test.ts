@@ -8,8 +8,21 @@ const reserveReportExportSlotMock = vi.hoisted(() => vi.fn());
 const releaseReportExportSlotMock = vi.hoisted(() => vi.fn());
 const resolveSingleActionReportContractMock = vi.hoisted(() => vi.fn());
 const buildSingleActionReportGenerationInputMock = vi.hoisted(() => vi.fn());
+const buildMultiActionReportGenerationInputMock = vi.hoisted(() => vi.fn());
 const SingleActionReportTargetUnavailableErrorMock = vi.hoisted(() =>
   class SingleActionReportTargetUnavailableError extends Error {},
+);
+const MultiActionReportPeriodInvalidErrorMock = vi.hoisted(() =>
+  class MultiActionReportPeriodInvalidError extends Error {},
+);
+const MultiActionReportScopeUnavailableErrorMock = vi.hoisted(() =>
+  class MultiActionReportScopeUnavailableError extends Error {},
+);
+const MultiActionReportEmptyErrorMock = vi.hoisted(() =>
+  class MultiActionReportEmptyError extends Error {},
+);
+const MultiActionReportSourceUnavailableErrorMock = vi.hoisted(() =>
+  class MultiActionReportSourceUnavailableError extends Error {},
 );
 
 vi.mock("@/lib/authz", () => ({
@@ -35,21 +48,30 @@ vi.mock("@/lib/reports/single-action-report", () => ({
   SingleActionReportTargetUnavailableError: SingleActionReportTargetUnavailableErrorMock,
 }));
 
+vi.mock("@/lib/reports/multi-action-report", () => ({
+  buildMultiActionReportGenerationInput: buildMultiActionReportGenerationInputMock,
+  MultiActionReportPeriodInvalidError: MultiActionReportPeriodInvalidErrorMock,
+  MultiActionReportScopeUnavailableError: MultiActionReportScopeUnavailableErrorMock,
+  MultiActionReportEmptyError: MultiActionReportEmptyErrorMock,
+  MultiActionReportSourceUnavailableError: MultiActionReportSourceUnavailableErrorMock,
+}));
+
 vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
 
 import { POST } from "./route";
 
-const validPayload = {
-  payload: {
+const validSnapshotPayload = {
     title: "Rapport d'impact - Paris - Par défaut",
     rubrique: "reporting",
     periode: "six_months",
     organizationType: "Global",
     data: { generatedAt: "2026-08-27T10:30:00.000Z", summary: ["Résumé"] },
-  },
-  scopeKind: "global",
+};
+const multiInput = {
+  payload: validSnapshotPayload,
+  scopeKind: "global" as const,
   scopeValue: "",
-  scopeLabel: "Paris",
+  scopeLabel: "Global",
   detailLevel: "default",
   modules: {
     dataAndCartography: true,
@@ -58,6 +80,15 @@ const validPayload = {
     detailedFiles: true,
   },
 };
+const validPayload = {
+  input: {
+    type: "multi_action" as const,
+    period: { id: "six_months" as const },
+    scope: { kind: "global" as const, value: null },
+  },
+  detailLevel: "default" as const,
+  modules: multiInput.modules,
+};
 
 describe("POST /api/reports/generations", () => {
   beforeEach(() => {
@@ -65,7 +96,7 @@ describe("POST /api/reports/generations", () => {
     requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
     persistReportGenerationMock.mockResolvedValue({
       id: "generation-1",
-      report: validPayload.payload.title,
+      report: validSnapshotPayload.title,
       period: "Six mois",
       perimeter: "Paris",
       detail: "Par défaut (12 à 16 pages)",
@@ -74,6 +105,7 @@ describe("POST /api/reports/generations", () => {
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
     reserveReportExportSlotMock.mockResolvedValue({ allowed: true, quotaDay: "2026-08-27" });
     releaseReportExportSlotMock.mockResolvedValue(undefined);
+    buildMultiActionReportGenerationInputMock.mockResolvedValue(multiInput);
     mockAllowedRateLimit(5);
   });
 
@@ -108,7 +140,7 @@ describe("POST /api/reports/generations", () => {
     expect(response.status).toBe(200);
     expect(persistReportGenerationMock).toHaveBeenCalledWith({
       createdByClerkId: "user-1",
-      input: validPayload,
+      input: multiInput,
     });
     expect(reserveReportExportSlotMock).toHaveBeenCalledWith("user-1");
     await expect(response.json()).resolves.toMatchObject({
@@ -137,6 +169,56 @@ describe("POST /api/reports/generations", () => {
     expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0]?.[0])).not.toContain(
       "Paris",
     );
+    expect(buildMultiActionReportGenerationInputMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        request: validPayload.input,
+        detailLevel: validPayload.detailLevel,
+        modules: validPayload.modules,
+      }),
+    );
+  });
+
+  it("rejects forged browser KPI or snapshot data on the multi-action contract", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify({
+          ...validPayload,
+          payload: {
+            title: "KPI forgé",
+            rubrique: "reporting",
+            periode: "six_months",
+            organizationType: "Global",
+            data: { generatedAt: "2026-08-27T10:30:00.000Z", stats: [{ label: "Actions", value: 999999 }] },
+          },
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(buildMultiActionReportGenerationInputMock).not.toHaveBeenCalled();
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["period", MultiActionReportPeriodInvalidErrorMock, 400],
+    ["scope", MultiActionReportScopeUnavailableErrorMock, 422],
+    ["empty", MultiActionReportEmptyErrorMock, 422],
+    ["source", MultiActionReportSourceUnavailableErrorMock, 503],
+  ] as const)("maps a multi-action %s failure before quota", async (_label, ErrorType, status) => {
+    buildMultiActionReportGenerationInputMock.mockRejectedValueOnce(new ErrorType());
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(status);
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
   });
 
   it("returns 429 before reading a costly snapshot when rate limited", async () => {
@@ -155,7 +237,7 @@ describe("POST /api/reports/generations", () => {
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
   });
 
-  it("rejects malformed snapshots without persistence", async () => {
+  it("rejects malformed typed inputs without persistence", async () => {
     const response = await POST(
       new Request("http://localhost/api/reports/generations", {
         method: "POST",
@@ -171,7 +253,7 @@ describe("POST /api/reports/generations", () => {
       details: {
         operation: "persist_report_generation",
         stage: "validation",
-        code: "invalid_payload",
+        code: "invalid_typed_input",
       },
     });
   });
@@ -204,9 +286,9 @@ describe("POST /api/reports/generations", () => {
         body: JSON.stringify({
           ...validPayload,
           payload: {
-            ...validPayload.payload,
+            ...validSnapshotPayload,
             data: {
-              ...validPayload.payload.data,
+              ...validSnapshotPayload.data,
               summary: ["x".repeat(2_200_000)],
             },
           },
@@ -280,7 +362,7 @@ describe("POST /api/reports/generations", () => {
   it("resolves and persists only the typed single-action scope", async () => {
     const singleInput = {
       payload: {
-        ...validPayload.payload,
+        ...validSnapshotPayload,
         title: "Rapport d'impact - Action canonique - Par défaut",
         organizationType: "single_action",
         provenance: {
@@ -299,7 +381,7 @@ describe("POST /api/reports/generations", () => {
     resolveSingleActionReportContractMock.mockResolvedValueOnce({ id: "action-1" });
     buildSingleActionReportGenerationInputMock.mockReturnValueOnce(singleInput);
     persistReportGenerationMock.mockResolvedValueOnce({
-      ...validPayload,
+      ...validSnapshotPayload,
       id: "generation-single",
       report: singleInput.payload.title,
       period: "Historique complet",
@@ -370,7 +452,7 @@ describe("POST /api/reports/generations", () => {
       method: "POST",
       body: JSON.stringify({
         input: { type: "single_action", actionId: "11111111-1111-4111-8111-111111111111" },
-        payload: { ...validPayload.payload, title: "Valeur injectée" },
+        payload: { ...validSnapshotPayload, title: "Valeur injectée" },
         detailLevel: "default",
         modules: validPayload.modules,
       }),
@@ -391,7 +473,7 @@ describe("POST /api/reports/generations", () => {
           actionId: "11111111-1111-4111-8111-111111111111",
           injected: "must not be ignored",
         },
-        payload: { ...validPayload.payload, title: "Valeur injectée" },
+        payload: { ...validSnapshotPayload, title: "Valeur injectée" },
       }),
     }));
 
@@ -403,7 +485,7 @@ describe("POST /api/reports/generations", () => {
       outcome: "error",
       details: expect.objectContaining({
         stage: "validation",
-        code: "invalid_single_action_input",
+        code: "invalid_typed_input",
       }),
     }));
   });

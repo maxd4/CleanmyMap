@@ -61,6 +61,18 @@
   manquantes restent `n/a`/inconnues et les indicateurs dérivés restent
   étiquetés comme proxies.
 
+  Le parcours `multi_action` accepte les scopes `global`, `account`,
+  `association` et `arrondissement`, ainsi que les périodes de 30 jours, 3
+  mois, 6 mois, 12 mois, année en cours, historique complet et intervalle
+  personnalisé. Pour ce dernier, `from` et `to` sont des dates civiles
+  inclusives `YYYY-MM-DD`, interprétées en UTC sur `dates.observedAt`. Le
+  navigateur transmet uniquement cette sélection et la composition des
+  modules ; le serveur recharge les actions publiques admissibles depuis les
+  sources canoniques, vérifie le scope contre ce corpus, filtre les événements
+  et calcule le `ReportModel` et le PDF communs. Un nom libre d'association ne
+  constitue ni une appartenance ni une permission privée, et une fenêtre sans
+  action admissible est refusée avant quota.
+
   L'aperçu navigateur reçoit une projection publique de cette action : les
   identifiants privés et les données internes de préparation, notamment les
   notes logistiques et les formalités, restent côté serveur. La projection

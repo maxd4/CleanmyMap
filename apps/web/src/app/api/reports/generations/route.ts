@@ -13,7 +13,6 @@ import {
   reserveReportExportSlot,
 } from "@/lib/reports/report-export-quota";
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
-import { reportGenerationPayloadSchema } from "@/lib/reports/report-generation-payload";
 import { readJsonBodyWithLimit } from "@/lib/http/request-body";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import {
@@ -21,12 +20,28 @@ import {
   resolveSingleActionReportContract,
   SingleActionReportTargetUnavailableError,
 } from "@/lib/reports/single-action-report";
+import {
+  buildMultiActionReportGenerationInput,
+  MultiActionReportEmptyError,
+  MultiActionReportPeriodInvalidError,
+  MultiActionReportScopeUnavailableError,
+  MultiActionReportSourceUnavailableError,
+} from "@/lib/reports/multi-action-report";
 
 export const runtime = "nodejs";
 const MAX_REPORT_GENERATION_REQUEST_BYTES = 2 * 1024 * 1024;
 
 const detailLevelSchema = z.enum(["concis", "default", "exhaustif"]);
 const scopeKindSchema = z.enum(["global", "account", "association", "arrondissement"]);
+const periodIdSchema = z.enum([
+  "thirty_days",
+  "three_months",
+  "six_months",
+  "twelve_months",
+  "current_year",
+  "full_history",
+]);
+const civilDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const modulesSchema = z.object({
   dataAndCartography: z.boolean(),
@@ -44,20 +59,30 @@ const singleActionRequestSchema = z.object({
   modules: modulesSchema.strict(),
 }).strict();
 
-const createPayloadSchema = z.object({
-  payload: reportGenerationPayloadSchema,
-  scopeKind: scopeKindSchema,
-  scopeValue: z.string().max(180),
-  scopeLabel: z.string().trim().min(1).max(180),
+const multiActionRequestSchema = z.object({
+  input: z.object({
+    type: z.literal("multi_action"),
+    period: z.union([
+      z.object({ id: periodIdSchema }).strict(),
+      z.object({
+        id: z.literal("custom_range"),
+        from: civilDateSchema,
+        to: civilDateSchema,
+      }).strict(),
+    ]),
+    scope: z.object({
+      kind: scopeKindSchema,
+      value: z.string().trim().max(180).nullable().optional(),
+    }).strict(),
+  }).strict(),
   detailLevel: detailLevelSchema,
-  modules: modulesSchema,
-});
+  modules: modulesSchema.strict(),
+}).strict();
 
-type ReportGenerationPayload = z.infer<typeof createPayloadSchema>;
 type ReportGenerationReservation = Awaited<ReturnType<typeof reserveReportExportSlot>>;
 type ReportGenerationItem = Awaited<ReturnType<typeof persistReportGeneration>>;
 
-function hasTypedScopeSelector(value: unknown): boolean {
+function hasTypedInput(value: unknown): boolean {
   return Boolean(
     value &&
       typeof value === "object" &&
@@ -100,13 +125,14 @@ async function parseReportGenerationRequest(
   }
 
   const singleAction = singleActionRequestSchema.safeParse(body.data);
-  if (hasTypedScopeSelector(body.data) && !singleAction.success) {
+  const multiAction = multiActionRequestSchema.safeParse(body.data);
+  if (hasTypedInput(body.data) && !singleAction.success && !multiAction.success) {
     await auditReportGenerationError(operationId, actorUserId, {
       stage: "validation",
-      code: "invalid_single_action_input",
+      code: "invalid_typed_input",
     });
     return {
-      response: NextResponse.json({ error: "Invalid single-action input" }, { status: 400 }),
+      response: NextResponse.json({ error: "Invalid report generation input" }, { status: 400 }),
     };
   }
 
@@ -138,33 +164,69 @@ async function parseReportGenerationRequest(
     }
   }
 
-  const parsed = createPayloadSchema.safeParse(body.data);
-  if (!parsed.success) {
+  if (multiAction.success) {
+    try {
+      return {
+        input: await buildMultiActionReportGenerationInput({
+          request: multiAction.data.input,
+          detailLevel: multiAction.data.detailLevel,
+          modules: multiAction.data.modules,
+          now: new Date(),
+        }),
+      };
+    } catch (error) {
+      if (error instanceof MultiActionReportPeriodInvalidError) {
+        await auditReportGenerationError(operationId, actorUserId, {
+          stage: "validation",
+          code: "invalid_period",
+        });
+        return { response: NextResponse.json({ error: "Période invalide." }, { status: 400 }) };
+      }
+      if (error instanceof MultiActionReportScopeUnavailableError) {
+        await auditReportGenerationError(operationId, actorUserId, {
+          stage: "authorization",
+          code: "scope_unavailable",
+        });
+        return { response: NextResponse.json({ error: "Périmètre indisponible." }, { status: 422 }) };
+      }
+      if (error instanceof MultiActionReportEmptyError) {
+        await auditReportGenerationError(operationId, actorUserId, {
+          stage: "source",
+          code: "empty_report_window",
+        });
+        return { response: NextResponse.json({ error: "Aucune action admissible sur cette période." }, { status: 422 }) };
+      }
+      if (error instanceof MultiActionReportSourceUnavailableError) {
+        await auditReportGenerationError(operationId, actorUserId, {
+          stage: "source",
+          code: "actions_source_unavailable",
+        });
+        return { response: NextResponse.json({ error: "Les données canoniques sont temporairement indisponibles." }, { status: 503 }) };
+      }
+      await auditReportGenerationError(operationId, actorUserId, {
+        stage: "source",
+        code: "multi_action_resolution_failed",
+      });
+      return { response: NextResponse.json({ error: "Le rapport multi-actions est temporairement indisponible." }, { status: 503 }) };
+    }
+  }
+
+  if (body.data && typeof body.data === "object" && "payload" in body.data) {
     await auditReportGenerationError(operationId, actorUserId, {
       stage: "validation",
-      code: "invalid_payload",
+      code: "legacy_payload_rejected",
     });
     return {
-      response: NextResponse.json(
-        { error: "Invalid payload", details: parsed.error.flatten().fieldErrors },
-        { status: 400 },
-      ),
+      response: NextResponse.json({ error: "A typed report generation input is required." }, { status: 400 }),
     };
   }
 
-  return { input: toReportGenerationHistoryInput(parsed.data) };
-}
-
-function toReportGenerationHistoryInput(
-  payload: ReportGenerationPayload,
-): ReportGenerationHistoryInput {
+  await auditReportGenerationError(operationId, actorUserId, {
+    stage: "validation",
+    code: "invalid_typed_input",
+  });
   return {
-    payload: payload.payload,
-    scopeKind: payload.scopeKind,
-    scopeValue: payload.scopeValue,
-    scopeLabel: payload.scopeLabel,
-    detailLevel: payload.detailLevel,
-    modules: payload.modules,
+    response: NextResponse.json({ error: "Invalid report generation input" }, { status: 400 }),
   };
 }
 

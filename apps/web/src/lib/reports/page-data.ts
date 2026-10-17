@@ -86,7 +86,7 @@ export async function loadReportsGenerationData() {
           status: "approved",
           floorDate: null,
           requireCoordinates: false,
-          types: null,
+          types: ["action"],
         }),
     ),
     loadReportCommunityEventsWithAvailability(REPORT_DATA_BUDGET.communityEvents.limit),
