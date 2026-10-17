@@ -9,6 +9,14 @@
 > sécurité, de données, d'architecture ou juridiques. Une fonctionnalité décrite
 > comme existante ici doit rester cohérente avec ces sources spécialisées.
 
+Les statuts sont explicitement séparés : `CURRENT` désigne un comportement ou
+une décision déjà observé(e) et documenté(e), `PLAN` un chantier retenu mais
+non réalisé, `HYPOTHÈSE COMMERCIALE` une proposition à valider sur le terrain,
+et `FUTURE` une capacité conditionnelle qui ne doit pas être construite avant
+ses preuves. Les prix, offres et scénarios économiques restent des hypothèses
+tant qu'ils ne sont pas confirmés par le [business model canonique](./business-model.md)
+et par des prestations ou partenariats réellement documentés.
+
 ## 1. Principe directeur
 
 CleanMyMap dispose déjà d'un périmètre fonctionnel large. La priorité n'est
@@ -29,19 +37,23 @@ Les prochains lots doivent donc privilégier, dans cet ordre :
 
 1. la fiabilité du parcours terrain ;
 2. la transformation des données en preuve et livrable ;
-3. la validation d'usage avec des acteurs réels ;
-4. la structuration juridique et économique du projet ;
-5. l'amélioration UX/UI des surfaces déjà utiles ;
-6. l'extension fonctionnelle seulement lorsqu'un besoin démontré la justifie.
+3. la validation commerciale de prestations simples avec des acteurs réels ;
+4. la structuration associative, contractuelle et financière du projet en
+   parallèle ;
+5. les premiers programmes territoriaux et l'amélioration des restitutions
+   lorsque des besoins partenaires sont démontrés ;
+6. l'amélioration UX/UI des surfaces déjà utiles ;
+7. l'extension fonctionnelle seulement lorsqu'un besoin démontré la justifie.
 
 ### Vue synthétique des priorités
 
 ```mermaid
 flowchart LR
   TERRAIN[Parcours terrain P0] --> RAPPORTS[Rapports d'impact P0]
-  RAPPORTS --> USAGE[Validation d'usage]
-  USAGE --> STRUCTURE[Structuration associative et économique]
-  STRUCTURE --> EXTENSIONS[Extensions P1 à P3]
+  RAPPORTS --> PRESTATIONS[Prestations P0 commercial]
+  STRUCTURE[Structuration associative, contrats, assurance et financement P0 parallèle]
+  PRESTATIONS --> PROGRAMMES[Programmes territoriaux et workflows partenaires P1]
+  PROGRAMMES --> EXTENSIONS[Services récurrents et extensions P2 conditionnel]
 ```
 
 ## 2. Priorités globales
@@ -50,12 +62,15 @@ flowchart LR
 | --- | --- | --- | --- |
 | `P0` | Parcours bénévole de bout en bout | fonctionnalités riches, validation E2E encore incomplète sur plusieurs effets réels | une action peut être préparée, réalisée, déclarée, reprise et finalisée sans rupture |
 | `P0` | Rapports d'impact | génération, analyse, snapshots, historique et exports déjà présents | générer simplement un rapport fiable depuis une action validée et le réutiliser comme livrable |
-| `P0 parallèle` | Structuration associative | aucune association n'exploite encore juridiquement CleanMyMap | constituer la structure si la décision est confirmée et préparer son exploitation réelle du projet |
+| `P0 commercial` | Validation de prestations | `PLAN` ; aucune offre, vente ou recette n'est prouvée | tester cleanwalks, ateliers et rapports personnalisés par des prestations assistées, sans développement commercial prématuré |
+| `P0 parallèle` | Structuration associative, contrats, assurance, prospection et partenariats financiers | `PLAN` ; aucune association n'exploite encore juridiquement CleanMyMap | disposer d'un cadre légal, contractuel et assurantiel compatible avec les activités réellement validées |
+| `P1` | Premiers programmes territoriaux, restitutions et workflows partenaires | `PLAN` conditionné par les preuves P0 | accompagner des programmes réels et améliorer les livrables selon des besoins répétés et démontrés |
 | `P1` | Communauté | hub fonctionnel mais encore dense | rendre le réseau lisible et utile sans créer un réseau social généraliste |
 | `P1` | Messagerie / discussions | fond fonctionnel très avancé | valider les parcours réels, l'accès, la modération et la compréhension mobile avant toute extension |
 | `P1` | Modération / administration | cockpit `/admin` avancé ; certaines surfaces techniques restent incomplètes | prouver les permissions et transitions sensibles, puis simplifier les écrans secondaires |
 | `P1` | Compte / dashboard / profil | `/reglages` livré pour son scope ; dashboard et profils encore perfectibles | recentrer l'espace personnel sur état, prochaine action, notifications et préférences utiles |
 | `P1` | UX/UI du formulaire bénévole | contrat fonctionnel avancé | réduire la charge cognitive et améliorer l'usage terrain mobile sans modifier le métier |
+| `P2 conditionnel` | Abonnements, facturation récurrente, espaces multi-organisations et services professionnels avancés | `FUTURE` ; aucune demande récurrente payante ni contrat compatible n'est prouvé | ne construire ces capacités qu'après validation commerciale, juridique, sécurité et économique explicite |
 | `P2` | Application mobile | `CURRENT / ACTIVE DEVELOPMENT`, `NOT_PRODUCTION_READY` | rendre fiable la V1 GPS native avant d'élargir son périmètre |
 | `P2` | Convergence UI générale | plusieurs lots visuels déjà exécutés | terminer les états, densités et incohérences restantes sans refonte globale |
 | `P3` | Extensions et montée en échelle | plusieurs pistes existent | n'ajouter campagnes, nouvelles projections ou rôles spécialisés qu'après validation du noyau |
@@ -252,7 +267,54 @@ le périmètre, puis retrouver exactement le même état historique.
 
 ---
 
-# 5. P0 parallèle — Structuration associative
+# 5. P0 commercial — Validation des prestations
+
+## Statut et objectif
+
+`PLAN` / `HYPOTHÈSE COMMERCIALE`. Le [business model canonique](./business-model.md)
+décrit les offres et montants comme des hypothèses ; aucune vente, recette,
+volonté de payer ou marge n'est `CURRENT` dans cette roadmap.
+
+L'objectif est de valider d'abord des prestations simples et directement
+adossées au socle existant : cleanwalks, ateliers et rapports personnalisés.
+La preuve recherchée porte sur une prestation réellement cadrée, réalisée et
+évaluée, pas sur la construction anticipée d'un paywall, d'un paiement
+récurrent ou d'un espace professionnel.
+
+## Dépendances
+
+- parcours terrain et rapports suffisamment fiables pour produire le livrable
+  promis ;
+- périmètre de données, permissions, confidentialité et provenance explicités ;
+- cadre contractuel, assurance et portage compatibles avec l'activité réelle ;
+- temps opérateur, partenaires prospectés et capacité à mesurer les coûts.
+
+## Preuve de valeur
+
+Une preuve valide combine, lorsque la prestation est effectivement tentée :
+
+- un besoin exprimé par un acteur identifié et un périmètre écrit ;
+- un devis ou une proposition accepté(e), puis une prestation livrée ;
+- le temps passé, les coûts directs, la qualité perçue et l'usage du livrable ;
+- la distinction entre montant proposé, montant facturé, montant encaissé et
+  soutien ou financement non commercial ;
+- un signal de réachat, de recommandation ou de renouvellement lorsqu'il
+  existe, sans transformer une hypothèse en résultat.
+
+Les montants de test et scénarios financiers restent ceux du business model ;
+la roadmap n'en crée pas de nouveaux.
+
+## Condition d'arrêt
+
+Arrêter l'industrialisation commerciale et conserver, au besoin, une offre
+ponctuelle ou financée si aucun acteur n'accepte le périmètre, si la prestation
+n'est pas livrable avec les moyens disponibles, ou si les coûts, risques et
+temps ne permettent pas une contribution soutenable. Une absence de preuve ne
+justifie pas de développer prématurément une fonctionnalité de paiement.
+
+---
+
+# 6. P0 parallèle — Structuration associative, contractuelle et financière
 
 ## Statut
 
@@ -267,6 +329,30 @@ CleanMyMap reste juridiquement porté par la personne physique actuelle.
 
 Les documents légaux publics et le runtime ne doivent pas anticiper
 l'association.
+
+## Objectif, dépendances et preuve de valeur
+
+L'objectif est de rendre possible l'activité effectivement validée :
+structuration associative, contrats, assurance, prospection et partenariats
+financiers. Cette voie reste parallèle au code et ne constitue pas une preuve
+de marché à elle seule.
+
+Elle dépend d'une décision de portage, de fondateurs et d'une gouvernance
+identifiés, d'un objet et de responsabilités clairs, des exigences RGPD et
+contractuelles, d'une assurance adaptée, ainsi que de moyens bancaires,
+comptables et opérationnels compatibles avec les prestations.
+
+La preuve de valeur est documentaire et opérationnelle : structure créée si
+elle est retenue, contrats relus et signés lorsqu'une activité est engagée,
+assurance couvrant les activités réelles, prospection tracée, et partenaires
+financiers ou conventions qualifiés sans les compter comme recettes acquises.
+
+## Condition d'arrêt
+
+Suspendre la formalisation ou la prospection lorsqu'aucun portage viable n'est
+identifié, que l'assurance ou les contrats ne couvrent pas l'activité, ou que
+les obligations et coûts dépassent les moyens réels. Ne pas transférer les
+actifs, les responsabilités ou les données par anticipation.
 
 ## Étapes
 
@@ -302,7 +388,42 @@ contiennent des hypothèses non stabilisées.
 
 ---
 
-# 6. P1 — Communauté
+# 7. P1 — Premiers programmes territoriaux, restitutions et workflows partenaires
+
+## Statut et objectif
+
+`PLAN`, après preuves P0. Le but est d'accompagner les premiers programmes
+territoriaux et d'améliorer les restitutions ou workflows partenaires à partir
+de besoins démontrés dans les prestations ou pilotes. Cette priorité ne crée
+pas par avance un portail multi-organisations, une campagne générique ou une
+surveillance exhaustive.
+
+## Dépendances
+
+- parcours terrain et rapports validés sur des cas réels ;
+- partenaire ou territoire identifié, avec périmètre et responsabilités
+  écrits ;
+- contrats de données, confidentialité, permissions et provenance vérifiables ;
+- capacité opérationnelle et cadre juridique/assurantiel adaptés.
+
+## Preuve de valeur
+
+Une priorité P1 est justifiée par un programme ou pilote réellement engagé,
+un livrable utilisé par le partenaire, des besoins récurrents enregistrés et
+une amélioration mesurable de la compréhension, du temps de restitution ou du
+workflow. Les exigences doivent provenir de ces usages, pas d'une liste de
+fonctionnalités supposées.
+
+## Condition d'arrêt
+
+Différer le chantier si aucun programme réel, usage partenaire ou besoin
+répété n'est démontré, ou si la gouvernance des données et des responsabilités
+reste insuffisante. Revenir à la prestation assistée et à l'amélioration du
+rapport existant plutôt que généraliser une surface dédiée.
+
+---
+
+# 8. P1 — Communauté
 
 ## État courant
 
@@ -343,7 +464,7 @@ Priorités :
 
 ---
 
-# 7. P1 — Messagerie et discussions
+# 9. P1 — Messagerie et discussions
 
 ## État courant
 
@@ -389,7 +510,7 @@ qu'un besoin produit ne les justifie pas.
 
 ---
 
-# 8. P1 — Modération et administration
+# 10. P1 — Modération et administration
 
 ## `/admin`
 
@@ -432,7 +553,7 @@ Ne pas transformer `/admin/forms` en nouveau système A/B sans besoin démontré
 
 ---
 
-# 9. P1 — Compte, dashboard et profils
+# 11. P1 — Compte, dashboard et profils
 
 ## `/reglages`
 
@@ -488,7 +609,7 @@ Aucune simplification d'interface ne doit créer une permission implicite.
 
 ---
 
-# 10. P1 — UX/UI formulaire bénévole
+# 12. P1 — UX/UI formulaire bénévole
 
 Le formulaire ne doit pas être réécrit comme un nouveau produit.
 
@@ -528,7 +649,46 @@ refonte esthétique globale.
 
 ---
 
-# 11. P2 — Application mobile
+# 13. P2 conditionnel — Services professionnels récurrents
+
+## Statut et objectif
+
+`FUTURE` / `PLAN conditionnel`. Les abonnements, la facturation récurrente,
+les espaces multi-organisations et les services professionnels avancés ne
+sont pas des fonctionnalités `CURRENT` et ne doivent pas être engagés par
+simple anticipation commerciale.
+
+L'objectif, si les preuves le justifient, sera de servir une demande
+professionnelle récurrente avec un niveau de sécurité, de support, de
+provenance et de rentabilité compatible avec le projet.
+
+## Dépendances
+
+Avant toute conception, il faut au minimum des cas réels de besoin récurrent
+documentés, une demande payante répétée et un cadre de contrats, d'entité,
+RGPD, autorisation multi-tenant, facturation, sécurité et support qui puisse
+être tenu. Le business model fixe le seuil de décision retenu ; la roadmap ne
+le remplace pas et n'en invente pas d'autre.
+
+## Preuve de valeur
+
+La preuve attendue est une demande récurrente effectivement payée ou engagée,
+un renouvellement ou usage répété, des coûts de support et d'exploitation
+connus, une contribution soutenable, et une revue de sécurité et d'accès
+compatible avec les données traitées. Les produits futurs ne sont pas
+présentés comme disponibles avant cette preuve.
+
+## Condition d'arrêt
+
+Ne pas construire de paywall, de facturation récurrente, de table
+d'organisation ou de portail professionnel si la demande récurrente, la
+rentabilité, la sécurité, la conformité ou la capacité de support n'est pas
+établie. Maintenir alors les prestations ponctuelles, les rapports et les
+partenariats financés qui restent compatibles avec le socle existant.
+
+---
+
+# 14. P2 — Application mobile
 
 ## Statut courant
 
@@ -589,7 +749,7 @@ sont suffisantes.
 
 ---
 
-# 12. P2 — Convergence UX/UI générale
+# 15. P2 — Convergence UX/UI générale
 
 Les chantiers visuels précédents ont déjà harmonisé une grande partie des
 palettes et shells.
@@ -622,7 +782,7 @@ Chaque lot doit partir :
 
 ---
 
-# 13. P3 — Extensions après validation du noyau
+# 16. P3 — Extensions après validation du noyau
 
 Ces sujets ne deviennent prioritaires qu'après preuve du parcours P0.
 
@@ -658,7 +818,7 @@ Toute intégration doit respecter :
 
 ---
 
-# 14. Horizon de travail
+# 17. Horizon de travail
 
 ## Q4 2026 — Convergence
 
@@ -666,11 +826,15 @@ Priorités :
 
 1. parcours bénévole E2E ;
 2. rapport d'une action ;
-3. tests utilisateurs du formulaire ;
-4. étude de marché et validation du besoin ;
-5. création de l'association si décision confirmée ;
+3. validation de prestations cleanwalks, ateliers et rapports personnalisés ;
+4. structuration associative, contrats, assurance, prospection et
+   partenariats financiers ;
+5. tests utilisateurs du formulaire et étude des besoins réels ;
 6. simplification Communauté / Dashboard ;
 7. validation des permissions de modération.
+
+Ces priorités restent `PLAN` : aucune prestation, recette ou structure n'est
+présentée comme acquise avant sa preuve documentaire et opérationnelle.
 
 ## H1 2027 — Pilotes et preuve d'usage
 
@@ -679,12 +843,14 @@ Objectifs :
 - terrains pilotes ;
 - partenaires actifs ;
 - rapports réellement utilisés ;
+- premiers programmes territoriaux et workflows partenaires demandés par les
+  usages ;
 - données de rétention et de complétion ;
 - modèle économique testé ;
 - premiers financements ou conventions selon opportunités ;
 - poursuite mobile uniquement si les bloqueurs P2 sont levés.
 
-## H2 2027 — Reproductibilité
+## H2 2027 — Reproductibilité et éventuelle montée en échelle
 
 Selon les preuves obtenues :
 
@@ -692,12 +858,14 @@ Selon les preuves obtenues :
 - campagnes multi-actions ;
 - services institutionnels ciblés ;
 - professionnalisation éventuelle ;
+- abonnements, facturation récurrente, espaces multi-organisations et services
+  professionnels avancés uniquement si la condition P2 est satisfaite ;
 - approfondissement mobile ;
 - réévaluation SCIC / ESUS si le fonctionnement réel le justifie.
 
 ---
 
-# 15. Critères de décision
+# 18. Critères de décision
 
 Avant tout nouveau chantier, poser les questions suivantes :
 
@@ -717,7 +885,7 @@ chantier.
 
 ---
 
-# 16. Indicateurs de progression
+# 19. Indicateurs de progression
 
 La roadmap ne fixe pas ici de cibles numériques non validées.
 
@@ -760,16 +928,30 @@ Les familles de preuves à suivre sont :
 - entretiens terrain ;
 - partenaires pilotes ;
 - structure juridique ;
+- contrats et assurance adaptés aux activités ;
+- prospection qualifiée et partenariats financiers distingués des recettes ;
 - financement ;
 - conventions ;
 - validation du business model.
+
+### Preuve commerciale et territoriale
+
+- propositions et devis acceptés ;
+- prestations livrées et livrables utilisés ;
+- montants proposés, facturés et encaissés suivis séparément ;
+- temps, coûts directs, contribution et signaux de réachat documentés ;
+- programmes territoriaux réellement engagés ;
+- besoins partenaires répétés et améliorations de restitution observées.
+
+Une hypothèse de prix, un scénario financier ou une demande déclarée ne vaut
+pas preuve de vente, de recette ou de demande récurrente.
 
 Toute cible chiffrée doit être établie séparément à partir d'une baseline
 observée ou d'un objectif explicitement décidé.
 
 ---
 
-# 17. Ce qui n'est pas prioritaire maintenant
+# 20. Ce qui n'est pas prioritaire maintenant
 
 Sauf preuve nouvelle :
 
@@ -782,11 +964,14 @@ Sauf preuve nouvelle :
 - ajouter de nouvelles projections d'impact sans protocole ;
 - multiplier les rôles ou permissions ;
 - industrialiser une fonctionnalité sans usage démontré ;
+- construire des abonnements, une facturation récurrente, des espaces
+  multi-organisations ou des services professionnels avancés sans la preuve
+  commerciale et les garanties P2 ;
 - refaire globalement l'UI.
 
 ---
 
-# 18. Stop condition globale
+# 21. Stop condition globale
 
 Le prochain cycle produit est réussi lorsque CleanMyMap peut démontrer de façon
 simple et reproductible :
@@ -796,8 +981,11 @@ une action réelle
 → des données fiables
 → un rapport d'impact exploitable
 → un acteur qui s'en sert
+→ une prestation ou un programme dont la valeur est documentée
 → une action suivante facilitée
 ```
 
-Lorsque cette boucle est prouvée, les extensions P2/P3 peuvent être réévaluées
-avec des données d'usage plutôt qu'avec des hypothèses.
+Lorsque cette boucle est prouvée, les programmes P1 puis les extensions P2/P3
+peuvent être réévalués avec des données d'usage, de coûts et de sécurité
+plutôt qu'avec des hypothèses seules. En l'absence de preuve, le chantier
+reste au niveau de prestation ponctuelle et de fiabilisation du socle.
