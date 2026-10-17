@@ -15,7 +15,7 @@
 - **Contexte nécessaire** : Compte Clerk connecté ; le rappel de complétion du compte reste non bloquant. Les fonctions de supervision et d'audit appliquent leurs autorisations propres.
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; l'historique reste soumis à l'authentification et à ses contrôles propres.
 - **Objectif utilisateur principal** : Consulter les enregistrements accessibles, leur qualité et les corrections à effectuer.
-- **Action principale attendue** : Filtrer et inspecter les lignes, consulter le détail qualité/contexte, les preuves photo d'un signalement lorsque demandé, l'audit autorisé et exporter les lignes approuvées filtrées en PDF.
+- **Action principale attendue** : Filtrer et inspecter les lignes, consulter le détail qualité/contexte, les photos de bilan d'une action ou les preuves photo d'un signalement lorsque demandé, l'audit autorisé et exporter les lignes approuvées filtrées en PDF.
 - **Palette attendue** : emerald
 - **Scope** : historique et supervision des enregistrements d'actions et de signalements accessibles au compte connecté, avec filtres de statut/qualité, recherche, correction prioritaire, détail, preuves et export.
 - **Terminée** : oui pour le périmètre actuellement livré ; les évolutions non implémentées restent dans la liste PLAN.
@@ -58,6 +58,13 @@ concernés par ce bloc.
 - Les règles d'accès restent celles du service média : auteur/admin pour un
   signalement `new`, lecture publique signée pour `validated`/`cleaned`.
 - Les URLs signées sont éphémères et ne sont jamais persistées côté client.
+
+Les actions terminées disposent d'une consultation séparée des photos de bilan :
+
+- le panneau reste fermé tant que le compte n'a pas demandé la lecture ;
+- `GET /api/actions/{actionId}/media` exige l'authentification et la capacité canonique de gestion de l'action, notamment la relation `action_organizers` ;
+- seules les lignes `ready` sont relues, avec des URLs signées temporaires ; une action publiée n'est pas pour autant lisible publiquement ;
+- les photos historiques décrites seulement par leurs métadonnées restent affichées comme telles et ne sont pas transformées en preuves persistantes.
 
 
 ## États à documenter

@@ -43,6 +43,7 @@ const DOMAIN_BY_ID = new Map(
 
 const SOURCE_TABLE_DOMAIN_MAP: Record<string, StorageBusinessDomainId> = {
   actions: "actions_terrain",
+  action_media: "pieces_jointes_photo",
   action_photos: "pieces_jointes_photo",
   attachments: "pieces_jointes_document",
   avatars: "donnees_utilisateur",

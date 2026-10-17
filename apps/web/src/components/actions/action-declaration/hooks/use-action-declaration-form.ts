@@ -140,5 +140,7 @@ export function useActionDeclarationForm({
     handleResumeDraft: draft.handleResumeDraft,
     handleIgnoreDraft: draft.handleIgnoreDraft,
     handleConfirmSubmit: submission.handleConfirmSubmit,
+    actionMediaUpload: submission.actionMediaUpload,
+    retryActionMediaUploads: submission.retryActionMediaUploads,
   };
 }

@@ -289,35 +289,6 @@ function getActivityImage(
   };
 }
 
-async function resolveActionPreviewImageUrl(
-  actionId: string,
-): Promise<string | null> {
-  try {
-    const { getSupabaseServerClient } = await import("@/lib/supabase/server");
-    const storage = getSupabaseServerClient(true).storage.from("action-photos");
-    const result = await storage.list(actionId, {
-      limit: 1,
-      offset: 0,
-      sortBy: { column: "name", order: "asc" },
-    });
-    if (result.error) {
-      return null;
-    }
-
-    const file = (result.data ?? []).find((entry) =>
-      /\.(?:jpe?g|png|webp)$/i.test(entry.name),
-    );
-    if (!file) {
-      return null;
-    }
-
-    const { data } = storage.getPublicUrl(`${actionId}/${file.name}`);
-    return data.publicUrl || null;
-  } catch {
-    return null;
-  }
-}
-
 function formatRelativeDay(observedAt: string): string {
   const observed = new Date(`${observedAt}T00:00:00.000Z`);
   if (Number.isNaN(observed.getTime())) {
@@ -400,29 +371,6 @@ export function buildHomeCommunityActivity(
     visibleActions: visibleContracts.length,
     distinctLocations,
     items,
-  };
-}
-
-async function attachActionPreviewImages(
-  activity: HomeCommunityActivitySummary,
-): Promise<HomeCommunityActivitySummary> {
-  const imageUrls = await Promise.all(
-    activity.items.map((item) => resolveActionPreviewImageUrl(item.id)),
-  );
-
-  return {
-    ...activity,
-    items: activity.items.map((item, index) => ({
-      ...item,
-      image: imageUrls[index]
-        ? {
-            source: "userProvidedImage" as const,
-            url: imageUrls[index] as string,
-            alt: `Photo fournie par l'utilisateur pour ${item.title}`,
-            isFallback: false as const,
-          }
-        : item.image,
-    })),
   };
 }
 
@@ -546,7 +494,7 @@ async function loadRecentCommunityActivityData(
   return {
     contracts: recent.items,
     floorDate,
-    activity: await attachActionPreviewImages(activity),
+    activity,
     sourceHealth: recent.sourceHealth,
   };
 }

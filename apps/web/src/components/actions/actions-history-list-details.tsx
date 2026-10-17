@@ -1,4 +1,5 @@
 import { ActionParticipantImpactManager } from "@/components/actions/action-participant-impact-manager";
+import { ActionMediaProofs } from "@/components/actions/action-media/action-media-proofs";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
 import type { ActionParticipationReviewItem } from "@/lib/actions/participation/group-participation";
@@ -93,6 +94,7 @@ export function ActionsHistoryListDetails({
         />
       ) : null}
       <ActionParticipantImpactManager actionId={selectedItem.id} fr={fr} />
+      <ActionMediaProofs actionId={selectedItem.id} />
       <ActionHistoryAuditSection
         selectedItem={selectedItem}
         selectedCanViewActionAudit={selectedCanViewActionAudit}

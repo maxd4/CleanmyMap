@@ -26,6 +26,16 @@ import type {
   ValidationIssue,
 } from "../model";
 import type { LoadedActionPhase } from "../utils/action-declaration-hydration.model";
+import {
+  uploadActionMedia,
+  type ActionMediaUploadFailure,
+} from "@/lib/actions/action-media/action-media-client";
+
+export type ActionMediaUploadState = {
+  status: "idle" | "uploading" | "complete" | "partial";
+  uploadedCount: number;
+  failed: ActionMediaUploadFailure[];
+};
 
 export type ActionDeclarationUserMetadata = {
   userId: string;
@@ -99,6 +109,25 @@ export function useActionDeclarationSubmission({
     useState<PostActionRetentionLoop | null>(null);
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
+  const [actionMediaUpload, setActionMediaUpload] = useState<ActionMediaUploadState>({
+    status: "idle",
+    uploadedCount: 0,
+    failed: [],
+  });
+
+  async function retryActionMediaUploads() {
+    if (!createdId || actionMediaUpload.failed.length === 0) return;
+    setActionMediaUpload((current) => ({ ...current, status: "uploading" }));
+    const result = await uploadActionMedia(
+      createdId,
+      actionMediaUpload.failed.map(({ asset }) => asset),
+    );
+    setActionMediaUpload({
+      status: result.failed.length > 0 ? "partial" : "complete",
+      uploadedCount: actionMediaUpload.uploadedCount + result.uploadedCount,
+      failed: result.failed,
+    });
+  }
 
   function trackFormStart() {
     if (!hasTrackedStartRef.current) {
@@ -181,6 +210,15 @@ export function useActionDeclarationSubmission({
         () => null,
       );
       setRecordedAction(persistedAction);
+      if (photoAssets.length > 0) {
+        setActionMediaUpload({ status: "uploading", uploadedCount: 0, failed: [] });
+        const mediaResult = await uploadActionMedia(persistedActionId, photoAssets);
+        setActionMediaUpload({
+          status: mediaResult.failed.length > 0 ? "partial" : "complete",
+          uploadedCount: mediaResult.uploadedCount,
+          failed: mediaResult.failed,
+        });
+      }
       setSubmissionState("success");
       setShowConfirmation(false);
       setLoadedActionPhase(
@@ -209,6 +247,8 @@ export function useActionDeclarationSubmission({
     validationIssues,
     showConfirmation,
     setShowConfirmation,
+    actionMediaUpload,
+    retryActionMediaUploads,
     trackFormStart,
     handleConfirmSubmit,
   };

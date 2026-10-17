@@ -134,6 +134,17 @@ it("classifies signalement evidence from its canonical metadata", () => {
       expectedSignal: "bucket",
     },
     {
+      title: "action media source table",
+      input: {
+        bucketId: "action-photos",
+        name: "action-photos/action-media/photo-1.jpg",
+        mimeType: "image/jpeg",
+        sourceTable: "action_media",
+      },
+      expectedId: "pieces_jointes_photo",
+      expectedSignal: "sourceTable",
+    },
+    {
       title: "chat attachments document mime",
       input: {
         bucketId: "chat-attachments",

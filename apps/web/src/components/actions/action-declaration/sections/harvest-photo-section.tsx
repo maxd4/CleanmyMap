@@ -35,15 +35,15 @@ export function HarvestPhotoSection({
               <Camera size={15} className="text-violet-600" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">Photo de preuve</p>
-              <p className="text-xs text-slate-400">Optionnelle — documente la collecte</p>
+              <p className="text-sm font-semibold text-slate-900">Photos de bilan</p>
+              <p className="text-xs text-slate-400">Optionnelles — documentent la collecte</p>
             </div>
           </div>
           {hasPhotos && (
             <button
               type="button"
               onClick={onClearPhotos}
-              aria-label="Supprimer les photos"
+              aria-label="Supprimer les photos de bilan"
               className="flex items-center gap-1.5 rounded-lg border border-rose-100 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-100 transition-colors"
             >
               <Trash2 size={13} />
@@ -62,7 +62,7 @@ export function HarvestPhotoSection({
                 <Camera size={18} />
               </div>
               <p className="text-xs font-semibold text-slate-700 text-center">Choisir un fichier</p>
-              <p className="text-[10px] text-slate-400 text-center">JPG, PNG · max 10 Mo</p>
+              <p className="text-xs text-slate-400 text-center">JPG, PNG, WebP · 3 photos · 5 Mo max</p>
               <input
                 id="harvest-photos"
                 type="file"

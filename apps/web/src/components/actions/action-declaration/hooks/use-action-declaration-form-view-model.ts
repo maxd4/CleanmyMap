@@ -159,6 +159,8 @@ export function useActionDeclarationFormViewModel(
         groupJoinHref: state.createdId && canShowGroupInvite
           ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(state.createdId)}`
           : null,
+        actionMediaUpload: state.actionMediaUpload,
+        onRetryActionMedia: state.retryActionMediaUploads,
       },
       onReset: () => {
         state.setForm(createInitialFormState(state.resolvedDefaultActorName, props.initialRecordType ?? "action"));

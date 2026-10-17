@@ -835,6 +835,27 @@ qu'après le clic de l'auteur sur `Voir les preuves photo`; l'ownership média
 existant autorise l'auteur à lire ses propres preuves, y compris lorsque le
 signalement est encore `new`.
 
+## Photos de bilan des actions
+
+Les photos de bilan appartiennent à la capacité distincte `action_media` et au
+bucket privé `action-photos`. Elles ne réutilisent ni `signalement_media` ni
+`signalement-evidence`. Les routes d'intent, de finalisation et de lecture
+exigent toutes une session Clerk puis revalident côté serveur l'action ciblée,
+son état `post_action_complete` et `canManageAction` avec la relation canonique
+`action_organizers`. Le créateur, un participant ou une structure déclarée ne
+devient pas organisateur par défaut ; un profil global suit les contrôles
+canoniques existants.
+
+Le quota est de trois médias actifs par action, avec un `clientUploadId`
+idempotent dans le périmètre action + utilisateur. Une ligne ne passe à
+`ready` qu'après vérification de l'objet Storage ; les lignes `pending` ou
+`failed` ne sont jamais retournées par la lecture. Les URLs signées sont
+éphémères et aucune URL, image binaire ou `dataUrl` n'est persistée dans les
+notes ou `preparation_data`. Une action publiée n'accorde aucune lecture
+publique. La suppression du parent cascade sur les métadonnées ; le nettoyage
+des objets abandonnés reste une responsabilité serveur dédiée et aucune
+suppression autonome d'une preuve `ready` n'est exposée au client.
+
 ## Lecture propriétaire des missions GPS
 
 La route `/missions/[id]` est une surface applicative protégée par AuthN Clerk.
