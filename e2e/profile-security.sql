@@ -82,14 +82,20 @@ begin
     raise exception 'SECURITY-01 public profile identity is unavailable';
   end if;
 
-  if not has_table_privilege('anon', 'public.newsletter_subscriptions', 'INSERT')
+  if has_table_privilege('anon', 'public.newsletter_subscriptions', 'INSERT')
     or has_table_privilege('anon', 'public.newsletter_subscriptions', 'SELECT')
     or has_table_privilege('anon', 'public.newsletter_subscriptions', 'UPDATE')
+    or has_table_privilege('anon', 'public.newsletter_subscriptions', 'TRUNCATE')
     or has_table_privilege('anon', 'public.newsletter_subscriptions', 'TRIGGER')
+    or has_table_privilege('anon', 'public.newsletter_subscriptions', 'REFERENCES')
     or has_table_privilege('authenticated', 'public.newsletter_subscriptions', 'INSERT')
     or has_table_privilege('authenticated', 'public.newsletter_subscriptions', 'SELECT')
     or has_table_privilege('authenticated', 'public.newsletter_subscriptions', 'UPDATE')
+    or has_table_privilege('authenticated', 'public.newsletter_subscriptions', 'TRUNCATE')
+    or has_table_privilege('authenticated', 'public.newsletter_subscriptions', 'TRIGGER')
+    or has_table_privilege('authenticated', 'public.newsletter_subscriptions', 'REFERENCES')
     or not has_table_privilege('service_role', 'public.newsletter_subscriptions', 'SELECT')
+    or not has_table_privilege('service_role', 'public.newsletter_subscriptions', 'INSERT')
     or not has_table_privilege('service_role', 'public.newsletter_subscriptions', 'UPDATE')
   then
     raise exception 'SECURITY-01 newsletter privileges do not match the contract';
@@ -116,6 +122,18 @@ end
 $$;
 
 set local role anon;
+
+do $$
+begin
+  begin
+    execute 'insert into public.newsletter_subscriptions (email, gdpr_consent, source, status) values (''security-01-anon-direct@example.org'', true, ''security-01'', ''active'')';
+    raise exception 'SECURITY-01 anon newsletter insert unexpectedly succeeded';
+  exception when insufficient_privilege then
+    null;
+  end;
+end
+$$;
+
 select id, display_name, handle, avatar_url
 from public.public_profiles
 where id = 'security-01-owner';
@@ -141,6 +159,17 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"security-01-owner"}', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claim.sub', 'security-01-owner', true);
+
+do $$
+begin
+  begin
+    execute 'insert into public.newsletter_subscriptions (email, gdpr_consent, source, status) values (''security-01-authenticated-direct@example.org'', true, ''security-01'', ''active'')';
+    raise exception 'SECURITY-01 authenticated newsletter insert unexpectedly succeeded';
+  exception when insufficient_privilege then
+    null;
+  end;
+end
+$$;
 
 select id, display_name, handle, avatar_url
 from public.profiles
