@@ -131,16 +131,24 @@ function classifyDomain(surface, filePath, root = repositoryRoot) {
   return relative[0] ?? "root";
 }
 
-function classifyLayer(surface, filePath, root = repositoryRoot) {
+function hasUseClientDirective(sourceText, filePath) {
+  const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, false, ts.ScriptKind.TSX);
+  for (const statement of sourceFile.statements) {
+    if (!ts.isExpressionStatement(statement) || !ts.isStringLiteral(statement.expression)) return false;
+    if (statement.expression.text === "use client") return true;
+  }
+  return false;
+}
+
+function classifyLayer(surface, filePath, root = repositoryRoot, sourceText = "") {
   if (isTestFile(filePath, root)) return "test";
   const relative = path.relative(surface.root, filePath).split(path.sep);
   const first = relative[0] ?? "";
   const second = relative[1] ?? "";
   if (surface.id === "web") {
-    // Next route/page entrypoints execute on the server boundary. They may
-    // compose application and infrastructure owners; client-facing UI stays
-    // under components/hooks and remains subject to UI boundary checks.
-    if (first === "app") return "application";
+    // Next route/page entrypoints execute on the server boundary unless the
+    // module explicitly opts into the client boundary with "use client".
+    if (first === "app") return hasUseClientDirective(sourceText, filePath) ? "ui" : "application";
     if (["components", "hooks"].includes(first)) return "ui";
     if (first === "lib" && ["actions", "account", "admin", "chat", "community", "dashboard", "funding", "gamification", "missions", "notifications", "pilotage", "route", "spogomi", "spots"].includes(second)) return "application";
     if (first === "lib" && ["auth", "backpressure", "botid", "browser", "github", "http", "logging", "maps", "media", "observability", "persistence", "posthog", "rate-limit", "security", "storage", "supabase"].includes(second)) return "infrastructure";
@@ -158,6 +166,7 @@ function classifyLayer(surface, filePath, root = repositoryRoot) {
 const UI_SAFE_SHARED_MODULES = new Set([
   "apps/web/src/lib/auth/redirect-url.ts",
   "apps/web/src/lib/media/image-compression.ts",
+  "apps/web/src/lib/observability/sentry-client.ts",
   "apps/web/src/lib/supabase/storage-business-classification.ts",
 ]);
 
@@ -310,17 +319,17 @@ export function buildArchitectureImportGraph({ source = "worktree", root = repos
   for (const surface of activeSurfaces) {
     for (const filePath of listSourceFilesFromView(measurementView, root, surface.root)) {
       const relativePath = normalizePath(filePath, root);
+      const sourceText = measurementView.readText(relativePath);
       const node = {
         path: relativePath,
         surface: surface.id,
         domain: classifyDomain(surface, filePath, root),
-        layer: classifyLayer(surface, filePath, root),
+        layer: classifyLayer(surface, filePath, root, sourceText),
         sourceKind: sourceKind(filePath, root),
         publicFacade: isPublicFacade(relativePath),
         facadeOwner: facadeOwner(relativePath),
       };
       nodes.push(node);
-      const sourceText = measurementView.readText(relativePath);
       for (const parsed of parseImports(filePath, sourceText)) {
         const targetPath = resolveInternalImport(surface, filePath, parsed.specifier, { root, view: measurementView });
         if (!targetPath) {
@@ -332,7 +341,7 @@ export function buildArchitectureImportGraph({ source = "worktree", root = repos
           path: targetRelative,
           surface: surface.id,
           domain: classifyDomain(surface, targetPath, root),
-          layer: classifyLayer(surface, targetPath, root),
+          layer: classifyLayer(surface, targetPath, root, measurementView.readText(targetRelative)),
           sourceKind: sourceKind(targetPath, root),
           publicFacade: isPublicFacade(targetRelative),
           facadeOwner: facadeOwner(targetRelative),

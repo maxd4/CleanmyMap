@@ -55,6 +55,54 @@ test("architecture graph resolves relative, alias, facade, test and type-only im
   assert.equal(reexports.filter((candidate) => candidate.kind === "runtime").length, 1);
 });
 
+test("server app routes and pages remain application entrypoints", () => {
+  const graph = fixtureGraph();
+  for (const entrypoint of ["app/route.ts", "app/page.tsx"]) {
+    const node = graph.nodes.find((candidate) => candidate.path.endsWith(entrypoint));
+    const importedInfrastructure = edge(graph, entrypoint, "lib/supabase/adapter.ts");
+    assert.equal(node?.layer, "application");
+    assert.equal(importedInfrastructure?.uiToInfrastructure, false);
+  }
+});
+
+test("a client app entrypoint is ui and detects an unauthorized infrastructure import", () => {
+  const graph = fixtureGraph();
+  const node = graph.nodes.find((candidate) => candidate.path.endsWith("app/client-page.tsx"));
+  const importedInfrastructure = edge(graph, "app/client-page.tsx", "lib/supabase/adapter.ts");
+  const clientViolation = collectBoundaryViolations(graph).find((violation) => violation.from.endsWith("app/client-page.tsx"));
+  assert.equal(node?.layer, "ui");
+  assert.equal(importedInfrastructure?.uiToInfrastructure, true);
+  assert.equal(clientViolation?.rule, "UI_TO_INFRASTRUCTURE");
+  const retiredResult = evaluateBoundary(graph, {
+    schemaVersion: 1,
+    rules: [...AUTHORIZED_BOUNDARY_RULES],
+    exceptions: [],
+    retired: [{ ...clientViolation, reason: "fixture", reviewedRef: "fixture-sha" }],
+  });
+  assert.equal(retiredResult.status, "FAIL");
+  assert.equal(retiredResult.reintroduced.length, 1);
+});
+
+test("comments and ordinary strings do not create a use-client directive", () => {
+  const graph = fixtureGraph();
+  for (const entrypoint of ["app/commented-client.tsx", "app/string-client.tsx"]) {
+    const node = graph.nodes.find((candidate) => candidate.path.endsWith(entrypoint));
+    const importedInfrastructure = edge(graph, entrypoint, "lib/supabase/adapter.ts");
+    assert.equal(node?.layer, "application");
+    assert.equal(importedInfrastructure?.uiToInfrastructure, false);
+  }
+});
+
+test("the explicit browser-safe client exception prevents a false positive", () => {
+  const graph = buildArchitectureImportGraph({ source: "worktree" });
+  const errorPage = edge(graph, "apps/web/src/app/error.tsx", "apps/web/src/lib/observability/sentry-client.ts");
+  const globalErrorPage = edge(graph, "apps/web/src/app/global-error.tsx", "apps/web/src/lib/observability/sentry-client.ts");
+  assert.equal(graph.nodes.find((node) => node.path === "apps/web/src/app/error.tsx")?.layer, "ui");
+  assert.equal(graph.nodes.find((node) => node.path === "apps/web/src/app/global-error.tsx")?.layer, "ui");
+  assert.equal(errorPage?.uiToInfrastructure, false);
+  assert.equal(globalErrorPage?.uiToInfrastructure, false);
+});
+
 test("stable JSON keeps the historical UTF-16 key order while using an explicit comparator", () => {
   assert.equal(stableJson({ z: 1, a: 2, A: 3, _: 4 }), '{\n  "A": 3,\n  "_": 4,\n  "a": 2,\n  "z": 1\n}\n');
 });
@@ -67,7 +115,7 @@ test("architecture graph reports a runtime A -> B -> A cycle", () => {
 test("boundary evaluation fails new violations and recognizes exact historical exceptions", () => {
   const graph = fixtureGraph();
   const violations = collectBoundaryViolations(graph);
-  assert.equal(violations.filter((violation) => violation.rule === "UI_TO_INFRASTRUCTURE").length, 1);
+  assert.equal(violations.filter((violation) => violation.rule === "UI_TO_INFRASTRUCTURE").length, 2);
   const result = evaluateBoundary(graph, {
     schemaVersion: 1,
     rules: [...AUTHORIZED_BOUNDARY_RULES],
@@ -75,7 +123,7 @@ test("boundary evaluation fails new violations and recognizes exact historical e
     retired: [],
   });
   assert.equal(result.status, "FAIL");
-  assert.equal(result.newViolations.length, 2);
+  assert.equal(result.newViolations.length, 3);
   const allowedResult = evaluateBoundary(graph, {
     schemaVersion: 1,
     rules: [...AUTHORIZED_BOUNDARY_RULES],
