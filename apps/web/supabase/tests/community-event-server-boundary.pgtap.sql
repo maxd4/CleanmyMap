@@ -43,32 +43,30 @@ create temp table community_event_server_boundary_fixture (
   event_id uuid not null
 );
 grant select on community_event_server_boundary_fixture to anon, authenticated;
+grant select, insert on community_event_server_boundary_fixture to service_role;
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"system"}', true);
 
-insert into public.community_events (
-  organizer_clerk_id,
-  title,
-  event_date,
-  location_label,
-  description
-) values (
-  'organizer-a',
-  'Public event fixture',
-  current_date,
-  'Fixture location',
-  'Fixture description'
+with inserted_event as (
+  insert into public.community_events (
+    organizer_clerk_id,
+    title,
+    event_date,
+    location_label,
+    description
+  ) values (
+    'organizer-a',
+    'Public event fixture',
+    current_date,
+    'Fixture location',
+    'Fixture description'
+  )
+  returning id
 )
-returning id;
-
 insert into community_event_server_boundary_fixture (event_id)
 select id
-from public.community_events
-where organizer_clerk_id = 'organizer-a'
-  and title = 'Public event fixture'
-order by created_at desc
-limit 1;
+from inserted_event;
 
 reset role;
 
