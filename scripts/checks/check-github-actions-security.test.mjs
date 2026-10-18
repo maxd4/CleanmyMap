@@ -75,6 +75,8 @@ const e2eWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows
 const sonarqubeWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "sonarqube-manual.yml"), "utf8");
 const packageLock = JSON.parse(readFileSync(path.join(repositoryRoot, "package-lock.json"), "utf8"));
 const codeqlWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "codeql.yml"), "utf8");
+const scorecardWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "scorecard.yml"), "utf8");
+const zizmorWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "zizmor.yml"), "utf8");
 const pinnedCiCheckoutSha = ["3d3c42e5aac5ba805825", "da76410c181273ba90b1"].join("");
 
 assert.doesNotMatch(e2eWorkflow, /path:\s*artifacts\/playwright\b/);
@@ -124,6 +126,31 @@ assert.doesNotMatch(codeqlWorkflow, /^paths-ignore:/m);
 assert.doesNotMatch(codeqlWorkflow, /^paths:/m);
 assert.match(codeqlWorkflow, /runs-on:\s*"ubuntu-24\.04"/);
 assert.deepEqual(auditWorkflowContent(codeqlWorkflow, ".github/workflows/codeql.yml"), []);
+
+// Dependabot updates must keep every CodeQL phase on the same pinned action
+// release. The default checkout path is the runner workspace, so no alternate
+// checkout_path is needed for these jobs.
+const codeqlActionRefs = [...codeqlWorkflow.matchAll(/uses:\s+github\/codeql-action\/(?:init|autobuild|analyze)@([0-9a-f]{40})/g)]
+  .map((match) => match[1]);
+assert.equal(codeqlActionRefs.length, 8);
+assert.deepEqual(new Set(codeqlActionRefs), new Set(["6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee"]));
+assert.doesNotMatch(codeqlWorkflow, /24c54180a607b1449ed407dd24f251e4e9147c8d/);
+assert.doesNotMatch(codeqlWorkflow, /checkout_path:/);
+assert.match(scorecardWorkflow, /uses:\s+ossf\/scorecard-action@fa7117db83c52d787ae5a89f350999701505d78e/);
+assert.doesNotMatch(scorecardWorkflow, /2d1146689b8cda280b9bc96326124645441f03bc/);
+assert.match(zizmorWorkflow, /uses:\s+zizmorcore\/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e/);
+assert.doesNotMatch(zizmorWorkflow, /cc914d7f3750a2d13d75c7f184a1060aa0e9d482/);
+for (const workflow of [codeqlWorkflow, scorecardWorkflow, zizmorWorkflow]) {
+  assert.match(workflow, /^permissions:\s*\{\}/m);
+  assert.match(workflow, /^concurrency:\s*$/m);
+  assert.match(workflow, /persist-credentials:\s*false/);
+  assert.deepEqual(auditWorkflowContent(workflow), []);
+}
+assert.match(scorecardWorkflow, /permissions:\n\s+contents: read/);
+assert.match(zizmorWorkflow, /permissions:\n\s+contents: read/);
+assert.match(codeqlWorkflow, /security-events: write/);
+assert.match(codeqlWorkflow, /category:\s*"\/language:javascript-typescript\/first-party"/);
+assert.match(codeqlWorkflow, /category:\s*"\/language:javascript-typescript\/vendor"/);
 
 assert.match(ciWorkflow, /jobs:\n  scope:/);
 assert.match(ciWorkflow, /dependency_audit_relevant:/);
