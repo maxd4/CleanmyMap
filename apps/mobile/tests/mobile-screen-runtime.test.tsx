@@ -122,6 +122,21 @@ describe('mobile native shell runtime', () => {
     expect(renderer.root.findAll((node) => textContent(node).includes('Votre compte'))).not.toHaveLength(0)
   })
 
+  it('renders one Lucide icon for each primary destination', async () => {
+    const renderer = await renderShell()
+    const expectedIcons = {
+      Agir: 'HandHelping',
+      Carte: 'Map',
+      Compte: 'CircleUserRound',
+    } as const
+
+    for (const [label, iconName] of Object.entries(expectedIcons)) {
+      const tab = renderer.root.findAllByProps({ accessibilityLabel: label })[0]
+      expect(tab).toBeDefined()
+      expect(tab.findAll((node) => String(node.type) === iconName)).not.toHaveLength(0)
+    }
+  })
+
   it('keeps account deletion explicit, confirmation-gated and server-owned', async () => {
     const renderer = await renderShell()
     const aboutTab = renderer.root.findAllByProps({ accessibilityRole: 'tab' }).find((tab) => textContent(tab).includes('À propos'))
