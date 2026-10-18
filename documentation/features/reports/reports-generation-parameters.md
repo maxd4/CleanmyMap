@@ -17,6 +17,30 @@ Le générateur multi-actions accepte les périmètres `global`, `account`, `ass
 
 Pour `POST /api/reports/generations`, le navigateur transmet l'entrée typée, le niveau de détail, les modules et la sélection avancée. Le serveur recharge les actions publiques admissibles depuis la source canonique avec les critères `status = approved`, `moderation_visibility = visible`, `published_at` non nul et `action_phase = post_action_complete`, valide le scope contre ces identifiants et libellés canoniques, filtre la période puis les filtres avancés, et calcule `ReportModel` et le PDF sur ce même ensemble. La projection complète est paginée ; si un champ indispensable ou une page échoue, la génération multi-actions est refusée plutôt que présentée comme exhaustive. Le nom libre d'une association ne constitue ni une appartenance ni une permission privée : ce filtre ne porte que sur le corpus public résolu côté serveur.
 
+### Reprise depuis `Mes fichiers` — `CURRENT`
+
+Le bouton **Reprendre la configuration** ne relit pas les KPI du snapshot pour
+produire la nouvelle génération. La page `/reports` charge d'abord la ligne et
+le snapshot avec l'ownership serveur, puis réutilise le formulaire, les states
+et les validations du générateur courant. Elle restaure seulement les champs
+vérifiables : scope et valeur, période, bornes personnalisées, niveau de détail,
+modules, filtres avancés et thème PDF historisé.
+
+Pour une période relative, les bornes absolues conservées sont affichées comme
+dates d'origine ; le `POST` suivant envoie l'identifiant relatif et le serveur
+recalcule la période courante avec ses sources canoniques. Pour
+`custom_range`, les deux bornes civiles `YYYY-MM-DD` du snapshot sont
+restaurées sans conversion. Un snapshot legacy, v1 ou v2 incomplet expose les
+paramètres absents comme inconnus ; aucune valeur historique n'est déduite des
+KPI, du libellé seul ou d'un défaut d'interface. Un scope ou une action qui ne
+peut plus être résolu côté serveur est signalé et le bouton de génération reste
+bloqué jusqu'à une nouvelle sélection valide.
+
+La reprise elle-même ne réserve ni ne consomme de quota. La nouvelle demande
+est une génération indépendante : elle repasse par `POST
+/api/reports/generations`, les contrôles d'admissibilité et le quota quotidien,
+et n'altère jamais la ligne ni le snapshot historiques.
+
 ### Filtres avancés CURRENT
 
 Le panneau secondaire **« Filtres avancés »** est fermé par défaut. Sa sélection est validée côté serveur, appliquée après la période et le scope sans jamais élargir ce dernier, puis conservée dans `snapshotMetadata.filters` avec `advancedFiltersVersion = reports-advanced-filters-v1`.

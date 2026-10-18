@@ -168,6 +168,82 @@ describe("ReportsWebDocumentPreparation", () => {
     ]);
   });
 
+  it("prefills the shared generator from a historical configuration and explains relative dates", () => {
+    mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
+    mocks.usePdfExport.mockReturnValue({
+      state: "idle",
+      message: null,
+      copy: { pendingLabel: "Génération en cours" },
+      hasData: true,
+      isDisabled: false,
+      exportRubriquePdf: vi.fn(),
+    });
+
+    const markup = renderToStaticMarkup(React.createElement(ReportsWebDocument, {
+      contracts: [],
+      communityEvents: [],
+      resumeConfig: {
+        generationId: "11111111-1111-4111-8111-111111111111",
+        generatedAt: "2026-08-27T10:30:00.000Z",
+        period: { id: "six_months", from: "2026-02-27", to: "2026-08-27" },
+        scope: { kind: "association", value: "association-1", label: "Association 1" },
+        detailLevel: "exhaustif",
+        modules: { dataAndCartography: true, transparencyAndMethods: false, rawData: true, detailedFiles: false },
+        filters: REPORT_ADVANCED_FILTER_DEFAULTS,
+        theme: "scientific",
+        unknownParameters: [],
+      },
+    } as ReportsWebDocumentProps));
+
+    expect(markup).toContain('data-testid="reports-resume-notice"');
+    expect(markup).toContain("Une nouvelle génération relative utilisera Six mois");
+    expect(markup).toContain("27 févr. 2026");
+    expect(markup).toContain("27 août 2026");
+    expect(mocks.useReportsWebDocumentModel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialScope: { kind: "association", value: "association-1" },
+      }),
+    );
+    const exportOptions = mocks.usePdfExport.mock.calls[0]?.[0];
+    expect(exportOptions).toEqual(expect.objectContaining({ periode: "six_months" }));
+    expect(exportOptions.data.summary).toContain(
+      "Modules optionnels inclus: Données & cartographie, Données brutes.",
+    );
+  });
+
+  it("blocks generation and requires a new selection when the resumed scope is unavailable", () => {
+    mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
+    mocks.usePdfExport.mockReturnValue({
+      state: "idle",
+      message: null,
+      copy: { pendingLabel: "Génération en cours" },
+      hasData: true,
+      isDisabled: false,
+      exportRubriquePdf: vi.fn(),
+    });
+
+    const markup = renderToStaticMarkup(React.createElement(ReportsWebDocument, {
+      contracts: [],
+      communityEvents: [],
+      resumeConfig: {
+        generationId: "11111111-1111-4111-8111-111111111111",
+        generatedAt: "2026-08-27T10:30:00.000Z",
+        period: { id: "six_months", from: "2026-02-27", to: "2026-08-27" },
+        scope: { kind: "account", value: "account-missing", label: "Compte disparu" },
+        detailLevel: "default",
+        modules: preparationProps.modules,
+        filters: REPORT_ADVANCED_FILTER_DEFAULTS,
+        theme: null,
+        unknownParameters: ["Le thème PDF d'origine n'est pas enregistré."],
+      },
+    } as ReportsWebDocumentProps));
+
+    expect(markup).toContain("Le périmètre d&#x27;origine n&#x27;est plus accessible");
+    expect(mocks.usePdfExport.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+  });
+
   it("does not advertise a retired history cap", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ReportsWebDocumentPreparation, preparationProps),

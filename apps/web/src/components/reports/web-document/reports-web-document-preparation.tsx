@@ -43,6 +43,7 @@ export type ReportsWebDocumentPreparationProps = {
   onModuleToggle: (key: keyof ModuleState) => void;
   advancedFilters: ReportAdvancedFilters;
   onAdvancedFiltersChange: (filters: ReportAdvancedFilters) => void;
+  resumeNotice?: string[];
   actionMediaAvailability?: "available" | "unavailable";
   advancedFiltersOpen?: boolean;
   onAdvancedFiltersToggle?: () => void;
@@ -65,6 +66,7 @@ export function ReportsWebDocumentPreparation({
   onModuleToggle,
   advancedFilters,
   onAdvancedFiltersChange,
+  resumeNotice,
   actionMediaAvailability = "available",
   advancedFiltersOpen = false,
   onAdvancedFiltersToggle = () => undefined,
@@ -85,6 +87,16 @@ export function ReportsWebDocumentPreparation({
       </div>
 
       <div className="mt-5 space-y-5">
+        {resumeNotice && resumeNotice.length > 0 ? (
+          <div
+            data-testid="reports-resume-notice"
+            role="status"
+            className="space-y-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950"
+          >
+            <p className="font-black">Configuration reprise</p>
+            {resumeNotice.map((line) => <p key={line}>{line}</p>)}
+          </div>
+        ) : null}
         <div className="space-y-3">
           <label htmlFor="reports-web-document-period" className="block text-sm font-black text-slate-900">Période</label>
           {singleAction ? (

@@ -29,6 +29,16 @@ au runtime et à ses tests, pas à une copie documentaire.
   distincte : elle est autorisée seulement pour un snapshot complet compatible,
   consomme le quota existant et crée une nouvelle ligne liée à sa source.
 
+- Depuis `Mes fichiers`, « Reprendre la configuration » charge la ligne
+  historique owner-scoped côté serveur et préremplit le générateur existant
+  avec les paramètres réellement conservés. Les bornes absolues d'une période
+  relative sont affichées comme dates d'origine, mais une nouvelle génération
+  relative utilise la période courante ; une période personnalisée conserve ses
+  deux bornes. Les champs inconnus des snapshots legacy, v1 ou v2 incomplets
+  restent signalés et ne sont jamais inventés. Une nouvelle génération repasse
+  par les validations, les sources canoniques et le quota normal, et crée un
+  snapshot indépendant sans modifier l'original.
+
 - La reproductibilité livrée est sémantique : les mêmes données, libellés,
   unités, limites et date de génération sont relus depuis le snapshot. Le PDF
   binaire n’est pas conservé ; une identité octet pour octet n’est donc pas

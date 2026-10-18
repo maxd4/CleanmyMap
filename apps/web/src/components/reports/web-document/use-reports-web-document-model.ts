@@ -46,6 +46,7 @@ type UseReportsWebDocumentModelOptions = {
   initialCommunityEventsAvailability?: CommunityEventsAvailability;
   initialPeriod?: ReportGenerationPeriodSelection;
   initialNow?: Date;
+  initialScope?: { kind: ReportScopeKind; value: string };
   advancedFilters?: ReportAdvancedFilters;
   actionMediaReadyCountByActionId?: Record<string, number>;
   actionMediaAvailability?: "available" | "unavailable";
@@ -59,12 +60,13 @@ export function useReportsWebDocumentModel({
   initialCommunityEventsAvailability,
   initialPeriod = { id: "full_history" },
   initialNow,
+  initialScope,
   advancedFilters = REPORT_ADVANCED_FILTER_DEFAULTS,
   actionMediaReadyCountByActionId = {},
   actionMediaAvailability = "available",
 }: UseReportsWebDocumentModelOptions = {}) {
-  const [scopeKind, setScopeKind] = useState<ReportScopeKind>("global");
-  const [scopeValue, setScopeValue] = useState<string>("");
+  const [scopeKind, setScopeKind] = useState<ReportScopeKind>(initialScope?.kind ?? "global");
+  const [scopeValue, setScopeValue] = useState<string>(initialScope?.value ?? "");
 
   const initialActionListItems = useMemo(
     () => (initialContracts ?? []).map((contract) => toActionListItem(contract)),
@@ -173,11 +175,12 @@ export function useReportsWebDocumentModel({
     scopeKind === "global"
       ? ""
       : scopeValueOptions.find((option) => option.value === scopeValue)?.value ??
-        scopeValueOptions[0]?.value ??
         "";
 
   const scope = useMemo(
-    () => normalizeReportScope({ kind: scopeKind, value: effectiveScopeValue }),
+    () => scopeKind === "global" || effectiveScopeValue
+      ? normalizeReportScope({ kind: scopeKind, value: effectiveScopeValue })
+      : { kind: "global" as const, value: null },
     [effectiveScopeValue, scopeKind],
   );
 

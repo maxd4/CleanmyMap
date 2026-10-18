@@ -32,10 +32,14 @@ import type { PilotageOverview } from "@/lib/pilotage/overview";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 import {
   getReportGenerationSnapshotById,
+  InvalidReportGenerationIdError,
   listReportGenerationHistoryPage,
 } from "@/lib/reports/report-generation-history-store";
-import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 import type { ReportGenerationHistoryPage } from "@/lib/reports/report-generation-history-contract";
+import {
+  buildReportGenerationResumeConfig,
+  type ReportGenerationResumeConfig,
+} from "@/lib/reports/report-generation-resume";
 import {
   getReportExportAvailability,
 } from "@/lib/reports/report-export-quota";
@@ -61,6 +65,8 @@ type SingleActionReportPageContext = {
 };
 
 type SingleActionReportPageError = "not_admissible" | "unavailable";
+
+type ReportsResumeStatus = "not_found" | "invalid" | "unavailable" | "action_unavailable";
 
 type ReportsAnalysisContentParams = {
   locale: Locale;
@@ -169,13 +175,15 @@ function buildReportsGenerationContent({
   dailyExportAvailability,
   singleAction,
   singleActionError,
-  resumeSnapshot,
+  resumeConfig,
+  resumeStatus,
 }: {
   generationData: Awaited<ReturnType<typeof loadReportsGenerationData>> | null;
   dailyExportAvailability: ReportExportAvailability;
   singleAction?: Pick<SingleActionReportPageContext, "actionId" | "scopeLabel"> | null;
   singleActionError?: SingleActionReportPageError | null;
-  resumeSnapshot?: PdfReportPayload;
+  resumeConfig?: ReportGenerationResumeConfig | null;
+  resumeStatus?: ReportsResumeStatus | null;
 }) {
   if (singleActionError) {
     const targetUnavailable = singleActionError === "not_admissible";
@@ -220,7 +228,8 @@ function buildReportsGenerationContent({
       actionMediaReadyCountByActionId={generationData.actionMediaReadyCountByActionId}
       actionMediaAvailability={generationData.actionMediaAvailability}
       dailyExportAvailability={dailyExportAvailability}
-      resumeSnapshot={resumeSnapshot}
+      resumeConfig={resumeConfig ?? undefined}
+      resumeStatus={resumeStatus ?? undefined}
       singleAction={singleAction ?? undefined}
     />
   ) : (
@@ -370,10 +379,41 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     }
 
     const resumeId = resolvedSearchParams.resumeId?.trim() || null;
-    const resumeSnapshotResult = resumeId
-      ? getReportGenerationSnapshotById(resumeId, userId).catch(() => null)
-      : Promise.resolve(null);
-    const [generationData, resumeGeneration, dailyExportAvailability] = await Promise.all([
+    const resumeContextResult = resumeId
+      ? getReportGenerationSnapshotById(resumeId, userId)
+          .then(async (record) => {
+            if (!record) return { config: null, status: "not_found" as const, singleAction: null };
+            const config = buildReportGenerationResumeConfig(record);
+            if (config.scope?.kind !== "single_action") {
+              return { config, status: null, singleAction: null };
+            }
+            try {
+              const contract = await resolveSingleActionReportContract(config.scope.value);
+              return {
+                config,
+                status: null,
+                singleAction: {
+                  actionId: config.scope.value,
+                  scopeLabel: getSingleActionReportScopeLabel(contract),
+                },
+              };
+            } catch (error) {
+              return {
+                config,
+                status: error instanceof SingleActionReportTargetUnavailableError
+                  ? "action_unavailable" as const
+                  : "unavailable" as const,
+                singleAction: null,
+              };
+            }
+          })
+          .catch((error) => ({
+            config: null,
+            status: error instanceof InvalidReportGenerationIdError ? "invalid" as const : "unavailable" as const,
+            singleAction: null,
+          }))
+      : Promise.resolve({ config: null, status: null, singleAction: null });
+    const [generationData, resumeContext, dailyExportAvailability] = await Promise.all([
       singleActionError
         ? Promise.resolve(null)
         : singleAction
@@ -392,7 +432,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             actionMediaAvailability: "available" as const,
           })
         : loadReportsGenerationData(userId).catch(() => null),
-      resumeSnapshotResult,
+      resumeContextResult,
       getReportExportAvailability(userId).catch(
         () => "unavailable" as ReportExportAvailability,
       ),
@@ -401,9 +441,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     const generationContent = buildReportsGenerationContent({
       generationData,
       dailyExportAvailability,
-      singleAction,
+      singleAction: resumeContext.singleAction ?? singleAction,
       singleActionError,
-      resumeSnapshot: resumeGeneration?.snapshot,
+      resumeConfig: resumeContext.config,
+      resumeStatus: resumeContext.status,
     });
 
     return (

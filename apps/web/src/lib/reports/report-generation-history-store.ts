@@ -33,6 +33,7 @@ export type ReportGenerationSnapshotRecord = {
   scopeValue: string;
   scopeLabel: string;
   detailLevel: ReportGenerationHistoryInput["detailLevel"];
+  modules?: ModuleState | null;
   snapshot: ReportGenerationHistoryInput["payload"];
   theme?: ReportGenerationHistoryInput["theme"];
 };
@@ -65,6 +66,17 @@ function hasSameModules(left: ModuleState, right: unknown): boolean {
     left.transparencyAndMethods === candidate.transparencyAndMethods &&
     left.rawData === candidate.rawData &&
     left.detailedFiles === candidate.detailedFiles;
+}
+
+function isModuleState(value: unknown): value is ModuleState {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Record<string, unknown>;
+  return [
+    "dataAndCartography",
+    "transparencyAndMethods",
+    "rawData",
+    "detailedFiles",
+  ].every((key) => typeof candidate[key] === "boolean");
 }
 
 const REPORT_GENERATION_INSTANT_PATTERN =
@@ -283,6 +295,7 @@ export async function getReportGenerationSnapshotById(
     scopeValue: data.scope_value,
     scopeLabel: data.scope_label,
     detailLevel: data.detail_level as ReportGenerationSnapshotRecord["detailLevel"],
+    modules: isModuleState(data.modules) ? data.modules : null,
     theme: data.theme ?? null,
     snapshot,
   };

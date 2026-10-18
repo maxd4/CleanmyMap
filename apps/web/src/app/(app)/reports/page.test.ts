@@ -78,11 +78,15 @@ vi.mock("@/components/reports/deferred-reports-web-document", () => ({
   DeferredReportsWebDocument: ({
     isTruncated,
     initialHistoryAvailability,
+    resumeConfig,
+    resumeStatus,
     singleAction,
     contracts,
   }: {
     isTruncated?: boolean;
     initialHistoryAvailability?: string;
+    resumeConfig?: { period?: { id?: string }; theme?: string | null };
+    resumeStatus?: string;
     singleAction?: { actionId: string; scopeLabel: string };
     contracts?: unknown[];
   }) =>
@@ -92,6 +96,9 @@ vi.mock("@/components/reports/deferred-reports-web-document", () => ({
         "data-testid": "report-generation",
         "data-truncated": isTruncated ? "true" : "false",
         "data-history-availability": initialHistoryAvailability,
+        "data-resume-period": resumeConfig?.period?.id,
+        "data-resume-theme": resumeConfig?.theme ?? undefined,
+        "data-resume-status": resumeStatus ?? undefined,
         "data-single-action-id": singleAction?.actionId,
         "data-single-action-scope": singleAction?.scopeLabel,
         "data-single-action-contract": singleAction ? JSON.stringify(contracts?.[0] ?? null) : undefined,
@@ -494,5 +501,46 @@ describe("/reports page contract", () => {
     expect(markup).toContain("Rapport Paris");
     expect(markup).toContain("Mes fichiers");
     expect(mocks.listReportGenerationHistoryPage).toHaveBeenCalledWith("user-1", { page: 1, pageSize: 12 });
+  });
+
+  it("loads an owner-scoped historical configuration before rendering generation", async () => {
+    mocks.fetchCachedUnifiedActionContracts.mockResolvedValue({
+      items: [contract],
+      isTruncated: false,
+      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
+    });
+    mocks.getReportGenerationSnapshotById.mockResolvedValueOnce({
+      id: "11111111-1111-4111-8111-111111111111",
+      filename: "rapport_reporting_six_months.pdf",
+      generatedAt: "2026-08-27T10:30:00.000Z",
+      scopeKind: "global",
+      scopeValue: "",
+      scopeLabel: "Global",
+      detailLevel: "default",
+      modules: { dataAndCartography: true, transparencyAndMethods: false, rawData: true, detailedFiles: false },
+      theme: "scientific",
+      snapshot: {
+        title: "Rapport repris",
+        rubrique: "reporting",
+        periode: "six_months",
+        organizationType: "Global",
+        data: { generatedAt: "2026-08-27T10:30:00.000Z" },
+      },
+    });
+
+    const markup = renderToStaticMarkup(await ReportsPage({
+      searchParams: Promise.resolve({
+        tab: "generation",
+        resumeId: "11111111-1111-4111-8111-111111111111",
+      }),
+    }));
+
+    expect(markup).toContain('data-testid="report-generation"');
+    expect(markup).toContain('data-resume-period="six_months"');
+    expect(markup).toContain('data-resume-theme="scientific"');
+    expect(mocks.getReportGenerationSnapshotById).toHaveBeenCalledWith(
+      "11111111-1111-4111-8111-111111111111",
+      "user-1",
+    );
   });
 });
