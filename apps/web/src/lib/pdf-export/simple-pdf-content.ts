@@ -9,7 +9,7 @@ type PdfReportColumn = {
 
 type PdfReportStat = {
   label: string;
-  value: string | number;
+  value: string | number | null;
   detail?: string;
 };
 

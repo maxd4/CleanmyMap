@@ -31,6 +31,19 @@ describe("report generation payload contract", () => {
     expect(isReportGenerationPayload(payload)).toBe(true);
   });
 
+  it("accepts an explicitly missing indicator value without turning it into zero", () => {
+    const withMissingIndicator = {
+      ...payload,
+      data: {
+        ...payload.data,
+        stats: [{ label: "Masse collectée", value: null }],
+      },
+    };
+
+    expect(parseReportGenerationPayload(withMissingIndicator)).toEqual(withMissingIndicator);
+    expect(isReportGenerationPayload(withMissingIndicator)).toBe(true);
+  });
+
   it("rejects an incompatible historical snapshot explicitly", () => {
     const invalid = {
       ...payload,

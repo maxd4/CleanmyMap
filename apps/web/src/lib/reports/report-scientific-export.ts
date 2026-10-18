@@ -117,6 +117,20 @@ const PROXY_FIELD_IDS = new Set([
 
 const DECLARED_FIELD_IDS = new Set(["Masse_Kg", "Masse_Kg_Declaree"]);
 
+const ABSENCE_SENTINELS = new Set([
+  "NA",
+  "N/A",
+  "UNAVAILABLE",
+  "INDISPONIBLE",
+]);
+
+const REPORT_STAT_COLUMNS = [
+  { key: "stat_id", label: "Identifiant indicateur" },
+  { key: "label", label: "Indicateur" },
+  { key: "value", label: "Valeur" },
+  { key: "detail", label: "Détail" },
+] as const;
+
 function toJsonValue(value: unknown): JsonValue {
   if (value === null || value === undefined) return null;
   if (typeof value === "string" || typeof value === "boolean") return value;
@@ -133,18 +147,16 @@ function toJsonValue(value: unknown): JsonValue {
   return String(value);
 }
 
+function normalizeScientificCellValue(value: JsonValue): JsonValue {
+  if (typeof value !== "string") return value;
+  return ABSENCE_SENTINELS.has(value.trim().toUpperCase()) ? null : value;
+}
+
 function resolveCellStatus(
   fieldId: string,
   value: JsonValue,
 ): ReportScientificDataStatus | null {
   if (value === null) return "NA";
-  if (typeof value === "string") {
-    const normalized = value.trim().toUpperCase();
-    if ((REPORT_SCIENTIFIC_DATA_STATUSES as readonly string[]).includes(normalized)) {
-      return normalized as ReportScientificDataStatus;
-    }
-    if (["N/A", "UNAVAILABLE", "INDISPONIBLE"].includes(normalized)) return "NA";
-  }
   if (PROXY_FIELD_IDS.has(fieldId)) return "PROXY";
   if (DECLARED_FIELD_IDS.has(fieldId)) return "DECLARED";
   if (fieldId === "Origine_Masse" && value === "declared") return "DECLARED";
@@ -252,15 +264,85 @@ function buildTable(params: {
     rows: params.rows.map((row, index) => ({
       index,
       values: Object.fromEntries(columns.map((column) => {
-        const value = toJsonValue(row[column.id]);
+        const value = normalizeScientificCellValue(toJsonValue(row[column.id]));
         return [column.id, { value, status: resolveCellStatus(column.id, value) }];
       })),
     })),
   };
 }
 
+function normalizeIdentifier(value: string): string {
+  const normalized = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return normalized || "indicateur";
+}
+
+function buildStableStatIds(stats: PdfReportPayload["data"]["stats"]): string[] {
+  const used = new Map<string, number>();
+  return (stats ?? []).map((stat) => {
+    const record = stat as unknown as Record<string, unknown>;
+    const historizedId = typeof record.id === "string" && record.id.trim()
+      ? record.id.trim()
+      : `stat-${normalizeIdentifier(stat.label)}`;
+    const occurrence = (used.get(historizedId) ?? 0) + 1;
+    used.set(historizedId, occurrence);
+    return occurrence === 1 ? historizedId : `${historizedId}-${occurrence}`;
+  });
+}
+
+function resolveExplicitStatus(value: unknown): ReportScientificDataStatus | null {
+  return typeof value === "string" &&
+    (REPORT_SCIENTIFIC_DATA_STATUSES as readonly string[]).includes(value)
+    ? value as ReportScientificDataStatus
+    : null;
+}
+
+function buildStatsTable(params: {
+  id: string;
+  title: string;
+  source: string;
+  stats: NonNullable<PdfReportPayload["data"]["stats"]>;
+}): ReportScientificTable {
+  const statIds = buildStableStatIds(params.stats);
+  const columns = REPORT_STAT_COLUMNS.map((column) => ({
+    id: column.key,
+    label: column.label,
+    unit: null,
+  }));
+
+  return {
+    id: params.id,
+    title: params.title,
+    source: params.source,
+    columns,
+    rows: params.stats.map((stat, index) => {
+      const record = stat as unknown as Record<string, unknown>;
+      const statId = statIds[index];
+      const value = normalizeScientificCellValue(toJsonValue(stat.value));
+      const explicitStatus = resolveExplicitStatus(record.status);
+      return {
+        index,
+        values: {
+          stat_id: { value: statId, status: null },
+          label: { value: stat.label, status: null },
+          value: {
+            value,
+            status: explicitStatus ?? resolveCellStatus(statId, value),
+          },
+          detail: { value: toJsonValue(stat.detail), status: null },
+        },
+      };
+    }),
+  };
+}
+
 function buildTables(payload: PdfReportPayload): ReportScientificTable[] {
   const tables: ReportScientificTable[] = [];
+  const indicatorTables: ReportScientificTable[] = [];
   if (payload.data.rows?.length) {
     tables.push(buildTable({
       id: "report-data",
@@ -271,16 +353,34 @@ function buildTables(payload: PdfReportPayload): ReportScientificTable[] {
     }));
   }
   for (const [index, chapter] of (payload.data.chapters ?? []).entries()) {
-    if (!chapter.rows?.length) continue;
-    tables.push(buildTable({
-      id: chapter.id ?? `chapter-${index + 1}`,
-      title: chapter.title,
-      source: `snapshot.data.chapters[${index}].rows`,
-      rows: chapter.rows,
-      columns: chapter.columns,
+    const chapterTableId = chapter.id ?? `chapter-${index + 1}`;
+    if (chapter.rows?.length) {
+      tables.push(buildTable({
+        id: chapterTableId,
+        title: chapter.title,
+        source: `snapshot.data.chapters[${index}].rows`,
+        rows: chapter.rows,
+        columns: chapter.columns,
+      }));
+    }
+    if (chapter.stats?.length) {
+      indicatorTables.push(buildStatsTable({
+        id: `${chapterTableId}-stats`,
+        title: `${chapter.title} — indicateurs`,
+        source: `snapshot.data.chapters[${index}].stats`,
+        stats: chapter.stats,
+      }));
+    }
+  }
+  if (payload.data.stats?.length) {
+    indicatorTables.unshift(buildStatsTable({
+      id: "report-stats",
+      title: "Indicateurs",
+      source: "snapshot.data.stats",
+      stats: payload.data.stats,
     }));
   }
-  return tables;
+  return [...tables, ...indicatorTables];
 }
 
 function buildLimitations(
@@ -299,7 +399,7 @@ function buildLimitations(
     limitations.push("La fenêtre source était explicitement tronquée ; les tables exportées ne représentent pas une couverture exhaustive.");
   }
   if (tables.length === 0) {
-    limitations.push("Aucune donnée tabulaire n'est enregistrée dans ce snapshot ; une absence n'est jamais convertie en zéro.");
+    limitations.push("Aucune donnée tabulaire ni indicateur n'est enregistré dans ce snapshot ; une absence n'est jamais convertie en zéro.");
   }
   if (tables.some((table) => table.rows.some((row) => Object.values(row.values).some((cell) => cell.status === null)))) {
     limitations.push("Les statuts non persistés par le snapshot restent inconnus ; OBSERVED, DERIVED et ASSUMPTION ne sont pas inférés à partir d'une valeur seule.");

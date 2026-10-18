@@ -75,15 +75,18 @@ l'état enregistré et signale l'anomalie sans créer une seconde ligne.
 Depuis l'historique, la référence bibliographique, le JSON et le CSV sont
 produits depuis la ligne `public.report_generations` owner-scoped, sans relire
 les actions ni recalculer les KPI. Le JSON porte le schéma versionné
-`reports-scientific-export-v1`, le snapshot source, les tables visibles, les
-unités connues, les versions réellement présentes et les limites. Le CSV est
-une projection longue des cellules des mêmes tables, avec identifiant stable,
-unité, valeur et statut ; une cellule absente reste vide avec `NA`, jamais
-zéro. Les statuts `OBSERVED`, `DERIVED`, `DECLARED`, `ASSUMPTION`, `PROXY` et
-`NA` ne sont exportés que lorsqu'ils sont connus du snapshot ou de la
-projection canonique ; les statuts non historisés restent explicitement
-inconnus. Les snapshots legacy restent lisibles, mais leurs versions et leur
-filiation manquantes sont signalées.
+`reports-scientific-export-v1`, le snapshot source, les indicateurs et tables
+effectivement rendus, les unités connues, les versions réellement présentes et
+les limites. Le CSV est une projection longue des cellules de ces mêmes
+indicateurs et tables, avec identifiant stable, origine, unité, valeur et
+statut ; une cellule absente reste vide avec `NA`, jamais zéro. Les statuts
+`OBSERVED`, `DERIVED`, `DECLARED`, `ASSUMPTION`, `PROXY` et `NA` ne sont
+exportés que lorsqu'ils sont connus du snapshot ou de la projection canonique ;
+les statuts non historisés restent explicitement inconnus. Les indicateurs
+utilisent les champs `label`, `value` et `detail` du snapshot, avec des
+identifiants déterministes de projection ; leurs valeurs textuelles ne
+suffisent pas à inventer un statut de provenance. Les snapshots legacy restent
+lisibles, mais leurs versions et leur filiation manquantes sont signalées.
 
 Les routes `GET /api/reports/generations/[id]/json` et `/csv` réutilisent le
 contrôle owner-scoped de l'historique. Elles ne publient ni objets Storage,

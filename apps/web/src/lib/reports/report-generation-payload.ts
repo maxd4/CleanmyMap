@@ -20,7 +20,7 @@ const pdfReportColumnSchema = z.object({
 
 const pdfReportStatSchema = z.object({
   label: z.string().min(1),
-  value: z.union([z.string(), z.number().finite()]),
+  value: z.union([z.string(), z.number().finite(), z.null()]),
   detail: z.string().optional(),
 }).passthrough();
 
