@@ -26,7 +26,9 @@ describe("GPS mission lifecycle migration [STATIC_CONTRACT]", () => {
   it("serializes point insertion with finalization without moving metric ownership", () => {
     expect(migration).toMatch(/create or replace function public\.guard_gps_point_mission_tracking\(\)/i);
     expect(migration).toMatch(/security invoker/i);
-    expect(migration).toMatch(/from public\.missions as m[\s\S]+?where m\.id = new\.mission_id[\s\S]+?for update/i);
+    expect(migration).toMatch(
+      /select m\.status, m\.volunteer_id[\s\S]+?into v_status, v_volunteer_id[\s\S]+?from public\.missions as m[\s\S]+?where m\.id = new\.mission_id[\s\S]+?for update/i,
+    );
     expect(migration).toMatch(/create trigger guard_gps_point_mission_tracking[\s\S]+?before insert on public\.gps_points/i);
     expect(migration).toMatch(/revoke all on function public\.guard_gps_point_mission_tracking\(\) from public, anon/i);
     expect(migration).toMatch(/grant execute on function public\.guard_gps_point_mission_tracking\(\) to authenticated, service_role/i);

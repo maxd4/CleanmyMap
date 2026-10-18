@@ -26,6 +26,7 @@ create temp table gps_point_lifecycle_fixture (
   other_tracking_id uuid not null
 );
 grant select on gps_point_lifecycle_fixture to anon, authenticated;
+grant select, insert, delete on gps_point_lifecycle_fixture to service_role;
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"system"}', true);
@@ -34,20 +35,26 @@ insert into public.profiles (id, display_name)
 values ('gps-owner-a', 'GPS owner A'), ('gps-owner-b', 'GPS owner B')
 on conflict (id) do nothing;
 
-insert into public.missions (volunteer_id, label, status, started_at)
-values
-  ('gps-owner-a', 'GPS lifecycle tracking A', 'tracking', now()),
-  ('gps-owner-a', 'GPS lifecycle completed A', 'completed', now() - interval '1 hour'),
-  ('gps-owner-a', 'GPS lifecycle cancelled A', 'cancelled', now() - interval '1 hour'),
-  ('gps-owner-b', 'GPS lifecycle tracking B', 'tracking', now());
-
 delete from gps_point_lifecycle_fixture;
-insert into gps_point_lifecycle_fixture
-select
-  (select id from public.missions where label = 'GPS lifecycle tracking A' order by created_at desc limit 1),
-  (select id from public.missions where label = 'GPS lifecycle completed A' order by created_at desc limit 1),
-  (select id from public.missions where label = 'GPS lifecycle cancelled A' order by created_at desc limit 1),
-  (select id from public.missions where label = 'GPS lifecycle tracking B' order by created_at desc limit 1);
+with inserted_missions as (
+  insert into public.missions (volunteer_id, label, status, started_at)
+  values
+    ('gps-owner-a', 'GPS lifecycle tracking A', 'tracking', now()),
+    ('gps-owner-a', 'GPS lifecycle completed A', 'completed', now() - interval '1 hour'),
+    ('gps-owner-a', 'GPS lifecycle cancelled A', 'cancelled', now() - interval '1 hour'),
+    ('gps-owner-b', 'GPS lifecycle tracking B', 'tracking', now())
+  returning id, label
+)
+insert into gps_point_lifecycle_fixture (tracking_id, completed_id, cancelled_id, other_tracking_id)
+select tracking.id, completed.id, cancelled.id, other_tracking.id
+from inserted_missions as tracking
+join inserted_missions as completed
+  on completed.label = 'GPS lifecycle completed A'
+join inserted_missions as cancelled
+  on cancelled.label = 'GPS lifecycle cancelled A'
+join inserted_missions as other_tracking
+  on other_tracking.label = 'GPS lifecycle tracking B'
+where tracking.label = 'GPS lifecycle tracking A';
 
 insert into public.gps_points (mission_id, latitude, longitude, recorded_at, client_point_id)
 select tracking_id, 48.8566, 2.3522, now() - interval '2 minutes', 'gps-a-1'
