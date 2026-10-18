@@ -34,14 +34,14 @@
     "expo-task-manager": "~57.0.21",
     "expo-web-browser": "~57.0.2",
     "lucide-react-native": "^1.55.0",
-    "react": "19.2.3",
+    "react": "19.3.1",
     "react-native": "0.86.3",
     "react-native-maps": "1.27.2",
     "react-native-svg": "15.15.4",
     "react-native-url-polyfill": "^4.0.0"
   },
   "devDependencies": {
-    "@types/react": "~19.2.18",
+    "@types/react": "~19.3.0",
     "@vitest/coverage-v8": "4.1.11",
     "braces": "file:vendor/braces",
     "eslint": "^9.39.4",
