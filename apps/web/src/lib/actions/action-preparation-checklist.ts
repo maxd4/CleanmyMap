@@ -22,6 +22,9 @@ export const ACTION_CHECKLIST_PROVENANCES = [
   "weather_forecast",
 ] as const;
 
+export const ACTION_WEATHER_STATES = ["idle", "loading", "success", "unavailable", "error"] as const;
+export type ActionWeatherState = (typeof ACTION_WEATHER_STATES)[number];
+
 export type ActionChecklistProvenance = (typeof ACTION_CHECKLIST_PROVENANCES)[number];
 
 export type ActionVolunteerChecklistItem = {
@@ -36,7 +39,14 @@ export type ActionVolunteerChecklist = {
   weatherRecommendations: ActionVolunteerChecklistItem[];
   provided: ActionVolunteerChecklistItem[];
   weatherStatus: "available" | "unavailable";
+  weatherState: ActionWeatherState;
   weatherMessage: string;
+  weatherForecast?: {
+    fetchedAt: string;
+    coveredWindow: { startAt: string; endAt: string };
+  } | null;
+  weatherContext?: PlannerWeatherContext | null;
+  weatherRequest?: PlannerWeatherContextRequest | null;
   staffing: {
     source: "confirmed" | "expected" | "unknown";
     count: number | null;
@@ -50,6 +60,7 @@ export type ActionVolunteerChecklistInput = {
   confirmedParticipants?: number | null;
   weatherContext?: PlannerWeatherContext | null;
   weatherRequest?: PlannerWeatherContextRequest | null;
+  weatherState?: ActionWeatherState;
 };
 
 const PROVENANCE_LABELS: Record<ActionChecklistProvenance, string> = {
@@ -193,12 +204,41 @@ function buildToBring(
 function buildWeatherRecommendations(
   context: PlannerWeatherContext | null | undefined,
   request: PlannerWeatherContextRequest | null | undefined,
+  requestedState?: ActionWeatherState,
 ): Pick<ActionVolunteerChecklist, "weatherRecommendations" | "weatherStatus" | "weatherMessage"> {
+  const state = requestedState ?? (
+    !request
+      ? "idle"
+      : context?.status === "available" && isPlannerWeatherContextCompatible(context, request)
+        ? "success"
+        : "unavailable"
+  );
+  if (state === "idle") {
+    return {
+      weatherRecommendations: [],
+      weatherStatus: "unavailable",
+      weatherMessage: "",
+    };
+  }
+  if (state === "loading") {
+    return {
+      weatherRecommendations: [],
+      weatherStatus: "unavailable",
+      weatherMessage: "Analyse des prévisions météo…",
+    };
+  }
+  if (state === "error") {
+    return {
+      weatherRecommendations: [],
+      weatherStatus: "unavailable",
+      weatherMessage: "Impossible d’analyser les prévisions météo. Réessayez.",
+    };
+  }
   if (!isPlannerWeatherContextCompatible(context, request)) {
     return {
       weatherRecommendations: [],
       weatherStatus: "unavailable",
-      weatherMessage: "Prévisions météo indisponibles pour cette action",
+      weatherMessage: "Prévisions météo indisponibles pour cette action.",
     };
   }
 
@@ -245,6 +285,7 @@ export function deriveActionVolunteerChecklist({
   confirmedParticipants,
   weatherContext = null,
   weatherRequest = null,
+  weatherState,
 }: ActionVolunteerChecklistInput): ActionVolunteerChecklist {
   const staffing = resolveStaffing(preparation, confirmedParticipants);
   const guidance = buildWasteFieldGuidance(preparation?.expectedWasteCategories);
@@ -256,14 +297,28 @@ export function deriveActionVolunteerChecklist({
     ...declaredRefreshments(preparation),
   ];
   const toBring = buildToBring(preparation, staffing, guidance);
-  const weather = buildWeatherRecommendations(weatherContext, weatherRequest);
+  const resolvedWeatherState = weatherState ?? (
+    !weatherRequest
+      ? "idle"
+      : weatherContext?.status === "available" && isPlannerWeatherContextCompatible(weatherContext, weatherRequest)
+        ? "success"
+        : "unavailable"
+  );
+  const weather = buildWeatherRecommendations(weatherContext, weatherRequest, resolvedWeatherState);
+  const weatherForecast = resolvedWeatherState === "success" && weatherContext?.coveredWindow
+    ? { fetchedAt: weatherContext.fetchedAt, coveredWindow: weatherContext.coveredWindow }
+    : null;
 
   return {
     toBring: toBring.items,
     weatherRecommendations: weather.weatherRecommendations,
     provided,
     weatherStatus: weather.weatherStatus,
+    weatherState: resolvedWeatherState,
     weatherMessage: weather.weatherMessage,
+    ...(weatherForecast ? { weatherForecast } : {}),
+    ...(weatherContext ? { weatherContext } : {}),
+    ...(weatherRequest ? { weatherRequest } : {}),
     staffing,
     insufficiencies: toBring.insufficiencies,
   };

@@ -8,6 +8,8 @@ import { buildActionDayBriefingText } from "./action-day-briefing";
 import { buildActionIcsHref } from "@/components/sections/rubriques/community/ics";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { actionChecklistProvenanceLabel } from "@/lib/actions/action-preparation-checklist";
+import { deriveActionVolunteerChecklist } from "@/lib/actions/action-preparation-checklist";
+import { useActionPreparationWeather } from "./use-action-preparation-weather";
 
 function formatRoute(briefing: ActionDayBriefing["action"]): string {
   if (briefing.route.topology === "loop") return "Boucle";
@@ -33,6 +35,17 @@ export function ActionDayView({ actionId }: { actionId: string }) {
 
   const actionBriefing = loadedBriefing?.actionId === actionId ? loadedBriefing : null;
   const actionError = error?.actionId === actionId ? error.message : null;
+  const weather = useActionPreparationWeather({
+    contextId: actionId,
+    request: actionBriefing?.action.volunteerChecklist?.weatherRequest ?? null,
+    initialWeatherContext: actionBriefing?.action.volunteerChecklist?.weatherContext ?? null,
+  });
+  const weatherChecklist = deriveActionVolunteerChecklist({
+    preparation: null,
+    weatherContext: weather.weatherContext,
+    weatherRequest: weather.weatherRequest,
+    weatherState: weather.weatherState,
+  });
   if (actionError) return <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-6 text-amber-950">{actionError}</div>;
   if (!actionBriefing) return <div role="status" className="rounded-2xl border border-emerald-100 bg-white px-4 py-4 text-sm font-semibold text-emerald-900">Chargement du briefing…</div>;
 
@@ -40,15 +53,27 @@ export function ActionDayView({ actionId }: { actionId: string }) {
   const action = briefing.action;
   const href = mapHref(action.map);
   const calendarHref = buildActionIcsHref({ id: briefing.actionId, title: action.title, actionDate: action.actionDate, startTime: action.eventStartTime ?? action.meetingTime, endTime: action.eventEndTime, location: action.meetingPoint, description: action.participantMessage ?? action.safetyInstructions });
+  const checklist = action.volunteerChecklist
+    ? {
+        ...action.volunteerChecklist,
+        weatherRecommendations: weatherChecklist.weatherRecommendations,
+        weatherState: weatherChecklist.weatherState,
+        weatherStatus: weatherChecklist.weatherStatus,
+        weatherMessage: weatherChecklist.weatherMessage,
+        weatherForecast: weatherChecklist.weatherForecast,
+      }
+    : null;
   const copyBriefing = async () => {
     try {
-      await navigator.clipboard.writeText(buildActionDayBriefingText(briefing));
+      await navigator.clipboard.writeText(buildActionDayBriefingText({
+        ...briefing,
+        action: { ...briefing.action, volunteerChecklist: checklist ?? undefined },
+      }));
       setCopyState("copied");
     } catch {
       setCopyState("error");
     }
   };
-  const checklist = action.volunteerChecklist;
   const checklistGroup = (values: NonNullable<typeof checklist>["toBring"], empty: string) => values.length > 0
     ? <ul className="space-y-2 text-sm text-emerald-950">{values.map((item) => <li key={item.key}><span className="font-semibold">{item.label}</span>{item.detail ? <span className="block text-xs text-emerald-800">{item.detail}</span> : null}<span className="block text-xs text-emerald-700">Source : {item.provenance.map(actionChecklistProvenanceLabel).join(", ")}</span></li>)}</ul>
     : <p className="text-sm text-slate-600">{empty}</p>;
@@ -70,8 +95,51 @@ export function ActionDayView({ actionId }: { actionId: string }) {
         <CmmCard tone="emerald" variant="outlined" size="md"><div className="space-y-3"><h3 className="flex items-center gap-2 text-lg font-black text-emerald-950"><ShieldCheck size={18} />Consignes</h3>{action.safetyInstructions ? <p className="whitespace-pre-line cmm-text-body cmm-text-primary">{action.safetyInstructions}</p> : <p className="cmm-text-body cmm-text-primary">Aucune consigne particulière renseignée.</p>}{action.participantMessage ? <p className="rounded-xl bg-emerald-50 px-3 py-2 cmm-text-body cmm-text-primary">{action.participantMessage}</p> : null}{action.accessibilityStatus !== "not_evaluated" || action.accessibility ? <p className="cmm-text-caption text-emerald-700">Accessibilité : {action.accessibility || action.accessibilityStatus}</p> : null}</div></CmmCard>
         <CmmCard tone="emerald" variant="outlined" size="md"><div className="space-y-3"><h3 className="flex items-center gap-2 text-lg font-black text-emerald-950"><Package size={18} />Matériel et convivialité</h3>{action.recommendedMaterials ? <p className="cmm-text-body cmm-text-primary"><strong>À prévoir :</strong> {action.recommendedMaterials}</p> : null}{action.materialsProvided ? <p className="cmm-text-body cmm-text-primary"><strong>Fourni :</strong> {action.materialsProvided}</p> : null}{action.equipmentProvided.length > 0 ? <p className="cmm-text-body cmm-text-primary"><strong>Équipements déclarés :</strong> {action.equipmentProvided.join(" · ")}</p> : null}{action.equipmentNotProvided?.length ? <p className="cmm-text-body cmm-text-primary"><strong>Équipements non fournis :</strong> {action.equipmentNotProvided.join(" · ")}</p> : null}{action.refreshmentsProvided.length > 0 ? <p className="cmm-text-body cmm-text-primary"><strong>Convivialité :</strong> {action.refreshmentsProvided.join(" · ")}</p> : null}{!action.recommendedMaterials && !action.materialsProvided && action.equipmentProvided.length === 0 && !action.equipmentNotProvided?.length && action.refreshmentsProvided.length === 0 ? <p className="cmm-text-body cmm-text-primary">Aucun matériel complémentaire renseigné.</p> : null}</div></CmmCard>
       </div>
-      {checklist ? <CmmCard tone="sky" variant="outlined" size="md" data-testid="action-day-volunteer-checklist"><div className="space-y-4"><div className="flex flex-wrap items-baseline justify-between gap-2"><div><h3 className="text-lg font-black text-sky-950">Checklist bénévole</h3><p className="mt-1 text-sm text-sky-900">{checklist.staffing.label}. Les recommandations ne constituent pas une garantie de sécurité.</p></div><p className="text-xs font-semibold text-sky-800">{checklist.weatherMessage}</p></div><div className="grid gap-4 md:grid-cols-3"><div><h4 className="mb-2 text-sm font-bold text-sky-950">À apporter</h4>{checklistGroup(checklist.toBring, "Aucun complément calculé.")}</div><div><h4 className="mb-2 text-sm font-bold text-sky-950">Recommandé selon la météo</h4>{checklistGroup(checklist.weatherRecommendations, checklist.weatherMessage)}</div><div><h4 className="mb-2 text-sm font-bold text-sky-950">Fourni par l’organisateur</h4>{checklistGroup(checklist.provided, "Aucun équipement déclaré.")}</div></div></div></CmmCard> : null}
+      {checklist ? (
+        <CmmCard tone="sky" variant="outlined" size="md" data-testid="action-day-volunteer-checklist">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <h3 className="text-lg font-black text-sky-950">Checklist bénévole</h3>
+                <p className="mt-1 text-sm text-sky-900">{checklist.staffing.label}. Les recommandations ne constituent pas une garantie de sécurité.</p>
+              </div>
+              {checklist.weatherMessage ? <p className="text-xs font-semibold text-sky-800">{checklist.weatherMessage}</p> : null}
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div>
+                <h4 className="mb-2 text-sm font-bold text-sky-950">À apporter</h4>
+                {checklistGroup(checklist.toBring, "Aucun complément calculé.")}
+              </div>
+              <div>
+                <h4 className="mb-2 text-sm font-bold text-sky-950">Recommandé selon la météo</h4>
+                {checklist.weatherState === "success" ? (
+                  <>
+                    {checklistGroup(checklist.weatherRecommendations, "Aucune recommandation météo particulière.")}
+                    <WeatherForecastMeta checklist={checklist} />
+                  </>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm text-slate-600">{checklist.weatherState === "idle" ? "Les recommandations météo sont calculées uniquement sur demande." : checklist.weatherMessage}</p>
+                    <CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={() => void weather.requestWeather()} disabled={checklist.weatherState === "loading"} aria-busy={checklist.weatherState === "loading"}>
+                      Voir les recommandations selon la météo
+                    </CmmButton>
+                  </div>
+                )}
+              </div>
+              <div>
+                <h4 className="mb-2 text-sm font-bold text-sky-950">Fourni par l’organisateur</h4>
+                {checklistGroup(checklist.provided, "Aucun équipement déclaré.")}
+              </div>
+            </div>
+          </div>
+        </CmmCard>
+      ) : null}
       <CmmCard tone="emerald" variant="muted" size="md"><div className="space-y-3"><h3 className="flex items-center gap-2 text-lg font-black text-emerald-950"><CheckCircle2 size={18} />Checklist de départ</h3><ul className="grid gap-2 sm:grid-cols-2">{action.checklist.length > 0 ? action.checklist.map((item) => <li key={item.key} className="flex items-start gap-2 rounded-xl bg-white/80 px-3 py-2 cmm-text-body cmm-text-primary"><CheckCircle2 size={15} className={item.checked ? "mt-0.5 shrink-0 text-emerald-600" : "mt-0.5 shrink-0 text-slate-300"} aria-hidden="true" /><span>{item.label}</span></li>) : <li className="cmm-text-body cmm-text-primary">Checklist non renseignée.</li>}</ul><p className="flex items-center gap-2 cmm-text-caption text-emerald-700"><Users size={14} />La checklist ne vaut pas pointage : aucune présence ni réclamation n’est créée ici.</p></div></CmmCard>
     </div>
   );
+}
+
+function WeatherForecastMeta({ checklist }: { checklist: NonNullable<ActionDayBriefing["action"]["volunteerChecklist"]> }) {
+  if (!checklist.weatherForecast) return null;
+  return <p className="mt-2 text-xs text-sky-800">Créneau : {checklist.weatherForecast.coveredWindow.startAt.replace("T", " ")} – {checklist.weatherForecast.coveredWindow.endAt.slice(11)} · Prévision récupérée le {new Date(checklist.weatherForecast.fetchedAt).toLocaleString("fr-FR")}</p>;
 }

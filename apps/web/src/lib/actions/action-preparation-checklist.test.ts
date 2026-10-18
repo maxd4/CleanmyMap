@@ -138,6 +138,7 @@ describe("action volunteer preparation checklist", () => {
       weatherRequest: weatherRequest(),
     });
     expect(result.weatherStatus).toBe("available");
+    expect(result.weatherState).toBe("success");
     expect(result.weatherRecommendations.map((entry) => entry.key)).toEqual(expect.arrayContaining([
       "weather-rain",
       "weather-cold",
@@ -159,7 +160,21 @@ describe("action volunteer preparation checklist", () => {
       weatherRequest: weatherRequest(),
     });
     expect(result.weatherRecommendations).toEqual([]);
-    expect(result.weatherMessage).toBe("Prévisions météo indisponibles pour cette action");
+    expect(result.weatherMessage).toBe("Prévisions météo indisponibles pour cette action.");
+    expect(result.weatherState).toBe("unavailable");
+  });
+
+  it("keeps weather recommendations idle until an explicit request", () => {
+    const result = deriveActionVolunteerChecklist({
+      preparation: { expectedWasteCategories: ["plastic"] },
+      weatherContext: weather([{ temperatureC: 2, precipitationMm: 4, windKmh: 40 }]),
+      weatherRequest: weatherRequest(),
+      weatherState: "idle",
+    });
+
+    expect(result.weatherRecommendations).toEqual([]);
+    expect(result.weatherMessage).toBe("");
+    expect(result.weatherState).toBe("idle");
   });
 
   it("rejects an otherwise valid forecast when its date, location or freshness no longer matches", () => {

@@ -1,3 +1,5 @@
+"use client";
+
 import { AlertTriangle, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
@@ -9,6 +11,8 @@ import { buildPublicActionPracticalInformation } from "@/lib/actions/participati
 import { ActionCreationLegalPanel } from "../../action-creation-legal-panel";
 import { deriveActionFormalitiesFacts } from "@/lib/actions/formalities-facts";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
+import { deriveActionVolunteerChecklist } from "@/lib/actions/action-preparation-checklist";
+import { createActionPreparationWeatherRequest, useActionPreparationWeather } from "../../use-action-preparation-weather";
 
 export function ActionBeforeVerificationSection({
   form,
@@ -41,6 +45,24 @@ export function ActionBeforeVerificationSection({
     placeType: form.placeType,
   });
   const publicInformation = buildPublicActionPracticalInformation(buildPreparationDataFromForm(form));
+  const weatherRequest = createActionPreparationWeatherRequest({
+    actionDate: form.actionDate,
+    scheduledStartTime: form.eventStartTime || form.departureTime || form.meetingTime,
+    scheduledEndTime: form.eventEndTime,
+    latitude: form.latitude,
+    longitude: form.longitude,
+  });
+  const weather = useActionPreparationWeather({
+    contextId: actionId,
+    request: weatherRequest,
+    initialWeatherContext: form.routeCalibrationContext?.plannerSnapshot?.weatherContext ?? null,
+  });
+  const weatherChecklist = deriveActionVolunteerChecklist({
+    preparation: null,
+    weatherContext: weather.weatherContext,
+    weatherRequest: weather.weatherRequest,
+    weatherState: weather.weatherState,
+  });
   const corrections = [
     ...validationIssues,
     ...(guidedReadiness === "blocked" ? ["Une formalité démontrée comme requise reste à déclarer envoyée."] : []),
@@ -91,7 +113,7 @@ export function ActionBeforeVerificationSection({
             <PreviewValue label="Équipements fournis" value={publicInformation.equipmentProvided.join(" · ") || "Non renseigné"} />
             <PreviewValue label="Convivialité" value={publicInformation.refreshmentsProvided.join(" · ") || "Non renseignée"} />
             <PreviewValue label="Checklist bénévole · à apporter" value={publicInformation.volunteerChecklist?.toBring.map((item) => item.label).join(" · ") || "Aucun complément calculé"} />
-            <PreviewValue label="Checklist bénévole · météo" value={publicInformation.volunteerChecklist?.weatherRecommendations.map((item) => item.label).join(" · ") || publicInformation.volunteerChecklist?.weatherMessage || "Prévisions indisponibles"} />
+            <PreviewWeatherValue checklist={weatherChecklist} onRequest={() => void weather.requestWeather()} />
             <PreviewValue label="Accessibilité" value={publicInformation.accessibility ?? "Non évaluée"} />
           </dl>
         </div>
@@ -137,4 +159,21 @@ function ReviewGroup({ title, tone, items }: { title: string; tone: "rose" | "am
 
 function PreviewValue({ label, value }: { label: string; value: string }) {
   return <div><dt className="text-xs font-black uppercase tracking-[0.1em] text-sky-700">{label}</dt><dd className="mt-1 whitespace-pre-line leading-5 text-sky-950">{value}</dd></div>;
+}
+
+function PreviewWeatherValue({
+  checklist,
+  onRequest,
+}: {
+  checklist: ReturnType<typeof deriveActionVolunteerChecklist>;
+  onRequest: () => void;
+}) {
+  return <div>
+    <dt className="text-xs font-black uppercase tracking-[0.1em] text-sky-700">Checklist bénévole · météo</dt>
+    <dd className="mt-1 whitespace-pre-line leading-5 text-sky-950">
+      {checklist.weatherState === "success"
+        ? checklist.weatherRecommendations.map((item) => item.label).join(" · ") || "Aucune recommandation météo particulière."
+        : <div className="space-y-2"><p>{checklist.weatherState === "idle" ? "Les recommandations météo sont calculées uniquement sur demande." : checklist.weatherMessage}</p><CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={onRequest} disabled={checklist.weatherState === "loading"} aria-busy={checklist.weatherState === "loading"}>Voir les recommandations selon la météo</CmmButton></div>}
+    </dd>
+  </div>;
 }

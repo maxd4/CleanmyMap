@@ -1,4 +1,5 @@
 import type { ActionChecklistProvenance } from "./action-preparation-checklist";
+import type { PlannerWeatherContext, PlannerWeatherContextRequest } from "@/lib/weather/planner-weather";
 
 export type ActionDayBriefing = {
   status: "ok";
@@ -28,7 +29,11 @@ export type ActionDayBriefing = {
       weatherRecommendations: Array<{ key: string; label: string; detail: string | null; provenance: ActionChecklistProvenance[] }>;
       provided: Array<{ key: string; label: string; detail: string | null; provenance: ActionChecklistProvenance[] }>;
       weatherStatus: "available" | "unavailable";
+      weatherState: "idle" | "loading" | "success" | "unavailable" | "error";
       weatherMessage: string;
+      weatherForecast?: { fetchedAt: string; coveredWindow: { startAt: string; endAt: string } } | null;
+      weatherContext?: PlannerWeatherContext | null;
+      weatherRequest?: PlannerWeatherContextRequest | null;
       staffing: { source: "confirmed" | "expected" | "unknown"; count: number | null; label: string };
       insufficiencies: string[];
     };

@@ -116,11 +116,16 @@ reste inconnue ; aucun ratio sacs/pinces par bénévole n'est inventé et une
 insuffisance n'est affichée que lorsque le stock et l'effectif sont connus.
 
 La dérivation ne modifie jamais `preparationChecklist`, ne persiste pas de copie
-et n'est pas une certification de sécurité. La météo ne provient que d'une
-prévision horaire `Europe/Paris` correspondant au lieu et au créneau retenus par
-le planner/Open-Meteo ; hors horizon, créneau incomplet ou fournisseur
-indisponible, seuls les conseils généraux et le matériel déclaré sont conservés.
-Un rafraîchissement météo seul ne déclenche pas de notification de changement
+et n'est pas une certification de sécurité. Les conseils généraux sont affichés
+immédiatement ; la prévision horaire `Europe/Paris` correspondant au lieu et au
+créneau retenus par le planner/Open-Meteo n'est demandée qu'après le bouton
+explicite `Voir les recommandations selon la météo`. Avant ce clic, aucun appel
+météo n'est lancé. Un instantané n'est réutilisé que s'il est compatible et
+récent ; hors horizon, créneau incomplet ou fournisseur indisponible, le message
+`Prévisions météo indisponibles pour cette action.` est affiché après la demande
+et les conseils généraux restent conservés. Un changement de date, d'horaire ou
+de lieu réinitialise l'état sans relancer automatiquement la prévision, tandis
+qu'un rafraîchissement météo seul ne déclenche pas de notification de changement
 de matériel.
 
 

@@ -12,7 +12,7 @@ import {
 } from "./ops-weather";
 import { parseCivilDateAsUtc } from "@/lib/time/civil-date";
 
-const PLANNER_WEATHER_SNAPSHOT_VERSION = "planner-weather-snapshot-v1" as const;
+export const PLANNER_WEATHER_SNAPSHOT_VERSION = "planner-weather-snapshot-v1" as const;
 const PLANNER_WEATHER_PROVIDER = "open-meteo" as const;
 const PLANNER_WEATHER_TIMEZONE = "Europe/Paris" as const;
 export const PLANNER_WEATHER_FORECAST_DAYS = 16;

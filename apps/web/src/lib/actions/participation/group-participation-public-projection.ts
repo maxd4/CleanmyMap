@@ -8,6 +8,7 @@ import {
 } from "@/lib/actions/preparation-contract";
 import {
   deriveActionVolunteerChecklist,
+  type ActionWeatherState,
   type ActionVolunteerChecklist,
 } from "@/lib/actions/action-preparation-checklist";
 import type {
@@ -81,6 +82,7 @@ export function buildPublicActionPracticalInformation(
     confirmedParticipants?: number | null;
     weatherContext?: PlannerWeatherContext | null;
     weatherRequest?: PlannerWeatherContextRequest | null;
+    weatherState?: ActionWeatherState;
   } = {},
 ): PublicActionPracticalInformation {
   const guidance = buildWasteFieldGuidance(preparationData?.expectedWasteCategories);
@@ -97,6 +99,7 @@ export function buildPublicActionPracticalInformation(
     confirmedParticipants: options.confirmedParticipants,
     weatherContext: options.weatherContext ?? preparationWeatherContext(preparationData),
     weatherRequest: options.weatherRequest,
+    weatherState: options.weatherState ?? "idle",
   });
 
   return {

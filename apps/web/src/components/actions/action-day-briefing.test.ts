@@ -23,6 +23,16 @@ const briefing = {
     refreshmentsProvided: ["Eau fournie pendant l'action"],
     accessibility: null,
     route: { topology: "loop", departureLabel: "Place centrale", arrivalLabel: null, hasSelectedOperationalRoute: false, targetDistanceKm: null, networkDistanceKm: null },
+    volunteerChecklist: {
+      toBring: [],
+      weatherRecommendations: [],
+      provided: [],
+      weatherStatus: "unavailable",
+      weatherState: "idle",
+      weatherMessage: "",
+      staffing: { source: "unknown", count: null, label: "Effectif exploitable non renseigné" },
+      insufficiencies: [],
+    },
   },
 } as unknown as ActionDayBriefing;
 
@@ -37,5 +47,22 @@ describe("action day briefing projection", () => {
     expect(text).toContain("Eau fournie pendant l'action");
     expect(text).not.toContain("notes");
     expect(text).not.toContain("actionId");
+    expect(text).not.toContain("météo");
+  });
+
+  it("includes weather only after a successful explicit forecast request", () => {
+    const withWeather = {
+      ...briefing,
+      action: {
+        ...briefing.action,
+        volunteerChecklist: {
+          ...briefing.action.volunteerChecklist,
+          weatherState: "success",
+          weatherRecommendations: [{ key: "rain", label: "Prévoir une veste imperméable", detail: null, provenance: ["weather_forecast"] }],
+        },
+      },
+    } as ActionDayBriefing;
+
+    expect(buildActionDayBriefingText(withWeather)).toContain("Checklist — météo : Prévoir une veste imperméable");
   });
 });
