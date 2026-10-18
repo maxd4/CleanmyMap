@@ -10,7 +10,7 @@ import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapsho
 export const runtime = "nodejs";
 
 const RECYCLING_BREAKDOWN_TTL_MINUTES = 60;
-const RECYCLING_BREAKDOWN_VERSION = "public-recycling-breakdown-v2";
+const RECYCLING_BREAKDOWN_VERSION = "public-recycling-breakdown-v3";
 const RECYCLING_BREAKDOWN_SNAPSHOT_KEY = "recycling-breakdown";
 
 export async function GET() {

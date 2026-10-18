@@ -65,6 +65,8 @@ export type UnifiedActionSourceLoadResult = {
   localContracts: ActionDataContract[];
   failedSources: ActionSourceName[];
   availableSources: ActionSourceName[];
+  /** Sources whose bounded raw window may hide rows after filtering/deduplication. */
+  truncatedSources: ActionSourceName[];
 };
 
 export type UnifiedContractOrigin = "remote" | "local";

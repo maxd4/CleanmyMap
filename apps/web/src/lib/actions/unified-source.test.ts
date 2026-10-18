@@ -444,6 +444,40 @@ describe("unified action source", () => {
     );
   });
 
+  it("keeps raw action truncation visible after test-seed filtering", async () => {
+    fetchActionsMock.mockResolvedValue([
+      remoteAction("runtime_seed-action"),
+      ...Array.from({ length: 2000 }, (_, index) => remoteAction(`eligible-${index}`)),
+      remoteAction("eligible-after-window"),
+    ]);
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+
+    const result = await fetchUnifiedActionContracts(
+      createSupabase([]) as never,
+      params({ limit: 2000, types: ["action"] }),
+    );
+
+    expect(result.items).toHaveLength(2000);
+    expect(result.isTruncated).toBe(true);
+  });
+
+  it("keeps raw action truncation visible after duplicate removal", async () => {
+    fetchActionsMock.mockResolvedValue([
+      remoteAction("duplicate-action"),
+      remoteAction("duplicate-action"),
+      ...Array.from({ length: 1999 }, (_, index) => remoteAction(`unique-${index}`)),
+    ]);
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+
+    const result = await fetchUnifiedActionContracts(
+      createSupabase([]) as never,
+      params({ limit: 2000, types: ["action"] }),
+    );
+
+    expect(result.items).toHaveLength(2000);
+    expect(result.isTruncated).toBe(true);
+  });
+
   it("keeps paginating canonical spots when the server cap shortens each page", async () => {
     const allRows = Array.from({ length: 2001 }, (_, index) =>
       canonicalSpot({ id: `spot-${index}` }),
@@ -483,6 +517,8 @@ describe("unified action source", () => {
 
     expect(result.items).toHaveLength(2000);
     expect(result.isTruncated).toBe(true);
+    expect(query.order).toHaveBeenNthCalledWith(1, "created_at", { ascending: false });
+    expect(query.order).toHaveBeenNthCalledWith(2, "id", { ascending: false });
     expect(rangeCalls).toEqual([
       [0, 999],
       [500, 1499],

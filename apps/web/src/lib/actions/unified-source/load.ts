@@ -27,7 +27,8 @@ function buildCanonicalSpotsQuery(
     .select(
       "id, created_at, created_by_clerk_id, label, spot_type, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, status, notes",
     )
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
   if (pageRange && pageSize) {
     query = query.limit(pageSize).range(pageRange.from, pageRange.to);
   } else if (params.limit !== null) {
@@ -188,6 +189,7 @@ export async function loadUnifiedActionSourceData(
 
   const failedSources: UnifiedActionSourceLoadResult["failedSources"] = [];
   const availableSources: UnifiedActionSourceLoadResult["availableSources"] = [];
+  const truncatedSources: UnifiedActionSourceLoadResult["truncatedSources"] = [];
 
   if (wantsActions && remoteRowsResult.status === "rejected") {
     failedSources.push("actions");
@@ -216,6 +218,23 @@ export async function loadUnifiedActionSourceData(
     });
   }
 
+  if (
+    wantsActions &&
+    sourceLimit !== null &&
+    remoteRowsResult.status === "fulfilled" &&
+    remoteRowsResult.value.length >= sourceLimit
+  ) {
+    truncatedSources.push("actions");
+  }
+  if (
+    wantsSpots &&
+    sourceLimit !== null &&
+    remoteSpotsResult.status === "fulfilled" &&
+    remoteSpotsResult.value.length >= sourceLimit
+  ) {
+    truncatedSources.push("spots");
+  }
+
   const localContractsValue =
     localContractsResult?.status === "fulfilled" ? localContractsResult.value : [];
 
@@ -225,5 +244,6 @@ export async function loadUnifiedActionSourceData(
     localContracts: localContractsValue,
     failedSources,
     availableSources,
+    truncatedSources,
   };
 }

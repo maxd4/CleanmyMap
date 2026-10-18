@@ -55,6 +55,7 @@ export async function fetchUnifiedActionContracts(
     localContracts,
     failedSources,
     availableSources,
+    truncatedSources,
   } = await loadUnifiedActionSourceData(supabase, params);
   const fallbackLocalContracts = failedSources.includes("actions")
     ? filterContractsByViewport(localContracts, params.viewport)
@@ -69,7 +70,7 @@ export async function fetchUnifiedActionContracts(
 
   return {
     items,
-    isTruncated,
+    isTruncated: isTruncated || truncatedSources.length > 0,
     sourceHealth: buildUnifiedSourceHealth(failedSources, availableSources),
   };
 }

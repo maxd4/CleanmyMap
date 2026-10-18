@@ -74,14 +74,14 @@ describe("recycling breakdown route", () => {
     });
   });
 
-  it("builds a complete v2 snapshot", async () => {
+  it("builds a complete v3 snapshot", async () => {
     const response = await GET();
     const body = (await response.json()) as { status?: string };
 
     expect(response.status).toBe(200);
     expect(body.status).toBe("ok");
     expect(lastSnapshotOptions).toMatchObject({
-      version: "public-recycling-breakdown-v2",
+      version: "public-recycling-breakdown-v3",
       allowStaleOnBuildError: false,
     });
     expect(fetchUnifiedActionContractsMock).toHaveBeenCalledWith(
