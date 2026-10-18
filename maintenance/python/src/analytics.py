@@ -8,6 +8,43 @@ def _safe_datetime(series: pd.Series) -> pd.Series:
     return pd.to_datetime(series, errors="coerce")
 
 
+def _parse_datetime_series(series: pd.Series) -> tuple[pd.Series, pd.Series, pd.Series]:
+    parsed_values: list[pd.Timestamp | pd.NaT] = []
+    aware_values: list[bool] = []
+    invalid_values: list[bool] = []
+
+    for value in series.tolist():
+        try:
+            if bool(pd.isna(value)):
+                parsed_values.append(pd.NaT)
+                aware_values.append(False)
+                invalid_values.append(False)
+                continue
+            parsed = pd.to_datetime(value, errors="coerce")
+            if bool(pd.isna(parsed)):
+                parsed_values.append(pd.NaT)
+                aware_values.append(False)
+                invalid_values.append(True)
+                continue
+            timestamp = pd.Timestamp(parsed)
+            is_aware = timestamp.tzinfo is not None and timestamp.utcoffset() is not None
+        except (OverflowError, TypeError, ValueError):
+            parsed_values.append(pd.NaT)
+            aware_values.append(False)
+            invalid_values.append(True)
+            continue
+
+        parsed_values.append(timestamp)
+        aware_values.append(is_aware)
+        invalid_values.append(False)
+
+    return (
+        pd.Series(parsed_values, index=series.index, dtype="object"),
+        pd.Series(aware_values, index=series.index, dtype="bool"),
+        pd.Series(invalid_values, index=series.index, dtype="bool"),
+    )
+
+
 def _summarize_numeric_measure(df: pd.DataFrame, column: str) -> dict[str, object]:
     source = df[column] if column in df.columns else pd.Series(pd.NA, index=df.index, dtype="object")
     numeric = pd.to_numeric(source, errors="coerce")
@@ -54,6 +91,7 @@ def _summarize_validation_delays(df: pd.DataFrame) -> tuple[float | None, float 
             "invalid_created_at_count": 0,
             "missing_validated_at_count": 0,
             "invalid_validated_at_count": 0,
+            "timezone_mismatch_count": 0,
             "negative_delay_count": 0,
             "is_exhaustive": False,
         }
@@ -61,16 +99,27 @@ def _summarize_validation_delays(df: pd.DataFrame) -> tuple[float | None, float 
     eligible = df[df["status"].isin(["approved", "rejected"])]
     created_source = eligible["created_at"]
     validated_source = eligible["validated_at"]
-    created = _safe_datetime(created_source)
-    validated = _safe_datetime(validated_source)
+    created, created_aware, created_invalid = _parse_datetime_series(created_source)
+    validated, validated_aware, validated_invalid = _parse_datetime_series(validated_source)
     created_missing = created_source.isna()
     validated_missing = validated_source.isna()
-    created_invalid = created_source.notna() & created.isna()
-    validated_invalid = validated_source.notna() & validated.isna()
     both_present = created.notna() & validated.notna()
-    delays = (validated - created).dt.total_seconds() / 86400.0
-    negative_delay = both_present & delays.lt(0)
-    valid = both_present & ~negative_delay
+    timezone_mismatch = both_present & created_aware.ne(validated_aware)
+    delay_values: list[float | None] = []
+    for created_value, validated_value, mismatch in zip(created, validated, timezone_mismatch, strict=True):
+        if pd.isna(created_value) or pd.isna(validated_value) or mismatch:
+            delay_values.append(None)
+            continue
+        try:
+            if created_value.tzinfo is not None:
+                created_value = created_value.tz_convert("UTC")
+                validated_value = validated_value.tz_convert("UTC")
+            delay_values.append((validated_value - created_value).total_seconds() / 86400.0)
+        except (OverflowError, TypeError, ValueError):
+            delay_values.append(None)
+    delays = pd.Series(delay_values, index=eligible.index, dtype="float64")
+    negative_delay = both_present & ~timezone_mismatch & delays.lt(0)
+    valid = delays.notna() & ~negative_delay
     valid_count = int(valid.sum())
     eligible_count = len(eligible)
     is_exhaustive = eligible_count > 0 and valid_count == eligible_count
@@ -91,6 +140,7 @@ def _summarize_validation_delays(df: pd.DataFrame) -> tuple[float | None, float 
         "invalid_created_at_count": int(created_invalid.sum()),
         "missing_validated_at_count": int(validated_missing.sum()),
         "invalid_validated_at_count": int(validated_invalid.sum()),
+        "timezone_mismatch_count": int(timezone_mismatch.sum()),
         "negative_delay_count": int(negative_delay.sum()),
         "is_exhaustive": is_exhaustive,
     }

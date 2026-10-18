@@ -16,6 +16,7 @@ def test_empty_frames_keep_measurements_unavailable() -> None:
     assert result["estimated_cost_saved_eur"] is None
     assert result["measurement_quality"]["dechets_kg"]["state"] == "unavailable"
     assert result["measurement_quality"]["megots"]["state"] == "unavailable"
+    assert result["validation_quality"]["state"] == "unavailable"
 
 
 def test_explicit_zero_is_observed_and_complete_measurements_keep_historical_totals() -> None:
@@ -120,3 +121,97 @@ def test_validation_delay_remains_available_when_all_eligible_dates_are_valid() 
     assert result["observed_avg_validation_delay_days"] == 1.5
     assert result["validation_quality"]["state"] == "available"
     assert result["validation_quality"]["is_exhaustive"] is True
+
+
+def test_utc_validation_dates_remain_available() -> None:
+    result = compute_advanced_kpis(
+        _submissions(
+            [
+                {
+                    "status": "approved",
+                    "created_at": "2026-01-01T00:00:00Z",
+                    "validated_at": "2026-01-02T00:00:00Z",
+                }
+            ]
+        ),
+        pd.DataFrame({"dechets_kg": [0.0], "megots": [0]}),
+    )
+
+    assert result["avg_validation_delay_days"] == 1.0
+    assert result["validation_quality"]["state"] == "available"
+    assert result["validation_quality"]["timezone_mismatch_count"] == 0
+
+
+def test_validation_dates_with_different_offsets_are_compared_in_utc() -> None:
+    result = compute_advanced_kpis(
+        _submissions(
+            [
+                {
+                    "status": "approved",
+                    "created_at": "2026-01-01T00:00:00+02:00",
+                    "validated_at": "2026-01-01T03:00:00+00:00",
+                }
+            ]
+        ),
+        pd.DataFrame({"dechets_kg": [0.0], "megots": [0]}),
+    )
+
+    assert result["avg_validation_delay_days"] == 5 / 24
+    assert result["observed_avg_validation_delay_days"] == 5 / 24
+    assert result["validation_quality"]["state"] == "available"
+
+
+def test_aware_and_naive_validation_dates_are_unavailable_without_timezone_assumption() -> None:
+    result = compute_advanced_kpis(
+        _submissions(
+            [
+                {
+                    "status": "approved",
+                    "created_at": "2026-01-01T00:00:00Z",
+                    "validated_at": "2026-01-02T00:00:00",
+                }
+            ]
+        ),
+        pd.DataFrame({"dechets_kg": [0.0], "megots": [0]}),
+    )
+
+    quality = result["validation_quality"]
+    assert result["avg_validation_delay_days"] is None
+    assert result["observed_avg_validation_delay_days"] is None
+    assert quality["state"] == "unavailable"
+    assert quality["valid_count"] == 0
+    assert quality["timezone_mismatch_count"] == 1
+    assert quality["is_exhaustive"] is False
+
+
+def test_valid_and_incompatible_validation_dates_remain_partial() -> None:
+    result = compute_advanced_kpis(
+        _submissions(
+            [
+                {
+                    "status": "approved",
+                    "created_at": "2026-01-01",
+                    "validated_at": "2026-01-02",
+                },
+                {
+                    "status": "approved",
+                    "created_at": "2026-01-01T00:00:00Z",
+                    "validated_at": "2026-01-02T00:00:00",
+                },
+                {
+                    "status": "rejected",
+                    "created_at": "2026-01-01T00:00:00Z",
+                    "validated_at": "2026-01-01T12:00:00Z",
+                },
+            ]
+        ),
+        pd.DataFrame({"dechets_kg": [0.0], "megots": [0]}),
+    )
+
+    quality = result["validation_quality"]
+    assert result["avg_validation_delay_days"] is None
+    assert result["observed_avg_validation_delay_days"] == 0.75
+    assert quality["state"] == "partial"
+    assert quality["valid_count"] == 2
+    assert quality["timezone_mismatch_count"] == 1
+    assert quality["is_exhaustive"] is False
