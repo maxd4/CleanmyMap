@@ -60,7 +60,7 @@ type ActionCreationCallbacks = {
     update: Partial<
       Pick<
         ActionPreparationContext,
-        "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials"
+        "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials" | "equipmentInventory" | "refreshmentsProvided"
       >
     >,
   ) => void;

@@ -27,6 +27,8 @@ export function makeJoinableActionItem(
       materialsToBring: null,
       derivedMaterials: [],
       materialsProvided: null,
+      equipmentProvided: [],
+      refreshmentsProvided: [],
       participantMessage: null,
     },
   };

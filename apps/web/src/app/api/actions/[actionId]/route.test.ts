@@ -33,6 +33,39 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     );
   });
 
+  it("reuses the existing canManageAction boundary for structured equipment edits", async () => {
+    const response = await patchAction({
+      preparationData: {
+        equipmentInventory: { glovesPairs: 3 },
+        refreshmentsProvided: { waterDuringAction: true },
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({
+      preparation_data: expect.objectContaining({
+        equipmentInventory: { glovesPairs: 3 },
+        refreshmentsProvided: { waterDuringAction: true },
+      }),
+    }));
+  });
+
+  it("refuses structured equipment edits from an unrelated Clerk user", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: true, userId: "unrelated-user" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "unrelated-user",
+      role: "benevole",
+      activeRole: "benevole",
+    });
+
+    const response = await patchAction({
+      preparationData: { equipmentInventory: { glovesPairs: 3 } },
+    });
+
+    expect(response.status).toBe(403);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
   it("uses the revision returned by each persisted write for concurrent operational notifications", async () => {
     loadActionByIdMock.mockResolvedValue({
       id: "action-test-1",

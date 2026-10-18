@@ -143,6 +143,8 @@ describe("shared action preparation context", () => {
         suggestedMaterials: ["gloves", "gloves"],
         materialsProvided: "Pinces sur place",
         recommendedMaterials: "Eau",
+        equipmentInventory: { glovesPairs: 0, garbageBags: 4 },
+        refreshmentsProvided: { waterDuringAction: true, drinksAfterAction: false },
       },
     });
 
@@ -152,5 +154,7 @@ describe("shared action preparation context", () => {
     expect(context.suggestedMaterials).toEqual(["gloves"]);
     expect(context.materialsProvided).toBe("Pinces sur place");
     expect(context.recommendedMaterials).toBe("Eau");
+    expect(context.equipmentInventory).toEqual({ glovesPairs: 0, garbageBags: 4 });
+    expect(context.refreshmentsProvided).toEqual({ waterDuringAction: true, drinksAfterAction: false });
   });
 });

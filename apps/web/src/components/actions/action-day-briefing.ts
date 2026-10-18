@@ -14,6 +14,8 @@ export function buildActionDayBriefingText(briefing: ActionDayBriefing): string 
   action.organizerLabel ? `Organisateur : ${action.organizerLabel}` : null,
   action.recommendedMaterials ? `À apporter : ${action.recommendedMaterials}` : null,
   action.materialsProvided ? `Fourni : ${action.materialsProvided}` : null,
+  action.equipmentProvided?.length ? `Équipements déclarés : ${action.equipmentProvided.join(", ")}` : null,
+  action.refreshmentsProvided?.length ? `Convivialité : ${action.refreshmentsProvided.join(", ")}` : null,
   action.safetyInstructions ? `Consignes : ${action.safetyInstructions}` : null,
   action.participantMessage ? `Informations pratiques : ${action.participantMessage}` : null,
   action.accessibility ? `Accessibilité : ${action.accessibility}` : null,

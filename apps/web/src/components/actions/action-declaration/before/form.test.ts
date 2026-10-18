@@ -204,6 +204,8 @@ describe("ActionBeforeDeclarationForm", () => {
     form.materialsProvided = "Pinces disponibles.";
     form.suggestedMaterials = ["gloves", "grabbers"];
     form.recommendedMaterials = "Prévoir de l'eau.";
+    form.equipmentInventory = { glovesPairs: 0, garbageBags: 6, firstAidKitAvailable: true };
+    form.refreshmentsProvided = { waterDuringAction: true, snackAfterAction: true };
     form.accessibilityStatus = "conditions_reported";
     form.accessibility = "Accès par la rue latérale.";
     form.preparationChecklist[0] = { ...form.preparationChecklist[0], checked: true };
@@ -239,6 +241,11 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).not.toContain("min-h-[132px]");
     expect(html).toContain('data-cmm-field-control="textarea"');
     expect(html).toContain('data-cmm-field-control="select"');
+    expect(html).toContain("Équipements fournis");
+    expect(html).toContain("Paires de gants");
+    expect(html).toContain("Convivialité");
+    expect(html).toContain("Aperçu déclaré");
+    expect(html).toContain('data-testid="preparation-equipment-preview"');
   });
 
   it("keeps historical preparation values editable in the team section", () => {

@@ -18,10 +18,17 @@ import {
 import { preparationFormalitiesSchemaFields } from "./action-formalities";
 import {
   ACTION_ACCESSIBILITY_STATUSES,
+  ACTION_EQUIPMENT_INVENTORY,
   ACTION_MATERIAL_SUGGESTIONS,
+  ACTION_REFRESHMENT_OPTIONS,
   isActionMaterialSuggestion,
 } from "@/lib/actions/preparation-contract";
-import type { ActionMaterialSuggestion } from "@/lib/actions/preparation-contract";
+import type {
+  ActionEquipmentAvailabilityKey,
+  ActionEquipmentQuantityKey,
+  ActionMaterialSuggestion,
+  ActionRefreshmentsProvided,
+} from "@/lib/actions/preparation-contract";
 
 export const routeCalibrationContextSchema = z.custom<RouteCalibrationContext>(
   isRouteCalibrationContext,
@@ -51,6 +58,15 @@ const preparationChecklistSchema = z.array(preparationChecklistItemSchema).max(1
     seen.add(item.key);
   });
 });
+const equipmentQuantityKeys = ACTION_EQUIPMENT_INVENTORY.filter((item) => item.kind === "quantity").map((item) => item.key) as ActionEquipmentQuantityKey[];
+const equipmentAvailabilityKeys = ACTION_EQUIPMENT_INVENTORY.filter((item) => item.kind === "availability").map((item) => item.key) as ActionEquipmentAvailabilityKey[];
+const equipmentInventorySchema = z.object({
+  ...Object.fromEntries(equipmentQuantityKeys.map((key) => [key, z.number().int().min(0).max(10_000).optional()])),
+  ...Object.fromEntries(equipmentAvailabilityKeys.map((key) => [key, z.boolean().optional()])),
+}).strict();
+const refreshmentsProvidedSchema = z.object(
+  Object.fromEntries(ACTION_REFRESHMENT_OPTIONS.map(({ key }) => [key, z.boolean().optional()])),
+).strict() as z.ZodType<ActionRefreshmentsProvided>;
 
 export const preparationDataSchema = z
   .object({
@@ -85,6 +101,8 @@ export const preparationDataSchema = z
     recommendedMaterials: z.string().max(2000).optional(),
     materialsProvided: z.string().max(2000).optional(),
     suggestedMaterials: z.array(materialSuggestionSchema).max(ACTION_MATERIAL_SUGGESTIONS.length).optional(),
+    equipmentInventory: equipmentInventorySchema.optional(),
+    refreshmentsProvided: refreshmentsProvidedSchema.optional(),
     participantMessage: z.string().max(2000).optional(),
     ...preparationFormalitiesSchemaFields,
     logisticsNotes: z.string().max(2000).optional(),

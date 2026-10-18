@@ -18,6 +18,8 @@ const briefing = {
     safetyInstructions: "Gants obligatoires",
     recommendedMaterials: "Gants",
     materialsProvided: null,
+    equipmentProvided: ["Paires de gants : 0"],
+    refreshmentsProvided: ["Eau fournie pendant l'action"],
     accessibility: null,
     route: { topology: "loop", departureLabel: "Place centrale", arrivalLabel: null, hasSelectedOperationalRoute: false, targetDistanceKm: null, networkDistanceKm: null },
   },
@@ -28,6 +30,8 @@ describe("action day briefing projection", () => {
     const text = buildActionDayBriefingText(briefing);
     expect(text).toContain("Place centrale");
     expect(text).toContain("Gants obligatoires");
+    expect(text).toContain("Paires de gants : 0");
+    expect(text).toContain("Eau fournie pendant l'action");
     expect(text).not.toContain("notes");
     expect(text).not.toContain("actionId");
   });

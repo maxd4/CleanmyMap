@@ -19,6 +19,8 @@ function nextPreparationContextFromForm(context: ActionPreparationContext, form:
     suggestedMaterials: form.suggestedMaterials,
     materialsProvided: form.materialsProvided,
     recommendedMaterials: form.recommendedMaterials,
+    equipmentInventory: form.equipmentInventory,
+    refreshmentsProvided: form.refreshmentsProvided,
   };
 }
 
@@ -40,6 +42,8 @@ export function useActionCreationPreparationSync({
     } else if (
       JSON.stringify(preparationContext.preparationChecklist) !== JSON.stringify(next.preparationChecklist) ||
       JSON.stringify(preparationContext.suggestedMaterials) !== JSON.stringify(next.suggestedMaterials) ||
+      JSON.stringify(preparationContext.equipmentInventory) !== JSON.stringify(next.equipmentInventory) ||
+      JSON.stringify(preparationContext.refreshmentsProvided) !== JSON.stringify(next.refreshmentsProvided) ||
       preparationContext.materialsProvided !== next.materialsProvided ||
       preparationContext.recommendedMaterials !== next.recommendedMaterials
     ) {
@@ -57,7 +61,7 @@ export function useActionCreationPreparationSync({
     return result;
   }, [preparationContext, setPreparationContext, setWorkflow]);
 
-  const handlePreparationContextChange = useCallback((update: Partial<Pick<ActionPreparationContext, "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials">>) => {
+  const handlePreparationContextChange = useCallback((update: Partial<Pick<ActionPreparationContext, "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials" | "equipmentInventory" | "refreshmentsProvided">>) => {
     setPreparationContext((current) => ({ ...current, ...update }));
     setWorkflow((current) => invalidateActionWorkflow(current, "preparation"));
   }, [setPreparationContext, setWorkflow]);

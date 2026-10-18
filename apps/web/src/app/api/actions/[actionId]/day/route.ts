@@ -11,6 +11,7 @@ import { loadActionById } from "@/lib/actions/store";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
+import { buildPublicActionPracticalInformation } from "@/lib/actions/participation/group-participation-public-projection";
 
 export const runtime = "nodejs";
 // Justification Vercel: le briefing relit l'action, les permissions et l'inscription courantes ; il ne doit jamais être servi depuis un cache partagé.
@@ -66,6 +67,7 @@ async function resolveDayAccess({
 
 function buildDayPayload(action: NonNullable<Awaited<ReturnType<typeof loadActionById>>>, actionId: string, isOrganizer: boolean) {
   const preparation = normalizeActionPreparationData(action.preparation_data ?? {});
+  const practicalInfo = buildPublicActionPracticalInformation(preparation);
   const metadata = extractActionMetadataFromNotes(action.notes);
   const latitude = finiteCoordinate(action.latitude);
   const longitude = finiteCoordinate(action.longitude);
@@ -89,6 +91,8 @@ function buildDayPayload(action: NonNullable<Awaited<ReturnType<typeof loadActio
       safetyInstructions: firstText(preparation.safetyInstructions),
       recommendedMaterials: firstText(preparation.recommendedMaterials),
       materialsProvided: firstText(preparation.materialsProvided),
+      equipmentProvided: practicalInfo.equipmentProvided,
+      refreshmentsProvided: practicalInfo.refreshmentsProvided,
       accessibility: firstText(preparation.accessibility),
       accessibilityStatus: preparation.accessibilityStatus ?? "not_evaluated",
       checklist: (preparation.preparationChecklist ?? []).map((item) => ({ key: item.key, label: item.label, checked: item.checked })),

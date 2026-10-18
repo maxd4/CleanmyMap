@@ -47,6 +47,8 @@ function buildItem(overrides: Partial<JoinableActionItem> = {}): JoinableActionI
       materialsToBring: null,
       derivedMaterials: [],
       materialsProvided: null,
+      equipmentProvided: [],
+      refreshmentsProvided: [],
       participantMessage: null,
     },
     ...overrides,
@@ -101,6 +103,8 @@ describe("Rejoindre une action content contract", () => {
         materialsToBring: "Gants et sacs.",
         derivedMaterials: ["Gants résistants"],
         materialsProvided: null,
+        equipmentProvided: [],
+        refreshmentsProvided: [],
         participantMessage: "Rendez-vous devant la grille.",
       },
     }));

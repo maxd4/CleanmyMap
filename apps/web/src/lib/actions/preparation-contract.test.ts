@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   ACTION_PREPARATION_CHECKLIST_DEFAULTS,
   normalizeActionPreparationContract,
+  normalizeEquipmentInventory,
+  normalizeRefreshmentsProvided,
   normalizePreparationChecklist,
   normalizeSuggestedMaterials,
 } from "./preparation-contract";
@@ -29,11 +31,24 @@ describe("ActionPreparationData preparation extensions", () => {
     expect(normalizeSuggestedMaterials(["gloves", "gloves", "unknown", 1])).toEqual(["gloves"]);
   });
 
+  it("keeps absent quantities absent while preserving zero and independent booleans", () => {
+    expect(normalizeEquipmentInventory({ glovesPairs: 0, garbageBags: undefined, firstAidKitAvailable: false, unknown: 4 })).toEqual({
+      glovesPairs: 0,
+      firstAidKitAvailable: false,
+    });
+    expect(normalizeRefreshmentsProvided({ waterDuringAction: true, drinksAfterAction: false })).toEqual({
+      waterDuringAction: true,
+      drinksAfterAction: false,
+    });
+  });
+
   it("removes invalid structured values at the server normalization boundary", () => {
     expect(normalizeActionPreparationContract({
       interventionMode: { version: "unknown", mode: "itinerary" },
       accessibilityStatus: "certified_pmr",
       suggestedMaterials: ["unknown"],
+      equipmentInventory: { glovesPairs: -1, unknown: 1 },
+      refreshmentsProvided: { waterDuringAction: "yes" },
       preparationChecklist: [{ key: "x", label: "ok", checked: false }],
       checklistBeforeDeparture: "Matériel vérifié",
     })).toEqual({

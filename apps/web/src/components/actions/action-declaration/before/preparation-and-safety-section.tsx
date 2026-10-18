@@ -8,6 +8,7 @@ import { SectionLabel } from "./ui";
 import type { BaseSectionProps } from "./section-contract";
 import { PreparationAccessibilityFields } from "./preparation-accessibility-fields";
 import { PreparationMaterialFields } from "./preparation-material-fields";
+import { PreparationEquipmentFields } from "./preparation-equipment-fields";
 import { PreparationChecklistFields } from "./preparation-checklist-fields";
 import { PreparationSecurityFields } from "./preparation-security-fields";
 import {
@@ -35,6 +36,11 @@ export function PreparationAndSafetySection({ form, updateField, embedded = fals
         <section aria-labelledby="before-material-group" className="space-y-3 border-b border-emerald-100 pb-5">
           <h4 id="before-material-group" className="text-base font-black text-emerald-950">Matériel à prévoir</h4>
           <PreparationMaterialFields form={form} updateField={updateField} />
+        </section>
+
+        <section aria-labelledby="before-equipment-group" className="space-y-3 border-b border-emerald-100 pb-5">
+          <h4 id="before-equipment-group" className="text-base font-black text-emerald-950">Équipements fournis</h4>
+          <PreparationEquipmentFields form={form} updateField={updateField} />
         </section>
 
         <section aria-labelledby="before-accessibility-group" className="space-y-3 border-b border-emerald-100 pb-5">

@@ -39,8 +39,10 @@ import type { RouteGeometryMode, RouteGeometryProvider } from "@/lib/route/route
 import type { ActionRouteVersioning } from "@/lib/route/route-active-version";
 import type {
   ActionAccessibilityStatus,
+  ActionEquipmentInventory,
   ActionMaterialSuggestion,
   ActionPreparationChecklistItem,
+  ActionRefreshmentsProvided,
 } from "./preparation-contract";
 import type { ActionInterventionModeSelection } from "./intervention-mode";
 
@@ -122,6 +124,10 @@ export type ActionPreparationData = {
   materialsProvided?: string;
   /** Quick suggestions only; never interpreted as universal requirements. */
   suggestedMaterials?: ActionMaterialSuggestion[];
+  /** Structured equipment availability; omitted fields remain unknown. */
+  equipmentInventory?: ActionEquipmentInventory;
+  /** Independent refreshment announcements; omitted fields remain unknown. */
+  refreshmentsProvided?: ActionRefreshmentsProvided;
   participantMessage?: string;
   /** Legacy read compatibility only; never accepted from new write payloads or mapped to FormState. */
   creatorRole?: "organisateur" | "benevole" | "association" | "etudiant" | "autre";

@@ -70,6 +70,8 @@ const FORM_STATE_KEYS = [
   "recommendedMaterials",
   "materialsProvided",
   "suggestedMaterials",
+  "equipmentInventory",
+  "refreshmentsProvided",
   "participantMessage",
   "logisticsNotes",
   "preparationChecklist",

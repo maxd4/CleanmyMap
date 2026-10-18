@@ -31,6 +31,8 @@ function buildItem(): JoinableActionItem {
       materialsToBring: null,
       derivedMaterials: [],
       materialsProvided: null,
+      equipmentProvided: [],
+      refreshmentsProvided: [],
       participantMessage: null,
     },
   };

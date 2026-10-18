@@ -118,6 +118,21 @@ describe("action change notification classification", () => {
     })).toEqual(["materials"]);
   });
 
+  it("notifies once for changes to announced equipment or refreshments", () => {
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { equipmentInventory: { glovesPairs: 2 } } }),
+      updateData: { preparation_data: { equipmentInventory: { glovesPairs: 3 } } },
+    })).toEqual(["materials"]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { refreshmentsProvided: { waterDuringAction: true } } }),
+      updateData: { preparation_data: { refreshmentsProvided: { waterDuringAction: true, snackAfterAction: true } } },
+    })).toEqual(["materials"]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { equipmentInventory: { glovesPairs: 2 }, logisticsNotes: "interne" } }),
+      updateData: { preparation_data: { equipmentInventory: { glovesPairs: 2 }, logisticsNotes: "interne modifiée" } },
+    })).toEqual([]);
+  });
+
   it("uses derived public waste guidance instead of raw category changes", () => {
     expect(detectActionChangeKinds({
       current: current({ preparation_data: { expectedWasteCategories: ["plastic"] } }),

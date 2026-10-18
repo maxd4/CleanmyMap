@@ -36,6 +36,8 @@ function action(overrides: Partial<ActionRow> = {}): ActionRow {
       volunteerParticipation: { participantsCount: 8 } as never,
       groupJoinEnabled: true,
       recommendedMaterials: "Gants",
+      equipmentInventory: { glovesPairs: 4, firstAidKitAvailable: true },
+      refreshmentsProvided: { waterDuringAction: true, snackAfterAction: false },
     },
     ...overrides,
   } as ActionRow;
@@ -49,6 +51,8 @@ describe("action duplication contract", () => {
     expect(prefill.organizerType).toBeNull();
     expect(prefill.operationalRoute).toBeNull();
     expect(prefill.routeCalibrationContext).toBeNull();
+    expect(prefill.equipmentInventory).toEqual({ glovesPairs: 4, firstAidKitAvailable: true });
+    expect(prefill.refreshmentsProvided).toEqual({ waterDuringAction: true, snackAfterAction: false });
     expect(prefill).not.toHaveProperty("actionId");
     expect(prefill).not.toHaveProperty("actionDate");
     expect(prefill).not.toHaveProperty("notes");

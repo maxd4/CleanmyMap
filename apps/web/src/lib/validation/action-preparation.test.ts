@@ -52,6 +52,8 @@ describe("HTTP preparation data contract", () => {
         accessibilityStatus: "conditions_reported",
         materialsProvided: "Sacs disponibles au départ.",
         suggestedMaterials: ["gloves", "bags"],
+        equipmentInventory: { glovesPairs: 0, grabbers: 3, firstAidKitAvailable: true },
+        refreshmentsProvided: { waterDuringAction: true, snackAfterAction: false },
         preparationChecklist: [
           { key: "materials_checked", label: "Matériel vérifié", checked: true },
         ],
@@ -64,6 +66,8 @@ describe("HTTP preparation data contract", () => {
         accessibilityStatus: "conditions_reported",
         materialsProvided: "Sacs disponibles au départ.",
         suggestedMaterials: ["gloves", "bags"],
+        equipmentInventory: { glovesPairs: 0, grabbers: 3, firstAidKitAvailable: true },
+        refreshmentsProvided: { waterDuringAction: true, snackAfterAction: false },
         preparationChecklist: [{ key: "materials_checked", checked: true }],
       });
     }
@@ -121,5 +125,22 @@ describe("HTTP preparation data contract", () => {
       ...valid,
       preparationData: { ...valid.preparationData, preparationChecklist: [{ key: "briefing", label: "Briefing sécurité" }] },
     }).success).toBe(false);
+  });
+
+  it("distinguishes unknown quantities from explicit zero and rejects invalid bounds", () => {
+    const valid = { ...basePayload, preparationData: {} };
+    expect(createActionSchema.safeParse({
+      ...valid,
+      preparationData: {
+        equipmentInventory: { glovesPairs: 0, garbageBags: 10_000 },
+        refreshmentsProvided: { waterDuringAction: false, drinksAfterAction: true },
+      },
+    }).success).toBe(true);
+    expect(createActionSchema.safeParse({ ...valid, preparationData: { equipmentInventory: { glovesPairs: -1 } } }).success).toBe(false);
+    expect(createActionSchema.safeParse({ ...valid, preparationData: { equipmentInventory: { glovesPairs: 10_001 } } }).success).toBe(false);
+    expect(createActionSchema.safeParse({ ...valid, preparationData: { equipmentInventory: { glovesPairs: 1.5 } } }).success).toBe(false);
+    expect(createActionSchema.safeParse({ ...valid, preparationData: { equipmentInventory: { glovesPairs: null } } }).success).toBe(false);
+    expect(createActionSchema.safeParse({ ...valid, preparationData: { equipmentInventory: { glovesPairs: 2, unknownItem: 1 } } }).success).toBe(false);
+    expect(createActionSchema.safeParse({ ...valid, preparationData: { refreshmentsProvided: { waterDuringAction: true, drinksAfterAction: false } } }).success).toBe(true);
   });
 });

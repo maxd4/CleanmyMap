@@ -1,6 +1,10 @@
 import { buildWasteFieldGuidance } from "@/lib/waste";
 import type { ActionPreparationData } from "@/lib/actions/types";
-import { ACTION_MATERIAL_SUGGESTIONS } from "@/lib/actions/preparation-contract";
+import {
+  ACTION_EQUIPMENT_INVENTORY,
+  ACTION_MATERIAL_SUGGESTIONS,
+  ACTION_REFRESHMENT_OPTIONS,
+} from "@/lib/actions/preparation-contract";
 
 export type PublicActionPracticalInformation = {
   accessibility: string | null;
@@ -11,11 +15,29 @@ export type PublicActionPracticalInformation = {
   derivedMaterials: string[];
   materialsProvided: string | null;
   suggestedMaterials?: string[];
+  equipmentProvided: string[];
+  refreshmentsProvided: string[];
   participantMessage: string | null;
 };
 
 function readPublicText(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function buildPublicEquipment(preparationData: ActionPreparationData | null | undefined): string[] {
+  const inventory = preparationData?.equipmentInventory;
+  if (!inventory) return [];
+  return ACTION_EQUIPMENT_INVENTORY.flatMap((option) => {
+    const value = inventory[option.key];
+    if (value === undefined || (option.kind === "availability" && value === false)) return [];
+    return option.kind === "quantity" ? [`${option.label} : ${value}`] : [option.label];
+  });
+}
+
+function buildPublicRefreshments(preparationData: ActionPreparationData | null | undefined): string[] {
+  const refreshments = preparationData?.refreshmentsProvided;
+  if (!refreshments) return [];
+  return ACTION_REFRESHMENT_OPTIONS.flatMap((option) => refreshments[option.key] ? [option.label] : []);
 }
 
 /**
@@ -45,6 +67,8 @@ export function buildPublicActionPracticalInformation(
     derivedMaterials: guidance.toPrepare,
     materialsProvided: readPublicText(preparationData?.materialsProvided),
     suggestedMaterials,
+    equipmentProvided: buildPublicEquipment(preparationData),
+    refreshmentsProvided: buildPublicRefreshments(preparationData),
     participantMessage: readPublicText(preparationData?.participantMessage),
   };
 }

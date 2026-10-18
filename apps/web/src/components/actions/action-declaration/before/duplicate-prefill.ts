@@ -34,6 +34,8 @@ export function applyDuplicatePrefillToForm(form: FormState, prefill: ActionDupl
     recommendedMaterials: prefill.recommendedMaterials,
     materialsProvided: prefill.materialsProvided,
     suggestedMaterials: [...prefill.suggestedMaterials],
+    equipmentInventory: { ...prefill.equipmentInventory },
+    refreshmentsProvided: { ...prefill.refreshmentsProvided },
     participantMessage: prefill.participantMessage,
     logisticsNotes: prefill.logisticsNotes,
     preparationChecklist: ACTION_PREPARATION_CHECKLIST_DEFAULTS.map((item) => ({ ...item })),

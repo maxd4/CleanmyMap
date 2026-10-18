@@ -1,6 +1,8 @@
 import {
   normalizeAccessibilityStatus,
+  normalizeEquipmentInventory,
   normalizePreparationChecklist,
+  normalizeRefreshmentsProvided,
   normalizeSuggestedMaterials,
 } from "@/lib/actions/preparation-contract";
 import type { FormState } from "./types";
@@ -18,6 +20,16 @@ function restorePreparationDraftField(
   if (key === "suggestedMaterials") {
     const normalized = normalizeSuggestedMaterials(value);
     if (normalized) next.suggestedMaterials = normalized;
+    return true;
+  }
+  if (key === "equipmentInventory") {
+    const normalized = normalizeEquipmentInventory(value);
+    if (normalized) next.equipmentInventory = normalized;
+    return true;
+  }
+  if (key === "refreshmentsProvided") {
+    const normalized = normalizeRefreshmentsProvided(value);
+    if (normalized) next.refreshmentsProvided = normalized;
     return true;
   }
   if (key === "preparationChecklist") {

@@ -20,6 +20,8 @@ describe("action declaration payload données de préparation", () => {
     expect(blankPreparation).not.toHaveProperty("estimatedDifficulty");
     expect(blankPreparation).not.toHaveProperty("creatorRole");
     expect(blankPreparation).not.toHaveProperty("placeType");
+    expect(blankPreparation).not.toHaveProperty("equipmentInventory");
+    expect(blankPreparation).not.toHaveProperty("refreshmentsProvided");
     expect(blankPreparation.durationMinutesDeclared).toBe(false);
     expect(blankPayload).not.toHaveProperty("placeType");
     expect(blankPayload.preparationData).not.toHaveProperty("plannedObjective");
@@ -77,12 +79,16 @@ describe("action declaration payload données de préparation", () => {
     form.suggestedMaterials = ["gloves", "grabbers"];
     form.preparationChecklist[0].checked = true;
     form.recommendedMaterials = "Eau et chaussures adaptées.";
+    form.equipmentInventory = { glovesPairs: 0, garbageBags: 8, firstAidKitAvailable: true };
+    form.refreshmentsProvided = { waterDuringAction: true, drinksAfterAction: false, snackAfterAction: true };
 
     const preparation = buildPreparationDataFromForm(form);
 
     expect(preparation.accessibilityStatus).toBe("conditions_reported");
     expect(preparation.materialsProvided).toBe("Sacs disponibles au départ.");
     expect(preparation.suggestedMaterials).toEqual(["gloves", "grabbers"]);
+    expect(preparation.equipmentInventory).toEqual({ glovesPairs: 0, garbageBags: 8, firstAidKitAvailable: true });
+    expect(preparation.refreshmentsProvided).toEqual({ waterDuringAction: true, drinksAfterAction: false, snackAfterAction: true });
     expect(preparation.preparationChecklist?.[0]).toMatchObject({
       key: "materials_checked",
       checked: true,

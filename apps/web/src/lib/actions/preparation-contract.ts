@@ -18,6 +18,37 @@ export const ACTION_MATERIAL_SUGGESTIONS = [
 
 export type ActionMaterialSuggestion = (typeof ACTION_MATERIAL_SUGGESTIONS)[number]["value"];
 
+export const ACTION_EQUIPMENT_INVENTORY = [
+  { key: "glovesPairs", label: "Paires de gants", kind: "quantity" },
+  { key: "garbageBags", label: "Sacs poubelles", kind: "quantity" },
+  { key: "cigaretteButtBags", label: "Sachets à mégots", kind: "quantity" },
+  { key: "grabbers", label: "Pinces de ramassage", kind: "quantity" },
+  { key: "highVisibilityVests", label: "Gilets haute visibilité", kind: "quantity" },
+  { key: "luggageScaleAvailable", label: "Pèse-bagage", kind: "availability" },
+  { key: "firstAidKitAvailable", label: "Trousse de premiers secours", kind: "availability" },
+] as const;
+
+export type ActionEquipmentQuantityKey = Extract<
+  (typeof ACTION_EQUIPMENT_INVENTORY)[number],
+  { kind: "quantity" }
+>["key"];
+export type ActionEquipmentAvailabilityKey = Extract<
+  (typeof ACTION_EQUIPMENT_INVENTORY)[number],
+  { kind: "availability" }
+>["key"];
+export type ActionEquipmentInventory = Partial<Record<ActionEquipmentQuantityKey, number>> &
+  Partial<Record<ActionEquipmentAvailabilityKey, boolean>>;
+
+export const ACTION_REFRESHMENT_OPTIONS = [
+  { key: "waterDuringAction", label: "Eau fournie pendant l'action" },
+  { key: "drinksAfterAction", label: "Boissons prévues après l'action" },
+  { key: "snackAfterAction", label: "Collation prévue après l'action" },
+] as const;
+
+export type ActionRefreshmentsProvided = Partial<
+  Record<(typeof ACTION_REFRESHMENT_OPTIONS)[number]["key"], boolean>
+>;
+
 export const ACTION_PREPARATION_CHECKLIST_DEFAULTS = [
   { key: "materials_checked", label: "Matériel vérifié", checked: false },
   { key: "meeting_point_confirmed", label: "Point de rendez-vous confirmé", checked: false },
@@ -52,6 +83,35 @@ export function normalizeSuggestedMaterials(value: unknown): ActionMaterialSugge
       isActionMaterialSuggestion(item),
   );
   return [...new Set(normalized)];
+}
+
+export function normalizeEquipmentInventory(value: unknown): ActionEquipmentInventory | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const candidate = value as Record<string, unknown>;
+  const normalized: ActionEquipmentInventory = {};
+  for (const option of ACTION_EQUIPMENT_INVENTORY) {
+    const raw = candidate[option.key];
+    if (option.kind === "quantity") {
+      if (typeof raw === "number" && Number.isInteger(raw) && raw >= 0 && raw <= 10_000) {
+        normalized[option.key] = raw;
+      }
+    } else if (typeof raw === "boolean") {
+      normalized[option.key] = raw;
+    }
+  }
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
+export function normalizeRefreshmentsProvided(value: unknown): ActionRefreshmentsProvided | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const candidate = value as Record<string, unknown>;
+  const normalized: ActionRefreshmentsProvided = {};
+  for (const option of ACTION_REFRESHMENT_OPTIONS) {
+    if (typeof candidate[option.key] === "boolean") {
+      normalized[option.key] = candidate[option.key] as boolean;
+    }
+  }
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
 export function normalizePreparationChecklist(
@@ -92,6 +152,16 @@ export function normalizeActionPreparationContract<T extends object>(data: T): T
     const suggestedMaterials = normalizeSuggestedMaterials(next["suggestedMaterials"]);
     if (suggestedMaterials && suggestedMaterials.length > 0) next["suggestedMaterials"] = suggestedMaterials;
     else delete next["suggestedMaterials"];
+  }
+  if ("equipmentInventory" in next) {
+    const equipmentInventory = normalizeEquipmentInventory(next["equipmentInventory"]);
+    if (equipmentInventory) next["equipmentInventory"] = equipmentInventory;
+    else delete next["equipmentInventory"];
+  }
+  if ("refreshmentsProvided" in next) {
+    const refreshmentsProvided = normalizeRefreshmentsProvided(next["refreshmentsProvided"]);
+    if (refreshmentsProvided) next["refreshmentsProvided"] = refreshmentsProvided;
+    else delete next["refreshmentsProvided"];
   }
   if ("preparationChecklist" in next) {
     const preparationChecklist = normalizePreparationChecklist(next["preparationChecklist"]);

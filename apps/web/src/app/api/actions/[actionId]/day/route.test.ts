@@ -36,6 +36,8 @@ describe("GET /api/actions/[actionId]/day", () => {
         safetyInstructions: "Rester avec le groupe.",
         recommendedMaterials: "Gants",
         materialsProvided: "Sacs",
+        equipmentInventory: { glovesPairs: 0, grabbers: 2, firstAidKitAvailable: true },
+        refreshmentsProvided: { waterDuringAction: true, snackAfterAction: true },
         preparationChecklist: [{ key: "water", label: "Eau", checked: false }],
       },
     });
@@ -45,6 +47,8 @@ describe("GET /api/actions/[actionId]/day", () => {
     expect(response.status).toBe(200);
     expect(body.access).toBe("organizer");
     expect(body.action).toMatchObject({ meetingPoint: "Entrée nord", meetingTime: "09:45", safetyInstructions: "Rester avec le groupe." });
+    expect(body.action.equipmentProvided).toEqual(["Paires de gants : 0", "Pinces de ramassage : 2", "Trousse de premiers secours"]);
+    expect(body.action.refreshmentsProvided).toEqual(["Eau fournie pendant l'action", "Collation prévue après l'action"]);
     expect(body.action).not.toHaveProperty("participantAccounts");
     expect(readActionRegistrationRecordMock).not.toHaveBeenCalled();
   });

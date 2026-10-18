@@ -88,6 +88,8 @@ export function ActionBeforeVerificationSection({
             <PreviewValue label="Message" value={publicInformation.participantMessage ?? "Non renseigné"} />
             <PreviewValue label="Sécurité" value={publicInformation.safetyInstructions ?? "Aucune consigne principale renseignée"} />
             <PreviewValue label="Matériel à apporter" value={[publicInformation.materialsToBring, ...publicInformation.derivedMaterials, ...(publicInformation.suggestedMaterials ?? [])].filter(Boolean).join(" · ") || "Non renseigné"} />
+            <PreviewValue label="Équipements fournis" value={publicInformation.equipmentProvided.join(" · ") || "Non renseigné"} />
+            <PreviewValue label="Convivialité" value={publicInformation.refreshmentsProvided.join(" · ") || "Non renseignée"} />
             <PreviewValue label="Accessibilité" value={publicInformation.accessibility ?? "Non évaluée"} />
           </dl>
         </div>

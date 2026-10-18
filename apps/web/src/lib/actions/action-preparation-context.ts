@@ -4,8 +4,12 @@ import type { PlannerActionHandoff } from "@/lib/route/route-operational";
 import {
   normalizePreparationChecklist,
   normalizeSuggestedMaterials,
+  normalizeEquipmentInventory,
+  normalizeRefreshmentsProvided,
+  type ActionEquipmentInventory,
   type ActionMaterialSuggestion,
   type ActionPreparationChecklistItem,
+  type ActionRefreshmentsProvided,
 } from "./preparation-contract";
 
 export type PreparationSelection = {
@@ -30,6 +34,8 @@ export type ActionPreparationContext = {
   suggestedMaterials: ActionMaterialSuggestion[] | null;
   materialsProvided: string | null;
   recommendedMaterials: string | null;
+  equipmentInventory?: ActionEquipmentInventory | null;
+  refreshmentsProvided?: ActionRefreshmentsProvided | null;
 };
 
 type DraftPreparationSource = Partial<{
@@ -43,6 +49,8 @@ type DraftPreparationSource = Partial<{
   suggestedMaterials: unknown;
   materialsProvided: string;
   recommendedMaterials: string;
+  equipmentInventory?: unknown;
+  refreshmentsProvided?: unknown;
 }>;
 
 function text(...values: unknown[]): string {
@@ -143,6 +151,22 @@ function firstSuggestedMaterials(...values: unknown[]): ActionMaterialSuggestion
   return null;
 }
 
+function firstEquipmentInventory(...values: unknown[]): ActionEquipmentInventory | null {
+  for (const value of values) {
+    const normalized = normalizeEquipmentInventory(value);
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
+function firstRefreshmentsProvided(...values: unknown[]): ActionRefreshmentsProvided | null {
+  for (const value of values) {
+    const normalized = normalizeRefreshmentsProvided(value);
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
 function orderedPreparationValues<T>(draftOverridesAction: boolean, actionValue: T, draftValue: T, handoffValue: T): T[] {
   return draftOverridesAction ? [draftValue, actionValue, handoffValue] : [actionValue, draftValue, handoffValue];
 }
@@ -165,13 +189,15 @@ function preparationContextDetails(
   draft: DraftPreparationSource | null | undefined,
   handoffPreparation: ActionPreparationData,
   draftOverridesAction: boolean,
-): Pick<ActionPreparationContext, "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials"> {
+): Pick<ActionPreparationContext, "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials" | "equipmentInventory" | "refreshmentsProvided"> {
   const ordered = <T,>(actionValue: T, draftValue: T, handoffValue: T) => orderedPreparationValues(draftOverridesAction, actionValue, draftValue, handoffValue);
   return {
     preparationChecklist: firstChecklist(...ordered(preparation.preparationChecklist, draft?.preparationChecklist, handoffPreparation.preparationChecklist)),
     suggestedMaterials: firstSuggestedMaterials(...ordered(preparation.suggestedMaterials, draft?.suggestedMaterials, handoffPreparation.suggestedMaterials)),
     materialsProvided: firstText(...ordered(preparation.materialsProvided, draft?.materialsProvided, handoffPreparation.materialsProvided)),
     recommendedMaterials: firstText(...ordered(preparation.recommendedMaterials, draft?.recommendedMaterials, handoffPreparation.recommendedMaterials)),
+    equipmentInventory: firstEquipmentInventory(...ordered(preparation.equipmentInventory, draft?.equipmentInventory, handoffPreparation.equipmentInventory)),
+    refreshmentsProvided: firstRefreshmentsProvided(...ordered(preparation.refreshmentsProvided, draft?.refreshmentsProvided, handoffPreparation.refreshmentsProvided)),
   };
 }
 

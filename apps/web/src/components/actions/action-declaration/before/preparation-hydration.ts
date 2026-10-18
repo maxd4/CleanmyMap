@@ -23,7 +23,9 @@ function hasPreparationContextData(context: ActionPreparationContext | undefined
       context.preparationChecklist ||
       context.suggestedMaterials ||
       context.materialsProvided ||
-      context.recommendedMaterials,
+      context.recommendedMaterials ||
+      context.equipmentInventory ||
+      context.refreshmentsProvided,
   );
 }
 
@@ -46,6 +48,8 @@ export function applyPreparationContextToForm(
     suggestedMaterials: context.suggestedMaterials ?? form.suggestedMaterials,
     materialsProvided: context.materialsProvided ?? form.materialsProvided,
     recommendedMaterials: context.recommendedMaterials ?? form.recommendedMaterials,
+    equipmentInventory: context.equipmentInventory ?? form.equipmentInventory,
+    refreshmentsProvided: context.refreshmentsProvided ?? form.refreshmentsProvided,
   };
 }
 

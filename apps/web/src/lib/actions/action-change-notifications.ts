@@ -101,6 +101,8 @@ function publicPreparationChanged(
       meaningfulTextChanged(currentPublic.materialsToBring, nextPublic.materialsToBring) ||
       meaningfulTextChanged(currentPublic.materialsProvided, nextPublic.materialsProvided) ||
       meaningfulListChanged(currentPublic.suggestedMaterials, nextPublic.suggestedMaterials) ||
+      meaningfulListChanged(currentPublic.equipmentProvided, nextPublic.equipmentProvided) ||
+      meaningfulListChanged(currentPublic.refreshmentsProvided, nextPublic.refreshmentsProvided) ||
       meaningfulListChanged(currentPublic.derivedMaterials, nextPublic.derivedMaterials),
   };
 }

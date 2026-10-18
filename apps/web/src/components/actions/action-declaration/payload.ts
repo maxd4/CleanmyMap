@@ -25,6 +25,8 @@ export function createInitialFormState(
     actorName,
     recordType,
     suggestedMaterials: [...initialState.suggestedMaterials],
+    equipmentInventory: { ...initialState.equipmentInventory },
+    refreshmentsProvided: { ...initialState.refreshmentsProvided },
     preparationChecklist: initialState.preparationChecklist.map((item) => ({ ...item })),
   };
 }

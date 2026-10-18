@@ -19,8 +19,10 @@ import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract
 import { estimateButtsWeightKg } from "@/lib/impact/impact-terrain-2026";
 import type {
   ActionAccessibilityStatus,
+  ActionEquipmentInventory,
   ActionMaterialSuggestion,
   ActionPreparationChecklistItem,
+  ActionRefreshmentsProvided,
 } from "@/lib/actions/preparation-contract";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
 
@@ -58,6 +60,8 @@ export type FormState = {
  recommendedMaterials: string;
  materialsProvided: string;
  suggestedMaterials: ActionMaterialSuggestion[];
+ equipmentInventory: ActionEquipmentInventory;
+ refreshmentsProvided: ActionRefreshmentsProvided;
  participantMessage: string;
  logisticsNotes: string;
  preparationChecklist: ActionPreparationChecklistItem[];
@@ -152,6 +156,8 @@ export const initialState: FormState = {
  recommendedMaterials:"",
  materialsProvided:"",
  suggestedMaterials:[],
+ equipmentInventory: {},
+ refreshmentsProvided: {},
  participantMessage:"",
  logisticsNotes:"",
  preparationChecklist: ACTION_PREPARATION_CHECKLIST_DEFAULTS.map((item) => ({ ...item })),

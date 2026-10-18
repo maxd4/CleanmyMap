@@ -92,6 +92,8 @@ function preparationDataFrom(source: PublicationSummarySource): ActionPreparatio
     recommendedMaterials: source.recommendedMaterials,
     materialsProvided: source.materialsProvided,
     suggestedMaterials: source.suggestedMaterials,
+    equipmentInventory: source.equipmentInventory,
+    refreshmentsProvided: source.refreshmentsProvided,
     preparationChecklist: source.preparationChecklist,
     participantMessage: source.participantMessage,
     logisticsNotes: source.logisticsNotes,

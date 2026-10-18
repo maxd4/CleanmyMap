@@ -15,7 +15,7 @@ const preparationActionRequests = new Map<string, Promise<ActionEditorRecord>>()
 
 function preparationDraftSignature(
   context: ActionPreparationContext,
-  fallback: Pick<FormState, "actionDate" | "departureTime" | "locationLabel" | "latitude" | "longitude" | "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials">,
+  fallback: Pick<FormState, "actionDate" | "departureTime" | "locationLabel" | "latitude" | "longitude" | "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials" | "equipmentInventory" | "refreshmentsProvided">,
 ): string {
   return JSON.stringify({
     actionDate: context.actionDate || fallback.actionDate,
@@ -27,6 +27,8 @@ function preparationDraftSignature(
     suggestedMaterials: context.suggestedMaterials ?? fallback.suggestedMaterials,
     materialsProvided: context.materialsProvided ?? fallback.materialsProvided,
     recommendedMaterials: context.recommendedMaterials ?? fallback.recommendedMaterials,
+    equipmentInventory: context.equipmentInventory ?? fallback.equipmentInventory,
+    refreshmentsProvided: context.refreshmentsProvided ?? fallback.refreshmentsProvided,
   });
 }
 
@@ -108,6 +110,8 @@ export function useActionPreparationContext({
       suggestedMaterials: preparationContext.suggestedMaterials ?? draft.suggestedMaterials,
       materialsProvided: preparationContext.materialsProvided ?? draft.materialsProvided,
       recommendedMaterials: preparationContext.recommendedMaterials ?? draft.recommendedMaterials,
+      equipmentInventory: preparationContext.equipmentInventory ?? draft.equipmentInventory,
+      refreshmentsProvided: preparationContext.refreshmentsProvided ?? draft.refreshmentsProvided,
     };
     const signature = preparationDraftSignature(preparationContext, draft);
     if (persistedDraftSignatureRef.current === signature) return;

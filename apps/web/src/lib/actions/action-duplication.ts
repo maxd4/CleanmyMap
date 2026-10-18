@@ -29,6 +29,8 @@ export type ActionDuplicatePrefill = {
   recommendedMaterials: string;
   materialsProvided: string;
   suggestedMaterials: NonNullable<ActionPreparationData["suggestedMaterials"]>;
+  equipmentInventory: NonNullable<ActionPreparationData["equipmentInventory"]>;
+  refreshmentsProvided: NonNullable<ActionPreparationData["refreshmentsProvided"]>;
   participantMessage: string;
   logisticsNotes: string;
   expectedWasteCategories: NonNullable<ActionPreparationData["expectedWasteCategories"]>;
@@ -90,6 +92,8 @@ export function buildActionDuplicatePrefill(action: ActionRow): ActionDuplicateP
     recommendedMaterials: text(preparation.recommendedMaterials),
     materialsProvided: text(preparation.materialsProvided),
     suggestedMaterials: [...(preparation.suggestedMaterials ?? [])],
+    equipmentInventory: structuredClone(preparation.equipmentInventory ?? {}),
+    refreshmentsProvided: structuredClone(preparation.refreshmentsProvided ?? {}),
     participantMessage: text(preparation.participantMessage),
     logisticsNotes: text(preparation.logisticsNotes),
     expectedWasteCategories: [...(preparation.expectedWasteCategories ?? [])],

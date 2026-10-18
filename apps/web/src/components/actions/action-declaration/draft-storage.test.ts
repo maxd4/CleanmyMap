@@ -103,6 +103,8 @@ describe("action declaration draft storage", () => {
     draft.accessibility = "Accès par la rampe nord.";
     draft.materialsProvided = "Pinces disponibles.";
     draft.suggestedMaterials = ["gloves", "bags"];
+    draft.equipmentInventory = { glovesPairs: 0, garbageBags: 4, firstAidKitAvailable: true };
+    draft.refreshmentsProvided = { waterDuringAction: true, drinksAfterAction: false };
     draft.preparationChecklist[0].checked = true;
 
     saveDraft(draft, "2026-05-13T10:45:00.000Z");
@@ -111,6 +113,8 @@ describe("action declaration draft storage", () => {
     expect(restored?.accessibilityStatus).toBe("obstacles_identified");
     expect(restored?.materialsProvided).toBe("Pinces disponibles.");
     expect(restored?.suggestedMaterials).toEqual(["gloves", "bags"]);
+    expect(restored?.equipmentInventory).toEqual({ glovesPairs: 0, garbageBags: 4, firstAidKitAvailable: true });
+    expect(restored?.refreshmentsProvided).toEqual({ waterDuringAction: true, drinksAfterAction: false });
     expect(restored?.preparationChecklist[0]).toMatchObject({ key: "materials_checked", checked: true });
   });
 

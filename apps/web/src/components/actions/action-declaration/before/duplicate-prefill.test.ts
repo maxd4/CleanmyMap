@@ -29,6 +29,8 @@ const prefill = {
   recommendedMaterials: "Gants",
   materialsProvided: "Sacs",
   suggestedMaterials: ["gloves"],
+  equipmentInventory: { glovesPairs: 2, firstAidKitAvailable: true },
+  refreshmentsProvided: { waterDuringAction: true },
   participantMessage: "Rendez-vous visible",
   logisticsNotes: "Note logistique",
   expectedWasteCategories: ["plastic"],
@@ -49,6 +51,8 @@ describe("duplicate prefill form mapping", () => {
     expect(result.groupJoinEnabled).toBe(false);
     expect(result.participantAccounts).toEqual([]);
     expect(result.formalitiesContext).toBeNull();
+    expect(result.equipmentInventory).toEqual({ glovesPairs: 2, firstAidKitAvailable: true });
+    expect(result.refreshmentsProvided).toEqual({ waterDuringAction: true });
     expect(result.preparationChecklist.every((item) => item.checked === false)).toBe(true);
   });
 });

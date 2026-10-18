@@ -28,6 +28,8 @@ describe("action declaration payload hydratation", () => {
       accessibilityStatus: "to_confirm",
       materialsProvided: "Pinces sur place.",
       suggestedMaterials: ["bags"],
+      equipmentInventory: { glovesPairs: 0, grabbers: 2, luggageScaleAvailable: true },
+      refreshmentsProvided: { waterDuringAction: true, snackAfterAction: false },
       preparationChecklist: [{ key: "materials_checked", label: "Matériel vérifié", checked: true }],
       checklistBeforeDeparture: "Ancienne note à relire",
     });
@@ -35,6 +37,8 @@ describe("action declaration payload hydratation", () => {
     expect(hydrated.accessibilityStatus).toBe("to_confirm");
     expect(hydrated.materialsProvided).toBe("Pinces sur place.");
     expect(hydrated.suggestedMaterials).toEqual(["bags"]);
+    expect(hydrated.equipmentInventory).toEqual({ glovesPairs: 0, grabbers: 2, luggageScaleAvailable: true });
+    expect(hydrated.refreshmentsProvided).toEqual({ waterDuringAction: true, snackAfterAction: false });
     expect(hydrated.preparationChecklist).toEqual([
       { key: "materials_checked", label: "Matériel vérifié", checked: true },
     ]);

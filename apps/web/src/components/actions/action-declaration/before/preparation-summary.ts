@@ -1,7 +1,9 @@
 import type { ActionPreparationData } from "@/lib/actions/types";
+import { buildPublicActionPracticalInformation } from "@/lib/actions/participation/group-participation-public-projection";
 import { ACTION_MATERIAL_SUGGESTIONS } from "@/lib/actions/preparation-contract";
 
 export function buildPreparationSummaryDetails(preparation: ActionPreparationData): string {
+  const practicalInfo = buildPublicActionPracticalInformation(preparation);
   const details = [
     preparation.materialsProvided
       ? `Matériel fourni : ${preparation.materialsProvided.trim()}`
@@ -10,6 +12,12 @@ export function buildPreparationSummaryDetails(preparation: ActionPreparationDat
       ? `À apporter (suggestions) : ${preparation.recommendedMaterials.trim()}`
       : null,
     formatSuggestedMaterials(preparation.suggestedMaterials),
+    practicalInfo.equipmentProvided.length > 0
+      ? `Équipements déclarés : ${practicalInfo.equipmentProvided.join(", ")}`
+      : null,
+    practicalInfo.refreshmentsProvided.length > 0
+      ? `Convivialité : ${practicalInfo.refreshmentsProvided.join(", ")}`
+      : null,
     buildChecklistSummary(preparation),
   ];
 

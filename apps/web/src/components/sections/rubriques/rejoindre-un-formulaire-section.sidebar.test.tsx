@@ -32,6 +32,8 @@ function buildHistoryItem(
       materialsToBring: null,
       derivedMaterials: [],
       materialsProvided: null,
+      equipmentProvided: [],
+      refreshmentsProvided: [],
       participantMessage: null,
     },
   };

@@ -18,6 +18,8 @@ export type ActionDayBriefing = {
     safetyInstructions: string | null;
     recommendedMaterials: string | null;
     materialsProvided: string | null;
+    equipmentProvided: string[];
+    refreshmentsProvided: string[];
     accessibility: string | null;
     accessibilityStatus: string;
     checklist: Array<{ key: string; label: string; checked: boolean }>;

@@ -13,7 +13,9 @@ import {
 } from "./payload-preparation-guidance";
 import {
   normalizeAccessibilityStatus,
+  normalizeEquipmentInventory,
   normalizePreparationChecklist,
+  normalizeRefreshmentsProvided,
   normalizeSuggestedMaterials,
 } from "../../../lib/actions/preparation-contract";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
@@ -113,6 +115,8 @@ function buildPreparationParticipationFields(
 function buildPreparationContentFields(
   form: FormState,
 ) {
+  const equipmentInventory = normalizeEquipmentInventory(form.equipmentInventory);
+  const refreshmentsProvided = normalizeRefreshmentsProvided(form.refreshmentsProvided);
   return {
     actionTitle: form.actionTitle.trim() || undefined,
     shortDescription: form.shortDescription.trim() || undefined,
@@ -127,6 +131,8 @@ function buildPreparationContentFields(
     formalitiesContext: form.formalitiesContext ?? undefined,
     materialsProvided: form.materialsProvided.trim() || undefined,
     suggestedMaterials: form.suggestedMaterials.length > 0 ? [...form.suggestedMaterials] : undefined,
+    ...(equipmentInventory ? { equipmentInventory } : {}),
+    ...(refreshmentsProvided ? { refreshmentsProvided } : {}),
     participantMessage: form.participantMessage.trim() || undefined,
     logisticsNotes: form.logisticsNotes.trim() || undefined,
     preparationChecklist:
@@ -248,6 +254,10 @@ function buildHydratedDescriptionFields(
     materialsProvided: preparationData.materialsProvided ?? form.materialsProvided,
     suggestedMaterials:
       normalizeSuggestedMaterials(preparationData.suggestedMaterials) ?? form.suggestedMaterials,
+    equipmentInventory:
+      normalizeEquipmentInventory(preparationData.equipmentInventory) ?? form.equipmentInventory,
+    refreshmentsProvided:
+      normalizeRefreshmentsProvided(preparationData.refreshmentsProvided) ?? form.refreshmentsProvided,
     participantMessage: preparationData.participantMessage ?? form.participantMessage,
     logisticsNotes: preparationData.logisticsNotes ?? form.logisticsNotes,
     preparationChecklist:
