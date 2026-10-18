@@ -54,6 +54,7 @@ const ACTION_COLUMNS = [
 ].join(", ");
 
 const STABLE_TIE_BREAKERS = Object.freeze({
+  actions: ["id"],
   action_conversations: ["id"],
   action_organizers: ["id"],
   action_registrations: ["id"],
@@ -73,19 +74,24 @@ async function fetchAllRows(supabase, table, columns, orderColumn = "created_at"
   const rows = [];
   let from = 0;
 
-  while (true) {
+  for (let page = 0; page < MAX_PAGES_PER_CHUNK; page += 1) {
     const to = from + PAGE_SIZE - 1;
-    let query = supabase.from(table).select(columns).range(from, to);
+    let query = supabase.from(table).select(columns);
     if (orderColumn) query = query.order(orderColumn, { ascending: false });
+    for (const tieBreaker of getStableTieBreakers(table, orderColumn)) {
+      query = query.order(tieBreaker, { ascending: false });
+    }
+    query = query.range(from, to);
     const { data, error } = await query;
     if (error) throw new Error(`${table}: ${error.message}`);
-    const batch = data ?? [];
+    if (!Array.isArray(data)) throw new Error(`${table}: invalid page response`);
+    const batch = data;
+    if (batch.length === 0) return rows;
     rows.push(...batch);
-    if (batch.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
+    from += batch.length;
   }
 
-  return rows;
+  throw new Error(`${table}: pagination exceeded its safety bound`);
 }
 
 async function fetchRowsForIds(supabase, table, column, ids, orderColumn = "created_at") {
