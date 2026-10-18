@@ -245,7 +245,7 @@ describe("POST /api/community/events", () => {
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 
-  it("creates and reads a geolocated event without deriving coordinates from its label", async () => {
+  it("resolves the organizer from Clerk instead of trusting the request payload", async () => {
     authMock.mockResolvedValue({ userId: "organizer-1" });
     getCurrentUserIdentityMock.mockResolvedValue({
       displayName: "Organisateur",
@@ -266,6 +266,7 @@ describe("POST /api/community/events", () => {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          organizer_clerk_id: "organizer-2",
           title: "Collecte géolocalisée",
           eventDate: "2026-09-10",
           locationLabel: "Lieu sans arrondissement",
@@ -281,6 +282,7 @@ describe("POST /api/community/events", () => {
     expect(response.status).toBe(201);
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({
+        organizer_clerk_id: "organizer-1",
         location_label: "Lieu sans arrondissement",
         latitude: 48.8566,
         longitude: 2.3522,
