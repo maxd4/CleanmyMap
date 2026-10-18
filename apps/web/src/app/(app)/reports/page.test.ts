@@ -543,4 +543,89 @@ describe("/reports page contract", () => {
       "user-1",
     );
   });
+
+  it("reuses the public historical single-action contract without loading the global corpus", async () => {
+    const actionId = "22222222-2222-4222-8222-222222222222";
+    mocks.getReportGenerationSnapshotById.mockResolvedValueOnce({
+      id: "33333333-3333-4333-8333-333333333333",
+      filename: "rapport_action.pdf",
+      generatedAt: "2026-08-27T10:30:00.000Z",
+      scopeKind: "single_action",
+      scopeValue: actionId,
+      scopeLabel: "Action historique",
+      detailLevel: "default",
+      modules: { dataAndCartography: true, transparencyAndMethods: false, rawData: true, detailedFiles: false },
+      theme: "scientific",
+      snapshot: {
+        title: "Rapport mono-action repris",
+        rubrique: "reporting",
+        periode: "six_months",
+        organizationType: "single_action",
+        data: { generatedAt: "2026-08-27T10:30:00.000Z" },
+      },
+    });
+    mocks.resolveSingleActionReportContract.mockResolvedValueOnce({
+      ...contract,
+      id: actionId,
+      createdByClerkId: "private-owner",
+      metadata: {
+        ...contract.metadata,
+        preparationData: {
+          actionTitle: "Action historique",
+          logisticsNotes: "NOTE LOGISTIQUE INTERNE",
+          formalitiesContext: { publicSpace: "private-context" },
+          routeTargetDistanceKm: 3,
+        },
+      },
+    });
+    mocks.getSingleActionReportScopeLabel.mockReturnValueOnce("Action historique");
+    mocks.fetchCachedUnifiedActionContracts.mockRejectedValueOnce(new Error("global corpus unavailable"));
+
+    const markup = renderToStaticMarkup(await ReportsPage({
+      searchParams: Promise.resolve({
+        tab: "generation",
+        resumeId: "33333333-3333-4333-8333-333333333333",
+      }),
+    }));
+
+    expect(markup).toContain('data-testid="report-generation"');
+    expect(markup).toContain(`data-single-action-id="${actionId}"`);
+    expect(markup).toContain('data-single-action-scope="Action historique"');
+    expect(markup).toContain("routeTargetDistanceKm");
+    expect(markup).not.toContain("private-owner");
+    expect(markup).not.toContain("NOTE LOGISTIQUE INTERNE");
+    expect(markup).not.toContain("private-context");
+    expect(mocks.fetchCachedUnifiedActionContracts).not.toHaveBeenCalled();
+    expect(mocks.resolveSingleActionReportContract).toHaveBeenCalledWith(actionId);
+  });
+
+  it("blocks an unavailable historical single action without substituting the global report", async () => {
+    const actionId = "44444444-4444-4444-8444-444444444444";
+    mocks.getReportGenerationSnapshotById.mockResolvedValueOnce({
+      id: "55555555-5555-4555-8555-555555555555",
+      filename: "rapport_action.pdf",
+      generatedAt: "2026-08-27T10:30:00.000Z",
+      scopeKind: "single_action",
+      scopeValue: actionId,
+      scopeLabel: "Action historique",
+      detailLevel: "default",
+      modules: {},
+      theme: "impact",
+      snapshot: { title: "Rapport mono-action", rubrique: "reporting", periode: "six_months", data: {} },
+    });
+    mocks.resolveSingleActionReportContract.mockRejectedValueOnce(
+      new mocks.SingleActionReportTargetUnavailableError("no longer admissible"),
+    );
+
+    const markup = renderToStaticMarkup(await ReportsPage({
+      searchParams: Promise.resolve({
+        tab: "generation",
+        resumeId: "55555555-5555-4555-8555-555555555555",
+      }),
+    }));
+
+    expect(markup).toContain("Génération indisponible");
+    expect(markup).not.toContain(`data-single-action-id="${actionId}"`);
+    expect(mocks.fetchCachedUnifiedActionContracts).not.toHaveBeenCalled();
+  });
 });

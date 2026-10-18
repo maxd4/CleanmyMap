@@ -68,6 +68,23 @@ type SingleActionReportPageError = "not_admissible" | "unavailable";
 
 type ReportsResumeStatus = "not_found" | "invalid" | "unavailable" | "action_unavailable";
 
+function buildSingleActionGenerationData(contract: PublicActionContract) {
+  return {
+    contracts: [contract],
+    isTruncated: false,
+    sourceHealth: {
+      partial: false,
+      failedSources: [],
+      availableSources: ["actions" as const],
+      warnings: [],
+    },
+    communityEvents: [],
+    communityEventsAvailability: "unavailable" as const,
+    actionMediaReadyCountByActionId: {},
+    actionMediaAvailability: "available" as const,
+  };
+}
+
 type ReportsAnalysisContentParams = {
   locale: Locale;
   roleLabel: string;
@@ -180,7 +197,7 @@ function buildReportsGenerationContent({
 }: {
   generationData: Awaited<ReturnType<typeof loadReportsGenerationData>> | null;
   dailyExportAvailability: ReportExportAvailability;
-  singleAction?: Pick<SingleActionReportPageContext, "actionId" | "scopeLabel"> | null;
+  singleAction?: Pick<SingleActionReportPageContext, "actionId" | "scopeLabel" | "contract"> | null;
   singleActionError?: SingleActionReportPageError | null;
   resumeConfig?: ReportGenerationResumeConfig | null;
   resumeStatus?: ReportsResumeStatus | null;
@@ -394,6 +411,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 status: null,
                 singleAction: {
                   actionId: config.scope.value,
+                  contract: projectPublicActionContract(contract),
                   scopeLabel: getSingleActionReportScopeLabel(contract),
                 },
               };
@@ -416,32 +434,34 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     const [generationData, resumeContext, dailyExportAvailability] = await Promise.all([
       singleActionError
         ? Promise.resolve(null)
-        : singleAction
-        ? Promise.resolve({
-            contracts: [singleAction.contract],
-            isTruncated: false,
-            sourceHealth: {
-              partial: false,
-              failedSources: [],
-              availableSources: ["actions" as const],
-              warnings: [],
-            },
-            communityEvents: [],
-            communityEventsAvailability: "unavailable" as const,
-            actionMediaReadyCountByActionId: {},
-            actionMediaAvailability: "available" as const,
-          })
-        : loadReportsGenerationData(userId).catch(() => null),
+        : resumeContextResult.then((context) => {
+            const resumeSingleAction = context.config?.scope?.kind === "single_action"
+              ? context.singleAction
+              : null;
+            const activeSingleAction = resumeSingleAction ?? (
+              context.config?.scope?.kind === "single_action" ? null : singleAction
+            );
+            if (context.config?.scope?.kind === "single_action" && !resumeSingleAction) {
+              return null;
+            }
+            return activeSingleAction
+              ? buildSingleActionGenerationData(activeSingleAction.contract)
+              : loadReportsGenerationData(userId).catch(() => null);
+          }),
       resumeContextResult,
       getReportExportAvailability(userId).catch(
         () => "unavailable" as ReportExportAvailability,
       ),
     ]);
 
+    const activeSingleAction = resumeContext.config?.scope?.kind === "single_action"
+      ? resumeContext.singleAction
+      : singleAction;
+
     const generationContent = buildReportsGenerationContent({
       generationData,
       dailyExportAvailability,
-      singleAction: resumeContext.singleAction ?? singleAction,
+      singleAction: activeSingleAction,
       singleActionError,
       resumeConfig: resumeContext.config,
       resumeStatus: resumeContext.status,
