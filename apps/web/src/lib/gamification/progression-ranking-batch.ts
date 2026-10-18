@@ -250,6 +250,15 @@ function isValidatedForm(row: FormRow): boolean {
     row.validated_by_admin === true && row.is_duplicate === false && row.is_deleted === false && row.is_test === false;
 }
 
+function indexEligibleFormsByAction(forms: readonly FormRow[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const row of forms) {
+    if (!row.action_id || !isValidatedForm(row)) continue;
+    counts.set(row.action_id, (counts.get(row.action_id) ?? 0) + 1);
+  }
+  return counts;
+}
+
 function isCompleteAction(row: ActionRow, validatedActionIds: ReadonlySet<string>): boolean {
   return validatedActionIds.has(row.id) && row.status === "approved" &&
     row.location_label.trim().length >= 3 && Number(row.waste_kg ?? 0) >= 0 &&
@@ -297,13 +306,14 @@ function buildBadgeCounts(
   geometryContributionsByUser: Map<string, GeometryContributionRow[]>,
   feedbackByUser: Map<string, ProductFeedbackRow[]>,
 ): Map<string, CurrentLeaderboardBadgeCounts> {
-  const formsByAction = new Set(forms.filter(isValidatedForm).map((row) => row.action_id).filter((id): id is string => Boolean(id)));
+  const eligibleFormsByAction = indexEligibleFormsByAction(forms);
+  const eligibleActionIds = new Set(eligibleFormsByAction.keys());
   const result = new Map<string, CurrentLeaderboardBadgeCounts>();
 
   for (const userId of userIds) {
     const rows = rowsByUser.get(userId) ?? [];
     const currentValidated = new Set(rows.filter(isCurrentActionValidated).map((row) => row.id));
-    const completeActions = rows.filter((row) => isCompleteAction(row, formsByAction));
+    const completeActions = rows.filter((row) => isCompleteAction(row, eligibleActionIds));
     const cleanPlaces = (cleanPlacesByUser.get(userId) ?? []).filter((row) => row.spot_type === "clean_place");
     const cleanEvents = (eventsByUser.get(userId) ?? [])
       .filter((event) => event.event_type === "clean_zone_task" && event.source_table && event.source_id)
@@ -320,11 +330,15 @@ function buildBadgeCounts(
     ).size;
     const productFeedbackCount = buildProductFeedbackFacts(feedbackByUser.get(userId) ?? []).count;
     const userActionIds = new Set(rows.map((row) => row.id));
+    let eligibleFormsCount = 0;
+    for (const actionId of userActionIds) {
+      eligibleFormsCount += eligibleFormsByAction.get(actionId) ?? 0;
+    }
     const counters: CatalogProgressionInputs["counters"] = {
       approvedActionsCount: rows.filter((row) => row.status === "approved").length,
       completeActionsCount: completeActions.length,
       visitedPlacesCount: visitedByUser.get(userId)?.length ?? 0,
-      eligibleFormsCount: forms.filter((row) => row.action_id && userActionIds.has(row.action_id) && formsByAction.has(row.action_id)).length,
+      eligibleFormsCount,
       participationCount: new Set(
         (participantsByUser.get(userId) ?? [])
           .filter((row) => row.participation_status === "confirmed")

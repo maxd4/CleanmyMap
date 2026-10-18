@@ -1,8 +1,17 @@
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { describe, expect, it, vi } from "vitest";
+import { buildProgressionFacts } from "./gamification-catalog-loader";
 import { loadActionRowsForUser } from "./progression-data";
 import { buildIndividualLeaderboardCandidates } from "./progression-ranking";
 import { loadLeaderboardBatchData } from "./progression-ranking-batch";
+
+vi.mock("./gamification-catalog-loader", async () => {
+  const actual = await vi.importActual<typeof import("./gamification-catalog-loader")>("./gamification-catalog-loader");
+  return {
+    ...actual,
+    buildProgressionFacts: vi.fn(actual.buildProgressionFacts),
+  };
+});
 
 type FixtureRow = Record<string, unknown>;
 
@@ -154,6 +163,56 @@ function buildValidatedForm(actionId: string): FixtureRow {
 }
 
 describe("batch user leaderboard source", () => {
+  it("indexes eligible forms once while preserving per-form cardinality and shared ownership", async () => {
+    const fixture = emptyFixture();
+    fixture.profiles = [buildProfile("user-1"), buildProfile("user-2"), buildProfile("user-3")];
+    fixture.actions = [
+      buildAction("action-shared", "user-1", "2026-01-10", "Action spontanée", "association"),
+      buildAction("action-invalid", "user-1", "2026-02-10", "Action spontanée", "association"),
+      buildAction("action-none", "user-3", "2026-03-10", "Action spontanée", "association"),
+    ];
+    fixture.action_organizers = [{ id: "organizer-shared", action_id: "action-shared", organizer_clerk_id: "user-2" }];
+    fixture.forms = [
+      buildValidatedForm("action-shared"),
+      { ...buildValidatedForm("action-shared"), id: "form-shared-2" },
+      { ...buildValidatedForm("action-invalid"), id: "form-draft", status: "draft" },
+      { ...buildValidatedForm("action-invalid"), id: "form-deleted-status", status: "deleted" },
+      { ...buildValidatedForm("action-invalid"), id: "form-incomplete", status: "incomplete" },
+      { ...buildValidatedForm("action-invalid"), id: "form-unvalidated", validated_by_admin: false },
+      { ...buildValidatedForm("action-invalid"), id: "form-duplicate", is_duplicate: true },
+      { ...buildValidatedForm("action-invalid"), id: "form-deleted-flag", is_deleted: true },
+      { ...buildValidatedForm("action-invalid"), id: "form-test", is_test: true },
+      { ...buildValidatedForm("action-none"), id: "form-none-draft", status: "draft" },
+    ];
+    const { supabase } = buildBatchSupabase(fixture);
+    const progressionFactsMock = vi.mocked(buildProgressionFacts);
+
+    progressionFactsMock.mockClear();
+    await loadLeaderboardBatchData(supabase as never);
+
+    expect(progressionFactsMock.mock.calls.map(([input]) => input.counters.eligibleFormsCount)).toEqual([2, 2, 0]);
+  });
+
+  it("keeps the indexed form count bounded for a large deterministic batch", async () => {
+    const fixture = emptyFixture();
+    fixture.profiles = Array.from({ length: 1001 }, (_, index) => buildProfile(`user-${index}`));
+    fixture.actions = fixture.profiles.map((profile, index) =>
+      buildAction(`action-${index}`, String(profile.id), "2026-01-10", "Action spontanée", "spontaneous"),
+    );
+    fixture.forms = fixture.actions.flatMap((action) => [
+      buildValidatedForm(String(action.id)),
+      { ...buildValidatedForm(String(action.id)), id: `form-${action.id}-2` },
+    ]);
+    const { supabase } = buildBatchSupabase(fixture);
+    const progressionFactsMock = vi.mocked(buildProgressionFacts);
+
+    progressionFactsMock.mockClear();
+    await loadLeaderboardBatchData(supabase as never);
+
+    expect(progressionFactsMock).toHaveBeenCalledTimes(1001);
+    expect(progressionFactsMock.mock.calls.every(([input]) => input.counters.eligibleFormsCount === 2)).toBe(true);
+  });
+
   it("keeps database reads paged and never loads a catalog per user", async () => {
     const fixture = emptyFixture();
     fixture.profiles = Array.from({ length: 32 }, (_, index) => buildProfile(`user-${index}`));
