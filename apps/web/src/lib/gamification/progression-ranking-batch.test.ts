@@ -163,6 +163,28 @@ function buildValidatedForm(actionId: string): FixtureRow {
 }
 
 describe("batch user leaderboard source", () => {
+  it("counts only eligible forms when one action has mixed form states", async () => {
+    const fixture = emptyFixture();
+    fixture.profiles = [buildProfile("user-1")];
+    fixture.actions = [buildAction("action-mixed", "user-1", "2026-01-10", "Action spontanée", "association")];
+    fixture.forms = [
+      buildValidatedForm("action-mixed"),
+      { ...buildValidatedForm("action-mixed"), id: "form-mixed-draft", status: "draft" },
+      { ...buildValidatedForm("action-mixed"), id: "form-mixed-duplicate", is_duplicate: true },
+      { ...buildValidatedForm("action-mixed"), id: "form-mixed-deleted", is_deleted: true },
+      { ...buildValidatedForm("action-mixed"), id: "form-mixed-test", is_test: true },
+    ];
+    const { supabase } = buildBatchSupabase(fixture);
+    const progressionFactsMock = vi.mocked(buildProgressionFacts);
+
+    progressionFactsMock.mockClear();
+    const batch = await loadLeaderboardBatchData(supabase as never);
+
+    expect(progressionFactsMock.mock.calls).toHaveLength(1);
+    expect(progressionFactsMock.mock.calls[0]?.[0].counters.eligibleFormsCount).toBe(1);
+    expect(batch.badgeCounts.has("user-1")).toBe(true);
+  });
+
   it("indexes eligible forms once while preserving per-form cardinality and shared ownership", async () => {
     const fixture = emptyFixture();
     fixture.profiles = [buildProfile("user-1"), buildProfile("user-2"), buildProfile("user-3")];

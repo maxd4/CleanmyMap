@@ -600,6 +600,15 @@ Règles:
 - exclusion des brouillons, suppressions, tests et formulaires incomplets;
 - exclusion des actions de type `zone_propre`;
 - dédoublonnage par paire `(action_id, group_id)`;
+- le compteur technique `eligibleFormsCount` du classement batch additionne
+  les lignes de formulaires qui satisfont effectivement les critères
+  d'éligibilité pour les actions rattachées à l'utilisateur : une action avec
+  deux lignes éligibles contribue donc `2`, tandis que les brouillons,
+  doublons, suppressions, tests et formulaires incomplets contribuent `0`;
+- ce compteur batch n'est pas une parité avec la RPC
+  `load_gamification_user_counters` : celle-ci compte des clés distinctes
+  `(action_id, group_id)` et applique en plus les filtres `approved` et
+  `zone_propre` de son contrat SQL;
 - les formulaires restent lisibles pour l'historique, mais leur complétude ne
   constitue plus à elle seule un fait CURRENT de progression ou de milestone;
 - aucun badge Forms CURRENT, aucune barre Forms et aucun XP ne sont attribués
