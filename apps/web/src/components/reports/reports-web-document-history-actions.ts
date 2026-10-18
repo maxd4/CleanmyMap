@@ -189,8 +189,7 @@ export function createReportsWebDocumentHistoryActions(params: HistoryActionsPar
     }
     try {
       const generation = await loadHistoricalReportSnapshot(id);
-      renderReportWindow(reportWindow, generation.snapshot, { theme });
-      window.setTimeout(() => reportWindow.print(), 250);
+      renderReportWindow(reportWindow, generation.snapshot, { theme, autoPrint: true });
       params.setHistoryActionStateById((current) => ({
         ...current,
         [id]: { action: "print", state: "success", message: "Fenêtre d’impression ouverte depuis le snapshot enregistré." },

@@ -8,6 +8,7 @@ import {
 } from "@/lib/reports/report-generation-snapshot";
 
 export type ReportBrowserRenderOptions = {
+  autoPrint?: boolean;
   theme?: ReportPdfTheme;
 };
 
@@ -20,6 +21,13 @@ export class IncompatibleReportRendererError extends Error {
   constructor() {
     super("Le template ou le renderer enregistré pour ce rapport n'est plus disponible.");
     this.name = "IncompatibleReportRendererError";
+  }
+}
+
+export class PrintableReportDeliveryError extends Error {
+  constructor() {
+    super("Le document imprimable n'a pas pu être sécurisé ou chargé.");
+    this.name = "PrintableReportDeliveryError";
   }
 }
 
@@ -47,7 +55,7 @@ export function renderReportWindow(
 ): void {
   assertReportRendererCompatibility(payload);
   renderReportHtmlWindow(reportWindow, buildOfficialReportHtml(payload, options), {
-    autoPrint: !payload.data.chapters?.length,
+    autoPrint: options.autoPrint ?? !payload.data.chapters?.length,
   });
 }
 
@@ -61,28 +69,118 @@ function renderReportHtmlWindow(
   // HTML before it becomes a navigable document; in particular, it removes
   // scripts and event-handler attributes without losing print CSS, tables or
   // the SVG route map.
-  const purifier = createDOMPurify(
-    reportWindow as unknown as Parameters<typeof createDOMPurify>[0],
-  );
-  const safeHtml = purifier.isSupported
-    ? purifier.sanitize(html, {
-        WHOLE_DOCUMENT: true,
-        FORBID_TAGS: ["script"],
-      })
-    : html;
-  const documentUrl = URL.createObjectURL(
-    new Blob([safeHtml], { type: "text/html;charset=UTF-8" }),
-  );
-  const handleLoad = () => {
-    URL.revokeObjectURL(documentUrl);
-    if (options.autoPrint) reportWindow.print();
-  };
-  reportWindow.addEventListener("load", handleLoad, { once: true });
-  if (options.closeAfterPrint) {
-    reportWindow.addEventListener("afterprint", () => reportWindow.close(), { once: true });
+  let safeHtml: string;
+  try {
+    const purifier = createDOMPurify(
+      reportWindow as unknown as Parameters<typeof createDOMPurify>[0],
+    );
+    if (!purifier.isSupported) throw new PrintableReportDeliveryError();
+    const sanitizedHtml = purifier.sanitize(html, {
+      WHOLE_DOCUMENT: true,
+      FORBID_TAGS: ["script"],
+    });
+    if (typeof sanitizedHtml !== "string") throw new PrintableReportDeliveryError();
+    safeHtml = sanitizedHtml;
+  } catch (error) {
+    reportWindow.close();
+    if (error instanceof PrintableReportDeliveryError) throw error;
+    throw new PrintableReportDeliveryError();
   }
-  reportWindow.location.replace(documentUrl);
-  reportWindow.focus();
+
+  let documentUrl: string;
+  try {
+    documentUrl = URL.createObjectURL(
+      new Blob([safeHtml], { type: "text/html;charset=UTF-8" }),
+    );
+  } catch {
+    reportWindow.close();
+    throw new PrintableReportDeliveryError();
+  }
+
+  let initialDocument: Document | null = null;
+  try {
+    initialDocument = reportWindow.document;
+    reportWindow.location.replace(documentUrl);
+  } catch {
+    URL.revokeObjectURL(documentUrl);
+    reportWindow.close();
+    throw new PrintableReportDeliveryError();
+  }
+
+  let settled = false;
+  let observedDocument: Document | null = null;
+  let pollTimer: ReturnType<typeof setTimeout> | null = null;
+  let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const clearTimers = () => {
+    if (pollTimer) clearTimeout(pollTimer);
+    if (timeoutTimer) clearTimeout(timeoutTimer);
+    pollTimer = null;
+    timeoutTimer = null;
+  };
+
+  const finish = (loadedDocument: Document) => {
+    if (settled) return;
+    settled = true;
+    clearTimers();
+    if (options.closeAfterPrint) {
+      reportWindow.addEventListener("afterprint", () => reportWindow.close(), { once: true });
+    }
+    try {
+      if (options.autoPrint) reportWindow.print();
+    } finally {
+      URL.revokeObjectURL(documentUrl);
+    }
+    void loadedDocument;
+  };
+
+  const fail = () => {
+    if (settled) return;
+    settled = true;
+    clearTimers();
+    URL.revokeObjectURL(documentUrl);
+    reportWindow.close();
+  };
+
+  const inspectLoadedDocument = () => {
+    if (settled || reportWindow.closed) {
+      fail();
+      return;
+    }
+
+    let currentDocument: Document;
+    let currentUrl: string;
+    try {
+      currentDocument = reportWindow.document;
+      currentUrl = reportWindow.location.href;
+    } catch {
+      fail();
+      return;
+    }
+
+    if (currentDocument !== observedDocument) {
+      observedDocument?.removeEventListener("DOMContentLoaded", inspectLoadedDocument);
+      observedDocument?.removeEventListener("readystatechange", inspectLoadedDocument);
+      observedDocument = currentDocument;
+      currentDocument.addEventListener("DOMContentLoaded", inspectLoadedDocument);
+      currentDocument.addEventListener("readystatechange", inspectLoadedDocument);
+    }
+
+    if (
+      currentDocument !== initialDocument &&
+      currentUrl === documentUrl &&
+      currentDocument.readyState === "complete"
+    ) {
+      finish(currentDocument);
+      return;
+    }
+
+    pollTimer = setTimeout(inspectLoadedDocument, 25);
+  };
+
+  timeoutTimer = setTimeout(fail, 30_000);
+  inspectLoadedDocument();
+  if (!reportWindow.closed) reportWindow.focus();
 }
 
 export function openPrintableHtmlWindow(
@@ -92,8 +190,13 @@ export function openPrintableHtmlWindow(
   const reportWindow = prepareReportWindow();
   if (!reportWindow) return false;
 
-  renderReportHtmlWindow(reportWindow, html, options);
-  return true;
+  try {
+    renderReportHtmlWindow(reportWindow, html, options);
+    return true;
+  } catch (error) {
+    if (!(error instanceof PrintableReportDeliveryError)) throw error;
+    return false;
+  }
 }
 
 export function openPrintableReport(
@@ -110,9 +213,14 @@ export function openPrintableReport(
   const targetWindow = reportWindow ?? prepareReportWindow();
   if (!targetWindow) return "blocked";
 
-  renderReportHtmlWindow(targetWindow, html, {
-    autoPrint: Boolean(buildPrintableHtml) || !payload.data.chapters?.length,
-    closeAfterPrint: Boolean(buildPrintableHtml),
-  });
+  try {
+    renderReportHtmlWindow(targetWindow, html, {
+      autoPrint: options.autoPrint ?? (Boolean(buildPrintableHtml) || !payload.data.chapters?.length),
+      closeAfterPrint: Boolean(buildPrintableHtml),
+    });
+  } catch (error) {
+    if (!(error instanceof PrintableReportDeliveryError)) throw error;
+    return "blocked";
+  }
   return "opened";
 }

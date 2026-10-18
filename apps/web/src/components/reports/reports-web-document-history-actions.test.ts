@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createReportsWebDocumentHistoryActions } from "./reports-web-document-history-actions";
 
 const mocks = vi.hoisted(() => ({
@@ -32,6 +32,10 @@ vi.mock("@/lib/reports/historical-report-replay", () => ({
 }));
 
 describe("createReportsWebDocumentHistoryActions", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("refreshes the active server page after deriving without injecting a local row", async () => {
     const reportWindow = { closed: false } as unknown as Window;
     const refreshHistory = vi.fn().mockResolvedValue(true);
@@ -59,6 +63,30 @@ describe("createReportsWebDocumentHistoryActions", () => {
     expect(refreshHistory).toHaveBeenCalledTimes(1);
     expect(setHistoryAvailability).toHaveBeenCalledWith("available");
     expect(mocks.renderReportWindow).toHaveBeenCalledWith(reportWindow, payload, { theme: "impact" });
+    expect(setHistoryActionStateById).toHaveBeenCalled();
+  });
+
+  it("delegates historical printing to the document-load lifecycle", async () => {
+    const reportWindow = { closed: false, close: vi.fn() } as unknown as Window;
+    const setHistoryActionStateById = vi.fn();
+    const payload = { snapshot: true } as never;
+    mocks.prepareReportWindow.mockReturnValueOnce(reportWindow);
+    mocks.loadHistoricalReportSnapshot.mockResolvedValueOnce({ snapshot: payload });
+
+    const actions = createReportsWebDocumentHistoryActions({
+      reportTheme: "impact",
+      refreshHistory: vi.fn(),
+      setHistoryAvailability: vi.fn(),
+      setDailyExportAvailability: vi.fn(),
+      setHistoryActionStateById,
+    });
+
+    await actions.handleHistoricalPrint("source");
+
+    expect(mocks.renderReportWindow).toHaveBeenCalledWith(reportWindow, payload, {
+      theme: "impact",
+      autoPrint: true,
+    });
     expect(setHistoryActionStateById).toHaveBeenCalled();
   });
 });

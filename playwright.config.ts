@@ -78,6 +78,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "pdf export browser",
+      testMatch: /pdf-export-browser-report\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "homepage chromium",
       testMatch: /homepage-reveal\.spec\.ts/,
       use: {
