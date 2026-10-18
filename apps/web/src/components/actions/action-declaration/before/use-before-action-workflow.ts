@@ -202,6 +202,7 @@ type BeforeActionIdentityFields = Pick<
   | "organizerAccounts"
   | "participantAccounts"
   | "groupJoinEnabled"
+  | "accessMode"
 >;
 
 function buildBeforeActionIdentityFields(
@@ -222,6 +223,7 @@ function buildBeforeActionIdentityFields(
       action.organizerAccounts?.join(", ") ?? hydrated.organizerAccounts,
     ).join(", "),
     groupJoinEnabled: action.groupJoinEnabled,
+    accessMode: action.accessMode ?? "public",
     participantAccounts: normalizeParticipantAccounts(action.participantAccounts),
   };
 }

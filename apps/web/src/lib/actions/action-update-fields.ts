@@ -133,6 +133,7 @@ export async function buildActionUpdateFields(params: {
   Object.assign(updateData, buildScalarFields(body));
   Object.assign(updateData, await buildDepartmentFields(current, body));
   Object.assign(updateData, buildTimingFields(current, body));
+  if (body.accessMode !== undefined) updateData["access_mode"] = body.accessMode;
 
   const drawing = explicitDrawing(body);
   if (drawing) {

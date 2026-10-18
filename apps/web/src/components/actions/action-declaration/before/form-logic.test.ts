@@ -140,6 +140,20 @@ describe("pre-action temporal validation", () => {
 });
 
 describe("pre-action identity payload", () => {
+  it("defaults to public and persists the private invitation choice", () => {
+    const form = buildValidPreActionForm();
+    expect(form.accessMode).toBe("public");
+    form.accessMode = "invite_link";
+
+    const payload = buildBeforeActionPayload({
+      form,
+      userMetadata: { userId: "user-creator", displayName: "Maxence" },
+    });
+
+    expect(payload.accessMode).toBe("invite_link");
+    expect(payload.actionPhase).toBe("pre_action");
+  });
+
   it("sends the authenticated creator label and distinct organizer/participant ids", () => {
     const form = createInitialFormState("legacy-alias", "action");
     form.associationName = "Association locale";

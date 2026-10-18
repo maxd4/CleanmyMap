@@ -88,6 +88,8 @@ export type ActionPhase =
   | "pre_action"
   | "post_action_draft"
   | "post_action_complete";
+export const ACTION_ACCESS_MODES = ["public", "invite_link"] as const;
+export type ActionAccessMode = (typeof ACTION_ACCESS_MODES)[number];
 export type { ActionQualityGrade } from "./quality/quality-rules";
 export type ActionImpactLevel = "faible" | "moyen" | "fort" | "critique";
 export type ActionVisionSource = "heuristic" | "hybrid" | "vision";
@@ -387,6 +389,7 @@ export type CreateActionPayload = {
   organizerAccounts?: string[];
   participantAccounts?: string[];
   groupJoinEnabled?: boolean;
+  accessMode?: ActionAccessMode;
   actionPhase?: ActionPhase;
   preparationData?: ActionPreparationData | null;
   /** Canonical itinerary → action handoff; persisted inside preparationData. */

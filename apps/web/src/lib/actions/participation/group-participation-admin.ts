@@ -42,6 +42,7 @@ async function validateAdminParticipationAction(
       runSingleActionQuery<{
         status: "pending" | "approved" | "rejected" | "cancelled";
         moderation_visibility?: "visible" | "hidden" | null;
+        access_mode?: "public" | "invite_link" | null;
         action_phase: ActionPhase;
         notes: string | null;
       }>(supabase, (query) =>
@@ -66,7 +67,7 @@ async function validateAdminParticipationAction(
     error.name = "ValidationError";
     throw error;
   }
-  if (extractActionMetadataFromNotes(actionResult.notes).groupJoinEnabled === false) {
+  if (actionResult.access_mode !== "invite_link" && extractActionMetadataFromNotes(actionResult.notes).groupJoinEnabled === false) {
     const error = new Error("L'organisateur n'a pas ouvert ce formulaire.");
     error.name = "ValidationError";
     throw error;

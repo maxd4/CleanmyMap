@@ -29,11 +29,12 @@ export class SingleActionReportTargetUnavailableError extends Error {
   }
 }
 
-function isEligibleSingleAction(row: { status: string; action_phase?: string | null; published_at?: string | null; moderation_visibility?: string | null }): boolean {
+function isEligibleSingleAction(row: { status: string; action_phase?: string | null; published_at?: string | null; moderation_visibility?: string | null; access_mode?: string | null }): boolean {
   return row.status === "approved" &&
     row.action_phase === "post_action_complete" &&
     Boolean(row.published_at) &&
-    row.moderation_visibility === "visible";
+    row.moderation_visibility === "visible" &&
+    row.access_mode !== "invite_link";
 }
 
 export async function resolveSingleActionReportContract(actionId: string): Promise<ActionDataContract> {

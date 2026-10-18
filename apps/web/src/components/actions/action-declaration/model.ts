@@ -7,6 +7,7 @@ import type {
  ActionMegotsCondition,
  ActionRecordType,
  ActionRouteTopology,
+ ActionAccessMode,
  ActionWasteMeasurementMethod,
 } from"@/lib/actions/types";
 import type { WasteCategorySlug } from "@/lib/waste";
@@ -32,6 +33,7 @@ export type FormState = {
  organizerAccounts: string;
  participantAccounts: string[];
  groupJoinEnabled: boolean;
+ accessMode: ActionAccessMode;
  wasteCategories?: WasteCategorySlug[];
  actionTitle: string;
  shortDescription: string;
@@ -125,6 +127,7 @@ export const initialState: FormState = {
  organizerAccounts:"",
  participantAccounts:[],
  groupJoinEnabled: false,
+ accessMode: "public",
  wasteCategories: [],
  actionTitle:"",
  shortDescription:"",

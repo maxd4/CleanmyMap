@@ -48,6 +48,7 @@ const FORM_STATE_KEYS = [
   "organizerAccounts",
   "participantAccounts",
   "groupJoinEnabled",
+  "accessMode",
   "actionTitle",
   "shortDescription",
   "communeZoneLabel",

@@ -136,6 +136,7 @@ async function buildActionsRoutePayload(
   url: URL,
   statusOverride: ActionStatus | null,
   toListItem: typeof toActionListItem | typeof toPublicActionListItem,
+  includePrivateActions = false,
 ) {
   const futureOnly = url.searchParams.get("view") === "future";
   const reportQuery = resolveReportQuery(url);
@@ -156,6 +157,7 @@ async function buildActionsRoutePayload(
     floorDate,
     requireCoordinates: false,
     types,
+    includePrivateActions,
   });
 
   const now = new Date();
@@ -287,6 +289,7 @@ export async function GET(request: Request) {
         url,
         readPolicy.status,
         toActionListItem,
+        true,
       );
       return NextResponse.json(
         payload,

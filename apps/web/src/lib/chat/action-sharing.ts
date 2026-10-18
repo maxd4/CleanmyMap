@@ -68,6 +68,7 @@ export function isShareableFutureAction(
     | "status"
     | "moderation_visibility"
     | "published_at"
+    | "access_mode"
   >,
   now = new Date(),
 ): boolean {
@@ -84,9 +85,11 @@ export function getPublicActionShareKind(
     | "status"
     | "moderation_visibility"
     | "published_at"
+    | "access_mode"
   >,
   now = new Date(),
 ): PublicActionShareKind | null {
+  if (action.access_mode === "invite_link") return null;
   if (!action.published_at || action.moderation_visibility === "hidden") {
     return null;
   }

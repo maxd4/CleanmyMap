@@ -239,6 +239,7 @@ export function buildActionInsertPayload(params: {
     event_end_time: params.payload.eventEndTime ?? null,
     published_at: null,
     preparation_data: preparationData,
+    access_mode: params.payload.accessMode ?? "public",
     notes: buildPersistedNotes({
       ...persistedPayload,
       manualDrawing: params.finalDrawing ?? undefined,

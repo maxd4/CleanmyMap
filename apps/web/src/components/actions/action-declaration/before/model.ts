@@ -272,6 +272,7 @@ export function sanitizePreActionForm(form: FormState): FormState {
   next.safetyInstructions = next.safetyInstructions.trim();
   next.recommendedMaterials = next.recommendedMaterials.trim();
   next.groupJoinEnabled = Boolean(next.groupJoinEnabled);
+  next.accessMode = next.accessMode === "invite_link" ? "invite_link" : "public";
   next.organizerAccounts = parseOrganizerAccounts(next.organizerAccounts).join(", ");
   next.participantAccounts = normalizeParticipantAccounts(next.participantAccounts);
   next.volunteersCount = next.volunteersCount.trim();

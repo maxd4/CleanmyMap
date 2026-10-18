@@ -14,6 +14,7 @@ import { normalizeParticipantAccounts, parseOrganizerAccounts } from "../payload
 import { FieldShell, GroupJoinPublishCard, SectionLabel } from "./ui";
 import { cn } from "@/lib/utils";
 import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
+import { PrivateActionAccessSection } from "./private-action-access-section";
 
 type IdentityAndSharingSectionProps = BaseSectionProps & {
   userMetadata: {
@@ -28,6 +29,7 @@ type IdentityAndSharingSectionProps = BaseSectionProps & {
   showVolunteerRegistration?: boolean;
   invitationStatuses?: readonly InvitationStatus[];
   embedded?: boolean;
+  actionId?: string | null;
 };
 
 export function IdentityAndSharingSection({
@@ -40,6 +42,7 @@ export function IdentityAndSharingSection({
   showVolunteerRegistration = true,
   invitationStatuses,
   embedded = false,
+  actionId,
   hasAttemptedSubmit,
   validationIssueFields,
 }: IdentityAndSharingSectionProps) {
@@ -69,9 +72,16 @@ export function IdentityAndSharingSection({
           currentUserId={userMetadata.userId}
         />
 
+        <PrivateActionAccessSection
+          accessMode={form.accessMode}
+          actionId={actionId}
+          onChange={(next) => updateField("accessMode", next)}
+        />
+
         {showVolunteerRegistration ? (
           <VolunteerRegistrationSection
             groupJoinEnabled={form.groupJoinEnabled}
+            accessMode={form.accessMode}
             participantAccountIds={normalizeParticipantAccounts(form.participantAccounts)}
             currentUserId={userMetadata.userId}
             onToggleGroupJoin={(next) => updateField("groupJoinEnabled", next)}
@@ -208,6 +218,7 @@ export function VolunteerRegistrationPanel({
         <SectionLabel icon={Users} title="Inscriptions des bénévoles" subtitle="Demandes d’inscription et membres à inviter avant la publication." />
         <VolunteerRegistrationSection
           groupJoinEnabled={form.groupJoinEnabled}
+          accessMode={form.accessMode}
           participantAccountIds={normalizeParticipantAccounts(form.participantAccounts)}
           currentUserId={userMetadata.userId}
           onToggleGroupJoin={(next) => updateField("groupJoinEnabled", next)}
@@ -230,6 +241,7 @@ function VolunteerRegistrationSection({
   onToggleGroupJoinHelp,
   onParticipantsChange,
   invitationStatuses,
+  accessMode,
 }: {
   groupJoinEnabled: boolean;
   participantAccountIds: string[];
@@ -239,6 +251,7 @@ function VolunteerRegistrationSection({
   onToggleGroupJoinHelp: () => void;
   onParticipantsChange: (next: string[]) => void;
   invitationStatuses?: readonly InvitationStatus[];
+  accessMode: FormState["accessMode"];
 }) {
   return (
     <section aria-labelledby="before-volunteer-registration-title" className="border-t border-emerald-100/80 pt-5">
@@ -247,17 +260,17 @@ function VolunteerRegistrationSection({
           Inscriptions des bénévoles
         </h3>
         <p className="cmm-text-body cmm-text-primary max-w-3xl">
-          Choisissez si les demandes publiques sont ouvertes et ajoutez, si besoin, des membres déjà connus.
+          {accessMode === "invite_link" ? "Les demandes passent par le lien privé ; ajoutez, si besoin, des membres déjà connus." : "Choisissez si les demandes publiques sont ouvertes et ajoutez, si besoin, des membres déjà connus."}
         </p>
       </div>
 
       <div className="mt-3 space-y-2">
-        <GroupJoinPublishCard
+        {accessMode === "public" ? <GroupJoinPublishCard
           checked={groupJoinEnabled}
           onChange={onToggleGroupJoin}
           showHelp={showGroupJoinHelp}
           onToggleHelp={onToggleGroupJoinHelp}
-        />
+        /> : <p className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs leading-5 text-amber-950">Les demandes publiques sont désactivées pour cette pré-action privée.</p>}
 
         <CmmDisclosure
           summary={<ActionFormDisclosureSummary label="Inviter des membres" detail={participantAccountIds.length ? `${participantAccountIds.length} membre${participantAccountIds.length > 1 ? "s" : ""}` : "Facultatif"} />}

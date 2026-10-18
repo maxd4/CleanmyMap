@@ -1,6 +1,7 @@
 import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 import type {
   ActionGeometrySource,
+  ActionAccessMode,
   ActionPhase,
   ActionPreparationData,
   ActionStatus,
@@ -65,6 +66,7 @@ export type ActionEditorRecord = {
   organizerName?: string | null;
   organizerAccounts?: string[];
   groupJoinEnabled: boolean;
+  accessMode?: ActionAccessMode;
   participantAccounts: string[];
   manualInvitationStatuses?: ActionManualInvitationStatusRecord[];
   placeType: string | null;

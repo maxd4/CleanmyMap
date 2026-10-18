@@ -10,6 +10,7 @@ export function normalizeStoredAction(row: ActionRow): ActionRow {
     volunteers_count: normalizeNullableStoredNumber(row.volunteers_count),
     duration_minutes: Number(row.duration_minutes ?? 0),
     action_phase: row.action_phase ?? "post_action_complete",
+    access_mode: row.access_mode ?? "public",
     preparation_data: (row.preparation_data ?? {}) as ActionRow["preparation_data"],
   };
 }

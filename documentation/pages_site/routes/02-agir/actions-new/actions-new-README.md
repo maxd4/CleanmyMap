@@ -76,6 +76,23 @@
 
 ## Accès progressif
 
+### Accès métier privé sur invitation
+
+Le pré-formulaire conserve `accessMode = public` par défaut, y compris pour les
+actions historiques. Le créateur ou un organisateur autorisé peut choisir
+`invite_link` pour une pré-action : cette visibilité métier est distincte de
+`moderation_visibility` et de `published_at`. Une action privée reste absente
+des cartes, recherches, rapports, exports, références et projections publics,
+y compris après finalisation.
+
+Le serveur génère des jetons aléatoires, ne persiste que leur empreinte et
+révoque implicitement l'ancien jeton lors d'un renouvellement. Le lien ne
+retourne qu'une projection minimale du rendez-vous. La demande d'inscription
+réutilise `action_registrations` et reste `pending` jusqu'à une décision via les
+permissions Actions existantes ; elle ne crée jamais une présence dans
+`action_participants`. Une action annulée, rejetée, finalisée ou un lien révoqué
+ne peut pas recevoir de nouvelle demande par ce parcours.
+
 Le choix du parcours et la saisie préalable peuvent être consultés ou
 préparés sans compte. Lorsqu'une création, une complétion ou un envoi doit
 être persisté avec une identité, l'interface propose la connexion ou la

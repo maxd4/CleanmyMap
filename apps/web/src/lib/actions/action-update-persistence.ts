@@ -69,6 +69,12 @@ export async function prepareActionUpdate(params: {
   }
 
   const nextActionPhase = body.actionPhase ?? current.action_phase;
+  if (body.accessMode === "invite_link" && nextActionPhase !== "pre_action") {
+    throw new ActionUpdateValidationError(
+      "accessMode",
+      "Le mode privé sur invitation est réservé aux pré-actions.",
+    );
+  }
   if (nextActionPhase === "pre_action" && body.preparationData) {
     const volunteerForecastMessage = getVolunteerForecastValidationMessage({
       volunteersExpected: body.preparationData.volunteersExpected,

@@ -26,6 +26,7 @@ type TeamLogisticsSectionProps = {
   onToggleGroupJoinHelp: () => void;
   invitationStatuses: ActionManualInvitationStatusRecord[];
   validationIssueFields: readonly string[];
+  actionId?: string | null;
 };
 
 export function TeamLogisticsSection({
@@ -37,6 +38,7 @@ export function TeamLogisticsSection({
   onToggleGroupJoinHelp,
   invitationStatuses,
   validationIssueFields,
+  actionId,
 }: TeamLogisticsSectionProps) {
   return (
     <CmmCard tone="emerald" variant="glass" size="lg">
@@ -61,6 +63,7 @@ export function TeamLogisticsSection({
             embedded
             hasAttemptedSubmit={validationIssueFields.length > 0}
             validationIssueFields={validationIssueFields}
+            actionId={actionId}
           />
         </section>
 

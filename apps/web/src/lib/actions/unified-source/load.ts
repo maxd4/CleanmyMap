@@ -168,6 +168,7 @@ export async function loadUnifiedActionSourceData(
           ceilingDate: params.ceilingDate ?? undefined,
           requireCoordinates: params.requireCoordinates,
           requirePublicCompletedActions: params.requirePublicCompletedActions,
+          includePrivateActions: params.includePrivateActions,
           viewport: params.viewport,
         })
       : Promise.resolve([]),

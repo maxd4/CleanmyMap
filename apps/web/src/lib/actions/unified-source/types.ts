@@ -26,6 +26,7 @@ export type UnifiedActionContractsParams = {
   types: ActionEntityType[] | null;
   /** Require the complete public post-action projection; missing columns fail closed. */
   requirePublicCompletedActions?: boolean;
+  includePrivateActions?: boolean;
   viewport?: ActionMapViewportQuery;
 };
 

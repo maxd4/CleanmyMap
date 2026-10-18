@@ -459,7 +459,20 @@ export async function createActionSubmission(
   const payload = params.payload;
 
   if (payload.recordType === "clean_place" || payload.recordType === "spot") {
+    if (payload.accessMode === "invite_link") {
+      throw validationError(
+        "accessMode",
+        "Le mode privé sur invitation est réservé aux pré-actions.",
+      );
+    }
     return createSignalementSubmission(params);
+  }
+
+  if (payload.accessMode === "invite_link" && payload.actionPhase !== "pre_action") {
+    throw validationError(
+      "accessMode",
+      "Le mode privé sur invitation est réservé aux pré-actions.",
+    );
   }
 
   const context = await resolveStandardActionContext({

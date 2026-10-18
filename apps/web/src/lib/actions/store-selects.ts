@@ -26,6 +26,7 @@ const ACTION_BASE_SELECT_FIELDS = [
   "notes",
   "status",
   "published_at",
+  "access_mode",
   "cancelled_at",
   "cancelled_by_clerk_id",
   "cancellation_reason",
@@ -76,6 +77,16 @@ export const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT = ACTION_BASE_SELECT
   )
   .join(", ");
 
+export const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_ACCESS_MODE = ACTION_SELECT_FIELDS_LEGACY
+  .split(", ")
+  .filter((field) => field !== "access_mode")
+  .join(", ");
+
+export const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT_AND_ACCESS_MODE = ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT
+  .split(", ")
+  .filter((field) => field !== "access_mode")
+  .join(", ");
+
 export function isMissingActionColumnError(error: unknown): boolean {
   const message =
     error instanceof Error
@@ -90,6 +101,7 @@ export function isMissingActionColumnError(error: unknown): boolean {
   return (
       normalized.includes("does not exist") &&
     (normalized.includes("action_phase") ||
+      normalized.includes("access_mode") ||
       normalized.includes("organizer_id") ||
       normalized.includes("organizer_name") ||
       normalized.includes("preparation_data") ||

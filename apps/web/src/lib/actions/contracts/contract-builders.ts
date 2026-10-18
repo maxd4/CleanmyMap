@@ -57,6 +57,7 @@ export type ActionContractCreatePayload = {
     | "organizerAccounts"
     | "participantAccounts"
     | "groupJoinEnabled"
+    | "accessMode"
     | "actionPhase"
     | "preparationData"
   > & {
@@ -130,6 +131,7 @@ function buildContractMetadata(
     organizerAccounts: payload.organizerAccounts,
     participantAccounts: payload.participantAccounts,
     groupJoinEnabled: payload.groupJoinEnabled,
+    accessMode: payload.accessMode,
     actionPhase: payload.actionPhase,
     preparationData: withRouteCalibrationContext(
       payload.preparationData,
@@ -287,6 +289,7 @@ function buildNormalizedIdentityFields(
         ? undefined
         : payload.metadata.associationName),
     groupJoinEnabled: payload.metadata.groupJoinEnabled,
+    accessMode: payload.metadata.accessMode ?? "public",
     actionPhase: payload.metadata.actionPhase ?? undefined,
     preparationData: context.preparationData,
     plannerSnapshotProof: payload.metadata.plannerSnapshotProof ?? null,

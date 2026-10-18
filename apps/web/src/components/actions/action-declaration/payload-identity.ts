@@ -50,6 +50,7 @@ export function buildCreateActionPayloadIdentityFields(
     associationName: parts.associationName,
     ...buildOrganizerPayloadFields(form, parts.organizerName),
     groupJoinEnabled: form.groupJoinEnabled,
+    accessMode: form.accessMode,
     actionPhase: declarationMode === "quick" ? "pre_action" : "post_action_complete",
     actionDate: form.actionDate,
     locationLabel: isFixedArea ? departureLocationLabel || form.locationLabel.trim() : routeLocationLabel,

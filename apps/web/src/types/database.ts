@@ -1,4 +1,5 @@
 import type {
+  ActionAccessMode,
   ActionGeometrySource,
   ActionPhase,
   ActionPreparationData,
@@ -115,6 +116,7 @@ export type ActionRow = {
   cancelled_from_status?: "pending" | "approved" | null;
   published_at?: string | null;
   moderation_visibility?: "visible" | "hidden";
+  access_mode?: ActionAccessMode;
   hidden_at?: string | null;
   hidden_by_clerk_id?: string | null;
   hidden_reason?: string | null;

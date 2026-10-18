@@ -5,8 +5,8 @@ import type { ActionQuery } from "@/lib/actions/query";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 import { getActionParisDate, isPublishedFuturePreAction } from "./temporal";
 import {
-  ACTION_SELECT_FIELDS_LEGACY,
-  ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT,
+  ACTION_SELECT_FIELDS_LEGACY_WITHOUT_ACCESS_MODE,
+  ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT_AND_ACCESS_MODE,
   ACTION_SELECT_FIELDS_WITH_PHASE,
   isMissingActionColumnError,
 } from "./store-selects";
@@ -47,6 +47,7 @@ type ActionListParams = {
   requirePublicCompletedActions?: boolean;
   viewport?: ActionMapViewportQuery;
   ceilingDate?: string;
+  includePrivateActions?: boolean;
 };
 
 const PUBLIC_ACTION_PAGE_SIZE = 1000;
@@ -76,6 +77,9 @@ function buildActionListQuery(
 
   if (selectFields.includes("moderation_visibility")) {
     nextQuery = nextQuery.eq("moderation_visibility", "visible");
+  }
+  if (!params.includePrivateActions && selectFields.includes("access_mode")) {
+    nextQuery = nextQuery.eq("access_mode", "public");
   }
 
   if (params.requirePublicCompletedActions) {
@@ -201,7 +205,7 @@ export async function fetchActionRows(
       const rows = await fetchActionRowsWithSelect(
         supabase,
         { ...params, includeFuturePublicActions: false },
-        ACTION_SELECT_FIELDS_LEGACY,
+        ACTION_SELECT_FIELDS_LEGACY_WITHOUT_ACCESS_MODE,
       );
       const normalized = rows.map(normalizeStoredAction);
       return params.futureOnly
@@ -214,7 +218,7 @@ export async function fetchActionRows(
       const rows = await fetchActionRowsWithSelect(
         supabase,
         { ...params, includeFuturePublicActions: false },
-        ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT,
+          ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT_AND_ACCESS_MODE,
       );
       const normalized = rows.map(normalizeStoredAction);
       return params.futureOnly
@@ -249,7 +253,7 @@ export async function fetchActionRowById(
     let row: ActionRow | null;
     try {
       row = await runSingleActionQuery<ActionRow>(supabase, (query) =>
-        query.select(ACTION_SELECT_FIELDS_LEGACY).eq("id", actionId).maybeSingle(),
+        query.select(ACTION_SELECT_FIELDS_LEGACY_WITHOUT_ACCESS_MODE).eq("id", actionId).maybeSingle(),
       );
     } catch (legacyError) {
       if (!isMissingActionColumnError(legacyError)) {
@@ -257,7 +261,7 @@ export async function fetchActionRowById(
       }
       row = await runSingleActionQuery<ActionRow>(supabase, (query) =>
         query
-          .select(ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT)
+          .select(ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT_AND_ACCESS_MODE)
           .eq("id", actionId)
           .maybeSingle(),
       );
@@ -299,7 +303,7 @@ export async function fetchRecentActionsByUser(
     try {
       const rows = await runActionQuery<ActionRow>(supabase, (query) =>
         query
-          .select(ACTION_SELECT_FIELDS_LEGACY)
+          .select(ACTION_SELECT_FIELDS_LEGACY_WITHOUT_ACCESS_MODE)
           .eq("created_by_clerk_id", params.userId)
           .order("action_date", { ascending: false })
           .limit(params.limit),
@@ -311,7 +315,7 @@ export async function fetchRecentActionsByUser(
       }
       const rows = await runActionQuery<ActionRow>(supabase, (query) =>
         query
-          .select(ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT)
+          .select(ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT_AND_ACCESS_MODE)
           .eq("created_by_clerk_id", params.userId)
           .order("action_date", { ascending: false })
           .limit(params.limit),

@@ -67,6 +67,7 @@ function buildIdentityFields(
     ).join(", "),
     participantAccounts: action.participantAccounts ?? preparedForm.participantAccounts,
     groupJoinEnabled: action.groupJoinEnabled,
+    accessMode: action.accessMode ?? "public",
   };
 }
 

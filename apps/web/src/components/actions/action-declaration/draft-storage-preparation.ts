@@ -25,6 +25,10 @@ function restorePreparationDraftField(
     if (normalized) next.preparationChecklist = normalized;
     return true;
   }
+  if (key === "accessMode") {
+    if (value === "public" || value === "invite_link") next.accessMode = value;
+    return true;
+  }
   return false;
 }
 

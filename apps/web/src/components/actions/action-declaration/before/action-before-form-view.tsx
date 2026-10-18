@@ -98,7 +98,7 @@ export function ActionBeforeFormView({
           ) : (
             <>
               <div className="space-y-6">
-                <IdentityAndSharingSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={onToggleGroupJoinHelp} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
+                <IdentityAndSharingSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={onToggleGroupJoinHelp} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} actionId={actionId} />
                 <PlannedActionSection form={form} updateField={updateField} updateFields={updateFields} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
                 <PreparationAndSafetySection form={form} updateField={updateField} />
               </div>

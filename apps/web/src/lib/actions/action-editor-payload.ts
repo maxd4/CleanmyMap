@@ -117,6 +117,7 @@ export function buildActionEditorPayload(row: ActionRow | null) {
     longitude: row.longitude,
     ...buildEditorMeasurementFields(row, metadata),
     ...buildEditorOrganizerFields(row, metadata),
+    accessMode: row.access_mode ?? "public",
     ...buildEditorRouteFields(metadata),
     ...buildEditorMediaFields(row, metadata, parsedDrawing),
   };
