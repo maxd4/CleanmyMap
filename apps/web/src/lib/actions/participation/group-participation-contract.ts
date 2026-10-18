@@ -10,7 +10,7 @@ import {
 } from "./group-participation.helpers";
 import type { PublicActionPracticalInformation } from "./group-participation-public-projection";
 
-type JoinableParticipationSource =
+export type JoinableParticipationSource =
   | ParticipationSource
   | ActionParticipantRow["participation_source"]
   | ActionRegistrationRow["registration_source"];
@@ -52,7 +52,7 @@ export type ActionParticipationMutationResult = {
   alreadyJoined: boolean;
   joinedAt: string;
   participationStatus: ParticipationStatus;
-  participationSource: ParticipationSource;
+  participationSource: JoinableParticipationSource;
   participationUpdatedAt: string | null;
   participantsCount: number;
 };

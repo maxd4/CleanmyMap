@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Copy, Link2, RefreshCw, Shield, X } from "lucide-react";
 import type { ActionAccessMode } from "@/lib/actions/types";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -10,6 +10,7 @@ type InviteLinkState = {
   active: boolean;
   url?: string;
   createdAt?: string | null;
+  expiresAt?: string | null;
   revokedAt?: string | null;
 };
 
@@ -26,6 +27,17 @@ export function PrivateActionAccessSection({
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!actionId || accessMode !== "invite_link") return;
+    void fetch(`/api/actions/${encodeURIComponent(actionId)}/invite-link`, { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json().catch(() => null) as InviteLinkState | null;
+        if (!response.ok) throw new Error("Impossible de lire l’état du lien d’invitation.");
+        setLink(body);
+      })
+      .catch((cause) => setError(cause instanceof Error ? cause.message : "Une erreur est survenue."));
+  }, [accessMode, actionId]);
 
   async function generateLink() {
     if (!actionId) return;
@@ -84,7 +96,7 @@ export function PrivateActionAccessSection({
         </FieldShell>
         {accessMode === "invite_link" ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-950">
-            <div className="flex items-start gap-2"><Link2 size={17} className="mt-0.5 shrink-0" /><p>Le lien donne seulement accès à une projection minimale. Toute inscription reste une demande à examiner par l’organisateur.</p></div>
+            <div className="flex items-start gap-2"><Link2 size={17} className="mt-0.5 shrink-0" /><p>Le lien donne seulement accès à une projection minimale. Avant l’action, il permet une inscription confirmée ; après finalisation, il ouvre une demande d’ajout soumise à décision. Il ne confirme jamais une présence terrain.</p></div>
             {!actionId ? <p className="mt-3 text-xs text-amber-900/75">Enregistrez d’abord la préparation pour générer le lien.</p> : (
               <div className="mt-3 space-y-2">
                 <div className="flex flex-wrap gap-2">
@@ -95,6 +107,7 @@ export function PrivateActionAccessSection({
                   {link?.active ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => void revokeLink()} disabled={busy}><X size={14} />Révoquer</CmmButton> : null}
                 </div>
                 {link?.active && link.url ? <p className="break-all rounded-xl bg-white/70 px-3 py-2 text-xs text-amber-950">{link.url}</p> : null}
+                {link?.active && link.expiresAt ? <p className="text-xs text-amber-900/75">Valable jusqu’au {new Date(link.expiresAt).toLocaleDateString("fr-FR")}.</p> : null}
               </div>
             )}
             {error ? <p role="alert" className="mt-2 text-xs font-semibold text-rose-700">{error}</p> : null}

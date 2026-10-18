@@ -8,7 +8,12 @@ import { loadActionById } from "@/lib/actions/store";
 import { canManageAction } from "@/lib/actions/permissions";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
-import { buildInvitationUrl, createInvitationToken, hashInvitationToken } from "@/lib/actions/private-invitation";
+import {
+  buildInvitationUrl,
+  createInvitationToken,
+  hashInvitationToken,
+  isInvitationExpired,
+} from "@/lib/actions/private-invitation";
 
 type Context = { params: Promise<{ actionId: string }> };
 
@@ -35,14 +40,15 @@ export async function GET(request: Request, ctx: Context) {
     if ("response" in resolved) return resolved.response;
     const result = await resolved.supabase
       .from("action_invitation_links")
-      .select("created_at, revoked_at")
+      .select("created_at, revoked_at, expires_at")
       .eq("action_id", resolved.actionId)
       .maybeSingle();
     if (result.error) throw result.error;
     return NextResponse.json({
       status: "ok",
-      active: Boolean(result.data && !result.data.revoked_at),
+      active: Boolean(result.data && !result.data.revoked_at && result.data.expires_at && !isInvitationExpired(result.data.expires_at)),
       createdAt: result.data?.created_at ?? null,
+      expiresAt: result.data?.expires_at ?? null,
       revokedAt: result.data?.revoked_at ?? null,
     });
   } catch (error) {
@@ -64,7 +70,20 @@ export async function POST(request: Request, ctx: Context) {
       p_actor_id: resolved.access.userId,
     });
     if (result.error) throw result.error;
-    return NextResponse.json({ status: "ok", active: true, url: buildInvitationUrl(request, token) }, { status: 201 });
+    const link = await resolved.supabase
+      .from("action_invitation_links")
+      .select("created_at, revoked_at, expires_at")
+      .eq("action_id", resolved.actionId)
+      .maybeSingle();
+    if (link.error) throw link.error;
+    return NextResponse.json({
+      status: "ok",
+      active: true,
+      url: buildInvitationUrl(request, token),
+      createdAt: link.data?.created_at ?? null,
+      expiresAt: link.data?.expires_at ?? null,
+      revokedAt: link.data?.revoked_at ?? null,
+    }, { status: 201 });
   } catch (error) {
     return handleApiError(error, "POST /api/actions/:actionId/invite-link");
   }

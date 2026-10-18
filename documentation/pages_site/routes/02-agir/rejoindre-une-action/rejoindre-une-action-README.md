@@ -100,6 +100,17 @@ action publique terminée. Cette demande de claim est créée dans
 `action_participants` avec `participation_source = post_action_claim` et reste
 en attente de validation selon les permissions existantes.
 
+Une action privée `access_mode = invite_link` n'est jamais ajoutée aux cartes,
+recherches, rapports, exports, références ou projections publics. Son lien
+profond donne une projection minimale et expire trois mois calendaires après sa
+création ou son renouvellement. Avant le début prévu, l'utilisation authentifiée
+du lien crée ou retrouve une inscription `action_registrations` `confirmed` de
+source `invite_link`. Une date passée sans finalisation affiche « Action en
+attente de finalisation » ; après `post_action_complete`, le lien ouvre une
+demande `action_participants` `post_action_claim` `pending`, jamais une
+confirmation automatique de présence. La révocation ou le renouvellement ferme
+immédiatement l'ancien lien.
+
 Une ligne `action_registrations` avec `registration_source = manual_add` et
 `registration_status = pending` est une invitation directe, pas une demande
 publique `group_form`. Elle n'est pas comptée comme inscription confirmée et

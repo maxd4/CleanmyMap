@@ -66,7 +66,8 @@ export type ActionRegistrationRow = {
     | "manual_add"
     | "admin"
     | "admin_override"
-    | "import";
+    | "import"
+    | "invite_link";
   registration_cancellation_reason?:
     | "recipient_rejected"
     | "organizer_withdrawn"

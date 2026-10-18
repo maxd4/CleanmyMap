@@ -14,7 +14,13 @@ type InviteProjection = {
   zoneCiblePrevue: string | null;
   organizerLabel: string | null;
   actionPhase: string;
-  registrationOpen: boolean;
+  invitationState: "pre_action" | "awaiting_finalization" | "post_action_claim";
+  expiresAt: string;
+  registrationStatus: "pending" | "confirmed" | "cancelled" | null;
+  registrationSource: string | null;
+  registrationCancellationReason: string | null;
+  participationStatus: "pending" | "confirmed" | "cancelled" | null;
+  participationSource: string | null;
 };
 
 export function PrivateActionInvitePage({ token }: { token: string }) {
@@ -40,14 +46,61 @@ export function PrivateActionInvitePage({ token }: { token: string }) {
     setMessage(null);
     setError(null);
     const response = await fetch(`/api/actions/invite/${encodeURIComponent(token)}`, { method: "POST" });
-    const body = await response.json().catch(() => null) as { error?: string } | null;
+    const body = await response.json().catch(() => null) as {
+      error?: string;
+      flow?: "pre_action" | "post_action_claim";
+      registrationStatus?: InviteProjection["registrationStatus"];
+      registrationSource?: string | null;
+      participationStatus?: InviteProjection["participationStatus"];
+      participationSource?: string | null;
+    } | null;
     if (response.status === 401) {
       router.push(`/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`);
       return;
     }
     if (!response.ok) setError(body?.error ?? "La demande n’a pas pu être envoyée.");
-    else setMessage("Votre demande est enregistrée et reste en attente de décision de l’organisateur.");
+    else if (body?.flow === "pre_action") {
+      setAction((current) => current ? {
+        ...current,
+        registrationStatus: body.registrationStatus ?? "confirmed",
+        registrationSource: body.registrationSource ?? "invite_link",
+      } : current);
+      setMessage("Votre inscription est confirmée pour cette action. Cette confirmation ne vaut pas présence sur le terrain.");
+    } else {
+      setAction((current) => current ? {
+        ...current,
+        participationStatus: body?.participationStatus ?? "pending",
+        participationSource: body?.participationSource ?? "post_action_claim",
+      } : current);
+      setMessage("Votre demande est enregistrée et reste en attente de décision de l’organisateur.");
+    }
     setBusy(false);
+  }
+
+  function renderState() {
+    if (!action) return null;
+    if (action.invitationState === "awaiting_finalization") {
+      return <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Action en attente de finalisation. Les demandes ouvriront lorsque le bilan sera finalisé.</p>;
+    }
+    if (action.invitationState === "post_action_claim") {
+      if (action.participationStatus === "pending") {
+        return <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Votre demande d’ajout aux participants est en attente de décision.</p>;
+      }
+      if (action.participationStatus === "confirmed") {
+        return <p className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">Votre rattachement aux participants est confirmé par l’organisateur.</p>;
+      }
+      if (action.participationStatus === "cancelled") {
+        return <p className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-950">Cette demande a été refusée ou annulée.</p>;
+      }
+      return <CmmButton className="mt-5" type="button" tone="primary" variant="pill" size="md" onClick={() => void requestRegistration()} disabled={busy}>{busy ? "Envoi…" : "Demander à être ajouté aux participants"}</CmmButton>;
+    }
+    if (action.registrationStatus === "confirmed") {
+      return <p className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">Votre inscription est confirmée. Cette confirmation ne vaut pas présence sur le terrain.</p>;
+    }
+    if (action.registrationStatus === "cancelled") {
+      return <p className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-950">Cette inscription a été refusée ou annulée.</p>;
+    }
+    return <CmmButton className="mt-5" type="button" tone="primary" variant="pill" size="md" onClick={() => void requestRegistration()} disabled={busy}>{busy ? "Envoi…" : "Rejoindre l’action"}</CmmButton>;
   }
 
   return (
@@ -65,8 +118,8 @@ export function PrivateActionInvitePage({ token }: { token: string }) {
             {action.zoneCiblePrevue ? <div className="rounded-2xl bg-emerald-50 p-3"><dt className="text-xs font-bold uppercase text-emerald-700">Zone prévue</dt><dd className="mt-1 font-semibold text-emerald-950">{action.zoneCiblePrevue}</dd></div> : null}
             {action.organizerLabel ? <div className="rounded-2xl bg-emerald-50 p-3"><dt className="text-xs font-bold uppercase text-emerald-700">Organisateur</dt><dd className="mt-1 font-semibold text-emerald-950">{action.organizerLabel}</dd></div> : null}
           </dl>
-          <p className="mt-6 text-xs leading-5 text-slate-600">Cette page ne publie pas les consignes internes de préparation. Une demande d’inscription ne confirme ni votre inscription ni votre présence sur le terrain.</p>
-          {action.registrationOpen ? <CmmButton className="mt-5" type="button" tone="primary" variant="pill" size="md" onClick={() => void requestRegistration()} disabled={busy}>{busy ? "Envoi…" : "Demander à rejoindre"}</CmmButton> : <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Les demandes d’inscription sont fermées pour cette action.</p>}
+          <p className="mt-6 text-xs leading-5 text-slate-600">Cette page ne publie pas les consignes internes de préparation. Le lien expire le {new Date(action.expiresAt).toLocaleDateString("fr-FR")}. Une inscription ou une demande de rattachement ne confirme jamais une présence sur le terrain.</p>
+          {renderState()}
           {message ? <p role="status" className="mt-3 text-sm font-semibold text-emerald-800">{message}</p> : null}
           <p className="mt-6 text-xs text-slate-500"><Link href="/actions/map" className="underline">Retour aux surfaces publiques</Link></p>
         </> : null}

@@ -130,6 +130,7 @@ mais ne constituent pas des pages de recherche autonomes.
 | /parcours et /parcours/* | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /profil et /profil/* | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /actions/history | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /actions/invite/[token] | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /missions/* | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /onboarding | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /reglages | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
@@ -261,6 +262,7 @@ entrées visibles appartiennent à la navigation primaire Agir.
 |---|---|---|---|---|
 | `/actions/history` | [Historique terrain](./routes/02-agir/actions-history/actions-history-README.md) | `protected` ; workflow secondaire protégé hors navigation primaire | agir | `apps/web/src/app/(app)/actions/history/page.tsx` |
 | `/actions/new` | [Créer une action](./routes/02-agir/actions-new/actions-new-README.md) | `clerk-context` ; **entrée visible** ; préparation accessible sans compte ; identité requise pour créer, compléter ou envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
+| `/actions/invite/[token]` | [Accès privé par invitation](./routes/02-agir/actions-invite/actions-invite-README.md) | `clerk-context` ; projection minimale via lien privé ; compte requis pour rejoindre ou demander un rattachement | agir, deep-link privé | `apps/web/src/app/(app)/actions/invite/[token]/page.tsx` |
 | `/sections/rejoindre-une-action` | [Rejoindre une action](./routes/02-agir/rejoindre-une-action/rejoindre-une-action-README.md) | `public-visible` ; **entrée visible** ; compte requis pour rejoindre | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/missions/[id]` | [Missions](./routes/02-agir/missions/missions-README.md) | `protected` ; workflow/deep-link hors navigation primaire | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
 | `/signalement` | [Signalement déchets](./routes/02-agir/signalement/signalement-README.md) | `clerk-context` ; **entrée visible** ; formulaire accessible sans compte ; identité requise pour transmettre, gérer les preuves et consulter ses observations | agir | `apps/web/src/app/(app)/signalement/page.tsx` |

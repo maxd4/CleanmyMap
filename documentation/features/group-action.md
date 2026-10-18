@@ -30,6 +30,19 @@ GPS reliée reste une mission à réconcilier et ne crée aucune présence final
 11. Si le bénévole s'est trompé, il peut annuler une inscription en attente ou confirmée, tout en conservant la trace historique de l'inscription.
 12. Une synchronisation du pré-formulaire est une opération atomique : une invitation en attente retirée par l'organisateur devient `cancelled` avec `registration_cancellation_reason = organizer_withdrawn`, une invitation acceptée reste `confirmed`, et une invitation refusée par son destinataire (`recipient_rejected`) ne peut pas être renvoyée par une sauvegarde ordinaire. Une réinvitation explicitement autorisée après retrait de l'organisateur réutilise la même ligne avec une nouvelle version d'événement.
 13. Depuis `Actions passées`, un bénévole peut demander son rattachement à une action publique terminée. Le claim crée une ligne distincte dans `action_participants` avec `participation_source = post_action_claim` et `participation_status = pending`, puis passe par la review de l'organisateur ou d'un administrateur autorisé. Une inscription future existante reste intacte.
+13 bis. Une action `access_mode = invite_link` reste absente des cartes, recherches,
+rapports, exports, références et projections publics, même après finalisation. Son
+lien est une capacité privée révocable, valable trois mois calendaires à compter
+de sa création ou de son renouvellement ; seul le hash du jeton est persisté.
+Avant le début prévu, un compte Clerk authentifié peut utiliser ce lien pour créer
+ou retrouver une inscription `action_registrations` immédiatement `confirmed`,
+avec `registration_source = invite_link`. Si la date est passée mais que le
+bilan n'est pas finalisé, le lien affiche « Action en attente de finalisation »
+et n'ouvre aucune nouvelle inscription. Après `post_action_complete`, le même
+lien réutilise le claim canonique et crée seulement une demande
+`action_participants` `post_action_claim` `pending`, jamais une présence confirmée.
+Un lien expiré, révoqué, remplacé ou associé à une action annulée, rejetée ou
+non éligible est fermé sans réactivation silencieuse d'une décision refusée.
 14. Une demande `group_form` `pending` génère un événement `action_event` dédupliqué pour le créateur, les organisateurs habilités et les rôles `admin`/`max`, à l'exclusion du demandeur. Elle est distinguée d'une invitation `manual_add` par `payload.subtype = registration_request`. Pour le créateur et les organisateurs, l'identité de livraison est leur `user_id` Clerk issu de la relation d'action : une ligne `profiles` n'est pas requise ; `profiles` reste utilisé uniquement pour résoudre les rôles `admin`/`max`.
 15. La carte « Demande d'inscription » expose `✓ Accepter` et `× Refuser`. Chaque clic repasse par l'autorisation serveur et une transition conditionnelle depuis `pending`; une décision concurrente ou un droit révoqué rend la carte indisponible sans seconde mutation.
 16. Une décision effective `confirmed` ou `cancelled` crée une notification `registration_decision` pour le demandeur Clerk avec un lien vers l'action, sans dépendre d'une présence préalable dans `profiles`. L'annulation de l'action retire la demande de la projection actionnable sans acceptation implicite ni refus fabriqué.
@@ -121,7 +134,7 @@ doit donc venir du parcours explicite `post_action_claim`, puis de sa validation
 - Source d'inscription future: table `action_registrations` avec `registration_status`, `registration_source`, `registered_at` et `updated_at`.
 - Source de participation finale: table `action_participants` avec `participation_status`, `participation_source`, `joined_at` et `updated_at`.
 - Identité de création: `actions.created_by_clerk_id`; responsabilité organisationnelle et permissions: `action_organizers`; aucune de ces deux sources ne prouve une présence terrain.
-- Origine d'inscription: `group_form` pour les demandes publiques futures et `manual_add` pour les invitations directes. Les invitations directes commencent toujours en `pending` et passent à `confirmed` ou `cancelled` par la réponse canonique du destinataire ; une inscription déjà acceptée peut ensuite être annulée par son titulaire sans perdre son historique. `registration_cancellation_reason` distingue `recipient_rejected`, `organizer_withdrawn` et `accepted_cancelled`; aucune sauvegarde ordinaire ne transforme un refus destinataire en nouvelle invitation.
+- Origine d'inscription: `group_form` pour les demandes publiques futures, `manual_add` pour les invitations directes organisateur et `invite_link` pour l'inscription privée par lien. `invite_link` est `confirmed` avant le début prévu ; `manual_add` commence `pending` et passe à `confirmed` ou `cancelled` par la réponse canonique du destinataire. Une inscription déjà acceptée peut ensuite être annulée par son titulaire sans perdre son historique. `registration_cancellation_reason` distingue `recipient_rejected`, `organizer_withdrawn` et `accepted_cancelled`; aucune sauvegarde ordinaire ne transforme un refus destinataire en nouvelle invitation.
 - Dans `Rejoindre une action`, une inscription future `group_form` `pending` est libellée « Demande d'inscription », tandis qu'une invitation `manual_add` `pending` est libellée « Invitation en attente de réponse » et renvoie à la carte de notification ; elle ne peut pas être annulée ou confirmée par la review organisateur.
 - Origine de participation finale: `admin`, `admin_override`, `import` ou `post_action_claim` selon l'opération qui l'a créée.
 - Source badge, progression et gamification: uniquement `action_participants` avec `participation_status = confirmed`. Un claim confirmé suit cette même source; une inscription future ne la remplace jamais.

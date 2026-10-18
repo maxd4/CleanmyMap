@@ -9,7 +9,6 @@ import {
   ADMIN_PARTICIPATION_SOURCE,
   GROUP_PARTICIPATION_SOURCE,
   PENDING_PARTICIPATION_STATUS,
-  type ParticipationSource,
   type ParticipationStatus,
 } from "./group-participation.helpers";
 import {
@@ -23,6 +22,7 @@ import {
 } from "./registration-records";
 import {
   createActionParticipationMutationResult,
+  type JoinableParticipationSource,
   type ActionParticipationMutationResult,
 } from "./group-participation-contract";
 
@@ -30,7 +30,7 @@ function buildMembershipResult(params: {
   alreadyJoined: boolean;
   joinedAt: string;
   participationStatus: ParticipationStatus;
-  participationSource: ParticipationSource;
+  participationSource: JoinableParticipationSource;
   participationUpdatedAt: string | null;
   participantsCount: number;
 }): ActionParticipationMutationResult {
@@ -72,7 +72,7 @@ export async function cancelActionParticipation(
   alreadyCancelled: boolean;
   joinedAt: string;
   participationStatus: ParticipationStatus;
-  participationSource: ParticipationSource;
+  participationSource: JoinableParticipationSource;
   participationUpdatedAt: string | null;
   participantsCount: number;
 }> {

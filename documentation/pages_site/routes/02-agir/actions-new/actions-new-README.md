@@ -86,12 +86,17 @@ des cartes, recherches, rapports, exports, références et projections publics,
 y compris après finalisation.
 
 Le serveur génère des jetons aléatoires, ne persiste que leur empreinte et
-révoque implicitement l'ancien jeton lors d'un renouvellement. Le lien ne
-retourne qu'une projection minimale du rendez-vous. La demande d'inscription
-réutilise `action_registrations` et reste `pending` jusqu'à une décision via les
-permissions Actions existantes ; elle ne crée jamais une présence dans
-`action_participants`. Une action annulée, rejetée, finalisée ou un lien révoqué
-ne peut pas recevoir de nouvelle demande par ce parcours.
+révoque implicitement l'ancien jeton lors d'un renouvellement. Chaque jeton
+reste valable trois mois calendaires depuis sa génération ou son renouvellement.
+Le lien ne retourne qu'une projection minimale du rendez-vous. Avant le début
+prévu, il crée ou retrouve une inscription `action_registrations` directement
+`confirmed` avec `registration_source = invite_link`, sans créer de présence
+terrain. Si la date est passée mais que le bilan n'est pas finalisé, la page
+indique que l'action est en attente de finalisation. Après finalisation, le
+même lien ouvre le claim canonique `action_participants` avec
+`participation_source = post_action_claim` et `pending`, soumis aux permissions
+et à la review Actions existantes. Une action annulée, rejetée, non éligible ou
+un lien révoqué/expiré ne peut pas recevoir de nouvelle demande par ce parcours.
 
 Le choix du parcours et la saisie préalable peuvent être consultés ou
 préparés sans compte. Lorsqu'une création, une complétion ou un envoi doit
