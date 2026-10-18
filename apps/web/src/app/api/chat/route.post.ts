@@ -65,8 +65,11 @@ async function processValidatedChatPost({
   }
   const destination = await resolveChatPostDestination({ supabase, serviceSupabase, userId, validated, zone, isExternalActionShare });
   if (destination instanceof Response) return destination;
-  const messageSupabase = data.channelType === "admin_elu" || data.channelType === "bug_report" ? serviceSupabase : supabase;
-  const message = await persistChatPostAndNotify({ supabase: messageSupabase, serviceSupabase, userId, validated, feedbackReplyContext, recipientId: destination.recipientId, actionConversationId: destination.actionConversationId, targetArrondissementId: destination.targetArrondissementId, targetZoneName: destination.targetZoneName, relatedEvent: destination.relatedEvent });
+  // All message creation is performed by the server client only after the
+  // Clerk identity, quota, channel, destination and conversation checks above.
+  // The RLS client remains available to read data needed during resolution and
+  // to preserve the caller-scoped readback contract where applicable.
+  const message = await persistChatPostAndNotify({ supabase, serviceSupabase, userId, validated, feedbackReplyContext, recipientId: destination.recipientId, actionConversationId: destination.actionConversationId, targetArrondissementId: destination.targetArrondissementId, targetZoneName: destination.targetZoneName, relatedEvent: destination.relatedEvent });
   if (message instanceof Response) return message;
   return NextResponse.json({ status: "sent", message }, { status: 201 });
 }

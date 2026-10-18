@@ -8,6 +8,7 @@ export const getSupabaseServerClientMock = vi.fn();
 export const verifyRateLimitMock = vi.fn();
 export const createServerRateLimitResponseMock = vi.fn();
 export const reserveDiscussionMessageSlotMock = vi.fn();
+export const toDiscussionRateLimitErrorPayloadMock = vi.fn();
 export const createChatNotificationsForMessageMock = vi.fn();
 export const resolveActionDiscussionAccessMock = vi.fn();
 export const loadActionByIdMock = vi.fn();
@@ -36,7 +37,7 @@ vi.mock("@/lib/rate-limit/server", () => ({
 
 vi.mock("@/lib/community/discussion-rate-limit", () => ({
   reserveDiscussionMessageSlot: reserveDiscussionMessageSlotMock,
-  toDiscussionRateLimitErrorPayload: vi.fn(),
+  toDiscussionRateLimitErrorPayload: toDiscussionRateLimitErrorPayloadMock,
 }));
 
 vi.mock("@/lib/chat/chat-notifications", () => ({
@@ -73,6 +74,7 @@ export function resetChatRouteMocks() {
   });
   createServerRateLimitResponseMock.mockReturnValue(null);
   reserveDiscussionMessageSlotMock.mockResolvedValue({ allowed: true });
+  toDiscussionRateLimitErrorPayloadMock.mockReturnValue({ error: "Quota de messagerie atteint" });
   createChatNotificationsForMessageMock.mockResolvedValue(undefined);
   resolveActionDiscussionAccessMock.mockResolvedValue({
     state: "allowed",

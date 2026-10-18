@@ -95,9 +95,10 @@ describe("POST /api/chat — polls", () => {
     });
 
     expect(response.status).toBe(201);
-    expect(supabaseMock.supabase.rpc).toHaveBeenCalledWith(
-      "create_chat_poll_with_options",
+    expect(supabaseMock.serviceRpc).toHaveBeenCalledWith(
+      "create_chat_poll_with_options_for_server",
       {
+        p_actor_user_id: "user-1",
         p_channel_type: "community",
         p_content: "Quel créneau préférez-vous ?",
         p_topic_id: "coordination_secteur",
@@ -107,6 +108,10 @@ describe("POST /api/chat — polls", () => {
         p_arrondissement_id: null,
         p_zone_name: null,
       },
+    );
+    expect(supabaseMock.supabase.rpc).not.toHaveBeenCalledWith(
+      "create_chat_poll_with_options",
+      expect.anything(),
     );
     expect(supabaseMock.serviceRpc).toHaveBeenCalledWith(
       "get_my_chat_poll_vote_summaries",
@@ -245,9 +250,10 @@ describe("POST /api/chat — polls", () => {
     );
 
     expect(response.status).toBe(201);
-    expect(supabaseMock.supabase.rpc).toHaveBeenCalledWith(
-      "create_chat_poll_with_options",
+    expect(supabaseMock.serviceRpc).toHaveBeenCalledWith(
+      "create_chat_poll_with_options_for_server",
       expect.objectContaining({
+        p_actor_user_id: "user-1",
         p_channel_type: channelType,
         p_content: "Quel choix ?",
         p_option_labels: ["Oui", "Non"],

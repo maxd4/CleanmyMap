@@ -38,16 +38,20 @@ export type ChatPostPersistenceContext = {
 };
 
 async function persistPollMessage(context: ChatPostPersistenceContext): Promise<ChatMessageRow | Response> {
-  const { supabase, serviceSupabase, userId, validated, recipientId, actionConversationId, targetArrondissementId, targetZoneName } = context;
+  const { serviceSupabase, userId, validated, recipientId, actionConversationId, targetArrondissementId, targetZoneName } = context;
   const { data, topicId } = validated;
   const pollOptions = pollOpts(data.pollOptions);
-  const isPrivilegedChannel = data.channelType === "admin_elu";
-  const { data: pollMessageId, error: pollError } = isPrivilegedChannel
-    ? await serviceSupabase.rpc("create_chat_poll_with_options_for_server", { p_actor_user_id: userId, p_content: data.content, p_topic_id: topicId, ...pollOptions })
-    : await supabase.rpc("create_chat_poll_with_options", { p_channel_type: data.channelType, p_content: data.content, p_topic_id: topicId, ...pollOptions, ...pollCtx(recipientId, actionConversationId, targetArrondissementId, targetZoneName) });
+  const { data: pollMessageId, error: pollError } = await serviceSupabase.rpc("create_chat_poll_with_options_for_server", {
+    p_actor_user_id: userId,
+    p_channel_type: data.channelType,
+    p_content: data.content,
+    p_topic_id: topicId,
+    ...pollOptions,
+    ...pollCtx(recipientId, actionConversationId, targetArrondissementId, targetZoneName),
+  });
   if (pollError) return handleApiError(pollError, "POST /api/chat (poll insert)");
   if (typeof pollMessageId !== "string") return handleApiError(new Error("La création du sondage n'a pas renvoyé son message."), "POST /api/chat (poll result)");
-  const message = await loadMessageById(isPrivilegedChannel ? serviceSupabase : supabase, serviceSupabase, userId, pollMessageId);
+  const message = await loadMessageById(serviceSupabase, serviceSupabase, userId, pollMessageId);
   return message ?? handleApiError(new Error("Le sondage créé est introuvable."), "POST /api/chat (poll readback)");
 }
 
@@ -67,9 +71,9 @@ async function persistFeedbackReply(context: ChatPostPersistenceContext): Promis
 }
 
 async function persistRegularMessage(context: ChatPostPersistenceContext): Promise<ChatMessageRow | Response> {
-  const { supabase, userId, validated, recipientId, actionConversationId, targetArrondissementId, targetZoneName, relatedEvent } = context;
+  const { serviceSupabase, userId, validated, recipientId, actionConversationId, targetArrondissementId, targetZoneName, relatedEvent } = context;
   const { data, messageKind, topicId, isExternalActionShare } = validated;
-  const { data: insertedMessage, error } = await supabase.from("app_messages").insert({
+  const { data: insertedMessage, error } = await serviceSupabase.from("app_messages").insert({
     sender_id: userId, recipient_id: recipientId, channel_type: data.channelType, conversation_id: actionConversationId,
     topic_id: topicId, message_kind: messageKind, related_event_id: relatedEvent?.id ?? null,
     arrondissement_id: targetArrondissementId, zone_name: targetZoneName, content: data.content,

@@ -109,10 +109,10 @@ export function buildSupabaseMock(options: SupabaseMockOptions) {
   }
   function rpc(functionName: string) {
     if (functionName === "list_my_dm_conversations") return Promise.resolve({ data: options.dmRows ?? [], error: null });
-    if (functionName !== "create_chat_poll_with_options" && functionName !== "create_chat_poll_with_options_for_server") throw new Error(`Unexpected RPC: ${functionName}`);
-    return Promise.resolve({ data: options.pollMessage?.id ?? null, error: null });
+    throw new Error(`Unexpected RLS RPC: ${functionName}`);
   }
   const supabase = { from: vi.fn(from), rpc: vi.fn(rpc) };
-  const serviceSupabase = { from: (...args: Parameters<typeof supabase.from>) => supabase.from(...args), rpc: serviceRpc, storage: { from: vi.fn(() => serviceStorageBucket) } };
-  return { supabase, ...staticQueries, ...messageHarness, serviceSupabase, serviceRpc, createSignedUrls };
+  const serviceAppMessagesTable = { ...messageHarness.appMessagesTable };
+  const serviceSupabase = { from: vi.fn((table: string) => table === "app_messages" ? serviceAppMessagesTable : from(table)), rpc: serviceRpc, storage: { from: vi.fn(() => serviceStorageBucket) } };
+  return { supabase, ...staticQueries, ...messageHarness, serviceSupabase, serviceAppMessagesTable, serviceRpc, createSignedUrls };
 }

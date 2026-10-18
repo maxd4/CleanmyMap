@@ -154,9 +154,14 @@ describe("admin_elu topics in the Chat API", () => {
         "create_chat_poll_with_options_for_server",
         {
           p_actor_user_id: "user-1",
+          p_channel_type: "admin_elu",
           p_content: "Quelle priorité retenir ?",
           p_topic_id: "arbitrages",
           p_option_labels: ["Priorité A", "Priorité B"],
+          p_recipient_id: null,
+          p_conversation_id: null,
+          p_arrondissement_id: null,
+          p_zone_name: null,
         },
       );
     },

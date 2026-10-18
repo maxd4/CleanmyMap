@@ -57,6 +57,11 @@ const MIGRATION_CONTRACT_REGISTRY = Object.freeze([
     migrationPattern: /security|privileg|rls|advisor/i,
     vitestTests: Object.freeze(["src/lib/supabase/supabase-security-advisors.test.ts"]),
   }),
+  Object.freeze({
+    family: "chat_message_write_boundaries",
+    migrationPattern: /chat[_-]message[_-]write[_-]boundaries/i,
+    vitestTests: Object.freeze(["src/lib/chat/chat-message-write-boundaries-migration.test.ts"]),
+  }),
 ]);
 
 function toRepositoryPath(file) {

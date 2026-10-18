@@ -259,6 +259,7 @@ describe("POST /api/chat — topics et territoire", () => {
       },
     });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { GET, POST } = await import("./route");
     const response = await GET(new Request("http://localhost/api/chat?channelType=community&topicId=spogomi"));

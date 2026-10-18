@@ -23,6 +23,24 @@
   ne conserve pas de grant `service_role` inutile ; son corps vérifie aussi
   le rôle/JWT attendu lorsque cela réduit le risque d'appel direct
 
+### Frontière d'écriture de la messagerie
+
+- [ ] `public.app_messages` ne possède aucun grant `INSERT` pour `anon` ou
+  `authenticated` ; les lectures RLS et les votes de sondage restent séparés
+  de la création des messages
+- [ ] `POST /api/chat` est la frontière canonique : identité Clerk, validation,
+  accès au canal/conversation/destinataire, puis réservation de quota avant
+  toute persistance
+- [ ] les messages et options de sondage validés sont persistés par
+  `service_role` uniquement après ces contrôles ; `service_role` ne constitue
+  pas à lui seul une autorisation métier
+- [ ] aucune RPC invoker ou écriture directe d'options ne permet de recréer un
+  sondage hors de la frontière serveur ; la RPC de création atomique est
+  exécutable seulement par `service_role`
+- [ ] les contrôles PostgreSQL réels distinguent les privilèges Data API, la
+  RPC et la persistance serveur ; si la base éphémère n'est pas disponible,
+  déclarer `DB_SEMANTICS_NOT_EXECUTED`
+
 ## Storage
 
 - [ ] la taille des uploads est bornée

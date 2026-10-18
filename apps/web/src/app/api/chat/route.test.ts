@@ -39,10 +39,7 @@ describe("POST /api/chat — publication et canaux", () => {
     });
 
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue({
-      ...supabaseMock.serviceSupabase,
-      from: supabaseMock.supabase.from,
-    });
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { POST } = await import("./route");
     const response = await POST(
@@ -107,6 +104,47 @@ describe("POST /api/chat — publication et canaux", () => {
     expect(loadActionByIdMock).not.toHaveBeenCalled();
   }, 15000);
 
+  it("does not reach any message write path after the canonical quota is exhausted", async () => {
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1",
+        display_name: "Alex",
+        handle: "alex",
+        paris_arrondissement: null,
+        role_label: "member",
+        metadata: null,
+      },
+      messages: [],
+      insertedMessage: {
+        id: "quota-unused",
+        created_at: "2026-05-01T11:30:00.000Z",
+        content: "unused",
+        channel_type: "community",
+        sender_id: "user-1",
+        recipient_id: null,
+        arrondissement_id: null,
+        zone_name: null,
+      },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
+    reserveDiscussionMessageSlotMock.mockResolvedValue({ allowed: false, retryAfterSeconds: 30 });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ channelType: "community", content: "Quota dépassé" }),
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(supabaseMock.serviceAppMessagesTable.insert).not.toHaveBeenCalled();
+    expect(supabaseMock.serviceRpc).not.toHaveBeenCalled();
+    expect(createChatNotificationsForMessageMock).not.toHaveBeenCalled();
+  });
+
   it("creates a message in an allowed action discussion", async () => {
     const actionId = "33333333-3333-4333-8333-333333333333";
     const conversationId = "44444444-4444-4444-8444-444444444444";
@@ -137,10 +175,7 @@ describe("POST /api/chat — publication et canaux", () => {
     });
     loadActionByIdMock.mockResolvedValue({ id: actionId, status: "approved" });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue({
-      ...supabaseMock.serviceSupabase,
-      from: supabaseMock.supabase.from,
-    });
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { POST } = await import("./route");
     const response = await POST(
@@ -210,10 +245,7 @@ describe("POST /api/chat — publication et canaux", () => {
     });
     loadActionByIdMock.mockResolvedValue({ id: actionId, status: "cancelled" });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue({
-      ...supabaseMock.serviceSupabase,
-      from: supabaseMock.supabase.from,
-    });
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { POST } = await import("./route");
     const response = await POST(
@@ -268,10 +300,7 @@ describe("POST /api/chat — publication et canaux", () => {
       new Error(`${internalMessage}\n${internalStackLine}`),
     );
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue({
-      ...supabaseMock.serviceSupabase,
-      from: supabaseMock.supabase.from,
-    });
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { POST } = await import("./route");
     const response = await POST(

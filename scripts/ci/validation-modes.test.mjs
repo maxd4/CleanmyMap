@@ -135,6 +135,16 @@ test("migration families retain their specialized FAST contract", () => {
   assert.equal(ids(plan).includes("test:scripts"), false);
 });
 
+test("chat message write boundary migrations retain their focused contract", () => {
+  assert.deepEqual(resolveMigrationContracts([
+    "apps/web/supabase/migrations/20261018000007_harden_chat_message_write_boundaries.sql",
+  ]), [{
+    family: "chat_message_write_boundaries",
+    scriptTests: [],
+    vitestTests: ["src/lib/chat/chat-message-write-boundaries-migration.test.ts"],
+  }]);
+});
+
 test("co-located Web and script tests are resolved without inventing tests", () => {
   assert.deepEqual(resolveAssociatedWebTestFiles(["apps/web/src/lib/chat/polls.ts"], {
     existingFiles: ["apps/web/src/lib/chat/polls.ts", "apps/web/src/lib/chat/polls.test.ts"],
