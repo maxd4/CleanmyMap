@@ -282,15 +282,46 @@ function normalizeIdentifier(value: string): string {
 }
 
 function buildStableStatIds(stats: PdfReportPayload["data"]["stats"]): string[] {
-  const used = new Map<string, number>();
+  const explicitIds = new Set(
+    (stats ?? [])
+      .map((stat) => {
+        const record = stat as unknown as Record<string, unknown>;
+        return typeof record.id === "string" && record.id.trim()
+          ? record.id.trim()
+          : null;
+      })
+      .filter((id): id is string => id !== null),
+  );
+  const used = new Set<string>();
+  const nextSuffixByBase = new Map<string, number>();
+
+  const allocateUniqueId = (baseId: string): string => {
+    if (!used.has(baseId) && !explicitIds.has(baseId)) {
+      used.add(baseId);
+      return baseId;
+    }
+
+    let suffix = nextSuffixByBase.get(baseId) ?? 2;
+    let candidate = `${baseId}-${suffix}`;
+    while (used.has(candidate) || explicitIds.has(candidate)) {
+      suffix += 1;
+      candidate = `${baseId}-${suffix}`;
+    }
+    nextSuffixByBase.set(baseId, suffix + 1);
+    used.add(candidate);
+    return candidate;
+  };
+
   return (stats ?? []).map((stat) => {
     const record = stat as unknown as Record<string, unknown>;
-    const historizedId = typeof record.id === "string" && record.id.trim()
+    const explicitId = typeof record.id === "string" && record.id.trim()
       ? record.id.trim()
-      : `stat-${normalizeIdentifier(stat.label)}`;
-    const occurrence = (used.get(historizedId) ?? 0) + 1;
-    used.set(historizedId, occurrence);
-    return occurrence === 1 ? historizedId : `${historizedId}-${occurrence}`;
+      : null;
+    if (explicitId !== null && !used.has(explicitId)) {
+      used.add(explicitId);
+      return explicitId;
+    }
+    return allocateUniqueId(explicitId ?? `stat-${normalizeIdentifier(stat.label)}`);
   });
 }
 
@@ -331,7 +362,7 @@ function buildStatsTable(params: {
           label: { value: stat.label, status: null },
           value: {
             value,
-            status: explicitStatus ?? resolveCellStatus(statId, value),
+            status: value === null ? "NA" : explicitStatus ?? resolveCellStatus(statId, value),
           },
           detail: { value: toJsonValue(stat.detail), status: null },
         },

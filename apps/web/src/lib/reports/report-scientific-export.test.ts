@@ -234,6 +234,86 @@ describe("report scientific exports", () => {
     expect(table?.rows.map((row) => row.values.value.status)).toEqual(["DECLARED", "PROXY"]);
   });
 
+  it("forces NA for absent indicators even when a historized status is contradictory", () => {
+    const snapshot = {
+      ...generation().snapshot,
+      data: {
+        ...generation().snapshot.data,
+        stats: [
+          { label: "Impact", value: null, status: "PROXY" },
+          { label: "Couverture", value: "n/a", status: "DECLARED" },
+          { label: "Masse", value: 3, status: "PROXY" },
+        ],
+      },
+    } as unknown as ReportGenerationSnapshotRecord["snapshot"];
+    const table = buildReportScientificExport(generation({ snapshot })).tables.find((item) => item.id === "report-stats");
+
+    expect(table?.rows.map((row) => row.values.value)).toEqual([
+      { value: null, status: "NA" },
+      { value: null, status: "NA" },
+      { value: 3, status: "PROXY" },
+    ]);
+  });
+
+  it("keeps generated indicator IDs unique when normalized labels collide", () => {
+    const snapshot = {
+      ...generation().snapshot,
+      data: {
+        ...generation().snapshot.data,
+        stats: [
+          { label: "Volume", value: 1 },
+          { label: "Volume", value: 2 },
+          { label: "Volume 2", value: 3 },
+        ],
+      },
+    } as unknown as ReportGenerationSnapshotRecord["snapshot"];
+    const table = buildReportScientificExport(generation({ snapshot })).tables.find((item) => item.id === "report-stats");
+    const ids = table?.rows.map((row) => row.values.stat_id.value);
+
+    expect(ids).toHaveLength(3);
+    expect([...new Set(ids)]).toHaveLength(3);
+  });
+
+  it("reserves explicit historized IDs when generated IDs would collide with them", () => {
+    const snapshot = {
+      ...generation().snapshot,
+      data: {
+        ...generation().snapshot.data,
+        stats: [
+          { label: "Volume", value: 1 },
+          { id: "stat-volume", label: "Volume historisé", value: 2 },
+        ],
+      },
+    } as unknown as ReportGenerationSnapshotRecord["snapshot"];
+    const table = buildReportScientificExport(generation({ snapshot })).tables.find((item) => item.id === "report-stats");
+
+    expect(table?.rows.map((row) => row.values.stat_id.value)).toEqual(["stat-volume-2", "stat-volume"]);
+  });
+
+  it("repeats the same scientific projection deterministically for one snapshot", () => {
+    const record = generation({
+      snapshot: {
+        ...generation().snapshot,
+        data: {
+          ...generation().snapshot.data,
+          stats: [
+            { label: "Volume", value: 1 },
+            { label: "Volume", value: 2 },
+            { label: "Volume 2", value: 3 },
+          ],
+        },
+      },
+    });
+
+    const first = buildReportScientificExport(record);
+    const second = buildReportScientificExport(record);
+    const firstCsv = buildReportScientificCsv(record);
+    const secondCsv = buildReportScientificCsv(record);
+
+    expect(second.tables).toEqual(first.tables);
+    expect(secondCsv).toBe(firstCsv);
+  });
+
   it("keeps the original snapshot untouched for legacy and current records", () => {
     const record = generation();
     const before = structuredClone(record.snapshot);
