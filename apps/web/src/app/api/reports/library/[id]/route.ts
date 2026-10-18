@@ -8,7 +8,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   try {
     const publication = await getActiveReportPublicationById((await params).id);
     if (!publication) return NextResponse.json({ error: "Document publié introuvable." }, { status: 404 });
-    return NextResponse.json(projectReportPublicationRow(publication), { headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=60" } });
+    return NextResponse.json(projectReportPublicationRow(publication), { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Public report library item failed", { error });
     return NextResponse.json({ error: "Le document publié est temporairement indisponible." }, { status: 503 });

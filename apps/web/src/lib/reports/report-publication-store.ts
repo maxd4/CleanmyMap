@@ -57,6 +57,13 @@ export async function getReportPublicationForOwner(params: { generationId: strin
 }
 
 export async function createReportPublication(params: Omit<ReportPublicationRecord, "id" | "publishedAt" | "revokedAt">): Promise<ReportPublicationRecord> {
+  const current = await getReportPublicationForOwner({
+    generationId: params.generationId,
+    createdByClerkId: params.createdByClerkId,
+  });
+  const publishedAt = current?.revokedAt === null
+    ? current.publishedAt
+    : new Date().toISOString();
   const { data, error } = await getSupabaseAdminClient().from("report_generation_publications").upsert({
     generation_id: params.generationId,
     artifact_id: params.artifactId,
@@ -65,6 +72,7 @@ export async function createReportPublication(params: Omit<ReportPublicationReco
     period_id: params.periodId,
     scope_label: params.scopeLabel,
     theme: params.theme,
+    published_at: publishedAt,
     revoked_at: null,
     public_author_label: params.publicAuthorLabel,
   }, { onConflict: "generation_id" }).select(SELECT).single();

@@ -22,7 +22,7 @@ function parse(request: Request): ReportPublicLibraryFilters {
 
 export async function GET(request: Request) {
   try {
-    return NextResponse.json(await listPublicReportLibraryPage(parse(request)), { headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=60" } });
+    return NextResponse.json(await listPublicReportLibraryPage(parse(request)), { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Public report library listing failed", { error });
     return NextResponse.json({ error: "La bibliothèque publique est temporairement indisponible." }, { status: 503 });

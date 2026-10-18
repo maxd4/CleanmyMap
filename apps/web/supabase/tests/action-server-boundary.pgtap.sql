@@ -48,6 +48,7 @@ create temp table action_server_boundary_fixture (
   public_action_id uuid not null
 );
 grant select on action_server_boundary_fixture to anon, authenticated;
+grant insert on action_server_boundary_fixture to service_role;
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"system"}', true);

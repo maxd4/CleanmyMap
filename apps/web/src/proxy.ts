@@ -167,6 +167,14 @@ function isSharedReportPdfRequest(req: NextRequest): boolean {
   return req.method === "GET" && /^\/api\/reports\/shared\/[^/]+$/.test(req.nextUrl.pathname);
 }
 
+function isPublicReportLibraryRequest(req: NextRequest): boolean {
+  if (req.method !== "GET") return false;
+  const pathname = req.nextUrl.pathname;
+  return pathname === "/api/reports/library" ||
+    /^\/api\/reports\/library\/[^/]+$/.test(pathname) ||
+    /^\/api\/reports\/library\/[^/]+\/pdf$/.test(pathname);
+}
+
 export function isAnonymousSafeApiRequest(req: NextRequest): boolean {
   if (req.method !== "GET") {
     return req.nextUrl.pathname === "/api/spogomi/team-form";
@@ -180,7 +188,7 @@ export function isAnonymousSafeApiRequest(req: NextRequest): boolean {
     "/api/partners/published-directory",
     "/api/community/events",
     "/api/spogomi/team-access",
-  ].includes(pathname) || pathname.startsWith("/api/spogomi/public/") || pathname === "/api/spogomi/team-form" || isSharedReportPdfRequest(req);
+  ].includes(pathname) || pathname.startsWith("/api/spogomi/public/") || pathname === "/api/spogomi/team-form" || isSharedReportPdfRequest(req) || isPublicReportLibraryRequest(req);
 }
 
 function hasClerkSessionSignal(req: NextRequest): boolean {
@@ -199,7 +207,7 @@ function shouldSkipClerkForAnonymousPublicRequest(req: NextRequest): boolean {
     "/api/actions/map",
     "/api/actions/map/initial-nearest",
     "/api/partners/published-directory",
-  ].includes(req.nextUrl.pathname) || isSharedReportPdfRequest(req))) {
+  ].includes(req.nextUrl.pathname) || isSharedReportPdfRequest(req) || isPublicReportLibraryRequest(req))) {
     return true;
   }
 

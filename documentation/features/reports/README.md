@@ -53,8 +53,11 @@ au runtime et à ses tests, pas à une copie documentaire.
   conserve uniquement les métadonnées publiques autorisées et l'état de
   révocation. Les routes publiques listent et servent uniquement les lignes
   non révoquées via le serveur et le bucket Storage privé, sans quota de
-  génération. Une révocation bloque les nouveaux accès CleanMyMap ; elle ne
-  peut pas annuler un fichier déjà téléchargé ou une réponse déjà délivrée.
+  génération. Ces réponses sont `no-store` et chaque lecture revalide la
+  publication active côté serveur ; une révocation bloque donc les nouveaux
+  accès CleanMyMap, sans pouvoir annuler un fichier déjà téléchargé ou une
+  réponse déjà délivrée. Ces lectures publiques ne dépendent pas de la
+  disponibilité d'une session Clerk, mais les mutations restent owner-scoped.
 
 - La reproductibilité livrée est sémantique : les mêmes données, libellés,
   unités, limites et date de génération sont relus depuis le snapshot. Le PDF

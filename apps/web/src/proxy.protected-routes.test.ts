@@ -210,6 +210,20 @@ describe("proxy route context", () => {
     expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/reports/generations/11111111-1111-4111-8111-111111111111"))).toBe(false);
   });
 
+  it("allows only the three public report-library GET routes through without Clerk", () => {
+    for (const pathname of [
+      "/api/reports/library",
+      "/api/reports/library/publication-1",
+      "/api/reports/library/publication-1/pdf",
+    ]) {
+      expect(isAnonymousSafeApiRequest(new NextRequest(`http://localhost${pathname}`)), pathname).toBe(true);
+    }
+
+    expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/reports/library/publication-1/pdf/extra"))).toBe(false);
+    expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/reports/library", { method: "POST" }))).toBe(false);
+    expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/reports/generations/11111111-1111-4111-8111-111111111111"))).toBe(false);
+  });
+
   it("does not make a valid shared bearer depend on Clerk or an expired cookie", async () => {
     clerkMiddlewareFailure.enabled = true;
 
@@ -222,6 +236,27 @@ describe("proxy route context", () => {
 
     if (!response) throw new Error("shared report proxy response is missing");
     expect(response.status).toBe(200);
+    expect(clerkContextRequestMock).not.toHaveBeenCalled();
+  });
+
+  it("does not make public library reads depend on Clerk or an expired cookie", async () => {
+    clerkMiddlewareFailure.enabled = true;
+
+    for (const pathname of [
+      "/api/reports/library",
+      "/api/reports/library/publication-1",
+      "/api/reports/library/publication-1/pdf",
+    ]) {
+      const response = await proxy(
+        new NextRequest(`http://localhost${pathname}`, {
+          headers: { cookie: "__session=expired" },
+        }),
+        {} as never,
+      );
+
+      expect(response?.status, pathname).toBe(200);
+    }
+
     expect(clerkContextRequestMock).not.toHaveBeenCalled();
   });
 
