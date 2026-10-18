@@ -118,7 +118,7 @@ test("structured parser rejects variables, subexpressions, and attached paramete
     assert.notEqual(result.status, 0, command);
     const output = normalizePowerShellOutput(result);
     assert.doesNotMatch(output, /"Executable"\s*:/, command);
-    assert.match(output, /not allowed|literal option/);
+    assert.match(output, /not\s+allowed|literal\s+option/);
   }
 });
 
