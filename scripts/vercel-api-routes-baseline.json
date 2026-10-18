@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-18T20:20:27.882Z",
-  "apiRouteCount": 186,
+  "apiRouteCount": 188,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -270,6 +270,7 @@
     "apps/web/src/app/api/actions/[actionId]/duplicate/route.ts",
     "apps/web/src/app/api/actions/[actionId]/formalities/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/invite-link/route.ts",
     "apps/web/src/app/api/actions/[actionId]/media/[mediaId]/finalize/route.ts",
     "apps/web/src/app/api/actions/[actionId]/media/intents/route.ts",
     "apps/web/src/app/api/actions/[actionId]/media/route.ts",
@@ -283,6 +284,7 @@
     "apps/web/src/app/api/actions/group-join/route.ts",
     "apps/web/src/app/api/actions/import/route.ts",
     "apps/web/src/app/api/actions/invitations/route.ts",
+    "apps/web/src/app/api/actions/invite/[token]/route.ts",
     "apps/web/src/app/api/actions/map/initial-nearest/route.ts",
     "apps/web/src/app/api/actions/map/pollution-score-references/route.ts",
     "apps/web/src/app/api/actions/map/route.ts",

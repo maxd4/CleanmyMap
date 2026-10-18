@@ -326,6 +326,65 @@ export const actionsAuthorizationContract = {
       evidence: ["auth", "respond_to_action_invitation"],
     },
   },
+  "actions/[actionId]/invite-link": {
+    GET: {
+      expected: "Authenticated action owner/organizer or admin/max reads the private invitation-link state",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireActionRequestAccess + loadActionById + canonical organizer resolution + canManageAction before the link-state projection",
+      evidence: [
+        "requireActionRequestAccess",
+        "loadActionById",
+        "loadCanonicalActionOrganizerIdsForAction",
+        "canManageAction",
+      ],
+      evidenceScope: "module",
+    },
+    POST: {
+      expected: "Authenticated action owner/organizer or admin/max creates a private invitation link only for an eligible pre-action",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireActionRequestAccess + canManageAction + pre-action invite-link eligibility guard + create_action_invitation_link RPC",
+      evidence: [
+        "requireActionRequestAccess",
+        "canManageAction",
+        "action_phase !== \"pre_action\"",
+        "create_action_invitation_link",
+      ],
+      evidenceScope: "module",
+    },
+    DELETE: {
+      expected: "Authenticated action owner/organizer or admin/max revokes the private invitation link",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireActionRequestAccess + canManageAction + revoke_action_invitation_link RPC",
+      evidence: [
+        "requireActionRequestAccess",
+        "canManageAction",
+        "revoke_action_invitation_link",
+      ],
+      evidenceScope: "module",
+    },
+  },
+  "actions/invite/[token]": {
+    GET: {
+      expected: "Public bounded projection for a valid, unrevoked private invitation token",
+      dimensions: ["public-safe"],
+      actual: "strict invitation-token format/hash lookup + revoked/action-state checks before minimal projection",
+      evidence: ["isInvitationTokenFormat", "hashInvitationToken", "minimalProjection"],
+      evidenceScope: "module",
+    },
+    POST: {
+      expected: "Authenticated recipient requests a private pre-action registration or a permitted post-action claim through a valid invitation token",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireActionRequestAccess + valid invitation-state resolution + recipient-bound pre-action registration RPC or canonical post-action claim/audit flow",
+      evidence: [
+        "requireActionRequestAccess",
+        "isInvitationTokenFormat",
+        "request_private_action_registration",
+        "claimFinishedActionParticipation",
+        "appendParticipationClaimAudit",
+      ],
+      evidenceScope: "module",
+    },
+  },
   "actions/registration-requests": {
     GET: {
       expected: "Authenticated creator/organizer or admin/max read of still-pending group_form requests",

@@ -74,6 +74,7 @@ function listSourceFilesFromView(view, root, directory) {
   const prefix = normalizePath(directory, root);
   return view
     .listFiles(prefix)
+    .filter((relativePath) => view.isFile(relativePath))
     .filter((relativePath) => isSourceFile(relativePath) && !shouldIgnore(relativePath))
     .map((relativePath) => path.resolve(root, ...relativePath.split("/")));
 }
@@ -357,8 +358,12 @@ function propagateClientContext(nodes, edges) {
 }
 
 export function buildArchitectureImportGraph({ source = "worktree", root = repositoryRoot, surfaces: suppliedSurfaces, gitSha, ref, view: suppliedView } = {}) {
-  const measurementView = suppliedView ?? createRepositoryView({ root, ref });
   const activeSurfaces = suppliedSurfaces ?? createSurfaces(root);
+  const measurementView = suppliedView ?? createRepositoryView({
+    root,
+    ref,
+    snapshotExtensions: source === "worktree" ? sourceExtensions : [],
+  });
   const sha = gitSha ?? git(["rev-parse", ref ?? "HEAD"], root);
   const provenanceVerified = measurementView.mode === "git" && Boolean(ref);
   const nodes = [];

@@ -103,7 +103,7 @@ function createView({ files, directories = [], readBinary, mode }) {
   });
 }
 
-export function createFilesystemRepositoryView(root = process.cwd()) {
+export function createFilesystemRepositoryView(root = process.cwd(), { snapshotExtensions = [] } = {}) {
   const repositoryRoot = path.resolve(root);
   const files = listFilesystemFiles(repositoryRoot);
   const directories = [];
@@ -117,12 +117,28 @@ export function createFilesystemRepositoryView(root = process.cwd()) {
     }
   };
   visitDirectories(repositoryRoot);
+  const snapshot = new Map();
+  const extensions = new Set(snapshotExtensions.map((extension) => extension.toLowerCase()));
+  for (const relativePath of files) {
+    if (!extensions.has(path.extname(relativePath).toLowerCase())) continue;
+    const absolutePath = path.join(repositoryRoot, ...relativePath.split("/"));
+    try {
+      snapshot.set(relativePath, fs.readFileSync(absolutePath));
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      throw error;
+    }
+  }
+  const visibleFiles = extensions.size > 0
+    ? files.filter((relativePath) => !extensions.has(path.extname(relativePath).toLowerCase()) || snapshot.has(relativePath))
+    : files;
   return createView({
     mode: "filesystem",
-    files,
+    files: visibleFiles,
     directories,
     readBinary(relativePath) {
       const normalizedPath = normalizeRepositoryPath(relativePath);
+      if (snapshot.has(normalizedPath)) return snapshot.get(normalizedPath);
       return fs.readFileSync(path.join(repositoryRoot, ...normalizedPath.split("/")));
     },
   });
@@ -302,7 +318,7 @@ export function createIndexRepositoryView(
 }
 
 export function createRepositoryView({ root = process.cwd(), ref, ...options } = {}) {
-  return ref ? createGitRepositoryView(ref, root, options) : createFilesystemRepositoryView(root);
+  return ref ? createGitRepositoryView(ref, root, options) : createFilesystemRepositoryView(root, options);
 }
 
 export function parseRepositoryRef(argv = process.argv.slice(2)) {
