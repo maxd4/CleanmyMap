@@ -25,7 +25,11 @@ export function RoutePdfExport({
   function handleExport() {
     setStatus("idle");
     const html = buildRoutePdfHtml(data, displayMode);
-    setStatus(openPrintableHtmlWindow(html) ? "success" : "error");
+    setStatus(
+      openPrintableHtmlWindow(html, { autoPrint: true, closeAfterPrint: true })
+        ? "success"
+        : "error",
+    );
   }
 
   return (

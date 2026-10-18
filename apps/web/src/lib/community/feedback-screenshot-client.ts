@@ -11,6 +11,18 @@ import {
 
 export const FEEDBACK_SCREENSHOT_ACCEPT = BUG_REPORT_SCREENSHOT_ALLOWED_MIME_TYPES.join(",");
 
+/** Return only a same-origin object URL created for this page's local preview. */
+export function getSafeFeedbackScreenshotPreviewUrl(value: unknown): string | null {
+  if (typeof value !== "string" || typeof window === "undefined") return null;
+
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "blob:" && parsed.origin === window.location.origin ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 class FeedbackScreenshotUploadError extends Error {
   constructor(message: string) {
     super(message);

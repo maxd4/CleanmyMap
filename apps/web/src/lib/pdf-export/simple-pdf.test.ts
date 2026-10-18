@@ -408,4 +408,30 @@ describe("simple PDF export", () => {
     expect(html).not.toContain("<script>");
     expect(html).not.toContain("<img src=x");
   });
+
+  it("escapes hostile report titles, chapters and data before printable HTML generation", () => {
+    const hostile = `\"><img src=x onerror="alert(1)"><script>alert(2)</script>`;
+    const html = buildOfficialReportHtml({
+      ...payload,
+      title: hostile,
+      data: {
+        ...payload.data,
+        summary: [hostile],
+        stats: [{ label: hostile, value: hostile, detail: hostile }],
+        chapters: [{
+          id: hostile,
+          title: hostile,
+          subtitle: hostile,
+          lines: [hostile],
+          rows: [{ value: hostile }],
+          columns: [{ key: "value", label: hostile }],
+        }],
+      },
+    });
+
+    expect(html).toContain("&quot;&gt;&lt;img src=x onerror=&quot;alert(1)&quot;&gt;&lt;script&gt;alert(2)&lt;/script&gt;");
+    expect(html).not.toContain("<img src=x");
+    expect(html).not.toContain("<script>alert(2)");
+    expect(html).not.toContain("onerror=\"alert(1)\"");
+  });
 });

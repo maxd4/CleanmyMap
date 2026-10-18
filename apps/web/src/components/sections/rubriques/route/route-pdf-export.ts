@@ -2,6 +2,7 @@ import type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 import type { RouteResponse } from "@/lib/route/route-response-contract";
 import { formatScorePercent } from "@/lib/formatters/score";
 import { formatBusinessDurationRangeMinutes } from "@/lib/actions/time-contract";
+import { escapeHtml } from "@/lib/security/html-escape";
 import {
   getRouteGroupPatternLabel,
   getRouteGroupVisualStyle,
@@ -22,15 +23,6 @@ type ProjectedPoint = {
   x: number;
   y: number;
 };
-
-function escapeHtml(value: unknown): string {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
 
 function formatNumber(value: number, maximumFractionDigits = 2): string {
   if (!Number.isFinite(value)) return "—";

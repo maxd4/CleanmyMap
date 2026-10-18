@@ -167,7 +167,7 @@ describe("route PDF export", () => {
       priorityReason: unsafe,
     };
     const html = buildRoutePdfHtml(data, "colors", data.generatedAt);
-    const escaped = "&quot;&amp;&lt;&gt;&#039;";
+    const escaped = "&quot;&amp;&lt;&gt;&#39;";
 
     expect(html).toContain(`data-route-stop="${escaped}"`);
     expect(html).toContain(`<strong>${escaped}</strong>`);

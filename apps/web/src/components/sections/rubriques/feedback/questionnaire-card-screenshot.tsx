@@ -1,5 +1,8 @@
 import type { ChangeEvent } from "react";
-import { FEEDBACK_SCREENSHOT_ACCEPT } from "@/lib/community/feedback-screenshot-client";
+import {
+  FEEDBACK_SCREENSHOT_ACCEPT,
+  getSafeFeedbackScreenshotPreviewUrl,
+} from "@/lib/community/feedback-screenshot-client";
 
 export function QuestionnaireScreenshotField({
   file,
@@ -14,6 +17,8 @@ export function QuestionnaireScreenshotField({
   onChange: (file: File | undefined) => void;
   onRemove: () => void;
 }) {
+  const safePreviewUrl = getSafeFeedbackScreenshotPreviewUrl(previewUrl);
+
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
       <div className="flex items-start justify-between gap-3">
@@ -39,11 +44,11 @@ export function QuestionnaireScreenshotField({
         onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.target.files?.[0])}
         className="sr-only"
       />
-      {file && previewUrl ? (
+      {file && safePreviewUrl ? (
         <div className="mt-4 flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/30 p-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={previewUrl}
+            src={safePreviewUrl}
             alt={`Aperçu de ${file.name}`}
             className="h-20 w-20 rounded-lg object-cover"
           />

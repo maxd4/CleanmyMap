@@ -15,6 +15,7 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 import {
+  getSafeFeedbackScreenshotPreviewUrl,
   uploadFeedbackScreenshot,
   validateFeedbackScreenshotFile,
 } from "@/lib/community/feedback-screenshot-client";
@@ -27,6 +28,18 @@ function pngFile(size = 8) {
 }
 
 describe("feedback screenshot browser upload contract", () => {
+  it("allows only a same-origin blob preview and keeps hostile file names as data", () => {
+    vi.stubGlobal("window", { location: { origin: "https://cleanmymap.test" } });
+
+    expect(getSafeFeedbackScreenshotPreviewUrl("blob:https://cleanmymap.test/preview-1")).toBe(
+      "blob:https://cleanmymap.test/preview-1",
+    );
+    expect(getSafeFeedbackScreenshotPreviewUrl("https://attacker.test/preview.png")).toBeNull();
+    expect(getSafeFeedbackScreenshotPreviewUrl("javascript:alert(1)")).toBeNull();
+
+    vi.unstubAllGlobals();
+  });
+
   it("rejects videos and files over the canonical limit before network access", () => {
     expect(validateFeedbackScreenshotFile(new File(["video"], "capture.mp4", { type: "video/mp4" }))).toContain(
       "vidéos",

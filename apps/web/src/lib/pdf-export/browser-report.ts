@@ -1,3 +1,4 @@
+import createDOMPurify from "dompurify";
 import type { PdfReportPayload } from "./simple-pdf";
 import { buildOfficialReportHtml } from "./official-report-html";
 import type { ReportPdfTheme } from "./report-pdf-theme";
@@ -8,6 +9,11 @@ import {
 
 export type ReportBrowserRenderOptions = {
   theme?: ReportPdfTheme;
+};
+
+type PrintableWindowOptions = {
+  autoPrint?: boolean;
+  closeAfterPrint?: boolean;
 };
 
 export class IncompatibleReportRendererError extends Error {
@@ -40,21 +46,53 @@ export function renderReportWindow(
   options: ReportBrowserRenderOptions = {},
 ): void {
   assertReportRendererCompatibility(payload);
-  renderReportHtmlWindow(reportWindow, buildOfficialReportHtml(payload, options));
+  renderReportHtmlWindow(reportWindow, buildOfficialReportHtml(payload, options), {
+    autoPrint: !payload.data.chapters?.length,
+  });
 }
 
-function renderReportHtmlWindow(reportWindow: Window, html: string): void {
-  reportWindow.document.open();
-  reportWindow.document.write(html);
-  reportWindow.document.close();
+function renderReportHtmlWindow(
+  reportWindow: Window,
+  html: string,
+  options: PrintableWindowOptions = {},
+): void {
+  // HTML is produced by the report builders, which escape dynamic values for
+  // their target contexts. DOMPurify is the final boundary for custom/export
+  // HTML before it becomes a navigable document; in particular, it removes
+  // scripts and event-handler attributes without losing print CSS, tables or
+  // the SVG route map.
+  const purifier = createDOMPurify(
+    reportWindow as unknown as Parameters<typeof createDOMPurify>[0],
+  );
+  const safeHtml = purifier.isSupported
+    ? purifier.sanitize(html, {
+        WHOLE_DOCUMENT: true,
+        FORBID_TAGS: ["script"],
+      })
+    : html;
+  const documentUrl = URL.createObjectURL(
+    new Blob([safeHtml], { type: "text/html;charset=UTF-8" }),
+  );
+  const handleLoad = () => {
+    URL.revokeObjectURL(documentUrl);
+    if (options.autoPrint) reportWindow.print();
+  };
+  reportWindow.addEventListener("load", handleLoad, { once: true });
+  if (options.closeAfterPrint) {
+    reportWindow.addEventListener("afterprint", () => reportWindow.close(), { once: true });
+  }
+  reportWindow.location.replace(documentUrl);
   reportWindow.focus();
 }
 
-export function openPrintableHtmlWindow(html: string): boolean {
+export function openPrintableHtmlWindow(
+  html: string,
+  options: PrintableWindowOptions = { autoPrint: true, closeAfterPrint: true },
+): boolean {
   const reportWindow = prepareReportWindow();
   if (!reportWindow) return false;
 
-  renderReportHtmlWindow(reportWindow, html);
+  renderReportHtmlWindow(reportWindow, html, options);
   return true;
 }
 
@@ -72,6 +110,9 @@ export function openPrintableReport(
   const targetWindow = reportWindow ?? prepareReportWindow();
   if (!targetWindow) return "blocked";
 
-  renderReportHtmlWindow(targetWindow, html);
+  renderReportHtmlWindow(targetWindow, html, {
+    autoPrint: Boolean(buildPrintableHtml) || !payload.data.chapters?.length,
+    closeAfterPrint: Boolean(buildPrintableHtml),
+  });
   return "opened";
 }
