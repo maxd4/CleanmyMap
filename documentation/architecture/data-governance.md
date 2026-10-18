@@ -314,9 +314,17 @@ La migration existe dans Git au SHA de référence ; son état d'application dis
 
 ## 8. Export, sauvegardes et intégrité
 
-Le script `apps/web/scripts/export-actions-backup.mjs` assemble un format d'archive Actions version 2 (`action-backup-contract.mjs`), incluant actions, relations et conversations associées. L'export parcourt des pages et chunks ; **l'exhaustivité d'une relation à forte cardinalité doit être prouvée** et un export incomplet ne doit jamais être accepté comme une archive valide.
+Le script `apps/web/scripts/export-actions-backup.mjs` assemble un format d'archive Actions version 2 (`cleanmymap.action-backup`, via `action-backup-contract.mjs`), incluant actions, relations et conversations associées. L'export parcourt des pages et chunks ; **l'exhaustivité d'une relation à forte cardinalité doit être prouvée** et un export incomplet ne doit jamais être accepté comme une archive valide.
 
-Les mutations de restauration sont distinctes des imports métier. Le restore doit préserver le contrat atomique déjà défini ; aucune opération destructive n'est lancée par une simple revue de schéma.
+La restauration de `cleanmymap.action-backup` version 2 est classée
+`DISASTER_RECOVERY_RESTORE`. La commande opératoire est
+`npm run restore:actions -w apps/web` : elle valide d'abord le format, le
+payload et les références de ses relations avant tout plan d'écriture. Le mode
+par défaut est un `dry-run`. Une mutation n'est autorisée qu'après confirmation
+explicite et appelle la RPC atomique `restore_action_backup` avec `service_role`
+dans le CLI autorisé. Elle conserve les identités historiques et les champs
+historiques sauvegardés. Cette voie est distincte de l'import métier, ne passe
+pas par `normalizeExternalActionImport` ni `createAction`, et ne doit pas être exposée sous un nom `import`.
 
 ## 9. Validation du schéma
 

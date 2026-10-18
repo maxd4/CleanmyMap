@@ -111,7 +111,8 @@ async function fetchRowsForIds(supabase, table, column, ids, orderColumn = "crea
       query = query.range(from, to);
       const { data, error } = await query;
       if (error) throw new Error(`${table}: ${error.message}`);
-      const batch = Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) throw new Error(`${table}: invalid page response`);
+      const batch = data;
       if (batch.length === 0) {
         completed = true;
         break;

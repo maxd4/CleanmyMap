@@ -157,6 +157,31 @@ test("rejects an anomalous root response instead of treating it as exhaustion", 
   );
 });
 
+test("rejects a non-tabular intermediate relation page instead of treating it as exhausted", async () => {
+  const relations = Array.from({ length: 1201 }, (_, index) => organizerRow(index + 1));
+  const { supabase, calls } = makeSupabase({
+    rowsByTable: { actions: [actionRow()], action_organizers: relations },
+    responseAt: (call) => call.table === "action_organizers" && call.from === 1000
+      ? { data: null, error: null }
+      : null,
+  });
+  let backup;
+
+  await assert.rejects(
+    async () => {
+      backup = await exportActionBackup(supabase, "2026-10-18T00:00:00.000Z");
+    },
+    /action_organizers: invalid page response/,
+  );
+
+  assert.equal(backup, undefined);
+  assert.deepEqual(
+    calls.filter(({ table }) => table === "action_organizers").map(({ from }) => from),
+    [0, 1000],
+  );
+  assert.equal(calls.some(({ table }) => table === "action_registrations"), false);
+});
+
 test("paginates a relation group beyond 1000 rows with stable ordering", async () => {
   const relations = Array.from({ length: 1201 }, (_, index) => organizerRow(index + 1));
   const { supabase, calls } = makeSupabase({
