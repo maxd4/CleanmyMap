@@ -112,11 +112,7 @@ describe("browser report delivery", () => {
   beforeEach(() => {
     createDOMPurifyMock.mockReturnValue({
       isSupported: true,
-      sanitize: vi.fn((html: string) =>
-        html
-          .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
-          .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, ""),
-      ),
+      sanitize: vi.fn((html: string) => html),
     });
   });
 
@@ -229,6 +225,10 @@ describe("browser report delivery", () => {
     vi.stubGlobal("window", { open: vi.fn().mockReturnValue(reportWindow) });
     const { createObjectURL } = stubObjectUrl();
     const hostileHtml = '<!doctype html><html><body><h1 title="&quot; onmouseover=&quot;alert(1)">Titre</h1><img src="x" onerror="alert(1)"><script>window.xss = true</script></body></html>';
+    createDOMPurifyMock.mockReturnValueOnce({
+      isSupported: true,
+      sanitize: vi.fn(() => "<!doctype html><html><body><h1>Titre</h1></body></html>"),
+    });
 
     expect(openPrintableHtmlWindow(hostileHtml, { autoPrint: false })).toBe(true);
 
