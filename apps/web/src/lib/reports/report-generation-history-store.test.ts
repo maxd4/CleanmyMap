@@ -10,6 +10,7 @@ import {
   getReportGenerationSnapshotById,
   InvalidReportGenerationIdError,
   listReportGenerationHistory,
+  listReportGenerationHistoryPage,
   persistDerivedReportGeneration,
   persistReportGeneration,
   resolveDirectReportGenerationPersistence,
@@ -77,8 +78,8 @@ describe("report generation history store", () => {
   });
 
   it("lists persisted rows newest first with a bounded limit", async () => {
-    const limit = vi.fn().mockResolvedValue({ data: [dbRow], error: null });
-    const order = vi.fn(() => ({ limit }));
+    const range = vi.fn().mockResolvedValue({ data: [dbRow], error: null, count: 1 });
+    const order = vi.fn(() => ({ order, range }));
     const eq = vi.fn(() => ({ order }));
     const select = vi.fn(() => ({ eq }));
     getSupabaseAdminClientMock.mockReturnValue({
@@ -94,11 +95,39 @@ describe("report generation history store", () => {
       },
     ]);
     expect(select).toHaveBeenCalledWith(
-      "id, generated_at, title, period_id, scope_label, detail_level",
+      "id, generated_at, title, period_id, scope_label, detail_level, theme",
+      { count: "exact" },
     );
     expect(eq).toHaveBeenCalledWith("created_by_clerk_id", "user-1");
     expect(order).toHaveBeenCalledWith("generated_at", { ascending: false });
-    expect(limit).toHaveBeenCalledWith(12);
+    expect(range).toHaveBeenCalledWith(0, 49);
+  });
+
+  it("applies owner-scoped pagination, title search, period, theme and chronological sort", async () => {
+    const range = vi.fn().mockResolvedValue({ data: [dbRow], error: null, count: 13 });
+    const order = vi.fn(() => ({ order, range }));
+    const themeEq = vi.fn(() => ({ order }));
+    const periodEq = vi.fn(() => ({ eq: themeEq }));
+    const ilike = vi.fn(() => ({ eq: periodEq }));
+    const ownerEq = vi.fn(() => ({ ilike }));
+    const select = vi.fn(() => ({ eq: ownerEq }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
+
+    await expect(listReportGenerationHistoryPage("user-1", {
+      page: 2,
+      pageSize: 12,
+      search: "Paris",
+      periodId: "six_months",
+      theme: "scientific",
+      sort: "asc",
+    })).resolves.toMatchObject({ page: 2, pageSize: 12, total: 13, hasPreviousPage: true, hasNextPage: false });
+
+    expect(ownerEq).toHaveBeenCalledWith("created_by_clerk_id", "user-1");
+    expect(ilike).toHaveBeenCalledWith("title", "%Paris%");
+    expect(periodEq).toHaveBeenCalledWith("period_id", "six_months");
+    expect(themeEq).toHaveBeenCalledWith("theme", "scientific");
+    expect(order).toHaveBeenCalledWith("generated_at", { ascending: true });
+    expect(range).toHaveBeenCalledWith(12, 23);
   });
 
   it("persists the exact payload and server-derived filename", async () => {
@@ -129,7 +158,7 @@ describe("report generation history store", () => {
     ).resolves.toMatchObject({ id: "11111111-1111-4111-8111-111111111111", report: payload.title });
 
     expect(select).toHaveBeenCalledWith(
-      "id, generated_at, title, period_id, scope_label, detail_level",
+      "id, generated_at, title, period_id, scope_label, detail_level, theme",
     );
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -218,7 +247,7 @@ describe("report generation history store", () => {
       snapshot: payload,
     });
     expect(select).toHaveBeenCalledWith(
-      "id, filename, generated_at, snapshot, period_id, scope_kind, scope_value, scope_label, detail_level, modules",
+      "id, filename, generated_at, snapshot, period_id, scope_kind, scope_value, scope_label, detail_level, modules, theme",
     );
     expect(idEq).toHaveBeenCalledWith("id", historicalId);
     expect(ownerEq).toHaveBeenCalledWith("created_by_clerk_id", "user-1");

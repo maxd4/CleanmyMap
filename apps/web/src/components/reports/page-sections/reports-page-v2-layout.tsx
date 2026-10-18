@@ -9,12 +9,14 @@ type ReportsPageV2LayoutProps = {
   activeTab: ReportsPageTabId;
   generationContent?: ReactNode;
   analysisContent?: ReactNode;
+  filesContent?: ReactNode;
 };
 
 export function ReportsPageV2Layout({
   activeTab,
   generationContent,
   analysisContent,
+  filesContent,
 }: ReportsPageV2LayoutProps) {
   const pageFamily = resolvePageFamily("/reports");
 
@@ -38,7 +40,11 @@ export function ReportsPageV2Layout({
           data-testid="reports-tab-content"
           className="min-w-0"
         >
-          {activeTab === "generation" ? generationContent : analysisContent}
+          {activeTab === "generation"
+            ? generationContent
+            : activeTab === "analysis"
+              ? analysisContent
+              : filesContent}
         </div>
       </CmmGridItem>
     </CmmGrid>

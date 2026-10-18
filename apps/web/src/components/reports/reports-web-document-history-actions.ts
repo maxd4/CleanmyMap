@@ -39,7 +39,9 @@ export function createReportsWebDocumentHistoryActions(params: HistoryActionsPar
     id: string,
     action: ReportGenerationHistoryActionState["action"],
     historicalReplayRef: HistoricalReplayRef,
+    themeOverride?: ReportPdfTheme,
   ): Promise<void> {
+    const theme = themeOverride ?? params.reportTheme;
     params.setHistoryActionStateById((current) => ({
       ...current,
       [id]: {
@@ -59,7 +61,7 @@ export function createReportsWebDocumentHistoryActions(params: HistoryActionsPar
 
     if (action === "reexport") {
       try {
-        const result = await downloadOrShareReportPdf({ generationId: id, theme: params.reportTheme });
+        const result = await downloadOrShareReportPdf({ generationId: id, theme });
         params.setHistoryActionStateById((current) => ({
           ...current,
           [id]: {
@@ -144,11 +146,11 @@ export function createReportsWebDocumentHistoryActions(params: HistoryActionsPar
         params.setRecentRows((current) => [derived.item, ...current].slice(0, REPORT_GENERATION_HISTORY_LIMIT));
         params.setHistoryAvailability("available");
         params.setDailyExportAvailability("used");
-        renderReportWindow(reportWindow, generation.snapshot, { theme: params.reportTheme });
+        renderReportWindow(reportWindow, generation.snapshot, { theme });
       } else if (action === "view") {
         replayHistoricalReport(action, generation, {
-          view: (payload) => renderReportWindow(reportWindow, payload, { theme: params.reportTheme }),
-          reexport: (payload) => renderReportWindow(reportWindow, payload, { theme: params.reportTheme }),
+          view: (payload) => renderReportWindow(reportWindow, payload, { theme }),
+          reexport: (payload) => renderReportWindow(reportWindow, payload, { theme }),
         });
       }
 
@@ -175,7 +177,8 @@ export function createReportsWebDocumentHistoryActions(params: HistoryActionsPar
     }
   }
 
-  async function handleHistoricalPrint(id: string): Promise<void> {
+  async function handleHistoricalPrint(id: string, themeOverride?: ReportPdfTheme): Promise<void> {
+    const theme = themeOverride ?? params.reportTheme;
     params.setHistoryActionStateById((current) => ({
       ...current,
       [id]: { action: "print", state: "pending", message: "Préparation de l’impression..." },
@@ -190,7 +193,7 @@ export function createReportsWebDocumentHistoryActions(params: HistoryActionsPar
     }
     try {
       const generation = await loadHistoricalReportSnapshot(id);
-      renderReportWindow(reportWindow, generation.snapshot, { theme: params.reportTheme });
+      renderReportWindow(reportWindow, generation.snapshot, { theme });
       window.setTimeout(() => reportWindow.print(), 250);
       params.setHistoryActionStateById((current) => ({
         ...current,

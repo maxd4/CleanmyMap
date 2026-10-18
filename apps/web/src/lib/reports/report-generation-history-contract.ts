@@ -8,6 +8,10 @@ import {
 import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 
 export const REPORT_GENERATION_HISTORY_LIMIT = 12;
+export const REPORT_GENERATION_HISTORY_PAGE_SIZE = REPORT_GENERATION_HISTORY_LIMIT;
+
+export type ReportGenerationHistoryTheme = "impact" | "scientific";
+export type ReportGenerationHistorySort = "asc" | "desc";
 
 export type ReportGenerationHistoryRow = {
   id: string;
@@ -16,6 +20,25 @@ export type ReportGenerationHistoryRow = {
   perimeter: string;
   detail: string;
   generatedAt: string;
+  theme?: ReportGenerationHistoryTheme | null;
+};
+
+export type ReportGenerationHistoryPage = {
+  rows: ReportGenerationHistoryRow[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+};
+
+export type ReportGenerationHistoryFilters = {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  periodId?: PeriodId;
+  theme?: ReportGenerationHistoryTheme;
+  sort?: ReportGenerationHistorySort;
 };
 
 export type ReportGenerationHistoryInput = {
@@ -25,6 +48,7 @@ export type ReportGenerationHistoryInput = {
   scopeLabel: string;
   detailLevel: DetailLevelId;
   modules: ModuleState;
+  theme?: ReportGenerationHistoryTheme | null;
 };
 
 export type ReportGenerationHistoryMetadata = {
@@ -34,6 +58,7 @@ export type ReportGenerationHistoryMetadata = {
   scopeLabel: string;
   detailLevel: DetailLevelId;
   generatedAt: string;
+  theme?: ReportGenerationHistoryTheme | null;
 };
 
 export function isReportGenerationHistoryRow(
@@ -75,5 +100,6 @@ export function toReportGenerationHistoryRow(
     perimeter: metadata.scopeLabel,
     detail: detailLevelLabel(metadata.detailLevel),
     generatedAt,
+    theme: metadata.theme ?? null,
   };
 }

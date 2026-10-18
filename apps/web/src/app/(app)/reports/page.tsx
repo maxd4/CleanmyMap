@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { DeferredReportsWebDocument } from "@/components/reports/deferred-reports-web-document";
+import { ReportsFiles } from "@/components/reports/reports-files";
 import { ReportsPageV2Layout } from "@/components/reports/page-sections/reports-page-v2-layout";
 import { resolveReportsTab } from "@/components/reports/page-sections/reports-page-tabs";
 import { ReportsAnalysisDashboard } from "@/components/reports/reports-analysis-dashboard";
@@ -29,7 +30,12 @@ import type { Locale } from "@/lib/ui/preferences";
 import type { ProfileAction } from "@/lib/profiles";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import type { ReportModel } from "@/lib/reports/report-model/types";
-import { listReportGenerationHistory } from "@/lib/reports/report-generation-history-store";
+import {
+  getReportGenerationSnapshotById,
+  listReportGenerationHistoryPage,
+} from "@/lib/reports/report-generation-history-store";
+import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
+import type { ReportGenerationHistoryPage } from "@/lib/reports/report-generation-history-contract";
 import {
   getReportExportAvailability,
 } from "@/lib/reports/report-export-quota";
@@ -45,7 +51,7 @@ import {
 } from "@/lib/reports/single-action-report";
 
 type ReportsPageProps = {
-  searchParams: Promise<{ tab?: string; actionId?: string }>;
+  searchParams: Promise<{ tab?: string; actionId?: string; resumeId?: string }>;
 };
 
 type SingleActionReportPageContext = {
@@ -160,18 +166,16 @@ function buildReportsPublicSummaryContent(
 
 function buildReportsGenerationContent({
   generationData,
-  historyResult,
   dailyExportAvailability,
   singleAction,
   singleActionError,
+  resumeSnapshot,
 }: {
   generationData: Awaited<ReturnType<typeof loadReportsGenerationData>> | null;
-  historyResult: Awaited<ReturnType<typeof listReportGenerationHistory>> extends infer Rows
-    ? { rows: Rows; availability: "available" | "unavailable" }
-    : never;
   dailyExportAvailability: ReportExportAvailability;
   singleAction?: Pick<SingleActionReportPageContext, "actionId" | "scopeLabel"> | null;
   singleActionError?: SingleActionReportPageError | null;
+  resumeSnapshot?: PdfReportPayload;
 }) {
   if (singleActionError) {
     const targetUnavailable = singleActionError === "not_admissible";
@@ -215,9 +219,8 @@ function buildReportsGenerationContent({
       communityEventsAvailability={generationData.communityEventsAvailability}
       actionMediaReadyCountByActionId={generationData.actionMediaReadyCountByActionId}
       actionMediaAvailability={generationData.actionMediaAvailability}
-      initialRecentRows={historyResult.rows}
-      initialHistoryAvailability={historyResult.availability}
       dailyExportAvailability={dailyExportAvailability}
+      resumeSnapshot={resumeSnapshot}
       singleAction={singleAction ?? undefined}
     />
   ) : (
@@ -328,6 +331,15 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       );
     }
 
+    if (activeTab === "files") {
+      return (
+        <ReportsPageV2Layout
+          activeTab={activeTab}
+          filesContent={buildAnonymousGenerationContent(clerkReachable)}
+        />
+      );
+    }
+
     const publicSummary = await loadReportsPublicSummary().catch(() => null);
     const publicSummaryContent = buildReportsPublicSummaryContent(publicSummary);
 
@@ -357,7 +369,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       }
     }
 
-    const [generationData, historyResult, dailyExportAvailability] = await Promise.all([
+    const resumeId = resolvedSearchParams.resumeId?.trim() || null;
+    const resumeSnapshotResult = resumeId
+      ? getReportGenerationSnapshotById(resumeId, userId).catch(() => null)
+      : Promise.resolve(null);
+    const [generationData, resumeGeneration, dailyExportAvailability] = await Promise.all([
       singleActionError
         ? Promise.resolve(null)
         : singleAction
@@ -376,9 +392,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             actionMediaAvailability: "available" as const,
           })
         : loadReportsGenerationData(userId).catch(() => null),
-      listReportGenerationHistory(userId)
-        .then((rows) => ({ rows, availability: "available" as const }))
-        .catch(() => ({ rows: [], availability: "unavailable" as const })),
+      resumeSnapshotResult,
       getReportExportAvailability(userId).catch(
         () => "unavailable" as ReportExportAvailability,
       ),
@@ -386,10 +400,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
     const generationContent = buildReportsGenerationContent({
       generationData,
-      historyResult,
       dailyExportAvailability,
       singleAction,
       singleActionError,
+      resumeSnapshot: resumeGeneration?.snapshot,
     });
 
     return (
@@ -397,6 +411,28 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         <ReportsPageV2Layout
           activeTab={activeTab}
           generationContent={generationContent}
+        />
+      </AccountCompletionGate>
+    );
+  }
+
+  if (activeTab === "files") {
+    const emptyPage: ReportGenerationHistoryPage = {
+      rows: [],
+      page: 1,
+      pageSize: 12,
+      total: 0,
+      hasNextPage: false,
+      hasPreviousPage: false,
+    };
+    const initialResult = await listReportGenerationHistoryPage(userId, { page: 1, pageSize: 12 })
+      .then((page) => ({ page, availability: "available" as const }))
+      .catch(() => ({ page: emptyPage, availability: "unavailable" as const }));
+    return (
+      <AccountCompletionGate state={accountCompletion}>
+        <ReportsPageV2Layout
+          activeTab={activeTab}
+          filesContent={<ReportsFiles initialPage={initialResult.page} initialAvailability={initialResult.availability} />}
         />
       </AccountCompletionGate>
     );

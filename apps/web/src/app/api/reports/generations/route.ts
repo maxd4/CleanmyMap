@@ -9,7 +9,13 @@ import {
   getReportExportQuotaDay,
   reserveReportExportSlot,
 } from "@/lib/reports/report-export-quota";
-import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
+import type {
+  ReportGenerationHistoryFilters,
+  ReportGenerationHistoryInput,
+} from "@/lib/reports/report-generation-history-contract";
+import {
+  listReportGenerationHistoryPage,
+} from "@/lib/reports/report-generation-history-store";
 import {
   auditReportGenerationError,
   auditReportGenerationSuccess,
@@ -39,6 +45,7 @@ export const runtime = "nodejs";
 const MAX_REPORT_GENERATION_REQUEST_BYTES = 2 * 1024 * 1024;
 
 const detailLevelSchema = z.enum(["concis", "default", "exhaustif"]);
+const reportThemeSchema = z.enum(["impact", "scientific"]);
 const scopeKindSchema = z.enum(["global", "account", "association", "arrondissement"]);
 const periodIdSchema = z.enum([
   "thirty_days",
@@ -64,6 +71,7 @@ const singleActionRequestSchema = z.object({
   }).strict(),
   detailLevel: detailLevelSchema,
   modules: modulesSchema.strict(),
+  theme: reportThemeSchema.optional(),
 }).strict();
 
 const multiActionRequestSchema = z.object({
@@ -85,6 +93,7 @@ const multiActionRequestSchema = z.object({
   }).strict(),
   detailLevel: detailLevelSchema,
   modules: modulesSchema.strict(),
+  theme: reportThemeSchema.optional(),
 }).strict();
 
 type ParsedReportGenerationRequest =
@@ -167,14 +176,17 @@ async function resolveReportGenerationInput(
     try {
       const contract = await resolveSingleActionReportContract(parsed.request.input.actionId);
       return {
-        input: buildSingleActionReportGenerationInput({
+        input: {
+          ...buildSingleActionReportGenerationInput({
           request: parsed.request.input,
           contract,
           detailLevel: parsed.request.detailLevel,
           modules: parsed.request.modules,
           generationId,
           now: new Date(),
-        }),
+          }),
+          theme: parsed.request.theme ?? "impact",
+        },
       };
     } catch (error) {
       if (error instanceof SingleActionReportTargetUnavailableError) {
@@ -194,14 +206,17 @@ async function resolveReportGenerationInput(
 
   try {
     return {
-      input: await buildMultiActionReportGenerationInput({
-        request: parsed.request.input,
-        detailLevel: parsed.request.detailLevel,
-        modules: parsed.request.modules,
-        generationId,
-        readerUserId: actorUserId,
-        now: new Date(),
-      }),
+      input: {
+        ...await buildMultiActionReportGenerationInput({
+          request: parsed.request.input,
+          detailLevel: parsed.request.detailLevel,
+          modules: parsed.request.modules,
+          generationId,
+          readerUserId: actorUserId,
+          now: new Date(),
+        }),
+        theme: parsed.request.theme ?? "impact",
+      },
     };
   } catch (error) {
     if (error instanceof MultiActionReportPeriodInvalidError) {
@@ -244,6 +259,47 @@ async function resolveReportGenerationInput(
       code: "multi_action_resolution_failed",
     });
     return { response: NextResponse.json({ error: "Le rapport multi-actions est temporairement indisponible." }, { status: 503 }) };
+  }
+}
+
+const historyQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(12),
+  search: z.string().trim().max(120).default(""),
+  period: z.union([periodIdSchema, z.literal("all")]).default("all"),
+  theme: z.union([reportThemeSchema, z.literal("all")]).default("all"),
+  sort: z.enum(["asc", "desc"]).default("desc"),
+});
+
+export async function GET(request: Request) {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) {
+    return unauthorizedJsonResponse({ hint: access.error });
+  }
+
+  const url = new URL(request.url);
+  const parsed = historyQuerySchema.safeParse(Object.fromEntries(url.searchParams.entries()));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Paramètres d’historique invalides." }, { status: 400 });
+  }
+
+  const filters: ReportGenerationHistoryFilters = {
+    page: parsed.data.page,
+    pageSize: parsed.data.pageSize,
+    search: parsed.data.search || undefined,
+    periodId: parsed.data.period === "all" ? undefined : parsed.data.period,
+    theme: parsed.data.theme === "all" ? undefined : parsed.data.theme,
+    sort: parsed.data.sort,
+  };
+
+  try {
+    return NextResponse.json(await listReportGenerationHistoryPage(access.userId, filters));
+  } catch (error) {
+    console.error("Report generation history listing failed", {
+      userId: access.userId,
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
+    return NextResponse.json({ error: "Historique temporairement indisponible." }, { status: 503 });
   }
 }
 

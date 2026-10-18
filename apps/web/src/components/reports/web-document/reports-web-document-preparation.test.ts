@@ -368,6 +368,7 @@ describe("ReportsWebDocumentPreparation", () => {
         rawData: false,
         detailedFiles: true,
       },
+      theme: "impact",
     });
     expect(String(request.body)).not.toContain("Masse_Kg");
     expect(mocks.openPrintableReport.mock.calls.at(-1)?.[4]).toEqual({ theme: "impact" });
@@ -459,13 +460,14 @@ describe("ReportsWebDocumentPreparation", () => {
         rawData: false,
         detailedFiles: true,
       },
+      theme: "impact",
     });
     expect(String(request.body)).not.toContain("Valeur navigateur ignorée");
     expect(mocks.openPrintableReport.mock.calls.at(-1)?.[4]).toEqual({ theme: "impact" });
     vi.unstubAllGlobals();
   });
 
-  it("replays a historical snapshot with the selected theme without a new generation", async () => {
+  it("keeps the history surface in Mes fichiers instead of the generator", () => {
     mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
     mocks.usePdfExport.mockReturnValue({
       state: "idle",
@@ -475,65 +477,11 @@ describe("ReportsWebDocumentPreparation", () => {
       isDisabled: false,
       exportRubriquePdf: vi.fn(),
     });
-    const reportWindow = { closed: false } as Window;
-    mocks.prepareReportWindow.mockReturnValue(reportWindow);
-    const snapshot = {
-      title: "Rapport historique",
-      rubrique: "reporting",
-      periode: "six_months",
-      organizationType: "Global",
-      data: { generatedAt: "2026-08-27T10:30:00.000Z", summary: ["Historique"] },
-    };
-    const historyRow = {
-      id: "generation-theme",
-      report: "Rapport historique",
-      period: "Six mois",
-      perimeter: "Global",
-      detail: "Par défaut",
-      generatedAt: "27/08/2026 12:30",
-    };
-    const props = {
+    renderToStaticMarkup(React.createElement(ReportsWebDocument, {
       contracts: [],
       communityEvents: [],
-      initialRecentRows: [historyRow],
-    } as unknown as ReportsWebDocumentProps;
-    renderToStaticMarkup(React.createElement(ReportsWebDocument, props));
-    const historyCall = mocks.deliveryHistory.mock.calls.at(-1) as unknown as [
-      { onView: (id: string) => void },
-    ] | undefined;
-    const historyProps = historyCall?.[0] as {
-      onView: (id: string) => void;
-    };
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        generation: {
-          id: "generation-theme",
-          filename: "rapport_historique.pdf",
-          generatedAt: "2026-08-27T10:30:00.000Z",
-          scopeLabel: "Global",
-          detailLevel: "default",
-          snapshot,
-        },
-      }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    historyProps.onView("generation-theme");
-    await vi.waitFor(() => expect(mocks.renderReportWindow).toHaveBeenCalledWith(
-      reportWindow,
-      snapshot,
-      { theme: "impact" },
-    ));
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/reports/generations/generation-theme",
-      expect.objectContaining({ method: "GET" }),
-    );
-    expect(fetchMock).not.toHaveBeenCalledWith(
-      "/api/reports/generations",
-      expect.objectContaining({ method: "POST" }),
-    );
-    vi.unstubAllGlobals();
+    }));
+    expect(mocks.deliveryHistory).not.toHaveBeenCalled();
   });
 
   it("does not fail an already successful PDF when history persistence fails", async () => {

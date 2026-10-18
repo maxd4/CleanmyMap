@@ -3,6 +3,7 @@ import { createRateLimitModule, mockAllowedRateLimit, mockRejectedRateLimit } fr
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const persistReportGenerationMock = vi.hoisted(() => vi.fn());
+const listReportGenerationHistoryPageMock = vi.hoisted(() => vi.fn());
 const resolveDirectReportGenerationPersistenceMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 const getReportExportAvailabilityMock = vi.hoisted(() => vi.fn());
@@ -34,6 +35,7 @@ vi.mock("@/lib/authz", () => ({
 
 vi.mock("@/lib/reports/report-generation-history-store", () => ({
   persistReportGeneration: persistReportGenerationMock,
+  listReportGenerationHistoryPage: listReportGenerationHistoryPageMock,
   resolveDirectReportGenerationPersistence: resolveDirectReportGenerationPersistenceMock,
 }));
 
@@ -64,7 +66,7 @@ vi.mock("@/lib/reports/multi-action-report", () => ({
 
 vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
 
-import { POST } from "./route";
+import { GET, POST } from "./route";
 
 const validSnapshotPayload = {
     title: "Rapport d'impact - Paris - Par défaut",
@@ -108,6 +110,14 @@ describe("POST /api/reports/generations", () => {
       detail: "Par défaut (12 à 16 pages)",
       generatedAt: "27/08/2026 12:30",
     });
+    listReportGenerationHistoryPageMock.mockResolvedValue({
+      rows: [],
+      page: 1,
+      pageSize: 12,
+      total: 0,
+      hasNextPage: false,
+      hasPreviousPage: false,
+    });
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
     resolveDirectReportGenerationPersistenceMock.mockResolvedValue({ kind: "not_persisted" });
     getReportExportAvailabilityMock.mockResolvedValue("available");
@@ -149,7 +159,7 @@ describe("POST /api/reports/generations", () => {
     expect(response.status).toBe(200);
     expect(persistReportGenerationMock).toHaveBeenCalledWith({
       createdByClerkId: "user-1",
-      input: multiInput,
+      input: expect.objectContaining({ ...multiInput, theme: "impact" }),
     });
     expect(reserveReportExportSlotMock).toHaveBeenCalledWith("user-1");
     await expect(response.json()).resolves.toMatchObject({
@@ -580,7 +590,7 @@ describe("POST /api/reports/generations", () => {
     }));
     expect(persistReportGenerationMock).toHaveBeenCalledWith({
       createdByClerkId: "user-1",
-      input: singleInput,
+      input: expect.objectContaining({ ...singleInput, theme: "impact" }),
     });
   });
 
@@ -660,5 +670,46 @@ describe("POST /api/reports/generations", () => {
         code: "invalid_typed_input",
       }),
     }));
+  });
+});
+
+describe("GET /api/reports/generations", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "owner-1" });
+    listReportGenerationHistoryPageMock.mockResolvedValue({
+      rows: [{ id: "generation-1", report: "Paris", period: "Six mois", perimeter: "Global", detail: "Par défaut", generatedAt: "27/08/2026 12:30", theme: "scientific" }],
+      page: 2,
+      pageSize: 12,
+      total: 13,
+      hasNextPage: false,
+      hasPreviousPage: true,
+    });
+  });
+
+  it("returns an owner-scoped page without touching generation quota", async () => {
+    const response = await GET(new Request("http://localhost/api/reports/generations?page=2&search=Paris&period=six_months&theme=scientific&sort=asc"));
+
+    expect(response.status).toBe(200);
+    expect(listReportGenerationHistoryPageMock).toHaveBeenCalledWith("owner-1", {
+      page: 2,
+      pageSize: 12,
+      search: "Paris",
+      periodId: "six_months",
+      theme: "scientific",
+      sort: "asc",
+    });
+    expect(getReportExportAvailabilityMock).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({ total: 13, hasPreviousPage: true });
+  });
+
+  it("denies anonymous history reads and rejects invalid filters", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: false, status: 401, error: "Unauthorized" });
+    await expect(GET(new Request("http://localhost/api/reports/generations"))).resolves.toHaveProperty("status", 401);
+
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: true, userId: "owner-1" });
+    const response = await GET(new Request("http://localhost/api/reports/generations?page=0"));
+    expect(response.status).toBe(400);
+    expect(listReportGenerationHistoryPageMock).not.toHaveBeenCalled();
   });
 });

@@ -26,4 +26,20 @@ describe("ReportsPageV2Layout", () => {
     expect(markup.match(/<h1\b/g)).toHaveLength(1);
     expect(markup).toContain('id="reports-tabpanel-analysis"');
   });
+
+  it("renders the files content for the files tab", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ReportsPageV2Layout, {
+        activeTab: "files",
+        generationContent: React.createElement("div", null, "Génération"),
+        analysisContent: React.createElement("div", null, "Analyse"),
+        filesContent: React.createElement("div", null, "Mes fichiers actifs"),
+      }),
+    );
+
+    expect(markup).toContain("Mes fichiers actifs");
+    expect(markup).not.toContain("Génération active");
+    expect(markup).not.toContain("Analyse active");
+    expect(markup).toContain('id="reports-tabpanel-files"');
+  });
 });

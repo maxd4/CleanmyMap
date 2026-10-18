@@ -45,6 +45,7 @@ export type ReportsWebDocumentDeliveryHistoryProps = {
   onCopyReference?: (id: string) => void;
   onExportJson?: (id: string) => void;
   onExportCsv?: (id: string) => void;
+  onResume?: (id: string) => void;
 };
 
 export type ReportGenerationHistoryActionState = {
@@ -65,6 +66,7 @@ function HistoryActionButtons({
   onCopyReference = () => undefined,
   onExportJson = () => undefined,
   onExportCsv = () => undefined,
+  onResume = () => undefined,
 }: {
   row: ReportGenerationHistoryRow;
   theme: ReportPdfTheme;
@@ -77,8 +79,10 @@ function HistoryActionButtons({
   onCopyReference: (id: string) => void;
   onExportJson: (id: string) => void;
   onExportCsv: (id: string) => void;
+  onResume: (id: string) => void;
 }) {
   const isPending = actionState?.state === "pending";
+  const resolvedTheme = row.theme ?? theme;
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -102,6 +106,16 @@ function HistoryActionButtons({
       >
         <span className="md:hidden">Partager le PDF</span>
         <span className="hidden md:inline">Télécharger PDF</span>
+      </CmmButton>
+      <CmmButton
+        disabled={isPending}
+        onClick={() => onResume(rowId)}
+        tone="tertiary"
+        variant="ghost"
+        size="md"
+        className="min-h-11"
+      >
+        Reprendre la configuration
       </CmmButton>
       <CmmButton
         disabled={isPending}
@@ -153,7 +167,17 @@ function HistoryActionButtons({
       >
         Exporter CSV
       </CmmButton>
-      <ReportsWebDocumentHistorySharing row={row} theme={theme} />
+      <CmmButton
+        disabled
+        title="La publication globale n'est pas encore disponible."
+        tone="tertiary"
+        variant="ghost"
+        size="md"
+        className="min-h-11"
+      >
+        Publier dans « Tous les fichiers »
+      </CmmButton>
+      <ReportsWebDocumentHistorySharing row={row} theme={resolvedTheme} />
     </div>
   );
 }
@@ -254,6 +278,7 @@ export function ReportsWebDocumentDeliveryHistory({
   onCopyReference = () => undefined,
   onExportJson = () => undefined,
   onExportCsv = () => undefined,
+  onResume = () => undefined,
 }: ReportsWebDocumentDeliveryHistoryProps) {
   return (
     <section
@@ -264,9 +289,9 @@ export function ReportsWebDocumentDeliveryHistory({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 id="reports-history-title" className="text-lg font-semibold text-slate-950">
-            Mes rapports récents
+            Mes fichiers
           </h3>
-          <p className="mt-1 text-sm text-slate-500">Derniers rapports générés.</p>
+          <p className="mt-1 text-sm text-slate-500">Tous vos rapports générés et leurs métadonnées.</p>
         </div>
       </div>
 
@@ -285,7 +310,7 @@ export function ReportsWebDocumentDeliveryHistory({
               <caption className="sr-only">Historique de mes rapports générés</caption>
               <thead className="bg-slate-50 text-xs normal-case tracking-normal text-slate-500">
                 <tr>
-                  {["Rapport", "Période", "Périmètre", "Détail", "Généré le", "Actions"].map((header) => (
+                  {["Rapport", "Période", "Périmètre", "Détail", "Thème PDF", "Généré le", "Actions"].map((header) => (
                     <th key={header} scope="col" className="font-semibold normal-case tracking-normal">
                       {header}
                     </th>
@@ -306,6 +331,7 @@ export function ReportsWebDocumentDeliveryHistory({
                     <td className="break-words text-sm text-slate-600">{row.period}</td>
                     <td className="break-words text-sm text-slate-600">{row.perimeter}</td>
                     <td className="break-words text-sm text-slate-600">{row.detail}</td>
+                    <td className="break-words text-sm text-slate-600">{row.theme === "scientific" ? "Scientifique" : row.theme === "impact" ? "Impact" : "Non enregistré"}</td>
                     <td className="break-words text-sm text-slate-600">{row.generatedAt}</td>
                     <td>
                       <HistoryActionButtons
@@ -320,6 +346,7 @@ export function ReportsWebDocumentDeliveryHistory({
                         onCopyReference={onCopyReference}
                         onExportJson={onExportJson}
                         onExportCsv={onExportCsv}
+                        onResume={onResume}
                       />
                       <HistoryActionFeedback actionState={actionStateById[row.id]} />
                     </td>
@@ -354,6 +381,10 @@ export function ReportsWebDocumentDeliveryHistory({
                     <dt className="text-slate-500">Détail</dt>
                     <dd className="mt-1 break-words font-medium text-slate-900">{row.detail}</dd>
                   </div>
+                  <div>
+                    <dt className="text-slate-500">Thème PDF</dt>
+                    <dd className="mt-1 break-words font-medium text-slate-900">{row.theme === "scientific" ? "Scientifique" : row.theme === "impact" ? "Impact" : "Non enregistré"}</dd>
+                  </div>
                 </dl>
                 <div className="mt-4">
                   <HistoryActionButtons
@@ -368,6 +399,7 @@ export function ReportsWebDocumentDeliveryHistory({
                     onCopyReference={onCopyReference}
                     onExportJson={onExportJson}
                     onExportCsv={onExportCsv}
+                    onResume={onResume}
                   />
                   <HistoryActionFeedback actionState={actionStateById[row.id]} />
                 </div>

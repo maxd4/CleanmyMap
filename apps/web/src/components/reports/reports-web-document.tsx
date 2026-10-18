@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import {
   ReportsWebDocumentDelivery,
-  ReportsWebDocumentDeliveryHistory,
 } from "@/components/reports/web-document/reports-web-document-delivery";
 import { ReportsWebDocumentPreparation } from "@/components/reports/web-document/reports-web-document-preparation";
 import { ReportsWebDocumentPreview } from "@/components/reports/web-document/reports-web-document-preview";
@@ -48,12 +47,6 @@ import {
 } from "@/lib/reports/data-availability";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
-  REPORT_GENERATION_HISTORY_LIMIT,
-  isReportGenerationHistoryRow,
-  type ReportGenerationHistoryRow,
-} from "@/lib/reports/report-generation-history-contract";
-import type { ReportGenerationHistoryActionState } from "./web-document/reports-web-document-delivery";
-import {
   filterReportGenerationContracts,
   isValidReportGenerationPeriodSelection,
   REPORT_GENERATION_TIME_ZONE,
@@ -61,7 +54,6 @@ import {
 } from "@/lib/reports/generation-period";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 import { isReportGenerationPayload } from "@/lib/reports/report-generation-payload";
-import { createReportsWebDocumentHistoryActions } from "@/components/reports/reports-web-document-history-actions";
 
 export type ReportsWebDocumentProps = {
   contracts: ActionDataContract[];
@@ -69,11 +61,10 @@ export type ReportsWebDocumentProps = {
   sourceHealth?: UnifiedSourceHealth;
   communityEvents: CommunityEventItem[];
   communityEventsAvailability?: CommunityEventsAvailability;
-  initialRecentRows?: ReportGenerationHistoryRow[];
-  initialHistoryAvailability?: "available" | "unavailable";
   dailyExportAvailability?: ReportExportAvailability;
   actionMediaReadyCountByActionId?: Record<string, number>;
   actionMediaAvailability?: "available" | "unavailable";
+  resumeSnapshot?: PdfReportPayload;
   singleAction?: { actionId: string; scopeLabel: string };
 };
 
@@ -83,27 +74,35 @@ export function ReportsWebDocument({
   sourceHealth,
   communityEvents,
   communityEventsAvailability,
-  initialRecentRows = [],
-  initialHistoryAvailability = "available",
   dailyExportAvailability: initialDailyExportAvailability = "unavailable",
   actionMediaReadyCountByActionId = {},
   actionMediaAvailability = "available",
+  resumeSnapshot,
   singleAction,
 }: ReportsWebDocumentProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [recentRows, setRecentRows] = useState(initialRecentRows);
-  const [historyAvailability, setHistoryAvailability] = useState(initialHistoryAvailability);
-  const [historyActionStateById, setHistoryActionStateById] = useState<
-    Record<string, ReportGenerationHistoryActionState>
-  >({});
+  const resumedPeriod = resumeSnapshot?.snapshotMetadata?.period.id ?? resumeSnapshot?.periode;
+  const resumedPeriodSelection = resumedPeriod === "custom_range" || [
+    "thirty_days",
+    "three_months",
+    "six_months",
+    "twelve_months",
+    "current_year",
+    "full_history",
+  ].includes(resumedPeriod ?? "")
+    ? resumedPeriod as SelectedPeriodId
+    : DEFAULT_REPORT_GENERATION_PERIOD;
   const [historyWarning, setHistoryWarning] = useState<string | null>(null);
   const [dailyExportAvailability, setDailyExportAvailability] =
     useState<ReportExportAvailability>(initialDailyExportAvailability);
   const [period, setPeriod] = useState<SelectedPeriodId>(
-    singleAction ? "full_history" : DEFAULT_REPORT_GENERATION_PERIOD,
+    singleAction ? "full_history" : resumedPeriodSelection,
   );
-  const [customRange, setCustomRange] = useState({ from: "", to: "" });
+  const [customRange, setCustomRange] = useState({
+    from: resumeSnapshot?.snapshotMetadata?.period.from ?? resumeSnapshot?.data.periodRange?.from ?? "",
+    to: resumeSnapshot?.snapshotMetadata?.period.to ?? resumeSnapshot?.data.periodRange?.to ?? "",
+  });
   const periodSelection = useMemo<ReportGenerationPeriodSelection>(
     () => period === "custom_range"
       ? { id: "custom_range", from: customRange.from, to: customRange.to }
@@ -111,19 +110,17 @@ export function ReportsWebDocument({
     [customRange.from, customRange.to, period],
   );
   const periodSelectionValid = isValidReportGenerationPeriodSelection(periodSelection);
-  const [detailLevel, setDetailLevel] = useState<DetailLevelId>(DEFAULT_REPORT_DETAIL_LEVEL);
+  const [detailLevel, setDetailLevel] = useState<DetailLevelId>(
+    resumeSnapshot?.snapshotMetadata?.detailLevel ?? DEFAULT_REPORT_DETAIL_LEVEL,
+  );
   const [reportTheme, setReportTheme] = useState<ReportPdfTheme>(DEFAULT_REPORT_PDF_THEME);
-  const [modules, setModules] = useState<ModuleState>(DEFAULT_REPORT_MODULES);
-  const [advancedFilters, setAdvancedFilters] = useState<ReportAdvancedFilters>(REPORT_ADVANCED_FILTER_DEFAULTS);
+  const [modules, setModules] = useState<ModuleState>(
+    resumeSnapshot?.snapshotMetadata?.modules ?? DEFAULT_REPORT_MODULES,
+  );
+  const [advancedFilters, setAdvancedFilters] = useState<ReportAdvancedFilters>(
+    resumeSnapshot?.snapshotMetadata?.filters ?? REPORT_ADVANCED_FILTER_DEFAULTS,
+  );
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
-  const historicalReplayRef = useRef<{ reportWindow: Window; payload: PdfReportPayload } | null>(null);
-  const historicalActions = createReportsWebDocumentHistoryActions({
-    reportTheme,
-    setRecentRows,
-    setHistoryAvailability,
-    setDailyExportAvailability,
-    setHistoryActionStateById,
-  });
   const reportNow = useMemo(() => new Date(), []);
   const filteredContracts = useMemo(
     () => filterReportGenerationContracts(contracts, periodSelection, reportNow),
@@ -189,6 +186,7 @@ export function ReportsWebDocument({
           input: { type: "single_action" as const, actionId: singleAction.actionId },
           detailLevel,
           modules,
+          theme: reportTheme,
         }
       : {
           input: {
@@ -202,6 +200,7 @@ export function ReportsWebDocument({
           },
           detailLevel,
           modules,
+          theme: reportTheme,
         };
     const response = await fetch("/api/reports/generations", {
       method: "POST",
@@ -225,12 +224,6 @@ export function ReportsWebDocument({
       }
       throw new Error(typeof body?.error === "string" ? body.error : "Export indisponible.");
     }
-    const historyRow = body?.item;
-    if (!historyRow || !isReportGenerationHistoryRow(historyRow)) {
-      throw new Error("Report generation history persistence failed.");
-    }
-    setRecentRows((current) => [historyRow, ...current].slice(0, REPORT_GENERATION_HISTORY_LIMIT));
-    setHistoryAvailability("available");
     setDailyExportAvailability("used");
     const generatedPayload = isReportGenerationPayload(body?.payload)
       ? body.payload
@@ -238,7 +231,6 @@ export function ReportsWebDocument({
     if (!generatedPayload) {
       throw new Error("Le snapshot serveur du rapport est invalide.");
     }
-    historicalReplayRef.current = null;
     const renderResult = openPrintableReport(
       generatedPayload,
       typeof body?.filename === "string" ? body.filename : buildPdfReportFilename(generatedPayload),
@@ -356,7 +348,6 @@ export function ReportsWebDocument({
           theme={reportTheme}
           onThemeChange={(theme) => {
             handleThemeChange(theme);
-            historicalActions.handleThemeChange(theme, historicalReplayRef);
           }}
           customRange={customRange}
           onCustomRangeChange={setCustomRange}
@@ -408,19 +399,6 @@ export function ReportsWebDocument({
         </section>
       </div>
 
-      <ReportsWebDocumentDeliveryHistory
-        recentRows={recentRows}
-        theme={reportTheme}
-        historyAvailability={historyAvailability}
-        actionStateById={historyActionStateById}
-        onView={(id) => void historicalActions.handleHistoricalAction(id, "view", historicalReplayRef)}
-        onReexport={(id) => void historicalActions.handleHistoricalAction(id, "reexport", historicalReplayRef)}
-        onPrint={(id) => void historicalActions.handleHistoricalPrint(id)}
-        onDerive={(id) => void historicalActions.handleHistoricalAction(id, "derive", historicalReplayRef)}
-        onCopyReference={(id) => void historicalActions.handleHistoricalAction(id, "reference", historicalReplayRef)}
-        onExportJson={(id) => void historicalActions.handleHistoricalAction(id, "json", historicalReplayRef)}
-        onExportCsv={(id) => void historicalActions.handleHistoricalAction(id, "csv", historicalReplayRef)}
-      />
     </section>
   );
 }

@@ -14,6 +14,8 @@ describe("ReportsPageTabs", () => {
     expect(markup).toContain("aria-current=\"page\"");
     expect(markup).toContain("?tab=analysis");
     expect(markup).toContain("?tab=generation");
+    expect(markup).toContain("Mes fichiers");
+    expect(markup).toContain("?tab=files");
     expect(markup).toContain('aria-label="Onglets des rapports"');
     expect(markup).not.toContain("Choix, aperçu et export du rapport.");
     expect(markup).not.toContain("KPI, comparaisons, résultats et méthodes.");
@@ -26,6 +28,7 @@ describe("ReportsPageTabs", () => {
     ["generation", "generation"],
     ["analysis", "analysis"],
     ["pilotage", "analysis"],
+    ["files", "files"],
   ] as const)("resolves %s to %s", (requestedTab, expectedTab) => {
     expect(resolveReportsTab(requestedTab)).toBe(expectedTab);
   });

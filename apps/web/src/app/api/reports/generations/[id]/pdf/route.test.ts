@@ -116,6 +116,33 @@ describe("GET /api/reports/generations/[id]/pdf", () => {
     expect(readyMock).toHaveBeenCalledWith({ artifactId: artifact.id, byteSize: 8 });
   });
 
+  it.each([
+    ["legacy", { title: "Legacy", rubrique: "reporting", periode: "six_months", organizationType: "Global", data: { generatedAt: "2026-10-18T08:00:00.000Z" } }],
+    ["v1", { ...generation.snapshot, snapshotSchemaVersion: 1 as const }],
+    ["v2", { ...generation.snapshot, snapshotSchemaVersion: 2 as const, snapshotMetadata: { templateVersion: "reports-template-v1", rendererVersion: "official-report-html-v1" } }],
+  ] as const)("renders %s snapshots through the compatible renderer without a new generation", async (_label, snapshot) => {
+    snapshotMock.mockResolvedValueOnce({ ...generation, snapshot });
+
+    const response = await GET(request(), { params: Promise.resolve({ id: generationId }) });
+
+    expect(response.status).toBe(200);
+    expect(renderMock).toHaveBeenCalledWith({ payload: snapshot, theme: "impact" });
+    expect(response.headers.get("Content-Type")).toBe("application/pdf");
+  });
+
+  it("returns the conserved artifact bytes identically and does not render a replacement", async () => {
+    const originalBytes = "%PDF-conserved-original-bytes%";
+    claimMock.mockResolvedValueOnce({ kind: "ready", artifact: { ...artifact, status: "ready", byteSize: originalBytes.length } });
+    downloadMock.mockResolvedValueOnce({ data: new Blob([originalBytes], { type: "application/pdf" }), error: null });
+
+    const response = await GET(request(), { params: Promise.resolve({ id: generationId }) });
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe(originalBytes);
+    expect(renderMock).not.toHaveBeenCalled();
+    expect(uploadMock).not.toHaveBeenCalled();
+  });
+
   it("reuses a ready artifact without rendering or quota work", async () => {
     claimMock.mockResolvedValueOnce({ kind: "ready", artifact: { ...artifact, status: "ready", byteSize: 8 } });
 

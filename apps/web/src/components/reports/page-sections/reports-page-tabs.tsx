@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { BarChart3, FileText } from "lucide-react";
+import { BarChart3, FileText, FolderOpen } from "lucide-react";
 
-export type ReportsPageTabId = "generation" | "analysis";
+export type ReportsPageTabId = "generation" | "analysis" | "files";
 
 type ReportsPageTabsProps = {
   activeTab: ReportsPageTabId;
@@ -22,6 +22,11 @@ const TAB_DEFINITIONS: Array<{
     label: "Analyse",
     icon: BarChart3,
   },
+  {
+    id: "files",
+    label: "Mes fichiers",
+    icon: FolderOpen,
+  },
 ];
 
 export function resolveReportsTab(
@@ -29,6 +34,9 @@ export function resolveReportsTab(
 ): ReportsPageTabId {
   if (requestedTab === "analysis" || requestedTab === "pilotage") {
     return "analysis";
+  }
+  if (requestedTab === "files") {
+    return "files";
   }
 
   return "generation";

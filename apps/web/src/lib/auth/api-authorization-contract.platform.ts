@@ -81,6 +81,12 @@ export const platformAuthorizationContract = {
     },
   },
   "reports/generations": {
+    GET: {
+      expected: "Authenticated user may list their own Reports generation history with server pagination and filters",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess before owner-scoped listReportGenerationHistoryPage; reads do not reserve generation quota",
+      evidence: ["requireAuthenticatedAccess", "listReportGenerationHistoryPage"],
+    },
     POST: {
       expected: "Authenticated user may persist their own Reports generation snapshot",
       dimensions: ["authentication", "ownership"],

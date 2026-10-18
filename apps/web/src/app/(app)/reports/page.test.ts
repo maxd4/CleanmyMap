@@ -2,6 +2,10 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 const mocks = vi.hoisted(() => ({
   getSafeAuthSession: vi.fn(),
   getServerLocale: vi.fn(),
@@ -15,6 +19,8 @@ const mocks = vi.hoisted(() => ({
   computeReportModel: vi.fn(),
   aggregateMonthlyAnalytics: vi.fn(),
   listReportGenerationHistory: vi.fn(),
+  listReportGenerationHistoryPage: vi.fn(),
+  getReportGenerationSnapshotById: vi.fn(),
   loadLandingSummary: vi.fn(),
   getReportExportAvailability: vi.fn(),
   resolveSingleActionReportContract: vi.fn(),
@@ -95,15 +101,16 @@ vi.mock("@/components/reports/deferred-reports-web-document", () => ({
 }));
 
 vi.mock("@/components/reports/page-sections/reports-page-v2-layout", () => ({
-  ReportsPageV2Layout: ({ activeTab, generationContent, analysisContent }: {
+  ReportsPageV2Layout: ({ activeTab, generationContent, analysisContent, filesContent }: {
     activeTab: string;
     generationContent?: React.ReactNode;
     analysisContent?: React.ReactNode;
+    filesContent?: React.ReactNode;
   }) =>
     React.createElement(
       "main",
       { "data-testid": "reports-layout", "data-active-tab": activeTab },
-      activeTab === "generation" ? generationContent : analysisContent,
+      activeTab === "generation" ? generationContent : activeTab === "analysis" ? analysisContent : filesContent,
     ),
 }));
 
@@ -157,6 +164,7 @@ vi.mock("@/lib/auth/account-completion-gate", () => ({
 
 vi.mock("@/lib/community/report-events", () => ({
   loadCachedReportCommunityEvents: mocks.loadCachedReportCommunityEvents,
+  loadCachedReportCommunityEventsWithAvailability: mocks.loadCachedReportCommunityEvents,
 }));
 
 vi.mock("@/lib/pilotage/overview", () => ({
@@ -190,12 +198,21 @@ vi.mock("@/lib/reports/report-model", () => ({
   computeReportModel: mocks.computeReportModel,
 }));
 
+vi.mock("@/lib/actions/action-media/action-media-report", () => ({
+  loadActionMediaReportReadiness: vi.fn().mockResolvedValue({
+    readyCountByActionId: new Map(),
+    availability: "available",
+  }),
+}));
+
 vi.mock("@/lib/actions/unified-source/unified-source-cache", () => ({
   fetchCachedUnifiedActionContracts: mocks.fetchCachedUnifiedActionContracts,
 }));
 
 vi.mock("@/lib/reports/report-generation-history-store", () => ({
   listReportGenerationHistory: mocks.listReportGenerationHistory,
+  listReportGenerationHistoryPage: mocks.listReportGenerationHistoryPage,
+  getReportGenerationSnapshotById: mocks.getReportGenerationSnapshotById,
 }));
 
 vi.mock("@/lib/accueil/data", () => ({
@@ -223,7 +240,7 @@ describe("/reports page contract", () => {
     mocks.getCurrentUserRoleLabel.mockResolvedValue("benevole");
     mocks.toProfile.mockImplementation((role: string) => role);
     mocks.isAdminLikeProfile.mockImplementation((profile: string) => profile === "admin" || profile === "max");
-    mocks.loadCachedReportCommunityEvents.mockResolvedValue([]);
+    mocks.loadCachedReportCommunityEvents.mockResolvedValue({ items: [], availability: "available" });
     mocks.loadPilotageOverview.mockResolvedValue({ contracts: [contract], summary: { kpis: [] }, methods: [] });
     mocks.computeReportModel.mockReturnValue({
       totals: { kg: 12, hours: 2, actions: 1 },
@@ -237,6 +254,8 @@ describe("/reports page contract", () => {
     });
     mocks.aggregateMonthlyAnalytics.mockReturnValue([]);
     mocks.listReportGenerationHistory.mockResolvedValue([]);
+    mocks.listReportGenerationHistoryPage.mockResolvedValue({ rows: [], page: 1, pageSize: 12, total: 0, hasNextPage: false, hasPreviousPage: false });
+    mocks.getReportGenerationSnapshotById.mockResolvedValue(null);
     mocks.loadLandingSummary.mockResolvedValue({
       counters: { wasteKg: 12, butts: 4, volunteers: 3 },
       activity: { visibleActions: 1, distinctLocations: 1, items: [] },
@@ -339,7 +358,7 @@ describe("/reports page contract", () => {
     expect(markup).toContain('data-testid="report-generation"');
     expect(markup).not.toContain("Génération réservée");
     expect(markup).not.toContain('data-testid="csv-export"');
-    expect(mocks.listReportGenerationHistory).toHaveBeenCalledWith("user-1");
+    expect(mocks.listReportGenerationHistory).not.toHaveBeenCalled();
   });
 
   it("resolves an action-specific generation page from the canonical action id", async () => {
@@ -454,18 +473,26 @@ describe("/reports page contract", () => {
     expect(mocks.computeReportModel).not.toHaveBeenCalled();
   });
 
-  it("keeps a history outage distinct from the real empty state without blocking generation", async () => {
+  it("renders all authenticated history in the files tab", async () => {
     mocks.getCurrentUserRoleLabel.mockResolvedValue("admin");
     mocks.toProfile.mockReturnValue("admin");
     mocks.isAdminLikeProfile.mockReturnValue(true);
-    mocks.listReportGenerationHistory.mockRejectedValueOnce(new Error("history unavailable"));
+    mocks.listReportGenerationHistoryPage.mockResolvedValueOnce({
+      rows: [{ id: "generation-1", report: "Rapport Paris", period: "Six mois", perimeter: "Global", detail: "Par défaut", generatedAt: "27/08/2026 12:30", theme: "scientific" }],
+      page: 1,
+      pageSize: 12,
+      total: 13,
+      hasNextPage: true,
+      hasPreviousPage: false,
+    });
 
     const markup = renderToStaticMarkup(
-      await ReportsPage({ searchParams: Promise.resolve({ tab: "generation" }) }),
+      await ReportsPage({ searchParams: Promise.resolve({ tab: "files" }) }),
     );
 
-    expect(markup).toContain('data-testid="report-generation"');
-    expect(markup).toContain('data-history-availability="unavailable"');
-    expect(markup).not.toContain("Aucun rapport généré");
+    expect(markup).toContain('data-testid="reports-files"');
+    expect(markup).toContain("Rapport Paris");
+    expect(markup).toContain("Mes fichiers");
+    expect(mocks.listReportGenerationHistoryPage).toHaveBeenCalledWith("user-1", { page: 1, pageSize: 12 });
   });
 });

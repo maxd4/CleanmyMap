@@ -1,9 +1,12 @@
 import { buildPdfReportFilename } from "@/lib/pdf-export/simple-pdf";
 import {
   REPORT_GENERATION_HISTORY_LIMIT,
+  REPORT_GENERATION_HISTORY_PAGE_SIZE,
   toReportGenerationHistoryRow,
+  type ReportGenerationHistoryFilters,
   type ReportGenerationHistoryInput,
   type ReportGenerationHistoryMetadata,
+  type ReportGenerationHistoryPage,
   type ReportGenerationHistoryRow,
 } from "./report-generation-history-contract";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -18,9 +21,9 @@ import {
 } from "./report-generation-derivation";
 
 const REPORT_GENERATION_HISTORY_METADATA_SELECT =
-  "id, generated_at, title, period_id, scope_label, detail_level";
+  "id, generated_at, title, period_id, scope_label, detail_level, theme";
 const REPORT_GENERATION_SNAPSHOT_SELECT =
-  "id, filename, generated_at, snapshot, period_id, scope_kind, scope_value, scope_label, detail_level, modules";
+  "id, filename, generated_at, snapshot, period_id, scope_kind, scope_value, scope_label, detail_level, modules, theme";
 
 export type ReportGenerationSnapshotRecord = {
   id: string;
@@ -31,6 +34,7 @@ export type ReportGenerationSnapshotRecord = {
   scopeLabel: string;
   detailLevel: ReportGenerationHistoryInput["detailLevel"];
   snapshot: ReportGenerationHistoryInput["payload"];
+  theme?: ReportGenerationHistoryInput["theme"];
 };
 
 export class InvalidReportGenerationIdError extends Error {
@@ -51,6 +55,7 @@ type ReportGenerationDbMetadataRow = {
   period_id: ReportGenerationHistoryMetadata["periodId"];
   scope_label: string;
   detail_level: ReportGenerationHistoryInput["detailLevel"];
+  theme: ReportGenerationHistoryInput["theme"];
 };
 
 function hasSameModules(left: ModuleState, right: unknown): boolean {
@@ -153,11 +158,16 @@ function assertSnapshotMatchesHistoryRow(
   }
 }
 
+function normalizePage(page: number | undefined): number {
+  if (!Number.isFinite(page)) return 1;
+  return Math.max(Math.trunc(page as number), 1);
+}
+
 function normalizeLimit(limit: number): number {
   if (!Number.isFinite(limit)) {
-    return REPORT_GENERATION_HISTORY_LIMIT;
+    return REPORT_GENERATION_HISTORY_PAGE_SIZE;
   }
-  return Math.min(Math.max(Math.trunc(limit), 1), REPORT_GENERATION_HISTORY_LIMIT);
+  return Math.min(Math.max(Math.trunc(limit), 1), 50);
 }
 
 function toHistoryMetadata(
@@ -170,6 +180,7 @@ function toHistoryMetadata(
     scopeLabel: row.scope_label,
     detailLevel: row.detail_level,
     generatedAt: row.generated_at,
+    theme: row.theme ?? null,
   };
 }
 
@@ -183,20 +194,50 @@ export async function listReportGenerationHistory(
   createdByClerkId: string,
   limit = REPORT_GENERATION_HISTORY_LIMIT,
 ): Promise<ReportGenerationHistoryRow[]> {
-  const { data, error } = await getSupabaseAdminClient()
+  const page = await listReportGenerationHistoryPage(createdByClerkId, {
+    pageSize: limit,
+  });
+  return page.rows;
+}
+
+export async function listReportGenerationHistoryPage(
+  createdByClerkId: string,
+  filters: ReportGenerationHistoryFilters = {},
+): Promise<ReportGenerationHistoryPage> {
+  const page = normalizePage(filters.page);
+  const pageSize = normalizeLimit(filters.pageSize ?? REPORT_GENERATION_HISTORY_PAGE_SIZE);
+  const search = filters.search?.trim();
+  let query = getSupabaseAdminClient()
     .from("report_generations")
-    .select(REPORT_GENERATION_HISTORY_METADATA_SELECT)
-    .eq("created_by_clerk_id", createdByClerkId)
-    .order("generated_at", { ascending: false })
-    .limit(normalizeLimit(limit));
+    .select(REPORT_GENERATION_HISTORY_METADATA_SELECT, { count: "exact" })
+    .eq("created_by_clerk_id", createdByClerkId);
+
+  if (search) query = query.ilike("title", `%${search.slice(0, 120)}%`);
+  if (filters.periodId) query = query.eq("period_id", filters.periodId);
+  if (filters.theme) query = query.eq("theme", filters.theme);
+
+  const ascending = filters.sort === "asc";
+  const { data, error, count } = await query
+    .order("generated_at", { ascending })
+    .order("id", { ascending })
+    .range((page - 1) * pageSize, page * pageSize - 1);
 
   if (error) {
     throw error;
   }
 
-  return ((data ?? []) as ReportGenerationDbMetadataRow[])
+  const rows = ((data ?? []) as ReportGenerationDbMetadataRow[])
     .map(toHistoryRow)
     .filter((row): row is ReportGenerationHistoryRow => Boolean(row));
+  const total = count ?? rows.length;
+  return {
+    rows,
+    page,
+    pageSize,
+    total,
+    hasNextPage: page * pageSize < total,
+    hasPreviousPage: page > 1,
+  };
 }
 
 export async function getReportGenerationSnapshotById(
@@ -242,6 +283,7 @@ export async function getReportGenerationSnapshotById(
     scopeValue: data.scope_value,
     scopeLabel: data.scope_label,
     detailLevel: data.detail_level as ReportGenerationSnapshotRecord["detailLevel"],
+    theme: data.theme ?? null,
     snapshot,
   };
 }
@@ -358,6 +400,7 @@ export async function persistReportGeneration(params: {
     scope_value: params.input.scopeValue,
     scope_label: params.input.scopeLabel,
     detail_level: params.input.detailLevel,
+    theme: params.input.theme ?? null,
     modules: params.input.modules,
     snapshot: payload,
   };
@@ -408,6 +451,7 @@ export async function persistDerivedReportGeneration(params: {
     scope_value: metadata.scope.value,
     scope_label: metadata.scope.label,
     detail_level: metadata.detailLevel,
+    theme: params.source.theme ?? null,
     modules: metadata.modules,
     snapshot: current,
   };
