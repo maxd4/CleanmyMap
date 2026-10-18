@@ -39,7 +39,7 @@ function makeSupabase(options: {
   return { supabase, upsert };
 }
 
-function request() {
+function request(overrides: Record<string, unknown> = {}) {
   return new Request("http://localhost/api/newsletter/subscribe", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -47,6 +47,7 @@ function request() {
       email: "Person@Example.org",
       gdprConsent: true,
       source: "security-01-test",
+      ...overrides,
     }),
   });
 }
@@ -69,6 +70,7 @@ describe("POST /api/newsletter/subscribe", () => {
     const response = await POST(request());
 
     expect(response.status).toBe(200);
+    expect(getSupabaseServerClientMock).toHaveBeenCalledWith(true);
     expect(upsert).toHaveBeenCalledWith(
       {
         email: "person@example.org",
@@ -92,5 +94,65 @@ describe("POST /api/newsletter/subscribe", () => {
 
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ error: "Impossible de s'abonner pour le moment" });
+  });
+
+  it("keeps an active subscription idempotent without another write", async () => {
+    const { supabase, upsert } = makeSupabase({
+      lookup: { email: "person@example.org", status: "active" },
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const { POST } = await import("./route");
+    const response = await POST(request());
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      status: "ok",
+      message: "Vous êtes déjà inscrit à la newsletter.",
+    });
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["an invalid email", { email: "not-an-email" }],
+    ["missing consent", { gdprConsent: false }],
+  ])("does not reach Supabase for %s", async (_label, overrides) => {
+    const { POST } = await import("./route");
+    const response = await POST(request(overrides));
+
+    expect(response.status).toBe(400);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["a honeypot signal", { honeypot: "filled" }],
+    ["a too-recent timestamp", { submittedAt: Date.now() }],
+  ])("does not write for %s", async (_label, overrides) => {
+    const { POST } = await import("./route");
+    const response = await POST(request(overrides));
+
+    expect(response.status).toBe(429);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it("does not write when the server rate limit rejects the request", async () => {
+    verifyRateLimitMock.mockResolvedValue({ allowed: false, retryAfter: 30 });
+    createServerRateLimitResponseMock.mockReturnValue(new Response(null, { status: 429 }));
+
+    const { POST } = await import("./route");
+    const response = await POST(request());
+
+    expect(response.status).toBe(429);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it("does not write when BotID rejects the request", async () => {
+    requireBotIdHumanMock.mockResolvedValue(new Response(null, { status: 403 }));
+
+    const { POST } = await import("./route");
+    const response = await POST(request());
+
+    expect(response.status).toBe(403);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 });

@@ -99,6 +99,15 @@ Exemples de classification cible :
 - contact, newsletter et notification de contenu illicite lorsque leur
   contrat l'exige : `public_write_exception`.
 
+Pour la newsletter, `public_write_exception` décrit le parcours HTTP public,
+pas un droit d'écriture Data API. La route `/api/newsletter/subscribe` applique
+BotID, rate limiting, validation, honeypot, délai anti-rejeu et consentement,
+puis écrit avec `service_role` ; `anon` et `authenticated` ne disposent pas
+d'INSERT direct sur `newsletter_subscriptions`. Le consentement RGPD est une
+preuve du choix déclaré dans le formulaire, pas une preuve de possession ou de
+contrôle effectif de l'adresse email. La fermeture du bypass Data API ne met
+pas en place de double opt-in ni de vérification d'adresse.
+
 ## Vérification transverse des surfaces interactives
 
 Toute surface interactive doit pouvoir être vérifiée à trois niveaux :
