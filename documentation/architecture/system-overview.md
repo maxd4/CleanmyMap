@@ -1,115 +1,34 @@
-# System overview
+# Vue système — façade de compatibilité
 
-## Vue runtime
+> **Statut : `COMPATIBILITY`**
 
-```mermaid
-flowchart LR
-  U[Utilisateurs] --> WEB[Next.js App Router]
-  WEB --> CLERK[Clerk AuthN]
-  WEB --> API[API Routes]
-  API --> AUTHZ[AuthZ serveur]
-  API --> DOMAIN[Services métier]
-  AUTHZ --> DOMAIN
-  DOMAIN --> SB[(Supabase)]
-  MOBILE[Application mobile Expo / React Native] --> CLERK
-  MOBILE --> SB
-```
-
-## Responsabilités
-
-| Couche | Responsabilité |
-|---|---|
-| `apps/web/src/app/` | pages et handlers API |
-| `apps/web/src/components/` | rendu UI |
-| `apps/web/src/lib/` | logique métier, auth, data, services |
-| Clerk | identité partagée web et mobile, principale pour le produit |
-| Supabase | PostgreSQL, RLS, Storage, RPC |
-| Vercel | hébergement et Functions |
-| `apps/mobile/` | suivi GPS natif |
-| `maintenance/python/` | maintenance hors runtime principal |
-
-## Flux web
-
-```mermaid
-sequenceDiagram
-  participant User as Utilisateur
-  participant Front as Frontend
-  participant API as API route
-  participant Auth as AuthN/AuthZ
-  participant Domain as Service métier
-  participant DB as Supabase
-
-  User->>Front: Action
-  Front->>API: Requête
-  API->>Auth: Session + autorisation
-  Auth-->>API: Autorisé / refusé
-  API->>Domain: Input validé
-  Domain->>DB: Lecture ou écriture
-  DB-->>Domain: Résultat
-  Domain-->>API: Payload
-  API-->>Front: Réponse
-```
-
-## Flux mobile
+La vue runtime détaillée a été absorbée par
+[`master-architecture.md`](./master-architecture.md), qui est désormais la
+source `CURRENT` de l'architecture globale. Cette façade est conservée pour
+les liens historiques et les contrôles documentaires ; elle ne porte aucune
+doctrine concurrente.
 
 ```mermaid
 flowchart LR
-  APP[Application mobile Expo / React Native] --> AUTH[Session Clerk]
-  AUTH --> SB[(Supabase)]
-  APP --> M[missions]
-  APP --> GPS[gps_points]
+  User[Utilisateur] --> Web[Next.js]
+  Web --> Auth[Clerk + AuthZ serveur]
+  Auth --> Domain[Contrats métier]
+  Domain --> Data[(Supabase)]
+  Mobile[Expo mobile] --> Auth
 ```
 
-### État actuel et limites
+Pour le détail, lire :
 
-CleanMyMap est un seul produit et un seul monorepo avec deux applications
-déployables distinctes sous `apps/`. Le web et le mobile partagent Clerk,
-Supabase et les contrats métier nécessaires. Le mobile est
-`CURRENT / ACTIVE DEVELOPMENT` depuis M0, mais reste `NOT_PRODUCTION_READY`.
-Un premier APK EAS `preview` a atteint l'écran de connexion Clerk
-sur Android le 11 octobre 2026 ; les connexions authentifiées,
-le terrain et les stores restent non vérifiés. Les preuves
-datées figurent dans `apps/mobile/README.md`.
-L'identité Clerk et la finalisation des métriques par trigger invoker sont
-finalisées et invariantes ; elles ne constituent plus des lots de conception.
+- [`master-architecture.md`](./master-architecture.md) — architecture,
+  frontières, mobile et migrations ;
+- [`frontend-backend-boundaries.md`](./frontend-backend-boundaries.md) —
+  séparation UI/API/domaine/data ;
+- [`data-governance.md`](./data-governance.md) — ownership, données, RLS et
+  provenance ;
+- [`../security/authz-authn-regles.md`](../security/authz-authn-regles.md) —
+  autorisations effectives ;
+- [`../../apps/mobile/README.md`](../../apps/mobile/README.md) — preuves et
+  limites de validation mobile datées.
 
-La V1 couvre le GPS avec carte et tracé, la reprise/offline, la finalisation
-serveur et les contacts d'urgence. Les limites encore ouvertes sont :
-
-- le traitement background headless ;
-- la validation opérationnelle ;
-- `mission_actions` et la photo de mission hors V1 ; les photos de
-  signalement réutilisent déjà le contrat média canonique ;
-- la future évolution produit de l'application mobile.
-
-La V1 mobile est destinée aux bénévoles terrain et reste volontairement réduite
-par rapport à la surface web complète, qui évolue indépendamment. Les autres
-capacités réutilisent le backend, les données et les projections communs ; le
-mobile ne porte aucune gamification parallèle.
-
-Les invariants de sécurité restent :
-
-- Clerk est l'identité principale du projet ;
-- une identité Supabase anonyme ne doit pas être assimilée implicitement à un profil Clerk ;
-- la finalisation mobile doit passer par l'UPDATE propriétaire vers `completed` ;
-  aucun client ne doit écrire directement `distance_m` ou `duration_s`.
-
-Voir `ADR-004` et `ADR-006`.
-
-## Zones critiques à lire en premier
-
-1. `apps/web/src/lib/authz.ts`
-2. `apps/web/src/proxy.ts`
-3. `apps/web/src/lib/auth/api-authorization-contract.ts`
-4. `apps/web/src/lib/actions/data-contract.ts`
-5. `apps/web/src/lib/actions/unified-source.ts`
-6. `apps/web/src/lib/actions/types.ts`
-7. `apps/web/src/app/api/admin/`
-8. `apps/web/supabase/migrations/`
-
-## Règle de lecture rapide
-
-- localiser le flux ;
-- ouvrir les fichiers pivots ;
-- consulter l'ADR pertinent ;
-- éviter la lecture exhaustive du dépôt avant d'avoir identifié l'impact réel.
+Les anciennes séquences et snapshots mobiles ne doivent pas être copiés ici.
+Ils appartiennent à leur source actuelle ou à l'historique de session.

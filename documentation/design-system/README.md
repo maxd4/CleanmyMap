@@ -5,6 +5,9 @@ expérimentales. Un README oriente ; il ne remplace pas un contrat spécialisé.
 
 ## Contrats `CURRENT`
 
+- [`Design-system.md`](./Design-system.md) — vue transversale `CURRENT` qui
+  relie les primitives et les modes sans remplacer leurs contrats spécialisés.
+
 - [`BLOC_COLOR_SYSTEM_PREMIUM.md`](./BLOC_COLOR_SYSTEM_PREMIUM.md) — familles,
   tokens de couleur et hiérarchie des actions.
 - [`DISPLAY_MODES_CANONICAL.md`](./DISPLAY_MODES_CANONICAL.md) — modes

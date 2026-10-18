@@ -81,6 +81,6 @@ refonte. Les contrats détaillés restent documentés dans leur source canonique
 ## Sources complémentaires
 
 - [Architecture globale](./master-architecture.md)
-- [Vue système](./system-overview.md)
+- [Architecture globale](./master-architecture.md)
 - [Services web](../operations/services-stack.md)
 - [Documentation du design system](../design-system/README.md)

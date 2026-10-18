@@ -7,16 +7,18 @@ Point d'entrée de l'architecture CleanMyMap.
 Lire d'abord :
 
 1. `master-architecture.md` ;
-2. `system-overview.md` ;
-3. ADR pertinents ;
-4. document de domaine concerné.
+2. ADR pertinents ;
+3. document de domaine concerné.
+
+`system-overview.md` reste une façade `COMPATIBILITY` pour les liens
+historiques ; il ne porte plus une vue concurrente.
 
 ## Vues principales
 
 | Fichier | Rôle |
 |---|---|
 | `master-architecture.md` | Architecture globale canonique |
-| `system-overview.md` | Vue runtime rapide |
+| `system-overview.md` | Façade de compatibilité vers l'architecture globale |
 | `ARCHITECTURE.md` | Entrée compacte pour assistants |
 | `frontend-backend-boundaries.md` | Frontières UI/API/domaine/data |
 | `data-governance.md` | Contrats et gouvernance des données |

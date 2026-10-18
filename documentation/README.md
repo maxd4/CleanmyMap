@@ -41,7 +41,7 @@ domaines métier.
 | Besoin | Référence |
 |---|---|
 | Architecture globale | `architecture/master-architecture.md` |
-| Vue système | `architecture/system-overview.md` |
+| Vue système | `architecture/master-architecture.md` (la façade `system-overview.md` reste compatible) |
 | ADR | `architecture/adr/` |
 | Refactors structurels | `architecture/refactor-priorities-plan.md`, `architecture/monolith-split-plan.md` (radar généré) et `architecture/modularity-decisions.md` (décisions humaines) |
 | Données | `database/README.md` |

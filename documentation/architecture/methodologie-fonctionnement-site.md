@@ -223,7 +223,7 @@ Cette méthodologie doit rester alignée avec les règles du dépôt :
 ## Documents liés
 
 - [Architecture globale](./master-architecture.md)
-- [Vue système](./system-overview.md)
+- [Architecture globale](./master-architecture.md)
 - [Services web stack](../operations/services-stack.md)
 - [Inventaire technique](./technical-inventory.md)
 - [Gouvernance des données](./data-governance.md)

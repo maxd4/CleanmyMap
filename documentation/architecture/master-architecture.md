@@ -1,358 +1,188 @@
-# Master Architecture — CleanMyMap
+# Architecture globale — CleanMyMap
 
-Source de vérité pour l'architecture globale du projet.
+> **Type :** source `CURRENT` de l'architecture globale et des exigences
+> techniques transversales. Les ADR et contrats spécialisés restent
+> propriétaires de leurs décisions détaillées.
 
-## Principes
-
-CleanMyMap sépare :
-
-- interface web ;
-- identité ;
-- domaine métier ;
-- données ;
-- application mobile ;
-- services externes ;
-- maintenance.
-
-CleanMyMap reste un seul produit et un seul monorepo avec deux applications
-déployables : `apps/web` pour le web Next.js et `apps/mobile` pour l'application
-mobile Expo / React Native. Elles partagent notamment Clerk, Supabase et les
-contrats métier nécessaires ; aucune n'est une copie ou un sous-projet
-indépendant. `packages/` reste une possibilité future pour du code réellement
-partagé et n'est pas présent dans l'architecture actuelle.
-
-Les versions exactes sont définies dans les manifestes.
-
-## Vue globale
+## 1. Architecture de référence
 
 ```mermaid
-flowchart TD
-  subgraph Users[Utilisateurs]
-    PUBLIC[Public]
-    MEMBER[Membre]
-    ADMIN[Admin / élu / max]
-  end
-
-  subgraph Web[apps/web]
-    UI[Next.js App Router UI]
-    API[API Routes]
-    DOMAIN[Services et contrats métier]
-  end
-
-  subgraph Identity[Identité]
-    CLERK[Clerk]
-  end
-
-  subgraph Data[Données]
-    SUPABASE[(Supabase PostgreSQL)]
-    STORAGE[Supabase Storage]
-  end
-
-  subgraph Mobile[apps/mobile]
-    EXPO[Expo / React Native]
-  end
-
-  subgraph Platform[Plateforme]
-    VERCEL[Vercel]
-  end
-
-  PUBLIC --> VERCEL
-  MEMBER --> VERCEL
-  ADMIN --> VERCEL
-  VERCEL --> UI
-  UI --> CLERK
-  UI --> API
-  API --> CLERK
-  API --> DOMAIN
-  DOMAIN --> SUPABASE
-  DOMAIN --> STORAGE
-  EXPO --> SUPABASE
-  EXPO --> STORAGE
+flowchart TB
+  Web[Web Next.js App Router] --> API[Route handlers / Server Components]
+  Mobile[Mobile Expo React Native] --> Clerk[Clerk identity]
+  Web --> Clerk
+  API --> Auth[AuthN + AuthZ + validation]
+  Auth --> Domain[Services et contrats TypeScript]
+  Domain --> PG[(Supabase PostgreSQL)]
+  Domain --> Storage[Supabase Storage]
+  Mobile --> PG
+  Mobile --> Storage
+  API --> Snapshots[Snapshots/caches recalculables]
+  Snapshots --> PG
+  Offline[maintenance/python - hors runtime] -. exports autorisés .-> PG
+  Hosting[Vercel] --- Web
 ```
 
-## Structure du dépôt
+**CURRENT :** un produit, un monorepo et deux applications `apps/web` et `apps/mobile`. Le mobile réutilise le backend et l'identité et reste `NOT_PRODUCTION_READY`. Python est réservé à `maintenance/python/` ; il n'est pas une dépendance serveur web. Le monorepo ne contient pas actuellement de package `packages/` partagé canonique.
 
-```txt
-CleanMyMap/
-├── apps/
-│   ├── web/
-│   │   ├── src/
-│   │   │   ├── app/
-│   │   │   ├── components/
-│   │   │   └── lib/
-│   │   └── supabase/
-│   └── mobile/
-├── documentation/
-├── scripts/
-├── maintenance/
-│   └── python/
-├── .github/
-├── .codex/
-└── .agents/
-```
+### Structure et frontières de confiance
 
-L'application mobile est issue de l'ancien `companion-app` ; cette mention est
-historique et ne désigne pas un projet séparé. Elle est `CURRENT / ACTIVE
-DEVELOPMENT` depuis le lot M0, tout en restant `NOT_PRODUCTION_READY`.
-L'identité Clerk, les RLS missions/GPS et la finalisation des métriques par
-trigger `SECURITY INVOKER` sont finalisées et invariantes. La V1 mobile couvre
-le GPS avec carte et tracé, la reprise/offline, la finalisation serveur et les
-contacts d'urgence. Les sujets encore ouverts sont le background headless, la
-validation opérationnelle, ainsi que `mission_actions` et la photo native comme
-évolutions mobiles futures.
+Les pages, layouts et handlers vivent sous `apps/web/src/app/`, les primitives
+UI sous `apps/web/src/components/` et le domaine, l'authentification, les
+contrats et les services sous `apps/web/src/lib/`. Les composants client
+restent minces ; aucune décision d'AuthZ sensible, aucun secret et aucune clé
+`service_role` ne franchissent la frontière serveur/client. Les APIs valident
+les entrées, contrôlent AuthN/AuthZ puis délèguent au propriétaire métier ; le
+proxy ne remplace pas le contrôle du handler.
 
-Le socle de release courant est Expo SDK 57 / Android API 36.
-Un premier APK EAS `preview` signé a été obtenu le 11 octobre 2026
-et l'écran de connexion Clerk affiché sur Android après activation
-de Native API. Le statut reste `NOT_PRODUCTION_READY` :
-connexions authentifiées, terrain, sécurité et stores ne sont
-pas validés. Voir `apps/mobile/README.md` pour la preuve datée.
+Les imports et migrations externes ne sont pas des sources de vérité
+concurrentes. Les anciens imports Google Sheets ne doivent pas être réactivés
+sans revalider le contrat courant. Les migrations éditables sont exclusivement
+dans `apps/web/supabase/migrations/` et `npm run audit:supabase-migration-trees`
+protège l'absence d'un second arbre.
 
-## Application web
+## 2. Responsabilités techniques
 
-### Pages et API
+| Couche | Owner | Invariant |
+|---|---|---|
+| UI web | `apps/web/src/app/`, `components/` | Interaction, rendu, accessibilité, pas de secret ni décision AuthZ autonome |
+| API web | `apps/web/src/app/api/` | Validation, AuthN/AuthZ, contrat HTTP, gestion des erreurs |
+| Domaine web | `apps/web/src/lib/` | Une source par règle métier, contrats Actions, impact, comptes et services |
+| Mobile | `apps/mobile/` | Permissions natives, GPS/offline, identité Clerk, accès owner-scoped |
+| Schéma SQL | `apps/web/supabase/migrations/` | Unique arbre append-only, types, RPC, grants et RLS cohérents |
+| Data | Supabase PostgreSQL + Storage | Données persistantes et médias autorisés, pas de duplication de vérité |
+| Exploitation | Vercel, CI, scripts existants | Surveiller quotas, latences et erreurs ; pas de mutation implicite |
+| Maintenance scientifique | `maintenance/python/` | Pandas/scripts reproductibles, séparés du runtime |
 
-```txt
-apps/web/src/app/
-```
+## 3. Exigences non fonctionnelles
 
-Contient :
+### TRD-01. Sécurité et permissions
 
-- pages App Router ;
-- layouts ;
-- route handlers API.
+- Clerk est le fournisseur d'identité principal ; ne pas ajouter de second système utilisateur sans ADR.
+- Le handler sensible doit contrôler l'identité, la capacité, le rôle/scope et l'ownership **avant** l'accès aux données ou la mutation.
+- Les identifiants fournis par le client ne prouvent jamais un droit (IDOR).
+- RLS et grants Supabase restent des frontières complémentaires ; `service_role` n'est permis que dans un contexte serveur/CLI autorisé.
+- Une API publique utilisant techniquement un client privilégié doit limiter sa projection ; le moyen d'accès ne rend pas automatiquement la route admin-only.
+- Les changements SQL non triviaux documentent : `PURPOSE`, `CALLER`, `AUTHORIZATION_BOUNDARY`, `IDEMPOTENCY`, `ATOMICITY`, `FAILURE_BEHAVIOR`, `SEARCH_PATH` et `GRANTS`.
 
-### UI
+### TRD-02. Cohérence des données
 
-```txt
-apps/web/src/components/
-```
+- La base versionnée est décrite par les migrations. La base distante représente un état observé distinct : publier du SQL sur Git ne signifie pas l'avoir appliqué.
+- Les domaines Actions et géométrie exposent leurs contrats via les modules canoniques. Ne pas recréer des calculateurs concurrents entre web, mobile, SQL et Python.
+- Les valeurs `NULL` scientifiques ne deviennent pas zéro ; provenance, unités et version méthodologique doivent rester interprétables.
+- Les caches et snapshots sont dérivés et invalidables, jamais propriétaires de la donnée métier.
 
-Les composants client doivent rester aussi minces que possible.
+### TRD-03. Performance et capacité
 
-### Domaine
+- Réduire la projection SQL, borner la cardinalité par utilisateur/action, période, zone, statut ou curseur.
+- Appliquer les filtres SQL avant transfert. Préférer `COUNT`, `GROUP BY`, RPC ou vue stable lorsque seule une synthèse est demandée.
+- Utiliser index seulement après preuve du prédicat et du plan ; éviter les suppressions d'index fondées uniquement sur un compteur `unused`.
+- Tester explicitement pagination au-delà des limites effectives de Supabase, ordre stable, doublons et fin de flux.
+- Éviter les scans au montage, recalculs identiques entre pages et export basé sur des résultats partiellement tronqués.
+- Ne pas fixer de SLA inventé : établir les baselines de requêtes, latence, mémoire, volume transféré et taux d'échec avant optimisation.
 
-```txt
-apps/web/src/lib/
-```
+### TRD-04. Concurrence et résilience
 
-Contient notamment :
+- Toute mutation multi-lignes déclare `ATOMIC` ou `PARTIAL_ALLOWED` avec reprise et comportement d'échec explicités.
+- Les opérations répétables doivent être idempotentes ou protégées contre les doubles écritures.
+- Snapshots publics : conserver les règles existantes de génération plus récente, relecture persistée et invalidation avec watermark ; ne pas supposer que la déduplication mémoire coordonne plusieurs instances Vercel.
+- GPS mobile : préserver ownership, persistance hors ligne et finalisation côté serveur ; les métriques dérivées de mission ne sont pas éditées directement par le client.
 
-- actions ;
-- profils ;
-- auth ;
-- authz ;
-- Supabase ;
-- gamification ;
-- rapports ;
-- services tiers ;
-- contrats.
+### TRD-05. Confidentialité et observabilité
 
-## Identité
+- Les journaux n'exposent ni secrets ni données personnelles inutiles.
+- Mesures applicatives et données de suivi respectent le consentement et les politiques en vigueur.
+- Les diagnostics distinguent erreurs logiques, erreurs d'environnement, CI, migration, déploiement et état observé en production.
 
-Clerk est l'identité principale du web et de l'application mobile.
+## 4. Contrats HTTP et projections
 
-Fichiers pivots :
+- Les routes suivent le contrat propre au domaine, sans enveloppe uniforme inventée.
+- Les lectures privées utilisent les guards adaptés et une stratégie de cache empêchant la contamination interutilisateur.
+- Les réponses de carte ne sont pas des copies brutes des enregistrements : elles respectent la projection publique, le statut et la visibilité.
+- Les exports et PDF précompilés sont servis avec vérification d'accès et URLs signées selon leur route ; un lien de Storage ne remplace pas l'autorisation métier.
+- Le code actuel de partage PDF historique expose une capacité séparée : création/révocation owner-scoped d'un lien bearer expirant, token stocké sous forme de hash, PDF déjà rendu conservé dans Storage privé. Un lien valide donne accès seulement au PDF associé. Protéger contre l'indexation, les referrers et les mises en cache inappropriées ; vérifier l'expiration et la révocation au téléchargement. Une migration publiée ne vaut pas déploiement appliqué.
+- Les erreurs doivent être explicites sans exposer les détails internes du fournisseur.
 
-```txt
-apps/web/src/lib/auth/
-apps/web/src/lib/authz.ts
-apps/web/src/proxy.ts
-apps/web/src/lib/profiles.ts
-```
-
-Supabase ne doit pas devenir un second fournisseur d'identité implicite pour le même utilisateur sans décision explicite.
-
-Voir :
-
-```txt
-documentation/architecture/adr/ADR-001-clerk-auth.md
-documentation/architecture/adr/ADR-004-companion-identity.md
-```
-
-L'application mobile utilise le même produit et les contrats partagés. Les
-migrations actuelles restent dans `apps/web/supabase/`, conformément à ADR-006.
-
-## Données
-
-Supabase fournit :
-
-- PostgreSQL ;
-- RLS ;
-- RPC ;
-- Storage.
-
-Règles :
-
-- `service_role` serveur uniquement ;
-- migration versionnée ;
-- ownership explicite ;
-- validation des entrées ;
-- tests RLS.
-
-## Flux actions
+### Flux Actions et surfaces dérivées
 
 ```mermaid
 flowchart LR
-  FORM[Formulaires] --> CONTRACT[Contrat actions]
-  IMPORT[Imports explicitement maintenus] --> CONTRACT
-  DB[(Supabase actions)] --> CONTRACT
-  CONTRACT --> SERVICES[Services métier]
-  SERVICES --> API[API]
+  Form[Formulaires] --> Contract[Contrat Actions]
+  Import[Imports autorisés] --> Contract
+  DB[(Supabase)] --> Contract
+  Contract --> Services[Services métier]
+  Services --> API[API]
   API --> UI[Carte / dashboard / rapports]
 ```
 
-Les anciens Google Sheets ne sont plus la source de vérité principale.
+Le contrat Actions et le module `unified-source.ts` restent les owners des
+normalisations et des imports autorisés. Les cartes, dashboards, rapports,
+PDF et snapshots sont des projections contrôlées ; ils ne créent pas un second
+modèle métier. Un export ou une lecture paginée doit prouver son exhaustivité
+avant d'être présenté comme un résultat complet.
 
-Ne pas réactiver un ancien import sans vérifier le contrat courant.
+### Services externes et coûts
 
-## Application compagnon
+Clerk, Supabase, Vercel et les services optionnels (messagerie, paiement,
+observabilité, analytics ou rate limiting) sont des dépendances explicites et
+bornées. L'absence d'un service optionnel ne doit pas casser le runtime sauf
+si le contrat de la route le requiert. Les quotas, latences, mémoire et volume
+transféré doivent être mesurés avant toute optimisation ou adoption d'une
+nouvelle plateforme ; aucun SLA n'est inventé dans l'architecture.
 
-`apps/mobile/` assure le suivi GPS natif.
+## 5. Socle mobile
 
-Statut architectural courant :
+- Expo / React Native avec Clerk partagé ; lien Supabase via Third-Party Auth dans les limites prévues.
+- Deux préoccupations distinctes : expérience terrain fiable et autorisation côté donnée/serveur.
+- Le suivi GPS, les points, la finalisation de mission et la reprise offline restent compatibles avec les règles propriétaires et triggers du schéma.
+- Ne pas déclarer l'application publiable avant la vérification réelle d'authentification, background headless, sécurité, appareils physiques et distribution.
 
-- surface séparée du workspace web ;
-- même projet Supabase ;
-- Clerk est l'identité canonique du web et du mobile ;
-- l'app mobile utilise `ClerkProvider`, `useAuth`, l'authentification hébergée
-  Clerk et `tokenCache` ;
-- le token Clerk courant est transmis à Supabase via Third-Party Auth ;
-- les RLS des missions et du GPS rapprochent le `sub` Clerk des identifiants
-  propriétaires ;
-- le trigger courant `SECURITY INVOKER` finalise `distance_m` et `duration_s`.
+## 6. Stack analytique et décisions de non-adoption
 
-Le statut courant du mobile est `CURRENT / ACTIVE DEVELOPMENT`,
-`NOT_PRODUCTION_READY`. L'identité Clerk, les RLS et la finalisation des
-métriques sont finalisées et invariantes. La V1 couvre le GPS avec carte et
-tracé, la reprise/offline, la finalisation serveur, les contacts d'urgence et
-la projection Compte privée `/api/mobile/account`.
-Les sujets ouverts sont la validation du background headless en
-conditions réelles, la validation opérationnelle et `mission_actions`
-hors V1. Les photos de signalement utilisent déjà les intents
-média canoniques ; les photos de mission restent hors runtime.
+| Technologie | Décision actuelle | Critère de réexamen |
+|---|---|---|
+| PostgreSQL `GROUP BY`, RPC, vues | **Favoriser** pour calculs agrégés sur données persistantes | Revue des plans SQL, RLS, coûts et sémantique |
+| Batching / chunking | **Favoriser** pour exports et opérations bornées | Pagination exhaustive, ordre stable et contrôle mémoire |
+| Pandas | **Conserver** pour recherche/maintenance hors runtime | Source documentée, provenance, volumétrie et tests |
+| `multiprocessing` Python | **Optionnel** pour CPU-bound offline | Profilage positif, mémoire et déterminisme acceptables |
+| MongoDB | **Non requis** | Contrat de persistance distinct réellement démontré |
+| Apache Spark | **Non requis** | Calcul distribué démontré au-delà d'une architecture simple |
+| BigQuery | **Non requis** | Entrepôt analytique externe justifié, conformité et coûts chiffrés |
 
-La V1 est destinée aux bénévoles terrain et reste volontairement réduite ; le
-web demeure la surface complète et indépendante. La V1 inclut le GPS live avec
-carte et tracé temps réel et les contacts d'urgence. Les autres capacités réutilisent le backend, les données et
-les projections communes, sans gamification parallèle ni second modèle métier.
+## 7. Validation d'une modification
 
-Voir ADR-004 et ADR-006.
+### Architecture UI
 
-## Supabase : source des migrations
+Une page métier reste une surface d'action ou de lecture, pas une landing
+decorative. `PageHeader`, les primitives `Cmm*`, les états asynchrones et les
+contrats du dossier `documentation/design-system/` sont réutilisés avant toute
+exception locale. Les composants cartographiques Leaflet sont chargés avec
+SSR désactivé ; les APIs navigateur restent côté client et les secrets,
+calculs métier stables et contrôles d'accès restent côté serveur.
 
-Le workspace actif possède :
+Pour une lecture rapide d'un flux, commencer par les owners
+`apps/web/src/lib/authz.ts`, `apps/web/src/proxy.ts`,
+`apps/web/src/lib/auth/api-authorization-contract.ts`,
+`apps/web/src/lib/actions/data-contract.ts`,
+`apps/web/src/lib/actions/unified-source.ts`, puis les handlers concernés et
+les migrations qui gouvernent la donnée. Cette liste d'entrée ne remplace pas
+la lecture des callers et des tests du lot.
 
-```txt
-apps/web/supabase/config.toml
-apps/web/supabase/migrations/
-```
+1. Identifier owner, callers, consommateurs, risques et contrats.
+2. Écrire les invariants et scénarios négatifs avant intégration.
+3. Exécuter les tests adaptés à la frontière : TypeScript, API, SQL/RLS isolés, web, mobile physique ou Python.
+4. Comparer le comportement fonctionnel et, pour une optimisation, les mesures avant/après.
+5. Conserver les preuves réelles ; une migration statique ne prouve pas le comportement PostgreSQL.
+6. Mettre à jour les sources documentaires canoniques lorsqu'un contrat durable évolue.
+7. Clore si la STOP CONDITION est atteinte, sans refonte périphérique.
 
-L'ancien arbre historique `supabase/migrations/` a été supprimé après
-comparaison contrôlée et ne doit pas être recréé. Le garde-fou
-`npm run audit:supabase-migration-trees` bloque sa réapparition.
+## 8. Références
 
-Voir :
-
-```txt
-documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md
-```
-
-## Sécurité
-
-```mermaid
-flowchart TD
-  REQ[Requête] --> AUTHN{Session requise ?}
-  AUTHN --> AUTHZ{Permission ?}
-  AUTHZ --> VALIDATE{Input valide ?}
-  VALIDATE --> DOMAIN[Service métier]
-  DOMAIN --> DATA[(Supabase)]
-  AUTHZ --> AUDIT[Audit si dérogation sensible]
-```
-
-Une route protégée par proxy doit tout de même vérifier le contrat d'autorisation adapté au handler.
-
-## Frontières serveur/client
-
-- secret : serveur ;
-- `service_role` : serveur ;
-- authz sensible : serveur ;
-- browser APIs : client ;
-- Leaflet : client dynamique sans SSR ;
-- données réactives : SWR ou mécanisme existant quand pertinent.
-
-## Services externes
-
-Exemples :
-
-```txt
-Clerk
-Supabase
-Vercel
-Resend
-Stripe
-Sentry
-PostHog
-Pinecone
-Upstash
-```
-
-Un service optionnel ne doit pas casser tout le runtime lorsqu'il est absent, sauf s'il est explicitement requis pour la route.
-
-## Quotas
-
-Le projet doit minimiser les coûts involontaires.
-
-Références :
-
-```txt
-documentation/operations/platform-cost-governance.md
-documentation/database/supabase-table-optimization-playbook.md
-documentation/architecture/data-governance.md
-documentation/security/authorization-capabilities.md
-```
-
-## Architecture UI
-
-Principes :
-
-- page métier ≠ landing décorative ;
-- `PageHeader` comme header canonique ;
-- famille de couleur via design system ;
-- détails lourds à la demande ;
-- client léger ;
-- composants réutilisables ;
-- états async explicites.
-
-## Documentation
-
-```txt
-pages_site/      fonctionnel par page
-architecture/    décisions et frontières
-security/        doctrine et audits
-development/     workflow technique
-product/         vision et priorités
-operations/      exploitation
-```
-
-Ne pas dupliquer une règle durable.
-
-## Validation
-
-Modification ciblée :
-
-```bash
-npm run checks:changed
-```
-
-Modification structurante :
-
-```bash
-npm run checks
-```
-
-E2E explicite :
-
-```bash
-npm run test:e2e
-```
+- `documentation/architecture/master-architecture.md`, `frontend-backend-boundaries.md` et la façade de compatibilité `system-overview.md`.
+- `documentation/architecture/adr/ADR-001-clerk-auth.md`, `ADR-004-companion-identity.md`, `ADR-006-supabase-migrations-source-of-truth.md`.
+- `documentation/security/authz-authn-regles.md`, `authorization-capabilities.md`.
+- `documentation/architecture/data-governance.md`.
+- `documentation/database/supabase-table-optimization-playbook.md`.
+- `documentation/operations/platform-cost-governance.md`.
+- `apps/mobile/README.md`, `documentation/development/TESTING.md`.
+- `apps/web/supabase/migrations/20261018000002_report_generation_pdf_shares.sql` et `documentation/features/reports/report-pdf-themes-and-reuse.md`.
