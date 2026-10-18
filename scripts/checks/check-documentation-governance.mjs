@@ -103,8 +103,32 @@ function validateDependencyAdvisoryGovernance(view) {
   return issues;
 }
 
+function hasHistoryStatus(content) {
+  return /(?:statut documentaire|document status|type)\s*:?[^\n]{0,80}\bHISTORY\b/i.test(
+    content.split(/\r?\n/).slice(0, 40).join("\n"),
+  );
+}
+
+export function findConcurrentActiveRoadmaps(view) {
+  const roadmapPaths = view
+    .listFiles("documentation/product")
+    .filter((filePath) => /(^|\/)roadmap[^/]*\.md$/i.test(filePath));
+  const activeRoadmaps = roadmapPaths.filter(
+    (filePath) => !hasHistoryStatus(view.readText(filePath)),
+  );
+
+  if (activeRoadmaps.length <= 1) return [];
+
+  return [{
+    file: "documentation/product",
+    line: 1,
+    pattern: "concurrent active roadmaps",
+    snippet: `Multiple roadmap documents are active without a distinct HISTORY status: ${activeRoadmaps.join(", ")}`,
+  }];
+}
+
 export function validateDocumentationGovernance(view) {
-  const violations = [];
+  const violations = [...findConcurrentActiveRoadmaps(view)];
   for (const filePath of view.listFiles("documentation")) {
     if (!scanExtensions.has(path.posix.extname(filePath).toLowerCase()) || shouldSkip(filePath)) {
       continue;

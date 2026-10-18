@@ -146,6 +146,94 @@ technique, pas un organisateur métier par défaut. Le backup
 l'import métier : il valide son payload avant écriture, conserve les identités
 et refuse un format incomplet ou sans version.
 
+### Contrats spécialisés conservés
+
+Les détails d'interface restent dans leurs owners spécialisés ; la présente
+synthèse fixe les invariants de données qui doivent rester vrais lorsqu'une
+surface, un import ou un rapport les consomme.
+
+#### Mesures de masse et compatibilité historique
+
+`wasteKg` désigne la masse totale des déchets hors mégots. `null` signifie
+« non mesuré », `0` signifie « zéro explicitement observé » et une valeur
+positive est une mesure connue. Les quatre catégories canoniques
+`recyclablesKg`, `glassKg`, `householdWasteKg` et `otherWasteKg` restent
+facultatives : une catégorie absente n'est jamais imputée à zéro.
+
+Les champs de masse contrôlés par le serveur utilisent la résolution canonique
+de `0,1 kg`, exposée par
+`apps/web/src/lib/waste/measurement.ts` via
+`ACTION_WASTE_MASS_RESOLUTION_KG`. Une valeur hors grille est refusée, sans
+arrondi silencieux. Pour une comparaison complète et explicitement mesurée,
+chaque valeur `x` est comparée dans l'intervalle
+`[max(0, x - résolution / 2), x + résolution / 2]` ; le total et la somme de
+la ventilation sont cohérents lorsque leurs intervalles se recouvrent.
+
+Les mesures historiques hors grille restent lisibles et inchangées. Lorsque
+la résolution historique n'est pas démontrable, ou qu'une valeur n'est pas
+alignée, la comparaison est `not_comparable` : elle ne réécrit ni la valeur,
+ni son historique. La comparaison de résolution ne modélise pas l'incertitude
+d'une balance ou d'une estimation visuelle. Les anciennes clés de ventilation
+restent donc des lectures de compatibilité, jamais une seconde source de vérité.
+
+#### Temporalité déclarée et valeur technique de compatibilité
+
+`duration_minutes` décrit le temps d'action de dépollution ;
+`event_start_time`/`event_end_time` décrivent le créneau global, incluant les
+temps d'organisation. Les durées dérivées restent indisponibles si les heures
+sont absentes ou incohérentes, et aucune durée de passage à minuit ou valeur
+historique n'est reconstruite. Comme `actions.duration_minutes` reste
+`NOT NULL DEFAULT 0`, `preparation_data.durationMinutesDeclared` distingue la
+durée effectivement déclarée de la valeur technique de compatibilité `0`.
+`estimatedDurationMinutes` dans les anciens `preparation_data` reste une
+lecture de compatibilité uniquement.
+
+Le contrat temporel détaillé et ses contrôles sont portés par
+[`actions-new-README.md`](../pages_site/routes/02-agir/actions-new/actions-new-README.md)
+et `apps/web/src/lib/actions/time-contract.ts`.
+
+#### Résolution territoriale des formalités
+
+Le moteur des formalités consomme la géographie canonique de l'action et ne
+crée ni seconde géographie ni autorisation territoriale. Les règles déclarent
+un scope `national`, `department`, `commune` ou `special_territory`. Les règles
+applicables sont résolues par précision décroissante (commune ou territoire
+spécialisé, département, national), puis par identifiant déterministe ; une
+règle générale n'est retirée que si une relation `supersedesRuleIds` le
+déclare. Des formalités compatibles peuvent donc coexister.
+
+Le fallback national fournit un cadre officiel lorsque aucune règle locale
+suffisamment précise ne s'applique, mais conserve `requirementStatus =
+unknown` tant que l'obligation locale n'est pas démontrée. `unknown` signifie
+« preuves insuffisantes pour conclure à required, recommended ou
+not_required » ; ce n'est ni l'absence de formalité, ni une erreur technique.
+La qualification, sa source officielle, son périmètre et sa date de
+vérification restent rattachés au moteur
+`apps/web/src/lib/actions/formalities-qualification.ts` et à
+`formalities-rules.ts`. Le parcours produit correspondant est décrit dans
+[`actions-new-README.md`](../pages_site/routes/02-agir/actions-new/actions-new-README.md).
+
+#### Géométries observées et promotion
+
+`ActionGeometrySource` est la provenance fine ; la projection de qualité ne
+doit pas la remplacer par la taxonomie des mesures. `gps_tracking` et
+`gpx_import` sont des observations lorsqu'elles proviennent respectivement de
+`gps_points` persistés ou d'une trace GPX validée ; `manual` est une déclaration,
+`reference` une emprise connue, et `routed`/`estimated_route` des
+reconstructions ou estimations. Les observations valides priment les
+reconstructions ultérieures.
+
+Une promotion conserve la cible de planification séparément de la distance
+observée et ajoute une contribution append-only et idempotente dans
+`action_geometry_contributions`. Plusieurs traces deviennent une couverture
+`MultiLineString` sans concaténation ni distance collective annoncée ; les
+distances individuelles restent séparées. La confiance ne prouve jamais la
+provenance. Une remédiation historique exige une preuve persistée ; à défaut,
+la ligne reste inconnue et inchangée. La grammaire et les règles de promotion
+sont détaillées dans
+[`methodologie-carte-actions.md`](../product/methodologie-carte-actions.md)
+et [`couverture-gps-multi-groupes.md`](../product/couverture-gps-multi-groupes.md).
+
 ## 4. Flux écriture et lecture Actions
 
 ```text
