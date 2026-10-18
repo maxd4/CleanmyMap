@@ -7,6 +7,7 @@ export type CachedUnifiedActionContractsParams = {
   actionIds?: string[] | null;
   status: ActionStatus | null;
   floorDate: string | null;
+  ceilingDate?: string | null;
   requireCoordinates: boolean;
   types: ActionEntityType[] | null;
   requirePublicCompletedActions?: boolean;
@@ -41,6 +42,7 @@ export function buildUnifiedActionContractsCacheKey(
     `actionIds:${buildActionIdsCacheKey(params.actionIds)}`,
     `status:${params.status ?? "all"}`,
     `floor:${params.floorDate ?? "all"}`,
+    `ceiling:${params.ceilingDate ?? "all"}`,
     `coords:${params.requireCoordinates ? "1" : "0"}`,
     `types:${buildTypesCacheKey(params.types)}`,
     `publicComplete:${params.requirePublicCompletedActions ? "1" : "0"}`,

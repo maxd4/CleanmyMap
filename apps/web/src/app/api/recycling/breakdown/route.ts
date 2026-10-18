@@ -10,7 +10,7 @@ import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapsho
 export const runtime = "nodejs";
 
 const RECYCLING_BREAKDOWN_TTL_MINUTES = 60;
-const RECYCLING_BREAKDOWN_VERSION = "public-recycling-breakdown-v1";
+const RECYCLING_BREAKDOWN_VERSION = "public-recycling-breakdown-v2";
 const RECYCLING_BREAKDOWN_SNAPSHOT_KEY = "recycling-breakdown";
 
 export async function GET() {
@@ -25,17 +25,21 @@ export async function GET() {
       title: "Répartition recyclage",
       version: RECYCLING_BREAKDOWN_VERSION,
       ttlMinutes: RECYCLING_BREAKDOWN_TTL_MINUTES,
+      allowStaleOnBuildError: false,
       buildPayload: async () => {
         const supabase = getSupabaseServerClient(true);
-        const { items: contracts } = await fetchUnifiedActionContracts(supabase, {
+        const result = await fetchUnifiedActionContracts(supabase, {
           limit: 2000,
           status: "approved",
           floorDate: null,
           requireCoordinates: false,
           types: ["action"],
         });
+        if (result.isTruncated || result.sourceHealth.partial) {
+          throw new Error("Recycling breakdown source is incomplete.");
+        }
 
-        const breakdown = buildRecyclingBreakdown(contracts);
+        const breakdown = buildRecyclingBreakdown(result.items);
         return {
           status: "ok" as const,
           totalKg: breakdown.totalKg,

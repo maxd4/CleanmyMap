@@ -160,9 +160,20 @@ function filterByFloorDate(
   return items.filter((item) => item.dates.observedAt >= floorDate);
 }
 
+function filterByCeilingDate(
+  items: ActionDataContract[],
+  ceilingDate: string | null,
+): ActionDataContract[] {
+  if (!ceilingDate) {
+    return items;
+  }
+  return items.filter((item) => item.dates.observedAt < ceilingDate);
+}
+
 export async function loadLocalActionContracts(params: {
   status: ActionStatus | null;
   floorDate: string | null;
+  ceilingDate?: string | null;
   limit: number | null;
   requireCoordinates: boolean;
 }): Promise<ActionDataContract[]> {
@@ -175,9 +186,12 @@ export async function loadLocalActionContracts(params: {
     .map((record) => toLocalContract(record, params.requireCoordinates))
     .filter((item): item is ActionDataContract => Boolean(item));
 
-  const sorted = filterByFloorDate(
-    filterByStatus(dedupeContractsByKey(fromStores), params.status),
-    params.floorDate,
+  const sorted = filterByCeilingDate(
+    filterByFloorDate(
+      filterByStatus(dedupeContractsByKey(fromStores), params.status),
+      params.floorDate,
+    ),
+    params.ceilingDate ?? null,
   )
     .sort((a, b) => b.dates.observedAt.localeCompare(a.dates.observedAt));
 

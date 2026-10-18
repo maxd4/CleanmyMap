@@ -24,6 +24,7 @@ function queryResult(data: unknown[], error: null | Error = null) {
     limit: vi.fn(() => query),
     gte: vi.fn(() => query),
     lte: vi.fn(() => query),
+    lt: vi.fn(() => query),
     not: vi.fn(() => query),
     in: vi.fn(() => query),
     then: (resolve: (value: unknown) => unknown) =>
@@ -36,6 +37,7 @@ type TestParams = {
   limit: number;
   status: "pending" | "approved" | "rejected" | null;
   floorDate: string | null;
+  ceilingDate: string | null;
   requireCoordinates: boolean;
   types: ActionEntityType[] | null;
 };
@@ -45,6 +47,7 @@ function params(overrides: Partial<TestParams> = {}): TestParams {
     limit: 10,
     status: null,
     floorDate: null,
+    ceilingDate: null,
     requireCoordinates: false,
     types: null,
     ...overrides,
@@ -401,5 +404,91 @@ describe("unified action source", () => {
     expect(fetchActionsMock).not.toHaveBeenCalled();
     expect(loadLocalActionContractsMock).not.toHaveBeenCalled();
     expect(result.sourceHealth.availableSources).toEqual(["spots"]);
+  });
+
+  it("propagates exclusive monthly upper bounds to action and spot sources", async () => {
+    const spotQuery = queryResult([]);
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === "trash_spotter_spots") {
+          return spotQuery;
+        }
+        throw new Error(`Unexpected source: ${table}`);
+      }),
+    };
+    fetchActionsMock.mockResolvedValue([]);
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+
+    await fetchUnifiedActionContracts(
+      supabase as never,
+      params({
+        floorDate: "2026-05-01",
+        ceilingDate: "2026-06-01",
+      }),
+    );
+
+    expect(fetchActionsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        floorDate: "2026-05-01",
+        ceilingDate: "2026-06-01",
+      }),
+    );
+    expect(spotQuery.gte).toHaveBeenCalledWith(
+      "created_at",
+      "2026-05-01T00:00:00.000Z",
+    );
+    expect(spotQuery.lt).toHaveBeenCalledWith(
+      "created_at",
+      "2026-06-01T00:00:00.000Z",
+    );
+  });
+
+  it("keeps paginating canonical spots when the server cap shortens each page", async () => {
+    const allRows = Array.from({ length: 2001 }, (_, index) =>
+      canonicalSpot({ id: `spot-${index}` }),
+    );
+    const pages = [
+      allRows.slice(0, 500),
+      allRows.slice(500, 1000),
+      allRows.slice(1000, 1500),
+      allRows.slice(1500, 2000),
+      allRows.slice(2000),
+    ];
+    const rangeCalls: unknown[][] = [];
+    let pageIndex = 0;
+    const query = {
+      select: vi.fn(() => query),
+      order: vi.fn(() => query),
+      limit: vi.fn(() => query),
+      range: vi.fn((...args: unknown[]) => {
+        rangeCalls.push(args);
+        return query;
+      }),
+      gte: vi.fn(() => query),
+      lte: vi.fn(() => query),
+      lt: vi.fn(() => query),
+      not: vi.fn(() => query),
+      in: vi.fn(() => query),
+      then: (resolve: (value: unknown) => unknown) =>
+        Promise.resolve(resolve({ data: pages[pageIndex++] ?? [], error: null })),
+    };
+    const supabase = { from: vi.fn(() => query) };
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+
+    const result = await fetchUnifiedActionContracts(
+      supabase as never,
+      params({ limit: 2000, types: ["spot"] }),
+    );
+
+    expect(result.items).toHaveLength(2000);
+    expect(result.isTruncated).toBe(true);
+    expect(rangeCalls).toEqual([
+      [0, 999],
+      [500, 1499],
+      [1000, 1999],
+      [1500, 2000],
+      [2000, 2000],
+    ]);
   });
 });

@@ -146,6 +146,20 @@ describe("loadOrRefreshPublicSurfaceSnapshot", () => {
     expect(upsertPublicSurfaceSnapshotMock).not.toHaveBeenCalled();
   });
 
+  it("refuse le fallback stale lorsqu'une agrégation exige des données complètes", async () => {
+    const existing = existingSnapshot("v2", "incomplete-old-payload");
+    const error = new Error("incomplete source");
+    const options = params({
+      version: "v2",
+      allowStaleOnBuildError: false,
+      buildPayload: vi.fn<() => Promise<string>>().mockRejectedValue(error),
+    });
+    readLatestPublicSurfaceSnapshotMock.mockResolvedValue(existing);
+
+    await expect(loadOrRefreshPublicSurfaceSnapshot(options)).rejects.toBe(error);
+    expect(upsertPublicSurfaceSnapshotMock).not.toHaveBeenCalled();
+  });
+
   it("crée le nouveau snapshot après une montée de version réussie", async () => {
     const options = params({ version: "v2" });
 

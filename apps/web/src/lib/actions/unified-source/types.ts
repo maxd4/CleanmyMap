@@ -20,6 +20,8 @@ export type UnifiedActionContractsParams = {
   includeFuturePublicActions?: boolean;
   futureOnly?: boolean;
   floorDate: string | null;
+  /** Exclusive civil-date upper bound for the selected action/spot month. */
+  ceilingDate?: string | null;
   requireCoordinates: boolean;
   types: ActionEntityType[] | null;
   /** Require the complete public post-action projection; missing columns fail closed. */

@@ -20,6 +20,8 @@ export type PublicSurfaceSnapshotRefreshParams<TPayload> = {
   buildPayload: () => Promise<TPayload>;
   meta?: Record<string, unknown>;
   now?: Date;
+  /** Incomplete source data must not silently serve a stale aggregate. */
+  allowStaleOnBuildError?: boolean;
 };
 
 export async function loadOrRefreshPublicSurfaceSnapshot<TPayload>(
@@ -84,7 +86,11 @@ export async function loadOrRefreshPublicSurfaceSnapshot<TPayload>(
     if (error instanceof Error && error.name === "PublicSurfaceSnapshotWriteConflictError") {
       throw error;
     }
-    if (existing && existing.version === params.version) {
+    if (
+      params.allowStaleOnBuildError !== false &&
+      existing &&
+      existing.version === params.version
+    ) {
       return existing;
     }
     throw error;

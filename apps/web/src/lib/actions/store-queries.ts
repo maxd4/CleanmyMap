@@ -46,6 +46,7 @@ type ActionListParams = {
   requireCoordinates?: boolean;
   requirePublicCompletedActions?: boolean;
   viewport?: ActionMapViewportQuery;
+  ceilingDate?: string;
 };
 
 const PUBLIC_ACTION_PAGE_SIZE = 1000;
@@ -98,6 +99,9 @@ function buildActionListQuery(
   if (params.floorDate) {
     nextQuery = nextQuery.gte("action_date", params.floorDate);
   }
+  if (params.ceilingDate) {
+    nextQuery = nextQuery.lt("action_date", params.ceilingDate);
+  }
   if (params.requireCoordinates) {
     nextQuery = nextQuery.not("latitude", "is", null).not("longitude", "is", null);
   }
@@ -112,6 +116,64 @@ function buildActionListQuery(
   return nextQuery;
 }
 
+function shouldPaginateActionQuery(params: ActionListParams): boolean {
+  return params.limit === null || params.limit > PUBLIC_ACTION_PAGE_SIZE;
+}
+
+async function fetchActionRowsWithSelect(
+  supabase: SupabaseClient,
+  params: ActionListParams,
+  selectFields: string,
+): Promise<ActionRow[]> {
+  if (!shouldPaginateActionQuery(params)) {
+    return runActionQuery<ActionRow>(supabase, (query) =>
+      buildActionListQuery(query, params, selectFields),
+    );
+  }
+
+  const requestedLimit = params.limit;
+  const rows: ActionRow[] = [];
+  let offset = 0;
+  let terminated = false;
+  const maxPages = 10_000;
+
+  for (let pageNumber = 0; pageNumber < maxPages; pageNumber += 1) {
+    const remaining = requestedLimit === null
+      ? PUBLIC_ACTION_PAGE_SIZE
+      : Math.min(PUBLIC_ACTION_PAGE_SIZE, requestedLimit - rows.length);
+    if (remaining <= 0) {
+      terminated = true;
+      break;
+    }
+
+    const page = await runActionQuery<ActionRow>(supabase, (query) =>
+      buildActionListQuery(
+        query,
+        { ...params, limit: remaining },
+        selectFields,
+        { from: offset, to: offset + remaining - 1 },
+      ),
+    );
+    if (page.length === 0) {
+      terminated = true;
+      break;
+    }
+
+    rows.push(...page);
+    offset += page.length;
+    if (requestedLimit !== null && rows.length >= requestedLimit) {
+      terminated = true;
+      break;
+    }
+  }
+
+  if (!terminated) {
+    throw new Error("Action source pagination exceeded its safety bound.");
+  }
+
+  return requestedLimit === null ? rows : rows.slice(0, requestedLimit);
+}
+
 export async function fetchActionRows(
   supabase: SupabaseClient,
   params: ActionListParams,
@@ -121,27 +183,11 @@ export async function fetchActionRows(
   }
 
   try {
-    const rows: ActionRow[] = [];
-    if (params.requirePublicCompletedActions && params.limit === null) {
-      for (let offset = 0; ; offset += PUBLIC_ACTION_PAGE_SIZE) {
-        const page = await runActionQuery<ActionRow>(supabase, (query) =>
-          buildActionListQuery(
-            query,
-            params,
-            ACTION_SELECT_FIELDS_WITH_PHASE,
-            { from: offset, to: offset + PUBLIC_ACTION_PAGE_SIZE - 1 },
-          ),
-        );
-        rows.push(...page);
-        if (page.length < PUBLIC_ACTION_PAGE_SIZE) break;
-      }
-    } else {
-      rows.push(
-        ...(await runActionQuery<ActionRow>(supabase, (query) =>
-          buildActionListQuery(query, params, ACTION_SELECT_FIELDS_WITH_PHASE),
-        )),
-      );
-    }
+    const rows = await fetchActionRowsWithSelect(
+      supabase,
+      params,
+      ACTION_SELECT_FIELDS_WITH_PHASE,
+    );
     const normalized = rows.map(normalizeStoredAction);
     return params.futureOnly
       ? normalized.filter((row) => isPublishedFuturePreAction(row))
@@ -152,12 +198,10 @@ export async function fetchActionRows(
     }
 
     try {
-      const rows = await runActionQuery<ActionRow>(supabase, (query) =>
-        buildActionListQuery(
-          query,
-          { ...params, includeFuturePublicActions: false },
-          ACTION_SELECT_FIELDS_LEGACY,
-        ),
+      const rows = await fetchActionRowsWithSelect(
+        supabase,
+        { ...params, includeFuturePublicActions: false },
+        ACTION_SELECT_FIELDS_LEGACY,
       );
       const normalized = rows.map(normalizeStoredAction);
       return params.futureOnly
@@ -167,12 +211,10 @@ export async function fetchActionRows(
       if (!isMissingActionColumnError(legacyError)) {
         throw legacyError;
       }
-      const rows = await runActionQuery<ActionRow>(supabase, (query) =>
-        buildActionListQuery(
-          query,
-          { ...params, includeFuturePublicActions: false },
-          ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT,
-        ),
+      const rows = await fetchActionRowsWithSelect(
+        supabase,
+        { ...params, includeFuturePublicActions: false },
+        ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT,
       );
       const normalized = rows.map(normalizeStoredAction);
       return params.futureOnly

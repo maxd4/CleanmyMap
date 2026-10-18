@@ -10,13 +10,17 @@ import type {
 } from "./contracts";
 import { mapActionStatusToSpotStatuses } from "./contracts";
 
-async function loadCanonicalSpots(
+const CANONICAL_SPOT_PAGE_SIZE = 1000;
+
+function buildCanonicalSpotsQuery(
   supabase: SupabaseClient,
   params: UnifiedActionContractsParams,
-): Promise<TrashSpotterSpotRow[]> {
+  pageSize?: number,
+  pageRange?: { from: number; to: number },
+) {
   const spotStatuses = mapActionStatusToSpotStatuses(params.status);
   if (spotStatuses && spotStatuses.length === 0) {
-    return [];
+    return null;
   }
   let query = supabase
     .from("trash_spotter_spots")
@@ -24,12 +28,17 @@ async function loadCanonicalSpots(
       "id, created_at, created_by_clerk_id, label, spot_type, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, status, notes",
     )
     .order("created_at", { ascending: false });
-  if (params.limit !== null) {
+  if (pageRange && pageSize) {
+    query = query.limit(pageSize).range(pageRange.from, pageRange.to);
+  } else if (params.limit !== null) {
     query = query.limit(params.limit + 1);
   }
 
   if (params.floorDate) {
     query = query.gte("created_at", `${params.floorDate}T00:00:00.000Z`);
+  }
+  if (params.ceilingDate) {
+    query = query.lt("created_at", `${params.ceilingDate}T00:00:00.000Z`);
   }
   if (params.requireCoordinates) {
     query = query.not("latitude", "is", null).not("longitude", "is", null);
@@ -51,11 +60,71 @@ async function loadCanonicalSpots(
     query = query.in("status", spotStatuses);
   }
 
-  const result = await query;
-  if (result.error) {
-    throw result.error;
+  return query;
+}
+
+async function loadCanonicalSpots(
+  supabase: SupabaseClient,
+  params: UnifiedActionContractsParams,
+): Promise<TrashSpotterSpotRow[]> {
+  const requestedLimit = params.limit === null ? null : params.limit + 1;
+  const shouldPaginate =
+    requestedLimit === null || requestedLimit > CANONICAL_SPOT_PAGE_SIZE;
+  if (!shouldPaginate) {
+    const query = buildCanonicalSpotsQuery(supabase, params);
+    if (!query) {
+      return [];
+    }
+    const result = await query;
+    if (result.error) {
+      throw result.error;
+    }
+    return (result.data ?? []) as TrashSpotterSpotRow[];
   }
-  return (result.data ?? []) as TrashSpotterSpotRow[];
+
+  const rows: TrashSpotterSpotRow[] = [];
+  let offset = 0;
+  let terminated = false;
+  const maxPages = 10_000;
+  for (let pageNumber = 0; pageNumber < maxPages; pageNumber += 1) {
+    const remaining = requestedLimit === null
+      ? CANONICAL_SPOT_PAGE_SIZE
+      : Math.min(CANONICAL_SPOT_PAGE_SIZE, requestedLimit - rows.length);
+    if (remaining <= 0) {
+      terminated = true;
+      break;
+    }
+    const query = buildCanonicalSpotsQuery(
+      supabase,
+      params,
+      remaining,
+      { from: offset, to: offset + remaining - 1 },
+    );
+    if (!query) {
+      terminated = true;
+      break;
+    }
+    const result = await query;
+    if (result.error) {
+      throw result.error;
+    }
+    const page = (result.data ?? []) as TrashSpotterSpotRow[];
+    if (page.length === 0) {
+      terminated = true;
+      break;
+    }
+    rows.push(...page);
+    offset += page.length;
+    if (requestedLimit !== null && rows.length >= requestedLimit) {
+      terminated = true;
+      break;
+    }
+  }
+
+  if (!terminated) {
+    throw new Error("Trash Spotter source pagination exceeded its safety bound.");
+  }
+  return requestedLimit === null ? rows : rows.slice(0, requestedLimit);
 }
 
 function canUseLocalActionFallback(
@@ -95,6 +164,7 @@ export async function loadUnifiedActionSourceData(
           includeFuturePublicActions: params.includeFuturePublicActions,
           futureOnly: params.futureOnly,
           floorDate: params.floorDate ?? undefined,
+          ceilingDate: params.ceilingDate ?? undefined,
           requireCoordinates: params.requireCoordinates,
           requirePublicCompletedActions: params.requirePublicCompletedActions,
           viewport: params.viewport,
@@ -109,6 +179,7 @@ export async function loadUnifiedActionSourceData(
         loadLocalActionContracts({
           status: params.status,
           floorDate: params.floorDate,
+          ceilingDate: params.ceilingDate ?? null,
           limit: sourceLimit,
           requireCoordinates: params.requireCoordinates,
         }),

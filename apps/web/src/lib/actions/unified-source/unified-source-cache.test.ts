@@ -18,6 +18,28 @@ describe("unified source cache key", () => {
     expect(key).toContain("types:action,spot");
   });
 
+  it("keeps distinct monthly upper bounds in distinct cache lanes", () => {
+    const may = buildUnifiedActionContractsCacheKey({
+      limit: 2000,
+      status: null,
+      floorDate: "2026-05-01",
+      ceilingDate: "2026-06-01",
+      requireCoordinates: false,
+      types: null,
+    });
+    const june = buildUnifiedActionContractsCacheKey({
+      limit: 2000,
+      status: null,
+      floorDate: "2026-06-01",
+      ceilingDate: "2026-07-01",
+      requireCoordinates: false,
+      types: null,
+    });
+
+    expect(may).not.toBe(june);
+    expect(may).toContain("ceiling:2026-06-01");
+  });
+
   it("treats empty type filters as the same cache lane as all types", () => {
     const emptyKey = buildUnifiedActionContractsCacheKey({
       limit: 1000,

@@ -1,5 +1,4 @@
-import { describe, expect, it } from "vitest";
-import { vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { CreateActionPayload } from "@/lib/actions/types";
 vi.mock("server-only", () => ({}));
 import {
@@ -11,7 +10,6 @@ import {
   resolvePersistedCigaretteButts,
 } from "./store";
 import { extractActionMetadataFromNotes } from "./metadata";
-
 function buildPayload(overrides: Partial<CreateActionPayload> = {}): CreateActionPayload {
   return {
     actorName: "Test",
@@ -572,6 +570,7 @@ describe("fetchActions", () => {
     const pages = [
       Array.from({ length: 1000 }, (_, index) => makeRow(index)),
       [makeRow(1000)],
+      [],
     ];
     let pageIndex = 0;
     const query = {
@@ -597,7 +596,7 @@ describe("fetchActions", () => {
     });
 
     expect(rows).toHaveLength(1001);
-    expect(rangeCalls).toEqual([[0, 999], [1000, 1999]]);
+    expect(rangeCalls).toEqual([[0, 999], [1000, 1999], [1001, 2000]]);
   });
 
   it("fails closed instead of using a legacy projection for public completed reports", async () => {

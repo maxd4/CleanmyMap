@@ -55,6 +55,7 @@ const loadGovernanceMonthlyReportMock = vi.hoisted(() =>
   vi.fn(async () => governanceReportRecord),
 );
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
+const fetchUnifiedActionContractsMock = vi.hoisted(() => vi.fn());
 const signedPdfUrl = "https://supabase.test/storage/v1/object/sign/reports/governance-monthly/rapport_gouvernance_mensuel_2026-05.pdf?token=abc123";
 
 vi.mock("@/lib/governance/governance-monthly-report", () => ({
@@ -73,6 +74,10 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
 
+vi.mock("@/lib/actions/unified-source", () => ({
+  fetchUnifiedActionContracts: fetchUnifiedActionContractsMock,
+}));
+
 import { GET } from "./route";
 
 describe("governance monthly report route", () => {
@@ -81,6 +86,16 @@ describe("governance monthly report route", () => {
     vi.clearAllMocks();
     requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
     adminAccessErrorJsonResponseMock.mockReturnValue(new Response("forbidden", { status: 403 }));
+    fetchUnifiedActionContractsMock.mockResolvedValue({
+      items: [],
+      isTruncated: false,
+      sourceHealth: {
+        partial: false,
+        failedSources: [],
+        availableSources: ["actions", "spots"],
+        warnings: [],
+      },
+    });
   });
 
   it("redirects to the precompiled PDF asset", async () => {
@@ -152,5 +167,58 @@ describe("governance monthly report route", () => {
     expect(response.status).toBe(403);
     expect(adminAccessErrorJsonResponseMock).toHaveBeenCalledTimes(1);
     expect(loadGovernanceMonthlyReportMock).not.toHaveBeenCalled();
+  });
+
+  it("bounds a quality review to the requested civil month", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/reports/governance-monthly?quality=1&month=2026-12"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchUnifiedActionContractsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        floorDate: "2026-12-01",
+        ceilingDate: "2027-01-01",
+      }),
+    );
+  });
+
+  it.each([
+    { isTruncated: true, partial: false },
+    { isTruncated: false, partial: true },
+  ])("does not return an ok quality review when source completeness is unavailable", async (health) => {
+    fetchUnifiedActionContractsMock.mockResolvedValueOnce({
+      items: [],
+      isTruncated: health.isTruncated,
+      sourceHealth: {
+        partial: health.partial,
+        failedSources: health.partial ? ["actions"] : [],
+        availableSources: ["spots"],
+        warnings: health.partial ? ["partial"] : [],
+      },
+    });
+
+    const response = await GET(
+      new Request("http://localhost/api/reports/governance-monthly?quality=1&month=2026-05"),
+    );
+    const body = (await response.json()) as { status?: string; error?: string };
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe("error");
+    expect(body.error).toContain("incomplètes");
+  });
+
+  it("does not report ok when the completeness proof is unavailable", async () => {
+    fetchUnifiedActionContractsMock.mockRejectedValueOnce(new Error("source unavailable"));
+
+    const response = await GET(
+      new Request("http://localhost/api/reports/governance-monthly?quality=1&month=2026-05"),
+    );
+    const body = (await response.json()) as { status?: string; error?: string };
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe("error");
+    expect(body.error).toContain("indisponibles");
   });
 });
