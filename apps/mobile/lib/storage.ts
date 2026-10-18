@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getAuthenticatedSupabaseClient, getClerkUserId } from './supabase';
 import { ensureGpsPointIdentity } from './gps-point-identity';
 import { createLocalIdentifier } from './local-identifier';
@@ -333,6 +334,60 @@ function withGpsBufferMutation<T>(ownerId: string, operation: () => Promise<T>):
   return mutation;
 }
 
+type PersistedGpsPointIdentity = Pick<MissionLocationInsert, 'mission_id' | 'client_point_id'>;
+
+async function isPersistedGpsPoint(
+  client: SupabaseClient,
+  point: PersistedGpsPointIdentity,
+): Promise<boolean> {
+  try {
+    const result = await client
+      .from('gps_points')
+      .select('mission_id, client_point_id')
+      .eq('mission_id', point.mission_id)
+      .eq('client_point_id', point.client_point_id)
+      .maybeSingle<{ mission_id: string; client_point_id: string }>();
+
+    return Boolean(
+      !result.error &&
+      result.data &&
+      result.data.mission_id === point.mission_id &&
+      result.data.client_point_id === point.client_point_id,
+    );
+  } catch {
+    // Une lecture de confirmation incertaine ne constitue jamais un acquittement.
+    return false;
+  }
+}
+
+async function findPersistedGpsPointKeys(
+  client: SupabaseClient,
+  keys: string[],
+  buffer: MissionLocationInsert[],
+): Promise<Set<string>> {
+  const confirmedKeys = new Set<string>();
+  for (const [index, point] of buffer.entries()) {
+    if (await isPersistedGpsPoint(client, point)) {
+      const key = keys[index];
+      if (key) confirmedKeys.add(key);
+    }
+  }
+  return confirmedKeys;
+}
+
+async function removeGpsBufferRecords(ownerId: string, indexKey: string, keys: Set<string>): Promise<void> {
+  if (keys.size === 0) return;
+
+  await withGpsBufferMutation(ownerId, async () => {
+    const currentKeys = await readIndex(indexKey);
+    await clearSecureBufferRecords([...keys]);
+    await writeIndex(
+      indexKey,
+      currentKeys.filter((key) => !keys.has(key)),
+    );
+  });
+}
+
 async function flushBufferOnce(ownerId: string): Promise<ServiceResult> {
   const indexKey = ownerScopedKey(GPS_BUFFER_INDEX_KEY_PREFIX, ownerId);
   if (!indexKey) return { ok: false, error: 'Connexion Clerk requise pour synchroniser les données.' };
@@ -372,18 +427,18 @@ async function flushBufferOnce(ownerId: string): Promise<ServiceResult> {
         ignoreDuplicates: true,
       });
       if (error) {
+        const confirmedKeys = await findPersistedGpsPointKeys(client, keys, buffer);
+        const identityStable = await getClerkUserId() === ownerId;
+        if (confirmedKeys.size > 0 && identityStable) {
+          await removeGpsBufferRecords(ownerId, indexKey, confirmedKeys);
+        }
+        if (confirmedKeys.size === keys.length && identityStable) {
+          return { ok: true, data: undefined };
+        }
         return { ok: false, error: `Synchronisation GPS impossible : ${error.message}` };
       }
 
-      await withGpsBufferMutation(ownerId, async () => {
-        const currentKeys = await readIndex(indexKey);
-        const flushedKeys = new Set(keys);
-        await clearSecureBufferRecords(keys);
-        await writeIndex(
-          indexKey,
-          currentKeys.filter((key) => !flushedKeys.has(key)),
-        );
-      });
+      await removeGpsBufferRecords(ownerId, indexKey, new Set(keys));
       console.log('[Storage] Buffer GPS vidé');
     }
   } catch (e) {

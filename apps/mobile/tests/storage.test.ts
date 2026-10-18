@@ -40,6 +40,39 @@ function resetStorageState() {
   vi.clearAllMocks()
 }
 
+function createGpsClient(options: {
+  upsertError?: Error | null
+  persistedPointKeys?: string[]
+  readError?: Error | null
+  changeUserIdOnRead?: string
+}) {
+  const upsert = vi.fn(async () => ({ error: options.upsertError ?? null }))
+  const select = vi.fn(() => ({
+    eq: vi.fn((column: string, value: string) => {
+      expect(column).toBe('mission_id')
+      return {
+        eq: vi.fn((clientPointColumn: string, clientPointId: string) => {
+          expect(clientPointColumn).toBe('client_point_id')
+          return {
+            maybeSingle: vi.fn(async () => {
+              const result = {
+                data: options.persistedPointKeys?.includes(`${value}:${clientPointId}`)
+                  ? { mission_id: value, client_point_id: clientPointId }
+                  : null,
+                error: options.readError ?? null,
+              }
+              if (options.changeUserIdOnRead) state.currentUserId = options.changeUserIdOnRead
+              return result
+            }),
+          }
+        }),
+      }
+    }),
+  }))
+
+  return { from: vi.fn(() => ({ upsert, select })) }
+}
+
 beforeEach(resetStorageState)
 
 async function replaysOfflinePoint() {
@@ -126,6 +159,90 @@ it('does not discard the buffer when Supabase replay fails', async () => {
     await flushBuffer(ownerId)
 
     expect(upsert).toHaveBeenCalledWith([point], expect.any(Object))
+    expect(await getPendingGpsPointCount(ownerId)).toBe(1)
+})
+
+it('acknowledges a replay after finalization only when the owner can read the exact persisted point', async () => {
+    await bufferPoint(ownerId, point)
+    state.client = createGpsClient({
+      upsertError: new Error('GPS mission is not accepting points.'),
+      persistedPointKeys: ['mission-1:point-1'],
+    })
+
+    await expect(flushBuffer(ownerId)).resolves.toEqual({ ok: true, data: undefined })
+    expect(await getPendingGpsPointCount(ownerId)).toBe(0)
+})
+
+it('acknowledges a replay after cancellation without inserting a duplicate', async () => {
+    await bufferPoint(ownerId, point)
+    const client = createGpsClient({
+      upsertError: new Error('GPS mission is not accepting points.'),
+      persistedPointKeys: ['mission-1:point-1'],
+    })
+    state.client = client
+
+    await expect(flushBuffer(ownerId)).resolves.toEqual({ ok: true, data: undefined })
+    expect(client.from).toHaveBeenCalledTimes(2)
+    expect(await getPendingGpsPointCount(ownerId)).toBe(0)
+})
+
+it('keeps a new point buffered when a terminal mission rejects it without a persisted row', async () => {
+    await bufferPoint(ownerId, point)
+    state.client = createGpsClient({
+      upsertError: new Error('GPS mission is not accepting points.'),
+    })
+
+    await expect(flushBuffer(ownerId)).resolves.toEqual({
+      ok: false,
+      error: 'Synchronisation GPS impossible : GPS mission is not accepting points.',
+    })
+    expect(await getPendingGpsPointCount(ownerId)).toBe(1)
+})
+
+it('does not acknowledge a point found only under another mission identity', async () => {
+    await bufferPoint(ownerId, point)
+    state.client = createGpsClient({
+      upsertError: new Error('GPS mission is not accepting points.'),
+      persistedPointKeys: ['mission-other:point-1'],
+    })
+
+    await expect(flushBuffer(ownerId)).resolves.toMatchObject({ ok: false })
+    expect(await getPendingGpsPointCount(ownerId)).toBe(1)
+})
+
+it('keeps all unconfirmed points when a batch contains confirmed and rejected replays', async () => {
+    const secondPoint = { ...point, client_point_id: 'point-2', recorded_at: '2026-09-28T10:01:00.000Z' }
+    await bufferPoint(ownerId, point)
+    await bufferPoint(ownerId, secondPoint)
+    state.client = createGpsClient({
+      upsertError: new Error('GPS mission is not accepting points.'),
+      persistedPointKeys: ['mission-1:point-1'],
+    })
+
+    await expect(flushBuffer(ownerId)).resolves.toMatchObject({ ok: false })
+    expect(await getPendingGpsPointCount(ownerId)).toBe(1)
+})
+
+it('keeps the buffer when confirmation lookup fails', async () => {
+    await bufferPoint(ownerId, point)
+    state.client = createGpsClient({
+      upsertError: new Error('GPS mission is not accepting points.'),
+      readError: new Error('read unavailable'),
+    })
+
+    await expect(flushBuffer(ownerId)).resolves.toMatchObject({ ok: false })
+    expect(await getPendingGpsPointCount(ownerId)).toBe(1)
+})
+
+it('keeps a confirmed replay buffered if the Clerk identity changes during verification', async () => {
+    await bufferPoint(ownerId, point)
+    state.client = createGpsClient({
+      upsertError: new Error('GPS mission is not accepting points.'),
+      persistedPointKeys: ['mission-1:point-1'],
+      changeUserIdOnRead: 'user_other',
+    })
+
+    await expect(flushBuffer(ownerId)).resolves.toMatchObject({ ok: false })
     expect(await getPendingGpsPointCount(ownerId)).toBe(1)
 })
 
