@@ -22,7 +22,7 @@ type HistoricalReplay = { reportWindow: Window; payload: PdfReportPayload };
 
 type HistoryActionsParams = {
   reportTheme: ReportPdfTheme;
-  refreshHistory: () => Promise<void>;
+  refreshHistory: () => Promise<boolean>;
   setHistoryAvailability: Dispatch<SetStateAction<"available" | "unavailable">>;
   setDailyExportAvailability: Dispatch<SetStateAction<ReportExportAvailability>>;
   setHistoryActionStateById: Dispatch<SetStateAction<Record<string, ReportGenerationHistoryActionState>>>;
@@ -139,8 +139,8 @@ export function createReportsWebDocumentHistoryActions(params: HistoryActionsPar
       const generation = derived?.generation ?? await loadHistoricalReportSnapshot(id);
       historicalReplayRef.current = { reportWindow, payload: generation.snapshot };
       if (derived) {
-        await params.refreshHistory();
-        params.setHistoryAvailability("available");
+        const refreshed = await params.refreshHistory();
+        if (refreshed) params.setHistoryAvailability("available");
         params.setDailyExportAvailability("used");
         renderReportWindow(reportWindow, generation.snapshot, { theme });
       } else if (action === "view") {

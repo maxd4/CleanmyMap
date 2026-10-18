@@ -49,7 +49,7 @@ export function ReportsFiles({ initialPage, initialAvailability = "available" }:
   const [, setDailyExportAvailability] = useState<ReportExportAvailability>("unavailable");
   const [historyActionStateById, setHistoryActionStateById] = useState<Record<string, ReportGenerationHistoryActionState>>({});
 
-  async function loadPage(nextPage: number): Promise<void> {
+  async function loadPage(nextPage: number): Promise<boolean> {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams({
@@ -68,9 +68,11 @@ export function ReportsFiles({ initialPage, initialAvailability = "available" }:
       }
       setPage(body);
       setHistoryAvailability("available");
+      return true;
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Historique temporairement indisponible.");
       setHistoryAvailability("unavailable");
+      return false;
     } finally {
       setLoading(false);
     }

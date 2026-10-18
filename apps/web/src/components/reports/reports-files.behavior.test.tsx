@@ -58,7 +58,7 @@ function page(overrides: Record<string, unknown> = {}) {
 describe("ReportsFiles history state", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.createHistoryActions.mockImplementation((params: { refreshHistory: () => Promise<void> }) => ({
+    mocks.createHistoryActions.mockImplementation((params: { refreshHistory: () => Promise<boolean> }) => ({
       handleHistoricalAction: vi.fn((_id: string, kind: string) => kind === "derive" ? params.refreshHistory() : undefined),
       handleHistoricalPrint: vi.fn(),
     }));
