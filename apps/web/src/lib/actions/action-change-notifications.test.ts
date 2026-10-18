@@ -4,6 +4,15 @@ import {
   detectActionChangeKinds,
 } from "./action-change-notifications";
 
+function preparationData(overrides: Record<string, unknown> = {}) {
+  return {
+    pointDeRendezVous: "Parc A",
+    meetingTime: "08:45",
+    departureTime: "09:00",
+    ...overrides,
+  };
+}
+
 function current(overrides: Record<string, unknown> = {}) {
   return {
     published_at: "2026-10-01T10:00:00.000Z",
@@ -35,7 +44,7 @@ describe("action change notification classification", () => {
     })).toEqual([]);
     expect(detectActionChangeKinds({
       current: current(),
-      updateData: { preparation_data: { shortDescription: "Actualisée" } },
+      updateData: { preparation_data: preparationData({ shortDescription: "Actualisée" }) },
     })).toEqual([]);
   });
 
@@ -50,7 +59,7 @@ describe("action change notification classification", () => {
     })).toEqual(["schedule"]);
     expect(detectActionChangeKinds({
       current: current(),
-      updateData: { preparation_data: { pointDeRendezVous: "Parc B" } },
+      updateData: { preparation_data: preparationData({ pointDeRendezVous: "Parc B" }) },
     })).toEqual(["meeting_point"]);
   });
 
@@ -67,69 +76,69 @@ describe("action change notification classification", () => {
 
   it("emits meaningful safety and equipment events but ignores formatting-only edits", () => {
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { safetyInstructions: "Rester en binôme." } }),
-      updateData: { preparation_data: { safetyInstructions: "  RESTER EN BINÔME ! " } },
+      current: current({ preparation_data: preparationData({ safetyInstructions: "Rester en binôme." }) }),
+      updateData: { preparation_data: preparationData({ safetyInstructions: "  RESTER EN BINÔME ! " }) },
     })).toEqual([]);
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { safetyInstructions: "Rester en binôme." } }),
-      updateData: { preparation_data: { safetyInstructions: "Rester en binôme et porter un gilet visible." } },
+      current: current({ preparation_data: preparationData({ safetyInstructions: "Rester en binôme." }) }),
+      updateData: { preparation_data: preparationData({ safetyInstructions: "Rester en binôme et porter un gilet visible." }) },
     })).toEqual(["safety"]);
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { recommendedMaterials: "Gants." } }),
-      updateData: { preparation_data: { recommendedMaterials: "Gants et sacs renforcés." } },
+      current: current({ preparation_data: preparationData({ recommendedMaterials: "Gants." }) }),
+      updateData: { preparation_data: preparationData({ recommendedMaterials: "Gants et sacs renforcés." }) },
     })).toEqual(["materials"]);
   });
 
   it("notifies for public accessibility changes and ignores private preparation data", () => {
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { accessibilityStatus: "not_evaluated" } }),
-      updateData: { preparation_data: { accessibilityStatus: "conditions_reported" } },
+      current: current({ preparation_data: preparationData({ accessibilityStatus: "not_evaluated" }) }),
+      updateData: { preparation_data: preparationData({ accessibilityStatus: "conditions_reported" }) },
     })).toEqual(["safety"]);
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { accessibility: "Accès par la rampe nord." } }),
-      updateData: { preparation_data: { accessibility: "Accès par l'entrée nord." } },
+      current: current({ preparation_data: preparationData({ accessibility: "Accès par la rampe nord." }) }),
+      updateData: { preparation_data: preparationData({ accessibility: "Accès par l'entrée nord." }) },
     })).toEqual(["safety"]);
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { logisticsNotes: "Note interne", preparationChecklist: [{ key: "briefing", label: "Briefing", checked: false }] } }),
-      updateData: { preparation_data: { logisticsNotes: "Autre note", preparationChecklist: [{ key: "briefing", label: "Briefing", checked: true }] } },
+      current: current({ preparation_data: preparationData({ logisticsNotes: "Note interne", preparationChecklist: [{ key: "briefing", label: "Briefing", checked: false }] }) }),
+      updateData: { preparation_data: preparationData({ logisticsNotes: "Autre note", preparationChecklist: [{ key: "briefing", label: "Briefing", checked: true }] }) },
     })).toEqual([]);
   });
 
   it("notifies for provided and suggested materials, not their ordering", () => {
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { materialsProvided: "Pinces disponibles." } }),
-      updateData: { preparation_data: { materialsProvided: "Pinces et sacs disponibles." } },
+      current: current({ preparation_data: preparationData({ materialsProvided: "Pinces disponibles." }) }),
+      updateData: { preparation_data: preparationData({ materialsProvided: "Pinces et sacs disponibles." }) },
     })).toEqual(["materials"]);
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { materialsProvided: "Pinces disponibles." } }),
-      updateData: { preparation_data: { materialsProvided: "" } },
+      current: current({ preparation_data: preparationData({ materialsProvided: "Pinces disponibles." }) }),
+      updateData: { preparation_data: preparationData({ materialsProvided: "" }) },
     })).toEqual(["materials"]);
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { suggestedMaterials: ["gloves", "grabbers"] } }),
-      updateData: { preparation_data: { suggestedMaterials: ["grabbers", "gloves"] } },
+      current: current({ preparation_data: preparationData({ suggestedMaterials: ["gloves", "grabbers"] }) }),
+      updateData: { preparation_data: preparationData({ suggestedMaterials: ["grabbers", "gloves"] }) },
     })).toEqual([]);
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { suggestedMaterials: ["gloves"] } }),
-      updateData: { preparation_data: { suggestedMaterials: ["gloves", "bags"] } },
+      current: current({ preparation_data: preparationData({ suggestedMaterials: ["gloves"] }) }),
+      updateData: { preparation_data: preparationData({ suggestedMaterials: ["gloves", "bags"] }) },
     })).toEqual(["materials"]);
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { suggestedMaterials: ["gloves", "bags"] } }),
-      updateData: { preparation_data: { suggestedMaterials: ["gloves"] } },
+      current: current({ preparation_data: preparationData({ suggestedMaterials: ["gloves", "bags"] }) }),
+      updateData: { preparation_data: preparationData({ suggestedMaterials: ["gloves"] }) },
     })).toEqual(["materials"]);
   });
 
   it("notifies once for changes to announced equipment or refreshments", () => {
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { equipmentInventory: { glovesPairs: 2 } } }),
-      updateData: { preparation_data: { equipmentInventory: { glovesPairs: 3 } } },
+      current: current({ preparation_data: preparationData({ equipmentInventory: { glovesPairs: 2 } }) }),
+      updateData: { preparation_data: preparationData({ equipmentInventory: { glovesPairs: 3 } }) },
     })).toEqual(["materials"]);
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { refreshmentsProvided: { waterDuringAction: true } } }),
-      updateData: { preparation_data: { refreshmentsProvided: { waterDuringAction: true, snackAfterAction: true } } },
+      current: current({ preparation_data: preparationData({ refreshmentsProvided: { waterDuringAction: true } }) }),
+      updateData: { preparation_data: preparationData({ refreshmentsProvided: { waterDuringAction: true, snackAfterAction: true } }) },
     })).toEqual(["materials"]);
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { equipmentInventory: { glovesPairs: 2 }, logisticsNotes: "interne" } }),
-      updateData: { preparation_data: { equipmentInventory: { glovesPairs: 2 }, logisticsNotes: "interne modifiée" } },
+      current: current({ preparation_data: preparationData({ equipmentInventory: { glovesPairs: 2 }, logisticsNotes: "interne" }) }),
+      updateData: { preparation_data: preparationData({ equipmentInventory: { glovesPairs: 2 }, logisticsNotes: "interne modifiée" }) },
     })).toEqual([]);
   });
 
@@ -147,27 +156,65 @@ describe("action change notification classification", () => {
 
     expect(detectActionChangeKinds({
       current: current({
-        preparation_data: {
+        preparation_data: preparationData({
           routeVersioning: { active: { calculation: { weatherContext: currentWeather } } },
-        },
+        }),
       }),
       updateData: {
-        preparation_data: {
+        preparation_data: preparationData({
           routeVersioning: { active: { calculation: { weatherContext: refreshedWeather } } },
-        },
+        }),
       },
     })).toEqual([]);
   });
 
   it("uses derived public waste guidance instead of raw category changes", () => {
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { expectedWasteCategories: ["plastic"] } }),
-      updateData: { preparation_data: { expectedWasteCategories: ["broken_glass"] } },
+      current: current({ preparation_data: preparationData({ expectedWasteCategories: ["plastic"] }) }),
+      updateData: { preparation_data: preparationData({ expectedWasteCategories: ["broken_glass"] }) },
     })).toEqual(["safety", "materials"]);
     expect(detectActionChangeKinds({
-      current: current({ preparation_data: { expectedWasteCategories: ["plastic"] } }),
-      updateData: { preparation_data: { expectedWasteCategories: ["plastic", "not-a-category"] } },
+      current: current({ preparation_data: preparationData({ expectedWasteCategories: ["plastic"] }) }),
+      updateData: { preparation_data: preparationData({ expectedWasteCategories: ["plastic", "not-a-category"] }) },
     })).toEqual([]);
+  });
+
+  it.each([
+    ["2 to 0", { glovesPairs: 2 }, { glovesPairs: 0 }],
+    ["2 to absent", { glovesPairs: 2 }, {}],
+    ["0 to 2", { glovesPairs: 0 }, { glovesPairs: 2 }],
+    ["absent to 0", {}, { glovesPairs: 0 }],
+  ])("detects equipment availability transition %s", (_label, before, after) => {
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: preparationData({ equipmentInventory: before }) }),
+      updateData: { preparation_data: preparationData({ equipmentInventory: after }) },
+    })).toEqual(["materials"]);
+  });
+
+  it("detects removal of the last equipment and the last announced refreshment", () => {
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: preparationData({ equipmentInventory: { glovesPairs: 2 } }) }),
+      updateData: { preparation_data: preparationData() },
+    })).toEqual(["materials"]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: preparationData({ refreshmentsProvided: { snackAfterAction: true } }) }),
+      updateData: { preparation_data: preparationData() },
+    })).toEqual(["materials"]);
+  });
+
+  it("does not duplicate an unchanged materials notification", () => {
+    const preparation = preparationData({
+      equipmentInventory: { glovesPairs: 2 },
+      refreshmentsProvided: { waterDuringAction: true },
+    });
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: preparation }),
+      updateData: { preparation_data: preparation },
+    })).toEqual([]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: preparation }),
+      updateData: { preparation_data: preparationData({ equipmentInventory: { glovesPairs: 3 }, refreshmentsProvided: { snackAfterAction: true } }) },
+    })).toEqual(["materials"]);
   });
 
   it("uses a stable key for retries and separates revisions", () => {

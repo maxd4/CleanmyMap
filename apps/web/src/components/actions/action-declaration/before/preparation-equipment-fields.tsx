@@ -4,6 +4,7 @@ import {
   ACTION_EQUIPMENT_INVENTORY,
   ACTION_MATERIAL_SUGGESTIONS,
   ACTION_REFRESHMENT_OPTIONS,
+  isActionEquipmentProvided,
   type ActionEquipmentQuantityKey,
   type ActionRefreshmentsProvided,
 } from "@/lib/actions/preparation-contract";
@@ -43,9 +44,18 @@ function updateAvailability(
 function declaredEquipmentLines(inventory: ActionEquipmentInventory): string[] {
   return ACTION_EQUIPMENT_INVENTORY.flatMap((option) => {
     const value = inventory[option.key];
-    if (value === undefined || (option.kind === "availability" && value === false)) return [];
+    if (!isActionEquipmentProvided(option, value)) return [];
     if (option.kind === "quantity") return [`${option.label} : ${value}`];
     return [option.label];
+  });
+}
+
+function explicitlyUnavailableEquipmentLines(inventory: ActionEquipmentInventory): string[] {
+  return ACTION_EQUIPMENT_INVENTORY.flatMap((option) => {
+    const value = inventory[option.key];
+    return option.kind === "quantity" && value === 0
+      ? [`${option.label} : aucune unité fournie`]
+      : [];
   });
 }
 
@@ -55,6 +65,7 @@ function declaredRefreshmentLines(refreshments: ActionRefreshmentsProvided): str
 
 export function PreparationEquipmentFields({ form, updateField }: BaseSectionProps) {
   const inventoryLines = declaredEquipmentLines(form.equipmentInventory);
+  const unavailableEquipmentLines = explicitlyUnavailableEquipmentLines(form.equipmentInventory);
   const refreshmentLines = declaredRefreshmentLines(form.refreshmentsProvided);
   const recommendedLines = [
     form.recommendedMaterials.trim() ? form.recommendedMaterials.trim() : null,
@@ -155,8 +166,13 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
           </div>
           <div>
             <h6 className="text-sm font-bold text-sky-950">Équipements fournis</h6>
-            {inventoryLines.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-sky-950">{inventoryLines.map((line) => <li key={line}>{line}</li>)}</ul> : <p className="mt-2 text-sm text-sky-900/70">Aucun équipement renseigné.</p>}
+            {inventoryLines.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-sky-950">{inventoryLines.map((line) => <li key={line}>{line}</li>)}</ul> : <p className="mt-2 text-sm text-sky-900/70">Aucun équipement fourni.</p>}
           </div>
+          {unavailableEquipmentLines.length > 0 ? <div>
+            <h6 className="text-sm font-bold text-sky-950">Équipements explicitement non fournis</h6>
+            <ul className="mt-2 space-y-1 text-sm text-sky-900/80">{unavailableEquipmentLines.map((line) => <li key={line}>{line}</li>)}</ul>
+          </div>
+          : null}
           <div>
             <h6 className="text-sm font-bold text-sky-950">Convivialité</h6>
             {refreshmentLines.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-sky-950">{refreshmentLines.map((line) => <li key={line}>{line}</li>)}</ul> : <p className="mt-2 text-sm text-sky-900/70">Aucune prestation renseignée.</p>}

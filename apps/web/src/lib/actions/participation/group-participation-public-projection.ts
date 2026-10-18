@@ -4,6 +4,7 @@ import {
   ACTION_EQUIPMENT_INVENTORY,
   ACTION_MATERIAL_SUGGESTIONS,
   ACTION_REFRESHMENT_OPTIONS,
+  isActionEquipmentProvided,
 } from "@/lib/actions/preparation-contract";
 import {
   deriveActionVolunteerChecklist,
@@ -21,6 +22,7 @@ export type PublicActionPracticalInformation = {
   materialsProvided: string | null;
   suggestedMaterials?: string[];
   equipmentProvided: string[];
+  equipmentNotProvided?: string[];
   refreshmentsProvided: string[];
   volunteerChecklist?: ActionVolunteerChecklist;
   participantMessage: string | null;
@@ -35,8 +37,19 @@ function buildPublicEquipment(preparationData: ActionPreparationData | null | un
   if (!inventory) return [];
   return ACTION_EQUIPMENT_INVENTORY.flatMap((option) => {
     const value = inventory[option.key];
-    if (value === undefined || (option.kind === "availability" && value === false)) return [];
+    if (!isActionEquipmentProvided(option, value)) return [];
     return option.kind === "quantity" ? [`${option.label} : ${value}`] : [option.label];
+  });
+}
+
+function buildPublicEquipmentNotProvided(preparationData: ActionPreparationData | null | undefined): string[] {
+  const inventory = preparationData?.equipmentInventory;
+  if (!inventory) return [];
+  return ACTION_EQUIPMENT_INVENTORY.flatMap((option) => {
+    const value = inventory[option.key];
+    return option.kind === "quantity" && value === 0
+      ? [`${option.label} : aucune unité fournie`]
+      : [];
   });
 }
 
@@ -91,6 +104,7 @@ export function buildPublicActionPracticalInformation(
     materialsProvided: readPublicText(preparationData?.materialsProvided),
     suggestedMaterials,
     equipmentProvided: buildPublicEquipment(preparationData),
+    equipmentNotProvided: buildPublicEquipmentNotProvided(preparationData),
     refreshmentsProvided: buildPublicRefreshments(preparationData),
     volunteerChecklist,
     participantMessage: readPublicText(preparationData?.participantMessage),

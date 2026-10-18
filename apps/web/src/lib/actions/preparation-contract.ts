@@ -39,6 +39,17 @@ export type ActionEquipmentAvailabilityKey = Extract<
 export type ActionEquipmentInventory = Partial<Record<ActionEquipmentQuantityKey, number>> &
   Partial<Record<ActionEquipmentAvailabilityKey, boolean>>;
 
+/** Presentation-only availability: zero is an explicit absence, not supplied stock. */
+export function isActionEquipmentProvided(
+  option: (typeof ACTION_EQUIPMENT_INVENTORY)[number],
+  value: unknown,
+): boolean {
+  if (option.kind === "quantity") {
+    return typeof value === "number" && Number.isInteger(value) && value > 0;
+  }
+  return value === true;
+}
+
 export const ACTION_REFRESHMENT_OPTIONS = [
   { key: "waterDuringAction", label: "Eau fournie pendant l'action" },
   { key: "drinksAfterAction", label: "Boissons prévues après l'action" },

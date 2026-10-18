@@ -32,10 +32,12 @@ describe("ActionPreparationData preparation extensions", () => {
   });
 
   it("keeps absent quantities absent while preserving zero and independent booleans", () => {
-    expect(normalizeEquipmentInventory({ glovesPairs: 0, garbageBags: undefined, firstAidKitAvailable: false, unknown: 4 })).toEqual({
+    const saved = normalizeEquipmentInventory({ glovesPairs: 0, garbageBags: undefined, firstAidKitAvailable: false, unknown: 4 });
+    expect(saved).toEqual({
       glovesPairs: 0,
       firstAidKitAvailable: false,
     });
+    expect(normalizeEquipmentInventory(saved)).toEqual(saved);
     expect(normalizeRefreshmentsProvided({ waterDuringAction: true, drinksAfterAction: false })).toEqual({
       waterDuringAction: true,
       drinksAfterAction: false,

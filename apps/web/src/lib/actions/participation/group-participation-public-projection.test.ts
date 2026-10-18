@@ -32,7 +32,8 @@ describe("public action practical information", () => {
     expect(result.materialsToBring).toBe("Gants et sacs.");
     expect(result.materialsProvided).toBe("Pinces disponibles.");
     expect(result.suggestedMaterials).toEqual(["Gants", "Pinces"]);
-    expect(result.equipmentProvided).toEqual(["Paires de gants : 0", "Sacs poubelles : 12", "Pèse-bagage"]);
+    expect(result.equipmentProvided).toEqual(["Sacs poubelles : 12", "Pèse-bagage"]);
+    expect(result.equipmentNotProvided).toEqual(["Paires de gants : aucune unité fournie"]);
     expect(result.refreshmentsProvided).toEqual(["Eau fournie pendant l'action", "Collation prévue après l'action"]);
     expect(result.accessibilityStatus).toBe("conditions_reported");
     expect(result.participantMessage).toBe("Rendez-vous devant la grille.");
@@ -54,6 +55,7 @@ describe("public action practical information", () => {
       materialsProvided: null,
       suggestedMaterials: [],
       equipmentProvided: [],
+      equipmentNotProvided: [],
       refreshmentsProvided: [],
       volunteerChecklist: {
         toBring: [],

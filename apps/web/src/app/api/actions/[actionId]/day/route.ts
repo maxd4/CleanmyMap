@@ -94,6 +94,7 @@ function buildDayPayload(action: NonNullable<Awaited<ReturnType<typeof loadActio
       recommendedMaterials: firstText(preparation.recommendedMaterials),
       materialsProvided: firstText(preparation.materialsProvided),
       equipmentProvided: practicalInfo.equipmentProvided,
+      equipmentNotProvided: practicalInfo.equipmentNotProvided,
       refreshmentsProvided: practicalInfo.refreshmentsProvided,
       volunteerChecklist: practicalInfo.volunteerChecklist,
       accessibility: firstText(preparation.accessibility),

@@ -102,6 +102,7 @@ function publicPreparationChanged(
       meaningfulTextChanged(currentPublic.materialsProvided, nextPublic.materialsProvided) ||
       meaningfulListChanged(currentPublic.suggestedMaterials, nextPublic.suggestedMaterials) ||
       meaningfulListChanged(currentPublic.equipmentProvided, nextPublic.equipmentProvided) ||
+      meaningfulListChanged(currentPublic.equipmentNotProvided, nextPublic.equipmentNotProvided) ||
       meaningfulListChanged(currentPublic.refreshmentsProvided, nextPublic.refreshmentsProvided) ||
       meaningfulListChanged(currentPublic.derivedMaterials, nextPublic.derivedMaterials),
   };
@@ -133,7 +134,7 @@ function nextPreparationData(
   return {
     current: currentPreparation,
     next: hasUpdateField(updateData, "preparation_data")
-      ? { ...currentPreparation, ...asPreparationData(updateData.preparation_data) }
+      ? asPreparationData(updateData.preparation_data)
       : currentPreparation,
   };
 }

@@ -6,6 +6,7 @@ import {
   ACTION_EQUIPMENT_INVENTORY,
   ACTION_MATERIAL_SUGGESTIONS,
   ACTION_REFRESHMENT_OPTIONS,
+  isActionEquipmentProvided,
 } from "./preparation-contract";
 
 export const ACTION_CHECKLIST_PROVENANCES = [
@@ -110,7 +111,7 @@ function declaredEquipment(preparation: ActionPreparationData | null | undefined
 
   return ACTION_EQUIPMENT_INVENTORY.flatMap((option) => {
     const value = inventory[option.key];
-    if (value === undefined || (option.kind === "availability" && value === false)) return [];
+    if (!isActionEquipmentProvided(option, value)) return [];
     const label = option.kind === "quantity" ? `${option.label} : ${value}` : option.label;
     return [item(`provided-${option.key}`, label, "organizer")];
   });

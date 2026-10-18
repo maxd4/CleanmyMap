@@ -21,6 +21,7 @@ export type ActionDayBriefing = {
     recommendedMaterials: string | null;
     materialsProvided: string | null;
     equipmentProvided: string[];
+    equipmentNotProvided?: string[];
     refreshmentsProvided: string[];
     volunteerChecklist?: {
       toBring: Array<{ key: string; label: string; detail: string | null; provenance: ActionChecklistProvenance[] }>;

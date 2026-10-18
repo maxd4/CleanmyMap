@@ -43,6 +43,7 @@ describe("action volunteer preparation checklist", () => {
     });
 
     expect(result.toBring).toEqual([]);
+    expect(result.provided.some((entry) => entry.label.includes(": 0"))).toBe(false);
     expect(result.provided.map((entry) => entry.label)).toEqual(expect.arrayContaining([
       "Paires de gants : 4",
       "Sacs poubelles : 20",
