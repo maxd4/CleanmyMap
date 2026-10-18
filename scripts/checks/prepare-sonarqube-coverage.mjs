@@ -59,7 +59,20 @@ function normalizeSourcePath(rawPath, { root, sourceRoot }) {
     throw new Error(`LCOV SF path escapes the checked-out source root: ${rawPath}`);
   }
   const target = repositoryFile(root, normalized);
-  if (!fs.existsSync(target) || !fs.statSync(target).isFile()) {
+  let targetStat;
+  try {
+    targetStat = fs.statSync(target, { throwIfNoEntry: false });
+  } catch (error) {
+    const code = error?.code;
+    if (code === "EACCES" || code === "EPERM") {
+      throw new Error(`LCOV SF path cannot be accessed in the checkout: ${normalized}`);
+    }
+    if (code === "ENOENT" || code === "ENOTDIR") {
+      throw new Error(`LCOV SF path does not resolve in the checkout: ${normalized}`);
+    }
+    throw new Error(`LCOV SF path could not be inspected in the checkout: ${normalized}`);
+  }
+  if (!targetStat?.isFile()) {
     throw new Error(`LCOV SF path does not resolve in the checkout: ${normalized}`);
   }
   return normalized;

@@ -131,6 +131,9 @@ vi.mock("@/lib/actions/action-update-notifications", () => ({
   emitActionUpdateNotifications: emitActionUpdateNotificationsMock,
 }));
 
+const updateMock = vi.hoisted(() => vi.fn());
+const fromMock = vi.hoisted(() => vi.fn());
+
 export {
   appendActionModerationAuditMock,
   emitActionUpdateNotificationsMock,
@@ -150,9 +153,6 @@ export {
   hasGpxGeometryContributionMock,
   reconcileGeometryContributionProgressionIfNeededMock,
 };
-
-const updateMock = vi.hoisted(() => vi.fn());
-const fromMock = vi.hoisted(() => vi.fn());
 
 export function resetPatchRouteMocks() {
   vi.resetModules();

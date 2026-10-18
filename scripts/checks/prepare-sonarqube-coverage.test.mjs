@@ -145,6 +145,18 @@ test("fails closed when LCOV points to a missing source", () => {
   }), /do not resolve|does not resolve/);
 });
 
+test("fails closed when an LCOV source resolves to a directory", () => {
+  const root = fixtureRoot();
+  const sourcePath = path.join(root, "apps/web/src/feature.ts");
+  fs.rmSync(sourcePath);
+  fs.mkdirSync(sourcePath);
+
+  assert.throws(() => validateSonarCoverageReports({
+    root,
+    reports: [{ scope: "web", lcovPath: "apps/web/coverage/lcov.info", summaryPath: "apps/web/coverage/coverage-summary.json", sourceRoot: "apps/web" }],
+  }), (error) => error instanceof Error && /does not resolve/.test(error.message));
+});
+
 test("fails closed when an LCOV report is absent", () => {
   const root = fixtureRoot();
   fs.rmSync(path.join(root, "apps/web/coverage/lcov.info"));

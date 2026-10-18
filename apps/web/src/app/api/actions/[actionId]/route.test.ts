@@ -1,10 +1,24 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { patchAction } from "@/__tests__/support/action-route-helpers";
 import { appendActionModerationAuditMock, emitActionUpdateNotificationsMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, requireAuthenticatedAccessMock, resolveActionDepartmentForPersistenceMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   beforeEach(() => {
     resetPatchRouteMocks();
+  });
+
+  it("réinitialise puis utilise le mock update hoisted du harness", async () => {
+    const staleImplementation = vi.fn(() => {
+      throw new Error("stale update implementation");
+    });
+    updateMock.mockImplementation(staleImplementation);
+
+    resetPatchRouteMocks();
+    const response = await patchAction({ actionPhase: "pre_action" });
+
+    expect(response.status).toBe(200);
+    expect(staleImplementation).not.toHaveBeenCalled();
+    expect(updateMock).toHaveBeenCalled();
   });
 
   it("keeps a pre-action pending until the harvest is completed", async () => {

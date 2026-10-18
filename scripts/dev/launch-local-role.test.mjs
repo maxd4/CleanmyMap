@@ -51,6 +51,13 @@ describe("launch-local-role", () => {
     assert.doesNotMatch(launcher, /DEV_STRICT_PORT\s*:/);
   });
 
+  it("keeps the launcher path import limited to its used helpers", () => {
+    const launcher = readFileSync("scripts/dev/launch-local-role.mjs", "utf8");
+    const pathImport = launcher.split("\n").find((line) => line.includes('from "node:path";'));
+
+    assert.equal(pathImport, 'import { delimiter, extname, join, posix, resolve, win32 } from "node:path";');
+  });
+
   it("uses a non-interactive Vercel Development pull without Claude tooling", () => {
     assert.deepEqual(getVercelEnvPullArgs(), ["env", "pull", ".env.local", "--environment", "development", "--yes"]);
 

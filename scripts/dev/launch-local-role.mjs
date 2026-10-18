@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { delimiter, dirname, extname, join, posix, resolve, win32 } from "node:path";
+import { delimiter, extname, join, posix, resolve, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = resolve(fileURLToPath(new URL(".", import.meta.url)));
