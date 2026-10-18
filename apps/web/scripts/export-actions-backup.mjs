@@ -10,6 +10,8 @@ import {
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const PAGE_SIZE = 1000;
+const CHUNK_SIZE = 500;
+const MAX_PAGES_PER_CHUNK = 10_000;
 const ACTION_COLUMNS = [
   "id",
   "created_at",
@@ -51,6 +53,22 @@ const ACTION_COLUMNS = [
   "preparation_data",
 ].join(", ");
 
+const STABLE_TIE_BREAKERS = Object.freeze({
+  action_conversations: ["id"],
+  action_organizers: ["id"],
+  action_registrations: ["id"],
+  action_participants: ["id"],
+  training_examples: ["action_id"],
+  forms: ["id"],
+  action_conversation_members: ["conversation_id", "user_id"],
+  action_conversation_exclusions: ["conversation_id", "user_id"],
+  action_share_contact_requests: ["id"],
+});
+
+function getStableTieBreakers(table, orderColumn) {
+  return (STABLE_TIE_BREAKERS[table] ?? []).filter((column) => column !== orderColumn);
+}
+
 async function fetchAllRows(supabase, table, columns, orderColumn = "created_at") {
   const rows = [];
   let from = 0;
@@ -73,13 +91,29 @@ async function fetchAllRows(supabase, table, columns, orderColumn = "created_at"
 async function fetchRowsForIds(supabase, table, column, ids, orderColumn = "created_at") {
   if (ids.length === 0) return [];
   const rows = [];
-  for (let index = 0; index < ids.length; index += 500) {
-    const chunk = ids.slice(index, index + 500);
-    let query = supabase.from(table).select("*").in(column, chunk);
-    if (orderColumn) query = query.order(orderColumn, { ascending: false });
-    const { data, error } = await query;
-    if (error) throw new Error(`${table}: ${error.message}`);
-    rows.push(...(data ?? []));
+  for (let index = 0; index < ids.length; index += CHUNK_SIZE) {
+    const chunk = ids.slice(index, index + CHUNK_SIZE);
+    let from = 0;
+    let completed = false;
+    for (let page = 0; page < MAX_PAGES_PER_CHUNK; page += 1) {
+      const to = from + PAGE_SIZE - 1;
+      let query = supabase.from(table).select("*").in(column, chunk);
+      if (orderColumn) query = query.order(orderColumn, { ascending: false });
+      for (const tieBreaker of getStableTieBreakers(table, orderColumn)) {
+        query = query.order(tieBreaker, { ascending: false });
+      }
+      query = query.range(from, to);
+      const { data, error } = await query;
+      if (error) throw new Error(`${table}: ${error.message}`);
+      const batch = Array.isArray(data) ? data : [];
+      if (batch.length === 0) {
+        completed = true;
+        break;
+      }
+      rows.push(...batch);
+      from += batch.length;
+    }
+    if (!completed) throw new Error(`${table}: pagination exceeded its safety bound`);
   }
   return rows;
 }
