@@ -183,7 +183,7 @@ export const actionsAuthorizationContract = {
     POST: {
       expected: "Authenticated user creates or reuses only their own eligible post-action claim",
       dimensions: ["authentication", "ownership", "business permission", "audit"],
-      actual: "requireAuthenticatedAccess + server-side finished-public action eligibility + user-scoped action_participants mutation + appendParticipationClaimAudit delegates to appendActionModerationAudit",
+      actual: "requireAuthenticatedAccess + shared public access_mode guard + user-scoped action_participants mutation + appendParticipationClaimAudit delegates to appendActionModerationAudit",
       evidence: [
         "requireAuthenticatedAccess",
         "claimFinishedActionParticipation",
@@ -374,12 +374,13 @@ export const actionsAuthorizationContract = {
     POST: {
       expected: "Authenticated recipient requests a private pre-action registration or a permitted post-action claim through a valid invitation token",
       dimensions: ["authentication", "ownership"],
-      actual: "requireActionRequestAccess + valid invitation-state resolution + recipient-bound pre-action registration RPC or canonical post-action claim/audit flow",
+      actual: "requireActionRequestAccess + valid invitation-state resolution + recipient-bound pre-action registration RPC or token-bound atomic private post-action claim RPC/audit flow",
       evidence: [
         "requireActionRequestAccess",
         "isInvitationTokenFormat",
         "request_private_action_registration",
         "claimFinishedActionParticipation",
+        "claim_private_action_participation",
         "appendParticipationClaimAudit",
       ],
       evidenceScope: "module",

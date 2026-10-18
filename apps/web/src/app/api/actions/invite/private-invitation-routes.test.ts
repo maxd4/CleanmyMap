@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { hashInvitationToken } from "@/lib/actions/private-invitation";
 
 const mocks = vi.hoisted(() => ({
   access: vi.fn(),
@@ -193,7 +194,11 @@ describe("private invitation route boundaries", () => {
 
     expect(response.status).toBe(200);
     expect(body).toMatchObject({ flow: "post_action_claim", participationStatus: "pending", participationSource: "post_action_claim" });
-    expect(mocks.claim).toHaveBeenCalledWith(expect.anything(), { actionId: action.id, userId: "user-owner" });
+    expect(mocks.claim).toHaveBeenCalledWith(expect.anything(), {
+      actionId: action.id,
+      userId: "user-owner",
+      tokenHash: hashInvitationToken(token),
+    });
     expect(mocks.audit).toHaveBeenCalledOnce();
     expect(mocks.rpc).not.toHaveBeenCalled();
   });

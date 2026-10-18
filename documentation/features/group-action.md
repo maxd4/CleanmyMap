@@ -41,6 +41,10 @@ bilan n'est pas finalisé, le lien affiche « Action en attente de finalisation 
 et n'ouvre aucune nouvelle inscription. Après `post_action_complete`, le même
 lien réutilise le claim canonique et crée seulement une demande
 `action_participants` `post_action_claim` `pending`, jamais une présence confirmée.
+Pour cette branche privée, le service partagé exige le hash du lien et délègue
+la vérification atomique du hash, de l'expiration, de la révocation, de l'action
+et de l'unicité à `claim_private_action_participation` ; les routes publiques,
+mobiles et SPOGOMI ne peuvent donc pas créer ce claim avec le seul `actionId`.
 Un lien expiré, révoqué, remplacé ou associé à une action annulée, rejetée ou
 non éligible est fermé sans réactivation silencieuse d'une décision refusée.
 13 ter. Les informations pratiques exposent une checklist bénévole dérivée à la

@@ -79,7 +79,62 @@ function isDuplicateError(error: unknown): boolean {
   );
 }
 
-type ClaimParams = { actionId: string; userId: string; now?: Date };
+type ClaimParams = { actionId: string; userId: string; now?: Date; tokenHash?: string };
+
+type PrivateClaimRpcRow = {
+  action_id: string;
+  participant_user_id: string;
+  participation_status: ParticipationStatus;
+  participation_source: ParticipationSource;
+  joined_at: string;
+  updated_at: string | null;
+  already_requested: boolean;
+};
+
+function mapPrivateClaimRpcError(error: { message?: string } | null): Error {
+  const message = error?.message ?? "Private post-action claim failed.";
+  if (message.includes("already_decided")) {
+    return createValidationError("Cette demande a déjà été refusée ou annulée.");
+  }
+  if (message.includes("already_active")) {
+    return createValidationError("Une demande de participation active existe déjà.");
+  }
+  if (
+    message.includes("invitation_invalid") ||
+    message.includes("action_unavailable")
+  ) {
+    return createNotFoundError();
+  }
+  return new Error(message);
+}
+
+async function claimPrivateActionParticipation(
+  supabase: SupabaseClient,
+  params: Required<Pick<ClaimParams, "actionId" | "userId">> & { tokenHash: string },
+): Promise<PostActionClaimResult> {
+  const result = await supabase.rpc("claim_private_action_participation", {
+    p_action_id: params.actionId,
+    p_user_id: params.userId,
+    p_token_hash: params.tokenHash,
+  });
+  if (result.error) throw mapPrivateClaimRpcError(result.error);
+  const row = (Array.isArray(result.data) ? result.data[0] : result.data) as PrivateClaimRpcRow | null;
+  if (!row) throw createValidationError("La demande de participation n’a pas pu être vérifiée.");
+
+  const value = createParticipationAuditValue({
+    participationStatus: row.participation_status,
+    participationSource: row.participation_source,
+    joinedAt: row.joined_at,
+    updatedAt: row.updated_at,
+  });
+  return buildClaimResult({
+    alreadyRequested: row.already_requested,
+    actionId: row.action_id,
+    participantUserId: row.participant_user_id,
+    value,
+    previousValue: row.already_requested ? value : null,
+  });
+}
 
 function buildExistingClaimResult(
   existing: ActionParticipantStatusRow,
@@ -154,6 +209,7 @@ export async function claimFinishedActionParticipation(
     status: "pending" | "approved" | "rejected";
     moderation_visibility?: "visible" | "hidden" | null;
     action_phase: "pre_action" | "post_action_draft" | "post_action_complete";
+    access_mode?: "public" | "invite_link" | null;
     action_date: string;
     event_start_time?: string | null;
     published_at?: string | null;
@@ -165,6 +221,17 @@ export async function claimFinishedActionParticipation(
   );
 
   const now = params.now ?? new Date();
+  if (action?.access_mode === "invite_link") {
+    if (!params.tokenHash) throw createNotFoundError();
+    return claimPrivateActionParticipation(supabase, {
+      actionId: params.actionId,
+      userId: params.userId,
+      tokenHash: params.tokenHash,
+    });
+  }
+  if (action?.access_mode !== "public" && action?.access_mode != null) {
+    throw createNotFoundError();
+  }
   const eligible =
     action?.status === "approved" &&
     action.moderation_visibility !== "hidden" &&

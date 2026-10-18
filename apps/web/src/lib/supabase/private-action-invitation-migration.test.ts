@@ -9,6 +9,10 @@ const lifecycleMigration = readFileSync(
   new URL("../../../supabase/migrations/20261018000012_private_action_invitation_expiration_and_claims.sql", import.meta.url),
   "utf8",
 );
+const atomicClaimMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261019000001_atomic_private_action_post_claim.sql", import.meta.url),
+  "utf8",
+);
 
 describe("private action invitation migration contract", () => {
   it("keeps access, moderation and publication as separate persisted boundaries", () => {
@@ -51,5 +55,22 @@ describe("private action invitation migration contract", () => {
     expect(lifecycleMigration).toContain("revoke all on function public.request_private_action_registration(uuid, text, text)");
     expect(lifecycleMigration).toContain("grant execute on function public.request_private_action_registration(uuid, text, text)");
     expect(lifecycleMigration).toContain("to service_role");
+  });
+
+  it("keeps private post-action proof and participant creation atomic", () => {
+    expect(atomicClaimMigration).toContain("create or replace function public.claim_private_action_participation(");
+    expect(atomicClaimMigration).toContain("where action_id = p_action_id");
+    expect(atomicClaimMigration).toContain("and token_hash = p_token_hash");
+    expect(atomicClaimMigration).toContain("v_invitation.revoked_at is not null");
+    expect(atomicClaimMigration).toContain("v_invitation.expires_at <= v_now");
+    expect(atomicClaimMigration).toContain("coalesce(v_action.access_mode, 'public') <> 'invite_link'");
+    expect(atomicClaimMigration).toContain("v_action.action_phase <> 'post_action_complete'");
+    expect(atomicClaimMigration).toContain("pg_advisory_xact_lock");
+    expect(atomicClaimMigration).toContain("private_post_action_claim_already_decided");
+    expect(atomicClaimMigration).toContain("'pending'");
+    expect(atomicClaimMigration).toContain("'post_action_claim'");
+    expect(atomicClaimMigration).toContain("revoke all on function public.claim_private_action_participation(uuid, text, text)");
+    expect(atomicClaimMigration).toContain("grant execute on function public.claim_private_action_participation(uuid, text, text)");
+    expect(atomicClaimMigration).not.toMatch(/grant execute on function public\.claim_private_action_participation[\s\S]*?(public|anon|authenticated)/i);
   });
 });

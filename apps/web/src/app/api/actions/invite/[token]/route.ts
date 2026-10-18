@@ -252,9 +252,12 @@ export async function POST(request: Request, ctx: Context) {
       });
     }
 
+    // The shared owner invokes claim_private_action_participation only with
+    // this invitation hash; public/mobile callers never provide that proof.
     const claim = await claimFinishedActionParticipation(resolution.supabase, {
       actionId: resolution.actionId,
       userId: access.userId,
+      tokenHash: resolution.tokenHash,
     });
     await appendParticipationClaimAudit({
       actionId: resolution.actionId,
