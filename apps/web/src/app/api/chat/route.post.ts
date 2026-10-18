@@ -7,6 +7,7 @@ import { canAccessChatChannel, buildChannelAccessHint } from "@/lib/chat/channel
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { resolveActionDiscussionAccess } from "@/lib/chat/action-conversations";
+import { reserveDiscussionMessageSlot, toDiscussionRateLimitErrorPayload } from "@/lib/community/discussion-rate-limit";
 import { validateChatPostRequest, type ValidatedChatPost } from "./route.post-validation";
 import {
   persistChatPostAndNotify,
@@ -65,6 +66,13 @@ async function processValidatedChatPost({
   }
   const destination = await resolveChatPostDestination({ supabase, serviceSupabase, userId, validated, zone, isExternalActionShare });
   if (destination instanceof Response) return destination;
+  const quota = await reserveDiscussionMessageSlot(serviceSupabase, {
+    userId,
+    channel: data.channelType === "bug_report" ? "bug_report" : "discussion_event",
+  });
+  if (!quota.allowed) {
+    return NextResponse.json(toDiscussionRateLimitErrorPayload(quota), { status: 429 });
+  }
   // All message creation is performed by the server client only after the
   // Clerk identity, quota, channel, destination and conversation checks above.
   // The RLS client remains available to read data needed during resolution and

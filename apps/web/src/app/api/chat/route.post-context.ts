@@ -5,7 +5,6 @@ import { createActionShareRequest } from "@/lib/chat/action-share-requests";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import { handleApiError } from "@/lib/http/api-errors";
-import { reserveDiscussionMessageSlot, toDiscussionRateLimitErrorPayload } from "@/lib/community/discussion-rate-limit";
 import type { ChatRelatedEvent } from "@/lib/chat/announcements";
 import {
   buildZoneContext,
@@ -197,13 +196,6 @@ export async function resolveChatPostExecutionZone({
   data: ValidatedChatPost["data"];
   sharedAction: SharedAction | null;
 }): Promise<ChatPostZoneContext | Response> {
-  const quota = await reserveDiscussionMessageSlot(serviceSupabase, {
-    userId,
-    channel: data.channelType === "bug_report" ? "bug_report" : "discussion_event",
-  });
-  if (!quota.allowed) {
-    return NextResponse.json(toDiscussionRateLimitErrorPayload(quota), { status: 429 });
-  }
   return resolveChatPostZoneContext({ serviceSupabase, userId, data, sharedAction });
 }
 
