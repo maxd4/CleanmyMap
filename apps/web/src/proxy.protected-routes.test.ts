@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 const clerkContextRequestMock = vi.hoisted(() => vi.fn());
+const clerkMiddlewareFailure = vi.hoisted(() => ({ enabled: false }));
 
 vi.mock("@clerk/nextjs/server", () => {
   process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
@@ -10,6 +11,9 @@ vi.mock("@clerk/nextjs/server", () => {
   return {
     clerkMiddleware: (handler: (auth: unknown, req: NextRequest, evt: unknown) => unknown) =>
       async (req: NextRequest, evt: unknown) => {
+        if (clerkMiddlewareFailure.enabled) {
+          throw new Error("Clerk unavailable");
+        }
         clerkContextRequestMock(req.nextUrl.pathname, req.headers.get("authorization"));
         return handler({ protect: vi.fn() }, req, evt);
       },
@@ -36,6 +40,11 @@ import { RUBRIQUE_REGISTRY } from "@/lib/sections-registry";
 import { SEO_HTTP_REDIRECT_SOURCES, SEO_REDIRECT_TARGETS } from "@/lib/seo/indexability";
 
 describe("proxy route context", () => {
+  beforeEach(() => {
+    clerkMiddlewareFailure.enabled = false;
+    clerkContextRequestMock.mockClear();
+  });
+
   it("keeps key page access semantics explicit", () => {
     expect(isProtectedAppPage("/actions/map")).toBe(false);
     expect(isClerkContextOnlyRoute("/actions/map")).toBe(false);
@@ -191,6 +200,29 @@ describe("proxy route context", () => {
 
     expect(isAnonymousSafeApiRequest(getRequest)).toBe(true);
     expect(isAnonymousSafeApiRequest(postRequest)).toBe(false);
+  });
+
+  it("allows only the public shared-report GET route through without Clerk", () => {
+    expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/reports/shared/" + "a".repeat(43)))).toBe(true);
+    expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/reports/shared/invalid-token"))).toBe(true);
+    expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/reports/shared/a/b"))).toBe(false);
+    expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/reports/shared/" + "a".repeat(43), { method: "POST" }))).toBe(false);
+    expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/reports/generations/11111111-1111-4111-8111-111111111111"))).toBe(false);
+  });
+
+  it("does not make a valid shared bearer depend on Clerk or an expired cookie", async () => {
+    clerkMiddlewareFailure.enabled = true;
+
+    const response = await proxy(
+      new NextRequest("http://localhost/api/reports/shared/" + "a".repeat(43), {
+        headers: { cookie: "__session=expired" },
+      }),
+      {} as never,
+    );
+
+    if (!response) throw new Error("shared report proxy response is missing");
+    expect(response.status).toBe(200);
+    expect(clerkContextRequestMock).not.toHaveBeenCalled();
   });
 
   it("applies SEO redirects before the Clerk middleware", async () => {

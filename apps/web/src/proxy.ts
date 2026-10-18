@@ -163,6 +163,10 @@ function isApiRoute(pathname: string): boolean {
   return pathname.startsWith("/api/");
 }
 
+function isSharedReportPdfRequest(req: NextRequest): boolean {
+  return req.method === "GET" && /^\/api\/reports\/shared\/[^/]+$/.test(req.nextUrl.pathname);
+}
+
 export function isAnonymousSafeApiRequest(req: NextRequest): boolean {
   if (req.method !== "GET") {
     return req.nextUrl.pathname === "/api/spogomi/team-form";
@@ -176,7 +180,7 @@ export function isAnonymousSafeApiRequest(req: NextRequest): boolean {
     "/api/partners/published-directory",
     "/api/community/events",
     "/api/spogomi/team-access",
-  ].includes(pathname) || pathname.startsWith("/api/spogomi/public/") || pathname === "/api/spogomi/team-form";
+  ].includes(pathname) || pathname.startsWith("/api/spogomi/public/") || pathname === "/api/spogomi/team-form" || isSharedReportPdfRequest(req);
 }
 
 function hasClerkSessionSignal(req: NextRequest): boolean {
@@ -191,11 +195,11 @@ function hasClerkSessionSignal(req: NextRequest): boolean {
 }
 
 function shouldSkipClerkForAnonymousPublicRequest(req: NextRequest): boolean {
-  if (req.method === "GET" && [
+  if (req.method === "GET" && ([
     "/api/actions/map",
     "/api/actions/map/initial-nearest",
     "/api/partners/published-directory",
-  ].includes(req.nextUrl.pathname)) {
+  ].includes(req.nextUrl.pathname) || isSharedReportPdfRequest(req))) {
     return true;
   }
 

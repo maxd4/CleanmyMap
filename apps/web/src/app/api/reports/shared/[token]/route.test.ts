@@ -102,4 +102,17 @@ describe("GET /api/reports/shared/[token]", () => {
     expect(response.status).toBe(503);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
   });
+
+  it("applies anonymous rate limiting before looking up the bearer", async () => {
+    const limitedResponse = new Response("Too many requests", { status: 429 });
+    enforceRateLimitMock.mockResolvedValueOnce(limitedResponse);
+
+    const response = await GET(request(), { params: Promise.resolve({ token }) });
+
+    expect(response).toBe(limitedResponse);
+    expect(hashTokenMock).not.toHaveBeenCalled();
+    expect(findShareMock).not.toHaveBeenCalled();
+    expect(artifactMock).not.toHaveBeenCalled();
+    expect(downloadMock).not.toHaveBeenCalled();
+  });
 });
