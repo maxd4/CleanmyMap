@@ -100,8 +100,8 @@ assert.match(e2eWorkflow, /\.\/node_modules\/\.bin\/supabase start/);
 assert.match(e2eWorkflow, /\.\/node_modules\/\.bin\/playwright install/);
 assert.match(e2eWorkflow, /\.\/node_modules\/\.bin\/playwright test/);
 assert.equal(packageLock.packages["node_modules/supabase"].version, "2.117.0");
-assert.equal(packageLock.packages["node_modules/playwright"].version, "1.64.0");
-assert.equal(packageLock.packages["node_modules/@playwright/test"].version, "1.64.0");
+assert.equal(packageLock.packages["node_modules/playwright"].version, "1.64.1");
+assert.equal(packageLock.packages["node_modules/@playwright/test"].version, "1.64.1");
 
 const firstPartyCodeqlJob = codeqlWorkflow.match(/  analyze-first-party-javascript:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";
 const vendoredCodeqlJob = codeqlWorkflow.match(/  analyze-vendored-javascript:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";

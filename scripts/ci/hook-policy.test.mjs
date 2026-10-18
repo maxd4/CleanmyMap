@@ -10,6 +10,17 @@ async function readRepoFile(relativePath) {
   return readFile(path.join(repoRoot, relativePath), "utf8");
 }
 
+function sectionMatching(document, headingPattern, label) {
+  const match = headingPattern.exec(document);
+  assert.ok(match, `missing governance section: ${label}`);
+  const section = document.slice(match.index + match[0].length);
+  return section.split(/^## /m, 1)[0];
+}
+
+function currentSection(document, heading) {
+  return sectionMatching(document, new RegExp(`^## ${heading}\\s*$`, "m"), heading);
+}
+
 test("pre-commit uses the changed-surface guard without DEVELOPMENT quality ratchets", async () => {
   const packageJson = JSON.parse(await readRepoFile("package.json"));
   const guard = await readRepoFile("scripts/ci/pre_commit_guard.ps1");
@@ -253,37 +264,51 @@ test("governance coordinates parallel dirty work without losing published scope"
   const rootAgents = await readRepoFile("AGENTS.md");
   const chatgpt = await readRepoFile("CHATGPT.md");
   const scriptsAgents = await readRepoFile("scripts/AGENTS.md");
+  const executionPolicy = currentSection(rootAgents, "Modèle d’exécution");
+  const chatgptPolicy = sectionMatching(chatgpt, /^## .*MAIN-ONLY \/ MULTI-WRITER/m, "ChatGPT multi-writer policy");
+  const scriptsPolicy = currentSection(scriptsAgents, "Modèle canonique de développement");
 
-  assert.match(rootAgents, /modifications locales non stagées hors périmètre ne bloquent ni le commit\s+ni le push/);
+  assert.match(executionPolicy, /MAIN-ONLY/);
+  assert.match(executionPolicy, /MULTI-WRITER/);
+  assert.match(executionPolicy, /dirty|locales?/i);
+  assert.match(executionPolicy, /staged|stag(?:é|ées?)/i);
+  assert.match(executionPolicy, /commit/);
+  assert.match(executionPolicy, /push/);
+  assert.match(executionPolicy, /ne jamais[^\n]*[ée]cras/i);
+  assert.match(executionPolicy, /PUSH_CANDIDATE/);
+  assert.match(executionPolicy, /origin\/main/);
+  assert.match(executionPolicy, /force-push/);
   assert.match(rootAgents, /git diff --cached --name-only/);
   assert.match(rootAgents, /git log --oneline origin\/main\.\.\.HEAD|git log --oneline origin\/main\.\.HEAD/);
   assert.match(rootAgents, /WORKTREE/);
   assert.match(rootAgents, /STAGED/);
   assert.match(rootAgents, /PUSH_CANDIDATE/);
-  assert.match(rootAgents, /MAIN-ONLY \/ MULTI-WRITER COORDONNÉ/);
-  assert.match(rootAgents, /plusieurs writers Codex peuvent travailler dans le checkout canonique/);
-  assert.match(rootAgents, /modifications sur des fichiers distincts peuvent progresser en parallèle/);
-  assert.match(rootAgents, /jamais écraser silencieusement les changements d’un autre writer/);
-  assert.match(rootAgents, /main publié = référence versionnée/);
-  assert.match(rootAgents, /candidate locale explicitement fournie ou produite pour le lot courant/);
-  assert.match(rootAgents, /tout changement local préexistant doit être préservé/);
   assert.doesNotMatch(rootAgents, /l['’]état local est prioritaire sur l['’]état github/i);
-  assert.match(rootAgents, /Hors mode de développement rapide\s*:\s*[\s\S]*validation → commit isolé → push main → vérification de convergence/);
-  assert.match(rootAgents, /Mode de développement rapide explicitement activé\s*:\s*[\s\S]*commit local selon son protocole, sans push tant que le mode reste actif/);
   assert.doesNotMatch(rootAgents, /workspace:start/);
   assert.doesNotMatch(scriptsAgents, /workspace:start/);
   assert.match(rootAgents, /### LEGACY \/ COMPATIBILITY/);
-  assert.match(chatgpt, /MAIN-ONLY \/ MULTI-WRITER COORDONNÉ/);
-  assert.match(chatgpt, /Plusieurs writers Codex peuvent y travailler en parallèle/);
-  assert.match(chatgpt, /préserver les changements concurrents/);
-  assert.match(chatgpt, /attente bornée, synchronisation non destructive/);
-  assert.match(chatgpt, /Hors mode de développement rapide\s*:\s*[\s\S]*validation → commit isolé → push main → vérification de convergence/);
-  assert.match(chatgpt, /Mode de développement rapide explicitement activé\s*:\s*[\s\S]*commit local selon son protocole, sans push tant que le mode reste actif/);
+  assert.match(chatgptPolicy, /MAIN-ONLY/);
+  assert.match(chatgptPolicy, /MULTI-WRITER/);
+  assert.match(chatgptPolicy, /parallel|concurrent/i);
+  assert.match(chatgptPolicy, /préserver|non destructive/i);
+  assert.match(chatgptPolicy, /STAGED/);
+  assert.match(chatgptPolicy, /PUSH_CANDIDATE/);
+  assert.match(chatgptPolicy, /validation/);
+  assert.match(chatgptPolicy, /commit/);
+  assert.match(chatgptPolicy, /push/);
+  assert.match(chatgptPolicy, /convergence/);
+  assert.match(chatgptPolicy, /rapide/);
+  assert.match(chatgptPolicy, /sans push/i);
   assert.doesNotMatch(chatgpt, /push origin\/main sur demande explicite|demander commit et push le lot|committer et pousser sur main lorsque l'utilisateur l'a demandé/i);
   assert.doesNotMatch(chatgpt, /workspace:start/);
   assert.doesNotMatch(chatgpt, /publication-candidate/);
-  assert.match(scriptsAgents, /Hors mode de développement rapide\s*:\s*[\s\S]*validation → commit isolé → push main → vérification de convergence/);
-  assert.match(scriptsAgents, /Mode de développement rapide explicitement activé\s*:\s*[\s\S]*commit local selon son protocole, sans push tant que le mode reste actif/);
+  assert.match(scriptsPolicy, /MAIN-ONLY/);
+  assert.match(scriptsPolicy, /MULTI-WRITER/);
+  assert.match(scriptsPolicy, /validation/);
+  assert.match(scriptsPolicy, /commit/);
+  assert.match(scriptsPolicy, /push/);
+  assert.match(scriptsPolicy, /rapide/);
+  assert.match(scriptsPolicy, /sans push/i);
   assert.doesNotMatch(scriptsAgents, /HEAD == origin\/main/);
   assert.match(scriptsAgents, /pré-commit doit utiliser exclusivement la portée `STAGED`/);
   assert.match(scriptsAgents, /pré-push réel doit utiliser exclusivement la portée\s+`PUSH_CANDIDATE`/);

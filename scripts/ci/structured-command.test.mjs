@@ -7,6 +7,11 @@ import test from "node:test";
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const powershell = process.platform === "win32" ? "powershell" : "pwsh";
 const parserPath = path.join(repositoryRoot, "scripts", "ci", "structured-command.ps1");
+const ANSI_ESCAPE_SEQUENCE = /\u001B\[[0-?]*[ -/]*[@-~]/g;
+
+function normalizePowerShellOutput(result) {
+  return `${result.stdout ?? ""}\n${result.stderr ?? ""}`.replace(ANSI_ESCAPE_SEQUENCE, "");
+}
 
 function powerShellOrSkip(t) {
   const probe = spawnSync(powershell, ["-NoProfile", "-NonInteractive", "-Command", "$PSVersionTable.PSVersion.ToString()"], {
@@ -80,7 +85,7 @@ test("run_focus rejects chained commands before executing any command", (t) => {
   );
 
   assert.notEqual(result.status, 0);
-  assert.match(`${result.stdout}\n${result.stderr}`, /exactly one invocation/);
+  assert.match(normalizePowerShellOutput(result), /exactly one invocation/);
   assert.doesNotMatch(result.stdout, /forged/);
 });
 
@@ -111,7 +116,9 @@ test("structured parser rejects variables, subexpressions, and attached paramete
   ]) {
     const result = invokeParser(command);
     assert.notEqual(result.status, 0, command);
-    assert.match(`${result.stdout}\n${result.stderr}`, /not allowed|literal option/);
+    const output = normalizePowerShellOutput(result);
+    assert.doesNotMatch(output, /"Executable"\s*:/, command);
+    assert.match(output, /not allowed|literal option/);
   }
 });
 

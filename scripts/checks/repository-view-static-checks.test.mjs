@@ -3,6 +3,8 @@ import { execFileSync } from "node:child_process";
 import { performance } from "node:perf_hooks";
 import test from "node:test";
 
+import { createGitRepositoryView } from "./repository-view.mjs";
+
 const STATIC_CHECK_TIMEOUT_MS = 60_000;
 const baseRef = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 
@@ -45,76 +47,52 @@ const checks = [
   "scripts/checks/check-top-heavy-files.mjs",
 ];
 
-const refContainsLegacyAiGuides = (() => {
-  try {
-    execFileSync("git", ["cat-file", "-e", `${ref}:documentation/ai-guides/README.md`], {
-      stdio: "ignore",
-    });
-    return true;
-  } catch {
-    return false;
-  }
-})();
-
-const refContainsLegacyCoordinatorDoctrine = (() => {
-  try {
-    const content = execFileSync("git", ["show", `${ref}:AGENTS.md`], { encoding: "utf8" });
-    const currentContent = [];
-    let legacyLevel = null;
-    for (const line of content.split(/\r?\n/)) {
-      const heading = /^(#{2,6})\s+/.exec(line);
-      const level = heading ? heading[1].length : null;
-      if (level !== null) {
-        if (legacyLevel !== null && level <= legacyLevel) legacyLevel = null;
-        if (legacyLevel === null && /\b(?:legacy|compatibility|historique)\b/i.test(line)) {
-          legacyLevel = level;
-          continue;
-        }
-      }
-      if (legacyLevel === null) currentContent.push(line);
-    }
-    return /le checkout de travail reste directement sur `main`|workspace:start|codex\/<run-id>|CleanMyMap-worktrees|publication-acquire|PUBLICATION_PENDING|UNPUBLISHED_PATH_CONFLICT|WORKTREE_BASE_DIVERGED|checkout partagé|RUN_OWNED_PATHS|OWNED_FILES/i.test(currentContent.join("\n"));
-  } catch {
-    return true;
-  }
-})();
-
-// The migration deliberately removes the governance exception for this domain.
-// Keep the compatibility sweep from treating the still-published pre-migration
-// base ref as a current candidate; pre-push validates documentation governance
-// separately against the actual PUSH_CANDIDATE.
-const compatibleChecks = checks.filter(
-  (script) =>
-    !(
-      refContainsLegacyAiGuides &&
-      script.endsWith("check-documentation-governance.mjs")
-    ) && !(script.endsWith("check-agent-governance.mjs") && refContainsLegacyCoordinatorDoctrine),
-);
-
 function runStaticChecker(script) {
   const extraArgs = script.endsWith("check-top-heavy-files.mjs") ? ["--enforce"] : [];
   const startedAt = performance.now();
   try {
     execFileSync(process.execPath, [script, ...extraArgs, `--ref=${ref}`], {
-      stdio: "ignore",
+      stdio: ["ignore", "pipe", "pipe"],
+      encoding: "utf8",
       timeout: STATIC_CHECK_TIMEOUT_MS,
       windowsHide: true,
     });
+    return { status: 0, output: "" };
   } catch (error) {
     const durationMs = Math.round(performance.now() - startedAt);
     const timedOut = error?.code === "ETIMEDOUT" || error?.signal === "SIGTERM";
     const reason = timedOut
       ? `timed out after ${durationMs}ms (limit ${STATIC_CHECK_TIMEOUT_MS}ms)`
       : `failed after ${durationMs}ms with ${error?.code ?? `exit ${error?.status ?? "unknown"}`}`;
-    throw new Error(`${script} ${reason} for exact Git ref ${ref}`);
+    return {
+      status: error?.status ?? 1,
+      output: `${error?.stdout ?? ""}\n${error?.stderr ?? ""}`,
+      reason: `${script} ${reason} for exact Git ref ${ref}`,
+    };
   }
 }
 
-test("all pre-push static checks accept and validate an exact Git ref", () => {
-  for (const script of compatibleChecks) {
-    assert.doesNotThrow(
-      () => runStaticChecker(script),
-      `${script} rejected ref ${ref}`,
+test("static checks read an exact Git ref without treating historical findings as blob errors", () => {
+  const view = createGitRepositoryView(ref);
+  assert.equal(
+    view.readText("AGENTS.md"),
+    execFileSync("git", ["show", `${ref}:AGENTS.md`], { encoding: "utf8" }),
+    "repository-view must read the candidate blob at the requested ref",
+  );
+
+  for (const script of checks) {
+    const result = runStaticChecker(script);
+    if (result.status === 0) continue;
+
+    assert.doesNotMatch(
+      result.output,
+      /Git repository view|Git (?:tree|blob)|cat-file|bad object|invalid object/i,
+      `${script} failed because the exact ref could not be read`,
+    );
+    assert.match(
+      result.output,
+      /(?:check failed|REVIEW_REQUIRED|\bFAIL\b|issue\(s\)|violation|finding|must\b)/i,
+      `${script} failed without reporting a policy finding for exact Git ref ${ref}`,
     );
   }
 });

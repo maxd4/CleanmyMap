@@ -6,6 +6,7 @@ import test from "node:test";
 
 const scriptsDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptsDirectory, "../..");
+const expectedScorecardActionSha = "fa7117db83c52d787ae5a89f350999701505d78e";
 
 function readWorkflow(name) {
   const path = resolve(repositoryRoot, ".github/workflows", name);
@@ -29,7 +30,7 @@ assertCommonWorkflowSecurity(scorecard, "scorecard.yml");
 assert.match(scorecard, /cron: ["']30 1 \* \* 6["']/);
 assert.match(scorecard, /workflow_dispatch:/);
 assert.doesNotMatch(scorecard, /(^|\n)\s*(push|pull_request):/);
-assert.match(scorecard, /ossf\/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc/);
+assert.match(scorecard, new RegExp(`ossf/scorecard-action@${expectedScorecardActionSha}`));
 assert.match(scorecard, /results_format: json/);
 assert.match(scorecard, /publish_results: false/);
 assert.match(scorecard, /actions\/upload-artifact@[0-9a-f]{40}/);
@@ -40,7 +41,7 @@ assertCommonWorkflowSecurity(zizmor, "zizmor.yml");
 assert.match(zizmor, /push:[\s\S]*paths:\s*\n\s+- \.github\/workflows\/\*\*\n\s+pull_request:/);
 assert.match(zizmor, /pull_request:[\s\S]*paths:\s*\n\s+- \.github\/workflows\/\*\*/);
 assert.match(zizmor, /workflow_dispatch:/);
-assert.match(zizmor, /zizmorcore\/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482/);
+assert.match(zizmor, /zizmorcore\/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e/);
 assert.match(zizmor, /version: 1\.30\.1/);
 assert.match(zizmor, /online-audits: false/);
 assert.match(zizmor, /advanced-security: false/);

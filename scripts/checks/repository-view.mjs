@@ -1,10 +1,19 @@
 import fs from "node:fs";
+import { Buffer } from "node:buffer";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 
 const DEFAULT_BATCH_CONTENT_TARGET_BYTES = 32 * 1024 * 1024;
 const BATCH_OUTPUT_MARGIN_BYTES = 1024;
 const BATCH_HEADER_MARGIN_BYTES = 128;
+
+// Git sorts paths by their raw tree bytes.  Buffer comparison keeps the view
+// order independent of the host locale (notably on Windows, where
+// String#localeCompare can place lowercase path components before uppercase
+// root files).
+function compareRepositoryPaths(left, right) {
+  return Buffer.from(left, "utf8").compare(Buffer.from(right, "utf8"));
+}
 
 export function normalizeRepositoryPath(relativePath) {
   return String(relativePath ?? "")
@@ -39,11 +48,11 @@ function listFilesystemFiles(root) {
   };
 
   visit(root);
-  return files.sort((left, right) => left.localeCompare(right, "en"));
+  return files.sort(compareRepositoryPaths);
 }
 
 function createView({ files, directories = [], readBinary, mode }) {
-  const fileList = [...new Set(files.map(normalizeRepositoryPath))].sort((left, right) => left.localeCompare(right, "en"));
+  const fileList = [...new Set(files.map(normalizeRepositoryPath))].sort(compareRepositoryPaths);
   const fileSet = new Set(fileList);
   const directorySet = new Set(directories.map(normalizeRepositoryPath).filter(Boolean));
   for (const file of fileList) {
@@ -72,11 +81,11 @@ function createView({ files, directories = [], readBinary, mode }) {
   const rootDirectories = () => [...new Set([
     ...[...directorySet].filter((directory) => !directory.includes("/")),
     ...fileList.filter((file) => file.includes("/")).map((file) => file.slice(0, file.indexOf("/"))),
-  ])].sort((left, right) => left.localeCompare(right, "en"));
+  ])].sort(compareRepositoryPaths);
   const listDirectories = (prefix = "") => {
     const normalizedPrefix = normalizeRepositoryPath(prefix);
-    if (!normalizedPrefix) return [...directorySet].sort((left, right) => left.localeCompare(right, "en"));
-    return [...directorySet].filter((directory) => directory.startsWith(`${normalizedPrefix}/`)).sort((left, right) => left.localeCompare(right, "en"));
+    if (!normalizedPrefix) return [...directorySet].sort(compareRepositoryPaths);
+    return [...directorySet].filter((directory) => directory.startsWith(`${normalizedPrefix}/`)).sort(compareRepositoryPaths);
   };
 
   return Object.freeze({
