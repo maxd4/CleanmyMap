@@ -46,6 +46,7 @@ export type ActionPreviewRow = Pick<
   | "cancellation_reason"
   | "cancelled_from_status"
 > & {
+  access_mode?: ActionRow["access_mode"];
   preparation_data?: ActionRow["preparation_data"];
   waste_kg?: number | null;
   cigarette_butts?: number | null;
@@ -79,7 +80,7 @@ export type ActionParticipantReviewRow = Pick<
 };
 
 const ACTION_PREVIEW_COLUMNS =
-  "id, created_at, updated_at, action_date, event_start_time, location_label, volunteers_count, duration_minutes, waste_kg, cigarette_butts, status, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status, preparation_data";
+  "id, created_at, updated_at, action_date, event_start_time, location_label, volunteers_count, duration_minutes, waste_kg, cigarette_butts, status, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status, access_mode, preparation_data";
 const ACTION_PARTICIPATION_COLUMNS =
   "status, moderation_visibility, notes, published_at, action_phase, action_date, event_start_time, cancelled_at, access_mode";
 
@@ -160,7 +161,9 @@ export function buildJoinableItem(
       participantSummary?.myUpdatedAt ?? participantSummary?.myJoinedAt ?? null,
     groupJoinEnabled: metadata.groupJoinEnabled,
     pendingRequestsCount: resolvePendingRequestsCount(participantSummary, participantsCount),
-    practicalInfo: buildPublicActionPracticalInformation(action.preparation_data),
+    practicalInfo: buildPublicActionPracticalInformation(action.preparation_data, {
+      confirmedParticipants: participantsCount,
+    }),
   };
 }
 

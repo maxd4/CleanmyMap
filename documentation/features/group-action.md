@@ -43,6 +43,17 @@ lien réutilise le claim canonique et crée seulement une demande
 `action_participants` `post_action_claim` `pending`, jamais une présence confirmée.
 Un lien expiré, révoqué, remplacé ou associé à une action annulée, rejetée ou
 non éligible est fermé sans réactivation silencieuse d'une décision refusée.
+13 ter. Les informations pratiques exposent une checklist bénévole dérivée à la
+volée : « À apporter », « Recommandé selon la météo » et « Fourni par
+l'organisateur ». Chaque élément conserve sa provenance (préparation,
+organisateur, catalogue Waste ou prévision météo). La dérivation ne modifie ni
+la checklist interne `preparationChecklist`, ni les champs de préparation, et
+les prévisions météo indisponibles ne sont jamais remplacées par la météo
+courante. L'absence de stock ou d'effectif ne devient pas un manque artificiel.
+Le briefing `Jour J` suit la même projection bornée ; pour une action privée,
+un compte Clerk doit être l'organisateur autorisé ou disposer d'une inscription
+`action_registrations` réellement `confirmed`. Un `actionId` seul ou une demande
+`pending` ne suffit pas et aucune ouverture du briefing ne crée une présence.
 14. Une demande `group_form` `pending` génère un événement `action_event` dédupliqué pour le créateur, les organisateurs habilités et les rôles `admin`/`max`, à l'exclusion du demandeur. Elle est distinguée d'une invitation `manual_add` par `payload.subtype = registration_request`. Pour le créateur et les organisateurs, l'identité de livraison est leur `user_id` Clerk issu de la relation d'action : une ligne `profiles` n'est pas requise ; `profiles` reste utilisé uniquement pour résoudre les rôles `admin`/`max`.
 15. La carte « Demande d'inscription » expose `✓ Accepter` et `× Refuser`. Chaque clic repasse par l'autorisation serveur et une transition conditionnelle depuis `pending`; une décision concurrente ou un droit révoqué rend la carte indisponible sans seconde mutation.
 16. Une décision effective `confirmed` ou `cancelled` crée une notification `registration_decision` pour le demandeur Clerk avec un lien vers l'action, sans dépendre d'une présence préalable dans `profiles`. L'annulation de l'action retire la demande de la projection actionnable sans acceptation implicite ni refus fabriqué.

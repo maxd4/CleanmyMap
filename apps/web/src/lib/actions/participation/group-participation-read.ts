@@ -56,11 +56,12 @@ export function isVisibleInGroupForms(
     | "status"
     | "moderation_visibility"
     | "published_at"
+    | "access_mode"
   >,
   metadata: { groupJoinEnabled: boolean },
   now = new Date(),
 ): boolean {
-  return isJoinableFuturePreAction(action, metadata, now);
+  return action.access_mode !== "invite_link" && isJoinableFuturePreAction(action, metadata, now);
 }
 
 function configureJoinableActionQuery(
@@ -71,6 +72,7 @@ function configureJoinableActionQuery(
   let nextQuery = query
     .select(ACTION_PREVIEW_COLUMNS)
     .eq("action_phase", "pre_action")
+    .eq("access_mode", "public")
     .eq("moderation_visibility", "visible")
     .in("status", ["approved", "pending"])
     .not("published_at", "is", null)
@@ -306,7 +308,9 @@ function buildActionHistoryItems(
       joinedAt: record.joinedAt, participationStatus: record.status, participationSource: record.source,
       participationUpdatedAt: record.updatedAt, groupJoinEnabled: metadata.groupJoinEnabled,
       pendingRequestsCount: Math.max(0, (context.participantSummaryByActionId.get(action.id)?.totalCount ?? 0) - (context.participantCounts.get(action.id) ?? 0)),
-      practicalInfo: buildPublicActionPracticalInformation(action.preparation_data),
+      practicalInfo: buildPublicActionPracticalInformation(action.preparation_data, {
+        confirmedParticipants: context.participantCounts.get(action.id) ?? 0,
+      }),
       individualImpact: "individualImpact" in record ? record.individualImpact : null,
       personalImpactAttribution: "participantId" in record
         ? context.participantImpactByActionId.get(action.id)?.get(record.participantId) ?? null

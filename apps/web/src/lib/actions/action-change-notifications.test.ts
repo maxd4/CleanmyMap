@@ -133,6 +133,32 @@ describe("action change notification classification", () => {
     })).toEqual([]);
   });
 
+  it("does not notify for a weather-refresh-only change", () => {
+    const currentWeather = {
+      available: true,
+      coveredWindow: true,
+      hourly: [{ time: "2026-10-20T09:00:00+02:00", temperatureC: 12, precipitationMm: 0, windKmh: 8, gustKmh: null }],
+      source: "open-meteo" as const,
+    };
+    const refreshedWeather = {
+      ...currentWeather,
+      hourly: [{ ...currentWeather.hourly[0], temperatureC: 14, windKmh: 10 }],
+    };
+
+    expect(detectActionChangeKinds({
+      current: current({
+        preparation_data: {
+          routeVersioning: { active: { calculation: { weatherContext: currentWeather } } },
+        },
+      }),
+      updateData: {
+        preparation_data: {
+          routeVersioning: { active: { calculation: { weatherContext: refreshedWeather } } },
+        },
+      },
+    })).toEqual([]);
+  });
+
   it("uses derived public waste guidance instead of raw category changes", () => {
     expect(detectActionChangeKinds({
       current: current({ preparation_data: { expectedWasteCategories: ["plastic"] } }),

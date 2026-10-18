@@ -52,6 +52,17 @@ est partielle et ne démontre aucun partenariat officiel ; les bilans
 spécialisés ne sont pas tous disponibles ; l'inclusion sociale et les effets
 liés à l'activité physique sont des objectifs, non des résultats mesurés.
 
+## La boucle produit
+
+<p align="center">
+  <img src="./documentation/resume-projet.png" alt="Boucle produit CleanMyMap : repérer, préparer, agir, mesurer et partager" />
+</p>
+
+Ces étapes forment une boucle continue de connaissance et d'action terrain :
+les observations aident à préparer les interventions, les actions produisent
+des éléments mesurables, puis les résultats rendent les prochaines décisions
+plus lisibles.
+
 <p align="center">
   <img src="./apps/web/public/brand/github-product-overview.webp" alt="Vue réelle de l'accueil CleanMyMap avec la carte des actions et les indicateurs d'impact" />
 </p>

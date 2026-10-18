@@ -55,6 +55,15 @@ describe("public action practical information", () => {
       suggestedMaterials: [],
       equipmentProvided: [],
       refreshmentsProvided: [],
+      volunteerChecklist: {
+        toBring: [],
+        weatherRecommendations: [],
+        provided: [],
+        weatherStatus: "unavailable",
+        weatherMessage: "Prévisions météo indisponibles pour cette action",
+        staffing: { source: "unknown", count: null, label: "Effectif exploitable non renseigné" },
+        insufficiencies: [],
+      },
       participantMessage: null,
     });
   });

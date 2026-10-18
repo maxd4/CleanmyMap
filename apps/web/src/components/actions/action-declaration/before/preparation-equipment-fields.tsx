@@ -8,6 +8,7 @@ import {
   type ActionRefreshmentsProvided,
 } from "@/lib/actions/preparation-contract";
 import type { ActionEquipmentInventory } from "@/lib/actions/preparation-contract";
+import { deriveActionVolunteerChecklist, actionChecklistProvenanceLabel } from "@/lib/actions/action-preparation-checklist";
 import type { BaseSectionProps } from "./section-contract";
 
 const quantityOptions = ACTION_EQUIPMENT_INVENTORY.filter(
@@ -64,6 +65,20 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
         }).join(", ")}`
       : null,
   ].filter((value): value is string => Boolean(value));
+  const volunteerChecklist = deriveActionVolunteerChecklist({
+    preparation: {
+      recommendedMaterials: form.recommendedMaterials,
+      materialsProvided: form.materialsProvided,
+      suggestedMaterials: form.suggestedMaterials,
+      equipmentInventory: form.equipmentInventory,
+      refreshmentsProvided: form.refreshmentsProvided,
+      expectedWasteCategories: form.wasteCategories,
+      routeCalibrationContext: form.routeCalibrationContext ?? undefined,
+    },
+  });
+  const checklistLines = (values: typeof volunteerChecklist.toBring) => values.length > 0
+    ? <ul className="mt-2 space-y-2 text-sm text-sky-950">{values.map((value) => <li key={value.key}><span className="font-semibold">{value.label}</span>{value.detail ? <span className="block text-xs text-sky-800">{value.detail}</span> : null}<span className="block text-xs text-sky-700">Source : {value.provenance.map(actionChecklistProvenanceLabel).join(", ")}</span></li>)}</ul>
+    : <p className="mt-2 text-sm text-sky-900/70">Aucun élément calculé.</p>;
 
   return (
     <div className="grid gap-4 lg:grid-cols-2" data-testid="preparation-equipment-fields">
@@ -149,6 +164,15 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
           <div>
             <h6 className="text-sm font-bold text-sky-950">Matériel actuellement conseillé</h6>
             {recommendedLines.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-sky-950">{recommendedLines.map((line) => <li key={line}>{line}</li>)}</ul> : <p className="mt-2 text-sm text-sky-900/70">Aucun complément renseigné.</p>}
+          </div>
+          <div className="border-t border-sky-100 pt-4" data-testid="preparation-volunteer-checklist">
+            <div className="flex flex-wrap items-baseline justify-between gap-2"><h6 className="text-sm font-bold text-sky-950">Checklist bénévole calculée</h6><span className="text-xs font-semibold text-sky-800">{volunteerChecklist.weatherMessage}</span></div>
+            <p className="mt-1 text-xs leading-5 text-sky-900/75">{volunteerChecklist.staffing.label}. Les données se recalculent sans modifier la checklist interne.</p>
+            <div className="mt-3 space-y-3">
+              <div><p className="text-xs font-black uppercase tracking-wide text-sky-700">À apporter</p>{checklistLines(volunteerChecklist.toBring)}</div>
+              <div><p className="text-xs font-black uppercase tracking-wide text-sky-700">Recommandé selon la météo</p>{checklistLines(volunteerChecklist.weatherRecommendations)}</div>
+              <div><p className="text-xs font-black uppercase tracking-wide text-sky-700">Fourni par l’organisateur</p>{checklistLines(volunteerChecklist.provided)}</div>
+            </div>
           </div>
         </div>
       </CmmCard>

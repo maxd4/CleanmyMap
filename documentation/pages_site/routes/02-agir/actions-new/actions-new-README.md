@@ -104,6 +104,25 @@ préparés sans compte. Lorsqu'une création, une complétion ou un envoi doit
 création de compte avec reprise du parcours. L'accès à l'entrée ne constitue
 pas une permission de mutation et ne modifie pas les règles métier existantes.
 
+### Checklist bénévole dérivée
+
+La carte « Équipements fournis » affiche une checklist calculée en lecture
+seule par `action-preparation-checklist.ts`. Elle croise les déclarations
+structurées de l'organisateur, les suggestions et recommandations libres, les
+catégories Waste attendues, l'effectif confirmé ou, à défaut, la prévision
+explicitement saisie. Les groupes « À apporter », « Recommandé selon la météo »
+et « Fourni par l'organisateur » portent leur provenance. Une quantité absente
+reste inconnue ; aucun ratio sacs/pinces par bénévole n'est inventé et une
+insuffisance n'est affichée que lorsque le stock et l'effectif sont connus.
+
+La dérivation ne modifie jamais `preparationChecklist`, ne persiste pas de copie
+et n'est pas une certification de sécurité. La météo ne provient que d'une
+prévision horaire `Europe/Paris` correspondant au lieu et au créneau retenus par
+le planner/Open-Meteo ; hors horizon, créneau incomplet ou fournisseur
+indisponible, seuls les conseils généraux et le matériel déclaré sont conservés.
+Un rafraîchissement météo seul ne déclenche pas de notification de changement
+de matériel.
+
 
 ## États à documenter
 

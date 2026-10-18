@@ -58,7 +58,9 @@ async function resolveDayAccess({
     organizerIds,
   );
   if (isOrganizer) return true;
-  if (!isPublicActionReferenceAvailable(action)) return NextResponse.json({ error: "Action indisponible." }, { status: 404 });
+  if (action.access_mode !== "invite_link" && !isPublicActionReferenceAvailable(action)) {
+    return NextResponse.json({ error: "Action indisponible." }, { status: 404 });
+  }
   const registration = await readActionRegistrationRecord(supabase, { actionId, userId });
   return registration?.registration_status === "confirmed"
     ? false
@@ -93,6 +95,7 @@ function buildDayPayload(action: NonNullable<Awaited<ReturnType<typeof loadActio
       materialsProvided: firstText(preparation.materialsProvided),
       equipmentProvided: practicalInfo.equipmentProvided,
       refreshmentsProvided: practicalInfo.refreshmentsProvided,
+      volunteerChecklist: practicalInfo.volunteerChecklist,
       accessibility: firstText(preparation.accessibility),
       accessibilityStatus: preparation.accessibilityStatus ?? "not_evaluated",
       checklist: (preparation.preparationChecklist ?? []).map((item) => ({ key: item.key, label: item.label, checked: item.checked })),

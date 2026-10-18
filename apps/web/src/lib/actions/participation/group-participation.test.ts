@@ -195,6 +195,21 @@ describe("group participation fallback handling", () => {
         TEST_NOW,
       ),
     ).toBe(false);
+    expect(
+      isVisibleInGroupForms(
+        {
+          action_date: "2026-06-10",
+          event_start_time: null,
+          action_phase: "pre_action",
+          status: "pending",
+          moderation_visibility: "visible",
+          published_at: "2026-01-01T00:00:00.000Z",
+          access_mode: "invite_link",
+        },
+        { groupJoinEnabled: true },
+        TEST_NOW,
+      ),
+    ).toBe(false);
   });
 
   it("builds a joinable item from the extracted helper seam", () => {

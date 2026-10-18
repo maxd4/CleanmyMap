@@ -62,4 +62,30 @@ describe("GET /api/actions/[actionId]/day", () => {
     expect(response.status).toBe(403);
     expect(readActionRegistrationRecordMock).toHaveBeenCalledWith(expect.anything(), { actionId: publicAction.id, userId: "owner-1" });
   });
+
+  it("allows a confirmed registrant to read the private action briefing without treating the action as public", async () => {
+    loadActionByIdMock.mockResolvedValue({
+      ...publicAction,
+      access_mode: "invite_link",
+      preparation_data: { ...publicAction.preparation_data, participantMessage: "Rendez-vous sur place." },
+    });
+    canManageActionMock.mockReturnValue(false);
+    readActionRegistrationRecordMock.mockResolvedValue({ registration_status: "confirmed" });
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/private/day"), { params: Promise.resolve({ actionId: publicAction.id }) });
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.access).toBe("confirmed_volunteer");
+    expect(body.action.participantMessage).toBe("Rendez-vous sur place.");
+    expect(body.action).not.toHaveProperty("logisticsNotes");
+  });
+
+  it("does not let a private actionId bypass a pending registration", async () => {
+    loadActionByIdMock.mockResolvedValue({ ...publicAction, access_mode: "invite_link" });
+    canManageActionMock.mockReturnValue(false);
+    readActionRegistrationRecordMock.mockResolvedValue({ registration_status: "pending" });
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/private/day"), { params: Promise.resolve({ actionId: publicAction.id }) });
+    expect(response.status).toBe(403);
+  });
 });

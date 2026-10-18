@@ -1,3 +1,5 @@
+import type { ActionChecklistProvenance } from "./action-preparation-checklist";
+
 export type ActionDayBriefing = {
   status: "ok";
   actionId: string;
@@ -20,6 +22,15 @@ export type ActionDayBriefing = {
     materialsProvided: string | null;
     equipmentProvided: string[];
     refreshmentsProvided: string[];
+    volunteerChecklist?: {
+      toBring: Array<{ key: string; label: string; detail: string | null; provenance: ActionChecklistProvenance[] }>;
+      weatherRecommendations: Array<{ key: string; label: string; detail: string | null; provenance: ActionChecklistProvenance[] }>;
+      provided: Array<{ key: string; label: string; detail: string | null; provenance: ActionChecklistProvenance[] }>;
+      weatherStatus: "available" | "unavailable";
+      weatherMessage: string;
+      staffing: { source: "confirmed" | "expected" | "unknown"; count: number | null; label: string };
+      insufficiencies: string[];
+    };
     accessibility: string | null;
     accessibilityStatus: string;
     checklist: Array<{ key: string; label: string; checked: boolean }>;

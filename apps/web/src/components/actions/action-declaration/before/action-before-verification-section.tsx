@@ -90,6 +90,8 @@ export function ActionBeforeVerificationSection({
             <PreviewValue label="Matériel à apporter" value={[publicInformation.materialsToBring, ...publicInformation.derivedMaterials, ...(publicInformation.suggestedMaterials ?? [])].filter(Boolean).join(" · ") || "Non renseigné"} />
             <PreviewValue label="Équipements fournis" value={publicInformation.equipmentProvided.join(" · ") || "Non renseigné"} />
             <PreviewValue label="Convivialité" value={publicInformation.refreshmentsProvided.join(" · ") || "Non renseignée"} />
+            <PreviewValue label="Checklist bénévole · à apporter" value={publicInformation.volunteerChecklist?.toBring.map((item) => item.label).join(" · ") || "Aucun complément calculé"} />
+            <PreviewValue label="Checklist bénévole · météo" value={publicInformation.volunteerChecklist?.weatherRecommendations.map((item) => item.label).join(" · ") || publicInformation.volunteerChecklist?.weatherMessage || "Prévisions indisponibles"} />
             <PreviewValue label="Accessibilité" value={publicInformation.accessibility ?? "Non évaluée"} />
           </dl>
         </div>
