@@ -1,5 +1,5 @@
 "use client";
 
-import { adapter } from "../lib/supabase/adapter";
+import { clientHelper } from "./client-helper";
 
-export const clientPageValue = adapter;
+export const clientPageValue = clientHelper;

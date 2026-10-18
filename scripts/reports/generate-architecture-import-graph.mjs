@@ -131,13 +131,21 @@ function classifyDomain(surface, filePath, root = repositoryRoot) {
   return relative[0] ?? "root";
 }
 
-function hasUseClientDirective(sourceText, filePath) {
+function hasDirective(sourceText, filePath, directive) {
   const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, false, ts.ScriptKind.TSX);
   for (const statement of sourceFile.statements) {
     if (!ts.isExpressionStatement(statement) || !ts.isStringLiteral(statement.expression)) return false;
-    if (statement.expression.text === "use client") return true;
+    if (statement.expression.text === directive) return true;
   }
   return false;
+}
+
+function hasUseClientDirective(sourceText, filePath) {
+  return hasDirective(sourceText, filePath, "use client");
+}
+
+function hasUseServerDirective(sourceText, filePath) {
+  return hasDirective(sourceText, filePath, "use server");
 }
 
 function classifyLayer(surface, filePath, root = repositoryRoot, sourceText = "") {
@@ -308,6 +316,46 @@ function summarizeDomains(nodes, edges) {
   return [...domains.values()].map((entry) => ({ ...entry, layers: sortStrings(entry.layers) })).sort((a, b) => a.domain.localeCompare(b.domain));
 }
 
+function propagateClientContext(nodes, edges) {
+  const nodesByPath = new Map(nodes.map((node) => [node.path, node]));
+  const runtimeEdgesBySource = new Map();
+  for (const edge of edges) {
+    if (edge.kind !== "runtime" || edge.sourceKind !== "runtime") continue;
+    const outgoing = runtimeEdgesBySource.get(edge.from) ?? [];
+    outgoing.push(edge);
+    runtimeEdgesBySource.set(edge.from, outgoing);
+  }
+
+  const queue = nodes.filter((node) => node.clientEntry && node.sourceKind === "runtime" && !node.serverBoundary);
+  for (const node of queue) node.clientReachable = true;
+
+  for (let index = 0; index < queue.length; index += 1) {
+    const source = queue[index];
+    for (const edge of runtimeEdgesBySource.get(source.path) ?? []) {
+      const target = nodesByPath.get(edge.to);
+      if (!target || target.sourceKind !== "runtime" || target.serverBoundary || target.clientReachable) continue;
+      target.clientReachable = true;
+      queue.push(target);
+    }
+  }
+
+  for (const node of nodes) {
+    node.effectiveLayer = node.serverBoundary ? "application" : node.clientReachable ? "ui" : node.layer;
+  }
+
+  for (const edge of edges) {
+    const source = nodesByPath.get(edge.from);
+    const target = nodesByPath.get(edge.to);
+    edge.fromClientContext = source?.clientReachable === true && edge.kind === "runtime";
+    edge.toClientContext = target?.clientReachable === true && edge.kind === "runtime";
+    edge.fromEffectiveLayer = source?.effectiveLayer ?? edge.fromLayer;
+    edge.toEffectiveLayer = target?.effectiveLayer ?? edge.toLayer;
+    edge.uiToInfrastructure = edge.fromEffectiveLayer === "ui"
+      && edge.toLayer === "infrastructure"
+      && !isUiSafeSharedModule(edge.to);
+  }
+}
+
 export function buildArchitectureImportGraph({ source = "worktree", root = repositoryRoot, surfaces: suppliedSurfaces, gitSha, ref, view: suppliedView } = {}) {
   const measurementView = suppliedView ?? createRepositoryView({ root, ref });
   const activeSurfaces = suppliedSurfaces ?? createSurfaces(root);
@@ -316,6 +364,8 @@ export function buildArchitectureImportGraph({ source = "worktree", root = repos
   const nodes = [];
   const edges = [];
   const unresolvedInternal = [];
+  const filePathsByRelativePath = new Map();
+  const surfacesById = new Map(activeSurfaces.map((surface) => [surface.id, surface]));
   for (const surface of activeSurfaces) {
     for (const filePath of listSourceFilesFromView(measurementView, root, surface.root)) {
       const relativePath = normalizePath(filePath, root);
@@ -326,28 +376,35 @@ export function buildArchitectureImportGraph({ source = "worktree", root = repos
         domain: classifyDomain(surface, filePath, root),
         layer: classifyLayer(surface, filePath, root, sourceText),
         sourceKind: sourceKind(filePath, root),
+        clientEntry: hasUseClientDirective(sourceText, filePath),
+        serverBoundary: hasUseServerDirective(sourceText, filePath),
+        clientReachable: false,
+        effectiveLayer: null,
         publicFacade: isPublicFacade(relativePath),
         facadeOwner: facadeOwner(relativePath),
       };
       nodes.push(node);
-      for (const parsed of parseImports(filePath, sourceText)) {
+      filePathsByRelativePath.set(relativePath, filePath);
+    }
+  }
+
+  const nodesByPath = new Map(nodes.map((node) => [node.path, node]));
+  for (const node of nodes) {
+    const surface = surfacesById.get(node.surface);
+    const filePath = filePathsByRelativePath.get(node.path);
+    if (!surface || !filePath) continue;
+    const sourceText = measurementView.readText(node.path);
+    for (const parsed of parseImports(filePath, sourceText)) {
         const targetPath = resolveInternalImport(surface, filePath, parsed.specifier, { root, view: measurementView });
         if (!targetPath) {
-          if (parsed.specifier.startsWith(".") || parsed.specifier.startsWith("@/")) unresolvedInternal.push({ from: relativePath, specifier: parsed.specifier, line: parsed.line });
+          if (parsed.specifier.startsWith(".") || parsed.specifier.startsWith("@/")) unresolvedInternal.push({ from: node.path, specifier: parsed.specifier, line: parsed.line });
           continue;
         }
         const targetRelative = normalizePath(targetPath, root);
-        const targetNode = {
-          path: targetRelative,
-          surface: surface.id,
-          domain: classifyDomain(surface, targetPath, root),
-          layer: classifyLayer(surface, targetPath, root, measurementView.readText(targetRelative)),
-          sourceKind: sourceKind(targetPath, root),
-          publicFacade: isPublicFacade(targetRelative),
-          facadeOwner: facadeOwner(targetRelative),
-        };
+        const targetNode = nodesByPath.get(targetRelative);
+        if (!targetNode) continue;
         const edge = {
-          from: relativePath,
+          from: node.path,
           to: targetRelative,
           surface: surface.id,
           sourceKind: node.sourceKind,
@@ -362,16 +419,14 @@ export function buildArchitectureImportGraph({ source = "worktree", root = repos
           crossDomain: node.domain !== targetNode.domain,
           targetsPublicFacade: targetNode.publicFacade,
           importsOwnFacade: targetNode.publicFacade && targetNode.facadeOwner && node.path.startsWith(`${targetNode.facadeOwner}/`) && node.path !== targetNode.path,
-          uiToInfrastructure: node.layer === "ui"
-            && targetNode.layer === "infrastructure"
-            && !isUiSafeSharedModule(targetRelative),
+          uiToInfrastructure: false,
           domainToUi: node.layer === "domain" && targetNode.layer === "ui",
           invertedLayer: node.sourceKind === "runtime" && node.layer !== "test" && targetNode.layer !== "test" && ["ui", "application", "domain", "infrastructure", "external-services"].indexOf(node.layer) > ["ui", "application", "domain", "infrastructure", "external-services"].indexOf(targetNode.layer),
         };
         edges.push(edge);
       }
-    }
   }
+  propagateClientContext(nodes, edges);
   nodes.sort((a, b) => a.path.localeCompare(b.path));
   edges.sort(compareEdge);
   const runtimeEdges = edges.filter((edge) => edge.kind === "runtime");

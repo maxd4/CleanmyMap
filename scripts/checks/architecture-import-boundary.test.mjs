@@ -57,7 +57,7 @@ test("architecture graph resolves relative, alias, facade, test and type-only im
 
 test("server app routes and pages remain application entrypoints", () => {
   const graph = fixtureGraph();
-  for (const entrypoint of ["app/route.ts", "app/page.tsx"]) {
+  for (const entrypoint of ["app/route.ts", "app/api/route.ts", "app/page.tsx"]) {
     const node = graph.nodes.find((candidate) => candidate.path.endsWith(entrypoint));
     const importedInfrastructure = edge(graph, entrypoint, "lib/supabase/adapter.ts");
     assert.equal(node?.layer, "application");
@@ -68,10 +68,17 @@ test("server app routes and pages remain application entrypoints", () => {
 test("a client app entrypoint is ui and detects an unauthorized infrastructure import", () => {
   const graph = fixtureGraph();
   const node = graph.nodes.find((candidate) => candidate.path.endsWith("app/client-page.tsx"));
-  const importedInfrastructure = edge(graph, "app/client-page.tsx", "lib/supabase/adapter.ts");
-  const clientViolation = collectBoundaryViolations(graph).find((violation) => violation.from.endsWith("app/client-page.tsx"));
+  const helper = graph.nodes.find((candidate) => candidate.path.endsWith("app/client-helper.ts"));
+  const importedInfrastructure = edge(graph, "app/client-deeper.ts", "lib/supabase/adapter.ts");
+  const clientViolation = collectBoundaryViolations(graph).find((violation) => violation.from.endsWith("app/client-deeper.ts"));
   assert.equal(node?.layer, "ui");
+  assert.equal(node?.clientEntry, true);
+  assert.equal(node?.clientReachable, true);
+  assert.equal(helper?.layer, "application");
+  assert.equal(helper?.clientReachable, true);
+  assert.equal(helper?.effectiveLayer, "ui");
   assert.equal(importedInfrastructure?.uiToInfrastructure, true);
+  assert.equal(importedInfrastructure?.fromClientContext, true);
   assert.equal(clientViolation?.rule, "UI_TO_INFRASTRUCTURE");
   const retiredResult = evaluateBoundary(graph, {
     schemaVersion: 1,
@@ -81,6 +88,46 @@ test("a client app entrypoint is ui and detects an unauthorized infrastructure i
   });
   assert.equal(retiredResult.status, "FAIL");
   assert.equal(retiredResult.reintroduced.length, 1);
+});
+
+test("client propagation follows runtime imports but stops at type-only and server-function boundaries", () => {
+  const graph = fixtureGraph();
+  const typeOnlyTarget = graph.nodes.find((candidate) => candidate.path.endsWith("lib/domain/client-type-only-target.ts"));
+  const typeOnlyEdge = edge(graph, "app/client-type-only.tsx", "lib/domain/client-type-only-target.ts");
+  const shared = graph.nodes.find((candidate) => candidate.path.endsWith("lib/domain/shared-client-server.ts"));
+  const serverToShared = edge(graph, "app/server-shared-page.tsx", "lib/domain/shared-client-server.ts");
+  const sharedToInfrastructure = edge(graph, "lib/domain/shared-client-server.ts", "lib/supabase/adapter.ts");
+  const serverAction = graph.nodes.find((candidate) => candidate.path.endsWith("lib/actions/server-action.ts"));
+  const clientToServerAction = edge(graph, "app/client-server-action.tsx", "lib/actions/server-action.ts");
+  const serverActionToInfrastructure = edge(graph, "lib/actions/server-action.ts", "lib/supabase/adapter.ts");
+
+  assert.equal(typeOnlyEdge?.kind, "type-only");
+  assert.equal(typeOnlyEdge?.toClientContext, false);
+  assert.equal(typeOnlyTarget?.clientReachable, false);
+  assert.equal(shared?.layer, "domain");
+  assert.equal(shared?.clientReachable, true);
+  assert.equal(serverToShared?.uiToInfrastructure, false);
+  assert.equal(sharedToInfrastructure?.uiToInfrastructure, true);
+  assert.equal(serverAction?.serverBoundary, true);
+  assert.equal(serverAction?.clientReachable, false);
+  assert.equal(serverAction?.effectiveLayer, "application");
+  assert.equal(clientToServerAction?.toClientContext, false);
+  assert.equal(serverActionToInfrastructure?.uiToInfrastructure, false);
+});
+
+test("the real Learn Comprendre page propagates its client context to the local section module", () => {
+  const graph = buildArchitectureImportGraph({ source: "worktree" });
+  const page = graph.nodes.find((candidate) => candidate.path === "apps/web/src/app/learn/comprendre/page.tsx");
+  const sections = graph.nodes.find((candidate) => candidate.path === "apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx");
+  const pageToSections = edge(graph, "apps/web/src/app/learn/comprendre/page.tsx", "apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx");
+
+  assert.equal(page?.layer, "ui");
+  assert.equal(page?.clientEntry, true);
+  assert.equal(sections?.layer, "application");
+  assert.equal(sections?.clientReachable, true);
+  assert.equal(sections?.effectiveLayer, "ui");
+  assert.equal(pageToSections?.kind, "runtime");
+  assert.equal(pageToSections?.toClientContext, true);
 });
 
 test("comments and ordinary strings do not create a use-client directive", () => {
@@ -99,6 +146,8 @@ test("the explicit browser-safe client exception prevents a false positive", () 
   const globalErrorPage = edge(graph, "apps/web/src/app/global-error.tsx", "apps/web/src/lib/observability/sentry-client.ts");
   assert.equal(graph.nodes.find((node) => node.path === "apps/web/src/app/error.tsx")?.layer, "ui");
   assert.equal(graph.nodes.find((node) => node.path === "apps/web/src/app/global-error.tsx")?.layer, "ui");
+  assert.equal(errorPage?.fromClientContext, true);
+  assert.equal(globalErrorPage?.fromClientContext, true);
   assert.equal(errorPage?.uiToInfrastructure, false);
   assert.equal(globalErrorPage?.uiToInfrastructure, false);
 });
@@ -115,7 +164,7 @@ test("architecture graph reports a runtime A -> B -> A cycle", () => {
 test("boundary evaluation fails new violations and recognizes exact historical exceptions", () => {
   const graph = fixtureGraph();
   const violations = collectBoundaryViolations(graph);
-  assert.equal(violations.filter((violation) => violation.rule === "UI_TO_INFRASTRUCTURE").length, 2);
+  assert.equal(violations.filter((violation) => violation.rule === "UI_TO_INFRASTRUCTURE").length, 3);
   const result = evaluateBoundary(graph, {
     schemaVersion: 1,
     rules: [...AUTHORIZED_BOUNDARY_RULES],
@@ -123,7 +172,7 @@ test("boundary evaluation fails new violations and recognizes exact historical e
     retired: [],
   });
   assert.equal(result.status, "FAIL");
-  assert.equal(result.newViolations.length, 3);
+  assert.equal(result.newViolations.length, 4);
   const allowedResult = evaluateBoundary(graph, {
     schemaVersion: 1,
     rules: [...AUTHORIZED_BOUNDARY_RULES],
