@@ -50,7 +50,7 @@ function fixtureRoot() {
 
 function ensureProperties(root) {
   const propertiesPath = path.join(root, "sonar-project.properties");
-  if (!fs.existsSync(propertiesPath)) fs.writeFileSync(propertiesPath, [
+  fs.writeFileSync(propertiesPath, [
     "sonar.projectKey=fixture",
     "sonar.javascript.lcov.reportPaths=apps/web/coverage/lcov.info,apps/mobile/coverage/lcov.info,scripts/coverage/lcov.info",
     "sonar.python.coverage.reportPaths=maintenance/python/coverage.xml",
