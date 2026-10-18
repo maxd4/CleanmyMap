@@ -1,6 +1,6 @@
 pandas>=3.0,<4
 folium>=0.20,<1
-streamlit>=1.65,<2
+streamlit>=1.66.0,<2
 streamlit-folium>=0.27,<1
 # fpdf 1.x reste le contrat utilisé par report_generator.py; fpdf2 serait une migration distincte.
 fpdf==1.7.2
@@ -13,4 +13,4 @@ qrcode[pil]>=8.2,<9
 openpyxl>=3.1.5,<4
 thefuzz>=0.22.1,<1
 python-Levenshtein>=0.27.5,<1
-posthog>=7.67,<8
+posthog>=7.70.0,<8
