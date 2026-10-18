@@ -48,31 +48,30 @@ create temp table user_data_boundary_fixture (
   notification_id uuid not null
 );
 grant select on user_data_boundary_fixture to anon, authenticated;
+grant select, insert on user_data_boundary_fixture to service_role;
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"system"}', true);
 
-insert into public.community_events (
-  organizer_clerk_id,
-  title,
-  event_date,
-  location_label,
-  description
-) values (
-  'organizer-a',
-  'User data boundary fixture',
-  current_date,
-  'Fixture location',
-  'Fixture description'
+with inserted_event as (
+  insert into public.community_events (
+    organizer_clerk_id,
+    title,
+    event_date,
+    location_label,
+    description
+  ) values (
+    'organizer-a',
+    'User data boundary fixture',
+    current_date,
+    'Fixture location',
+    'Fixture description'
+  )
+  returning id
 )
-returning id;
-
 insert into user_data_boundary_fixture (event_id, notification_id)
 select id, '00000000-0000-4000-8000-000000000001'::uuid
-from public.community_events
-where title = 'User data boundary fixture'
-order by created_at desc
-limit 1;
+from inserted_event;
 
 insert into public.event_rsvps (event_id, participant_clerk_id, status)
 select event_id, participant_clerk_id, status
