@@ -149,6 +149,7 @@ export function ReportsWebDocument({
     initialCommunityEventsAvailability: communityEventsAvailability,
     initialPeriod: periodSelection,
     initialNow: reportNow,
+    initialScopeContracts: contracts,
     initialScope,
     advancedFilters,
     actionMediaReadyCountByActionId,

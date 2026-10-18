@@ -46,6 +46,7 @@ type UseReportsWebDocumentModelOptions = {
   initialCommunityEventsAvailability?: CommunityEventsAvailability;
   initialPeriod?: ReportGenerationPeriodSelection;
   initialNow?: Date;
+  initialScopeContracts?: ActionDataContract[];
   initialScope?: { kind: ReportScopeKind; value: string };
   advancedFilters?: ReportAdvancedFilters;
   actionMediaReadyCountByActionId?: Record<string, number>;
@@ -60,6 +61,7 @@ export function useReportsWebDocumentModel({
   initialCommunityEventsAvailability,
   initialPeriod = { id: "full_history" },
   initialNow,
+  initialScopeContracts,
   initialScope,
   advancedFilters = REPORT_ADVANCED_FILTER_DEFAULTS,
   actionMediaReadyCountByActionId = {},
@@ -69,12 +71,12 @@ export function useReportsWebDocumentModel({
   const [scopeValue, setScopeValue] = useState<string>(initialScope?.value ?? "");
 
   const initialActionListItems = useMemo(
-    () => (initialContracts ?? []).map((contract) => toActionListItem(contract)),
-    [initialContracts],
+    () => (initialScopeContracts ?? initialContracts ?? []).map((contract) => toActionListItem(contract)),
+    [initialContracts, initialScopeContracts],
   );
   const initialMapItems = useMemo(
-    () => (initialContracts ?? []).map((contract) => toActionMapItem(contract)),
-    [initialContracts],
+    () => (initialScopeContracts ?? initialContracts ?? []).map((contract) => toActionMapItem(contract)),
+    [initialContracts, initialScopeContracts],
   );
 
   const actionsAll = useSWR(

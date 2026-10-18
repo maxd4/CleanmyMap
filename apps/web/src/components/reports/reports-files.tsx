@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { ReportsWebDocumentDeliveryHistory } from "@/components/reports/web-document/reports-web-document-delivery";
@@ -14,7 +14,7 @@ import {
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 import type { ReportPdfTheme } from "./web-document/reports-web-document.shared";
 import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
-import type { ReportGenerationHistoryActionState, ReportsWebDocumentHistoryRow } from "@/components/reports/web-document/reports-web-document-delivery";
+import type { ReportGenerationHistoryActionState } from "@/components/reports/web-document/reports-web-document-delivery";
 
 type ReportsFilesProps = {
   initialPage: ReportGenerationHistoryPage;
@@ -44,25 +44,10 @@ export function ReportsFiles({ initialPage, initialAvailability = "available" }:
   const [sort, setSort] = useState<ReportGenerationHistorySort>("desc");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [initialUnavailable] = useState(initialAvailability === "unavailable");
+  const [historyAvailability, setHistoryAvailability] = useState<"available" | "unavailable">(initialAvailability);
   const historicalReplayRef = useRef<{ reportWindow: Window; payload: PdfReportPayload } | null>(null);
   const [, setDailyExportAvailability] = useState<ReportExportAvailability>("unavailable");
   const [historyActionStateById, setHistoryActionStateById] = useState<Record<string, ReportGenerationHistoryActionState>>({});
-
-  const setRecentRows: Dispatch<SetStateAction<ReportsWebDocumentHistoryRow[]>> = (update) => {
-    setPage((current) => ({
-      ...current,
-      rows: typeof update === "function" ? update(current.rows) : update,
-    }));
-  };
-
-  const historyActions = createReportsWebDocumentHistoryActions({
-    reportTheme: "impact",
-    setRecentRows,
-    setHistoryAvailability: () => undefined,
-    setDailyExportAvailability,
-    setHistoryActionStateById,
-  });
 
   async function loadPage(nextPage: number): Promise<void> {
     setLoading(true);
@@ -82,12 +67,22 @@ export function ReportsFiles({ initialPage, initialAvailability = "available" }:
         throw new Error(body && "error" in body && body.error ? body.error : "Historique temporairement indisponible.");
       }
       setPage(body);
+      setHistoryAvailability("available");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Historique temporairement indisponible.");
+      setHistoryAvailability("unavailable");
     } finally {
       setLoading(false);
     }
   }
+
+  const historyActions = createReportsWebDocumentHistoryActions({
+    reportTheme: "impact",
+    refreshHistory: () => loadPage(page.page),
+    setHistoryAvailability,
+    setDailyExportAvailability,
+    setHistoryActionStateById,
+  });
 
   function resume(id: string): void {
     router.push(`/reports?tab=generation&resumeId=${encodeURIComponent(id)}`);
@@ -152,7 +147,7 @@ export function ReportsFiles({ initialPage, initialAvailability = "available" }:
 
       <ReportsWebDocumentDeliveryHistory
         recentRows={page.rows}
-        historyAvailability={error || initialUnavailable ? "unavailable" : "available"}
+        historyAvailability={historyAvailability}
         actionStateById={historyActionStateById}
         onView={(id) => action(id, "view")}
         onReexport={(id) => action(id, "reexport")}

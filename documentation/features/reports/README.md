@@ -39,6 +39,11 @@ au runtime et à ses tests, pas à une copie documentaire.
   par les validations, les sources canoniques et le quota normal, et crée un
   snapshot indépendant sans modifier l'original.
 
+- Après « Créer une nouvelle version », `Mes fichiers` recharge la page
+  historique depuis le serveur en conservant la recherche, les filtres, le
+  tri, la pagination et le total courant. Une génération dérivée n'est donc
+  jamais ajoutée localement à une page qui pourrait ne pas la contenir.
+
 - La reproductibilité livrée est sémantique : les mêmes données, libellés,
   unités, limites et date de génération sont relus depuis le snapshot. Le PDF
   binaire n’est pas conservé ; une identité octet pour octet n’est donc pas
@@ -46,11 +51,12 @@ au runtime et à ses tests, pas à une copie documentaire.
 - Les thèmes PDF `Impact` et `Scientifique` sont CURRENT dans le générateur :
   le sélecteur ne modifie que le CSS du renderer HTML officiel. La composition,
   les données, les KPI, les modules et les niveaux de détail restent identiques.
-  Le thème n'est ni un paramètre de génération ni une propriété du snapshot ;
-  les snapshots historiques sans thème explicite restent donc compatibles et
-  sont rendus avec le thème choisi, Impact par défaut. Changer de thème lors de
-  la consultation ou du réexport ne refait pas la génération et ne consomme
-  pas de quota.
+  Le thème n'est pas une donnée métier du snapshot, mais le choix explicite est
+  conservé dans la métadonnée de la ligne d'historique. La reprise restitue ce
+  choix lorsqu'il existe ; une ligne legacy sans thème reste explicitement
+  `Non enregistré` et n'invente aucune provenance. Changer de thème lors de la
+  consultation ou du réexport ne refait pas la génération et ne consomme pas de
+  quota.
 - Le renderer historique vérifie la paire de versions enregistrée. Une paire
   incompatible est refusée explicitement ; le système ne promet pas une
   identité binaire entre deux versions de renderer et ne stocke pas de PDF

@@ -15,10 +15,6 @@ import {
 } from "@/lib/reports/historical-report-client";
 import { buildReportScientificReference } from "@/lib/reports/report-scientific-export";
 import { replayHistoricalReport } from "@/lib/reports/historical-report-replay";
-import {
-  REPORT_GENERATION_HISTORY_LIMIT,
-  type ReportGenerationHistoryRow,
-} from "@/lib/reports/report-generation-history-contract";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 import type { ReportPdfTheme } from "./web-document/reports-web-document.shared";
 
@@ -26,7 +22,7 @@ type HistoricalReplay = { reportWindow: Window; payload: PdfReportPayload };
 
 type HistoryActionsParams = {
   reportTheme: ReportPdfTheme;
-  setRecentRows: Dispatch<SetStateAction<ReportGenerationHistoryRow[]>>;
+  refreshHistory: () => Promise<void>;
   setHistoryAvailability: Dispatch<SetStateAction<"available" | "unavailable">>;
   setDailyExportAvailability: Dispatch<SetStateAction<ReportExportAvailability>>;
   setHistoryActionStateById: Dispatch<SetStateAction<Record<string, ReportGenerationHistoryActionState>>>;
@@ -143,7 +139,7 @@ export function createReportsWebDocumentHistoryActions(params: HistoryActionsPar
       const generation = derived?.generation ?? await loadHistoricalReportSnapshot(id);
       historicalReplayRef.current = { reportWindow, payload: generation.snapshot };
       if (derived) {
-        params.setRecentRows((current) => [derived.item, ...current].slice(0, REPORT_GENERATION_HISTORY_LIMIT));
+        await params.refreshHistory();
         params.setHistoryAvailability("available");
         params.setDailyExportAvailability("used");
         renderReportWindow(reportWindow, generation.snapshot, { theme });
