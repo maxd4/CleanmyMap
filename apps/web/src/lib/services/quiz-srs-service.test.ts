@@ -64,6 +64,10 @@ describe("quiz SRS service", () => {
 
     expect(mocks.selectMock).toHaveBeenCalledTimes(1);
     expect(mocks.upsertMock).toHaveBeenCalledTimes(1);
+    expect(mocks.upsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: "user-1", question_id: "q-2" }),
+      { onConflict: "user_id,question_id" },
+    );
     expect(firstLoad["q-1"]?.success_count).toBe(2);
     expect(secondLoad["q-2"]?.mastery_level).toBe(4);
     expect(secondLoad["q-1"]?.success_count).toBe(2);

@@ -91,8 +91,9 @@ export async function syncQuizQuestionTypeBalanceProgress(
     nextBalancedCount: afterState.minimum,
   });
 
+  const persistedAwards: QuizBalanceAward[] = [];
   for (const award of awards) {
-    await insertProgressionEvent(supabase, {
+    const inserted = await insertProgressionEvent(supabase, {
       userId: params.userId,
       eventType: "quiz_question_type_balance_milestone",
       sourceTable: "quiz_type_balance_progress",
@@ -114,35 +115,38 @@ export async function syncQuizQuestionTypeBalanceProgress(
       },
     });
 
+    if (inserted) {
+      persistedAwards.push(award);
+    }
   }
 
-  if (awards.length > 0) {
+  if (persistedAwards.length > 0) {
     await broadcastGamificationAnnouncement(supabase, {
       type: "quiz_question_type_balance_milestone",
       source: "quiz",
       userId: params.userId,
-      title: `+${awards.reduce((sum, award) => sum + award.xp, 0)} XP sur le quiz équilibré`,
+      title: `+${persistedAwards.reduce((sum, award) => sum + award.xp, 0)} XP sur le quiz équilibré`,
       message:
-        awards.length === 1
-          ? `Quiz équilibré : ${awards[0]?.milestone ?? 0} bonnes réponses sur chaque type atteintes.`
-          : `Quiz équilibré : ${awards.map((award) => award.milestone).join(" / ")} bonnes réponses sur chaque type atteintes.`,
+        persistedAwards.length === 1
+          ? `Quiz équilibré : ${persistedAwards[0]?.milestone ?? 0} bonnes réponses sur chaque type atteintes.`
+          : `Quiz équilibré : ${persistedAwards.map((award) => award.milestone).join(" / ")} bonnes réponses sur chaque type atteintes.`,
       icon: "🧩",
       questionType: params.questionType,
-      milestones: awards.map((award) => award.milestone),
-      steps: awards.map((award) => award.step),
-      xp: awards.reduce((sum, award) => sum + award.xp, 0),
+      milestones: persistedAwards.map((award) => award.milestone),
+      steps: persistedAwards.map((award) => award.step),
+      xp: persistedAwards.reduce((sum, award) => sum + award.xp, 0),
       dedupeKey: `quiz_question_type_balance_milestone:${params.userId}:${params.questionType}:${afterState.minimum}`,
     });
   }
 
-  if (awards.length > 0) {
+  if (persistedAwards.length > 0) {
     await refreshProgressionProfile(supabase, params.userId);
   }
 
   return {
     previousBalancedCount,
     balancedCount: afterState.minimum,
-    awards,
-    totalXpAwarded: awards.reduce((sum, award) => sum + award.xp, 0),
+    awards: persistedAwards,
+    totalXpAwarded: persistedAwards.reduce((sum, award) => sum + award.xp, 0),
   };
 }

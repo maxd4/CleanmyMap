@@ -1073,6 +1073,33 @@ restent accordées explicitement, sans réouvrir une lecture anonyme des donnée
 privées. Le contrat réel est exercé pour `anon`, `authenticated` et
 `service_role` dans l'environnement PostgreSQL éphémère.
 
+### Données utilisateur, notifications et progression
+
+Les tables `public.event_rsvps` et `public.quiz_srs` sont strictement
+propriétaire-scopées : une session `authenticated` doit présenter un `sub`
+Clerk non vide qui correspond exactement à `participant_clerk_id` ou
+`user_id`. `anon`, une session sans `sub` et une valeur propriétaire vide ne
+peuvent donc ni lire ni écrire ces données. Le navigateur conserve la capacité
+de sauvegarder et relire son propre état `quiz_srs`, tandis que les écritures
+de RSVP restent soumises à la même frontière de propriétaire.
+
+`public.quiz_type_progress` est une projection de progression fiable. Un
+utilisateur authentifié peut lire ses propres compteurs, mais ne peut pas les
+insérer, les modifier ou les supprimer via le Data API ; leur avancement passe
+par `/api/gamification/quiz/progress` et le client serveur privilégié après
+vérification Clerk et de la réponse canonique. Les récompenses XP/badges sont
+émises seulement lorsque l'événement de progression idempotent est réellement
+inséré : un rejeu pédagogique peut encore avancer le SRS et la progression,
+mais ne réattribue pas un événement déjà consommé.
+
+`public.app_notifications` reste lisible uniquement par le propriétaire
+authentifié ou par les producteurs serveur. Le client ne dispose que des
+privilèges de colonnes `read_at`, `seen_at` et `acknowledged_at`, avec un
+`WITH CHECK` qui maintient `user_id` sur l'identité courante ; `title`,
+`content`, `type`, `payload` et `user_id` restent des champs serveur. Les
+producteurs utilisent `service_role` côté serveur et ne transmettent jamais ce
+secret au navigateur.
+
 Tester selon le domaine :
 
 - anonyme ;

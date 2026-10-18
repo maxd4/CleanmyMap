@@ -88,8 +88,9 @@ export async function syncQuizQuestionTypeProgress(
     questionType: params.questionType,
   });
 
+  const persistedAwards: QuizProgressAward[] = [];
   for (const award of awards) {
-    await insertProgressionEvent(supabase, {
+    const inserted = await insertProgressionEvent(supabase, {
       userId: params.userId,
       eventType: "quiz_question_type_milestone",
       sourceTable: "quiz_type_progress",
@@ -110,23 +111,26 @@ export async function syncQuizQuestionTypeProgress(
       },
     });
 
+    if (inserted) {
+      persistedAwards.push(award);
+    }
   }
 
-  if (awards.length > 0) {
+  if (persistedAwards.length > 0) {
     await broadcastGamificationAnnouncement(supabase, {
       type: "quiz_question_type_milestone",
       source: "quiz",
       userId: params.userId,
-      title: `+${awards.reduce((sum, award) => sum + award.xp, 0)} XP sur le quiz`,
+      title: `+${persistedAwards.reduce((sum, award) => sum + award.xp, 0)} XP sur le quiz`,
       message:
-        awards.length === 1
-          ? `${questionTypeLabel} : ${awards[0]?.milestone ?? 0} bonnes réponses atteintes.`
-          : `${questionTypeLabel} : ${awards.map((award) => award.milestone).join(" / ")} bonnes réponses atteintes.`,
+        persistedAwards.length === 1
+          ? `${questionTypeLabel} : ${persistedAwards[0]?.milestone ?? 0} bonnes réponses atteintes.`
+          : `${questionTypeLabel} : ${persistedAwards.map((award) => award.milestone).join(" / ")} bonnes réponses atteintes.`,
       icon: "🧠",
       questionType: params.questionType,
-      milestones: awards.map((award) => award.milestone),
-      steps: awards.map((award) => award.step),
-      xp: awards.reduce((sum, award) => sum + award.xp, 0),
+      milestones: persistedAwards.map((award) => award.milestone),
+      steps: persistedAwards.map((award) => award.step),
+      xp: persistedAwards.reduce((sum, award) => sum + award.xp, 0),
       dedupeKey: `quiz_question_type_milestone:${params.userId}:${params.questionType}:${correctCount}`,
     });
   }
@@ -144,7 +148,7 @@ export async function syncQuizQuestionTypeProgress(
     throw updated.error;
   }
 
-  if (awards.length > 0) {
+  if (persistedAwards.length > 0) {
     await refreshProgressionProfile(supabase, params.userId);
   }
 
@@ -153,7 +157,7 @@ export async function syncQuizQuestionTypeProgress(
     questionTypeLabel,
     previousCount,
     correctCount,
-    awards,
-    totalXpAwarded: awards.reduce((sum, award) => sum + award.xp, 0),
+    awards: persistedAwards,
+    totalXpAwarded: persistedAwards.reduce((sum, award) => sum + award.xp, 0),
   };
 }

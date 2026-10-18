@@ -138,4 +138,28 @@ describe("POST /api/gamification/quiz/progress", () => {
     expect((await secondResponse.json()).totalXpAwarded).toBe(0);
     expect(syncQuizQuestionTypeProgressMock).toHaveBeenCalledTimes(2);
   });
+
+  it("returns no reward when the progression writers deduplicate a replay", async () => {
+    syncQuizQuestionTypeProgressMock.mockResolvedValue({
+      ...progressResult,
+      awards: [],
+      totalXpAwarded: 0,
+    });
+    syncQuizQuestionTypeBalanceProgressMock.mockResolvedValue({
+      ...balanceResult,
+      awards: [],
+      totalXpAwarded: 0,
+    });
+
+    const response = await POST(request({ questionId: "e1", answer: "Faux" }));
+    const payload = await response.json();
+
+    expect(payload).toMatchObject({
+      status: "ok",
+      awards: [],
+      balancedAwards: [],
+      totalXpAwarded: 0,
+      balancedTotalXpAwarded: 0,
+    });
+  });
 });

@@ -358,4 +358,23 @@ describe("notification client", () => {
 
     expect(getSupabaseBrowserClientMock).not.toHaveBeenCalled();
   });
+
+  it("updates only the current user's notification read state", async () => {
+    const eqUserMock = vi.fn().mockResolvedValue({ error: null });
+    const eqNotificationMock = vi.fn(() => ({ eq: eqUserMock }));
+    const updateMock = vi.fn(() => ({ eq: eqNotificationMock }));
+    const fromMock = vi.fn(() => ({ update: updateMock }));
+    getSupabaseBrowserClientMock.mockReturnValue({ from: fromMock });
+    getTokenMock.mockResolvedValue("clerk-supabase-token");
+
+    const { markNotificationAsReadForCurrentUser } = await import("./client");
+    await markNotificationAsReadForCurrentUser("user_123", "notification-1", getTokenMock);
+
+    expect(updateMock).toHaveBeenCalledWith({
+      read_at: expect.any(String),
+      seen_at: expect.any(String),
+    });
+    expect(eqNotificationMock).toHaveBeenCalledWith("id", "notification-1");
+    expect(eqUserMock).toHaveBeenCalledWith("user_id", "user_123");
+  });
 });
