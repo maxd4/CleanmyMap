@@ -194,7 +194,7 @@ describe("buildPublicationSummary", () => {
     expect(summary).toEqual(expect.arrayContaining([
       { label: "Itinéraire", value: "Place de la mairie → Quai de Seine · 2 groupe(s)" },
       { label: "Date / heure", value: "2026-09-20 · 09:00 · à 11:00" },
-      { label: "Météo", value: "Prévision disponible · 18 °C" },
+      { label: "Météo", value: "Non disponible dans les données canoniques de cette action" },
       { label: "Informations logistiques", value: "Vérifier l'autorisation du lieu." },
       { label: "Bénévoles recherchés", value: "8" },
       { label: "Consignes principales", value: "Rester en groupe." },

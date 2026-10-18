@@ -12,6 +12,8 @@ import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { buildPublicActionPracticalInformation } from "@/lib/actions/participation/group-participation-public-projection";
+import { loadActionParticipantSummaries } from "@/lib/actions/participation/participant-summaries";
+import { buildPlannerWeatherRequest } from "@/lib/weather/planner-weather";
 
 export const runtime = "nodejs";
 // Justification Vercel: le briefing relit l'action, les permissions et l'inscription courantes ; il ne doit jamais être servi depuis un cache partagé.
@@ -67,9 +69,24 @@ async function resolveDayAccess({
     : NextResponse.json({ error: "Briefing réservé aux bénévoles inscrits." }, { status: 403 });
 }
 
-function buildDayPayload(action: NonNullable<Awaited<ReturnType<typeof loadActionById>>>, actionId: string, isOrganizer: boolean) {
+function buildDayPayload(
+  action: NonNullable<Awaited<ReturnType<typeof loadActionById>>>,
+  actionId: string,
+  isOrganizer: boolean,
+  confirmedParticipants: number | null,
+) {
   const preparation = normalizeActionPreparationData(action.preparation_data ?? {});
-  const practicalInfo = buildPublicActionPracticalInformation(preparation);
+  const weatherRequest = buildPlannerWeatherRequest({
+    latitude: action.latitude,
+    longitude: action.longitude,
+    actionDate: action.action_date,
+    scheduledStartTime: action.event_start_time ?? preparation.meetingTime ?? preparation.departureTime,
+    scheduledEndTime: action.event_end_time,
+  });
+  const projectedPracticalInfo = buildPublicActionPracticalInformation(preparation, {
+    confirmedParticipants,
+    weatherRequest,
+  });
   const metadata = extractActionMetadataFromNotes(action.notes);
   const latitude = finiteCoordinate(action.latitude);
   const longitude = finiteCoordinate(action.longitude);
@@ -93,10 +110,10 @@ function buildDayPayload(action: NonNullable<Awaited<ReturnType<typeof loadActio
       safetyInstructions: firstText(preparation.safetyInstructions),
       recommendedMaterials: firstText(preparation.recommendedMaterials),
       materialsProvided: firstText(preparation.materialsProvided),
-      equipmentProvided: practicalInfo.equipmentProvided,
-      equipmentNotProvided: practicalInfo.equipmentNotProvided,
-      refreshmentsProvided: practicalInfo.refreshmentsProvided,
-      volunteerChecklist: practicalInfo.volunteerChecklist,
+      equipmentProvided: projectedPracticalInfo.equipmentProvided,
+      equipmentNotProvided: projectedPracticalInfo.equipmentNotProvided,
+      refreshmentsProvided: projectedPracticalInfo.refreshmentsProvided,
+      volunteerChecklist: projectedPracticalInfo.volunteerChecklist,
       accessibility: firstText(preparation.accessibility),
       accessibilityStatus: preparation.accessibilityStatus ?? "not_evaluated",
       checklist: (preparation.preparationChecklist ?? []).map((item) => ({ key: item.key, label: item.label, checked: item.checked })),
@@ -125,7 +142,9 @@ export async function GET(request: Request, context: DayRouteContext) {
     if (!action) return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
     const dayAccess = await resolveDayAccess({ supabase, action, actionId: normalizedActionId, userId: access.userId });
     if (dayAccess instanceof Response) return dayAccess;
-    return NextResponse.json(buildDayPayload(action, normalizedActionId, dayAccess));
+    const summaries = await loadActionParticipantSummaries(supabase, { actionIds: [normalizedActionId], userId: null });
+    const confirmedParticipants = summaries.find((summary) => summary.actionId === normalizedActionId)?.activeCount ?? null;
+    return NextResponse.json(buildDayPayload(action, normalizedActionId, dayAccess, confirmedParticipants));
   } catch (error) {
     return handleApiError(error, "GET /api/actions/[actionId]/day");
   }

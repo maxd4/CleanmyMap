@@ -15,6 +15,9 @@ export function buildPreparationSummaryDetails(preparation: ActionPreparationDat
     practicalInfo.equipmentProvided.length > 0
       ? `Équipements déclarés : ${practicalInfo.equipmentProvided.join(", ")}`
       : null,
+    practicalInfo.equipmentNotProvided && practicalInfo.equipmentNotProvided.length > 0
+      ? `Équipements non fournis : ${practicalInfo.equipmentNotProvided.join(", ")}`
+      : null,
     practicalInfo.refreshmentsProvided.length > 0
       ? `Convivialité : ${practicalInfo.refreshmentsProvided.join(", ")}`
       : null,

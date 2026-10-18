@@ -53,7 +53,11 @@ l'organisateur ». Chaque élément conserve sa provenance (préparation,
 organisateur, catalogue Waste ou prévision météo). La dérivation ne modifie ni
 la checklist interne `preparationChecklist`, ni les champs de préparation, et
 les prévisions météo indisponibles ne sont jamais remplacées par la météo
-courante. L'absence de stock ou d'effectif ne devient pas un manque artificiel.
+courante. Un instantané n'est utilisé que si sa date, son créneau et ses
+coordonnées correspondent à l'action, s'il reste dans l'horizon de prévision
+et s'il a été récupéré récemment ; sinon la météo est explicitement indisponible
+et les conseils généraux restent affichés. L'absence de stock ou d'effectif ne
+devient pas un manque artificiel.
 Le briefing `Jour J` suit la même projection bornée ; pour une action privée,
 un compte Clerk doit être l'organisateur autorisé ou disposer d'une inscription
 `action_registrations` réellement `confirmed`. Un `actionId` seul ou une demande

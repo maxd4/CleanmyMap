@@ -18,6 +18,7 @@ import {
   resolveJoinedAt,
   resolveParticipationUpdatedAt,
   getActionTitle,
+  buildActionWeatherRequest,
   type ActionParticipantRecordRow,
   type ActionPreviewRow,
 } from "./group-participation.helpers";
@@ -309,7 +310,10 @@ function buildActionHistoryItems(
       participationUpdatedAt: record.updatedAt, groupJoinEnabled: metadata.groupJoinEnabled,
       pendingRequestsCount: Math.max(0, (context.participantSummaryByActionId.get(action.id)?.totalCount ?? 0) - (context.participantCounts.get(action.id) ?? 0)),
       practicalInfo: buildPublicActionPracticalInformation(action.preparation_data, {
-        confirmedParticipants: context.participantCounts.get(action.id) ?? 0,
+        confirmedParticipants: context.participantSummaryByActionId.get(action.id)
+          ? context.participantCounts.get(action.id) ?? 0
+          : null,
+        weatherRequest: buildActionWeatherRequest(action),
       }),
       individualImpact: "individualImpact" in record ? record.individualImpact : null,
       personalImpactAttribution: "participantId" in record

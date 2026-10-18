@@ -4,6 +4,7 @@ import type { ActionParticipantSummary } from "./participant-summaries";
 import type { ActionPreparationData } from "@/lib/actions/types";
 import type { JoinableActionItem } from "./group-participation-contract";
 import { buildPublicActionPracticalInformation } from "./group-participation-public-projection";
+import { buildPlannerWeatherRequest } from "@/lib/weather/planner-weather";
 
 export const PENDING_PARTICIPATION_STATUS = "pending" as const;
 export const ACTIVE_PARTICIPATION_STATUS = "confirmed" as const;
@@ -48,6 +49,9 @@ export type ActionPreviewRow = Pick<
 > & {
   access_mode?: ActionRow["access_mode"];
   preparation_data?: ActionRow["preparation_data"];
+  latitude?: number | null;
+  longitude?: number | null;
+  event_end_time?: string | null;
   waste_kg?: number | null;
   cigarette_butts?: number | null;
 };
@@ -80,7 +84,7 @@ export type ActionParticipantReviewRow = Pick<
 };
 
 const ACTION_PREVIEW_COLUMNS =
-  "id, created_at, updated_at, action_date, event_start_time, location_label, volunteers_count, duration_minutes, waste_kg, cigarette_butts, status, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status, access_mode, preparation_data";
+  "id, created_at, updated_at, action_date, event_start_time, event_end_time, location_label, latitude, longitude, volunteers_count, duration_minutes, waste_kg, cigarette_butts, status, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status, access_mode, preparation_data";
 const ACTION_PARTICIPATION_COLUMNS =
   "status, moderation_visibility, notes, published_at, action_phase, action_date, event_start_time, cancelled_at, access_mode";
 
@@ -120,6 +124,17 @@ function resolvePendingRequestsCount(
   participantsCount: number,
 ): number {
   return Math.max(0, (participantSummary?.totalCount ?? participantsCount) - participantsCount);
+}
+
+export function buildActionWeatherRequest(action: ActionPreviewRow) {
+  const preparation = action.preparation_data as ActionPreparationData | null | undefined;
+  return buildPlannerWeatherRequest({
+    latitude: action.latitude,
+    longitude: action.longitude,
+    actionDate: action.action_date,
+    scheduledStartTime: action.event_start_time ?? preparation?.meetingTime ?? preparation?.departureTime,
+    scheduledEndTime: action.event_end_time,
+  });
 }
 
 export function getActionTitle(action: Pick<ActionPreviewRow, "preparation_data">): string | null {
@@ -162,7 +177,8 @@ export function buildJoinableItem(
     groupJoinEnabled: metadata.groupJoinEnabled,
     pendingRequestsCount: resolvePendingRequestsCount(participantSummary, participantsCount),
     practicalInfo: buildPublicActionPracticalInformation(action.preparation_data, {
-      confirmedParticipants: participantsCount,
+      confirmedParticipants: participantSummary ? participantsCount : null,
+      weatherRequest: buildActionWeatherRequest(action),
     }),
   };
 }

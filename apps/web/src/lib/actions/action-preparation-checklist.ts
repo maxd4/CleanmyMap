@@ -1,5 +1,11 @@
-import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
-import { plannerWeatherOperationalAssessment } from "@/lib/weather/planner-weather";
+import type {
+  PlannerWeatherContext,
+  PlannerWeatherContextRequest,
+} from "@/lib/weather/planner-weather";
+import {
+  isPlannerWeatherContextCompatible,
+  plannerWeatherOperationalAssessment,
+} from "@/lib/weather/planner-weather";
 import { buildWasteFieldGuidance } from "@/lib/waste";
 import type { ActionPreparationData } from "./types";
 import {
@@ -43,6 +49,7 @@ export type ActionVolunteerChecklistInput = {
   preparation: ActionPreparationData | null | undefined;
   confirmedParticipants?: number | null;
   weatherContext?: PlannerWeatherContext | null;
+  weatherRequest?: PlannerWeatherContextRequest | null;
 };
 
 const PROVENANCE_LABELS: Record<ActionChecklistProvenance, string> = {
@@ -133,16 +140,12 @@ function inventoryValue(
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
 }
 
-function isCoveredByKnownInventory(
+function isStructuredGlovesSuggestionCovered(
   preparation: ActionPreparationData | null | undefined,
-  recommendation: string,
+  staffing: ActionVolunteerChecklist["staffing"],
 ): boolean {
-  const text = normalizedText(recommendation);
-  if (text.includes("gant")) return (inventoryValue(preparation, "glovesPairs") ?? 0) > 0;
-  if (text.includes("pince")) return (inventoryValue(preparation, "grabbers") ?? 0) > 0;
-  if (text.includes("sac")) return (inventoryValue(preparation, "garbageBags") ?? 0) > 0;
-  if (text.includes("gilet")) return (inventoryValue(preparation, "highVisibilityVests") ?? 0) > 0;
-  return false;
+  const stock = inventoryValue(preparation, "glovesPairs");
+  return staffing.count !== null && stock !== null && stock >= staffing.count;
 }
 
 function buildToBring(
@@ -154,7 +157,6 @@ function buildToBring(
   const insufficiencies: string[] = [];
   const add = (label: string, provenance: ActionChecklistProvenance, key: string, detail: string | null = null) => {
     if (!label.trim()) return;
-    if (isCoveredByKnownInventory(preparation, label)) return;
     addRecommendation(items, item(key, label.trim(), provenance, detail));
   };
 
@@ -164,7 +166,8 @@ function buildToBring(
 
   for (const suggestion of preparation?.suggestedMaterials ?? []) {
     const label = ACTION_MATERIAL_SUGGESTIONS.find((candidate) => candidate.value === suggestion)?.label;
-    if (label) add(label, "preparation", `preparation-suggestion-${suggestion}`);
+    if (!label || (suggestion === "gloves" && isStructuredGlovesSuggestionCovered(preparation, staffing))) continue;
+    add(label, "preparation", `preparation-suggestion-${suggestion}`);
   }
 
   for (const recommendation of guidance.toPrepare) {
@@ -187,24 +190,11 @@ function buildToBring(
   return { items, insufficiencies };
 }
 
-function validWeatherContext(context: PlannerWeatherContext | null | undefined): context is PlannerWeatherContext {
-  return Boolean(
-    context?.status === "available" &&
-      context.coveredWindow &&
-      context.hourly.length > 0 &&
-      context.hourly.every((point) =>
-        typeof point.time === "string" &&
-        Number.isFinite(point.temperatureC) &&
-        Number.isFinite(point.precipitationMm) &&
-        Number.isFinite(point.windKmh),
-      ),
-  );
-}
-
 function buildWeatherRecommendations(
   context: PlannerWeatherContext | null | undefined,
+  request: PlannerWeatherContextRequest | null | undefined,
 ): Pick<ActionVolunteerChecklist, "weatherRecommendations" | "weatherStatus" | "weatherMessage"> {
-  if (!validWeatherContext(context)) {
+  if (!isPlannerWeatherContextCompatible(context, request)) {
     return {
       weatherRecommendations: [],
       weatherStatus: "unavailable",
@@ -254,6 +244,7 @@ export function deriveActionVolunteerChecklist({
   preparation,
   confirmedParticipants,
   weatherContext = null,
+  weatherRequest = null,
 }: ActionVolunteerChecklistInput): ActionVolunteerChecklist {
   const staffing = resolveStaffing(preparation, confirmedParticipants);
   const guidance = buildWasteFieldGuidance(preparation?.expectedWasteCategories);
@@ -265,7 +256,7 @@ export function deriveActionVolunteerChecklist({
     ...declaredRefreshments(preparation),
   ];
   const toBring = buildToBring(preparation, staffing, guidance);
-  const weather = buildWeatherRecommendations(weatherContext);
+  const weather = buildWeatherRecommendations(weatherContext, weatherRequest);
 
   return {
     toBring: toBring.items,

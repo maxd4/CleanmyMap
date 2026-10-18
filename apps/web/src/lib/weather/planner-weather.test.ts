@@ -4,7 +4,9 @@ import {
   type OpenMeteoForecastResponse,
 } from "./open-meteo-client";
 import {
+  buildPlannerWeatherRequest,
   fetchPlannerWeatherContext,
+  isPlannerWeatherContextCompatible,
   PLANNER_WEATHER_FORECAST_DAYS,
 } from "./planner-weather";
 
@@ -80,6 +82,30 @@ describe("planner weather context", () => {
     });
   });
 
+  it("accepts a stored context only for the same current window and coordinates", async () => {
+    const context = await fetchPlannerWeatherContext({
+      latitude: 48.8566,
+      longitude: 2.3522,
+      scheduledStartAt: "2026-09-15T10:00",
+      scheduledEndAt: "2026-09-15T12:00",
+      now: NOW,
+      client: { fetcher: async () => response(forecast()) },
+    });
+    const request = buildPlannerWeatherRequest({
+      latitude: 48.8566,
+      longitude: 2.3522,
+      actionDate: "2026-09-15",
+      scheduledStartTime: "10:00",
+      scheduledEndTime: "12:00",
+      now: NOW,
+    });
+
+    expect(isPlannerWeatherContextCompatible(context, request)).toBe(true);
+    expect(isPlannerWeatherContextCompatible(context, { ...request!, longitude: 2.36 })).toBe(false);
+    expect(isPlannerWeatherContextCompatible(context, { ...request!, scheduledStartAt: "2026-09-15T11:00" })).toBe(false);
+    expect(isPlannerWeatherContextCompatible(context, { ...request!, now: new Date("2026-09-14T15:00:00.000Z") })).toBe(false);
+  });
+
   it("keeps a missing metric null instead of manufacturing a zero", async () => {
     const context = await fetchPlannerWeatherContext({
       latitude: 48.8566,
@@ -103,6 +129,15 @@ describe("planner weather context", () => {
       status: "fallback",
       operationalLimitMinutes: null,
     });
+    const request = buildPlannerWeatherRequest({
+      latitude: 48.8566,
+      longitude: 2.3522,
+      actionDate: "2026-09-15",
+      scheduledStartTime: "10:00",
+      scheduledEndTime: "12:00",
+      now: NOW,
+    });
+    expect(isPlannerWeatherContextCompatible(context, request)).toBe(true);
   });
 
   it("preserves rain, heat and wind/gust values for a changing window", async () => {

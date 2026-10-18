@@ -11,6 +11,7 @@ import {
 import type { ActionEquipmentInventory } from "@/lib/actions/preparation-contract";
 import { deriveActionVolunteerChecklist, actionChecklistProvenanceLabel } from "@/lib/actions/action-preparation-checklist";
 import type { BaseSectionProps } from "./section-contract";
+import { useActionPreparationWeather } from "../../use-action-preparation-weather";
 
 const quantityOptions = ACTION_EQUIPMENT_INVENTORY.filter(
   (option): option is Extract<(typeof ACTION_EQUIPMENT_INVENTORY)[number], { kind: "quantity" }> => option.kind === "quantity",
@@ -67,6 +68,18 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
   const inventoryLines = declaredEquipmentLines(form.equipmentInventory);
   const unavailableEquipmentLines = explicitlyUnavailableEquipmentLines(form.equipmentInventory);
   const refreshmentLines = declaredRefreshmentLines(form.refreshmentsProvided);
+  const weather = useActionPreparationWeather({
+    actionDate: form.actionDate,
+    scheduledStartTime: form.eventStartTime || form.departureTime || form.meetingTime,
+    scheduledEndTime: form.eventEndTime,
+    latitude: form.latitude,
+    longitude: form.longitude,
+  });
+  const parsedVolunteersExpected = Number(form.volunteersCount.trim());
+  const volunteersExpected = form.volunteersCount.trim() !== "" &&
+    Number.isInteger(parsedVolunteersExpected) && parsedVolunteersExpected >= 0
+    ? parsedVolunteersExpected
+    : undefined;
   const recommendedLines = [
     form.recommendedMaterials.trim() ? form.recommendedMaterials.trim() : null,
     form.suggestedMaterials.length > 0
@@ -85,7 +98,10 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
       refreshmentsProvided: form.refreshmentsProvided,
       expectedWasteCategories: form.wasteCategories,
       routeCalibrationContext: form.routeCalibrationContext ?? undefined,
+      ...(volunteersExpected !== undefined ? { volunteersExpected } : {}),
     },
+    weatherContext: weather.weatherContext,
+    weatherRequest: weather.weatherRequest,
   });
   const checklistLines = (values: typeof volunteerChecklist.toBring) => values.length > 0
     ? <ul className="mt-2 space-y-2 text-sm text-sky-950">{values.map((value) => <li key={value.key}><span className="font-semibold">{value.label}</span>{value.detail ? <span className="block text-xs text-sky-800">{value.detail}</span> : null}<span className="block text-xs text-sky-700">Source : {value.provenance.map(actionChecklistProvenanceLabel).join(", ")}</span></li>)}</ul>
@@ -182,7 +198,7 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
             {recommendedLines.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-sky-950">{recommendedLines.map((line) => <li key={line}>{line}</li>)}</ul> : <p className="mt-2 text-sm text-sky-900/70">Aucun complément renseigné.</p>}
           </div>
           <div className="border-t border-sky-100 pt-4" data-testid="preparation-volunteer-checklist">
-            <div className="flex flex-wrap items-baseline justify-between gap-2"><h6 className="text-sm font-bold text-sky-950">Checklist bénévole calculée</h6><span className="text-xs font-semibold text-sky-800">{volunteerChecklist.weatherMessage}</span></div>
+            <div className="flex flex-wrap items-baseline justify-between gap-2"><h6 className="text-sm font-bold text-sky-950">Checklist bénévole calculée</h6><span className="text-xs font-semibold text-sky-800">{weather.weatherLoading ? "Prévisions météo en cours de récupération" : volunteerChecklist.weatherMessage}</span></div>
             <p className="mt-1 text-xs leading-5 text-sky-900/75">{volunteerChecklist.staffing.label}. Les données se recalculent sans modifier la checklist interne.</p>
             <div className="mt-3 space-y-3">
               <div><p className="text-xs font-black uppercase tracking-wide text-sky-700">À apporter</p>{checklistLines(volunteerChecklist.toBring)}</div>

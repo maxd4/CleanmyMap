@@ -10,7 +10,10 @@ import {
   deriveActionVolunteerChecklist,
   type ActionVolunteerChecklist,
 } from "@/lib/actions/action-preparation-checklist";
-import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
+import type {
+  PlannerWeatherContext,
+  PlannerWeatherContextRequest,
+} from "@/lib/weather/planner-weather";
 
 export type PublicActionPracticalInformation = {
   accessibility: string | null;
@@ -77,6 +80,7 @@ export function buildPublicActionPracticalInformation(
   options: {
     confirmedParticipants?: number | null;
     weatherContext?: PlannerWeatherContext | null;
+    weatherRequest?: PlannerWeatherContextRequest | null;
   } = {},
 ): PublicActionPracticalInformation {
   const guidance = buildWasteFieldGuidance(preparationData?.expectedWasteCategories);
@@ -92,6 +96,7 @@ export function buildPublicActionPracticalInformation(
     preparation: preparationData,
     confirmedParticipants: options.confirmedParticipants,
     weatherContext: options.weatherContext ?? preparationWeatherContext(preparationData),
+    weatherRequest: options.weatherRequest,
   });
 
   return {

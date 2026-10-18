@@ -13,6 +13,7 @@ import {
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 import { buildPreparationSummaryDetails } from "./preparation-summary";
 import type { ActionCreationSectionId } from "@/lib/actions/action-creation-sections";
+import { buildPlannerWeatherRequest, isPlannerWeatherContextCompatible } from "@/lib/weather/planner-weather";
 
 export type SelectOption = {
   value: string;
@@ -114,8 +115,18 @@ function textValue(value: unknown, fallback: string): string {
 
 function formatWeather(source: PublicationSummarySource): string {
   const preparation = preparationDataFrom(source);
-  const weather = preparation.routeCalibrationContext?.plannerSnapshot?.weatherContext;
-  if (!weather || weather.status !== "available") {
+  const weather = preparation.routeVersioning?.active.calculation.weatherContext ??
+    preparation.routeCalibrationContext?.plannerSnapshot?.weatherContext;
+  const weatherRequest = buildPlannerWeatherRequest({
+    latitude: "latitude" in source ? source.latitude : null,
+    longitude: "longitude" in source ? source.longitude : null,
+    actionDate: "actionDate" in source ? source.actionDate : preparation.actionDate,
+    scheduledStartTime: "eventStartTime" in source
+      ? source.eventStartTime ?? preparation.meetingTime ?? preparation.departureTime
+      : preparation.meetingTime ?? preparation.departureTime,
+    scheduledEndTime: "eventEndTime" in source ? source.eventEndTime : null,
+  });
+  if (!isPlannerWeatherContextCompatible(weather, weatherRequest)) {
     return "Non disponible dans les données canoniques de cette action";
   }
 

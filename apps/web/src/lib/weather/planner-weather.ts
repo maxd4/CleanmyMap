@@ -16,6 +16,8 @@ const PLANNER_WEATHER_SNAPSHOT_VERSION = "planner-weather-snapshot-v1" as const;
 const PLANNER_WEATHER_PROVIDER = "open-meteo" as const;
 const PLANNER_WEATHER_TIMEZONE = "Europe/Paris" as const;
 export const PLANNER_WEATHER_FORECAST_DAYS = 16;
+export const PLANNER_WEATHER_CONTEXT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+const PLANNER_WEATHER_COORDINATE_TOLERANCE = 0.000001;
 
 type PlannerWeatherStatus = "available" | "unavailable";
 
@@ -91,6 +93,11 @@ export type PlannerWeatherRequest = {
   client?: OpenMeteoClientOptions;
 };
 
+export type PlannerWeatherContextRequest = Pick<
+  PlannerWeatherRequest,
+  "latitude" | "longitude" | "scheduledStartAt" | "scheduledEndAt"
+> & { now?: Date };
+
 const LOCAL_DATE_TIME_PATTERN = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/;
 
 function localDateTime(value: string | undefined): { date: string; hour: number; minute: number } | null {
@@ -102,6 +109,49 @@ function localDateTime(value: string | undefined): { date: string; hour: number;
   const parsed = new Date(`${match[1]}T${match[2]}:${match[3]}:00Z`);
   if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 16) !== `${match[1]}T${match[2]}:${match[3]}`) return null;
   return { date: match[1]!, hour, minute };
+}
+
+function normalizedTime(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  const match = /^(\d{2}):(\d{2})(?::\d{2})?$/.exec(trimmed);
+  if (!match) return null;
+  return `${match[1]}:${match[2]}`;
+}
+
+function normalizedScheduledDateTime(date: unknown, time: unknown): string | null {
+  if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date.trim())) return null;
+  const trimmedTime = typeof time === "string" ? time.trim() : "";
+  const fullDateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(trimmedTime)
+    ? trimmedTime.slice(0, 16)
+    : `${date.trim()}T${normalizedTime(trimmedTime) ?? ""}`;
+  return localDateTime(fullDateTime)?.date === date.trim() ? fullDateTime : null;
+}
+
+export function buildPlannerWeatherRequest(input: {
+  latitude: unknown;
+  longitude: unknown;
+  actionDate: unknown;
+  scheduledStartTime: unknown;
+  scheduledEndTime: unknown;
+  now?: Date;
+}): PlannerWeatherContextRequest | null {
+  const latitude = typeof input.latitude === "number"
+    ? input.latitude
+    : typeof input.latitude === "string" && input.latitude.trim() !== ""
+      ? Number(input.latitude)
+      : Number.NaN;
+  const longitude = typeof input.longitude === "number"
+    ? input.longitude
+    : typeof input.longitude === "string" && input.longitude.trim() !== ""
+      ? Number(input.longitude)
+      : Number.NaN;
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) return null;
+  if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) return null;
+  const scheduledStartAt = normalizedScheduledDateTime(input.actionDate, input.scheduledStartTime);
+  const scheduledEndAt = normalizedScheduledDateTime(input.actionDate, input.scheduledEndTime);
+  if (!scheduledStartAt || !scheduledEndAt) return null;
+  return { latitude, longitude, scheduledStartAt, scheduledEndAt, now: input.now };
 }
 
 function toLocalDateTime(value: Date): string {
@@ -135,6 +185,15 @@ function normalizeWindow(
   const startKey = `${start.date}T${String(start.hour).padStart(2, "0")}:${String(start.minute).padStart(2, "0")}`;
   const endKey = `${end.date}T${String(end.hour).padStart(2, "0")}:${String(end.minute).padStart(2, "0")}`;
   return endKey > startKey ? { startAt: startKey, endAt: endKey } : null;
+}
+
+function isWithinForecastHorizon(window: PlannerWeatherWindow, now: Date): boolean {
+  const localNow = toLocalDateTime(now);
+  const today = localNow.slice(0, 10);
+  const latestForecastDate = addDays(today, PLANNER_WEATHER_FORECAST_DAYS - 1);
+  return window.endAt >= localNow &&
+    window.startAt.slice(0, 10) >= today &&
+    window.endAt.slice(0, 10) <= latestForecastDate;
 }
 
 function unavailableContext(
@@ -320,6 +379,29 @@ export function isPlannerWeatherContext(value: unknown): value is PlannerWeather
     (context.operationalRisk === undefined || isPlannerWeatherOperationalAssessment(context.operationalRisk));
 }
 
+export function isPlannerWeatherContextCompatible(
+  context: PlannerWeatherContext | null | undefined,
+  request: PlannerWeatherContextRequest | null | undefined,
+): context is PlannerWeatherContext {
+  if (!context || context.status !== "available" || !request || !isPlannerWeatherContext(context)) return false;
+  const window = normalizeWindow(request.scheduledStartAt, request.scheduledEndAt);
+  if (!window || !context.coveredWindow ||
+    context.coveredWindow.startAt !== window.startAt ||
+    context.coveredWindow.endAt !== window.endAt) return false;
+  if (Math.abs(context.location.latitude - request.latitude) > PLANNER_WEATHER_COORDINATE_TOLERANCE ||
+    Math.abs(context.location.longitude - request.longitude) > PLANNER_WEATHER_COORDINATE_TOLERANCE) return false;
+  const now = request.now ?? new Date();
+  const fetchedAt = Date.parse(context.fetchedAt);
+  const nowAt = now.getTime();
+  if (!Number.isFinite(fetchedAt) || fetchedAt > nowAt || nowAt - fetchedAt > PLANNER_WEATHER_CONTEXT_MAX_AGE_MS) return false;
+  if (!isWithinForecastHorizon(window, now)) return false;
+  return context.hourly.length > 0 &&
+    hasCompleteHourlyCoverage(context.hourly, window) &&
+    context.hourly.every((point) =>
+      typeof point.time === "string" && point.time.length > 0,
+    );
+}
+
 function isPlannerWeatherOperationalAssessment(
   value: unknown,
 ): value is PlannerWeatherOperationalAssessment {
@@ -356,11 +438,7 @@ export async function fetchPlannerWeatherContext(
     return unavailableContext(request, fetchedAt, "invalid_window", null);
   }
 
-  const localNow = toLocalDateTime(request.now ?? new Date());
-  const today = localNow.slice(0, 10);
-  const latestForecastDate = addDays(today, PLANNER_WEATHER_FORECAST_DAYS - 1);
-  if (window.endAt < localNow || window.startAt.slice(0, 10) < today ||
-    window.endAt.slice(0, 10) > latestForecastDate) {
+  if (!isWithinForecastHorizon(window, request.now ?? new Date())) {
     return unavailableContext(request, fetchedAt, "outside_forecast_horizon", window);
   }
 

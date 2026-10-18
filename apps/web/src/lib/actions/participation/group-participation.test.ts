@@ -269,6 +269,32 @@ describe("group participation fallback handling", () => {
     expect(JSON.stringify(item)).not.toContain("Note privée");
   });
 
+  it("does not turn a missing participation summary into confirmed zero staffing", () => {
+    const item = buildJoinableItem(
+      {
+        id: "action-without-summary",
+        created_at: "2026-06-01T10:00:00Z",
+        action_date: "2026-06-10",
+        location_label: "Parc Nord",
+        volunteers_count: 12,
+        duration_minutes: 45,
+        status: "approved",
+        notes: null,
+        action_phase: "pre_action",
+        preparation_data: { equipmentInventory: { glovesPairs: 0 } },
+      },
+      { groupJoinEnabled: true },
+      0,
+      null,
+    );
+
+    expect(item.practicalInfo.volunteerChecklist?.staffing).toEqual({
+      source: "unknown",
+      count: null,
+      label: "Effectif exploitable non renseigné",
+    });
+  });
+
   it("resolves the latest participation timestamp from a row", () => {
     expect(
       resolveParticipationUpdatedAt({
