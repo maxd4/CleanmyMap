@@ -992,6 +992,16 @@ Une validation ou modération ultérieure par `admin`/`max` est une opération
 distincte, contrôlée côté serveur, motivée lorsque le contrat l'exige et
 auditée. Elle ne doit pas être déduite de la création de l'action.
 
+La création d'une action n'est pas une permission `INSERT` directe du Data API.
+`POST /api/actions` vérifie la session Clerk, valide le payload et délègue la
+création atomique et ses relations à `create_action_with_relations`, exécutée
+uniquement par `service_role`. Les rôles `anon` et `authenticated` conservent
+les lectures RLS prévues mais ne disposent d'aucun `INSERT`, `UPDATE` ou
+`DELETE` direct sur `public.actions` ; les métriques, le statut et la
+modération ne peuvent donc pas être choisis ou modifiés par un payload
+PostgREST hors de cette frontière métier. Les retries restent bornés par la
+clé idempotente `(created_by_clerk_id, client_request_id)` et son fingerprint.
+
 ## Supabase et RLS
 
 L'AuthZ applicative ne remplace pas RLS.
@@ -1034,6 +1044,15 @@ PostgREST directe d'un autre compte. Les routes personnelles et les routes
 administratives doivent effectuer l'autorisation Clerk avant d'utiliser le
 client serveur privilégié, avec un prédicat d'owner ou un scope administratif
 explicite.
+
+La table `public.action_organizers` conserve la même frontière d'écriture
+serveur-only. Sa lecture RLS est corrélée à la ligne `public.actions` : une
+relation d'organisateur n'est visible que si l'action associée est visible par
+l'acteur selon `actions_select_public_or_owner`. Une action privée ne révèle
+donc pas ses organisateurs à `anon` ni à un autre compte ; les organisateurs
+d'une action publique restent lisibles par la surface publique prévue. Cette
+policy ne remplace pas les contrôles Clerk des routes de gestion : elle ferme
+la fuite Data API et ne donne aucune capacité de mutation.
 
 Les privilèges `TRUNCATE`, `TRIGGER`, `REFERENCES` et `DELETE` ne font pas
 partie du contrat des rôles applicatifs sur les profils. Les capacités métier
