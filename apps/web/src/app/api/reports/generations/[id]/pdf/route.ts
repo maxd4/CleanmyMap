@@ -235,6 +235,7 @@ export async function GET(request: Request, { params }: ReportPdfRouteContext) {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${attachmentFilename(generation.filename)}"; filename*=UTF-8''${encodeURIComponent(attachmentFilename(generation.filename))}`,
         "Content-Length": String(downloaded.data.size),
+        // Cache justification: generated PDFs contain private owner-scoped report data.
         "Cache-Control": "private, no-store",
         "X-Report-Pdf-Renderer-Version": REPORT_PDF_ARTIFACT_RENDERER_VERSION,
       },

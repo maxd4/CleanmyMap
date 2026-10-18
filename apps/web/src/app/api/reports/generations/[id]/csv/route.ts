@@ -33,6 +33,8 @@ export async function GET(_request: Request, { params }: RouteContext) {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="${buildReportScientificExportFilename(generation.filename, "csv")}"`,
+        // Cache justification: this export contains the authenticated owner's
+        // private historical report data and must not be shared or retained.
         "Cache-Control": "private, no-store",
       },
     });

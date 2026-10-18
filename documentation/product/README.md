@@ -25,6 +25,7 @@ Repères transversaux à conserver dans toute la documentation produit :
 - `vision-et-objectifs.md` — vision globale et positionnement du projet ;
 - `business-model.md` — hypothèses économiques et critères de validation (`PLAN`) ;
 - `roadmap-priorisee.md` — priorités produit ;
+- `roadmap-priorisee-long.md` — historique détaillé (`HISTORY`), conservé pour son contexte et ses critères, sans autorité sur l'ordre courant ;
 - `dimension-communautaire.md` — continuité d'engagement ;
 - `chantiers-q2-q3.md` — chantiers structurants.
 

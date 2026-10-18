@@ -71,6 +71,7 @@ export async function GET(request: Request, { params }: RouteContext) {
       getReportPdfArtifactForOwner({ generationId: generation.id, createdByClerkId: access.userId, theme, rendererVersion: REPORT_PDF_ARTIFACT_RENDERER_VERSION }),
     ]);
     const preview = projectReportPublicationPreview({ generation, theme, artifactReady: artifact?.status === "ready", publishedAt: publication?.revokedAt ? null : publication?.publishedAt });
+    // Cache justification: publication state is owner-scoped and must not be shared.
     return NextResponse.json({ preview, publication: publication ? { status: publication.revokedAt ? "revoked" : "published", publishedAt: publication.publishedAt } : { status: "private", publishedAt: null } }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     if (error instanceof ReportPublicationProjectionError) return NextResponse.json({ error: error.message, code: "publication_not_allowed" }, { status: 422 });

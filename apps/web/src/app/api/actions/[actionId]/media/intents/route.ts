@@ -11,6 +11,8 @@ import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 
 export const runtime = "nodejs";
+// Vercel justification: authenticated owner-scoped upload intents must not be
+// statically cached or replayed across action owners.
 export const dynamic = "force-dynamic";
 
 const intentSchema = z.object({

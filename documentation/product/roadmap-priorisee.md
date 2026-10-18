@@ -113,6 +113,10 @@ estimé et export de la géométrie effectivement retenue. Les participants et
 organisateurs doivent rester distincts : inscription future, présence finale,
 attribution post-action et droits de modification sont des scénarios séparés.
 
+Ces détails, repris de la roadmap désormais `HISTORY`, restent les critères
+actifs du plan canonique ; ils ne créent pas un second moteur ni un second
+parcours métier.
+
 La clôture de ce P0 exige plusieurs scénarios réalistes avec persistance
 vérifiée, dont un scénario mobile et un scénario d'erreur/reprise.
 
@@ -122,6 +126,11 @@ Le rapport d'impact doit rester un moteur unique et permettre :
 action admissible → scope single_action résolu côté serveur
 → aperçu → génération → historique / réexport du même snapshot
 ```
+
+La génération, l'analyse, les snapshots, l'historique et les exports restent
+les capacités du même moteur. Les niveaux `Concis`, `Par défaut` et `Exhaustif`
+ne redeviennent des choix produit que s'ils produisent réellement des sorties
+différentes ; sinon le contrat historique est conservé.
 
 La reproductibilité doit conserver schéma, template, méthodologie, facteurs,
 renderer et provenance. Les niveaux `Concis`, `Par défaut` et `Exhaustif` ne
@@ -163,6 +172,12 @@ réduire la charge cognitive sans réécrire le produit : mobile first, un objec
 par écran, CTA stable, aide et erreurs contextualisées, unités explicites,
 brouillon visible et distinction mesure/estimation.
 
+Le compte, le dashboard et les profils restent un travail de recentrage sur
+l'état courant, la prochaine action, les notifications et les préférences
+utiles. La communauté, la messagerie et l'administration doivent d'abord être
+validées sur leurs accès, leur modération, leur compréhension mobile et leurs
+transitions sensibles avant toute extension fonctionnelle.
+
 ### P2 et P3 — Mobile, UX et extensions conditionnelles
 
 Le mobile reste `CURRENT / ACTIVE DEVELOPMENT` et `NOT_PRODUCTION_READY`. Sa V1
@@ -170,6 +185,10 @@ reste courte : mission GPS, permission, carte/tracé, synchronisation, reprise,
 flush et finalisation serveur. Background headless, `mission_actions`, appareils
 réels et distribution sont des bloqueurs à lever ; aucune parité web/mobile,
 messagerie, rapport ou gamification parallèle n'est visée.
+
+Les abonnements, la facturation récurrente, les espaces multi-organisations et
+les services professionnels avancés restent `FUTURE` : ils exigent d'abord une
+preuve commerciale, juridique, économique et de sécurité explicite.
 
 La convergence UX/UI cible les états `loading`, `empty`, `error`, `forbidden` et
 `offline`, le responsive, clavier/focus, reduced motion, densité et impression,

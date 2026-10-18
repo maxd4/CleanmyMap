@@ -1,13 +1,14 @@
-# Roadmap priorisée
+# Roadmap priorisée — historique détaillé
 
-> **Statut documentaire : `PLAN`**
+> **Statut documentaire : `HISTORY`**
 >
 > **Horizon : Q4 2026 → 2027**
 >
-> Cette roadmap est la source produit de priorité globale. Elle ne remplace ni
-> les fiches `CURRENT` de `documentation/pages_site/`, ni les contrats de
-> sécurité, de données, d'architecture ou juridiques. Une fonctionnalité décrite
-> comme existante ici doit rester cohérente avec ces sources spécialisées.
+> Cette version détaillée a été remplacée comme source active par
+> [`roadmap-priorisee.md`](./roadmap-priorisee.md), qui porte désormais l'ordre
+> canonique des priorités. Elle est conservée pour son contexte, ses critères
+> détaillés et ses informations historiques ; elle ne doit pas être lue comme
+> un second plan `CURRENT` ou `PLAN`.
 
 Les statuts sont explicitement séparés : `CURRENT` désigne un comportement ou
 une décision déjà observé(e) et documenté(e), `PLAN` un chantier retenu mais

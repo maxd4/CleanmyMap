@@ -48,6 +48,7 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
         error,
       });
     }
+    // Cache justification: revocation state is private owner-scoped metadata.
     return NextResponse.json({ revoked: true, shareId: share.id, auditWarning }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Report PDF share revocation failed", { generationId: id, shareId, error });

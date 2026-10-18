@@ -34,6 +34,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
       headers: {
         "Content-Type": "application/json; charset=utf-8",
         "Content-Disposition": `attachment; filename="${buildReportScientificExportFilename(generation.filename, "json")}"`,
+        // Cache justification: this export contains private owner-scoped report data.
         "Cache-Control": "private, no-store",
       },
     });

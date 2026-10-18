@@ -19,6 +19,7 @@ function invalidShareResponse(): Response {
     {
       status: 404,
       headers: {
+        // Cache justification: token validity and revocation must never be cached.
         "Cache-Control": "private, no-store",
         "X-Robots-Tag": "noindex, nofollow, noarchive",
         "Referrer-Policy": "no-referrer",

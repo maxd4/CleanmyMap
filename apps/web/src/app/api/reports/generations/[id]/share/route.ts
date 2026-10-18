@@ -152,7 +152,10 @@ export async function GET(request: Request, { params }: RouteContext) {
         7 * 24 * 60 * 60,
         REPORT_PDF_SHARE_MAX_EXPIRY_SECONDS,
       ],
-    }, { headers: { "Cache-Control": "private, no-store" } });
+    }, {
+      // Cache justification: share metadata and tokens are private owner-scoped state.
+      headers: { "Cache-Control": "private, no-store" },
+    });
   } catch (error) {
     console.error("Report PDF share preview failed", { generationId: generation.id, error });
     return NextResponse.json({ error: "Le partage du PDF est temporairement indisponible." }, { status: 503 });

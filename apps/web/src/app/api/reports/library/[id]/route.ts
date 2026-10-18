@@ -8,6 +8,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   try {
     const publication = await getActiveReportPublicationById((await params).id);
     if (!publication) return NextResponse.json({ error: "Document publié introuvable." }, { status: 404 });
+    // Cache justification: a revoked publication must disappear immediately.
     return NextResponse.json(projectReportPublicationRow(publication), { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Public report library item failed", { error });

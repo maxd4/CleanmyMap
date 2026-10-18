@@ -24,6 +24,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         "Content-Type": "application/pdf",
         "Content-Disposition": `${download ? "attachment" : "inline"}; filename="${attachmentFilename(publication.title)}"; filename*=UTF-8''${encodeURIComponent(attachmentFilename(publication.title))}`,
         "Content-Length": String(stored.data.size),
+        // Cache justification: the public artifact must reflect revocation immediately.
         "Cache-Control": "no-store",
       },
     });

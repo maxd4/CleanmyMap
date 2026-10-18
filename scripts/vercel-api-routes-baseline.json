@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-16T17:00:00.000Z",
-  "apiRouteCount": 173,
+  "generatedAt": "2026-10-18T20:20:27.882Z",
+  "apiRouteCount": 186,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -162,6 +162,97 @@
       "reason": "Finalisation authentifiée de la capture Bug après vérification binaire et transition conditionnelle vers ready.",
       "costContract": "POST borné à un reportId UUID et à l'identité Clerk propriétaire ; chaque appel relit et télécharge un seul objet privé borné par la taille contractuelle, puis ne marque ready que si le chemin pending courant correspond.",
       "reviewedAt": "2026-10-16"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/media/[mediaId]/finalize/route.ts",
+      "introducedBy": "23abf71c8fb3bc7e459459c69596b8b28eaf74a2",
+      "reason": "Finalisation authentifiée d'une photo de bilan d'action, après contrôle de l'accès à l'action et des métadonnées Storage par le propriétaire du parcours.",
+      "costContract": "POST borné à actionId/mediaId et à l'identité Clerk courante ; le service canonique vérifie l'admissibilité, l'objet privé et la transition de finalisation avant rattachement, sans cache partagé.",
+      "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/media/intents/route.ts",
+      "introducedBy": "23abf71c8fb3bc7e459459c69596b8b28eaf74a2",
+      "reason": "Création authentifiée de l'intention d'upload des photos de bilan, dans le workflow média canonique des actions.",
+      "costContract": "POST borné à actionId et aux métadonnées d'image validées ; l'accès et l'identité sont revalidés côté serveur avant émission d'une intention Storage privée.",
+      "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/media/route.ts",
+      "introducedBy": "23abf71c8fb3bc7e459459c69596b8b28eaf74a2",
+      "reason": "Lecture authentifiée des médias attachés à une action, avec projection limitée au périmètre accessible par le demandeur.",
+      "costContract": "GET borné à actionId et à l'identité Clerk courante ; le service média revalide l'admissibilité et ne renvoie que les objets du parcours autorisé, sans cache partagé.",
+      "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/reports/generations/[id]/csv/route.ts",
+      "introducedBy": "3a596b982c52915cda660317ace7c19b54afb4dd",
+      "reason": "Export CSV scientifique d'un snapshot historique appartenant à l'utilisateur authentifié.",
+      "costContract": "GET borné à un generationId et à l'identité Clerk courante ; le snapshot est relu par le store owner-scoped, exporté sans recalcul silencieux et livré private/no-store.",
+      "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/reports/generations/[id]/json/route.ts",
+      "introducedBy": "3a596b982c52915cda660317ace7c19b54afb4dd",
+      "reason": "Export JSON scientifique du snapshot historique appartenant à l'utilisateur authentifié.",
+      "costContract": "GET borné à un generationId et à l'identité Clerk courante ; le snapshot historique est validé avant projection JSON et la réponse reste private/no-store.",
+      "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/reports/generations/[id]/pdf/route.ts",
+      "introducedBy": "a0d844c3d803eb4eceabb093ca59352f317faa74",
+      "reason": "Génération ou réutilisation du PDF historique d'un rapport pour son propriétaire authentifié, avec audit des opérations sensibles.",
+      "costContract": "GET borné à un generationId et à l'identité Clerk courante ; renderer, artifact, quota, audit et livraison restent owner-scoped, avec réponse private/no-store et durée Vercel limitée.",
+      "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/reports/generations/[id]/publication/route.ts",
+      "introducedBy": "e0b1c95858b92061b6a4ba110a69fb3b26aff4a3",
+      "reason": "Prévisualisation, publication et révocation du rapport historique depuis la bibliothèque publique, sous contrôle du propriétaire authentifié.",
+      "costContract": "GET/POST/DELETE bornés à un generationId et à l'identité Clerk courante ; l'artifact prêt, l'éligibilité, la projection et l'audit sont vérifiés avant mutation, avec réponses private/no-store.",
+      "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/reports/generations/[id]/share/[shareId]/route.ts",
+      "introducedBy": "30fde7b0110d09ba6c2b7e8e044f96b80114c3b0",
+      "reason": "Révocation authentifiée d'un lien temporaire de partage PDF appartenant au propriétaire de la génération.",
+      "costContract": "DELETE borné à generationId/shareId UUID et à l'identité Clerk courante ; la révocation owner-scoped est auditée et la réponse reste private/no-store.",
+      "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/reports/generations/[id]/share/route.ts",
+      "introducedBy": "30fde7b0110d09ba6c2b7e8e044f96b80114c3b0",
+      "reason": "Création et consultation des liens temporaires de partage PDF depuis une génération historique appartenant à l'utilisateur.",
+      "costContract": "GET/POST bornés au generationId et à l'identité Clerk courante, avec rate limit authentifié, artifact prêt obligatoire, expiration bornée, token opaque et audit ; réponses private/no-store.",
+      "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/reports/library/[id]/pdf/route.ts",
+      "introducedBy": "e0b1c95858b92061b6a4ba110a69fb3b26aff4a3",
+      "reason": "Livraison du PDF d'une publication active de la bibliothèque publique, après vérification de la publication et de l'artifact correspondant.",
+      "costContract": "GET borné à un identifiant de publication ; seul l'artifact lié à une publication active, à sa génération, son thème et son renderer est délivré, avec no-store et disposition contrôlée.",
+      "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/reports/library/[id]/route.ts",
+      "introducedBy": "e0b1c95858b92061b6a4ba110a69fb3b26aff4a3",
+      "reason": "Projection publique bornée d'une publication active de rapport, sans exposition du snapshot privé sous-jacent.",
+      "costContract": "GET limité à un identifiant de publication active ; la projection canonique est renvoyée avec no-store et une publication révoquée ou absente reste introuvable.",
+      "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/reports/library/route.ts",
+      "introducedBy": "e0b1c95858b92061b6a4ba110a69fb3b26aff4a3",
+      "reason": "Liste publique paginée des publications de rapports réellement actives, séparée des générations privées.",
+      "costContract": "GET limité aux filtres de bibliothèque validés par le store public ; seules les publications actives sont projetées et la réponse est no-store pour éviter une exposition stale.",
+      "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/reports/shared/[token]/route.ts",
+      "introducedBy": "30fde7b0110d09ba6c2b7e8e044f96b80114c3b0",
+      "reason": "Téléchargement public d'un PDF via un token temporaire opaque, révocable et vérifié contre l'artifact owner-scoped.",
+      "costContract": "GET borné à un token de 43 caractères, rate limité, hashé avant recherche ; expiration, révocation, cohérence generation/theme/renderer et absence Storage sont vérifiées, avec private/no-store et no-referrer.",
+      "reviewedAt": "2026-10-18"
     }
   ],
   "apiRoutes": [
@@ -179,6 +270,9 @@
     "apps/web/src/app/api/actions/[actionId]/duplicate/route.ts",
     "apps/web/src/app/api/actions/[actionId]/formalities/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/media/[mediaId]/finalize/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/media/intents/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/media/route.ts",
     "apps/web/src/app/api/actions/[actionId]/participant-impact/route.ts",
     "apps/web/src/app/api/actions/[actionId]/participation-claim/route.ts",
     "apps/web/src/app/api/actions/[actionId]/public/route.ts",
@@ -278,9 +372,19 @@
     "apps/web/src/app/api/reports/actions.json/route.ts",
     "apps/web/src/app/api/reports/elus-dossier/route.ts",
     "apps/web/src/app/api/reports/exports.csv/route.ts",
+    "apps/web/src/app/api/reports/generations/[id]/csv/route.ts",
+    "apps/web/src/app/api/reports/generations/[id]/json/route.ts",
+    "apps/web/src/app/api/reports/generations/[id]/pdf/route.ts",
+    "apps/web/src/app/api/reports/generations/[id]/publication/route.ts",
     "apps/web/src/app/api/reports/generations/[id]/route.ts",
+    "apps/web/src/app/api/reports/generations/[id]/share/[shareId]/route.ts",
+    "apps/web/src/app/api/reports/generations/[id]/share/route.ts",
     "apps/web/src/app/api/reports/generations/route.ts",
     "apps/web/src/app/api/reports/governance-monthly/route.ts",
+    "apps/web/src/app/api/reports/library/[id]/pdf/route.ts",
+    "apps/web/src/app/api/reports/library/[id]/route.ts",
+    "apps/web/src/app/api/reports/library/route.ts",
+    "apps/web/src/app/api/reports/shared/[token]/route.ts",
     "apps/web/src/app/api/route/recommend/route.ts",
     "apps/web/src/app/api/sandbox/runbook-checks/route.ts",
     "apps/web/src/app/api/send/route.ts",

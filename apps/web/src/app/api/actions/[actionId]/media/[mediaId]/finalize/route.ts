@@ -7,6 +7,8 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 
 export const runtime = "nodejs";
+// Vercel justification: authenticated owner-scoped media finalization must not
+// be statically cached or replayed across action owners.
 export const dynamic = "force-dynamic";
 
 function errorResponse(error: unknown) {

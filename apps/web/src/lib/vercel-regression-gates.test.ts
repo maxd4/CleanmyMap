@@ -18,10 +18,25 @@ const testDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(testDir, "../../../..");
 const baselinePath = path.join(repoRoot, "scripts", "vercel-api-routes-baseline.json");
 
-function readBaselineApiRoutes(): string[] {
+type VercelJustification = {
+  route?: string;
+  introducedBy?: string;
+  reason?: string;
+  costContract?: string;
+};
+
+type VercelBaseline = {
+  apiRoutes?: string[];
+  additionalChangeJustifications?: VercelJustification[];
+};
+
+function readBaseline(): VercelBaseline {
   const raw = fs.readFileSync(baselinePath, "utf8");
-  const parsed = JSON.parse(raw) as { apiRoutes?: string[] };
-  return parsed.apiRoutes ?? [];
+  return JSON.parse(raw) as VercelBaseline;
+}
+
+function readBaselineApiRoutes(): string[] {
+  return readBaseline().apiRoutes ?? [];
 }
 
 function scanFixture(files: Record<string, string>) {
@@ -61,6 +76,76 @@ describe("vercel regression gates", () => {
     const baselineRoutes = readBaselineApiRoutes();
     expect(surface.apiRoutes).toEqual(baselineRoutes);
     expect(surface.apiRoutes.length).toBe(baselineRoutes.length);
+  });
+
+  it("documents the owners and contracts of the newly ratified media and report routes", () => {
+    const expectedIntroductions = new Map([
+      [
+        "apps/web/src/app/api/actions/[actionId]/media/[mediaId]/finalize/route.ts",
+        "23abf71c8fb3bc7e459459c69596b8b28eaf74a2",
+      ],
+      [
+        "apps/web/src/app/api/actions/[actionId]/media/intents/route.ts",
+        "23abf71c8fb3bc7e459459c69596b8b28eaf74a2",
+      ],
+      [
+        "apps/web/src/app/api/actions/[actionId]/media/route.ts",
+        "23abf71c8fb3bc7e459459c69596b8b28eaf74a2",
+      ],
+      [
+        "apps/web/src/app/api/reports/generations/[id]/csv/route.ts",
+        "3a596b982c52915cda660317ace7c19b54afb4dd",
+      ],
+      [
+        "apps/web/src/app/api/reports/generations/[id]/json/route.ts",
+        "3a596b982c52915cda660317ace7c19b54afb4dd",
+      ],
+      [
+        "apps/web/src/app/api/reports/generations/[id]/pdf/route.ts",
+        "a0d844c3d803eb4eceabb093ca59352f317faa74",
+      ],
+      [
+        "apps/web/src/app/api/reports/generations/[id]/publication/route.ts",
+        "e0b1c95858b92061b6a4ba110a69fb3b26aff4a3",
+      ],
+      [
+        "apps/web/src/app/api/reports/generations/[id]/share/[shareId]/route.ts",
+        "30fde7b0110d09ba6c2b7e8e044f96b80114c3b0",
+      ],
+      [
+        "apps/web/src/app/api/reports/generations/[id]/share/route.ts",
+        "30fde7b0110d09ba6c2b7e8e044f96b80114c3b0",
+      ],
+      [
+        "apps/web/src/app/api/reports/library/[id]/pdf/route.ts",
+        "e0b1c95858b92061b6a4ba110a69fb3b26aff4a3",
+      ],
+      [
+        "apps/web/src/app/api/reports/library/[id]/route.ts",
+        "e0b1c95858b92061b6a4ba110a69fb3b26aff4a3",
+      ],
+      [
+        "apps/web/src/app/api/reports/library/route.ts",
+        "e0b1c95858b92061b6a4ba110a69fb3b26aff4a3",
+      ],
+      [
+        "apps/web/src/app/api/reports/shared/[token]/route.ts",
+        "30fde7b0110d09ba6c2b7e8e044f96b80114c3b0",
+      ],
+    ]);
+    const justifications = new Map(
+      (readBaseline().additionalChangeJustifications ?? [])
+        .filter((entry): entry is VercelJustification & { route: string } => Boolean(entry.route))
+        .map((entry) => [entry.route, entry]),
+    );
+
+    for (const [route, introducedBy] of expectedIntroductions) {
+      const entry = justifications.get(route);
+      expect(entry, `${route} lacks baseline ownership metadata`).toBeDefined();
+      expect(entry?.introducedBy, `${route} has an incorrect introduction owner`).toBe(introducedBy);
+      expect(entry?.reason?.length, `${route} lacks a reason`).toBeGreaterThan(20);
+      expect(entry?.costContract?.length, `${route} lacks a cost/security contract`).toBeGreaterThan(20);
+    }
   });
 
   it("requires a justification comment for force-dynamic pages", () => {
