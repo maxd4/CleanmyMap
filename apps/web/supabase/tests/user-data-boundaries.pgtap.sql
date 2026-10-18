@@ -1,6 +1,6 @@
 begin;
 
-select plan(55);
+select plan(61);
 
 select ok(not has_table_privilege('anon', 'public.event_rsvps', 'SELECT'), 'anon cannot read RSVP rows');
 select ok(not has_table_privilege('anon', 'public.event_rsvps', 'INSERT'), 'anon cannot insert RSVP rows');
@@ -8,6 +8,9 @@ select ok(not has_table_privilege('anon', 'public.event_rsvps', 'UPDATE'), 'anon
 select ok(not has_table_privilege('anon', 'public.event_rsvps', 'DELETE'), 'anon cannot delete RSVP rows');
 select ok(has_table_privilege('authenticated', 'public.event_rsvps', 'SELECT'), 'authenticated can read owned RSVP rows');
 select ok(has_table_privilege('authenticated', 'public.event_rsvps', 'INSERT'), 'authenticated can insert owned RSVP rows');
+select ok(not has_table_privilege('authenticated', 'public.event_rsvps', 'TRUNCATE'), 'authenticated cannot truncate RSVP rows');
+select ok(not has_table_privilege('authenticated', 'public.event_rsvps', 'TRIGGER'), 'authenticated cannot create RSVP triggers');
+select ok(not has_table_privilege('authenticated', 'public.event_rsvps', 'REFERENCES'), 'authenticated cannot add RSVP references');
 
 select ok(not has_table_privilege('anon', 'public.quiz_srs', 'SELECT'), 'anon cannot read SRS rows');
 select ok(not has_table_privilege('anon', 'public.quiz_srs', 'INSERT'), 'anon cannot insert SRS rows');
@@ -15,6 +18,9 @@ select ok(not has_table_privilege('anon', 'public.quiz_srs', 'UPDATE'), 'anon ca
 select ok(not has_table_privilege('anon', 'public.quiz_srs', 'DELETE'), 'anon cannot delete SRS rows');
 select ok(has_table_privilege('authenticated', 'public.quiz_srs', 'SELECT'), 'authenticated can read owned SRS rows');
 select ok(has_table_privilege('authenticated', 'public.quiz_srs', 'INSERT'), 'authenticated can persist owned SRS rows');
+select ok(not has_table_privilege('authenticated', 'public.quiz_srs', 'TRUNCATE'), 'authenticated cannot truncate SRS rows');
+select ok(not has_table_privilege('authenticated', 'public.quiz_srs', 'TRIGGER'), 'authenticated cannot create SRS triggers');
+select ok(not has_table_privilege('authenticated', 'public.quiz_srs', 'REFERENCES'), 'authenticated cannot add SRS references');
 
 select ok(not has_table_privilege('anon', 'public.quiz_type_progress', 'SELECT'), 'anon cannot read quiz progress');
 select ok(not has_table_privilege('authenticated', 'public.quiz_type_progress', 'INSERT'), 'authenticated cannot insert reliable progress');

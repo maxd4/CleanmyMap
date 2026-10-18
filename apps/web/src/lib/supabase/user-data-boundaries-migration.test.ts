@@ -5,6 +5,10 @@ const migration = readFileSync(
   new URL("../../../supabase/migrations/20261018000005_harden_user_data_rls_boundaries.sql", import.meta.url),
   "utf8",
 );
+const residualPrivilegesMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261018000010_revoke_residual_user_data_privileges.sql", import.meta.url),
+  "utf8",
+);
 
 describe("user data RLS boundary migration", () => {
   it("removes anonymous privileges and keeps SRS owner writes", () => {
@@ -27,5 +31,13 @@ describe("user data RLS boundary migration", () => {
     expect(migration).toContain("create policy app_notifications_authenticated_update_read_state on public.app_notifications");
     expect(migration).toContain("create policy app_notifications_service_role on public.app_notifications");
     expect(migration).toContain("grant select, insert, update, delete on table public.app_notifications to service_role;");
+  });
+
+  it("removes residual SQL privileges from authenticated private-data access", () => {
+    for (const table of ["event_rsvps", "quiz_srs"]) {
+      expect(residualPrivilegesMigration).toContain(
+        `revoke truncate, trigger, references\non table public.${table}\nfrom authenticated;`,
+      );
+    }
   });
 });
