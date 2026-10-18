@@ -767,6 +767,13 @@ accès global aux comptes individuels du territoire
 | `privileged_admin` | modération/support avec minimisation |
 | `security_audit` | audit sensible non public |
 
+La bibliothèque communautaire des rapports relève de `public` uniquement après
+une mutation volontaire du propriétaire. `report_generation_publications` est
+server-only : l'ownership, l'admissibilité de la projection et l'artefact PDF
+exact sont contrôlés avant publication, et chaque lecture publique revérifie
+la publication active avant de relire le bucket privé. Une révocation bloque
+les nouveaux accès CleanMyMap ; elle ne révoque pas des octets déjà téléchargés.
+
 Le DTO serveur doit être borné au niveau nécessaire. Ne pas charger un objet complet pour ensuite masquer quelques champs dans le client.
 
 ## 9. Garde-fous par niveau de risque

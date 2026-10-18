@@ -44,6 +44,18 @@ au runtime et à ses tests, pas à une copie documentaire.
   tri, la pagination et le total courant. Une génération dérivée n'est donc
   jamais ajoutée localement à une page qui pourrait ne pas la contenir.
 
+- `Tous les fichiers` est une bibliothèque communautaire distincte de
+  l'historique privé. Seul le propriétaire peut demander une prévisualisation,
+  publier ou retirer une génération ; ces actions vérifient côté serveur
+  l'ownership, l'artefact PDF prêt et une projection sûre qui exclut les
+  identifiants internes, PII, coordonnées, médias et données brutes. La table
+  `report_generation_publications` ne duplique pas le snapshot immuable : elle
+  conserve uniquement les métadonnées publiques autorisées et l'état de
+  révocation. Les routes publiques listent et servent uniquement les lignes
+  non révoquées via le serveur et le bucket Storage privé, sans quota de
+  génération. Une révocation bloque les nouveaux accès CleanMyMap ; elle ne
+  peut pas annuler un fichier déjà téléchargé ou une réponse déjà délivrée.
+
 - La reproductibilité livrée est sémantique : les mêmes données, libellés,
   unités, limites et date de génération sont relus depuis le snapshot. Le PDF
   binaire n’est pas conservé ; une identité octet pour octet n’est donc pas

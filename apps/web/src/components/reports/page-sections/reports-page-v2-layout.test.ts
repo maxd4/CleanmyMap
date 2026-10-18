@@ -42,4 +42,16 @@ describe("ReportsPageV2Layout", () => {
     expect(markup).not.toContain("Analyse active");
     expect(markup).toContain('id="reports-tabpanel-files"');
   });
+
+  it("renders the public library content for the library tab", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ReportsPageV2Layout, {
+        activeTab: "library",
+        libraryContent: React.createElement("div", null, "Tous les fichiers publics"),
+      }),
+    );
+
+    expect(markup).toContain("Tous les fichiers publics");
+    expect(markup).toContain('id="reports-tabpanel-library"');
+  });
 });

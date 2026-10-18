@@ -21,6 +21,8 @@ export type ReportGenerationHistoryRow = {
   detail: string;
   generatedAt: string;
   theme?: ReportGenerationHistoryTheme | null;
+  publicationStatus?: "private" | "published";
+  publicationPublishedAt?: string | null;
 };
 
 export type ReportGenerationHistoryPage = {

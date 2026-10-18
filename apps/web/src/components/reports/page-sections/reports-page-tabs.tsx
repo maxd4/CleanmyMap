@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { BarChart3, FileText, FolderOpen } from "lucide-react";
+import { BarChart3, FileText, FolderOpen, LibraryBig } from "lucide-react";
 
-export type ReportsPageTabId = "generation" | "analysis" | "files";
+export type ReportsPageTabId = "generation" | "analysis" | "files" | "library";
 
 type ReportsPageTabsProps = {
   activeTab: ReportsPageTabId;
@@ -27,6 +27,11 @@ const TAB_DEFINITIONS: Array<{
     label: "Mes fichiers",
     icon: FolderOpen,
   },
+  {
+    id: "library",
+    label: "Tous les fichiers",
+    icon: LibraryBig,
+  },
 ];
 
 export function resolveReportsTab(
@@ -37,6 +42,9 @@ export function resolveReportsTab(
   }
   if (requestedTab === "files") {
     return "files";
+  }
+  if (requestedTab === "library") {
+    return "library";
   }
 
   return "generation";

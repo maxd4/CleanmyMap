@@ -10,6 +10,7 @@ type ReportsPageV2LayoutProps = {
   generationContent?: ReactNode;
   analysisContent?: ReactNode;
   filesContent?: ReactNode;
+  libraryContent?: ReactNode;
 };
 
 export function ReportsPageV2Layout({
@@ -17,6 +18,7 @@ export function ReportsPageV2Layout({
   generationContent,
   analysisContent,
   filesContent,
+  libraryContent,
 }: ReportsPageV2LayoutProps) {
   const pageFamily = resolvePageFamily("/reports");
 
@@ -44,7 +46,9 @@ export function ReportsPageV2Layout({
             ? generationContent
             : activeTab === "analysis"
               ? analysisContent
-              : filesContent}
+              : activeTab === "files"
+                ? filesContent
+                : libraryContent}
         </div>
       </CmmGridItem>
     </CmmGrid>

@@ -73,7 +73,7 @@ projection Supabase relue.
 | Progression | `progression_profiles`, `progression_events`, `user_badge_totals` | Progression persistée, journal et agrégats | Profil concerné / projection leaderboard autorisée |
 | Communauté | `community_events`, `event_rsvps`, `app_notifications` | Événements, inscriptions et notifications | Utilisateur ou audience autorisée |
 | Apprentissage | `quiz_type_progress`, `quiz_srs`, `checklist_progress` | Progressions et checklists | Utilisateur et objet ciblés |
-| Restitution | `public_surface_snapshots`, `report_generations`, `report_generation_pdf_artifacts`, `report_generation_pdf_shares`, Storage `reports` | Snapshots calculés, artefacts PDF historiques et liens expirables révocables | Accès propriétaire aux gestions de partage ; lien bearer limité à un PDF |
+| Restitution | `public_surface_snapshots`, `report_generations`, `report_generation_pdf_artifacts`, `report_generation_pdf_shares`, `report_generation_publications`, Storage `reports` | Snapshots calculés, artefacts PDF historiques, liens expirables et publications communautaires révocables | Accès propriétaire aux mutations ; bibliothèque limitée aux projections publiées |
 
 **Étiquettes legacy :** `user_points` et `points_ledger` relèvent des chemins `COMPATIBILITY / LEGACY`, non de nouveaux owners de progression. Cette liste est une **carte des domaines**, pas un inventaire intégral du schéma physique.
 
@@ -95,6 +95,8 @@ erDiagram
   profiles ||--o{ progression_events : "journal (référence utilisateur)"
   report_generations ||--o{ report_generation_pdf_artifacts : "PDF rendus"
   report_generations ||--o{ report_generation_pdf_shares : "liens révocables"
+  report_generations ||--o| report_generation_publications : "publication volontaire"
+  report_generation_pdf_artifacts ||--o| report_generation_publications : "artefact publié"
   report_generation_pdf_artifacts ||--o{ report_generation_pdf_shares : "artefact cible"
 ```
 
@@ -106,6 +108,7 @@ erDiagram
 - Une migration ultérieure ajoute `missions.action_id` en lien nullable à `actions.id` avec `ON DELETE SET NULL`.
 - Les membres de conversation référencent `action_conversations.id` dans la migration dédiée.
 - `report_generation_pdf_shares.generation_id` référence `report_generations.id` et `artifact_id` référence `report_generation_pdf_artifacts.id`, avec suppression en cascade dans la migration `20261018000002_report_generation_pdf_shares.sql`. Le token est conservé uniquement sous hash SHA-256, avec expiration et révocation. Une policy et des grants limitent la table à `service_role` ; les handlers authentifiés contrôlent le propriétaire.
+- `report_generation_publications` ne contient aucun snapshot : `generation_id` et `artifact_id` relient l'historique immuable et l'artefact PDF privé à une projection minimale (titre, période, périmètre autorisé, thème, date, auteur public optionnel). La projection est refusée côté serveur si le snapshot contient des données brutes, identifiants internes, PII, coordonnées, médias privés ou un périmètre mono-action. RLS et grants rendent la table server-only ; les routes publiques ne servent que les lignes non révoquées et relisent l'artefact exact depuis le serveur.
 
 Ne pas généraliser ces exemples au reste du schéma sans inspection de la dernière migration qui affecte chaque table.
 

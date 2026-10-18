@@ -19,6 +19,7 @@ import type { ModuleState } from "./report-pdf-data";
 import {
   buildDerivedReportGenerationPayload,
 } from "./report-generation-derivation";
+import { getReportPublicationStatuses } from "./report-publication-store";
 
 const REPORT_GENERATION_HISTORY_METADATA_SELECT =
   "id, generated_at, title, period_id, scope_label, detail_level, theme";
@@ -241,6 +242,17 @@ export async function listReportGenerationHistoryPage(
   const rows = ((data ?? []) as ReportGenerationDbMetadataRow[])
     .map(toHistoryRow)
     .filter((row): row is ReportGenerationHistoryRow => Boolean(row));
+  try {
+    const publicationStatuses = await getReportPublicationStatuses(rows.map((row) => row.id));
+    for (const row of rows) {
+      const publication = publicationStatuses.get(row.id);
+      row.publicationStatus = publication?.status ?? "private";
+      row.publicationPublishedAt = publication?.publishedAt ?? null;
+    }
+  } catch {
+    // History remains readable when the optional publication projection is unavailable.
+    for (const row of rows) row.publicationStatus = "private";
+  }
   const total = count ?? rows.length;
   return {
     rows,

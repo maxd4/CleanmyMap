@@ -139,6 +139,29 @@ export const platformAuthorizationContract = {
       ],
     },
   },
+  "reports/generations/[id]/publication": {
+    GET: {
+      expected: "Authenticated owner may preview the safe public projection of their report",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + owner-scoped snapshot and artifact lookup + server-side publication projection",
+      evidenceScope: "module",
+      evidence: ["requireAuthenticatedAccess", "getReportGenerationSnapshotById", "getReportPdfArtifactForOwner", "projectReportPublicationPreview"],
+    },
+    POST: {
+      expected: "Authenticated owner may publish only a ready, safe projection of their report",
+      dimensions: ["authentication", "ownership", "audit"],
+      actual: "requireAuthenticatedAccess + owner-scoped snapshot/artifact + eligibility check + publication persistence + audit",
+      evidenceScope: "module",
+      evidence: ["requireAuthenticatedAccess", "getReportGenerationSnapshotById", "assertReportPublicationEligibility", "getReportPdfArtifactForOwner", "createReportPublication", "appendAdminOperationAudit"],
+    },
+    DELETE: {
+      expected: "Authenticated owner may revoke only their own report publication",
+      dimensions: ["authentication", "ownership", "audit"],
+      actual: "requireAuthenticatedAccess + owner-scoped publication revocation + audit",
+      evidenceScope: "module",
+      evidence: ["requireAuthenticatedAccess", "revokeReportPublication", "appendAdminOperationAudit"],
+    },
+  },
   "reports/generations/[id]/json": {
     GET: {
       expected: "Authenticated owner may export the structured JSON projection of their immutable Reports snapshot",
@@ -186,6 +209,30 @@ export const platformAuthorizationContract = {
       actual: "anonymous server rate limit + SHA-256 token lookup with expiry/revocation checks + exact artifact/generation/theme/renderer binding + private Storage read",
       evidence: ["enforceServerRateLimit", "hashReportPdfShareToken", "findActiveReportPdfShareByTokenHash", "getReportPdfArtifactById", "downloadReportPdfArtifact"],
       handlerEvidence: ["enforceServerRateLimit", "hashReportPdfShareToken", "findActiveReportPdfShareByTokenHash", "getReportPdfArtifactById"],
+    },
+  },
+  "reports/library": {
+    GET: {
+      expected: "Anonymous or authenticated visitors may list only active safe report publication metadata",
+      dimensions: ["public-safe"],
+      actual: "server-side active publication listing without snapshot or Storage access",
+      evidence: ["listPublicReportLibraryPage"],
+    },
+  },
+  "reports/library/[id]": {
+    GET: {
+      expected: "Anonymous or authenticated visitors may inspect only active safe publication metadata",
+      dimensions: ["public-safe"],
+      actual: "server-side active publication lookup and safe row projection",
+      evidence: ["getActiveReportPublicationById", "projectReportPublicationRow"],
+    },
+  },
+  "reports/library/[id]/pdf": {
+    GET: {
+      expected: "Anonymous or authenticated visitors may download only the active published exact PDF artifact",
+      dimensions: ["public-safe"],
+      actual: "active publication lookup + exact artifact binding + private Storage server read",
+      evidence: ["getActiveReportPublicationById", "getReportPdfArtifactById", "downloadReportPdfArtifact"],
     },
   },
   "reports/elus-dossier": {

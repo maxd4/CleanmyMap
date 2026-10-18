@@ -48,6 +48,7 @@ export function ReportsFiles({ initialPage, initialAvailability = "available" }:
   const historicalReplayRef = useRef<{ reportWindow: Window; payload: PdfReportPayload } | null>(null);
   const [, setDailyExportAvailability] = useState<ReportExportAvailability>("unavailable");
   const [historyActionStateById, setHistoryActionStateById] = useState<Record<string, ReportGenerationHistoryActionState>>({});
+  const [publicationPreviewById, setPublicationPreviewById] = useState<Record<string, { title: string; period: string; scope: string; theme: ReportPdfTheme; artifactReady: boolean; documentUrl: string; communicatedContent: string }>>({});
 
   async function loadPage(nextPage: number): Promise<boolean> {
     setLoading(true);
@@ -94,6 +95,39 @@ export function ReportsFiles({ initialPage, initialAvailability = "available" }:
     const row = page.rows.find((candidate) => candidate.id === id);
     const rowTheme = themeForRow(row?.theme);
     void historyActions.handleHistoricalAction(id, kind, historicalReplayRef, rowTheme);
+  }
+
+  async function preparePublication(id: string): Promise<void> {
+    const row = page.rows.find((candidate) => candidate.id === id);
+    if (!row) return;
+    const theme = themeForRow(row.theme);
+    setError(null);
+    const response = await fetch(`/api/reports/generations/${encodeURIComponent(id)}/publication?theme=${theme}`, { cache: "no-store" });
+    const body = await response.json().catch(() => null);
+    if (!response.ok || !body?.preview) {
+      setError(body?.error ?? "La publication est temporairement indisponible.");
+      return;
+    }
+    setPublicationPreviewById((current) => ({ ...current, [id]: body.preview }));
+  }
+
+  async function confirmPublication(id: string): Promise<void> {
+    const preview = publicationPreviewById[id];
+    if (!preview?.artifactReady) return;
+    setError(null);
+    const response = await fetch(`/api/reports/generations/${encodeURIComponent(id)}/publication`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: preview.theme }) });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) { setError(body?.error ?? "La publication n'a pas pu être enregistrée."); return; }
+    setPublicationPreviewById((current) => { const next = { ...current }; delete next[id]; return next; });
+    await loadPage(page.page);
+  }
+
+  async function revokePublication(id: string): Promise<void> {
+    setError(null);
+    const response = await fetch(`/api/reports/generations/${encodeURIComponent(id)}/publication`, { method: "DELETE" });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) { setError(body?.error ?? "La révocation n'a pas pu être enregistrée."); return; }
+    await loadPage(page.page);
   }
 
   return (
@@ -159,6 +193,11 @@ export function ReportsFiles({ initialPage, initialAvailability = "available" }:
         onExportJson={(id) => action(id, "json")}
         onExportCsv={(id) => action(id, "csv")}
         onResume={resume}
+        publicationPreviewById={publicationPreviewById}
+        onPublish={(id) => void preparePublication(id)}
+        onConfirmPublication={(id) => void confirmPublication(id)}
+        onCancelPublication={(id) => setPublicationPreviewById((current) => { const next = { ...current }; delete next[id]; return next; })}
+        onRevokePublication={(id) => void revokePublication(id)}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
@@ -168,7 +207,7 @@ export function ReportsFiles({ initialPage, initialAvailability = "available" }:
           <button type="button" className="min-h-10 rounded-lg border border-slate-300 px-3 font-semibold disabled:opacity-50" disabled={!page.hasNextPage || loading} onClick={() => void loadPage(page.page + 1)}>Suivant</button>
         </div>
       </div>
-      <p className="text-xs leading-5 text-slate-500">La publication dans « Tous les fichiers » sera proposée lorsque cette fonctionnalité sera activée. Les lignes historiques sans thème affichent « Non enregistré ».</p>
+      <p className="text-xs leading-5 text-slate-500">La publication est volontaire et réversible. Seule une projection sûre du PDF est exposée ; les lignes historiques sans thème affichent « Non enregistré ».</p>
     </section>
   );
 }

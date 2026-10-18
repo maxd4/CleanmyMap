@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { DeferredReportsWebDocument } from "@/components/reports/deferred-reports-web-document";
 import { ReportsFiles } from "@/components/reports/reports-files";
+import { ReportsLibrary } from "@/components/reports/reports-library";
 import { ReportsPageV2Layout } from "@/components/reports/page-sections/reports-page-v2-layout";
 import { resolveReportsTab } from "@/components/reports/page-sections/reports-page-tabs";
 import { ReportsAnalysisDashboard } from "@/components/reports/reports-analysis-dashboard";
@@ -36,6 +37,8 @@ import {
   listReportGenerationHistoryPage,
 } from "@/lib/reports/report-generation-history-store";
 import type { ReportGenerationHistoryPage } from "@/lib/reports/report-generation-history-contract";
+import { listPublicReportLibraryPage } from "@/lib/reports/report-publication-store";
+import type { ReportPublicLibraryPage } from "@/lib/reports/report-publication-contract";
 import {
   buildReportGenerationResumeConfig,
   type ReportGenerationResumeConfig,
@@ -346,6 +349,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     : locale === "fr"
       ? "Visiteur"
       : "Visitor";
+
+  if (activeTab === "library") {
+    const emptyPage: ReportPublicLibraryPage = { rows: [], page: 1, pageSize: 12, total: 0, hasNextPage: false, hasPreviousPage: false };
+    const initialResult = await listPublicReportLibraryPage({ page: 1, pageSize: 12 })
+      .then((page) => ({ page, availability: "available" as const }))
+      .catch(() => ({ page: emptyPage, availability: "unavailable" as const }));
+    return <ReportsPageV2Layout activeTab="library" libraryContent={<ReportsLibrary initialPage={initialResult.page} initialAvailability={initialResult.availability} />} />;
+  }
 
   if (!userId) {
     if (activeTab === "generation") {

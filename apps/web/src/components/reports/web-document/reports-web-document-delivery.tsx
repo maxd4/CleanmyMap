@@ -46,6 +46,11 @@ export type ReportsWebDocumentDeliveryHistoryProps = {
   onExportJson?: (id: string) => void;
   onExportCsv?: (id: string) => void;
   onResume?: (id: string) => void;
+  publicationPreviewById?: Record<string, { title: string; period: string; scope: string; theme: ReportPdfTheme; artifactReady: boolean; documentUrl: string; communicatedContent: string }>;
+  onPublish?: (id: string) => void;
+  onConfirmPublication?: (id: string) => void;
+  onCancelPublication?: (id: string) => void;
+  onRevokePublication?: (id: string) => void;
 };
 
 export type ReportGenerationHistoryActionState = {
@@ -67,6 +72,11 @@ function HistoryActionButtons({
   onExportJson = () => undefined,
   onExportCsv = () => undefined,
   onResume = () => undefined,
+  publicationPreview,
+  onPublish = () => undefined,
+  onConfirmPublication = () => undefined,
+  onCancelPublication = () => undefined,
+  onRevokePublication = () => undefined,
 }: {
   row: ReportGenerationHistoryRow;
   theme: ReportPdfTheme;
@@ -80,6 +90,11 @@ function HistoryActionButtons({
   onExportJson: (id: string) => void;
   onExportCsv: (id: string) => void;
   onResume: (id: string) => void;
+  publicationPreview?: { title: string; period: string; scope: string; theme: ReportPdfTheme; artifactReady: boolean; documentUrl: string; communicatedContent: string };
+  onPublish: (id: string) => void;
+  onConfirmPublication: (id: string) => void;
+  onCancelPublication: (id: string) => void;
+  onRevokePublication: (id: string) => void;
 }) {
   const isPending = actionState?.state === "pending";
   const resolvedTheme = row.theme ?? theme;
@@ -168,15 +183,17 @@ function HistoryActionButtons({
         Exporter CSV
       </CmmButton>
       <CmmButton
-        disabled
-        title="La publication globale n'est pas encore disponible."
+        disabled={isPending}
+        onClick={() => row.publicationStatus === "published" ? onRevokePublication(rowId) : onPublish(rowId)}
+        title={row.publicationStatus === "published" ? "Retirer le document de la bibliothèque publique" : "Préparer la publication publique"}
         tone="tertiary"
         variant="ghost"
         size="md"
         className="min-h-11"
       >
-        Publier dans « Tous les fichiers »
+        {row.publicationStatus === "published" ? "Retirer de la bibliothèque" : "Publier dans « Tous les fichiers »"}
       </CmmButton>
+      {publicationPreview ? <div className="basis-full rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"><p className="font-bold">Confirmer la publication de « {publicationPreview.title} »</p><p className="mt-1">Période : {publicationPreview.period} · Périmètre : {publicationPreview.scope} · Thème : {publicationPreview.theme === "scientific" ? "Scientifique" : "Impact"}</p><p className="mt-1">{publicationPreview.communicatedContent}</p><a className="mt-2 inline-block font-semibold underline" href={publicationPreview.documentUrl} target="_blank" rel="noreferrer">Consulter le document réellement accessible</a><div className="mt-3 flex gap-2"><CmmButton disabled={!publicationPreview.artifactReady || isPending} onClick={() => onConfirmPublication(rowId)} tone="primary" size="sm">Confirmer</CmmButton><CmmButton disabled={isPending} onClick={() => onCancelPublication(rowId)} tone="secondary" size="sm">Annuler</CmmButton></div></div> : null}
       <ReportsWebDocumentHistorySharing row={row} theme={resolvedTheme} />
     </div>
   );
@@ -279,6 +296,11 @@ export function ReportsWebDocumentDeliveryHistory({
   onExportJson = () => undefined,
   onExportCsv = () => undefined,
   onResume = () => undefined,
+  publicationPreviewById = {},
+  onPublish = () => undefined,
+  onConfirmPublication = () => undefined,
+  onCancelPublication = () => undefined,
+  onRevokePublication = () => undefined,
 }: ReportsWebDocumentDeliveryHistoryProps) {
   return (
     <section
@@ -347,6 +369,11 @@ export function ReportsWebDocumentDeliveryHistory({
                         onExportJson={onExportJson}
                         onExportCsv={onExportCsv}
                         onResume={onResume}
+                        publicationPreview={publicationPreviewById[row.id]}
+                        onPublish={onPublish}
+                        onConfirmPublication={onConfirmPublication}
+                        onCancelPublication={onCancelPublication}
+                        onRevokePublication={onRevokePublication}
                       />
                       <HistoryActionFeedback actionState={actionStateById[row.id]} />
                     </td>
@@ -400,6 +427,11 @@ export function ReportsWebDocumentDeliveryHistory({
                     onExportJson={onExportJson}
                     onExportCsv={onExportCsv}
                     onResume={onResume}
+                        publicationPreview={publicationPreviewById[row.id]}
+                        onPublish={onPublish}
+                        onConfirmPublication={onConfirmPublication}
+                        onCancelPublication={onCancelPublication}
+                        onRevokePublication={onRevokePublication}
                   />
                   <HistoryActionFeedback actionState={actionStateById[row.id]} />
                 </div>
