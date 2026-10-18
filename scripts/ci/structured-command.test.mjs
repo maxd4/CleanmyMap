@@ -10,7 +10,9 @@ const parserPath = path.join(repositoryRoot, "scripts", "ci", "structured-comman
 const ANSI_ESCAPE_SEQUENCE = /\u001B\[[0-?]*[ -/]*[@-~]/g;
 
 function normalizePowerShellOutput(result) {
-  return `${result.stdout ?? ""}\n${result.stderr ?? ""}`.replace(ANSI_ESCAPE_SEQUENCE, "");
+  return `${result.stdout ?? ""}\n${result.stderr ?? ""}`
+    .replace(ANSI_ESCAPE_SEQUENCE, "")
+    .replace(/\r?\n\s*\|\s*/g, " ");
 }
 
 function powerShellOrSkip(t) {
