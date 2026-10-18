@@ -1,7 +1,7 @@
 import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { lstat, mkdir, readdir, realpath, rename, rm, rmdir } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, open, readdir, realpath, rename, rm, rmdir } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -21,7 +21,9 @@ const trackedFilePatterns = [
   /^__PSScriptPolicyTest_.*\.(?:ps1|psm1)$/i,
 ];
 
-const quarantineDirectoryPrefix = ".cleanmymap-temp-cleanup-";
+const privateCleanupDirectoryName = ".cleanmymap";
+const privateQuarantineDirectoryName = "temp-cleanup";
+const quarantineDirectoryPrefix = "run-";
 
 function defaultTempRoot() {
   return process.env.TEMP || process.env.TMP || os.tmpdir();
@@ -30,6 +32,28 @@ function defaultTempRoot() {
 function isDirectChild(root, candidate) {
   const relative = path.relative(root, candidate);
   return relative.length > 0 && !relative.includes(path.sep) && !path.isAbsolute(relative);
+}
+
+function normalizedPath(value) {
+  const resolved = path.resolve(value);
+  return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+}
+
+function hasStableFileIdentity(stat) {
+  const isNonZeroIdentity = (value) =>
+    typeof value === "bigint" ? value !== 0n : Number.isFinite(value) && value > 0;
+  return isNonZeroIdentity(stat.dev) && isNonZeroIdentity(stat.ino);
+}
+
+function hasSameFileIdentity(left, right) {
+  return hasStableFileIdentity(left) &&
+    hasStableFileIdentity(right) &&
+    left.dev === right.dev &&
+    left.ino === right.ino;
+}
+
+function hasExpectedKind(stat, kind) {
+  return kind === "directory" ? stat.isDirectory() : stat.isFile();
 }
 
 async function assertSafeTempRoot(value) {
@@ -53,7 +77,7 @@ async function assertSafeCandidate(root, candidate) {
     throw new Error(`Refusing to clean a path outside the temporary root: ${candidatePath}`);
   }
 
-  const candidateStat = await lstat(candidatePath);
+  const candidateStat = await lstat(candidatePath, { bigint: true });
   if (candidateStat.isSymbolicLink()) {
     throw new Error(`Refusing to clean a symbolic link: ${candidatePath}`);
   }
@@ -63,12 +87,79 @@ async function assertSafeCandidate(root, candidate) {
     throw new Error(`Refusing to clean a redirected temporary entry: ${candidatePath}`);
   }
 
-  const expectedKind = candidate.kind === "directory" ? candidateStat.isDirectory() : candidateStat.isFile();
-  if (!expectedKind) {
+  if (!hasExpectedKind(candidateStat, candidate.kind)) {
     throw new Error(`Temporary entry changed type before cleanup: ${candidatePath}`);
   }
 
-  return candidateStat;
+  return { candidatePath, candidateStat };
+}
+
+async function assertPrivateDirectory(directory, homeDirectory) {
+  const directoryStat = await lstat(directory);
+  if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) {
+    throw new Error(`Refusing to use an unsafe cleanup quarantine: ${directory}`);
+  }
+  if (process.platform !== "win32" && (directoryStat.mode & 0o077) !== 0) {
+    throw new Error(`Refusing to use a publicly accessible cleanup quarantine: ${directory}`);
+  }
+
+  const canonicalDirectory = await realpath(directory);
+  const canonicalHome = await realpath(homeDirectory);
+  const normalizedDirectory = normalizedPath(canonicalDirectory);
+  const normalizedHome = normalizedPath(canonicalHome);
+  if (
+    normalizedDirectory !== normalizedPath(directory) ||
+    !normalizedDirectory.startsWith(`${normalizedHome}${path.sep}`)
+  ) {
+    throw new Error(`Refusing to use a redirected cleanup quarantine: ${directory}`);
+  }
+
+  return canonicalDirectory;
+}
+
+async function ensureDirectory(directory) {
+  try {
+    await lstat(directory);
+  } catch (error) {
+    if (error?.code !== "ENOENT") {
+      throw error;
+    }
+    try {
+      await mkdir(directory, { mode: 0o700 });
+    } catch (mkdirError) {
+      if (mkdirError?.code !== "EEXIST") {
+        throw mkdirError;
+      }
+    }
+  }
+}
+
+async function createQuarantineDirectory() {
+  const homeDirectory = await realpath(path.resolve(os.homedir()));
+  const privateDirectory = path.join(homeDirectory, privateCleanupDirectoryName);
+  await ensureDirectory(privateDirectory);
+  const safePrivateDirectory = await assertPrivateDirectory(privateDirectory, homeDirectory);
+  const quarantineParent = path.join(safePrivateDirectory, privateQuarantineDirectoryName);
+  await ensureDirectory(quarantineParent);
+
+  const safeQuarantineParent = await assertPrivateDirectory(quarantineParent, homeDirectory);
+  const quarantineDirectory = await mkdtemp(
+    path.join(safeQuarantineParent, `${quarantineDirectoryPrefix}${randomUUID()}-`),
+  );
+  await assertPrivateDirectory(quarantineDirectory, homeDirectory);
+  return quarantineDirectory;
+}
+
+async function assertQuarantinedCandidate(quarantinedPath, candidateHandle, candidateKind, candidatePath) {
+  const quarantinedStat = await lstat(quarantinedPath, { bigint: true });
+  const openedStat = await candidateHandle.stat({ bigint: true });
+  if (
+    quarantinedStat.isSymbolicLink() ||
+    !hasExpectedKind(quarantinedStat, candidateKind) ||
+    !hasSameFileIdentity(openedStat, quarantinedStat)
+  ) {
+    throw new Error(`Temporary entry changed identity before cleanup: ${candidatePath}`);
+  }
 }
 
 export function resolvePowerShellExecutable({ platform = process.platform, env = process.env } = {}) {
@@ -117,16 +208,6 @@ export function hasActiveEditorProcesses({ spawn = spawnSync, platform = process
 
   const count = Number(output);
   return Number.isSafeInteger(count) && count >= 0 ? count > 0 : true;
-}
-
-function hasSameFileIdentity(left, right) {
-  return left.dev === right.dev && left.ino === right.ino;
-}
-
-async function createQuarantineDirectory(root) {
-  const quarantineDirectory = path.join(root, `${quarantineDirectoryPrefix}${randomUUID()}`);
-  await mkdir(quarantineDirectory, { mode: 0o700 });
-  return quarantineDirectory;
 }
 
 async function removeEmptyQuarantineDirectory(quarantineDirectory) {
@@ -232,22 +313,28 @@ export async function removeCandidate(root, candidate, { beforeRename } = {}) {
     throw new Error(`Refusing to clean an unallowlisted temporary entry: ${candidate.name}`);
   }
 
-  const candidateStat = await assertSafeCandidate(tempRoot, candidate);
-  const quarantineDirectory = await createQuarantineDirectory(tempRoot);
-  const quarantinedPath = path.join(quarantineDirectory, candidate.name);
+  const { candidatePath, candidateStat } = await assertSafeCandidate(tempRoot, candidate);
+  let candidateHandle;
+  let quarantineDirectory;
 
   try {
+    candidateHandle = await open(candidatePath, "r");
+    const openedStat = await candidateHandle.stat({ bigint: true });
+    if (!hasSameFileIdentity(candidateStat, openedStat) || !hasExpectedKind(openedStat, candidate.kind)) {
+      throw new Error(`Temporary entry changed identity before cleanup: ${candidatePath}`);
+    }
+
+    quarantineDirectory = await createQuarantineDirectory();
+    const quarantinedPath = path.join(quarantineDirectory, candidate.name);
+
     if (beforeRename) {
       await beforeRename();
     }
 
     await assertSafeTempRoot(tempRoot);
-    await rename(candidate.fullPath, quarantinedPath);
+    await rename(candidatePath, quarantinedPath);
 
-    const quarantinedStat = await lstat(quarantinedPath);
-    if (!hasSameFileIdentity(candidateStat, quarantinedStat)) {
-      throw new Error(`Temporary entry changed identity before cleanup: ${candidate.fullPath}`);
-    }
+    await assertQuarantinedCandidate(quarantinedPath, candidateHandle, candidate.kind, candidatePath);
 
     await rm(quarantinedPath, {
       recursive: candidate.kind === "directory",
@@ -255,7 +342,10 @@ export async function removeCandidate(root, candidate, { beforeRename } = {}) {
       maxRetries: 2,
     });
   } finally {
-    await removeEmptyQuarantineDirectory(quarantineDirectory);
+    await candidateHandle?.close();
+    if (quarantineDirectory) {
+      await removeEmptyQuarantineDirectory(quarantineDirectory);
+    }
   }
 }
 
