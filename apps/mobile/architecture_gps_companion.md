@@ -124,7 +124,10 @@ la seule inscription.
 
 Les policies courantes ciblent le rôle `authenticated` et rapprochent le
 `sub` du JWT Clerk de `missions.volunteer_id`. Les policies de `gps_points`
-utilisent la même identité par l'intermédiaire de la mission liée. Le mobile
+utilisent la même identité par l'intermédiaire de la mission liée et
+n'acceptent un nouvel enregistrement que lorsque la mission est `tracking`.
+Les missions `completed` et `cancelled` sont terminales pour la surface mobile :
+elles ne peuvent pas être rouvertes pour ajouter des points. Le mobile
 ne reçoit pas de droit d'écriture sur `distance_m` ou `duration_s`, ni sur
 `action_id`. Lorsqu'une mission doit être liée à une action, l'app appelle la
 route web authentifiée dédiée ; le site vérifie le créateur, l'organisateur ou
@@ -150,6 +153,12 @@ Le serveur conserve la distance individuelle issue de `missions.distance_m` ;
 le mobile ne calcule ni ne persiste ces métriques. Une mission autonome
 n'alimente aucune action. Un contributeur non confirmé et non organisateur
 canonique produit une observation refusée, jamais une récompense.
+
+L'insertion d'un point verrouille la ligne de mission et revalide son état dans
+un trigger invoker. Une finalisation concurrente attend donc l'insertion déjà
+engagée et inclut son point dans les métriques, ou bien l'insertion observe
+`completed` et est rejetée. Ce verrou ne déplace ni ne duplique la source
+serveur des métriques.
 
 Plusieurs missions terminées liées à la même action restent des observations
 distinctes : elles ne sont ni concaténées ni remplacées. La projection active

@@ -489,6 +489,12 @@ mission vers `completed` avec `ended_at`. Un trigger `BEFORE UPDATE` serveur
 calcule alors la distance Haversine et la durée dans `NEW`, puis la ligne
 finalisée est renvoyée par le même `.select()`.
 
+Une mission `completed` ou `cancelled` est terminale pour la surface mobile :
+la policy GPS exige l'état `tracking`, et la ligne de mission est verrouillée
+pendant la vérification d'un nouvel insert afin de sérialiser une course avec
+la finalisation. Le flush conserve son buffer local tant que l'upsert n'est pas
+confirmé ; un rejeu portant le même `client_point_id` reste donc idempotent.
+
 La fonction du trigger est `SECURITY INVOKER` avec `search_path = pg_catalog` :
 la lecture des `gps_points` reste donc soumise aux RLS de l'appelant. Le
 propriétaire Clerk peut finaliser sa mission ; un autre utilisateur et `anon`
