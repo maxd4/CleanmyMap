@@ -261,17 +261,13 @@ const MAX_CYCLE_REPORT_LENGTH = 4 * 1024 * 1024;
 
 export function isCompleteCycleReport(stdout = "") {
   const text = String(stdout);
-  const jsonStart = text.indexOf("{");
-  if (jsonStart < 0) return false;
-
-  let depth = 0;
+  const objectStarts = [];
   let inString = false;
   let escaped = false;
+  let jsonStart = -1;
   let jsonEnd = -1;
 
-  for (let index = jsonStart; index < text.length; index += 1) {
-    if (index - jsonStart + 1 > MAX_CYCLE_REPORT_LENGTH) return false;
-
+  for (let index = 0; index < text.length; index += 1) {
     const character = text[index];
     if (inString) {
       if (escaped) escaped = false;
@@ -280,20 +276,22 @@ export function isCompleteCycleReport(stdout = "") {
       continue;
     }
 
-    if (character === '"') inString = true;
-    else if (character === "{") depth += 1;
-    else if (character === "}") {
-      depth -= 1;
-      if (depth === 0) {
+    if (objectStarts.length > 0 && character === '"') {
+      inString = true;
+    } else if (character === "{") {
+      objectStarts.push(index);
+    } else if (character === "}" && objectStarts.length > 0) {
+      const objectStart = objectStarts.pop();
+      if (objectStarts.length === 0) {
+        jsonStart = objectStart;
         jsonEnd = index + 1;
-        break;
       }
-      if (depth < 0) return false;
     }
   }
 
-  if (jsonEnd < 0 || inString || depth !== 0) return false;
+  if (jsonStart < 0 || jsonEnd < 0 || inString || objectStarts.length > 0) return false;
   if (text.slice(jsonEnd).trim() !== "") return false;
+  if (jsonEnd - jsonStart > MAX_CYCLE_REPORT_LENGTH) return false;
 
   const candidate = text.slice(jsonStart, jsonEnd);
   try {
