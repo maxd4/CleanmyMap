@@ -6,7 +6,7 @@ const canManageActionMock = vi.hoisted(() => vi.fn());
 const canManageActionsGloballyMock = vi.hoisted(() => vi.fn());
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerRowsMock = vi.hoisted(() => vi.fn());
-const loadActionParticipationReviewsMock = vi.hoisted(() => vi.fn());
+const loadActionParticipationReviewPageMock = vi.hoisted(() => vi.fn());
 const loadActionRoleAttestationStateMock = vi.hoisted(() => vi.fn());
 const reviewActionRoleAttestationMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -16,7 +16,7 @@ vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: getCurrentUserIdentityMo
 vi.mock("@/lib/actions/permissions", () => ({ canManageAction: canManageActionMock, canManageActionsGlobally: canManageActionsGloballyMock }));
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionByIdMock }));
 vi.mock("@/lib/actions/participation/organizers", () => ({ loadActionOrganizerRowsForAction: loadActionOrganizerRowsMock }));
-vi.mock("@/lib/actions/participation/group-participation", () => ({ loadActionParticipationReviews: loadActionParticipationReviewsMock }));
+vi.mock("@/lib/actions/participation/group-participation", () => ({ loadActionParticipationReviewPage: loadActionParticipationReviewPageMock }));
 vi.mock("@/lib/actions/role-attestations", async () => {
   const actual = await vi.importActual<typeof import("@/lib/actions/role-attestations")>("@/lib/actions/role-attestations");
   return { ...actual, loadActionRoleAttestationState: loadActionRoleAttestationStateMock, reviewActionRoleAttestation: reviewActionRoleAttestationMock };
@@ -51,7 +51,7 @@ describe("/api/actions/[actionId]/role-attestations", () => {
     canManageActionsGloballyMock.mockReturnValue(false);
     loadActionByIdMock.mockResolvedValue(action);
     loadActionOrganizerRowsMock.mockResolvedValue([{ organizer_clerk_id: "reviewer-1", organizer_label: "Reviewer", organizer_handle: null, is_primary: true }]);
-    loadActionParticipationReviewsMock.mockResolvedValue([{ userId: "volunteer-1", displayName: "Volunteer", handle: null, participationStatus: "confirmed" }]);
+    loadActionParticipationReviewPageMock.mockResolvedValue({ items: [{ userId: "volunteer-1", displayName: "Volunteer", handle: null, participationStatus: "confirmed" }], hasMore: false, nextOffset: null });
     loadActionRoleAttestationStateMock.mockResolvedValue({ assignments: [{ user_id: "volunteer-1", role_code: "group_lead" }], attestations: [] });
     reviewActionRoleAttestationMock.mockResolvedValue({ id: "attestation-1", verification_status: "confirmed" });
   });
@@ -67,10 +67,37 @@ describe("/api/actions/[actionId]/role-attestations", () => {
   it("does not expose pending or absent participants to a volunteer", async () => {
     requireActionRequestAccessMock.mockResolvedValue({ ok: true, userId: "volunteer-1" });
     canManageActionMock.mockReturnValue(false);
-    loadActionParticipationReviewsMock.mockResolvedValue([]);
+    loadActionParticipationReviewPageMock.mockResolvedValue({ items: [], hasMore: false, nextOffset: null });
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) });
     expect(response.status).toBe(403);
+  });
+
+  it("returns a bounded reviewer page and its stable continuation", async () => {
+    loadActionParticipationReviewPageMock.mockResolvedValueOnce({
+      items: [{ userId: "volunteer-1", displayName: "Volunteer", handle: null, participationStatus: "confirmed" }],
+      hasMore: true,
+      nextOffset: 102,
+    });
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/action-1/role-attestations?limit=2&offset=100"), { params: Promise.resolve({ actionId: "action-1" }) });
+    expect(response.status).toBe(200);
+    expect(loadActionParticipationReviewPageMock).toHaveBeenCalledWith(undefined, expect.objectContaining({ limit: 2, offset: 100, userId: undefined }));
+    await expect(response.json()).resolves.toMatchObject({ pagination: { hasMore: true, nextOffset: 102 } });
+  });
+
+  it("forces a volunteer lookup to the authenticated participant identity", async () => {
+    requireActionRequestAccessMock.mockResolvedValue({ ok: true, userId: "volunteer-1" });
+    canManageActionMock.mockReturnValue(false);
+    loadActionParticipationReviewPageMock.mockResolvedValue({
+      items: [{ userId: "volunteer-1", displayName: "Volunteer", handle: null, participationStatus: "confirmed" }],
+      hasMore: false,
+      nextOffset: null,
+    });
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/action-1/role-attestations?limit=100&offset=100"), { params: Promise.resolve({ actionId: "action-1" }) });
+    expect(response.status).toBe(200);
+    expect(loadActionParticipationReviewPageMock).toHaveBeenCalledWith(undefined, expect.objectContaining({ limit: 1, offset: 0, userId: "volunteer-1" }));
   });
 
   it("keeps self-review pending and delegates the transaction to the RPC", async () => {

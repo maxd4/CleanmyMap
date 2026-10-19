@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-18T20:20:27.882Z",
-  "apiRouteCount": 190,
+  "apiRouteCount": 191,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -63,6 +63,13 @@
       "introducedBy": "WORKTREE-CANDIDATE",
       "reason": "Surface privée de proposition et de réponse au transfert explicite du primaire opérationnel, séparée des permissions de gestion de l'action.",
       "costContract": "POST/PATCH bornés à l'action, aux organisateurs et à l'identité Clerk courante, avec proposition idempotente et décision RPC atomique, réponses private/no-store et aucune inscription implicite.",
+      "reviewedAt": "2026-10-19"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/role-attestations/route.ts",
+      "introducedBy": "3fa9d62c47ee689f4b7042f4a308b293f43dfaa6",
+      "reason": "Surface privée de bilan pour consulter les participants finaux et faire relire leurs missions effectivement exercées, avec décision réservée aux reviewers habilités.",
+      "costContract": "GET/POST bornés à une action finalisée, à une page de 100 participants maximum et à l'identité Clerk ; la participation confirmée, l'autorisation organisateur et la RPC service_role sont revalidées côté serveur, avec force-dynamic et réponses private/no-store.",
       "reviewedAt": "2026-10-19"
     },
     {
@@ -294,6 +301,7 @@
     "apps/web/src/app/api/actions/[actionId]/participation-claim/route.ts",
     "apps/web/src/app/api/actions/[actionId]/public/route.ts",
     "apps/web/src/app/api/actions/[actionId]/publish/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/role-attestations/route.ts",
     "apps/web/src/app/api/actions/[actionId]/route-version/route.ts",
     "apps/web/src/app/api/actions/[actionId]/route.ts",
     "apps/web/src/app/api/actions/account-options/route.ts",

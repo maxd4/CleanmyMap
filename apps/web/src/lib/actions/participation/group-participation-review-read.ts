@@ -24,38 +24,76 @@ function toParticipationSearchItem(row: ParticipantSearchRow): ActionParticipati
   };
 }
 
+export type ActionParticipationReviewPage = {
+  items: ActionParticipationReviewItem[];
+  hasMore: boolean;
+  nextOffset: number | null;
+};
+
 export async function loadActionParticipationReviews(
   supabase: SupabaseClient,
   params: {
     actionId: string;
     limit?: number;
+    offset?: number;
+    userId?: string;
     statuses?: ParticipationStatus[];
     actionPhase?: ActionPhase;
   },
 ): Promise<ActionParticipationReviewItem[]> {
+  const page = await loadActionParticipationReviewPage(supabase, params);
+  return page.items;
+}
+
+export async function loadActionParticipationReviewPage(
+  supabase: SupabaseClient,
+  params: {
+    actionId: string;
+    limit?: number;
+    offset?: number;
+    userId?: string;
+    statuses?: ParticipationStatus[];
+    actionPhase?: ActionPhase;
+  },
+): Promise<ActionParticipationReviewPage> {
   const reviewLimit = Math.max(1, Math.min(params.limit ?? 24, 100));
+  const reviewOffset = Math.max(0, Math.min(params.offset ?? 0, 100_000));
   const statuses = params.statuses ?? [PENDING_PARTICIPATION_STATUS];
-  const rows = await loadParticipationReviewRows(supabase, params.actionId, reviewLimit, statuses, params.actionPhase);
-  if (rows.length === 0) {
-    return [];
+  const rows = await loadParticipationReviewRows(
+    supabase,
+    params.actionId,
+    reviewLimit,
+    reviewOffset,
+    statuses,
+    params.actionPhase,
+    params.userId,
+  );
+  const hasMore = rows.length > reviewLimit;
+  const pageRows = rows.slice(0, reviewLimit);
+  if (pageRows.length === 0) {
+    return { items: [], hasMore: false, nextOffset: null };
   }
 
   const registeredBeforeAction = await loadRegisteredBeforeActionUserIds(
     supabase,
     params.actionId,
-    rows,
+    pageRows,
   );
   const profileMap = await loadParticipantProfilesForUserIds(
     supabase,
-    rows.map((row) => row.user_id),
+    pageRows.map((row) => row.user_id),
   );
   const spogomiIdentityByUserId = await loadSpogomiIdentityStatuses(
     supabase,
     params.actionId,
-    rows.map((row) => row.user_id),
+    pageRows.map((row) => row.user_id),
   );
 
-  return buildParticipationReviewItems(rows, profileMap, registeredBeforeAction, spogomiIdentityByUserId);
+  return {
+    items: buildParticipationReviewItems(pageRows, profileMap, registeredBeforeAction, spogomiIdentityByUserId),
+    hasMore,
+    nextOffset: hasMore ? reviewOffset + reviewLimit : null,
+  };
 }
 
 async function loadSpogomiIdentityStatuses(
@@ -108,8 +146,10 @@ async function loadParticipationReviewRows(
   supabase: SupabaseClient,
   actionId: string,
   reviewLimit: number,
+  reviewOffset: number,
   statuses: ParticipationStatus[],
   actionPhase?: ActionPhase,
+  userId?: string,
 ): Promise<ParticipationReviewRow[]> {
   const useRegs = usesRegistrationStore(actionPhase);
   let query = supabase
@@ -118,6 +158,10 @@ async function loadParticipationReviewRows(
     .eq("action_id", actionId)
     .in(useRegs ? "registration_status" : "participation_status", statuses);
 
+  if (userId) {
+    query = query.eq("user_id", userId);
+  }
+
   if (useRegs && statuses.includes(PENDING_PARTICIPATION_STATUS)) {
     // Une invitation manual_add est réservée à la réponse de son destinataire.
     query = query.eq("registration_source", "group_form");
@@ -125,7 +169,8 @@ async function loadParticipationReviewRows(
 
   const result = await query
     .order("created_at", { ascending: true })
-    .limit(reviewLimit);
+    .order("id", { ascending: true })
+    .range(reviewOffset, reviewOffset + reviewLimit);
 
   if (result.error) {
     throw new Error(result.error.message);

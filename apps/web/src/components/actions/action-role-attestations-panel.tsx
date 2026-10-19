@@ -27,6 +27,7 @@ type State = {
   canReview: boolean;
   roleOptions: RoleOption[];
   participants: Participant[];
+  pagination: { hasMore: boolean; nextOffset: number | null };
 };
 
 function statusLabel(status: Attestation["verification_status"]): string {
@@ -44,24 +45,35 @@ function formatDecisionDate(value: string | null): string {
 export function ActionRoleAttestationsPanel({ actionId }: { actionId: string }) {
   const [state, setState] = useState<State | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [selectedRoleByUser, setSelectedRoleByUser] = useState<Record<string, string>>({});
   const [reasonByUser, setReasonByUser] = useState<Record<string, string>>({});
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async ({ offset = 0, append = false }: { offset?: number; append?: boolean } = {}) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/role-attestations`, { cache: "no-store" });
+      const query = new URLSearchParams({ limit: "100", offset: String(offset) });
+      const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/role-attestations?${query.toString()}`, { cache: "no-store" });
       const payload = (await response.json()) as State & { error?: string };
       if (!response.ok) throw new Error(payload.error || "Les missions ne sont pas disponibles.");
-      setState(payload);
+      setState((current) => {
+        if (!append || !current) return payload;
+        const knownUserIds = new Set(current.participants.map((participant) => participant.userId));
+        return {
+          ...payload,
+          participants: [...current.participants, ...payload.participants.filter((participant) => !knownUserIds.has(participant.userId))],
+        };
+      });
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Les missions ne sont pas disponibles.");
     } finally {
-      setLoading(false);
+      if (append) setLoadingMore(false);
+      else setLoading(false);
     }
   }, [actionId]);
 
@@ -165,6 +177,19 @@ export function ActionRoleAttestationsPanel({ actionId }: { actionId: string }) 
             );
           })}
         </div>
+        {state.canReview && state.pagination.hasMore ? (
+          <div className="flex justify-center">
+            <CmmButton
+              tone="secondary"
+              variant="ghost"
+              size="sm"
+              loading={loadingMore}
+              onClick={() => void load({ offset: state.pagination.nextOffset ?? state.participants.length, append: true })}
+            >
+              Charger les participants suivants
+            </CmmButton>
+          </div>
+        ) : null}
       </div>
     </CmmCard>
   );

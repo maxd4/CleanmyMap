@@ -14,6 +14,7 @@ export {
 
 export {
   addActionParticipationByAdmin,
+  loadActionParticipationReviewPage,
   loadActionParticipationReviews,
   reviewActionParticipation,
   searchActionParticipationCandidates,

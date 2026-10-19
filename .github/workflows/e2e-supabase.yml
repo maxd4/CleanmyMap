@@ -34,6 +34,8 @@ on:
       - "apps/web/supabase/config.toml"
       - "apps/web/supabase/migrations/**"
       - "apps/web/supabase/tests/spogomi-mixed-division-smoke.sql"
+      - "apps/web/supabase/tests/action-role-attestation-correction.sql"
+      - "e2e/action-role-attestation-concurrency.mjs"
       - "apps/web/supabase/seed.sql"
       - "playwright.config.ts"
       - "package.json"
@@ -184,6 +186,12 @@ jobs:
         run: |
           set -o pipefail
           ./node_modules/.bin/supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/spogomi-mixed-division-smoke.sql)" 2>&1 | tee artifacts/ci/spogomi-mixed-division-smoke.log
+
+      - name: Execute role attestation correction PostgreSQL contract
+        run: |
+          set -o pipefail
+          ./node_modules/.bin/supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/action-role-attestation-correction.sql)" 2>&1 | tee artifacts/ci/action-role-attestation-correction.log
+          node e2e/action-role-attestation-concurrency.mjs 2>&1 | tee -a artifacts/ci/action-role-attestation-correction.log
 
           echo "Running SECURITY-02 PostgreSQL two-session contract"
           node e2e/security-02-two-sessions.mjs 2>&1 | tee -a artifacts/ci/supabase-preflight.log

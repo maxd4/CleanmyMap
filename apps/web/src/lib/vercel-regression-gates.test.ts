@@ -93,6 +93,10 @@ describe("vercel regression gates", () => {
         "23abf71c8fb3bc7e459459c69596b8b28eaf74a2",
       ],
       [
+        "apps/web/src/app/api/actions/[actionId]/role-attestations/route.ts",
+        "3fa9d62c47ee689f4b7042f4a308b293f43dfaa6",
+      ],
+      [
         "apps/web/src/app/api/reports/generations/[id]/csv/route.ts",
         "3a596b982c52915cda660317ace7c19b54afb4dd",
       ],

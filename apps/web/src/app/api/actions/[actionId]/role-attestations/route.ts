@@ -7,7 +7,7 @@ import { getCurrentUserIdentity } from "@/lib/authz";
 import { canManageAction, canManageActionsGlobally } from "@/lib/actions/permissions";
 import { loadActionById } from "@/lib/actions/store";
 import { loadActionOrganizerRowsForAction } from "@/lib/actions/participation/organizers";
-import { loadActionParticipationReviews } from "@/lib/actions/participation/group-participation";
+import { loadActionParticipationReviewPage } from "@/lib/actions/participation/group-participation";
 import { ACTION_FIELD_ROLE_OPTIONS, isActionFieldRoleCode } from "@/lib/actions/field-roles";
 import {
   isActionFinalizedForRoleAttestation,
@@ -18,6 +18,7 @@ import { evaluateRoleAttestationPolicy } from "@/lib/actions/role-attestation-po
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
+// Justification Vercel: attestation reads and writes are identity-scoped/private; no-store prevents shared-cache exposure of final participation and reviewer decisions.
 export const dynamic = "force-dynamic";
 
 type Context = { params: Promise<{ actionId: string }> };
@@ -55,7 +56,18 @@ function errorStatus(message: string): number {
 }
 
 function noStoreResponse(body: unknown, status = 200) {
+  // Justification Vercel: participant identities, assignments and attestation audit data must never be stored or shared by an intermediary cache.
   return NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
+}
+
+function readPagination(request: Request) {
+  const searchParams = new URL(request.url).searchParams;
+  const rawLimit = Number(searchParams.get("limit") ?? 100);
+  const rawOffset = Number(searchParams.get("offset") ?? 0);
+  return {
+    limit: Number.isFinite(rawLimit) ? Math.max(1, Math.min(Math.trunc(rawLimit), 100)) : 100,
+    offset: Number.isFinite(rawOffset) ? Math.max(0, Math.min(Math.trunc(rawOffset), 100_000)) : 0,
+  };
 }
 
 export async function GET(request: Request, context: Context) {
@@ -69,16 +81,19 @@ export async function GET(request: Request, context: Context) {
       return noStoreResponse({ error: "Les missions sont consultables après la finalisation canonique de l’action." }, 409);
     }
 
+    const pageRequest = readPagination(request);
     const state = await loadActionRoleAttestationState(access.supabase, access.action.id);
-    const participants = await loadActionParticipationReviews(access.supabase, {
+    const participantsPage = await loadActionParticipationReviewPage(access.supabase, {
       actionId: access.action.id,
       statuses: ["confirmed"],
       actionPhase: "post_action_complete",
-      limit: 100,
+      limit: access.isManager ? pageRequest.limit : 1,
+      offset: access.isManager ? pageRequest.offset : 0,
+      userId: access.isManager ? undefined : auth.userId,
     });
     const visibleParticipants = access.isManager
-      ? participants
-      : participants.filter((participant) => participant.userId === auth.userId);
+      ? participantsPage.items
+      : participantsPage.items.filter((participant) => participant.userId === auth.userId);
     if (!access.isManager && visibleParticipants.length === 0) {
       return noStoreResponse({ error: "La consultation des missions exige une participation finale confirmée." }, 403);
     }
@@ -88,6 +103,10 @@ export async function GET(request: Request, context: Context) {
       canReview: access.isManager,
       currentUserId: auth.userId,
       roleOptions: ACTION_FIELD_ROLE_OPTIONS,
+      pagination: {
+        hasMore: access.isManager && participantsPage.hasMore,
+        nextOffset: access.isManager ? participantsPage.nextOffset : null,
+      },
       participants: visibleParticipants.map((participant) => ({
         userId: participant.userId,
         displayName: participant.displayName,
