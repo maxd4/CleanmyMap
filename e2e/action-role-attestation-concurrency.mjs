@@ -45,6 +45,8 @@ values ('${actionId}'::uuid, '${targetUserId}', 'group_lead', 'active', '${revie
 commit;
 begin;
 set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 select public.review_action_role_attestation('${actionId}'::uuid, '${targetUserId}', 'group_lead', 'confirm', '${reviewerId}', null, false);
 commit;
 `;
@@ -60,6 +62,8 @@ rollback;
 const concurrentCorrectionWithoutReasonSql = `
 begin;
 set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 select public.review_action_role_attestation('${actionId}'::uuid, '${targetUserId}', 'group_lead', 'reject', '${reviewerId}', null, false);
 commit;
 `;
@@ -67,6 +71,8 @@ commit;
 const correctedDecisionSql = `
 begin;
 set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 select public.review_action_role_attestation('${actionId}'::uuid, '${targetUserId}', 'group_lead', 'reject', '${reviewerId}', 'concurrent correction reason', false);
 commit;
 `;

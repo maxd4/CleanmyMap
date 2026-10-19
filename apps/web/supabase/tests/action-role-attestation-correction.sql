@@ -42,6 +42,28 @@ commit;
 
 begin;
 set local role service_role;
+select set_config('request.jwt.claims', '{"role":"authenticated"}', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+-- PostgreSQL service_role alone is not an authorized JWT identity for the RPC.
+do $$
+begin
+  begin
+    perform public.review_action_role_attestation(
+      '11111111-1111-4111-8111-111111111111', 'role-attestation-contract-user',
+      'group_lead', 'confirm', 'role-attestation-contract-reviewer', null, false
+    );
+    raise exception 'review without the service_role JWT claim was accepted';
+  exception when others then
+    if sqlerrm not like '%action_role_attestation_forbidden%' then raise; end if;
+  end;
+end $$;
+rollback;
+
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 
 -- First confirmation is valid and creates exactly one audit revision/notice.
 select public.review_action_role_attestation(
@@ -78,6 +100,8 @@ commit;
 
 begin;
 set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 do $$
 begin
   begin
@@ -103,6 +127,8 @@ commit;
 
 begin;
 set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 select public.review_action_role_attestation(
   '11111111-1111-4111-8111-111111111111', 'role-attestation-contract-user',
   'group_lead', 'reject', 'role-attestation-contract-reviewer', 'explicit rejection', false
