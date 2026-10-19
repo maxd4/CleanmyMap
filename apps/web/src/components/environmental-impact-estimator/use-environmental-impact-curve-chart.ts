@@ -64,14 +64,8 @@ export function useEnvironmentalImpactCurveChart({
       setSelectedScopeKey("site");
       setSelectedPointIndexOverride(pointIndex);
     },
-    onSitePointKeyDown: (pointIndex: number) => {
-      setSelectedPointIndexOverride(pointIndex);
-    },
     onUserPointClick: (pointIndex: number) => {
       setSelectedScopeKey("user");
-      setSelectedPointIndexOverride(pointIndex);
-    },
-    onUserPointKeyDown: (pointIndex: number) => {
       setSelectedPointIndexOverride(pointIndex);
     },
   };

@@ -22,29 +22,27 @@ export function RouteList({
           picks.map((item, index) => (
             <li
               key={item.id}
-              className={`group flex cursor-pointer flex-col justify-between gap-4 p-4 transition hover:bg-[rgba(17,56,41,0.62)] sm:flex-row sm:items-start ${selectedStopId === item.id ? "bg-emerald-400/10 ring-1 ring-inset ring-emerald-300/30" : ""}`}
-              role="button"
-              tabIndex={0}
-              aria-current={selectedStopId === item.id ? "true" : undefined}
-              onClick={() => onSelectStop?.(item.id)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  onSelectStop?.(item.id);
-                }
-              }}
+              className={`group flex flex-col justify-between gap-4 p-4 transition hover:bg-[rgba(17,56,41,0.62)] sm:flex-row sm:items-start ${selectedStopId === item.id ? "bg-emerald-400/10 ring-1 ring-inset ring-emerald-300/30" : ""}`}
             >
-              <div className="space-y-2">
-                <p className="flex items-center gap-2 font-bold text-white">
+              <button
+                type="button"
+                className="min-w-0 flex-1 cursor-pointer space-y-2 text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-300"
+                aria-pressed={selectedStopId === item.id}
+                aria-label={
+                  fr ? `Sélectionner ${item.label}` : `Select ${item.label}`
+                }
+                onClick={() => onSelectStop?.(item.id)}
+              >
+                <span className="flex items-center gap-2 font-bold text-white">
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/90 cmm-text-caption font-black text-emerald-950">
                     {index + 1}
                   </span>
                   {item.label}
-                </p>
-                <p className="inline-flex rounded-full border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] px-2.5 py-1 cmm-text-small font-semibold text-emerald-50/86">
+                </span>
+                <span className="inline-flex rounded-full border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] px-2.5 py-1 cmm-text-small font-semibold text-emerald-50/86">
                   {item.priorityReason}
-                </p>
-              </div>
+                </span>
+              </button>
               <div className="shrink-0 space-y-2 sm:text-right">
                 <p className="rounded-2xl border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] px-3 py-2 text-sm font-medium text-emerald-100/80">
                   {Number(item.segmentKm || 0).toFixed(2)} km • {item.estimatedMinutes} min

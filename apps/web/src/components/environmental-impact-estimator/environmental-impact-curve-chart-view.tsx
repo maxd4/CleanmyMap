@@ -15,21 +15,13 @@ function EnvironmentalImpactCurveChartPoints({
   points,
   selectedPointIndex,
   onPointClick,
-  onPointKeyDown,
 }: {
   scopeKey: EnvironmentalImpactScopeKey;
   scope: EnvironmentalImpactScopeEstimate;
   points: ChartPoint[];
   selectedPointIndex: number;
   onPointClick: (pointIndex: number) => void;
-  onPointKeyDown: (pointIndex: number) => void;
 }) {
-  const selectionLabel =
-    scopeKey === "site" ? "Sélectionner le site" : "Sélectionner l'utilisateur";
-  const fallbackLabel =
-    scopeKey === "site"
-      ? "Sélectionner le point de courbe site"
-      : "Sélectionner le point de courbe utilisateur";
   const color = CURVE_COLORS[scopeKey];
 
   return (
@@ -50,29 +42,52 @@ function EnvironmentalImpactCurveChartPoints({
           stroke={scope.curve[index]?.index === selectedPointIndex ? "#fff" : color}
           strokeWidth={scope.curve[index]?.index === selectedPointIndex ? "4.5" : "4"}
           style={{ cursor: "pointer" }}
-          role="button"
-          tabIndex={0}
-          aria-label={
-            scope.curve[index]
-              ? `${selectionLabel}: ${scope.curve[index].weekLabel} - ${formatKg(
-                  scope.curve[index].weeklyKgCo2eProxy,
-                )}`
-              : fallbackLabel
-          }
+          aria-hidden="true"
           onClick={() => {
             if (scope.curve[index]) {
               onPointClick(scope.curve[index].index);
             }
           }}
-          onKeyDown={(event) => {
-            if ((event.key === "Enter" || event.key === " ") && scope.curve[index]) {
-              event.preventDefault();
-              onPointKeyDown(scope.curve[index].index);
-            }
-          }}
         />
       ))}
     </>
+  );
+}
+
+function EnvironmentalImpactCurveChartControls({
+  scopeKey,
+  scope,
+  selectedPointIndex,
+  onPointClick,
+}: {
+  scopeKey: EnvironmentalImpactScopeKey;
+  scope: EnvironmentalImpactScopeEstimate;
+  selectedPointIndex: number;
+  onPointClick: (pointIndex: number) => void;
+}) {
+  const label = scopeKey === "site" ? "Points de la courbe du site" : "Points de la courbe utilisateur";
+  const selectionLabel = scopeKey === "site" ? "Sélectionner le site" : "Sélectionner l'utilisateur";
+
+  return (
+    <fieldset className="mt-3 min-w-0 border-0 p-0" aria-label={label}>
+      <legend className="cmm-text-caption font-black uppercase tracking-[0.18em] text-red-100/55">
+        {label}
+      </legend>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {scope.curve.map((point) => (
+          <button
+            key={`${scopeKey}-accessible-${point.date}`}
+            type="button"
+            aria-pressed={point.index === selectedPointIndex}
+            aria-label={`${selectionLabel}: ${point.weekLabel} - ${formatKg(point.weeklyKgCo2eProxy)}`}
+            className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-bold text-white transition hover:border-white/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
+            onClick={() => onPointClick(point.index)}
+          >
+            {point.weekLabel}
+          </button>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 
@@ -236,9 +251,7 @@ export function EnvironmentalImpactCurveChartView({
   selectedPointIndex,
   selectedLinePoint,
   onSitePointClick,
-  onSitePointKeyDown,
   onUserPointClick,
-  onUserPointKeyDown,
 }: {
   site: EnvironmentalImpactScopeEstimate;
   user: EnvironmentalImpactScopeEstimate;
@@ -246,9 +259,7 @@ export function EnvironmentalImpactCurveChartView({
   selectedPointIndex: number;
   selectedLinePoint: ChartPoint | null;
   onSitePointClick: (pointIndex: number) => void;
-  onSitePointKeyDown: (pointIndex: number) => void;
   onUserPointClick: (pointIndex: number) => void;
-  onUserPointKeyDown: (pointIndex: number) => void;
 }) {
   const {
     width,
@@ -297,7 +308,6 @@ export function EnvironmentalImpactCurveChartView({
           points={sitePoints}
           selectedPointIndex={selectedPointIndex}
           onPointClick={onSitePointClick}
-          onPointKeyDown={onSitePointKeyDown}
         />
         <EnvironmentalImpactCurveChartPoints
           scopeKey="user"
@@ -305,7 +315,6 @@ export function EnvironmentalImpactCurveChartView({
           points={userPoints}
           selectedPointIndex={selectedPointIndex}
           onPointClick={onUserPointClick}
-          onPointKeyDown={onUserPointKeyDown}
         />
         <EnvironmentalImpactCurveChartAxisLabels
           axisLabels={axisLabels}
@@ -331,6 +340,20 @@ export function EnvironmentalImpactCurveChartView({
           kg CO2e proxy cumulés
         </text>
       </svg>
+      <div className="space-y-3 px-4 pb-4" aria-label="Sélection clavier des points de courbe">
+        <EnvironmentalImpactCurveChartControls
+          scopeKey="site"
+          scope={site}
+          selectedPointIndex={selectedPointIndex}
+          onPointClick={onSitePointClick}
+        />
+        <EnvironmentalImpactCurveChartControls
+          scopeKey="user"
+          scope={user}
+          selectedPointIndex={selectedPointIndex}
+          onPointClick={onUserPointClick}
+        />
+      </div>
     </div>
   );
 }

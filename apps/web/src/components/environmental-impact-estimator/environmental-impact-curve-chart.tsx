@@ -103,9 +103,7 @@ export function EnvironmentalImpactCurveChart({
         selectedPointIndex={chart.selectedPointIndex}
         selectedLinePoint={chart.selectedLinePoint}
         onSitePointClick={chart.onSitePointClick}
-        onSitePointKeyDown={chart.onSitePointKeyDown}
         onUserPointClick={chart.onUserPointClick}
-        onUserPointKeyDown={chart.onUserPointKeyDown}
       />
 
       <EnvironmentalImpactCurveChartDetails

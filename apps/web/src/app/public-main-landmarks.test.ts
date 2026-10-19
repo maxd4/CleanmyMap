@@ -22,6 +22,15 @@ function countMainElements(source: string): number {
 }
 
 describe("public HTML landmarks", () => {
+  it("provides a keyboard skip link targeting the stable root main", () => {
+    expect(rootLayout).toContain('href="#main-content"');
+    expect(rootLayout).toContain("Aller au contenu principal");
+    expect(rootLayout).toContain('id="main-content"');
+    expect(rootLayout).toContain("tabIndex={-1}");
+    expect(rootLayout).toContain("focus-visible:translate-y-0");
+    expect(rootLayout).toContain("focus-visible:outline-2");
+  });
+
   it("keeps the root main as the only main landmark on public descendants", () => {
     expect(countMainElements(rootLayout)).toBe(1);
 
