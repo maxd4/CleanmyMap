@@ -20,21 +20,24 @@ export class FeedbackScreenshotPreview {
   }
 }
 
+const trustedFeedbackScreenshotPreviews = new WeakSet<FeedbackScreenshotPreview>();
 const revokedFeedbackScreenshotPreviews = new WeakSet<FeedbackScreenshotPreview>();
 
 /** Create the only preview value accepted by the screenshot renderer. */
 export function createFeedbackScreenshotPreview(file: File): FeedbackScreenshotPreview | null {
   if (validateFeedbackScreenshotFile(file)) return null;
-  return new FeedbackScreenshotPreview(URL.createObjectURL(file));
+  const preview = new FeedbackScreenshotPreview(URL.createObjectURL(file));
+  trustedFeedbackScreenshotPreviews.add(preview);
+  return preview;
 }
 
 export function isFeedbackScreenshotPreview(value: unknown): value is FeedbackScreenshotPreview {
-  return value instanceof FeedbackScreenshotPreview;
+  return value instanceof FeedbackScreenshotPreview && trustedFeedbackScreenshotPreviews.has(value);
 }
 
 /** Revoke a preview at most once; the owning questionnaire controls its lifecycle. */
 export function revokeFeedbackScreenshotPreview(preview: FeedbackScreenshotPreview | null): void {
-  if (!preview || revokedFeedbackScreenshotPreviews.has(preview)) return;
+  if (!preview || !trustedFeedbackScreenshotPreviews.has(preview) || revokedFeedbackScreenshotPreviews.has(preview)) return;
   revokedFeedbackScreenshotPreviews.add(preview);
   URL.revokeObjectURL(preview.url);
 }

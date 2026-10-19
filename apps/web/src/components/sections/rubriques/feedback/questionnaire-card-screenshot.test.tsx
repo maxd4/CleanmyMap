@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createFeedbackScreenshotPreview,
-  type FeedbackScreenshotPreview,
+  FeedbackScreenshotPreview,
 } from "@/lib/community/feedback-screenshot-client";
 import { QuestionnaireScreenshotField } from "./questionnaire-card-screenshot";
 
@@ -48,6 +48,24 @@ describe("QuestionnaireScreenshotField preview boundary", () => {
     );
 
     expect(markup).not.toContain("https://attacker.test/preview.png");
+    expect(markup).not.toContain('alt="Aperçu de capture.png"');
+  });
+
+  it("does not render a preview from a directly instantiated class value", () => {
+    const file = new File(["png"], "capture.png", { type: "image/png" });
+    const forgedPreview = new FeedbackScreenshotPreview("blob:forged-preview");
+
+    const markup = renderToStaticMarkup(
+      <QuestionnaireScreenshotField
+        file={file}
+        preview={forgedPreview}
+        error={null}
+        onChange={() => undefined}
+        onRemove={() => undefined}
+      />,
+    );
+
+    expect(markup).not.toContain("blob:forged-preview");
     expect(markup).not.toContain('alt="Aperçu de capture.png"');
   });
 });

@@ -16,6 +16,7 @@ vi.mock("@/lib/supabase/client", () => ({
 
 import {
   createFeedbackScreenshotPreview,
+  FeedbackScreenshotPreview,
   isFeedbackScreenshotPreview,
   revokeFeedbackScreenshotPreview,
   uploadFeedbackScreenshot,
@@ -47,6 +48,17 @@ describe("feedback screenshot browser upload contract", () => {
 
     expect(createFeedbackScreenshotPreview(new File(["video"], "capture.mp4", { type: "video/mp4" }))).toBeNull();
     expect(createObjectURL).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
+  });
+
+  it("rejects a preview instantiated outside the validated factory", () => {
+    const forgedPreview = new FeedbackScreenshotPreview("blob:forged-preview");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { revokeObjectURL });
+
+    expect(isFeedbackScreenshotPreview(forgedPreview)).toBe(false);
+    revokeFeedbackScreenshotPreview(forgedPreview);
+    expect(revokeObjectURL).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 
