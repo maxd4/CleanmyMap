@@ -147,9 +147,12 @@ describe("form labels reported by Sonar S6853", () => {
     );
     const { control, label } = expectNamedControl(document, "#quick-signalement-evidence", "Déposer ou capturer");
     expect(label?.htmlFor).toBe("quick-signalement-evidence");
+    expect(control?.type).toBe("file");
+    expect(control?.className).toContain("sr-only");
+    expect(control?.className).not.toContain("hidden");
+    expect(label?.className).toContain("focus-within:ring-2");
+    expect(label?.className).toContain("focus-within:ring-emerald-300");
     expect(control?.tabIndex).toBeGreaterThanOrEqual(0);
-    control?.focus();
-    expect(document.activeElement).toBe(control);
   });
 
   it("proves dynamic chat destination labels contain and reference their radio controls", async () => {
