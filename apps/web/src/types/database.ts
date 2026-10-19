@@ -76,6 +76,39 @@ export type ActionRegistrationRow = {
   manual_invitation_version?: number;
 };
 
+export type ActionFieldRoleCode =
+  | "group_lead"
+  | "cigarette_bag_lead"
+  | "recyclable_bag_lead"
+  | "household_waste_bag_lead"
+  | "glass_bag_lead";
+
+export type ActionFieldRoleAssignmentRow = {
+  id: string;
+  action_id: string;
+  user_id: string;
+  role_code: ActionFieldRoleCode;
+  assignment_status: "active" | "revoked";
+  assigned_by_clerk_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ActionFieldRoleTransferProposalRow = {
+  id: string;
+  action_id: string;
+  current_primary_user_id: string;
+  successor_user_id: string;
+  proposed_by_clerk_id: string;
+  status: "pending" | "accepted" | "rejected" | "cancelled" | "expired";
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+  decided_at: string | null;
+  decided_by_clerk_id: string | null;
+  decision_reason: string | null;
+};
+
 export type ActionRow = {
   id: string;
   created_at: string;

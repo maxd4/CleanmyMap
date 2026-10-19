@@ -172,6 +172,30 @@ doit donc venir du parcours explicite `post_action_claim`, puis de sa validation
 
 ## Validation
 
+### Responsabilités opérationnelles par action
+
+`action_organizers` reste la relation canonique des organisateurs : le créateur
+technique, l'organisateur principal et les coorganisateurs restent distincts.
+Les responsabilités terrain sont une relation séparée, limitée à l'action :
+`action_field_role_assignments` associe un bénévole confirmé à une ou plusieurs
+valeurs du catalogue `action_field_role_catalog`. Une même responsabilité peut
+être portée par plusieurs personnes et une personne peut en choisir plusieurs.
+
+Cette relation ne donne jamais `canManageAction`, ne crée ni inscription ni
+présence et n'est pas utilisée par les cartes, recherches, exports ou
+projections publiques. Les bénévoles confirmés peuvent gérer leurs propres
+responsabilités pendant la pré-action ; le créateur, les organisateurs autorisés
+et les rôles globaux autorisés peuvent gérer celles des bénévoles confirmés.
+Les mutations passent par les RPC serveur contrôlées par Clerk et les lignes
+restent protégées par RLS/grants service-only.
+
+Le primaire ne change jamais lors d'une sauvegarde ordinaire du formulaire. Un
+transfert explicite crée une proposition dans
+`action_field_role_transfer_proposals`, acceptée par le successeur, puis met à
+jour atomiquement `action_organizers.is_primary` et écrit dans le journal
+`action_field_role_transfer_audit`. Une action historique sans primaire reste
+sans primaire tant qu'aucune désignation explicite n'a été effectuée.
+
 - Verifier que le bouton de join est visible sur les surfaces ciblees.
 - Verifier qu'une inscription future, même confirmée, ne remonte pas dans les statistiques ni la gamification.
 - Verifier qu'une demande en attente peut etre annulée par son auteur.
@@ -184,3 +208,10 @@ doit donc venir du parcours explicite `post_action_claim`, puis de sa validation
 - Verifier qu'une action finalisée publiquement ne notifie qu'une fois chaque inscrit confirmé sans participation finale confirmée, avec le même `actionId`.
 - Verifier que « J'ai participé » reste `pending` jusqu'à review et que « Je n'ai pas participé » ne modifie ni les résultats ni les statistiques.
 - Verifier qu'une décision concurrente, un droit de review révoqué ou une action devenue indisponible rend la carte non actionnable et conserve l'état métier observé.
+- Vérifier que plusieurs rôles, plusieurs personnes pour un même rôle et les
+  actions distinctes restent isolés.
+- Vérifier qu'un bénévole pending, cancelled ou non inscrit ne peut pas recevoir
+  une responsabilité et qu'un rôle opérationnel ne donne aucun droit de gestion.
+- Vérifier que le retrait et l'acceptation d'un transfert primaire sont
+  transactionnels, idempotents et refusent les propositions périmées ou
+  concurrentes.

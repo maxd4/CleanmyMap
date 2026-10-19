@@ -191,16 +191,7 @@ describe("loadCanonicalActionOrganizerIdsForAction", () => {
 describe("syncActionOrganizers", () => {
   it("persists the selected CleanMyMap account ids by canonical id", async () => {
     const rpcCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
-    const currentRows = [
-      {
-        action_id: "action-1",
-        organizer_clerk_id: "user-old",
-        organizer_label: "Ancien organisateur",
-        organizer_handle: "ancien",
-        is_primary: true,
-        created_at: "2026-01-01T00:00:00.000Z",
-      },
-    ];
+    const currentRows: Array<Record<string, unknown>> = [];
     const supabase = {
       from: vi.fn((table: string) => {
         if (table === "public_profiles") {
@@ -348,6 +339,49 @@ describe("syncActionOrganizers", () => {
       ],
     });
     expect(result.organizers.filter((organizer) => organizer.isPrimary)).toHaveLength(1);
+  });
+
+  it("rejects an ordinary save that removes the current primary", async () => {
+    const currentRows = [{
+      action_id: "action-1",
+      organizer_clerk_id: "user-primary",
+      organizer_label: "Principal actuel",
+      organizer_handle: "principal",
+      is_primary: true,
+      created_at: "2026-01-01T00:00:00.000Z",
+    }];
+    const rpc = vi.fn();
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === "public_profiles") {
+          const chain = {
+            select: vi.fn(() => chain),
+            eq: vi.fn((field: string, value: string) => {
+              if (field === "id") chain.maybeSingle = vi.fn().mockResolvedValue({ data: value === "user-successor" ? { id: value, display_name: "Successeur", handle: "successeur" } : null, error: null });
+              return chain;
+            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            ilike: vi.fn(() => chain),
+            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          };
+          return chain;
+        }
+        if (table === "action_organizers") {
+          const query = { select: vi.fn(() => query), eq: vi.fn(() => query), order: vi.fn().mockImplementationOnce(() => ({ order: vi.fn().mockResolvedValue({ data: currentRows, error: null }) })) };
+          return query;
+        }
+        throw new Error(`Unexpected table ${table}`);
+      }),
+      rpc,
+    } as unknown as SupabaseClient;
+
+    await expect(syncActionOrganizers({
+      supabase,
+      actionId: "action-1",
+      creator: { userId: "creator", displayName: "Créateur" },
+      organizerAccounts: ["user-successor"],
+    })).rejects.toThrow("transfert explicite");
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("does not mutate relations when an account cannot be resolved", async () => {

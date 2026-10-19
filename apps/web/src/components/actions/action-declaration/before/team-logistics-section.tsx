@@ -10,6 +10,7 @@ import { IdentityAndSharingSection, VolunteerRegistrationPanel } from "./identit
 import { PreparationPlanningFields } from "./preparation-planning-fields";
 import { PreparationAndSafetySection } from "./preparation-and-safety-section";
 import { SectionLabel } from "./ui";
+import { ActionFieldRolesPanel } from "../../action-field-roles-panel";
 
 type TeamLogisticsSectionProps = {
   form: FormState;
@@ -66,6 +67,8 @@ export function TeamLogisticsSection({
             actionId={actionId}
           />
         </section>
+
+        <ActionFieldRolesPanel actionId={actionId} />
 
         <section aria-labelledby="before-team-registration-group" className="border-b border-emerald-100 pb-5">
           <VolunteerRegistrationPanel

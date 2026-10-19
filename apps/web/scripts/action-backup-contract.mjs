@@ -104,6 +104,12 @@ export function buildActionBackup({ exportedAt, tables }) {
     ACTION_BACKUP_TABLES.map((table) => [table, tables[table] ?? []]),
   );
 
+  const fieldRoleTables = {
+    action_field_role_assignments: tables.action_field_role_assignments ?? [],
+    action_field_role_transfer_proposals: tables.action_field_role_transfer_proposals ?? [],
+    action_field_role_transfer_audit: tables.action_field_role_transfer_audit ?? [],
+  };
+
   return {
     format: ACTION_BACKUP_FORMAT,
     version: ACTION_BACKUP_VERSION,
@@ -120,6 +126,7 @@ export function buildActionBackup({ exportedAt, tables }) {
       ACTION_BACKUP_TABLES.map((table) => [table, normalizedTables[table].length]),
     ),
     tables: normalizedTables,
+    fieldRoleTables,
   };
 }
 
@@ -218,6 +225,22 @@ export function validateActionBackup(payload) {
       );
       if (!owner) {
         fail(`published action ${action.id} has no owner conversation member`);
+      }
+    }
+  }
+
+  if (payload.fieldRoleTables !== undefined) {
+    if (!isRecord(payload.fieldRoleTables)) fail("fieldRoleTables must be an object");
+    for (const table of [
+      "action_field_role_assignments",
+      "action_field_role_transfer_proposals",
+      "action_field_role_transfer_audit",
+    ]) {
+      assertArray(payload.fieldRoleTables[table], `fieldRoleTables.${table}`);
+      assertUnique(payload.fieldRoleTables[table], "id", `fieldRoleTables.${table}`);
+      for (const [index, row] of payload.fieldRoleTables[table].entries()) {
+        assertUuid(row.id, `fieldRoleTables.${table}[${index}].id`);
+        assertActionReference(row, actionIds, `fieldRoleTables.${table}`, index);
       }
     }
   }

@@ -6,6 +6,13 @@ import {
   uniqueTokens,
 } from "./organizers";
 
+export class PrimaryOrganizerTransferRequiredError extends Error {
+  constructor() {
+    super("Le changement d’organisateur principal doit passer par une demande de transfert explicite.");
+    this.name = "PrimaryOrganizerTransferRequiredError";
+  }
+}
+
 export async function syncActionOrganizers(
   params: ActionAccountResolutionParams & {
     actionId: string;
@@ -29,10 +36,13 @@ export async function syncActionOrganizers(
   const nextOrganizerIds = new Set(
     resolution.organizers.map((organizer) => organizer.userId),
   );
-  const currentPrimaryId = currentRows.find(
-    (row) => row.is_primary && nextOrganizerIds.has(row.organizer_clerk_id.trim()),
-  )?.organizer_clerk_id.trim();
-  const primaryId = currentPrimaryId ?? resolution.organizers[0]?.userId;
+  const currentPrimaryId = currentRows.find((row) => row.is_primary)?.organizer_clerk_id.trim();
+  if (currentPrimaryId && !nextOrganizerIds.has(currentPrimaryId)) {
+    throw new PrimaryOrganizerTransferRequiredError();
+  }
+  const primaryId = currentPrimaryId ?? (
+    currentRows.length === 0 ? resolution.organizers[0]?.userId : undefined
+  );
   const nextOrganizers = resolution.organizers.map((organizer) => ({
     ...organizer,
     isPrimary: organizer.userId === primaryId,

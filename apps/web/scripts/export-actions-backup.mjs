@@ -164,6 +164,9 @@ export async function exportActionBackup(supabase, exportedAt = new Date().toISO
       "action_id",
       actionIds,
     ),
+    action_field_role_assignments: await fetchRowsForIds(supabase, "action_field_role_assignments", "action_id", actionIds),
+    action_field_role_transfer_proposals: await fetchRowsForIds(supabase, "action_field_role_transfer_proposals", "action_id", actionIds),
+    action_field_role_transfer_audit: await fetchRowsForIds(supabase, "action_field_role_transfer_audit", "action_id", actionIds),
   };
 
   for (const table of ACTION_BACKUP_TABLES) {

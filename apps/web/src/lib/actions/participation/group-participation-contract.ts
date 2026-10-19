@@ -132,6 +132,7 @@ export type JoinableActionHistoryItem = JoinableActionItem & {
 export type ActionParticipationReviewItem = {
   id: string;
   actionId: string;
+  userId: string;
   displayName: string;
   handle: string | null;
   joinedAt: string;

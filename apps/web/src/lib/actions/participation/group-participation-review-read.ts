@@ -186,6 +186,7 @@ function buildParticipationReviewItems(
     return {
       id: row.id,
       actionId: row.action_id,
+      userId: row.user_id,
       displayName: profile?.display_name?.trim() || profile?.handle?.trim() || row.user_id,
       handle: profile?.handle?.trim() || null,
       joinedAt: row.joined_at,

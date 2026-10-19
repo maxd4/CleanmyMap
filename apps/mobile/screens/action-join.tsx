@@ -6,13 +6,16 @@ import {
   claimPastAction,
   loadActionReview,
   loadMobileActionDetail,
+  loadMobileActionFieldRoles,
   loadMobileActions,
   requestFutureAction,
   respondToInvitation,
   reviewActionRequest,
+  updateMobileActionFieldRoles,
   type MobileActionItem,
   type MobileActionReviewItem,
   type MobileInvitation,
+  type MobileFieldRoleState,
 } from '../lib/mobile-actions-service'
 
 type ActionJoinScreenProps = {
@@ -172,7 +175,42 @@ function InvitationPanel({ invitations, onDecision }: { invitations: MobileInvit
 }
 
 function DetailPanel({ item, onClose }: { item: MobileActionItem; onClose: () => void }) {
-  return <View style={styles.detail}><View style={styles.cardHeader}><Text style={styles.sectionTitle}>Détail</Text><TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Fermer le détail"><Ionicons name="close" size={22} color="#94a3b8" /></TouchableOpacity></View><Text style={styles.bodyText}>{item.actionTitle ?? item.location_label}</Text><Text style={styles.cardMeta}>Rendez-vous : {item.location_label}</Text><Text style={styles.cardMeta}>Date : {item.action_date}</Text></View>
+  const [roles, setRoles] = useState<MobileFieldRoleState | null>(null)
+  const [roleUserId, setRoleUserId] = useState<string | null>(null)
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([])
+  const [roleBusy, setRoleBusy] = useState(false)
+  const [roleError, setRoleError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    void loadMobileActionFieldRoles(item.id).then((result) => {
+      if (!active) return
+      setRoles(result)
+      const firstUserId = result.confirmedParticipants[0]?.userId ?? null
+      setRoleUserId(firstUserId)
+      setSelectedRoles(result.assignments.filter((assignment) => assignment.user_id === firstUserId && assignment.assignment_status === 'active').map((assignment) => assignment.role_code))
+    }).catch((reason) => { if (active) setRoleError(reason instanceof Error ? reason.message : 'Les responsabilités sont indisponibles.') })
+    return () => { active = false }
+  }, [item.id])
+
+  useEffect(() => {
+    if (!roles || !roleUserId) return
+    setSelectedRoles(roles.assignments.filter((assignment) => assignment.user_id === roleUserId && assignment.assignment_status === 'active').map((assignment) => assignment.role_code))
+  }, [roleUserId, roles])
+
+  async function saveRoles() {
+    if (!roles || !roleUserId) return
+    setRoleBusy(true)
+    setRoleError(null)
+    try {
+      const updated = await updateMobileActionFieldRoles(item.id, roleUserId, selectedRoles)
+      setRoles(updated)
+    } catch (reason) {
+      setRoleError(reason instanceof Error ? reason.message : 'Les responsabilités n’ont pas été enregistrées.')
+    } finally { setRoleBusy(false) }
+  }
+
+  return <View style={styles.detail}><View style={styles.cardHeader}><Text style={styles.sectionTitle}>Détail</Text><TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Fermer le détail"><Ionicons name="close" size={22} color="#94a3b8" /></TouchableOpacity></View><Text style={styles.bodyText}>{item.actionTitle ?? item.location_label}</Text><Text style={styles.cardMeta}>Rendez-vous : {item.location_label}</Text><Text style={styles.cardMeta}>Date : {item.action_date}</Text>{roles ? <View style={styles.rolesPanel}><Text style={styles.sectionTitle}>Responsabilités terrain</Text><Text style={styles.cardMeta}>Ces cartes concernent uniquement cette action et ne donnent aucun droit d’organisation.</Text>{roles.canManage && roles.confirmedParticipants.length > 1 ? <View style={styles.rolePeople}>{roles.confirmedParticipants.map((participant) => <TouchableOpacity key={participant.userId} onPress={() => setRoleUserId(participant.userId)} style={[styles.rolePerson, roleUserId === participant.userId && styles.rolePersonSelected]}><Text style={styles.rolePersonLabel}>{participant.displayName}</Text></TouchableOpacity>)}</View> : null}{roles.roleOptions.map((role) => { const selected = selectedRoles.includes(role.code); return <TouchableOpacity key={role.code} onPress={() => setSelectedRoles((current) => selected ? current.filter((code) => code !== role.code) : [...current, role.code])} style={[styles.roleCard, selected && styles.roleCardSelected]} accessibilityRole="checkbox" accessibilityState={{ checked: selected }}><Ionicons name={selected ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={selected ? '#34d399' : '#64748b'} /><View style={{ flex: 1 }}><Text style={styles.roleLabel}>{role.label}</Text><Text style={styles.cardMeta}>{role.description}</Text></View></TouchableOpacity> })}<SmallButton label={roleBusy ? '...' : 'Enregistrer mes responsabilités'} disabled={roleBusy || !roleUserId} onPress={() => void saveRoles()} />{roleError ? <Text style={styles.error}>{roleError}</Text> : null}</View> : roleError ? <Text style={styles.error}>{roleError}</Text> : <ActivityIndicator color="#34d399" style={styles.loader} />}</View>
 }
 
 function ReviewPanel({ review, busy, onClose, onDecision }: { review: { actionId: string; requests: MobileActionReviewItem[] }; busy: boolean; onClose: () => void; onDecision: (request: MobileActionReviewItem) => void }) {
@@ -206,4 +244,12 @@ const styles = StyleSheet.create({
   invitationRow: { borderTopColor: '#1e293b', borderTopWidth: 1, paddingTop: 10, marginTop: 10 },
   sectionTitle: { color: '#e2e8f0', fontSize: 15, fontWeight: '900' },
   detail: { backgroundColor: '#172033', borderColor: '#334155', borderRadius: 16, borderWidth: 1, padding: 14, marginTop: 8, marginBottom: 16 },
+  rolesPanel: { borderTopColor: '#334155', borderTopWidth: 1, marginTop: 14, paddingTop: 14, gap: 8 },
+  rolePeople: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 4 },
+  rolePerson: { borderColor: '#475569', borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8 },
+  rolePersonSelected: { backgroundColor: '#064e3b', borderColor: '#34d399' },
+  rolePersonLabel: { color: '#e2e8f0', fontSize: 12, fontWeight: '800' },
+  roleCard: { alignItems: 'center', backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 12, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 10 },
+  roleCardSelected: { backgroundColor: '#11352f', borderColor: '#34d399' },
+  roleLabel: { color: '#f8fafc', fontSize: 13, fontWeight: '800' },
 })

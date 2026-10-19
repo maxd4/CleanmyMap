@@ -7,7 +7,10 @@ import {
   loadCanonicalActionOrganizerIdsForAction,
   syncActionManualParticipants,
 } from "./organizers";
-import { syncActionOrganizers } from "./organizer-sync";
+import {
+  PrimaryOrganizerTransferRequiredError,
+  syncActionOrganizers,
+} from "./organizer-sync";
 
 type PostProcessingCreator = {
   userId: string;
@@ -32,12 +35,20 @@ export async function syncUpdatedOrganizers({
 }): Promise<void> {
   if (body.organizerAccounts === undefined) return;
 
-  const organizerResolution = await syncActionOrganizers({
-    supabase,
-    actionId,
-    creator: resolvePostProcessingCreator(userId, identity),
-    organizerAccounts: body.organizerAccounts,
-  });
+  let organizerResolution: Awaited<ReturnType<typeof syncActionOrganizers>>;
+  try {
+    organizerResolution = await syncActionOrganizers({
+      supabase,
+      actionId,
+      creator: resolvePostProcessingCreator(userId, identity),
+      organizerAccounts: body.organizerAccounts,
+    });
+  } catch (error) {
+    if (error instanceof PrimaryOrganizerTransferRequiredError) {
+      throw new ActionUpdateValidationError("organizerAccounts", error.message);
+    }
+    throw error;
+  }
   if (organizerResolution.unresolvedTokens.length > 0) {
     throw new ActionUpdateValidationError(
       "organizerAccounts",

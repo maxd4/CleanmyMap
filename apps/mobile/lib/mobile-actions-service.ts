@@ -41,6 +41,20 @@ export type MobileActionReviewItem = {
   participationSource: string
 }
 
+export type MobileFieldRoleOption = { code: string; label: string; description: string }
+export type MobileFieldRoleAssignment = { id: string; action_id: string; user_id: string; role_code: string; assignment_status: 'active' | 'revoked' }
+export type MobileFieldRoleParticipant = { userId: string; displayName: string; handle: string | null; registrationStatus: string }
+export type MobileFieldRoleState = {
+  status: string
+  actionId: string
+  canManage: boolean
+  roleOptions: MobileFieldRoleOption[]
+  assignments: MobileFieldRoleAssignment[]
+  confirmedParticipants: MobileFieldRoleParticipant[]
+  organizers: Array<{ userId: string; displayName: string; handle: string | null; isPrimary: boolean }>
+  pendingTransfer: { id: string; successor_user_id: string; status: string } | null
+}
+
 type MobileActionsPayload = {
   future: MobileActionItem[]
   past: MobileActionItem[]
@@ -192,6 +206,17 @@ export async function loadMobileActionDay(actionId: string) {
   return mobileRequest<{ status: string; actionId: string; access: string; action: Record<string, unknown> }>(
     `/api/actions/${encodeURIComponent(actionId)}/day`,
   )
+}
+
+export async function loadMobileActionFieldRoles(actionId: string) {
+  return mobileRequest<MobileFieldRoleState>(`/api/actions/${encodeURIComponent(actionId)}/field-roles`)
+}
+
+export async function updateMobileActionFieldRoles(actionId: string, userId: string, roleCodes: string[]) {
+  return mobileRequest<MobileFieldRoleState>(`/api/actions/${encodeURIComponent(actionId)}/field-roles`, {
+    method: 'PUT',
+    body: JSON.stringify({ userId, roleCodes }),
+  })
 }
 
 export async function createMobileSignalement(payload: {

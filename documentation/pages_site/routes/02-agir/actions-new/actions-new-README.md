@@ -214,3 +214,9 @@ ne doit être inventée et aucune invitation externe n'est envoyée.
 - Toute soumission d'action reste `pending` jusqu'au parcours explicite de validation, quel que soit le rôle actif de son auteur.
 - Les corrections admin d'impact exigent un motif, journalisent les valeurs avant/après et recalculent la progression de manière idempotente pour les organisateurs concernés.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+- Le panneau « Équipe et logistique » expose, pour une action déjà créée, les
+  responsabilités terrain propres à cette action. Il réutilise les inscrits
+  confirmés et n'accorde aucun droit supplémentaire. Le transfert de
+  l'organisateur principal est une demande explicite acceptée par le
+  successeur ; une simple sauvegarde des coorganisateurs ne peut pas le faire
+  implicitement.

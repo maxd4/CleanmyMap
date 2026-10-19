@@ -425,6 +425,35 @@ export const actionsAuthorizationContract = {
       evidenceScope: "module",
     },
   },
+  "actions/[actionId]/field-roles": {
+    GET: {
+      expected: "Authenticated confirmed volunteer reads own per-action responsibilities, or authorized action manager reads the confirmed roster",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireActionRequestAccess + resolveActionFieldRoleAccess enforces action ownership/organizer relation or confirmed registration before the minimal field-role projection",
+      evidence: ["requireActionRequestAccess", "resolveActionFieldRoleAccess", "loadActionFieldRoleState"],
+      evidenceScope: "module",
+    },
+    PUT: {
+      expected: "Confirmed volunteer replaces own roles, or authorized manager replaces roles only for a confirmed participant",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireActionRequestAccess + resolveActionFieldRoleAccess + confirmed registration check + service-only assign_action_field_roles RPC",
+      evidence: ["requireActionRequestAccess", "resolveActionFieldRoleAccess", "readActionRegistrationRecord", "replaceActionFieldRoles"],
+    },
+  },
+  "actions/[actionId]/field-roles/transfer": {
+    POST: {
+      expected: "Primary organizer, action creator, or admin/max proposes an explicit primary-organizer transfer to an existing coorganizer",
+      dimensions: ["authentication", "business permission", "ownership", "audit"],
+      actual: "requireActionRequestAccess + resolveActionFieldRoleAccess + primary/creator/global guard + transactional propose_action_field_role_transfer RPC",
+      evidence: ["requireActionRequestAccess", "resolveActionFieldRoleAccess", "proposeActionFieldRoleTransfer"],
+    },
+    PATCH: {
+      expected: "Successor accepts or authorized actor rejects a pending primary-organizer transfer",
+      dimensions: ["authentication", "business permission", "ownership", "audit"],
+      actual: "requireActionRequestAccess + resolveActionFieldRoleAccess + transactional respond_action_field_role_transfer RPC",
+      evidence: ["requireActionRequestAccess", "resolveActionFieldRoleAccess", "respondToActionFieldRoleTransfer"],
+    },
+  },
   "actions/[actionId]/media/intents": {
     POST: {
       expected: "Authenticated action creator/organizer or admin/max creates an idempotent completed-action photo intent",

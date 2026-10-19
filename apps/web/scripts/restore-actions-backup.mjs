@@ -40,7 +40,8 @@ export async function restoreActionBackup({
     return { ...plan, mode: "apply", status: "empty", restored: 0 };
   }
 
-  const result = await supabase.rpc("restore_action_backup", { p_backup: backup });
+  const hasFieldRoleTables = backup.fieldRoleTables && Object.values(backup.fieldRoleTables).some((rows) => rows.length > 0);
+  const result = await supabase.rpc(hasFieldRoleTables ? "restore_action_backup_with_field_roles" : "restore_action_backup", { p_backup: backup });
   if (result.error) throw new Error(`restore_action_backup: ${result.error.message}`);
   return {
     ...plan,

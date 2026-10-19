@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-18T20:20:27.882Z",
-  "apiRouteCount": 188,
+  "apiRouteCount": 190,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -50,6 +50,20 @@
       "reason": "Projection authentifiée du briefing Jour J, avec relecture de l'action, des organisateurs et de l'inscription confirmée avant exposition des informations opérationnelles.",
       "costContract": "GET borné à un actionId et à l'identité Clerk courante ; les droits organisateur ou bénévole confirmé sont revalidés côté serveur, la réponse ne doit pas être partagée par cache et aucune présence terrain n'est créée.",
       "reviewedAt": "2026-10-11"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/field-roles/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Surface privée de lecture et de mutation des responsabilités opérationnelles par action, bornée par l'identité Clerk et le statut d'inscription confirmé.",
+      "costContract": "GET/PUT bornés à une action et à une identité Clerk, avec roster confirmé limité aux gestionnaires, mutations via RPC contrôlée et réponses private/no-store ; aucun rôle n'accorde de permission d'administration.",
+      "reviewedAt": "2026-10-19"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/field-roles/transfer/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Surface privée de proposition et de réponse au transfert explicite du primaire opérationnel, séparée des permissions de gestion de l'action.",
+      "costContract": "POST/PATCH bornés à l'action, aux organisateurs et à l'identité Clerk courante, avec proposition idempotente et décision RPC atomique, réponses private/no-store et aucune inscription implicite.",
+      "reviewedAt": "2026-10-19"
     },
     {
       "route": "apps/web/src/app/api/actions/[actionId]/duplicate/route.ts",
@@ -268,6 +282,8 @@
     "apps/web/src/app/api/actions/[actionId]/cancel/route.ts",
     "apps/web/src/app/api/actions/[actionId]/day/route.ts",
     "apps/web/src/app/api/actions/[actionId]/duplicate/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/field-roles/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/field-roles/transfer/route.ts",
     "apps/web/src/app/api/actions/[actionId]/formalities/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
     "apps/web/src/app/api/actions/[actionId]/invite-link/route.ts",
