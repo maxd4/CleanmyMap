@@ -7,20 +7,18 @@ import {
   formatLandingOverviewErrorMessage,
   loadLandingSummary,
 } from "@/lib/accueil/data";
-import { HOME_ROUTE } from "@/lib/home-routes";
 import {
   buildPublicImpactMetrics,
   type PublicImpactCounters,
 } from "@/lib/impact/public-impact-kpis";
 import type { Metadata } from "next";
-import { metadata as appMetadata } from "@/lib/metadata";
+import { buildPageMetadata, metadata as appMetadata } from "@/lib/metadata";
 import { BRAND_ASSET_DIMENSIONS, BRAND_ASSET_PATHS } from "@/components/brand/brand-assets";
 
 // Stable landing content is regenerated hourly; recent activity refreshes independently.
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  ...appMetadata,
+export const metadata: Metadata = buildPageMetadata("/", {
   title: "Carte de dépollution citoyenne & actions écologiques",
   description:
     "CleanMyMap est la carte citoyenne de dépollution urbaine en France. Signalez les pollutions, organisez des cleanwalks et déclarez vos actions de nettoyage. Développement durable, bénévolat, impact terrain, valorisation des déchets.",
@@ -59,11 +57,9 @@ export const metadata: Metadata = {
     "commune",
   ],
   openGraph: {
-    ...appMetadata.openGraph,
     title: "CleanMyMap - Carte de dépollution citoyenne & actions écologiques",
     description:
       "La carte citoyenne de dépollution urbaine partout en France. Signalez, nettoyez, agissez pour l'environnement. Bénévolat, écologie, impact terrain.",
-    url: HOME_ROUTE,
     siteName: "CleanMyMap",
     locale: "fr_FR",
     type: "website",
@@ -77,7 +73,6 @@ export const metadata: Metadata = {
     ],
   },
   twitter: {
-    ...appMetadata.twitter,
     card: "summary_large_image",
     title: "CleanMyMap - Dépollution citoyenne & actions écologiques",
     description:
@@ -95,8 +90,7 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  alternates: { canonical: "/" },
-};
+});
 
 export default async function HomePage() {
   let landingSummary = null;

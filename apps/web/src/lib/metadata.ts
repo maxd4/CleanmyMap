@@ -111,3 +111,40 @@ export const metadata: Metadata = {
     title: "CleanMyMap",
   },
 };
+
+export function buildPageMetadata(
+  canonical: string,
+  pageMetadata: Metadata,
+): Metadata {
+  const pageOpenGraph =
+    pageMetadata.openGraph && typeof pageMetadata.openGraph === "object"
+      ? pageMetadata.openGraph
+      : {};
+  const pageTwitter =
+    pageMetadata.twitter && typeof pageMetadata.twitter === "object"
+      ? pageMetadata.twitter
+      : {};
+  const pageAlternates =
+    pageMetadata.alternates && typeof pageMetadata.alternates === "object"
+      ? pageMetadata.alternates
+      : {};
+
+  return {
+    ...metadata,
+    ...pageMetadata,
+    openGraph: {
+      ...(metadata.openGraph ?? {}),
+      ...pageOpenGraph,
+      url: canonical,
+    },
+    twitter: {
+      ...(metadata.twitter ?? {}),
+      ...pageTwitter,
+    },
+    alternates: {
+      ...(metadata.alternates ?? {}),
+      ...pageAlternates,
+      canonical,
+    },
+  };
+}

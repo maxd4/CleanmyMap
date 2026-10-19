@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { LearnLocalizedHeading } from "@/components/learn/learn-localized-heading";
+import { buildPageMetadata } from "@/lib/metadata";
 import LearnSentrainerClient from "./client";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata("/learn/sentrainer", {
   title: "S'entraîner",
   description:
     "Sessions courtes et questions mélangées pour ancrer les repères écologiques.",
-  alternates: { canonical: "/learn/sentrainer" },
   robots: { index: true, follow: true },
-};
+});
 
 export default function LearnSentrainerPage() {
   return (

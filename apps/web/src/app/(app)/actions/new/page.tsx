@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { ActionCreationShell } from "@/components/actions/action-creation-shell";
+import { buildPageMetadata } from "@/lib/metadata";
 import {
   resolveNewActionPageContext,
   type NewActionPageSearchParams,
 } from "./page-context";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata("/actions/new", {
   title: "Créer une action",
   description:
     "Préparer une action avant terrain ou compléter ses résultats après réalisation. Consultez ensuite les estimations d’impact sur le CO₂ évité et l’eau préservée.",
@@ -20,14 +21,11 @@ export const metadata: Metadata = {
     "écologie",
     "développement durable",
   ],
-  alternates: {
-    canonical: "/actions/new",
-  },
   robots: {
     index: true,
     follow: true,
   },
-};
+});
 
 type NewActionPageProps = {
   searchParams?: Promise<NewActionPageSearchParams>;

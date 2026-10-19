@@ -3,8 +3,9 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
+import { buildPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata("/mentions-legales", {
   title: "Mentions Légales",
   description:
     "Mentions légales de CleanMyMap, avec accès direct aux Conditions d'utilisation, à la Politique de confidentialité et à la Politique cookies.",
@@ -18,10 +19,7 @@ export const metadata: Metadata = {
     "écologie",
     "développement durable",
   ],
-  alternates: {
-    canonical: "/mentions-legales",
-  },
-};
+});
 
 export default function MentionsLegalesPage() {
   return (

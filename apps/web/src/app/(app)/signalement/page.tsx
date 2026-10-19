@@ -10,18 +10,18 @@ import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { resolveSignalementCoordinate } from "./signalement-page.utils";
+import { buildPageMetadata } from "@/lib/metadata";
 
 type SignalementPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata("/signalement", {
   title: "Signaler un déchet",
   description:
     "Signaler l’état observé d’un lieu pour alimenter la cartographie citoyenne de CleanMyMap.",
-  alternates: { canonical: "/signalement" },
   robots: { index: true, follow: true },
-};
+});
 
 export default async function SignalementPage({
   searchParams,

@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { loadPublishedSpogomiEventBySlug } from "@/lib/spogomi/public-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { formatDateTimeInTimeZone } from "@/lib/time/civil-date";
+import { buildPageMetadata } from "@/lib/metadata";
 
 type Props = { params: Promise<{ eventSlug: string }> };
 
@@ -23,12 +24,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!event) {
     return { title: "Compétition SPOGOMI indisponible", robots: { index: false, follow: false } };
   }
-  return {
+  return buildPageMetadata(`/spogomi/${encodeURIComponent(event.slug)}`, {
     title: event.name,
     description: `Informations publiques de la compétition SPOGOMI ${event.name}.`,
-    alternates: { canonical: `/spogomi/${encodeURIComponent(event.slug)}` },
     robots: { index: true, follow: true },
-  };
+  });
 }
 
 function formatDate(value: string, timeZone: string) {

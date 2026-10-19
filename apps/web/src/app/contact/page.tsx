@@ -6,15 +6,13 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
 import { resolvePublicContactEmail } from "@/lib/email-config";
+import { buildPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata("/contact", {
   title: "Contact",
   description:
     "Contactez CleanMyMap pour les demandes générales, juridiques ou RGPD. Adresse officielle et formulaire public de contact.",
-  alternates: {
-    canonical: "/contact",
-  },
-};
+});
 
 export default function ContactPage() {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";

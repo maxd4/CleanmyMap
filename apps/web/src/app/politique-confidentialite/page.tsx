@@ -5,8 +5,11 @@ import { RgpdRequestForm } from "@/components/sections/rubriques/rgpd-request-fo
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { resolvePublicContactEmail } from "@/lib/email-config";
+import { buildPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata(
+  "/politique-confidentialite",
+  {
   title: "Politique de confidentialité",
   description:
     "Politique de confidentialité CleanMyMap : données traitées, finalités, bases légales, droits RGPD, sous-traitants, rétention et sécurité.",
@@ -18,10 +21,8 @@ export const metadata: Metadata = {
     "droits RGPD",
     "cookies",
   ],
-  alternates: {
-    canonical: "/politique-confidentialite",
   },
-};
+);
 
 function Pill({ children }: { children: ReactNode }) {
   return (

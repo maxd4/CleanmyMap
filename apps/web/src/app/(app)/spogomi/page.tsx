@@ -16,13 +16,13 @@ import { SPOGOMI_EXTERNAL_EVENTS, SPOGOMI_INTERNATIONAL_NEWS, SPOGOMI_INTERNATIO
 import { listPublishedSpogomiEvents, type SpogomiPublicLifecycle } from "@/lib/spogomi/public-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { formatDateTimeInTimeZone } from "@/lib/time/civil-date";
+import { buildPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata("/spogomi", {
   title: "Événements SPOGOMI",
   description: "Découvrir les événements SPOGOMI publiés et leurs actions CleanMyMap associées.",
-  alternates: { canonical: "/spogomi" },
   robots: { index: true, follow: true },
-};
+});
 
 const lifecycleLabels: Record<SpogomiPublicLifecycle, string> = {
   upcoming: "À venir",

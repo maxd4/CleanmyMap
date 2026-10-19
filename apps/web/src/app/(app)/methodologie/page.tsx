@@ -11,8 +11,9 @@ import type {
 import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import type { PublicLandingActionAggregation } from "@/lib/accueil/action-participant-aggregation";
 import { loadLatestPublicImpactSnapshot } from "@/lib/impact/public-impact-snapshot";
+import { buildPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata("/methodologie", {
   title: "Méthodologie - Comment nous calculons l'impact",
   description:
     "Méthodologie de calcul d'impact environnemental de CleanMyMap. Coefficients CO2, eau, valorisation des déchets. Transparence complète sur les métriques d'action citoyenne.",
@@ -27,10 +28,7 @@ export const metadata: Metadata = {
     "écologie",
     "développement durable",
   ],
-  alternates: {
-    canonical: "/methodologie",
-  },
-};
+});
 
 // Methodology values come from weekly/monthly snapshots and daily-scale sources.
 export const revalidate = 86400;

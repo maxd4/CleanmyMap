@@ -18,6 +18,7 @@ import {
   PUBLIC_INDEXABLE_SECTION_IDS,
   PUBLIC_NOINDEX_SECTION_IDS,
 } from "@/lib/seo/indexability";
+import { buildPageMetadata } from "@/lib/metadata";
 import { loadPublicSectionInitialData } from "@/lib/sections/public-section-snapshots";
 
 type SectionPageProps = {
@@ -67,14 +68,15 @@ export async function generateMetadata({
       ? { index: false, follow: true, nocache: true }
       : { index: false, follow: false, nocache: true };
 
-  return {
+  const pageMetadata = {
     title: localizedLabel,
     description: localizedDescription,
     robots,
-    ...(isIndexable
-      ? { alternates: { canonical: `/sections/${section.id}` } }
-      : {}),
-  };
+  } satisfies Metadata;
+
+  return isIndexable
+    ? buildPageMetadata(`/sections/${section.id}`, pageMetadata)
+    : pageMetadata;
 }
 
 export default async function SectionPage({ params, searchParams }: SectionPageProps) {

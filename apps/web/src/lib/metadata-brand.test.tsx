@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { WebSiteJsonLd } from "@/components/seo/structured-data/navigation-data";
-import { metadata } from "./metadata";
+import { buildPageMetadata, metadata } from "./metadata";
 
 describe("CleanMyMap SEO brand identity", () => {
   it("keeps the exact brand in global metadata without adding brand variants as keywords", () => {
@@ -38,5 +38,27 @@ describe("CleanMyMap SEO brand identity", () => {
     expect(JSON.parse(json!)).not.toHaveProperty("interactionStatistic");
     expect(JSON.parse(json!)).not.toHaveProperty("potentialAction");
     expect(json).not.toContain("Clean My Map");
+  });
+
+  it("keeps the page canonical and Open Graph URL on the same route", () => {
+    const pageMetadata = buildPageMetadata("/actions/map", {
+      title: "Carte des actions",
+      description: "Explorer les actions publiques.",
+      robots: { index: true, follow: true },
+    });
+
+    expect(pageMetadata.alternates?.canonical).toBe("/actions/map");
+    expect(pageMetadata.openGraph).toMatchObject({
+      url: "/actions/map",
+      images: metadata.openGraph && "images" in metadata.openGraph
+        ? metadata.openGraph.images
+        : undefined,
+    });
+    expect(pageMetadata.twitter).toMatchObject({
+      card: "summary_large_image",
+      images: metadata.twitter && "images" in metadata.twitter
+        ? metadata.twitter.images
+        : undefined,
+    });
   });
 });

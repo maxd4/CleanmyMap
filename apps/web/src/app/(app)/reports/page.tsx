@@ -13,6 +13,7 @@ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
+import { buildPageMetadata } from "@/lib/metadata";
 import { getServerLocale } from "@/lib/server-preferences";
 import {
   getProfileLabel,
@@ -331,13 +332,12 @@ function buildAnonymousGenerationContent(clerkReachable: boolean) {
   );
 }
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata("/reports", {
   title: "Rapports d'impact",
   description:
     "Analysez les données de nettoyage participatif, les indicateurs d'impact calculés par proxy et la qualité des données.",
-  alternates: { canonical: "/reports" },
   robots: { index: true, follow: true },
-};
+});
 
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const [{ userId, clerkReachable }, locale] = await Promise.all([

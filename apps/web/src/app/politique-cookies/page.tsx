@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
+import { buildPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata("/politique-cookies", {
   title: "Politique cookies",
   description:
     "Politique cookies de CleanMyMap : cookies essentiels, préférences locales, consentement, analytics et gestion du choix utilisateur.",
@@ -14,10 +15,7 @@ export const metadata: Metadata = {
     "consentement",
     "analytics",
   ],
-  alternates: {
-    canonical: "/politique-cookies",
-  },
-};
+});
 
 function CookieTypeCard({
   title,

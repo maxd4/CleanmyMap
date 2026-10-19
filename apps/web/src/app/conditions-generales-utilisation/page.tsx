@@ -9,9 +9,12 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { resolvePublicContactEmail } from "@/lib/email-config";
+import { buildPageMetadata } from "@/lib/metadata";
 import { LegalAccordion } from "./legal-accordion";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata(
+  "/conditions-generales-utilisation",
+  {
   title: "Conditions d'utilisation",
   description:
     "Conditions d'utilisation de CleanMyMap : accès au service, contributions, modération, données personnelles et responsabilité.",
@@ -22,10 +25,8 @@ export const metadata: Metadata = {
     "modération",
     "propriété intellectuelle",
   ],
-  alternates: {
-    canonical: "/conditions-generales-utilisation",
   },
-};
+);
 
 const legalLinkClass =
   "font-medium text-emerald-700 hover:text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2";

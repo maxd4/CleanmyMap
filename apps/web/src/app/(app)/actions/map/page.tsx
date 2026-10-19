@@ -7,15 +7,15 @@ import {
   type PublicImpactCounters,
 } from "@/lib/impact/public-impact-kpis";
 import { resolvePageFamily } from "@/lib/ui/page-families";
+import { buildPageMetadata } from "@/lib/metadata";
 import { ActionsMapPageClient } from "./page-client";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata("/actions/map", {
   title: "Carte des actions",
   description:
     "Explorer les actions de dépollution et les signalements citoyens sur la carte CleanMyMap.",
-  alternates: { canonical: "/actions/map" },
   robots: { index: true, follow: true },
-};
+});
 
 const EMPTY_PUBLIC_IMPACT_COUNTERS: PublicImpactCounters = {
   wasteKg: 0,

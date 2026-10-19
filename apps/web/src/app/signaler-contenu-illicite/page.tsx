@@ -3,12 +3,12 @@ import Link from "next/link";
 import { LegalContentReportForm } from "@/components/sections/rubriques/legal-content-report-form";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
+import { buildPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata("/signaler-contenu-illicite", {
   title: "Signaler un contenu illicite",
   description: "Transmettre une notification électronique circonstanciée concernant un contenu potentiellement illicite.",
-  alternates: { canonical: "/signaler-contenu-illicite" },
-};
+});
 
 export default function SignalerContenuIllicitePage() {
   return (
