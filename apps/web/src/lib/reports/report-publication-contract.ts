@@ -214,12 +214,50 @@ function containsPhoneLikeValue(value: string): boolean {
   return false;
 }
 
-function startsWithIsoDate(value: string): boolean {
-  return value.length >= 10 && value[4] === "-" && value[7] === "-" &&
-    isAsciiDigit(value.charCodeAt(0)) && isAsciiDigit(value.charCodeAt(1)) &&
-    isAsciiDigit(value.charCodeAt(2)) && isAsciiDigit(value.charCodeAt(3)) &&
-    isAsciiDigit(value.charCodeAt(5)) && isAsciiDigit(value.charCodeAt(6)) &&
-    isAsciiDigit(value.charCodeAt(8)) && isAsciiDigit(value.charCodeAt(9));
+function readFixedDigits(value: string, start: number, length: number): number | null {
+  if (start + length > value.length) return null;
+  let result = 0;
+  for (let offset = 0; offset < length; offset += 1) {
+    const code = value.charCodeAt(start + offset);
+    if (!isAsciiDigit(code)) return null;
+    result = result * 10 + code - 48;
+  }
+  return result;
+}
+
+function isValidIsoCalendarDate(year: number, month: number, day: number): boolean {
+  if (month < 1 || month > 12 || day < 1) return false;
+  const daysInMonth = [31, year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return day <= daysInMonth[month - 1];
+}
+
+function isCompleteIsoDateOrTimestamp(value: string): boolean {
+  if (value.length < 10 || value.length > 35 || value[4] !== "-" || value[7] !== "-") return false;
+  const year = readFixedDigits(value, 0, 4);
+  const month = readFixedDigits(value, 5, 2);
+  const day = readFixedDigits(value, 8, 2);
+  if (year === null || month === null || day === null || !isValidIsoCalendarDate(year, month, day)) return false;
+  if (value.length === 10) return true;
+  if (value[10] !== "T") return false;
+
+  const hour = readFixedDigits(value, 11, 2);
+  const minute = readFixedDigits(value, 14, 2);
+  const second = readFixedDigits(value, 17, 2);
+  if (value[13] !== ":" || value[16] !== ":" || hour === null || minute === null || second === null || hour > 23 || minute > 59 || second > 59) return false;
+
+  let cursor = 19;
+  if (value[cursor] === ".") {
+    cursor += 1;
+    const fractionStart = cursor;
+    while (cursor < value.length && isAsciiDigit(value.charCodeAt(cursor))) cursor += 1;
+    if (cursor === fractionStart || cursor - fractionStart > 9) return false;
+  }
+  if (cursor === value.length) return true;
+  if (value[cursor] === "Z") return cursor + 1 === value.length;
+  if (value[cursor] !== "+" && value[cursor] !== "-") return false;
+  const offsetHour = readFixedDigits(value, cursor + 1, 2);
+  const offsetMinute = readFixedDigits(value, cursor + 4, 2);
+  return value[cursor + 3] === ":" && offsetHour !== null && offsetMinute !== null && offsetHour <= 23 && offsetMinute <= 59 && cursor + 6 === value.length;
 }
 
 function containsUrl(value: string): boolean {
@@ -229,8 +267,8 @@ function containsUrl(value: string): boolean {
 
 function containsPrivateMarker(value: unknown): boolean {
   if (typeof value === "string") {
-    const isDate = startsWithIsoDate(value);
-    return containsPrivateMarkerWord(value) || containsUuid(value) || containsEmail(value) || containsUrl(value) || (!isDate && containsPhoneLikeValue(value));
+    const isCompleteDate = isCompleteIsoDateOrTimestamp(value);
+    return containsPrivateMarkerWord(value) || containsUuid(value) || containsEmail(value) || containsUrl(value) || (!isCompleteDate && containsPhoneLikeValue(value));
   }
   if (Array.isArray(value)) return value.some(containsPrivateMarker);
   if (value && typeof value === "object") {

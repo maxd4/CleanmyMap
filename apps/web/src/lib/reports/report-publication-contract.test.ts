@@ -81,6 +81,53 @@ describe("report publication projection", () => {
     expect(() => assertReportPublicationEligibility(unsafe)).toThrow(ReportPublicationProjectionError);
   });
 
+  it.each([
+    "2026-10-19",
+    "2026-10-19T06:12:34.567Z",
+    "2026-10-19T06:12:34+02:00",
+  ])("accepts a complete public ISO date or timestamp (%s)", (value) => {
+    const safe = {
+      ...generation,
+      snapshot: {
+        ...generation.snapshot,
+        data: { ...generation.snapshot.data, summary: [value] },
+      },
+    };
+
+    expect(() => assertReportPublicationEligibility(safe)).not.toThrow();
+  });
+
+  it.each([
+    "2026-10-19 06 12 34 56 78",
+    "2026-10-19 +33 6 12 34 56 78",
+    "2026-10-19, contact@example.com",
+    "2026-10-19 https://example.com/private",
+  ])("does not let a date prefix exempt private or contact data (%s)", (value) => {
+    const unsafe = {
+      ...generation,
+      snapshot: {
+        ...generation.snapshot,
+        data: { ...generation.snapshot.data, summary: [value] },
+      },
+    };
+
+    expect(() => assertReportPublicationEligibility(unsafe)).toThrow(ReportPublicationProjectionError);
+  });
+
+  it("rejects a long date-prefixed phone value within a bounded execution time", () => {
+    const unsafe = {
+      ...generation,
+      snapshot: {
+        ...generation.snapshot,
+        data: { ...generation.snapshot.data, summary: [`2026-10-19 ${"06 ".repeat(40_000)}12`] },
+      },
+    };
+    const startedAt = performance.now();
+
+    expect(() => assertReportPublicationEligibility(unsafe)).toThrow(ReportPublicationProjectionError);
+    expect(performance.now() - startedAt).toBeLessThan(1_000);
+  });
+
   it("rejects long adversarial non-private content within a bounded execution time", () => {
     const safe = {
       ...generation,
