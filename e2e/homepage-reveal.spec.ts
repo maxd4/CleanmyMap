@@ -22,13 +22,8 @@ test.describe("homepage community credibility reveal", () => {
     const revealedContent = section.locator("[data-gsap-reveal]").first();
     await expect(section).toBeVisible();
     await expect(revealedContent).toBeVisible();
-    await activityResponse;
-
-    await waitForRenderCycles(page, 2);
-    await expect(section).toBeVisible();
-    await expect(revealedContent).toBeVisible();
-
     await section.scrollIntoViewIfNeeded();
+    await activityResponse;
     await waitForRenderCycles(page, 2);
     await expect(section).toBeVisible();
     await expect(revealedContent).toBeVisible();

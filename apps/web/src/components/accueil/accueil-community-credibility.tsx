@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentType, type RefObject } from "react";
 import useSWR from "swr";
 import type {
   HomeCommunityActivityResponse,
   HomeCommunityActivitySummary,
 } from "@/lib/accueil/data";
-import { useGsapReveal } from "@/lib/animations/use-gsap-reveal";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import {
   fetchHomepageActivity,
@@ -24,6 +23,12 @@ type HomeCommunityCredibilityProps = {
   activity: HomeCommunityActivitySummary;
   errorMessage?: string | null;
 };
+
+type HomeCommunityCredibilityRevealProps = {
+  sectionRef: RefObject<HTMLElement | null>;
+};
+
+type HomeCommunityCredibilityRevealComponent = ComponentType<HomeCommunityCredibilityRevealProps>;
 
 function useHomeCommunityCredibility({
   activity,
@@ -57,20 +62,35 @@ function useHomeCommunityCredibility({
     refreshError || refreshedActivity?.errorMessage || errorMessage,
   );
 
-  useGsapReveal(sectionRef, {
-    selector: "[data-gsap-reveal]",
-    start: "top 78%",
-    stagger: 0.06,
-    duration: 0.65,
-    y: 20,
-  });
-
-  return { setSectionRefs, visibleActivity, hasActivityError };
+  return { setSectionRefs, visibleActivity, hasActivityError, isNearViewport, sectionRef };
 }
 
 export function HomeCommunityCredibility(props: HomeCommunityCredibilityProps) {
-  const { setSectionRefs, visibleActivity, hasActivityError } =
+  const { setSectionRefs, visibleActivity, hasActivityError, isNearViewport, sectionRef } =
     useHomeCommunityCredibility(props);
+  const [CommunityCredibilityReveal, setCommunityCredibilityReveal] =
+    useState<HomeCommunityCredibilityRevealComponent | null>(null);
+
+  useEffect(() => {
+    if (!isNearViewport) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    void import("./accueil-community-credibility-reveal")
+      .then(({ HomeCommunityCredibilityReveal: Reveal }) => {
+        if (!cancelled) {
+          setCommunityCredibilityReveal(() => Reveal);
+        }
+      })
+      .catch(() => {
+        // The public section remains visible when the progressive enhancement cannot load.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isNearViewport]);
 
   return (
     <section
@@ -78,6 +98,7 @@ export function HomeCommunityCredibility(props: HomeCommunityCredibilityProps) {
       data-homepage-section="community-credibility"
       className="relative isolate overflow-hidden py-8 sm:py-10 lg:py-12"
     >
+      {CommunityCredibilityReveal ? <CommunityCredibilityReveal sectionRef={sectionRef} /> : null}
       <div className="cmm-page-width relative grid items-stretch gap-4 px-3 sm:px-6 lg:grid-cols-2 lg:gap-6 lg:px-6">
         <HomeCommunityActivityPanel
           activity={visibleActivity}

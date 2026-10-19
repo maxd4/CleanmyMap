@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HomeCommunityActivitySummary } from "@/lib/accueil/data";
@@ -5,10 +6,6 @@ import type { HomeCommunityActivitySummary } from "@/lib/accueil/data";
 const state = vi.hoisted(() => ({
   isNearViewport: false,
   swrCalls: [] as unknown[][],
-}));
-
-vi.mock("@/lib/animations/use-gsap-reveal", () => ({
-  useGsapReveal: () => undefined,
 }));
 
 vi.mock("@/components/ui/use-in-view-once", () => ({
@@ -73,6 +70,16 @@ afterEach(() => {
 });
 
 describe("HomeCommunityCredibility action hierarchy", () => {
+  it("keeps the GSAP reveal behind the near-viewport dynamic boundary", () => {
+    const source = readFileSync(
+      new URL("./accueil-community-credibility.tsx", import.meta.url),
+      "utf8",
+    );
+
+    expect(source).toContain('import("./accueil-community-credibility-reveal")');
+    expect(source).not.toContain('from "@/lib/animations/use-gsap-reveal"');
+  });
+
   it("combines the credibility content into one responsive card", () => {
     const markup = renderToStaticMarkup(
       <HomeCommunityCredibility activity={EMPTY_ACTIVITY} />,
