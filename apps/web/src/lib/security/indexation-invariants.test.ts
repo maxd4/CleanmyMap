@@ -22,7 +22,8 @@ describe("security indexation invariants", () => {
 
     const sectionPage = readSource("src/app/(app)/sections/[sectionId]/page.tsx");
     expect(sectionPage).toContain("PUBLIC_INDEXABLE_SECTION_IDS");
-    expect(sectionPage).toContain("alternates: { canonical: `/sections/${section.id}` }");
+    expect(sectionPage).toContain("buildPageMetadata");
+    expect(sectionPage).toContain("`/sections/${section.id}`");
   });
 
   it("keeps public hybrids indexable while their auth surfaces stay protected", () => {
