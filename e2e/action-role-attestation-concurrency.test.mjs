@@ -46,9 +46,16 @@ test("role attestation SQL contract distinguishes PostgreSQL role from JWT role 
   }
 });
 
-function createConcurrentQueryHarness({ holderMode = "success", correctionMode = "reject-after-observation", cleanupMode = "success" } = {}) {
+function createConcurrentQueryHarness({
+  holderMode = "success",
+  correctionMode = "reject-after-observation",
+  cleanupMode = "success",
+  observationMode = "immediate",
+  observationDelayMs = 25,
+} = {}) {
   const calls = [];
   const tasks = [];
+  const polls = [];
   const state = { holder: "idle", correction: "idle" };
 
   function startTask(name, mode, signal) {
@@ -89,14 +96,47 @@ function createConcurrentQueryHarness({ holderMode = "success", correctionMode =
     });
   }
 
+  function startPoll(name, stdout, signal) {
+    const poll = { name, settled: false, cancelled: false };
+    polls.push(poll);
+    return new Promise((resolve, reject) => {
+      const settle = (settler, value) => {
+        if (poll.settled) return;
+        poll.settled = true;
+        signal?.removeEventListener("abort", onAbort);
+        settler(value);
+      };
+      const onAbort = () => {
+        poll.cancelled = true;
+        settle(reject, new Error(`${name} poll cancelled`));
+      };
+
+      signal?.addEventListener("abort", onAbort, { once: true });
+      if (observationMode === "hang") return;
+      if (observationMode === "delayed") {
+        setTimeout(() => settle(resolve, { stdout }), observationDelayMs);
+        return;
+      }
+      settle(resolve, { stdout });
+    });
+  }
+
   const query = (sql, { signal } = {}) => {
     calls.push(sql);
     if (sql.includes("insert into public.actions")) return Promise.resolve({ stdout: "", stderr: "" });
     if (sql.includes("ROLE_ATTESTATION_LOCK_HELD")) {
-      return Promise.resolve({ stdout: state.holder === "active" && holderMode !== "hang" ? "ROLE_ATTESTATION_LOCK_HELD" : "ROLE_ATTESTATION_LOCK_NOT_HELD" });
+      return startPoll(
+        "holder-probe",
+        state.holder === "active" && holderMode !== "hang" ? "ROLE_ATTESTATION_LOCK_HELD" : "ROLE_ATTESTATION_LOCK_NOT_HELD",
+        signal,
+      );
     }
     if (sql.includes("ROLE_ATTESTATION_CORRECTION_WAITING")) {
-      return Promise.resolve({ stdout: state.correction === "active" ? "ROLE_ATTESTATION_CORRECTION_WAITING" : "ROLE_ATTESTATION_CORRECTION_NOT_WAITING" });
+      return startPoll(
+        "correction-probe",
+        state.correction === "active" ? "ROLE_ATTESTATION_CORRECTION_WAITING" : "ROLE_ATTESTATION_CORRECTION_NOT_WAITING",
+        signal,
+      );
     }
     if (sql.includes("application_name', 'cleanmymap-role-attestation-lock-holder")) {
       return startTask("holder", holderMode, signal);
@@ -105,13 +145,14 @@ function createConcurrentQueryHarness({ holderMode = "success", correctionMode =
       return startTask("correction", correctionMode, signal);
     }
     if (sql.includes("delete from public.actions") && !sql.includes("insert into public.actions")) {
+      assert.ok(polls.every((poll) => poll.settled), "all probes must settle before cleanup");
       if (cleanupMode === "fail") return Promise.reject(new Error("cleanup query failed"));
       return Promise.resolve({ stdout: "", stderr: "" });
     }
     return Promise.resolve({ stdout: "", stderr: "" });
   };
 
-  return { calls, tasks, query };
+  return { calls, polls, tasks, query };
 }
 
 async function assertNoUnhandledRejection(operation) {
@@ -138,7 +179,7 @@ test("behavioral proof keeps the holder and correction sessions controlled", asy
 });
 
 test("an immediate holder failure interrupts observation, cleans up and has no unhandled rejection", async () => {
-  const harness = createConcurrentQueryHarness({ holderMode: "fail-immediately" });
+  const harness = createConcurrentQueryHarness({ holderMode: "fail-immediately", observationMode: "delayed" });
   const startedAt = Date.now();
 
   await assertNoUnhandledRejection(() => assert.rejects(
@@ -148,23 +189,42 @@ test("an immediate holder failure interrupts observation, cleans up and has no u
 
   assert.ok(Date.now() - startedAt < 200, "an immediate command failure must not consume the observation timeout");
   assert.ok(harness.calls.some((sql) => sql.includes("delete from public.actions") && !sql.includes("insert into public.actions")));
+  assert.ok(harness.polls.some((poll) => poll.name === "holder-probe" && poll.cancelled));
+  assert.ok(harness.polls.every((poll) => poll.settled), "the failed holder probe must settle before cleanup");
   assert.ok(harness.tasks.every((task) => task.settled), "the failed holder must be settled before cleanup");
 });
 
 test("an immediate correction failure interrupts its observation and cancels the holder", async () => {
-  const harness = createConcurrentQueryHarness({ correctionMode: "fail-immediately" });
+  const harness = createConcurrentQueryHarness({ correctionMode: "fail-immediately", observationMode: "delayed" });
 
-  await assert.rejects(
-    runActionRoleAttestationConcurrency({ query: harness.query, syncTimeoutMs: 250, pollIntervalMs: 1 }),
-    /correction query failed immediately/,
+  await assertNoUnhandledRejection(() =>
+    assert.rejects(
+      runActionRoleAttestationConcurrency({ query: harness.query, syncTimeoutMs: 250, pollIntervalMs: 1 }),
+      /correction query failed immediately/,
+    ),
   );
 
   assert.ok(harness.tasks.some((task) => task.name === "holder" && task.cancelled));
+  assert.ok(harness.polls.some((poll) => poll.name === "correction-probe" && poll.cancelled));
+  assert.ok(harness.polls.every((poll) => poll.settled), "the failed correction probe must settle before cleanup");
   assert.ok(harness.tasks.every((task) => task.settled), "both sessions must settle before cleanup");
 });
 
+test("a command completing before a delayed observation cancels and settles the probe", async () => {
+  const harness = createConcurrentQueryHarness({ holderMode: "success", observationMode: "delayed", observationDelayMs: 100 });
+
+  await assert.rejects(
+    runActionRoleAttestationConcurrency({ query: harness.query, syncTimeoutMs: 250, pollIntervalMs: 1 }),
+    /action lock holder command completed before the expected observation/,
+  );
+
+  assert.ok(harness.polls.some((poll) => poll.name === "holder-probe" && poll.cancelled));
+  assert.ok(harness.polls.every((poll) => poll.settled), "a premature command must settle its probe before cleanup");
+  assert.ok(harness.tasks.every((task) => task.settled));
+});
+
 test("an observation timeout cancels the active command during polling and still cleans up", async () => {
-  const harness = createConcurrentQueryHarness({ holderMode: "hang" });
+  const harness = createConcurrentQueryHarness({ holderMode: "hang", observationMode: "hang" });
 
   await assert.rejects(
     runActionRoleAttestationConcurrency({ query: harness.query, syncTimeoutMs: 25, pollIntervalMs: 1 }),
@@ -172,6 +232,7 @@ test("an observation timeout cancels the active command during polling and still
   );
 
   assert.ok(harness.tasks.some((task) => task.name === "holder" && task.cancelled));
+  assert.ok(harness.polls.length > 0 && harness.polls.every((poll) => poll.cancelled && poll.settled));
   assert.ok(harness.tasks.every((task) => task.settled), "timeout cancellation must not abandon a command");
   assert.ok(harness.calls.some((sql) => sql.includes("delete from public.actions") && !sql.includes("insert into public.actions")));
 });

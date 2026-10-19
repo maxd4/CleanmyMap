@@ -73,8 +73,11 @@ async function waitForDatabaseObservation(
   let lastObservation = "none";
   while (Date.now() < deadline) {
     if (command?.failure) throw command.failure;
+    const observationController = new AbortController();
+    const observationTimeoutMs = Math.max(1, deadline - Date.now());
+    const observationTimeout = setTimeout(() => observationController.abort(), observationTimeoutMs);
     const observation = Promise.resolve()
-      .then(() => query(sql, { timeoutMs: Math.max(1, deadline - Date.now()) }))
+      .then(() => query(sql, { signal: observationController.signal, timeoutMs: observationTimeoutMs }))
       .then(
         (result) => ({ type: "observation", result }),
         (error) => ({ type: "observation-error", error }),
@@ -84,9 +87,19 @@ async function waitForDatabaseObservation(
         ? { type: "command-error", error: result.reason }
         : { type: "command-completed" },
     );
-    const outcome = await Promise.race([observation, commandState].filter(Boolean));
-    if (outcome.type === "command-error") throw outcome.error;
-    if (outcome.type === "command-completed") {
+    let outcome;
+    try {
+      outcome = await Promise.race([observation, commandState].filter(Boolean));
+    } finally {
+      clearTimeout(observationTimeout);
+    }
+    if (outcome.type === "command-error" || outcome.type === "command-completed") {
+      // The command won the race while the database probe was still active.
+      // Abort and settle that probe before propagating the command outcome so
+      // cleanup never runs with an orphaned pg_stat_activity query.
+      observationController.abort();
+      await observation;
+      if (outcome.type === "command-error") throw outcome.error;
       throw new Error(`${description} command completed before the expected observation`);
     }
     if (outcome.type === "observation-error") {
