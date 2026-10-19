@@ -674,6 +674,17 @@ Chaque modification documente au minimum :
 Ne pas ajouter un nouveau service d'analytics payant pour démontrer une
 réduction qui peut être testée au niveau du déclencheur.
 
+La campagne navigateur publique `e2e/network-demand-public.spec.ts` complète
+ces preuves au niveau des requêtes réellement observables depuis le client :
+elle couvre le deep-link Partenaires, le retour vers Communauté, le refus
+anonyme de la ventilation Recyclage, l'absence de classement public sur
+Gamification et le chargement unique des références de la carte principale.
+Les panneaux administratifs, le pilotage, les rapports et les autres lectures
+SSR restent vérifiés par leurs tests de loaders et de hooks propriétaires.
+Cette campagne ne mesure pas les invocations Vercel, les octets Supabase ou
+les reconstructions serveur ; ces métriques fournisseur restent à qualifier
+séparément lorsque les accès d'observation sont disponibles.
+
 ## 10. Checklist de modification
 
 Avant publication d'une fonctionnalité touchant aux coûts plateforme :

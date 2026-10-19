@@ -1,6 +1,7 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { act, create } from "react-test-renderer";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CodexUsagePanel, DeferredCodexUsagePanel } from "./codex-usage-panel";
 import {
   calculateAverageWeeklyKg,
@@ -9,12 +10,49 @@ import {
 } from "./codex-usage-panel.model";
 
 describe("CodexUsagePanel", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("does not mount the Codex data panel before explicit consultation", () => {
     const markup = renderToStaticMarkup(React.createElement(DeferredCodexUsagePanel));
 
     expect(markup).toContain("Consulter le suivi Codex");
     expect(markup).not.toContain("Enregistrer la semaine");
     expect(markup).not.toContain("Aucun journal Codex");
+  });
+
+  it("reads once after consultation and keeps the result mounted across reopen", () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ snapshots: [] }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(<DeferredCodexUsagePanel />);
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    const openButton = renderer.root
+      .findAllByType("button")
+      .find((button) => String(button.props.children).includes("Consulter"));
+    act(() => openButton?.props.onClick());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/codex-usage?historyLimit=12",
+      { headers: { Accept: "application/json" } },
+    );
+
+    const hideButton = renderer.root
+      .findAllByType("button")
+      .find((button) => String(button.props.children).includes("Masquer"));
+    act(() => hideButton?.props.onClick());
+    const reopenButton = renderer.root
+      .findAllByType("button")
+      .find((button) => String(button.props.children).includes("Consulter"));
+    act(() => reopenButton?.props.onClick());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("renders the weekly Codex journal controls", () => {
