@@ -261,11 +261,41 @@ const MAX_CYCLE_REPORT_LENGTH = 4 * 1024 * 1024;
 
 export function isCompleteCycleReport(stdout = "") {
   const text = String(stdout);
-  const statusIndex = text.lastIndexOf('"status"');
-  const jsonStart = statusIndex < 0 ? -1 : text.lastIndexOf("{", statusIndex);
+  const jsonStart = text.indexOf("{");
   if (jsonStart < 0) return false;
-  const candidate = text.slice(jsonStart);
-  if (candidate.length > MAX_CYCLE_REPORT_LENGTH) return false;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  let jsonEnd = -1;
+
+  for (let index = jsonStart; index < text.length; index += 1) {
+    if (index - jsonStart + 1 > MAX_CYCLE_REPORT_LENGTH) return false;
+
+    const character = text[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') inString = false;
+      continue;
+    }
+
+    if (character === '"') inString = true;
+    else if (character === "{") depth += 1;
+    else if (character === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        jsonEnd = index + 1;
+        break;
+      }
+      if (depth < 0) return false;
+    }
+  }
+
+  if (jsonEnd < 0 || inString || depth !== 0) return false;
+  if (text.slice(jsonEnd).trim() !== "") return false;
+
+  const candidate = text.slice(jsonStart, jsonEnd);
   try {
     const report = JSON.parse(candidate);
     return report.status === "cycles_found"

@@ -31,6 +31,17 @@ test("GitNexus audit accepts only the optional cycles flag", () => {
 
 test("GitNexus cycle reports use bounded linear JSON detection", () => {
   assert.equal(isCompleteCycleReport(`${"noise ".repeat(100_000)}{"status":"cycles_found","enumeration":"complete","cycles":[]}`), true);
+  assert.equal(
+    isCompleteCycleReport('{"status":"cycles_found","enumeration":"complete","cycles":[{"status":"open","files":["a.ts"]}]}'),
+    true,
+  );
+  assert.equal(
+    isCompleteCycleReport('{"status":"cycles_found","enumeration":"complete","cycles":[{"files":["brace } and \\\"quote\\\""]}]}'),
+    true,
+  );
+  assert.equal(isCompleteCycleReport('GitNexus: report\n{"status":"cycles_found","enumeration":"complete","cycles":[]}'), true);
+  assert.equal(isCompleteCycleReport('{"status":"cycles_found","enumeration":"complete","cycles":[]'), false);
+  assert.equal(isCompleteCycleReport('{"status":"unknown","enumeration":"complete","cycles":[]}'), false);
   assert.equal(isCompleteCycleReport(`${"{\"status\":\"noise\"}".repeat(100_000)}not-json`), false);
   assert.equal(isCompleteCycleReport(`{"status":"cycles_found","enumeration":"complete","cycles":[{"files":["${"x".repeat(4 * 1024 * 1024)}"]}]}`), false);
 });
