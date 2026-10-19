@@ -304,8 +304,18 @@ describe("/reports page contract", () => {
     expect(markup).not.toContain('data-testid="profile-completion-required"');
   });
 
-  it("loads the 90-day analysis window and renders primary KPIs", async () => {
-    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "pilotage" }) }));
+  it("renders the light authenticated summary without loading detailed analysis", async () => {
+    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "analysis" }) }));
+
+    expect(markup).toContain('data-testid="reports-public-summary"');
+    expect(markup).toContain("Afficher les analyses détaillées");
+    expect(markup).toContain('href="?tab=analysis&amp;detail=1"');
+    expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
+    expect(mocks.computeReportModel).not.toHaveBeenCalled();
+  });
+
+  it("loads the 90-day analysis window only after an explicit detail request", async () => {
+    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "pilotage", detail: "1" }) }));
 
     expect(markup).toContain('data-active-tab="analysis"');
     expect(markup).toContain('data-testid="reports-analysis-dashboard"');
@@ -340,7 +350,7 @@ describe("/reports page contract", () => {
     });
 
     const markup = renderToStaticMarkup(
-      await ReportsPage({ searchParams: Promise.resolve({ tab: "analysis" }) }),
+      await ReportsPage({ searchParams: Promise.resolve({ tab: "analysis", detail: "1" }) }),
     );
 
     expect(markup).toContain('data-testid="reports-analysis-dashboard"');
@@ -471,7 +481,7 @@ describe("/reports page contract", () => {
     mocks.isAdminLikeProfile.mockReturnValue(true);
     mocks.loadPilotageOverview.mockRejectedValue(new Error("Supabase unavailable"));
 
-    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "pilotage" }) }));
+    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "pilotage", detail: "1" }) }));
 
     expect(markup).toContain('data-active-tab="analysis"');
     expect(markup).toContain("Analyse temporairement indisponible");

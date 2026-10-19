@@ -63,6 +63,14 @@ réutilise le cache SWR récent et la cadence bornée existante.
 Cette optimisation ne modifie ni `canAccessPilotage`, ni les scopes serveur,
 ni les contrôles d'autorisation de l'endpoint.
 
+Les opérations communautaires détaillées sont séparées de l'overview initiale.
+Le bouton « Explorer les opérations détaillées » navigue vers
+`/pilotage?operations=1` avec le prefetch désactivé ; seul cet état explicite
+appelle `loadPilotageCommunityOperations`. La résolution conserve le scope
+`organized/userId` et réutilise les contrats de l'overview canonique. Une
+ouverture de `/pilotage` sans cette intention ne charge pas les 120 événements
+nécessaires au détail.
+
 
 ## États à documenter
 

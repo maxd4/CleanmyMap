@@ -13,6 +13,10 @@ import {
   type PilotageLocale,
 } from "@/components/pilotage/pilotage-access-screen";
 
+type PilotageAccessPageProps = {
+  searchParams: Promise<{ operations?: string }>;
+};
+
 async function loadOverview(userId: string) {
   return loadPilotageOverview({
     periodDays: 30,
@@ -21,7 +25,8 @@ async function loadOverview(userId: string) {
   });
 }
 
-export default async function PilotageAccessPage() {
+export default async function PilotageAccessPage({ searchParams }: PilotageAccessPageProps) {
+  const requestedOperations = (await searchParams).operations === "1";
   const { userId, clerkReachable } = await getSafeAuthSession();
   const locale = (await getServerLocale()) as PilotageLocale;
 
@@ -50,7 +55,7 @@ export default async function PilotageAccessPage() {
   }
 
   const overview = await loadOverview(userId).catch(() => null);
-  const communityOperations = overview
+  const communityOperations = requestedOperations && overview
     ? await loadPilotageCommunityOperations(overview.contracts).catch(() => null)
     : null;
   return (

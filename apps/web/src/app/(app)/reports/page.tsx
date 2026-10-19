@@ -58,7 +58,12 @@ import {
 } from "@/lib/reports/single-action-report";
 
 type ReportsPageProps = {
-  searchParams: Promise<{ tab?: string; actionId?: string; resumeId?: string }>;
+  searchParams: Promise<{
+    tab?: string;
+    actionId?: string;
+    resumeId?: string;
+    detail?: string;
+  }>;
 };
 
 type SingleActionReportPageContext = {
@@ -151,7 +156,20 @@ function buildReportsAnalysisContent({
 
 function buildReportsPublicSummaryContent(
   publicSummary: Awaited<ReturnType<typeof loadReportsPublicSummary>> | null,
+  showDetailedCta = false,
 ) {
+  const detailedCta = showDetailedCta ? (
+    <CmmButton
+      href="?tab=analysis&detail=1"
+      prefetch={false}
+      tone="primary"
+      variant="pill"
+      className="mt-2"
+    >
+      Afficher les analyses détaillées
+    </CmmButton>
+  ) : null;
+
   return publicSummary ? (
     <section
       className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
@@ -182,10 +200,12 @@ function buildReportsPublicSummaryContent(
           </div>
         ))}
       </div>
+      {detailedCta}
     </section>
   ) : (
     <section role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
       La synthèse publique est temporairement indisponible.
+      {detailedCta}
     </section>
   );
 }
@@ -342,6 +362,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const activeTab = resolveReportsTab(
     resolvedSearchParams.tab,
   );
+  const showDetailedAnalysis = resolvedSearchParams.detail === "1";
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
   const roleLabel = userId
@@ -505,6 +526,20 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         <ReportsPageV2Layout
           activeTab={activeTab}
           filesContent={<ReportsFiles initialPage={initialResult.page} initialAvailability={initialResult.availability} />}
+        />
+      </AccountCompletionGate>
+    );
+  }
+
+  if (!showDetailedAnalysis) {
+    const publicSummary = await loadReportsPublicSummary().catch(() => null);
+    const publicSummaryContent = buildReportsPublicSummaryContent(publicSummary, true);
+
+    return (
+      <AccountCompletionGate state={accountCompletion}>
+        <ReportsPageV2Layout
+          activeTab="analysis"
+          analysisContent={publicSummaryContent}
         />
       </AccountCompletionGate>
     );
