@@ -42,24 +42,35 @@ export function RecyclingBreakdownDetails({
   onLoaded,
 }: {
   fr: boolean;
-  onLoaded?: (breakdown: PublicSectionBreakdown) => void;
+  onLoaded?: (breakdown: PublicSectionBreakdown, identityKey: string) => void;
 }) {
-  const { isLoaded, isSignedIn } = useAuth();
-  const [requested, setRequested] = useState(false);
-  const canLoad = isLoaded && Boolean(isSignedIn);
-  const key = requested && canLoad ? BREAKDOWN_KEY : null;
+  const { isLoaded, isSignedIn, userId } = useAuth();
+  const identityKey = isLoaded && isSignedIn && userId ? userId : null;
+  const [requestedIdentity, setRequestedIdentity] = useState<string | null>(null);
+  const requested = identityKey !== null && requestedIdentity === identityKey;
+  const key = requested && identityKey ? [BREAKDOWN_KEY, identityKey] : null;
   const { data, error, isLoading, isValidating } = useSWR<PublicSectionBreakdown>(
     key,
     fetchRecyclingBreakdown,
     {
       ...swrRecentViewOptions,
-      keepPreviousData: true,
+      // Never carry a private snapshot from one Clerk identity to another.
+      // Reuse remains available through the identity-scoped SWR key.
+      keepPreviousData: false,
     },
   );
 
   useEffect(() => {
-    if (data) onLoaded?.(data);
-  }, [data, onLoaded]);
+    // Security reset: the request state must not survive a Clerk identity change.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRequestedIdentity(null);
+  }, [identityKey]);
+
+  const visibleData = requested && identityKey ? data : undefined;
+
+  useEffect(() => {
+    if (visibleData && identityKey) onLoaded?.(visibleData, identityKey);
+  }, [identityKey, onLoaded, visibleData]);
 
   if (!isLoaded) {
     return (
@@ -99,7 +110,7 @@ export function RecyclingBreakdownDetails({
               {fr ? "Cette lecture authentifiée est chargée uniquement à votre demande." : "This authenticated read loads only when you ask for it."}
             </p>
           </div>
-          <CmmButton type="button" onClick={() => setRequested(true)} tone="primary" variant="pill">
+          <CmmButton type="button" onClick={() => identityKey && setRequestedIdentity(identityKey)} tone="primary" variant="pill">
             {fr ? "Voir la répartition détaillée des déchets" : "View the detailed waste breakdown"}
           </CmmButton>
         </div>
@@ -107,7 +118,7 @@ export function RecyclingBreakdownDetails({
     );
   }
 
-  if (isLoading || (isValidating && !data)) {
+  if (isLoading || (isValidating && !visibleData)) {
     return (
       <DetailState>
         <p role="status" aria-live="polite" className="text-sm font-semibold text-slate-300">
@@ -129,7 +140,7 @@ export function RecyclingBreakdownDetails({
                 : (fr ? "La ventilation détaillée n’a pas pu être chargée. Aucune valeur n’est remplacée par zéro." : "The detailed breakdown could not be loaded. No value is replaced with zero.")}
             </p>
           </div>
-          <CmmButton type="button" onClick={() => setRequested(false)} tone="secondary" variant="pill">
+          <CmmButton type="button" onClick={() => setRequestedIdentity(null)} tone="secondary" variant="pill">
             {fr ? "Réessayer" : "Retry"}
           </CmmButton>
         </div>
@@ -137,7 +148,7 @@ export function RecyclingBreakdownDetails({
     );
   }
 
-  if (!data) {
+  if (!visibleData) {
     return (
       <DetailState>
         <div className="space-y-4">
@@ -145,7 +156,7 @@ export function RecyclingBreakdownDetails({
           <p className="text-sm leading-6 text-slate-300">
             {fr ? "Le snapshot détaillé n’est pas disponible ; aucune valeur inconnue n’est présentée comme zéro." : "The detailed snapshot is unavailable; unknown values are not shown as zero."}
           </p>
-          <CmmButton type="button" onClick={() => setRequested(false)} tone="secondary" variant="pill">
+          <CmmButton type="button" onClick={() => setRequestedIdentity(null)} tone="secondary" variant="pill">
             {fr ? "Réessayer" : "Retry"}
           </CmmButton>
         </div>
@@ -158,14 +169,14 @@ export function RecyclingBreakdownDetails({
       <p role="status" className="text-sm font-semibold text-emerald-300">
         {fr ? "Répartition détaillée disponible depuis le snapshot réel." : "Detailed breakdown loaded from the real snapshot."}
       </p>
-      <RecyclingStreamTable breakdown={data} fr={fr} />
+      <RecyclingStreamTable breakdown={visibleData} fr={fr} />
       <div className="grid gap-8 lg:grid-cols-2">
-        <RecyclingQualitySummary quality={data.triQuality} fr={fr} />
+        <RecyclingQualitySummary quality={visibleData.triQuality} fr={fr} />
         <DetailState>
           <h3 className="text-lg font-black text-white">{fr ? "Qualité de la mesure" : "Measurement quality"}</h3>
           <dl className="mt-5 space-y-3 text-sm text-slate-300">
-            <div className="flex justify-between gap-4"><dt>{fr ? "Actions avec masse renseignée" : "Actions with recorded mass"}</dt><dd className="font-black text-white">{data.wasteCoverageRate.toFixed(1)} %</dd></div>
-            <div className="flex justify-between gap-4"><dt>{fr ? "Snapshot généré le" : "Snapshot generated"}</dt><dd className="font-black text-white">{new Date(data.generatedAt).toLocaleString(fr ? "fr-FR" : "en-GB")}</dd></div>
+            <div className="flex justify-between gap-4"><dt>{fr ? "Actions avec masse renseignée" : "Actions with recorded mass"}</dt><dd className="font-black text-white">{visibleData.wasteCoverageRate.toFixed(1)} %</dd></div>
+            <div className="flex justify-between gap-4"><dt>{fr ? "Snapshot généré le" : "Snapshot generated"}</dt><dd className="font-black text-white">{new Date(visibleData.generatedAt).toLocaleString(fr ? "fr-FR" : "en-GB")}</dd></div>
           </dl>
         </DetailState>
       </div>

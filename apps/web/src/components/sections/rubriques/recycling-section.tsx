@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { motion } from "framer-motion";
+import { useAuth } from "@clerk/nextjs";
 import { fetchActions, fetchMapActions } from "@/lib/actions/http";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { RecyclingQuestionAssistant } from "./recycling-question-assistant/index";
@@ -62,8 +63,37 @@ export function RecyclingSection({
 }) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
-  const [breakdownData, setBreakdownData] = useState<PublicSectionBreakdown | undefined>(
-    () => initialData?.breakdown ?? undefined,
+  const { isLoaded, isSignedIn, userId } = useAuth();
+  const identityKey = isLoaded && isSignedIn && userId ? userId : null;
+  const activeIdentityRef = useRef<string | null>(identityKey);
+  const [breakdownState, setBreakdownState] = useState<{
+    identityKey: string;
+    data: PublicSectionBreakdown;
+  } | null>(null);
+
+  useEffect(() => {
+    activeIdentityRef.current = identityKey;
+  }, [identityKey]);
+
+  useEffect(() => {
+    // Security reset: discard the prior private snapshot after sign-out or account switch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setBreakdownState((current) =>
+      current?.identityKey === identityKey ? current : null,
+    );
+  }, [identityKey]);
+
+  const breakdownData =
+    identityKey && breakdownState?.identityKey === identityKey
+      ? breakdownState.data
+      : undefined;
+
+  const handleBreakdownLoaded = useCallback(
+    (data: PublicSectionBreakdown, loadedIdentityKey: string) => {
+      if (activeIdentityRef.current !== loadedIdentityKey) return;
+      setBreakdownState({ identityKey: loadedIdentityKey, data });
+    },
+    [],
   );
   
   const actions = useSWR<PublicSectionActionListResponse>(
@@ -165,7 +195,11 @@ export function RecyclingSection({
               </motion.div>
 
               <motion.div variants={RUBRIQUE_ITEM_VARIANTS}>
-                <RecyclingBreakdownDetails fr={fr} onLoaded={setBreakdownData} />
+                <RecyclingBreakdownDetails
+                  key={identityKey ?? "recycling-breakdown-anonymous"}
+                  fr={fr}
+                  onLoaded={handleBreakdownLoaded}
+                />
               </motion.div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

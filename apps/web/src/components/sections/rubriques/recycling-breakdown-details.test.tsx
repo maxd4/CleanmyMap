@@ -3,14 +3,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PublicSectionBreakdown } from "@/lib/sections/public-section-snapshot-contract";
 
-const authState = vi.hoisted(() => ({ isLoaded: true, isSignedIn: false }));
+const authState = vi.hoisted(() => ({ isLoaded: true, isSignedIn: false, userId: null as string | null }));
 const swrState = vi.hoisted(() => ({
   data: undefined as PublicSectionBreakdown | undefined,
   error: undefined as Error | undefined,
   isLoading: false,
   isValidating: false,
 }));
-const swrCalls = vi.hoisted(() => [] as Array<{ key: string | null; options: Record<string, unknown> }>);
+const swrCalls = vi.hoisted(() => [] as Array<{ key: unknown; options: Record<string, unknown> }>);
 
 vi.mock("@clerk/nextjs", () => ({
   useAuth: () => authState,
@@ -41,6 +41,7 @@ describe("RecyclingBreakdownDetails", () => {
   beforeEach(() => {
     authState.isLoaded = true;
     authState.isSignedIn = false;
+    authState.userId = null;
     swrState.data = undefined;
     swrState.error = undefined;
     swrState.isLoading = false;
@@ -59,6 +60,7 @@ describe("RecyclingBreakdownDetails", () => {
 
   it("activates one cached SWR view only after an authorized click", () => {
     authState.isSignedIn = true;
+    authState.userId = "user-a";
     swrState.data = snapshot;
 
     let renderer!: ReactTestRenderer;
@@ -74,12 +76,12 @@ describe("RecyclingBreakdownDetails", () => {
 
     act(() => trigger?.props.onClick());
 
-    expect(lastCall()?.key).toBe("section-recycling-breakdown");
+    expect(lastCall()?.key).toEqual(["section-recycling-breakdown", "user-a"]);
     expect(lastCall()?.options).toMatchObject({
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       revalidateIfStale: false,
-      keepPreviousData: true,
+      keepPreviousData: false,
     });
     expect(lastCall()?.options.dedupingInterval).toBe(60_000);
     expect(renderer.root.findByProps({ "data-breakdown-state": "success" })).toBeDefined();
@@ -87,6 +89,7 @@ describe("RecyclingBreakdownDetails", () => {
 
   it("keeps an unavailable result distinct from zero", () => {
     authState.isSignedIn = true;
+    authState.userId = "user-a";
     let renderer!: ReactTestRenderer;
     act(() => {
       renderer = create(<RecyclingBreakdownDetails fr onLoaded={vi.fn()} />);
@@ -100,4 +103,31 @@ describe("RecyclingBreakdownDetails", () => {
     expect(renderer.root.findAllByType("button").some((button) => String(button.props.children).includes("Réessayer"))).toBe(true);
     expect(renderer.root.findAllByType("p").some((paragraph) => String(paragraph.props.children).includes("aucune valeur inconnue n’est présentée comme zéro"))).toBe(true);
   });
+
+  it("drops the request, cache view and callback when the Clerk identity changes", () => {
+    authState.isSignedIn = true;
+    authState.userId = "user-a";
+    swrState.data = snapshot;
+    const onLoaded = vi.fn();
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(<RecyclingBreakdownDetails fr onLoaded={onLoaded} />);
+    });
+    const trigger = renderer.root.findAllByType("button").find((button) =>
+      String(button.props.children).includes("Voir la répartition détaillée"),
+    );
+    act(() => trigger?.props.onClick());
+    expect(onLoaded).toHaveBeenCalledWith(snapshot, "user-a");
+
+    authState.userId = "user-b";
+    act(() => {
+      renderer.update(<RecyclingBreakdownDetails fr onLoaded={onLoaded} />);
+    });
+
+    expect(lastCall()?.key).toBeNull();
+    expect(renderer.root.findAllByProps({ "data-breakdown-state": "success" })).toHaveLength(0);
+    expect(onLoaded).toHaveBeenCalledTimes(1);
+  });
+
 });
