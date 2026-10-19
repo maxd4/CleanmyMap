@@ -47,6 +47,13 @@ describe("/api/actions/[actionId]/field-roles/transfer", () => {
     const { PATCH } = await import("./route");
     const response = await PATCH(new Request("http://localhost", { method: "PATCH", body: JSON.stringify({ proposalId: "00000000-0000-4000-8000-000000000001", decision: "accept" }) }), { params: Promise.resolve({ actionId: "action-1" }) });
     expect(response.status).toBe(200);
-    expect(respondToActionFieldRoleTransferMock).toHaveBeenCalledWith({}, expect.objectContaining({ proposalId: "00000000-0000-4000-8000-000000000001", decision: "accept", actorId: "primary-1" }));
+    expect(respondToActionFieldRoleTransferMock).toHaveBeenCalledWith({}, expect.objectContaining({ actionId: "action-1", proposalId: "00000000-0000-4000-8000-000000000001", decision: "accept", actorId: "primary-1" }));
+  });
+
+  it("returns a conflict when the transactional response invalidates an expired proposal", async () => {
+    respondToActionFieldRoleTransferMock.mockResolvedValue({ id: "proposal-1", status: "expired" });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost", { method: "PATCH", body: JSON.stringify({ proposalId: "00000000-0000-4000-8000-000000000001", decision: "accept" }) }), { params: Promise.resolve({ actionId: "action-1" }) });
+    expect(response.status).toBe(409);
   });
 });

@@ -196,10 +196,15 @@ restent protégées par RLS/grants service-only.
 
 Le primaire ne change jamais lors d'une sauvegarde ordinaire du formulaire. Un
 transfert explicite crée une proposition dans
-`action_field_role_transfer_proposals`, acceptée par le successeur, puis met à
-jour atomiquement `action_organizers.is_primary` et écrit dans le journal
-`action_field_role_transfer_audit`. Une action historique sans primaire reste
-sans primaire tant qu'aucune désignation explicite n'a été effectuée.
+`action_field_role_transfer_proposals`. Le successeur peut l'accepter et le
+primaire, le créateur ou un administrateur autorisé peut la refuser ; la
+mutation met à jour atomiquement `action_organizers.is_primary` et écrit dans
+`action_field_role_transfer_audit`. Les états `pending`, `accepted`, `rejected`,
+`cancelled` et `expired` restent historisés. L'expiration est réconciliée sous
+verrou d'action afin qu'elle ne bloque pas une nouvelle proposition, et une
+action qui quitte la pré-action invalide toute proposition encore en attente.
+Une action historique sans primaire reste sans primaire tant qu'aucune
+désignation explicite n'a été effectuée.
 
 - Verifier que le bouton de join est visible sur les surfaces ciblees.
 - Verifier qu'une inscription future, même confirmée, ne remonte pas dans les statistiques ni la gamification.
@@ -219,4 +224,5 @@ sans primaire tant qu'aucune désignation explicite n'a été effectuée.
   une responsabilité et qu'un rôle opérationnel ne donne aucun droit de gestion.
 - Vérifier que le retrait et l'acceptation d'un transfert primaire sont
   transactionnels, idempotents et refusent les propositions périmées ou
-  concurrentes.
+  concurrentes ; un changement de statut d'inscription révoque la
+  responsabilité opérationnelle active sans supprimer son historique.

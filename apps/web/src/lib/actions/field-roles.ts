@@ -66,6 +66,7 @@ export type ActionFieldRoleTransferProposal = {
 export type ActionFieldRoleState = {
   assignments: ActionFieldRoleAssignment[];
   pendingTransfer: ActionFieldRoleTransferProposal | null;
+  transferProposals: ActionFieldRoleTransferProposal[];
 };
 
 const ASSIGNMENT_COLUMNS =
@@ -101,16 +102,17 @@ export async function loadActionFieldRoleState(
       .from("action_field_role_transfer_proposals")
       .select(TRANSFER_COLUMNS)
       .eq("action_id", actionId)
-      .eq("status", "pending")
       .order("created_at", { ascending: false })
-      .limit(1),
+      .limit(20),
   ]);
   if (assignmentsResult.error) throw new Error(assignmentsResult.error.message);
   if (transferResult.error) throw new Error(transferResult.error.message);
 
+  const transferProposals = (transferResult.data ?? []) as ActionFieldRoleTransferProposal[];
   return {
     assignments: (assignmentsResult.data ?? []) as ActionFieldRoleAssignment[],
-    pendingTransfer: ((transferResult.data ?? [])[0] ?? null) as ActionFieldRoleTransferProposal | null,
+    pendingTransfer: transferProposals.find((proposal) => proposal.status === "pending") ?? null,
+    transferProposals,
   };
 }
 
@@ -144,9 +146,10 @@ export async function proposeActionFieldRoleTransfer(
 
 export async function respondToActionFieldRoleTransfer(
   supabase: SupabaseClient,
-  params: { proposalId: string; actorId: string; decision: "accept" | "reject"; actorIsGlobalAdmin: boolean; reason?: string | null },
+  params: { actionId: string; proposalId: string; actorId: string; decision: "accept" | "reject"; actorIsGlobalAdmin: boolean; reason?: string | null },
 ): Promise<ActionFieldRoleTransferProposal> {
   const result = await supabase.rpc("respond_action_field_role_transfer", {
+    p_action_id: params.actionId,
     p_proposal_id: params.proposalId,
     p_actor_id: params.actorId,
     p_decision: params.decision,

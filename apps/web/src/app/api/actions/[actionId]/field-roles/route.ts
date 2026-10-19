@@ -29,11 +29,16 @@ function toResponseState(
   userId: string,
   includeAll: boolean,
 ) {
+  const transferProposals = state.transferProposals ?? [];
+  const visibleTransferProposals = includeAll
+    ? transferProposals
+    : transferProposals.filter((proposal) => proposal.successor_user_id === userId || proposal.current_primary_user_id === userId);
   return {
     assignments: includeAll
       ? state.assignments
       : state.assignments.filter((assignment) => assignment.user_id === userId),
-    pendingTransfer: state.pendingTransfer,
+    pendingTransfer: visibleTransferProposals.find((proposal) => proposal.status === "pending") ?? null,
+    transferProposals: visibleTransferProposals,
   };
 }
 
@@ -51,6 +56,9 @@ async function loadResponse(access: Extract<Awaited<ReturnType<typeof resolveAct
     status: "ok",
     actionId: access.action.id,
     canManage: access.isManager,
+    canProposeTransfer: access.isGlobalAdmin || access.isCreator || access.isPrimary,
+    canRejectTransfer: access.isGlobalAdmin || access.isCreator || access.isPrimary,
+    currentUserId: userId,
     roleOptions: ACTION_FIELD_ROLE_OPTIONS,
     organizers: access.organizerRows.map((row) => ({
       userId: row.organizer_clerk_id,

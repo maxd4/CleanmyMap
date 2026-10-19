@@ -39,7 +39,7 @@ describe("/api/actions/[actionId]/field-roles", () => {
     vi.clearAllMocks();
     requireActionRequestAccessMock.mockResolvedValue({ ok: true, userId: "volunteer-1" });
     resolveActionFieldRoleAccessMock.mockResolvedValue(baseAccess);
-    loadActionFieldRoleStateMock.mockResolvedValue({ assignments: [], pendingTransfer: null });
+    loadActionFieldRoleStateMock.mockResolvedValue({ assignments: [], pendingTransfer: null, transferProposals: [] });
     loadActionParticipationReviewsMock.mockResolvedValue([]);
     readActionRegistrationRecordMock.mockResolvedValue({ registration_status: "confirmed" });
     replaceActionFieldRolesMock.mockResolvedValue([]);

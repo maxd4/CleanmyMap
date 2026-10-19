@@ -7,6 +7,8 @@ import {
   loadActionReview,
   loadMobileActionDetail,
   loadMobileActionFieldRoles,
+  proposeMobileActionFieldRoleTransfer,
+  respondMobileActionFieldRoleTransfer,
   loadMobileActions,
   requestFutureAction,
   respondToInvitation,
@@ -180,6 +182,7 @@ function DetailPanel({ item, onClose }: { item: MobileActionItem; onClose: () =>
   const [selectedRoles, setSelectedRoles] = useState<string[]>([])
   const [roleBusy, setRoleBusy] = useState(false)
   const [roleError, setRoleError] = useState<string | null>(null)
+  const [successorUserId, setSuccessorUserId] = useState('')
 
   useEffect(() => {
     let active = true
@@ -210,7 +213,31 @@ function DetailPanel({ item, onClose }: { item: MobileActionItem; onClose: () =>
     } finally { setRoleBusy(false) }
   }
 
-  return <View style={styles.detail}><View style={styles.cardHeader}><Text style={styles.sectionTitle}>Détail</Text><TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Fermer le détail"><Ionicons name="close" size={22} color="#94a3b8" /></TouchableOpacity></View><Text style={styles.bodyText}>{item.actionTitle ?? item.location_label}</Text><Text style={styles.cardMeta}>Rendez-vous : {item.location_label}</Text><Text style={styles.cardMeta}>Date : {item.action_date}</Text>{roles ? <View style={styles.rolesPanel}><Text style={styles.sectionTitle}>Responsabilités terrain</Text><Text style={styles.cardMeta}>Ces cartes concernent uniquement cette action et ne donnent aucun droit d’organisation.</Text>{roles.canManage && roles.confirmedParticipants.length > 1 ? <View style={styles.rolePeople}>{roles.confirmedParticipants.map((participant) => <TouchableOpacity key={participant.userId} onPress={() => setRoleUserId(participant.userId)} style={[styles.rolePerson, roleUserId === participant.userId && styles.rolePersonSelected]}><Text style={styles.rolePersonLabel}>{participant.displayName}</Text></TouchableOpacity>)}</View> : null}{roles.roleOptions.map((role) => { const selected = selectedRoles.includes(role.code); return <TouchableOpacity key={role.code} onPress={() => setSelectedRoles((current) => selected ? current.filter((code) => code !== role.code) : [...current, role.code])} style={[styles.roleCard, selected && styles.roleCardSelected]} accessibilityRole="checkbox" accessibilityState={{ checked: selected }}><Ionicons name={selected ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={selected ? '#34d399' : '#64748b'} /><View style={{ flex: 1 }}><Text style={styles.roleLabel}>{role.label}</Text><Text style={styles.cardMeta}>{role.description}</Text></View></TouchableOpacity> })}<SmallButton label={roleBusy ? '...' : 'Enregistrer mes responsabilités'} disabled={roleBusy || !roleUserId} onPress={() => void saveRoles()} />{roleError ? <Text style={styles.error}>{roleError}</Text> : null}</View> : roleError ? <Text style={styles.error}>{roleError}</Text> : <ActivityIndicator color="#34d399" style={styles.loader} />}</View>
+  async function proposeTransfer() {
+    if (!successorUserId) return
+    setRoleBusy(true)
+    setRoleError(null)
+    try {
+      await proposeMobileActionFieldRoleTransfer(item.id, successorUserId)
+      setRoles(await loadMobileActionFieldRoles(item.id))
+      setSuccessorUserId('')
+    } catch (reason) {
+      setRoleError(reason instanceof Error ? reason.message : 'La demande de transfert n’a pas été créée.')
+    } finally { setRoleBusy(false) }
+  }
+
+  async function respondTransfer(proposal: NonNullable<MobileFieldRoleState['transferProposals']>[number], decision: 'accept' | 'reject') {
+    setRoleBusy(true)
+    setRoleError(null)
+    try {
+      await respondMobileActionFieldRoleTransfer(item.id, proposal.id, decision)
+      setRoles(await loadMobileActionFieldRoles(item.id))
+    } catch (reason) {
+      setRoleError(reason instanceof Error ? reason.message : 'La décision de transfert n’a pas été enregistrée.')
+    } finally { setRoleBusy(false) }
+  }
+
+  return <View style={styles.detail}><View style={styles.cardHeader}><Text style={styles.sectionTitle}>Détail</Text><TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Fermer le détail"><Ionicons name="close" size={22} color="#94a3b8" /></TouchableOpacity></View><Text style={styles.bodyText}>{item.actionTitle ?? item.location_label}</Text><Text style={styles.cardMeta}>Rendez-vous : {item.location_label}</Text><Text style={styles.cardMeta}>Date : {item.action_date}</Text>{roles ? <View style={styles.rolesPanel}><Text style={styles.sectionTitle}>Responsabilités terrain</Text><Text style={styles.cardMeta}>Ces cartes concernent uniquement cette action et ne donnent aucun droit d’organisation.</Text>{roles.canManage && roles.confirmedParticipants.length > 1 ? <View style={styles.rolePeople}>{roles.confirmedParticipants.map((participant) => <TouchableOpacity key={participant.userId} onPress={() => setRoleUserId(participant.userId)} style={[styles.rolePerson, roleUserId === participant.userId && styles.rolePersonSelected]}><Text style={styles.rolePersonLabel}>{participant.displayName}</Text></TouchableOpacity>)}</View> : null}{roles.roleOptions.map((role) => { const selected = selectedRoles.includes(role.code); return <TouchableOpacity key={role.code} onPress={() => setSelectedRoles((current) => selected ? current.filter((code) => code !== role.code) : [...current, role.code])} style={[styles.roleCard, selected && styles.roleCardSelected]} accessibilityRole="checkbox" accessibilityState={{ checked: selected }}><Ionicons name={selected ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={selected ? '#34d399' : '#64748b'} /><View style={{ flex: 1 }}><Text style={styles.roleLabel}>{role.label}</Text><Text style={styles.cardMeta}>{role.description}</Text></View></TouchableOpacity> })}<SmallButton label={roleBusy ? '...' : 'Enregistrer mes responsabilités'} disabled={roleBusy || !roleUserId} onPress={() => void saveRoles()} />{roles.canProposeTransfer && roles.organizers.some((organizer) => !organizer.isPrimary) ? <View style={styles.transferPanel}><Text style={styles.cardMeta}>Transfert explicite du primaire</Text><View style={styles.cardActions}>{roles.organizers.filter((organizer) => !organizer.isPrimary).map((organizer) => <SmallButton key={organizer.userId} label={successorUserId === organizer.userId ? `Successeur : ${organizer.displayName}` : organizer.displayName} disabled={roleBusy} onPress={() => setSuccessorUserId(organizer.userId)} secondary={successorUserId !== organizer.userId} />)}</View><SmallButton label="Proposer le transfert" disabled={roleBusy || !successorUserId} onPress={() => void proposeTransfer()} /></View> : null}{roles.transferProposals.map((proposal) => <View key={proposal.id} style={styles.transferPanel}><Text style={styles.cardMeta}>Transfert vers {proposal.successor_user_id} — {proposal.status}</Text><View style={styles.cardActions}>{proposal.status === 'pending' && proposal.successor_user_id === roles.currentUserId ? <SmallButton label="Accepter" disabled={roleBusy} onPress={() => void respondTransfer(proposal, 'accept')} /> : null}{proposal.status === 'pending' && (roles.canRejectTransfer || proposal.successor_user_id === roles.currentUserId) ? <SmallButton label="Refuser" disabled={roleBusy} onPress={() => void respondTransfer(proposal, 'reject')} secondary /> : null}</View></View>)}{roleError ? <Text style={styles.error}>{roleError}</Text> : null}</View> : roleError ? <Text style={styles.error}>{roleError}</Text> : <ActivityIndicator color="#34d399" style={styles.loader} />}</View>
 }
 
 function ReviewPanel({ review, busy, onClose, onDecision }: { review: { actionId: string; requests: MobileActionReviewItem[] }; busy: boolean; onClose: () => void; onDecision: (request: MobileActionReviewItem) => void }) {
@@ -245,6 +272,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#e2e8f0', fontSize: 15, fontWeight: '900' },
   detail: { backgroundColor: '#172033', borderColor: '#334155', borderRadius: 16, borderWidth: 1, padding: 14, marginTop: 8, marginBottom: 16 },
   rolesPanel: { borderTopColor: '#334155', borderTopWidth: 1, marginTop: 14, paddingTop: 14, gap: 8 },
+  transferPanel: { borderTopColor: '#334155', borderTopWidth: 1, marginTop: 8, paddingTop: 8, gap: 8 },
   rolePeople: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 4 },
   rolePerson: { borderColor: '#475569', borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8 },
   rolePersonSelected: { backgroundColor: '#064e3b', borderColor: '#34d399' },

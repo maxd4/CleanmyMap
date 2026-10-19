@@ -53,6 +53,10 @@ export type MobileFieldRoleState = {
   confirmedParticipants: MobileFieldRoleParticipant[]
   organizers: Array<{ userId: string; displayName: string; handle: string | null; isPrimary: boolean }>
   pendingTransfer: { id: string; successor_user_id: string; status: string } | null
+  transferProposals: Array<{ id: string; action_id: string; current_primary_user_id: string; successor_user_id: string; status: string; expires_at: string; decided_at: string | null; decision_reason: string | null }>
+  canProposeTransfer?: boolean
+  canRejectTransfer?: boolean
+  currentUserId?: string
 }
 
 type MobileActionsPayload = {
@@ -217,6 +221,20 @@ export async function updateMobileActionFieldRoles(actionId: string, userId: str
     method: 'PUT',
     body: JSON.stringify({ userId, roleCodes }),
   })
+}
+
+export async function proposeMobileActionFieldRoleTransfer(actionId: string, successorUserId: string) {
+  return mobileRequest<{ status: string; proposal: MobileFieldRoleState['transferProposals'][number] }>(
+    `/api/actions/${encodeURIComponent(actionId)}/field-roles/transfer`,
+    { method: 'POST', body: JSON.stringify({ successorUserId }) },
+  )
+}
+
+export async function respondMobileActionFieldRoleTransfer(actionId: string, proposalId: string, decision: 'accept' | 'reject', reason?: string) {
+  return mobileRequest<{ status: string; proposal: MobileFieldRoleState['transferProposals'][number] }>(
+    `/api/actions/${encodeURIComponent(actionId)}/field-roles/transfer`,
+    { method: 'PATCH', body: JSON.stringify({ proposalId, decision, ...(reason ? { reason } : {}) }) },
+  )
 }
 
 export async function createMobileSignalement(payload: {

@@ -450,7 +450,7 @@ export const actionsAuthorizationContract = {
     PATCH: {
       expected: "Successor accepts or authorized actor rejects a pending primary-organizer transfer",
       dimensions: ["authentication", "business permission", "ownership", "audit"],
-      actual: "requireActionRequestAccess + resolveActionFieldRoleAccess + transactional respond_action_field_role_transfer RPC",
+      actual: "requireActionRequestAccess + resolveActionFieldRoleAccess + action-scoped transactional respond_action_field_role_transfer RPC; PostgreSQL rechecks the lifecycle, proposal ownership and terminal decision before mutating",
       evidence: ["requireActionRequestAccess", "resolveActionFieldRoleAccess", "respondToActionFieldRoleTransfer"],
     },
   },

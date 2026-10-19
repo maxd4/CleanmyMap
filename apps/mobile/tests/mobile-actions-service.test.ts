@@ -12,13 +12,17 @@ import {
   loadMobileActionDay,
   loadMobileActionDetail,
   loadMobileActionEditor,
+  loadMobileActionFieldRoles,
   loadMobileActions,
   loadMyMobileSignalements,
   publishMobileAction,
+  proposeMobileActionFieldRoleTransfer,
   requestFutureAction,
+  respondMobileActionFieldRoleTransfer,
   respondToInvitation,
   reviewActionRequest,
   updateMobileAction,
+  updateMobileActionFieldRoles,
 } from '../lib/mobile-actions-service'
 
 describe('mobile actions transport', () => {
@@ -66,6 +70,18 @@ describe('mobile actions transport', () => {
 
     expect(requestMock).toHaveBeenNthCalledWith(1, '/api/mobile/actions', { method: 'POST', body: JSON.stringify({ actionId: 'action-1', intent: 'join' }) })
     expect(requestMock).toHaveBeenNthCalledWith(2, '/api/mobile/actions/invitations', { method: 'PATCH', body: JSON.stringify({ registrationId: 'registration-1', decision: 'reject' }) })
+  })
+
+  it('keeps field-role transfer transport action-scoped for Clerk bearer routes', async () => {
+    await loadMobileActionFieldRoles('action/1')
+    await updateMobileActionFieldRoles('action/1', 'user/1', ['group_lead'])
+    await proposeMobileActionFieldRoleTransfer('action/1', 'successor/1')
+    await respondMobileActionFieldRoleTransfer('action/1', 'proposal-1', 'reject', 'Indisponible')
+
+    expect(requestMock).toHaveBeenNthCalledWith(1, '/api/actions/action%2F1/field-roles')
+    expect(requestMock).toHaveBeenNthCalledWith(2, '/api/actions/action%2F1/field-roles', { method: 'PUT', body: JSON.stringify({ userId: 'user/1', roleCodes: ['group_lead'] }) })
+    expect(requestMock).toHaveBeenNthCalledWith(3, '/api/actions/action%2F1/field-roles/transfer', { method: 'POST', body: JSON.stringify({ successorUserId: 'successor/1' }) })
+    expect(requestMock).toHaveBeenNthCalledWith(4, '/api/actions/action%2F1/field-roles/transfer', { method: 'PATCH', body: JSON.stringify({ proposalId: 'proposal-1', decision: 'reject', reason: 'Indisponible' }) })
   })
 
   it('posts action creation and signalement payloads without local result calculations', async () => {

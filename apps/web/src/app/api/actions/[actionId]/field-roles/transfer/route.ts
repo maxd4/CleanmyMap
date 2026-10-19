@@ -59,12 +59,17 @@ export async function PATCH(request: Request, context: Context) {
     const access = await resolveActionFieldRoleAccess(actionId.trim(), auth.userId);
     if (!access.ok) return NextResponse.json({ error: access.status === 404 ? "Action introuvable." : "Accès refusé." }, { status: access.status });
     const proposal = await respondToActionFieldRoleTransfer(access.supabase, {
+      actionId: actionId.trim(),
       proposalId: parsed.data.proposalId,
       actorId: auth.userId,
       decision: parsed.data.decision,
       actorIsGlobalAdmin: access.isGlobalAdmin,
       reason: parsed.data.reason,
     });
+    const expectedStatus = parsed.data.decision === "accept" ? "accepted" : "rejected";
+    if (proposal.status !== expectedStatus) {
+      return NextResponse.json({ error: "Cette proposition n’est plus disponible.", proposal }, { status: 409 });
+    }
     // Justification Vercel: transfer state is private and must remain uncached.
     return NextResponse.json({ status: "ok", proposal }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
