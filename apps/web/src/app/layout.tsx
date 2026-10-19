@@ -59,13 +59,13 @@ export default async function RootLayout({
             allowedRedirectOrigins={clerkRuntime.allowedRedirectOrigins}
           >
             <PostHogProvider>
-              <RootLayoutChrome />
               <a
                 href="#main-content"
                 className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-md bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-lg transition-transform focus-visible:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
               >
                 Aller au contenu principal
               </a>
+              <RootLayoutChrome />
               <main
                 id="main-content"
                 tabIndex={-1}

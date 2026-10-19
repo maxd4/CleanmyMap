@@ -23,6 +23,13 @@ function countMainElements(source: string): number {
 
 describe("public HTML landmarks", () => {
   it("provides a keyboard skip link targeting the stable root main", () => {
+    const skipLinkPosition = rootLayout.indexOf('<a\n                href="#main-content"');
+    const rootLayoutChromePosition = rootLayout.indexOf("<RootLayoutChrome />");
+    const mainPosition = rootLayout.indexOf('<main\n                id="main-content"');
+
+    expect(skipLinkPosition).toBeGreaterThanOrEqual(0);
+    expect(rootLayoutChromePosition).toBeGreaterThan(skipLinkPosition);
+    expect(mainPosition).toBeGreaterThan(rootLayoutChromePosition);
     expect(rootLayout).toContain('href="#main-content"');
     expect(rootLayout).toContain("Aller au contenu principal");
     expect(rootLayout).toContain('id="main-content"');

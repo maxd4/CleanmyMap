@@ -19,22 +19,13 @@ async function assertFocusedControlIsVisible(page: Page): Promise<void> {
 }
 
 test.describe("accessibility Lighthouse keyboard criteria", () => {
-  test("home exposes one landmark main and a visible skip-link focus target", async ({ page }) => {
+  test("home focuses the skip link first and keeps global navigation keyboard accessible", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
-    await dismissCookies(page);
 
     await expect(page.getByRole("main")).toHaveCount(1);
     const skipLink = page.getByRole("link", { name: "Aller au contenu principal" });
     await expect(skipLink).toBeAttached();
-    let skipLinkReached = false;
-    for (let index = 0; index < 40; index += 1) {
-      await page.keyboard.press("Tab");
-      if (await skipLink.evaluate((element) => element === document.activeElement)) {
-        skipLinkReached = true;
-        break;
-      }
-    }
-    expect(skipLinkReached, "skip link must be reachable in the document tab order").toBe(true);
+    await page.keyboard.press("Tab");
     await expect(skipLink).toBeFocused();
     await assertFocusedControlIsVisible(page);
     await expect(skipLink).toHaveCSS("outline-style", /solid|dashed|dotted/);
@@ -42,9 +33,9 @@ test.describe("accessibility Lighthouse keyboard criteria", () => {
     await page.keyboard.press("Enter");
     await expect(page.locator("#main-content")).toBeFocused();
     await page.keyboard.press("Shift+Tab");
-    await expect(skipLink).toBeFocused();
-    await page.keyboard.press("Escape");
-    await expect(skipLink).toBeFocused();
+    await expect(page.locator('nav[aria-label="Barre de navigation principale"] :focus')).toHaveCount(1);
+
+    await dismissCookies(page);
   });
 
   test("route page does not expose list items as synthetic buttons", async ({ page }) => {
