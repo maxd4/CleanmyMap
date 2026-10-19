@@ -93,6 +93,7 @@ const CURRENT_SOURCE_TABLES = new Set([
   "action_geometry_contributions",
   "spogomi_recognition_attestations",
   "community_bug_reports",
+  "action_role_attestations",
 ]);
 
 export function asGamificationMetadata(value: unknown): Record<string, unknown> {

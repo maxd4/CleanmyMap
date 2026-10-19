@@ -25,6 +25,7 @@ import {
 } from "@/components/profil/impact-card-export";
 import type { GamificationBadgeDefinition } from "@/lib/gamification/progression-types";
 import type { EngagementStatus } from "@/lib/gamification/engagement-status";
+import { ACTION_FIELD_ROLE_OPTIONS } from "@/lib/actions/field-roles";
 
 type ImpactPageProgression = {
   currentLevel: number;
@@ -39,7 +40,17 @@ type ImpactPageProgression = {
   badges?: string[];
   badgeCatalog?: readonly GamificationBadgeDefinition[];
   engagementStatus?: EngagementStatus;
+  history?: {
+    timeline: Array<{
+      id: string;
+      actionDate: string;
+      locationLabel: string;
+      validatedRoleCodes: string[];
+    }>;
+  };
 };
+
+const FIELD_ROLE_LABELS = new Map<string, string>(ACTION_FIELD_ROLE_OPTIONS.map((role) => [role.code, role.label]));
 
 type GamificationMeResponse = {
   status: "ok";
@@ -184,6 +195,7 @@ export default function ImpactProfilePage() {
   }
 
   const prog = meData?.progression;
+  const validatedRoleHistory = prog?.history?.timeline.filter((item) => item.validatedRoleCodes.length > 0) ?? [];
 
   if (!currentAccountIdentity) {
     return (
@@ -195,7 +207,7 @@ export default function ImpactProfilePage() {
         lockedPreview={
           <div className="grid gap-8 md:grid-cols-2">
             <div className={cn("rounded-[2rem] border p-6", classes.surface)}>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-400/60">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-red-400/60">
                 Aperçu verrouillé
               </p>
               <div className="mt-4 rounded-2xl border border-white/5 bg-red-400/5 p-5">
@@ -206,7 +218,7 @@ export default function ImpactProfilePage() {
               </div>
             </div>
             <div className={cn("rounded-[2rem] border p-6", classes.surface)}>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-400/60">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-red-400/60">
                 Actions disponibles
               </p>
               <div className="mt-4 space-y-3">
@@ -237,14 +249,14 @@ export default function ImpactProfilePage() {
       <header className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <Link
           href={DASHBOARD_ROUTE}
-          className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-red-400/40 transition-colors hover:text-red-400"
+          className="group flex items-center gap-3 text-xs font-black uppercase tracking-[0.2em] text-red-400/40 transition-colors hover:text-red-400"
         >
           <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
           Retour au cockpit
         </Link>
         <div className="flex items-center gap-3 rounded-full border border-red-400/20 bg-red-400/5 px-6 py-2">
           <ShieldCheck size={14} className="text-red-400" />
-          <h1 className="text-[10px] font-black uppercase tracking-[0.3em] text-red-400/80">
+          <h1 className="text-xs font-black uppercase tracking-[0.3em] text-red-400/80">
             Carte d&apos;impact personnelle
           </h1>
         </div>
@@ -270,7 +282,7 @@ export default function ImpactProfilePage() {
 
         <div className="space-y-10">
           <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-600">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-slate-600">
               <span className="rounded-full border border-red-500/15 bg-red-500/8 px-3 py-1 text-red-700">
                 Carte d&apos;impact personnelle
               </span>
@@ -344,7 +356,7 @@ export default function ImpactProfilePage() {
             <div className="pointer-events-none absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-red-500/10 blur-2xl" />
 
             <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-red-400/40">
+              <p className="text-xs font-black uppercase tracking-widest text-red-400/40">
                 Méthodologie
               </p>
               <p className="cmm-text-body cmm-text-inverse">
@@ -360,9 +372,49 @@ export default function ImpactProfilePage() {
             </Link>
           </div>
 
+          <section
+            aria-labelledby="validated-role-history-title"
+            className={cn("space-y-4 rounded-[2rem] border p-8", classes.surface)}
+          >
+            <div className="space-y-2">
+              <p className="text-xs font-black uppercase tracking-widest text-red-400/40">
+                Historique personnel
+              </p>
+              <h3 id="validated-role-history-title" className="text-lg font-black tracking-tight text-slate-950">
+                Missions validées
+              </h3>
+              <p className="cmm-text-body">
+                Les rôles affichés ici correspondent uniquement aux attestations confirmées pour vos actions.
+              </p>
+            </div>
+            {validatedRoleHistory.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-4 text-sm text-slate-600">
+                Aucune mission validée dans votre historique.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {validatedRoleHistory.map((item) => (
+                  <li key={item.id} className="rounded-2xl border border-slate-200 bg-white/80 p-4">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <span className="font-bold text-slate-950">{item.locationLabel || "Action terrain"}</span>
+                      <time className="text-xs font-semibold text-slate-500" dateTime={item.actionDate}>{item.actionDate}</time>
+                    </div>
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {item.validatedRoleCodes.map((roleCode) => (
+                        <li key={roleCode} className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-800">
+                          {FIELD_ROLE_LABELS.get(roleCode) ?? roleCode}
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
           <section className={cn("space-y-4 rounded-[2rem] border p-8", classes.surface)}>
             <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-red-400/40">
+              <p className="text-xs font-black uppercase tracking-widest text-red-400/40">
                 Impact collectif
               </p>
               <h3 className="text-lg font-black tracking-tight text-slate-950">

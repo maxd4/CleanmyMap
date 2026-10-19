@@ -13,7 +13,7 @@ import type {
 export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
 export const CURRENT_GAMIFICATION_RULES_VERSION = "gamification-2026.10-v1" as const;
-export const CURRENT_GAMIFICATION_RULES_REVISION = 15 as const;
+export const CURRENT_GAMIFICATION_RULES_REVISION = 16 as const;
 
 export type GamificationCategory =
   | "XP_PROGRESSION"
@@ -32,6 +32,11 @@ export type GamificationXpPolicy =
   | {
       kind: "progression_paliers";
       rule: "common_current_scale";
+    }
+  | {
+      kind: "specialization_thresholds";
+      version: string;
+      xpPerTier: number;
     }
   | {
       kind: "fixed_one_shot";
@@ -104,7 +109,8 @@ export type ProgressionEventType =
   | "moderation_first_impact_correction"
   | "moderation_multi_family"
   | "product_feedback_accepted"
-  | "spogomi_first_referee_certified";
+  | "spogomi_first_referee_certified"
+  | "terrain_specialization_tier_unlock";
 
 export const CURRENT_INFINITE_PROGRESSION_IDS = [
   "participation",
@@ -172,6 +178,7 @@ export type GamificationBadgeDefinition = {
   sourceDomain: string;
   visibility: GamificationVisibility;
   progressionId: CurrentInfiniteProgressionId | null;
+  subProgressionId?: string;
   rule: GamificationBadgeRule;
   xpPolicy: GamificationXpPolicy;
   aliases: readonly string[];
@@ -202,6 +209,7 @@ export type GamificationMechanicDefinition = {
   id: string;
   category: GamificationCategory;
   progressionId: CurrentInfiniteProgressionId | null;
+  subProgressionId?: string;
   xpPolicy: GamificationXpPolicy;
   sourceDomain: string;
   badgeId: string | null;
@@ -559,6 +567,7 @@ export type PersonalTimelineItem = {
   latitude: number | null;
   longitude: number | null;
   manualDrawing: ActionDrawing | null;
+  validatedRoleCodes: string[];
 };
 
 export type PostActionRetentionLoop = {

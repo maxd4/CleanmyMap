@@ -10,6 +10,7 @@ import type {
   GamificationSummaryMilestone,
   GamificationSummaryProgression,
 } from "@/lib/gamification/gamification-summary";
+import { TerrainSpecializationsPanel } from "./terrain-specializations-panel";
 
 type CatalogState = GamificationSummaryProgression["state"] | GamificationSummaryMilestone["state"];
 
@@ -366,6 +367,10 @@ export function GamificationCatalogPanel({
         </div>
         <CatalogGroup title={fr ? "En cours" : "In progress"} items={groups.progressions.inProgress} fr={fr} kind="progression" />
         <CatalogGroup title={fr ? "À découvrir" : "To discover"} items={groups.progressions.toDiscover} fr={fr} kind="progression" />
+      </div>
+
+      <div className="mt-8 border-t border-[#ead8d2] pt-7">
+        <TerrainSpecializationsPanel specializations={summary.terrainSpecializations ?? []} locale={locale} />
       </div>
 
       <div id="gamification-milestones" tabIndex={-1} className="mt-8 border-t border-[#ead8d2] pt-7 scroll-mt-6">

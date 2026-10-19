@@ -38,6 +38,11 @@ import { loadGamificationLedgerEvents } from "./gamification-summary-loader";
 import { buildGamificationSummary } from "./gamification-summary";
 import { CURRENT_GAMIFICATION_RULES_REVISION } from "./progression-types";
 import { buildIndividualLeaderboardForUser } from "./progression-ranking";
+import {
+  buildTerrainSpecializationProgressions,
+  TERRAIN_SPECIALIZATION_EVENT_TYPE,
+} from "./terrain-specializations";
+import { loadTerrainSpecializationEvidence } from "./terrain-specialization-evidence";
 
 type ProgressionEvents = Awaited<ReturnType<typeof loadGamificationLedgerEvents>>;
 type ProgressionStats = Awaited<ReturnType<typeof loadUserProgressionStats>>;
@@ -53,6 +58,7 @@ type UserProgressionInputs = {
   catalog: ProgressionCatalog;
   progressionEvents: ProgressionEvents;
   rulesMigrationState: RulesMigrationState;
+  terrainSpecializationEvidence: Awaited<ReturnType<typeof loadTerrainSpecializationEvidence>>;
 };
 
 type LevelState = {
@@ -65,7 +71,7 @@ type LevelState = {
   badges: UserProgressionResponse["badges"];
 };
 
-function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
+function buildTimelineItems(rows: ActionRow[], validatedRolesByAction: ReadonlyMap<string, string[]>): PersonalTimelineItem[] {
   return rows.map((row) => {
     const quality = actionQualityScoreFromRow(row);
     return {
@@ -85,6 +91,7 @@ function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
       latitude: row.latitude,
       longitude: row.longitude,
       manualDrawing: actionRowToDrawing(row),
+      validatedRoleCodes: validatedRolesByAction.get(row.id) ?? [],
     };
   });
 }
@@ -96,7 +103,7 @@ async function loadUserProgressionInputs(
   const yearToDateStartDate = getYearToDateStartDate();
   const progressionEventsPromise = loadGamificationLedgerEvents(supabase, userId);
   const rulesMigrationStatePromise = loadGamificationRulesMigrationState(supabase, userId);
-  const [stats, rows, annualRows, individualRanking, annualImpact, catalog, progressionEvents, rulesMigrationState] = await Promise.all([
+  const [stats, rows, annualRows, individualRanking, annualImpact, catalog, progressionEvents, rulesMigrationState, terrainSpecializationEvidence] = await Promise.all([
     loadUserProgressionStats(supabase, userId, { events: progressionEventsPromise }),
     loadActionRowsForUser(supabase, userId),
     loadApprovedActionRows(supabase, 10000, yearToDateStartDate),
@@ -108,6 +115,7 @@ async function loadUserProgressionInputs(
     }),
     progressionEventsPromise,
     rulesMigrationStatePromise,
+    loadTerrainSpecializationEvidence(supabase, userId),
   ]);
 
   return {
@@ -119,6 +127,7 @@ async function loadUserProgressionInputs(
     catalog,
     progressionEvents,
     rulesMigrationState,
+    terrainSpecializationEvidence,
   };
 }
 
@@ -176,6 +185,17 @@ function buildProgressionSummary(
         inputs.rulesMigrationState.currentAppliedRulesRevision ?? CURRENT_GAMIFICATION_RULES_REVISION,
       lastAcknowledgedRulesRevision: inputs.rulesMigrationState.lastAcknowledgedRulesRevision ?? 0,
     },
+    terrainSpecializations: buildTerrainSpecializationProgressions(
+      inputs.terrainSpecializationEvidence,
+      inputs.progressionEvents
+        .filter((event) => event.event_type === TERRAIN_SPECIALIZATION_EVENT_TYPE)
+        .map((event) => ({
+          specializationId: event.metadata && typeof event.metadata.specializationId === "string"
+            ? event.metadata.specializationId
+            : undefined,
+          xp_awarded: event.xp_awarded,
+        })),
+    ),
   });
 }
 
@@ -193,8 +213,17 @@ function buildDynamicRanking(
   };
 }
 
-function buildHistory(rows: ActionRow[]): UserProgressionResponse["history"] {
-  const timeline = buildTimelineItems(rows).slice(0, 30);
+function buildHistory(
+  rows: ActionRow[],
+  terrainSpecializationEvidence: UserProgressionInputs["terrainSpecializationEvidence"],
+): UserProgressionResponse["history"] {
+  const validatedRolesByAction = new Map<string, string[]>();
+  for (const evidence of terrainSpecializationEvidence) {
+    const roles = validatedRolesByAction.get(evidence.actionId) ?? [];
+    if (!roles.includes(evidence.roleCode)) roles.push(evidence.roleCode);
+    validatedRolesByAction.set(evidence.actionId, roles.sort());
+  }
+  const timeline = buildTimelineItems(rows, validatedRolesByAction).slice(0, 30);
   return {
     timeline,
     mapPoints: timeline.filter(
@@ -234,7 +263,7 @@ function buildUserProgressionResponse(
     impact: computePersonalImpactMetrics(inputs.rows),
     impactMethodology: buildPersonalImpactMethodology(inputs.stats.qualityAverage),
     dynamicRanking: buildDynamicRanking(inputs.individualRanking),
-    history: buildHistory(inputs.rows),
+    history: buildHistory(inputs.rows, inputs.terrainSpecializationEvidence),
     monthlyMilestone: getCurrentMonthlyMilestone(
       inputs.annualImpact.wasteKg,
       inputs.annualImpact.wasteCoverageRate,

@@ -15,6 +15,7 @@ import type {
 import { CURRENT_GAMIFICATION_RULES_REVISION } from "./progression-types";
 import type { GamificationCatalogItem, GamificationCatalogState } from "./gamification-catalog";
 import type { GamificationLedgerEvent } from "./gamification-summary-loader";
+import type { TerrainSpecializationProgression } from "./terrain-specializations";
 export type { GamificationLedgerEvent } from "./gamification-summary-loader";
 
 export type GamificationSummaryNextLevel = {
@@ -79,6 +80,7 @@ export type GamificationSummary = {
   nextLevel: GamificationSummaryNextLevel;
   progressions: GamificationSummaryProgression[];
   milestones: GamificationSummaryMilestone[];
+  terrainSpecializations?: TerrainSpecializationProgression[];
   xpReconciliation: {
     progressionXp: number;
     milestoneXp: number;
@@ -259,6 +261,7 @@ export function buildGamificationSummary(input: {
     currentAppliedRulesRevision: number;
     lastAcknowledgedRulesRevision: number;
   };
+  terrainSpecializations?: readonly TerrainSpecializationProgression[];
 }): GamificationSummary {
   const contributions = buildXpContributions(input.events);
   const progressions = input.catalog
@@ -283,6 +286,7 @@ export function buildGamificationSummary(input: {
     nextLevel: input.nextLevel,
     progressions,
     milestones,
+    terrainSpecializations: [...(input.terrainSpecializations ?? [])],
     xpReconciliation: {
       progressionXp,
       milestoneXp,

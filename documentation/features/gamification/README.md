@@ -15,6 +15,10 @@ recopie ni les seuils de progression ni les familles de badges.
 - Les dix progressions infinies sont `participation`, `organisation`,
   `exploration`, `clean_zones`, `regularity`, `versatility`, `learning`,
   `moderation`, `cartography` et `product_feedback`.
+- Les sept spécialisations terrain sont des sous-progressions de
+  `participation` ou `organisation` dans ce même registre : elles utilisent
+  les attestations post-action confirmées et le même ledger
+  `progression_events`, sans créer une nouvelle famille globale.
 - Les faits métier restent dans leurs sources. `progression_events` est le
   ledger XP CURRENT et `progression_profiles` sa projection persistante.
 - Les identités et collections de badges sont détenues par

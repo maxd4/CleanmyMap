@@ -81,6 +81,24 @@ Le code et les tests priment si une divergence apparaît.
   `exploration`, `clean_zones`, `regularity`, `versatility`, `learning`,
   `moderation`, `cartography` et `product_feedback` (la modération restant limitée aux comptes
   autorisés par AuthZ).
+- Les spécialisations terrain (`organizer_primary`, `coorganizer`,
+  `group_lead`, `cigarette_butts`, `recyclables`, `household_waste` et
+  `glass`) sont des sous-progressions rattachées à `organisation` ou
+  `participation`. Leur politique versionnée
+  `terrain-specializations-2026.10-v1` compte les actions distinctes dont la
+  mission est attestée, la présence finale est `confirmed` et l'action est
+  `approved`, publiée, visible et `post_action_complete`. Les seuils sont
+  `1, 3, 5, 10, 20`, puis chaque dizaine ; l'XP n'est émise qu'au
+  franchissement. Si plusieurs rôles franchissent un seuil sur la même action,
+  un seul événement crédite le montant le plus élevé, tandis que les autres
+  événements restent des preuves de badge à `0 XP`.
+- Ces événements utilisent `progression_events` avec une identité stable
+  incluant la spécialisation, la version, le palier et l'action. La
+  réconciliation peut donc déplacer ou retirer une preuve après correction
+  d'attestation sans rejouer la récompense d'organisation de base. Une
+  attestation ne confère aucune permission et aucun grade n'est consommé par
+  AuthZ ; les mesures de poids ou de mégots, les inscriptions et les rôles
+  simplement choisis sont exclus.
 - Les jalons CURRENT avec XP sont `Première trace utile`, `Parrainage utile`,
   `Boucle bouclée`, `Mobilisateur`, `Donnée exemplaire` et `Modérateur
   polyvalent`. Les autres jalons CURRENT sont `BADGE_ONLY`.

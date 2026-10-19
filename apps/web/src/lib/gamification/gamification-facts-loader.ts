@@ -20,6 +20,10 @@ import type {
 } from "./gamification-reconstruction";
 import { GAMIFICATION_REGISTRY } from "./progression-utils";
 import { loadSpogomiFirstRefereeFact } from "@/lib/spogomi/gamification-facts";
+import {
+  buildTerrainSpecializationFacts,
+} from "./terrain-specializations";
+import { loadTerrainSpecializationEvidence } from "./terrain-specialization-evidence";
 
 export { buildGeometryContributionFacts } from "./gamification-geometry-facts";
 
@@ -27,7 +31,7 @@ async function loadCurrentGamificationFacts(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<GamificationFacts> {
-  const [actions, counters, visitedResult, quizResult, participantResult, geometryContributionFacts, productFeedback] = await Promise.all([
+  const [actions, counters, visitedResult, quizResult, participantResult, geometryContributionFacts, productFeedback, terrainSpecializationEvidence] = await Promise.all([
     loadActionRowsForUser(supabase, userId),
     loadGamificationUserCounters(supabase, userId),
     supabase.from("user_visited_places").select("place_label, created_at").eq("user_id", userId).limit(10000),
@@ -35,6 +39,7 @@ async function loadCurrentGamificationFacts(
     supabase.from("action_participants").select("action_id, joined_at, updated_at, participation_source").eq("user_id", userId).eq("participation_status", "confirmed").limit(10000),
     loadGeometryContributionFacts(supabase, userId),
     loadProductFeedbackFacts(supabase, userId),
+    loadTerrainSpecializationEvidence(supabase, userId),
   ]);
   if (visitedResult.error) throw new Error(visitedResult.error.message);
   if (quizResult.error) throw new Error(quizResult.error.message);
@@ -44,7 +49,12 @@ async function loadCurrentGamificationFacts(
     actionRows: actions,
   });
   const actionState = await buildActionFacts(supabase, userId, actions, validatedActionIds);
-  const facts: GamificationSourceFact[] = [...actionState.facts, ...geometryContributionFacts, ...productFeedback.facts];
+  const facts: GamificationSourceFact[] = [
+    ...actionState.facts,
+    ...geometryContributionFacts,
+    ...productFeedback.facts,
+    ...buildTerrainSpecializationFacts(userId, terrainSpecializationEvidence),
+  ];
   const spogomiFirstReferee = await loadSpogomiFirstRefereeFact(supabase, userId);
   if (spogomiFirstReferee) facts.push(spogomiFirstReferee);
   const participantRows = (participantResult.data ?? []) as unknown[];

@@ -88,6 +88,9 @@ function buildMetadata(
   fact: GamificationSourceFact,
   logicalId: string,
 ): Record<string, unknown> {
+  const specializationId = rule.mechanicId.startsWith("terrain_specialization:")
+    ? rule.mechanicId.slice("terrain_specialization:".length)
+    : null;
   return {
     ...(fact.metadata ?? {}),
     gamificationEngine: "CURRENT_RECONCILABLE",
@@ -96,6 +99,7 @@ function buildMetadata(
     mechanicId: rule.mechanicId,
     introducedInRulesRevision: rule.introducedInRulesRevision,
     progressionId: rule.progressionId,
+    ...(specializationId ? { specializationId } : {}),
     milestoneId: rule.milestoneId,
     badgeId: rule.badgeId,
     sourceTable: fact.sourceTable,

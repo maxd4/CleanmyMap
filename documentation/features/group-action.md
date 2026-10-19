@@ -228,8 +228,16 @@ la décision), une révision et une ligne dans
 `action_role_attestation_audit`. Une auto-validation ordinaire ne devient pas
 une confirmation : elle reste `pending` jusqu'à l'intervention d'un reviewer
 indépendant ; `admin`/`max` peut traiter son propre cas selon la frontière
-d'autorisation existante. La mission attestée ne donne aucune permission et
-n'alimente pas encore l'XP.
+d'autorisation existante. La mission attestée ne donne aucune permission. Elle
+peut alimenter, après réconciliation seulement, une sous-progression terrain
+lorsqu'elle fait franchir un palier : `1`, `3`, `5`, `10`, `20`, puis chaque
+dizaine. Les sept spécialisations sont rattachées aux familles `organisation`
+ou `participation` et leurs montants sont versionnés dans le registre
+gamification. Une sélection de rôle, une inscription, une présence non
+confirmée ou une mesure déclarée ne produit aucun XP. Plusieurs rôles attestés
+sur une même action conservent tous leurs badges, mais le bonus spécialisé de
+cette action est plafonné au montant le plus élevé ; la récompense
+d'organisation de base reste inchangée.
 
 La mutation RPC verrouille l'action et la participation, est idempotente pour
 un même état, et insère la notification `action_event` de décision dans la

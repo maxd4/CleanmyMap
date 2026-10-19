@@ -64,7 +64,7 @@ projection Supabase relue.
 | Famille | Tables / ressources identifiées | Responsabilité | Règle d'accès |
 |---|---|---|---|
 | Identité produit | `profiles` | Profil, identifiant Clerk, rôles et préférences | Profil ciblé et AuthZ explicite |
-| Actions | `public.actions`, `action_organizers`, `action_registrations`, `action_participants`, `action_field_role_assignments`, `action_role_attestations`, `forms` | Action, organisation, inscription, présence finale, mission prévue et attestation historique | Ressource + owner/organisateur/participant + état ; attestation server-only |
+| Actions | `public.actions`, `action_organizers`, `action_registrations`, `action_participants`, `action_field_role_assignments`, `action_role_attestations`, `forms` | Action, organisation, inscription, présence finale, mission prévue et attestation historique ; les spécialisations gamification en sont une projection réconciliée | Ressource + owner/organisateur/participant + état ; attestation server-only, XP uniquement via `progression_events` |
 | Médias / entraînement | `training_examples`, Supabase Storage | Provenance média, pièces liées aux actions | Accès selon action et contrat Storage |
 | Conversations d'action | `action_conversations`, `action_conversation_members`, `action_conversation_exclusions`, `action_share_contact_requests` | Échanges et audiences associées à l'action | Membres, exclusions, acteur et capacité |
 | Observations carte | `public.trash_spotter_spots` | Signalement (`spot`) et lieu propre (`clean_place`) | Projection publique filtrée, mutation autorisée |

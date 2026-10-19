@@ -2,6 +2,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const ACTION_FIELD_ROLE_OPTIONS = [
   {
+    code: "organizer_primary",
+    label: "Organisateur référent",
+    description: "Responsabilité d’organisation principale attestée après l’action.",
+  },
+  {
+    code: "coorganizer",
+    label: "Coorganisateur",
+    description: "Responsabilité de coorganisation attestée après l’action.",
+  },
+  {
     code: "group_lead",
     label: "Responsable du groupe",
     description: "Coordination du groupe et du déroulé terrain.",

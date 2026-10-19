@@ -95,6 +95,7 @@ describe("gamification badges listing", () => {
           table === "spots" ||
           table === "progression_events" ||
           table === "quiz_type_progress" ||
+          table === "action_role_attestations" ||
           table === "xp_audit"
         ) {
           return createEmptyQueryChain();
@@ -181,6 +182,9 @@ describe("gamification badges listing", () => {
           return createDataQueryChain([], progressionInserts);
         }
         if (table === "quiz_type_progress") {
+          return createDataQueryChain([], []);
+        }
+        if (table === "action_role_attestations") {
           return createDataQueryChain([], []);
         }
         if (table === "xp_audit") {

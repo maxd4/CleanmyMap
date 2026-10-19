@@ -15,6 +15,12 @@ import type {
   ProgressionEventType,
 } from "./progression-types";
 import { CURRENT_SPOGOMI_BADGE_DEFINITIONS } from "./badge-catalog";
+import {
+  TERRAIN_SPECIALIZATIONS,
+  TERRAIN_SPECIALIZATION_EVENT_TYPE,
+  TERRAIN_SPECIALIZATION_RULES_VERSION,
+  TERRAIN_SPECIALIZATION_INTRODUCED_REVISION,
+} from "./terrain-specializations";
 export { CURRENT_MILESTONES } from "./current-milestones";
 export { CURRENT_INFINITE_PROGRESSIONS } from "./current-progressions";
 
@@ -87,9 +93,29 @@ const CURRENT_SPOGOMI_COLLECTION_MECHANICS = CURRENT_SPOGOMI_BADGE_DEFINITIONS.m
   description: definition.rule.description,
 })) satisfies readonly GamificationMechanicDefinition[];
 
+const CURRENT_TERRAIN_SPECIALIZATION_MECHANICS = TERRAIN_SPECIALIZATIONS.map((specialization) => ({
+  id: `terrain_specialization:${specialization.id}`,
+  category: "XP_PROGRESSION" as const,
+  progressionId: specialization.parentProgressionId,
+  subProgressionId: specialization.id,
+  xpPolicy: {
+    kind: "specialization_thresholds" as const,
+    version: TERRAIN_SPECIALIZATION_RULES_VERSION,
+    xpPerTier: specialization.xpPerTier,
+  },
+  sourceDomain: specialization.sourceDomain,
+  badgeId: specialization.badgeId,
+  milestoneId: null,
+  visibility: "current_user" as const,
+  rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+  introducedInRulesRevision: TERRAIN_SPECIALIZATION_INTRODUCED_REVISION,
+  description: specialization.description,
+})) satisfies readonly GamificationMechanicDefinition[];
+
 export const GAMIFICATION_REGISTRY = [
   ...CURRENT_INFINITE_PROGRESSIONS,
   ...CURRENT_MILESTONES,
+  ...CURRENT_TERRAIN_SPECIALIZATION_MECHANICS,
   ...CURRENT_SPOGOMI_COLLECTION_MECHANICS,
   ...NON_GAMIFIED_SIGNALS,
 ] as const satisfies readonly GamificationMechanicDefinition[];
@@ -266,6 +292,10 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   spogomi_first_referee_certified: {
     classification: "milestone",
     milestoneId: "spogomi_first_referee",
+  },
+  [TERRAIN_SPECIALIZATION_EVENT_TYPE]: {
+    classification: "non_progression",
+    reason: "Les événements de spécialisation sont construits par la policy terrain et rattachés à Organisation ou Participation.",
   },
 };
 export function currentInfiniteProgressions(): readonly GamificationProgressionDefinition[] {

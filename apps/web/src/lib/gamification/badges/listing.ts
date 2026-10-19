@@ -19,6 +19,12 @@ import {
   type LearningProgressionSummary,
 } from "../quiz-learning-progression";
 import { BADGE_DEFINITIONS } from "../badge-catalog";
+import {
+  buildTerrainSpecializationProgressions,
+  TERRAIN_SPECIALIZATION_EVENT_TYPE,
+} from "../terrain-specializations";
+import { loadTerrainSpecializationEvidence } from "../terrain-specialization-evidence";
+import { loadGamificationLedgerEvents, type GamificationLedgerEvent } from "../gamification-summary-loader";
 
 const CLEAN_ZONE_SOURCE_LIMIT = 1000;
 
@@ -117,14 +123,47 @@ function appendBadges(
   target.push(...source);
 }
 
+function buildTerrainSpecializationBadges(
+  evidence: Awaited<ReturnType<typeof loadTerrainSpecializationEvidence>>,
+  events: GamificationLedgerEvent[],
+): GamificationBadgeEntry[] {
+  const progressions = buildTerrainSpecializationProgressions(
+    evidence,
+    events
+      .filter((event) => event.event_type === TERRAIN_SPECIALIZATION_EVENT_TYPE)
+      .map((event) => ({
+        specializationId: event.metadata && typeof event.metadata.specializationId === "string"
+          ? event.metadata.specializationId
+          : undefined,
+        xp_awarded: event.xp_awarded,
+      })),
+  );
+  return progressions.map((progression) => ({
+    id: `${progression.badgeId}:current`,
+    definitionId: progression.badgeId,
+    family: `terrain-specialization:${progression.id}`,
+    status: "CURRENT" as const,
+    scale: progression.parentProgressionId === "organisation" ? "gem" : "participant",
+    name: progression.label,
+    description: progression.description,
+    icon: "🛡️",
+    unlocked: progression.started,
+    progress: { current: progression.verifiedActionCount, target: progression.nextThreshold },
+    visualVariant: "terrain-specialization",
+    tooltip: `Palier ${progression.currentTier || 0} · ${progression.verifiedActionCount} action(s) vérifiée(s)`,
+  }));
+}
+
 export async function loadGamificationBadgesList(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<GamificationBadgesListPayload> {
-  const [counters, cleanZoneSources, learningProgression] = await Promise.all([
+  const [counters, cleanZoneSources, learningProgression, terrainEvidence, ledgerEvents] = await Promise.all([
     loadGamificationUserCounters(supabase, userId),
     loadCleanZoneSourcesForUser(supabase, userId),
     loadQuizLearningProgression(supabase, userId),
+    loadTerrainSpecializationEvidence(supabase, userId),
+    loadGamificationLedgerEvents(supabase, userId),
   ]);
 
   const {
@@ -144,6 +183,7 @@ export async function loadGamificationBadgesList(
   appendBadges(badges, participantBadges);
 
   appendBadges(badges, buildOrganisationBadges(completeActionsCount));
+  appendBadges(badges, buildTerrainSpecializationBadges(terrainEvidence, ledgerEvents));
 
   const legacyBadges = buildActionBadges(actionsCount, completeActionsCount);
   appendBadges(badges, legacyBadges);

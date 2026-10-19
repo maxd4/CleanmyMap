@@ -5,6 +5,7 @@ import type {
   GamificationProgressionDefinition,
   MilestoneDefinition,
 } from "./progression-types";
+import { TERRAIN_SPECIALIZATIONS } from "./terrain-specializations";
 
 function progressionBadgeDefinition(
   progression: GamificationProgressionDefinition,
@@ -44,6 +45,26 @@ function milestoneBadgeDefinition(
   };
 }
 
+const CURRENT_TERRAIN_SPECIALIZATION_BADGE_DEFINITIONS = TERRAIN_SPECIALIZATIONS.map((specialization) => ({
+  id: specialization.badgeId,
+  family: `terrain-specialization:${specialization.id}`,
+  status: "CURRENT" as const,
+  label: specialization.label,
+  scale: specialization.parentProgressionId === "organisation" ? "gem" as const : "participant" as const,
+  metric: "verified_role_attestation_actions",
+  sourceDomain: specialization.sourceDomain,
+  visibility: "current_user" as const,
+  progressionId: specialization.parentProgressionId,
+  subProgressionId: specialization.id,
+  rule: { kind: "infinite_thresholds" as const, description: specialization.description },
+  xpPolicy: {
+    kind: "specialization_thresholds" as const,
+    version: "terrain-specializations-2026.10-v1",
+    xpPerTier: specialization.xpPerTier,
+  },
+  aliases: [],
+}));
+
 /** Canonical identities for repeatable SPOGOMI collection instances. */
 export const CURRENT_SPOGOMI_BADGE_DEFINITIONS = [
   ["spogomi_collector", "Ramasseur SPOGOMI", "Collecte réellement effectuée et présence confirmée."],
@@ -74,6 +95,7 @@ export const CURRENT_SPOGOMI_BADGE_DEFINITIONS = [
 /** Canonical badge identity catalog for every gamification surface. */
 export const CURRENT_BADGE_DEFINITIONS = [
   ...CURRENT_INFINITE_PROGRESSIONS.map(progressionBadgeDefinition),
+  ...CURRENT_TERRAIN_SPECIALIZATION_BADGE_DEFINITIONS,
   ...CURRENT_MILESTONES.map(milestoneBadgeDefinition),
   ...CURRENT_SPOGOMI_BADGE_DEFINITIONS,
 ] as const satisfies readonly GamificationBadgeDefinition[];

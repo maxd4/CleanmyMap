@@ -207,4 +207,35 @@ describe("buildCatalogGroups", () => {
     expect(markup).toContain('href="/sections/feedback#bug"');
     expect(markup).toContain("Envoyer un feedback");
   });
+
+  it("renders terrain specializations as sub-progressions with verified counts and earned XP", () => {
+    const markup = renderToStaticMarkup(createElement(GamificationCatalogPanel, {
+      summary: summary({
+        terrainSpecializations: [{
+          id: "glass",
+          roleCode: "glass_bag_lead",
+          label: "Responsable verre",
+          description: "Mission attestée.",
+          parentProgressionId: "participation",
+          badgeId: "terrain-specialization-glass",
+          verifiedActionCount: 3,
+          currentTier: 3,
+          nextThreshold: 5,
+          actionsRemaining: 2,
+          xpObtained: 0.25,
+          started: true,
+        }],
+      }),
+      loading: false,
+      error: null,
+      locale: "fr",
+    }));
+
+    expect(markup).toContain("Spécialisations terrain");
+    expect(markup).toContain("Responsable verre");
+    expect(markup).toContain("Actions vérifiées");
+    expect(markup).toContain("XP réellement obtenue :");
+    expect(markup).toContain("0,25 XP");
+    expect(markup).toContain("Un badge ne donne aucune permission");
+  });
 });

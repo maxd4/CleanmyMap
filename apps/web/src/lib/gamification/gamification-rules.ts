@@ -20,6 +20,12 @@ import {
   type ProgressionEventType,
 } from "./progression-types";
 import { PRODUCT_FEEDBACK_THRESHOLDS } from "./gamification-feedback-facts";
+import {
+  TERRAIN_SPECIALIZATIONS,
+  TERRAIN_SPECIALIZATION_EVENT_TYPE,
+  TERRAIN_SPECIALIZATION_RULES_VERSION,
+  TERRAIN_SPECIALIZATION_INTRODUCED_REVISION,
+} from "./terrain-specializations";
 
 type GamificationAwardPolicy =
   | { kind: "fixed"; amount: number }
@@ -146,10 +152,29 @@ function buildCurrentRules(): GamificationRulesV1 {
       introducedInRulesRevision: mechanic.introducedInRulesRevision,
     }));
 
+  const terrainSpecializationRules: GamificationRule[] = TERRAIN_SPECIALIZATIONS.map((specialization) => ({
+    mechanicId: `terrain_specialization:${specialization.id}`,
+    category: "XP_PROGRESSION",
+    eventType: TERRAIN_SPECIALIZATION_EVENT_TYPE,
+    progressionId: specialization.parentProgressionId,
+    milestoneId: null,
+    badgeId: specialization.badgeId,
+    sourceDomain: specialization.sourceDomain,
+    xpPolicy: {
+      kind: "specialization_thresholds",
+      version: TERRAIN_SPECIALIZATION_RULES_VERSION,
+      xpPerTier: specialization.xpPerTier,
+    },
+    awardPolicy: { kind: "fact", field: "xpAwarded" },
+    eligibility: { kind: "canonical_fact", factKey: "validated_role_attestation" },
+    thresholds: [],
+    introducedInRulesRevision: TERRAIN_SPECIALIZATION_INTRODUCED_REVISION,
+  }));
+
   return {
     version: CURRENT_GAMIFICATION_RULES_VERSION,
     rulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
-    mechanics: [...eventRules, ...nonGamifiedRules],
+    mechanics: [...eventRules, ...terrainSpecializationRules, ...nonGamifiedRules],
   };
 }
 

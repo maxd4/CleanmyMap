@@ -313,6 +313,50 @@ Le total XP global est la somme des événements actifs des dix progressions et
 des jalons `XP_MILESTONE` autorisés par le registre. Aucun event type ne crée
 un second ledger ou une balance par famille.
 
+### Sous-progressions de spécialisations terrain
+
+Les responsabilités terrain validées après l'action sont sept
+sous-progressions, et non sept progressions globales supplémentaires :
+
+| Identifiant stable | Libellé | Famille parente | Rôle métier | XP par palier |
+| --- | --- | --- | --- | ---: |
+| `organizer_primary` | Organisateur référent | `organisation` | `organizer_primary` | 1 |
+| `coorganizer` | Coorganisateur | `organisation` | `coorganizer` | 0,75 |
+| `group_lead` | Responsable de groupe | `participation` | `group_lead` | 0,5 |
+| `cigarette_butts` | Responsable mégots | `participation` | `cigarette_bag_lead` | 0,4 |
+| `recyclables` | Responsable recyclables | `participation` | `recyclable_bag_lead` | 0,25 |
+| `household_waste` | Responsable ordures ménagères | `participation` | `household_waste_bag_lead` | 0,25 |
+| `glass` | Responsable verre | `participation` | `glass_bag_lead` | 0,25 |
+
+La politique versionnée `terrain-specializations-2026.10-v1` compte les
+actions distinctes dont l'utilisateur possède une attestation `confirmed`, une
+participation finale `action_participants.confirmed` et une action
+`approved`, publiée, visible et `post_action_complete`. Le rôle prévu,
+l'inscription, l'invitation, une présence non confirmée, une action
+inéligible, un changement de quantité de déchets ou une attribution faite par
+la seule sélection du rôle ne sont jamais des faits XP. Pour
+`organizer_primary` et `coorganizer`, l'attestation conserve l'instantané de la
+provenance `action_organizers` observée au moment de la décision ; une
+modification ultérieure ne réécrit pas l'histoire.
+
+Les seuils sont `1`, `3`, `5`, `10`, `20`, puis un seuil tous les dix
+accomplissements supplémentaires, sans borne supérieure. Chaque couple
+`(utilisateur, action, rôle)` est dédoublonné. Les franchissements de
+spécialisations distinctes sur une même action conservent leurs badges et
+leurs preuves, mais un seul bonus spécialisé est crédité, égal au montant le
+plus élevé. Le bonus d'organisation de base, historiquement égal à `1 XP` par
+action validée réparti entre organisateurs reconnus, reste indépendant et
+inchangé.
+
+Les événements `terrain_specialization_tier_unlock` sont reconstruits depuis
+ces preuves et écrits uniquement dans `progression_events`. Leur identité
+stable contient la spécialisation, la version, le palier et l'action ; une
+correction ou un retrait d'attestation fait donc l'objet d'une mise à jour ou
+d'une rétraction par la réconciliation, sans cumul lors d'une reconstruction.
+Les badges affichent le palier, le compteur d'actions vérifiées, le prochain
+seuil et l'effort restant indéfiniment. Ils ne constituent ni une certification
+professionnelle, ni une habilitation réglementaire, ni une permission AuthZ.
+
 La progression `cartography` reconnaît une contribution terrain acceptée sur
 une action distincte. Plusieurs GPX ou missions du même utilisateur sur la
 même action valent une seule contribution ; GPX puis mobile restent une seule
