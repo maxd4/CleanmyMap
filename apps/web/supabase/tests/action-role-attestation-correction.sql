@@ -26,7 +26,10 @@ insert into public.actions (
   '2030-01-15T12:00:00Z'::timestamptz, 'action', 'post_action_complete', '{}'::jsonb, 'visible'
 );
 insert into public.action_organizers (action_id, organizer_clerk_id, organizer_label, is_primary)
-values ('11111111-1111-4111-8111-111111111111'::uuid, 'role-attestation-contract-reviewer', 'Contract reviewer', true);
+values
+  ('11111111-1111-4111-8111-111111111111'::uuid, 'role-attestation-contract-reviewer', 'Contract reviewer', true),
+  ('11111111-1111-4111-8111-111111111111'::uuid, 'role-attestation-contract-second-reviewer', 'Second contract reviewer', false),
+  ('11111111-1111-4111-8111-111111111111'::uuid, 'role-attestation-contract-user', 'Participant reviewer', false);
 insert into public.action_participants (action_id, user_id, participation_status, participation_source)
 values ('11111111-1111-4111-8111-111111111111'::uuid, 'role-attestation-contract-user', 'confirmed', 'group_form');
 insert into public.action_field_role_assignments (
@@ -46,14 +49,14 @@ select public.review_action_role_attestation(
   'group_lead', 'confirm', 'role-attestation-contract-reviewer', null, false
 );
 do $$
-declare v_status text; v_audit_count bigint; v_notice_count bigint;
+declare v_status text; v_revision integer; v_audit_count bigint; v_notice_count bigint;
 begin
-  select verification_status into v_status
+  select verification_status, revision into v_status, v_revision
     from public.action_role_attestations
    where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
   select count(*) into v_audit_count from public.action_role_attestation_audit where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
   select count(*) into v_notice_count from public.app_notifications where user_id = 'role-attestation-contract-user' and payload ->> 'actionId' = '11111111-1111-4111-8111-111111111111';
-  if v_status <> 'confirmed' or v_audit_count <> 1 or v_notice_count <> 1 then
+  if v_status <> 'confirmed' or v_revision <> 1 or v_audit_count <> 1 or v_notice_count <> 1 then
     raise exception 'first confirmation contract failed';
   end if;
 end $$;
@@ -64,15 +67,16 @@ select public.review_action_role_attestation(
   'group_lead', 'confirm', 'role-attestation-contract-reviewer', null, false
 );
 do $$
-declare v_audit_count bigint; v_notice_count bigint;
+declare v_revision integer; v_audit_count bigint; v_notice_count bigint;
 begin
+  select revision into v_revision from public.action_role_attestations where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
   select count(*) into v_audit_count from public.action_role_attestation_audit where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
   select count(*) into v_notice_count from public.app_notifications where user_id = 'role-attestation-contract-user' and payload ->> 'actionId' = '11111111-1111-4111-8111-111111111111';
-  if v_audit_count <> 1 or v_notice_count <> 1 then raise exception 'idempotent retry created a side effect'; end if;
+  if v_revision <> 1 or v_audit_count <> 1 or v_notice_count <> 1 then raise exception 'idempotent retry created a side effect'; end if;
 end $$;
 commit;
 
-begin
+begin;
 set local role service_role;
 do $$
 begin
@@ -88,7 +92,7 @@ begin
   begin
     perform public.review_action_role_attestation(
       '11111111-1111-4111-8111-111111111111', 'role-attestation-contract-user',
-      'group_lead', 'confirm', 'role-attestation-contract-reviewer', null, false
+      'group_lead', 'confirm', 'role-attestation-contract-second-reviewer', null, false
     );
     raise exception 'terminal correction without a reason was accepted';
   exception when others then
@@ -104,12 +108,12 @@ select public.review_action_role_attestation(
   'group_lead', 'reject', 'role-attestation-contract-reviewer', 'explicit rejection', false
 );
 do $$
-declare v_status text; v_audit_count bigint; v_notice_count bigint;
+declare v_status text; v_revision integer; v_audit_count bigint; v_notice_count bigint;
 begin
-  select verification_status into v_status from public.action_role_attestations where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
+  select verification_status, revision into v_status, v_revision from public.action_role_attestations where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
   select count(*) into v_audit_count from public.action_role_attestation_audit where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
   select count(*) into v_notice_count from public.app_notifications where user_id = 'role-attestation-contract-user' and payload ->> 'actionId' = '11111111-1111-4111-8111-111111111111';
-  if v_status <> 'rejected' or v_audit_count <> 2 or v_notice_count <> 2 then raise exception 'reasoned correction contract failed'; end if;
+  if v_status <> 'rejected' or v_revision <> 2 or v_audit_count <> 2 or v_notice_count <> 2 then raise exception 'reasoned correction contract failed'; end if;
 end $$;
 
 -- A self-review remains pending and does not emit a terminal notification.
@@ -118,11 +122,14 @@ select public.review_action_role_attestation(
   'group_lead', 'confirm', 'role-attestation-contract-user', 'self review pending', false
 );
 do $$
-declare v_status text; v_notice_count bigint;
+declare v_status text; v_revision integer; v_audit_count bigint; v_notice_count bigint;
 begin
-  select verification_status into v_status from public.action_role_attestations where action_id = '11111111-1111-4111-111111111111'::uuid;
+  select verification_status, revision into v_status, v_revision
+    from public.action_role_attestations
+   where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
+  select count(*) into v_audit_count from public.action_role_attestation_audit where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
   select count(*) into v_notice_count from public.app_notifications where user_id = 'role-attestation-contract-user' and payload ->> 'actionId' = '11111111-1111-4111-8111-111111111111';
-  if v_status <> 'pending' or v_notice_count <> 2 then raise exception 'self-review pending contract failed'; end if;
+  if v_status <> 'pending' or v_revision <> 3 or v_audit_count <> 3 or v_notice_count <> 2 then raise exception 'self-review pending contract failed'; end if;
 end $$;
 commit;
 

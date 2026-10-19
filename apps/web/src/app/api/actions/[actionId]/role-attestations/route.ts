@@ -161,9 +161,6 @@ export async function POST(request: Request, context: Context) {
     if (parsed.data.decision === "reject" && !reason) {
       return validationErrorResponse({ reason: ["Un motif est requis pour rejeter une mission."] });
     }
-    if (current && current.verification_status !== "pending" && !reason) {
-      return validationErrorResponse({ reason: ["Un motif est requis pour corriger une décision."] });
-    }
     const policy = evaluateRoleAttestationPolicy({
       actionFinalized: isActionFinalizedForRoleAttestation(access.action),
       participationStatus: (participationResult.data as { participation_status?: string } | null)?.participation_status,
@@ -177,6 +174,8 @@ export async function POST(request: Request, context: Context) {
       decision: parsed.data.decision,
       reason,
       currentStatus: current?.verification_status ?? null,
+      currentReviewerUserId: current?.reviewer_clerk_id ?? null,
+      currentDecisionReason: current?.decision_reason ?? null,
     });
     if (!policy.allowed && policy.status === "denied") {
       return noStoreResponse({ error: "La décision n’est pas compatible avec les preuves requises pour cette mission." }, 409);

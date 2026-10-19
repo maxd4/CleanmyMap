@@ -42,6 +42,35 @@ describe("role attestation policy", () => {
     expect(evaluateRoleAttestationPolicy({ ...base, currentStatus: "confirmed", reason: "Correction auditée" })).toEqual({ allowed: true, status: "confirmed" });
   });
 
+  it("allows only a strictly identical terminal retry without a new reason", () => {
+    expect(evaluateRoleAttestationPolicy({
+      ...base,
+      currentStatus: "confirmed",
+      currentReviewerUserId: "reviewer-1",
+      currentDecisionReason: null,
+    })).toEqual({ allowed: true, status: "confirmed" });
+    expect(evaluateRoleAttestationPolicy({
+      ...base,
+      reason: "  Correction auditée  ",
+      currentStatus: "confirmed",
+      currentReviewerUserId: "reviewer-1",
+      currentDecisionReason: "Correction auditée",
+    })).toEqual({ allowed: true, status: "confirmed" });
+    expect(evaluateRoleAttestationPolicy({
+      ...base,
+      currentStatus: "confirmed",
+      currentReviewerUserId: "reviewer-2",
+      currentDecisionReason: null,
+    })).toMatchObject({ allowed: false, reason: "correction_reason_required" });
+    expect(evaluateRoleAttestationPolicy({
+      ...base,
+      decision: "reject",
+      currentStatus: "confirmed",
+      currentReviewerUserId: "reviewer-1",
+      currentDecisionReason: null,
+    })).toMatchObject({ allowed: false, reason: "rejection_reason_required" });
+  });
+
   it("keeps multiple role decisions independent", () => {
     expect(evaluateRoleAttestationPolicy({ ...base })).toEqual({ allowed: true, status: "confirmed" });
     expect(evaluateRoleAttestationPolicy({ ...base, decision: "reject", reason: "Mission non réalisée" })).toEqual({ allowed: true, status: "rejected" });

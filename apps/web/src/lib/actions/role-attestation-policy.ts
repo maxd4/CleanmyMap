@@ -11,6 +11,8 @@ export type RoleAttestationPolicyInput = {
   decision: "confirm" | "reject";
   reason: string | null | undefined;
   currentStatus?: ActionRoleAttestationStatus | null;
+  currentReviewerUserId?: string | null;
+  currentDecisionReason?: string | null;
 };
 
 export type RoleAttestationPolicyResult =
@@ -27,8 +29,13 @@ export function evaluateRoleAttestationPolicy(input: RoleAttestationPolicyInput)
   }
   if (!input.hasPlannedAssignment && !reason) return { allowed: false, status: "denied", reason: "retrospective_reason_required" };
   if (input.decision === "reject" && !reason) return { allowed: false, status: "denied", reason: "rejection_reason_required" };
+  const desiredStatus = input.decision === "confirm" ? "confirmed" : "rejected";
+  const isIdenticalTerminalRetry = input.currentStatus === desiredStatus
+    && input.currentReviewerUserId?.trim() === input.reviewerUserId.trim()
+    && (input.currentDecisionReason?.trim() || null) === reason;
+  if (isIdenticalTerminalRetry) return { allowed: true, status: desiredStatus };
   if (input.currentStatus && input.currentStatus !== "pending" && !reason) {
     return { allowed: false, status: "denied", reason: "correction_reason_required" };
   }
-  return { allowed: true, status: input.decision === "confirm" ? "confirmed" : "rejected" };
+  return { allowed: true, status: desiredStatus };
 }

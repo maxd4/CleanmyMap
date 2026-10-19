@@ -122,4 +122,52 @@ describe("/api/actions/[actionId]/role-attestations", () => {
     expect(response.status).toBe(200);
     expect(reviewActionRoleAttestationMock).toHaveBeenCalledTimes(1);
   });
+
+  it("passes an identical terminal confirmation retry to the idempotent RPC", async () => {
+    loadActionRoleAttestationStateMock.mockResolvedValue({
+      assignments: [{ user_id: "volunteer-1", role_code: "group_lead" }],
+      attestations: [{
+        id: "attestation-1",
+        user_id: "volunteer-1",
+        role_code: "group_lead",
+        verification_status: "confirmed",
+        reviewer_clerk_id: "reviewer-1",
+        decision_reason: null,
+      }],
+    });
+    reviewActionRoleAttestationMock.mockResolvedValue({ id: "attestation-1", verification_status: "confirmed", revision: 1 });
+    const query = participantQuery("confirmed");
+    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn(() => query) });
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }),
+    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    expect(response.status).toBe(200);
+    expect(reviewActionRoleAttestationMock).toHaveBeenCalledTimes(1);
+    await expect(response.json()).resolves.toMatchObject({ attestation: { revision: 1, verification_status: "confirmed" } });
+  });
+
+  it("rejects a non-idempotent terminal correction without a reason before the RPC", async () => {
+    loadActionRoleAttestationStateMock.mockResolvedValue({
+      assignments: [{ user_id: "volunteer-1", role_code: "group_lead" }],
+      attestations: [{
+        id: "attestation-1",
+        user_id: "volunteer-1",
+        role_code: "group_lead",
+        verification_status: "confirmed",
+        reviewer_clerk_id: "reviewer-2",
+        decision_reason: null,
+      }],
+    });
+    const query = participantQuery("confirmed");
+    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn(() => query) });
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }),
+    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    expect(response.status).toBe(409);
+    expect(reviewActionRoleAttestationMock).not.toHaveBeenCalled();
+  });
 });
