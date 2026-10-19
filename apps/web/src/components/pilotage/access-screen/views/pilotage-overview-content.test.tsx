@@ -52,7 +52,7 @@ const overview = {
 } as unknown as PilotageOverview;
 
 function renderOperations(
-  state: "NOT_REQUESTED" | "AVAILABLE" | "UNAVAILABLE",
+  state: "NOT_REQUESTED" | "AVAILABLE" | "PARTIAL" | "UNAVAILABLE",
   communityOperations: unknown = null,
 ) {
   return renderToStaticMarkup(
@@ -93,5 +93,18 @@ describe("Pilotage overview community operations states", () => {
     });
     expect(availableMarkup).toContain("Masquer les opérations détaillées");
     expect(availableMarkup).toContain("operations-panel");
+  });
+
+  it("renders partial coverage without presenting exhaustive operations", () => {
+    const markup = renderOperations("PARTIAL", {
+      availability: "partial",
+      staffingPlan: {},
+      reminders: [],
+      postEventLoop: {},
+    });
+
+    expect(markup).toContain("Opérations détaillées partiellement couvertes");
+    expect(markup).toContain("Les indicateurs détaillés ne sont pas des totaux exhaustifs");
+    expect(markup).toContain("operations-panel");
   });
 });

@@ -8,7 +8,7 @@ import {
 } from "@/lib/community/engagement";
 import { extractEventRefFromAction } from "@/lib/community/engagement/shared";
 import type { CommunityEventItem } from "@/lib/community/http";
-import { loadCachedReportCommunityEvents } from "@/lib/community/report-events";
+import { loadCachedPilotageCommunityEvents } from "@/lib/community/report-events";
 
 type PilotagePostEventLoopRow = {
   event: CommunityEventItem;
@@ -20,6 +20,7 @@ type PilotagePostEventLoopRow = {
 };
 
 export type PilotageCommunityOperations = {
+  availability: "available" | "partial";
   staffingPlan: {
     rows: ReturnType<typeof computeEventStaffingPlan>["rows"];
     summary: EventStaffingSummary;
@@ -29,7 +30,7 @@ export type PilotageCommunityOperations = {
     rows: PilotagePostEventLoopRow[];
     closedCount: number;
     total: number;
-    completionRate: number;
+    completionRate: number | null;
     missing: PilotagePostEventLoopRow[];
   };
 };
@@ -37,6 +38,7 @@ export type PilotageCommunityOperations = {
 export type PilotageCommunityOperationsState =
   | "NOT_REQUESTED"
   | "AVAILABLE"
+  | "PARTIAL"
   | "UNAVAILABLE";
 
 function hasWasteCharacterization(action: ReturnType<typeof toActionListItem>): boolean {
@@ -57,12 +59,12 @@ export async function loadPilotageCommunityOperations(
       .map((action) => extractEventRefFromAction(action))
       .filter((eventId): eventId is string => Boolean(eventId)),
   );
-  const events = (await loadCachedReportCommunityEvents(120)).filter(
-    (event) =>
-      (normalizedUserId.length > 0 &&
-        (event.organizerClerkId ?? "").trim() === normalizedUserId) ||
-      linkedEventIds.has(event.id),
+  const eventResult = await loadCachedPilotageCommunityEvents(
+    normalizedUserId,
+    [...linkedEventIds],
+    120,
   );
+  const events = eventResult.items;
   const conversion = computeEventConversions(events, actions);
   const upcomingEvents = events.filter((event) => event.eventDate >= now.toISOString().slice(0, 10));
   const staffingPlan = computeEventStaffingPlan(upcomingEvents, now);
@@ -92,13 +94,19 @@ export async function loadPilotageCommunityOperations(
 
   const closedCount = rows.filter((row) => row.closed).length;
   return {
+    availability: eventResult.availability === "partial" ? "partial" : "available",
     staffingPlan,
     reminders,
     postEventLoop: {
       rows,
       closedCount,
       total: rows.length,
-      completionRate: rows.length === 0 ? 100 : (closedCount / rows.length) * 100,
+      completionRate:
+        eventResult.availability === "partial"
+          ? null
+          : rows.length === 0
+            ? 100
+            : (closedCount / rows.length) * 100,
       missing: rows.filter((row) => !row.closed),
     },
   };

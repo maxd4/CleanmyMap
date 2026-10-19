@@ -79,7 +79,12 @@ describe("/pilotage detail loading contract", () => {
     mocks.getCurrentUserEffectiveAccess.mockResolvedValue({ canAccessPilotage: true });
     mocks.toProfile.mockReturnValue("coordinateur");
     mocks.loadPilotageOverview.mockResolvedValue(overview);
-    mocks.loadPilotageCommunityOperations.mockResolvedValue({ staffingPlan: {}, reminders: [], postEventLoop: {} });
+    mocks.loadPilotageCommunityOperations.mockResolvedValue({
+      availability: "available",
+      staffingPlan: {},
+      reminders: [],
+      postEventLoop: {},
+    });
   });
 
   it("keeps detailed community operations unloaded on the initial overview", async () => {

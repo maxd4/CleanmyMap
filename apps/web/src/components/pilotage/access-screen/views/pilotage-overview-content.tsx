@@ -61,6 +61,24 @@ function PilotageOperationsDisclosure({
     );
   }
 
+  if (state === "PARTIAL") {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className="space-y-4 rounded-2xl border border-amber-200/30 bg-amber-100/10 p-4 text-sm leading-6 text-orange-100"
+      >
+        <div>
+          <p className="font-black text-white">Opérations détaillées partiellement couvertes</p>
+          <p>Le périmètre autorisé dépasse la limite de lecture. Les indicateurs détaillés ne sont pas des totaux exhaustifs.</p>
+        </div>
+        <CmmButton href="/pilotage" tone="secondary" variant="pill">
+          Masquer les opérations détaillées
+        </CmmButton>
+      </div>
+    );
+  }
+
   const isExpanded = state === "AVAILABLE";
   return (
     <CmmButton
@@ -97,5 +115,5 @@ export function PilotageOverviewContent({ locale, copy, overview, overviewLinks,
     );
   }
   const notices = buildReportDataAvailabilityNotices(overview.dataAvailability);
-  return <><>{notices.length > 0 ? <div role="status" aria-live="polite" className="rounded-2xl border border-amber-200/40 bg-amber-100/10 p-4 text-sm leading-6 text-orange-100">{notices.join(" ")}</div> : null}</><PilotageScopeNotice copy={copy} isEmpty={overview.contracts.length === 0} /><PilotageOverviewSurfaceTabs locale={locale} overview={overview} /><PilotageOperationsDisclosure state={communityOperationsState} retryHref={communityOperationsRetryHref} />{communityOperationsState === "AVAILABLE" && communityOperations ? <PilotageCommunityOperationsPanel operations={communityOperations} canExportFunnel={canExportCommunityFunnel} /> : null}<PilotageOverviewSummary locale={locale} copy={copy} overview={overview} lastUpdatedAt={lastUpdatedAt} /><PilotageOverviewMetrics locale={locale} copy={copy} overview={overview} /><PilotageOverviewPriorities locale={locale} copy={copy} topPriorities={topPriorities} topZones={topZones} /><PilotageOverviewSupportSections locale={locale} accessEyebrow={copy.accessEyebrow} overview={overview} overviewLinks={overviewLinks} accessAllowed={accessAllowed} /></>;
+  return <><>{notices.length > 0 ? <div role="status" aria-live="polite" className="rounded-2xl border border-amber-200/40 bg-amber-100/10 p-4 text-sm leading-6 text-orange-100">{notices.join(" ")}</div> : null}</><PilotageScopeNotice copy={copy} isEmpty={overview.contracts.length === 0} /><PilotageOverviewSurfaceTabs locale={locale} overview={overview} /><PilotageOperationsDisclosure state={communityOperationsState} retryHref={communityOperationsRetryHref} />{(communityOperationsState === "AVAILABLE" || communityOperationsState === "PARTIAL") && communityOperations ? <PilotageCommunityOperationsPanel operations={communityOperations} canExportFunnel={canExportCommunityFunnel} /> : null}<PilotageOverviewSummary locale={locale} copy={copy} overview={overview} lastUpdatedAt={lastUpdatedAt} /><PilotageOverviewMetrics locale={locale} copy={copy} overview={overview} /><PilotageOverviewPriorities locale={locale} copy={copy} topPriorities={topPriorities} topZones={topZones} /><PilotageOverviewSupportSections locale={locale} accessEyebrow={copy.accessEyebrow} overview={overview} overviewLinks={overviewLinks} accessAllowed={accessAllowed} /></>;
 }

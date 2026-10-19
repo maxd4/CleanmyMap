@@ -71,6 +71,14 @@ appelle `loadPilotageCommunityOperations`. La résolution conserve le scope
 ouverture de `/pilotage` sans cette intention ne charge pas les 120 événements
 nécessaires au détail.
 
+La lecture détaillée sélectionne les événements organisés par l'identité Clerk
+courante ou reliés par `[EVENT_REF]` à une action du corpus organisé autorisé,
+avant d'appliquer son budget de lecture. Les résultats sont fusionnés par
+identifiant et les summaries RSVP sont chargés uniquement pour ce périmètre.
+Lorsque ce corpus scoped dépasse le budget, l'interface signale une couverture
+partielle et ne présente pas les indicateurs détaillés comme des totaux
+exhaustifs ; une erreur de lecture conserve l'état indisponible.
+
 
 ## États à documenter
 

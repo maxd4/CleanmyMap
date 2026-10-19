@@ -23,7 +23,9 @@ function CommunityPostEventLoopCard(props: CommunityPostEventLoopCardProps) {
  <p className="mt-1 cmm-text-small cmm-text-secondary">
  Taux de fermeture:{""}
  <span className="font-semibold">
- {postEventLoop.completionRate.toFixed(1)}%
+ {postEventLoop.completionRate === null
+  ? "Inconnu (couverture partielle)"
+  : `${postEventLoop.completionRate.toFixed(1)}%`}
  </span>{""}
  (presence renseignee + post-mortem + action liee + caracterisation des dechets).
  </p>
@@ -52,7 +54,9 @@ function CommunityPostEventLoopCard(props: CommunityPostEventLoopCardProps) {
  ))}
 {postEventLoop.missing.length === 0 ? (
  <li className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-800">
- Toutes les boucles post-événement sont complètes pour le moment. La présence, le post-mortem, l&apos;action liée et la caractérisation des déchets sont déjà renseignés.
+ {postEventLoop.completionRate === null
+  ? "Aucune boucle incomplète parmi les événements lus ; le corpus reste partiel."
+  : "Toutes les boucles post-événement sont complètes pour le moment. La présence, le post-mortem, l&apos;action liée et la caractérisation des déchets sont déjà renseignés."}
  </li>
 ) : null}
  </ul>

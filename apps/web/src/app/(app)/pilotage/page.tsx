@@ -71,7 +71,9 @@ export default async function PilotageAccessPage({ searchParams }: PilotageAcces
     !requestedOperations
       ? "NOT_REQUESTED"
       : communityOperations
-        ? "AVAILABLE"
+        ? communityOperations.availability === "partial"
+          ? "PARTIAL"
+          : "AVAILABLE"
         : "UNAVAILABLE";
   return (
     <PilotageOverviewPage

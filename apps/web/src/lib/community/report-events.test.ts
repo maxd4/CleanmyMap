@@ -17,6 +17,7 @@ vi.mock("./event-rsvp-summaries", () => ({
 }));
 
 import {
+  loadCachedPilotageCommunityEvents,
   loadCachedReportCommunityEvents,
   loadCachedReportCommunityEventsWithAvailability,
 } from "./report-events";
@@ -46,11 +47,53 @@ function setupPages(pages: Array<Array<ReturnType<typeof makeRow>> | Error>) {
   });
   const builder = {
     select: vi.fn(() => builder),
+    eq: vi.fn(() => builder),
+    in: vi.fn(() => builder),
     order: vi.fn(() => builder),
     range,
   };
   mocks.getSupabaseServerClient.mockReturnValue({ from: vi.fn(() => builder) });
   return range;
+}
+
+function setupScopedSources(params: {
+  organizerRows: Array<ReturnType<typeof makeRow>>;
+  linkedRows: Array<ReturnType<typeof makeRow>>;
+  globalRows: Array<ReturnType<typeof makeRow>>;
+}) {
+  const builders: Array<{
+    eq: ReturnType<typeof vi.fn>;
+    in: ReturnType<typeof vi.fn>;
+    range: ReturnType<typeof vi.fn>;
+  }> = [];
+  const from = vi.fn(() => {
+    let source: "organizer" | "linked" | "global" = "global";
+    const builder = {
+      select: vi.fn(() => builder),
+      eq: vi.fn(() => {
+        source = "organizer";
+        return builder;
+      }),
+      in: vi.fn(() => {
+        source = "linked";
+        return builder;
+      }),
+      order: vi.fn(() => builder),
+      range: vi.fn(async () => ({
+        data:
+          source === "organizer"
+            ? params.organizerRows
+            : source === "linked"
+              ? params.linkedRows
+              : params.globalRows,
+        error: null,
+      })),
+    };
+    builders.push(builder);
+    return builder;
+  });
+  mocks.getSupabaseServerClient.mockReturnValue({ from });
+  return { builders, from };
 }
 
 describe("report community event loading", () => {
@@ -113,6 +156,86 @@ describe("report community event loading", () => {
 
     await expect(loadCachedReportCommunityEventsWithAvailability()).rejects.toThrow(
       "page unavailable",
+    );
+  });
+
+  it("selects organizer-owned events before applying the scoped budget", async () => {
+    const organizerEvent = makeRow(121);
+    organizerEvent.organizer_clerk_id = "user-a";
+    const globalRows = Array.from({ length: 120 }, (_, index) => makeRow(index));
+    globalRows.push(organizerEvent);
+    const { builders } = setupScopedSources({
+      organizerRows: [organizerEvent],
+      linkedRows: [],
+      globalRows,
+    });
+
+    const result = await loadCachedPilotageCommunityEvents("user-a", [], 120);
+
+    expect(result.items.map((event) => event.id)).toEqual(["event-121"]);
+    expect(result.availability).toBe("available");
+    expect(builders[0]?.eq).toHaveBeenCalledWith("organizer_clerk_id", "user-a");
+    expect(builders[0]?.range).toHaveBeenCalledWith(0, 120);
+  });
+
+  it("selects linked event ids with a parameterized bounded filter and deduplicates", async () => {
+    const linkedEvent = makeRow(122);
+    linkedEvent.organizer_clerk_id = "user-b";
+    const { builders } = setupScopedSources({
+      organizerRows: [],
+      linkedRows: [linkedEvent],
+      globalRows: [makeRow(0)],
+    });
+
+    const result = await loadCachedPilotageCommunityEvents("user-a", ["event-122", "event-122"], 120);
+
+    expect(result.items.map((event) => event.id)).toEqual(["event-122"]);
+    expect(builders[1]?.in).toHaveBeenCalledWith("id", ["event-122"]);
+  });
+
+  it("does not include an event outside the organizer or linked-event scope", async () => {
+    const externalEvent = makeRow(123);
+    externalEvent.organizer_clerk_id = "user-b";
+    setupScopedSources({
+      organizerRows: [],
+      linkedRows: [],
+      globalRows: [externalEvent],
+    });
+
+    const result = await loadCachedPilotageCommunityEvents("user-a", [], 120);
+
+    expect(result.items).toEqual([]);
+  });
+
+  it("deduplicates an event selected by both scoped sources", async () => {
+    const sharedEvent = makeRow(124);
+    sharedEvent.organizer_clerk_id = "user-a";
+    setupScopedSources({
+      organizerRows: [sharedEvent],
+      linkedRows: [sharedEvent],
+      globalRows: [],
+    });
+
+    const result = await loadCachedPilotageCommunityEvents("user-a", ["event-124"], 120);
+
+    expect(result.items.map((event) => event.id)).toEqual(["event-124"]);
+  });
+
+  it("reports partial scoped coverage when the organizer result exceeds the budget", async () => {
+    const page = Array.from({ length: 121 }, (_, index) => makeRow(index));
+    setupScopedSources({ organizerRows: page, linkedRows: [], globalRows: [] });
+
+    const result = await loadCachedPilotageCommunityEvents("user-a", [], 120);
+
+    expect(result.items).toHaveLength(120);
+    expect(result.availability).toBe("partial");
+  });
+
+  it("fails closed when a scoped event read fails", async () => {
+    setupPages([new Error("scoped event read unavailable")]);
+
+    await expect(loadCachedPilotageCommunityEvents("user-a", [], 120)).rejects.toThrow(
+      "scoped event read unavailable",
     );
   });
 });

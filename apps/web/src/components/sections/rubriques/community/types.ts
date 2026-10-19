@@ -37,7 +37,7 @@ export type PostEventLoop = {
   rows: PostEventLoopRow[];
   closedCount: number;
   total: number;
-  completionRate: number;
+  completionRate: number | null;
   missing: PostEventLoopRow[];
 };
 
