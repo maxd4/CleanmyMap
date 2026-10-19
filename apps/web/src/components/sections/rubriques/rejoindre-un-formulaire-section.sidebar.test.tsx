@@ -40,6 +40,21 @@ function buildHistoryItem(
 }
 
 describe("JoinFormSidebar tracking vocabulary", () => {
+  it("uses the existing future-actions panel as the empty-history jump target", () => {
+    const markup = renderToStaticMarkup(
+      <JoinFormSidebar
+        fr
+        authenticated
+        sortedHistoryItems={[]}
+        activeRegistrationItems={[]}
+        activeParticipationItems={[]}
+      />,
+    );
+
+    expect(markup).toContain('href="#join-action-panel-future"');
+    expect(markup).not.toContain('href="#explorer-actions"');
+  });
+
   it("uses the phase-specific vocabulary and a neutral mixed-history shortcut", () => {
     const registration = buildHistoryItem("registration", "post_action_draft");
     const participation = buildHistoryItem("participation", "post_action_complete");

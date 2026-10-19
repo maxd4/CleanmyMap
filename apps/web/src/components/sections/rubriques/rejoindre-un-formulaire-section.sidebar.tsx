@@ -45,7 +45,7 @@ export function JoinFormSidebar({
           {fr
             ? "Aucune inscription ou participation enregistrée pour le moment."
             : "No registration or participation recorded yet."}
-          <CmmButton href="#explorer-actions" tone="secondary" variant="pill" size="sm" className="mt-3">
+          <CmmButton href="#join-action-panel-future" tone="secondary" variant="pill" size="sm" className="mt-3">
             {fr ? "Voir les actions" : "See actions"}
           </CmmButton>
         </div>
