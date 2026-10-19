@@ -115,11 +115,11 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "fedab8e1fbfa369a",
+      "fingerprint": "30a526af832d0365",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les deux narratifs calculent un score de readiness comparable, mais ils restent des projections éditoriales distinctes avec libellés, résumés, preuves et usages budgétaires propres à leur surface de rapport.",
-      "evidence": "apps/web/src/lib/reports/master-pack/analytics/executive.ts:14-26 et apps/web/src/lib/reports/report-model/builders.ts:167-179 ; les sorties et leurs messages métier divergent au-delà du calcul partagé.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
+      "evidence": "apps/web/src/lib/reports/master-pack/analytics/executive.ts:15-26 et apps/web/src/lib/reports/report-model/builders.ts:182-193 ; les sorties et leurs messages métier divergent au-delà du calcul partagé ; pair CURRENT relu.",
+      "reviewedRef": "5c9866c3dc311a4269758c2602b5320771c4015f"
     },
     {
       "scope": "runtime",
@@ -267,11 +267,11 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "ebd063b7d8a73fbe",
+      "fingerprint": "7fdd47f5ab0d9cd4",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les annonces de progression quiz et de progression équilibrée partagent une enveloppe de broadcast, mais leurs types, libellés, icônes et clés de déduplication portent deux contrats métier distincts.",
-      "evidence": "apps/web/src/lib/gamification/quiz-balance-progress.ts:129-134 et apps/web/src/lib/gamification/quiz-progress.ts:125-130 ; la distinction équilibré/type est conservée dans le payload.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
+      "evidence": "apps/web/src/lib/gamification/quiz-balance-progress.ts:133-138 et apps/web/src/lib/gamification/quiz-progress.ts:129-134 ; la distinction équilibré/type est conservée dans le payload ; pair CURRENT relu.",
+      "reviewedRef": "5c9866c3dc311a4269758c2602b5320771c4015f"
     },
     {
       "scope": "runtime",
@@ -567,14 +567,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/admin/storage-usage/route.test.ts:145-157 ; symboles: StorageUsageCaptureErrorMock, stage, post_write, partialMutation et app/api/admin/storage-usage/route.test.ts:167-179 ; symboles: storage, provider, error, POST restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
       "evidence": "app/api/admin/storage-usage/route.test.ts:145-157 et app/api/admin/storage-usage/route.test.ts:167-179 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "28c316bc98807e47",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/admin/storage-usage/route.test.ts:148-156 et app/api/reports/generations/route.test.ts:230-238 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/admin/storage-usage/route.test.ts:148-156 et app/api/reports/generations/route.test.ts:230-238 ; pair CURRENT relu.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
     },
     {
@@ -1083,19 +1075,11 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "b3605d07d86703b5",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT components/reports/web-document/reports-web-document.shared.tsx:392-399 ; symboles: Recurrence, recurrence, Score, score et components/reports/web-document/reports-web-document.shared.tsx:540-547 ; symboles: toFixed, Score, score, columns restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "apps/web/src/components/reports/web-document/reports-web-document.shared.tsx:392-399 et apps/web/src/components/reports/web-document/reports-web-document.shared.tsx:540-547 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "89d4828cde9ad1d8",
+      "fingerprint": "25f5250993095c3d",
       "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/reports/web-document/use-reports-web-document-model.ts:250-265 ; symboles: Megots, impact, butts, voles et lib/reports/page-data-export.ts:15-31 ; symboles: Megots, contract, metadata, cigaretteButts reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/reports/web-document/use-reports-web-document-model.ts:250-265 et apps/web/src/lib/reports/page-data-export.ts:15-31 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
+      "reason": "La similarité CURRENT entre components/reports/web-document/use-reports-web-document-model.ts:319-331 ; symboles: Megots, impact, butts, voles et lib/reports/page-data-export.ts:21-34 ; symboles: Megots, contract, metadata, cigaretteButts reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
+      "evidence": "apps/web/src/components/reports/web-document/use-reports-web-document-model.ts:319-331 et apps/web/src/lib/reports/page-data-export.ts:21-34 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
+      "reviewedRef": "5c9866c3dc311a4269758c2602b5320771c4015f"
     },
     {
       "scope": "runtime",
@@ -1195,11 +1179,11 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "715d3818a894dc2a",
+      "fingerprint": "d32dc51aeaf47211",
       "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre lib/actions/map/map-http-utils.ts:57-65 ; symboles: export, toFiniteNumber, value, parsed et lib/gamification/progression-utils.ts:291-299 ; symboles: export, toNullableFloat, value, parsed reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/lib/actions/map/map-http-utils.ts:57-65 et apps/web/src/lib/gamification/progression-utils.ts:291-299 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
+      "reason": "La similarité CURRENT entre lib/actions/map/map-http-utils.ts:57-65 ; symboles: export, toFiniteNumber, value, parsed et lib/gamification/progression-utils.ts:346-354 ; symboles: export, toNullableFloat, value, parsed reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
+      "evidence": "apps/web/src/lib/actions/map/map-http-utils.ts:57-65 et apps/web/src/lib/gamification/progression-utils.ts:346-354 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
+      "reviewedRef": "5c9866c3dc311a4269758c2602b5320771c4015f"
     },
     {
       "scope": "runtime",
@@ -1299,14 +1283,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "f46e96c411fc5866",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/(app)/dashboard/page.test.ts:1-7 et app/(app)/reports/page.test.ts:1-7 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/(app)/dashboard/page.test.ts:1-7 et app/(app)/reports/page.test.ts:1-7 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "3920ef164bebabfd",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT app/(app)/dashboard/page.test.ts:89-97 et app/(app)/sponsor-portal/page.test.ts:68-76 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
@@ -1359,14 +1335,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT app/api-boundary.test.ts:14-20 et lib/server-client-boundaries.test.ts:19-25 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
       "evidence": "app/api-boundary.test.ts:14-20 et lib/server-client-boundaries.test.ts:19-25 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "a507787ab59793d4",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/chat/action-discussion-route.test.ts:21-31 et app/api/chat/route.test.ts:139-149 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/chat/action-discussion-route.test.ts:21-31 et app/api/chat/route.test.ts:139-149 ; pair CURRENT relu.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
     },
     {
@@ -1675,14 +1643,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "c7c0592814b12e21",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/reports/generations/route.test.ts:151-163 ; symboles: JSON, stringify, validPayload, detailLevel et app/api/reports/generations/route.test.ts:172-184 ; symboles: persistReportGenerationMock, appendAdminOperationAuditMock, toHaveBeenCalledTimes, calls restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "app/api/reports/generations/route.test.ts:151-163 et app/api/reports/generations/route.test.ts:172-184 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "463408c8ee3ca361",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/sandbox/runbook-checks/route.test.ts:133-139 ; symboles: POST, request, listRunbookChecksMock, upsertRunbookCheckMock et app/api/sandbox/runbook-checks/route.test.ts:153-159 ; symboles: listRunbookChecksMock, upsertRunbookCheckMock, appendAdminOperationAuditMock, toHaveBeenCalledTimes restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
@@ -1859,11 +1819,11 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "dc56b58787e1b6b3",
+      "fingerprint": "9d2e3bca237ab404",
       "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT components/sections/rubriques/community/ics.test.ts:18-30 et lib/reports/report-model/analytics.test.ts:133-145 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "components/sections/rubriques/community/ics.test.ts:18-30 et lib/reports/report-model/analytics.test.ts:133-145 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
+      "reason": "Les occurrences CURRENT components/sections/rubriques/community/ics.test.ts:18-28 et lib/reports/report-model/analytics.test.ts:133-143 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
+      "evidence": "components/sections/rubriques/community/ics.test.ts:18-28 et lib/reports/report-model/analytics.test.ts:133-143 ; pair CURRENT relu.",
+      "reviewedRef": "5c9866c3dc311a4269758c2602b5320771c4015f"
     },
     {
       "scope": "tests",
@@ -2223,14 +2183,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT lib/reports/report-export-quota.test.ts:1-9 et lib/reports/report-generation-history-store.test.ts:1-9 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
       "evidence": "lib/reports/report-export-quota.test.ts:1-9 et lib/reports/report-generation-history-store.test.ts:1-9 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "8fd30b88135eaa29",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT lib/reports/report-generation-history-store.test.ts:122-130 ; symboles: maybeSingle, data, historicalRow, error et lib/reports/report-generation-history-store.test.ts:155-163 ; symboles: ownerEq, maybeSingle, idEq, select restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "lib/reports/report-generation-history-store.test.ts:122-130 et lib/reports/report-generation-history-store.test.ts:155-163 ; pair CURRENT relu.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
     },
     {
