@@ -13,6 +13,7 @@ describe("Trash Spotter observation entry", () => {
     const ownerLoop = read("components/actions/trash-spotter-owner-loop.tsx");
 
     expect(section).toContain("ActionsMapFeed");
+    expect(section).toContain("deferUntilVisible");
     expect(section).toContain("useTrashSpotter");
     expect(section).toContain('href="/signalement"');
     expect(section).not.toContain("TrashSpotterObservationForm");

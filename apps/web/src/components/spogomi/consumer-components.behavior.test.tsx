@@ -125,8 +125,10 @@ describe("SPOGOMI consumer components", () => {
     act(() => { renderer = create(<SpogomiPhotoGallery photos={[photo("one"), photo("two")]} />); });
     const thumbnails = renderer.root.findAll((node) => node.type === "button");
     expect(thumbnails).toHaveLength(2);
+    expect(renderer.root.findAll((node) => node.type === "img")).toHaveLength(2);
     act(() => { thumbnails[0]?.props.onClick(); });
     expect(renderer.root.findByProps({ role: "dialog" })).toBeTruthy();
+    expect(renderer.root.findAll((node) => node.type === "img")).toHaveLength(3);
     expect(renderer.root.findAll((node) => node.props["aria-label"] === "Photo suivante")).toHaveLength(1);
     renderer.unmount();
 

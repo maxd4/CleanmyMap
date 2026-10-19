@@ -229,6 +229,7 @@ export function TrashSpotterSection() {
                 tone="emerald"
                 showIntro={false}
                 showStoriesCarousel={false}
+                deferUntilVisible
               />
             </div>
 

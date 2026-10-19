@@ -86,6 +86,15 @@ publique. Une action disposant d'un score valide ne devient donc pas grise sur
 la homepage ; le gris reste réservé à l'indisponibilité réelle du score et le
 chargement possède sa couleur dédiée.
 
+Les cartes secondaires utilisent le même composant avec `deferUntilVisible`.
+Avant que le shell n'entre dans le viewport utile, ni
+`ActionPollutionScoreReferencesProvider` ni `useMapFeedData` ne sont montés ;
+les références de score et le feed restent donc absents du réseau. Le shell
+réutilise le déclencheur `useInViewOnce` existant, puis le cache SWR partagé est
+réutilisé lors d'un retour sur la carte. `/actions/map`, carte principale,
+n'active pas cette option et conserve son chargement normal, sa légende et ses
+couleurs.
+
 Le navigateur conserve actuellement `/api/actions/map` comme lecture principale
 et `actions_map_feed` comme fallback. Une bascule RPC-first est volontairement
 bloquée : le DTO RPC ne transporte pas encore `action_phase`, `published_at` et
@@ -394,6 +403,8 @@ La page demande une vigilance particulière :
 - composants cartographiques chargés dynamiquement ;
 - références de score partagées ;
 - éviter les fetchs supplémentaires à l'ouverture d'un détail.
+- les cartes secondaires peuvent différer le provider de références et le feed
+  jusqu'à leur visibilité effective, sans différer la carte principale ;
 - Les preuves photo Trash Spotter ne sont pas chargées avec la carte ni à
   l'ouverture du popup : le popup spot/clean_place propose une action explicite
   « Voir les preuves photo ». Le GET média n'est déclenché qu'après ce clic et

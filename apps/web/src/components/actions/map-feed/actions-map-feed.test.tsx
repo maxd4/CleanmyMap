@@ -40,6 +40,25 @@ const mapFeedData = (overrides: Record<string, unknown> = {}) => ({
 });
 
 describe("ActionsMapFeed", () => {
+  it("does not mount the score references or feed before a deferred map is visible", () => {
+    useMapFeedDataMock.mockReturnValue(mapFeedData());
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionsMapFeed, {
+        days: 180,
+        statusFilter: "approved",
+        impactFilter: "all",
+        qualityMin: 0,
+        presentation: "immersive",
+        deferUntilVisible: true,
+      }),
+    );
+
+    expect(markup).not.toContain('data-testid="actions-map-pollution-score-boundary"');
+    expect(useMapFeedDataMock).not.toHaveBeenCalled();
+    expect(markup).toContain('aria-busy="true"');
+  });
+
   it("keeps every feed surface inside the pollution references boundary", () => {
     useMapFeedDataMock.mockReturnValue(mapFeedData());
 

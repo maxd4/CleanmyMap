@@ -1385,8 +1385,14 @@ trouvées sur Internet ne sont jamais importées automatiquement.
 
 La galerie utilise une grille légère, des images différées, une ouverture
 agrandie accessible, la navigation clavier et un état absent lorsque aucune
-photo autorisée n'est disponible. Elle n'affiche aucun roster, nom de mineur,
-autorisation parentale, token ou dossier d'arbitrage.
+photo autorisée n'est disponible. La version agrandie n'est rendue qu'après
+l'ouverture explicite d'une photo. Le contrat publié actuel ne contient qu'une
+URL par photo et aucune variante miniature ni transformation Storage canonique
+; aucune URL transformée ni image dérivée persistée ne doit donc être inventée.
+Les octets économisés par une stratégie de miniature restent non mesurés tant
+qu'une variante publiée et une campagne de comparaison réelle n'existent pas.
+La galerie n'affiche aucun roster, nom de mineur, autorisation parentale, token
+ou dossier d'arbitrage.
 
 Fichiers principaux :
 

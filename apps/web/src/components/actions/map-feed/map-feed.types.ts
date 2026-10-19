@@ -114,6 +114,7 @@ export type ActionsMapFeedProps = Partial<Pick<
   showIntro?: boolean;
   fullViewport?: boolean;
   showStoriesCarousel?: boolean;
+  deferUntilVisible?: boolean;
   visibleCategories?: Record<MarkerCategory, boolean>;
   onOpenAction?: (actionId: string) => void;
 };

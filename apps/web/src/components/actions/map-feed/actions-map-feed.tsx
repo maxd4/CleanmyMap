@@ -367,6 +367,33 @@ function ActionsMapFeedWithReferences({
 }
 
 export function ActionsMapFeed(props: ActionsMapFeedProps) {
+  const { ref: deferredMapRef, isInView: isDeferredMapVisible } = useInViewOnce<HTMLElement>({
+    rootMargin: "260px 0px",
+  });
+
+  if (props.deferUntilVisible) {
+    return (
+      <section
+        ref={deferredMapRef}
+        aria-label="Carte des actions"
+        aria-busy={!isDeferredMapVisible}
+        className="relative min-h-[18rem] w-full"
+      >
+        {isDeferredMapVisible ? (
+          <ActionPollutionScoreReferencesProvider>
+            <ActionsMapFeedWithReferences {...props} />
+          </ActionPollutionScoreReferencesProvider>
+        ) : (
+          <CmmSkeleton
+            variant="chart"
+            className="min-h-[18rem] w-full rounded-[2.25rem]"
+            aria-label="La carte sera chargée lorsqu'elle sera visible"
+          />
+        )}
+      </section>
+    );
+  }
+
   return (
     <ActionPollutionScoreReferencesProvider>
       <ActionsMapFeedWithReferences {...props} />
