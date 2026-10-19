@@ -7,6 +7,7 @@ import { CURRENT_INFINITE_PROGRESSIONS } from "./current-progressions";
 import { CURRENT_GAMIFICATION_RULES_REVISION, CURRENT_GAMIFICATION_RULES_VERSION } from "./progression-types";
 import type {
   ActionRow,
+  ActionTimelineRow,
   GamificationProgressionDefinition,
   GamificationEventRegistration,
   GamificationMechanicDefinition,
@@ -350,7 +351,7 @@ export function toNullableFloat(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function actionRowToListItem(row: ActionRow): ActionListItem {
+export function actionRowToListItem(row: ActionTimelineRow): ActionListItem {
   return {
     id: row.id,
     created_at: row.created_at,
@@ -368,7 +369,7 @@ export function actionRowToListItem(row: ActionRow): ActionListItem {
   };
 }
 
-export function actionRowToDrawing(row: ActionRow): ActionDrawing | null {
+export function actionRowToDrawing(row: ActionTimelineRow): ActionDrawing | null {
   return (
     parseDrawingFromGeoJson(
       row.derived_geometry_geojson,
@@ -426,7 +427,7 @@ export function computeActionValidationAward(
   };
 }
 
-export function evaluateActionQualityScore(row: ActionRow): {
+export function evaluateActionQualityScore(row: ActionTimelineRow): {
   score: number;
   grade: ActionQualityGrade;
 } {

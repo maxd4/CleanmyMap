@@ -1,6 +1,6 @@
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { evaluateActionQuality } from "@/lib/actions/quality/quality";
-import type { ActionRow } from "./progression-types";
+import type { ActionRow, ActionTimelineRow } from "./progression-types";
 import {
   actionRowToListItem,
   evaluateActionQualityScore,
@@ -74,7 +74,7 @@ export function aggregateUserImpactStats(rows: readonly ActionRow[]) {
   }]));
 }
 
-export function actionQualityScoreFromRow(row: ActionRow): number {
+export function actionQualityScoreFromRow(row: ActionTimelineRow): number {
   return evaluateActionQualityScore(row).score;
 }
 

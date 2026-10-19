@@ -6,11 +6,14 @@ import {
   completeActionCount,
   isSpontaneousActionNotes,
 } from "./progression-action-projections";
-import type { ActionRow, SpotRow } from "./progression-types";
+import type { ActionRow, ActionTimelineRow, SpotRow } from "./progression-types";
 
 export const ACTION_APPROVED_COLUMNS =
   "id, created_at, created_by_clerk_id, type, actor_name, organizer_type, organizer_id, organizer_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, action_phase, preparation_data, published_at";
 const ACTION_FULL_COLUMNS = ACTION_APPROVED_COLUMNS;
+const ACTION_TIMELINE_COLUMNS =
+  "id, created_at, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source";
+const MAX_PERSONAL_HISTORY_ACTION_IDS = 10000;
 
 type LoadValidatedActionIdsOptions = {
   actionRows?: ActionRow[];
@@ -64,6 +67,29 @@ export async function loadActionRowsForUser(
     }
   }
   return [...rowsById.values()];
+}
+
+/**
+ * Recover only the action fields needed by the personal timeline. The IDs are
+ * supplied by already validated, current role evidence and remain bounded by
+ * the evidence loader's cap; this must not become a broader participation or
+ * organization loader.
+ */
+export async function loadActionRowsByIdsForPersonalHistory(
+  supabase: SupabaseClient,
+  actionIds: readonly string[],
+): Promise<ActionTimelineRow[]> {
+  const boundedActionIds = [...new Set(actionIds)]
+    .filter((actionId) => actionId.length > 0)
+    .slice(0, MAX_PERSONAL_HISTORY_ACTION_IDS);
+  if (boundedActionIds.length === 0) return [];
+
+  return runActionQuery<ActionTimelineRow>(supabase, (query) =>
+    query
+      .select(ACTION_TIMELINE_COLUMNS)
+      .in("id", boundedActionIds)
+      .limit(boundedActionIds.length),
+  );
 }
 
 export async function loadValidatedActionIdsForUser(

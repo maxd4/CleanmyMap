@@ -327,6 +327,32 @@ export type ActionRow = {
   geometry_source?: ActionGeometrySource | null;
 };
 
+/**
+ * Minimal action projection needed to render the personal timeline.
+ * It deliberately excludes organizer and preparation fields because this
+ * projection is also used for actions recovered from validated role evidence.
+ */
+export type ActionTimelineRow = Pick<
+  ActionRow,
+  | "id"
+  | "created_at"
+  | "actor_name"
+  | "action_date"
+  | "location_label"
+  | "latitude"
+  | "longitude"
+  | "waste_kg"
+  | "cigarette_butts"
+  | "volunteers_count"
+  | "duration_minutes"
+  | "status"
+  | "notes"
+  | "derived_geometry_kind"
+  | "derived_geometry_geojson"
+  | "geometry_confidence"
+  | "geometry_source"
+>;
+
 export type SpotRow = {
   id: string;
   created_at: string;
