@@ -9,6 +9,14 @@ export type PilotageOverviewResponse = {
 
 export type OverviewFetchError = Error & { status?: number };
 
+export type ElusOverviewIdentity = {
+  isLoaded: boolean;
+  isSignedIn: boolean | undefined;
+  userId: string | null | undefined;
+};
+
+type PilotageOverviewKey = readonly ["/api/pilotage/overview", string];
+
 export const fetchPilotageOverview = async (
   url: string,
 ): Promise<PilotageOverviewResponse> => {
@@ -23,13 +31,37 @@ export const fetchPilotageOverview = async (
   return (await response.json()) as PilotageOverviewResponse;
 };
 
-export function useElusOverview(activeTab: ElusSectionTab = "overview") {
-  return useSWR<PilotageOverviewResponse, OverviewFetchError>(
-    "/api/pilotage/overview",
-    fetchPilotageOverview,
+export function useElusOverview(
+  activeTab: ElusSectionTab = "overview",
+  identity: ElusOverviewIdentity = {
+    isLoaded: false,
+    isSignedIn: false,
+    userId: null,
+  },
+) {
+  const identityKey =
+    identity.isLoaded && identity.isSignedIn === true && identity.userId
+      ? identity.userId
+      : null;
+  const key: PilotageOverviewKey | null = identityKey
+    ? ["/api/pilotage/overview", identityKey]
+    : null;
+  const swrResult = useSWR<PilotageOverviewResponse, OverviewFetchError>(
+    key,
+    ([url]) => fetchPilotageOverview(url),
     {
       ...swrRecentViewOptions,
+      keepPreviousData: false,
       refreshInterval: activeTab === "methods" ? 0 : 1_800_000,
     },
   );
+
+  return {
+    ...swrResult,
+    data: identityKey ? swrResult.data : undefined,
+    error: identityKey ? swrResult.error : undefined,
+    identityKey,
+    isLoading:
+      !identity.isLoaded || Boolean(identityKey && swrResult.isLoading),
+  };
 }

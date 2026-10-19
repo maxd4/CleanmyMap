@@ -17,10 +17,14 @@ import { ElusSectionZonesPanel } from "./elus-section-zones-panel";
 
 export function ElusSection() {
   const { locale } = useSitePreferences();
-  const { user, isSignedIn } = useUser();
+  const { isLoaded, user, isSignedIn } = useUser();
   const fr = locale === "fr";
   const [activeTab, setActiveTab] = useState<ElusSectionTab>("overview");
-  const { data, isLoading, error } = useElusOverview(activeTab);
+  const { data, isLoading, error } = useElusOverview(activeTab, {
+    isLoaded,
+    isSignedIn,
+    userId: user?.id,
+  });
   const grantedRoleValue =
     typeof user?.publicMetadata?.role === "string"
       ? user.publicMetadata.role
@@ -31,7 +35,7 @@ export function ElusSection() {
     grantedRoleValue,
   );
 
-  if (error) {
+  if (error || (isLoaded && isSignedIn !== true)) {
     return <ElusSectionErrorState showPromotionCta={showPromotionCta} />;
   }
 
