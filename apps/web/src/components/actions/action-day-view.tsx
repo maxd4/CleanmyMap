@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CheckCircle2, Clock3, Copy, MapPin, Navigation, Package, Printer, ShieldCheck, Users } from "lucide-react";
+import { CalendarDays, Clock3, Copy, MapPin, Navigation, Package, Printer, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { fetchActionDayBriefing, type ActionDayBriefing } from "@/lib/actions/day-briefing-http";
@@ -135,7 +135,6 @@ export function ActionDayView({ actionId }: { actionId: string }) {
           </div>
         </CmmCard>
       ) : null}
-      <CmmCard tone="emerald" variant="muted" size="md"><div className="space-y-3"><h3 className="flex items-center gap-2 text-lg font-black text-emerald-950"><CheckCircle2 size={18} />Checklist de départ</h3><ul className="grid gap-2 sm:grid-cols-2">{action.checklist.length > 0 ? action.checklist.map((item) => <li key={item.key} className="flex items-start gap-2 rounded-xl bg-white/80 px-3 py-2 cmm-text-body cmm-text-primary"><CheckCircle2 size={15} className={item.checked ? "mt-0.5 shrink-0 text-emerald-600" : "mt-0.5 shrink-0 text-slate-300"} aria-hidden="true" /><span>{item.label}</span></li>) : <li className="cmm-text-body cmm-text-primary">Checklist non renseignée.</li>}</ul><p className="flex items-center gap-2 cmm-text-caption text-emerald-700"><Users size={14} />La checklist ne vaut pas pointage : aucune présence ni réclamation n’est créée ici.</p></div></CmmCard>
     </div>
   );
 }

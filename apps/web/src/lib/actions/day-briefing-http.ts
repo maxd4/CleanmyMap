@@ -26,7 +26,6 @@ export type ActionDayBriefing = {
     volunteerChecklist?: ActionVolunteerChecklistPublic;
     accessibility: string | null;
     accessibilityStatus: string;
-    checklist: Array<{ key: string; label: string; checked: boolean }>;
     route: {
       topology: "loop" | "point_to_point" | null;
       departureLabel: string | null;

@@ -39,7 +39,7 @@ describe("GET /api/actions/[actionId]/day", () => {
         materialsProvided: "Sacs",
         equipmentInventory: { glovesPairs: 0, grabbers: 2, firstAidKitAvailable: true },
         refreshmentsProvided: { waterDuringAction: true, snackAfterAction: true },
-        preparationChecklist: [{ key: "water", label: "Eau", checked: false }],
+        preparationChecklist: [{ key: "internal-preparation-key", label: "INTERNAL_ONLY_PREP_CHECKLIST_LABEL", checked: false }],
         routeCalibrationContext: {
           plannerSnapshot: {
             weatherContext: {
@@ -69,7 +69,13 @@ describe("GET /api/actions/[actionId]/day", () => {
     expect(body.action.equipmentNotProvided).toEqual(["Paires de gants : aucune unité fournie"]);
     expect(body.action.refreshmentsProvided).toEqual(["Eau fournie pendant l'action", "Collation prévue après l'action"]);
     expect(body.action).not.toHaveProperty("participantAccounts");
+    expect(body.action).not.toHaveProperty("checklist");
+    expect(body.action).not.toHaveProperty("preparationChecklist");
+    expect(body.action.volunteerChecklist).toBeDefined();
     const serialized = JSON.stringify(body.action);
+    expect(serialized).not.toContain("internal-preparation-key");
+    expect(serialized).not.toContain("INTERNAL_ONLY_PREP_CHECKLIST_LABEL");
+    expect(serialized).not.toContain('"checked"');
     expect(serialized).not.toContain("day-private-planner-context");
     expect(serialized).not.toContain("routeCalibrationContext");
     expect(serialized).not.toContain("plannerSnapshot");
@@ -91,7 +97,11 @@ describe("GET /api/actions/[actionId]/day", () => {
     loadActionByIdMock.mockResolvedValue({
       ...publicAction,
       access_mode: "invite_link",
-      preparation_data: { ...publicAction.preparation_data, participantMessage: "Rendez-vous sur place." },
+      preparation_data: {
+        ...publicAction.preparation_data,
+        participantMessage: "Rendez-vous sur place.",
+        preparationChecklist: [{ key: "private-internal-key", label: "PRIVATE_INTERNAL_LABEL", checked: true }],
+      },
     });
     canManageActionMock.mockReturnValue(false);
     readActionRegistrationRecordMock.mockResolvedValue({ registration_status: "confirmed" });
@@ -102,6 +112,12 @@ describe("GET /api/actions/[actionId]/day", () => {
     expect(body.access).toBe("confirmed_volunteer");
     expect(body.action.participantMessage).toBe("Rendez-vous sur place.");
     expect(body.action).not.toHaveProperty("logisticsNotes");
+    expect(body.action).not.toHaveProperty("checklist");
+    expect(JSON.stringify(body.action)).not.toContain("preparationChecklist");
+    expect(JSON.stringify(body.action)).not.toContain("private-internal-key");
+    expect(JSON.stringify(body.action)).not.toContain("PRIVATE_INTERNAL_LABEL");
+    expect(JSON.stringify(body.action)).not.toContain('"checked"');
+    expect(body.action.volunteerChecklist).toBeDefined();
   });
 
   it("does not let a private actionId bypass a pending registration", async () => {

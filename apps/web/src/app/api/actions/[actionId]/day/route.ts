@@ -116,7 +116,6 @@ function buildDayPayload(
       volunteerChecklist: projectedPracticalInfo.volunteerChecklist,
       accessibility: firstText(preparation.accessibility),
       accessibilityStatus: preparation.accessibilityStatus ?? "not_evaluated",
-      checklist: (preparation.preparationChecklist ?? []).map((item) => ({ key: item.key, label: item.label, checked: item.checked })),
       route: {
         topology: nullable(preparation.routeTopology),
         departureLabel: firstText(metadata.departureLocationLabel),
