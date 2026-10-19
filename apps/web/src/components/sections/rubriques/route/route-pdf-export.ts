@@ -287,21 +287,8 @@ function renderGroupPage(
   return `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">Fiche terrain</p><h1>${escapeHtml(label)}</h1><p>${route.volunteerCount} bénévoles · ${route.stops.length} stops/zones · ${escapeHtml(route.geometry.mode === "network" ? "Tracé réseau" : "Tracé estimé")}</p><p class="route-pdf-meta"><strong>Point de rendez-vous :</strong> ${escapeHtml(rendezVous)} · départ et arrivée au même endroit</p></header><div class="route-pdf-map-shell">${renderSvgMap(data, [route], displayMode, label)}</div>${renderLegend([route], displayMode)}${renderMetrics(data, [route], false)}${renderStops([route])}${renderCorridors([route], data, false)}${renderInstructions(data, [route])}</section>`;
 }
 
-export function buildRoutePdfHtml(
-  data: RouteResponse,
-  displayMode: RouteMultiRouteDisplayMode,
-  generatedAt = data.generatedAt,
-): string {
-  const routes = getExportRoutes(data);
-  const multi = routes.length > 1;
-  const event = data.trace.eventCentered?.event;
-  const title = event ? `Itinéraire CleanMyMap — ${event.title}` : "Itinéraire CleanMyMap";
-  const originLabel = `${data.origin.latitude.toFixed(6)}, ${data.origin.longitude.toFixed(6)} · ${data.origin.source === "map" ? "carte" : data.origin.source === "browser" ? "navigateur" : "zone enregistrée approximative"}`;
-  const overviewTitle = multi ? `Vue générale — ${routes.length} groupes` : "Vue générale — 1 boucle";
-  const overview = `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">CleanMyMap · export terrain</p><h1>${escapeHtml(title)}</h1><p>${escapeHtml(overviewTitle)}</p><p class="route-pdf-meta">Généré le ${escapeHtml(formatDateTime(generatedAt))}${event ? ` · Événement : ${escapeHtml(event.title)} · ${escapeHtml(formatDate(event.eventDate))}` : ""}</p></header><div class="route-pdf-summary"><p><strong>Point de rendez-vous :</strong> ${escapeHtml(originLabel)}</p><p><strong>Bénévoles :</strong> ${data.volunteers} · <strong>Groupes :</strong> ${routes.length}</p></div><div class="route-pdf-map-shell">${renderSvgMap(data, routes, displayMode, overviewTitle)}</div>${renderLegend(routes, displayMode)}${renderMetrics(data, routes, multi)}${renderStops(routes)}${renderCorridors(routes, data, true)}${renderInstructions(data, routes)}</section>`;
-  const groupPages = multi ? routes.map((route) => renderGroupPage(data, route, displayMode)).join("") : "";
-
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>${escapeHtml(title)}</title><style>
+export function buildRoutePdfCss(routeCount: number): string {
+  return `
 @page { size: A4 landscape; margin: 10mm; }
 * { box-sizing: border-box; }
 body { margin: 0; background: #ffffff; color: #0f172a; font-family: Arial, Helvetica, sans-serif; font-size: 11pt; }
@@ -316,7 +303,7 @@ p { margin: 1.5mm 0; }
 .route-pdf-summary { display: flex; flex-wrap: wrap; gap: 8mm; margin-bottom: 4mm; }
 .route-pdf-map-shell { border: 1px solid #cbd5e1; margin: 3mm 0 4mm; padding: 2mm; }
 .route-pdf-map { display: block; width: 100%; height: auto; max-height: 96mm; }
-.route-pdf-legend { display: grid; grid-template-columns: repeat(${Math.min(routes.length, 4)}, minmax(0, 1fr)); gap: 3mm 6mm; list-style: none; margin: 3mm 0 5mm; padding: 0; }
+.route-pdf-legend { display: grid; grid-template-columns: repeat(${Math.min(routeCount, 4)}, minmax(0, 1fr)); gap: 3mm 6mm; list-style: none; margin: 3mm 0 5mm; padding: 0; }
 .route-pdf-legend li { display: flex; align-items: center; gap: 2mm; }
 .route-pdf-legend svg { flex: 0 0 auto; }
 .route-pdf-legend span { display: flex; flex-direction: column; gap: 1mm; }
@@ -335,5 +322,22 @@ p { margin: 1.5mm 0; }
 .route-pdf-instructions { border-top: 1px solid #94a3b8; padding-top: 3mm; }
 @media screen { body { background: #e2e8f0; padding: 12mm; } .route-pdf-page { background: white; margin: 0 auto 12mm; max-width: 1120px; padding: 10mm; box-shadow: 0 8px 30px rgba(15,23,42,.14); } }
 @media print { .route-pdf-page { min-height: auto; } }
-</style></head><body>${overview}${groupPages}<script>window.addEventListener("afterprint", () => window.close()); window.addEventListener("load", () => setTimeout(() => window.print(), 250));</script></body></html>`;
+`;
+}
+
+export function buildRoutePdfHtml(
+  data: RouteResponse,
+  displayMode: RouteMultiRouteDisplayMode,
+  generatedAt = data.generatedAt,
+): string {
+  const routes = getExportRoutes(data);
+  const multi = routes.length > 1;
+  const event = data.trace.eventCentered?.event;
+  const title = event ? `Itinéraire CleanMyMap — ${event.title}` : "Itinéraire CleanMyMap";
+  const originLabel = `${data.origin.latitude.toFixed(6)}, ${data.origin.longitude.toFixed(6)} · ${data.origin.source === "map" ? "carte" : data.origin.source === "browser" ? "navigateur" : "zone enregistrée approximative"}`;
+  const overviewTitle = multi ? `Vue générale — ${routes.length} groupes` : "Vue générale — 1 boucle";
+  const overview = `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">CleanMyMap · export terrain</p><h1>${escapeHtml(title)}</h1><p>${escapeHtml(overviewTitle)}</p><p class="route-pdf-meta">Généré le ${escapeHtml(formatDateTime(generatedAt))}${event ? ` · Événement : ${escapeHtml(event.title)} · ${escapeHtml(formatDate(event.eventDate))}` : ""}</p></header><div class="route-pdf-summary"><p><strong>Point de rendez-vous :</strong> ${escapeHtml(originLabel)}</p><p><strong>Bénévoles :</strong> ${data.volunteers} · <strong>Groupes :</strong> ${routes.length}</p></div><div class="route-pdf-map-shell">${renderSvgMap(data, routes, displayMode, overviewTitle)}</div>${renderLegend(routes, displayMode)}${renderMetrics(data, routes, multi)}${renderStops(routes)}${renderCorridors(routes, data, true)}${renderInstructions(data, routes)}</section>`;
+  const groupPages = multi ? routes.map((route) => renderGroupPage(data, route, displayMode)).join("") : "";
+
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>${escapeHtml(title)}</title><style>${buildRoutePdfCss(routes.length)}</style></head><body>${overview}${groupPages}<script>window.addEventListener("afterprint", () => window.close()); window.addEventListener("load", () => setTimeout(() => window.print(), 250));</script></body></html>`;
 }

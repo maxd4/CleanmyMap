@@ -2,7 +2,7 @@ import createDOMPurify from "dompurify";
 import { escapeHtml } from "@/lib/security/html-escape";
 import type { PdfReportPayload } from "./simple-pdf";
 import { buildOfficialReportHtml } from "./official-report-html";
-import type { ReportPdfTheme } from "./report-pdf-theme";
+import { buildOfficialReportCss, type ReportPdfTheme } from "./report-pdf-theme";
 import {
   REPORT_RENDERER_VERSION,
   REPORT_TEMPLATE_VERSION,
@@ -16,6 +16,8 @@ export type ReportBrowserRenderOptions = {
 type PrintableWindowOptions = {
   autoPrint?: boolean;
   closeAfterPrint?: boolean;
+  /** CSS is accepted only from a trusted in-repository printable generator. */
+  trustedCss?: string;
 };
 
 const PRINTABLE_FRAGMENT_FORBID_TAGS = [
@@ -29,6 +31,7 @@ const PRINTABLE_FRAGMENT_FORBID_TAGS = [
   "object",
   "script",
   "textarea",
+  "style",
   "body",
   "head",
   "html",
@@ -51,7 +54,7 @@ function escapeHtmlPreservingEntities(value: string): string {
   return escaped.replace(/__CMM_HTML_ENTITY_(\d+)__/g, (_marker, index: string) => entities[Number(index)] ?? "");
 }
 
-function sanitizePrintableHtml(reportWindow: Window, html: string): string {
+function sanitizePrintableHtml(reportWindow: Window, html: string, trustedCss?: string): string {
   const purifier = createDOMPurify(
     reportWindow as unknown as Parameters<typeof createDOMPurify>[0],
   );
@@ -61,6 +64,7 @@ function sanitizePrintableHtml(reportWindow: Window, html: string): string {
     const sanitized = purifier.sanitize(fragment, {
       WHOLE_DOCUMENT: false,
       FORBID_TAGS: PRINTABLE_FRAGMENT_FORBID_TAGS,
+      FORBID_ATTR: ["style"],
     });
     if (typeof sanitized !== "string") throw new PrintableReportDeliveryError();
     return sanitized;
@@ -69,7 +73,8 @@ function sanitizePrintableHtml(reportWindow: Window, html: string): string {
   const titleSource = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "";
   const safeTitle = escapeHtmlPreservingEntities(titleSource);
   const safeFragment = sanitizeFragment(html.replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, ""));
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8" /><title>${safeTitle}</title></head><body>${safeFragment}</body></html>`;
+  const safeTrustedCss = trustedCss ? `<style>${trustedCss.replace(/<\/style/gi, "<\\/style")}</style>` : "";
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8" />${safeTrustedCss}<title>${safeTitle}</title></head><body>${safeFragment}</body></html>`;
 }
 
 export class IncompatibleReportRendererError extends Error {
@@ -111,6 +116,7 @@ export function renderReportWindow(
   assertReportRendererCompatibility(payload);
   renderReportHtmlWindow(reportWindow, buildOfficialReportHtml(payload, options), {
     autoPrint: options.autoPrint ?? !payload.data.chapters?.length,
+    trustedCss: buildOfficialReportCss(options.theme),
   });
 }
 
@@ -126,7 +132,7 @@ function renderReportHtmlWindow(
   // the SVG route map.
   let safeHtml: string;
   try {
-    safeHtml = sanitizePrintableHtml(reportWindow, html);
+    safeHtml = sanitizePrintableHtml(reportWindow, html, options.trustedCss);
   } catch (error) {
     reportWindow.close();
     if (error instanceof PrintableReportDeliveryError) throw error;
@@ -263,6 +269,7 @@ export function openPrintableReport(
     renderReportHtmlWindow(targetWindow, html, {
       autoPrint: options.autoPrint ?? (Boolean(buildPrintableHtml) || !payload.data.chapters?.length),
       closeAfterPrint: Boolean(buildPrintableHtml),
+      trustedCss: buildPrintableHtml ? undefined : buildOfficialReportCss(options.theme),
     });
   } catch (error) {
     if (!(error instanceof PrintableReportDeliveryError)) throw error;

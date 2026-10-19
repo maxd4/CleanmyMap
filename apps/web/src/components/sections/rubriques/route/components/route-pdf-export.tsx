@@ -8,7 +8,7 @@ import type {
   RouteMultiRouteDisplayMode,
   RouteResponse,
 } from "../route-types";
-import { buildRoutePdfHtml } from "../route-pdf-export";
+import { buildRoutePdfCss, buildRoutePdfHtml } from "../route-pdf-export";
 
 export function RoutePdfExport({
   data,
@@ -26,7 +26,7 @@ export function RoutePdfExport({
     setStatus("idle");
     const html = buildRoutePdfHtml(data, displayMode);
     setStatus(
-      openPrintableHtmlWindow(html, { autoPrint: true, closeAfterPrint: true })
+      openPrintableHtmlWindow(html, { autoPrint: true, closeAfterPrint: true, trustedCss: buildRoutePdfCss(data.groupRoutes.length) })
         ? "success"
         : "error",
     );
