@@ -825,6 +825,18 @@ relire tout fichier partagé avant modification et sérialiser les mutations de
 l’index, de `HEAD` et des références Git ; aucun writer ne peut écraser
 silencieusement le travail d’un autre.
 
+Cette politique CURRENT est héritée automatiquement par tous les prompts
+Codex. Un prompt ordinaire ne doit pas demander de nettoyer le checkout, de
+figer un SHA, de geler les autres writers ou d'attendre une convergence Git
+pour commencer une analyse, une correction ou une validation locale. Il doit
+capturer l'état Git initial, identifier les chemins du lot et poursuivre les
+opérations indépendantes ; une évolution de `HEAD`, de `origin/main`, de
+l'index ou du worktree requalifie seulement les preuves affectées. Une cible
+dirty appartenant à un autre writer reste protégée et bloque uniquement sa
+mutation sans autorisation. Les conditions exactes de `STAGED`,
+`PUSH_CANDIDATE`, SonarQube et `RELEASE` restent des exigences de leur
+publication ou de leur mesure officielle, pas des prérequis de diagnostic.
+
 Tout fichier dirty préexistant qui n’est pas explicitement attribué au lot
 courant est présumé appartenir à un autre writer. Les prompts Codex ne doivent
 donc jamais demander de nettoyer, restaurer, supprimer, stasher, déplacer ou
@@ -935,6 +947,7 @@ Les validations ont trois portées qui ne doivent pas être confondues :
 ```text
 WORKTREE        = itération manuelle, changements dirty et untracked inclus
 STAGED          = candidat du commit, exclusivement git diff --cached
+COMMITTED_SNAPSHOT = arbre Git immuable identifié par son SHA
 PUSH_CANDIDATE  = refs et ranges réellement transmis par le protocole pre-push
                   Git, exclusivement depuis ses arguments et son stdin
 ```

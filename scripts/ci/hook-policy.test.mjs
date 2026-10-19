@@ -264,6 +264,7 @@ test("governance coordinates parallel dirty work without losing published scope"
   const rootAgents = await readRepoFile("AGENTS.md");
   const chatgpt = await readRepoFile("CHATGPT.md");
   const scriptsAgents = await readRepoFile("scripts/AGENTS.md");
+  const testingGuide = await readRepoFile("documentation/development/TESTING.md");
   const executionPolicy = currentSection(rootAgents, "Modèle d’exécution");
   const chatgptPolicy = sectionMatching(chatgpt, /^## .*MAIN-ONLY \/ MULTI-WRITER/m, "ChatGPT multi-writer policy");
   const scriptsPolicy = currentSection(scriptsAgents, "Modèle canonique de développement");
@@ -283,6 +284,9 @@ test("governance coordinates parallel dirty work without losing published scope"
   assert.match(rootAgents, /WORKTREE/);
   assert.match(rootAgents, /STAGED/);
   assert.match(rootAgents, /PUSH_CANDIDATE/);
+  assert.match(rootAgents, /ne constitue jamais un motif d'arrêt global/);
+  assert.match(rootAgents, /WORKTREE_LIVE.*STAGED.*COMMITTED_SNAPSHOT.*PUSH_CANDIDATE/s);
+  assert.match(rootAgents, /elles ne deviennent pas des préconditions de\s+diagnostic local/);
   assert.doesNotMatch(rootAgents, /l['’]état local est prioritaire sur l['’]état github/i);
   assert.doesNotMatch(rootAgents, /workspace:start/);
   assert.doesNotMatch(scriptsAgents, /workspace:start/);
@@ -299,6 +303,9 @@ test("governance coordinates parallel dirty work without losing published scope"
   assert.match(chatgptPolicy, /convergence/);
   assert.match(chatgptPolicy, /rapide/);
   assert.match(chatgptPolicy, /sans push/i);
+  assert.match(chatgptPolicy, /héritée automatiquement par tous les prompts\s+Codex/);
+  assert.match(chatgptPolicy, /ne doit pas demander de nettoyer le checkout/);
+  assert.match(chatgptPolicy, /COMMITTED_SNAPSHOT/);
   assert.doesNotMatch(chatgpt, /push origin\/main sur demande explicite|demander commit et push le lot|committer et pousser sur main lorsque l'utilisateur l'a demandé/i);
   assert.doesNotMatch(chatgpt, /workspace:start/);
   assert.doesNotMatch(chatgpt, /publication-candidate/);
@@ -312,4 +319,9 @@ test("governance coordinates parallel dirty work without losing published scope"
   assert.doesNotMatch(scriptsAgents, /HEAD == origin\/main/);
   assert.match(scriptsAgents, /pré-commit doit utiliser exclusivement la portée `STAGED`/);
   assert.match(scriptsAgents, /pré-push réel doit utiliser exclusivement la portée\s+`PUSH_CANDIDATE`/);
+  assert.match(scriptsPolicy, /peut commencer même\s+si le checkout est dirty/);
+  assert.match(scriptsPolicy, /WORKTREE_LIVE.*STAGED.*COMMITTED_SNAPSHOT.*PUSH_CANDIDATE/s);
+  assert.match(testingGuide, /## Exécution non bloquante du checkout/);
+  assert.match(testingGuide, /Aucun worktree propre,\s+SHA figé, gel des writers ou convergence Git n'est un prérequis/);
+  assert.match(testingGuide, /Une mesure `WORKTREE_LIVE`.*ne constitue jamais une preuve reproductible/s);
 });

@@ -376,10 +376,11 @@ test("all audits accept a stable dirty worktree and record non-clean evidence", 
   }
 });
 
-test("divergent start and changed snapshots remain published as informative evidence", async () => {
+test("non-conflicting concurrent changes do not stop an audit and remain informative", async () => {
   const root = tempRoot();
   try {
     let snapshotCount = 0;
+    let engineCalls = 0;
     const changed = {
       ...stableSnapshot,
       auditedHead: "b".repeat(40),
@@ -392,10 +393,14 @@ test("divergent start and changed snapshots remain published as informative evid
       root,
       runId: "run-changed",
       snapshot: () => (++snapshotCount === 1 ? { ...stableSnapshot, originMain: "c".repeat(40), baselineStable: false, worktree: "?? foreign.txt", worktreeClean: false } : changed),
-      engine: async () => fixtureResult("dead-code"),
+      engine: async () => {
+        engineCalls += 1;
+        return fixtureResult("dead-code");
+      },
     });
     const manifest = JSON.parse(fs.readFileSync(result.results[0].paths.manifest, "utf8"));
     assert.equal(result.status, "PASS");
+    assert.equal(engineCalls, 1);
     assert.equal(manifest.auditedHead, sha);
     assert.equal(manifest.baselineStable, false);
     assert.equal(manifest.initialWorktreeClean, false);

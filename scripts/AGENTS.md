@@ -49,10 +49,24 @@ déplacé ou réconcilié par ce lot. La coordination des références Git ne pe
 pas de modifier le contenu dirty étranger. Aucun nouveau worktree, clone, claim,
 coordinateur persistant ou branche de chantier n'est créé.
 
-Chaque lot fait `git fetch origin main`, vérifie `main`, stage une allowlist,
-valide `STAGED` et crée un commit local dont les fichiers et validations sont
-identifiés. Plusieurs responsabilités peuvent être publiées ensemble si elles
-ont été explicitement relues et validées.
+Chaque lot capture d'abord l'état de `HEAD`, de `origin/main`, de l'index, du
+worktree et des untracked, identifie son allowlist, puis peut commencer même
+si le checkout est dirty, si des commits locaux ne sont pas publiés, si
+`HEAD != origin/main` ou si un autre writer est actif. Une mutation d'un chemin
+dirty étranger reste interdite sans autorisation, mais elle ne bloque pas les
+scripts ni les validations indépendants. `git fetch origin main` et la
+vérification des refs servent à requalifier une preuve ou à préparer la
+publication ; ils ne sont pas des prérequis d'exécution locale. Une évolution
+concurrente entraîne seulement la requalification ou le rejeu de la preuve
+affectée. Chaque lot stage ensuite une allowlist, valide `STAGED` et crée un
+commit local dont les fichiers et validations sont identifiés. Plusieurs
+responsabilités peuvent être publiées ensemble si elles ont été explicitement
+relues et validées.
+
+Les scopes sont strictement séparés : `WORKTREE_LIVE` est le checkout mouvant,
+`STAGED` l'index exact, `COMMITTED_SNAPSHOT` un arbre Git immuable par SHA, et
+`PUSH_CANDIDATE` les refs effectivement transmises par le protocole Git. Une
+mesure live ne peut jamais être présentée comme preuve reproductible d'un SHA.
 
 Hors mode de développement rapide :
 

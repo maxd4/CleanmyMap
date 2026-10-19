@@ -266,6 +266,26 @@ supprimer les résultats parce qu'un autre writer a travaillé en parallèle.
 La synchronisation avec `origin/main` est une exigence de réconciliation et de
 publication, pas un prérequis pour commencer une analyse locale.
 
+Cette règle est générale pour toute analyse, correction ou validation locale :
+la présence de changements staged, unstaged ou untracked, de commits locaux
+non publiés, d'un `HEAD` différent de `origin/main` ou d'un autre writer actif
+ne constitue jamais un motif d'arrêt global. Aucun prompt ordinaire ne peut
+imposer un worktree propre, un SHA figé, le gel des autres writers ou la
+convergence Git avant de commencer. L'exécution capture l'état initial, puis
+poursuit les opérations indépendantes ; si `HEAD`, `origin/main`, l'index ou le
+worktree évolue, seules les preuves devenues incohérentes sont requalifiées ou
+rejouées. Un chemin ciblé dirty attribué à un autre writer interdit seulement
+sa mutation sans autorisation et ne bloque pas les autres chemins du lot.
+
+Les scopes restent distincts : `WORKTREE_LIVE` décrit le checkout mouvant,
+`STAGED` le contenu exact de l'index du candidat, `COMMITTED_SNAPSHOT` un arbre
+Git immuable identifié par son SHA, et `PUSH_CANDIDATE` les refs réellement
+transmises par le protocole de push. Une mesure `WORKTREE_LIVE` ne devient donc
+jamais une preuve reproductible d'un SHA. Les exigences d'un candidat exact
+pour `STAGED`, `PUSH_CANDIDATE`, SonarQube ou `RELEASE` restent applicables à
+leur opération respective ; elles ne deviennent pas des préconditions de
+diagnostic local.
+
 Une exécution doit capturer immédiatement la liste des chemins dirty et
 untracked, puis figer une allowlist du lot courant. Elle ne doit jamais se
 terminer avec un fichier dirty ou untracked introduit par le lot courant, ni
@@ -300,8 +320,9 @@ ou une dette dont la provenance n'est pas établie.
   modifier les fichiers étrangers ;
 - une validation bloquante, un conflit d’attribution, une régression de
   sécurité, une divergence de `HEAD`/index ou une divergence distante restent
-  des conditions d’arrêt pour le commit et le push ; dans ces cas, aucun commit
-  ou push forcé ne doit être effectué ;
+  des conditions d’arrêt pour le commit et le push, mais pas pour les analyses
+  ou validations locales indépendantes ; dans ces cas, aucun commit ou push
+  forcé ne doit être effectué ;
 - un conflit non résolu ne doit jamais être masqué ou intégré silencieusement.
 
 Un fichier supplémentaire directement nécessaire à la même responsabilité

@@ -10,6 +10,28 @@ Le workflow CleanMyMap distingue trois modes de validation : `DEVELOPMENT`,
 `FULL` et `RELEASE`. Les tests spécialisés restent des briques appelables
 séparément, pas des modes supplémentaires.
 
+## Exécution non bloquante du checkout
+
+Les analyses et validations locales peuvent toujours démarrer et se poursuivre
+dans un checkout staged, unstaged, untracked, avec des commits locaux non
+publiés, `HEAD != origin/main` ou un autre writer actif. Aucun worktree propre,
+SHA figé, gel des writers ou convergence Git n'est un prérequis de
+`DEVELOPMENT`, d'un diagnostic ciblé ou d'une validation indépendante. Le
+runner capture l'état Git initial et les chemins du lot, préserve les chemins
+étrangers et poursuit les opérations non conflictuelles. Une évolution de
+`HEAD`, de `origin/main`, de l'index ou du worktree requalifie et rejoue
+uniquement la preuve devenue incohérente ; un chemin ciblé dirty d'un autre
+writer bloque sa mutation, pas le reste du lot.
+
+Les provenances sont distinctes et doivent être affichées : `WORKTREE_LIVE`
+pour le checkout mouvant, `STAGED` pour l'index exact, `COMMITTED_SNAPSHOT`
+pour un arbre Git immuable identifié par SHA, et `PUSH_CANDIDATE` pour les refs
+réellement transmises au push. Une mesure `WORKTREE_LIVE` est informative si
+le checkout évolue et ne constitue jamais une preuve reproductible d'un SHA.
+Les exigences de candidat exact pour `FULL`, SonarQube, les releases et le push
+restent obligatoires au moment de leur opération ; elles ne bloquent pas les
+diagnostics locaux.
+
 ## Niveau de preuve et contrats exécutés
 
 Toujours distinguer :
@@ -968,8 +990,8 @@ la séquence bornée suivante :
 La décision de fraîcheur est déterministe :
 
 - `INDEX_CURRENT` : `lastCommit` est le SHA candidat, le runner et les
-  métadonnées attendues sont compatibles, et le worktree est propre ; les
-  requêtes contextuelles peuvent orienter l'analyse ;
+  métadonnées attendues sont compatibles, et aucun changement local ne rend
+  l'arbre ambigu ; les requêtes contextuelles peuvent orienter l'analyse ;
 - `INDEX_PARTIALLY_STALE` : le SHA indexé est celui du candidat mais des
   modifications locales existent ; le graphe ne sert qu'à orienter la recherche
   et toute relation pertinente doit être confirmée dans le code courant ;
@@ -988,10 +1010,11 @@ réutilisées doivent toujours appartenir au même candidat ; aucun `PASS` ne pe
 provenir d'un autre SHA.
 
 Une réindexation locale n'est jamais automatique avant un commit. Elle ne peut
-être envisagée que pour une analyse importante, après vérification de la
-propreté ou de la séparation des changements staged/unstaged, de l'absence de
-processus concurrent et de la condition de licence ; elle ne doit jamais
-écraser, restaurer ou modifier les fichiers staged ou unstaged préexistants.
+être envisagée que pour une analyse importante, après séparation explicite des
+changements staged/unstaged et vérification de l'absence de processus qui
+pourrait rendre l'index ambigu ; la propreté n'est pas requise pour poursuivre
+les autres validations. Elle ne doit jamais écraser, restaurer ou modifier les
+fichiers staged ou unstaged préexistants.
 Les cycles globaux restent contrôlés par `quality:cycles` en `FULL` ; aucune
 requête GitNexus d'impact ne devient un contrôle bloquant de pré-commit ou de
 pré-push.
