@@ -69,7 +69,9 @@ jobs:
 
       - name: Install legacy Python PDF dependency
         if: matrix.runtime == 'python'
-        run: "python -m pip install --disable-pip-version-check --no-input --no-cache-dir --no-deps --no-binary=:all: fpdf==1.7.2"
+        # fpdf 1.x has no compatible wheel for this lane. Keep the intentional
+        # source install isolated, exact-pinned and artifact-hash verified.
+        run: "python -m pip install --disable-pip-version-check --no-input --no-cache-dir --no-deps --require-hashes --no-binary=:all: -r maintenance/python/requirements-sonarqube-source.txt"
 
       - name: Install Python maintenance dependencies
         if: matrix.runtime == 'python'

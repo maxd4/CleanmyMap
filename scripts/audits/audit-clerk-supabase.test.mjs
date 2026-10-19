@@ -8,6 +8,7 @@ import {
   resolveStoredActiveRole,
   resolveStoredRoleLabel,
 } from "./audit-clerk-supabase.mjs";
+import { sanitizeLogValue } from "../security/safe-log-value.mjs";
 
 describe("audit-clerk-supabase canonical role contract", () => {
   it("requires canonical max metadata and the exact owner id", () => {
@@ -124,5 +125,14 @@ describe("audit-clerk-supabase canonical role contract", () => {
     assert.match(logLine, /"totalCount":null/);
     assert.match(logLine, /"role_projection_source":"present"/);
     assert.doesNotMatch(logLine, /injected|role_projection_synced_at/);
+  });
+
+  it("bounds and neutralizes external diagnostic values at the output boundary", () => {
+    const externalPath = "artifacts/diagnostic\n\u001b[31mforged";
+    const logLine = `JSON: ${sanitizeLogValue(externalPath)}`;
+
+    assert.ok(logLine.length < 256);
+    assert.doesNotMatch(logLine, /[\r\n\u0000-\u001f\u007f-\u009f]/);
+    assert.match(logLine, /\\u000a/);
   });
 });

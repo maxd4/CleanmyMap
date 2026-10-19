@@ -7,11 +7,14 @@ import test from "node:test";
 
 import {
   canReuseGitNexusIndex,
+  acquireAuditLock,
   classifyGitNexusIndex,
   getGitNexusStepTimeoutMs,
   isReusableGitNexusIndex,
   main,
   parseArgs,
+  isCompleteCycleReport,
+  releaseAuditLock,
   runGitNexusCommand,
 } from "./audit-gitnexus.mjs";
 import {
@@ -24,6 +27,31 @@ test("GitNexus audit accepts only the optional cycles flag", () => {
   assert.deepEqual(parseArgs([]), { cycles: false });
   assert.deepEqual(parseArgs(["--cycles"]), { cycles: true });
   assert.throws(() => parseArgs(["--force"]), /Usage:/);
+});
+
+test("GitNexus cycle reports use bounded linear JSON detection", () => {
+  assert.equal(isCompleteCycleReport(`${"noise ".repeat(100_000)}{"status":"cycles_found","enumeration":"complete","cycles":[]}`), true);
+  assert.equal(isCompleteCycleReport(`${"{\"status\":\"noise\"}".repeat(100_000)}not-json`), false);
+  assert.equal(isCompleteCycleReport(`{"status":"cycles_found","enumeration":"complete","cycles":[{"files":["${"x".repeat(4 * 1024 * 1024)}"]}]}`), false);
+});
+
+test("GitNexus lock tokens are cryptographic and cleanup is owner-conditional", (t) => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-lock-contract-"));
+  fs.mkdirSync(path.join(repoRoot, ".gitnexus"));
+  t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
+
+  const first = acquireAuditLock(repoRoot);
+  assert.ok(first);
+  assert.match(first.token, /^[0-9a-f-]{36}$/);
+  assert.equal(acquireAuditLock(repoRoot), null);
+
+  fs.writeFileSync(first.lockPath, JSON.stringify({ token: "another-owner" }));
+  releaseAuditLock(first);
+  assert.equal(fs.existsSync(first.lockPath), true);
+
+  fs.writeFileSync(first.lockPath, JSON.stringify({ token: first.token }));
+  releaseAuditLock(first);
+  assert.equal(fs.existsSync(first.lockPath), false);
 });
 
 test("GitNexus preflight fails immediately when the local runner is missing", async (t) => {

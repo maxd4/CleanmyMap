@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
+import { sanitizeLogValue } from "../security/safe-log-value.mjs";
 
 const DEFAULT_PAGE_SIZE = 500;
 const DEFAULT_OUTPUT_BASE = join("artifacts", "audits", "clerk-supabase-audit");
@@ -784,15 +785,15 @@ async function main() {
   await writeFile(`${outputBase}.csv`, toCsv(rows), "utf8");
 
   console.log(formatAuditSummaryLog(summary));
-  console.log(`JSON: ${resolve(`${outputBase}.json`)}`);
-  console.log(`CSV:  ${resolve(`${outputBase}.csv`)}`);
+  console.log(`JSON: ${sanitizeLogValue(resolve(`${outputBase}.json`))}`);
+  console.log(`CSV:  ${sanitizeLogValue(resolve(`${outputBase}.csv`))}`);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
   main().catch((error) => {
     console.error(
       "clerk-supabase-audit failed:",
-      error instanceof Error ? error.message : String(error),
+      sanitizeLogValue(error instanceof Error ? error.message : String(error)),
     );
     process.exit(1);
   });

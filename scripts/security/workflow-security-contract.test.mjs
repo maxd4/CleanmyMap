@@ -14,6 +14,12 @@ function readWorkflow(name) {
   return readFileSync(path, "utf8");
 }
 
+function readRepositoryFile(relativePath) {
+  const path = resolve(repositoryRoot, relativePath);
+  assert.ok(existsSync(path), `${relativePath} must exist`);
+  return readFileSync(path, "utf8");
+}
+
 function assertCommonWorkflowSecurity(workflow, name) {
   assert.match(workflow, /permissions:\s*\{\}/, `${name} must deny permissions by default`);
   assert.match(workflow, /permissions:\s*\n\s+contents: read/, `${name} must use read-only contents access`);
@@ -56,4 +62,10 @@ assert.equal(
 const e2e = readWorkflow("e2e-supabase.yml");
 assert.match(e2e, /pull_request\.head\.repo\.full_name != github\.repository/);
 assert.match(e2e, /External pull requests cannot execute[\s\S]*?exit 1/);
+
+const sonarqube = readWorkflow("sonarqube-manual.yml");
+const sourceRequirement = readRepositoryFile("maintenance/python/requirements-sonarqube-source.txt");
+assert.match(sonarqube, /--require-hashes --no-binary=:all: -r maintenance\/python\/requirements-sonarqube-source\.txt/);
+assert.match(sonarqube, /--only-binary=:all: -r maintenance\/python\/requirements-dev\.txt/);
+assert.match(sourceRequirement, /^fpdf==1\.7\.2 \\\n\s+--hash=sha256:[0-9a-f]{64}$/m);
 });

@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { sanitizeLogValue } from "../security/safe-log-value.mjs";
 
 const DEFAULT_LIMIT = 100;
 const DEFAULT_OUTPUT_BASE = path.join("artifacts", "exports", "clerk-users");
@@ -53,13 +54,6 @@ function resolveOutputBasePath(value) {
   }
 
   return resolved;
-}
-
-export function sanitizeLogValue(value) {
-  return String(value).replace(/[\u0000-\u001f\u007f-\u009f]/g, (character) => {
-    const codePoint = character.codePointAt(0) ?? 0;
-    return `\\u${codePoint.toString(16).padStart(4, "0")}`;
-  });
 }
 
 function parseDotEnv(content) {
@@ -285,9 +279,10 @@ const isDirectRun =
 
 if (isDirectRun) {
   main().catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
+    console.error(sanitizeLogValue(error instanceof Error ? error.message : error));
     process.exitCode = 1;
   });
 }
 
+export { sanitizeLogValue } from "../security/safe-log-value.mjs";
 export { normaliseUser, resolveOutputBasePath, toCsv };

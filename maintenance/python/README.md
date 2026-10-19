@@ -54,6 +54,15 @@ La résolution doit ensuite être vérifiée par `pip check`, les imports, la
 compilation et la suite pytest. Le lockfile contient des versions de paquets,
 pas des chemins locaux ni des secrets.
 
+La lane de couverture SonarQube conserve l'installation source explicite de
+`fpdf==1.7.2`, car le contrat `fpdf` 1.x de `report_generator.py` ne dispose
+pas d'une wheel compatible dans cette lane. Elle n'utilise pas le lockfile
+général pour cette exception :
+`requirements-sonarqube-source.txt` impose la version exacte et le hash SHA-256
+de la distribution source, avec `--no-deps` dans l'environnement CI isolé.
+Les autres dépendances de cette lane restent installées avec
+`--only-binary=:all:` et les contraintes testées.
+
 ## Frontières et règles
 
 - Ne pas importer la logique de maintenance dans `apps/web` ou `apps/mobile`.

@@ -4,6 +4,7 @@ import {
   ACTION_DECLARATION_DRAFT_DATE_KEY,
   ACTION_DECLARATION_DRAFT_KEY,
   clearDraft,
+  createActionCreationRequestId,
   loadDraftSnapshot,
   loadDraftSnapshotResult,
   retryDraftLoad,
@@ -39,6 +40,24 @@ afterEach(() => {
 });
 
 describe("action declaration draft storage", () => {
+  it("uses the browser crypto API when randomUUID is unavailable", () => {
+    const values = new Uint8Array(16).fill(0xab);
+    vi.stubGlobal("crypto", {
+      getRandomValues: (target: Uint8Array) => {
+        target.set(values);
+        return target;
+      },
+    });
+
+    expect(createActionCreationRequestId()).toBe("action-create-abababab-abab-4bab-abab-abababababab");
+  });
+
+  it("fails explicitly when no secure browser random source is available", () => {
+    vi.stubGlobal("crypto", undefined);
+
+    expect(() => createActionCreationRequestId()).toThrow(/API crypto indisponible/);
+  });
+
   it("saves a dated draft and reloads the stored form fields", () => {
     installLocalStorage();
     const savedAt = "2026-05-13T10:45:00.000Z";

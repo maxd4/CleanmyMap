@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 import { gitExecutable } from "../ci/git-executable.mjs";
@@ -256,12 +257,17 @@ export async function runGitNexusCommand(
   };
 }
 
-function isCompleteCycleReport(stdout = "") {
-  const jsonStarts = [...stdout.matchAll(/\{\s*"status"\s*:/g)].map((match) => match.index ?? -1);
-  const jsonStart = jsonStarts.at(-1) ?? -1;
+const MAX_CYCLE_REPORT_LENGTH = 4 * 1024 * 1024;
+
+export function isCompleteCycleReport(stdout = "") {
+  const text = String(stdout);
+  const statusIndex = text.lastIndexOf('"status"');
+  const jsonStart = statusIndex < 0 ? -1 : text.lastIndexOf("{", statusIndex);
   if (jsonStart < 0) return false;
+  const candidate = text.slice(jsonStart);
+  if (candidate.length > MAX_CYCLE_REPORT_LENGTH) return false;
   try {
-    const report = JSON.parse(stdout.slice(jsonStart));
+    const report = JSON.parse(candidate);
     return report.status === "cycles_found"
       && report.enumeration === "complete"
       && Array.isArray(report.cycles);
@@ -274,9 +280,9 @@ function hasStaleStatus(stdout = "") {
   return /Status:\s*.*stale/i.test(stdout) || /Index incomplete reasons:/i.test(stdout);
 }
 
-function acquireAuditLock(repoDirectory) {
+export function acquireAuditLock(repoDirectory) {
   const lockPath = path.join(repoDirectory, auditLockRelativePath);
-  const token = `${process.pid}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  const token = randomUUID();
   let descriptor;
   try {
     descriptor = fs.openSync(lockPath, "wx");
@@ -290,7 +296,7 @@ function acquireAuditLock(repoDirectory) {
   }
 }
 
-function releaseAuditLock(lock) {
+export function releaseAuditLock(lock) {
   if (!lock) return;
   try {
     const current = JSON.parse(fs.readFileSync(lock.lockPath, "utf8"));

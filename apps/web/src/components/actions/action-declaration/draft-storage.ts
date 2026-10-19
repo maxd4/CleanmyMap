@@ -278,9 +278,26 @@ export function retryDraftLoad(): void {
 }
 
 export function createActionCreationRequestId(): string {
-  const randomUuid = globalThis.crypto?.randomUUID?.();
+  const cryptoApi = globalThis.crypto;
+  const randomUuid = cryptoApi?.randomUUID?.();
   if (randomUuid) return `action-create-${randomUuid}`;
-  return `action-create-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  if (typeof cryptoApi?.getRandomValues !== "function") {
+    throw new Error("Impossible de générer un identifiant d’action sécurisé : API crypto indisponible.");
+  }
+
+  const bytes = new Uint8Array(16);
+  try {
+    cryptoApi.getRandomValues(bytes);
+  } catch (error) {
+    throw new Error("Impossible de générer un identifiant d’action sécurisé.", { cause: error });
+  }
+
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const uuid = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  return `action-create-${uuid}`;
 }
 
 export function saveDraft(
