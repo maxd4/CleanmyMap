@@ -1,7 +1,7 @@
 "use client";
 
 import { ClerkProvider } from"@clerk/nextjs";
-import { frFR, enUS } from"@clerk/localizations";
+import { frFR } from"@clerk/localizations/fr-FR";
 import { useSitePreferences } from"@/components/ui/site-preferences-provider";
 import { ReactNode } from"react";
 
@@ -31,7 +31,7 @@ export function ClerkLocalizationProvider({
       formFieldLabel__username: "Pseudo",
       formFieldInputPlaceholder__username: "Pseudo",
     }
-  : enUS;
+  : undefined;
 
  return (
  <ClerkProvider
