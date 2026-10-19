@@ -40,7 +40,6 @@ function VolunteerChecklist({ info, fr }: { info: PublicActionPracticalInformati
   const weather = useActionPreparationWeather({
     contextId: null,
     request: baseChecklist?.weatherRequest ?? null,
-    initialWeatherContext: baseChecklist?.weatherContext ?? null,
   });
   const weatherChecklist = deriveActionVolunteerChecklist({
     preparation: null,

@@ -8,8 +8,9 @@ import {
 } from "@/lib/actions/preparation-contract";
 import {
   deriveActionVolunteerChecklist,
+  projectActionVolunteerChecklistForPublic,
   type ActionWeatherState,
-  type ActionVolunteerChecklist,
+  type ActionVolunteerChecklistPublic,
 } from "@/lib/actions/action-preparation-checklist";
 import type {
   PlannerWeatherContext,
@@ -28,7 +29,7 @@ export type PublicActionPracticalInformation = {
   equipmentProvided: string[];
   equipmentNotProvided?: string[];
   refreshmentsProvided: string[];
-  volunteerChecklist?: ActionVolunteerChecklist;
+  volunteerChecklist?: ActionVolunteerChecklistPublic;
   participantMessage: string | null;
 };
 
@@ -94,13 +95,14 @@ export function buildPublicActionPracticalInformation(
     },
     [],
   );
-  const volunteerChecklist = deriveActionVolunteerChecklist({
+  const internalVolunteerChecklist = deriveActionVolunteerChecklist({
     preparation: preparationData,
     confirmedParticipants: options.confirmedParticipants,
     weatherContext: options.weatherContext ?? preparationWeatherContext(preparationData),
     weatherRequest: options.weatherRequest,
     weatherState: options.weatherState ?? "idle",
   });
+  const volunteerChecklist = projectActionVolunteerChecklistForPublic(internalVolunteerChecklist);
 
   return {
     accessibility: readPublicText(preparationData?.accessibility),

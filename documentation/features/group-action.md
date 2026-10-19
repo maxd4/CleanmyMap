@@ -60,6 +60,11 @@ ses coordonnées correspondent à l'action, s'il reste dans l'horizon de
 prévision et s'il a été récupéré récemment ; sinon la météo est explicitement
 indisponible et un nouvel essai reste explicite. L'absence de stock ou
 d'effectif ne devient pas un manque artificiel.
+La projection HTTP publique ou bénévole ne sérialise jamais le contexte météo
+brut, `routeVersioning`, `routeCalibrationContext`, `plannerSnapshot` ni les
+évaluations internes du planner ; elle ne conserve, pour le bouton explicite,
+que les coordonnées et le créneau autorisés ainsi que l'état et les résultats
+de recommandation effectivement affichables.
 Le briefing `Jour J` suit la même projection bornée ; pour une action privée,
 un compte Clerk doit être l'organisateur autorisé ou disposer d'une inscription
 `action_registrations` réellement `confirmed`. Un `actionId` seul ou une demande

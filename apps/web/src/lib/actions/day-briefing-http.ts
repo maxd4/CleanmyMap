@@ -1,5 +1,4 @@
-import type { ActionChecklistProvenance } from "./action-preparation-checklist";
-import type { PlannerWeatherContext, PlannerWeatherContextRequest } from "@/lib/weather/planner-weather";
+import type { ActionVolunteerChecklistPublic } from "./action-preparation-checklist";
 
 export type ActionDayBriefing = {
   status: "ok";
@@ -24,19 +23,7 @@ export type ActionDayBriefing = {
     equipmentProvided: string[];
     equipmentNotProvided?: string[];
     refreshmentsProvided: string[];
-    volunteerChecklist?: {
-      toBring: Array<{ key: string; label: string; detail: string | null; provenance: ActionChecklistProvenance[] }>;
-      weatherRecommendations: Array<{ key: string; label: string; detail: string | null; provenance: ActionChecklistProvenance[] }>;
-      provided: Array<{ key: string; label: string; detail: string | null; provenance: ActionChecklistProvenance[] }>;
-      weatherStatus: "available" | "unavailable";
-      weatherState: "idle" | "loading" | "success" | "unavailable" | "error";
-      weatherMessage: string;
-      weatherForecast?: { fetchedAt: string; coveredWindow: { startAt: string; endAt: string } } | null;
-      weatherContext?: PlannerWeatherContext | null;
-      weatherRequest?: PlannerWeatherContextRequest | null;
-      staffing: { source: "confirmed" | "expected" | "unknown"; count: number | null; label: string };
-      insufficiencies: string[];
-    };
+    volunteerChecklist?: ActionVolunteerChecklistPublic;
     accessibility: string | null;
     accessibilityStatus: string;
     checklist: Array<{ key: string; label: string; checked: boolean }>;

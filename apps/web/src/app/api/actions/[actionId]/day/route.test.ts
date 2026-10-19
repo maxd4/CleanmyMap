@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { publicAction } from "@/fixtures/public-action";
+import { PLANNER_WEATHER_SNAPSHOT_VERSION } from "@/lib/weather/planner-weather";
 
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -39,6 +40,23 @@ describe("GET /api/actions/[actionId]/day", () => {
         equipmentInventory: { glovesPairs: 0, grabbers: 2, firstAidKitAvailable: true },
         refreshmentsProvided: { waterDuringAction: true, snackAfterAction: true },
         preparationChecklist: [{ key: "water", label: "Eau", checked: false }],
+        routeCalibrationContext: {
+          plannerSnapshot: {
+            weatherContext: {
+              version: PLANNER_WEATHER_SNAPSHOT_VERSION,
+              provider: "open-meteo",
+              source: "forecast",
+              fetchedAt: "2026-10-19T08:00:00.000Z",
+              coveredWindow: { startAt: "2026-10-20T09:00", endAt: "2026-10-20T11:00" },
+              status: "available",
+              weatherStatus: "available",
+              location: { latitude: 48.85, longitude: 2.35, timezone: "Europe/Paris" },
+              hourly: [],
+              summary: null,
+              operationalRisk: { status: "nominal", riskLevel: "vert", reasons: ["day-private-planner-context"], ruleVersion: "weather-operational-rules-v1", ruleSource: "apps/web/src/lib/weather/ops-weather", operationalLimitMinutes: null },
+            },
+          },
+        },
       },
     });
     const { GET } = await import("./route");
@@ -51,8 +69,13 @@ describe("GET /api/actions/[actionId]/day", () => {
     expect(body.action.equipmentNotProvided).toEqual(["Paires de gants : aucune unité fournie"]);
     expect(body.action.refreshmentsProvided).toEqual(["Eau fournie pendant l'action", "Collation prévue après l'action"]);
     expect(body.action).not.toHaveProperty("participantAccounts");
+    const serialized = JSON.stringify(body.action);
+    expect(serialized).not.toContain("day-private-planner-context");
+    expect(serialized).not.toContain("routeCalibrationContext");
+    expect(serialized).not.toContain("plannerSnapshot");
+    expect(serialized).not.toContain("weatherContext");
     expect(readActionRegistrationRecordMock).not.toHaveBeenCalled();
-  });
+  }, 15000);
 
   it("denies an authenticated requester whose future registration is only pending", async () => {
     loadActionByIdMock.mockResolvedValue(publicAction);

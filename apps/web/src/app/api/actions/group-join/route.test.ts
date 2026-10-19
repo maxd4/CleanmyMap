@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
+import { PLANNER_WEATHER_SNAPSHOT_VERSION } from "@/lib/weather/planner-weather";
 
 import {
   createSupabaseMock,
@@ -36,6 +37,25 @@ describe("GET /api/actions/group-join", () => {
             expectedWasteCategories: ["battery"],
             logisticsNotes: "Note privée non exposée.",
             checklistBeforeDeparture: "Checklist interne non exposée.",
+            routeVersioning: {
+              active: {
+                calculation: {
+                  weatherContext: {
+                    version: PLANNER_WEATHER_SNAPSHOT_VERSION,
+                    provider: "open-meteo",
+                    source: "forecast",
+                    fetchedAt: "2026-05-01T08:00:00.000Z",
+                    coveredWindow: { startAt: "2026-05-10T09:00", endAt: "2026-05-10T11:00" },
+                    status: "available",
+                    weatherStatus: "available",
+                    location: { latitude: 48.85, longitude: 2.35, timezone: "Europe/Paris" },
+                    hourly: [],
+                    summary: null,
+                    operationalRisk: { status: "nominal", riskLevel: "vert", reasons: ["internal-planner-context"], ruleVersion: "weather-operational-rules-v1", ruleSource: "apps/web/src/lib/weather/ops-weather", operationalLimitMinutes: null },
+                  },
+                },
+              },
+            } as never,
           },
         }),
         {
@@ -105,6 +125,10 @@ describe("GET /api/actions/group-join", () => {
     expect(body.items?.[0]).not.toHaveProperty("preparation_data");
     expect(body.items?.[0]).not.toHaveProperty("notes");
     expect(JSON.stringify(body.items?.[0])).not.toContain("Note privée non exposée");
+    const serialized = JSON.stringify(body.items?.[0]);
+    expect(serialized).not.toContain("internal-planner-context");
+    expect(serialized).not.toContain("routeVersioning");
+    expect(serialized).not.toContain("weatherContext");
   }, 15000);
 
   it("keeps the list available when Clerk auth cannot resolve the session", async () => {

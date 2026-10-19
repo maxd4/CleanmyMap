@@ -55,6 +55,15 @@ export type ActionVolunteerChecklist = {
   insufficiencies: string[];
 };
 
+export type ActionVolunteerWeatherRequest = Pick<
+  PlannerWeatherContextRequest,
+  "latitude" | "longitude" | "scheduledStartAt" | "scheduledEndAt"
+>;
+
+export type ActionVolunteerChecklistPublic = Omit<ActionVolunteerChecklist, "weatherContext" | "weatherRequest"> & {
+  weatherRequest?: ActionVolunteerWeatherRequest | null;
+};
+
 export type ActionVolunteerChecklistInput = {
   preparation: ActionPreparationData | null | undefined;
   confirmedParticipants?: number | null;
@@ -321,6 +330,54 @@ export function deriveActionVolunteerChecklist({
     ...(weatherRequest ? { weatherRequest } : {}),
     staffing,
     insufficiencies: toBring.insufficiencies,
+  };
+}
+
+function projectWeatherRequest(
+  request: PlannerWeatherContextRequest | null | undefined,
+): ActionVolunteerWeatherRequest | null {
+  if (!request) return null;
+  return {
+    latitude: request.latitude,
+    longitude: request.longitude,
+    ...(request.scheduledStartAt ? { scheduledStartAt: request.scheduledStartAt } : {}),
+    ...(request.scheduledEndAt ? { scheduledEndAt: request.scheduledEndAt } : {}),
+  };
+}
+
+function projectChecklistItems(items: ActionVolunteerChecklistItem[]): ActionVolunteerChecklistItem[] {
+  return items.map(({ key, label, detail, provenance }) => ({
+    key,
+    label,
+    detail,
+    provenance: [...provenance],
+  }));
+}
+
+/**
+ * Projects the internal checklist for public and confirmed-volunteer HTTP
+ * responses. Forecast context and planner evaluation objects stay server-side;
+ * only the bounded request needed by the explicit weather action is retained.
+ */
+export function projectActionVolunteerChecklistForPublic(
+  checklist: ActionVolunteerChecklist,
+): ActionVolunteerChecklistPublic {
+  return {
+    toBring: projectChecklistItems(checklist.toBring),
+    weatherRecommendations: projectChecklistItems(checklist.weatherRecommendations),
+    provided: projectChecklistItems(checklist.provided),
+    weatherStatus: checklist.weatherStatus,
+    weatherState: checklist.weatherState,
+    weatherMessage: checklist.weatherMessage,
+    ...(checklist.weatherForecast ? {
+      weatherForecast: {
+        fetchedAt: checklist.weatherForecast.fetchedAt,
+        coveredWindow: { ...checklist.weatherForecast.coveredWindow },
+      },
+    } : {}),
+    ...(checklist.weatherRequest ? { weatherRequest: projectWeatherRequest(checklist.weatherRequest) } : {}),
+    staffing: { ...checklist.staffing },
+    insufficiencies: [...checklist.insufficiencies],
   };
 }
 

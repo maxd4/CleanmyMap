@@ -39,7 +39,6 @@ export function ActionDayView({ actionId }: { actionId: string }) {
   const weather = useActionPreparationWeather({
     contextId: actionId,
     request: actionBriefing?.action.volunteerChecklist?.weatherRequest ?? null,
-    initialWeatherContext: actionBriefing?.action.volunteerChecklist?.weatherContext ?? null,
   });
   const weatherChecklist = deriveActionVolunteerChecklist({
     preparation: null,
