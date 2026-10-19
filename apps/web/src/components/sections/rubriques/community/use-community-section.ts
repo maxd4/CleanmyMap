@@ -6,10 +6,10 @@ import { useCommunityActions } from "./use-community-actions";
 import { toRsvpLabel } from "./helpers";
 import type { CommunityTab, UseCommunitySectionModel } from "./types";
 
-export function useCommunitySection(): UseCommunitySectionModel {
+export function useCommunitySection({ eventsEnabled = true }: { eventsEnabled?: boolean } = {}): UseCommunitySectionModel {
   const [activeTab, setActiveTab] = useState<CommunityTab>("upcoming");
 
-  const eventsHook = useCommunityEvents();
+  const eventsHook = useCommunityEvents(eventsEnabled);
   const actionsHook = useCommunityActions(eventsHook.reloadEvents);
 
   return {

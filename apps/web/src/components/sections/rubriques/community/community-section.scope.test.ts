@@ -52,6 +52,18 @@ describe("CommunitySection scope", () => {
     expect(actionsHookSource).toContain("updateCommunityEventOps");
   });
 
+  it("resolves the surface tab before enabling the community event read", () => {
+    expect(sectionSource.indexOf("const searchParams = useSearchParams();")).toBeLessThan(
+      sectionSource.indexOf("const model = useCommunitySection"),
+    );
+    expect(sectionSource).toContain(
+      'useCommunitySection({ eventsEnabled: !isPartnersTab })',
+    );
+    expect(eventsHookSource).toContain(
+      'enabled ? ["section-community-events"] : null',
+    );
+  });
+
   it("does not retain the unsourced operational promise removed from the journey", () => {
     const createEventSource = readFileSync(join(communityRoot, "create-event-card.tsx"), "utf8");
 

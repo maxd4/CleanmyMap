@@ -17,17 +17,16 @@ import { CmmButton } from "@/components/ui/cmm-button";
 type SurfaceTab = "community" | "partners";
 
 export function CommunitySection() {
-  const model = useCommunitySection();
-  const { eventsLoadError, reloadEvents } = model;
-  const { locale } = useSitePreferences();
-  const fr = locale === "fr";
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const lastToastRef = useRef<string | null>(null);
-
   const surfaceTab: SurfaceTab =
     searchParams.get("tab") === "partners" ? "partners" : "community";
   const isPartnersTab = surfaceTab === "partners";
+  const model = useCommunitySection({ eventsEnabled: !isPartnersTab });
+  const { eventsLoadError, reloadEvents } = model;
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
+  const lastToastRef = useRef<string | null>(null);
 
   useEffect(() => {
     const error = eventsLoadError?.kind === "network" ? eventsLoadError : null;

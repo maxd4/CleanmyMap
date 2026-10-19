@@ -93,6 +93,11 @@ relais, de création de l'action terrain et de partage sont repliées dans le
 détail. Les seules passerelles générales en bas de page sont l'annuaire et la
 messagerie.
 
+Le changement vers `Partenaires` désactive la clé SWR des événements ; les 120
+événements ne sont donc chargés qu'à l'ouverture de `Communauté`. Un retour à
+`Communauté` réutilise le cache SWR récent et conserve l'état local du formulaire
+et des suivis non sauvegardés pendant la consultation de l'annuaire.
+
 ## Périmètre fonctionnel actuel
 
 L'onglet `Communauté` expose uniquement :

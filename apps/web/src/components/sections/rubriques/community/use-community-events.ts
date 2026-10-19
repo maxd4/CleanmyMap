@@ -4,7 +4,7 @@ import { fetchCommunityEvents } from "@/lib/community/http";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { isAppError, toAppError } from "@/lib/errors/app-errors";
 
-export function useCommunityEvents() {
+export function useCommunityEvents(enabled = true) {
   const {
     data: eventsData,
     error: eventsError,
@@ -12,7 +12,7 @@ export function useCommunityEvents() {
     isValidating: eventsValidating,
     mutate: reloadEvents,
   } = useSWR(
-    ["section-community-events"],
+    enabled ? ["section-community-events"] : null,
     () => fetchCommunityEvents({ limit: 120 }),
     swrRecentViewOptions,
   );

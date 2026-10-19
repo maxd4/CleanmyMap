@@ -32,12 +32,22 @@ export async function GET() {
 }
 
 function stripPublicationMetadata(entry: PublishedPartnerAnnuaireEntry) {
- const { sourceRequestId, publishedAt, publicationStatus, source, reviewedAt, reviewedByUserId, ...rest } = entry;
+  const {
+    sourceRequestId,
+    publishedAt,
+    publicationStatus,
+    source,
+    reviewedAt,
+    reviewedByUserId,
+    internalAdminContact,
+    ...rest
+  } = entry;
  void sourceRequestId;
  void publishedAt;
  void publicationStatus;
  void source;
  void reviewedAt;
  void reviewedByUserId;
+  void internalAdminContact;
  return rest;
 }
