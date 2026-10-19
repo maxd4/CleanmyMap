@@ -58,7 +58,7 @@ function findForbiddenCheckoutSkillArtifacts(view) {
 
   for (const relativePath of view.listFiles()) {
     const parts = relativePath.split("/");
-    if (parts.at(-1) === "skills-lock.json") {
+    if (parts.at(-1) === "skills-lock.json" && relativePath !== "skills-lock.json") {
       violations.push(`${relativePath}: skills-lock.json inside the checkout`);
     }
 

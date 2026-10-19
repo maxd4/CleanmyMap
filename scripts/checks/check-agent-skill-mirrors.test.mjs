@@ -52,6 +52,21 @@ describe("agent skill mirror governance", () => {
     }
   });
 
+  it("accepts the published root skills lock", () => {
+    const script = path.join(process.cwd(), "scripts", "checks", "check-agent-skill-mirrors.mjs");
+    const fixture = createValidFixture();
+    fs.writeFileSync(path.join(fixture, "skills-lock.json"), '{"version":1,"skills":{}}\n');
+
+    try {
+      const result = runCheck(script, fixture);
+
+      assert.equal(result.status, 0);
+      assert.match(result.output, /1 mirrored skills/);
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
   it("rejects an untracked nested vendor skill directory", () => {
     const script = path.join(process.cwd(), "scripts", "checks", "check-agent-skill-mirrors.mjs");
     const fixture = createValidFixture();

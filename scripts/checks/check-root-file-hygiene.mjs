@@ -26,6 +26,7 @@ export const versionableRootFiles = new Set([
   "README.md",
   "SECURITY.md",
   "sonar-project.properties",
+  "skills-lock.json",
 ]);
 
 export const trackedCanonicalRootDirectories = [

@@ -45,6 +45,19 @@ test("linked worktree metadata file is allowed at the repository root", () => {
   assert.deepEqual(result.forbidden, []);
 });
 
+test("the published root skills lock is allowed while unknown root files remain rejected", () => {
+  assert.equal(versionableRootFiles.has("skills-lock.json"), true);
+
+  const result = validateRootFileHygiene({
+    mode: "git",
+    listFiles: () => ["README.md", "skills-lock.json", "unknown-root.txt"],
+    rootFiles: () => ["README.md", "skills-lock.json", "unknown-root.txt"],
+    rootDirectories: () => [],
+  });
+
+  assert.deepEqual(result.forbidden, ["unknown-root.txt"]);
+});
+
 test("SonarQube configuration is allowed while unknown root files remain rejected in Git and filesystem views", (t) => {
   assert.equal(versionableRootFiles.has("sonar-project.properties"), true);
 
