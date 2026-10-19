@@ -15,7 +15,9 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 import {
-  getSafeFeedbackScreenshotPreviewUrl,
+  createFeedbackScreenshotPreview,
+  isFeedbackScreenshotPreview,
+  revokeFeedbackScreenshotPreview,
   uploadFeedbackScreenshot,
   validateFeedbackScreenshotFile,
 } from "@/lib/community/feedback-screenshot-client";
@@ -28,15 +30,23 @@ function pngFile(size = 8) {
 }
 
 describe("feedback screenshot browser upload contract", () => {
-  it("allows only a same-origin blob preview and keeps hostile file names as data", () => {
-    vi.stubGlobal("window", { location: { origin: "https://cleanmymap.test" } });
+  it("creates and revokes only validated local previews", () => {
+    const createObjectURL = vi.fn(() => "blob:owned-preview");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
 
-    expect(getSafeFeedbackScreenshotPreviewUrl("blob:https://cleanmymap.test/preview-1")).toBe(
-      "blob:https://cleanmymap.test/preview-1",
-    );
-    expect(getSafeFeedbackScreenshotPreviewUrl("https://attacker.test/preview.png")).toBeNull();
-    expect(getSafeFeedbackScreenshotPreviewUrl("javascript:alert(1)")).toBeNull();
+    const preview = createFeedbackScreenshotPreview(pngFile());
+    expect(preview?.url).toBe("blob:owned-preview");
+    expect(createObjectURL).toHaveBeenCalledOnce();
+    expect(isFeedbackScreenshotPreview(preview)).toBe(true);
+    expect(isFeedbackScreenshotPreview({ url: "blob:foreign-preview" })).toBe(false);
 
+    revokeFeedbackScreenshotPreview(preview);
+    revokeFeedbackScreenshotPreview(preview);
+    expect(revokeObjectURL).toHaveBeenCalledOnce();
+
+    expect(createFeedbackScreenshotPreview(new File(["video"], "capture.mp4", { type: "video/mp4" }))).toBeNull();
+    expect(createObjectURL).toHaveBeenCalledOnce();
     vi.unstubAllGlobals();
   });
 

@@ -1,268 +1,352 @@
 # Gouvernance des coûts plateforme — CleanMyMap
 
-## Objet
+## Objet, portée et statut
 
-Ce document est la source `CURRENT` pour les décisions de coût et de placement
-entre Vercel, Supabase, le navigateur et les assets préparés.
+Ce document est la **source `CURRENT` unique** pour les décisions durables de coût,
+de placement et de déclenchement entre Vercel, Supabase, le navigateur, les
+fournisseurs externes et les assets préparés. Il s'applique aux fonctionnalités
+nouvelles et aux évolutions des parcours existants, sur Web et sur leurs
+consommateurs mobiles lorsqu'ils partagent les mêmes contrats serveur.
 
-Il ne contient ni backlog daté, ni classement ponctuel de routes, ni compteur de
-quota. Les diagnostics historiques vivent dans
-[`audits/`](./audits/). Les rapports entièrement générés vivent sous
-`artifacts/`.
+Il définit **les règles à respecter**, non un inventaire de tâches terminées.
+Les exemples de surfaces décrivent une **politique produit cible** ; ils ne
+prouvent ni son intégration dans le code, ni son déploiement. La vérité runtime
+reste le code et ses tests sur `main`, puis les mesures des services connectés.
 
-Pour les sources de vérité des données, lire aussi
-[`../architecture/data-governance.md`](../architecture/data-governance.md).
-Pour l'autorisation, utiliser
-[`../security/authorization-capabilities.md`](../security/authorization-capabilities.md).
-Le coût ne crée jamais à lui seul une permission.
+Ce fichier ne contient ni backlog daté, ni classement ponctuel de routes, ni
+compteur de quota. Les diagnostics historiques, leurs dates, SHAs et limites
+sont conservés dans [`audits/`](./audits/) ; les rapports reproductibles sous
+`artifacts/`. Un audit statique ne constitue pas une mesure de production.
 
-## Principe directeur
+Sources complémentaires :
 
-Choisir la couche qui porte réellement la responsabilité :
+- [Gouvernance des données](../architecture/data-governance.md) : sources de vérité et cycle de vie.
+- [Capacités d'autorisation](../security/authorization-capabilities.md) : AuthN, AuthZ, RLS et scopes.
+- [Playbook Supabase](../database/supabase-table-optimization-playbook.md) : plans d'exécution, index et requêtes.
+- [Découpage client/serveur](../development/client-server-bundle-splitting.md) : frontières Next.js et poids du navigateur.
+- [Documentation de test](../development/TESTING.md) : niveaux de preuve.
+
+**Invariant supérieur :** la sécurité, les permissions, l'intégrité des données,
+les obligations légales et les informations nécessaires à l'utilisateur ne
+sont jamais sacrifiées pour économiser un quota.
+
+## 1. Les trois catégories de fonctionnalités
+
+Chaque **opération distante**, et non nécessairement chaque page entière, doit
+être classée en l'une des catégories suivantes avant toute nouvelle lecture,
+fonction Vercel, actualisation, récupération média ou calcul serveur.
+
+| Catégorie | Définition | Déclenchement attendu | Optimisation prioritaire |
+|---|---|---|---|
+| **A — Essentielle** | Nécessaire immédiatement pour rendre la surface utile, sûre, accessible ou cohérente : autorisation, contenu principal, rendez-vous d'action, alertes importantes. | Automatique, mais uniquement au moment et sur l'audience réellement nécessaires. | Projection minimale, statique/ISR, cache compatible, lectures bornées, suppression de doublons. |
+| **B — Facultative et potentiellement coûteuse** | Analyse approfondie, statistiques secondaires, export, comparaison, grande carte secondaire, historique ou diagnostic que l'utilisateur peut choisir de ne pas consulter. | Après une intention explicite : clic, ouverture volontaire d'un onglet ou panneau, demande de génération. | **Chargement à la demande réel** en amont du réseau et du rendu serveur, réutilisation des résultats valides. |
+| **C — Nécessaire mais récurrente** | Donnée utile dont la fraîcheur exige une synchronisation : messages, notifications, statut de demandes, supervision et mises à jour visibles. | Chargement initial justifié puis rafraîchissement conditionné à visibilité, activité, changement ou événement. | Fréquence bornée, arrêt hors visibilité, cache, déduplication, Realtime si pertinent, push ou revalidation ciblée. |
+
+Les catégories ne sont **ni des rôles d'accès**, ni une taxonomie de
+confidentialité : une opération `privileged` peut être de catégorie A, B ou C.
+Une même page peut cumuler les trois catégories. Un jeu de données peut changer
+de catégorie selon son consommateur : les références de scores sont nécessaires
+à une carte dont les couleurs sont visibles, mais facultatives sur un écran où
+la carte n'est pas ouverte.
+
+### 1.1 Règles de classement
+
+1. **A par nécessité démontrée**, jamais parce qu'un `useEffect`, un hook SWR
+   ou un Server Component est historiquement monté. L'absence d'une donnée
+   essentielle ne doit pas provoquer de fausse valeur ou désactiver un contrôle
+   de sécurité.
+2. **B par défaut pour les enrichissements** : comparaison détaillée, historique
+   secondaire, diagnostic administratif, export ou grande image. Le clic doit
+   correspondre à une décision compréhensible, non à un obstacle artificiel.
+3. **C uniquement si la fraîcheur a une valeur métier** : documenter pourquoi
+   le simple rechargement volontaire ou un cache borné ne suffit pas.
+4. **Ne pas ajouter un bouton déjà implicite** : ouvrir l'onglet « Communauté »,
+   visiter `/sections/leaderboard`, soumettre une recherche ou générer un PDF
+   sont déjà des intentions. Ajouter un deuxième bouton ne réduit pas
+   nécessairement les requêtes et dégrade le parcours.
+5. **Choisir au niveau de l'opération** : conserver automatiquement le résumé
+   tout en différant les détails. Ne pas cacher toute la carte publique,
+   toutes les informations d'une action ou le suivi personnel pour éviter une
+   seule lecture facultative.
+6. **Réévaluer lorsque le produit évolue** : les nouvelles surfaces, caches,
+   sources, quotas ou usages peuvent modifier le bon déclencheur.
+
+### 1.2 Ce que signifie « derrière un bouton »
+
+La mise en attente doit empêcher **l'exécution** et pas seulement la visibilité :
+
+- Avant l'intention : ni `fetch`, ni RPC Supabase, ni appel fournisseur, ni
+  génération côté serveur déclenchés spécifiquement par le détail facultatif.
+- Un panneau fermé ne doit pas monter un hook dont la clé SWR reste active.
+  Utiliser une clé `null`, un `enabled` réel ou ne pas monter le composant.
+- Une route serveur ne doit pas charger à l'avance une analyse facultative
+  pour la masquer ensuite dans le navigateur.
+- Les `prefetch`, `IntersectionObserver`, import dynamique, `Suspense` ou CSS
+  seuls **ne garantissent pas** l'absence de requête. Vérifier le déclencheur
+  réel de chaque dépendance, y compris les Server Components et liens Next.js.
+- Après le clic : état `loading`, résultat, absence réelle, erreur et action de
+  nouvelle tentative compréhensibles ; désactivation pendant la demande et
+  déduplication des intentions simultanées.
+- Lors d'une fermeture/réouverture : réutiliser les données encore valides,
+  sans ajouter de cache parallèle.
+- Au changement de paramètres métier : invalider les résultats incompatibles ;
+  annuler ou ignorer les réponses tardives. Ne jamais montrer une ancienne
+  prévision météo pour une nouvelle date ou un nouveau lieu.
+- Un bouton « Actualiser » est distinct d'un bouton « Consulter » : il force
+  une revalidation seulement à la demande, avec garde anti-abus adapté.
+
+Pour une donnée de catégorie C, désactiver le polling quand la surface devient
+inactive **sans perdre les événements qui doivent rester notifiés**. Un badge
+d'alerte peut avoir une projection légère et un rythme limité tandis que son
+historique détaillé attend l'ouverture du panneau.
+
+### 1.3 Matrice de déclenchement par surface
+
+| Situation | Comportement canonique |
+|---|---|
+| Arrivée sur une page | Charger son contenu essentiel A, pas les détails B de panneaux cachés. |
+| Onglets mutuellement exclusifs | Charger seulement les données de l'onglet actif ; réutiliser le cache si l'utilisateur revient. |
+| Modal, accordéon, panneau d'exploration | Ne déclencher B qu'après ouverture explicite ; préserver l'accessibilité clavier. |
+| Carte principale et ses couleurs | Charger automatiquement les marqueurs et références nécessaires, bornés et cohérents. |
+| Carte secondaire sous le pli | Différer ses données et dépendances jusqu'à son usage ou sa visibilité justifiée ; ne pas utiliser le viewport comme prétexte à un calcul caché non requis. |
+| Recherche texte | Délai de frappe, longueur minimale, requêtes annulables, pagination ; éviter le clic de confirmation inutile si le parcours est une autocomplétion. |
+| Temps réel et notifications | Visibilité, activité, déduplication et fréquence proportionnée ; ne pas supprimer les alertes. |
+| Export PDF/CSV/JSON | Génération et lecture lourde après action explicite ; réutiliser snapshot et artefact existants. |
+| Calcul local pur | Ne pas l'assimiler à un coût Supabase/Vercel ; prioriser les appels réseau et les ressources CPU réellement significatives. |
+| Cron et opérations réglementaires | Exécuter indépendamment des visites ; bornes, idempotence et cadence contrôlées. |
+
+## 2. Décisions produit par famille de fonctionnalités
+
+Ces décisions encadrent les intégrations et leurs tests. Elles ne signifient
+**pas** que les lots correspondants ont déjà été livrés. Le code publié reste
+l'autorité sur le comportement effectivement disponible.
+
+| Famille | Chargement à préserver | Déclenchement facultatif / optimisation retenue |
+|---|---|---|
+| **Gamification** | Progression et reconnaissance personnelles, sous AuthN. | Ne pas charger le classement public dans « Progression & badges » si un lien vers `/sections/leaderboard` existe déjà. Le chargement du classement appartient à cette page, après navigation volontaire. |
+| **Recyclage** | Synthèse publique, informations pédagogiques et conseils de tri. | Ventilation authentifiée des déchets, qualité détaillée et grands agrégats au clic « Voir la répartition détaillée des déchets » ; aucune requête privée anonyme qui échoue systématiquement en 401. |
+| **Communauté / Partenaires** | Événements dans l'onglet Communauté ; partenaires dans leur propre onglet. | Désactiver les lectures événements, RSVP et traitements annexes lorsque `?tab=partners` est actif. Le changement d'onglet est déjà le déclencheur ; aucun deuxième bouton. |
+| **Annuaire** | Fiches, recherche et filtres publics permettant de trouver un acteur. | Différer seulement une carte ou des enrichissements qui causent de véritables lectures supplémentaires ; privilégier le filtrage local et le cache public existant. |
+| **Administration Codex / Storage** | Alertes minimales nécessaires à la supervision, permissions et diagnostics de sécurité. | Ouvrir les historiques et analyses détaillées avec « Consulter le suivi Codex » et « Consulter l'utilisation du stockage ». Le seul chargement par proximité du viewport n'est pas une intention explicite. |
+| **Pilotage institutionnel** | Vue générale et zone autorisée ; contrôles `canAccessPilotage` et scopes inchangés. | Suspendre revalidation des analyses lorsqu'un onglet purement méthodologique est affiché ; ouvrir les opérations ou comparaisons avancées sur demande. |
+| **Rapports d'impact** | Synthèse exacte admissible, onglets « Mes fichiers » et bibliothèque selon leurs contrats d'accès. | Analyses profondes après « Afficher les analyses détaillées » ; préserver la reprise de configuration, les filtres et le générateur existant. Aucun deuxième bouton avant `POST /api/reports/generations`, déjà explicite. |
+| **Cartographie** | Marqueurs, couleurs et références indispensables à la carte principale ; exclusions des actions privées. | Références de score et modules Leaflet des cartes secondaires seulement quand réellement nécessaires ; déduplication par contexte/viewport, pas de RPC par popup. |
+| **Galerie SPOGOMI** | Miniatures et crédits publics, parcours clavier. | Grande résolution uniquement après ouverture de la photo ; mesurer le poids réel et préférer une variante canonique légère si son économie nette est justifiée. |
+| **Checklist bénévole / météo** | Équipements fournis, matériel à apporter et conseils Waste sans météo. | Prévision fraîche et recommandations météo après « Voir les recommandations selon la météo » ; préférer un contexte déjà valide. Ne pas masquer un calcul local léger ni appeler Open-Meteo avant intention pour cette checklist. |
+| **Itinéraires** | Formulaire et données utiles au paramétrage. | `POST /api/route/recommend` est déjà une action explicite : ne pas ajouter une confirmation secondaire ; optimiser la résolution serveur et le cache si les mesures l'exigent. |
+| **Messagerie / notifications** | Messages de la conversation ouverte, alertes et compteur nécessaire à l'utilisateur. | Pas de bouton préalable ; polling borné et désactivé hors contexte, Realtime si utile, historique et listes détaillées différés si indépendants du compteur. |
+| **Adresses** | Suggestions pendant une véritable saisie. | Garder un debounce, seuil minimal, local-first et annulation des recherches périmées ; ne pas remplacer l'autocomplétion par un bouton. |
+| **Accueil** | Contenu public essentiel et synthèse légère. | ISR et rafraîchissement de l'activité proche du viewport selon son contrat ; aucune obligation de cliquer pour comprendre CleanMyMap. |
+| **Maintenance** | Crons, rappels et obligations opérationnelles. | Pas de dépendance au clic ; fréquence, scope, quotas de traitement et idempotence contrôlés. |
+
+### 2.1 Précautions métier propres à ces décisions
+
+- **Résumé et détail doivent provenir du même modèle métier canonique.** Ne
+  jamais fabriquer un compteur global à partir d'un échantillon tronqué ni
+  substituer un agrégat public à un scope d'organisateur.
+- **La météo externe doit être distinguée du coût hébergeur.** Un appel direct
+  navigateur → Open-Meteo n'est pas en soi une invocation Vercel ni une lecture
+  Supabase ; une route serveur qui agrège météo et actions peut consommer les
+  deux. Les règles de fraîcheur, de pertinence et de fournisseur restent
+  applicables dans les deux cas.
+- **Le classement ne doit pas émettre de nouvelle récompense.** Son chargement
+  différé ne change ni le ledger XP, ni les règles de consentement ou de
+  visibilité publique.
+- **Les exports ne créent pas une nouvelle vérité.** Prévisualisation, document
+  HTML officiel, PDF et snapshots historiques restent synchronisés via leurs
+  contrats de génération et de stockage existants.
+- **Les scores de la carte ne sont pas décoratifs.** Une carte principale ne
+  doit pas devenir grise, afficher zéro ou changer de légende à cause d'une
+  optimisation qui supprime les références nécessaires.
+- **Les actions privées restent privées**, y compris lors d'un appel direct à
+  une API, d'un préchargement, d'un export ou d'une requête par `actionId`.
+- **Les données inconnues restent inconnues** : erreur, absence de permission,
+  couverture partielle ou cache périmé ne se transforment jamais en zéro ni en
+  « aucune activité ».
+
+## 3. Placement technique et nature des quotas
+
+Choisir la couche portant effectivement la responsabilité :
 
 | Besoin | Couche par défaut | Règle |
 |---|---|---|
-| contenu public durable et versionné | Git / rendu statique | ne pas déplacer en base sans besoin de mutation |
-| état personnel éphémère ou non critique | navigateur | `localStorage` / IndexedDB si aucune synchronisation serveur n'est requise |
-| donnée métier persistante, partagée ou sécurisée | Supabase | RLS, lectures bornées, index ou RPC adaptés |
-| secret serveur, orchestration, mutation privilégiée, agrégation serveur nécessaire | Vercel / serveur applicatif | garder le handler utile, borné et explicitement justifié |
-| média ou livrable réutilisable | asset préparé / Storage | ne pas reconstruire le fichier à chaque lecture |
-| donnée dérivée recalculable | cache / ISR / revalidation | le cache n'est jamais la source de vérité |
+| Contenu public durable et versionné | Git / rendu statique | Pas de base sans nécessité de mutation. |
+| État personnel éphémère non critique | Navigateur | `localStorage` / IndexedDB si aucune synchronisation nécessaire. |
+| Donnée métier partagée, persistée ou sécurisée | Supabase | RLS, index, projection minimale et requêtes bornées. |
+| Secret, privilège, coordination interservices | Serveur/Vercel | Handler justifié, limité et mesurable. |
+| Média ou livrable réutilisable | Asset préparé, Storage ou CDN | Éviter de reconstruire à chaque consultation. |
+| Donnée dérivée et recalculable | Cache, ISR, revalidation ou snapshot | Le cache n'est jamais source de vérité. |
 
-Une route Vercel n'est pas un proxy Supabase par défaut. Un accès direct
-navigateur → Supabase n'est acceptable que si le contrat RLS et la surface de
-données le permettent réellement.
+Une route Vercel n'est pas un relais Supabase par défaut. Un accès direct du
+navigateur à Supabase n'est acceptable qu'avec un contrat RLS et une projection
+réellement adaptés. Aucune optimisation ne doit exposer une clé privilégiée.
 
-## Dimensions de coût à surveiller
+### 3.1 Coûts à distinguer
 
-Les libellés Vercel utilisés par le dépôt incluent notamment :
+**Vercel** : `Invocations`, `Edge Requests`, `Fast Origin Transfer`,
+`Fast Data Transfer`, mémoire et calcul des fonctions, builds et déploiements.
+Un rendu serveur ou une API peut également réaliser plusieurs lectures en base.
+Les noms commerciaux peuvent évoluer ; les tableaux de bord du fournisseur
+restent la référence des compteurs réels.
 
-- `Invocations` : exécutions de fonctions et rendus serveur ;
-- `Edge Requests` : requêtes traitées par l'edge ;
-- `Fast Origin Transfer` : données transférées entre edge et origine ;
-- `Fluid Memory` : mémoire provisionnée pendant l'exécution ;
-- `Fast Data Transfer` : octets servis au visiteur.
+**Supabase** : ressources PostgreSQL (requêtes, durée et contention), egress
+Database/Storage, taille et nombre des objets Storage, trafic Realtime,
+connexions, fonctions éventuelles et opérations administratives. Une lecture
+directe Supabase peut ne pas appeler Vercel tout en consommant la base et le
+réseau. Inversement, une fonction Vercel qui ne lit pas Supabase consomme des
+ressources Vercel, pas nécessairement un quota Database.
 
-Les noms et modalités commerciales peuvent évoluer chez le fournisseur. Les
-scripts et dashboards courants restent l'autorité pour les mesures actuelles ;
-ce document ne fige aucun plafond numérique.
+**Autres services** : Clerk, Open-Meteo, géocodage, email, Sentry, PostHog,
+GitHub et autres fournisseurs disposent de tarifs, politiques et limites
+indépendants. Une opération client directe vers un tiers ne doit pas être
+comptée comme une invocation Vercel fictive.
 
-Les sélecteurs d'organisateurs et de membres des actions utilisent
-`GET /api/actions/account-options`. Cette route est une lecture authentifiée
-server-side de Clerk, limitée à 10 comptes par page, à 120 caractères de
-recherche et à un offset maximal de 100000, avec un rate limit de 60 requêtes
-par minute. Sa réponse `private, no-store` contient uniquement l'identifiant,
-le nom public et le pseudo ; elle évite de mettre en cache entre sessions des
-données de sélection et ne transmet ni email privé ni activité Clerk. Le coût
-à surveiller est donc principalement l'invocation Vercel et l'appel Clerk,
-avec une taille de réponse bornée ; toute évolution du volume ou de la
-fréquence doit passer par l'audit de quotas existant.
+Pour toute hypothèse d'économie, définir l'unité : requêtes **logiques**
+évitées, invocations observées, lignes/objets lus, octets transférés, CPU,
+événements Realtime, transformations ou téléchargements. Ne pas convertir
+un compteur local en euros ou en pourcentage d'allocation sans métriques
+correspondantes et tarifs applicables vérifiés.
 
-Les décisions d'actions utilisent deux surfaces privées distinctes, conservées
-dans [`scripts/vercel-api-routes-baseline.json`](../../scripts/vercel-api-routes-baseline.json)
-avec leur provenance et leur contrat de coût :
+### 3.2 Instrumentation et comparabilité
 
-- `GET/PATCH /api/actions/invitations` est réservé au destinataire authentifié
-  d'une invitation `manual_add`. La lecture et la décision passent par les RPC
-  destinataire-scopées et ne projettent que les identifiants d'inscription et
-  d'action ; la décision est atomique et idempotente. `private, no-store` est
-  nécessaire pour ne pas servir à un autre destinataire un état d'invitation
-  personnel qui doit rester frais. La lecture est limitée à 30 requêtes par
-  minute et les décisions à 10 par minute via le limiteur canonique ; aucune
-  sauvegarde ordinaire ne crée une nouvelle invitation.
-- `GET /api/actions/registration-requests` est réservé à un reviewer
-  authentifié. Sa RPC reprojette uniquement les demandes `group_form/pending`
-  d'actions futures publiées et visibles, avec notification existante et droits
-  actuels ; elle ne crée pas de seconde file. Sa projection est limitée aux
-  identifiants d'inscription et d'action et reste `private, no-store` pour
-  synchroniser les décisions concurrentes.
+Pour chaque opération significative, relever si accessible :
 
-Ces lectures de décision sont déclenchées par le rafraîchissement du centre de
-notifications : la cloche utilise un intervalle de 300 secondes lorsqu'elle
-est ouverte et de 900 secondes lorsqu'elle est fermée mais visible ; le tableau
-de bord les charge à son ouverture et lors d'un chargement explicite
-supplémentaire, sans intervalle dédié. Les bornes sont donc la projection RPC
-par utilisateur/reviewer, l'état canonique encore actionnable et cette fréquence
-de rafraîchissement ; aucun payload de notification complet ni donnée privée
-Clerk n'est répliqué dans Vercel.
+1. **Déclencheur réel** : montage, navigation, clic, onglet, scroll, focus,
+   mutation, timer, cron, bot ou revalidation.
+2. **Chaîne d'appels** : navigateur → route Vercel → RPC/SQL/Storage/tiers ;
+   différencier accès direct Supabase et passage par fonction.
+3. **Cardinalité** : appels par visite, utilisateur, événement, fenêtre horaire
+   et scénario de montée en charge.
+4. **Volume et coût unitaire** : octets, lignes, taille de payload, durée,
+   cache hit/miss, génération d'artefact ou trafic de médias.
+5. **Comparaison juste** : même action utilisateur, audience, cold/warm cache,
+   droits et période. Les changements de trafic ne valent pas gains d'efficacité.
+6. **Niveau de preuve** : observation fournisseur, trace réseau ou test local,
+   estimation modélisée et simple hypothèse explicitement distingués.
 
-Le rappel J-1 des inscriptions confirmées ne crée pas de cron supplémentaire :
-le job quotidien `action-reminders` est exécuté par le registre de
-`/api/cron/maintenance`. Sa RPC ne parcourt que les actions dont la date locale
-`Europe/Paris` est le lendemain, les inscriptions `confirmed` et la préférence
-de rappel ; l'index d'événements stable rend les retries sans effet et empêche
-la réémission après changement de date. La page de réglages lit une préférence
-agrégée et les masques d'action ; elle reste `private, no-store` et
-rate-limitée, sans canal email, SMS ou push implicite.
+Si les données de facturation ou les logs sont indisponibles, conserver un
+**verdict de coût non mesuré**. Des tests montrant zéro requête facultative
+avant clic démontrent un déclenchement maîtrisé, **pas** un montant économisé.
 
-## Soutenabilité préventive des plans gratuits
+## 4. Soutenabilité préventive des offres gratuites
 
 CleanMyMap doit pouvoir rester sur les offres gratuites de Vercel, Supabase et
-des services associés aussi longtemps que raisonnablement possible, y compris
-lorsque le nombre de bénévoles, d'actions et de consultations augmente
-fortement. La maîtrise des quotas est une contrainte d'architecture et de
-produit dès la conception, et non une correction à effectuer après saturation.
+des services associés aussi longtemps que raisonnablement possible, même si
+les bénévoles, actions et consultations augmentent fortement. Les quotas sont
+une contrainte d'architecture dès la conception et non un problème à attendre.
 
-Une réévaluation est prioritaire lorsqu'au moins l'un des cas suivants apparaît :
+Réévaluer en priorité lorsqu'au moins une condition apparaît :
 
-- une page, une fonctionnalité, une ressource, une tâche automatique ou une
-  famille de requêtes représente plus de 50 % de la consommation observée d'un
-  quota, même si le quota gratuit global reste largement disponible ;
-- une seule fonctionnalité consomme ou risque de consommer une part majeure de
-  l'allocation gratuite totale ;
-- une projection de croissance crédible montre qu'une fonctionnalité pourrait
-  saturer un quota avec l'arrivée de nouveaux bénévoles, même si son usage
-  actuel est faible ;
-- une consommation importante existe sans utilisateurs actifs : robots,
-  monitoring, polling, déploiements, revalidations ou traitements de fond.
+- Une page, fonctionnalité, famille de requêtes, tâche automatique ou ressource
+  représente **plus de 50 % d'un quota observé**, même si l'offre n'est pas
+  globalement proche de sa limite.
+- Une fonctionnalité consomme ou pourrait consommer une part majeure de
+  l'allocation gratuite dans un scénario crédible.
+- La croissance prévue pourrait saturer un quota : utilisateurs, actions,
+  fréquence, volume de preuves, photos ou exports.
+- Une consommation élevée survient sans utilisateurs actifs : robots,
+  monitoring, polling, cron, déploiements, revalidations ou previews.
 
-Lorsqu'un de ces cas est observé, l'analyse doit :
+L'examen doit :
 
-1. identifier la cause réelle en mesurant les appels, octets, exécutions, coûts
-   unitaires et mécanismes de cache, en distinguant les mesures observées, les
-   estimations et les hypothèses ;
-2. anticiper la croissance avec plusieurs scénarios explicites d'utilisation,
-   sans supposer que tous les coûts évoluent linéairement avec le nombre
-   d'utilisateurs ;
-3. comparer des alternatives fortes : statification, suppression de calculs
-   répétés, chargement à la demande, cache, traitements différés, réduction de
-   fréquence, simplification fonctionnelle, changement d'architecture ou de
-   fournisseur ;
-4. autoriser, lorsque c'est nécessaire, un arbitrage produit explicite : une
-   fonctionnalité coûteuse peut être simplifiée, restreinte, remplacée,
-   différée ou retirée si sa valeur ne justifie pas son coût prévisible ; une
-   modification durable de son contrat fonctionnel exige toutefois une
-   décision produit explicite ;
-5. privilégier l'économie structurelle, c'est-à-dire une réduction du coût par
-   action ou par utilisateur, plutôt qu'une optimisation cosmétique des
-   compteurs actuels ;
-6. valider les scénarios de charge, les audits de quotas et les risques de
-   croissance avant l'ouverture à un public plus large, sans attendre la
-   saturation.
+1. mesurer les causes : appels, octets, exécutions, cache, coûts fixes et
+   unitaires, sans confondre observation, estimation et hypothèse ;
+2. modéliser plusieurs scénarios de croissance, sans supposer une relation
+   systématiquement linéaire ;
+3. comparer suppression de redondance, statification, chargement conditionnel,
+   cache, revalidation, pagination, agrégats, traitement différé, simplification,
+   choix de fournisseur ou arbitrage fonctionnel ;
+4. rendre explicite toute décision de simplifier, restreindre, remplacer,
+   différer ou retirer une fonctionnalité coûteuse si sa valeur est insuffisante ;
+5. rechercher une baisse **structurelle du coût par visite ou action**, et non
+   une amélioration cosmétique d'un dashboard ;
+6. revalider avec tests, audits et mesures disponibles avant une ouverture
+   plus large au public.
 
-La sécurité, les droits d'accès, l'intégrité des données et les obligations
-légales restent prioritaires. Une économie de quota ne justifie jamais leur
-affaiblissement.
+Une fonctionnalité dominante n'est pas automatiquement supprimée ; sa
+justification et sa soutenabilité doivent néanmoins être démontrées. Une faible
+consommation courante ou un faible nombre d'utilisateurs ne prouve pas la
+soutenabilité future.
 
-Une fonctionnalité dominante en consommation n'est donc pas automatiquement
-supprimée, mais elle ne peut pas être conservée sans examen explicite de sa
-nécessité, de ses alternatives et de sa soutenabilité à plus grande échelle.
-L'absence d'utilisateurs actifs ou le faible pourcentage actuel du quota
-gratuit ne constitue jamais, à lui seul, une preuve de soutenabilité.
+## 5. Arbre de décision avant toute fonctionnalité
 
-## Arbre de décision
+1. **Quelle valeur immédiate ?** Classer chaque opération en A, B ou C.
+   Décider du déclencheur et de la fraîcheur métier, pas de l'UI seulement.
+2. **La donnée doit-elle être persistée ?** Sinon préférer Git, calcul pur
+   local ou état navigateur selon sa nature.
+3. **Doit-elle être partagée, sécurisée ou synchronisée entre appareils ?**
+   Supabase est candidat si oui ; état local autrement, sans contourner le
+   besoin réel de cohérence.
+4. **Exige-t-elle un secret, une AuthZ serveur, une mutation privilégiée ou une
+   agrégation non exposable au client ?** Utiliser alors le serveur/Vercel,
+   avec une frontière clairement justifiée.
+5. **Quel volume réellement nécessaire ?** Projeter les colonnes, les filtres
+   et le périmètre, puis appliquer limite, pagination, bbox ou agrégat.
+6. **Quelle fraîcheur est requise ?** Statique, ISR, cache court, ETag,
+   revalidation métier, polling visible, événement ou temps réel.
+7. **Le déclenchement évite-t-il réellement le réseau ?** Vérifier les montages
+   SWR, le rendu serveur, les prefetchs Next.js et les fallback loaders.
+8. **Des calculs ou objets existent-ils déjà ?** Réutiliser snapshot, cache,
+   RPC, service et artefact canonique avant toute nouvelle abstraction.
+9. **Quelles protections ?** AuthN, AuthZ, RLS, scopes, rate limit, bot/abus,
+   taille de réponse, identité du cache et protection des actions privées.
+10. **Quelle preuve ?** Tests réseau avant/après intention, tests de contrats,
+    mesure en production si possible et STOP CONDITION explicite.
 
-Avant d'ajouter une surface ou un flux :
+## 6. Vercel : contrats durables
 
-1. La donnée doit-elle être persistée ?
-   - non → Git ou navigateur selon sa nature ;
-   - oui → continuer.
-2. Doit-elle être partagée, sécurisée ou retrouvée sur plusieurs appareils ?
-   - oui → Supabase est le candidat naturel ;
-   - non → état local possible.
-3. L'opération exige-t-elle un secret, une AuthZ serveur, une orchestration
-   privilégiée ou une transformation non exposable au client ?
-   - oui → serveur/Vercel ;
-   - non → éviter un relais serveur inutile.
-4. La lecture doit-elle être exacte à chaque requête ?
-   - non → cache, ISR, revalidation ou snapshot ;
-   - oui → borner strictement volume et fréquence.
-5. La fonctionnalité ajoute-t-elle une route, un polling, un cron, un export ou
-   un bundle lourd ?
-   - oui → documenter le coût attendu et le garde-fou correspondant.
+### 6.1 Déploiement, validation et rétention
 
-## Vercel : règles durables
+La signature d'un commit Git est un signal d'intégrité, pas une demande de
+build/déploiement. La configuration versionnée `apps/web/vercel.json` désactive
+les déploiements Git automatiques (`git.deploymentEnabled: false`). Tout
+Preview ou Production doit être explicitement autorisé selon les gates
+`FULL` puis `RELEASE` sur le **SHA exact**. Un push Git n'est pas une preuve
+de déploiement ni de disponibilité de la nouvelle fonctionnalité.
 
-### Moratoire de déploiement jusqu'au 16 septembre 2026 inclus
+Historique à ne pas réactiver tacitement : du **10 au 16 septembre 2026 inclus**,
+un moratoire interdisait tout deployment Preview/Production, promotion ou Deploy
+Hook, ainsi que tout push pouvant déclencher un déploiement automatique. Il
+interdisait les contournements (`--force`, `--no-verify`, CLI ou workflow
+alternatif). Il a expiré le **16 septembre 2026** ; la reprise à partir du
+17 septembre exigeait et exige toujours une autorisation volontaire conforme
+à la gouvernance de release. Ce moratoire n'est **pas** une interdiction active
+après son échéance.
 
-Du 10 au 16 septembre 2026 inclus, aucun deployment Vercel Preview ou
-Production n'est autorisé. Les commits et pushes Git restent autorisés si,
-avant le push, tous les mécanismes automatiques susceptibles de créer un
-deployment Vercel sont désactivés et leur désactivation est vérifiée. Si cette
-garantie n'est pas établie, le push reste interdit.
+Mesurer périodiquement, lorsque les données existent : commits intégrés à
+`main`, Productions réelles, SHAs associés, ratio `Productions / commits main`
+et nombre de Productions par commit. Séparer Production, Preview, `canceled`
+et `error`. Les lectures API sont sans effet sur la permission de déployer.
 
-Pendant le moratoire :
+Limiter la rétention des Previews, déploiements annulés et erreurs, puis des
+Productions excédentaires, selon les réglages effectifs de l'équipe Vercel.
+Une recommandation documentaire n'est pas la preuve qu'un réglage fournisseur
+est actif.
 
-- ne pas exécuter `vercel deploy`, `npx vercel deploy`, `vercel --prod`,
-  `npx vercel --prod` ni aucune commande équivalente ou appel d'API de
-  déploiement ;
-- ne créer ni déploiement Preview ni déploiement Production ;
-- ne pas promouvoir un deployment existant ;
-- ne pas créer ni appeler de Deploy Hook ;
-- ne pousser un commit ou une ref que lorsque l'auto-déploiement Git Vercel et
-  tous les autres mécanismes automatiques concernés sont désactivés et vérifiés
-  avant le push ;
-- ne pas contourner cette règle avec `--force`, `--no-verify`, une autre CLI,
-  un workflow manuel ou une intégration distante.
+### 6.2 Configuration versionnée vérifiable
 
-Le moratoire expire à la fin du 16 septembre 2026. La reprise des deployments
-est possible à partir du 17 septembre 2026 et doit être volontaire. Pendant
-cette période, un résultat local ou une publication Git ne constitue pas une
-preuve de déploiement ni de disponibilité distante.
+Le dépôt documente `apps/web/vercel.json` et `.vercel/project.json` comme
+configuration du projet :
 
-### Déclenchement, mesure et rétention
+- `rootDirectory` : `apps/web` ; région des fonctions : `cdg1` ;
+- auto-déploiement Git désactivé par `deploymentEnabled=false` ;
+- unique cron Vercel déclaré : `/api/cron/maintenance`, `20 3 * * *` UTC,
+  le registre applicatif décidant ensuite quels jobs sont dus ;
+- source maps : `NEXT_PUBLIC_SOURCE_MAP=true`,
+  `productionBrowserSourceMaps: true`, `experimental.serverSourceMaps`
+  désactivé ; upload de symbolication via
+  `scripts/upload-sentry-sourcemaps.mjs`, puis suppression des `.map` du
+  filesystem de build après la tentative d'upload.
 
-La signature d'un commit est un signal d'intégrité Git uniquement. Elle ne
-constitue jamais une demande de build ou de déploiement Vercel. Les déploiements
-Git automatiques sont désactivés par la configuration canonique ; un déploiement
-ne peut être envisagé qu'après `FULL` puis `RELEASE` sur le SHA exact.
+Toute référence à cette configuration doit être recontrôlée sur le `main`
+courant et dans Vercel avant une décision opérationnelle.
 
-La configuration versionnée `apps/web/vercel.json` désactive les déploiements Git
-automatiques avec la règle officielle `git.deploymentEnabled: false`. Les
-previews ou productions doivent donc être explicitement demandées et vérifiées
-par le protocole RELEASE ; cette règle ne modifie ni les mises à jour de
-sécurité ni la configuration Dependabot de GitHub.
+La page d'accueil exporte `revalidate = 3600`. L'activité communautaire a son
+propre cache et ne doit pas être confondue avec la revalidation ISR de la page.
 
-Après le moratoire, mesurer pendant quelques jours le ratio entre :
+### 6.3 Rendu dynamique et caches
 
-- les commits intégrés sur `main` ;
-- les déploiements dont la cible Vercel est `production` ;
-- les références de commit uniques réellement associées à ces Productions.
-
-Le rapport doit distinguer les Productions des Previews et des déploiements
-`canceled` ou `error`, puis afficher au minimum `Productions / commits main` et
-le nombre de Productions par commit. Une mesure locale ou API en lecture seule
-ne constitue pas une autorisation de déployer.
-
-La release gate est désormais activée par le protocole `FULL` puis `RELEASE` :
-Git continue d'intégrer sur `main`, tandis qu'une Production n'est générée
-qu'au moment d'une publication explicitement demandée et autorisée pour le SHA
-validé.
-
-La rétention Vercel doit rester agressive en parallèle : fenêtre très courte
-pour les Previews, les déploiements annulés et les erreurs, et petite fenêtre
-pour les Productions. Ces réglages relèvent des paramètres Vercel du projet ou
-de l'équipe ; ils ne sont pas considérés comme configurés par la seule présence
-de cette règle dans le dépôt.
-
-### Configuration Vercel CURRENT
-
-La configuration versionnée actuelle est portée par
-[`apps/web/vercel.json`](../../apps/web/vercel.json) et le projet lié sous
-`.vercel/project.json` :
-
-- le `rootDirectory` Vercel est `apps/web` et les fonctions ciblent la région
-  `cdg1` ;
-- les déploiements Git automatiques sont désactivés (`deploymentEnabled=false`) ;
-- le seul cron Vercel déclaré est `/api/cron/maintenance`, programmé à
-  `20 3 * * *` UTC ; le registre applicatif décide ensuite quels jobs sont dus ;
-- le build expose `NEXT_PUBLIC_SOURCE_MAP=true`, conserve
-  `productionBrowserSourceMaps: true` et désactive
-  `experimental.serverSourceMaps` ;
-- le build web exécute ensuite `scripts/upload-sentry-sourcemaps.mjs`. Les maps
-  sont supprimées du filesystem de build après la tentative d'upload, y compris
-  sur Vercel. Sentry conserve la symbolication ; les `.map` ne sont donc pas
-  publiés comme artefacts statiques du déploiement.
-
-La homepage exporte `revalidate = 3600` dans
-[`apps/web/src/app/page.tsx`](../../apps/web/src/app/page.tsx). Cette fenêtre
-ISR concerne le rendu de la page ; l'activité récente de la homepage utilise
-son propre mécanisme borné et ne doit pas être assimilée à une seconde
-revalidation de la page.
-
-### Rendu dynamique et cache
-
-Ne pas utiliser par défaut :
+Ne pas employer par défaut :
 
 ```txt
 force-dynamic
@@ -270,200 +354,247 @@ revalidate = 0
 cache: "no-store"
 ```
 
-Les conserver uniquement lorsqu'un besoin fonctionnel, de fraîcheur ou de
-sécurité l'exige.
+Ces mécanismes restent indispensables dans certains flux privés ou sensibles.
+Les justifier par le contrat de fraîcheur ou de sécurité, et non par facilité.
+Préférer le statique pour le contenu durable, ISR pour une fenêtre de fraîcheur,
+un cache partagé **uniquement pour les données véritablement publiques**, et
+un cache privé adapté pour les données de session. Une clé publique ne doit
+jamais incorporer un `userId`, une préférence sensible, une géolocalisation
+précise ou un résultat privilégié.
 
-Préférer :
+#### Inventaire des caches existants à respecter
 
-- statique quand le contenu est stable ;
-- ISR ou `revalidate` quand une fenêtre de fraîcheur est acceptable ;
-- cache court pour les agrégats réutilisés ;
-- état navigateur pour les données personnelles non critiques.
+Les limites de lignes et les TTL ci-dessous correspondent aux **contrats
+documentés dans le dépôt**, non à des octets mesurés ou à des plafonds de
+facturation. Vérifier l'implémentation CURRENT avant de modifier une entrée.
 
-Une désactivation volontaire du cache doit être explicable depuis le code et
-protégée par les tests ou contrôles pertinents.
+| Surface | Clés et cardinalité | Borne contractuelle | TTL | Invalidation / usage |
+|---|---|---|---|---|
+| Accueil | ISR de page, clé de route | page et activité bornée | 3600 s | rendu accueil, activité indépendante |
+| Activité accueil | clé de route | liste d'activité bornée | 600 s | `/api/homepage/activity` |
+| Méthodologie | ISR de page, clé de route | snapshot et GitHub bornés | 86400 s | `/methodologie` |
+| Statistiques GitHub | URL de dépôt / endpoint | pagination bornée | 3600 s par défaut ; 86400 s en méthodologie | cache `fetch` Next |
+| Actions unifiées | `limit/status/floor/coords/types` | jusqu'à 1500 contrats / lecture | 600 s | `unified-action-contracts`, invalidation après action |
+| Pilotage | `period/limit/types` et scope | borne propre au caller (notamment 1800 pour `/pilotage` dans le code relu) | 600 s | `pilotage-overview` |
+| Événements communautaires | `limit` ; `eventId` hors Data Cache | limite du loader | 900 s | invalidation événement/RSVP |
+| Événements rapports | `limit` de 1 à 120 | 120 événements et compteurs RSVP | 900 s | rapports |
+| Pression événements — itinéraire | snapshot unique | 560 événements + 4000 RSVP | 900 s | planification |
+| Pression par arrondissement | snapshot unique | 280 événements + 4000 RSVP | 900 s | planification |
+| Spots | `limit` de 1 à 300 × statut | au plus 300 spots / lecture | 60 s | `spots-map` |
+| Classement gamification | 2 scopes × 3 métriques | classement borné | 120 s | tag classement |
+| Labels progression | clé partagée | au plus 10000 lignes d'actions | 120 s | tag commun |
+| Export referrals administrateur | clé sans dimension utilisateur | pagination par lots de 1000, volume total évolutif | 600 s | tag `admin-referral-lineage-export` |
 
-#### Inventaire ISR et Data Cache du runtime
+Les invalidations métier utilisent `revalidateTag(..., "max")` lorsque
+c'est le contrat CURRENT. Elles marquent les entrées périmées ; elles ne doivent
+pas fabriquer une entrée supplémentaire par utilisateur. Les événements
+invalident flux communautaire, rapports et pression d'itinéraire ; les actions
+invalident les contrats unifiés et les snapshots applicables.
 
-Cet inventaire décrit les caches Vercel/Next.js actuellement conservés. Les
-volumes sont des bornes de contrat (lignes, éléments ou combinaisons de clé),
-pas une mesure d'octets : la taille réelle dépend des données Supabase. Les
-surfaces personnelles ou dépendantes d'un texte, de coordonnées précises ou
-d'un `userId` ne sont pas placées dans le Data Cache ; elles conservent, quand
-nécessaire, un cache HTTP privé.
+Les lectures à forte cardinalité — recherche textuelle de comptes, paramètres
+de localisation précise, préremplissage, nom d'affichage, progression privée,
+referrals, etc. — ne sont pas promues sans preuve dans le Data Cache partagé.
+Elles peuvent utiliser des réponses privées et des caches de session adaptés.
 
-| Surface | Clé et cardinalité | Taille approximative | TTL | Consommateur / invalidation |
-|---|---|---:|---:|---|
-| Page d'accueil | ISR de page, une clé de route | rendu de la page + activité bornée | 3600 s | accueil ; l'activité API est indépendante |
-| Activité accueil | clé de route | liste d'activité bornée par le loader | 600 s | `/api/homepage/activity` |
-| Méthodologie | ISR de page, une clé de route | snapshot méthodologie + statistiques GitHub bornées | 86400 s | `/methodologie` |
-| GitHub repository stats | URL dépôt/endpoint GitHub, petit nombre de dépôts connus | métadonnées et listes paginées limitées par le loader | 3600 s par défaut, 86400 s pour méthodologie | page Méthodologie ; `fetch` Next `next.revalidate` |
-| Actions unifiées | `limit/status/floor/coords/types`, combinaisons bornées par les callers | jusqu'à 1500 contrats par lecture | 600 s | accueil, rapports, pilotage, impressions/exports ; tag `unified-action-contracts` invalidé après mutation action |
-| Pilotage | `period/limit/types`, combinaisons de dashboard bornées | jusqu'à 1500 contrats dérivés | 600 s | pilotage ; tag `pilotage-overview` |
-| Événements communautaires | `limit` pour la liste ; recherche `eventId` directe hors Data Cache | jusqu'à la limite demandée ; événement ciblé lu directement | 900 s pour les listes | flux communautaire ; invalidation événement/RSVP |
-| Événements pour rapports | `limit` borné de 1 à 120 | au plus 120 événements + compteurs RSVP | 900 s | rapports ; invalidation événement/RSVP |
-| Pression événements pour itinéraire | clé unique de snapshot | au plus 560 événements + 4000 RSVP | 900 s | recommandations d'itinéraire ; invalidation événement/RSVP |
-| Pression par arrondissement | clé unique | au plus 280 événements + 4000 RSVP | 900 s | recommandations d'itinéraire ; invalidation événement/RSVP |
-| Spots | `limit` 1..300 × statut borné, au plus ~1200 lanes théoriques | au plus 300 spots par lecture | 60 s | carte spots authentifiée ; tag `spots-map` invalidé à la création d'un signalement |
-| Leaderboard gamification | 2 scopes × 3 métriques, 6 clés | classement borné par le loader | 120 s | leaderboard borné par le loader ; tag de classement |
-| Labels progression | clé partagée unique | au plus 10000 lignes d'actions | 120 s | progression/gamification ; tag commun |
-| Export referrals admin | clé unique, sans dimension utilisateur | toutes les lignes de profils, paginées par lots de 1000 ; volume total dépendant du nombre de profils | 600 s | export admin ; tag `admin-referral-lineage-export` |
+### 6.4 Routes API : responsabilité, bornes et déclenchement
 
-Les invalidations métier utilisent `revalidateTag(..., "max")` : elles
-marquent les entrées périmées sans fabriquer une clé par utilisateur. Les
-événements invalident ensemble le flux communautaire, les rapports et la
-pression d'itinéraire ; les mutations d'actions invalident le cache unifié en
-plus des snapshots persistés. Aucun `revalidatePath` n'est utilisé dans le
-runtime actuel.
+Une route applicative doit apporter une responsabilité réelle : mutation métier,
+AuthZ serveur, secret, validation/anti-abus, agrégation nécessaire, orchestration
+ou livrable serveur justifié. Éviter les handlers ne faisant que relayer une
+lecture Supabase démontrée `RLS-safe`.
 
-Les lectures suivantes restent directes côté serveur, avec leur AuthZ et leur
-projection inchangées : préremplissage d'actions, recherche d'utilisateurs par
-texte, suggestions d'adresse, reverse geocoding, mode de nom d'affichage,
-gamification personnelle, analytics de points, résumé referrals et vue de
-lignage referrals. Ce choix supprime les clés à forte cardinalité
-(`userId`, texte de recherche, coordonnées à quatre décimales ou profil ciblé)
-du Data Cache Vercel ; il ne les transforme pas en `no-store` lorsque le
-contrat HTTP privé reste utile.
+Pour toute liste, dashboard ou export, imposer une borne : pagination, `limit`,
+période, scope, bbox, agrégat ou contrat équivalent. Éviter une chaîne
+`composant → API → Supabase` au montage de chaque sous-panneau si la même
+projection est déjà disponible et admissible dans le cache.
 
-### Routes API
+Les routes privées restent protégées **côté serveur** même lorsque leur panneau
+est masqué : l'existence d'un bouton ne constitue jamais une AuthZ.
 
-Une route applicative doit apporter au moins une responsabilité réelle :
+Cas documentés de coût et d'autorisation à préserver :
 
-- mutation métier ;
-- AuthZ serveur ;
-- usage d'un secret ;
-- validation ou anti-abus ;
-- agrégation/transformation nécessaire ;
-- orchestration de plusieurs services ;
-- production d'un livrable serveur justifié.
+- `GET /api/actions/account-options` : sélecteur authentifié de comptes Clerk,
+  pages de 10 comptes, recherche bornée à 120 caractères, offset maximal de
+  100000, limiteur à 60 requêtes/minute. Projection minimale (`id`, nom public,
+  pseudo), réponse `private, no-store`, aucune donnée privée Clerk exposée.
+  Coût : invocation Vercel + accès Clerk ; charger lors de l'ouverture du
+  sélecteur ou d'une recherche pertinente, pas au montage du formulaire entier.
+- `GET/PATCH /api/actions/invitations` : uniquement le destinataire
+  authentifié d'une invitation `manual_add`, lecture/décision via RPC
+  destinataire-scopées, réponse personnelle `private, no-store`, données
+  minimales et mutation atomique/idempotente. Lectures bornées à 30/minute,
+  décisions à 10/minute selon la politique du service.
+- `GET /api/actions/registration-requests` : reviewers authentifiés, RPC
+  bornée aux demandes `group_form/pending` d'actions futures publiées et
+  visibles, sans nouvelle file ni payload privé inutile. État personnel
+  `private, no-store`.
 
-Éviter les handlers qui ne font que relayer une lecture Supabase RLS-safe.
+Les lectures de décisions sont alimentées par la cloche de notifications ; la
+cloche ouverte se rafraîchit au plus selon l'intervalle contractuel de
+**300 secondes**, la cloche fermée et la page visible à **900 secondes**.
+Le tableau de bord charge à son ouverture et lors d'une action explicite, sans
+intervalle propre. Ces valeurs doivent être recontrôlées dans le code lors
+d'une modification ; ne pas les durcir ou raccourcir sans justification.
 
-Toute liste ou export doit avoir une borne explicite : pagination, `limit`,
-période, scope, bbox, agrégat ou autre contrat équivalent.
+### 6.5 Edge, proxy et préchargements
 
-### Edge et middleware
+Le proxy ou middleware couvre uniquement les frontières qui le nécessitent.
+Ne pas élargir son matcher pour dupliquer une AuthZ correctement appliquée
+par le handler. Ne pas affaiblir la validation en déplaçant simplement une
+opération hors du proxy.
 
-Le proxy ou middleware doit rester limité aux surfaces qui nécessitent
-réellement cette frontière.
+Les liens vers un détail B ou une route protégée ne doivent pas déclencher
+involontairement un prefetch coûteux. Pour un lien Next.js vers une analyse
+lourde, désactiver le prefetch lorsque nécessaire, en vérifiant le comportement
+réel ; ne pas supprimer la navigation directe légitime.
 
-Ne pas ajouter une route au matcher uniquement pour dupliquer une AuthZ déjà
-correctement portée par le handler. L'autorité finale reste la couche serveur
-responsable du contrat.
+### 6.6 SWR, polling, Realtime et interfaces live
 
-Les liens publics vers des surfaces protégées ne doivent pas provoquer
-involontairement des préchargements coûteux lorsque le produit n'en a pas
-besoin.
+Pour une lecture de catégorie B, utiliser une **clé SWR inactive avant
+l'intention** ou le montage conditionnel du hook. Après ouverture, réutiliser
+le cache, les règles de déduplication et `swrRecentViewOptions` déjà en place.
+Ne pas ajouter une option globale qui modifie silencieusement la fraîcheur de
+toutes les surfaces.
 
-### Polling, temps réel et panneaux live
+Tout polling de catégorie C doit avoir :
 
-Un polling doit avoir :
+- un propriétaire métier et une raison de fraîcheur identifiée ;
+- une fréquence documentée et proportionnée ;
+- une condition de session, d'activité, de visibilité ou d'onglet ;
+- un arrêt ou ralentissement lorsque la page est masquée, hors ligne ou que
+  la surface n'est pas consultée ;
+- une déduplication des appels simultanés, et une stratégie de reprise ;
+- une comparaison explicite avec Realtime, push, revalidation ciblée ou cache.
 
-- une fréquence justifiée ;
-- une condition de visibilité ou d'activité lorsque pertinente ;
-- un arrêt ou ralentissement quand l'onglet est caché ou la surface fermée ;
-- une alternative évaluée : cache, revalidation au focus, Supabase Realtime,
-  push ou chargement à la demande.
+Ne pas installer Realtime pour une donnée qui tolère un cache court. Ne pas
+forcer un clic périodique pour recevoir des messages ou alertes importantes.
+Séparer un **compteur léger** d'un historique détaillé lorsque le contrat le
+permet sans introduire une seconde vérité ni un délai de décision dangereux.
 
-Ne pas utiliser un flux temps réel pour une donnée qui tolère une fenêtre de
-fraîcheur.
+### 6.7 Server Components et données de grande taille
 
-### Server Components et client
+Conserver un Server Component lorsqu'il correspond au contrat de la page ;
+isoler l'interaction dans le sous-arbre client le plus petit. Ne pas convertir
+une page entière en Client Component pour déplacer un `fetch` qui reste
+nécessaire côté serveur. Un bouton n'économise rien si le Server Component a
+déjà exécuté `loadReportsAnalysisData()` ou une agrégation équivalente avant
+l'affichage du bouton.
 
-Garder le Server Component par défaut lorsqu'il convient au contrat de la page,
-puis isoler les interactions dans le plus petit sous-arbre client.
+Préférer un **résumé léger canonique** et une route ou un état de navigation
+explicitement demandé pour le détail. Une sous-page dédiée, un paramètre
+`detail=1` ou un Server Action/handler existant peut être adéquat selon son
+contrat ; vérifier les prefetchs et les frontières d'accès. Éviter le
+transport/hydratation d'objets complets lorsque seule une synthèse sert l'UI.
 
-Éviter :
+Les contrats de pilotage, de rapports et de filtres doivent partager leur
+logique canonique : le résumé ne peut ni élargir les scopes, ni présenter une
+couverture tronquée comme exhaustive.
 
-- une page entière en Client Component pour un état local mineur ;
-- plusieurs fetchs clients indépendants vers la même donnée ;
-- l'hydratation d'objets inutilement volumineux ;
-- les bibliothèques lourdes dans le shell global.
+### 6.8 Cartographie
 
-Pour les frontières et le bundle, voir
-[`../development/client-server-bundle-splitting.md`](../development/client-server-bundle-splitting.md).
+Les dépendances cartographiques lourdes (Leaflet, clustering, dessin, routing)
+restent isolées côté client et ne sont chargées que lorsque pertinentes. Les
+requêtes de carte sont bornées par viewport, filtres, période, limite ou
+agrégat ; jamais une table entière pour obtenir quelques marqueurs.
 
-### Cartographie
+- Une carte **principale** charge automatiquement les données et références
+  requises pour les scores et leurs couleurs correctes.
+- Une carte **secondaire** peut différer ses données jusqu'à son ouverture ou
+  sa visibilité utile, sans déclencher des calculs cachés par simple montage.
+- Les paramètres identiques réutilisent les réponses admissibles ; une réponse
+  tardive d'un ancien viewport ne doit pas écraser la carte courante.
+- Éviter une requête de score par popup. Réutiliser la projection publique
+  unique, les références globales et la source canonique des couleurs.
+- Préserver strictement le filtrage des actions privées et la compatibilité
+  des contrats `/api/actions/map` et `actions_map_feed`. Ne pas changer
+  de source pour économiser un appel sans parité de DTO prouvée.
 
-Leaflet et les autres dépendances cartographiques lourdes doivent rester
-isolées côté client et chargées uniquement lorsque la surface est utile.
+### 6.9 Images, médias et Storage
 
-Les données cartographiques doivent être bornées par zone visible, filtres,
-limite ou agrégat. Ne jamais charger une table entière pour produire une vue de
-carte.
+Préférer compression avant upload, dimensions préparées et variantes adaptées
+aux affichages. Les assets statiques versionnés restent dans Git/CDN ; les
+médias métier persistants dans Storage/CDN selon leur contrat.
 
-### Images et médias
+- Une miniature ne devrait pas télécharger le fichier haute résolution si une
+  variante légère existe et si son coût total est meilleur.
+- Ouvrir une photo en plein écran est une intention permettant le téléchargement
+  de la variante HD ; conserver le chargement différé et l'accessibilité.
+- Ne pas multiplier transformations dynamiques ou dérivés persistants sans
+  comparer CPU, stockage supplémentaire, maintenance et octets épargnés.
+- URL signées, droits Storage, crédit, consentement et révocation restent
+  conformes aux contrats métier. Le cache public ne doit jamais rendre un
+  fichier privé accessible après la perte de ses droits.
 
-Préférer :
+### 6.10 PDF, CSV/JSON et artefacts réutilisables
 
-- compression avant upload ;
-- dimensions préparées ;
-- assets statiques pour les médias versionnés ;
-- Storage ou CDN pour les médias persistants.
+Pour tout livrable lourd :
 
-Ne pas utiliser une transformation serveur à la volée lorsqu'un fichier déjà
-préparé satisfait le besoin.
+1. borner et vérifier les données sources ;
+2. vérifier scope et AuthZ ;
+3. réutiliser snapshot, HTML canonique et artefact préparé lorsqu'ils existent ;
+4. générer côté navigateur si le contrat le permet sans altérer la preuve ;
+5. utiliser Storage lorsque le même fichier est réutilisable ;
+6. réserver la génération serveur aux cas qui en ont réellement besoin.
 
-### PDF et exports
+Le quota applicatif, les réservations atomiques, la composition officielle et
+l'historique des rapports restent inchangés par une optimisation de
+préchargement. Une consultation ou un téléchargement historique ne doit pas
+consommer un nouveau quota de génération si le contrat actuel l'exclut.
 
-Pour un livrable lourd :
+### 6.11 Crons, rappels, bots et analytics
 
-1. limiter la donnée source ;
-2. vérifier l'AuthZ ;
-3. réutiliser un artefact déjà préparé lorsque possible ;
-4. générer côté navigateur si le contrat le permet ;
-5. conserver dans Storage lorsque le fichier doit être réutilisé ;
-6. réserver la génération serveur aux cas qui la nécessitent réellement.
+Les coûts sans visite humaine peuvent venir de cron, monitoring, previewers,
+robots, revalidations, polling abandonné ou déploiements. Identifier le chemin
+réel avant de modifier l'application. Ne pas créer un cron par fonctionnalité
+si le registre `/api/cron/maintenance` peut l'exécuter correctement.
 
-### Crons, monitors et robots
+Le rappel J-1 des inscriptions confirmées utilise le job quotidien
+`action-reminders` dans le registre existant. La RPC cible le lendemain en
+`Europe/Paris`, les inscriptions `confirmed` et les préférences de rappel ;
+les identifiants d'événements stables rendent les retries idempotents et
+empêchent la réémission indue après changement de date. La préférence en
+réglages reste une lecture personnelle limitée, sans canal email/SMS/push
+implicite ajouté pour réduire ou déplacer le coût.
 
-Une consommation sans navigation humaine peut venir de :
+Les analytics soumises au consentement ne doivent pas démarrer avant la
+préférence applicable. Conserver le batching et le throttling de pageviews ;
+réévaluer la granularité des événements si le volume dépasse la valeur de
+l'analyse. Le suivi des coûts ne doit pas nécessiter davantage de télémétrie
+que ce qu'il cherche à économiser.
 
-- cron ;
-- monitoring ;
-- robot ou crawler ;
-- previewer de lien ;
-- polling laissé actif ;
-- revalidation automatique.
+## 7. Supabase : requêtes, Storage et Realtime
 
-Avant de modifier le runtime, identifier la source réelle dans les logs et les
-audits.
-
-### Analytics
-
-Les analytics soumises au consentement ne doivent pas être initialisées avant
-la décision utilisateur prévue par le produit.
-
-Limiter le volume des pageviews et événements lorsque leur granularité
-n'apporte pas de valeur analytique correspondante.
-
-## Supabase : coût et placement
-
-Les règles détaillées d'optimisation des requêtes vivent dans
+Les méthodes de tuning SQL, index et plans d'exécution sont canoniques dans
 [`../database/supabase-table-optimization-playbook.md`](../database/supabase-table-optimization-playbook.md).
 
-Invariants transversaux :
+Règles transversales :
 
-- aucune lecture large par commodité ;
-- aucune RLS affaiblie pour réduire un coût ;
-- projection minimale des colonnes ;
-- borne explicite ;
-- filtre en base plutôt qu'après chargement ;
-- index adapté aux chemins runtime ;
-- RPC ou agrégat partagé lorsque plusieurs surfaces refont le même calcul ;
-- snapshot/cache pour les synthèses qui n'exigent pas une fraîcheur immédiate.
+- aucun `SELECT *` ou chargement de table entière par commodité ;
+- projection minimale, limite et pagination documentées ;
+- filtres et scopes appliqués **en base** avant lecture, plutôt qu'en JavaScript
+  après transfert d'un corpus inutile ;
+- index adaptés aux prédicats et ordres utilisés par les vrais consommateurs ;
+- RPC ou agrégation partagée lorsqu'elle supprime des scans répétitifs tout en
+  préservant les permissions et la qualité des données ;
+- snapshot ou cache court pour les synthèses ne nécessitant pas le temps réel ;
+- pas de duplication de tables, services, registries ou ledgers pour simplifier
+  temporairement une interface ;
+- jamais de désactivation ou d'assouplissement RLS sous prétexte de coût ;
+- jamais de lecture publique d'un contenu privé en raison d'un cache partagé ;
+- Storage : réutiliser les objets, réduire la taille des images, vérifier la
+  politique de rétention et ne pas régénérer des PDFs identiques ;
+- Realtime : s'abonner aux événements utiles et nettoyer les abonnements des
+  surfaces inactives ; ne pas diffuser des datasets complets sans raison.
 
-Une table centrale peut rester coûteuse dans un audit si ses accès sont
-légitimes, bornés et correctement indexés. Le but n'est pas d'obtenir
-artificiellement zéro signal.
+Une table centrale peut rester visible dans les audits si ses accès sont
+légitimes, indexés, bornés et nécessaires. « Zéro requête Supabase » ne
+constitue pas un objectif métier absolu.
 
-## Autorisation et coût
+## 8. Coût, sécurité et autorisation
 
-Ne pas créer une seconde taxonomie d'accès fondée sur les quotas.
-
-Les classes d'autorisation canoniques sont définies dans
-[`../security/authorization-capabilities.md`](../security/authorization-capabilities.md),
-notamment :
+Ne pas créer une taxonomie de sécurité fondée sur le coût. Les classes
+canoniques relèvent de
+[`../security/authorization-capabilities.md`](../security/authorization-capabilities.md) :
 
 ```txt
 public_read
@@ -473,33 +604,104 @@ privileged
 public_write_exception
 ```
 
-Une surface coûteuse peut être `privileged` si son rôle produit et son risque
-le justifient, mais elle ne devient pas privilégiée uniquement pour économiser
-un quota.
+Une surface peut être `privileged` si la fonctionnalité et son risque le
+justifient, mais pas uniquement parce qu'elle est coûteuse. Un bouton ou un
+onglet masqué ne remplace jamais :
 
-## Checklist de modification
+- authentification, ownership, scope et AuthZ côté handler/RPC ;
+- RLS PostgreSQL et vérification de l'audience ;
+- validation des entrées et limites anti-abus ;
+- projection allowlistée et absence de données internes ;
+- isolation des caches et invalidation lorsque les droits changent ;
+- idempotence, transactions ou réservation atomique des mutations ;
+- non-divulgation des actions privées, rapports privés et ressources Storage.
 
-Avant publication d'une fonctionnalité qui touche la plateforme :
+Les opérations confidentielles ou changeantes peuvent imposer `private,
+no-store` même si cela coûte plus cher. La sécurité prime sur la réutilisation
+d'un cache public.
 
-- [ ] la couche de stockage est justifiée ;
-- [ ] aucune route Vercel de relais inutile n'est ajoutée ;
-- [ ] chaque lecture potentiellement croissante est bornée ;
-- [ ] le cache ou la stratégie de fraîcheur est explicite ;
-- [ ] les pollings et crons ont un propriétaire et une fréquence justifiée ;
-- [ ] les exports et médias lourds ont une stratégie d'artefact ;
-- [ ] l'AuthZ reste portée par le contrat de sécurité ;
-- [ ] la taille du bundle est revue si une dépendance lourde est ajoutée ;
-- [ ] le quota ou coût susceptible d'augmenter est identifiable ;
-- [ ] toute surface représentant plus de 50 % d'un quota observé, ou risquant
-      de devenir dominante selon un scénario crédible, fait l'objet d'un examen
-      explicite de concentration et de soutenabilité ;
-- [ ] les coûts fixes sans utilisateurs actifs et plusieurs scénarios de montée
-      en charge ont été examinés avant d'élargir l'audience ;
-- [ ] les tests et audits pertinents sont exécutés.
+## 9. Tests et critères de preuve
 
-## Audits et commandes
+### 9.1 Contrat minimal pour une fonctionnalité B
 
-Commandes principales du dépôt :
+Avant de classer un chargement « à la demande » comme terminé, démontrer :
+
+1. **Sans clic / onglet inactif** : aucune requête dédiée à l'enrichissement B,
+   y compris côté serveur, dans les hooks enfants et à cause du prefetch.
+2. **Intention explicite** : réponse conforme, chargement perceptible et
+   contrôles d'accès conservés.
+3. **Double activation** : requête logique dédupliquée ; pas d'opérations
+   privilégiées concurrentes ou de génération multiple.
+4. **Retour** : réutilisation d'un résultat encore frais et compatible.
+5. **Contexte modifié** : date, période, scope, coordonnées ou filtres
+   invalident exactement les réponses incompatibles ; pas d'affichage obsolète.
+6. **Erreur / hors horizon / absence de droits** : état explicite ; aucune
+   valeur métier fabriquée, repli dangereux ou 401 anonyme systématique.
+7. **Parcours alternatifs** : deep-links, mobile, export, impression, reprise
+   d'historique et interactions clavier ne déclenchent rien d'inattendu.
+8. **Sécurité** : appeler directement l'endpoint ne contourne pas les
+   protections assurées par l'UI.
+
+Les tests doivent compter les appels réseau/clients Supabase mockés et
+instrumenter le déclenchement côté serveur si pertinent, pas uniquement
+vérifier que le bouton est présent ou qu'un composant est caché. Un test de
+présentation ne prouve jamais RLS, concurrence ou AuthZ réelle : respecter les
+niveaux de validation du dépôt.
+
+### 9.2 Contrat minimal pour A et C
+
+- **A** : premier rendu utile, données essentielles correctes, autorisation
+  avant exposition, sérialisation bornée, cache sûr et absence d'appel dupliqué.
+- **C** : cadence maîtrisée, arrêt quand la surface n'est plus pertinente,
+  reprise correcte, événements non perdus, observabilité proportionnée, et
+  pas de polling simultané redondant entre composants.
+- **Toutes** : états `loading`, `empty`, `unavailable`, `error` clairement
+  distingués ; absence de fuite dans des réponses publiques et tests de
+  non-régression des parcours essentiels.
+
+### 9.3 Preuves et résultats attendus
+
+Chaque modification documente au minimum :
+
+- le **type A/B/C**, la décision produit et les appels concernés ;
+- le nombre de requêtes **logiques** avant/après dans les scénarios testés ;
+- le fonctionnement des caches, la fraîcheur et l'invalidation ;
+- le gain fournisseur réellement mesuré, **ou explicitement non mesuré** ;
+- les tests exécutés, limites et anomalies sans transformer un mock en preuve
+  PostgreSQL, Clerk, navigateur réel ou production ;
+- le SHA vérifié et la convergence publiée suivant la gouvernance Git.
+
+Ne pas ajouter un nouveau service d'analytics payant pour démontrer une
+réduction qui peut être testée au niveau du déclencheur.
+
+## 10. Checklist de modification
+
+Avant publication d'une fonctionnalité touchant aux coûts plateforme :
+
+- [ ] Chaque opération distante a une classification A/B/C et un déclencheur justifié.
+- [ ] Les données essentielles restent disponibles sans clic artificiel.
+- [ ] Aucun chargement B masqué n'exécute de requête anticipée sur client, serveur ou prefetch.
+- [ ] Les onglets et panneaux non actifs ne chargent que les données réellement partagées.
+- [ ] Les pollings C ont visibilité, fréquence, arrêt et déduplication documentés.
+- [ ] La couche de placement, l'owner métier et la source canonique sont conservés.
+- [ ] Aucune route Vercel de relais inutile ni seconde source de vérité n'est créée.
+- [ ] Chaque lecture croissante est bornée, filtrée et projetée au minimum.
+- [ ] Le cache, la clé, le scope, la fraîcheur et l'invalidation sont explicités.
+- [ ] Les données privées ne sont ni mises en cache publiquement ni chargées par prétexte UX.
+- [ ] Les exports et médias lourds réutilisent, lorsque possible, un artefact adapté.
+- [ ] Les crons, analytics et ressources sans visiteurs restent surveillés.
+- [ ] Les permissions, RLS, validations et limites de débit restent intactes.
+- [ ] La taille du bundle est revue pour toute dépendance cartographique ou visuelle lourde.
+- [ ] Le quota potentiel (Vercel, Supabase ou tiers) est identifiable sans confondre leurs unités.
+- [ ] Les consommations >50 % d'un quota observé ou potentiellement dominantes sont réévaluées.
+- [ ] Les coûts fixes et plusieurs scénarios de croissance sont étudiés avant élargissement.
+- [ ] Les tests réseau prouvent l'absence des appels facultatifs avant intention.
+- [ ] Les gains estimés, mesurés et non mesurés sont explicitement distingués.
+- [ ] Les tests/checks requis sont exécutés et leur niveau de preuve est rapporté.
+
+## 11. Audits, commandes et références
+
+Commandes existantes de contrôle :
 
 ```bash
 npm run audit:vercel-quota
@@ -507,23 +709,26 @@ npm run audit:vercel:ci
 npm run report:vercel-surface
 ```
 
-`npm run report:vercel-surface` produit le rapport courant sous
-`artifacts/vercel/`. Un rapport généré n'est pas une source documentaire
-`CURRENT`.
+`npm run report:vercel-surface` produit son résultat courant sous
+`artifacts/vercel/`. Un artefact généré n'est pas une source documentaire
+`CURRENT`. Les audits historiques sont indexés par
+[`audits/README.md`](./audits/README.md). Une mise à jour volontaire d'une
+baseline doit correspondre à un changement réel du runtime et être validée
+par les scripts existants, non servir à masquer un dépassement.
 
-Les diagnostics historiques conservés sont indexés dans
-[`audits/README.md`](./audits/README.md).
+Références spécialisées :
 
-Une évolution volontaire d'une baseline ou d'un coût attendu doit être
-justifiée par le changement réel puis validée avec le mécanisme prévu par le
-script concerné.
+- [Gouvernance des données](../architecture/data-governance.md)
+- [Documentation Database](../database/README.md)
+- [Playbook d'optimisation Supabase](../database/supabase-table-optimization-playbook.md)
+- [Capacités d'autorisation](../security/authorization-capabilities.md)
+- [Client/server bundle splitting](../development/client-server-bundle-splitting.md)
+- [Testing](../development/TESTING.md)
+- [Résolution des builds Vercel](./vercel-build-troubleshooting.md)
+- [Index des audits historiques](./audits/README.md)
 
-## Références
-
-- [`../architecture/data-governance.md`](../architecture/data-governance.md)
-- [`../database/README.md`](../database/README.md)
-- [`../database/supabase-table-optimization-playbook.md`](../database/supabase-table-optimization-playbook.md)
-- [`../security/authorization-capabilities.md`](../security/authorization-capabilities.md)
-- [`../development/client-server-bundle-splitting.md`](../development/client-server-bundle-splitting.md)
-- [`vercel-build-troubleshooting.md`](./vercel-build-troubleshooting.md)
-- [`audits/README.md`](./audits/README.md)
+**Décision de gouvernance documentaire :** les politiques A/B/C, les
+principes de déclenchement et les bonnes pratiques restent dans **ce fichier
+unique**. Les métriques datées, classements, exemples de traces réseau et
+résultats d'intégration vivent dans les audits et rapports existants. Ne pas
+créer une deuxième « gouvernance des coûts » en parallèle.

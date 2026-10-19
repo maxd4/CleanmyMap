@@ -126,6 +126,46 @@ describe("QuestionnaireCard serialized description validation", () => {
     expect(submitButton(renderer)?.props.disabled).toBe(false);
   });
 
+  it("owns one local preview and revokes the previous preview on replacement and unmount", () => {
+    const createObjectURL = vi.fn((file: File) => `blob:${file.name}`);
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(
+        <QuestionnaireCard
+          questionnaire={questionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+        />,
+      );
+    });
+
+    const fileInput = renderer.root.findAllByType("input").find(
+      (input) => input.props.type === "file",
+    );
+    expect(fileInput).toBeDefined();
+    const first = new File(["png"], "first.png", { type: "image/png" });
+    const second = new File(["png"], "second.png", { type: "image/png" });
+
+    act(() => {
+      fileInput!.props.onChange({ target: { files: [first] } });
+    });
+    expect(createObjectURL).toHaveBeenCalledWith(first);
+
+    act(() => {
+      fileInput!.props.onChange({ target: { files: [second] } });
+    });
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:first.png");
+    expect(revokeObjectURL).toHaveBeenCalledTimes(1);
+
+    act(() => renderer.unmount());
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:second.png");
+    expect(revokeObjectURL).toHaveBeenCalledTimes(2);
+  });
+
   it("disables submit and explains the overflow after one extra character", () => {
     const { questionnaire, values } = valuesForDescriptionLength(
       FEEDBACK_DESCRIPTION_MAX_LENGTH + 1,

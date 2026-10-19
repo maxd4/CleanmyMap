@@ -1,23 +1,24 @@
 import type { ChangeEvent } from "react";
 import {
   FEEDBACK_SCREENSHOT_ACCEPT,
-  getSafeFeedbackScreenshotPreviewUrl,
+  isFeedbackScreenshotPreview,
+  type FeedbackScreenshotPreview,
 } from "@/lib/community/feedback-screenshot-client";
 
 export function QuestionnaireScreenshotField({
   file,
-  previewUrl,
+  preview,
   error,
   onChange,
   onRemove,
 }: {
   file: File | null;
-  previewUrl: string | null;
+  preview: FeedbackScreenshotPreview | null;
   error: string | null;
-  onChange: (file: File | undefined) => void;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onRemove: () => void;
 }) {
-  const safePreviewUrl = getSafeFeedbackScreenshotPreviewUrl(previewUrl);
+  const safePreview = isFeedbackScreenshotPreview(preview) ? preview : null;
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
@@ -41,14 +42,14 @@ export function QuestionnaireScreenshotField({
         id="feedback-bug-screenshot"
         type="file"
         accept={FEEDBACK_SCREENSHOT_ACCEPT}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.target.files?.[0])}
+        onChange={onChange}
         className="sr-only"
       />
-      {file && safePreviewUrl ? (
+      {file && safePreview ? (
         <div className="mt-4 flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/30 p-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={safePreviewUrl}
+            src={safePreview.url}
             alt={`Aperçu de ${file.name}`}
             className="h-20 w-20 rounded-lg object-cover"
           />

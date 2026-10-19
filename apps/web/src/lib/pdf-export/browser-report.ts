@@ -1,4 +1,5 @@
 import createDOMPurify from "dompurify";
+import { escapeHtml } from "@/lib/security/html-escape";
 import type { PdfReportPayload } from "./simple-pdf";
 import { buildOfficialReportHtml } from "./official-report-html";
 import type { ReportPdfTheme } from "./report-pdf-theme";
@@ -16,6 +17,60 @@ type PrintableWindowOptions = {
   autoPrint?: boolean;
   closeAfterPrint?: boolean;
 };
+
+const PRINTABLE_FRAGMENT_FORBID_TAGS = [
+  "base",
+  "embed",
+  "form",
+  "iframe",
+  "input",
+  "link",
+  "meta",
+  "object",
+  "script",
+  "textarea",
+  "body",
+  "head",
+  "html",
+  "title",
+];
+
+const DEFAULT_PRINTABLE_WINDOW_OPTIONS = Object.freeze({
+  autoPrint: true,
+  closeAfterPrint: true,
+});
+
+function escapeHtmlPreservingEntities(value: string): string {
+  const entities: string[] = [];
+  const protectedValue = value.replace(/&(?:amp|lt|gt|quot|#39);/g, (entity) => {
+    const marker = `__CMM_HTML_ENTITY_${entities.length}__`;
+    entities.push(entity);
+    return marker;
+  });
+  const escaped = escapeHtml(protectedValue);
+  return escaped.replace(/__CMM_HTML_ENTITY_(\d+)__/g, (_marker, index: string) => entities[Number(index)] ?? "");
+}
+
+function sanitizePrintableHtml(reportWindow: Window, html: string): string {
+  const purifier = createDOMPurify(
+    reportWindow as unknown as Parameters<typeof createDOMPurify>[0],
+  );
+  if (!purifier.isSupported) throw new PrintableReportDeliveryError();
+
+  const sanitizeFragment = (fragment: string): string => {
+    const sanitized = purifier.sanitize(fragment, {
+      WHOLE_DOCUMENT: false,
+      FORBID_TAGS: PRINTABLE_FRAGMENT_FORBID_TAGS,
+    });
+    if (typeof sanitized !== "string") throw new PrintableReportDeliveryError();
+    return sanitized;
+  };
+
+  const titleSource = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "";
+  const safeTitle = escapeHtmlPreservingEntities(titleSource);
+  const safeFragment = sanitizeFragment(html.replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, ""));
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8" /><title>${safeTitle}</title></head><body>${safeFragment}</body></html>`;
+}
 
 export class IncompatibleReportRendererError extends Error {
   constructor() {
@@ -71,16 +126,7 @@ function renderReportHtmlWindow(
   // the SVG route map.
   let safeHtml: string;
   try {
-    const purifier = createDOMPurify(
-      reportWindow as unknown as Parameters<typeof createDOMPurify>[0],
-    );
-    if (!purifier.isSupported) throw new PrintableReportDeliveryError();
-    const sanitizedHtml = purifier.sanitize(html, {
-      WHOLE_DOCUMENT: true,
-      FORBID_TAGS: ["script"],
-    });
-    if (typeof sanitizedHtml !== "string") throw new PrintableReportDeliveryError();
-    safeHtml = sanitizedHtml;
+    safeHtml = sanitizePrintableHtml(reportWindow, html);
   } catch (error) {
     reportWindow.close();
     if (error instanceof PrintableReportDeliveryError) throw error;
@@ -185,7 +231,7 @@ function renderReportHtmlWindow(
 
 export function openPrintableHtmlWindow(
   html: string,
-  options: PrintableWindowOptions = { autoPrint: true, closeAfterPrint: true },
+  options: PrintableWindowOptions = DEFAULT_PRINTABLE_WINDOW_OPTIONS,
 ): boolean {
   const reportWindow = prepareReportWindow();
   if (!reportWindow) return false;

@@ -11,16 +11,32 @@ import {
 
 export const FEEDBACK_SCREENSHOT_ACCEPT = BUG_REPORT_SCREENSHOT_ALLOWED_MIME_TYPES.join(",");
 
-/** Return only a same-origin object URL created for this page's local preview. */
-export function getSafeFeedbackScreenshotPreviewUrl(value: unknown): string | null {
-  if (typeof value !== "string" || typeof window === "undefined") return null;
+export class FeedbackScreenshotPreview {
+  readonly url: string;
 
-  try {
-    const parsed = new URL(value);
-    return parsed.protocol === "blob:" && parsed.origin === window.location.origin ? value : null;
-  } catch {
-    return null;
+  /** @internal Preview values must normally come from createFeedbackScreenshotPreview. */
+  constructor(url: string) {
+    this.url = url;
   }
+}
+
+const revokedFeedbackScreenshotPreviews = new WeakSet<FeedbackScreenshotPreview>();
+
+/** Create the only preview value accepted by the screenshot renderer. */
+export function createFeedbackScreenshotPreview(file: File): FeedbackScreenshotPreview | null {
+  if (validateFeedbackScreenshotFile(file)) return null;
+  return new FeedbackScreenshotPreview(URL.createObjectURL(file));
+}
+
+export function isFeedbackScreenshotPreview(value: unknown): value is FeedbackScreenshotPreview {
+  return value instanceof FeedbackScreenshotPreview;
+}
+
+/** Revoke a preview at most once; the owning questionnaire controls its lifecycle. */
+export function revokeFeedbackScreenshotPreview(preview: FeedbackScreenshotPreview | null): void {
+  if (!preview || revokedFeedbackScreenshotPreviews.has(preview)) return;
+  revokedFeedbackScreenshotPreviews.add(preview);
+  URL.revokeObjectURL(preview.url);
 }
 
 class FeedbackScreenshotUploadError extends Error {

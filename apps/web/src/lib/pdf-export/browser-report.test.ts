@@ -225,9 +225,13 @@ describe("browser report delivery", () => {
     vi.stubGlobal("window", { open: vi.fn().mockReturnValue(reportWindow) });
     const { createObjectURL } = stubObjectUrl();
     const hostileHtml = '<!doctype html><html><body><h1 title="&quot; onmouseover=&quot;alert(1)">Titre</h1><img src="x" onerror="alert(1)"><script>window.xss = true</script></body></html>';
+    const sanitize = vi.fn((fragment: string, options?: { WHOLE_DOCUMENT?: boolean }) => {
+      expect(options?.WHOLE_DOCUMENT).toBe(false);
+      return fragment.includes("<script") ? "<h1>Titre</h1>" : fragment;
+    });
     createDOMPurifyMock.mockReturnValueOnce({
       isSupported: true,
-      sanitize: vi.fn(() => "<!doctype html><html><body><h1>Titre</h1></body></html>"),
+      sanitize,
     });
 
     expect(openPrintableHtmlWindow(hostileHtml, { autoPrint: false })).toBe(true);
@@ -237,6 +241,20 @@ describe("browser report delivery", () => {
     expect(sanitizedHtml).not.toContain("<script");
     expect(sanitizedHtml).not.toMatch(/\bonerror\s*=/i);
     expect(sanitizedHtml).not.toMatch(/\bonmouseover\s*=/i);
+    expect(sanitize).toHaveBeenCalledOnce();
+    expect(sanitize.mock.calls.every(([, options]) => options?.WHOLE_DOCUMENT === false)).toBe(true);
+  });
+
+  it("keeps escaped report titles as text in the fixed document shell", async () => {
+    const { reportWindow } = createReportWindow();
+    vi.stubGlobal("window", { open: vi.fn().mockReturnValue(reportWindow) });
+    const { createObjectURL } = stubObjectUrl();
+
+    expect(openPrintableHtmlWindow("<html><head><title>A &amp; B</title></head><body>Rapport</body></html>", { autoPrint: false })).toBe(true);
+
+    const printableHtml = await createdHtml(createObjectURL);
+    expect(printableHtml).toContain("<title>A &amp; B</title>");
+    expect(printableHtml).not.toContain("A &amp;amp; B");
   });
 
   it("does not print before the navigated document is complete", () => {

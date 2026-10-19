@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type FormEvent,
   type SetStateAction,
 } from "react";
@@ -24,7 +25,12 @@ import {
   submitFeedbackQuestionnaire,
 } from "./feedback-submission";
 import { fetchPersonalFeedbackPage } from "./feedback-history-loader";
-import { validateFeedbackScreenshotFile } from "@/lib/community/feedback-screenshot-client";
+import {
+  createFeedbackScreenshotPreview,
+  revokeFeedbackScreenshotPreview,
+  validateFeedbackScreenshotFile,
+  type FeedbackScreenshotPreview,
+} from "@/lib/community/feedback-screenshot-client";
 import { findPotentiallySimilarFeedback } from "@/lib/community/feedback-similarity";
 import { useSpeechRecognition } from "./use-speech-recognition";
 import {
@@ -98,8 +104,8 @@ export function QuestionnaireCard({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState<string | null>(null);
-  const screenshotPreviewUrlRef = useRef<string | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<FeedbackScreenshotPreview | null>(null);
+  const screenshotPreviewRef = useRef<FeedbackScreenshotPreview | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [personalFeedback, setPersonalFeedback] = useState<PersonalFeedbackItem[]>([]);
   const [personalFeedbackOwnerId, setPersonalFeedbackOwnerId] = useState<string | null>(null);
@@ -150,15 +156,15 @@ export function QuestionnaireCard({
   }, []);
 
   useEffect(() => () => {
-    if (screenshotPreviewUrlRef.current) URL.revokeObjectURL(screenshotPreviewUrlRef.current);
+    revokeFeedbackScreenshotPreview(screenshotPreviewRef.current);
   }, []);
 
   function replaceScreenshotFile(file: File | null) {
-    if (screenshotPreviewUrlRef.current) URL.revokeObjectURL(screenshotPreviewUrlRef.current);
-    const previewUrl = file ? URL.createObjectURL(file) : null;
-    screenshotPreviewUrlRef.current = previewUrl;
-    setScreenshotPreviewUrl(previewUrl);
-    setScreenshotFile(file);
+    const nextPreview = file ? createFeedbackScreenshotPreview(file) : null;
+    revokeFeedbackScreenshotPreview(screenshotPreviewRef.current);
+    screenshotPreviewRef.current = nextPreview;
+    setScreenshotPreview(nextPreview);
+    setScreenshotFile(nextPreview ? file : null);
   }
 
   const canSubmit = questionnaire.fields.every((field) => {
@@ -230,8 +236,9 @@ export function QuestionnaireCard({
     }
   }
 
-  function handleScreenshotChange(file: File | undefined) {
+  function handleScreenshotChange(event: ChangeEvent<HTMLInputElement>) {
     setScreenshotError(null);
+    const file = event.target.files?.[0];
     if (!file) {
       replaceScreenshotFile(null);
       return;
@@ -344,7 +351,7 @@ export function QuestionnaireCard({
           {questionnaire.id === "bug" ? (
             <QuestionnaireScreenshotField
               file={screenshotFile}
-              previewUrl={screenshotPreviewUrl}
+              preview={screenshotPreview}
               error={screenshotError}
               onChange={handleScreenshotChange}
               onRemove={() => {
