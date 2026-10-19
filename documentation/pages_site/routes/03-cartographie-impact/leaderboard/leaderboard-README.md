@@ -30,3 +30,13 @@ les éléments LEGACY et les éléments privilégiés ou de modération sont exc
 
 Exemple de ventilation : 4 grades Participant + 3 grades Exploration +
 2 one-shot = 9 badges.
+
+## Chargement et cache
+
+`LeaderboardPanel` est monté uniquement par cette page canonique. La section
+`/sections/gamification` conserve sa reconnaissance personnelle et son CTA,
+mais ne monte pas le panneau, ne déclenche pas sa requête et désactive le
+prefetch du lien. Les changements de périmètre ou de métrique utilisent la clé
+de vue du panneau et les options `swrRecentViewOptions` : une vue récente est
+réutilisée en mémoire, sans revalidation automatique au focus ou au retour, et
+les filtres utilisateurs/structures ainsi que niveau/XP/badges restent actifs.

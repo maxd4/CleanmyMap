@@ -14,6 +14,11 @@ sur une fiche `CURRENT` divergente.
 - [Fiche fonctionnelle Où agir](../pages_site/routes/02-agir/agir-README.md)
   — entrée produit du parcours cartographique.
 
+## Recyclage — `CURRENT`
+
+- [`recycling.md`](./recycling.md) — contrat de résumé public et de chargement
+  volontaire de la ventilation authentifiée.
+
 ## Gamification — `CURRENT`
 
 - [`gamification/README.md`](./gamification/README.md) — index des contrats et

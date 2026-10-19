@@ -58,11 +58,12 @@ describe("personal gamification recognition", () => {
     expect(cards[1]?.card.mentorEligible).toBe(false);
   });
 
-  it("reuses the public leaderboard panel without a second private fetching engine", () => {
-    expect(panelSource).toContain('<LeaderboardPanel initialScope="user" />');
+  it("keeps the public leaderboard behind its canonical page", () => {
     expect(panelSource).toContain('href="/sections/leaderboard"');
+    expect(panelSource).toContain('prefetch={false}');
     expect(panelSource).toContain("Voir le classement public");
     expect(panelSource).toContain("La progression personnelle et toutes les données privées Gamification restent protégées.");
+    expect(panelSource).not.toContain("LeaderboardPanel");
     expect(panelSource).not.toContain("useSWR");
     expect(panelSource).not.toContain("/api/gamification/leaderboard?");
     expect(panelSource).not.toContain("buildLeaderboardKey");

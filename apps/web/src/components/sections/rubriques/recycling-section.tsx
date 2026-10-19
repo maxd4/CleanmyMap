@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { motion } from "framer-motion";
 import { fetchActions, fetchMapActions } from "@/lib/actions/http";
@@ -11,9 +11,8 @@ import {
   RecyclingKpiGrid, 
   RecyclingWorkflowCard, 
   RecyclingDataUsageCard,
-  RecyclingStreamTable,
-  RecyclingQualitySummary
 } from "./recycling-components";
+import { RecyclingBreakdownDetails } from "./recycling-breakdown-details";
 import { AlertCircle, Recycle, Sparkles, MapPin, Search } from "lucide-react";
 import {
   RUBRIQUE_CONTAINER_VARIANTS,
@@ -27,17 +26,6 @@ import type {
   PublicSectionInitialData,
   PublicSectionMapResponse,
 } from "@/lib/sections/public-section-snapshot-contract";
-
-async function fetchRecyclingBreakdown(): Promise<PublicSectionBreakdown> {
-  const response = await fetch("/api/recycling/breakdown", {
-    method: "GET",
-    cache: "no-store",
-  });
-  if (!response.ok) {
-    throw new Error("breakdown_unavailable");
-  }
-  return (await response.json()) as PublicSectionBreakdown;
-}
 
 function buildRecyclingStats(
   items: PublicSectionActionListResponse["items"],
@@ -74,6 +62,9 @@ export function RecyclingSection({
 }) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
+  const [breakdownData, setBreakdownData] = useState<PublicSectionBreakdown | undefined>(
+    () => initialData?.breakdown ?? undefined,
+  );
   
   const actions = useSWR<PublicSectionActionListResponse>(
     ["section-recycling-actions"],
@@ -86,15 +77,9 @@ export function RecyclingSection({
     { fallbackData: initialData?.map ?? undefined },
   );
   
-  const breakdown = useSWR<PublicSectionBreakdown>(
-    "section-recycling-breakdown",
-    fetchRecyclingBreakdown,
-    { fallbackData: initialData?.breakdown ?? undefined },
-  );
-
   const stats = useMemo(
-    () => buildRecyclingStats(actions.data?.items ?? [], map.data?.items ?? [], breakdown.data),
-    [actions.data?.items, breakdown.data, map.data?.items],
+    () => buildRecyclingStats(actions.data?.items ?? [], map.data?.items ?? [], breakdownData),
+    [actions.data?.items, breakdownData, map.data?.items],
   );
 
   // Breakdown is authenticated and may be unavailable anonymously. It must
@@ -180,7 +165,7 @@ export function RecyclingSection({
               </motion.div>
 
               <motion.div variants={RUBRIQUE_ITEM_VARIANTS}>
-                <RecyclingStreamTable breakdown={breakdown.data} fr={fr} />
+                <RecyclingBreakdownDetails fr={fr} onLoaded={setBreakdownData} />
               </motion.div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -193,12 +178,6 @@ export function RecyclingSection({
               </div>
             </div>
 
-            <div className="lg:col-span-4 space-y-12">
-              <RubriqueCard themeColor="emerald" withTopBar={true} className="p-8">
-                <RecyclingQualitySummary quality={breakdown.data?.triQuality} fr={fr} />
-              </RubriqueCard>
-
-            </div>
           </motion.div>
         )}
       </div>

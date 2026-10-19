@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { BadgeCheck, ShieldCheck, Sparkles, Users } from "lucide-react";
-import { LeaderboardPanel } from "@/components/gamification/leaderboard-panel";
 import type { ContributorRecognitionCard } from "@/lib/gamification/progression-types";
 import type { MeResponse } from "./gamification-types";
 import { SectionLabel } from "./gamification-shell";
@@ -133,16 +132,13 @@ export function RecognitionPanel({
       <div className="mt-6 border-t border-[#f1dfd8] pt-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm font-black text-[#2c1a17]"><Sparkles size={16} className="text-[#c51f1f]" />{fr ? "Classement public" : "Public leaderboard"}</div>
-          <Link href="/sections/leaderboard" className="rounded-full border border-[#cf3b34] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-[#a13f38] transition hover:bg-[#fff5f2]">
+          <Link href="/sections/leaderboard" prefetch={false} className="rounded-full border border-[#cf3b34] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-[#a13f38] transition hover:bg-[#fff5f2]">
             {fr ? "Voir le classement public" : "View the public leaderboard"}
           </Link>
         </div>
         <p className="mt-3 text-sm leading-6 text-[#806b65]">
           {fr ? "La progression personnelle et toutes les données privées Gamification restent protégées." : "Personal progression and all private Gamification data remain protected."}
         </p>
-        <div className="mt-5">
-          <LeaderboardPanel initialScope="user" />
-        </div>
       </div>
     </section>
   );

@@ -48,9 +48,11 @@ jalons de reconnaissance sont présentés dans deux groupes distincts. Les
 indicateurs d'impact restent dans leur panneau dédié et ne forment pas une
 jauge XP.
 
-La section privée réutilise le composant canonique `LeaderboardPanel` pour
-afficher un aperçu du classement public, avec un lien vers
-`/sections/leaderboard`. Le panneau public utilise les deux scopes `user` et
+La section privée conserve la reconnaissance personnelle et propose uniquement
+le CTA « Voir le classement public » vers `/sections/leaderboard`. Elle ne
+monte pas `LeaderboardPanel`, ne lance pas la lecture du classement et désactive
+le prefetch de ce lien. Le panneau public est monté et chargé uniquement sur la
+page canonique, avec les deux scopes `user` et
 `structure` et les trois métriques `level`, `xp` et `badges`. Pour un utilisateur,
 le niveau est le niveau utilisateur ; pour une structure, il s'agit du niveau
 collectif. Le compteur de badges suit `total = gradeCount + oneShotCount` et

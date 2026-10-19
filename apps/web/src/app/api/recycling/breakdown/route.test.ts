@@ -95,6 +95,17 @@ describe("recycling breakdown route", () => {
     );
   });
 
+  it("rejects anonymous access before loading the private snapshot", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: false });
+
+    const response = await GET();
+
+    expect(response.status).toBe(401);
+    expect(unauthorizedJsonResponseMock).toHaveBeenCalledOnce();
+    expect(loadOrRefreshPublicSurfaceSnapshotMock).not.toHaveBeenCalled();
+    expect(fetchUnifiedActionContractsMock).not.toHaveBeenCalled();
+  });
+
   it.each([
     { isTruncated: true, partial: false },
     { isTruncated: false, partial: true },

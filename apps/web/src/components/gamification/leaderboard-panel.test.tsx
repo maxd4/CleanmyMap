@@ -1,3 +1,4 @@
+import { act, create } from "react-test-renderer";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { PublicLeaderboardResponseDto } from "@/lib/gamification/progression-types";
@@ -9,9 +10,13 @@ const swrState = vi.hoisted(() => ({
     isLoading: false,
   },
 }));
+const swrCalls = vi.hoisted(() => [] as Array<{ key: string; options: Record<string, unknown> }>);
 
 vi.mock("swr", () => ({
-  default: () => swrState.current,
+  default: (key: string, _fetcher: unknown, options: Record<string, unknown>) => {
+    swrCalls.push({ key, options });
+    return swrState.current;
+  },
 }));
 
 import { LeaderboardPanel } from "./leaderboard-panel";
@@ -23,6 +28,34 @@ type MockSwrState = {
 };
 
 describe("LeaderboardPanel", () => {
+  it("loads each selected view through the recent-view cache contract", () => {
+    swrCalls.length = 0;
+    swrState.current = { data: undefined, error: undefined, isLoading: true };
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(<LeaderboardPanel />);
+    });
+
+    const structureButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).includes("Structures"));
+    const userButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).includes("Utilisateurs"));
+    act(() => structureButton?.props.onClick());
+    act(() => userButton?.props.onClick());
+
+    expect(swrCalls.map(({ key }) => key)).toEqual([
+      "/api/gamification/leaderboard/public?scope=user&metric=level",
+      "/api/gamification/leaderboard/public?scope=structure&metric=level",
+      "/api/gamification/leaderboard/public?scope=user&metric=level",
+    ]);
+    expect(swrCalls[0]?.options).toMatchObject({
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
+      keepPreviousData: true,
+      dedupingInterval: 60_000,
+    });
+  });
+
   it("renders user metrics and never renders private identifiers", () => {
     swrState.current = {
       data: {

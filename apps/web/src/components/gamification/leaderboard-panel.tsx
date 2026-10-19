@@ -17,6 +17,7 @@ import {
   PUBLIC_LEADERBOARD_METRICS,
   type PublicLeaderboardScope,
 } from "./leaderboard-panel.model";
+import { swrRecentViewOptions } from "@/lib/swr-config";
 
 const numberFormatter = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 1,
@@ -131,8 +132,7 @@ export function LeaderboardPanel({
   const [metric, setMetric] = useState<LeaderboardMetric>("level");
   const key = buildPublicLeaderboardUrl(scope, metric);
   const { data, error, isLoading } = useSWR(key, fetchPublicLeaderboard, {
-    keepPreviousData: false,
-    revalidateOnFocus: false,
+    ...swrRecentViewOptions,
   });
 
   return (

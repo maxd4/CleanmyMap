@@ -55,9 +55,11 @@ La rubrique gamification sert à rendre lisible la progression personnelle, la r
   d'impact, d'historique ou de modération.
 - Le leaderboard est l'unique exception à la règle de non-publication de la gamification.
 
-La page `/sections/gamification` reste privée. Elle réutilise le panneau public
-canonique et propose le CTA « Voir le classement public » sans ajouter le
-leaderboard à la navigation primaire.
+La page `/sections/gamification` reste privée. Elle conserve la reconnaissance
+personnelle et propose le CTA « Voir le classement public » sans ajouter le
+leaderboard à la navigation primaire. Elle ne monte pas le panneau de classement
+et ne précharge ni son bundle ni sa requête : le chargement commence à
+l'ouverture effective de `/sections/leaderboard`.
 
 ## Ce que la rubrique montre
 
