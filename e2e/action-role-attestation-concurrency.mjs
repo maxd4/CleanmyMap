@@ -41,30 +41,78 @@ async function runQuery(sql, { signal: callerSignal, timeoutMs = CONCURRENCY_QUE
   }
 }
 
-function startQuery(sql) {
+function startQuery(sql, query = runQuery) {
   const controller = new AbortController();
+  let failure;
+  const promise = Promise.resolve().then(() => query(sql, { signal: controller.signal }));
+  // Attach the rejection handler synchronously: callers intentionally await the
+  // command after one or more observation queries.
+  promise.catch((error) => {
+    failure = error;
+  });
   return {
-    promise: runQuery(sql, { signal: controller.signal }),
+    promise,
+    settled: promise.then(
+      () => ({ status: "fulfilled" }),
+      (error) => ({ status: "rejected", reason: error }),
+    ),
+    get failure() {
+      return failure;
+    },
     cancel: () => controller.abort(),
   };
 }
 
-async function waitForDatabaseObservation(sql, marker, description) {
-  const deadline = Date.now() + CONCURRENCY_SYNC_TIMEOUT_MS;
+async function waitForDatabaseObservation(
+  sql,
+  marker,
+  description,
+  { query = runQuery, command, timeoutMs = CONCURRENCY_SYNC_TIMEOUT_MS, pollIntervalMs = CONCURRENCY_POLL_INTERVAL_MS } = {},
+) {
+  const deadline = Date.now() + timeoutMs;
   let lastObservation = "none";
   while (Date.now() < deadline) {
-    try {
-      const result = await runQuery(sql, { timeoutMs: Math.max(1, deadline - Date.now()) });
+    if (command?.failure) throw command.failure;
+    const observation = Promise.resolve()
+      .then(() => query(sql, { timeoutMs: Math.max(1, deadline - Date.now()) }))
+      .then(
+        (result) => ({ type: "observation", result }),
+        (error) => ({ type: "observation-error", error }),
+      );
+    const commandState = command?.settled.then((result) =>
+      result.status === "rejected"
+        ? { type: "command-error", error: result.reason }
+        : { type: "command-completed" },
+    );
+    const outcome = await Promise.race([observation, commandState].filter(Boolean));
+    if (outcome.type === "command-error") throw outcome.error;
+    if (outcome.type === "command-completed") {
+      throw new Error(`${description} command completed before the expected observation`);
+    }
+    if (outcome.type === "observation-error") {
+      lastObservation = outcome.error instanceof Error ? outcome.error.message : String(outcome.error);
+    } else {
+      const result = outcome.result;
       lastObservation = String(result.stdout ?? "").trim();
       if (lastObservation.includes(marker)) {
         return;
       }
-    } catch (error) {
-      lastObservation = error instanceof Error ? error.message : String(error);
     }
-    await new Promise((resolve) => setTimeout(resolve, CONCURRENCY_POLL_INTERVAL_MS));
+    const pause = new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    if (command) {
+      const commandDuringPause = command.settled.then((result) =>
+        result.status === "rejected" ? { type: "command-error", error: result.reason } : { type: "command-completed" },
+      );
+      const pauseOutcome = await Promise.race([pause.then(() => ({ type: "pause" })), commandDuringPause]);
+      if (pauseOutcome.type === "command-error") throw pauseOutcome.error;
+      if (pauseOutcome.type === "command-completed") {
+        throw new Error(`${description} command completed before the expected observation`);
+      }
+    } else {
+      await pause;
+    }
   }
-  throw new Error(`${description} timed out after ${CONCURRENCY_SYNC_TIMEOUT_MS}ms; last observation: ${lastObservation.slice(0, 500)}`);
+  throw new Error(`${description} timed out after ${timeoutMs}ms; last observation: ${lastObservation.slice(0, 500)}`);
 }
 
 const setupSql = `
@@ -196,36 +244,71 @@ delete from public.app_notifications where user_id = '${targetUserId}' and paylo
 commit;
 `;
 
-async function main() {
-  await runQuery(setupSql);
+function formatError(error) {
+  if (error instanceof AggregateError) {
+    return [error.message, ...error.errors.map((nestedError, index) => `cause ${index + 1}: ${formatError(nestedError)}`)].join("\n");
+  }
+  return error instanceof Error ? error.message : String(error);
+}
+
+export async function runActionRoleAttestationConcurrency({
+  query = runQuery,
+  syncTimeoutMs = CONCURRENCY_SYNC_TIMEOUT_MS,
+  pollIntervalMs = CONCURRENCY_POLL_INTERVAL_MS,
+} = {}) {
+  await query(setupSql);
   let holder;
   let correction;
+  let primaryError;
+  let cleanupError;
   try {
-    holder = startQuery(holdActionLockSql);
-    await waitForDatabaseObservation(lockHolderProbeSql, "ROLE_ATTESTATION_LOCK_HELD", "action lock holder");
-    correction = startQuery(concurrentCorrectionWithoutReasonSql);
-    await waitForDatabaseObservation(correctionWaitProbeSql, "ROLE_ATTESTATION_CORRECTION_WAITING", "concurrent correction lock wait");
+    holder = startQuery(holdActionLockSql, query);
+    await waitForDatabaseObservation(lockHolderProbeSql, "ROLE_ATTESTATION_LOCK_HELD", "action lock holder", {
+      query,
+      command: holder,
+      timeoutMs: syncTimeoutMs,
+      pollIntervalMs,
+    });
+    correction = startQuery(concurrentCorrectionWithoutReasonSql, query);
+    await waitForDatabaseObservation(
+      correctionWaitProbeSql,
+      "ROLE_ATTESTATION_CORRECTION_WAITING",
+      "concurrent correction lock wait",
+      { query, command: correction, timeoutMs: syncTimeoutMs, pollIntervalMs },
+    );
     await assert.rejects(
       correction.promise,
       (error) => String(error).includes("action_role_attestation_correction_reason_required"),
     );
     await holder.promise;
-    await runQuery(verifyUnchangedSql);
-    await runQuery(correctedDecisionSql);
-    await runQuery(verifySql);
+    await query(verifyUnchangedSql);
+    await query(correctedDecisionSql);
+    await query(verifySql);
+  } catch (error) {
+    primaryError = error;
   } finally {
     correction?.cancel();
     holder?.cancel();
     await Promise.allSettled([holder?.promise, correction?.promise].filter(Boolean));
-    await runQuery(cleanupSql);
+    try {
+      await query(cleanupSql);
+    } catch (error) {
+      cleanupError = error;
+    }
   }
+
+  if (primaryError && cleanupError) {
+    throw new AggregateError([primaryError, cleanupError], "Concurrent role attestation proof and cleanup both failed");
+  }
+  if (primaryError) throw primaryError;
+  if (cleanupError) throw cleanupError;
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  main()
+  runActionRoleAttestationConcurrency()
     .then(() => console.log("Role attestation concurrent correction contract passed."))
     .catch((error) => {
-      console.error(`DB_SEMANTICS_NOT_EXECUTED: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`DB_SEMANTICS_NOT_EXECUTED: ${formatError(error)}`);
       process.exitCode = 1;
     });
 }
