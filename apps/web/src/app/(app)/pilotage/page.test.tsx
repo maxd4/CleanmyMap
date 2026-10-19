@@ -45,10 +45,22 @@ vi.mock("@/lib/pilotage/community-operations", () => ({
 vi.mock("@/components/pilotage/pilotage-access-screen", () => ({
   PilotageLockedPage: () => React.createElement("div", null, "locked"),
   PilotageRestrictedPage: () => React.createElement("div", null, "restricted"),
-  PilotageOverviewPage: ({ communityOperations }: { communityOperations: unknown }) =>
+  PilotageOverviewPage: ({
+    communityOperations,
+    communityOperationsState,
+    communityOperationsRetryHref,
+  }: {
+    communityOperations: unknown;
+    communityOperationsState: string;
+    communityOperationsRetryHref: string;
+  }) =>
     React.createElement(
       "div",
-      { "data-community-operations": communityOperations ? "loaded" : "not-loaded" },
+      {
+        "data-community-operations": communityOperations ? "loaded" : "not-loaded",
+        "data-community-operations-state": communityOperationsState,
+        "data-community-operations-retry": communityOperationsRetryHref,
+      },
       "overview",
     ),
 }));
@@ -76,6 +88,7 @@ describe("/pilotage detail loading contract", () => {
     );
 
     expect(markup).toContain('data-community-operations="not-loaded"');
+    expect(markup).toContain('data-community-operations-state="NOT_REQUESTED"');
     expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({
       periodDays: 30,
       limit: 1800,
@@ -90,7 +103,19 @@ describe("/pilotage detail loading contract", () => {
     );
 
     expect(markup).toContain('data-community-operations="loaded"');
-    expect(mocks.loadPilotageCommunityOperations).toHaveBeenCalledWith([contract]);
+    expect(mocks.loadPilotageCommunityOperations).toHaveBeenCalledWith([contract], "user-1");
+    expect(markup).toContain('data-community-operations-state="AVAILABLE"');
+  });
+
+  it("exposes an unavailable state and a changing retry URL after a detail failure", async () => {
+    mocks.loadPilotageCommunityOperations.mockRejectedValueOnce(new Error("temporary failure"));
+
+    const markup = renderToStaticMarkup(
+      await PilotageAccessPage({ searchParams: Promise.resolve({ operations: "1", retry: "4" }) }),
+    );
+
+    expect(markup).toContain('data-community-operations-state="UNAVAILABLE"');
+    expect(markup).toContain('data-community-operations-retry="/pilotage?operations=1&amp;retry=5"');
   });
 
   it("does not read overview or operations for an unauthorized visitor", async () => {

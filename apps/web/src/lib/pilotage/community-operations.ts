@@ -34,6 +34,11 @@ export type PilotageCommunityOperations = {
   };
 };
 
+export type PilotageCommunityOperationsState =
+  | "NOT_REQUESTED"
+  | "AVAILABLE"
+  | "UNAVAILABLE";
+
 function hasWasteCharacterization(action: ReturnType<typeof toActionListItem>): boolean {
   return Boolean(
     action.waste_breakdown && Object.keys(action.waste_breakdown).length > 0,
@@ -42,19 +47,26 @@ function hasWasteCharacterization(action: ReturnType<typeof toActionListItem>): 
 
 export async function loadPilotageCommunityOperations(
   contracts: ActionDataContract[],
+  userId: string,
   now = new Date(),
 ): Promise<PilotageCommunityOperations> {
-  const events = await loadCachedReportCommunityEvents(120);
+  const normalizedUserId = userId.trim();
   const actions = contracts.map((contract) => toActionListItem(contract));
-  const conversion = computeEventConversions(events, actions);
-  const upcomingEvents = events.filter((event) => event.eventDate >= now.toISOString().slice(0, 10));
-  const staffingPlan = computeEventStaffingPlan(upcomingEvents, now);
-  const reminders = computeEventRelances(upcomingEvents, now);
-  const linkedActionIds = new Set(
+  const linkedEventIds = new Set(
     actions
       .map((action) => extractEventRefFromAction(action))
       .filter((eventId): eventId is string => Boolean(eventId)),
   );
+  const events = (await loadCachedReportCommunityEvents(120)).filter(
+    (event) =>
+      (normalizedUserId.length > 0 &&
+        (event.organizerClerkId ?? "").trim() === normalizedUserId) ||
+      linkedEventIds.has(event.id),
+  );
+  const conversion = computeEventConversions(events, actions);
+  const upcomingEvents = events.filter((event) => event.eventDate >= now.toISOString().slice(0, 10));
+  const staffingPlan = computeEventStaffingPlan(upcomingEvents, now);
+  const reminders = computeEventRelances(upcomingEvents, now);
 
   const rows = events
     .filter((event) => event.eventDate < now.toISOString().slice(0, 10))
@@ -72,7 +84,7 @@ export async function loadPilotageCommunityOperations(
           linkedActions.some(hasWasteCharacterization),
         hasAttendance: event.attendanceCount !== null,
         hasPostMortem: Boolean(event.postMortem?.trim()),
-        hasLinkedAction: (conversionRow?.linkedActions ?? 0) > 0 && linkedActionIds.has(event.id),
+        hasLinkedAction: (conversionRow?.linkedActions ?? 0) > 0 && linkedEventIds.has(event.id),
         hasWasteCharacterization: linkedActions.some(hasWasteCharacterization),
       };
       return row;
