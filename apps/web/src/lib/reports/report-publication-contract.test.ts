@@ -61,4 +61,49 @@ describe("report publication projection", () => {
   ])("rejects unsafe publication projection (%s)", (...args: unknown[]) => {
     expect(() => assertReportPublicationEligibility(args[0] as typeof generation)).toThrow(ReportPublicationProjectionError);
   });
+
+  it.each([
+    ["uuid", "11111111-1111-4111-8111-111111111111"],
+    ["email", "contact@example.com"],
+    ["phone", "+33 6 12 34 56 78"],
+    ["url", "https://example.com/private"],
+    ["Clerk identifier", "user_2abc123"],
+    ["token", "token-secret-value"],
+  ])("rejects a payload containing a private %s", (_label, value) => {
+    const unsafe = {
+      ...generation,
+      snapshot: {
+        ...generation.snapshot,
+        data: { ...generation.snapshot.data, value },
+      },
+    };
+
+    expect(() => assertReportPublicationEligibility(unsafe)).toThrow(ReportPublicationProjectionError);
+  });
+
+  it("rejects long adversarial non-private content within a bounded execution time", () => {
+    const safe = {
+      ...generation,
+      snapshot: {
+        ...generation.snapshot,
+        data: { ...generation.snapshot.data, value: `${"a".repeat(200_000)}!` },
+      },
+    };
+    const startedAt = performance.now();
+
+    expect(() => assertReportPublicationEligibility(safe)).not.toThrow();
+    expect(performance.now() - startedAt).toBeLessThan(1_000);
+  });
+
+  it("does not reject ordinary field names that merely contain marker letters", () => {
+    const safe = {
+      ...generation,
+      snapshot: {
+        ...generation.snapshot,
+        data: { ...generation.snapshot.data, candidate: "indicator", validation: "complete" },
+      },
+    };
+
+    expect(() => assertReportPublicationEligibility(safe)).not.toThrow();
+  });
 });

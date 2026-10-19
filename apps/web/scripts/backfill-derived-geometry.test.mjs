@@ -97,3 +97,50 @@ test("rejects malformed, invalid and unsupported geometries without proposing up
   }));
   assert.equal(invalid.classification, "INVALID");
 });
+
+test("normalizes historical numeric strings but rejects null coordinates", () => {
+  const historical = parseDrawingFromGeoJson(
+    geojson("LineString", [["2.3", "48.8"], ["2.4", "48.9"]]),
+  );
+
+  assert.deepEqual(historical?.coordinates, [[48.8, 2.3], [48.9, 2.4]]);
+  assert.equal(parseDrawingFromGeoJson(geojson("LineString", [[null, 48.8], [2.4, 48.9]])), null);
+  assert.equal(parseDrawingFromGeoJson(geojson("LineString", [["", 48.8], [2.4, 48.9]])), null);
+});
+
+test("keeps polygon output stable whether the GeoJSON ring repeats its first point", () => {
+  const open = parseDrawingFromGeoJson(
+    geojson("Polygon", [[[2.3, 48.8], [2.4, 48.8], [2.4, 48.9]]]),
+  );
+  const closed = parseDrawingFromGeoJson(
+    geojson("Polygon", [[[2.3, 48.8], [2.4, 48.8], [2.4, 48.9], [2.3, 48.8]]]),
+  );
+
+  assert.deepEqual(closed, open);
+});
+
+test("matches internal latitude/longitude route coordinates after explicit numeric normalization", () => {
+  const routeGeometry = {
+    mode: "network",
+    provider: "osrm",
+    estimated: false,
+    coordinates: [["48.8", "2.3"], ["48.9", "2.4"]],
+  };
+  const result = classifyGeometryRow(row({
+    derived_geometry_geojson: geojson("LineString", [[2.3, 48.8], [2.4, 48.9]]),
+    preparation_data: JSON.stringify({
+      operationalRoute: { routes: [{ geometry: routeGeometry }] },
+    }),
+  }));
+
+  assert.equal(result.classification, "SAFE_UPDATE");
+  assert.equal(result.correction, "restore_network_route_provenance");
+});
+
+test("does not create a fallback point from null or out-of-range coordinates", () => {
+  const nullPoint = classifyGeometryRow(row({ latitude: null, longitude: null }), "signalement");
+  const invalidPoint = classifyGeometryRow(row({ latitude: 91, longitude: 2.3 }), "signalement");
+
+  assert.equal(nullPoint.classification, "AMBIGUOUS");
+  assert.equal(invalidPoint.classification, "AMBIGUOUS");
+});

@@ -105,16 +105,43 @@ function resolveEnvValue(key, envFileMap) {
   return null;
 }
 
+function toFiniteCoordinateNumber(value) {
+  if (typeof value !== "number" && typeof value !== "string") return null;
+  if (typeof value === "string" && value.trim() === "") return null;
+  const number = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(number)) return null;
+  return number === 0 ? 0 : number;
+}
+
+function normalizeInternalCoordinatePair(point) {
+  if (!Array.isArray(point) || point.length < 2) return null;
+  const latitude = toFiniteCoordinateNumber(point[0]);
+  const longitude = toFiniteCoordinateNumber(point[1]);
+  if (
+    latitude === null ||
+    longitude === null ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    return null;
+  }
+  return [latitude, longitude];
+}
+
 function isFiniteCoordinatePair(point) {
+  return normalizeInternalCoordinatePair(point) !== null;
+}
+
+function areCoordinatesEqual(left, right) {
+  const normalizedLeft = normalizeInternalCoordinatePair(left);
+  const normalizedRight = normalizeInternalCoordinatePair(right);
   return (
-    Array.isArray(point) &&
-    point.length >= 2 &&
-    Number.isFinite(Number(point[0])) &&
-    Number.isFinite(Number(point[1])) &&
-    Number(point[0]) >= -90 &&
-    Number(point[0]) <= 90 &&
-    Number(point[1]) >= -180 &&
-    Number(point[1]) <= 180
+    normalizedLeft !== null &&
+    normalizedRight !== null &&
+    Object.is(normalizedLeft[0], normalizedRight[0]) &&
+    Object.is(normalizedLeft[1], normalizedRight[1])
   );
 }
 
@@ -126,6 +153,20 @@ function isRenderableDrawing(drawing) {
     drawing.coordinates.length >= minimumPoints &&
     drawing.coordinates.every(isFiniteCoordinatePair)
   );
+}
+
+function normalizeDrawing(drawing) {
+  if (!drawing || !Array.isArray(drawing.coordinates)) return null;
+  const coordinates = drawing.coordinates.map(normalizeInternalCoordinatePair);
+  if (coordinates.some((point) => point === null)) return null;
+  const withoutClosingPoint =
+    drawing.kind === "polygon" &&
+    coordinates.length >= 2 &&
+    areCoordinatesEqual(coordinates[0], coordinates.at(-1))
+      ? coordinates.slice(0, -1)
+      : coordinates;
+  const normalized = { kind: drawing.kind, coordinates: withoutClosingPoint };
+  return isRenderableDrawing(normalized) ? normalized : null;
 }
 
 export function parseDrawingFromGeoJson(geojson, kindHint = null) {
@@ -151,22 +192,14 @@ export function parseDrawingFromGeoJson(geojson, kindHint = null) {
     if (!Array.isArray(points)) return null;
     const coordinates = points.map((point) =>
       Array.isArray(point) && point.length >= 2
-        ? [Number(point[1]), Number(point[0])]
+        ? normalizeInternalCoordinatePair([point[1], point[0]])
         : null,
     );
-    if (coordinates.some((point) => !isFiniteCoordinatePair(point))) return null;
-    const normalized =
-      isPolygon &&
-      coordinates.length >= 2 &&
-      coordinates[0][0] === coordinates.at(-1)?.[0] &&
-      coordinates[0][1] === coordinates.at(-1)?.[1]
-        ? coordinates.slice(0, -1)
-        : coordinates;
     const drawing = {
       kind: drawingKind,
-      coordinates: normalized,
+      coordinates,
     };
-    return isRenderableDrawing(drawing) ? drawing : null;
+    return normalizeDrawing(drawing);
   } catch {
     return null;
   }
@@ -194,7 +227,7 @@ function parseDrawingFromNotes(notes) {
   if (!drawingJson) return null;
   try {
     const parsed = JSON.parse(drawingJson);
-    return isRenderableDrawing(parsed) ? parsed : null;
+    return normalizeDrawing(parsed);
   } catch {
     return null;
   }
@@ -264,14 +297,11 @@ function toGeoJsonString(drawing) {
 }
 
 function coordinatesEqual(left, right) {
+  if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+    return false;
+  }
   return (
-    Array.isArray(left) &&
-    Array.isArray(right) &&
-    left.length === right.length &&
-    left.every(
-      (point, index) =>
-        point?.[0] === right[index]?.[0] && point?.[1] === right[index]?.[1],
-    )
+    left.every((point, index) => areCoordinatesEqual(point, right[index]))
   );
 }
 
@@ -288,9 +318,8 @@ function geometryMatchesRoute(drawing, preparationData) {
 }
 
 function legacyEllipseRadii(row, meta) {
-  if (!Number.isFinite(Number(row.latitude)) || !Number.isFinite(Number(row.longitude))) {
-    return null;
-  }
+  const center = normalizeInternalCoordinatePair([row.latitude, row.longitude]);
+  if (!center) return null;
   const anchor =
     normalizeLabel(row.location_label) ||
     normalizeLabel(meta.departureLocationLabel) ||
@@ -302,8 +331,10 @@ function isDemonstratedLegacyEllipse(row, drawing, meta) {
   if (!drawing || drawing.kind !== "polygon") return null;
   const radii = legacyEllipseRadii(row, meta);
   if (!radii) return null;
+  const center = normalizeInternalCoordinatePair([row.latitude, row.longitude]);
+  if (!center) return null;
   const expected = buildEllipsePolygon(
-    { latitude: Number(row.latitude), longitude: Number(row.longitude) },
+    { latitude: center[0], longitude: center[1] },
     radii[0],
     radii[1],
   );
@@ -339,7 +370,7 @@ function sourceAcceptsKind(source, kind) {
 function hasValidPointGeometry(row) {
   return (
     row.derived_geometry_kind === "point" &&
-    isFiniteCoordinatePair([Number(row.latitude), Number(row.longitude)])
+    isFiniteCoordinatePair([row.latitude, row.longitude])
   );
 }
 
@@ -500,9 +531,8 @@ function classifySignalement(row) {
     return decision(row, "trash_spotter_spots", "INVALID");
   }
 
-  const latitude = Number(row.latitude);
-  const longitude = Number(row.longitude);
-  if (!stored.hasStoredGeometry && isFiniteCoordinatePair([latitude, longitude])) {
+  const point = normalizeInternalCoordinatePair([row.latitude, row.longitude]);
+  if (!stored.hasStoredGeometry && point) {
     return decision(
       row,
       "trash_spotter_spots",

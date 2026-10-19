@@ -272,12 +272,23 @@ function buildTable(params: {
 }
 
 function normalizeIdentifier(value: string): string {
-  const normalized = value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  const source = value.normalize("NFD").toLowerCase();
+  let normalized = "";
+  let pendingSeparator = false;
+  for (const character of source) {
+    const code = character.charCodeAt(0);
+    const isCombiningMark = code >= 0x0300 && code <= 0x036f;
+    const isAsciiAlphaNumeric =
+      !isCombiningMark &&
+      (code >= 48 && code <= 57 || code >= 97 && code <= 122);
+    if (isAsciiAlphaNumeric) {
+      if (pendingSeparator && normalized) normalized += "-";
+      normalized += character;
+      pendingSeparator = false;
+    } else if (!isCombiningMark && normalized) {
+      pendingSeparator = true;
+    }
+  }
   return normalized || "indicateur";
 }
 

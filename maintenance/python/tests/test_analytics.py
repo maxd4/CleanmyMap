@@ -32,6 +32,18 @@ def test_explicit_zero_is_observed_and_complete_measurements_keep_historical_tot
     assert result["measurement_quality"]["dechets_kg"]["is_exhaustive"] is True
 
 
+def test_observed_zero_keeps_the_zero_measurement_but_ratio_remains_undefined() -> None:
+    result = compute_advanced_kpis(
+        _submissions([{"status": "approved"}]),
+        pd.DataFrame({"dechets_kg": [0.0], "megots": [0]}),
+    )
+
+    assert result["total_kg"] == 0.0
+    assert result["estimated_cost_saved_eur"] == 0.0
+    assert result["impact_kg_per_eur"] is None
+    assert result["measurement_quality"]["dechets_kg"]["state"] == "available"
+
+
 def test_missing_nan_and_invalid_values_are_not_converted_to_zero() -> None:
     result = compute_advanced_kpis(
         pd.DataFrame(),

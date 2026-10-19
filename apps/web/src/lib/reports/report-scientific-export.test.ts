@@ -274,6 +274,27 @@ describe("report scientific exports", () => {
     expect([...new Set(ids)]).toHaveLength(3);
   });
 
+  it("normalizes Unicode and trims separator runs without changing stable suffix allocation", () => {
+    const snapshot = {
+      ...generation().snapshot,
+      data: {
+        ...generation().snapshot.data,
+        stats: [
+          { label: " Énergie — totale ", value: 1 },
+          { label: "Energie totale", value: 2 },
+          { label: "Énergie totale 2", value: 3 },
+        ],
+      },
+    } as unknown as ReportGenerationSnapshotRecord["snapshot"];
+    const table = buildReportScientificExport(generation({ snapshot })).tables.find((item) => item.id === "report-stats");
+
+    expect(table?.rows.map((row) => row.values.stat_id.value)).toEqual([
+      "stat-energie-totale",
+      "stat-energie-totale-2",
+      "stat-energie-totale-2-2",
+    ]);
+  });
+
   it("reserves explicit historized IDs when generated IDs would collide with them", () => {
     const snapshot = {
       ...generation().snapshot,

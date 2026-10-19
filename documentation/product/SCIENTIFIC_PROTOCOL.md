@@ -49,6 +49,9 @@ bénévoles et durée) sont des observations ou des déclarations seulement
 lorsqu'elles sont effectivement renseignées et conservées. Une valeur absente
 reste inconnue (`NA`) : elle ne devient pas `0` par conversion numérique. Un
 zéro explicite reste en revanche une mesure ou une déclaration nulle.
+Lorsqu'une métrique est un ratio, un zéro observé au numérateur et au
+dénominateur ne constitue pas un ratio nul : le résultat reste indéfini (`NA`)
+sans ajout d'un epsilon ou d'une constante de remplacement.
 
 Les résultats ci-dessous sont des valeurs dérivées à partir de ces données et
 de facteurs de configuration. Ils sont qualifiés de `PROXY` : ils donnent un

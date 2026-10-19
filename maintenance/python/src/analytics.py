@@ -162,7 +162,11 @@ def compute_advanced_kpis(all_submissions_df: pd.DataFrame, filtered_approved_df
     total_kg = observed_total_kg if kg_quality["is_exhaustive"] else None
     total_megots = observed_total_megots if megots_quality["is_exhaustive"] else None
     estimated_cost_saved = (total_kg / 1000.0) * 150.0 if total_kg is not None else None
-    impact_per_euro = (total_kg / estimated_cost_saved) if estimated_cost_saved and estimated_cost_saved > 0 else (0.0 if total_kg == 0.0 else None)
+    impact_per_euro = (
+        total_kg / estimated_cost_saved
+        if estimated_cost_saved is not None and estimated_cost_saved > 0
+        else None
+    )
 
     return {
         "mission_completion_rate": completion_rate,
