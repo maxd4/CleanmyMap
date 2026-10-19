@@ -2,6 +2,15 @@
 
 const EventEmitter = require('events');
 
+const defineObjectValue = (object, key, value) => {
+  Object.defineProperty(object, key, {
+    configurable: true,
+    enumerable: true,
+    value,
+    writable: true,
+  });
+};
+
 const startObject = Ctr =>
   function () {
     if (this.done) {
@@ -120,7 +129,7 @@ class Assembler extends EventEmitter {
       if (this.current instanceof Array) {
         this.current.push(value);
       } else {
-        this.current[this.key] = value;
+        defineObjectValue(this.current, this.key, value);
         this.key = null;
       }
     }
@@ -138,7 +147,7 @@ class Assembler extends EventEmitter {
       } else {
         value = this.reviver(this.key, value);
         if (value !== undefined) {
-          this.current[this.key] = value;
+          defineObjectValue(this.current, this.key, value);
         }
         this.key = null;
       }

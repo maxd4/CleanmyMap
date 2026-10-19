@@ -207,6 +207,33 @@ CVE-2026-71429. Les modules de filtres `pick`, `ignore`, `filter` et `replace`
 ne sont ni embarqués ni résolubles. Il n'y a aucun override global et la
 redirection reste limitée à `jayson@4.3.0`.
 
+Le backport corrige également `GHSA-mjw6-4jj6-33hc` / `CVE-2026-104183`.
+Dans les deux chemins d'assemblage avec et sans reviver, les clés JSON sont
+écrites par `Object.defineProperty` comme propriétés propres, énumérables,
+inscriptibles et configurables. Une clé `__proto__` reste ainsi une donnée JSON
+sérialisable au lieu d'invoquer le setter historique d'`Object.prototype`.
+Les objets reconstruits gardent leur prototype ordinaire, les tableaux
+conservent leur comportement d'indexation et le reviver conserve la sémantique
+de suppression par retour `undefined`.
+
+La preuve comportementale correspondante est dans
+`apps/mobile/security/stream-json-jayson-security.test.mjs` : objets racine et
+imbriqués, clé `__proto__`, tableau, reviver, sérialisation, comparaison avec
+`JSON.parse`, absence de modification des prototypes et absence de pollution
+de `Object.prototype`, en plus des chemins CommonJS historiques et du
+streaming incrémental existants. Le registre npm qualifie cette correction
+uniquement pour `GHSA-mjw6-4jj6-33hc`, `stream-json@1.9.1` résolu vers
+`apps/mobile/vendor/stream-json` ; il ne crée aucune exception générale.
+
+`GHSA-hqr4-qq8f-hg3x` est requalifié `NOT_APPLICABLE` pour ce vendor précis :
+l'advisory concerne les composants JSONC, alors que le package local ne contient
+aucun parseur JSONC ni module JSONC associé. La vérification CURRENT combine
+`npm ls jsonc-parser json-source-map --all --json` (aucun composant résolu,
+sortie de projet vide) et l'absence de ces chemins dans
+`apps/mobile/vendor/stream-json`. Cette qualification ne supprime pas le
+signal npm attaché au nom upstream `stream-json` et ne constitue pas une
+relaxation de l'accès public ou du contrôleur de sécurité.
+
 La redirection est strictement scoped à `jayson@4.3.0` dans `package.json` :
 
 ```json

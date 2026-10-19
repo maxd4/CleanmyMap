@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   buildNpmAuditInvocation,
+  EXPLICIT_NOT_APPLICABLE,
   EXPLICIT_MITIGATIONS,
   evaluateAuditPolicy,
   extractAuditFindings,
@@ -22,6 +23,7 @@ const lockfile = {
 };
 
 const BRACES_ADVISORY = "GHSA-VFJ7-8CJW-P6XM";
+const STREAM_JSON_JSONC_ADVISORY = "GHSA-hqr4-qq8f-hg3x";
 
 function bracesAuditReport() {
   return {
@@ -253,6 +255,42 @@ test("the exact vendor mitigation is accepted but a changed version is not", () 
   });
   assert.equal(rejected.passed, false);
   assert.equal(rejected.unmitigated[0].version, "1.9.2");
+});
+
+test("records the JSONC advisory as exact non-applicability for the bounded vendor", () => {
+  const entry = EXPLICIT_NOT_APPLICABLE.find(
+    (candidate) => candidate.advisory === STREAM_JSON_JSONC_ADVISORY,
+  );
+  assert.deepEqual(entry, {
+    advisory: STREAM_JSON_JSONC_ADVISORY,
+    packageName: "stream-json",
+    version: "1.9.1",
+    path: "apps/mobile/vendor/stream-json",
+    documentation: "documentation/security/dependency-advisory-governance.md",
+    verification: "apps/mobile/security/stream-json-jayson-security.test.mjs",
+  });
+
+  const result = evaluateAuditPolicy({
+    auditReport: {
+      vulnerabilities: {
+        "stream-json": {
+          name: "stream-json",
+          severity: "moderate",
+          via: [{
+            url: `https://github.com/advisories/${STREAM_JSON_JSONC_ADVISORY}`,
+            severity: "moderate",
+          }],
+          nodes: ["node_modules/stream-json"],
+        },
+      },
+    },
+    lockfile,
+  });
+
+  assert.equal(result.findings[0].mitigationStatus, "NOT_APPLICABLE_EXACT");
+  assert.equal(result.notApplicable.length, 1);
+  assert.equal(result.unmitigated.length, 0);
+  assert.equal(result.passed, true);
 });
 
 test("accepts only the exact braces backport and its dedicated security harness", () => {

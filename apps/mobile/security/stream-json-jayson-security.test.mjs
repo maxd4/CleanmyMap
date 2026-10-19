@@ -30,6 +30,21 @@ const waitFor = async (predicate, message) => {
   }
 };
 
+const collectStreamValues = async (chunks, options = {}) => {
+  const StreamValues = require("stream-json/streamers/StreamValues");
+  const parser = StreamValues.withParser(options);
+  const values = [];
+  parser.on("data", (item) => values.push(item.value));
+  const finished = new Promise((resolve, reject) => {
+    parser.once("error", reject);
+    parser.once("end", () => resolve(values));
+  });
+
+  for (const chunk of chunks) await writeChunk(parser, chunk);
+  parser.end();
+  return finished;
+};
+
 test("keeps jayson on the bounded CommonJS compatibility surface", () => {
   const rootPackage = JSON.parse(
     fs.readFileSync(path.join(repositoryRoot, "package.json"), "utf8"),
@@ -49,6 +64,56 @@ test("keeps jayson on the bounded CommonJS compatibility surface", () => {
       path.join(vendorRoot, `${request.slice("stream-json/".length)}.js`),
     );
   }
+});
+
+test("preserves JSON __proto__ keys as own properties without prototype pollution", async () => {
+  const payload =
+    '{"__proto__":{"polluted":"root"},"nested":{"__proto__":{"polluted":"nested"},"count":2},"items":[{"__proto__":{"polluted":"array"}}]}';
+  const expected = JSON.parse(payload);
+  const actual = (await collectStreamValues([
+    payload.slice(0, 32),
+    payload.slice(32, 79),
+    payload.slice(79),
+  ]))[0];
+
+  assert.deepEqual(actual, expected);
+  assert.equal(Object.getPrototypeOf(actual), Object.prototype);
+  assert.equal(Object.getPrototypeOf(actual.nested), Object.prototype);
+  assert.equal(Object.getPrototypeOf(actual.items), Array.prototype);
+  assert.equal(Object.getPrototypeOf(actual.items[0]), Object.prototype);
+  assert.equal(Object.hasOwn(actual, "__proto__"), true);
+  assert.equal(Object.hasOwn(actual.nested, "__proto__"), true);
+  assert.equal(Object.hasOwn(actual.items[0], "__proto__"), true);
+  assert.equal(Object.getOwnPropertyDescriptor(actual, "__proto__").enumerable, true);
+  assert.equal(Object.getOwnPropertyDescriptor(actual, "__proto__").writable, true);
+  assert.equal(Object.getOwnPropertyDescriptor(actual, "__proto__").configurable, true);
+  assert.equal(Object.prototype.polluted, undefined);
+  assert.equal(JSON.stringify(actual), JSON.stringify(expected));
+  assert.deepEqual(JSON.parse(JSON.stringify(actual)), expected);
+});
+
+test("preserves primitive values while streaming multiple JSON values", async () => {
+  const values = await collectStreamValues(["null true 42 \"text\""]);
+
+  assert.deepEqual(values, [null, true, 42, "text"]);
+});
+
+test("keeps the secure property path when StreamValues uses a reviver", async () => {
+  const payload = '{"__proto__":{"flag":true},"nested":{"count":2}}';
+  const seenKeys = [];
+  const reviver = (key, value) => {
+    seenKeys.push(key);
+    return key === "count" ? value * 2 : value;
+  };
+  const expected = JSON.parse(payload, reviver);
+  const actual = (await collectStreamValues([payload], { reviver }))[0];
+
+  assert.deepEqual(actual, expected);
+  assert.ok(seenKeys.includes("__proto__"));
+  assert.equal(actual.nested.count, 4);
+  assert.equal(Object.hasOwn(actual, "__proto__"), true);
+  assert.equal(Object.getPrototypeOf(actual), Object.prototype);
+  assert.equal(Object.prototype.flag, undefined);
 });
 
 test("performs a minimal streaming JSON-RPC exchange through jayson", async () => {
@@ -286,6 +351,29 @@ test("does not ship the excluded vulnerable path-filter modules", () => {
     assert.throws(
       () => require.resolve(`stream-json/filters/${moduleName}`, { paths: [mobileRoot] }),
       /Cannot find module/,
+    );
+  }
+});
+
+test("does not resolve JSONC components covered by the non-applicable advisory", () => {
+  for (const moduleName of [
+    "jsonc-parser",
+    "json-source-map",
+    "stream-json/jsonc/parser.js",
+    "stream-json/jsonc/verifier.js",
+  ]) {
+    assert.throws(
+      () => require.resolve(moduleName, { paths: [mobileRoot] }),
+      /Cannot find module/,
+      `${moduleName} must not be resolvable from the mobile package`,
+    );
+  }
+
+  for (const moduleName of ["parser.js", "verifier.js"]) {
+    assert.equal(
+      fs.existsSync(path.join(vendorRoot, "jsonc", moduleName)),
+      false,
+      `jsonc/${moduleName} must not be present in the local package`,
     );
   }
 });

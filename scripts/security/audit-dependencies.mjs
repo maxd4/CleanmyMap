@@ -41,6 +41,14 @@ export const EXPLICIT_MITIGATIONS = Object.freeze([
     verification: "apps/mobile/security/stream-json-jayson-security.test.mjs",
   }),
   Object.freeze({
+    advisory: "GHSA-mjw6-4jj6-33hc",
+    packageName: "stream-json",
+    version: "1.9.1",
+    path: "apps/mobile/vendor/stream-json",
+    documentation: GOVERNANCE_DOCUMENT,
+    verification: "apps/mobile/security/stream-json-jayson-security.test.mjs",
+  }),
+  Object.freeze({
     advisory: "GHSA-86w9-cpqp-85rv",
     packageName: "node-forge",
     version: "1.4.0",
@@ -56,6 +64,25 @@ export const EXPLICIT_MITIGATIONS = Object.freeze([
     documentation: GOVERNANCE_DOCUMENT,
     verification: "apps/mobile/security/braces-security.test.mjs",
   }),
+]);
+
+// These are exact, repository-owned non-applicability decisions. They are
+// scoped to one package, version and path and require the same evidence as a
+// local backport; they are not package-wide or severity-wide exceptions.
+export const EXPLICIT_NOT_APPLICABLE = Object.freeze([
+  Object.freeze({
+    advisory: "GHSA-hqr4-qq8f-hg3x",
+    packageName: "stream-json",
+    version: "1.9.1",
+    path: "apps/mobile/vendor/stream-json",
+    documentation: GOVERNANCE_DOCUMENT,
+    verification: "apps/mobile/security/stream-json-jayson-security.test.mjs",
+  }),
+]);
+
+const EXACT_ADVISORY_EXCEPTIONS = Object.freeze([
+  ...EXPLICIT_MITIGATIONS,
+  ...EXPLICIT_NOT_APPLICABLE,
 ]);
 
 // Diagnostic classification only: this entry covers the still-blocking
@@ -276,6 +303,9 @@ function mitigationStatusForFinding(finding) {
   if (EXPLICIT_MITIGATIONS.some((mitigation) => mitigationMatches(finding, mitigation))) {
     return "MITIGATED_EXACT";
   }
+  if (EXPLICIT_NOT_APPLICABLE.some((entry) => mitigationMatches(finding, entry))) {
+    return "NOT_APPLICABLE_EXACT";
+  }
   if (finding.rootAdvisories.some((advisory) => Object.hasOwn(BLOCKED_UPSTREAM_ADVISORIES, advisory))) {
     return "BLOCKED_BY_UPSTREAM";
   }
@@ -288,7 +318,7 @@ function exactMitigationCoversPackage(packageKey, vulnerability, vulnerabilities
   const details = auditDetails(vulnerability);
   if (details.some((detail) => detail && findingNodes(packageKey, vulnerability).some((node) => {
     const resolved = resolveLockfilePackage(node, packages);
-    return EXPLICIT_MITIGATIONS.some((mitigation) => mitigationMatches({
+    return EXACT_ADVISORY_EXCEPTIONS.some((mitigation) => mitigationMatches({
       advisory: advisoryIdFromDetail(detail),
       packageName: vulnerability.name ?? packageKey,
       version: resolved.version,
@@ -383,7 +413,7 @@ function mitigationMatches(finding, mitigation) {
 
 export function validateMitigationRegistry(repositoryRoot = REPO_ROOT) {
   const seen = new Set();
-  for (const mitigation of EXPLICIT_MITIGATIONS) {
+  for (const mitigation of EXACT_ADVISORY_EXCEPTIONS) {
     const fields = [mitigation.advisory, mitigation.packageName, mitigation.version, mitigation.path];
     if (fields.some((field) => typeof field !== "string" || field.length === 0 || field.includes("*"))) {
       throw new Error("Invalid dependency advisory mitigation registry entry");
@@ -416,12 +446,15 @@ export function evaluateAuditPolicy({ auditReport, lockfile, repositoryRoot = RE
   const gatedFindings = findings.filter((finding) => AUDIT_SEVERITIES.includes(finding.severity));
   const mitigated = gatedFindings.filter((finding) =>
     EXPLICIT_MITIGATIONS.some((mitigation) => mitigationMatches(finding, mitigation)));
+  const notApplicable = findings.filter((finding) =>
+    EXPLICIT_NOT_APPLICABLE.some((entry) => mitigationMatches(finding, entry)));
   const unmitigated = gatedFindings.filter((finding) =>
-    !EXPLICIT_MITIGATIONS.some((mitigation) => mitigationMatches(finding, mitigation)));
+    !EXACT_ADVISORY_EXCEPTIONS.some((entry) => mitigationMatches(finding, entry)));
   return Object.freeze({
     findings: Object.freeze(findings),
     gatedFindings: Object.freeze(gatedFindings),
     mitigated: Object.freeze(mitigated),
+    notApplicable: Object.freeze(notApplicable),
     unmitigated: Object.freeze(unmitigated),
     passed: unmitigated.length === 0,
   });
@@ -480,8 +513,12 @@ export function formatAuditPolicyResult(result) {
   const lines = [
     `npm audit High/Critical findings: ${result.gatedFindings.length}`,
     `Mitigated exact exceptions: ${result.mitigated.length}`,
+    `Not-applicable exact exceptions: ${result.notApplicable.length}`,
     "High/Critical advisory diagnostics:",
   ];
+  for (const finding of result.notApplicable) {
+    lines.push(`NOT_APPLICABLE: ${formatFinding(finding)}`);
+  }
   for (const finding of result.gatedFindings) {
     lines.push(formatFindingDiagnostics(finding));
   }
