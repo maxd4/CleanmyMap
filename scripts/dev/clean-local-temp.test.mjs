@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
+import test, { beforeEach } from "node:test";
 
 import {
   cleanLocalTemp,
@@ -19,6 +19,14 @@ function makeFixtureRoot() {
 function removeFixtureRoot(root) {
   fs.rmSync(root, { recursive: true, force: true });
 }
+
+beforeEach((t) => {
+  const isolatedHome = makeFixtureRoot();
+  t.mock.method(os, "homedir", () => isolatedHome);
+  // MockTracker restores homedir after the test, while the after hook also
+  // runs when an assertion fails, so no real home or foreign quarantine is touched.
+  t.after(() => removeFixtureRoot(isolatedHome));
+});
 
 function privateQuarantineParent() {
   return path.join(os.homedir(), ".cleanmymap", "temp-cleanup");
@@ -236,6 +244,27 @@ test("refuses a concurrent replacement with a different file identity", async ()
     removePrivateQuarantineDirectories(
       listPrivateQuarantineDirectories().filter((directory) => !quarantineBefore.has(directory)),
     );
+  }
+});
+
+test("preserves a foreign quarantine directory in the isolated home", async () => {
+  const root = makeFixtureRoot();
+  const foreignDirectory = path.join(privateQuarantineParent(), "run-foreign-owner");
+  const foreignSentinel = path.join(foreignDirectory, "sentinel.txt");
+  const candidatePath = path.join(root, "codex-clipboard-foreign-quarantine.png");
+
+  try {
+    fs.mkdirSync(foreignDirectory, { recursive: true, mode: 0o700 });
+    fs.writeFileSync(foreignSentinel, "must survive", "utf8");
+    fs.writeFileSync(candidatePath, "fixture", "utf8");
+
+    const { candidates } = await collectCandidates({ root, force: true, now: Date.now() + 1_000 });
+    await removeCandidate(root, candidates[0]);
+
+    assert.equal(fs.existsSync(foreignDirectory), true);
+    assert.equal(fs.readFileSync(foreignSentinel, "utf8"), "must survive");
+  } finally {
+    removeFixtureRoot(root);
   }
 });
 
