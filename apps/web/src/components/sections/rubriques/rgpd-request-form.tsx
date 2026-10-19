@@ -5,12 +5,15 @@ import { Mail, Send, CheckCircle, AlertCircle, Shield, Info, ArrowUpRight } from
 import { motion, AnimatePresence } from "framer-motion";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmFeedback } from "@/components/ui/cmm-feedback";
+import { CmmField, CmmInput, CmmSelect, CmmTextarea } from "@/components/ui/cmm-field";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import { buildContactMailtoHref } from "@/lib/contact/contact-request-mail";
 
 type RequestType = "access" | "rectification" | "erasure" | "portability" | "other";
 type RequestMode = "automatic" | "manual";
 type RequestStatus = "idle" | "sending" | "success" | "draft" | "error";
+type RequestFieldErrors = Partial<Record<"email" | "message", string>>;
 
 export function RgpdRequestForm() {
   const { locale } = useSitePreferences();
@@ -24,6 +27,7 @@ export function RgpdRequestForm() {
   const [submittedAt, setSubmittedAt] = useState(() => Date.now());
   const [status, setStatus] = useState<RequestStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<RequestFieldErrors>({});
 
   const requestTypeLabels: Record<RequestType, { fr: string; en: string }> = {
     access: { fr: "Droit d'accès (obtenir mes données)", en: "Right of access" },
@@ -37,12 +41,17 @@ export function RgpdRequestForm() {
     e.preventDefault();
     
     if (!email || !message) {
+      setFieldErrors({
+        ...(email ? {} : { email: "Indiquez votre adresse email de contact." }),
+        ...(message ? {} : { message: "Précisez votre demande." }),
+      });
       setErrorMessage("Veuillez remplir tous les champs obligatoires.");
       return;
     }
 
     setStatus("sending");
     setErrorMessage("");
+    setFieldErrors({});
 
     const normalizedEmail = email.trim();
     const normalizedMessage = message.trim();
@@ -88,6 +97,10 @@ export function RgpdRequestForm() {
               .flatMap((value) => value ?? [])
               .filter((value): value is string => typeof value === "string" && value.length > 0)
           : [];
+        setFieldErrors({
+          email: details?.email?.[0],
+          message: details?.message?.[0],
+        });
         setStatus("error");
         setErrorMessage(
           fieldErrors[0] ||
@@ -100,6 +113,7 @@ export function RgpdRequestForm() {
       setStatus("success");
       setEmail("");
       setMessage("");
+      setFieldErrors({});
       setHoneypot("");
       setSubmittedAt(Date.now());
     } catch {
@@ -255,43 +269,57 @@ export function RgpdRequestForm() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
-            <Info size={12} className="text-sky-500" />
-            Type de demande *
-          </label>
-          <select
+        <CmmField
+          id="rgpd-request-type"
+          required
+          label={
+            <span className="flex items-center gap-2">
+              <Info size={12} className="text-sky-500" />
+              Type de demande
+            </span>
+          }
+        >
+          <CmmSelect
             value={requestType}
             onChange={(e) => setRequestType(e.target.value as RequestType)}
-            className="w-full appearance-none rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-900 transition-all focus:border-sky-300 focus:outline-none"
+            required
           >
             {Object.entries(requestTypeLabels).map(([key, label]) => (
-              <option key={key} value={key} className="bg-white">
+              <option key={key} value={key}>
                 {label.fr}
               </option>
             ))}
-          </select>
-        </div>
+          </CmmSelect>
+        </CmmField>
 
-        <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
-            <Mail size={12} className="text-sky-500" />
-            Votre email de contact *
-          </label>
-          <input
+        <CmmField
+          id="rgpd-request-email"
+          required
+          error={fieldErrors.email}
+          label={
+            <span className="flex items-center gap-2">
+              <Mail size={12} className="text-sky-500" />
+              Votre email de contact
+            </span>
+          }
+        >
+          <CmmInput
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (fieldErrors.email) setFieldErrors((current) => ({ ...current, email: undefined }));
+            }}
             placeholder="votre@email.com"
-            className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-900 placeholder:text-slate-400 transition-all focus:border-sky-300 focus:outline-none"
             required
           />
-        </div>
+        </CmmField>
 
         <div className="sr-only" aria-hidden="true">
           <label>
             Ne pas remplir
-            <input
+            <CmmInput
+              id="rgpd-request-honeypot"
               type="text"
               value={honeypot}
               onChange={(event) => setHoneypot(event.target.value)}
@@ -301,31 +329,39 @@ export function RgpdRequestForm() {
           </label>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
-            <Send size={12} className="text-sky-500" />
-            Détails de votre demande *
-          </label>
-          <textarea
+        <CmmField
+          id="rgpd-request-message"
+          required
+          error={fieldErrors.message}
+          label={
+            <span className="flex items-center gap-2">
+              <Send size={12} className="text-sky-500" />
+              Détails de votre demande
+            </span>
+          }
+        >
+          <CmmTextarea
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => {
+              setMessage(e.target.value);
+              if (fieldErrors.message) setFieldErrors((current) => ({ ...current, message: undefined }));
+            }}
             placeholder="Précisez votre demande ici..."
             rows={4}
-            className="w-full resize-none rounded-[2rem] border border-slate-200 bg-white px-6 py-5 text-sm font-bold text-slate-900 placeholder:text-slate-400 transition-all focus:border-sky-300 focus:outline-none"
             required
           />
-        </div>
+        </CmmField>
       </div>
 
       <AnimatePresence>
         {errorMessage && (
-          <motion.div 
-          initial={{ opacity: 1, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700"
-          >
-            <AlertCircle size={16} />
-            <p className="text-xs font-bold">{errorMessage}</p>
+          <motion.div initial={{ opacity: 1, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+            <CmmFeedback tone="error" title="Envoi impossible">
+              <span className="flex items-center gap-2 text-xs font-bold">
+                <AlertCircle size={16} aria-hidden="true" />
+                {errorMessage}
+              </span>
+            </CmmFeedback>
           </motion.div>
         )}
       </AnimatePresence>

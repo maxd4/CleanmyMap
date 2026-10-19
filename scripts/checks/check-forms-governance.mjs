@@ -11,6 +11,7 @@ const primitivePath = path.join(
 // remain native by design; all other input/select/textarea controls use Cmm*.
 const migratedFiles = [
   "apps/web/src/components/reports/admin-workflow/step-confirm.tsx",
+  "apps/web/src/components/sections/rubriques/rgpd-request-form.tsx",
 ].map((file) => path.join(repositoryRoot, file));
 
 // The CURRENT Actions declaration form is intentionally outside this migration
