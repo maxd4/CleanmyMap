@@ -17,7 +17,7 @@ export function ElusSectionNavigation({ fr, activeTab, onTabChange }: ElusSectio
         {[
           { id: "overview" as const, label: fr ? "Vue d'ensemble" : "Overview", icon: BarChart3 },
           { id: "zones" as const, label: fr ? "Priorités Zones" : "Zone Priorities", icon: MapPin },
-          { id: "methods" as const, label: fr ? "Référentiel" : "Reference", icon: FileText },
+          { id: "methods" as const, label: fr ? "Méthodologie" : "Methodology", icon: FileText },
         ].map((tab) => (
           <CmmButton
             key={tab.id}

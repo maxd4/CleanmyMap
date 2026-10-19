@@ -52,6 +52,17 @@ de l'organisateur ordinaire, notamment la présence et le post-mortem de sa
 propre mission, restent dans le détail Communauté et ne sont pas déplacées
 derrière `/pilotage`.
 
+## Onglets et fraîcheur
+
+La vue générale et l'onglet Zones consomment le snapshot institutionnel autorisé
+par `/api/pilotage/overview`. L'onglet « Méthodologie » conserve le dernier
+snapshot valide pour afficher ses explications sans relancer la lecture ni son
+rafraîchissement périodique tant qu'il est actif. Le retour à une vue de données
+réutilise le cache SWR récent et la cadence bornée existante.
+
+Cette optimisation ne modifie ni `canAccessPilotage`, ni les scopes serveur,
+ni les contrôles d'autorisation de l'endpoint.
+
 
 ## États à documenter
 

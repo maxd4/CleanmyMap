@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
-import { useInViewOnce } from "@/components/ui/use-in-view-once";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { StorageLoadingState } from "./storage-usage-panel.async";
 
 const DeferredStorageUsagePanelComponent = dynamic(
@@ -27,18 +28,47 @@ function StorageUsagePanelLoadingState() {
   );
 }
 
+function StorageUsagePanelPrompt({ onOpen }: { onOpen: () => void }) {
+  return (
+    <AdminPanelShell
+      title="Stockage Supabase"
+      subtitle="La consommation, l'historique et les détails du stockage sont chargés lorsque vous consultez ce panneau."
+    >
+      <CmmButton type="button" tone="primary" variant="pill" onClick={onOpen}>
+        Consulter l&apos;utilisation du stockage
+      </CmmButton>
+    </AdminPanelShell>
+  );
+}
+
 export function DeferredStorageUsagePanel() {
-  const { ref, isInView } = useInViewOnce<HTMLDivElement>({
-    rootMargin: "320px 0px",
-  });
+  const [hasOpened, setHasOpened] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (!hasOpened) {
+    return (
+      <StorageUsagePanelPrompt
+        onOpen={() => {
+          setHasOpened(true);
+          setIsOpen(true);
+        }}
+      />
+    );
+  }
 
   return (
-    <div ref={ref} className="min-h-[720px]">
-      {isInView ? (
+    <div className="min-h-[720px] space-y-4">
+      {!isOpen ? (
+        <StorageUsagePanelPrompt onOpen={() => setIsOpen(true)} />
+      ) : null}
+      <div hidden={!isOpen}>
+        <div className="mb-4 flex justify-end">
+          <CmmButton type="button" tone="tertiary" variant="pill" onClick={() => setIsOpen(false)}>
+            Masquer l&apos;utilisation du stockage
+          </CmmButton>
+        </div>
         <DeferredStorageUsagePanelComponent />
-      ) : (
-        <StorageUsagePanelLoadingState />
-      )}
+      </div>
     </div>
   );
 }

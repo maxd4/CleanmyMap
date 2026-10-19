@@ -1,5 +1,7 @@
 import useSWR from "swr";
+import { swrRecentViewOptions } from "@/lib/swr-config";
 import type { PilotageOverview } from "@/lib/pilotage/overview.types";
+import type { ElusSectionTab } from "./elus-section-navigation";
 
 export type PilotageOverviewResponse = {
   status: "ok";
@@ -21,14 +23,13 @@ export const fetchPilotageOverview = async (
   return (await response.json()) as PilotageOverviewResponse;
 };
 
-export function useElusOverview() {
+export function useElusOverview(activeTab: ElusSectionTab = "overview") {
   return useSWR<PilotageOverviewResponse, OverviewFetchError>(
     "/api/pilotage/overview",
     fetchPilotageOverview,
     {
-      refreshInterval: 1_800_000,
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
+      ...swrRecentViewOptions,
+      refreshInterval: activeTab === "methods" ? 0 : 1_800_000,
     },
   );
 }

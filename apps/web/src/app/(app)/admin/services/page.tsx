@@ -1,5 +1,5 @@
 import { AdminAccessState } from"@/components/ui/admin-access-state";
-import { CodexUsagePanel } from"@/components/admin/codex-usage-panel";
+import { DeferredCodexUsagePanel } from"@/components/admin/codex-usage-panel";
 import { EnvironmentalImpactCapturePanel } from"@/components/admin/environmental-impact-capture-panel";
 import { FreePlanServicesPanel } from"@/components/admin/free-plan-services-panel";
 import { VisionTrainingPanel } from"@/components/admin/vision-training-panel";
@@ -52,7 +52,7 @@ export default async function AdminServicesPage() {
 
  <CmmSectionGroup>
  <div id="codex-usage">
- <CodexUsagePanel />
+ <DeferredCodexUsagePanel />
  </div>
 
  <div id="environmental-impact">

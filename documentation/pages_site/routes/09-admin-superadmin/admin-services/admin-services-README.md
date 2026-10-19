@@ -37,6 +37,25 @@
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : moyenne
 
+## Chargement volontaire des panneaux détaillés
+
+Les alertes et indicateurs minimaux de supervision restent disponibles au
+chargement de la page, notamment via le panneau d'état système. Les lectures
+détaillées qui ne sont pas nécessaires à cette supervision sont déclenchées
+par intention explicite :
+
+- **Codex** : le bouton « Consulter le suivi Codex » monte le journal, ses
+  agrégats et son historique. Le formulaire et l'enregistrement restent
+  réservés aux contrôles administratifs existants.
+- **Stockage** : le bouton « Consulter l'utilisation du stockage » monte la
+  lecture Supabase/Vercel, ses graphiques, son historique, ses détails et son
+  actualisation manuelle. La proximité du viewport ne déclenche pas cette
+  lecture.
+
+Après ouverture, une réduction puis une réouverture réutilise le panneau déjà
+monté et son résultat en mémoire ; aucune autorisation serveur n'est déplacée
+vers le contrôle d'interface.
+
 
 
 

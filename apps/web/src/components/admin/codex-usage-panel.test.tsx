@@ -1,7 +1,7 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { CodexUsagePanel } from "./codex-usage-panel";
+import { CodexUsagePanel, DeferredCodexUsagePanel } from "./codex-usage-panel";
 import {
   calculateAverageWeeklyKg,
   serializeCodexUsageForm,
@@ -9,6 +9,14 @@ import {
 } from "./codex-usage-panel.model";
 
 describe("CodexUsagePanel", () => {
+  it("does not mount the Codex data panel before explicit consultation", () => {
+    const markup = renderToStaticMarkup(React.createElement(DeferredCodexUsagePanel));
+
+    expect(markup).toContain("Consulter le suivi Codex");
+    expect(markup).not.toContain("Enregistrer la semaine");
+    expect(markup).not.toContain("Aucun journal Codex");
+  });
+
   it("renders the weekly Codex journal controls", () => {
     const markup = renderToStaticMarkup(React.createElement(CodexUsagePanel));
 

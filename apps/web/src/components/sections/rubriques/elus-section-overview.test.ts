@@ -1,5 +1,18 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchPilotageOverview } from "./elus-section-overview";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  useSWR: vi.fn(),
+}));
+
+vi.mock("swr", () => ({
+  default: mocks.useSWR,
+}));
+
+import { fetchPilotageOverview, useElusOverview } from "./elus-section-overview";
+
+beforeEach(() => {
+  mocks.useSWR.mockReturnValue({});
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -7,6 +20,32 @@ afterEach(() => {
 });
 
 describe("ElusSection overview loader", () => {
+  it("suspends periodic refresh while the methodology tab is active", () => {
+    useElusOverview("methods");
+
+    expect(mocks.useSWR).toHaveBeenCalledWith(
+      "/api/pilotage/overview",
+      fetchPilotageOverview,
+      expect.objectContaining({
+        refreshInterval: 0,
+        revalidateIfStale: false,
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false,
+        keepPreviousData: true,
+      }),
+    );
+  });
+
+  it("keeps the institutional refresh cadence on data tabs", () => {
+    useElusOverview("zones");
+
+    expect(mocks.useSWR).toHaveBeenCalledWith(
+      "/api/pilotage/overview",
+      fetchPilotageOverview,
+      expect.objectContaining({ refreshInterval: 1_800_000 }),
+    );
+  });
+
   it("keeps the no-store request and response contract", async () => {
     const payload = {
       status: "ok",

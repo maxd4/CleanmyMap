@@ -1,5 +1,6 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { act, create } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -8,6 +9,12 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("swr", () => ({
   default: mocks.useSWR,
+}));
+
+vi.mock("next/dynamic", () => ({
+  default: () => function DeferredStorageUsagePanelMock() {
+    return React.createElement("div", { "data-storage-panel-mounted": "true" });
+  },
 }));
 
 vi.mock("@/components/admin/admin-panel-shell", () => ({
@@ -22,13 +29,6 @@ vi.mock("@/components/admin/admin-panel-shell", () => ({
 
 vi.mock("@/components/dashboard/storage-business-contribution-panel", () => ({
   StorageBusinessContributionPanel: () => React.createElement("div"),
-}));
-
-vi.mock("@/components/ui/use-in-view-once", () => ({
-  useInViewOnce: () => ({
-    ref: React.createRef<HTMLDivElement>(),
-    isInView: false,
-  }),
 }));
 
 import { StorageUsagePanel } from "./storage-usage-panel";
@@ -117,13 +117,34 @@ describe("StorageUsagePanel", () => {
     expect(markup).toContain("Aucune comparaison mensuelle encore disponible.");
   });
 
-  it("defers the panel before its section is near the viewport", () => {
+  it("does not mount the panel before explicit consultation", () => {
     const markup = renderToStaticMarkup(
       React.createElement(DeferredStorageUsagePanel),
     );
 
     expect(markup).toContain("Stockage Supabase");
-    expect(markup).toContain('aria-busy="true"');
-    expect(markup).toContain("Chargement du suivi du stockage");
+    expect(markup).toContain("Consulter l&#x27;utilisation du stockage");
+    expect(markup).not.toContain('aria-busy="true"');
+    expect(markup).not.toContain("Stockage utilisé");
+  });
+
+  it("mounts the deferred panel only after the consultation button is clicked", () => {
+    let renderer: ReturnType<typeof create>;
+
+    act(() => {
+      renderer = create(React.createElement(DeferredStorageUsagePanel));
+    });
+
+    expect(renderer!.root.findAllByProps({ "data-storage-panel-mounted": "true" })).toHaveLength(0);
+    const consultationButton = renderer!.root
+      .findAllByType("button")
+      .find((button) => button.children.join("").includes("Consulter"));
+    expect(consultationButton).toBeDefined();
+
+    act(() => {
+      consultationButton!.props.onClick();
+    });
+
+    expect(renderer!.root.findAllByProps({ "data-storage-panel-mounted": "true" })).toHaveLength(1);
   });
 });

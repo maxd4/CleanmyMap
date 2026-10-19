@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { RefreshCcw, TriangleAlert } from "lucide-react";
 import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 import { CodexUsagePanelForm } from "./codex-usage-panel-form";
 import { CodexUsagePanelHistory } from "./codex-usage-panel-history";
@@ -95,5 +97,50 @@ export function CodexUsagePanel() {
         ) : null}
       </div>
     </AdminPanelShell>
+  );
+}
+
+function CodexUsagePanelPrompt({ onOpen }: { onOpen: () => void }) {
+  return (
+    <AdminPanelShell
+      title="Suivi Codex"
+      subtitle="Le journal, les agrégats et l'historique détaillés sont chargés lorsque vous consultez ce panneau."
+    >
+      <CmmButton type="button" tone="primary" variant="pill" onClick={onOpen}>
+        Consulter le suivi Codex
+      </CmmButton>
+    </AdminPanelShell>
+  );
+}
+
+export function DeferredCodexUsagePanel() {
+  const [hasOpened, setHasOpened] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (!hasOpened) {
+    return (
+      <CodexUsagePanelPrompt
+        onOpen={() => {
+          setHasOpened(true);
+          setIsOpen(true);
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {!isOpen ? (
+        <CodexUsagePanelPrompt onOpen={() => setIsOpen(true)} />
+      ) : null}
+      <div hidden={!isOpen}>
+        <div className="mb-4 flex justify-end">
+          <CmmButton type="button" tone="tertiary" variant="pill" onClick={() => setIsOpen(false)}>
+            Masquer le suivi Codex
+          </CmmButton>
+        </div>
+        <CodexUsagePanel />
+      </div>
+    </div>
   );
 }

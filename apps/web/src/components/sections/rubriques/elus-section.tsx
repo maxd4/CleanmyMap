@@ -20,7 +20,7 @@ export function ElusSection() {
   const { user, isSignedIn } = useUser();
   const fr = locale === "fr";
   const [activeTab, setActiveTab] = useState<ElusSectionTab>("overview");
-  const { data, isLoading, error } = useElusOverview();
+  const { data, isLoading, error } = useElusOverview(activeTab);
   const grantedRoleValue =
     typeof user?.publicMetadata?.role === "string"
       ? user.publicMetadata.role
