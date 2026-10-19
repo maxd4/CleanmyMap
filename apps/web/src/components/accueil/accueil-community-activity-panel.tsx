@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   CheckCircle2,
@@ -27,22 +28,31 @@ function ActionPreview({
   image: HomeCommunityActivitySummary["items"][number]["image"];
 }) {
   const hasImage = image.url !== null;
+  const isFallbackImage = image.source === "fallbackImage";
 
   return (
     <div
-      aria-label={hasImage ? image.alt : "Aucune image disponible"}
-      className="h-20 w-24 shrink-0 overflow-hidden rounded-[1.05rem] border border-emerald-100/70 bg-white/80 sm:h-[5.25rem] sm:w-[8.5rem]"
-      role={hasImage ? "img" : undefined}
-      style={
-        hasImage
-          ? {
-              backgroundImage: `url("${image.url}")`,
-              backgroundPosition: "center",
-              backgroundSize: "cover",
-            }
-          : undefined
-      }
-    />
+      aria-label={!hasImage ? "Aucune image disponible" : undefined}
+      className="relative h-20 w-24 shrink-0 overflow-hidden rounded-[1.05rem] border border-emerald-100/70 bg-white/80 sm:h-[5.25rem] sm:w-[8.5rem]"
+    >
+      {isFallbackImage ? (
+        <Image
+          src={image.url}
+          alt={image.alt}
+          fill
+          sizes="(min-width: 640px) 136px, 96px"
+          loading="lazy"
+          className="object-cover"
+        />
+      ) : hasImage ? (
+        <div
+          aria-label={image.alt}
+          className="absolute inset-0 bg-cover bg-center"
+          role="img"
+          style={{ backgroundImage: `url("${image.url}")` }}
+        />
+      ) : null}
+    </div>
   );
 }
 
