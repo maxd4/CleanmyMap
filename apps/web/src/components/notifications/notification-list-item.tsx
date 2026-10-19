@@ -72,6 +72,7 @@ const actionEventStaticLabels: Record<string, { fr: string; en: string }> = {
   },
   post_action_claim: { fr: "Réclamation de participation", en: "Participation claim" },
   post_action_claim_decision: { fr: "Résultat de votre réclamation", en: "Claim review result" },
+  role_attestation_decision: { fr: "Décision sur votre mission", en: "Role mission decision" },
 };
 
 function getStateLabel(

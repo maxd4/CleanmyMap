@@ -64,7 +64,7 @@ projection Supabase relue.
 | Famille | Tables / ressources identifiées | Responsabilité | Règle d'accès |
 |---|---|---|---|
 | Identité produit | `profiles` | Profil, identifiant Clerk, rôles et préférences | Profil ciblé et AuthZ explicite |
-| Actions | `public.actions`, `action_organizers`, `action_registrations`, `action_participants`, `forms` | Action, organisation, inscription, participation et qualification | Ressource + owner/organisateur/participant + état |
+| Actions | `public.actions`, `action_organizers`, `action_registrations`, `action_participants`, `action_field_role_assignments`, `action_role_attestations`, `forms` | Action, organisation, inscription, présence finale, mission prévue et attestation historique | Ressource + owner/organisateur/participant + état ; attestation server-only |
 | Médias / entraînement | `training_examples`, Supabase Storage | Provenance média, pièces liées aux actions | Accès selon action et contrat Storage |
 | Conversations d'action | `action_conversations`, `action_conversation_members`, `action_conversation_exclusions`, `action_share_contact_requests` | Échanges et audiences associées à l'action | Membres, exclusions, acteur et capacité |
 | Observations carte | `public.trash_spotter_spots` | Signalement (`spot`) et lieu propre (`clean_place`) | Projection publique filtrée, mutation autorisée |
@@ -85,6 +85,8 @@ erDiagram
   actions ||--o{ action_organizers : "organisateurs"
   actions ||--o{ action_registrations : "inscriptions"
   actions ||--o{ action_participants : "participants"
+  actions ||--o{ action_field_role_assignments : "missions prévues"
+  actions ||--o{ action_role_attestations : "missions attestées"
   actions ||--o{ forms : "formulaires"
   actions ||--o| action_conversations : "conversation liée"
   action_conversations ||--o{ action_conversation_members : "membres"
@@ -123,6 +125,17 @@ La phase distingue durablement `action_registrations` (inscription future) de
 `confirmed` alimentent les statistiques, badges, progression et quotes-parts.
 Le créateur ou l'organisateur d'une action n'est pas automatiquement un
 participant terrain ; tout rattachement post-action suit le workflow canonique.
+
+Les missions ajoutent une troisième frontière :
+`action_field_role_assignments` est la source des rôles prévus avant le terrain,
+`action_participants` reste la source exclusive de la présence finale, et
+`action_role_attestations` conserve la décision historique d'un reviewer après
+la finalisation. Les attestations et leur table
+`action_role_attestation_audit` sont protégées par RLS et grants server-only ;
+elles ne peuvent pas être utilisées comme source de permissions. Leur
+provenance garde la révision, le reviewer, la date, la justification et les
+instantanés utiles de l'affectation ou de `action_organizers`. Les changements
+ultérieurs de ces relations ne réécrivent pas les décisions passées.
 
 Pour la carte, `trash_spotter_spots` est la source runtime des nouveaux
 signalements `spot` et `clean_place`. `public.spots` est une archive legacy

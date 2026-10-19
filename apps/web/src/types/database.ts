@@ -94,6 +94,40 @@ export type ActionFieldRoleAssignmentRow = {
   updated_at: string;
 };
 
+export type ActionRoleAttestationRow = {
+  id: string;
+  action_id: string;
+  user_id: string;
+  role_code: ActionFieldRoleCode;
+  verification_status: "pending" | "confirmed" | "rejected";
+  reviewer_clerk_id: string | null;
+  decided_at: string | null;
+  decision_reason: string | null;
+  responsibility_provenance: "planned_assignment" | "retrospective";
+  provenance_snapshot: Record<string, unknown>;
+  revision: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ActionRoleAttestationAuditRow = {
+  id: string;
+  action_id: string;
+  attestation_id: string | null;
+  user_id: string;
+  role_code: ActionFieldRoleCode;
+  event_code: "pending" | "confirmed" | "rejected" | "corrected";
+  actor_clerk_id: string;
+  reviewer_clerk_id: string | null;
+  previous_status: "pending" | "confirmed" | "rejected" | null;
+  next_status: "pending" | "confirmed" | "rejected";
+  decision_reason: string | null;
+  responsibility_provenance: "planned_assignment" | "retrospective";
+  provenance_snapshot: Record<string, unknown>;
+  revision: number;
+  created_at: string;
+};
+
 export type ActionFieldRoleTransferProposalRow = {
   id: string;
   action_id: string;

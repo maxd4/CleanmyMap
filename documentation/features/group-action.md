@@ -206,6 +206,36 @@ action qui quitte la pré-action invalide toute proposition encore en attente.
 Une action historique sans primaire reste sans primaire tant qu'aucune
 désignation explicite n'a été effectuée.
 
+### Attestation post-action des missions
+
+L'affectation préalable, la participation finale et la mission attestée sont
+trois preuves différentes : `action_field_role_assignments` décrit la mission
+prévue, `action_participants` au statut `confirmed` décrit la présence réelle,
+et `action_role_attestations` décrit la décision d'un reviewer habilité. Une
+inscription `action_registrations`, même `confirmed`, ne suffit donc jamais.
+
+Une attestation n'est possible que pour une action `approved`, publiée, visible
+et `post_action_complete`, et pour une participation finale `confirmed`. Le
+créateur et les organisateurs ne reçoivent aucune présence implicite. Le
+parcours Bilan réutilise la liste canonique des participants finaux, expose les
+rôles prévus et autorise la confirmation, le rejet ou la correction auditée par
+un reviewer autorisé via `canManageAction`. Une mission non prévue peut être
+attestée rétrospectivement, mais une justification est obligatoire.
+
+Chaque décision conserve le reviewer Clerk, la date, un instantané de
+provenance (affectation et relation `action_organizers` observée au moment de
+la décision), une révision et une ligne dans
+`action_role_attestation_audit`. Une auto-validation ordinaire ne devient pas
+une confirmation : elle reste `pending` jusqu'à l'intervention d'un reviewer
+indépendant ; `admin`/`max` peut traiter son propre cas selon la frontière
+d'autorisation existante. La mission attestée ne donne aucune permission et
+n'alimente pas encore l'XP.
+
+La mutation RPC verrouille l'action et la participation, est idempotente pour
+un même état, et insère la notification `action_event` de décision dans la
+même transaction. La clé de révision déduplique les messages. Un changement
+ultérieur d'organisateur ne réécrit pas les instantanés historiques.
+
 - Verifier que le bouton de join est visible sur les surfaces ciblees.
 - Verifier qu'une inscription future, même confirmée, ne remonte pas dans les statistiques ni la gamification.
 - Verifier qu'une demande en attente peut etre annulée par son auteur.

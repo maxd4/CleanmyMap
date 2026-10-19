@@ -186,6 +186,24 @@ organisateurs peuvent demander leur rattachement par le même
 validation et ne transforme pas les inscriptions futures en participations
 finales.
 
+## Missions réalisées et historique personnel
+
+Une mission sélectionnée avant l'action (`action_field_role_assignments`) ne
+prouve pas qu'elle a été réalisée. Dans le Bilan, seuls les participants
+`action_participants` `confirmed` sont affichés pour une revue de mission. Un
+reviewer autorisé peut confirmer ou rejeter chaque rôle prévu, corriger une
+décision avec un motif conservé, ou attester une mission rétrospective avec une
+justification explicite. Les états `pending`, `confirmed` et `rejected` restent
+distincts de la participation et sont historisés dans
+`action_role_attestations` et `action_role_attestation_audit`.
+
+Une auto-validation par un organisateur ou un participant reste en attente
+d'un reviewer indépendant, sauf le traitement autorisé par `admin`/`max`. Le
+centre de notifications informe le participant seulement après la transaction
+réussie et déduplique chaque révision. L'historique personnel peut afficher les
+missions confirmées et leurs décisions ; aucune mission attestée ne crée encore
+de gain XP ni de permission.
+
 ## Contrat de traitement de file
 
 La route :

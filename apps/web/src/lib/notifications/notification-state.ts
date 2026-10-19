@@ -62,6 +62,7 @@ export function isOptionalInformationNotification(notification: AppNotification)
       "action_result_impact",
       "registration_decision",
       "administrative_requirements",
+      "role_attestation_decision",
     ].includes(String(notification.payload.subtype));
 }
 

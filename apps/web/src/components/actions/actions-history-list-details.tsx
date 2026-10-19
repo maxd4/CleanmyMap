@@ -1,4 +1,5 @@
 import { ActionParticipantImpactManager } from "@/components/actions/action-participant-impact-manager";
+import { ActionRoleAttestationsPanel } from "@/components/actions/action-role-attestations-panel";
 import { ActionMediaProofs } from "@/components/actions/action-media/action-media-proofs";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
@@ -66,6 +67,7 @@ export function ActionsHistoryListDetails({
         selectedLostPoints={selectedLostPoints}
         correctiveAction={correctiveAction}
       />
+      <div className="mt-4"><ActionRoleAttestationsPanel actionId={selectedItem.id} /></div>
       {isSingleActionReportEligible(selectedItem) ? (
         <div className="mt-3 rounded-xl border border-red-200 bg-red-50/70 p-3">
           <p className="cmm-text-caption font-semibold uppercase tracking-wide text-red-700">Rapport mono-action</p>
