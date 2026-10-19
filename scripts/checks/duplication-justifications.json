@@ -2659,11 +2659,11 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "e2cfd7c6b62ab3ea",
+      "fingerprint": "27b347fc547077d7",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les deux sections du même composant affichent des champs d'identité différents avec des états distincts ; le clone est du JSX structurel sans owner autonome.",
-      "evidence": "components/actions/action-declaration/before/identity-and-sharing-section.tsx:73-82 et components/actions/action-declaration/before/identity-and-sharing-section.tsx:209-218 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+      "evidence": "components/actions/action-declaration/before/identity-and-sharing-section.tsx:82-92 et components/actions/action-declaration/before/identity-and-sharing-section.tsx:219-229 ; pair CURRENT relu.",
+      "reviewedRef": "61882a3b2db79049bf47b0c4f7f6020a40856b65"
     },
     {
       "scope": "runtime",
@@ -2771,19 +2771,19 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "0f8efcd1dc2b9a63",
+      "fingerprint": "d340e447a12b485d",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les imports et mocks communs des routes day et duplicate restent propres à deux tests de contrat API ; aucune fixture métier partagée n'est identifiée.",
-      "evidence": "app/api/actions/[actionId]/day/route.test.ts:1-9 et app/api/actions/[actionId]/duplicate/route.test.ts:1-9 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+      "evidence": "app/api/actions/[actionId]/day/route.test.ts:3-10 et app/api/actions/[actionId]/duplicate/route.test.ts:2-9 ; pair CURRENT relu.",
+      "reviewedRef": "61882a3b2db79049bf47b0c4f7f6020a40856b65"
     },
     {
       "scope": "tests",
       "fingerprint": "73bf56dcecba798b",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les deux tests de route ont un contexte de requête similaire mais des assertions métier séparées ; mutualiser ce fragment créerait une façade de test sans owner.",
-      "evidence": "app/api/actions/[actionId]/day/route.test.ts:9-16 et app/api/actions/[actionId]/duplicate/route.test.ts:8-15 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+      "evidence": "app/api/actions/[actionId]/day/route.test.ts:10-17 et app/api/actions/[actionId]/duplicate/route.test.ts:8-15 ; pair CURRENT relu.",
+      "reviewedRef": "61882a3b2db79049bf47b0c4f7f6020a40856b65"
     },
     {
       "scope": "tests",

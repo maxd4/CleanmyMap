@@ -180,6 +180,7 @@ describe("progression event registry", () => {
       "spogomi_first_referee_certified",
       "spot_create_pending",
       "spot_validation_bonus",
+      "terrain_specialization_tier_unlock",
     ].sort());
 
     expect(registry.community_referral_invite).toEqual({
@@ -203,6 +204,7 @@ describe("progression event registry", () => {
     expect(registry.collective_attendance_confirmed.classification).toBe("non_progression");
     expect(registry.spot_create_pending.classification).toBe("non_progression");
     expect(registry.spot_validation_bonus.classification).toBe("non_progression");
+    expect(registry.terrain_specialization_tier_unlock.classification).toBe("non_progression");
     expect(registry.first_trace_utile).toEqual({
       classification: "milestone",
       milestoneId: "premiere_trace_utile",

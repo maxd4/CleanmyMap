@@ -9,8 +9,16 @@ import {
 } from "./field-roles";
 
 describe("action field roles contract", () => {
-  it("keeps the five per-action role codes explicit and rejects unknown codes", () => {
-    expect(ACTION_FIELD_ROLE_OPTIONS).toHaveLength(5);
+  it("keeps the current per-action role codes explicit and rejects unknown codes", () => {
+    expect(ACTION_FIELD_ROLE_OPTIONS.map(({ code }) => code)).toEqual([
+      "organizer_primary",
+      "coorganizer",
+      "group_lead",
+      "cigarette_bag_lead",
+      "recyclable_bag_lead",
+      "household_waste_bag_lead",
+      "glass_bag_lead",
+    ]);
     expect(isActionFieldRoleCode("group_lead")).toBe(true);
     expect(isActionFieldRoleCode("admin")).toBe(false);
     expect(normalizeActionFieldRoleCodes(["group_lead", "group_lead", "admin"])).toEqual(["group_lead"]);

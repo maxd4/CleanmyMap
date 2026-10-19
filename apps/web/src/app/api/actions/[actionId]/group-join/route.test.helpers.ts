@@ -347,6 +347,8 @@ function createParticipantsChain(
     inFilters: Record<string, string[]>;
     countRequested: boolean;
     limitValue: number | null;
+    rangeFrom: number | null;
+    rangeTo: number | null;
     inserting?: GroupJoinParticipantRow;
     pendingUpdate?: Record<string, unknown>;
     pendingInsert?: GroupJoinParticipantRow;
@@ -355,6 +357,8 @@ function createParticipantsChain(
     inFilters: {},
     countRequested: false,
     limitValue: null,
+    rangeFrom: null,
+    rangeTo: null,
   };
   const normalizeRow = (row: GroupJoinParticipantRow) =>
     normalizeGroupJoinStoreRow(row, table);
@@ -404,6 +408,7 @@ function createParticipantsChain(
     eq: (field: string, value: string) => ParticipantChain;
     in: (field: string, values: string[]) => ParticipantChain;
     order: (field: string, options?: { ascending?: boolean }) => ParticipantChain;
+    range: (from: number, to: number) => ParticipantChain;
     limit: (limit: number) => Promise<ManyResult<GroupJoinParticipantRow>>;
     maybeSingle: () => Promise<SingleResult<GroupJoinParticipantRow>>;
     update: (values: Record<string, unknown>) => ParticipantChain;
@@ -441,6 +446,11 @@ function createParticipantsChain(
       return chain;
     }),
     order: vi.fn(() => chain),
+    range: vi.fn((from: number, to: number) => {
+      state.rangeFrom = from;
+      state.rangeTo = to;
+      return chain;
+    }),
     limit: vi.fn(async (limit: number) => {
       state.limitValue = limit;
       const filtered = buildFiltered();
@@ -555,9 +565,17 @@ function createParticipantsChain(
           : {
               data: state.countRequested
                 ? null
-                : buildFiltered()
-                    .slice(0, state.limitValue ?? undefined)
-                    .map((row) => normalizeRow(row)),
+                : (() => {
+                    const filtered = buildFiltered();
+                    const start = state.rangeFrom ?? 0;
+                    const end = state.rangeTo === null ? undefined : state.rangeTo + 1;
+                    return filtered
+                      .slice(
+                        state.rangeFrom === null ? 0 : start,
+                        state.rangeFrom === null ? state.limitValue ?? undefined : end,
+                      )
+                      .map((row) => normalizeRow(row));
+                  })(),
               count: buildFiltered().length,
               error: null,
             },
