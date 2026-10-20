@@ -44,6 +44,16 @@ test.describe("SPOGOMI public navigation", () => {
     expect(publicText).not.toContain("resolutionnote");
   });
 
+  test("keeps private creation and personal-event entry points behind authentication", async ({ page }) => {
+    const creationResponse = await page.goto("/spogomi/nouveau");
+    expect(creationResponse?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/sign-in\?redirect_url=%2Fspogomi%2Fnouveau/);
+
+    const eventsResponse = await page.goto("/spogomi/mes-evenements");
+    expect(eventsResponse?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/sign-in\?redirect_url=%2Fspogomi%2Fmes-evenements/);
+  });
+
   test("keeps secondary content accessible and compact", async ({ page }) => {
     const response = await page.goto("/spogomi");
     expect(response?.status()).toBe(200);

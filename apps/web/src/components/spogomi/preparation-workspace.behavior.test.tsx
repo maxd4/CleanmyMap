@@ -56,4 +56,70 @@ describe("SPOGOMI preparation workspace", () => {
     expect(publish?.props.disabled).toBe(true);
     renderer.unmount();
   });
+
+  it("previews a synthetic roster, exposes its anomaly, then confirms only the selected rows", async () => {
+    const preview = {
+      sourceSystem: "cachan_ticketing", format: "csv", encoding: "utf-8", sheetName: null, headerRow: 1,
+      rowsRead: 2, headers: ["ticket", "name"], unknownHeaders: [],
+      rows: [{ rowNumber: 2, name: "Participant synthétique", externalReference: "TICKET-1", groupPreference: null }],
+      errors: [{ rowNumber: 3, code: "empty_occupant", message: "Place sans occupant" }],
+      mapping: { ticketReference: "ticket", name: "name" }, sheetCandidates: [], columnDiagnostics: [],
+      cancelledRowNumbers: [], changedRowNumbers: [], conflictRowNumbers: [], rowEffects: { "2": "created" }, requiresExplicitSelection: false,
+    };
+    const calls: Array<[RequestInfo | URL, RequestInit | undefined]> = [];
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      calls.push([input, init]);
+      const url = String(input);
+      if (url.includes("/imports/preview")) return Promise.resolve(new Response(JSON.stringify(preview), { status: 200 }));
+      if (url.includes("/imports/confirm")) return Promise.resolve(new Response(JSON.stringify({ imported: 1 }), { status: 200 }));
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
+    });
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); });
+
+    const file = new File(["ticket,name\nTICKET-1,Participant synthétique"], "synthetic-roster.csv", { type: "text/csv" });
+    const fileInput = renderer.root.findAllByType("input").find((input) => input.props.type === "file" && String(input.props.accept).includes("csv"));
+    expect(fileInput).toBeTruthy();
+    await act(async () => { fileInput?.props.onChange({ target: { files: [file] } }); await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); });
+    const rendered = JSON.stringify(renderer.toJSON());
+    expect(rendered).toContain("Place sans occupant");
+    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "Confirmer la sélection")?.props.disabled).toBe(false);
+
+    const confirm = renderer.root.findAllByType("button").find((button) => button.props.children === "Confirmer la sélection");
+    await act(async () => { confirm?.props.onClick(); await Promise.resolve(); });
+    const confirmCall = calls.find(([input, init]) => String(input).includes("/imports/confirm") && init?.method === "POST");
+    expect(confirmCall).toBeTruthy();
+    expect(confirmCall?.[1]?.body).toBeInstanceOf(FormData);
+    renderer.unmount();
+  });
+
+  it("keeps team preview and lock actions revision-scoped", async () => {
+    const teamPreview = {
+      expectedRevision: 2, proposalFingerprint: "proposal-a", explanation: ["Composition déterministe"],
+      formation: { teams: [{ draftKey: "team-1", teamNumber: 1, participantIds: ["participant-1"] }], unassignedParticipantIds: [] },
+    };
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/teams/auto") && init?.method === "POST" && String(init.body).includes("confirm")) return Promise.resolve(new Response(JSON.stringify({ confirmed: true }), { status: 200 }));
+      if (url.includes("/teams/auto")) return Promise.resolve(new Response(JSON.stringify(teamPreview), { status: 200 }));
+      if (url.includes("/teams/lock")) return Promise.resolve(new Response(JSON.stringify({ locked: true }), { status: 200 }));
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
+    });
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); });
+    const previewButton = renderer.root.findAllByType("button").find((button) => button.props.children === "Prévisualiser ou régénérer");
+    await act(async () => { previewButton?.props.onClick(); await Promise.resolve(); });
+    expect(renderer.root.findByProps({ children: "Composition déterministe" })).toBeTruthy();
+    const confirmButton = renderer.root.findAllByType("button").find((button) => button.props.children === "Confirmer cette proposition");
+    await act(async () => { confirmButton?.props.onClick(); await Promise.resolve(); });
+    const confirmCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/teams/auto") && String(call[1]?.body).includes('"confirm":true'));
+    expect(JSON.parse(confirmCall?.[1]?.body as string)).toEqual(expect.objectContaining({ expectedRevision: 2, proposalFingerprint: "proposal-a" }));
+    const lockButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).startsWith("Verrouiller"));
+    await act(async () => { lockButton?.props.onClick(); await Promise.resolve(); });
+    const lockCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/teams/lock"));
+    expect(JSON.parse(lockCall?.[1]?.body as string)).toEqual({ divisionId: "division-casual", expectedRevision: 2 });
+    renderer.unmount();
+  });
 });

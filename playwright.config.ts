@@ -105,7 +105,7 @@ export default defineConfig({
     },
     {
       name: "authenticated campaign",
-      testMatch: /authenticated-campaign\.spec\.ts/,
+      testMatch: /authenticated-(?:campaign|spogomi)\.spec\.ts/,
       dependencies: ["global setup"],
       use: { ...devices["Desktop Chrome"] },
     },

@@ -27,7 +27,9 @@ import { SpogomiAttendancePanel } from "./spogomi-attendance-panel";
 import { SpogomiFieldOperationsPanel } from "./spogomi-field-operations-panel";
 import { SpogomiIdentityLinkCard } from "./spogomi-identity-link-card";
 import { SpogomiResultReviewPanel } from "./spogomi-result-review-panel";
+import { SpogomiTeamAccessLinks } from "./spogomi-team-access-links";
 import { SpogomiTeamResultForm } from "./spogomi-team-result-form";
+import { SpogomiConsolidationPanel } from "./spogomi-consolidation-panel";
 
 const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 const settle = async () => { await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); }); };
@@ -144,6 +146,74 @@ describe("SPOGOMI deep consumer states", () => {
     await act(async () => { certify?.props.onClick(); });
     expect(fetchMock).toHaveBeenCalledWith("/api/spogomi/events/event-1/results", expect.objectContaining({ method: "POST" }));
     expect(JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string)).toEqual(expect.objectContaining({ divisionId: "division-1", decision: "certified" }));
+    renderer.unmount();
+  });
+
+  it("keeps team access generation opaque and revocation effective in the interactive surface", async () => {
+    fetchMock.mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") return Promise.resolve(response({ accessUrl: "/spogomi/paris/equipe?access=opaque-ref", expiresAt: "2026-06-01T12:00:00.000Z" }));
+      if (init?.method === "DELETE") return Promise.resolve(response({ revoked: true }));
+      return Promise.resolve(response({}));
+    });
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiTeamAccessLinks eventId="event-1" teams={[{ id: "team-1", team_number: 1, public_name: "Alpha" }]} />); });
+
+    const generate = renderer.root.findAllByType("button").find((button) => button.props.children === "Générer");
+    await act(async () => { generate?.props.onClick(); await Promise.resolve(); });
+    const generatedLink = renderer.root.findAllByType("textarea")[0];
+    expect(generatedLink.props.value).toBe("/spogomi/paris/equipe?access=opaque-ref");
+    expect(renderer.root.findAllByType("a").some((link) => link.props.href === generatedLink.props.value)).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith("/api/spogomi/events/event-1/teams/team-1/access", expect.objectContaining({ method: "POST" }));
+
+    const revoke = renderer.root.findAllByType("button").find((button) => button.props.children === "Révoquer");
+    await act(async () => { revoke?.props.onClick(); await Promise.resolve(); });
+    expect(fetchMock).toHaveBeenCalledWith("/api/spogomi/events/event-1/teams/team-1/access", expect.objectContaining({ method: "DELETE" }));
+    expect(renderer.root.findAllByType("textarea")).toHaveLength(0);
+    renderer.unmount();
+  });
+
+  it("publishes consolidation with the displayed source hash and rereads the new projection", async () => {
+    const preview = {
+      event: { id: "event-1", action_id: "action-1", name: "Paris", location_label: "Paris", starts_at: "2026-06-01", ends_at: null, state: "finished", environmental_mapping_version: "mapping-v1" },
+      mappings: [],
+      currentProjection: null,
+      projection: {
+        actionId: "action-1", projectionVersion: "v1", sourceHash: "hash-a", readyForPublication: true,
+        teamsIncluded: 1, participantsPresent: 2, totalWasteMassGrams: 1200, cigaretteButtsMassGrams: 30, cigaretteButtsCount: 4,
+        categoriesWithoutMapping: [], excludedMeasures: [], organizer: null, officialRoute: null,
+      },
+    };
+    const reread = { ...preview, currentProjection: { id: "projection-1", projectionRevision: 1, sourceHash: "hash-a", status: "published" } };
+    fetchMock.mockReset();
+    fetchMock.mockImplementationOnce(() => Promise.resolve(response(preview))).mockImplementationOnce(() => Promise.resolve(response({ published: true }))).mockImplementationOnce(() => Promise.resolve(response(reread)));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiConsolidationPanel eventId="event-1" />); });
+    await settle();
+
+    const publish = renderer.root.findAllByType("button").find((button) => button.props.children === "Publier le bilan");
+    await act(async () => { publish?.props.onClick(); await Promise.resolve(); });
+    const publishCall = [...fetchMock.mock.calls].find((call) => call[1]?.method === "POST");
+    expect(publishCall?.[0]).toBe("/api/spogomi/events/event-1/consolidation");
+    expect(JSON.parse(publishCall?.[1]?.body as string)).toEqual({ action: "publish", sourceHash: "hash-a" });
+    expect(renderer.root.findByProps({ role: "status" }).props.children).toBe("Bilan consolidé publié dans l’action CleanMyMap cible.");
+    expect(JSON.stringify(renderer.toJSON())).toContain("Projection courante");
+    renderer.unmount();
+  });
+
+  it("renders a rejected consolidation without converting a conflict into a success", async () => {
+    const preview = {
+      event: { id: "event-1", action_id: "action-1", name: "Paris", location_label: "Paris", starts_at: "2026-06-01", ends_at: null, state: "finished", environmental_mapping_version: "mapping-v1" },
+      mappings: [], currentProjection: null,
+      projection: { actionId: "action-1", projectionVersion: "v1", sourceHash: "hash-a", readyForPublication: true, teamsIncluded: 1, participantsPresent: 1, totalWasteMassGrams: null, cigaretteButtsMassGrams: null, cigaretteButtsCount: null, categoriesWithoutMapping: [], excludedMeasures: [], organizer: null, officialRoute: null },
+    };
+    fetchMock.mockResolvedValueOnce(response(preview)).mockResolvedValueOnce(response({ error: "La source a changé." }, 409));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiConsolidationPanel eventId="event-1" />); });
+    await settle();
+    const publish = renderer.root.findAllByType("button").find((button) => button.props.children === "Publier le bilan");
+    await act(async () => { publish?.props.onClick(); await Promise.resolve(); });
+    expect(renderer.root.findByProps({ role: "alert" }).props.children).toBe("La source a changé.");
+    expect(renderer.root.findAllByProps({ role: "status" })).toHaveLength(0);
     renderer.unmount();
   });
 

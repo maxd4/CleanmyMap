@@ -20,6 +20,7 @@ on:
       - "e2e/global.teardown.ts"
       - "e2e/run-github-actions-persistent.mjs"
       - "e2e/spogomi-concurrency.mjs"
+      - "e2e/authenticated-spogomi.spec.ts"
       - "e2e/profile-security.sql"
       - "e2e/supabase-advisory-hardening.sql"
       - "e2e/supabase-admission-requests.sql"
