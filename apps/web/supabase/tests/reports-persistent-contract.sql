@@ -352,5 +352,9 @@ begin
 end;
 $$;
 
-raise notice 'EXECUTED_DB_CONTRACT: Reports persistence, RLS, snapshots, quota, PDF artifacts, shares, publications and action_media contract passed';
+do $$
+begin
+  raise notice 'EXECUTED_DB_CONTRACT: Reports persistence, RLS, snapshots, quota, PDF artifacts, shares, publications and action_media contract passed';
+end;
+$$;
 rollback;
