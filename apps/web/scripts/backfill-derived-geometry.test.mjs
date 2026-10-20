@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { classifyGeometryRow, parseDrawingFromGeoJson } from "./backfill-derived-geometry.mjs";
+import {
+  buildBackfillPlan,
+  classifyGeometryRow,
+  parseDrawingFromGeoJson,
+} from "./backfill-derived-geometry.mjs";
+import { buildEllipsePolygon } from "../src/lib/actions/geometry/geometry-core.ts";
 
 function geojson(type, coordinates) {
   return JSON.stringify({ type, coordinates });
@@ -143,4 +148,143 @@ test("does not create a fallback point from null or out-of-range coordinates", (
 
   assert.equal(nullPoint.classification, "AMBIGUOUS");
   assert.equal(invalidPoint.classification, "AMBIGUOUS");
+});
+
+test("restores historical drawings from notes with a minimal deterministic payload", () => {
+  const drawing = geojson("LineString", [[2.3, 48.8], [2.4, 48.9]]);
+  const result = classifyGeometryRow(row({
+    notes: `old note\n[cmm-meta]{"departureLocationLabel":"Paris"}\n[DRAWING_GEOJSON]${JSON.stringify({ kind: "polyline", coordinates: [[48.8, 2.3], [48.9, 2.4]] })}`,
+  }));
+
+  assert.equal(result.classification, "SAFE_UPDATE");
+  assert.equal(result.correction, "restore_manual_drawing_provenance");
+  assert.deepEqual(result.update, {
+    geometry_source: "manual",
+    geometry_confidence: 1,
+    derived_geometry_kind: "polyline",
+    derived_geometry_geojson: drawing,
+  });
+});
+
+test("classifies point provenance and preserves every supported drawing source", () => {
+  const sources = [
+    ["gpx_import", "polyline"],
+    ["gps_tracking", "polyline"],
+    ["routed", "polyline"],
+    ["estimated_route", "polyline"],
+    ["estimated_area", "polygon"],
+    ["manual", "polyline"],
+    ["reference", "polygon"],
+  ];
+  for (const [source, kind] of sources) {
+    const coordinates = kind === "polygon"
+      ? [[[2.3, 48.8], [2.4, 48.8], [2.4, 48.9]]]
+      : [[2.3, 48.8], [2.4, 48.9]];
+    const result = classifyGeometryRow(row({
+      derived_geometry_kind: kind,
+      derived_geometry_geojson: geojson(kind === "polygon" ? "Polygon" : "LineString", coordinates),
+      geometry_source: source,
+    }));
+    assert.equal(result.classification, "PRESERVE", source);
+  }
+
+  const point = classifyGeometryRow(row({
+    latitude: "48.8",
+    longitude: "2.3",
+    derived_geometry_kind: "point",
+    geometry_source: "fallback_point",
+  }));
+  assert.equal(point.classification, "PRESERVE");
+  assert.equal(classifyGeometryRow(row({ geometry_source: "invented_source" })).classification, "AMBIGUOUS");
+});
+
+test("rejects source and geometry-kind inconsistencies without changing the row", () => {
+  const inconsistent = classifyGeometryRow(row({
+    derived_geometry_kind: "polygon",
+    derived_geometry_geojson: geojson("Polygon", [[[2.3, 48.8], [2.4, 48.8], [2.4, 48.9]]]),
+    geometry_source: "routed",
+  }));
+  const unknown = classifyGeometryRow(row({
+    derived_geometry_kind: "polyline",
+    derived_geometry_geojson: geojson("LineString", [[2.3, 48.8], [2.4, 48.9]]),
+    geometry_source: "legacy_import",
+  }));
+  assert.equal(inconsistent.classification, "INVALID");
+  assert.equal(inconsistent.update, null);
+  assert.equal(unknown.classification, "AMBIGUOUS");
+  assert.equal(unknown.update, null);
+});
+
+test("recognizes matching routes and leaves different routes ambiguous", () => {
+  const route = { mode: "fallback", provider: "none", estimated: false, coordinates: [[48.8, 2.3], [48.9, 2.4]] };
+  const matching = classifyGeometryRow(row({
+    derived_geometry_geojson: geojson("LineString", [[2.3, 48.8], [2.4, 48.9]]),
+    preparation_data: { actualRoute: { routes: [{ geometry: route }] } },
+  }));
+  const different = classifyGeometryRow(row({
+    derived_geometry_geojson: geojson("LineString", [[2.3, 48.8], [2.5, 49]]),
+    preparation_data: { actualRoute: { routes: [{ geometry: route }] } },
+  }));
+  assert.equal(matching.classification, "SAFE_UPDATE");
+  assert.equal(matching.correction, "restore_geodesic_fallback_provenance");
+  assert.equal(matching.update.geometry_source, "estimated_route");
+  assert.equal(different.classification, "AMBIGUOUS");
+});
+
+test("recognizes a demonstrated legacy ellipse but never infers one from a near miss", () => {
+  const ellipse = buildEllipsePolygon({ latitude: 48.8, longitude: 2.3 }, 85, 55);
+  const demonstrated = classifyGeometryRow(row({
+    latitude: 48.8,
+    longitude: 2.3,
+    location_label: "Rue de Rivoli, Paris",
+    derived_geometry_geojson: geojson("Polygon", [ellipse.coordinates.map(([lat, lng]) => [lng, lat])]),
+  }));
+  const nearMiss = classifyGeometryRow(row({
+    latitude: 48.8,
+    longitude: 2.3,
+    location_label: "Rue de Rivoli, Paris",
+    derived_geometry_geojson: geojson("Polygon", [ellipse.coordinates.map(([lat, lng]) => [lng + 0.0001, lat])]),
+  }));
+  assert.equal(demonstrated.classification, "SAFE_UPDATE");
+  assert.equal(demonstrated.correction, "classify_legacy_ellipse_85x55m_as_estimated_area");
+  assert.deepEqual(demonstrated.update, { geometry_source: "estimated_area", geometry_confidence: 0.52 });
+  assert.equal(nearMiss.classification, "AMBIGUOUS");
+  assert.equal(nearMiss.update, null);
+});
+
+test("keeps compliant drawings unchanged and classification idempotent", () => {
+  const compliant = row({
+    derived_geometry_kind: "polyline",
+    derived_geometry_geojson: geojson("LineString", [[2.3, 48.8], [2.4, 48.9]]),
+    geometry_source: "manual",
+  });
+  const first = classifyGeometryRow(compliant);
+  const second = classifyGeometryRow(compliant);
+  assert.deepEqual(second, first);
+  assert.equal(first.classification, "PRESERVE");
+  assert.equal(first.update, null);
+});
+
+test("isolates malformed geometry while retaining valid plan decisions", () => {
+  const plan = buildBackfillPlan({
+    actions: [
+      row({ id: "invalid", derived_geometry_geojson: "{broken" }),
+      row({
+        id: "route",
+        derived_geometry_geojson: geojson("LineString", [[2.3, 48.8], [2.4, 48.9]]),
+        preparation_data: { operationalRoute: { routes: [{ geometry: { mode: "network", provider: "osrm", estimated: false, coordinates: [[48.8, 2.3], [48.9, 2.4]] } }] } },
+      }),
+    ],
+    signalements: [{ ...row({ id: "point" }), latitude: 48.8, longitude: 2.3 }],
+  });
+  assert.equal(plan.decisions.find((decision) => decision.id === "invalid").classification, "INVALID");
+  assert.equal(plan.decisions.find((decision) => decision.id === "route").classification, "SAFE_UPDATE");
+  assert.deepEqual(plan.signalementUpdates, [{
+    id: "point",
+    derived_geometry_kind: "point",
+    derived_geometry_geojson: null,
+    geometry_confidence: 0.24,
+    geometry_source: "fallback_point",
+  }]);
+  assert.equal(plan.report.totalInspected, 3);
 });
