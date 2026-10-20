@@ -149,6 +149,18 @@ it('serializes reconciliation additions and removals for one owner', async () =>
     await expect(getPendingLinkedMissionReconciliationIds('user_a')).resolves.toEqual(['mission-a2'])
 })
 
+it('deduplicates reconciliation ids and keeps the bounded owner queue', async () => {
+    for (let index = 0; index < 55; index += 1) {
+      await enqueuePendingLinkedMissionReconciliation(ownerId, `mission-${index}`)
+    }
+    await enqueuePendingLinkedMissionReconciliation(ownerId, 'mission-10')
+
+    const ids = await getPendingLinkedMissionReconciliationIds(ownerId)
+    expect(ids).toHaveLength(50)
+    expect(new Set(ids).size).toBe(50)
+    expect(ids.at(-1)).toBe('mission-49')
+})
+
 it('keeps an offline point and replays it once Clerk/Supabase is available', replaysOfflinePoint)
 
 it('does not discard the buffer when Supabase replay fails', async () => {
@@ -293,6 +305,39 @@ it('removes malformed records without replaying them or discarding valid owner d
 
     expect(upsert).toHaveBeenCalledWith([point], expect.any(Object))
     expect(state.values.has('bad-record')).toBe(false)
+    expect(await getPendingGpsPointCount(ownerId)).toBe(0)
+})
+
+it('ignores an absent, corrupt, or partially valid GPS index without losing valid records', async () => {
+    expect(await getPendingGpsPointCount(ownerId)).toBe(0)
+    state.values.set('_cmm_gps_buffer_index_user_123', '{not-json')
+    expect(await getPendingGpsPointCount(ownerId)).toBe(0)
+
+    state.values.set('_cmm_gps_buffer_index_user_123', JSON.stringify(['valid-record', 42, null]))
+    state.values.set('valid-record', JSON.stringify(point))
+    const upsert = vi.fn(async () => ({ error: null }))
+    state.client = { from: vi.fn(() => ({ upsert })) }
+
+    await flushBuffer(ownerId)
+
+    expect(upsert).toHaveBeenCalledWith([point], expect.any(Object))
+    expect(await getPendingGpsPointCount(ownerId)).toBe(0)
+})
+
+it('assigns an identity to a valid point with a missing client id and preserves it on retry', async () => {
+    const pointWithoutId = { ...point, client_point_id: undefined } as unknown as typeof point
+    const upsert = vi.fn()
+      .mockResolvedValueOnce({ error: new Error('temporary failure') })
+      .mockResolvedValueOnce({ error: null })
+    state.client = { from: vi.fn(() => ({ upsert })) }
+
+    await bufferPoint(ownerId, pointWithoutId)
+    await flushBuffer(ownerId)
+    await flushBuffer(ownerId)
+
+    const firstId = upsert.mock.calls[0][0][0].client_point_id
+    expect(firstId).toEqual(expect.any(String))
+    expect(upsert.mock.calls[1][0][0].client_point_id).toBe(firstId)
     expect(await getPendingGpsPointCount(ownerId)).toBe(0)
 })
 

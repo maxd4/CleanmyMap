@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   createMobileAction: vi.fn(),
   updateMobileAction: vi.fn(),
   loadMobileActionEditor: vi.fn(async () => ({ status: 'ok', action: {} })),
+  loadMobileActionDay: vi.fn(async () => ({ status: 'ok', actionId: 'action-1', access: 'owner', action: {} })),
   publishMobileAction: vi.fn(),
   createLinkedMission: vi.fn(),
 }))
@@ -44,6 +45,7 @@ vi.mock('../lib/mobile-actions-service', () => ({
   createMobileAction: state.createMobileAction,
   updateMobileAction: state.updateMobileAction,
   loadMobileActionEditor: state.loadMobileActionEditor,
+  loadMobileActionDay: state.loadMobileActionDay,
   publishMobileAction: state.publishMobileAction,
 }))
 
@@ -57,10 +59,10 @@ function findButton(renderer: TestRenderer.ReactTestRenderer, label: string) {
   return renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity').find((node) => textContent(node).includes(label))
 }
 
-async function renderScreen() {
+async function renderScreen(onSessionExpired = vi.fn()) {
   let renderer!: TestRenderer.ReactTestRenderer
   await act(async () => {
-    renderer = TestRenderer.create(<ActionCreateScreen onSessionExpired={vi.fn()} />)
+    renderer = TestRenderer.create(<ActionCreateScreen onSessionExpired={onSessionExpired} />)
   })
   return renderer
 }
@@ -72,6 +74,7 @@ describe('mobile action creation runtime', () => {
     state.createMobileAction.mockReset()
     state.updateMobileAction.mockReset()
     state.loadMobileActionEditor.mockClear()
+    state.loadMobileActionDay.mockReset()
     state.publishMobileAction.mockReset()
     state.createLinkedMission.mockReset()
     state.foregroundPermission = 'granted'
@@ -79,6 +82,7 @@ describe('mobile action creation runtime', () => {
     state.createMobileAction.mockResolvedValue({ status: 'created', id: 'action-1', source: 'actions' })
     state.updateMobileAction.mockResolvedValue({ status: 'ok', actionId: 'action-1', actionPhase: 'pre_action' })
     state.publishMobileAction.mockResolvedValue({ status: 'published', id: 'action-1', publishedAt: '2026-10-20T10:00:00.000Z', alreadyPublished: false })
+    state.loadMobileActionDay.mockResolvedValue({ status: 'ok', actionId: 'action-1', access: 'owner', action: {} })
     state.createLinkedMission.mockResolvedValue({ ok: true, missionId: 'mission-1' })
   })
 
@@ -111,6 +115,20 @@ describe('mobile action creation runtime', () => {
 
     expect(state.setItem).not.toHaveBeenCalled()
     expect(renderer.root.findAll((node) => textContent(node).includes('Le brouillon local n’a pas pu être relu'))).not.toHaveLength(0)
+  })
+
+  it('restores a valid section and ignores a malformed local draft payload', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ draft: { title: 'Terrain repris' }, section: 'terrain' }))
+    const renderer = await renderScreen()
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Latitude' })).toBeDefined()
+
+    await act(async () => { renderer.unmount() })
+    state.getItem.mockResolvedValueOnce('{malformed')
+    const malformed = await renderScreen()
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    expect(malformed.root.findByProps({ accessibilityLabel: 'Titre de l’action' }).props.value).toBe('')
   })
 
   it('does not POST while local draft recovery is blocked', async () => {
@@ -246,6 +264,99 @@ describe('mobile action creation runtime', () => {
     await act(async () => { await publishedButton?.props.onPress() })
     expect(state.createMobileAction).toHaveBeenCalledTimes(1)
     expect(state.publishMobileAction).toHaveBeenCalledTimes(1)
+  })
+
+  it('updates an existing action before publishing and can retry a failed publication', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-existing', section: 'verification', draft: { title: 'Action existante' } }))
+    state.publishMobileAction.mockRejectedValueOnce(new Error('publication indisponible')).mockResolvedValueOnce({ status: 'published', id: 'action-existing', publishedAt: '2026-10-20T10:00:00.000Z', alreadyPublished: false })
+    const renderer = await renderScreen()
+    const publish = findButton(renderer, 'Publier')
+
+    await act(async () => { await publish?.props.onPress() })
+    expect(state.updateMobileAction).toHaveBeenCalledWith('action-existing', expect.objectContaining({ clientRequestId: expect.any(String) }))
+    expect(state.publishMobileAction).toHaveBeenCalledTimes(1)
+    expect(renderer.root.findAll((node) => textContent(node).includes('publication indisponible'))).not.toHaveLength(0)
+
+    await act(async () => { await findButton(renderer, 'Publier')?.props.onPress() })
+    expect(state.updateMobileAction).toHaveBeenCalledTimes(2)
+    expect(state.publishMobileAction).toHaveBeenCalledTimes(2)
+    expect(findButton(renderer, 'Publiée')?.props.disabled).toBe(true)
+  })
+
+  it('forwards a session 401 during save and does not claim a local success', async () => {
+    state.getItem.mockResolvedValue(null)
+    state.createMobileAction.mockRejectedValueOnce({ status: 401 })
+    const onSessionExpired = vi.fn()
+    const renderer = await renderScreen(onSessionExpired)
+    await act(async () => { await findButton(renderer, 'Enregistrer le brouillon')?.props.onPress() })
+
+    expect(onSessionExpired).toHaveBeenCalledOnce()
+    expect(renderer.root.findAll((node) => textContent(node).includes('Brouillon enregistré sur le serveur'))).toHaveLength(0)
+  })
+
+  it('forwards a session 401 while restoring an existing action editor', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-401', section: 'verification' }))
+    state.loadMobileActionEditor.mockRejectedValueOnce({ status: 401 })
+    const onSessionExpired = vi.fn()
+
+    await renderScreen(onSessionExpired)
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+
+    expect(onSessionExpired).toHaveBeenCalledOnce()
+    expect(state.loadMobileActionEditor).toHaveBeenCalledWith('action-401')
+  })
+
+  it('forwards a failed GPS link and a failed briefing lookup without local success', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-tools', section: 'verification', draft: { title: 'Action outils' } }))
+    state.createLinkedMission.mockResolvedValueOnce({ ok: false, error: 'liaison refusée' })
+    state.loadMobileActionDay.mockRejectedValueOnce(new Error('briefing indisponible'))
+    const renderer = await renderScreen()
+
+    await act(async () => { await findButton(renderer, 'Relier une activité GPS')?.props.onPress() })
+    expect(renderer.root.findAll((node) => textContent(node).includes('liaison refusée'))).not.toHaveLength(0)
+    await act(async () => { await findButton(renderer, 'Ouvrir Préparer / Jour J')?.props.onPress() })
+    expect(renderer.root.findAll((node) => textContent(node).includes('briefing indisponible'))).not.toHaveLength(0)
+  })
+
+  it('builds manual point-to-point coordinates with deduplicated participants and a truncated checklist', async () => {
+    state.getItem.mockResolvedValue(null)
+    const renderer = await renderScreen()
+    const input = (label: string, value: string) => renderer.root.findByProps({ accessibilityLabel: label }).props.onChangeText(value)
+
+    await act(async () => {
+      input('Titre de l’action', 'Action manuelle')
+      input('Date (AAAA-MM-JJ)', '2026-11-01')
+      input('Lieu', 'Lieu manuel')
+    })
+    await act(async () => { await findButton(renderer, 'Terrain')?.props.onPress() })
+    await act(async () => {
+      input('Latitude', '48.123456')
+      input('Longitude', '2.654321')
+      await findButton(renderer, 'Point à point')?.props.onPress()
+      input('Départ', 'Départ manuel')
+    })
+    await act(async () => { input('Arrivée', 'Arrivée manuelle') })
+    await act(async () => { await findButton(renderer, 'Équipe et logistique')?.props.onPress() })
+    await act(async () => {
+      input('Coorganisateurs (identifiants séparés par des virgules)', 'orga-1, orga-1, orga-2')
+      input('Invitations (identifiants séparés par des virgules)', 'invite-1, invite-1, invite-2')
+      input('Logistique et checklist (une ligne par item)', Array.from({ length: 14 }, (_, index) => `item-${index + 1}`).join('\n'))
+    })
+    await act(async () => { await findButton(renderer, 'Vérifier et publier')?.props.onPress() })
+    await act(async () => { await findButton(renderer, 'Publier')?.props.onPress() })
+
+    const payload = state.createMobileAction.mock.calls[0][0]
+    expect(payload).toMatchObject({
+      locationLabel: 'Lieu manuel',
+      latitude: 48.123456,
+      longitude: 2.654321,
+      routeTopology: 'point_to_point',
+      departureLocationLabel: 'Départ manuel',
+      arrivalLocationLabel: 'Arrivée manuelle',
+      organizerAccounts: ['orga-1', 'orga-2'],
+      participantAccounts: ['invite-1', 'invite-2'],
+    })
+    expect(payload.preparationData.preparationChecklist).toHaveLength(12)
   })
 
   it('links GPS only after a server draft exists and keeps the server result explicit', async () => {
