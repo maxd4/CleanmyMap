@@ -4,6 +4,7 @@ streamlit>=1.66.0,<2
 streamlit-folium>=0.27,<1
 # fpdf 1.x reste le contrat utilisé par report_generator.py; fpdf2 serait une migration distincte.
 fpdf==1.7.2
+reportlab>=4.4,<5
 osmnx>=2.1,<3
 networkx>=3.7,<4
 geopy>=2.5,<3
