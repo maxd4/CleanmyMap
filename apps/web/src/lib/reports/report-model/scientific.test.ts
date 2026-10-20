@@ -488,10 +488,9 @@ describe("Reports scientific model", () => {
   });
 
   it("keeps monthly chronology and quality metrics stable across host timezones", () => {
-    const originalTimezone = process.env.TZ;
     try {
       const results = ["UTC", "Europe/Paris"].map((timezone) => {
-        process.env.TZ = timezone;
+        vi.stubEnv("TZ", timezone);
         const valid = makeAction({ id: "valid", actionDate: "2026-03-01", wasteKg: 1 });
         const explicitOffset = makeAction({ id: "offset", actionDate: "2026-03-01T00:30:00+01:00", wasteKg: 2 });
         const rejected = makeAction({ id: "no-zone", actionDate: "2026-03-01T00:30:00", wasteKg: 4 });
@@ -521,8 +520,7 @@ describe("Reports scientific model", () => {
       ) / 2;
       expect(results[0]?.quality.freshnessDays).toBeCloseTo(expectedFreshnessDays, 10);
     } finally {
-      if (originalTimezone === undefined) delete process.env.TZ;
-      else process.env.TZ = originalTimezone;
+      vi.unstubAllEnvs();
     }
   });
 

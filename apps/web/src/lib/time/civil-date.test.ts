@@ -45,10 +45,9 @@ describe("civil date adapter", () => {
   });
 
   it("keeps action-date parsing stable when the host timezone changes", () => {
-    const originalTimezone = process.env.TZ;
     try {
       const results = ["UTC", "Europe/Paris"].map((timezone) => {
-        process.env.TZ = timezone;
+        vi.stubEnv("TZ", timezone);
         return [
           parseActionDateAsUtc("2026-03-01T00:30:00.000Z")?.toISOString(),
           parseActionDateAsUtc("2026-03-01T00:30:00")?.toISOString() ?? null,
@@ -59,8 +58,7 @@ describe("civil date adapter", () => {
         ["2026-03-01T00:30:00.000Z", null],
       ]);
     } finally {
-      if (originalTimezone === undefined) delete process.env.TZ;
-      else process.env.TZ = originalTimezone;
+      vi.unstubAllEnvs();
     }
   });
 
