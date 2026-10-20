@@ -164,6 +164,27 @@ describe("report advanced filters", () => {
     })).toEqual([]);
   });
 
+  it("rejects missing and immediately out-of-range cigarette measures", () => {
+    const contracts = [
+      makeContract("below", { wasteKg: 4, cigaretteButts: 4.99 }),
+      makeContract("at-lower", { wasteKg: 4, cigaretteButts: 5 }),
+      makeContract("at-upper", { wasteKg: 4, cigaretteButts: 10 }),
+      makeContract("above", { wasteKg: 4, cigaretteButts: 11 }),
+      makeContract("missing", { wasteKg: 4, cigaretteButts: null }),
+    ];
+
+    expect(filterActionContractsByAdvancedFilters({
+      contracts,
+      filters: {
+        ...REPORT_ADVANCED_FILTER_DEFAULTS,
+        cigaretteButtsMin: 5,
+        cigaretteButtsMax: 10,
+      },
+      now,
+    }).map((contract) => contract.id)).toEqual(["at-lower", "at-upper"]);
+    expect(normalizeReportAdvancedFilters(undefined)).toEqual(REPORT_ADVANCED_FILTER_DEFAULTS);
+  });
+
   it("keeps unavailable media harmless when no photo filter is active", () => {
     expect(filterActionContractsByAdvancedFilters({
       contracts: [makeContract("action")],

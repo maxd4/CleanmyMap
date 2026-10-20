@@ -266,6 +266,39 @@ describe("multi-action report server resolver", () => {
     })).rejects.toBeInstanceOf(MultiActionReportEmptyError);
   });
 
+  it.each([
+    ["account", "user-1"],
+    ["arrondissement", "1"],
+  ] as const)("selects the canonical corpus for a %s scope", async (kind, value) => {
+    mocks.loadReportsGenerationData.mockResolvedValueOnce({
+      contracts: [
+        makeContract("included"),
+        kind === "account"
+          ? makeContract("other-account", { createdByClerkId: "user-2" })
+          : makeContract("other-arrondissement", { locationLabel: "Paris 2e" }),
+      ],
+      isTruncated: false,
+      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
+      communityEvents: [],
+      communityEventsAvailability: "available",
+    });
+    const result = await buildMultiActionReportGenerationInput({
+      request: {
+        type: "multi_action",
+        period: { id: "six_months" },
+        scope: { kind, value },
+      },
+      detailLevel: "default",
+      modules,
+      now,
+    });
+
+    const modelCall = mocks.computeReportModel.mock.calls.at(-1)?.[0];
+    expect(modelCall.contracts.map((contract: { id: string }) => contract.id)).toEqual(["included"]);
+    expect(result.scopeKind).toBe(kind);
+    expect(result.scopeValue).toBe(value);
+  });
+
   it("keeps approved-only reports from fabricating moderation statistics", async () => {
     await buildMultiActionReportGenerationInput({
       request: {
@@ -414,6 +447,68 @@ describe("multi-action report server resolver", () => {
       expect.objectContaining({ key: "verreKg", kg: 3, actions: 1 }),
       expect.objectContaining({ key: "megotsKg", kg: 2, actions: 1 }),
       expect.objectContaining({ key: "plastiqueKg", kg: 1, actions: 1 }),
+    ]);
+  });
+
+  it("keeps an entirely unknown waste profile and impact proxy unavailable", async () => {
+    mocks.loadReportsGenerationData.mockResolvedValueOnce({
+      contracts: [makeContract("unknown", { wasteKg: 0, volunteersCount: null, wasteBreakdown: null })],
+      isTruncated: false,
+      sourceHealth: { partial: true, failedSources: ["community_events"], availableSources: ["actions"], warnings: ["events unavailable"] },
+      communityEvents: [],
+      communityEventsAvailability: "unavailable",
+    });
+    mocks.computeReportModel.mockReturnValueOnce({
+      generatedAt: now.toISOString(),
+      totals: { actions: 1, kg: 0, knownWasteActions: 1, volunteersKnownActions: 0, hours: 0 },
+      impactMethodology: { proxyVersion: "impact-proxy-v1", qualityRulesVersion: "quality-v1" },
+    });
+
+    await buildMultiActionReportGenerationInput({
+      request: { type: "multi_action", period: { id: "full_history" }, scope: { kind: "global" } },
+      detailLevel: "default",
+      modules,
+      now,
+    });
+
+    const model = mocks.buildPdfData.mock.calls.at(-1)?.[0]?.model;
+    expect(model.wasteProfile).toEqual({
+      categories: [],
+      coveragePercent: 0,
+      dominantLabel: "Déchets non typés",
+      dominantKg: 0,
+    });
+    expect(model.dataAvailability).toMatchObject({
+      sourceHealth: { partial: true, failedSources: ["community_events"] },
+      communityEventsAvailability: "unavailable",
+    });
+    expect(mocks.buildPdfData).toHaveBeenCalledWith(expect.objectContaining({ surfaceProxy: null }));
+  });
+
+  it("uses action counts as the deterministic tie-breaker for equal waste categories", async () => {
+    mocks.loadReportsGenerationData.mockResolvedValueOnce({
+      contracts: [
+        makeContract("plastic", { wasteBreakdown: { plastiqueKg: 2 } }),
+        makeContract("glass-1", { wasteBreakdown: { verreKg: 1 } }),
+        makeContract("glass-2", { id: "glass-2", wasteBreakdown: { verreKg: 1 } }),
+      ],
+      isTruncated: false,
+      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
+      communityEvents: [],
+      communityEventsAvailability: "available",
+    });
+
+    await buildMultiActionReportGenerationInput({
+      request: { type: "multi_action", period: { id: "full_history" }, scope: { kind: "global" } },
+      detailLevel: "default",
+      modules,
+      now,
+    });
+
+    const model = mocks.buildPdfData.mock.calls.at(-1)?.[0]?.model;
+    expect(model.wasteProfile.categories).toEqual([
+      expect.objectContaining({ key: "verreKg", kg: 2, actions: 2 }),
+      expect.objectContaining({ key: "plastiqueKg", kg: 2, actions: 1 }),
     ]);
   });
 });

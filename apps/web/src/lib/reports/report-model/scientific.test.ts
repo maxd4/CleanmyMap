@@ -15,8 +15,10 @@ import {
 import { computeReportModel } from "@/lib/reports/report-model/compute-report-model";
 import {
   buildCalendarRows,
+  buildMonthRows,
   buildRouteSteps,
 } from "@/lib/reports/report-model/builders";
+import { buildReportProjections } from "@/lib/reports/report-model/compute-report-model.projections";
 import { computeReportRsvpSummary } from "@/lib/reports/report-model/community";
 import {
   toFrDate,
@@ -307,6 +309,49 @@ describe("Reports scientific model", () => {
     expect(selectScientific(build(actions))).toEqual(selectScientific(build([...actions].reverse())));
   });
 
+  it("keeps projection windows and evidence availability explicit", () => {
+    const current = makeAction({ id: "current", actionDate: "2026-03-20", wasteKg: 2 });
+    const previous = makeAction({ id: "previous", actionDate: "2026-02-01", wasteKg: 1 });
+    const invalid = makeAction({ id: "invalid", actionDate: "not-a-date" });
+    const withEvidence = makeAction({ id: "evidence", actionDate: "2026-03-10" });
+    withEvidence.contract = {
+      ...withEvidence.contract!,
+      metadata: {
+        ...withEvidence.contract!.metadata,
+        photos: [
+          { id: "safe", dataUrl: "data:image/png;base64,ZmFrZQ==" },
+          { id: "unsafe", dataUrl: "javascript:alert(1)" },
+        ] as never,
+      },
+    };
+
+    const projection = buildReportProjections({
+      approvedActions: [current, previous, invalid, withEvidence],
+      mapApprovedActions: [makeMapItem(current), makeMapItem(previous)],
+      byArea: [{ area: "Paris 1er", actions: 0, kg: 0, butts: 0, recurrence: 0, score: 0 }],
+      nowMs: Date.parse("2026-03-25T12:00:00.000Z"),
+      totals: { totalKg: 3, totalButts: 30 },
+    });
+
+    expect(projection.trendPercent).toBe(100);
+    expect(projection.climate6.actions).toBe(3);
+    expect(projection.annualRows).toEqual([["Paris 1er", "0", "0,0 kg", "0", "0,00 kg/action"]]);
+    expect(projection.highlightActions).toEqual([
+      expect.objectContaining({ id: "evidence", photos: ["data:image/png;base64,ZmFrZQ=="] }),
+    ]);
+    expect(projection.highlightPhotos).toEqual([
+      { url: "data:image/png;base64,ZmFrZQ==", label: "Paris 10e", date: "2026-03-10" },
+    ]);
+
+    expect(buildReportProjections({
+      approvedActions: [],
+      mapApprovedActions: [],
+      byArea: [],
+      nowMs: Date.parse("2026-03-25T12:00:00.000Z"),
+      totals: { totalKg: 0, totalButts: 0 },
+    }).trendPercent).toBe(0);
+  });
+
   it("does not fabricate ratios when their denominator is unavailable", () => {
     const pending = makeAction({ id: "pending", status: "pending" });
     pending.contract = {
@@ -384,6 +429,38 @@ describe("Reports scientific model", () => {
     expect(metrics.sourceBuckets).toEqual({ citoyen: 1, associatif: 1, institutionnel: 1 });
   });
 
+  it("preserves legacy-field fallbacks while keeping invalid dates unavailable", () => {
+    const legacy = makeAction({ id: "legacy", wasteKg: 2, cigaretteButts: 4, volunteersCount: 2 });
+    legacy.contract = undefined;
+    const invalidDate = makeAction({ id: "invalid-date", actionDate: "not-a-date" });
+    invalidDate.contract = {
+      ...invalidDate.contract!,
+      dates: { ...invalidDate.contract!.dates, createdAt: "not-a-date", validatedAt: "also-not-a-date" },
+    };
+    const invalidModeration = makeAction({ id: "invalid-moderation", status: "pending" });
+    invalidModeration.contract = {
+      ...invalidModeration.contract!,
+      dates: { ...invalidModeration.contract!.dates, createdAt: "not-a-date", validatedAt: "also-not-a-date" },
+    };
+
+    const report = computeReportModel({
+      allItems: [legacy, invalidDate, invalidModeration],
+      approvedItems: [legacy, invalidDate],
+      mapItems: [],
+      events: [],
+      now: new Date("2026-03-25T12:00:00.000Z"),
+    });
+
+    expect(report.totals).toMatchObject({ kg: 3, butts: 14, volunteers: 3, hours: 1.5 });
+    expect(report.quality.freshnessDays).toBe(24.5);
+    expect(report.moderation.delayDays).toBeNull();
+    expect(computeCommunityEngagementMetrics({
+      leaderboardItems: [legacy],
+      sourceItems: [],
+      leaderboardLimit: 8,
+    }).topLeaderboard).toEqual([{ name: "Alice", actions: 1, kg: 2, butts: 4 }]);
+  });
+
   it("protects the small mathematical and formatting contracts used by the model", () => {
     expect(average([])).toBe(0);
     expect(average([2, 4, 8])).toBe(14 / 3);
@@ -391,11 +468,16 @@ describe("Reports scientific model", () => {
     expect(median([9, 1, 5, 3])).toBe(4);
     expect(normalizeListType({ record_type: "other" } as ActionListItem)).toBe("spot");
     expect(normalizeListType({ record_type: "clean_place" } as ActionListItem)).toBe("clean_place");
+    expect(normalizeListType({ record_type: "action" } as ActionListItem)).toBe("action");
     expect(toFrNumber(12.345, 2)).toBe("12,35");
     expect(toFrInt(1_234)).toBe("1 234");
     expect(toFrOptionalNumber(null)).toBe("Indisponible");
     expect(toFrOptionalInt(null)).toBe("Indisponible");
     expect(toFrDate("not-a-date")).toBe("not-a-date");
+    expect(toFrDate("2026-03-25T00:00:00.000Z")).toContain("2026");
+    expect(buildMonthRows([makeAction({ actionDate: "not-a-date" })])).toEqual([
+      expect.objectContaining({ month: "not-a-d", actions: 1 }),
+    ]);
     expect(buildCalendarRows(new Date("2026-11-15T00:00:00.000Z"))).toHaveLength(4);
     expect(buildRouteSteps([makeMapItem(makeAction({ latitude: null, longitude: null }))], 6)).toEqual([]);
   });

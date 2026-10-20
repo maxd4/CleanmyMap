@@ -5,6 +5,7 @@ import {
   computeReportAccountScopeCoverage,
   filterActionContractsByScope,
   filterCommunityEventsByScope,
+  filterReportScopeItems,
   formatReportScopeLabel,
   normalizeReportScope,
 } from "./scope";
@@ -83,6 +84,54 @@ it("builds readable labels from available options", () => {
   ).toBe("Alice");
 });
 
+it("keeps fallback labels and scope matching on canonical fields only", () => {
+  const sources = [
+    {
+      created_by_clerk_id: "  user-2  ",
+      actor_name: null,
+      association_name: null,
+      location_label: "Lyon 2e",
+    },
+    {
+      contract: {
+        createdByClerkId: "User-3",
+        metadata: { actorName: null, associationName: "  Association A  " },
+        location: { label: "Paris 5e" },
+      },
+    },
+    {
+      contract: {
+        createdByClerkId: null,
+        metadata: { actorName: null, associationName: null },
+        location: { label: null },
+      },
+    },
+  ];
+
+  const options = buildReportScopeOptions(sources);
+  expect(options.accounts).toEqual([
+    { value: "user-2", label: "Compte user-2", count: 1 },
+    { value: "User-3", label: "Compte User-3", count: 1 },
+  ]);
+  expect(options.associations).toEqual([
+    { value: "Association A", label: "Association A", count: 1 },
+  ]);
+  expect(options.arrondissements).toEqual([
+    { value: "5", label: "Paris 5e", count: 1 },
+  ]);
+
+  expect(formatReportScopeLabel({ kind: "account", value: "abcdefgh-123" })).toBe("Compte abcdefgh");
+  expect(formatReportScopeLabel({ kind: "association", value: "Association libre" })).toBe("Association libre");
+  expect(formatReportScopeLabel({ kind: "arrondissement", value: "9" })).toBe("Arrondissement 9e");
+
+  expect(filterReportScopeItems(sources, { kind: "global", value: null })).toBe(sources);
+  expect(filterReportScopeItems(sources, { kind: "account", value: "USER-3" })).toHaveLength(1);
+  expect(filterReportScopeItems(sources, { kind: "association", value: "association a" })).toHaveLength(1);
+  expect(filterReportScopeItems(sources, { kind: "arrondissement", value: "5" })).toHaveLength(1);
+  expect(filterReportScopeItems(sources, { kind: "account", value: "unknown" })).toEqual([]);
+  expect(filterReportScopeItems(sources, { kind: "arrondissement", value: "2" })).toEqual([]);
+});
+
 it.each([
   { kind: "account", value: null },
   { kind: "association", value: "" },
@@ -156,6 +205,28 @@ it("filters contracts and community events by scope", () => {
       { kind: "account", value: "user-1" },
     ),
   ).toHaveLength(1);
+});
+
+it("keeps global and arrondissement event scopes bounded to structured locations", () => {
+  const events = [
+    {
+      id: "paris-11",
+      organizerClerkId: "user-1",
+      locationLabel: "Paris 11e",
+    },
+    {
+      id: "lyon-2",
+      organizerClerkId: "user-1",
+      locationLabel: "Lyon 2e",
+    },
+  ] as never;
+
+  expect(filterCommunityEventsByScope(events, { kind: "global", value: null })).toBe(events);
+  expect(filterCommunityEventsByScope(events, { kind: "arrondissement", value: "11" }).map((event) => event.id)).toEqual([
+    "paris-11",
+  ]);
+  expect(filterCommunityEventsByScope(events, { kind: "association", value: "Association A" })).toEqual([]);
+  expect(filterActionContractsByScope([contract], { kind: "global", value: null })).toEqual([contract]);
 });
 
 it("does not attribute an event to an association from free text", () => {

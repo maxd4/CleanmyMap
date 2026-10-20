@@ -148,6 +148,19 @@ describe("report generation period", () => {
     expect(() => getReportGenerationPeriodBounds("six_months", new Date("invalid"))).toThrow(RangeError);
   });
 
+  it("keeps custom bounds explicit and rejects an invalid clock for date projections", () => {
+    expect(() => getReportGenerationPeriodBounds("custom_range" as never, now)).toThrow(
+      "explicit selection",
+    );
+    expect(getReportGenerationPeriodDateBounds({ id: "full_history" }, now)).toEqual({
+      from: null,
+      to: "2026-08-31",
+    });
+    expect(() => getReportGenerationPeriodDateBounds({ id: "full_history" }, new Date("invalid"))).toThrow(
+      "valid date",
+    );
+  });
+
   it("uses UTC civil dates for custom ranges even when offsets cross a calendar boundary", () => {
     const selection = { id: "custom_range" as const, from: "2026-08-01", to: "2026-08-31" };
 
