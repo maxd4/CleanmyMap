@@ -65,7 +65,10 @@ const baseFixture = (): Fixture => ({
     { clerk_id: "checkin-a", role: "checkin", revoked_at: null },
     { clerk_id: "revoked-a", role: "observer", revoked_at: "2026-01-02T10:00:00.000Z" },
   ],
-  participants: [{ id: "participant-a", clerk_id: "participant-a", account_link_status: "verified" }],
+  participants: [
+    { id: "participant-a", clerk_id: "participant-a", account_link_status: "verified" },
+    { id: "external-a", clerk_id: "external-a", account_link_status: "pending" },
+  ],
 });
 
 describe("SPOGOMI event-scoped authorization", () => {
@@ -90,6 +93,14 @@ describe("SPOGOMI event-scoped authorization", () => {
     const access = await resolveSpogomiEventAccess({ supabase: supabaseFor(baseFixture()) as never, eventId: "event-a", userId: "admin-a" });
     expect(access?.role).toBe("organizer");
     expect(hasSpogomiCapability(access, "manage")).toBe(true);
+  });
+
+  it("does not promote a granted admin whose active role is not admin", async () => {
+    getCurrentUserIdentity.mockResolvedValueOnce({ userId: "admin-a", role: "admin", activeRole: "benevole" });
+    const access = await resolveSpogomiEventAccess({ supabase: supabaseFor(baseFixture()) as never, eventId: "event-a", userId: "admin-a" });
+    expect(access?.role).toBeNull();
+    expect(hasSpogomiCapability(access, "manage")).toBe(false);
+    expect(hasSpogomiCapability(access, "assign_event_access")).toBe(false);
   });
 
   it("gives an observer operational read only and refuses arbitration or mutation", async () => {
@@ -126,5 +137,26 @@ describe("SPOGOMI event-scoped authorization", () => {
 
     const otherEvent = await resolveSpogomiEventAccess({ supabase: supabaseFor({ ...fixture, eventId: "event-b" }) as never, eventId: "event-a", userId: "observer-a" });
     expect(otherEvent).toBeNull();
+  });
+
+  it("distinguishes an externally listed participant from a linked Clerk participant", async () => {
+    const linked = await resolveSpogomiEventAccess({ supabase: supabaseFor(baseFixture()) as never, eventId: "event-a", userId: "participant-a" });
+    expect(linked?.role).toBe("participant");
+    expect(linked?.participantId).toBe("participant-a");
+    expect(hasSpogomiCapability(linked, "private_read")).toBe(true);
+
+    const external = await resolveSpogomiEventAccess({ supabase: supabaseFor(baseFixture()) as never, eventId: "event-a", userId: "external-a" });
+    expect(external?.role).toBeNull();
+    expect(external?.participantId).toBeNull();
+    expect(hasSpogomiCapability(external, "private_read")).toBe(false);
+  });
+
+  it("rejects a falsified identity returned by the identity provider", async () => {
+    getCurrentUserIdentity.mockResolvedValueOnce({ userId: "different-user", role: "admin", activeRole: "admin" });
+    await expect(resolveSpogomiEventAccess({
+      supabase: supabaseFor(baseFixture()) as never,
+      eventId: "event-a",
+      userId: "attacker-user",
+    })).resolves.toBeNull();
   });
 });
