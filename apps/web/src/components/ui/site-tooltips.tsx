@@ -228,9 +228,10 @@ export function SiteTooltips() {
     const describedBy = trigger.getAttribute("aria-describedby");
     restoreStateRef.current = {
       title: source === "title" ? (trigger.getAttribute("data-tooltip-original-title") ?? undefined) : undefined,
-      describedBy: describedBy ?? undefined,
+      describedBy: describedBy ?? "",
     };
 
+    activeTriggerRef.current = trigger;
     timerRef.current = window.setTimeout(() => {
       activeTriggerRef.current = trigger;
       const preferredPlacement = getPreferredPlacement(trigger);
@@ -252,7 +253,7 @@ export function SiteTooltips() {
         return null;
       }
 
-      return target.closest<HTMLElement>("[data-tooltip-content], [title]");
+      return target.closest<HTMLElement>("[data-tooltip-content], [title], [data-tooltip-source]");
     };
 
     const isLeavingTrigger = (trigger: HTMLElement, relatedTarget: EventTarget | null) =>
@@ -387,6 +388,11 @@ export function SiteTooltips() {
       window.removeEventListener("scroll", onScrollOrResize, true);
     };
   }, [activeTooltip, clearTimer, hideTooltip, showTooltip, updatePosition]);
+
+  useEffect(() => () => {
+    clearTimer();
+    restoreTrigger();
+  }, [clearTimer, restoreTrigger]);
 
   useLayoutEffect(() => {
     if (!activeTooltip || !tooltipRef.current) {
