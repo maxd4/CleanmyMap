@@ -337,6 +337,22 @@ describe("POST /api/reports/generations", () => {
     }));
   });
 
+  it("rejects a body without a typed selector before quota", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify({ detailLevel: "default", modules: validPayload.modules }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(getReportExportAvailabilityMock).not.toHaveBeenCalled();
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+      details: expect.objectContaining({ stage: "validation", code: "invalid_typed_input" }),
+    }));
+  });
+
   it("returns an explicit 503 when the final quota reservation fails", async () => {
     reserveReportExportSlotMock.mockRejectedValueOnce(new Error("quota rpc unavailable"));
 

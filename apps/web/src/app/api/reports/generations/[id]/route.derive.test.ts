@@ -29,6 +29,7 @@ vi.mock("@/lib/admin/audit/operation-audit", () => ({ appendAdminOperationAudit:
 
 import { POST } from "./route";
 import { InvalidReportGenerationIdError } from "@/lib/reports/report-generation-history-store";
+import { InvalidReportGenerationSnapshotError } from "@/lib/reports/report-generation-payload";
 import { REPORT_ADVANCED_FILTER_DEFAULTS } from "@/lib/reports/report-advanced-filters";
 
 const sourceId = "11111111-1111-4111-8111-111111111111";
@@ -162,6 +163,18 @@ describe("POST /api/reports/generations/[id]", () => {
     getSnapshotMock.mockRejectedValueOnce(new InvalidReportGenerationIdError());
     const invalid = await POST(request(), { params: Promise.resolve({ id: "not-a-uuid" }) });
     expect(invalid.status).toBe(400);
+    expect(reserveQuotaMock).not.toHaveBeenCalled();
+  });
+
+  it("maps unreadable source snapshots and storage failures without reserving quota", async () => {
+    getSnapshotMock.mockRejectedValueOnce(new InvalidReportGenerationSnapshotError());
+    const invalidSnapshot = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
+    expect(invalidSnapshot.status).toBe(422);
+    expect(reserveQuotaMock).not.toHaveBeenCalled();
+
+    getSnapshotMock.mockRejectedValueOnce(new Error("history unavailable"));
+    const unavailable = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
+    expect(unavailable.status).toBe(503);
     expect(reserveQuotaMock).not.toHaveBeenCalled();
   });
 
