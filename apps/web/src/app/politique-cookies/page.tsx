@@ -147,6 +147,9 @@ export default function PolitiqueCookiesPage() {
           </h2>
           <div className="cmm-data-table-wrap">
             <table className="cmm-data-table">
+              <caption className="sr-only">
+                Durées de conservation des cookies, consentements, sessions et préférences de site
+              </caption>
               <thead className="bg-slate-100 text-slate-900">
                 <tr>
                   <th scope="col" className="font-semibold">Élément</th>

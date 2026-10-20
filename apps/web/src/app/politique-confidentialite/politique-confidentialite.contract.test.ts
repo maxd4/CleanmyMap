@@ -1,5 +1,13 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+
+import PolitiqueConfidentialitePage from "./page";
+
+vi.mock("@/components/sections/rubriques/rgpd-request-form", () => ({
+  RgpdRequestForm: () => null,
+}));
 
 const publicPolicy = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 const documentedPolicy = readFileSync(
@@ -20,6 +28,18 @@ const retentionCleanup = readFileSync(
 );
 
 describe("privacy policy contract", () => {
+  it("gives the legal-bases table an accessible name without changing its columns or data", () => {
+    const markup = renderToStaticMarkup(createElement(PolitiqueConfidentialitePage));
+
+    expect(markup).toContain(
+      '<caption class="sr-only">Traitements de données personnelles, finalités et bases légales</caption>',
+    );
+    expect(markup.match(/<th scope="col"/g)).toHaveLength(3);
+    expect(markup).toContain("Compte et profil");
+    expect(markup).toContain("Analytics et mesure d&#x27;audience");
+    expect(markup).toContain("Contributions financières via Stripe");
+  });
+
   it("keeps the public page and legal doctrine free of obsolete factual claims", () => {
     const obsoleteClaims = [
       /association loi 1901/iu,

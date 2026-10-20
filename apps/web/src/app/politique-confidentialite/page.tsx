@@ -200,6 +200,9 @@ export default function PolitiqueConfidentialitePage() {
           </div>
           <div className="cmm-data-table-wrap">
             <table className="cmm-data-table">
+              <caption className="sr-only">
+                Traitements de données personnelles, finalités et bases légales
+              </caption>
               <thead className="bg-slate-100 text-slate-900">
                 <tr>
                   <th scope="col" className="font-semibold">Traitement</th>
