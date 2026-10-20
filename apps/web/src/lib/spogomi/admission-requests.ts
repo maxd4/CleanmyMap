@@ -141,7 +141,7 @@ export async function listSpogomiAdmissionRequestsForRequester(
   return (result.data ?? []).map((row) => mapRequester(row as Record<string, unknown>));
 }
 
-export async function loadSpogomiAdmissionRequestForRequester(
+async function loadSpogomiAdmissionRequestForRequester(
   supabase: SupabaseClient,
   params: { eventId: string; requestId: string; requesterClerkId: string },
 ): Promise<SpogomiAdmissionRequesterView | null> {

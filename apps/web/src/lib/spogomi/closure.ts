@@ -1,16 +1,13 @@
 import type { SpogomiDivisionType } from "./types";
 
-export const SPOGOMI_TEAM_CLOSURE_STATUSES = [
-  "present_measured",
-  "absent",
-  "forfeit",
-  "excluded",
-  "disqualified",
-  "result_missing",
-  "contested",
-] as const;
-
-export type SpogomiTeamClosureStatus = (typeof SPOGOMI_TEAM_CLOSURE_STATUSES)[number];
+export type SpogomiTeamClosureStatus =
+  | "present_measured"
+  | "absent"
+  | "forfeit"
+  | "excluded"
+  | "disqualified"
+  | "result_missing"
+  | "contested";
 export type SpogomiEnvironmentalEligibility = "eligible" | "excluded" | "unknown";
 
 export type SpogomiTeamClosureDecision = {
@@ -59,7 +56,6 @@ export type SpogomiClosureSummary = {
 };
 
 const explicitNonParticipants = new Set<SpogomiTeamClosureStatus>(["absent", "forfeit"]);
-const sportExcluded = new Set<SpogomiTeamClosureStatus>(["absent", "forfeit", "excluded", "disqualified", "result_missing", "contested"]);
 
 export function defaultSpogomiTeamClosureDecision(team: Pick<SpogomiClosureTeamInput, "teamId" | "divisionId" | "certifiedSubmission">): SpogomiTeamClosureDecision {
   return team.certifiedSubmission
@@ -73,10 +69,6 @@ export function effectiveSpogomiTeamClosureDecision(team: SpogomiClosureTeamInpu
 
 export function isSpogomiTeamNonParticipating(status: SpogomiTeamClosureStatus): boolean {
   return explicitNonParticipants.has(status);
-}
-
-export function isSpogomiTeamSportExcluded(status: SpogomiTeamClosureStatus): boolean {
-  return sportExcluded.has(status);
 }
 
 export function deriveSpogomiClosureSummary(input: {

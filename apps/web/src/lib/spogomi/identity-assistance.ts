@@ -44,7 +44,7 @@ function mapError(error: unknown): SpogomiIdentityAssistanceError {
   return new SpogomiIdentityAssistanceError("La demande d’assistance n’a pas pu être enregistrée.", "validation");
 }
 
-export function normalizeAssistanceContext(value: string | undefined): string {
+function normalizeAssistanceContext(value: string | undefined): string {
   return (value ?? "").trim().slice(0, 1200);
 }
 
