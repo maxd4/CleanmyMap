@@ -114,6 +114,8 @@ class PDFReport(FPDF):
         except Exception:
             self._unicode_font_enabled = False
             self._font_family = "Helvetica"
+            # fpdf 1.x expects this flag to exist when a built-in font is used.
+            self.unifontsubset = False
 
     def set_font(self, family=None, style="", size=0):
         requested = (family or self._font_family or "Helvetica").lower()

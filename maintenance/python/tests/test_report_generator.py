@@ -130,6 +130,92 @@ def test_safe_text_repairs_mojibake_and_normalizes_non_strings():
     assert safe_text(42) == "42"
 
 
+def test_pdf_report_falls_back_to_helvetica_when_unicode_fonts_are_absent(monkeypatch):
+    monkeypatch.setattr(report_module.os.path, "exists", lambda _path: False)
+
+    report = PDFReport(pd.DataFrame())
+
+    assert report._unicode_font_enabled is False
+    assert report._font_family == "Helvetica"
+    report.add_page()
+    report.set_font(report._font_family, "", 10)
+    report.cell(0, 8, "Résumé d’action — fallback")
+    pdf = report.output(dest="S")
+    assert (pdf if isinstance(pdf, bytes) else pdf.encode("latin-1")).startswith(b"%PDF-")
+
+
+def test_pdf_report_falls_back_when_font_registration_fails(monkeypatch):
+    def fail_add_font(self, *args, **kwargs):
+        raise OSError("font registration failed")
+
+    monkeypatch.setattr(PDFReport, "add_font", fail_add_font)
+
+    report = PDFReport(pd.DataFrame())
+
+    assert report._unicode_font_enabled is False
+    assert report._font_family == "Helvetica"
+
+
+def test_generate_accepts_all_legacy_column_variants(monkeypatch):
+    captured = []
+    monkeypatch.setattr(PDFReport, "_add_all_content", lambda self, ville, city_df: captured.append(city_df.copy()))
+    monkeypatch.setattr(PDFReport, "create_cover", lambda self, ville, city_df: None)
+    monkeypatch.setattr(PDFReport, "output", lambda self, *args, **kwargs: b"%PDF-legacy")
+    data = pd.DataFrame([{
+        "ville": "Paris", "date": "2026-01-01", "nbr megots": 3, "kg dechets": 1.5,
+        "nom d'association": "Association", "temps en min": 30, "nombre benevoles": 2,
+        "adresse precise ou coordo GPS": "Rue Unicode", "type": "Parc",
+    }])
+
+    assert PDFReport(data).generate(dest="S") == b"%PDF-legacy"
+    normalized = captured[-1]
+    assert normalized.loc[0, "megots"] == 3
+    assert normalized.loc[0, "dechets_kg"] == 1.5
+    assert normalized.loc[0, "association"] == "Association"
+    assert normalized.loc[0, "temps_min"] == 30
+    assert normalized.loc[0, "nb_benevoles"] == 2
+    assert normalized.loc[0, "adresse"] == "Rue Unicode"
+    assert normalized.loc[0, "type_lieu"] == "Parc"
+
+
+def test_governance_and_spatial_sections_handle_missing_period_and_empty_data():
+    report = PDFReport(pd.DataFrame())
+    report.add_page()
+    report.create_governance_block(pd.DataFrame())
+    report.create_spatial_analysis("Paris", pd.DataFrame())
+
+    pdf = report.output(dest="S")
+    pdf = pdf if isinstance(pdf, bytes) else pdf.encode("latin-1")
+    assert pdf.startswith(b"%PDF-")
+    assert report.page_no() >= 3
+
+
+def test_long_registry_repeats_headers_after_page_break():
+    rows = [{
+        "id": f"action-{index}", "date": pd.Timestamp("2026-01-01") + pd.Timedelta(days=index),
+        "lieu_complet": f"Lieu très long {index}", "association": "Association",
+        "megots": index, "dechets_kg": index / 10, "temps_min": 30,
+        "nb_benevoles": 2, "est_propre": False,
+    } for index in range(225)]
+    report = PDFReport(pd.DataFrame(rows))
+    report.create_detailed_registry(pd.DataFrame(rows))
+
+    assert report.page_no() > 2
+    pdf = report.output(dest="S")
+    pdf = pdf if isinstance(pdf, bytes) else pdf.encode("latin-1")
+    assert pdf.startswith(b"%PDF-")
+
+
+def test_external_counter_failure_is_reported_as_unavailable(monkeypatch):
+    database = __import__("src.database", fromlist=["get_active_spots"])
+    monkeypatch.setattr(database, "get_active_spots", lambda: (_ for _ in ()).throw(RuntimeError("sqlite unavailable")))
+
+    metrics = PDFReport(pd.DataFrame())._compute_web_rubrique_metrics(pd.DataFrame())
+
+    assert metrics["active_spots_count"] is None
+    assert metrics["db_note"] == "Données community/spot sqlite indisponibles (RuntimeError)."
+
+
 def test_web_metrics_keep_missing_external_values_uninvented():
     report = PDFReport(pd.DataFrame())
     report.is_dummy = True
