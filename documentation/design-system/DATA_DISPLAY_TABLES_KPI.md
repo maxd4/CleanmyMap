@@ -14,6 +14,16 @@ Il n'existe volontairement pas de `CmmKpi` parallèle. Les composants métier
 peuvent composer `StatCard` avec leur libellé, unité, période, source, badge,
 description et footer sans recréer la surface de carte.
 
+### Hiérarchie et sincérité des indicateurs
+
+- Une carte KPI expose d'abord le **libellé précis**, la **valeur réellement disponible** et son **unité**. La période, le périmètre géographique, la source et les limites sont visibles lorsque leur omission rendrait le chiffre trompeur.
+- Ne pas employer de microtexte illisible, d'opacité faible, d'abréviation incompréhensible ou de seule icône pour une donnée indispensable.
+- Comparer des valeurs seulement lorsque leurs unités, périodes et périmètres sont compatibles. Une tendance non vérifiée n'est ni un pourcentage d'évolution ni un badge de réussite.
+- Distinguer explicitement **zéro, inconnu, non observé, estimation, projection, indisponible et privé** en suivant les contrats scientifiques et de données du domaine ; aucun placeholder ne devient silencieusement une donnée.
+- Les valeurs numériques alignées utilisent `tabular-nums` si la comparaison visuelle en bénéficie. Le titre, l'unité et la valeur doivent rester lisibles après reflow sans être tronqués de façon silencieuse.
+- Une carte standard conserve les dimensions de `StatCard` et `CmmCard`, non un padding/radius supplémentaire propre au Dashboard, Pilotage ou Reports.
+- La couleur d'accent représente une identité ou une catégorie documentée ; elle ne crée pas seule un niveau, une gravité ou une signification scientifique.
+
 ## Tables runtime
 
 Les tables runtime conservent leur sémantique native : `<table>`, `<thead>`,
@@ -33,6 +43,15 @@ Il n'existe volontairement pas de composant React `CmmTable`. Le fichier
 
 Le tri, les colonnes, la sélection, la pagination, la hauteur maximale et les
 interactions restent des responsabilités métier du consommateur.
+
+### Lisibilité et actions sur les tables
+
+- Les libellés de colonnes sont brefs mais compréhensibles ; les unités ambiguës sont visibles dans l'en-tête ou la cellule selon le contexte.
+- Le tri réellement disponible possède un état compréhensible visuellement et programmatiquement ; une simple flèche décorative ne doit pas prétendre déclencher un tri.
+- Une table large peut défiler horizontalement **dans `cmm-data-table-wrap`**, mais ne doit pas élargir la page entière. Tester la navigation clavier et le focus des actions contenues dans ses cellules.
+- L'ordre DOM, l'ordre de lecture et les relations entre intitulés et valeurs doivent rester exploitables pour les technologies d'assistance.
+- Lorsque la comparaison de nombreuses colonnes n'est plus utilisable sur smartphone, adapter la présentation dans le consommateur seulement si une alternative équivalente est réellement plus compréhensible et ne duplique pas le calcul métier.
+- La pagination, les filtres et l'export affichent des états de chargement, vide et erreur honnêtes ; ne pas remplacer un résultat inaccessible par une table fictive.
 
 ## Composition et frontières
 
@@ -63,13 +82,27 @@ jamais être confondu avec `cmm-data-table-wrap`.
 
 ## État de migration
 
-Les consommateurs runtime canoniques actuels sont :
+Les consommateurs runtime suivis par le garde-fou canonique sont :
 
 - `apps/web/src/components/admin/role-management-panel.tsx` ;
 - `apps/web/src/components/dashboard/system-status-panel.tsx` ;
 - `apps/web/src/components/actions/actions-map-table.tsx`.
 
-La dette runtime raw-table est désormais vide : les tables runtime couvertes
-par le checker utilisent le shell et la géométrie canoniques. Print/Export
+Cette liste désigne les surfaces à contrôler, pas une preuve de conformité :
+`npm run check:data-display` reste l'autorité de migration et doit être
+exécuté sur le candidat concerné. Tant que ce contrôle signale une table
+runtime hors contrat, la dette ne doit pas être déclarée résolue. Print/Export
 reste un contrat spécialisé séparé, avec son exclusion dédiée dans
 `check:data-display`, et ne doit pas être assimilé aux tables runtime.
+
+## Vérification et références
+
+Tester tableaux et KPI avec valeurs longues, unités explicites, zéros, absence de données, états de chargement, format numérique et reflow mobile. Vérifier que `check:data-display` et les tests concernés sont **réellement exécutés** ; ce guard ne prouve pas seul la compréhension des unités et de la provenance.
+
+Les liens ci-dessous sont des repères de présentation, d'accessibilité ou de
+structure ; ils ne remplacent ni les contrats runtime CleanMyMap ni une preuve
+de conformité exécutée.
+
+- USWDS, typographie de données : https://designsystem.digital.gov/components/typography/
+- GOV.UK, listes de synthèse : https://design-system.service.gov.uk/components/summary-list/
+- W3C, ARIA tableaux : https://www.w3.org/WAI/ARIA/apg/patterns/table/
