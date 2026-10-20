@@ -2,14 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getSnapshotMock = vi.hoisted(() => vi.fn());
+const InvalidReportGenerationIdErrorMock = vi.hoisted(() => class extends Error {});
+const InvalidReportGenerationSnapshotErrorMock = vi.hoisted(() => class extends Error {});
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: requireAuthenticatedAccessMock }));
 vi.mock("@/lib/reports/report-generation-history-store", () => ({
   getReportGenerationSnapshotById: getSnapshotMock,
-  InvalidReportGenerationIdError: class InvalidReportGenerationIdError extends Error {},
+  InvalidReportGenerationIdError: InvalidReportGenerationIdErrorMock,
 }));
 vi.mock("@/lib/reports/report-generation-payload", () => ({
-  InvalidReportGenerationSnapshotError: class InvalidReportGenerationSnapshotError extends Error {},
+  InvalidReportGenerationSnapshotError: InvalidReportGenerationSnapshotErrorMock,
 }));
 
 import { GET } from "./route";
@@ -59,5 +61,18 @@ describe("GET historical scientific CSV", () => {
     expect(body).toContain("generation_id");
     expect(body).toContain("DECLARED");
     expect(body).toContain("NA");
+  });
+
+  it.each([
+    ["invalid id", new InvalidReportGenerationIdErrorMock(), 400, "Identifiant de rapport invalide."],
+    ["incompatible snapshot", new InvalidReportGenerationSnapshotErrorMock(), 422, "Le snapshot historique est invalide ou incompatible."],
+    ["store failure", new Error("database unavailable"), 503, "Impossible d'exporter le rapport historique."],
+  ])("maps %s without returning an export", async (_label, error, status, message) => {
+    getSnapshotMock.mockRejectedValueOnce(error);
+
+    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ id }) });
+
+    expect(response.status).toBe(status);
+    await expect(response.json()).resolves.toEqual({ error: message });
   });
 });

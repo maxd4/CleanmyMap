@@ -4,6 +4,8 @@ import {
   DEFAULT_REPORT_DETAIL_LEVEL,
   DEFAULT_REPORT_GENERATION_PERIOD,
   DEFAULT_REPORT_MODULES,
+  buildModuleSelectionLabel,
+  buildReportTitle,
   buildPdfData,
   buildScopeSelectValue,
   type ModuleState,
@@ -340,6 +342,71 @@ describe("reports web document shared helpers", () => {
     expect(rendered).toContain("n/a");
   });
 
+  it("retains populated optional chapters, units and unavailable moderation values in the canonical corpus", () => {
+    const pdf = buildPdfData({
+      reportTitle: "Rapport d'impact - Corpus complet",
+      scopeLabel: "Corpus complet",
+      period: "custom_range",
+      detailLevel: "default",
+      modules: {
+        dataAndCartography: true,
+        transparencyAndMethods: true,
+        rawData: true,
+        detailedFiles: true,
+      },
+      surfaceProxy: 1234.5,
+      periodRange: { from: "2024-02-29", to: "2024-03-01", timeZone: "UTC" },
+      model: {
+        ...fixtureModel,
+        wasteProfile: {
+          ...fixtureModel.wasteProfile,
+          categories: [{ key: "plastique", label: "Plastique", kg: 2.5, actions: 1 }],
+        },
+        report: {
+          ...fixtureModel.report,
+          moderation: { ...fixtureModel.report.moderation, rejected: null, delayDays: null },
+          calendar: [["S1", "2024-02-29 → 2024-03-01", "Vérifier les proxys", "Équipe terrain"]],
+          impactMethodology: {
+            ...fixtureModel.report.impactMethodology,
+            sources: { publicActions: "public.actions@v2" },
+            formulas: [{
+              id: "water_saved" as const,
+              label: "Eau protégée",
+              formula: "mégots × facteur proxy",
+              interpretation: "Estimation, pas mesure instrumentale",
+            }],
+          },
+        },
+      } as never,
+    });
+
+    expect(pdf.periodRange).toEqual({ from: "2024-02-29", to: "2024-03-01", timeZone: "UTC" });
+    expect(pdf.chapters.find((chapter) => chapter.id === "contexte-local")?.rows).toEqual([
+      { Déchet: "Plastique", Kg: "2.5", Actions: 1 },
+    ]);
+    expect(pdf.chapters.find((chapter) => chapter.id === "methodologie-fiabilite")?.rows).toEqual([
+      {
+        Formule: "Eau protégée",
+        Lecture: "mégots × facteur proxy",
+        Interprétation: "Estimation, pas mesure instrumentale",
+      },
+    ]);
+    expect(pdf.chapters.find((chapter) => chapter.id === "methodologie-fiabilite")?.lines).toEqual(
+      expect.arrayContaining(["Sources de référence: publicActions."]),
+    );
+    expect(pdf.chapters.find((chapter) => chapter.id === "gouvernance-transparence")?.lines).toEqual(
+      expect.arrayContaining(["Modération: 2 approuvés / indisponible.", "Délai moyen: Indisponible jours."]),
+    );
+    expect(pdf.chapters.find((chapter) => chapter.id === "calendrier-previsionnel")?.rows).toEqual([
+      {
+        Sprint: "S1",
+        Période: "2024-02-29 → 2024-03-01",
+        Objectif: "Vérifier les proxys",
+        Responsable: "Équipe terrain",
+      },
+    ]);
+  });
+
   it("supports a custom combination with the same selection contract used by the PDF summary", () => {
     const pdf = buildPdfDataWithModules({
       dataAndCartography: true,
@@ -490,10 +557,24 @@ describe("reports web document shared helpers", () => {
   it("keeps the supported periods and filter labels stable", () => {
     expect(DEFAULT_REPORT_GENERATION_PERIOD).toBe("six_months");
     expect(DEFAULT_REPORT_DETAIL_LEVEL).toBe("default");
+    expect(periodLabel("thirty_days")).toBe("30 jours");
+    expect(periodLabel("three_months")).toBe("3 mois");
     expect(periodLabel("six_months")).toBe("Six mois");
+    expect(periodLabel("twelve_months")).toBe("12 mois");
     expect(periodLabel("current_year")).toBe("Année en cours");
     expect(periodLabel("full_history")).toBe("Historique complet");
+    expect(periodLabel("custom_range")).toBe("Intervalle personnalisé");
     expect(reportPeriodLabel("full_history", true)).toBe("Historique complet");
+    expect(reportPeriodLabel("custom_range", false, { from: "2024-02-29", to: "2024-03-01" })).toBe(
+      "Intervalle personnalisé (2024-02-29 → 2024-03-01)",
+    );
+    expect(buildModuleSelectionLabel({
+      dataAndCartography: false,
+      transparencyAndMethods: false,
+      rawData: false,
+      detailedFiles: false,
+    })).toBe("aucun module optionnel");
+    expect(buildReportTitle("Paris", "exhaustif")).toBe("Rapport d'impact - Paris - Exhaustif");
     expect(detailLevelLabel("default")).toBe("Par défaut");
     expect(detailLevelDescription("concis")).toContain("Résultats principaux");
     expect(detailLevelDescription("exhaustif")).toContain("Sources");

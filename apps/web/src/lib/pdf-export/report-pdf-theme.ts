@@ -108,6 +108,61 @@ const reportPdfPage = {
   margin: reportPdfSpacing.pageMargin,
 } as const;
 
+function buildWebHeroCss(theme: ReportPdfThemeTokens, typography: typeof reportPdfTypography): string {
+  return `
+    .cmm-web-hero,
+    .cmm-web-section {
+      border: 1px solid ${theme.rule};
+      border-radius: ${theme.radius};
+      overflow: hidden;
+      background: ${theme.white};
+      break-inside: auto;
+      page-break-inside: auto;
+    }
+    .cmm-web-hero {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+    }
+    .cmm-web-hero__left {
+      padding: 6mm 7mm;
+      color: ${theme.accentForeground};
+      background: ${theme.accentBackground};
+    }
+    .cmm-web-hero__left .cmm-web-header__kicker,
+    .cmm-web-hero__left .cmm-web-header__title,
+    .cmm-web-hero__left .cmm-web-header__subtitle {
+      color: ${theme.accentForeground};
+    }
+    .cmm-web-hero__left .cmm-callout {
+      color: ${theme.ink};
+    }
+    .cmm-web-hero__left .cmm-table-wrap {
+      background: ${theme.white};
+      color: ${theme.ink};
+    }
+    .cmm-web-hero__right {
+      padding: 6mm 7mm;
+      background: ${theme.noteLight};
+    }
+    .cmm-web-section__header {
+      padding: 5mm 6mm;
+      color: ${theme.accentForeground};
+      background: ${theme.accentBackground};
+    }
+    .cmm-web-section__kicker {
+      color: ${theme.accentForeground};
+      font-size: ${typography.caption};
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .cmm-web-section__subtitle {
+      margin-top: 1.8mm;
+      color: ${theme.accentForeground};
+    }
+  `;
+}
+
 export function buildOfficialReportCss(theme: ReportPdfTheme = "impact"): string {
   const c = reportPdfThemeTokens[theme];
   const t = reportPdfTypography;
@@ -265,33 +320,7 @@ export function buildOfficialReportCss(theme: ReportPdfTheme = "impact"): string
       display: block;
       font-size: ${t.small};
     }
-    .cmm-web-hero,
-    .cmm-web-section {
-      border: 1px solid ${c.rule};
-      border-radius: ${c.radius};
-      overflow: hidden;
-      background: ${c.white};
-      break-inside: auto;
-      page-break-inside: auto;
-    }
-    .cmm-web-hero {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-    }
-    .cmm-web-hero__left {
-      padding: 6mm 7mm;
-      color: ${c.accentForeground};
-      background: ${c.accentBackground};
-    }
-    .cmm-web-hero__right {
-      padding: 6mm 7mm;
-      background: ${c.noteLight};
-    }
-    .cmm-web-section__header {
-      padding: 5mm 6mm;
-      color: ${c.accentForeground};
-      background: ${c.accentBackground};
-    }
+    ${buildWebHeroCss(c, t)}
     .cmm-web-section.is-locked {
       border-color: #D5DEE6;
       background: #F8FAFC;
@@ -308,13 +337,6 @@ export function buildOfficialReportCss(theme: ReportPdfTheme = "impact"): string
       justify-content: space-between;
       gap: 3mm;
     }
-    .cmm-web-section__kicker {
-      color: ${c.accentForeground};
-      font-size: ${t.caption};
-      font-weight: 700;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-    }
     .cmm-web-section.is-locked .cmm-web-section__kicker {
       color: #64748B;
     }
@@ -328,10 +350,6 @@ export function buildOfficialReportCss(theme: ReportPdfTheme = "impact"): string
       color: #334155;
       margin-top: 1.25mm;
       font-size: 13.5pt;
-    }
-    .cmm-web-section__subtitle {
-      margin-top: 1.8mm;
-      color: ${c.accentForeground};
     }
     .cmm-web-section.is-locked .cmm-web-section__subtitle {
       color: #64748B;
