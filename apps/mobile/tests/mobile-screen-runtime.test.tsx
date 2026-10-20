@@ -1,6 +1,8 @@
 import React from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { useCompanionMissionController } from '../hooks/use-companion-mission-controller'
+import type { Mission } from '../types/mission'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -8,6 +10,11 @@ const state = vi.hoisted(() => ({
   alert: vi.fn(),
   openedUrls: [] as string[],
   accountDeletion: vi.fn(async () => ({ status: 'queued', requestId: 'request-1', notificationStatus: 'sent' as const, deletionProcessed: false, message: 'Demande enregistrée.' })),
+}))
+
+const appState = vi.hoisted(() => ({
+  controller: null as ReturnType<typeof useCompanionMissionController> | null,
+  startHostedAuth: vi.fn(),
 }))
 
 function nativeComponent(name: string) {
@@ -33,6 +40,23 @@ vi.mock('react-native', () => ({
 }))
 
 vi.mock('expo-status-bar', () => ({ StatusBar: nativeComponent('StatusBar') }))
+vi.mock('@clerk/expo', () => ({
+  ClerkProvider: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => React.createElement('ClerkProvider', props, children),
+}))
+vi.mock('@clerk/expo/hosted-auth', () => ({
+  useHostedAuth: () => ({ startHostedAuth: appState.startHostedAuth }),
+}))
+vi.mock('@clerk/expo/token-cache', () => ({ tokenCache: { getToken: vi.fn(), saveToken: vi.fn(), clearToken: vi.fn() } }))
+vi.mock('../hooks/use-companion-mission-controller', () => ({
+  useCompanionMissionController: () => appState.controller,
+}))
+vi.mock('../screens/mission-active-map', () => ({
+  MissionActiveMap: (props: Record<string, unknown>) => React.createElement('MissionActiveMap', props),
+}))
+vi.mock('../screens/mission-finalization', () => ({
+  MissionFinalizationScreen: (props: Record<string, unknown>) => React.createElement('MissionFinalizationScreen', props),
+  MissionCompletionScreen: (props: Record<string, unknown>) => React.createElement('MissionCompletionScreen', props),
+}))
 vi.mock('expo-linking', () => ({ openURL: vi.fn(async (url: string) => { state.openedUrls.push(url) }) }))
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: vi.fn(async () => null), setItem: vi.fn(async () => undefined), removeItem: vi.fn(async () => undefined) },
@@ -95,6 +119,70 @@ function textContent(node: TestRenderer.ReactTestInstance): string {
   return node.children.map((child) => typeof child === 'string' ? child : textContent(child)).join('')
 }
 
+function mission(overrides: Partial<Mission> = {}): Mission {
+  return {
+    id: 'mission-1',
+    volunteer_id: 'mission-owner',
+    action_id: null,
+    label: 'Action terrain',
+    status: 'tracking',
+    started_at: '2026-10-20T10:00:00.000Z',
+    ended_at: null,
+    distance_m: null,
+    duration_s: null,
+    created_at: '2026-10-20T09:59:00.000Z',
+    ...overrides,
+  }
+}
+
+function controller(overrides: Partial<ReturnType<typeof useCompanionMissionController>> = {}): ReturnType<typeof useCompanionMissionController> {
+  return {
+    isLoaded: true,
+    isSignedIn: true,
+    userId: 'user-current',
+    phase: 'idle',
+    mission: null,
+    errorMsg: null,
+    duration: '12s',
+    pendingGpsPointCount: 0,
+    finalizationStage: null,
+    completionSummary: null,
+    handleStartMobileMission: vi.fn(async () => undefined),
+    handleSessionExpired: vi.fn(async () => undefined),
+    handleStop: vi.fn(),
+    handleReturnHome: vi.fn(),
+    signOut: vi.fn(async () => undefined),
+    ...overrides,
+  }
+}
+
+function findTouchable(renderer: TestRenderer.ReactTestRenderer, label: string): TestRenderer.ReactTestInstance {
+  const button = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity' && textContent(node).includes(label))[0]
+  expect(button, `TouchableOpacity containing ${label}`).toBeDefined()
+  return button!
+}
+
+function findAppShell(renderer: TestRenderer.ReactTestRenderer): TestRenderer.ReactTestInstance {
+  const shell = renderer.root.findAll((node) => (
+    typeof node.props?.onStartActivity === 'function' &&
+    typeof node.props?.onSignOut === 'function'
+  ))[0]
+  expect(shell).toBeDefined()
+  return shell!
+}
+
+async function renderApp(key: string | undefined) {
+  vi.stubEnv('EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY', key ?? '')
+  vi.resetModules()
+  const { default: App } = await import('../App')
+  let renderer!: TestRenderer.ReactTestRenderer
+  await act(async () => {
+    renderer = TestRenderer.create(<App />)
+    await Promise.resolve()
+  })
+  return renderer
+}
+
 async function renderShell() {
   let renderer!: TestRenderer.ReactTestRenderer
   await act(async () => {
@@ -110,6 +198,12 @@ describe('mobile native shell runtime', () => {
     state.alert.mockReset()
     state.openedUrls.length = 0
     state.accountDeletion.mockClear()
+    appState.controller = controller()
+    appState.startHostedAuth.mockReset().mockResolvedValue(undefined)
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('renders the three accessible primary destinations and account sections', async () => {
@@ -161,5 +255,139 @@ describe('mobile native shell runtime', () => {
     expect(renderer.root.findAll((node) => textContent(node).includes('Retour à Agir'))).not.toHaveLength(0)
     const webLinks = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity').filter((item) => textContent(item).includes('Ouvrir'))
     expect(webLinks.length).toBeGreaterThan(0)
+  })
+
+  it('renders the required configuration state when the Clerk key is absent', async () => {
+    const renderer = await renderApp(undefined)
+
+    expect(textContent(renderer.root)).toContain('CONFIGURATION REQUISE')
+    expect(textContent(renderer.root)).toContain('EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY est nécessaire')
+    expect(renderer.root.findAllByType('ClerkProvider' as unknown as React.ElementType)).toHaveLength(0)
+  })
+
+  it('mounts ClerkProvider and shows the initial session loading state', async () => {
+    appState.controller = controller({ isLoaded: false, isSignedIn: false })
+    const renderer = await renderApp('pk_test_mobile')
+
+    expect(renderer.root.findAllByType('ClerkProvider' as unknown as React.ElementType)).toHaveLength(1)
+    expect(textContent(renderer.root)).toContain('CHARGEMENT...')
+    expect(renderer.root.findAll((node) => typeof node.props?.onStartActivity === 'function')).toHaveLength(0)
+  })
+
+  it('renders the signed-out screen and forwards sign-in/sign-up success', async () => {
+    appState.controller = controller({ isSignedIn: false })
+    const renderer = await renderApp('pk_test_mobile')
+
+    const signIn = findTouchable(renderer, 'SE CONNECTER')
+    await act(async () => { await signIn.props.onPress() })
+    expect(appState.startHostedAuth).toHaveBeenCalledWith({ mode: 'sign-in' })
+
+    const signUp = findTouchable(renderer, 'CRÉER UN COMPTE')
+    await act(async () => { await signUp.props.onPress() })
+    expect(appState.startHostedAuth).toHaveBeenCalledWith({ mode: 'sign-up' })
+    expect(appState.startHostedAuth).toHaveBeenCalledTimes(2)
+  })
+
+  it.each([
+    ['sign-in', 'SE CONNECTER', new Error('Clerk indisponible'), 'Clerk indisponible'],
+    ['sign-up', 'CRÉER UN COMPTE', { code: 'network-failure' }, 'Connexion Clerk impossible.'],
+  ] as const)('renders %s failure for Error and non-Error auth failures', async (mode, label, failure, expected) => {
+    appState.controller = controller({ isSignedIn: false })
+    appState.startHostedAuth.mockRejectedValueOnce(failure)
+    const renderer = await renderApp('pk_test_mobile')
+
+    await act(async () => { await findTouchable(renderer, label).props.onPress() })
+
+    expect(appState.startHostedAuth).toHaveBeenCalledWith({ mode })
+    expect(textContent(renderer.root)).toContain(expected)
+  })
+
+  it('disables both authentication buttons while hosted authentication is pending', async () => {
+    let resolveAuth!: () => void
+    appState.controller = controller({ isSignedIn: false })
+    appState.startHostedAuth.mockImplementation(() => new Promise<void>((resolve) => { resolveAuth = resolve }))
+    const renderer = await renderApp('pk_test_mobile')
+    const signIn = findTouchable(renderer, 'SE CONNECTER')
+    const signUp = findTouchable(renderer, 'CRÉER UN COMPTE')
+
+    await act(async () => {
+      void signIn.props.onPress()
+      await Promise.resolve()
+    })
+
+    expect(signIn.props.disabled).toBe(true)
+    expect(signUp.props.disabled).toBe(true)
+    await act(async () => { resolveAuth(); await Promise.resolve() })
+    expect(findTouchable(renderer, 'SE CONNECTER').props.disabled).toBe(false)
+  })
+
+  it('renders requesting and forwards the real start callback without double authentication', async () => {
+    const start = vi.fn(async () => undefined)
+    appState.controller = controller({ phase: 'requesting', handleStartMobileMission: start })
+    const renderer = await renderApp('pk_test_mobile')
+
+    expect(textContent(renderer.root)).toContain('PRÉPARATION DU SUIVI...')
+    expect(renderer.root.findAll((node) => typeof node.props?.onStartActivity === 'function')).toHaveLength(0)
+    expect(appState.startHostedAuth).not.toHaveBeenCalled()
+  })
+
+  it('passes the current owner to a valid tracking mission and uses the mission owner fallback', async () => {
+    const current = mission()
+    appState.controller = controller({ phase: 'tracking', mission: current, userId: 'user-current' })
+    const renderer = await renderApp('pk_test_mobile')
+    const active = renderer.root.findByType('MissionActiveMap' as unknown as React.ElementType)
+
+    expect(active.props).toMatchObject({ missionId: 'mission-1', ownerId: 'user-current', missionLabel: 'Action terrain', duration: '12s', pendingGpsPointCount: 0 })
+    expect(active.props.onStop).toBe(appState.controller.handleStop)
+    act(() => renderer.unmount())
+
+    appState.controller = controller({ phase: 'tracking', mission: mission({ volunteer_id: 'mission-owner-fallback' }), userId: null })
+    const fallbackRenderer = await renderApp('pk_test_mobile')
+    expect(fallbackRenderer.root.findByType('MissionActiveMap' as unknown as React.ElementType).props.ownerId).toBe('mission-owner-fallback')
+  })
+
+  it('never displays a mission when tracking has no valid mission contract', async () => {
+    appState.controller = controller({ phase: 'tracking', mission: null })
+    const renderer = await renderApp('pk_test_mobile')
+
+    expect(renderer.root.findAllByType('MissionActiveMap' as unknown as React.ElementType)).toHaveLength(0)
+    expect(renderer.root.findAll((node) => typeof node.props?.onStartActivity === 'function')).toHaveLength(1)
+    const shell = findAppShell(renderer)
+    expect(shell.props.onStartActivity).toBe(appState.controller.handleStartMobileMission)
+  })
+
+  it('renders finalization, completion summary and return to MobileShell', async () => {
+    appState.controller = controller({ phase: 'stopping', finalizationStage: 'finalizing' })
+    const finalizing = await renderApp('pk_test_mobile')
+    expect(finalizing.root.findByType('MissionFinalizationScreen' as unknown as React.ElementType).props).toEqual({ stage: 'finalizing' })
+    act(() => finalizing.unmount())
+
+    const handleReturnHome = vi.fn()
+    appState.controller = controller({ completionSummary: mission({ status: 'completed', ended_at: '2026-10-20T10:30:00.000Z', distance_m: 120, duration_s: 1800 }), handleReturnHome })
+    const completed = await renderApp('pk_test_mobile')
+    const summary = completed.root.findByType('MissionCompletionScreen' as unknown as React.ElementType)
+    expect(summary.props.mission).toMatchObject({ id: 'mission-1', status: 'completed', distance_m: 120, duration_s: 1800 })
+    await act(async () => summary.props.onReturnHome())
+    expect(handleReturnHome).toHaveBeenCalledOnce()
+    act(() => completed.unmount())
+
+    appState.controller = controller()
+    const home = await renderApp('pk_test_mobile')
+    expect(home.root.findAll((node) => typeof node.props?.onStartActivity === 'function')).toHaveLength(1)
+    expect(findAppShell(home).props.onSignOut).toBeTypeOf('function')
+  })
+
+  it('passes explicit session expiration and sign-out callbacks back to MobileShell', async () => {
+    const handleSessionExpired = vi.fn(async () => undefined)
+    const signOut = vi.fn(async () => undefined)
+    appState.controller = controller({ handleSessionExpired, signOut })
+    const renderer = await renderApp('pk_test_mobile')
+    const shell = findAppShell(renderer)
+
+    await act(async () => { await shell.props.onSessionExpired() })
+    await act(async () => { await shell.props.onSignOut() })
+
+    expect(handleSessionExpired).toHaveBeenCalledOnce()
+    expect(signOut).toHaveBeenCalledOnce()
   })
 })
