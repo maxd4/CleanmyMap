@@ -105,6 +105,16 @@ function useMissionForegroundTrack(ownerId: string, missionId: string, mapRef: R
     function handleLocation(location: Location.LocationObject, runId: number) {
       if (!active || runId !== runIdRef.current) return
 
+      if (
+        !Number.isFinite(location.coords.latitude) ||
+        !Number.isFinite(location.coords.longitude) ||
+        !Number.isFinite(location.timestamp) ||
+        Number.isNaN(new Date(location.timestamp).getTime())
+      ) {
+        setSyncMessage('Position GPS invalide.')
+        return
+      }
+
       const coordinate = toCoordinate(location)
       const point = toTrackPoint(location)
       localTrackRef.current = mergeTrackPoints(localTrackRef.current, [point])
