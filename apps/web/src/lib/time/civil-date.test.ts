@@ -27,11 +27,14 @@ describe("civil date adapter", () => {
   it("parses canonical action dates and rejects impossible or ambiguous values", () => {
     expect(parseActionDateAsUtc("2024-02-29")?.toISOString()).toBe("2024-02-29T00:00:00.000Z");
     expect(parseActionDateAsUtc("2026-02-28")?.toISOString()).toBe("2026-02-28T00:00:00.000Z");
-    expect(parseActionDateAsUtc("2026-03-01T00:30:00.000Z")?.toISOString()).toBe("2026-03-01T00:30:00.000Z");
-    expect(parseActionDateAsUtc("2026-03-01T00:30:00+01:00")?.toISOString()).toBe("2026-02-28T23:30:00.000Z");
-    expect(parseActionDateAsUtc("2026-02-28T23:30:00-02:00")?.toISOString()).toBe("2026-03-01T01:30:00.000Z");
+    expect(parseActionDateAsUtc("2026-03-01T00:30:00Z")?.toISOString()).toBe("2026-03-01T00:30:00.000Z");
+    expect(parseActionDateAsUtc("2026-03-01T00:30:00.1Z")?.toISOString()).toBe("2026-03-01T00:30:00.100Z");
+    expect(parseActionDateAsUtc("2026-03-01T00:30:00.123Z")?.toISOString()).toBe("2026-03-01T00:30:00.123Z");
+    expect(parseActionDateAsUtc("2026-03-01T00:30:00.123456Z")?.toISOString()).toBe("2026-03-01T00:30:00.123Z");
+    expect(parseActionDateAsUtc("2026-03-01T00:30:00.123456+01:00")?.toISOString()).toBe("2026-02-28T23:30:00.123Z");
+    expect(parseActionDateAsUtc("2026-02-28T23:30:00.654321-02:00")?.toISOString()).toBe("2026-03-01T01:30:00.654Z");
     expect(parseActionDateAsUtc("2026-02-30")).toBeNull();
-    expect(parseActionDateAsUtc("2026-02-30T00:00:00Z")).toBeNull();
+    expect(parseActionDateAsUtc("2026-02-30T00:00:00.123456Z")).toBeNull();
     expect(parseActionDateAsUtc("not-a-date")).toBeNull();
   });
 
@@ -49,13 +52,14 @@ describe("civil date adapter", () => {
       const results = ["UTC", "Europe/Paris"].map((timezone) => {
         vi.stubEnv("TZ", timezone);
         return [
-          parseActionDateAsUtc("2026-03-01T00:30:00.000Z")?.toISOString(),
+          parseActionDateAsUtc("2026-03-01T00:30:00.123456Z")?.toISOString(),
+          parseActionDateAsUtc("2026-03-01T00:30:00.123456+01:00")?.toISOString(),
           parseActionDateAsUtc("2026-03-01T00:30:00")?.toISOString() ?? null,
         ];
       });
       expect(results).toEqual([
-        ["2026-03-01T00:30:00.000Z", null],
-        ["2026-03-01T00:30:00.000Z", null],
+        ["2026-03-01T00:30:00.123Z", "2026-02-28T23:30:00.123Z", null],
+        ["2026-03-01T00:30:00.123Z", "2026-02-28T23:30:00.123Z", null],
       ]);
     } finally {
       vi.unstubAllEnvs();

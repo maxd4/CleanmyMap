@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
 import { buildActionDataContract } from "@/lib/actions/contracts/contract-model";
@@ -492,7 +492,7 @@ describe("Reports scientific model", () => {
       const results = ["UTC", "Europe/Paris"].map((timezone) => {
         vi.stubEnv("TZ", timezone);
         const valid = makeAction({ id: "valid", actionDate: "2026-03-01", wasteKg: 1 });
-        const explicitOffset = makeAction({ id: "offset", actionDate: "2026-03-01T00:30:00+01:00", wasteKg: 2 });
+        const explicitOffset = makeAction({ id: "offset", actionDate: "2026-03-01T00:30:00.123456+01:00", wasteKg: 2 });
         const rejected = makeAction({ id: "no-zone", actionDate: "2026-03-01T00:30:00", wasteKg: 4 });
         const report = computeReportModel({
           allItems: [valid, explicitOffset, rejected],
@@ -516,7 +516,7 @@ describe("Reports scientific model", () => {
       });
       const expectedFreshnessDays = (
         (Date.parse("2026-03-25T12:00:00.000Z") - Date.parse("2026-03-01T00:00:00.000Z")) / 86_400_000
-        + (Date.parse("2026-03-25T12:00:00.000Z") - Date.parse("2026-03-01T00:30:00+01:00")) / 86_400_000
+        + (Date.parse("2026-03-25T12:00:00.000Z") - Date.parse("2026-03-01T00:30:00.123456+01:00")) / 86_400_000
       ) / 2;
       expect(results[0]?.quality.freshnessDays).toBeCloseTo(expectedFreshnessDays, 10);
     } finally {
