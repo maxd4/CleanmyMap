@@ -1266,10 +1266,16 @@ class PDFReport(FPDF):
         lon_series = pd.to_numeric(
             records.get("longitude", records.get("lon", pd.Series(np.nan, index=records.index))), errors="coerce"
         )
-        kg_series = pd.to_numeric(records.get("dechets_kg", 0), errors="coerce").fillna(0)
-        megots_series = pd.to_numeric(records.get("megots", 0), errors="coerce").fillna(0)
-        benevoles_series = pd.to_numeric(records.get("nb_benevoles", records.get("benevoles", 0)), errors="coerce").fillna(0)
-        temps_series = pd.to_numeric(records.get("temps_min", 0), errors="coerce").fillna(0)
+        def _numeric_series(*columns: str) -> pd.Series:
+            for column in columns:
+                if column in records.columns:
+                    return pd.to_numeric(records[column], errors="coerce").fillna(0)
+            return pd.Series(0.0, index=records.index, dtype="float64")
+
+        kg_series = _numeric_series("dechets_kg")
+        megots_series = _numeric_series("megots")
+        benevoles_series = _numeric_series("nb_benevoles", "benevoles")
+        temps_series = _numeric_series("temps_min")
 
         date_candidates = [
             "created_at",
@@ -1290,7 +1296,12 @@ class PDFReport(FPDF):
         else:
             freshness_days = None
 
-        by_area = records.assign(__area=area_series).groupby("__area").agg(
+        records_with_metrics = records.assign(
+            __area=area_series,
+            dechets_kg=kg_series,
+            megots=megots_series,
+        )
+        by_area = records_with_metrics.groupby("__area").agg(
             actions=("__area", "size"),
             kg=("dechets_kg", "sum"),
             megots=("megots", "sum"),
@@ -1458,7 +1469,7 @@ class PDFReport(FPDF):
         )
 
         # Benchmark inter-zones
-        compare_table = records.assign(__area=area_series).groupby("__area").agg(
+        compare_table = records_with_metrics.groupby("__area").agg(
             actions=("__area", "size"),
             kg=("dechets_kg", "sum"),
             megots=("megots", "sum"),
@@ -1513,7 +1524,7 @@ class PDFReport(FPDF):
             )
         actor_type_counts = actor_type_series.value_counts().head(4)
         actor_type_txt = ", ".join([f"{k}={int(v)}" for k, v in actor_type_counts.items()]) if not actor_type_counts.empty else "n/a"
-        actor_zone_counts = records.assign(__area=area_series).groupby("__area").size().sort_values(ascending=False).head(3)
+        actor_zone_counts = records_with_metrics.groupby("__area").size().sort_values(ascending=False).head(3)
         actor_zones_txt = ", ".join([f"{idx} ({int(v)})" for idx, v in actor_zone_counts.items()]) if not actor_zone_counts.empty else "n/a"
 
         self._render_decision_block(
