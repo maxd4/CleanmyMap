@@ -7,10 +7,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const state = vi.hoisted(() => ({
   getItem: vi.fn<() => Promise<string | null>>(),
   setItem: vi.fn(async () => undefined),
+  foregroundPermission: 'granted' as 'granted' | 'denied',
+  position: { latitude: 48.8566, longitude: 2.3522 },
   createMobileAction: vi.fn(),
   updateMobileAction: vi.fn(),
   loadMobileActionEditor: vi.fn(async () => ({ status: 'ok', action: {} })),
   publishMobileAction: vi.fn(),
+  createLinkedMission: vi.fn(),
 }))
 
 function nativeComponent(name: string) {
@@ -28,11 +31,15 @@ vi.mock('react-native', () => ({
   View: nativeComponent('View'),
 }))
 vi.mock('@expo/vector-icons', () => ({ Ionicons: nativeComponent('Ionicons') }))
-vi.mock('expo-location', () => ({ Accuracy: { Balanced: 'balanced' } }))
+vi.mock('expo-location', () => ({
+  Accuracy: { Balanced: 'balanced' },
+  requestForegroundPermissionsAsync: vi.fn(async () => ({ status: state.foregroundPermission })),
+  getCurrentPositionAsync: vi.fn(async () => ({ coords: state.position })),
+}))
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: state.getItem, setItem: state.setItem },
 }))
-vi.mock('../lib/linked-mission-service', () => ({ createLinkedMission: vi.fn() }))
+vi.mock('../lib/linked-mission-service', () => ({ createLinkedMission: state.createLinkedMission }))
 vi.mock('../lib/mobile-actions-service', () => ({
   createMobileAction: state.createMobileAction,
   updateMobileAction: state.updateMobileAction,
@@ -66,8 +73,13 @@ describe('mobile action creation runtime', () => {
     state.updateMobileAction.mockReset()
     state.loadMobileActionEditor.mockClear()
     state.publishMobileAction.mockReset()
+    state.createLinkedMission.mockReset()
+    state.foregroundPermission = 'granted'
+    state.position = { latitude: 48.8566, longitude: 2.3522 }
     state.createMobileAction.mockResolvedValue({ status: 'created', id: 'action-1', source: 'actions' })
     state.updateMobileAction.mockResolvedValue({ status: 'ok', actionId: 'action-1', actionPhase: 'pre_action' })
+    state.publishMobileAction.mockResolvedValue({ status: 'published', id: 'action-1', publishedAt: '2026-10-20T10:00:00.000Z', alreadyPublished: false })
+    state.createLinkedMission.mockResolvedValue({ ok: true, missionId: 'mission-1' })
   })
 
   it('does not overwrite a delayed interrupted draft before restoration completes', async () => {
@@ -192,5 +204,66 @@ describe('mobile action creation runtime', () => {
     await act(async () => { await saveAgain?.props.onPress() })
     expect(state.updateMobileAction).toHaveBeenCalledTimes(1)
     expect(state.createMobileAction).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not persist a denied location permission and accepts a later GPS retry', async () => {
+    state.getItem.mockResolvedValue(null)
+    state.foregroundPermission = 'denied'
+    const renderer = await renderScreen()
+    const locate = findButton(renderer, 'Utiliser ma position actuelle')
+
+    await act(async () => { await locate?.props.onPress(); await Promise.resolve() })
+    expect(state.createMobileAction).not.toHaveBeenCalled()
+    expect(renderer.root.findAll((node) => textContent(node).includes('La permission de localisation est nécessaire'))).not.toHaveLength(0)
+
+    state.foregroundPermission = 'granted'
+    await act(async () => { await locate?.props.onPress(); await Promise.resolve() })
+    await act(async () => { await findButton(renderer, 'Continuer')?.props.onPress() })
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Latitude' }).props.value).toBe('48.856600')
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Longitude' }).props.value).toBe('2.352200')
+    expect(renderer.root.findAll((node) => textContent(node).includes('Position actuelle ajoutée'))).not.toHaveLength(0)
+  })
+
+  it('publishes exactly once after creating the server action and disables the published state', async () => {
+    state.getItem.mockResolvedValue(null)
+    const renderer = await renderScreen()
+    const title = renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' })
+    await act(async () => { title.props.onChangeText('Action publiée') })
+
+    for (let index = 0; index < 3; index += 1) {
+      const next = findButton(renderer, 'Continuer')
+      await act(async () => { await next?.props.onPress() })
+    }
+
+    const publish = findButton(renderer, 'Publier')
+    await act(async () => { await publish?.props.onPress() })
+    expect(state.createMobileAction).toHaveBeenCalledTimes(1)
+    expect(state.publishMobileAction).toHaveBeenCalledWith('action-1')
+    expect(renderer.root.findAll((node) => textContent(node).includes('Publication confirmée par le serveur'))).not.toHaveLength(0)
+    expect(findButton(renderer, 'Publiée')?.props.disabled).toBe(true)
+
+    const publishedButton = findButton(renderer, 'Publiée')
+    await act(async () => { await publishedButton?.props.onPress() })
+    expect(state.createMobileAction).toHaveBeenCalledTimes(1)
+    expect(state.publishMobileAction).toHaveBeenCalledTimes(1)
+  })
+
+  it('links GPS only after a server draft exists and keeps the server result explicit', async () => {
+    state.getItem.mockResolvedValue(null)
+    const renderer = await renderScreen()
+    const linkBeforeSave = findButton(renderer, 'Relier une activité GPS')
+    expect(linkBeforeSave).toBeUndefined()
+
+    const save = findButton(renderer, 'Enregistrer le brouillon')
+    await act(async () => { await save?.props.onPress() })
+    for (let index = 0; index < 3; index += 1) {
+      const next = findButton(renderer, 'Continuer')
+      await act(async () => { await next?.props.onPress() })
+    }
+
+    const link = findButton(renderer, 'Relier une activité GPS')
+    await act(async () => { await link?.props.onPress() })
+    expect(state.createLinkedMission).toHaveBeenCalledWith('Action mobile', 'action-1')
+    expect(renderer.root.findAll((node) => textContent(node).includes('Suivi GPS lié'))).not.toHaveLength(0)
   })
 })
