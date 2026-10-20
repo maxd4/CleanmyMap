@@ -9,6 +9,7 @@ import {
   createSonarProducerResult,
   finalizeSonarAnalysis,
   prepareSonarPartialCoverage,
+  stageSonarCoverageReport,
   validateSonarCoverageReports,
 } from "./prepare-sonarqube-coverage.mjs";
 
@@ -403,4 +404,157 @@ test("final status keeps a successful scan distinct from failed preparation test
   assert.equal(finalizeSonarAnalysis({ manifest, scannerOutcome: "success", preparationOutcome: "failure" }), 1);
   assert.equal(finalizeSonarAnalysis({ manifest: { ...manifest, statuses: { ...manifest.statuses, sonarIntegrity: "PASS" } }, scannerOutcome: "success", preparationOutcome: "success" }), 0);
   assert.equal(finalizeSonarAnalysis({ manifest: { ...manifest, statuses: { ...manifest.statuses, sonarIntegrity: "FAIL" } }, scannerOutcome: "success", preparationOutcome: "success" }), 1);
+});
+
+test("rejects unknown scopes, empty LCOV and source traversal", () => {
+  const root = fixtureRoot();
+  assert.throws(() => stageSonarCoverageReport({ root, scope: "unknown", outputRoot: path.join(root, "artifacts") }), /Unknown SonarQube coverage scope/);
+  fs.writeFileSync(path.join(root, "apps/web/coverage/lcov.info"), "");
+  assert.throws(() => validateSonarCoverageReports({
+    root,
+    reports: [{ scope: "web", lcovPath: "apps/web/coverage/lcov.info", summaryPath: "apps/web/coverage/coverage-summary.json", sourceRoot: "apps/web" }],
+  }), /LCOV report is empty/);
+  fs.writeFileSync(path.join(root, "apps/web/coverage/lcov.info"), "SF:../../../../outside.ts\nDA:1,1\nend_of_record\n");
+  assert.throws(() => validateSonarCoverageReports({
+    root,
+    reports: [{ scope: "web", lcovPath: "apps/web/coverage/lcov.info", summaryPath: "apps/web/coverage/coverage-summary.json", sourceRoot: "apps/web" }],
+  }), /escapes the checked-out source root|does not resolve/);
+});
+
+test("accepts an absolute LCOV source and rejects invalid or incoherent counters", () => {
+  const root = fixtureRoot();
+  const source = path.join(root, "apps", "web", "src", "feature.ts");
+  const lcovPath = path.join(root, "apps", "web", "coverage", "lcov.info");
+  const summaryPath = path.join(root, "apps", "web", "coverage", "coverage-summary.json");
+  fs.writeFileSync(lcovPath, [
+    `SF:${source}`,
+    "DA:1,1",
+    "LF:1",
+    "LH:1",
+    "end_of_record",
+  ].join("\n"));
+  fs.writeFileSync(summaryPath, JSON.stringify({
+    total: { lines: { total: 1, covered: 1 }, branches: { total: 0, covered: 0 }, functions: { total: 0, covered: 0 } },
+    "src/feature.ts": { lines: { total: 1, covered: 1 }, branches: { total: 0, covered: 0 }, functions: { total: 0, covered: 0 } },
+  }));
+  assert.equal(validateSonarCoverageReports({
+    root,
+    reports: [{ scope: "web", lcovPath: "apps/web/coverage/lcov.info", summaryPath: "apps/web/coverage/coverage-summary.json", sourceRoot: "apps/web" }],
+    write: false,
+  })[0].files, 1);
+
+  for (const metric of ["DA:-1,1", "DA:1,-1", "BRDA:1,0,0,-1", "FNDA:-1,fn"]) {
+    fs.writeFileSync(lcovPath, `SF:src/feature.ts\n${metric}\nend_of_record\n`);
+    assert.throws(() => validateSonarCoverageReports({
+      root,
+      reports: [{ scope: "web", lcovPath: "apps/web/coverage/lcov.info", summaryPath: "apps/web/coverage/coverage-summary.json", sourceRoot: "apps/web" }],
+      write: false,
+    }), /Invalid LCOV/);
+  }
+  fs.writeFileSync(lcovPath, "SF:src/feature.ts\nDA:1,1\nend_of_record\n");
+  fs.writeFileSync(summaryPath, JSON.stringify({
+    total: { lines: { total: 2, covered: 2 }, branches: { total: 0, covered: 0 }, functions: { total: 0, covered: 0 } },
+    "src/feature.ts": { lines: { total: 1, covered: 1 }, branches: { total: 0, covered: 0 }, functions: { total: 0, covered: 0 } },
+  }));
+  assert.throws(() => validateSonarCoverageReports({
+    root,
+    reports: [{ scope: "web", lcovPath: "apps/web/coverage/lcov.info", summaryPath: "apps/web/coverage/coverage-summary.json", sourceRoot: "apps/web" }],
+    write: false,
+  }), /totals do not match/);
+});
+
+test("rejects mismatched LCOV sources and malformed Cobertura measurements", () => {
+  const root = fixtureRoot();
+  fs.writeFileSync(path.join(root, "apps/web/src/other.ts"), "export const other = 1;\n");
+  fs.writeFileSync(path.join(root, "apps/web/coverage/coverage-summary.json"), JSON.stringify({
+    total: { lines: { total: 1, covered: 1 }, branches: { total: 1, covered: 1 }, functions: { total: 1, covered: 1 } },
+    "src/other.ts": { lines: { total: 1, covered: 1 }, branches: { total: 1, covered: 1 }, functions: { total: 1, covered: 1 } },
+  }));
+  assert.throws(() => validateSonarCoverageReports({
+    root,
+    reports: [{ scope: "web", lcovPath: "apps/web/coverage/lcov.info", summaryPath: "apps/web/coverage/coverage-summary.json", sourceRoot: "apps/web" }],
+    write: false,
+  }), /sources do not match/);
+
+  const definition = { scope: "python", format: "cobertura", coveragePath: "maintenance/python/coverage.xml", sourceRoot: "maintenance/python" };
+  fs.mkdirSync(path.join(root, "maintenance/python/src"), { recursive: true });
+  fs.writeFileSync(path.join(root, "maintenance/python/src/module.py"), "value = 1\n");
+  const coveragePath = path.join(root, definition.coveragePath);
+  fs.mkdirSync(path.dirname(coveragePath), { recursive: true });
+  for (const xml of [
+    "<coverage><class>",
+    "<coverage><class filename=\"src/module.py\"><lines><line number=\"x\" hits=\"1\"/></lines></class>",
+    "<coverage><class filename=\"src/module.py\"><lines><line number=\"1\" hits=\"-1\"/></lines></class>",
+    "<coverage><class filename=\"src/module.py\"><lines><line number=\"1\" hits=\"1\"/>",
+  ]) {
+    fs.writeFileSync(coveragePath, xml);
+    assert.throws(() => validateSonarCoverageReports({ root, reports: [definition], write: false }), /coverage XML/);
+  }
+});
+
+test("keeps producer provenance and duplicate results fail-closed", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-sonar-provenance-"));
+  for (const definition of REPORT_DEFINITIONS) writeValidReport(root, definition.scope);
+  const resultsDir = writeProducerResults(root, { missingScopes: ["python"] });
+  const duplicate = JSON.parse(fs.readFileSync(path.join(resultsDir, "web.json"), "utf8"));
+  fs.writeFileSync(path.join(resultsDir, "web-copy.json"), JSON.stringify(duplicate));
+  const manifest = prepareSonarPartialCoverage({
+    root,
+    producerResultsDir: resultsDir,
+    analyzedSha: "sha-current",
+    runId: "run-1",
+    propertiesOut: path.join(root, "artifacts/sonar-project.properties"),
+    manifestOut: path.join(root, "artifacts/sonarqube-manifest.json"),
+  });
+  assert.equal(manifest.reports.find((report) => report.scope === "web").omission.kind, "DUPLICATE_RESULT");
+  assert.equal(manifest.reports.find((report) => report.scope === "python").omission.kind, "MISSING_RESULT");
+  assert.equal(manifest.statuses.sonarIntegrity, "FAIL");
+});
+
+test("reports producer PASS with validator NOT_RUN and producer FAIL without a false import", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-sonar-statuses-"));
+  for (const scope of ["web", "mobile", "node", "python"]) writeValidReport(root, scope);
+  const resultsDir = writeProducerResults(root);
+  const webPath = path.join(resultsDir, "web.json");
+  const web = JSON.parse(fs.readFileSync(webPath, "utf8"));
+  web.validator.status = "NOT_RUN";
+  web.validator.outcome = "skipped";
+  fs.writeFileSync(webPath, JSON.stringify(web));
+  const nodePath = path.join(resultsDir, "node.json");
+  const node = JSON.parse(fs.readFileSync(nodePath, "utf8"));
+  node.producer.status = "FAIL";
+  node.producer.outcome = "failure";
+  node.validator.status = "PASS";
+  fs.writeFileSync(nodePath, JSON.stringify(node));
+  const manifest = prepareSonarPartialCoverage({
+    root,
+    producerResultsDir: resultsDir,
+    analyzedSha: "sha-current",
+    runId: "run-1",
+    propertiesOut: path.join(root, "artifacts/sonar-project.properties"),
+    manifestOut: path.join(root, "artifacts/sonarqube-manifest.json"),
+  });
+  assert.equal(manifest.reports.find((report) => report.scope === "web").imported, false);
+  assert.equal(manifest.reports.find((report) => report.scope === "node").imported, false);
+  assert.equal(manifest.statuses.sonarTests, "FAIL");
+  assert.equal(finalizeSonarAnalysis({ manifest, scannerOutcome: "success", preparationOutcome: "success" }), 0);
+});
+
+test("refuses staging coverage outside the artifact output root", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-sonar-output-"));
+  const escapedName = `${path.basename(root)}-outside`;
+  const escaped = path.join(path.dirname(root), escapedName);
+  fs.mkdirSync(escaped, { recursive: true });
+  fs.writeFileSync(path.join(escaped, "lcov.info"), "SF:fixture.ts\nDA:1,1\nend_of_record\n");
+  fs.writeFileSync(path.join(escaped, "summary.json"), JSON.stringify({
+    total: { lines: { total: 1, covered: 1 }, branches: { total: 0, covered: 0 }, functions: { total: 0, covered: 0 } },
+    "fixture.ts": { lines: { total: 1, covered: 1 }, branches: { total: 0, covered: 0 }, functions: { total: 0, covered: 0 } },
+  }));
+  fs.writeFileSync(path.join(root, "fixture.ts"), "export const fixture = 1;\n");
+  assert.throws(() => stageSonarCoverageReport({
+    root,
+    scope: "custom",
+    outputRoot: path.join(root, "artifacts", "out"),
+    reports: [{ scope: "custom", lcovPath: `../${escapedName}/lcov.info`, summaryPath: `../${escapedName}/summary.json`, sourceRoot: "." }],
+  }), /escapes its artifact root/);
 });
