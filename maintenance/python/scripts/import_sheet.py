@@ -23,7 +23,7 @@ COLUMN_KEYWORDS = {
     'type': ['type', 'categorie', 'catégorie', 'type lieu'],
     'association': ['asso', 'association', 'nom association', 'structure'],
     'propre': ['propre', 'lieux propres', 'liste lieux propres', 'liste_lieux_propres', 'lieux_propres'],
-    'megots_qualite': ['qualite', 'etat', 'étât', 'condition'],
+    'megots_qualite': ['qualite', 'qualité', 'etat', 'état', 'condition'],
 }
 
 def find_col(columns, key):
@@ -35,7 +35,7 @@ def find_col(columns, key):
     return None
 
 def extract_coords(text):
-    if not text or pd.isna(text): return None, None
+    if text is None or (isinstance(text, str) and not text.strip()) or pd.isna(text): return None, None
     value = str(text)
     def read_number(start):
         cursor = start
@@ -86,7 +86,7 @@ def extract_coords(text):
     return None, None
 
 def geocode_location(text):
-    if not text or pd.isna(text) or text == "Lieu non spécifié": return None, None
+    if text is None or (isinstance(text, str) and not text.strip()) or pd.isna(text) or text == "Lieu non spécifié": return None, None
     query = str(text).strip()
     
     # Nettoyage basique (typos courantes)
@@ -116,7 +116,7 @@ def run():
         print(f"Erreur telechargement: {e}")
         return
 
-    raw_df.columns = raw_df.columns.str.strip()
+    raw_df.columns = raw_df.columns.map(lambda column: str(column).strip())
     cols = {k: find_col(raw_df.columns, k) for k in COLUMN_KEYWORDS}
     
     actions = []
