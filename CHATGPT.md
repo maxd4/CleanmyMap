@@ -1283,6 +1283,18 @@ résumé dans la source fonctionnelle
 → aucune copie miroir
 ```
 
+Certains documents administratifs, entrepreneuriaux et financiers de
+CleanMyMap sont conservés dans Google Drive. Leur index de référence se trouve
+dans [`documentation/product/README.md`](documentation/product/README.md).
+Lorsqu'une demande concerne le business plan SNEE, la comptabilité, les
+prévisionnels ou les subventions, consulter les documents Google Drive
+pertinents dans leur version actuelle lorsqu'ils sont accessibles, plutôt que
+de se fonder sur une ancienne conversation, une mémoire ou un chiffre
+recopié. Si Google Drive est inaccessible, signaler cette limite et demander
+un accès ou un export ; ne pas supposer connaître le contenu. Toute
+modification de la stratégie produit ou d'un contrat durable reste gouvernée
+par les sources canoniques du dépôt.
+
 Ne pas polluer un contrat transversal avec :
 
 - un chantier actif ;

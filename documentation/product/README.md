@@ -55,6 +55,37 @@ Repères transversaux à conserver dans toute la documentation produit :
 - [`ubiquitous-language.md`](./ubiquitous-language.md) — termes métier
   transversaux et ambiguïtés à éviter.
 
+### Documents entrepreneuriaux et financiers externes
+
+Les documents de travail SNEE / Pépite sont conservés dans le dossier Google
+Drive [`CMM-SNEE-PEPITE`](https://drive.google.com/drive/folders/1_J2yZOlHlpmsRKM3GBNV8YzxdR2B49bH).
+Ils sont évolutifs et peuvent contenir des hypothèses, des budgets et des
+éléments administratifs non définitifs. Ils ne constituent pas, à eux seuls,
+des preuves de dépenses, de recettes, de conventions ou de partenariats
+réalisés. Leur consultation dépend des permissions accordées dans Google
+Drive.
+
+Documents SNEE / Pépite :
+
+- [01 — Business plan CleanMyMap — SNEE](https://docs.google.com/document/d/1qdJ4QwXNLmTPhD7oCDBB99nt8dCsKFILXgioLpC5uWA/edit) — cadrage du projet et du business plan ;
+- [02 — Modèle économique et offres pilotes](https://docs.google.com/document/d/1M_wXjHaXkBhgWoP9WvoQbC3lXKq9tSVCsMk5o-dHFXY/edit) — hypothèses de modèle économique et offres à tester ;
+- [03 — Étude de marché et validation des besoins](https://docs.google.com/document/d/1addD06lpVTIW61ecVFGZDLNyBba8a8VFrh0NfWXQ6fQ/edit) — recherche de marché et validation des besoins ;
+- [04 — Prévisionnel financier et plan de financement](https://docs.google.com/document/d/1FYk5GDypDoxJudGrLrlVLYYy6hQghq66fD_1jOTv7gA/edit) — prévisions financières et financement envisagé ;
+- [05 — Journal comptable et justificatifs](https://docs.google.com/document/d/1M0b6IoPi2BwkMY6dqIMl70TulKQB3Vv4hb4hpnlYqfk/edit) — suivi comptable préparatoire et pièces associées ;
+- [06 — Feuille de route entrepreneuriale SNEE](https://docs.google.com/document/d/1eY-ib8GxGkvZcGjtknouORV5xj8uBIlXUR1LZ8t1AGI/edit) — suivi de l’accompagnement et prochaines étapes.
+
+Documents complémentaires Culture-ActionS, référencés séparément du dossier
+SNEE / Pépite :
+
+- [Budget prévisionnel Culture-ActionS](https://docs.google.com/document/d/1qRPhuPlW8lhWzOKWuze4p42jQxP4oWhpV-7mK_qBgOc/edit) ;
+- [Demande de subvention Culture-ActionS](https://docs.google.com/document/d/1dAUNhdI2-BlVqfhAVMP5v2MF1VdjTioWlzOxIWfStak/edit).
+
+Ces documents ne remplacent pas les sources canoniques du dépôt pour le
+comportement du produit, son architecture, sa stratégie produit durable ou
+son statut juridique. Une subvention demandée, un budget prévisionnel, un prix
+exploratoire ou une collaboration envisagée ne doivent pas être présentés
+comme acquis, réalisés, validés ou signés sans preuve indépendante.
+
 ## Hiérarchie de lecture
 
 Pour une fonctionnalité :
