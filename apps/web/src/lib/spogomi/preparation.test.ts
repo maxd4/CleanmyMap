@@ -364,6 +364,18 @@ describe("SPOGOMI preparation", () => {
     expect(preview.sourceSystem).toBe("cachan_ticketing");
   });
 
+  it("rejects an oversized file before allocating import parsing state", async () => {
+    const oversized = new File([new Uint8Array(5 * 1024 * 1024 + 1)], "too-large.csv", { type: "text/csv" });
+    await expect(previewRosterFile(oversized)).rejects.toThrow(/5 Mo maximum/i);
+  });
+
+  it("reports rows beyond the bounded import limit without silently activating them", async () => {
+    const rows = ["Nom;Groupe", ...Array.from({ length: 10_001 }, (_, index) => `Participant ${index + 1};Groupe A`)].join("\n");
+    const preview = await previewRosterFile(new File([rows], "too-many-rows.csv", { type: "text/csv" }));
+    expect(preview.rows).toHaveLength(10_000);
+    expect(preview.errors).toContainEqual(expect.objectContaining({ code: "row_excluded", rowNumber: 10_002 }));
+  });
+
   it("checks ZIP expansion metadata before inflation", () => {
     const bytes = zipSync({ "xl/workbook.xml": new TextEncoder().encode("<workbook />") });
     const centralSignature = [0x50, 0x4b, 0x01, 0x02];

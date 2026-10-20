@@ -332,4 +332,58 @@ describe("SPOGOMI preparation service previews", () => {
       actorClerkId: "organizer-1",
     })).rejects.toThrow(/composition a changé/i);
   });
+
+  it("requires an explicit division for mixed preparation and never crosses division assignments", async () => {
+    const event = spogomiPreparationEvent({
+      mode: "mixed",
+      team_size_config: { casual: { minMembers: 2, maxMembers: 4 } },
+      composition_revision: 3,
+    });
+    await expect(previewSpogomiTeams(readOnlySupabase({}), event)).rejects.toThrow(/division explicite/i);
+
+    const rpc = vi.fn().mockResolvedValue({ data: { revision: 4 }, error: null });
+    const supabase = readOnlySupabase({
+      spogomi_participants: {
+        data: [
+          { id: "casual-1", division_id: "division-casual", group_preference: null, source_row_number: 1, team_id: null, registration_status: "registered", source_system: "manual_roster", ticket_status: null, ticket_deleted: false },
+          { id: "world-1", division_id: "division-world", group_preference: null, source_row_number: 2, team_id: null, registration_status: "registered", source_system: "manual_roster", ticket_status: null, ticket_deleted: false },
+          { id: "world-2", division_id: "division-world", group_preference: null, source_row_number: 3, team_id: null, registration_status: "registered", source_system: "manual_roster", ticket_status: null, ticket_deleted: false },
+          { id: "world-3", division_id: "division-world", group_preference: null, source_row_number: 4, team_id: null, registration_status: "registered", source_system: "manual_roster", ticket_status: null, ticket_deleted: false },
+        ],
+        error: null,
+      },
+      spogomi_teams: {
+        data: [
+          { id: "casual-team", division_id: "division-casual", team_number: 1, composition_state: "draft" },
+          { id: "world-team", division_id: "division-world", team_number: 2, composition_state: "draft" },
+        ],
+        error: null,
+      },
+    }, rpc);
+    const division = { id: "division-world", division_type: "world_cup" as const };
+    const proposed = await previewSpogomiTeams(supabase, event, division);
+    expect(proposed.participantCount).toBe(3);
+    expect(proposed.formation.teams).toHaveLength(1);
+    expect(proposed.formation.teams[0]?.participantIds).toEqual(["world-1", "world-2", "world-3"]);
+    expect(proposed.preservedTeamIds).toEqual(["world-team"]);
+
+    await confirmSpogomiTeams({
+      supabase,
+      event,
+      division,
+      expectedRevision: proposed.expectedRevision,
+      proposalFingerprint: proposed.proposalFingerprint,
+      actorClerkId: "organizer-1",
+    });
+    expect(rpc).toHaveBeenCalledWith("spogomi_confirm_team_composition_for_division", expect.objectContaining({
+      p_event_id: "event-1",
+      p_division_id: "division-world",
+      p_expected_revision: 3,
+      p_assignments: [
+        { participantId: "world-1", teamNumber: 1, divisionId: "division-world" },
+        { participantId: "world-2", teamNumber: 1, divisionId: "division-world" },
+        { participantId: "world-3", teamNumber: 1, divisionId: "division-world" },
+      ],
+    }));
+  });
 });

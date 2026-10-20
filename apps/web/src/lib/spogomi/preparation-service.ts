@@ -364,6 +364,7 @@ export type SpogomiTeamCompositionPreview = {
 };
 
 export async function previewSpogomiTeams(supabase: SupabaseClient, event: EventRow, division?: SpogomiDivisionContext): Promise<SpogomiTeamCompositionPreview> {
+  if (event.mode === "mixed" && !division) throw new Error("Validation: une division explicite est requise pour composer un événement mixte.");
   if (event.state === "composition_locked") throw new Error("Validation: la composition est déjà verrouillée.");
   let participantsQuery = supabase.from("spogomi_participants")
     .select("id, group_preference, source_row_number, team_id, registration_status, source_system, ticket_status, ticket_deleted")
