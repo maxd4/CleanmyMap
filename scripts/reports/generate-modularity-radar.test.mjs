@@ -469,3 +469,129 @@ test("an immutable historical ref is never classified as current", () => {
   assert.equal(historical.status, "HISTORICAL_SNAPSHOT");
   assert.notEqual(historical.resolved, historical.head);
 });
+
+test("rejects a missing or unknown Git ref and accepts an explicit valid ref", () => {
+  assert.throws(() => resolveRadarRef(), /REF Git obligatoire/);
+  assert.throws(() => resolveRadarRef("ref-that-does-not-exist"));
+  const resolved = resolveRadarRef(currentRef === "a".repeat(40) ? "HEAD" : currentRef);
+  assert.match(resolved.resolved, /^[0-9a-f]{40}$/i);
+  assert.match(resolved.head, /^[0-9a-f]{40}$/i);
+});
+
+function writeQualityRun(root, auditedSha, runId, overrides = {}) {
+  const audits = ["dead-code", "duplication", "top-heavy", "complexity", "cycles"];
+  for (const audit of audits) {
+    const target = path.join(root, "artifacts", "quality-audits", auditedSha, runId, audit);
+    fs.mkdirSync(target, { recursive: true });
+    fs.writeFileSync(path.join(target, "manifest.json"), JSON.stringify({
+      schemaVersion: 1,
+      audit,
+      runId,
+      auditedHead: auditedSha,
+      originMain: auditedSha,
+      baselineStable: true,
+      worktreeClean: true,
+      reproducible: true,
+      resultClass: "REPRODUCIBLE",
+      ...(overrides.manifest?.[audit] ?? {}),
+    }));
+    fs.writeFileSync(path.join(target, "report.json"), JSON.stringify(overrides.report?.[audit] ?? auditResults()[audit]));
+  }
+}
+
+test("rejects absent, incorrect, unreadable and incomplete quality provenance", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-radar-invalid-proof-"));
+  const auditedSha = "d".repeat(40);
+  try {
+    assert.equal(loadQualityAuditArtifacts({ root, auditedSha, runId: "missing-run" }).measured, false);
+    writeQualityRun(root, auditedSha, "valid-run");
+    assert.equal(loadQualityAuditArtifacts({ root, auditedSha, runId: "wrong-run" }).measured, false);
+
+    fs.writeFileSync(path.join(root, "artifacts", "quality-audits", auditedSha, "valid-run", "cycles", "report.json"), "{broken");
+    assert.equal(loadQualityAuditArtifacts({ root, auditedSha, runId: "valid-run" }).measured, false);
+
+    writeQualityRun(root, auditedSha, "incomplete-run", {
+      report: { duplication: { results: null } },
+    });
+    const incomplete = loadQualityAuditArtifacts({ root, auditedSha, runId: "incomplete-run" });
+    assert.equal(incomplete.measured, false);
+
+    writeQualityRun(root, auditedSha, "non-reproducible-run", {
+      manifest: { complexity: { worktreeClean: false }, cycles: { auditedHead: "e".repeat(40) } },
+    });
+    assert.equal(loadQualityAuditArtifacts({ root, auditedSha, runId: "non-reproducible-run" }).measured, false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("uses only current complexity findings strictly above the policy target", () => {
+  const atTarget = "apps/web/src/at-target.ts";
+  const aboveTarget = "apps/web/src/above-target.ts";
+  const correlations = createCorrelationSignalsFromAuditResults(auditResults({
+    complexity: {
+      metrics: [
+        { metric: "complexity", path: "src/at-target.ts", category: "React/JSX", value: 20 },
+        { metric: "complexity", path: aboveTarget, category: "React/JSX", value: 21 },
+        { metric: "complexity", path: "src/data.ts", category: "data/config", value: 999 },
+      ],
+      result: { failures: [], reviews: [], improvements: [], stale: [] },
+    },
+  }));
+  assert.equal(correlations.complexityByFile.has(atTarget), false);
+  assert.equal(correlations.complexityByFile.has(aboveTarget), true);
+  assert.equal(correlations.complexityByFile.has("apps/web/src/data.ts"), false);
+});
+
+test("accepts qualified duplication identities only when they match the current result", () => {
+  const correlations = createCorrelationSignalsFromAuditResults(auditResults({
+    duplication: {
+      results: [{
+        scopeName: "runtime",
+        occurrences: [
+          { fingerprint: "keep", occurrenceA: { path: "src/keep.ts" }, occurrenceB: { path: "src/other.ts" } },
+          { fingerprint: "noise", occurrenceA: { path: "src/noise.ts" }, occurrenceB: { path: "src/other.ts" } },
+          { fingerprint: "current", occurrenceA: { path: "src/current.ts" }, occurrenceB: { path: "./src/other.ts" } },
+        ],
+      }],
+      justificationReport: { classifications: { KEEP_INTENTIONAL: ["runtime:keep"], NO_ACTION_NOISE: ["runtime:noise"] } },
+    },
+  }));
+  assert.equal(correlations.duplicationByFile.has("apps/web/src/keep.ts"), false);
+  assert.equal(correlations.duplicationByFile.has("apps/web/src/noise.ts"), false);
+  assert.equal(correlations.duplicationByFile.get("apps/web/src/current.ts"), 1);
+  assert.equal(correlations.duplicationByFile.get("apps/web/src/other.ts"), 1);
+});
+
+test("rejects inverted and duplicated canonical markers, summary tables and detail sheets", () => {
+  const valid = canonicalRegistry();
+  const cases = [
+    ["inverted markers", valid.replace("<!-- RADAR:HUMAN_DECISIONS:BEGIN -->", "<!-- RADAR:HUMAN_DECISIONS:SWAP -->").replace("<!-- RADAR:HUMAN_DECISIONS:END -->", "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->").replace("<!-- RADAR:HUMAN_DECISIONS:SWAP -->", "<!-- RADAR:HUMAN_DECISIONS:END -->")],
+    ["duplicate begin", valid.replace("<!-- RADAR:HUMAN_DECISIONS:BEGIN -->", "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->\n<!-- RADAR:HUMAN_DECISIONS:BEGIN -->")],
+    ["duplicate summary header", valid.replace("| PATH | ARCHITECTURE_DECISION | PRIORITY | DEPENDENCY_OR_BLOCKER | NEXT_TRIGGER |", "| PATH | ARCHITECTURE_DECISION | PRIORITY | DEPENDENCY_OR_BLOCKER | NEXT_TRIGGER |\n| PATH | ARCHITECTURE_DECISION | PRIORITY | DEPENDENCY_OR_BLOCKER | NEXT_TRIGGER |")],
+    ["missing detail sheet", valid.replace("#### `src/current.ts`", "#### `src/other.ts`")],
+    ["duplicate detail sheet", valid.replace("#### `src/current.ts`", "#### `src/current.ts`\n\n#### `src/current.ts`")],
+  ];
+  for (const [label, markdown] of cases) {
+    const view = { isFile: (file) => file === "documentation/architecture/modularity-decisions.md", readText: () => markdown };
+    assert.throws(() => readHumanDecisionsFromView(view, { requireRegistry: true }), /Registre canonique des décisions illisible/, label);
+  }
+});
+
+test("generates deterministic radar markdown from a temporary synthetic report", () => {
+  const candidate = row("apps/web/src/deterministic.ts");
+  const input = {
+    report: { rows: [candidate], radarRows: [candidate], preventive: [], architectural: [candidate], tests: [], generated: [] },
+    refInfo: { requested: "HEAD", resolved: currentRef, status: "CURRENT_AT_GENERATION" },
+    humanBlock: canonicalRegistry({ file: candidate.file }),
+    humanDecisions: parseHumanDecisions(extractHumanDecisions(canonicalRegistry({ file: candidate.file }))),
+    top: 1,
+    generatedAt: "2026-01-01T00:00:00.000Z",
+  };
+  const first = buildRadarMarkdown(input);
+  const second = buildRadarMarkdown(input);
+  assert.equal(first, second);
+  assert.match(first, /RADAR_REF=aaaaaaaa/);
+  assert.match(first, /COHESIVE_SINGLE_FILE/);
+  assert.doesNotMatch(first, /999 \/ 999/);
+});
