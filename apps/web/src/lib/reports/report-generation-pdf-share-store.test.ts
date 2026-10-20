@@ -70,6 +70,8 @@ describe("report-generation-pdf-share-store token contract", () => {
     expect(isReportPdfShareExpiryValid(REPORT_PDF_SHARE_MIN_EXPIRY_SECONDS - 1)).toBe(false);
     expect(isReportPdfShareExpiryValid(REPORT_PDF_SHARE_MAX_EXPIRY_SECONDS + 1)).toBe(false);
     expect(isReportPdfShareExpiryValid(3600.5)).toBe(false);
+    expect(isReportPdfShareExpiryValid(Number.NaN)).toBe(false);
+    expect(isReportPdfShareExpiryValid(Number.POSITIVE_INFINITY)).toBe(false);
   });
 
   it("reads only active shares by hashed bearer, expiry and owner scope", async () => {
@@ -109,6 +111,39 @@ describe("report-generation-pdf-share-store token contract", () => {
     expect(query.insert.mock.calls[0][0]).not.toHaveProperty("token");
   });
 
+  it("keeps an expired or revoked bearer unavailable and propagates lookup errors", async () => {
+    configureQuery({ data: null, error: null });
+    await expect(findActiveReportPdfShareByTokenHash({ tokenHash: "expired", now: "2026-10-20T00:00:00.000Z" })).resolves.toBeNull();
+
+    configureQuery({ data: null, error: new Error("share lookup failed") });
+    await expect(findActiveReportPdfShareByTokenHash({ tokenHash: "revoked" })).rejects.toThrow("share lookup failed");
+  });
+
+  it("does not report a share creation without a returned row", async () => {
+    const query = configureQuery({ data: null, error: null });
+    await expect(createReportPdfShare({
+      generationId: row.generation_id,
+      artifactId: row.artifact_id,
+      createdByClerkId: row.created_by_clerk_id,
+      theme: row.theme,
+      rendererVersion: row.renderer_version,
+      expiresAt: row.expires_at,
+      token: "a".repeat(43),
+    })).rejects.toThrow("n'a pas pu être enregistré");
+    expect(query.insert).toHaveBeenCalledTimes(1);
+
+    configureQuery({ data: null, error: new Error("share insert failed") });
+    await expect(createReportPdfShare({
+      generationId: row.generation_id,
+      artifactId: row.artifact_id,
+      createdByClerkId: row.created_by_clerk_id,
+      theme: row.theme,
+      rendererVersion: row.renderer_version,
+      expiresAt: row.expires_at,
+      token: "b".repeat(43),
+    })).rejects.toThrow("share insert failed");
+  });
+
   it("revoke is owner- and generation-scoped and cannot revive a revoked row", async () => {
     const query = configureQuery({ data: row, error: null });
 
@@ -126,6 +161,23 @@ describe("report-generation-pdf-share-store token contract", () => {
     expect(query.is).toHaveBeenCalledWith("revoked_at", null);
   });
 
+  it("distinguishes an already absent share from a database failure during revocation", async () => {
+    const query = configureQuery({ data: null, error: null });
+    await expect(revokeReportPdfShare({
+      shareId: row.id,
+      generationId: row.generation_id,
+      createdByClerkId: row.created_by_clerk_id,
+    })).resolves.toBeNull();
+    expect(query.is).toHaveBeenCalledWith("revoked_at", null);
+
+    configureQuery({ data: null, error: new Error("revoke failed") });
+    await expect(revokeReportPdfShare({
+      shareId: row.id,
+      generationId: row.generation_id,
+      createdByClerkId: row.created_by_clerk_id,
+    })).rejects.toThrow("revoke failed");
+  });
+
   it("keeps owner listing scoped and propagates database errors", async () => {
     const query = configureQuery({ data: [row], error: null });
     const shares = await listReportPdfSharesForOwner({ generationId: row.generation_id, createdByClerkId: row.created_by_clerk_id });
@@ -135,5 +187,14 @@ describe("report-generation-pdf-share-store token contract", () => {
 
     configureQuery({ data: null, error: new Error("database unavailable") });
     await expect(listReportPdfSharesForOwner({ generationId: row.generation_id, createdByClerkId: row.created_by_clerk_id })).rejects.toThrow("database unavailable");
+  });
+
+  it("returns an empty owner list and orders it newest first", async () => {
+    const query = configureQuery({ data: [], error: null });
+    await expect(listReportPdfSharesForOwner({ generationId: row.generation_id, createdByClerkId: row.created_by_clerk_id })).resolves.toEqual([]);
+    expect(query.order).toHaveBeenCalledWith("created_at", { ascending: false });
+
+    configureQuery({ data: null, error: null });
+    await expect(listReportPdfSharesForOwner({ generationId: row.generation_id, createdByClerkId: row.created_by_clerk_id })).resolves.toEqual([]);
   });
 });

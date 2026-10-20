@@ -614,3 +614,125 @@ describe("report generation history persistence failures", () => {
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow("read failed");
   });
 });
+
+describe("report generation history store response boundaries", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("maps publication statuses when available and keeps history private on an optional projection failure", async () => {
+    const historyQuery = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn().mockResolvedValue({ data: [dbRow], error: null, count: 1 }),
+    };
+    for (const method of ["select", "eq", "order"]) historyQuery[method as keyof typeof historyQuery] = vi.fn().mockReturnValue(historyQuery) as never;
+    const statusQuery = { select: vi.fn(), in: vi.fn() };
+    statusQuery.select.mockReturnValue(statusQuery);
+    statusQuery.in.mockResolvedValue({
+      data: [{ generation_id: dbRow.id, published_at: "2026-08-28T10:00:00.000Z", revoked_at: null }],
+      error: null,
+    });
+    const from = vi.fn()
+      .mockReturnValueOnce(historyQuery)
+      .mockReturnValueOnce(statusQuery)
+      .mockReturnValueOnce(historyQuery)
+      .mockReturnValueOnce(statusQuery);
+    getSupabaseAdminClientMock.mockReturnValue({ from });
+
+    await expect(listReportGenerationHistoryPage("user-admin", { pageSize: 1 })).resolves.toMatchObject({
+      rows: [{ id: dbRow.id, publicationStatus: "published", publicationPublishedAt: "2026-08-28T10:00:00.000Z" }],
+    });
+
+    statusQuery.in.mockRejectedValueOnce(new Error("optional projection unavailable"));
+    await expect(listReportGenerationHistoryPage("user-admin", { pageSize: 1 })).resolves.toMatchObject({
+      rows: [{ id: dbRow.id, publicationStatus: "private" }],
+    });
+  });
+
+  it("preserves DB errors and empty pages instead of converting them to private rows", async () => {
+    const error = new Error("history query failed");
+    const errorQuery = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), range: vi.fn().mockResolvedValue({ data: null, error, count: null }) };
+    for (const method of ["select", "eq", "order"]) errorQuery[method as keyof typeof errorQuery] = vi.fn().mockReturnValue(errorQuery) as never;
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn().mockReturnValue(errorQuery) });
+    await expect(listReportGenerationHistoryPage("user-admin")).rejects.toThrow("history query failed");
+
+    const emptyQuery = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), range: vi.fn().mockResolvedValue({ data: [], error: null, count: 0 }) };
+    for (const method of ["select", "eq", "order"]) emptyQuery[method as keyof typeof emptyQuery] = vi.fn().mockReturnValue(emptyQuery) as never;
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn().mockReturnValue(emptyQuery) });
+    await expect(listReportGenerationHistoryPage("user-admin", { page: 0, pageSize: Number.POSITIVE_INFINITY })).resolves.toMatchObject({
+      rows: [], page: 1, pageSize: 12, total: 0, hasNextPage: false, hasPreviousPage: false,
+    });
+  });
+
+  it("distinguishes an absent snapshot from an incompatible stored payload and normalizes invalid modules", async () => {
+    const maybeSingle = vi.fn()
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: { ...historicalRow, snapshot: { title: "not a current payload" } }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          ...historicalRow,
+          modules: { rawData: true },
+          theme: null,
+          snapshot: {
+            title: "Legacy",
+            rubrique: "reporting",
+            periode: "six_months",
+            organizationType: "Global",
+            data: { generatedAt: payload.data.generatedAt, summary: ["Legacy"] },
+          },
+        },
+        error: null,
+      });
+    const ownerEq = vi.fn(() => ({ maybeSingle }));
+    const idEq = vi.fn(() => ({ eq: ownerEq }));
+    const select = vi.fn(() => ({ eq: idEq }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
+
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).resolves.toBeNull();
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow("invalid or incompatible");
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).resolves.toMatchObject({ modules: null, theme: null });
+  });
+
+  it("rejects impossible instants and a forged generation lineage", async () => {
+    const maybeSingle = vi.fn()
+      .mockResolvedValueOnce({ data: { ...historicalRow, generated_at: "2026-08-27T25:30:00Z" }, error: null })
+      .mockResolvedValueOnce({ data: { ...historicalRow, generated_at: "2026-02-29T10:30:00Z" }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          ...historicalRow,
+          id: "22222222-2222-4222-8222-222222222222",
+        },
+        error: null,
+      });
+    const ownerEq = vi.fn(() => ({ maybeSingle }));
+    const idEq = vi.fn(() => ({ eq: ownerEq }));
+    const select = vi.fn(() => ({ eq: idEq }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
+
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow("invalid or incompatible");
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow("invalid or incompatible");
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow("invalid or incompatible");
+  });
+
+  it("propagates an insert error after validating the immutable snapshot", async () => {
+    const single = vi.fn().mockResolvedValue({ data: null, error: new Error("history insert failed") });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ insert })) });
+
+    await expect(persistReportGeneration({
+      createdByClerkId: "user-admin",
+      input: {
+        payload,
+        scopeKind: "global",
+        scopeValue: "",
+        scopeLabel: "Paris",
+        detailLevel: "default",
+        modules: dbRow.modules,
+      },
+    })).rejects.toThrow("history insert failed");
+    expect(insert).toHaveBeenCalledTimes(1);
+  });
+});
