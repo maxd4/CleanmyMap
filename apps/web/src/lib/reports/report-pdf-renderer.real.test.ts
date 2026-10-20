@@ -1,18 +1,23 @@
+import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 
+const browserPath = vi.hoisted(() => process.platform === "win32"
+  ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+  : "/usr/bin/chromium");
+
 vi.mock("@sparticuz/chromium", () => ({
   default: {
     args: [],
-    executablePath: async () => process.env.CMM_CHROME_PATH,
+    executablePath: async () => browserPath,
   },
 }));
 
 import { renderOfficialReportPdf } from "./report-pdf-renderer";
 
-const runRealPdfTest = process.env.CMM_RUN_REAL_PDF === "1" ? it : it.skip;
+const runRealPdfTest = process.env.CI === "reports-05-real" && existsSync(browserPath) ? it : it.skip;
 
 const payload: PdfReportPayload = {
   title: "Rapport A4 réel — Corpus déterministe",
