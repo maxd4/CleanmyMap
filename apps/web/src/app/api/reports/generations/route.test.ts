@@ -28,6 +28,9 @@ const MultiActionReportEmptyErrorMock = vi.hoisted(() =>
 const MultiActionReportSourceUnavailableErrorMock = vi.hoisted(() =>
   class MultiActionReportSourceUnavailableError extends Error {},
 );
+const ReportAdvancedFilterSourceUnavailableErrorMock = vi.hoisted(() =>
+  class ReportAdvancedFilterSourceUnavailableError extends Error {},
+);
 
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
@@ -62,6 +65,13 @@ vi.mock("@/lib/reports/multi-action-report", () => ({
   MultiActionReportScopeUnavailableError: MultiActionReportScopeUnavailableErrorMock,
   MultiActionReportEmptyError: MultiActionReportEmptyErrorMock,
   MultiActionReportSourceUnavailableError: MultiActionReportSourceUnavailableErrorMock,
+}));
+
+vi.mock("@/lib/reports/report-advanced-filters", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/reports/report-advanced-filters")>(
+    "@/lib/reports/report-advanced-filters",
+  )),
+  ReportAdvancedFilterSourceUnavailableError: ReportAdvancedFilterSourceUnavailableErrorMock,
 }));
 
 vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
@@ -240,6 +250,114 @@ describe("POST /api/reports/generations", () => {
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
   });
 
+  it("refuses a report when the photographic filter source is unavailable", async () => {
+    buildMultiActionReportGenerationInputMock.mockRejectedValueOnce(
+      new ReportAdvancedFilterSourceUnavailableErrorMock(),
+    );
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "La preuve photographique canonique est temporairement indisponible.",
+    });
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+      outcome: "error",
+      details: expect.objectContaining({
+        stage: "source",
+        code: "action_media_filter_source_unavailable",
+      }),
+    }));
+  });
+
+  it("maps an unexpected single-action source failure without consuming quota", async () => {
+    resolveSingleActionReportContractMock.mockRejectedValueOnce(new Error("source unavailable"));
+
+    const response = await POST(new Request("http://localhost/api/reports/generations", {
+      method: "POST",
+      body: JSON.stringify({
+        input: { type: "single_action", actionId: "11111111-1111-4111-8111-111111111111" },
+        detailLevel: "default",
+        modules: validPayload.modules,
+      }),
+    }));
+
+    expect(response.status).toBe(503);
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+      details: expect.objectContaining({ stage: "source", code: "action_resolution_failed" }),
+    }));
+  });
+
+  it("maps an unexpected multi-action source failure without consuming quota", async () => {
+    buildMultiActionReportGenerationInputMock.mockRejectedValueOnce(new Error("source unavailable"));
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Le rapport multi-actions est temporairement indisponible.",
+    });
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+      details: expect.objectContaining({ stage: "source", code: "multi_action_resolution_failed" }),
+    }));
+  });
+
+  it("rejects a legacy payload without resolving or reserving it", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify({ payload: validSnapshotPayload }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "A typed report generation input is required.",
+    });
+    expect(getReportExportAvailabilityMock).not.toHaveBeenCalled();
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+      details: expect.objectContaining({ stage: "validation", code: "legacy_payload_rejected" }),
+    }));
+  });
+
+  it("returns an explicit 503 when the final quota reservation fails", async () => {
+    reserveReportExportSlotMock.mockRejectedValueOnce(new Error("quota rpc unavailable"));
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Quota d'export temporairement indisponible.",
+    });
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+    expect(releaseReportExportSlotMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+      details: expect.objectContaining({ stage: "quota", code: "quota_unavailable" }),
+    }));
+  });
+
   it("returns 429 before reading a costly snapshot when rate limited", async () => {
     mockRejectedRateLimit(5);
 
@@ -403,6 +521,54 @@ describe("POST /api/reports/generations", () => {
       userId: "user-1",
       quotaDay: "2026-08-27",
     });
+  });
+
+  it("keeps the persistence failure response when quota release and its audit both fail", async () => {
+    persistReportGenerationMock.mockRejectedValueOnce(new Error("raw-persistence-error"));
+    releaseReportExportSlotMock.mockRejectedValueOnce(new Error("release unavailable"));
+    appendAdminOperationAuditMock.mockRejectedValueOnce(new Error("audit unavailable"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "persistence_failed",
+      persisted: false,
+    });
+    expect(releaseReportExportSlotMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("preserves an uncertain result even when the uncertainty audit fails", async () => {
+    persistReportGenerationMock.mockRejectedValueOnce(new Error("response lost"));
+    resolveDirectReportGenerationPersistenceMock.mockResolvedValueOnce({ kind: "uncertain" });
+    appendAdminOperationAuditMock.mockRejectedValueOnce(new Error("audit unavailable"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "persistence_uncertain",
+      persisted: "unknown",
+      generationId: expect.any(String),
+    });
+    expect(releaseReportExportSlotMock).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it("reconciles an apparent persistence failure after direct insertion without reinserting or releasing quota", async () => {
@@ -711,5 +877,20 @@ describe("GET /api/reports/generations", () => {
     const response = await GET(new Request("http://localhost/api/reports/generations?page=0"));
     expect(response.status).toBe(400);
     expect(listReportGenerationHistoryPageMock).not.toHaveBeenCalled();
+  });
+
+  it("maps a history store failure without touching quota", async () => {
+    listReportGenerationHistoryPageMock.mockRejectedValueOnce(new Error("history unavailable"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await GET(new Request("http://localhost/api/reports/generations"));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Historique temporairement indisponible.",
+    });
+    expect(getReportExportAvailabilityMock).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 });

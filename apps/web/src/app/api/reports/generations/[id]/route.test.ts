@@ -87,4 +87,18 @@ describe("GET /api/reports/generations/[id]", () => {
     });
     expect(invalidSnapshotResponse.status).toBe(422);
   });
+
+  it("does not disclose another user's generation and maps storage failures", async () => {
+    getSnapshotMock.mockResolvedValueOnce(null);
+    const missingResponse = await GET(request(), { params: Promise.resolve({ id }) });
+    expect(missingResponse.status).toBe(404);
+    expect(getSnapshotMock).toHaveBeenCalledWith(id, "user-1");
+
+    getSnapshotMock.mockRejectedValueOnce(new Error("history unavailable"));
+    const unavailableResponse = await GET(request(), { params: Promise.resolve({ id }) });
+    expect(unavailableResponse.status).toBe(503);
+    await expect(unavailableResponse.json()).resolves.toEqual({
+      error: "Impossible de charger le rapport historique.",
+    });
+  });
 });

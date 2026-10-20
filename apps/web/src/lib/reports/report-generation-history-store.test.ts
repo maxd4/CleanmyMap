@@ -518,3 +518,99 @@ describe("report generation history store", () => {
     );
   });
 });
+
+describe("report generation history persistence failures", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("does not treat an absent direct insert response as a successful generation", async () => {
+    const single = vi.fn().mockResolvedValue({ data: null, error: null });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ insert })) });
+
+    await expect(persistReportGeneration({
+      createdByClerkId: "user-admin",
+      input: {
+        payload,
+        scopeKind: "global",
+        scopeValue: "",
+        scopeLabel: "Paris",
+        detailLevel: "default",
+        modules: dbRow.modules,
+      },
+    })).rejects.toThrow("history row was not returned");
+  });
+
+  it("does not treat an absent derived insert response as a successful generation", async () => {
+    const single = vi.fn().mockResolvedValue({ data: null, error: null });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ insert })) });
+    const source = {
+      id: historicalId,
+      filename: historicalRow.filename,
+      generatedAt: historicalRow.generated_at,
+      scopeKind: "global" as const,
+      scopeValue: "",
+      scopeLabel: "Paris",
+      detailLevel: "default" as const,
+      snapshot: payload,
+    };
+
+    await expect(persistDerivedReportGeneration({
+      createdByClerkId: "user-admin",
+      source,
+      generationId: "22222222-2222-4222-8222-222222222222",
+      generatedAt: "2026-10-17T12:05:00.000Z",
+    })).rejects.toThrow("Derived report generation row was not returned");
+  });
+
+  it("rejects an inserted direct row whose timestamp is invalid", async () => {
+    const single = vi.fn().mockResolvedValue({
+      data: { ...dbRow, generated_at: "not-an-instant" },
+      error: null,
+    });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ insert })) });
+
+    await expect(persistReportGeneration({
+      createdByClerkId: "user-admin",
+      input: {
+        payload,
+        scopeKind: "global",
+        scopeValue: "",
+        scopeLabel: "Paris",
+        detailLevel: "default",
+        modules: dbRow.modules,
+      },
+    })).rejects.toThrow("invalid generated_at");
+  });
+
+  it("rejects a current input whose stored metadata does not match the request", async () => {
+    await expect(persistReportGeneration({
+      createdByClerkId: "user-admin",
+      input: {
+        payload,
+        scopeKind: "account",
+        scopeValue: "account-1",
+        scopeLabel: "Compte",
+        detailLevel: "default",
+        modules: dbRow.modules,
+      },
+    })).rejects.toThrow("invalid or incompatible");
+    expect(getSupabaseAdminClientMock).not.toHaveBeenCalled();
+  });
+
+  it("maps a snapshot read error to the caller instead of inventing a missing row", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: new Error("read failed") });
+    const ownerEq = vi.fn(() => ({ maybeSingle }));
+    const idEq = vi.fn(() => ({ eq: ownerEq }));
+    const select = vi.fn(() => ({ eq: idEq }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
+
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow("read failed");
+  });
+});

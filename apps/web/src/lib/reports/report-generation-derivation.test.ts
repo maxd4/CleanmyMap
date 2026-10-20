@@ -82,4 +82,17 @@ describe("report generation derivation", () => {
       ReportGenerationDerivationUnavailableError,
     );
   });
+
+  it.each([
+    ["an invalid target id", "not-a-uuid", targetGenerationId],
+    ["an invalid source id", targetGenerationId, "not-a-uuid"],
+    ["the same source and target id", sourceGenerationId, sourceGenerationId],
+  ])("refuses derivation with %s", (_label, generationId, sourceId) => {
+    expect(() => buildDerivedReportGenerationPayload({
+      source: currentPayload(),
+      generationId,
+      sourceGenerationId: sourceId,
+      generatedAt,
+    })).toThrow(ReportGenerationDerivationUnavailableError);
+  });
 });

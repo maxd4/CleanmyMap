@@ -220,15 +220,24 @@ export async function POST(
       );
     } else {
       await releaseReportExportSlot({ userId: access.userId, quotaDay: reservation.quotaDay }).catch(() => undefined);
-      await appendAdminOperationAudit({
-        operationId,
-        at: new Date().toISOString(),
-        actorUserId: access.userId,
-        operationType: "admin_operation",
-        outcome: "error",
-        targetId: source.id,
-        details: { operation: "derive_report_generation", stage: "persistence", code: "persistence_failed" },
-      });
+      try {
+        await appendAdminOperationAudit({
+          operationId,
+          at: new Date().toISOString(),
+          actorUserId: access.userId,
+          operationType: "admin_operation",
+          outcome: "error",
+          targetId: source.id,
+          details: { operation: "derive_report_generation", stage: "persistence", code: "persistence_failed" },
+        });
+      } catch (auditError) {
+        console.error("Report derived generation persistence failure audit failed", {
+          operationId,
+          generationId,
+          sourceGenerationId: source.id,
+          error: auditError instanceof Error ? auditError.message : "unknown_error",
+        });
+      }
       return NextResponse.json({ error: "Impossible d'enregistrer la nouvelle version du rapport." }, { status: 503 });
     }
   }

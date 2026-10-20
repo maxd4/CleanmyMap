@@ -137,6 +137,50 @@ describe("report generation payload contract", () => {
     })).toBe(false);
   });
 
+  it("rejects current metadata whose timestamp is not identical to report data", () => {
+    const current = {
+      ...payload,
+      snapshotSchemaVersion: 2 as const,
+      snapshotMetadata: {
+        snapshotSchemaVersion: 2 as const,
+        templateVersion: "reports-template-v1",
+        rendererVersion: "official-report-html-v1",
+        generatedAt: "2026-08-27T11:30:00.000Z",
+        period: { id: "six_months" as const, from: "2026-02-27", to: "2026-08-27", timeZone: "UTC" as const },
+        scope: { kind: "global" as const, value: "", label: "Global" },
+        detailLevel: "default" as const,
+        modules: { dataAndCartography: true, transparencyAndMethods: true, rawData: false, detailedFiles: true },
+        provenance: { type: "multi_action" as const, source: "public.actions" as const, resolvedAt: payload.data.generatedAt, actionCount: 1 },
+        methodology: { proxyVersion: "impact-proxy-v1", qualityRulesVersion: "quality-v1" },
+        dataAvailability: { truncated: false, availableSources: ["actions"], failedSources: [], communityEvents: "available" as const },
+      },
+    };
+
+    expect(isReportGenerationPayload(current)).toBe(false);
+    expect(() => parseReportGenerationPayload(current)).toThrow(InvalidReportGenerationSnapshotError);
+  });
+
+  it("rejects metadata attached to a legacy payload", () => {
+    const legacyWithMetadata = {
+      ...payload,
+      snapshotMetadata: {
+        snapshotSchemaVersion: 2 as const,
+        templateVersion: "reports-template-v1",
+        rendererVersion: "official-report-html-v1",
+        generatedAt: payload.data.generatedAt,
+        period: { id: "six_months" as const, from: "2026-02-27", to: "2026-08-27", timeZone: "UTC" as const },
+        scope: { kind: "global" as const, value: "", label: "Global" },
+        detailLevel: "default" as const,
+        modules: { dataAndCartography: true, transparencyAndMethods: true, rawData: false, detailedFiles: true },
+        provenance: { type: "multi_action" as const, source: "public.actions" as const, resolvedAt: payload.data.generatedAt, actionCount: 1 },
+        methodology: { proxyVersion: "impact-proxy-v1", qualityRulesVersion: "quality-v1" },
+        dataAvailability: { truncated: false, availableSources: ["actions"], failedSources: [], communityEvents: "available" as const },
+      },
+    };
+
+    expect(isReportGenerationPayload(legacyWithMetadata)).toBe(false);
+  });
+
   it("keeps old v2 rows readable but refuses them as new-generation inputs", () => {
     const oldV2 = {
       ...payload,
