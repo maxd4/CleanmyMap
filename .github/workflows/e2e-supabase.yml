@@ -37,7 +37,9 @@ on:
       - "apps/web/supabase/tests/spogomi-mixed-division-smoke.sql"
       - "apps/web/supabase/tests/spogomi-transactional-contract.sql"
       - "apps/web/supabase/tests/action-role-attestation-correction.sql"
+      - "apps/web/supabase/tests/reports-persistent-contract.sql"
       - "e2e/action-role-attestation-concurrency.mjs"
+      - "e2e/reports-postgres-concurrency.mjs"
       - "apps/web/supabase/seed.sql"
       - "playwright.config.ts"
       - "package.json"
@@ -204,6 +206,14 @@ jobs:
 
           echo "Running SECURITY-02 PostgreSQL two-session contract"
           node e2e/security-02-two-sessions.mjs 2>&1 | tee -a artifacts/ci/supabase-preflight.log
+
+      - name: Execute Reports persistent PostgreSQL contract
+        run: |
+          set -o pipefail
+          contract_log="artifacts/ci/reports-persistent-contract.log"
+          ./node_modules/.bin/supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/reports-persistent-contract.sql)" 2>&1 | tee "$contract_log"
+          grep -q "EXECUTED_DB_CONTRACT: Reports persistence, RLS, snapshots, quota, PDF artifacts, shares, publications and action_media contract passed" "$contract_log"
+          node e2e/reports-postgres-concurrency.mjs 2>&1 | tee -a "$contract_log"
 
       - name: Synchronize PostgREST schema after PostgreSQL proof
         run: |
