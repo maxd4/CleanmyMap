@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -73,6 +75,22 @@ export function useCreatorInbox({
   const [feedbackMetrics, setFeedbackMetrics] = useState(initialFeedbackMetrics);
   const [partnerReason, setPartnerReason] = useState<Record<string, string>>({});
   const [actionReasons, setActionReasons] = useState<Record<string, string>>({});
+  const feedbackTimersRef = useRef<Set<number>>(new Set());
+
+  useEffect(() => () => {
+    for (const timer of feedbackTimersRef.current) {
+      window.clearTimeout(timer);
+    }
+    feedbackTimersRef.current.clear();
+  }, []);
+
+  function scheduleFeedbackTimer(callback: () => void, delay: number) {
+    const timer = window.setTimeout(() => {
+      feedbackTimersRef.current.delete(timer);
+      callback();
+    }, delay);
+    feedbackTimersRef.current.add(timer);
+  }
 
   const pagination = useCreatorInboxPagination({
     initialItems,
@@ -143,7 +161,7 @@ export function useCreatorInbox({
       }
       if (page.feedbackMetrics) setFeedbackMetrics(page.feedbackMetrics);
       setSuccessMessage(copy.messages.refreshSuccess);
-      window.setTimeout(() => setSuccessMessage(null), 1800);
+      scheduleFeedbackTimer(() => setSuccessMessage(null), 1800);
     } catch (error) {
       if (pagination.cancelReplacement(replacementGeneration)) {
         setErrorMessage(resolveInboxMessage(error, copy.messages.refreshError));
@@ -174,7 +192,7 @@ export function useCreatorInbox({
       const payload = await applyCreatorInboxAction({ ...params, reason });
       setItems((current) => refreshList(current, payload.item ?? null, payload.deletedId));
       setSuccessMessage(copy.messages.actionSuccess);
-      window.setTimeout(() => setSuccessMessage(null), 1800);
+      scheduleFeedbackTimer(() => setSuccessMessage(null), 1800);
     } catch (error) {
       setErrorMessage(resolveInboxMessage(error, copy.messages.actionError));
     } finally {
@@ -218,7 +236,7 @@ export function useCreatorInbox({
       });
       setItems((current) => refreshList(current, payload.item ?? null));
       setSuccessMessage(copy.messages.qualificationSuccess);
-      window.setTimeout(() => setSuccessMessage(null), 1800);
+      scheduleFeedbackTimer(() => setSuccessMessage(null), 1800);
     } catch (error) {
       setErrorMessage(resolveInboxMessage(error, copy.messages.qualificationError));
     } finally {
@@ -277,7 +295,7 @@ export function useCreatorInbox({
       setSuccessMessage(
         inboxLocale === "fr" ? "Suivi de réalisation enregistré." : "Product follow-up saved.",
       );
-      window.setTimeout(() => setSuccessMessage(null), 1800);
+      scheduleFeedbackTimer(() => setSuccessMessage(null), 1800);
     } catch (error) {
       setErrorMessage(resolveInboxMessage(error, copy.messages.actionError));
     } finally {
@@ -395,7 +413,7 @@ export function useCreatorInbox({
     try {
       await navigator.clipboard.writeText(summarizeCreatorInboxItem(item, inboxLocale));
       setCopiedKey(item.id);
-      window.setTimeout(() => setCopiedKey(null), 1500);
+      scheduleFeedbackTimer(() => setCopiedKey(null), 1500);
     } catch {
       setErrorMessage(copy.messages.clipboardError);
     }
@@ -437,7 +455,7 @@ export function useCreatorInbox({
           ? "Décision enregistrée, mais une notification a échoué."
           : copy.messages.actionSuccess,
       );
-      window.setTimeout(() => setSuccessMessage(null), 2400);
+      scheduleFeedbackTimer(() => setSuccessMessage(null), 2400);
     } catch (error) {
       setErrorMessage(resolveInboxMessage(error, copy.messages.actionError));
     } finally {
