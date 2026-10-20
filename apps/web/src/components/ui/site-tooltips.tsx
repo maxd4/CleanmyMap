@@ -347,9 +347,7 @@ export function SiteTooltips() {
       }
 
       clearTimer();
-      if (activeTooltip) {
-        hideTooltip();
-      }
+      hideTooltip();
     };
 
     const onKeyDown = (event: KeyboardEvent) => {

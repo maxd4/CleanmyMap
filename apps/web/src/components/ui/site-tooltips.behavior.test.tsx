@@ -55,10 +55,15 @@ function tooltip() {
 describe("SiteTooltips DOM behavior", () => {
   let root: Root | null = null;
   let host: HTMLDivElement | null = null;
+  let originalInnerWidth = 0;
+  let originalInnerHeight = 0;
+  const fixtureNodes: HTMLElement[] = [];
   const rects = new WeakMap<Element, DOMRect>();
 
   beforeEach(() => {
     vi.useFakeTimers();
+    originalInnerWidth = window.innerWidth;
+    originalInnerHeight = window.innerHeight;
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
       if (this.id === TOOLTIP_ID) {
         return rect({ width: 120, height: 40 });
@@ -80,6 +85,10 @@ describe("SiteTooltips DOM behavior", () => {
     vi.restoreAllMocks();
     vi.clearAllTimers();
     vi.useRealTimers();
+    fixtureNodes.splice(0).forEach((node) => node.remove());
+    expect(document.querySelectorAll("[data-site-tooltips-test-fixture]")).toHaveLength(0);
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: originalInnerWidth });
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: originalInnerHeight });
   });
 
   function mount() {
@@ -93,7 +102,7 @@ describe("SiteTooltips DOM behavior", () => {
     content: { title?: string; data?: string; placement?: string; describedBy?: string },
     triggerRect: RectValues = { width: 40, height: 20, left: 100, top: 100 },
   ) {
-    const trigger = document.createElement("button");
+    const trigger = registerFixture(document.createElement("button"));
     if (content.title !== undefined) trigger.title = content.title;
     if (content.data !== undefined) trigger.dataset.tooltipContent = content.data;
     if (content.placement !== undefined) trigger.dataset.tooltipPlacement = content.placement;
@@ -101,6 +110,12 @@ describe("SiteTooltips DOM behavior", () => {
     rects.set(trigger, rect(triggerRect));
     document.body.append(trigger);
     return trigger;
+  }
+
+  function registerFixture<T extends HTMLElement>(node: T): T {
+    node.dataset.siteTooltipsTestFixture = "true";
+    fixtureNodes.push(node);
+    return node;
   }
 
   async function advance(ms = SHOW_DELAY_MS) {
@@ -143,7 +158,7 @@ describe("SiteTooltips DOM behavior", () => {
   it("ignores empty content and cancels a pending hover when leaving or moving within one trigger", async () => {
     mount();
     const empty = addTrigger({ title: "   " });
-    const absent = document.createElement("button");
+    const absent = registerFixture(document.createElement("button"));
     document.body.append(absent);
     firePointer(absent, "pointerover");
     await advance();
@@ -155,7 +170,7 @@ describe("SiteTooltips DOM behavior", () => {
     expect(empty.getAttribute("title")).toBe("   ");
 
     const parent = addTrigger({ title: "Parent tooltip" });
-    const child = document.createElement("span");
+    const child = registerFixture(document.createElement("span"));
     parent.append(child);
     firePointer(parent, "pointerover");
     firePointer(parent, "pointerout");
@@ -187,7 +202,7 @@ describe("SiteTooltips DOM behavior", () => {
   it("handles touch cancellation, touch release, outside pointer dismissal, and Escape", async () => {
     mount();
     const trigger = addTrigger({ data: "Touch help." });
-    const outside = document.createElement("div");
+    const outside = registerFixture(document.createElement("div"));
     document.body.append(outside);
 
     firePointer(trigger, "pointerover", { pointerType: "touch" });
@@ -219,6 +234,47 @@ describe("SiteTooltips DOM behavior", () => {
     await advance();
     act(() => document.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Escape" })));
     expect(tooltip()).toBeNull();
+  });
+
+  it("restores native and accessibility attributes after rapid touch and allows a later hover", async () => {
+    mount();
+    const titleTrigger = addTrigger({ title: "Original native title" });
+    const dataTrigger = addTrigger({ data: "Data help.", describedBy: "existing-description" });
+
+    firePointer(titleTrigger, "pointerdown", { pointerType: "touch" });
+    expect(titleTrigger.getAttribute("title")).toBeNull();
+    expect(titleTrigger.getAttribute("data-tooltip-source")).toBe("title");
+    await advance(150);
+    firePointer(titleTrigger, "pointerup", { pointerType: "touch" });
+    expect(tooltip()).toBeNull();
+    expect(titleTrigger.getAttribute("title")).toBe("Original native title");
+    expect(titleTrigger.hasAttribute("data-tooltip-source")).toBe(false);
+    expect(titleTrigger.hasAttribute("data-tooltip-original-title")).toBe(false);
+    expect(titleTrigger.hasAttribute("aria-describedby")).toBe(false);
+
+    firePointer(titleTrigger, "pointerover");
+    await advance();
+    expect(tooltip()?.textContent).toBe("Original native title");
+    firePointer(titleTrigger, "pointerout");
+    expect(titleTrigger.getAttribute("title")).toBe("Original native title");
+
+    firePointer(dataTrigger, "pointerdown", { pointerType: "touch" });
+    expect(dataTrigger.getAttribute("data-tooltip-source")).toBe("data");
+    await advance(150);
+    firePointer(dataTrigger, "pointerup", { pointerType: "touch" });
+    expect(tooltip()).toBeNull();
+    expect(dataTrigger.getAttribute("data-tooltip-content")).toBe("Data help.");
+    expect(dataTrigger.hasAttribute("data-tooltip-source")).toBe(false);
+    expect(dataTrigger.hasAttribute("data-tooltip-original-title")).toBe(false);
+    expect(dataTrigger.getAttribute("aria-describedby")).toBe("existing-description");
+
+    firePointer(dataTrigger, "pointerdown", { pointerType: "touch" });
+    await advance(SHOW_DELAY_MS + 1);
+    expect(tooltip()).not.toBeNull();
+    firePointer(dataTrigger, "pointerup", { pointerType: "touch" });
+    expect(tooltip()).toBeNull();
+    expect(dataTrigger.hasAttribute("data-tooltip-source")).toBe(false);
+    expect(dataTrigger.getAttribute("aria-describedby")).toBe("existing-description");
   });
 
   it("switches triggers without leaving the first tooltip or its title mutation behind", async () => {
