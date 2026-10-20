@@ -39,7 +39,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | `apps/web/src/components/actions/action-declaration/before/sections.tsx` | ALREADY_MODULARIZED | NONE | préserver la façade d'exports, BaseSectionProps, validation, focus et updateField | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 | `apps/web/src/app/api/route/recommend/route.response.ts` | ALREADY_MODULARIZED | NONE | préserver DTO, planner proof/snapshot, calibration et la façade `buildRouteRecommendationResponse` | nouveau mode de réponse ou sous-contrat consommé indépendamment |
 | `apps/web/src/lib/actions/participation/group-participation-review.ts` | ALREADY_MODULARIZED | NONE | préserver AuthZ, ownership, idempotence, audit et ordre des mutations | nouvelle responsabilité autonome réintroduite dans la façade ou divergence de contrat |
-| `apps/web/src/lib/actions/pollution/corridor-history.ts` | COHESIVE_SINGLE_FILE | NONE | préserver les constantes géographiques, `CorridorPolyline`/`CorridorHistory` et l'ordre matching → historique → score ; ne pas créer une source de vérité commune parallèle | nouveau mode de corridor ou sous-modèle historique indépendant |
+| `apps/web/src/lib/actions/pollution/corridor-history.ts` | EXTRACTED_PURE_CONTRACT | CURRENT | préserver les constantes géographiques, `CorridorPolyline`/`CorridorHistory` et l'ordre matching → historique → score ; garder la géométrie extraite comme module pur à sens unique | nouveau mode de corridor, sous-modèle historique indépendant ou consommateur géométrique autonome |
 | `apps/web/src/lib/actions/http.ts` | ALREADY_MODULARIZED | NONE | préserver URL, méthode, payload et erreurs de chaque famille endpoint | nouvelle famille de contrat réintroduite dans la façade ou divergence URL/méthode/payload |
 | `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts` | COHESIVE_SINGLE_FILE | NONE | owner unique du modèle de preuve/confiance/serviceabilité | nouveau type de preuve autonome ou changement indépendant de matérialisation |
 | `apps/web/src/app/api/chat/route.post.ts` | ALREADY_MODULARIZED | NONE | aucun ; la frontière serveur reste séparée du client et les contrats POST sont préservés | nouvelle responsabilité autonome réintroduite dans la route ou opacification d'une décision AuthN/AuthZ |
@@ -637,18 +637,18 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 
 | Champ | Valeur |
 | --- | --- |
-| RESPONSIBILITIES | projection géographique, matching de polylignes, groupement d'actions par corridor, historique et synthèse de scores |
+| RESPONSIBILITIES | matching de polylignes, groupement d'actions par corridor, historique et synthèse de scores ; orchestration du noyau géométrique extrait |
 | PUBLIC_CONTRACTS | types `Corridor*`, `matchCorridorPolylines`, `groupActionsByCorridor`, `findCorridorHistoryForAction`, `summarizeCorridorHistory` |
 | SIDE_EFFECTS | aucun effet externe ; calculs purs |
 | MAIN_CONSUMERS | couches map, modèles de popup corridor/action et historique pollution |
 | TEST_BOUNDARY | `corridor-history.test.ts`, tests map layers et popups |
-| COUPLING | helpers géométriques et agrégation fortement cohésifs autour du concept corridor |
-| NATURAL_EXTRACTION_BOUNDARY | aucune extraction obligatoire ; projection et matching forment le cœur du même domaine |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
-| RATIONALE | le pipeline projection géographique, sampling, matching, groupement, historique et synthèse de scores reste un contrat corridor unique ; aucun sous-modèle historique ou mode de corridor indépendant n'est démontré dans ce lot |
+| COUPLING | façade métier dépendant d'un module géométrique pur à sens unique ; aucun cycle ni duplication de seuils |
+| NATURAL_EXTRACTION_BOUNDARY | `corridor-history-geometry.ts` porte projection, échantillonnage, plus proche point et couverture ; la façade conserve conversion métier, matching, groupement, historique et scores |
+| ARCHITECTURE_DECISION | EXTRACTED_PURE_CONTRACT |
+| RATIONALE | la lecture des consommateurs confirme que la géométrie est un noyau pur testable indépendamment des actions et de l'historique ; la façade conserve le contrat corridor public et l'ordre matching → historique → score, tandis que les seuils restent définis dans l'owner métier et sont passés explicitement à la couverture |
 | PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver les constantes géographiques, `CorridorPolyline`/`CorridorHistory` et l'ordre matching → historique → score ; ne pas créer une source de vérité commune parallèle |
-| NEXT_TRIGGER | nouveau mode de corridor ou sous-modèle historique indépendant |
+| DEPENDENCY_OR_BLOCKER | préserver les constantes géographiques, `CorridorPolyline`/`CorridorHistory`, les unités et l'ordre matching → historique → score ; ne pas créer de second owner du domaine Pollution |
+| NEXT_TRIGGER | nouveau mode de corridor, sous-modèle historique indépendant ou consommateur géométrique autonome |
 
 #### `apps/web/src/lib/actions/http.ts`
 
