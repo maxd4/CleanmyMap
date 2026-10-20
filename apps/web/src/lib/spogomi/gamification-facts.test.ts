@@ -48,4 +48,26 @@ describe("SPOGOMI first referee facts", () => {
       ],
     }), "user-1")).rejects.toThrow("SPOGOMI first referee participants read failed: incomplete paginated result");
   });
+
+  it("selects one earliest certified mission across events for the one-shot XP milestone", async () => {
+    const responses = validResponses();
+    responses.spogomi_participants = [{ data: [
+      { id: "participant-1", event_id: "event-1", clerk_id: "user-1", registration_status: "registered", attendance_status: "present", account_link_status: "verified" },
+      { id: "participant-2", event_id: "event-2", clerk_id: "user-1", registration_status: "registered", attendance_status: "present", account_link_status: "verified" },
+    ], count: 2, error: null }];
+    responses.spogomi_recognition_attestations = [{ data: [
+      { id: "mission-late", participant_id: "participant-1", event_id: "event-1", certified_at: "2027-01-01T12:00:00Z", certification_version: "late-v1", evidence_reference: "proof:late" },
+      { id: "mission-early", participant_id: "participant-2", event_id: "event-2", certified_at: "2026-12-31T12:00:00Z", certification_version: "early-v1", evidence_reference: "proof:early" },
+    ], count: 2, error: null }];
+    responses.spogomi_events = [{ data: [
+      { id: "event-1", action_id: "action-1", starts_at: "2026-12-31T23:30:00Z", official_timezone: "Europe/Paris", state: "certified" },
+      { id: "event-2", action_id: "action-2", starts_at: "2026-12-30T23:30:00Z", official_timezone: "Europe/Paris", state: "certified" },
+    ], count: 2, error: null }];
+    responses.action_participants = [{ data: [{ id: "ap-1", action_id: "action-1" }, { id: "ap-2", action_id: "action-2" }], count: 2, error: null }];
+
+    await expect(loadSpogomiFirstRefereeFact(fakeSupabase(responses), "user-1")).resolves.toMatchObject({
+      xpAwarded: 1,
+      metadata: { missionId: "mission-early", eventId: "event-2", certificationVersion: "early-v1" },
+    });
+  });
 });
