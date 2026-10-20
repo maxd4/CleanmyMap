@@ -8,6 +8,7 @@ import { distanceKm, scoreAction } from "./math";
 import { toFrInt, toFrNumber, toFrOptionalNumber } from "./formatters";
 import { average } from "./math";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
+import { parseActionDateAsUtc } from "@/lib/time/civil-date";
 
 function toImpactInput(item: ActionListItem | ActionMapItem) {
   return item.contract ?? {
@@ -20,12 +21,12 @@ function toImpactInput(item: ActionListItem | ActionMapItem) {
   };
 }
 
-function monthKey(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value.slice(0, 7) || "n/a";
+function monthKey(value: string): string | null {
+  const date = parseActionDateAsUtc(value);
+  if (!date) {
+    return null;
   }
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
 export function buildRouteSteps(items: ActionMapItem[], maxStops: number): RouteStep[] {
@@ -88,6 +89,9 @@ export function buildMonthRows(items: ActionListItem[]): MonthRow[] {
   const grouped = new Map<string, MonthRow>();
   for (const item of items) {
     const key = monthKey(item.action_date);
+    if (!key) {
+      continue;
+    }
     const previous = grouped.get(key) ?? {
       month: key,
       actions: 0,

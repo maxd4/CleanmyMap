@@ -9,6 +9,7 @@ import type { AreaStats } from "./types";
 import { buildMonthRows, buildRouteSteps } from "./builders";
 import { toFrInt, toFrNumber } from "./formatters";
 import { safeImageSource } from "@/lib/security/html-escape";
+import { parseActionDateAsUtc } from "@/lib/time/civil-date";
 
 export function toActionImpactInput(item: ActionListItem): ActionImpactInput {
   return item.contract ?? {
@@ -26,12 +27,12 @@ function buildTrendProjection(approvedActions: ActionListItem[], nowMs: number) 
   const currentFloor = nowMs - 30 * 24 * 60 * 60 * 1000;
   const previousFloor = nowMs - 60 * 24 * 60 * 60 * 1000;
   const currentActions = approvedActions.filter((item) => {
-    const timestamp = new Date(item.action_date).getTime();
-    return Number.isFinite(timestamp) && timestamp >= currentFloor;
+    const date = parseActionDateAsUtc(item.action_date);
+    return date !== null && date.getTime() >= currentFloor;
   });
   const previousActions = approvedActions.filter((item) => {
-    const timestamp = new Date(item.action_date).getTime();
-    return Number.isFinite(timestamp) && timestamp >= previousFloor && timestamp < currentFloor;
+    const date = parseActionDateAsUtc(item.action_date);
+    return date !== null && date.getTime() >= previousFloor && date.getTime() < currentFloor;
   });
   const trendPercent =
     previousActions.length > 0
@@ -57,12 +58,12 @@ function buildClimateProjection(
   const sixMonthsFloor = nowMs - 183 * 24 * 60 * 60 * 1000;
   const twelveMonthsFloor = nowMs - 365 * 24 * 60 * 60 * 1000;
   const sixMonthsItems = approvedActions.filter((item) => {
-    const timestamp = new Date(item.action_date).getTime();
-    return Number.isFinite(timestamp) && timestamp >= sixMonthsFloor;
+    const date = parseActionDateAsUtc(item.action_date);
+    return date !== null && date.getTime() >= sixMonthsFloor;
   });
   const twelveMonthsItems = approvedActions.filter((item) => {
-    const timestamp = new Date(item.action_date).getTime();
-    return Number.isFinite(timestamp) && timestamp >= twelveMonthsFloor;
+    const date = parseActionDateAsUtc(item.action_date);
+    return date !== null && date.getTime() >= twelveMonthsFloor;
   });
   const summarizeWindow = (items: ActionListItem[]) => {
     const impact = sumActionImpactKpis(items.map(toActionImpactInput));

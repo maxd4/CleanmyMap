@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { formatCivilDateInTimeZone, formatDateTimeInTimeZone, isCivilDate, parseDateTimeLocalInTimeZone, parseCivilDateAsUtc } from "./civil-date";
+import { formatCivilDateInTimeZone, formatDateTimeInTimeZone, isCivilDate, parseActionDateAsUtc, parseDateTimeLocalInTimeZone, parseCivilDateAsUtc } from "./civil-date";
 
 describe("civil date adapter", () => {
   it.each(["America/Los_Angeles", "Europe/Paris"])(
@@ -22,6 +22,14 @@ describe("civil date adapter", () => {
   it("rejects non-civil-date inputs instead of inventing an instant", () => {
     expect(parseCivilDateAsUtc("2026-01-02T12:00:00Z")).toBeNull();
     expect(parseCivilDateAsUtc(null)).toBeNull();
+  });
+
+  it("parses action dates with a stable UTC month and rejects impossible calendar dates", () => {
+    expect(parseActionDateAsUtc("2026-02-28")?.toISOString()).toBe("2026-02-28T00:00:00.000Z");
+    expect(parseActionDateAsUtc("2026-03-01T00:30:00+01:00")?.toISOString()).toBe("2026-02-28T23:30:00.000Z");
+    expect(parseActionDateAsUtc("2026-02-30")).toBeNull();
+    expect(parseActionDateAsUtc("2026-02-30T00:00:00Z")).toBeNull();
+    expect(parseActionDateAsUtc("not-a-date")).toBeNull();
   });
 
   it.each([

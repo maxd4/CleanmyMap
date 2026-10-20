@@ -241,10 +241,13 @@ describe("reports web analytics", () => {
  makeListItem({ id:"a-1", action_date:"2026-01-05", waste_kg: 2 }),
  makeListItem({ id:"a-2", action_date:"2026-01-18", waste_kg: 3 }),
  makeListItem({ id:"a-3", action_date:"2026-02-02", waste_kg: 4 }),
+ makeListItem({ id:"invalid", action_date:"not-a-date", waste_kg: 99 }),
+ makeListItem({ id:"impossible", action_date:"2026-02-30", waste_kg: 99 }),
  ]);
  expect(rows).toHaveLength(2);
  expect(rows[0]?.kg).toBe(20);
  expect(rows[1]?.kg).toBe(10);
+ expect(rows.every((row) => row.month !== "not-a-d")).toBe(true);
  });
 
  it("preserves row-level availability across the report model projections", () => {

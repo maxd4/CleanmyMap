@@ -19,6 +19,7 @@ import {
   buildRouteSteps,
 } from "@/lib/reports/report-model/builders";
 import { buildReportProjections } from "@/lib/reports/report-model/compute-report-model.projections";
+import { buildExhaustiveSupplementalChapters } from "@/lib/reports/report-detail-level";
 import { computeReportRsvpSummary } from "@/lib/reports/report-model/community";
 import {
   toFrDate,
@@ -452,13 +453,65 @@ describe("Reports scientific model", () => {
     });
 
     expect(report.totals).toMatchObject({ kg: 3, butts: 14, volunteers: 3, hours: 1.5 });
-    expect(report.quality.freshnessDays).toBe(24.5);
+    expect(report.quality).toMatchObject({ completenessScore: 50, freshnessDays: 24.5 });
     expect(report.moderation.delayDays).toBeNull();
     expect(computeCommunityEngagementMetrics({
       leaderboardItems: [legacy],
       sourceItems: [],
       leaderboardLimit: 8,
     }).topLeaderboard).toEqual([{ name: "Alice", actions: 1, kg: 2, butts: 4 }]);
+  });
+
+  it("excludes invalid action dates from monthly chronology without dropping their totals", () => {
+    const civil = makeAction({ id: "civil", actionDate: "2026-02-28", wasteKg: 1 });
+    const timestamp = makeAction({
+      id: "timestamp",
+      actionDate: "2026-03-01T00:30:00+01:00",
+      wasteKg: 2,
+    });
+    const invalid = makeAction({ id: "invalid", actionDate: "not-a-date", wasteKg: 4 });
+    const impossible = makeAction({ id: "impossible", actionDate: "2026-02-30", wasteKg: 8 });
+    const report = computeReportModel({
+      allItems: [civil, timestamp, invalid, impossible],
+      approvedItems: [civil, timestamp, invalid, impossible],
+      mapItems: [],
+      events: [],
+      now: new Date("2026-03-25T12:00:00.000Z"),
+    });
+
+    expect(report.totals.kg).toBe(15);
+    expect(report.totals.actions).toBe(4);
+    expect(report.monthRows12).toEqual([
+      expect.objectContaining({ month: "2026-02", actions: 2, kg: 3 }),
+    ]);
+    expect(report.monthRows12.some((row) => row.month === "not-a-d")).toBe(false);
+  });
+
+  it("does not expose a fabricated month in the detailed monthly chapter", () => {
+    const valid = makeAction({ id: "valid", actionDate: "2026-03-01" });
+    const invalid = makeAction({ id: "invalid", actionDate: "not-a-date" });
+    const report = computeReportModel({
+      allItems: [valid, invalid],
+      approvedItems: [valid, invalid],
+      mapItems: [],
+      events: [],
+      now: new Date("2026-03-25T12:00:00.000Z"),
+    });
+
+    const chapter = buildExhaustiveSupplementalChapters({
+      report,
+      modules: {
+        dataAndCartography: false,
+        transparencyAndMethods: false,
+        rawData: true,
+        detailedFiles: false,
+      },
+    })[0];
+
+    expect(chapter?.rows).toEqual([
+      expect.objectContaining({ Mois: "2026-03", Actions: 1 }),
+    ]);
+    expect(JSON.stringify(chapter)).not.toContain("not-a-d");
   });
 
   it("protects the small mathematical and formatting contracts used by the model", () => {
@@ -475,9 +528,7 @@ describe("Reports scientific model", () => {
     expect(toFrOptionalInt(null)).toBe("Indisponible");
     expect(toFrDate("not-a-date")).toBe("not-a-date");
     expect(toFrDate("2026-03-25T00:00:00.000Z")).toContain("2026");
-    expect(buildMonthRows([makeAction({ actionDate: "not-a-date" })])).toEqual([
-      expect.objectContaining({ month: "not-a-d", actions: 1 }),
-    ]);
+    expect(buildMonthRows([makeAction({ actionDate: "not-a-date" })])).toEqual([]);
     expect(buildCalendarRows(new Date("2026-11-15T00:00:00.000Z"))).toHaveLength(4);
     expect(buildRouteSteps([makeMapItem(makeAction({ latitude: null, longitude: null }))], 6)).toEqual([]);
   });

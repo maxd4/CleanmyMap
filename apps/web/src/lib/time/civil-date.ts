@@ -1,4 +1,5 @@
 const CIVIL_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+const ACTION_DATE_CIVIL_PREFIX_PATTERN = /^(\d{4}-\d{2}-\d{2})(?=$|T| )/;
 const LOCAL_DATE_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d)(?:\.(\d{1,3}))?)?$/;
 const DEFAULT_DATE_TIME_FORMAT_OPTIONS = Object.freeze({
   dateStyle: "medium",
@@ -146,4 +147,29 @@ export function parseCivilDateAsUtc(value: string | null | undefined): Date | nu
 
 export function isCivilDate(value: string | null | undefined): value is string {
   return parseCivilDateAsUtc(value) !== null;
+}
+
+/**
+ * Parses an ActionListItem date without consulting the host timezone.
+ * Civil dates remain UTC-midnight values; timestamps remain absolute instants.
+ * ISO-looking impossible calendar dates are rejected instead of normalized.
+ */
+export function parseActionDateAsUtc(value: string | null | undefined): Date | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  const civilDate = parseCivilDateAsUtc(normalized);
+  if (civilDate) {
+    return civilDate;
+  }
+
+  const civilPrefix = ACTION_DATE_CIVIL_PREFIX_PATTERN.exec(normalized)?.[1];
+  if (civilPrefix && !isCivilDate(civilPrefix)) {
+    return null;
+  }
+
+  const parsed = new Date(normalized);
+  return Number.isFinite(parsed.getTime()) ? parsed : null;
 }

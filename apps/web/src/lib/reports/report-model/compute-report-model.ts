@@ -27,6 +27,7 @@ import {
   computeMapCoverageMetrics,
 } from "./metrics";
 import { computeReportRsvpSummary } from "./community";
+import { parseActionDateAsUtc } from "@/lib/time/civil-date";
 import {
   buildReportProjections,
   toActionImpactInput,
@@ -143,7 +144,7 @@ function computeMapMetrics(mapItems: ActionMapItem[]) {
 
 function computeQualityMetrics(approvedActions: ActionListItem[], nowMs: number) {
   const completenessChecks = approvedActions.map((item) => {
-    const hasDate = Boolean(item.action_date);
+    const hasDate = parseActionDateAsUtc(item.action_date) !== null;
     const hasLocation = item.location_label.trim().length > 2;
     const hasDuration = Number(item.duration_minutes || 0) > 0;
     const hasVolunteers =
@@ -181,9 +182,9 @@ function computeQualityMetrics(approvedActions: ActionListItem[], nowMs: number)
   const freshnessDays = median(
     approvedActions
       .map((item) => {
-        const timestamp = new Date(item.action_date).getTime();
-        if (!Number.isFinite(timestamp)) return null;
-        return (nowMs - timestamp) / (24 * 60 * 60 * 1000);
+        const date = parseActionDateAsUtc(item.action_date);
+        if (!date) return null;
+        return (nowMs - date.getTime()) / (24 * 60 * 60 * 1000);
       })
       .filter((value): value is number => value !== null && value >= 0),
   );
