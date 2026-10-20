@@ -61,6 +61,19 @@ ChatGPT est l'agent principal de réflexion et doit :
 
 ChatGPT ne doit pas déléguer à Codex une analyse, une réécriture ou une décision qu'il peut prendre lui-même après lecture suffisante du dépôt.
 
+Pour toute demande substantielle, ChatGPT doit d'abord cadrer le résultat réel
+recherché, au-delà de la solution initialement envisagée, puis arbitrer les
+alternatives, le périmètre et les critères d'acceptation avant de rédiger le
+premier prompt Codex. Cette réflexion s'appuie sur les fondamentaux, méthodes,
+outils et critères d'évaluation de la discipline concernée, sans recourir à des
+instructions artificielles de jeu de rôle. Elle recherche les hypothèses
+fragiles, les limites structurelles et les solutions à fort levier qu'un expert
+examinerait. Une cible nettement plus ambitieuse peut être retenue lorsque sa
+valeur potentielle le justifie, mais sa faisabilité, ses gains, ses coûts et ses
+risques restent des hypothèses à vérifier ; ils ne doivent jamais être
+présentés comme acquis. Cette profondeur reste proportionnelle aux enjeux et ne
+doit pas transformer une correction triviale en analyse cérémonielle.
+
 ### Codex
 
 Codex sert principalement à :
@@ -72,6 +85,11 @@ Codex sert principalement à :
 - exécuter les validations ;
 - vérifier les interactions avec l'environnement local ;
 - produire les preuves locales ;
+- poursuivre l'objectif défini avec rigueur, en vérifiant les limites techniques
+  et les contraintes réelles ;
+- signaler les impossibilités, risques ou alternatives majeures lorsqu'ils sont
+  démontrés, sans élargir unilatéralement le lot ni remplacer l'arbitrage de
+  ChatGPT ;
 - committer et pousser sur `main` lorsque l'utilisateur l'a demandé et que les validations du lot le permettent.
 
 Un prompt Codex ne doit jamais servir de substitut à l'analyse de ChatGPT.

@@ -36,6 +36,26 @@ Ordre de priorité :
 
 Ne jamais préférer une refonte large à une correction ciblée suffisante.
 
+## Objectif défini et ambition contrôlée
+
+Codex poursuit l'objectif défini par le cadrage du lot avec rigueur : le but est
+le meilleur résultat démontrable, pas la seule accélération de l'exécution. Pour
+un changement substantiel, vérifier les hypothèses fragiles, les limites
+techniques, les coûts, les risques et les critères d'acceptation réellement
+mesurables. Une cible plus ambitieuse peut être pertinente si sa valeur est
+étayée, mais sa faisabilité et ses gains restent à prouver.
+
+Si l'objectif est impossible, insuffisamment spécifié ou rendu irréaliste par
+le checkout, l'environnement ou une contrainte technique, signaler le fait et
+proposer l'alternative majeure la plus proche lorsque celle-ci est démontrable.
+Ne pas abaisser silencieusement les critères de réussite, inventer un gain ou
+élargir unilatéralement le lot. La profondeur d'analyse reste proportionnelle
+aux enjeux : une correction triviale conserve un chemin d'exécution sobre.
+
+La philosophie commune et ses limites sont détaillées dans
+`documentation/development/kaizen/PRINCIPLES.md` ; cette section en traduit
+l'exigence d'exécution vérifiable sans dupliquer ses méthodes.
+
 ## Canari
 
 Commencer uniquement la réponse finale par `Maxence —`.

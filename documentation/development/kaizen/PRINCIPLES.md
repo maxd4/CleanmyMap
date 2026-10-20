@@ -6,6 +6,23 @@ Aucune partie du projet n'est considérée comme parfaite ou définitivement fig
 
 Le Kaizen signifie : observer, comprendre, améliorer par petites décisions vérifiables, puis mesurer ou valider le résultat.
 
+L'ambition porte d'abord sur le résultat : viser le meilleur résultat
+démontrable, et non simplement l'exécution la plus rapide. Pour une demande
+substantielle, examiner l'objectif réel au-delà de la solution initialement
+proposée, mobiliser les fondamentaux, méthodes, outils et critères d'évaluation
+du domaine concerné, puis rechercher les hypothèses fragiles, les limites
+structurelles et les solutions à fort levier qu'un expert examinerait. Les
+instructions de jeu de rôle artificielles ne remplacent ni cette maîtrise du
+domaine ni les preuves.
+
+Une cible nettement plus ambitieuse peut être justifiée lorsque sa valeur
+potentielle le mérite. Sa faisabilité, ses gains attendus, ses coûts et ses
+risques doivent toutefois rester explicitement confrontés aux mesures et aux
+contraintes réelles : aucune promesse n'est acquise sans vérification. Une
+amélioration fondamentale et mesurable est préférable à une succession
+d'optimisations superficielles, mais la profondeur de conception reste
+proportionnelle aux enjeux et ne doit pas alourdir une correction triviale.
+
 Il ne signifie pas : ajouter des fonctionnalités, dépendances, animations, abstractions ou refactors parce qu'ils paraissent plus modernes.
 
 ## 2. Le périmètre reste une contrainte
