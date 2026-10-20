@@ -34,6 +34,7 @@ on:
       - "apps/web/supabase/config.toml"
       - "apps/web/supabase/migrations/**"
       - "apps/web/supabase/tests/spogomi-mixed-division-smoke.sql"
+      - "apps/web/supabase/tests/spogomi-transactional-contract.sql"
       - "apps/web/supabase/tests/action-role-attestation-correction.sql"
       - "e2e/action-role-attestation-concurrency.mjs"
       - "apps/web/supabase/seed.sql"
@@ -186,6 +187,11 @@ jobs:
         run: |
           set -o pipefail
           ./node_modules/.bin/supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/spogomi-mixed-division-smoke.sql)" 2>&1 | tee artifacts/ci/spogomi-mixed-division-smoke.log
+
+      - name: Execute SPOGOMI transactional PostgreSQL contract
+        run: |
+          set -o pipefail
+          ./node_modules/.bin/supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/spogomi-transactional-contract.sql)" 2>&1 | tee artifacts/ci/spogomi-transactional-contract.log
 
       - name: Execute role attestation correction PostgreSQL contract
         run: |

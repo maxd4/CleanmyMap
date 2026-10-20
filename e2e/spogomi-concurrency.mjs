@@ -106,6 +106,49 @@ async function currentRevision(client, eventId) {
   return Number(row.composition_revision);
 }
 
+async function consolidationSourceSnapshot(client, eventId) {
+  const [event, categories, mappings, teams, submissions, items, participants, routes] = await Promise.all([
+    must(await client.from("spogomi_events").select("id, name, location_label, starts_at, ends_at, environmental_mapping_version, updated_at, action_id").eq("id", eventId).single(), "read consolidation event snapshot"),
+    must(await client.from("spogomi_category_rules").select("id, updated_at").eq("event_id", eventId), "read consolidation category snapshot"),
+    must(await client.from("spogomi_environment_category_mappings").select("id, updated_at").eq("event_id", eventId), "read consolidation mapping snapshot"),
+    must(await client.from("spogomi_teams").select("id, updated_at").eq("event_id", eventId), "read consolidation team snapshot"),
+    must(await client.from("spogomi_result_submissions").select("id, updated_at").eq("event_id", eventId), "read consolidation submission snapshot"),
+    must(await client.from("spogomi_result_items").select("id, updated_at").eq("event_id", eventId), "read consolidation item snapshot"),
+    must(await client.from("spogomi_participants").select("id, updated_at").eq("event_id", eventId), "read consolidation participant snapshot"),
+    must(await client.from("spogomi_event_routes").select("id, updated_at, event_id").eq("event_id", eventId), "read consolidation route snapshot"),
+  ]);
+  const actionRow = await must(
+    await client.from("actions").select("id, organizer_id, organizer_name, organizer_type, updated_at").eq("id", event.action_id).single(),
+    "read consolidation Action snapshot",
+  );
+  const snapshotRows = (rows) => rows.map((row) => ({ id: row.id, updatedAt: row.updated_at }));
+  return {
+    event: {
+      id: event.id,
+      name: event.name,
+      locationLabel: event.location_label,
+      startsAt: event.starts_at,
+      endsAt: event.ends_at,
+      mappingVersion: event.environmental_mapping_version,
+      updatedAt: event.updated_at,
+    },
+    action: {
+      id: actionRow.id,
+      organizerId: actionRow.organizer_id,
+      organizerName: actionRow.organizer_name,
+      organizerType: actionRow.organizer_type,
+      updatedAt: actionRow.updated_at,
+    },
+    categories: snapshotRows(categories),
+    mappings: snapshotRows(mappings),
+    teams: snapshotRows(teams),
+    submissions: snapshotRows(submissions),
+    items: snapshotRows(items),
+    participants: snapshotRows(participants),
+    route: routes[0] ? { id: routes[0].id, updatedAt: routes[0].updated_at } : null,
+  };
+}
+
 async function verifySupabaseSchema(client) {
   await must(
     await client.from("actions").select("id").limit(1),
@@ -346,6 +389,99 @@ async function concurrentCertificateReissue() {
   assert.equal(history.length, 3, "certificate concurrency keeps issued and replaced history");
 }
 
+async function concurrentConsolidationPublication() {
+  const actionId = await createAction(sessionA, { preserved: `${marker}-consolidation` });
+  const event = await createEvent(sessionA, actionId, "casual");
+  await must(
+    await sessionA.from("spogomi_events").update({ state: "judging" }).eq("id", event.id),
+    "prepare consolidation concurrency event",
+  );
+  const team = await must(
+    await sessionA.from("spogomi_teams").insert({
+      event_id: event.id,
+      team_number: 1,
+      public_name: `${marker} consolidation team`,
+      composition_state: "verified",
+    }).select("id").single(),
+    "create consolidation concurrency team",
+  );
+  const participant = await must(
+    await sessionA.from("spogomi_participants").insert({
+      event_id: event.id,
+      team_id: team.id,
+      external_reference: `${marker}-consolidation-ticket`,
+      registration_status: "registered",
+      attendance_status: "present",
+    }).select("id").single(),
+    "create consolidation concurrency participant",
+  );
+  const submission = await must(
+    await sessionA.from("spogomi_result_submissions").insert({
+      event_id: event.id,
+      team_id: team.id,
+      version: 1,
+      status: "certified",
+      regulation_version: "synthetic-v1",
+      submitted_by_clerk_id: `${marker}-team`,
+      submitted_at: "2026-10-20T10:00:00.000Z",
+      certified_by_clerk_id: `${marker}-referee`,
+      certified_at: "2026-10-20T10:01:00.000Z",
+    }).select("id").single(),
+    "create consolidation concurrency submission",
+  );
+  await must(
+    await sessionA.from("spogomi_teams").update({ certified_submission_id: submission.id }).eq("id", team.id),
+    "link consolidation concurrency certification",
+  );
+  const sourceSnapshot = await consolidationSourceSnapshot(sessionA, event.id);
+  const projection = {
+    readyForPublication: true,
+    teamsIncluded: 1,
+    participantsPresent: 1,
+    sourceSubmissionIds: [submission.id],
+    sourceSnapshot,
+    action: { wasteKg: "1.250", cigaretteButts: 5, volunteersCount: 1 },
+    totalWasteMassGrams: 1250,
+    cigaretteButtsMassGrams: 5,
+    cigaretteButtsCount: 5,
+    consolidation: { source: marker },
+  };
+  const results = await Promise.all([
+    sessionA.rpc("consolidate_spogomi_event_to_action", {
+      p_event_id: event.id,
+      p_consolidation_key: `${marker}-consolidation`,
+      p_source_hash: "a".repeat(64),
+      p_projection_version: "spogomi-cleanmymap-v1",
+      p_mappings: [],
+      p_projection: projection,
+      p_published_by_clerk_id: `${marker}-publisher-a`,
+    }),
+    sessionB.rpc("consolidate_spogomi_event_to_action", {
+      p_event_id: event.id,
+      p_consolidation_key: `${marker}-consolidation`,
+      p_source_hash: "a".repeat(64),
+      p_projection_version: "spogomi-cleanmymap-v1",
+      p_mappings: [],
+      p_projection: projection,
+      p_published_by_clerk_id: `${marker}-publisher-b`,
+    }),
+  ]);
+  assert.equal(results.filter((result) => !result.error).length, 2, "same-hash consolidation must serialize as one committed projection");
+  const current = await must(
+    await sessionA.from("spogomi_action_consolidations").select("source_hash, projection_revision, is_current").eq("event_id", event.id),
+    "read concurrent consolidation projection",
+  );
+  assert.deepEqual(current, [{ source_hash: "a".repeat(64), projection_revision: 1, is_current: true }], "concurrent consolidation must leave one current projection");
+  const action = await must(
+    await sessionA.from("actions").select("spogomi_projection_source_hash, preparation_data").eq("id", actionId).single(),
+    "read Action after concurrent consolidation",
+  );
+  assert.equal(action.spogomi_projection_source_hash, "a".repeat(64));
+  assert.equal(action.preparation_data.preserved, `${marker}-consolidation`, "failed or duplicate publication must preserve unrelated Action data");
+  assert.doesNotMatch(JSON.stringify(projection), /display_name|clerk_id|external_reference|email/i, "public consolidation projection must not contain nominative fields");
+  void participant;
+}
+
 async function concurrentClosureCorrectionAndRankingPublication() {
   const actionId = await createAction(sessionA, { independent: `${marker}-preserved` });
   const event = await createEvent(sessionA, actionId, "casual");
@@ -515,6 +651,8 @@ async function concurrentClosureCorrectionAndRankingPublication() {
 async function cleanup() {
   await sessionA.from("admin_operations_audit").delete().like("actor_user_id", `${marker}%`);
   for (const eventId of created.events) {
+    await sessionA.from("spogomi_action_consolidations").delete().eq("event_id", eventId);
+    await sessionA.from("spogomi_environment_category_mappings").delete().eq("event_id", eventId);
     await sessionA.from("spogomi_volunteer_certificate_history").delete().eq("event_id", eventId);
     await sessionA.from("spogomi_volunteer_certificates").delete().eq("event_id", eventId);
     await sessionA.from("spogomi_events").delete().eq("id", eventId);
@@ -534,8 +672,9 @@ async function main() {
     await concurrentMoveAndLock();
     await concurrentOfficialGpxSync();
     await concurrentCertificateReissue();
+    await concurrentConsolidationPublication();
     await concurrentClosureCorrectionAndRankingPublication();
-    process.stdout.write("EXECUTED_DB_CONTRACT: SPOGOMI composition, public-name uniqueness, certificate concurrency and closure republication safety passed.\n");
+    process.stdout.write("EXECUTED_DB_CONTRACT: SPOGOMI composition, lock, GPX, certificate, consolidation and closure republication safety passed.\n");
   } finally {
     await cleanup();
   }
