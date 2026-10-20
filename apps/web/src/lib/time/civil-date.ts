@@ -1,5 +1,6 @@
 const CIVIL_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const ACTION_DATE_CIVIL_PREFIX_PATTERN = /^(\d{4}-\d{2}-\d{2})(?=$|T| )/;
+const ACTION_DATE_ZONED_TIMESTAMP_PATTERN = /^(\d{4}-\d{2}-\d{2})T([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d)(?:\.(\d{1,3}))?)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/;
 const LOCAL_DATE_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d)(?:\.(\d{1,3}))?)?$/;
 const DEFAULT_DATE_TIME_FORMAT_OPTIONS = Object.freeze({
   dateStyle: "medium",
@@ -167,6 +168,10 @@ export function parseActionDateAsUtc(value: string | null | undefined): Date | n
 
   const civilPrefix = ACTION_DATE_CIVIL_PREFIX_PATTERN.exec(normalized)?.[1];
   if (civilPrefix && !isCivilDate(civilPrefix)) {
+    return null;
+  }
+
+  if (!ACTION_DATE_ZONED_TIMESTAMP_PATTERN.test(normalized)) {
     return null;
   }
 

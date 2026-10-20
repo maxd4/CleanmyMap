@@ -24,12 +24,44 @@ describe("civil date adapter", () => {
     expect(parseCivilDateAsUtc(null)).toBeNull();
   });
 
-  it("parses action dates with a stable UTC month and rejects impossible calendar dates", () => {
+  it("parses canonical action dates and rejects impossible or ambiguous values", () => {
+    expect(parseActionDateAsUtc("2024-02-29")?.toISOString()).toBe("2024-02-29T00:00:00.000Z");
     expect(parseActionDateAsUtc("2026-02-28")?.toISOString()).toBe("2026-02-28T00:00:00.000Z");
+    expect(parseActionDateAsUtc("2026-03-01T00:30:00.000Z")?.toISOString()).toBe("2026-03-01T00:30:00.000Z");
     expect(parseActionDateAsUtc("2026-03-01T00:30:00+01:00")?.toISOString()).toBe("2026-02-28T23:30:00.000Z");
+    expect(parseActionDateAsUtc("2026-02-28T23:30:00-02:00")?.toISOString()).toBe("2026-03-01T01:30:00.000Z");
     expect(parseActionDateAsUtc("2026-02-30")).toBeNull();
     expect(parseActionDateAsUtc("2026-02-30T00:00:00Z")).toBeNull();
     expect(parseActionDateAsUtc("not-a-date")).toBeNull();
+  });
+
+  it.each([
+    "2026-03-01T00:30:00",
+    "2026-03-01 00:30:00Z",
+    "March 1, 2026",
+    "2026/03/01",
+  ])("rejects a non-canonical action date without inventing a host-timezone instant: %s", (value) => {
+    expect(parseActionDateAsUtc(value)).toBeNull();
+  });
+
+  it("keeps action-date parsing stable when the host timezone changes", () => {
+    const originalTimezone = process.env.TZ;
+    try {
+      const results = ["UTC", "Europe/Paris"].map((timezone) => {
+        process.env.TZ = timezone;
+        return [
+          parseActionDateAsUtc("2026-03-01T00:30:00.000Z")?.toISOString(),
+          parseActionDateAsUtc("2026-03-01T00:30:00")?.toISOString() ?? null,
+        ];
+      });
+      expect(results).toEqual([
+        ["2026-03-01T00:30:00.000Z", null],
+        ["2026-03-01T00:30:00.000Z", null],
+      ]);
+    } finally {
+      if (originalTimezone === undefined) delete process.env.TZ;
+      else process.env.TZ = originalTimezone;
+    }
   });
 
   it.each([
