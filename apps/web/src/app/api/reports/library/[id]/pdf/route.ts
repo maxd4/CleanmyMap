@@ -11,6 +11,7 @@ import { getActiveReportPublicationById } from "@/lib/reports/report-publication
 export const runtime = "nodejs";
 
 const PUBLIC_REPORT_HEADERS = {
+  // Published PDFs can be revoked immediately, so clients must not retain a stale cached variant.
   "Cache-Control": "no-store",
   "X-Robots-Tag": "noindex, nofollow, noarchive",
   "Referrer-Policy": "no-referrer",

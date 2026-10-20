@@ -17,7 +17,18 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.match(workflow, /supabase start --workdir apps\/web --yes/);
   assert.match(workflow, /supabase db reset --local --workdir apps\/web --yes/);
   assert.doesNotMatch(workflow, /--workdir apps\/web\/supabase/);
-  assert.equal((workflow.match(/--workdir apps\/web\b/g) ?? []).length, 9, "all Supabase CLI calls must use the apps/web project workdir");
+  const supabaseCliInvocations = workflow
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.includes("./node_modules/.bin/supabase"));
+  assert.ok(supabaseCliInvocations.length > 0, "workflow must invoke the Supabase CLI");
+  for (const invocation of supabaseCliInvocations) {
+    assert.match(
+      invocation,
+      /--workdir apps\/web\b/,
+      `Supabase CLI invocation must use the apps/web project workdir: ${invocation}`,
+    );
+  }
   assert.match(workflow, /Preflight canonical ephemeral PostgreSQL schema/);
   assert.match(workflow, /project_id\s*=\s*\\"web\\"/);
   assert.match(workflow, /to_regclass\('public\.actions'\)/);
