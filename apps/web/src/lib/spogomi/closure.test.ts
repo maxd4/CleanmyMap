@@ -2,6 +2,22 @@ import { describe, expect, it } from "vitest";
 import { deriveSpogomiClosureSummary, effectiveSpogomiTeamClosureDecision } from "./closure";
 
 describe("SPOGOMI closure decisions", () => {
+  it.each([
+    ["present_measured", true, "eligible", true],
+    ["absent", false, "excluded", false],
+    ["forfeit", false, "excluded", false],
+    ["excluded", false, "excluded", true],
+    ["disqualified", false, "eligible", true],
+    ["result_missing", false, "unknown", true],
+    ["contested", false, "unknown", true],
+  ] as const)("keeps sport and environmental eligibility explicit for %s", (status, sportEligible, environmentalEligibility, certifiedSubmission) => {
+    const decision = effectiveSpogomiTeamClosureDecision({
+      teamId: `team-${status}`, divisionId: "casual", certifiedSubmission,
+      decision: { teamId: `team-${status}`, divisionId: "casual", status, sportEligible, environmentalEligibility, decisionVersion: 2, reason: "Décision synthétique." },
+    });
+    expect(decision).toMatchObject({ status, sportEligible, environmentalEligibility, decisionVersion: 2 });
+  });
+
   it("keeps absence and forfeit outside both rankings and environmental totals", () => {
     const decision = effectiveSpogomiTeamClosureDecision({
       teamId: "team-forfeit",

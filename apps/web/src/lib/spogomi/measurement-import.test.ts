@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const workbookRowsMock = vi.hoisted(() => vi.fn());
 const callFieldOperationMock = vi.hoisted(() => vi.fn());
@@ -67,6 +67,11 @@ function workbook(sheetName = "Mesures") {
 }
 
 describe("SPOGOMI measurement workbook import", () => {
+  beforeEach(() => {
+    workbookRowsMock.mockReset();
+    callFieldOperationMock.mockReset();
+  });
+
   it.each([
     ["empty", new File([], "measurements.csv"), /taille absente/],
     ["unsupported extension", file("measurements.pdf"), /Format refusé/],
@@ -83,6 +88,48 @@ describe("SPOGOMI measurement workbook import", () => {
     await expect(previewSpogomiMeasurementWorkbook({ supabase: fixture.supabase, eventId: "event-1", divisionId: "casual", file: file(), sheetName: "missing", actorClerkId: "organizer" })).rejects.toThrow("feuille demandée");
     workbookRowsMock.mockReturnValueOnce({ sheets: [{ name: "Mesures", rows: [["team", "category"]] }] });
     await expect(previewSpogomiMeasurementWorkbook({ supabase: fixture.supabase, eventId: "event-1", divisionId: "casual", file: file(), actorClerkId: "organizer" })).rejects.toThrow("équipe, catégorie et valeur");
+  });
+
+  it.each(["csv", "tsv", "xlsx", "xls", "ods"])("accepts the controlled %s format and an explicitly selected sheet", async (extension) => {
+    const sheets = [
+      { name: "Autre feuille", rows: [["team", "category", "value"], ["8", "plastic", "2"]] },
+      { name: "Mesures terrain", rows: [["Équipe", "Catégorie", "Valeur"], ["7", "plastic", "3"]] },
+    ];
+    workbookRowsMock.mockReturnValue({ sheets });
+    const fixture = supabaseFor({
+      tables: { spogomi_teams: [{ id: "team-7", team_number: 7 }], spogomi_category_rules: [{ id: "category-plastic", code: "plastic", measurement_kind: "mass", unit: "g" }] },
+      maybeSingles: { spogomi_measurement_imports: null },
+      singleResults: { spogomi_measurement_imports: [{ data: { id: `import-${extension}` }, error: null }] },
+    });
+    const result = await previewSpogomiMeasurementWorkbook({
+      supabase: fixture.supabase, eventId: "event-1", divisionId: "casual",
+      file: file(`measurements.${extension}`), sheetName: "Mesures terrain", actorClerkId: "organizer",
+    }) as { format: string; sheetName: string; rows: Array<Record<string, unknown>> };
+    expect(result).toMatchObject({ format: extension, sheetName: "Mesures terrain" });
+    expect(result.rows[0]).toMatchObject({ teamId: "team-7", categoryRuleId: "category-plastic", massGrams: 3, selected: true });
+  });
+
+  it("rejects a file over the limit and dangerous or blank values without reserving a confirmed measurement", async () => {
+    const fixture = supabaseFor();
+    await expect(previewSpogomiMeasurementWorkbook({
+      supabase: fixture.supabase, eventId: "event-1", divisionId: "casual",
+      file: new File([new Uint8Array(5 * 1024 * 1024 + 1)], "too-large.csv"), actorClerkId: "organizer",
+    })).rejects.toThrow("supérieure à 5 Mo");
+    expect(fixture.from).not.toHaveBeenCalled();
+
+    workbookRowsMock.mockReturnValue({ sheets: [{ name: "Mesures", rows: [
+      ["team", "category", "value", "type", "unit"],
+      ["7", "plastic", "=1+1", "mass", "g"],
+      ["7", "plastic", "", "mass", "g"],
+    ] }] });
+    const validFixture = supabaseFor({
+      tables: { spogomi_teams: [{ id: "team-7", team_number: 7 }], spogomi_category_rules: [{ id: "category-plastic", code: "plastic", measurement_kind: "mass", unit: "g" }] },
+      maybeSingles: { spogomi_measurement_imports: null },
+      singleResults: { spogomi_measurement_imports: [{ data: { id: "import-dangerous" }, error: null }] },
+    });
+    const result = await previewSpogomiMeasurementWorkbook({ supabase: validFixture.supabase, eventId: "event-1", divisionId: "casual", file: file(), actorClerkId: "organizer" }) as { rows: Array<Record<string, unknown>> };
+    expect(result.rows.every((row) => row.selected === false)).toBe(true);
+    expect(result.rows.flatMap((row) => row.diagnostics as string[])).toEqual(expect.arrayContaining(["Valeur numérique absente ou invalide."]));
   });
 
   it("keeps valid rows selected and exposes invalid rows with actionable diagnostics", async () => {
@@ -141,10 +188,22 @@ describe("SPOGOMI measurement workbook import", () => {
     expect(result).toEqual({ imported: 2, alreadyConfirmed: false });
     expect(callFieldOperationMock).toHaveBeenCalledTimes(2);
     expect(callFieldOperationMock).toHaveBeenCalledWith(expect.objectContaining({ rpc: "spogomi_upsert_operational_measurement", args: expect.objectContaining({ p_source_reference: "import:import-1:row:2" }) }));
+    expect(callFieldOperationMock).toHaveBeenCalledWith(expect.objectContaining({ args: expect.objectContaining({ p_source_kind: "import_excel", p_actor_clerk_id: "operator" }) }));
     expect(fixture.calls.some((call) => call.table === "spogomi_measurement_imports" && call.method === "update")).toBe(true);
 
     const confirmed = supabaseFor({ maybeSingles: { spogomi_measurement_imports: { id: "import-1", status: "confirmed", content_sha256: "hash" } } });
     await expect(confirmSpogomiMeasurementImport({ supabase: confirmed.supabase, eventId: "event-1", divisionId: "casual", importId: "import-1", actorClerkId: "operator" })).resolves.toEqual({ imported: 0, alreadyConfirmed: true });
+  });
+
+  it("does not mark an import confirmed when a measurement command fails", async () => {
+    callFieldOperationMock.mockRejectedValueOnce(new Error("measurement conflict"));
+    const fixture = supabaseFor({
+      tables: { spogomi_measurement_import_rows: [{ row_number: 2, team_id: "team-1", category_rule_id: "category-1", measurement_kind: "mass", unit: "g", quantity: null, mass_grams: 10, object_count: null, selected: true }] },
+      maybeSingles: { spogomi_measurement_imports: { id: "import-1", status: "previewed", content_sha256: "hash" } },
+      awaitResults: { spogomi_measurement_import_rows: { data: [{ row_number: 2, team_id: "team-1", category_rule_id: "category-1", measurement_kind: "mass", unit: "g", quantity: null, mass_grams: 10, object_count: null, selected: true }], error: null } },
+    });
+    await expect(confirmSpogomiMeasurementImport({ supabase: fixture.supabase, eventId: "event-1", divisionId: "casual", importId: "import-1", actorClerkId: "operator" })).rejects.toThrow("measurement conflict");
+    expect(fixture.calls.some((call) => call.table === "spogomi_measurement_imports" && call.method === "update")).toBe(false);
   });
 
   it("rejects absent, unpaired and non-admissible confirmation rows", async () => {

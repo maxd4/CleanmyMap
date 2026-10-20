@@ -74,6 +74,16 @@ describe("SPOGOMI consolidation service", () => {
     }));
   });
 
+  it("refuses publication when a source changes after preview and performs no privileged mutation", async () => {
+    const before = supabaseFor();
+    const preview = await buildSpogomiConsolidationPreview({ supabase: before.supabase, eventId: "event-1" });
+    const after = supabaseFor({
+      spogomi_result_items: [{ id: "item-1", division_id: "casual", submission_id: "submission-1", category_rule_id: "category-plastic", quantity: null, mass_grams: 1250, object_count: null, provenance: "photo-2", measurement_method: "balance", source_reference: "field-2", updated_at: "item-updated-2" }],
+    });
+    await expect(publishSpogomiConsolidation({ supabase: after.supabase, eventId: "event-1", publishedByClerkId: "organizer", expectedSourceHash: preview.projection.sourceHash })).rejects.toThrow("bilan a changé");
+    expect(after.rpc).not.toHaveBeenCalled();
+  });
+
   it.each([
     [{ code: "40001", message: "stale projection" }, /Conflict: stale projection/],
     [{ code: "23514", message: "projection invalid" }, /Conflict: projection invalid/],

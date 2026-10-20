@@ -16,6 +16,9 @@ describe("SPOGOMI action consolidation migration STATIC_CONTRACT", () => {
     expect(migration).not.toContain("where event_id = p_event_id and source_hash = p_source_hash;");
     expect(migration).toContain("is_current");
     expect(migration).toContain("coalesce(max(projection_revision), 0) + 1");
+    expect(migration).toContain("set is_current = false, status = 'superseded'");
+    expect(migration).toContain("insert into public.spogomi_action_consolidations");
+    expect(migration).toContain("source_hash, mapping_version, status, is_current");
   });
 
   it("persists explicit versioned mappings and exact gram fields without scores or XP", () => {
@@ -44,6 +47,7 @@ describe("SPOGOMI action consolidation migration STATIC_CONTRACT", () => {
     expect(contractSource).toContain("spogomiOfficialReference");
     expect(contractSource).toContain("status = 'superseded'");
     expect(contractSource).toContain("set is_current = false");
+    expect(contractSource).not.toContain("public.forms");
   });
 
   it("preserves independent geometry and proves SPOGOMI ownership before clearing it", () => {

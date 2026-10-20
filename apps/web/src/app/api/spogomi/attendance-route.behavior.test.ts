@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
@@ -34,6 +34,11 @@ vi.mock("@/lib/spogomi/authorization", () => ({
 const context = { params: Promise.resolve({ eventId: "event-1" }) };
 
 describe("SPOGOMI attendance route", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.enforceRateLimit.mockResolvedValue(null);
+  });
+
   it("fails closed for anonymous and non-check-in users", async () => {
     mocks.requireAuthenticatedAccess.mockResolvedValueOnce({ ok: false });
     const route = await import("./events/[eventId]/attendance/route");
@@ -58,5 +63,32 @@ describe("SPOGOMI attendance route", () => {
     const write = await route.POST(new Request("http://localhost", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ divisionId: "11111111-1111-4111-8111-111111111111", participantId: "22222222-2222-4222-8222-222222222222", status: "present", reason: "Accueil", provenance: "onsite_identity_check" }) }), context);
     expect(write.status).toBe(200);
     expect(mocks.setStatus).toHaveBeenCalledWith(expect.objectContaining({ actorClerkId: "checkin-1", status: "present", reason: "Accueil" }));
+  });
+
+  it("enforces the rate limit before parsing or invoking a privileged attendance command", async () => {
+    mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "checkin-1" });
+    const limited = new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
+    mocks.enforceRateLimit.mockResolvedValue(limited);
+    const route = await import("./events/[eventId]/attendance/route");
+    const response = await route.POST(new Request("http://localhost", { method: "POST", body: "not-json" }), context);
+    expect(response.status).toBe(429);
+    expect(mocks.setStatus).not.toHaveBeenCalled();
+    expect(mocks.getSupabase).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid client-declared roles and stale revisions at the API boundary", async () => {
+    mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "checkin-1" });
+    mocks.getSupabase.mockReturnValue({});
+    mocks.resolveAccess.mockResolvedValue({ checkin: false, role: "observer" });
+    const route = await import("./events/[eventId]/attendance/route");
+    const body = { divisionId: "11111111-1111-4111-8111-111111111111", participantId: "22222222-2222-4222-8222-222222222222", status: "present", reason: "Accueil", provenance: "onsite_identity_check", role: "checkin" };
+    expect((await route.POST(new Request("http://localhost", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }), context)).status).toBe(422);
+    expect(mocks.setStatus).not.toHaveBeenCalled();
+
+    mocks.resolveAccess.mockResolvedValue({ checkin: true });
+    mocks.setStatus.mockRejectedValueOnce(Object.assign(new Error("stale"), { code: "40001" }));
+    const stale = await route.POST(new Request("http://localhost", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, role: undefined, expectedUpdatedAt: "2026-10-20T09:00:00.000Z" }) }), context);
+    expect(stale.status).toBe(500);
+    expect(mocks.setStatus).toHaveBeenCalledWith(expect.objectContaining({ expectedUpdatedAt: "2026-10-20T09:00:00.000Z" }));
   });
 });
