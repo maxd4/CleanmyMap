@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   fetchCachedUnifiedActionContracts: vi.fn(),
   loadCachedReportCommunityEventsWithAvailability: vi.fn(),
   loadPilotageOverview: vi.fn(),
+  loadLandingSummary: vi.fn(),
   toActionListItem: vi.fn((item: unknown) => item),
   toActionMapItem: vi.fn((item: unknown) => item),
   getActionOperationalContext: vi.fn(),
@@ -37,6 +38,10 @@ vi.mock("@/lib/pilotage/overview", () => ({
   loadPilotageOverview: mocks.loadPilotageOverview,
 }));
 
+vi.mock("@/lib/accueil/data", () => ({
+  loadLandingSummary: mocks.loadLandingSummary,
+}));
+
 vi.mock("@/lib/reports/report-model", () => ({
   computeReportModel: mocks.computeReportModel,
 }));
@@ -52,8 +57,10 @@ vi.mock("@/lib/supabase/server", () => ({
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import { filterContractsToWindow } from "@/lib/pilotage/metrics";
 import {
+  buildReportsSummaryKpis,
   loadReportsAnalysisData,
   loadReportsGenerationData,
+  loadReportsPublicSummary,
 } from "./page-data";
 
 function contractAt(observedAt: string, id: string): ActionDataContract {
@@ -68,6 +75,10 @@ describe("/reports server data budget", () => {
       availability: "available",
     });
     mocks.loadPilotageOverview.mockResolvedValue({ contracts: [], periodDays: 90 });
+    mocks.loadLandingSummary.mockResolvedValue({
+      activity: { visibleActions: 0, distinctLocations: 0 },
+      counters: { wasteKg: 0, butts: 0, volunteers: 0 },
+    });
     mocks.computeReportModel.mockReturnValue({});
     mocks.aggregateMonthlyAnalytics.mockReturnValue([]);
     mocks.fetchCachedUnifiedActionContracts.mockResolvedValue({
@@ -194,5 +205,73 @@ describe("/reports server data budget", () => {
     });
     expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+
+  it("passes the authorized reader to the private media aggregate and preserves its availability", async () => {
+    mocks.fetchCachedUnifiedActionContracts.mockResolvedValueOnce({
+      items: [{ id: "action-1" }, { id: "action-2" }],
+      isTruncated: false,
+      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
+    });
+    mocks.loadActionMediaReportReadiness.mockResolvedValueOnce({
+      readyCountByActionId: new Map([["action-1", 2]]),
+      availability: "available",
+    });
+
+    const result = await loadReportsGenerationData("reader-1");
+
+    expect(mocks.loadActionMediaReportReadiness).toHaveBeenCalledWith(
+      {},
+      ["action-1", "action-2"],
+      "reader-1",
+    );
+    expect(result.actionMediaReadyCountByActionId).toEqual({ "action-1": 2 });
+    expect(result.actionMediaAvailability).toBe("available");
+  });
+
+  it("fails closed when the media projection fails without invalidating the action corpus", async () => {
+    mocks.loadActionMediaReportReadiness.mockRejectedValueOnce(new Error("media source down"));
+
+    const result = await loadReportsGenerationData("reader-1");
+
+    expect(result.contracts).toEqual([{ id: "action-1" }]);
+    expect(result.actionMediaReadyCountByActionId).toEqual({});
+    expect(result.actionMediaAvailability).toBe("unavailable");
+  });
+
+  it("keeps public summary values and explicit zeroes intact", async () => {
+    mocks.loadLandingSummary.mockResolvedValueOnce({
+      activity: { visibleActions: 3, distinctLocations: 2 },
+      counters: { wasteKg: 0, butts: 0, volunteers: 0 },
+    });
+
+    await expect(loadReportsPublicSummary()).resolves.toEqual({
+      visibleActions: 3,
+      distinctLocations: 2,
+      wasteKg: 0,
+      cigaretteButts: 0,
+      volunteers: 0,
+    });
+  });
+
+  it("keeps an unavailable summary explicit and does not turn missing KPI deltas into zero", () => {
+    expect(buildReportsSummaryKpis(null)).toEqual([
+      expect.objectContaining({ value: "n/a", deltaAbsolute: "n/a", deltaPercent: "n/a" }),
+      expect.objectContaining({ value: "n/a", deltaAbsolute: "n/a", deltaPercent: "n/a" }),
+      expect.objectContaining({ value: "n/a", deltaAbsolute: "n/a", deltaPercent: "n/a" }),
+    ]);
+    expect(buildReportsSummaryKpis({
+      summary: {
+        kpis: [
+          { label: "KPI 1", value: "1", previousValue: "n/a" },
+          { label: "KPI 2", value: "2", previousValue: "n/a", interpretation: "positive" },
+          { label: "KPI 3", value: "3", previousValue: "n/a", deltaAbsolute: "0", deltaPercent: "0%" },
+        ],
+      },
+    } as never)).toEqual([
+      expect.objectContaining({ label: "KPI 1", deltaAbsolute: "", deltaPercent: "", interpretation: "neutral" }),
+      expect.objectContaining({ label: "KPI 2", interpretation: "positive" }),
+      expect.objectContaining({ label: "KPI 3", deltaAbsolute: "0", deltaPercent: "0%" }),
+    ]);
   });
 });

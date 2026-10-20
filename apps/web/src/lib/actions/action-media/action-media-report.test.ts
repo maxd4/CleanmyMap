@@ -365,4 +365,54 @@ describe("action media report readiness", () => {
     expect(result.availability).toBe("unavailable");
     expect(result.readyCountByActionId.size).toBe(0);
   });
+
+  it("returns an available empty projection for an empty canonical action set", async () => {
+    const { supabase } = makePagedSupabase(() => {
+      throw new Error("no query should be issued");
+    });
+
+    const result = await loadActionMediaReportReadiness(supabase as never, ["", "  ", ""], "user-1");
+
+    expect(result).toEqual({ readyCountByActionId: new Map(), availability: "available" });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("returns unavailable when the reader identity is absent or blank", async () => {
+    const { supabase } = makePagedSupabase(() => {
+      throw new Error("no query should be issued");
+    });
+
+    await expect(loadActionMediaReportReadiness(supabase as never, ["a1"], undefined)).resolves.toEqual({
+      readyCountByActionId: new Map(),
+      availability: "unavailable",
+    });
+    await expect(loadActionMediaReportReadiness(supabase as never, ["a1"], "  ")).resolves.toEqual({
+      readyCountByActionId: new Map(),
+      availability: "unavailable",
+    });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("refuses a ready row for an action outside the requested batch", async () => {
+    const { supabase } = makePagedSupabase(() => ({
+      data: [{ id: "m-1", action_id: "not-requested", created_by_clerk_id: "user-1" }],
+      error: null,
+      count: 1,
+    }));
+
+    const result = await loadActionMediaReportReadiness(supabase as never, ["a1"], "user-1");
+
+    expect(result.availability).toBe("unavailable");
+    expect(result.readyCountByActionId).toEqual(new Map());
+  });
+
+  it("fails closed when the paginated query throws before returning a page", async () => {
+    const { supabase } = makePagedSupabase(() => {
+      throw new Error("query interrupted");
+    });
+
+    const result = await loadActionMediaReportReadiness(supabase as never, ["a1"], "user-1");
+
+    expect(result).toEqual({ readyCountByActionId: new Map(), availability: "unavailable" });
+  });
 });

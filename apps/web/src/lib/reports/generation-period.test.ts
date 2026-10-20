@@ -4,6 +4,9 @@ import {
   filterReportGenerationContracts,
   getReportGenerationPeriodDateBounds,
   getReportGenerationPeriodBounds,
+  filterReportCommunityEventsByPeriod,
+  isReportGenerationDateInPeriod,
+  isValidReportGenerationPeriodSelection,
 } from "./generation-period";
 
 function contractAt(
@@ -101,5 +104,68 @@ describe("report generation period", () => {
       { id: "custom_range", from: "2026-09-01", to: "2026-08-01" },
       now,
     )).toThrow(RangeError);
+  });
+
+  it("clamps calendar subtraction on leap years and keeps the UTC floor inclusive", () => {
+    const leapYearNow = new Date("2024-08-31T12:00:00.000Z");
+    const contracts = [
+      contractAt("2024-02-28T23:59:59.999Z", "before-leap-floor"),
+      contractAt("2024-02-29T00:00:00.000Z", "leap-floor"),
+      contractAt("2024-08-31T12:00:00.000Z", "leap-now"),
+    ];
+
+    expect(getReportGenerationPeriodBounds("six_months", leapYearNow)).toEqual({
+      lowerBound: Date.parse("2024-02-29T00:00:00.000Z"),
+      upperBound: leapYearNow.getTime(),
+    });
+    expect(filterReportGenerationContracts(contracts, "six_months", leapYearNow).map((contract) => contract.id)).toEqual([
+      "leap-floor",
+      "leap-now",
+    ]);
+  });
+
+  it("validates civil dates instead of accepting normalized calendar overflows", () => {
+    expect(isValidReportGenerationPeriodSelection({
+      id: "custom_range",
+      from: "2024-02-29",
+      to: "2024-02-29",
+    })).toBe(true);
+    expect(isValidReportGenerationPeriodSelection({
+      id: "custom_range",
+      from: "2023-02-29",
+      to: "2023-03-01",
+    })).toBe(false);
+    expect(isValidReportGenerationPeriodSelection({
+      id: "custom_range",
+      from: "2024-02-30",
+      to: "2024-03-01",
+    })).toBe(false);
+    expect(isValidReportGenerationPeriodSelection({
+      id: "custom_range",
+      from: "2024-03-01T00:00:00.000Z",
+      to: "2024-03-02",
+    })).toBe(false);
+    expect(() => getReportGenerationPeriodBounds("six_months", new Date("invalid"))).toThrow(RangeError);
+  });
+
+  it("uses UTC civil dates for custom ranges even when offsets cross a calendar boundary", () => {
+    const selection = { id: "custom_range" as const, from: "2026-08-01", to: "2026-08-31" };
+
+    expect(isReportGenerationDateInPeriod("2026-08-01T02:30:00+02:00", selection, now)).toBe(true);
+    expect(isReportGenerationDateInPeriod("2026-08-31T23:30:00-02:00", selection, now)).toBe(false);
+    expect(isReportGenerationDateInPeriod("not-a-date", selection, now)).toBe(false);
+  });
+
+  it("rejects invalid relative dates and applies the same inclusive window to community events", () => {
+    expect(isReportGenerationDateInPeriod("not-a-date", { id: "thirty_days" }, now)).toBe(false);
+    const events = [
+      { id: "at-floor", eventDate: "2026-08-01T00:00:00.000Z" },
+      { id: "at-now", eventDate: now.toISOString() },
+      { id: "future", eventDate: "2026-09-01T00:00:00.000Z" },
+    ] as never;
+    expect(filterReportCommunityEventsByPeriod(events, { id: "full_history" }, now).map((event: { id: string }) => event.id)).toEqual([
+      "at-floor",
+      "at-now",
+    ]);
   });
 });

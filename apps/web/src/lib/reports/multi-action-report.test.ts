@@ -40,6 +40,7 @@ vi.mock("@/lib/reports/page-data-export", () => ({
 import {
   buildMultiActionReportGenerationInput,
   MultiActionReportEmptyError,
+  MultiActionReportPeriodInvalidError,
   MultiActionReportScopeUnavailableError,
   MultiActionReportSourceUnavailableError,
 } from "./multi-action-report";
@@ -310,5 +311,76 @@ describe("multi-action report server resolver", () => {
       modules,
       now,
     })).rejects.toBeInstanceOf(MultiActionReportEmptyError);
+  });
+
+  it("never expands the canonical corpus when period, scope and filters are combined", async () => {
+    const candidates = [
+      makeContract("kept", { wasteKg: 4, associationName: "Association Canonique" }),
+      makeContract("outside-period", { observedAt: "2026-01-01T00:00:00.000Z" }),
+      makeContract("other-association", { associationName: "Autre association" }),
+      makeContract("below-filter", { wasteKg: 1 }),
+      makeContract("hidden", { moderationVisibility: "hidden" }),
+      makeContract("unpublished", { publishedAt: null }),
+      makeContract("draft", { actionPhase: "post_action_draft" }),
+      makeContract("rejected", { status: "rejected" }),
+    ];
+    mocks.loadReportsGenerationData.mockResolvedValueOnce({
+      contracts: [...candidates].reverse(),
+      isTruncated: false,
+      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
+      communityEvents: [],
+      communityEventsAvailability: "available",
+    });
+
+    const filters = {
+      ...{
+        dataQuality: "all" as const,
+        qualityGradeAtLeast: "any" as const,
+        measureProvenance: "any" as const,
+        validCoordinates: "any" as const,
+        geometryProvenance: "any" as const,
+        declarationOrigin: "any" as const,
+        wasteKgMin: 4,
+        wasteKgMax: 4,
+        cigaretteButtsMin: null,
+        cigaretteButtsMax: null,
+        wasteCategory: "any" as const,
+        exploitableGeometry: "any" as const,
+        photographicEvidence: "any" as const,
+      },
+    };
+    const result = await buildMultiActionReportGenerationInput({
+      request: {
+        type: "multi_action",
+        period: { id: "custom_range", from: "2026-08-01", to: "2026-08-31" },
+        scope: { kind: "association", value: "Association Canonique" },
+        filters,
+      },
+      detailLevel: "default",
+      modules,
+      now,
+      generationId: "generation-selection-order",
+    });
+
+    const modelCall = mocks.computeReportModel.mock.calls.at(-1)?.[0];
+    expect(modelCall.contracts.map((contract: { id: string }) => contract.id)).toEqual(["kept"]);
+    expect(modelCall.allItems.map((item: { contract: { id: string } }) => item.contract.id)).toEqual(["kept"]);
+    expect(modelCall.approvedItems.map((item: { contract: { id: string } }) => item.contract.id)).toEqual(["kept"]);
+    expect(modelCall.mapItems.map((item: { contract: { id: string } }) => item.contract.id)).toEqual(["kept"]);
+    expect(result.payload.snapshotMetadata).toMatchObject({ provenance: { actionCount: 1 }, filters });
+  });
+
+  it("rejects invalid custom periods before reading the source", async () => {
+    await expect(buildMultiActionReportGenerationInput({
+      request: {
+        type: "multi_action",
+        period: { id: "custom_range", from: "2026-09-01", to: "2026-08-01" },
+        scope: { kind: "global" },
+      },
+      detailLevel: "default",
+      modules,
+      now,
+    })).rejects.toBeInstanceOf(MultiActionReportPeriodInvalidError);
+    expect(mocks.loadReportsGenerationData).not.toHaveBeenCalled();
   });
 });

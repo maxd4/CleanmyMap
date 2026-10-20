@@ -65,6 +65,14 @@ describe("single-action report server boundary", () => {
     expect(loadActionByIdMock).toHaveBeenCalledWith({}, actionId);
   });
 
+  it("fails closed when the row-to-contract projection changes eligibility", async () => {
+    toActionContractMock.mockReturnValueOnce({ ...contract, status: "pending" });
+
+    await expect(resolveSingleActionReportContract(actionId)).rejects.toBeInstanceOf(
+      SingleActionReportTargetUnavailableError,
+    );
+  });
+
   it.each([
     ["missing", null],
     ["draft", { ...row, status: "pending" }],
@@ -72,6 +80,7 @@ describe("single-action report server boundary", () => {
     ["refused", { ...row, status: "rejected" }],
     ["hidden", { ...row, moderation_visibility: "hidden" }],
     ["unpublished", { ...row, published_at: null }],
+    ["private", { ...row, access_mode: "invite_link" }],
   ])("rejects %s targets", async (_label, value) => {
     loadActionByIdMock.mockResolvedValueOnce(value);
     await expect(resolveSingleActionReportContract(actionId)).rejects.toBeInstanceOf(

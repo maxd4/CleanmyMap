@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildActionDataContract } from "@/lib/actions/contracts/contract-model";
 import {
   filterActionContractsByAdvancedFilters,
+  normalizeReportAdvancedFilters,
   REPORT_ADVANCED_FILTER_DEFAULTS,
   ReportAdvancedFilterSourceUnavailableError,
 } from "./report-advanced-filters";
@@ -131,5 +132,100 @@ describe("report advanced filters", () => {
       now,
       actionMediaAvailability: "unavailable",
     })).toThrow(ReportAdvancedFilterSourceUnavailableError);
+  });
+
+  it("keeps explicit zero distinct from missing values and rejects contradictory ranges", () => {
+    const contracts = [
+      makeContract("zero", { wasteKg: 0, cigaretteButts: 0 }),
+      makeContract("missing", { wasteKg: null, cigaretteButts: null }),
+      makeContract("positive", { wasteKg: 2, cigaretteButts: 2 }),
+    ];
+
+    expect(filterActionContractsByAdvancedFilters({
+      contracts,
+      filters: {
+        ...REPORT_ADVANCED_FILTER_DEFAULTS,
+        wasteKgMin: 0,
+        wasteKgMax: 0,
+        cigaretteButtsMin: 0,
+        cigaretteButtsMax: 0,
+      },
+      now,
+    }).map((contract) => contract.id)).toEqual(["zero"]);
+
+    expect(filterActionContractsByAdvancedFilters({
+      contracts,
+      filters: {
+        ...REPORT_ADVANCED_FILTER_DEFAULTS,
+        wasteKgMin: 3,
+        wasteKgMax: 1,
+      },
+      now,
+    })).toEqual([]);
+  });
+
+  it("keeps unavailable media harmless when no photo filter is active", () => {
+    expect(filterActionContractsByAdvancedFilters({
+      contracts: [makeContract("action")],
+      filters: { ...REPORT_ADVANCED_FILTER_DEFAULTS, photographicEvidence: "any" },
+      now,
+      actionMediaAvailability: "unavailable",
+    }).map((contract) => contract.id)).toEqual(["action"]);
+  });
+
+  it("applies the quality grade boundary and rejects invalid filter values before selection", () => {
+    const canonical = makeContract("canonical");
+    const incomplete = makeContract("incomplete", {
+      latitude: null,
+      longitude: null,
+      wasteKg: null,
+      cigaretteButts: null,
+      volunteersCount: null,
+      durationMinutes: null,
+      manualDrawing: null,
+    });
+
+    expect(filterActionContractsByAdvancedFilters({
+      contracts: [canonical, incomplete],
+      filters: { ...REPORT_ADVANCED_FILTER_DEFAULTS, qualityGradeAtLeast: "A" },
+      now,
+    }).map((contract) => contract.id)).toEqual(["canonical"]);
+    expect(() => normalizeReportAdvancedFilters({
+      ...REPORT_ADVANCED_FILTER_DEFAULTS,
+      wasteKgMin: -1,
+    })).toThrow();
+    expect(() => normalizeReportAdvancedFilters({
+      ...REPORT_ADVANCED_FILTER_DEFAULTS,
+      cigaretteButtsMax: Number.NaN,
+    })).toThrow();
+  });
+
+  it("requires structured positive categories and never promotes text or zero to evidence", () => {
+    const result = filterActionContractsByAdvancedFilters({
+      contracts: [
+        makeContract("positive", { wasteBreakdown: { recyclablesKg: 1 } }),
+        makeContract("zero", { wasteBreakdown: { recyclablesKg: 0 } }),
+        makeContract("text", { notes: "recyclables", wasteBreakdown: null }),
+      ],
+      filters: { ...REPORT_ADVANCED_FILTER_DEFAULTS, wasteCategory: "recyclables" },
+      now,
+    });
+
+    expect(result.map((contract) => contract.id)).toEqual(["positive"]);
+  });
+
+  it("rejects a geometry or declaration provenance mismatch without fallback inference", () => {
+    const contract = makeContract("canonical", { geometrySource: "manual", submissionMode: "complete" });
+
+    expect(filterActionContractsByAdvancedFilters({
+      contracts: [contract],
+      filters: { ...REPORT_ADVANCED_FILTER_DEFAULTS, geometryProvenance: "reference" },
+      now,
+    })).toEqual([]);
+    expect(filterActionContractsByAdvancedFilters({
+      contracts: [contract],
+      filters: { ...REPORT_ADVANCED_FILTER_DEFAULTS, declarationOrigin: "quick" },
+      now,
+    })).toEqual([]);
   });
 });
