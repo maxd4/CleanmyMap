@@ -383,4 +383,37 @@ describe("multi-action report server resolver", () => {
     })).rejects.toBeInstanceOf(MultiActionReportPeriodInvalidError);
     expect(mocks.loadReportsGenerationData).not.toHaveBeenCalled();
   });
+
+  it("computes multi-action waste coverage from structured rows without counting missing breakdowns", async () => {
+    mocks.loadReportsGenerationData.mockResolvedValueOnce({
+      contracts: [
+        makeContract("a", { wasteBreakdown: { megotsKg: 2, plastiqueKg: 1 } }),
+        makeContract("b", { wasteBreakdown: { megotsKg: 0, verreKg: 3 } }),
+        makeContract("missing", { wasteBreakdown: null }),
+      ],
+      isTruncated: false,
+      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
+      communityEvents: [],
+      communityEventsAvailability: "available",
+    });
+
+    await buildMultiActionReportGenerationInput({
+      request: { type: "multi_action", period: { id: "full_history" }, scope: { kind: "global" } },
+      detailLevel: "default",
+      modules,
+      now,
+    });
+
+    const model = mocks.buildPdfData.mock.calls.at(-1)?.[0]?.model;
+    expect(model.wasteProfile).toMatchObject({
+      coveragePercent: (2 / 3) * 100,
+      dominantLabel: "Verre",
+      dominantKg: 3,
+    });
+    expect(model.wasteProfile.categories).toEqual([
+      expect.objectContaining({ key: "verreKg", kg: 3, actions: 1 }),
+      expect.objectContaining({ key: "megotsKg", kg: 2, actions: 1 }),
+      expect.objectContaining({ key: "plastiqueKg", kg: 1, actions: 1 }),
+    ]);
+  });
 });

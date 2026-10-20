@@ -198,6 +198,24 @@ describe("report advanced filters", () => {
       ...REPORT_ADVANCED_FILTER_DEFAULTS,
       cigaretteButtsMax: Number.NaN,
     })).toThrow();
+
+    const lowQuality = makeContract("low-quality", {
+      createdByClerkId: null,
+      createdAt: null,
+      observedAt: "2020-01-01T00:00:00.000Z",
+      latitude: null,
+      longitude: null,
+      manualDrawing: null,
+      wasteKg: null,
+      cigaretteButts: null,
+      volunteersCount: null,
+      durationMinutes: null,
+    });
+    expect(filterActionContractsByAdvancedFilters({
+      contracts: [lowQuality],
+      filters: { ...REPORT_ADVANCED_FILTER_DEFAULTS, qualityGradeAtLeast: "C" },
+      now,
+    }).map((contract) => contract.id)).toEqual(["low-quality"]);
   });
 
   it("requires structured positive categories and never promotes text or zero to evidence", () => {
@@ -227,5 +245,32 @@ describe("report advanced filters", () => {
       filters: { ...REPORT_ADVANCED_FILTER_DEFAULTS, declarationOrigin: "quick" },
       now,
     })).toEqual([]);
+  });
+
+  it("supports absence filters without treating invalid or unknown evidence as present", () => {
+    const withGeometry = makeContract("with-geometry");
+    const withoutGeometry = makeContract("without-geometry", {
+      latitude: null,
+      longitude: null,
+      manualDrawing: null,
+    });
+
+    expect(filterActionContractsByAdvancedFilters({
+      contracts: [withGeometry, withoutGeometry],
+      filters: { ...REPORT_ADVANCED_FILTER_DEFAULTS, exploitableGeometry: "without" },
+      now,
+    }).map((contract) => contract.id)).toEqual(["without-geometry"]);
+    expect(filterActionContractsByAdvancedFilters({
+      contracts: [withGeometry, withoutGeometry],
+      filters: { ...REPORT_ADVANCED_FILTER_DEFAULTS, validCoordinates: "required" },
+      now,
+    }).map((contract) => contract.id)).toEqual(["with-geometry"]);
+    expect(filterActionContractsByAdvancedFilters({
+      contracts: [withGeometry, withoutGeometry],
+      filters: { ...REPORT_ADVANCED_FILTER_DEFAULTS, photographicEvidence: "without" },
+      now,
+      actionMediaReadyCountByActionId: new Map([["with-geometry", 1]]),
+      actionMediaAvailability: "available",
+    }).map((contract) => contract.id)).toEqual(["without-geometry"]);
   });
 });

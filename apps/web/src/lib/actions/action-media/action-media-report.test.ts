@@ -415,4 +415,27 @@ describe("action media report readiness", () => {
 
     expect(result).toEqual({ readyCountByActionId: new Map(), availability: "unavailable" });
   });
+
+  it.each([
+    { name: "an empty action id", row: { id: "m-1", action_id: "", created_by_clerk_id: "user-1" } },
+    { name: "a missing action id", row: { id: "m-1", created_by_clerk_id: "user-1" } as unknown as ReportRow },
+  ])("fails closed for $name", async ({ row }) => {
+    const { supabase } = makePagedSupabase(() => ({ data: [row], error: null, count: 1 }));
+
+    const result = await loadActionMediaReportReadiness(supabase as never, ["a1"], "user-1");
+
+    expect(result).toEqual({ readyCountByActionId: new Map(), availability: "unavailable" });
+  });
+
+  it("refuses a short page that cannot account for the advertised remaining rows", async () => {
+    const { supabase } = makePagedSupabase(() => ({
+      data: [{ id: "m-1", action_id: "a1", created_by_clerk_id: "user-1" }],
+      error: null,
+      count: 2,
+    }));
+
+    const result = await loadActionMediaReportReadiness(supabase as never, ["a1"], "user-1");
+
+    expect(result).toEqual({ readyCountByActionId: new Map(), availability: "unavailable" });
+  });
 });
