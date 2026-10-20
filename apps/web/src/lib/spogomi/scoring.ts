@@ -9,7 +9,8 @@ function round(value: number, decimals: number, mode: "half_up" | "down" | "up")
   const factor = 10 ** decimals;
   if (mode === "down") return Math.floor(value * factor) / factor;
   if (mode === "up") return Math.ceil(value * factor) / factor;
-  return Math.round((value + Number.EPSILON) * factor) / factor;
+  const scaled = value * factor;
+  return (scaled >= 0 ? Math.floor(scaled + 0.5) : Math.ceil(scaled - 0.5)) / factor;
 }
 function sumNullable(values: Array<number | null | undefined>): number | null {
   const present = values.filter((value): value is number => value !== null && value !== undefined);
@@ -50,6 +51,35 @@ export function calculateSpogomiCompetitionResult(input: SpogomiCompetitionInput
       buttsPerParticipant,
       ineligibleReason: "regulation_incomplete",
     };
+  }
+
+  const itemValidation = validateCompetitionItems(input);
+  if (!itemValidation.ok) {
+    return {
+      physicalTotals,
+      officialScore: null,
+      scoreStatus: "unavailable",
+      appliedPenalties,
+      comparableForButtsPerParticipant,
+      buttsPerParticipant,
+      ineligibleReason: itemValidation.reason,
+    };
+  }
+
+  if (input.submissionStatus === "certified" && regulation.eligibility?.requiresAllCategories) {
+    const categoryCodes = new Set(regulation.categories.map((category) => category.code));
+    const measuredCodes = new Set(input.items.filter((item) => item.quantity !== null).map((item) => item.categoryCode));
+    if (measuredCodes.size !== categoryCodes.size || [...categoryCodes].some((code) => !measuredCodes.has(code))) {
+      return {
+        physicalTotals,
+        officialScore: null,
+        scoreStatus: "unavailable",
+        appliedPenalties,
+        comparableForButtsPerParticipant,
+        buttsPerParticipant,
+        ineligibleReason: "all_categories_required",
+      };
+    }
   }
 
   const minimumPresent = regulation.eligibility?.minimumPresentParticipants ?? null;

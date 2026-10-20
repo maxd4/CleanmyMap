@@ -116,6 +116,42 @@ describe("SPOGOMI public results projection", () => {
     expect(projection.results.sport.entries.filter((entry) => entry.teamNumber <= 2).map((entry) => entry.rank)).toEqual([1, 1]);
   });
 
+  it("uses only the configured sporting tiebreaker and never the team number", () => {
+    const candidate = source();
+    candidate.event.regulationConfig = { ...(candidate.event.regulationConfig as Record<string, unknown>), tiebreakers: ["sporting_score", "mass_grams"] };
+    const projection = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+    expect(projection.results.sport.entries.filter((entry) => entry.teamNumber <= 2).map((entry) => ({ team: entry.teamNumber, rank: entry.rank }))).toEqual([
+      { team: 1, rank: 1 },
+      { team: 2, rank: 2 },
+    ]);
+  });
+
+  it("keeps equal direct-butts ratios tied and does not use sporting tiebreakers", () => {
+    const candidate = source();
+    candidate.items = candidate.items.map((item) => item.submission_id === "submission-2" && item.category_rule_id === "cat-butts"
+      ? { ...item, mass_grams: null, object_count: 2 }
+      : item);
+    candidate.participants = [...candidate.participants, { id: "p5", team_id: "team-2", registration_status: "registered", attendance_status: "present" }];
+    const projection = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+    expect(projection.results.butts.entries.filter((entry) => entry.teamNumber <= 2).map((entry) => ({ team: entry.teamNumber, rank: entry.rank, ratio: entry.ratio }))).toEqual([
+      { team: 1, rank: 2, ratio: 1 },
+      { team: 2, rank: 2, ratio: 1 },
+    ]);
+  });
+
+  it("keeps a valid physical collection visible when sports closure disqualifies the team", () => {
+    const candidate = source();
+    candidate.teams = candidate.teams.map((team) => team.id === "team-1"
+      ? { ...team, certified_submission_id: "submission-1", closure_status: "disqualified", sport_eligible: false, environmental_eligibility: "eligible" }
+      : team);
+    candidate.submissions = candidate.submissions.map((submission) => submission.id === "submission-1" ? { ...submission, status: "certified" } : submission);
+    const projection = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+    const sportsEntry = projection.results.sport.entries.find((entry) => entry.teamNumber === 1);
+    const exportedTeam = projection.teams.find((team) => team.teamNumber === 1);
+    expect(sportsEntry).toMatchObject({ eligible: false, rank: null });
+    expect(exportedTeam).toMatchObject({ environmentalEligibility: "eligible", categories: expect.arrayContaining([expect.objectContaining({ quantity: 10, massGrams: 10000 })]) });
+  });
+
   it("does not expose provisional values in certified visibility without a matching official decision", () => {
     const candidate = source();
     candidate.event.state = "certified";

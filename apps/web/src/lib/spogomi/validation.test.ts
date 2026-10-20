@@ -161,4 +161,25 @@ describe("SPOGOMI domain invariants", () => {
     expect(isRegulationReadyForCertification({ ...ready, tiebreakers: ["mass_grams", "mass_grams"] })).toBe(false);
     expect(isRegulationReadyForCertification({ ...ready, rounding: undefined })).toBe(false);
   });
+
+  it("keeps submission states distinct and requires an authorized certification decision", () => {
+    const ready: SpogomiRegulation = {
+      ...incompleteRegulation,
+      sourceReference: "synthetic://spogomi/test-regulation-v1",
+      status: "complete",
+      rounding: { decimals: 0, mode: "half_up" },
+      eligibility: { minimumPresentParticipants: 1, requiresAllCategories: true },
+      tiebreakers: ["sporting_score"],
+      categories: [{ ...incompleteRegulation.categories[0], coefficient: 1, coefficientStatus: "confirmed", isComplete: true }],
+    };
+
+    for (const status of ["draft", "submitted", "rejected", "superseded"] as const) {
+      expect(validateSubmissionCertification({ status, regulation: ready, certifiedByClerkId: null, certifiedAt: null })).toEqual({ ok: true });
+    }
+    expect(validateSubmissionCertification({ status: "certified", regulation: ready, certifiedByClerkId: null, certifiedAt: null })).toEqual({ ok: false, reason: "certification_reviewer_and_timestamp_required" });
+    expect(validateSubmissionCertification({ status: "certified", regulation: ready, certifiedByClerkId: "referee-1", certifiedAt: "2026-10-20T10:00:00.000Z" })).toEqual({ ok: true });
+    for (const previousStatus of ["provisional", "rejected", "superseded"] as const) {
+      expect(validateSubmissionCertification({ status: "certified", previousStatus, regulation: ready, certifiedByClerkId: "referee-1", certifiedAt: "2026-10-20T10:00:00.000Z" })).toEqual({ ok: false, reason: "non_certifiable_previous_status" });
+    }
+  });
 });

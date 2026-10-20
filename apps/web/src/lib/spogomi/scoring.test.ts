@@ -46,6 +46,83 @@ const completeRegulation: SpogomiRegulation = {
 };
 
 describe("SPOGOMI competition engine", () => {
+  it.each([
+    { mode: "half_up" as const, expected: 1.3 },
+    { mode: "down" as const, expected: 1.2 },
+    { mode: "up" as const, expected: 1.3 },
+  ])("applies the configured $mode rounding rule without changing gram precision", ({ mode, expected }) => {
+    const regulation = { ...completeRegulation, rounding: { decimals: 1, mode } };
+    const result = calculateSpogomiCompetitionResult({
+      regulation,
+      presentParticipants: 1,
+      submissionStatus: "certified",
+      items: [
+        { categoryCode: "bottles", measurementKind: "count", unit: "objet", quantity: 0, objectCount: 0, massGrams: null, provenance: "counted" },
+        { categoryCode: "butts", measurementKind: "count", unit: "objet", quantity: 0, objectCount: 0, massGrams: null, provenance: "counted" },
+        { categoryCode: "mixed", measurementKind: "mass", unit: "g", quantity: 2.5, massGrams: 2.5, objectCount: null, provenance: "weighed" },
+      ],
+    });
+    expect(result.officialScore).toBe(expected);
+    expect(result.physicalTotals.massGrams).toBe(2.5);
+    expect(result.scoreStatus).toBe("official");
+  });
+
+  it("rounds half_up away from zero when penalties exceed the synthetic score", () => {
+    const regulation = { ...completeRegulation, rounding: { decimals: 1, mode: "half_up" as const } };
+    const result = calculateSpogomiCompetitionResult({
+      regulation,
+      presentParticipants: 1,
+      submissionStatus: "certified",
+      appliedPenalties: [{ code: "synthetic", label: "Synthetic penalty", points: 2.5 }],
+      items: [
+        { categoryCode: "bottles", measurementKind: "count", unit: "objet", quantity: 0, objectCount: 0, massGrams: null, provenance: "counted" },
+        { categoryCode: "butts", measurementKind: "count", unit: "objet", quantity: 0, objectCount: 0, massGrams: null, provenance: "counted" },
+        { categoryCode: "mixed", measurementKind: "mass", unit: "g", quantity: 1.25, massGrams: 1.25, objectCount: null, provenance: "weighed" },
+      ],
+    });
+    expect(result.officialScore).toBe(-1.9);
+  });
+
+  it.each([
+    ["status", { status: "incomplete" as const }],
+    ["source", { sourceReference: null }],
+    ["rounding", { rounding: undefined }],
+    ["eligibility", { eligibility: undefined }],
+    ["tiebreakers", { tiebreakers: undefined }],
+    ["category completeness", { categories: completeRegulation.categories.map((category) => ({ ...category, isComplete: false })) }],
+    ["coefficient confirmation", { categories: completeRegulation.categories.map((category) => ({ ...category, coefficientStatus: "unknown" as const })) }],
+    ["penalty definition", { penalties: [{ code: "late", label: "Retour tardif", points: Number.NaN }] }],
+  ])("keeps the official score unavailable when the regulation %s is incomplete", (_name, change) => {
+    const result = calculateSpogomiCompetitionResult({
+      regulation: { ...completeRegulation, ...change },
+      presentParticipants: 1,
+      submissionStatus: "certified",
+      items: [{ categoryCode: "mixed", measurementKind: "mass", unit: "g", quantity: 12.75, massGrams: 12.75, provenance: "weighed" }],
+    });
+    expect(result.officialScore).toBeNull();
+    expect(result.scoreStatus).toBe("unavailable");
+  });
+
+  it("does not certify a result when every configured category is not measured", () => {
+    const result = calculateSpogomiCompetitionResult({
+      regulation: completeRegulation,
+      presentParticipants: 1,
+      submissionStatus: "certified",
+      items: [{ categoryCode: "mixed", measurementKind: "mass", unit: "g", quantity: 12.75, massGrams: 12.75, provenance: "weighed" }],
+    });
+    expect(result).toMatchObject({ officialScore: null, scoreStatus: "unavailable", ineligibleReason: "all_categories_required" });
+  });
+
+  it.each([
+    [{ categoryCode: "mixed", measurementKind: "mass" as const, unit: "kg", quantity: 1, provenance: "weighed" }, "measurement_unit_must_match_category"],
+    [{ categoryCode: "bottles", measurementKind: "count" as const, unit: "objet", quantity: 1.5, provenance: "counted" }, "count_must_be_an_integer"],
+    [{ categoryCode: "mixed", measurementKind: "mass" as const, unit: "g", quantity: Number.NaN, provenance: "weighed" }, "quantity_must_be_a_non_negative_finite_number"],
+    [{ categoryCode: "mixed", measurementKind: "mass" as const, unit: "g", quantity: 1, massGrams: Number.POSITIVE_INFINITY, provenance: "weighed" }, "mass_grams_must_be_non_negative_and_bounded"],
+    [{ categoryCode: "mixed", measurementKind: "mass" as const, unit: "g", quantity: 1, objectCount: 1.5, provenance: "weighed" }, "object_count_must_be_a_non_negative_integer"],
+  ])("rejects invalid measured values before an official score can be produced", (item, reason) => {
+    expect(validateCompetitionItems({ regulation: completeRegulation, presentParticipants: 1, items: [item] })).toEqual({ ok: false, reason });
+  });
+
   it("keeps physical totals separate from the official score and preserves gram precision", () => {
     const result = calculateSpogomiCompetitionResult({
       regulation: completeRegulation,
@@ -83,7 +160,11 @@ describe("SPOGOMI competition engine", () => {
       regulation: completeRegulation,
       presentParticipants: 1,
       submissionStatus: "certified",
-      items: [{ categoryCode: "butts", measurementKind: "count", unit: "objet", quantity: 2, objectCount: 2, provenance: "counted" }],
+      items: [
+        { categoryCode: "bottles", measurementKind: "count", unit: "objet", quantity: 0, objectCount: 0, provenance: "counted" },
+        { categoryCode: "butts", measurementKind: "count", unit: "objet", quantity: 2, objectCount: 2, provenance: "counted" },
+        { categoryCode: "mixed", measurementKind: "mass", unit: "g", quantity: 0, massGrams: 0, provenance: "weighed" },
+      ],
     });
     expect(result.scoreStatus).toBe("official");
   });
