@@ -95,4 +95,29 @@ describe("SPOGOMI official rankings route", () => {
     expect((await route.POST(new Request("http://localhost"), context)).status).toBe(500);
     expect(mocks.handleApiError).toHaveBeenCalledWith(expect.objectContaining({ code: "40001" }), "spogomi.rankings.publish");
   });
+
+  it("reports a mixed publication as partial when a later division rejects its snapshot", async () => {
+    const casual = divisionProjection("division-casual", "team-casual");
+    const world = divisionProjection("division-world", "team-world");
+    mocks.loadSpogomiResultsProjection.mockResolvedValueOnce({ teams: [...casual.teams, ...world.teams] });
+    mocks.getSpogomiDivisionProjections.mockReturnValue([casual, world]);
+    mocks.rpc
+      .mockResolvedValueOnce({ data: 2, error: null })
+      .mockResolvedValueOnce({ data: null, error: { code: "40001", message: "stale source" } });
+
+    const partial = await route.POST(new Request("http://localhost"), context);
+    expect(partial.status).toBe(409);
+    expect(await partial.json()).toEqual({
+      status: "partial",
+      rankings: 2,
+      divisions: [{ divisionId: "division-casual", decisionVersion: expect.any(String), count: 2 }],
+      failedDivisions: [{ divisionId: "division-world", status: "failed" }],
+    });
+    expect(mocks.handleApiError).not.toHaveBeenCalled();
+
+    mocks.rpc.mockResolvedValue({ data: 2, error: null });
+    const retry = await route.POST(new Request("http://localhost"), context);
+    expect(retry.status).toBe(200);
+    expect((await retry.json()).status).toBe("published");
+  });
 });

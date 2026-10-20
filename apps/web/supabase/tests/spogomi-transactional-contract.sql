@@ -56,6 +56,14 @@ begin
     v_event_id, v_revision, 'spogomi-transactional-contract-lock'
   );
 
+  insert into public.spogomi_result_submissions (
+    id, event_id, team_id, version, status, regulation_version,
+    submitted_by_clerk_id, submitted_at
+  ) values (
+    v_submission_id, v_event_id, v_team_id, 1, 'submitted', 'synthetic-v1',
+    'spogomi-transactional-contract-team', now()
+  );
+
   begin
     update public.spogomi_participants set team_id = null where id = v_participant_id;
     raise exception 'direct participant mutation after composition lock was accepted';
@@ -103,7 +111,7 @@ select set_config('request.jwt.claims',
 select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claim.sub', 'spogomi-transactional-contract-owner', true);
 do $$
-declare
+  declare
   v_event_count bigint;
   v_team_count bigint;
   v_result_count bigint;
@@ -117,9 +125,10 @@ begin
   if v_event_count <> 1 or v_team_count <> 1 then
     raise exception 'authorized organizer read did not return its event projection';
   end if;
-  execute 'select count(*) from public.spogomi_result_submissions' into v_result_count;
-  if v_result_count < 0 then
-    raise exception 'authorized organizer result read returned an invalid count';
+   execute format('select count(*) from public.spogomi_result_submissions where event_id = %L::uuid',
+     (select id::text from public.spogomi_events where name = 'Synthetic transactional event')) into v_result_count;
+   if v_result_count <> 1 then
+     raise exception 'authorized organizer result read did not return the exact event submission';
   end if;
   begin
     execute 'select 1 from public.spogomi_participants limit 1';
@@ -146,12 +155,20 @@ select set_config('request.jwt.claim.sub', 'spogomi-unrelated-account', true);
 do $$
 declare
   v_event_count bigint;
+  v_result_count bigint;
 begin
   select count(*) into v_event_count
     from public.spogomi_events
    where name = 'Synthetic transactional event';
   if v_event_count <> 0 then
     raise exception 'unrelated authenticated account read another event';
+  end if;
+  select count(*) into v_result_count
+    from public.spogomi_result_submissions s
+    join public.spogomi_events e on e.id = s.event_id
+   where e.name = 'Synthetic transactional event';
+  if v_result_count <> 0 then
+    raise exception 'unrelated authenticated account read another event result';
   end if;
 end;
 $$;
@@ -385,5 +402,148 @@ begin
 end;
 $$;
 
-raise notice 'EXECUTED_DB_CONTRACT: SPOGOMI RLS, lock triggers and atomic A-B-A consolidation contract passed';
+-- Measurement import confirmation is one transaction: invalid later rows do
+-- not leave earlier revisions, and a successful replay is idempotent.
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+do $$
+declare
+  v_action_id uuid := gen_random_uuid();
+  v_event_id uuid := gen_random_uuid();
+  v_division_id uuid;
+  v_team_id uuid := gen_random_uuid();
+  v_category_a uuid := gen_random_uuid();
+  v_category_b uuid := gen_random_uuid();
+  v_import_id uuid := gen_random_uuid();
+  v_other_import_id uuid := gen_random_uuid();
+  v_result jsonb;
+  v_confirmed_rows integer[];
+  v_count bigint;
+  v_status text;
+begin
+  insert into public.actions (id, created_by_clerk_id, action_date, location_label, status)
+  values (v_action_id, 'spogomi-measurement-import-contract-owner', current_date,
+          'Synthetic measurement import contract', 'pending');
+  insert into public.spogomi_events (
+    id, action_id, created_by_clerk_id, name, location_label, mode, state,
+    starts_at, regulation_version, regulation_status
+  ) values (
+    v_event_id, v_action_id, 'spogomi-measurement-import-contract-owner',
+    'Synthetic measurement import event', 'Synthetic measurement location',
+    'casual', 'draft', '2026-10-20T09:00:00+02:00', 'synthetic-measurement-v1', 'complete'
+  );
+  perform public.spogomi_ensure_parent_divisions(v_event_id, 'casual');
+  select id into v_division_id from public.spogomi_divisions where event_id = v_event_id;
+  insert into public.spogomi_teams (id, event_id, division_id, team_number, public_name)
+  values (v_team_id, v_event_id, v_division_id, 1, 'Synthetic measurement team');
+  insert into public.spogomi_category_rules (
+    id, event_id, division_id, regulation_version, code, label,
+    measurement_kind, unit, coefficient_status, is_complete
+  ) values
+    (v_category_a, v_event_id, v_division_id, 'synthetic-measurement-v1', 'plastic', 'Plastic', 'mass', 'g', 'not_applicable', true),
+    (v_category_b, v_event_id, v_division_id, 'synthetic-measurement-v1', 'butts', 'Butts', 'count', 'piece', 'not_applicable', true);
+  insert into public.spogomi_measurement_imports (
+    id, event_id, division_id, content_sha256, import_key, file_name, format,
+    sheet_name, column_mapping, imported_by_clerk_id
+  ) values (
+    v_import_id, v_event_id, v_division_id, repeat('1', 64),
+    'synthetic-measurement-import-1', 'synthetic.xlsx', 'xlsx', 'Mesures',
+    '{"team":"team","category":"category","value":"value"}'::jsonb,
+    'spogomi-measurement-import-contract-owner'
+  );
+  insert into public.spogomi_measurement_import_rows (
+    import_id, event_id, division_id, row_number, team_id, category_rule_id,
+    measurement_kind, unit, mass_grams, measurement_method, provenance, selected, diagnostics
+  ) values
+    (v_import_id, v_event_id, v_division_id, 2, v_team_id, v_category_a, 'mass', 'g', 10, 'synthetic balance', 'synthetic source A', true, '[]'::jsonb),
+    (v_import_id, v_event_id, v_division_id, 3, v_team_id, null, 'count', 'piece',  null, 'synthetic counter', 'synthetic source B', true, '[]'::jsonb);
+
+  begin
+    perform public.spogomi_confirm_measurement_import(
+      v_event_id, v_division_id, v_import_id, null,
+      'synthetic-measurement-import-operator'
+    );
+    raise exception 'invalid later measurement row unexpectedly confirmed the import';
+  exception when others then
+    if sqlerrm not like '%invalid selected row%' then raise; end if;
+  end;
+  select count(*) into v_count
+    from public.spogomi_operational_measurements
+   where event_id = v_event_id and division_id = v_division_id;
+  if v_count <> 0 then raise exception 'failed import left a partial measurement revision'; end if;
+  select status into v_status from public.spogomi_measurement_imports where id = v_import_id;
+  if v_status <> 'previewed' then raise exception 'failed import changed its reservation status'; end if;
+
+  update public.spogomi_measurement_import_rows
+     set category_rule_id = v_category_b, measurement_kind = 'count', unit = 'piece',
+         object_count = 3, mass_grams = null
+   where import_id = v_import_id and row_number = 3;
+  v_result := public.spogomi_confirm_measurement_import(
+    v_event_id, v_division_id, v_import_id, null,
+    'synthetic-measurement-import-operator'
+  );
+  if (v_result ->> 'imported') <> '2' or (v_result ->> 'alreadyConfirmed') <> 'false' then
+    raise exception 'valid measurement import was not confirmed exactly once';
+  end if;
+  select count(*) into v_count
+    from public.spogomi_operational_measurements
+   where event_id = v_event_id and division_id = v_division_id;
+  if v_count <> 2 then raise exception 'valid measurement import did not create two revisions'; end if;
+  select count(*) into v_count
+    from public.spogomi_measurement_history
+   where event_id = v_event_id and division_id = v_division_id;
+  if v_count <> 2 then raise exception 'measurement history did not preserve both imported rows'; end if;
+  select confirmed_row_numbers into v_confirmed_rows
+    from public.spogomi_measurement_imports where id = v_import_id;
+  if v_confirmed_rows <> array[2, 3] then raise exception 'confirmed row selection was not persisted'; end if;
+
+  v_result := public.spogomi_confirm_measurement_import(
+    v_event_id, v_division_id, v_import_id, null,
+    'synthetic-measurement-import-retry'
+  );
+  if (v_result ->> 'alreadyConfirmed') <> 'true' then raise exception 'identical confirmed import replay was not idempotent'; end if;
+  select count(*) into v_count
+    from public.spogomi_measurement_history
+   where event_id = v_event_id and division_id = v_division_id;
+  if v_count <> 2 then raise exception 'confirmed import replay created new measurement history'; end if;
+
+  begin
+    perform public.spogomi_confirm_measurement_import(
+      v_event_id, v_division_id, v_import_id, array[2],
+      'synthetic-measurement-import-retry'
+    );
+    raise exception 'incompatible confirmed selection unexpectedly succeeded';
+  exception when others then
+    if sqlerrm not like '%selection is immutable%' then raise; end if;
+  end;
+
+  insert into public.spogomi_measurement_imports (
+    id, event_id, division_id, content_sha256, import_key, file_name, format,
+    sheet_name, column_mapping, imported_by_clerk_id
+  ) values (
+    v_other_import_id, v_event_id, v_division_id, repeat('1', 64),
+    'synthetic-measurement-import-other-sheet', 'synthetic.xlsx', 'xlsx', 'Autre feuille',
+    '{"team":"team-id","category":"category-id","value":"value-g"}'::jsonb,
+    'spogomi-measurement-import-contract-owner'
+  );
+  begin
+    perform public.spogomi_confirm_measurement_import(
+      v_event_id, v_division_id, v_other_import_id, array[]::integer[],
+      'synthetic-measurement-import-operator'
+    );
+    raise exception 'explicit empty measurement selection unexpectedly succeeded';
+  exception when others then
+    if sqlerrm not like '%selection cannot be empty%' then raise; end if;
+  end;
+  select status into v_status from public.spogomi_measurement_imports where id = v_other_import_id;
+  if v_status <> 'previewed' then raise exception 'empty selection changed the import reservation'; end if;
+end;
+$$;
+
+do $$
+begin
+  raise notice 'EXECUTED_DB_CONTRACT: SPOGOMI RLS, lock triggers and atomic A-B-A consolidation contract passed';
+end;
+$$;
 rollback;

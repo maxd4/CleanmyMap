@@ -26,6 +26,9 @@ export async function POST(_request: Request, context: { params: Promise<{ event
     if (!projection || !divisionProjections.every((division) => division.results.regulationComplete) || projection.teams.some((team) => team.sportEligible && team.submissionStatus !== "certified") || projection.teams.some((team) => !team.sportEligible && !isSpogomiTeamNonParticipating(team.closureStatus) && team.closureStatus !== "excluded" && team.closureStatus !== "disqualified")) {
       return NextResponse.json({ error: "Chaque équipe éligible doit disposer d’un résultat certifié et les équipes non participantes doivent être explicitement qualifiées." }, { status: 409 });
     }
+    // Mixed editions publish one division at a time. This is an explicit
+    // PARTIAL_ALLOWED boundary: a later division may fail after an earlier
+    // division committed, but the response must never claim full publication.
     const published = [];
     for (const divisionProjection of divisionProjections) {
       const divisionId = divisionProjection.event.divisions?.length === 1
@@ -39,6 +42,14 @@ export async function POST(_request: Request, context: { params: Promise<{ event
       const source = { snapshot: divisionProjection.publicationSourceSnapshot, teams: divisionProjection.teams.map((team) => ({ divisionId, teamId: team.teamId, team: team.teamNumber, submission: team.submissionVersion, present: team.presentParticipants })) };
       const decisionVersion = createHash("sha256").update(JSON.stringify({ divisionId, regulation: divisionProjection.regulation, source, rankings })).digest("hex");
       const result = await supabase.rpc("publish_spogomi_official_rankings_for_division_checked_closure", { p_event_id: event.id, p_division_id: divisionId, p_decision_version: decisionVersion, p_source_reference: `spogomi:official-rankings:${event.id}:${divisionId}:${decisionVersion}`, p_rankings: rankings, p_actor_clerk_id: access.userId, p_source_snapshot: divisionProjection.publicationSourceSnapshot });
+      if (result.error && published.length > 0) {
+        return NextResponse.json({
+          status: "partial",
+          rankings: published.reduce((sum, item) => sum + item.count, 0),
+          divisions: published,
+          failedDivisions: [{ divisionId, status: "failed" }],
+        }, { status: 409 });
+      }
       if (result.error) throw result.error;
       published.push({ divisionId, decisionVersion, count: Number(result.data ?? 0) });
     }

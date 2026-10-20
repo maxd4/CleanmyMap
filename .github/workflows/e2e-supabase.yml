@@ -192,7 +192,9 @@ jobs:
       - name: Execute SPOGOMI transactional PostgreSQL contract
         run: |
           set -o pipefail
-          ./node_modules/.bin/supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/spogomi-transactional-contract.sql)" 2>&1 | tee artifacts/ci/spogomi-transactional-contract.log
+          contract_log="artifacts/ci/spogomi-transactional-contract.log"
+          ./node_modules/.bin/supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/spogomi-transactional-contract.sql)" 2>&1 | tee "$contract_log"
+          grep -q "EXECUTED_DB_CONTRACT: SPOGOMI RLS, lock triggers and atomic A-B-A consolidation contract passed" "$contract_log"
 
       - name: Execute role attestation correction PostgreSQL contract
         run: |

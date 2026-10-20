@@ -74,20 +74,33 @@ export async function previewSpogomiMeasurementWorkbook(params: { supabase: Supa
     if (category && measurementKind !== category.measurement_kind) diagnostics.push("La nature de mesure ne correspond pas au règlement.");
     return { rowNumber: offset + 2, teamNumber: Number(teamValue) || null, teamId: team?.id ?? null, categoryCode: categoryValue || null, categoryRuleId: category?.id ?? null, measurementKind, unit: normalizeValue(row[unitIndex] ?? category?.unit ?? "") || null, quantity: measurementKind === "volume" ? value : null, massGrams: measurementKind === "mass" ? value : null, objectCount: measurementKind === "count" ? value : null, measurementMethod: normalizeValue(row[methodIndex] ?? "import Excel") || "import Excel", provenance: normalizeValue(row[provenanceIndex] ?? "import_excel") || "import_excel", selected: diagnostics.length === 0, diagnostics };
   });
-  const importKey = `${params.eventId}:${params.divisionId}:${contentHash}`;
-  const existing = await params.supabase.from("spogomi_measurement_imports").select("id, status, import_key, content_sha256, sheet_name, column_mapping").eq("event_id", params.eventId).eq("division_id", params.divisionId).eq("content_sha256", contentHash).maybeSingle();
+  const columnMapping: Record<string, string> = {
+    team: headers[teamIndex],
+    category: headers[categoryIndex],
+    value: headers[valueIndex],
+  };
+  if (kindIndex >= 0) columnMapping.kind = headers[kindIndex];
+  if (unitIndex >= 0) columnMapping.unit = headers[unitIndex];
+  if (methodIndex >= 0) columnMapping.method = headers[methodIndex];
+  if (provenanceIndex >= 0) columnMapping.provenance = headers[provenanceIndex];
+  const mappingKey = JSON.stringify(columnMapping);
+  const importKey = `${params.eventId}:${params.divisionId}:${contentHash}:${selectedSheet.name}:${mappingKey}`;
+  const existing = await params.supabase.from("spogomi_measurement_imports").select("id, status, import_key, content_sha256, sheet_name, column_mapping").eq("event_id", params.eventId).eq("division_id", params.divisionId).eq("content_sha256", contentHash).eq("sheet_name", selectedSheet.name).eq("column_mapping", columnMapping).maybeSingle();
   if (existing.error) throw existing.error;
   let importId = existing.data?.id as string | undefined;
   if (!importId) {
-    const inserted = await params.supabase.from("spogomi_measurement_imports").insert({ event_id: params.eventId, division_id: params.divisionId, content_sha256: contentHash, import_key: importKey, file_name: params.file.name, format, sheet_name: selectedSheet.name, column_mapping: { team: headers[teamIndex], category: headers[categoryIndex], value: headers[valueIndex] }, imported_by_clerk_id: params.actorClerkId }).select("id").single();
+    const inserted = await params.supabase.from("spogomi_measurement_imports").insert({ event_id: params.eventId, division_id: params.divisionId, content_sha256: contentHash, import_key: importKey, file_name: params.file.name, format, sheet_name: selectedSheet.name, column_mapping: columnMapping, imported_by_clerk_id: params.actorClerkId }).select("id").single();
     if (inserted.error) {
       if (inserted.error.code !== "23505") throw inserted.error;
-      const raced = await params.supabase.from("spogomi_measurement_imports").select("id").eq("event_id", params.eventId).eq("division_id", params.divisionId).eq("content_sha256", contentHash).single();
+      const raced = await params.supabase.from("spogomi_measurement_imports").select("id, status").eq("event_id", params.eventId).eq("division_id", params.divisionId).eq("content_sha256", contentHash).eq("sheet_name", selectedSheet.name).eq("column_mapping", columnMapping).single();
       if (raced.error) throw raced.error;
       importId = raced.data.id;
     } else importId = inserted.data.id;
   }
   if (!importId) throw new Error("L’import n’a pas pu être réservé.");
+  if (existing.data?.status === "confirmed") {
+    return { importId, contentHash, fileName: params.file.name, format, sheetName: selectedSheet.name, rows, alreadyConfirmed: true };
+  }
   const rowsInsert = rows.map((row) => ({ ...row, import_id: importId, event_id: params.eventId, division_id: params.divisionId, diagnostics: row.diagnostics }));
   const rowsResult = await params.supabase.from("spogomi_measurement_import_rows").upsert(rowsInsert, { onConflict: "import_id,row_number" });
   if (rowsResult.error) throw rowsResult.error;
@@ -95,22 +108,21 @@ export async function previewSpogomiMeasurementWorkbook(params: { supabase: Supa
 }
 
 export async function confirmSpogomiMeasurementImport(params: { supabase: SupabaseClient; eventId: string; divisionId: string; importId: string; selectedRowNumbers?: number[]; actorClerkId: string }): Promise<{ imported: number; alreadyConfirmed: boolean }> {
-  const importResult = await params.supabase.from("spogomi_measurement_imports").select("id, status, content_sha256").eq("id", params.importId).eq("event_id", params.eventId).eq("division_id", params.divisionId).maybeSingle();
-  if (importResult.error) throw importResult.error;
-  if (!importResult.data) throw new Error("Import Excel introuvable.");
-  if (importResult.data.status === "confirmed") return { imported: 0, alreadyConfirmed: true };
-  let rowsQuery = params.supabase.from("spogomi_measurement_import_rows").select("*").eq("import_id", params.importId).eq("event_id", params.eventId).eq("division_id", params.divisionId).eq("selected", true);
-  if (params.selectedRowNumbers?.length) rowsQuery = rowsQuery.in("row_number", params.selectedRowNumbers);
-  const rowsResult = await rowsQuery.order("row_number");
-  if (rowsResult.error) throw rowsResult.error;
-  if (!rowsResult.data?.length) throw new Error("Aucune ligne admissible sélectionnée.");
-  let imported = 0;
-  for (const row of rowsResult.data) {
-    if (!row.team_id || !row.category_rule_id || !row.measurement_kind || row.unit === null) throw new Error(`La ligne ${row.row_number} n’est pas rapprochée.`);
-    await callSpogomiFieldOperation({ supabase: params.supabase, rpc: "spogomi_upsert_operational_measurement", args: { p_event_id: params.eventId, p_division_id: params.divisionId, p_team_id: row.team_id, p_category_rule_id: row.category_rule_id, p_measurement_kind: row.measurement_kind, p_unit: row.unit, p_quantity: row.quantity, p_mass_grams: row.mass_grams, p_object_count: row.object_count, p_measurement_method: row.measurement_method ?? "import Excel", p_provenance: row.provenance ?? `import_excel:${importResult.data.content_sha256}`, p_source_kind: "import_excel", p_source_reference: `import:${params.importId}:row:${row.row_number}`, p_actor_clerk_id: params.actorClerkId, p_reason: "Import Excel confirmé après aperçu" } });
-    imported += 1;
-  }
-  const updated = await params.supabase.from("spogomi_measurement_imports").update({ status: "confirmed", confirmed_at: new Date().toISOString() }).eq("id", params.importId).eq("status", "previewed").select("id").maybeSingle();
-  if (updated.error) throw updated.error;
-  return { imported, alreadyConfirmed: false };
+  const result = await callSpogomiFieldOperation({
+    supabase: params.supabase,
+    rpc: "spogomi_confirm_measurement_import",
+    args: {
+      p_event_id: params.eventId,
+      p_division_id: params.divisionId,
+      p_import_id: params.importId,
+      p_selected_row_numbers: params.selectedRowNumbers ?? null,
+      p_actor_clerk_id: params.actorClerkId,
+    },
+  });
+  if (!result || typeof result !== "object") throw new Error("La confirmation d’import est invalide.");
+  const payload = result as { imported?: unknown; alreadyConfirmed?: unknown };
+  return {
+    imported: typeof payload.imported === "number" ? payload.imported : Number(payload.imported ?? 0),
+    alreadyConfirmed: payload.alreadyConfirmed === true,
+  };
 }

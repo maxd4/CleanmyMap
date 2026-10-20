@@ -172,8 +172,24 @@ describe("SPOGOMI measurement workbook import", () => {
     expect(result.alreadyConfirmed).toBe(false);
   });
 
+  it("scopes a reservation by sheet and complete column mapping and never rewrites a confirmed import", async () => {
+    workbookRowsMock.mockReturnValue({ sheets: [{ name: "Mesures B", rows: [["team", "category", "value", "unit"], ["7", "plastic", "1", "g"]] }] });
+    const fixture = supabaseFor({
+      tables: { spogomi_teams: [{ id: "team-7", team_number: 7 }], spogomi_category_rules: [{ id: "category-plastic", code: "plastic", measurement_kind: "mass", unit: "g" }] },
+      maybeSingles: { spogomi_measurement_imports: { id: "confirmed-import", status: "confirmed", sheet_name: "Mesures B", column_mapping: { team: "team", category: "category", value: "value", unit: "unit" } } },
+    });
+    const result = await previewSpogomiMeasurementWorkbook({ supabase: fixture.supabase, eventId: "event-1", divisionId: "casual", file: file("same-workbook.xlsx"), sheetName: "Mesures B", actorClerkId: "organizer" }) as { alreadyConfirmed: boolean };
+    expect(result.alreadyConfirmed).toBe(true);
+    expect(fixture.calls.some((call) => call.table === "spogomi_measurement_imports" && call.method === "upsert")).toBe(false);
+    const importQueries = fixture.calls.filter((call) => call.table === "spogomi_measurement_imports" && call.method === "eq");
+    expect(importQueries).toEqual(expect.arrayContaining([
+      expect.objectContaining({ args: ["sheet_name", "Mesures B"] }),
+      expect.objectContaining({ args: ["column_mapping", { team: "team", category: "category", value: "value", unit: "unit" }] }),
+    ]));
+  });
+
   it("confirms only admissible selected rows, calls the operational RPC and is idempotent after confirmation", async () => {
-    callFieldOperationMock.mockResolvedValue({ id: "measurement-1" });
+    callFieldOperationMock.mockResolvedValue({ imported: 1, alreadyConfirmed: false });
     const rows = [
       { row_number: 2, team_id: "team-1", category_rule_id: "category-1", measurement_kind: "mass", unit: "g", quantity: null, mass_grams: 10, object_count: null, measurement_method: "balance", provenance: "photo", selected: true },
       { row_number: 3, team_id: "team-2", category_rule_id: "category-2", measurement_kind: "count", unit: "piece", quantity: null, mass_grams: null, object_count: 4, measurement_method: null, provenance: null, selected: true },
@@ -185,35 +201,35 @@ describe("SPOGOMI measurement workbook import", () => {
       singleResults: { spogomi_measurement_imports: [{ data: { id: "import-1" }, error: null }] },
     });
     const result = await confirmSpogomiMeasurementImport({ supabase: fixture.supabase, eventId: "event-1", divisionId: "casual", importId: "import-1", selectedRowNumbers: [2], actorClerkId: "operator" });
-    expect(result).toEqual({ imported: 2, alreadyConfirmed: false });
-    expect(callFieldOperationMock).toHaveBeenCalledTimes(2);
-    expect(callFieldOperationMock).toHaveBeenCalledWith(expect.objectContaining({ rpc: "spogomi_upsert_operational_measurement", args: expect.objectContaining({ p_source_reference: "import:import-1:row:2" }) }));
-    expect(callFieldOperationMock).toHaveBeenCalledWith(expect.objectContaining({ args: expect.objectContaining({ p_source_kind: "import_excel", p_actor_clerk_id: "operator" }) }));
-    expect(fixture.calls.some((call) => call.table === "spogomi_measurement_imports" && call.method === "update")).toBe(true);
-
-    const confirmed = supabaseFor({ maybeSingles: { spogomi_measurement_imports: { id: "import-1", status: "confirmed", content_sha256: "hash" } } });
-    await expect(confirmSpogomiMeasurementImport({ supabase: confirmed.supabase, eventId: "event-1", divisionId: "casual", importId: "import-1", actorClerkId: "operator" })).resolves.toEqual({ imported: 0, alreadyConfirmed: true });
-  });
-
-  it("does not mark an import confirmed when a measurement command fails", async () => {
-    callFieldOperationMock.mockRejectedValueOnce(new Error("measurement conflict"));
-    const fixture = supabaseFor({
-      tables: { spogomi_measurement_import_rows: [{ row_number: 2, team_id: "team-1", category_rule_id: "category-1", measurement_kind: "mass", unit: "g", quantity: null, mass_grams: 10, object_count: null, selected: true }] },
-      maybeSingles: { spogomi_measurement_imports: { id: "import-1", status: "previewed", content_sha256: "hash" } },
-      awaitResults: { spogomi_measurement_import_rows: { data: [{ row_number: 2, team_id: "team-1", category_rule_id: "category-1", measurement_kind: "mass", unit: "g", quantity: null, mass_grams: 10, object_count: null, selected: true }], error: null } },
-    });
-    await expect(confirmSpogomiMeasurementImport({ supabase: fixture.supabase, eventId: "event-1", divisionId: "casual", importId: "import-1", actorClerkId: "operator" })).rejects.toThrow("measurement conflict");
+    expect(result).toEqual({ imported: 1, alreadyConfirmed: false });
+    expect(callFieldOperationMock).toHaveBeenCalledTimes(1);
+    expect(callFieldOperationMock).toHaveBeenCalledWith(expect.objectContaining({
+      rpc: "spogomi_confirm_measurement_import",
+      args: expect.objectContaining({
+        p_import_id: "import-1",
+        p_selected_row_numbers: [2],
+        p_actor_clerk_id: "operator",
+      }),
+    }));
     expect(fixture.calls.some((call) => call.table === "spogomi_measurement_imports" && call.method === "update")).toBe(false);
+
+    callFieldOperationMock.mockResolvedValueOnce({ imported: 0, alreadyConfirmed: true });
+    await expect(confirmSpogomiMeasurementImport({ supabase: fixture.supabase, eventId: "event-1", divisionId: "casual", importId: "import-1", actorClerkId: "operator" })).resolves.toEqual({ imported: 0, alreadyConfirmed: true });
+    expect(callFieldOperationMock).toHaveBeenLastCalledWith(expect.objectContaining({ args: expect.objectContaining({ p_selected_row_numbers: null }) }));
   });
 
-  it("rejects absent, unpaired and non-admissible confirmation rows", async () => {
-    const base = { maybeSingles: { spogomi_measurement_imports: null } };
-    await expect(confirmSpogomiMeasurementImport({ supabase: supabaseFor(base).supabase, eventId: "e", divisionId: "d", importId: "missing", actorClerkId: "a" })).rejects.toThrow("introuvable");
+  it("passes an explicit empty selection to the atomic owner instead of confirming every row", async () => {
+    callFieldOperationMock.mockResolvedValue({ imported: 0, alreadyConfirmed: false });
+    const fixture = supabaseFor();
+    await confirmSpogomiMeasurementImport({ supabase: fixture.supabase, eventId: "event-1", divisionId: "casual", importId: "import-1", selectedRowNumbers: [], actorClerkId: "operator" });
+    expect(callFieldOperationMock).toHaveBeenCalledWith(expect.objectContaining({ args: expect.objectContaining({ p_selected_row_numbers: [] }) }));
+  });
 
-    const noRows = supabaseFor({ maybeSingles: { spogomi_measurement_imports: { id: "i", status: "previewed", content_sha256: "h" } }, awaitResults: { spogomi_measurement_import_rows: { data: [], error: null } } });
-    await expect(confirmSpogomiMeasurementImport({ supabase: noRows.supabase, eventId: "e", divisionId: "d", importId: "i", actorClerkId: "a" })).rejects.toThrow("Aucune ligne admissible");
-
-    const unpaired = supabaseFor({ maybeSingles: { spogomi_measurement_imports: { id: "i", status: "previewed", content_sha256: "h" } }, awaitResults: { spogomi_measurement_import_rows: { data: [{ row_number: 2, selected: true, team_id: null, category_rule_id: "c", measurement_kind: "mass", unit: "g" }], error: null } } });
-    await expect(confirmSpogomiMeasurementImport({ supabase: unpaired.supabase, eventId: "e", divisionId: "d", importId: "i", actorClerkId: "a" })).rejects.toThrow("n’est pas rapprochée");
+  it("propagates atomic-owner failures without falling back to client-side row writes", async () => {
+    callFieldOperationMock.mockRejectedValueOnce(new Error("SPOGOMI measurement import contains an invalid selected row"));
+    const fixture = supabaseFor();
+    await expect(confirmSpogomiMeasurementImport({ supabase: fixture.supabase, eventId: "e", divisionId: "d", importId: "missing", actorClerkId: "a" })).rejects.toThrow("invalid selected row");
+    expect(fixture.calls).toHaveLength(0);
+    expect(callFieldOperationMock).toHaveBeenCalledWith(expect.objectContaining({ rpc: "spogomi_confirm_measurement_import" }));
   });
 });
