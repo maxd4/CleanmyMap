@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { unstable_cache } from "next/cache";
+import { z } from "zod";
 import { toCommunityEventItem } from "./event-item";
 import {
   indexCommunityEventRsvpSummaries,
@@ -35,6 +36,7 @@ export type ReportCommunityEventsLoadResult = {
 const REPORT_COMMUNITY_EVENTS_MAX_PAGES = 10;
 const REPORT_COMMUNITY_EVENTS_SCOPED_ID_BATCH_SIZE = 100;
 const REPORT_COMMUNITY_EVENTS_SCOPED_MAX_LINKED_IDS = 1_200;
+const UUID_SCHEMA = z.string().uuid();
 
 function clampLimit(limit: number): number {
   return Math.min(120, Math.max(1, Math.trunc(limit)));
@@ -45,7 +47,13 @@ function buildReportCommunityEventsCacheKey(limit: number, complete: boolean): s
 }
 
 function normalizeScopedEventIds(eventIds: readonly string[]): string[] {
-  return [...new Set(eventIds.map((eventId) => eventId.trim()).filter(Boolean))].sort();
+  return [
+    ...new Set(
+      eventIds
+        .map((eventId) => eventId.trim())
+        .filter((eventId) => UUID_SCHEMA.safeParse(eventId).success),
+    ),
+  ].sort();
 }
 
 function buildScopedReportCommunityEventsCacheKey(

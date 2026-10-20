@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getSupabaseServerClient: vi.fn(),
   loadCommunityEventRsvpSummaries: vi.fn(),
-  unstableCache: vi.fn((callback: () => unknown) => callback),
+  unstableCache: vi.fn((callback: () => unknown, ...args: unknown[]) => {
+    void args;
+    return callback;
+  }),
 }));
 
 vi.mock("next/cache", () => ({ unstable_cache: mocks.unstableCache }));
@@ -24,7 +27,7 @@ import {
 
 function makeRow(index: number) {
   return {
-    id: `event-${index}`,
+    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
     created_at: `2026-01-01T00:00:${String(index % 60).padStart(2, "0")}Z`,
     organizer_clerk_id: `organizer-${index}`,
     title: `Événement ${index}`,
@@ -172,7 +175,7 @@ describe("report community event loading", () => {
 
     const result = await loadCachedPilotageCommunityEvents("user-a", [], 120);
 
-    expect(result.items.map((event) => event.id)).toEqual(["event-121"]);
+    expect(result.items.map((event) => event.id)).toEqual([organizerEvent.id]);
     expect(result.availability).toBe("available");
     expect(builders[0]?.eq).toHaveBeenCalledWith("organizer_clerk_id", "user-a");
     expect(builders[0]?.range).toHaveBeenCalledWith(0, 120);
@@ -187,10 +190,53 @@ describe("report community event loading", () => {
       globalRows: [makeRow(0)],
     });
 
-    const result = await loadCachedPilotageCommunityEvents("user-a", ["event-122", "event-122"], 120);
+    const result = await loadCachedPilotageCommunityEvents(
+      "user-a",
+      [linkedEvent.id, linkedEvent.id],
+      120,
+    );
 
-    expect(result.items.map((event) => event.id)).toEqual(["event-122"]);
-    expect(builders[1]?.in).toHaveBeenCalledWith("id", ["event-122"]);
+    expect(result.items.map((event) => event.id)).toEqual([linkedEvent.id]);
+    expect(builders[1]?.in).toHaveBeenCalledWith("id", [linkedEvent.id]);
+  });
+
+  it("ignores invalid linked event refs before building the query and cache key", async () => {
+    const { builders } = setupScopedSources({
+      organizerRows: [],
+      linkedRows: [],
+      globalRows: [],
+    });
+
+    await loadCachedPilotageCommunityEvents("user-a", ["event-42"], 120);
+    const invalidRefCacheKey = mocks.unstableCache.mock.calls[0]?.[1];
+
+    vi.clearAllMocks();
+    setupScopedSources({ organizerRows: [], linkedRows: [], globalRows: [] });
+    await loadCachedPilotageCommunityEvents("user-a", [], 120);
+
+    expect(mocks.unstableCache.mock.calls[0]?.[1]).toEqual(invalidRefCacheKey);
+    expect(builders).toHaveLength(1);
+    expect(builders[0]?.in).not.toHaveBeenCalled();
+  });
+
+  it("keeps valid linked events when invalid refs are mixed into the input", async () => {
+    const linkedEvent = makeRow(125);
+    linkedEvent.organizer_clerk_id = "user-b";
+    const { builders } = setupScopedSources({
+      organizerRows: [],
+      linkedRows: [linkedEvent],
+      globalRows: [],
+    });
+
+    const result = await loadCachedPilotageCommunityEvents(
+      "user-a",
+      ["event-invalid", linkedEvent.id, "event-invalid"],
+      120,
+    );
+
+    expect(result.items.map((event) => event.id)).toEqual([linkedEvent.id]);
+    expect(builders[1]?.in).toHaveBeenCalledWith("id", [linkedEvent.id]);
+    expect(builders[1]?.in.mock.calls.flatMap(([, ids]) => ids)).toEqual([linkedEvent.id]);
   });
 
   it("does not include an event outside the organizer or linked-event scope", async () => {
@@ -216,9 +262,9 @@ describe("report community event loading", () => {
       globalRows: [],
     });
 
-    const result = await loadCachedPilotageCommunityEvents("user-a", ["event-124"], 120);
+    const result = await loadCachedPilotageCommunityEvents("user-a", [sharedEvent.id], 120);
 
-    expect(result.items.map((event) => event.id)).toEqual(["event-124"]);
+    expect(result.items.map((event) => event.id)).toEqual([sharedEvent.id]);
   });
 
   it("reports partial scoped coverage when the organizer result exceeds the budget", async () => {
