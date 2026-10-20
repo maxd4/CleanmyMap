@@ -192,10 +192,10 @@ export function sumActionImpactKpis(
     if (impact.volunteersKnown) {
       volunteersKnownActions += 1;
     }
-    totalDurationMinutes += Math.max(
-      0,
-      Number(contract.metadata.durationMinutes || 0),
-    );
+    const durationMinutes = Number(contract.metadata.durationMinutes ?? 0);
+    totalDurationMinutes += Number.isFinite(durationMinutes)
+      ? Math.max(0, durationMinutes)
+      : 0;
   }
 
   totals.co2AvoidedKg =
