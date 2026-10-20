@@ -1,4 +1,5 @@
 import * as React from "react";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { FileText, Loader2, TriangleAlert } from "lucide-react";
@@ -12,6 +13,8 @@ import {
   collectDomElements,
   type TestDomElementProps,
 } from "./__tests__/reports-web-document.test-support";
+
+Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const historyRows: ReportsWebDocumentHistoryRow[] = [
   {
@@ -117,6 +120,46 @@ describe("ReportsWebDocumentDelivery", () => {
     deliveryButton?.props.onClick?.();
 
     expect(onGenerate).toHaveBeenCalledTimes(1);
+  });
+
+  it("executes the export click and disables the control during a pending quota-bound run", () => {
+    const onGenerate = vi.fn();
+    let renderer!: ReactTestRenderer;
+
+    try {
+      act(() => {
+        renderer = create(React.createElement(ReportsWebDocumentDelivery, {
+          state: "idle",
+          message: null,
+          pendingLabel: "Génération en cours",
+          isDisabled: false,
+          exportStatus: createStatus("idle"),
+          dailyExportAvailability: "available",
+          historyWarning: null,
+          onGenerate,
+        }));
+      });
+      const button = renderer.root.findByType("button");
+      act(() => button.props.onClick());
+      expect(onGenerate).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        renderer.update(React.createElement(ReportsWebDocumentDelivery, {
+          state: "pending",
+          message: null,
+          pendingLabel: "Génération en cours",
+          isDisabled: true,
+          exportStatus: createStatus("pending"),
+          dailyExportAvailability: "used",
+          historyWarning: null,
+          onGenerate,
+        }));
+      });
+      expect(renderer.root.findByType("button").props.disabled).toBe(true);
+      expect(JSON.stringify(renderer.toJSON())).toContain("Déjà utilisé aujourd'hui");
+    } finally {
+      renderer?.unmount();
+    }
   });
 
   it("renders persisted history fields with explicit replay actions", () => {

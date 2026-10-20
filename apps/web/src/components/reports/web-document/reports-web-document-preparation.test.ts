@@ -1,4 +1,5 @@
 import * as React from "react";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -11,6 +12,8 @@ import {
 } from "../reports-web-document";
 import { REPORT_ADVANCED_FILTER_DEFAULTS } from "./reports-web-document.shared";
 import { collectDomElements } from "./__tests__/reports-web-document.test-support";
+
+Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const mocks = vi.hoisted(() => ({
   useReportsWebDocumentModel: vi.fn(),
@@ -129,6 +132,53 @@ const reportModel = {
 describe("ReportsWebDocumentPreparation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("executes real configuration events and opens the advanced filter panel", () => {
+    const props = {
+      ...preparationProps,
+      onPeriodChange: vi.fn(),
+      onDetailLevelChange: vi.fn(),
+      onThemeChange: vi.fn(),
+      onScopeChange: vi.fn(),
+      onModuleToggle: vi.fn(),
+      onAdvancedFiltersChange: vi.fn(),
+      onAdvancedFiltersToggle: vi.fn(),
+      actionMediaAvailability: "unavailable" as const,
+    };
+    let renderer!: ReactTestRenderer;
+
+    try {
+      act(() => {
+        renderer = create(React.createElement(ReportsWebDocumentPreparation, props));
+      });
+
+      act(() => {
+        renderer.root.findByProps({ id: "reports-web-document-period" }).props.onChange({ target: { value: "custom_range" } });
+        renderer.root.findByProps({ id: "reports-web-document-detail-level" }).props.onChange({ target: { value: "exhaustif" } });
+        renderer.root.findByProps({ id: "reports-web-document-theme" }).props.onChange({ target: { value: "scientific" } });
+        renderer.root.findByProps({ id: "reports-web-document-scope" }).props.onChange({ target: { value: "association:association-1" } });
+        renderer.root.findAllByType("input").filter((input) => input.props.type === "checkbox")[0]?.props.onChange();
+        renderer.root.findAllByType("button").find((button) => button.props["aria-controls"] === "reports-advanced-filters")?.props.onClick();
+      });
+
+      expect(props.onPeriodChange).toHaveBeenCalledWith("custom_range");
+      expect(props.onDetailLevelChange).toHaveBeenCalledWith("exhaustif");
+      expect(props.onThemeChange).toHaveBeenCalledWith("scientific");
+      expect(props.onScopeChange).toHaveBeenCalledWith("association:association-1");
+      expect(props.onModuleToggle).toHaveBeenCalledWith("dataAndCartography");
+      expect(props.onAdvancedFiltersToggle).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        renderer.update(React.createElement(ReportsWebDocumentPreparation, { ...props, advancedFiltersOpen: true, period: "custom_range" }));
+      });
+      const advancedSelect = renderer.root.findAllByType("select").find((select) => select.props.value === "all");
+      act(() => advancedSelect?.props.onChange({ target: { value: "without_blocking_anomaly" } }));
+      expect(props.onAdvancedFiltersChange).toHaveBeenCalledWith({ ...REPORT_ADVANCED_FILTER_DEFAULTS, dataQuality: "without_blocking_anomaly" });
+      expect(renderer.root.findAllByType("select").some((select) => select.props.disabled === true)).toBe(true);
+    } finally {
+      renderer?.unmount();
+    }
   });
 
   it("relays period, scope and module callbacks without owning state", () => {

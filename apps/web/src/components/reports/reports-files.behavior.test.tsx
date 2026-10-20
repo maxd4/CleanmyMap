@@ -20,18 +20,26 @@ vi.mock("@/components/reports/web-document/reports-web-document-delivery", () =>
     recentRows,
     historyAvailability,
     onDerive,
+    onPublish,
+    onConfirmPublication,
+    publicationPreviewById,
   }: {
     recentRows: Array<{ id: string; report: string }>;
     historyAvailability: string;
     onDerive: (id: string) => void;
+    onPublish?: (id: string) => void;
+    onConfirmPublication?: (id: string) => void;
+    publicationPreviewById?: Record<string, { artifactReady: boolean }>;
   }) => React.createElement(
     "div",
     { "data-testid": "history-state", "data-history-availability": historyAvailability },
-    recentRows.map((row) => React.createElement(
-      "button",
-      { key: row.id, type: "button", onClick: () => onDerive(row.id) },
-      row.report,
-    )),
+    recentRows.flatMap((row) => [
+      React.createElement("button", { key: `${row.id}-derive`, type: "button", onClick: () => onDerive(row.id) }, row.report),
+      React.createElement("button", { key: `${row.id}-publish`, type: "button", onClick: () => onPublish?.(row.id) }, `Publier ${row.id}`),
+      publicationPreviewById?.[row.id]
+        ? React.createElement("button", { key: `${row.id}-confirm`, type: "button", disabled: !publicationPreviewById[row.id]?.artifactReady, onClick: () => onConfirmPublication?.(row.id) }, `Confirmer ${row.id}`)
+        : null,
+    ]),
   ),
 }));
 
@@ -147,6 +155,46 @@ describe("ReportsFiles history state", () => {
       expect(refreshedButton).toBeTruthy();
       expect(renderer.root.findAllByType("button")
         .some((button) => button.children.includes("Rapport page 2"))).toBe(false);
+    } finally {
+      renderer?.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("publishes from the historical row without creating a new generation", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ preview: { title: "Rapport public", period: "Six mois", scope: "Global", theme: "scientific", artifactReady: true, documentUrl: "/api/reports/library/pub-1/pdf", communicatedContent: "PDF uniquement" } }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ publication: { status: "published" } }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => page({ total: 25 }) });
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReactTestRenderer;
+
+    try {
+      act(() => {
+        renderer = create(<ReportsFiles initialPage={page()} />);
+      });
+      const publishButton = renderer.root.findAllByType("button").find((button) => button.children.includes("Publier generation-2"));
+      await act(async () => {
+        publishButton?.props.onClick();
+        await Promise.resolve();
+      });
+      const confirmButton = renderer.root.findAllByType("button").find((button) => button.children.includes("Confirmer generation-2"));
+      expect(confirmButton?.props.disabled).toBe(false);
+
+      await act(async () => {
+        confirmButton?.props.onClick();
+        await Promise.resolve();
+      });
+
+      expect(fetchMock.mock.calls.map(([url, init]) => [String(url), (init as RequestInit | undefined)?.method ?? "GET"])).toEqual([
+        ["/api/reports/generations/generation-2/publication?theme=scientific", "GET"],
+        ["/api/reports/generations/generation-2/publication", "POST"],
+        [expect.stringContaining("/api/reports/generations?page=2"), "GET"],
+      ]);
+      expect(fetchMock.mock.calls.filter(([url, init]) => (init as RequestInit | undefined)?.method === "POST" && !String(url).endsWith("/publication")).length).toBe(0);
     } finally {
       renderer?.unmount();
       vi.unstubAllGlobals();
