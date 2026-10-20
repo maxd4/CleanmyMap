@@ -264,6 +264,40 @@ mesurés ou des roots restent stale ; un fichier seulement repassé sous REVIEW
 reste dans la baseline pour conserver le ratchet. Ne pas ajouter d'exception
 pour contourner un garde-fou.
 
+### Qualification et priorité des familles jscpd
+
+Lire les deux occurrences CURRENT et regrouper les fingerprints par
+responsabilité avant toute mutation. Une famille reçoit une qualification :
+
+- `MIGRATE_TO_CANONICAL` : migrer les consommateurs vers un owner déjà établi ;
+- `CENTRALIZE_OWNER` : créer un owner commun seulement si une règle métier
+  durable est réellement partagée et que la divergence évitée est démontrée ;
+- `DELETE_PROVEN` : suppression justifiée après vérification des consommateurs ;
+- `KEEP_INTENTIONAL` : duplication nécessaire à une frontière, une sémantique
+  distincte, une lisibilité ou une preuve indépendante ;
+- `TEST_SHARED_HARNESS` : mutualiser seulement l'infrastructure de tests, sans
+  absorber les assertions métier ni de sécurité ;
+- `NO_ACTION_NOISE` : similarité de texte sans gain architectural réel.
+
+Prioriser les familles selon le risque et la source canonique :
+
+```text
+P0 sécurité, AuthN/AuthZ, RLS, ownership, scope, invariant sensible
+P1 sources de vérité métier concurrentes
+P2 duplication runtime de domaine, persistance ou API
+P3 infrastructure runtime réutilisable
+P4 infrastructure commune de tests
+P5 duplication intentionnelle
+P6 bruit textuel
+```
+
+Traiter P0 à P3 avant P4, sauf test nécessaire à la protection immédiate du
+runtime ; pour une famille mixte, traiter d'abord son owner runtime. P5 et P6
+ne sont pas des objectifs de réduction. Les preuves et le schéma persistant
+des justifications sont définis dans
+`documentation/development/TESTING.md` ; les familles conservées restent
+réexaminables si leur contrat change.
+
 ### Condition d’arrêt des lots de duplication en FULL
 
 Un lot de duplication ne peut être clôturé qu’après, dans cet ordre :
@@ -279,8 +313,8 @@ rapport jscpd courant lu
 → métriques finales observées
 ```
 
-La règle de qualification et de priorité est canonique dans `AGENTS.md` ; le
-protocole de mesure jscpd et ses ratchets restent dans
+Le cadre universel est dans `AGENTS.md` ; la qualification et la priorité
+P0–P6 sont définies ici. La mesure jscpd et ses ratchets restent dans
 `documentation/development/TESTING.md`. Pendant `DEVELOPMENT`, jscpd n'est pas
 déclenché automatiquement par une extraction, un import ou un refactor et ne
 constitue pas une condition de staging, commit, push ou clôture. Une
