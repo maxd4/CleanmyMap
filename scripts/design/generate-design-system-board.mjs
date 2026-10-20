@@ -438,7 +438,7 @@ function buildSourceSummary() {
   ];
 }
 
-async function buildData() {
+export async function buildData({ sourceFiles = SOURCE_FILES, listFiles = listComponentFiles, now = () => new Date().toISOString() } = {}) {
   const [
     globalsCss,
     blockAccentsSource,
@@ -448,13 +448,13 @@ async function buildData() {
     uiFiles,
     navigationFiles,
   ] = await Promise.all([
-    readText(SOURCE_FILES.globalsCss),
-    readText(SOURCE_FILES.blockAccents),
-    readText(SOURCE_FILES.navigation),
-    readText(SOURCE_FILES.accueilPilotageRoutes),
-    readText(SOURCE_FILES.sectionsConfig),
-    listComponentFiles(SOURCE_FILES.uiComponentsDir),
-    listComponentFiles(SOURCE_FILES.navigationComponentsDir),
+    readText(sourceFiles.globalsCss),
+    readText(sourceFiles.blockAccents),
+    readText(sourceFiles.navigation),
+    readText(sourceFiles.accueilPilotageRoutes),
+    readText(sourceFiles.sectionsConfig),
+    listFiles(sourceFiles.uiComponentsDir),
+    listFiles(sourceFiles.navigationComponentsDir),
   ]);
 
   const rootVars = extractCssVars(globalsCss, ":root");
@@ -724,7 +724,7 @@ async function buildData() {
   const coreHighlightFiles = buildComponentHighlights(uiFiles, navigationFiles);
 
   return {
-    generatedAt: new Date().toISOString(),
+    generatedAt: now(),
     stats: {
       tokens: palette.length,
       blocks: blocks.length,
@@ -799,37 +799,42 @@ ${renderScript(data)}
   return `${html.slice(0, scriptStart)}${nextScript}${html.slice(scriptEnd + "</script>".length)}`;
 }
 
-async function generate() {
-  const data = await buildData();
-  await fs.mkdir(BOARD_DIR, { recursive: true });
-  await writeText(BOARD_DATA_JSON, `${JSON.stringify(data, null, 2)}\n`);
+export async function generate({ boardDir = BOARD_DIR, sourceFiles = SOURCE_FILES, listFiles = listComponentFiles, now } = {}) {
+  const data = await buildData({ sourceFiles, listFiles, now });
+  const dataJsonPath = path.join(boardDir, path.basename(BOARD_DATA_JSON));
+  const staticBoardHtmlPath = path.join(boardDir, path.basename(STATIC_BOARD_HTML));
+  const dynamicBoardHtmlPath = path.join(boardDir, path.basename(DYNAMIC_BOARD_HTML));
+  await fs.mkdir(boardDir, { recursive: true });
+  await writeText(dataJsonPath, `${JSON.stringify(data, null, 2)}\n`);
 
-  const templateHtml = await readText(STATIC_BOARD_HTML);
+  const templateHtml = await readText(staticBoardHtmlPath);
   const dynamicHtml = buildDynamicHtml(templateHtml, data);
-  await writeText(DYNAMIC_BOARD_HTML, dynamicHtml);
+  await writeText(dynamicBoardHtmlPath, dynamicHtml);
 
-  console.log(`Generated ${path.relative(ROOT_DIR, DYNAMIC_BOARD_HTML)} and ${path.relative(ROOT_DIR, BOARD_DATA_JSON)}`);
+  console.log(`Generated ${path.relative(ROOT_DIR, dynamicBoardHtmlPath)} and ${path.relative(ROOT_DIR, dataJsonPath)}`);
+  return { data, dataJsonPath, dynamicBoardHtmlPath };
 }
 
-async function watchAndRegenerate() {
-  await generate();
-
-  const watchedPaths = [
-    SOURCE_FILES.globalsCss,
-    SOURCE_FILES.blockAccents,
-    SOURCE_FILES.navigation,
-    SOURCE_FILES.sectionsConfig,
-    SOURCE_FILES.uiComponentsDir,
-    SOURCE_FILES.navigationComponentsDir,
-  ];
+export async function watchAndRegenerate({ generateImpl = generate, watchImpl = watch, watchedPaths = [
+  SOURCE_FILES.globalsCss,
+  SOURCE_FILES.blockAccents,
+  SOURCE_FILES.navigation,
+  SOURCE_FILES.sectionsConfig,
+  SOURCE_FILES.uiComponentsDir,
+  SOURCE_FILES.navigationComponentsDir,
+] } = {}) {
+  await generateImpl();
 
   let timer = null;
+  let closed = false;
+  const watchers = [];
   const schedule = () => {
+    if (closed) return;
     if (timer) {
       clearTimeout(timer);
     }
     timer = setTimeout(() => {
-      generate().catch((error) => {
+      generateImpl().catch((error) => {
         console.error(error);
       });
     }, 150);
@@ -837,14 +842,33 @@ async function watchAndRegenerate() {
 
   for (const watchPath of watchedPaths) {
     try {
-      watch(watchPath, { recursive: true }, schedule);
+      const watcher = watchImpl(watchPath, { recursive: true }, schedule);
+      if (watcher && typeof watcher.close === "function") watchers.push(watcher);
     } catch (error) {
       console.warn(`Unable to watch ${watchPath}:`, error.message);
     }
   }
 
   console.log("Watching design system sources for changes...");
+  return () => {
+    closed = true;
+    if (timer) clearTimeout(timer);
+    for (const watcher of watchers) watcher.close();
+  };
 }
+
+export {
+  buildComponentHighlights,
+  buildDynamicHtml,
+  extractCssVars,
+  formatItemMeta,
+  gradientBetween,
+  hexToRgb,
+  listComponentFiles,
+  mixHex,
+  parseExportedStringConstants,
+  renderScript,
+};
 
 const shouldWatch = WATCH_ARGS.has("--watch");
 
