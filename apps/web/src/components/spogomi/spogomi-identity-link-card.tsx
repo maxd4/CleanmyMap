@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { Link2, Users } from "lucide-react";
@@ -87,22 +87,26 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
   const [assistanceMode, setAssistanceMode] = useState(false);
   const [assistanceContext, setAssistanceContext] = useState("");
   const [assistanceRequest, setAssistanceRequest] = useState<SpogomiAssistanceRequest | null>(null);
+  const stateRequestId = useRef(0);
 
   const loadState = useCallback(async () => {
     if (!isLoaded || !isSignedIn) return;
+    const requestId = ++stateRequestId.current;
     setIsLoadingState(true);
     try {
       const response = await fetch(`/api/spogomi/events/${encodeURIComponent(eventId)}/identity-link`, { cache: "no-store" });
       const payload = (await response.json().catch(() => ({}))) as LinkResponse;
       if (!response.ok) throw new Error(payload.error ?? "L’état de la liaison n’a pas pu être chargé.");
+      if (requestId !== stateRequestId.current) return;
       setIdentityState(payload.state ?? "identity_unlinked");
       setRecognition(payload.recognition ?? null);
       setTeam(payload.team ?? null);
       setAssistanceRequest(payload.assistance ?? null);
     } catch (loadError) {
+      if (requestId !== stateRequestId.current) return;
       setError(loadError instanceof Error ? loadError.message : "L’état de la liaison n’a pas pu être chargé.");
     } finally {
-      setIsLoadingState(false);
+      if (requestId === stateRequestId.current) setIsLoadingState(false);
     }
   }, [eventId, isLoaded, isSignedIn]);
 
@@ -112,7 +116,10 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
       return;
     }
     const timer = window.setTimeout(() => { void loadState(); }, 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      stateRequestId.current += 1;
+    };
   }, [isLoaded, isSignedIn, loadState]);
 
   async function submit() {
@@ -236,6 +243,8 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
             </CmmButton>
           ) : null}
           {identityState === "participation_unavailable" ? <CmmButton type="button" tone="secondary" disabled={isSubmitting} onClick={() => void loadState()}>Vérifier à nouveau</CmmButton> : null}
+          {message ? <p role="status" className="text-sm font-semibold text-emerald-800">{message}</p> : null}
+          {error ? <p role="alert" className="text-sm font-semibold text-rose-700">{error}</p> : null}
         </div>
       ) : (
         <div className="space-y-3">
@@ -243,6 +252,8 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
             <div className="space-y-2 rounded-xl border border-emerald-200 bg-white/75 p-3">
               <p className="text-sm font-bold text-emerald-900">{assistanceStatusLabel(assistanceRequest.status)}</p>
               {assistanceRequest.status === "pending" ? <CmmButton type="button" size="sm" tone="secondary" disabled={isSubmitting} onClick={() => void cancelAssistance()}>Annuler la demande</CmmButton> : null}
+              {message ? <p role="status" className="text-sm font-semibold text-emerald-800">{message}</p> : null}
+              {error ? <p role="alert" className="text-sm font-semibold text-rose-700">{error}</p> : null}
             </div>
           ) : null}
           {!assistanceRequest || assistanceRequest.status === "cancelled" || assistanceRequest.status === "rejected" ? (
@@ -252,6 +263,8 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
                 <label className="block text-sm font-bold text-slate-800" htmlFor="spogomi-identity-assistance-context">Élément utile à la recherche <span className="font-normal text-slate-500">(facultatif)</span></label>
                 <textarea id="spogomi-identity-assistance-context" value={assistanceContext} onChange={(event) => setAssistanceContext(event.target.value)} maxLength={1200} rows={4} placeholder="Expliquez brièvement comment l’organisateur peut vous recontacter ou vérifier votre participation. Ne saisissez pas de code secret." className="w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500 focus:ring-2" />
                 <div className="flex flex-wrap gap-2"><CmmButton type="submit" tone="primary" disabled={isSubmitting} loading={isSubmitting}>{isSubmitting ? "Transmission…" : "Envoyer la demande"}</CmmButton><CmmButton type="button" tone="secondary" disabled={isSubmitting} onClick={() => setAssistanceMode(false)}>J’ai retrouvé mon code</CmmButton></div>
+                {message ? <p role="status" className="text-sm font-semibold text-emerald-800">{message}</p> : null}
+                {error ? <p role="alert" className="text-sm font-semibold text-rose-700">{error}</p> : null}
               </form>
             ) : (
               <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
