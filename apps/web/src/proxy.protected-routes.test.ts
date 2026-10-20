@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 const clerkContextRequestMock = vi.hoisted(() => vi.fn());
 const clerkMiddlewareFailure = vi.hoisted(() => ({ enabled: false }));
+const devAuthBypassEnabledMock = vi.hoisted(() => vi.fn(() => false));
 
 vi.mock("@clerk/nextjs/server", () => {
   process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
@@ -19,6 +20,10 @@ vi.mock("@clerk/nextjs/server", () => {
       },
   };
 });
+
+vi.mock("@/lib/auth/dev-auth", () => ({
+  isDevAuthBypassEnabled: devAuthBypassEnabledMock,
+}));
 
 import {
   DASHBOARD_ROUTE,
@@ -43,6 +48,11 @@ describe("proxy route context", () => {
   beforeEach(() => {
     clerkMiddlewareFailure.enabled = false;
     clerkContextRequestMock.mockClear();
+    devAuthBypassEnabledMock.mockReturnValue(false);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("keeps key page access semantics explicit", () => {
@@ -282,6 +292,63 @@ describe("proxy route context", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("x-robots-tag")).toBeNull();
+  });
+
+  it("fails closed for protected requests when Clerk is unavailable", async () => {
+    clerkMiddlewareFailure.enabled = true;
+
+    const apiResponse = await proxy(
+      new NextRequest("http://localhost/api/admin/roles", {
+        headers: { cookie: "__session=expired" },
+      }),
+      {} as never,
+    );
+    expect(apiResponse?.status).toBe(401);
+    expect(await apiResponse?.json()).toMatchObject({ kind: "permission" });
+
+    const pageResponse = await proxy(
+      new NextRequest("http://localhost/dashboard", {
+        headers: { cookie: "__session=expired" },
+      }),
+      {} as never,
+    );
+    expect(pageResponse?.status).toBe(307);
+    expect(new URL(pageResponse?.headers.get("location") ?? "http://invalid").pathname).toBe("/sign-in");
+  });
+
+  it("keeps context-only and anonymous-safe requests available during a Clerk outage", async () => {
+    clerkMiddlewareFailure.enabled = true;
+
+    const contextResponse = await proxy(
+      new NextRequest("http://localhost/reports", {
+        headers: { cookie: "__session=expired" },
+      }),
+      {} as never,
+    );
+    expect(contextResponse?.status).toBe(200);
+    expect(contextResponse?.headers.get("location")).toBeNull();
+
+    const publicApiResponse = await proxy(
+      new NextRequest("http://localhost/api/community/events", {
+        headers: { cookie: "__session=expired" },
+      }),
+      {} as never,
+    );
+    expect(publicApiResponse?.status).toBe(200);
+    expect(publicApiResponse?.headers.get("x-robots-tag")).toBeNull();
+  });
+
+  it("keeps the explicitly enabled local bypass on the Next path during a Clerk outage", async () => {
+    devAuthBypassEnabledMock.mockReturnValue(true);
+    clerkMiddlewareFailure.enabled = true;
+
+    const response = await proxy(
+      new NextRequest("http://localhost/dashboard"),
+      {} as never,
+    );
+
+    expect(response?.status).toBe(200);
+    expect(response?.headers.get("location")).toBeNull();
   });
 
 });
