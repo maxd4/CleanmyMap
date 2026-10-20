@@ -1,5 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   computeButtsFromMegotsKg,
@@ -33,6 +33,14 @@ const OUT_CLEAN_PLACES_PATH = join(APP_DIR, "data", "raw", "google-sheet-clean-p
 const OUT_CLEAN_PLACES_FORM_CSV_PATH = join(APP_DIR, "data", "raw", "google-sheet-clean-places-form-like.csv");
 const ASSOCIATION_OPTIONS_PATH = join(APP_DIR, "src", "lib", "actions", "association-options.ts");
 const USER_AGENT = "cleanmymap-web-admin-import/1.0 (contact: admin@cleanmymap.local)";
+const DEFAULT_PATHS = Object.freeze({
+  rawPath: RAW_PATH,
+  outPath: OUT_PATH,
+  outFormCsvPath: OUT_FORM_CSV_PATH,
+  outCleanPlacesPath: OUT_CLEAN_PLACES_PATH,
+  outCleanPlacesFormCsvPath: OUT_CLEAN_PLACES_FORM_CSV_PATH,
+  associationOptionsPath: ASSOCIATION_OPTIONS_PATH,
+});
 
 function isLikelyHtmlPayload(contentType, bodyText) {
   const type = String(contentType || "").toLowerCase();
@@ -44,14 +52,14 @@ function isLikelyHtmlPayload(contentType, bodyText) {
   );
 }
 
-async function fetchUsableSheetCsv(sheetUrl) {
+async function fetchUsableSheetCsv(sheetUrl, fetchImpl = fetch) {
   const attempts = [];
 
   const candidates = buildGoogleSheetCsvCandidates(assertGoogleSheetUrl(sheetUrl));
 
   for (const candidateUrl of candidates) {
     try {
-      const response = await fetch(candidateUrl, {
+      const response = await fetchImpl(candidateUrl, {
         headers: { "User-Agent": USER_AGENT },
       });
       if (!response.ok) {
@@ -89,8 +97,11 @@ function buildEntrepriseAssociationName(enterpriseName) {
   return `Entreprise - ${trimmed.slice(0, 100)}`;
 }
 
-async function readAssociationOptions() {
-  const source = await readFile(ASSOCIATION_OPTIONS_PATH, "utf8");
+async function readAssociationOptions(
+  readFileImpl = readFile,
+  associationOptionsPath = ASSOCIATION_OPTIONS_PATH,
+) {
+  const source = await readFileImpl(associationOptionsPath, "utf8");
   const block = source.match(
     /export const ASSOCIATION_SELECTION_OPTIONS = \[([\s\S]*?)\] as const;/,
   );
@@ -208,15 +219,26 @@ function normalizeStatus(raw) {
   return "approved";
 }
 
-async function main() {
-  const cliArgs = process.argv.slice(2);
+async function main(options = {}) {
+  const {
+    args = process.argv.slice(2),
+    env = process.env,
+    paths = DEFAULT_PATHS,
+    fetchImpl = fetch,
+    readFileImpl = readFile,
+    writeFileImpl = writeFile,
+    geocodeResolverFactory = createGeocodeResolver,
+  } = options;
+  const cliArgs = args;
   const geocodeEnabled = cliArgs.includes("--geocode");
   const sheetUrlArg = cliArgs.find((arg) => arg.startsWith("http"));
-  const sheetUrl =
-    sheetUrlArg || process.env.CLEANMYMAP_SHEET_URL || DEFAULT_SHEET_URL;
-  const knownAssociations = await readAssociationOptions();
+  const sheetUrl = sheetUrlArg || env.CLEANMYMAP_SHEET_URL || DEFAULT_SHEET_URL;
+  const knownAssociations = await readAssociationOptions(
+    readFileImpl,
+    paths.associationOptionsPath,
+  );
 
-  const fetched = await fetchUsableSheetCsv(sheetUrl);
+  const fetched = await fetchUsableSheetCsv(sheetUrl, fetchImpl);
   let csvText = fetched.csvText;
   let rows = csvText ? parseCsv(csvText) : [];
 
@@ -228,13 +250,13 @@ async function main() {
 
   if (rows.length < 2) {
     try {
-      const localRaw = await readFile(RAW_PATH, "utf8");
+      const localRaw = await readFileImpl(paths.rawPath, "utf8");
       const localRows = parseCsv(localRaw);
       if (localRows.length >= 2) {
         rows = localRows;
         console.warn(
           "Google Sheet unreachable/empty in this environment. Using local snapshot:",
-          RAW_PATH,
+          paths.rawPath,
         );
       }
     } catch {
@@ -244,7 +266,7 @@ async function main() {
 
   if (rows.length < 2) {
     try {
-      const existingPayloadText = await readFile(OUT_PATH, "utf8");
+      const existingPayloadText = await readFileImpl(paths.outPath, "utf8");
       const existingPayload = JSON.parse(existingPayloadText);
       const existingItems = Array.isArray(existingPayload?.items)
         ? existingPayload.items
@@ -252,7 +274,7 @@ async function main() {
       if (existingItems.length > 0) {
         console.warn(
           "Google Sheet unreachable/empty and no usable CSV snapshot. Reusing existing admin payload:",
-          OUT_PATH,
+          paths.outPath,
         );
         console.warn(
           "Tip: rerun with a valid CLEANMYMAP_SHEET_URL once network/sharing is fixed.",
@@ -377,7 +399,7 @@ async function main() {
     throw new Error("Missing required columns: action_date/date");
   }
 
-  const resolveGeocode = createGeocodeResolver({
+  const resolveGeocode = geocodeResolverFactory({
     userAgent: USER_AGENT,
     delayMs: 1100,
     acceptLanguage: "fr",
@@ -628,7 +650,7 @@ async function main() {
   }
 
   const payload = { items };
-  await writeFile(OUT_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  await writeFileImpl(paths.outPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
 
   const formLikeRows = [
     [
@@ -660,7 +682,7 @@ async function main() {
       ];
     }),
   ];
-  await writeFile(OUT_FORM_CSV_PATH, toCsv(formLikeRows), "utf8");
+  await writeFileImpl(paths.outFormCsvPath, toCsv(formLikeRows), "utf8");
 
   const cleanPlaceItems = [];
   for (const label of Array.from(cleanPlaceLabels)) {
@@ -682,8 +704,8 @@ async function main() {
       notes: "Imported from Google Sheet column: lieux propres",
     });
   }
-  await writeFile(
-    OUT_CLEAN_PLACES_PATH,
+  await writeFileImpl(
+    paths.outCleanPlacesPath,
     `${JSON.stringify({ items: cleanPlaceItems }, null, 2)}\n`,
     "utf8",
   );
@@ -699,7 +721,7 @@ async function main() {
       item.notes,
     ]),
   ];
-  await writeFile(OUT_CLEAN_PLACES_FORM_CSV_PATH, toCsv(cleanPlaceFormRows), "utf8");
+  await writeFileImpl(paths.outCleanPlacesFormCsvPath, toCsv(cleanPlaceFormRows), "utf8");
 
   const geocoded = items.filter(
     (item) => item.latitude !== null && item.longitude !== null,
@@ -707,10 +729,10 @@ async function main() {
   const cleanGeocoded = cleanPlaceItems.filter(
     (item) => item.latitude !== null && item.longitude !== null,
   ).length;
-  console.log(`Admin import payload generated: ${OUT_PATH}`);
-  console.log(`Form-like CSV generated: ${OUT_FORM_CSV_PATH}`);
-  console.log(`Clean places payload generated: ${OUT_CLEAN_PLACES_PATH}`);
-  console.log(`Clean places form-like CSV generated: ${OUT_CLEAN_PLACES_FORM_CSV_PATH}`);
+  console.log(`Admin import payload generated: ${paths.outPath}`);
+  console.log(`Form-like CSV generated: ${paths.outFormCsvPath}`);
+  console.log(`Clean places payload generated: ${paths.outCleanPlacesPath}`);
+  console.log(`Clean places form-like CSV generated: ${paths.outCleanPlacesFormCsvPath}`);
   console.log(`Rows parsed: ${items.length}`);
   console.log(`Clean places parsed: ${cleanPlaceItems.length}`);
   console.log(`Rows skipped: ${skipped}`);
@@ -721,10 +743,14 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+export { main };
+
+if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
+  main().catch((error) => {
   console.error(
     "build-admin-import-from-sheet failed:",
     error instanceof Error ? error.message : error,
   );
   process.exit(1);
-});
+  });
+}

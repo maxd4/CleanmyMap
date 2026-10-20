@@ -40,7 +40,7 @@ assert.doesNotMatch(
 );
 assert.match(
   importerSource,
-  /readFile\(RAW_PATH/,
+  /readFileImpl\(paths\.rawPath/,
   "the existing local snapshot remains available as a fallback",
 );
 });

@@ -134,12 +134,14 @@ export function parseIsoDateFlexible(raw) {
 }
 
 function toNumber(raw, fallback = 0) {
-  const value = Number(
-    String(raw ?? "")
-      .replace(",", ".")
-      .replace(/[^\d.-]/g, "")
-      .trim(),
-  );
+  const normalized = String(raw ?? "")
+    .replace(",", ".")
+    .replace(/[^\d.-]/g, "")
+    .trim();
+  if (!normalized) {
+    return fallback;
+  }
+  const value = Number(normalized);
   return Number.isFinite(value) ? value : fallback;
 }
 
