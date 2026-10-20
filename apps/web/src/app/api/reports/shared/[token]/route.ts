@@ -3,6 +3,7 @@ import { enforceServerRateLimit } from "@/lib/rate-limit/server";
 import {
   downloadReportPdfArtifact,
   getReportPdfArtifactById,
+  isConfirmedReportPdfArtifactStorageAbsence,
 } from "@/lib/reports/report-generation-pdf-artifact-store";
 import {
   findActiveReportPdfShareByTokenHash,
@@ -28,14 +29,6 @@ function invalidShareResponse(): Response {
   );
 }
 
-function hasConfirmedStorageAbsence(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  const candidate = error as { status?: unknown; statusCode?: unknown; code?: unknown };
-  return candidate.status === 404 || candidate.status === "404" ||
-    candidate.statusCode === 404 || candidate.statusCode === "404" ||
-    candidate.code === "404" || candidate.code === "not_found";
-}
-
 function attachmentFilename(theme: string): string {
   return `rapport_cleanmymap_${theme}.pdf`;
 }
@@ -54,7 +47,7 @@ export async function GET(request: Request, { params }: RouteContext) {
     console.error("Report PDF shared-link lookup failed", { error });
     return new Response("Le partage du PDF est temporairement indisponible.", {
       status: 503,
-      headers: { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" },
+      headers: { "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow, noarchive", "Referrer-Policy": "no-referrer" },
     });
   }
   if (!share) return invalidShareResponse();
@@ -76,11 +69,11 @@ export async function GET(request: Request, { params }: RouteContext) {
 
     const downloaded = await downloadReportPdfArtifact(artifact.storagePath);
     if (!downloaded.data) {
-      if (hasConfirmedStorageAbsence(downloaded.error)) return invalidShareResponse();
+      if (isConfirmedReportPdfArtifactStorageAbsence(downloaded.error)) return invalidShareResponse();
       console.error("Report PDF shared-link Storage read failed", { shareId: share.id, error: downloaded.error });
       return new Response("Le partage du PDF est temporairement indisponible.", {
         status: 503,
-        headers: { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" },
+        headers: { "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow, noarchive", "Referrer-Policy": "no-referrer" },
       });
     }
 
@@ -102,7 +95,7 @@ export async function GET(request: Request, { params }: RouteContext) {
     console.error("Report PDF shared-link delivery failed", { shareId: share.id, error });
     return new Response("Le partage du PDF est temporairement indisponible.", {
       status: 503,
-      headers: { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" },
+      headers: { "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow, noarchive", "Referrer-Policy": "no-referrer" },
     });
   }
 }

@@ -12,6 +12,7 @@ import { InvalidReportGenerationSnapshotError } from "@/lib/reports/report-gener
 import {
   downloadReportPdfArtifact,
   getReportPdfArtifactForOwner,
+  isConfirmedReportPdfArtifactStorageAbsence,
   REPORT_PDF_ARTIFACT_RENDERER_VERSION,
   type ReportPdfArtifactTheme,
 } from "@/lib/reports/report-generation-pdf-artifact-store";
@@ -70,14 +71,6 @@ function preview(params: {
   };
 }
 
-function hasConfirmedStorageAbsence(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  const candidate = error as { status?: unknown; statusCode?: unknown; code?: unknown };
-  return candidate.status === 404 || candidate.status === "404" ||
-    candidate.statusCode === 404 || candidate.statusCode === "404" ||
-    candidate.code === "404" || candidate.code === "not_found";
-}
-
 async function loadOwnedGeneration(id: string, userId: string) {
   try {
     return await getReportGenerationSnapshotById(id, userId);
@@ -124,6 +117,8 @@ async function auditShareOperation(params: {
 export async function GET(request: Request, { params }: RouteContext) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse({ hint: access.error });
+  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(request, access.userId, { limit: 30, window: 60 });
+  if (rateLimitResponse) return rateLimitResponse;
 
   const { id } = await params;
   const theme = parseTheme(new URL(request.url).searchParams.get("theme") ?? "impact");
@@ -200,7 +195,7 @@ export async function POST(request: Request, { params }: RouteContext) {
     }
     const stored = await downloadReportPdfArtifact(artifact.storagePath);
     if (!stored.data) {
-      const status = hasConfirmedStorageAbsence(stored.error) ? 409 : 503;
+      const status = isConfirmedReportPdfArtifactStorageAbsence(stored.error) ? 409 : 503;
       return NextResponse.json({ error: status === 409 ? "Le PDF historique n'est plus disponible. Téléchargez-le à nouveau avant de le partager." : "Le stockage du PDF est temporairement indisponible." }, { status });
     }
 

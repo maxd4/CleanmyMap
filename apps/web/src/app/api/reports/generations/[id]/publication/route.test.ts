@@ -70,11 +70,45 @@ describe("report publication route", () => {
     expect(createMock).not.toHaveBeenCalled();
   });
 
+  it("refuses anonymous publication mutations before reading or persisting history", async () => {
+    authMock.mockResolvedValue({ ok: false, status: 401, error: "Unauthorized" });
+
+    const publish = await POST(request("POST", { theme: "scientific" }), { params: Promise.resolve({ id: generationId }) });
+    const revoke = await DELETE(request("DELETE"), { params: Promise.resolve({ id: generationId }) });
+
+    expect(publish.status).toBe(401);
+    expect(revoke.status).toBe(401);
+    expect(snapshotMock).not.toHaveBeenCalled();
+    expect(createMock).not.toHaveBeenCalled();
+    expect(revokeMock).not.toHaveBeenCalled();
+  });
+
+  it("does not let another account revoke the publication", async () => {
+    authMock.mockResolvedValue({ ok: true, userId: "other-user" });
+    revokeMock.mockResolvedValueOnce(null);
+
+    const response = await DELETE(request("DELETE"), { params: Promise.resolve({ id: generationId }) });
+
+    expect(response.status).toBe(404);
+    expect(revokeMock).toHaveBeenCalledWith({ generationId, createdByClerkId: "other-user" });
+    expect(auditMock).not.toHaveBeenCalled();
+  });
+
   it("rejects unsafe projection and does not publish it", async () => {
     snapshotMock.mockResolvedValue({ ...generation, snapshot: { ...generation.snapshot, data: { ...generation.snapshot.data, rows: [{ email: "private@example.com" }] } } });
     const response = await POST(request("POST", { theme: "scientific" }), { params: Promise.resolve({ id: generationId }) });
     expect(response.status).toBe(422);
     expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("requires the exact ready PDF variant before publishing", async () => {
+    artifactMock.mockResolvedValueOnce(null);
+
+    const response = await POST(request("POST", { theme: "scientific" }), { params: Promise.resolve({ id: generationId }) });
+
+    expect(response.status).toBe(409);
+    expect(createMock).not.toHaveBeenCalled();
+    expect(auditMock).not.toHaveBeenCalled();
   });
 
   it("revokes only the owner's publication", async () => {

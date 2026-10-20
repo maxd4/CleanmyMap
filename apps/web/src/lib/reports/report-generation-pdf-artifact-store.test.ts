@@ -6,6 +6,7 @@ vi.mock("@/lib/supabase/server", () => ({ getSupabaseAdminClient: getSupabaseAdm
 import {
   buildReportPdfArtifactStoragePath,
   claimReportPdfArtifact,
+  isConfirmedReportPdfArtifactStorageAbsence,
   markReportPdfArtifactReady,
   reclaimMissingReportPdfArtifact,
   REPORT_PDF_ARTIFACT_RENDERING_LEASE_MS,
@@ -54,6 +55,13 @@ function configureClient(params: {
 
 describe("report PDF artifact store", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("distinguishes confirmed Storage absence from temporary failures", () => {
+    expect(isConfirmedReportPdfArtifactStorageAbsence({ statusCode: 404 })).toBe(true);
+    expect(isConfirmedReportPdfArtifactStorageAbsence({ code: "not_found" })).toBe(true);
+    expect(isConfirmedReportPdfArtifactStorageAbsence({ status: 503, code: "service_unavailable" })).toBe(false);
+    expect(isConfirmedReportPdfArtifactStorageAbsence(new Error("Storage unavailable"))).toBe(false);
+  });
 
   it("uses an immutable generation/theme/renderer path", () => {
     expect(buildReportPdfArtifactStoragePath({

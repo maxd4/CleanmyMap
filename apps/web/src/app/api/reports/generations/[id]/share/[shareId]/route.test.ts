@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
+const rateLimitMock = vi.hoisted(() => vi.fn());
 const revokeMock = vi.hoisted(() => vi.fn());
 const auditMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: authMock }));
+vi.mock("@/lib/rate-limit/server", () => ({ enforceServerRateLimitForAuthenticatedUser: rateLimitMock }));
 vi.mock("@/lib/reports/report-generation-pdf-share-store", () => ({ revokeReportPdfShare: revokeMock }));
 vi.mock("@/lib/admin/audit/operation-audit", () => ({ appendAdminOperationAudit: auditMock }));
 
@@ -17,6 +19,7 @@ describe("DELETE /api/reports/generations/[id]/share/[shareId]", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authMock.mockResolvedValue({ ok: true, userId: "owner-1" });
+    rateLimitMock.mockResolvedValue(null);
     revokeMock.mockResolvedValue({ id: shareId });
     auditMock.mockResolvedValue(undefined);
   });
@@ -28,6 +31,17 @@ describe("DELETE /api/reports/generations/[id]/share/[shareId]", () => {
     expect(await response.json()).toMatchObject({ revoked: true, shareId });
     expect(revokeMock).toHaveBeenCalledWith({ shareId, generationId, createdByClerkId: "owner-1" });
     expect(auditMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("rate-limits revocation before touching the owner-scoped store", async () => {
+    const limitedResponse = new Response("Too many requests", { status: 429 });
+    rateLimitMock.mockResolvedValueOnce(limitedResponse);
+
+    const response = await DELETE(new Request("https://cleanmymap.test"), { params: Promise.resolve({ id: generationId, shareId }) });
+
+    expect(response).toBe(limitedResponse);
+    expect(revokeMock).not.toHaveBeenCalled();
+    expect(auditMock).not.toHaveBeenCalled();
   });
 
   it("does not let a third party revoke a link", async () => {

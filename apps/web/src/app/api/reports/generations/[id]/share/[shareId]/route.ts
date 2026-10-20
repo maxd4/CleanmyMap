@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
+import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 import { revokeReportPdfShare } from "@/lib/reports/report-generation-pdf-share-store";
 
 export const runtime = "nodejs";
@@ -15,6 +16,8 @@ function isUuid(value: string): boolean {
 export async function DELETE(_request: Request, { params }: RouteContext) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse({ hint: access.error });
+  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(_request, access.userId, { limit: 10, window: 60 });
+  if (rateLimitResponse) return rateLimitResponse;
 
   const { id, shareId } = await params;
   if (!isUuid(id) || !isUuid(shareId)) {

@@ -25,6 +25,7 @@ vi.mock("@/lib/reports/report-generation-pdf-artifact-store", () => ({
   REPORT_PDF_ARTIFACT_RENDERER_VERSION: "chromium-official-report-pdf-v1",
   claimReportPdfArtifact: claimMock,
   downloadReportPdfArtifact: downloadMock,
+  isConfirmedReportPdfArtifactStorageAbsence: (error: { status?: unknown; statusCode?: unknown; code?: unknown } | null) => error?.status === 404 || error?.statusCode === 404 || error?.code === "not_found",
   waitForReportPdfArtifact: waitMock,
   markReportPdfArtifactReady: readyMock,
   markReportPdfArtifactFailed: failedMock,

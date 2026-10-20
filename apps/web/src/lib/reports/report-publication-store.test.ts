@@ -6,7 +6,7 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseAdminClient: getSupabaseAdminClientMock,
 }));
 
-import { createReportPublication } from "./report-publication-store";
+import { createReportPublication, listPublicReportLibraryPage } from "./report-publication-store";
 
 const params = {
   generationId: "11111111-1111-4111-8111-111111111111",
@@ -60,6 +60,22 @@ function configureStore(current: { publishedAt: string; revokedAt: string | null
   return { upsert, upsertSingle };
 }
 
+function configureLibraryPage(rows: unknown[], count: number) {
+  const query = {
+    select: vi.fn(),
+    is: vi.fn(),
+    ilike: vi.fn(),
+    eq: vi.fn(),
+    order: vi.fn(),
+    range: vi.fn().mockResolvedValue({ data: rows, error: null, count }),
+  };
+  for (const method of ["select", "is", "ilike", "eq", "order"]) {
+    query[method as keyof typeof query] = vi.fn().mockReturnValue(query) as never;
+  }
+  getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn().mockReturnValue(query) });
+  return query;
+}
+
 describe("report publication dates", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -103,5 +119,19 @@ describe("report publication dates", () => {
       { onConflict: "generation_id" },
     );
     expect(publication.id).toBe("publication-1");
+  });
+
+  it("keeps the public library query active-only, bounded and filter-scoped", async () => {
+    const query = configureLibraryPage([databaseRow("2026-10-18T12:00:00.000Z", null)], 51);
+
+    const page = await listPublicReportLibraryPage({ page: 0, pageSize: 100, search: "  public  ", periodId: "six_months", theme: "scientific", sort: "asc" });
+
+    expect(query.is).toHaveBeenCalledWith("revoked_at", null);
+    expect(query.ilike).toHaveBeenCalledWith("title", "%public%");
+    expect(query.eq).toHaveBeenCalledWith("period_id", "six_months");
+    expect(query.eq).toHaveBeenCalledWith("theme", "scientific");
+    expect(query.range).toHaveBeenCalledWith(0, 49);
+    expect(page).toMatchObject({ page: 1, pageSize: 50, total: 51, hasNextPage: true, hasPreviousPage: false });
+    expect(JSON.stringify(page)).not.toContain("createdByClerkId");
   });
 });

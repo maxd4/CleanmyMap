@@ -34,6 +34,14 @@ type ReportPdfArtifactRow = {
 
 const SELECT = "id, generation_id, created_by_clerk_id, theme, renderer_version, storage_path, status, byte_size, updated_at";
 
+export function isConfirmedReportPdfArtifactStorageAbsence(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { status?: unknown; statusCode?: unknown; code?: unknown };
+  return candidate.status === 404 || candidate.status === "404" ||
+    candidate.statusCode === 404 || candidate.statusCode === "404" ||
+    candidate.code === "404" || candidate.code === "not_found";
+}
+
 function toArtifact(row: ReportPdfArtifactRow): ReportPdfArtifact {
   return {
     id: row.id,

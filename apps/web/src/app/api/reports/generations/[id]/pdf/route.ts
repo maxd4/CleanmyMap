@@ -11,6 +11,7 @@ import {
 import {
   claimReportPdfArtifact,
   downloadReportPdfArtifact,
+  isConfirmedReportPdfArtifactStorageAbsence,
   markReportPdfArtifactFailed,
   markReportPdfArtifactReady,
   reclaimMissingReportPdfArtifact,
@@ -54,17 +55,6 @@ async function auditFailure(params: {
   } catch (error) {
     console.error("Report PDF artifact failure audit failed", { ...params, error });
   }
-}
-
-function isConfirmedStorageObjectAbsence(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  const candidate = error as { status?: unknown; statusCode?: unknown; code?: unknown };
-  return candidate.status === 404 ||
-    candidate.status === "404" ||
-    candidate.statusCode === 404 ||
-    candidate.statusCode === "404" ||
-    candidate.code === "404" ||
-    candidate.code === "not_found";
 }
 
 async function renderOwnedReportPdf(params: {
@@ -195,7 +185,7 @@ export async function GET(request: Request, { params }: ReportPdfRouteContext) {
 
       downloaded = await downloadReportPdfArtifact(artifact.storagePath);
       if (downloaded.data) break;
-      if (!isConfirmedStorageObjectAbsence(downloaded.error)) {
+      if (!isConfirmedReportPdfArtifactStorageAbsence(downloaded.error)) {
         throw downloaded.error ?? new Error("PDF artifact is unavailable.");
       }
 

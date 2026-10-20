@@ -82,6 +82,22 @@ describe("report publication projection", () => {
   });
 
   it.each([
+    ["address", { address: "12 rue des Lilas" }],
+    ["postal code", { postalCode: "75001" }],
+    ["coordinates", { coordinates: { lat: 48.8566, lon: 2.3522 } }],
+  ])("rejects a payload containing sensitive %s fields", (_label, value) => {
+    const unsafe = {
+      ...generation,
+      snapshot: {
+        ...generation.snapshot,
+        data: { ...generation.snapshot.data, value },
+      },
+    };
+
+    expect(() => assertReportPublicationEligibility(unsafe)).toThrow(ReportPublicationProjectionError);
+  });
+
+  it.each([
     "2026-10-19",
     "2026-10-19T06:12:34.567Z",
     "2026-10-19T06:12:34+02:00",

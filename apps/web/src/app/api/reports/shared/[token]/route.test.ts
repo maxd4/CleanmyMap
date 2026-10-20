@@ -14,6 +14,7 @@ vi.mock("@/lib/reports/report-generation-pdf-share-store", () => ({
 vi.mock("@/lib/reports/report-generation-pdf-artifact-store", () => ({
   getReportPdfArtifactById: artifactMock,
   downloadReportPdfArtifact: downloadMock,
+  isConfirmedReportPdfArtifactStorageAbsence: (error: { status?: unknown; statusCode?: unknown; code?: unknown } | null) => error?.status === 404 || error?.statusCode === 404 || error?.code === "not_found",
 }));
 
 import { GET } from "./route";
@@ -101,6 +102,22 @@ describe("GET /api/reports/shared/[token]", () => {
 
     expect(response.status).toBe(503);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(response.headers.get("X-Robots-Tag")).toBe("noindex, nofollow, noarchive");
+  });
+
+  it("keeps confirmed Storage absence distinct from a temporary outage", async () => {
+    downloadMock.mockResolvedValueOnce({ data: null, error: { statusCode: 404, code: "not_found" } });
+    const response = await GET(request(), { params: Promise.resolve({ token }) });
+    expect(response.status).toBe(404);
+    expect(response.headers.get("X-Robots-Tag")).toBe("noindex, nofollow, noarchive");
+  });
+
+  it("returns an unavailable response when the share lookup fails", async () => {
+    findShareMock.mockRejectedValueOnce(new Error("database unavailable"));
+    const response = await GET(request(), { params: Promise.resolve({ token }) });
+    expect(response.status).toBe(503);
+    expect(response.headers.get("X-Robots-Tag")).toBe("noindex, nofollow, noarchive");
+    expect(downloadMock).not.toHaveBeenCalled();
   });
 
   it("applies anonymous rate limiting before looking up the bearer", async () => {

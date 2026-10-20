@@ -22,6 +22,7 @@ vi.mock("@/lib/reports/report-generation-payload", () => ({
 vi.mock("@/lib/reports/report-generation-pdf-artifact-store", () => ({
   downloadReportPdfArtifact: downloadMock,
   getReportPdfArtifactForOwner: artifactMock,
+  isConfirmedReportPdfArtifactStorageAbsence: (error: { status?: unknown; statusCode?: unknown; code?: unknown } | null) => error?.status === 404 || error?.statusCode === 404 || error?.code === "not_found",
   REPORT_PDF_ARTIFACT_BUCKET: "reports",
   REPORT_PDF_ARTIFACT_RENDERER_VERSION: "chromium-official-report-pdf-v1",
 }));
@@ -119,6 +120,18 @@ describe("historical report PDF sharing", () => {
     expect(JSON.stringify(body)).not.toContain("a".repeat(43));
   });
 
+  it("rate-limits owner share reads before loading the private report", async () => {
+    const limitedResponse = new Response("Too many requests", { status: 429 });
+    rateLimitMock.mockResolvedValueOnce(limitedResponse);
+
+    const response = await GET(request(), { params: Promise.resolve({ id: generationId }) });
+
+    expect(response).toBe(limitedResponse);
+    expect(snapshotMock).not.toHaveBeenCalled();
+    expect(artifactMock).not.toHaveBeenCalled();
+    expect(listMock).not.toHaveBeenCalled();
+  });
+
   it("creates one expiring link for the ready exact variant without quota work", async () => {
     const response = await POST(request({ theme: "impact", expiresInSeconds: 24 * 60 * 60 }), { params: Promise.resolve({ id: generationId }) });
     const body = await response.json();
@@ -149,5 +162,22 @@ describe("historical report PDF sharing", () => {
     expect(response.status).toBe(409);
     expect(createMock).not.toHaveBeenCalled();
     expect(downloadMock).not.toHaveBeenCalled();
+  });
+
+  it.each([3600 - 1, 30 * 24 * 60 * 60 + 1, 3600.5])("rejects an out-of-contract expiry (%s) before loading history", async (expiresInSeconds) => {
+    const response = await POST(request({ theme: "impact", expiresInSeconds }), { params: Promise.resolve({ id: generationId }) });
+
+    expect(response.status).toBe(400);
+    expect(snapshotMock).not.toHaveBeenCalled();
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a temporary Storage failure distinct from a confirmed missing PDF", async () => {
+    downloadMock.mockResolvedValueOnce({ data: null, error: { status: 503, code: "service_unavailable" } });
+
+    const response = await POST(request({ theme: "impact", expiresInSeconds: 3600 }), { params: Promise.resolve({ id: generationId }) });
+
+    expect(response.status).toBe(503);
+    expect(createMock).not.toHaveBeenCalled();
   });
 });
