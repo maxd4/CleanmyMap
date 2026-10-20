@@ -40,7 +40,7 @@ const OPTIONAL_PROFILE_PROJECTION_COLUMNS = [
   "role_projection_synced_at",
 ];
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const options = {
     limit: DEFAULT_PAGE_SIZE,
     out: DEFAULT_OUTPUT_BASE,
@@ -57,7 +57,7 @@ function parseArgs(argv) {
   return options;
 }
 
-function parseDotEnv(content) {
+export function parseDotEnv(content) {
   const env = {};
   for (const line of content.split(/\r?\n/)) {
     const trimmed = line.trim();
@@ -84,9 +84,9 @@ function parseDotEnv(content) {
   return env;
 }
 
-async function loadEnvFiles() {
+export async function loadEnvFiles(fileCandidates = ENV_FILE_CANDIDATES) {
   const merged = {};
-  for (const filePath of ENV_FILE_CANDIDATES) {
+  for (const filePath of fileCandidates) {
     if (!existsSync(filePath)) {
       continue;
     }
@@ -104,8 +104,8 @@ async function loadEnvFiles() {
   return merged;
 }
 
-function resolveEnvValue(key, fileEnv) {
-  const runtime = process.env[key];
+export function resolveEnvValue(key, fileEnv, runtimeEnv = process.env) {
+  const runtime = runtimeEnv[key];
   if (typeof runtime === "string" && runtime.trim().length > 0) {
     return runtime.trim();
   }
@@ -299,7 +299,7 @@ function mergeSets(...sets) {
   return output;
 }
 
-async function fetchClerkUsers(secretKey, limit) {
+export async function fetchClerkUsers(secretKey, limit, fetchImpl = fetch) {
   const users = [];
   let offset = 0;
   let totalCount = null;
@@ -309,7 +309,7 @@ async function fetchClerkUsers(secretKey, limit) {
     url.searchParams.set("limit", String(limit));
     url.searchParams.set("offset", String(offset));
 
-    const response = await fetch(url, {
+    const response = await fetchImpl(url, {
       headers: {
         Authorization: `Bearer ${secretKey}`,
         Accept: "application/json",
@@ -328,7 +328,11 @@ async function fetchClerkUsers(secretKey, limit) {
         ? page.data
         : Array.isArray(page?.users)
           ? page.users
-          : [];
+          : null;
+
+    if (!data) {
+      throw new Error("Clerk API response malformed: expected an array, data array or users array.");
+    }
 
     if (typeof page?.total_count === "number") {
       totalCount = page.total_count;
@@ -382,7 +386,7 @@ async function fetchClerkUsers(secretKey, limit) {
   return { users, totalCount };
 }
 
-async function fetchAllRows(supabase, { schema = "public", table, select, orderColumn }) {
+export async function fetchAllRows(supabase, { schema = "public", table, select, orderColumn }) {
   const rows = [];
   let from = 0;
 
@@ -495,7 +499,7 @@ export function formatAuditSummaryLog(summary) {
   });
 }
 
-function buildRowSummary({
+export function buildRowSummary({
   id,
   clerkUser,
   profileRow,
@@ -589,7 +593,7 @@ function buildRowSummary({
   };
 }
 
-function toCsv(rows) {
+export function toCsv(rows) {
   const header = [
     "id",
     "status",
@@ -641,17 +645,28 @@ function toCsv(rows) {
   return `${lines.join("\n")}\n`;
 }
 
-async function main() {
-  const args = parseArgs(process.argv);
+export async function main({
+  argv = process.argv,
+  env = process.env,
+  envFileCandidates = ENV_FILE_CANDIDATES,
+  createSupabaseClient = createClient,
+  fetchImpl = fetch,
+  outputCwd = process.cwd(),
+  mkdirImpl = mkdir,
+  writeFileImpl = writeFile,
+  now = () => new Date().toISOString(),
+  log = console.log,
+} = {}) {
+  const args = parseArgs(argv);
   if (!Number.isInteger(args.limit) || args.limit <= 0) {
     throw new Error(`Invalid --limit value: ${String(args.limit)}`);
   }
 
-  const envFiles = await loadEnvFiles();
-  const clerkSecretKey = resolveEnvValue("CLERK_SECRET_KEY", envFiles);
-  const supabaseUrl = resolveEnvValue("NEXT_PUBLIC_SUPABASE_URL", envFiles);
-  const serviceRoleKey = resolveEnvValue("SUPABASE_SERVICE_ROLE_KEY", envFiles);
-  const imuOwnerUserId = resolveEnvValue("CLERK_IMU_OWNER_USER_ID", envFiles);
+  const envFiles = await loadEnvFiles(envFileCandidates);
+  const clerkSecretKey = resolveEnvValue("CLERK_SECRET_KEY", envFiles, env);
+  const supabaseUrl = resolveEnvValue("NEXT_PUBLIC_SUPABASE_URL", envFiles, env);
+  const serviceRoleKey = resolveEnvValue("SUPABASE_SERVICE_ROLE_KEY", envFiles, env);
+  const imuOwnerUserId = resolveEnvValue("CLERK_IMU_OWNER_USER_ID", envFiles, env);
 
   if (!clerkSecretKey) {
     throw new Error("Missing CLERK_SECRET_KEY.");
@@ -660,14 +675,14 @@ async function main() {
     throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.");
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  const supabase = createSupabaseClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
   const profileProjection = await detectProfileProjectionColumns(supabase);
   const [clerkResult, profiles, progressionProfiles, progressionEvents, checklistProgress, funnelEvents] =
     await Promise.all([
-      fetchClerkUsers(clerkSecretKey, args.limit),
+      fetchClerkUsers(clerkSecretKey, args.limit, fetchImpl),
       fetchAllRows(supabase, {
         schema: "public",
         table: "profiles",
@@ -744,7 +759,7 @@ async function main() {
   };
 
   const summary = {
-    generatedAt: new Date().toISOString(),
+    generatedAt: now(),
     clerk: {
       totalCount: clerkResult.totalCount,
       count: clerkResult.users.length,
@@ -768,8 +783,8 @@ async function main() {
     },
   };
 
-  const outputBase = resolve(process.cwd(), args.out);
-  await mkdir(dirname(outputBase), { recursive: true });
+  const outputBase = resolve(outputCwd, args.out);
+  await mkdirImpl(dirname(outputBase), { recursive: true });
 
   const report = {
     summary,
@@ -777,16 +792,18 @@ async function main() {
     users: rows,
   };
 
-  await writeFile(
+  await writeFileImpl(
     `${outputBase}.json`,
     `${JSON.stringify(report, null, 2)}\n`,
     "utf8",
   );
-  await writeFile(`${outputBase}.csv`, toCsv(rows), "utf8");
+  await writeFileImpl(`${outputBase}.csv`, toCsv(rows), "utf8");
 
-  console.log(formatAuditSummaryLog(summary));
-  console.log(`JSON: ${sanitizeLogValue(resolve(`${outputBase}.json`))}`);
-  console.log(`CSV:  ${sanitizeLogValue(resolve(`${outputBase}.csv`))}`);
+  log(formatAuditSummaryLog(summary));
+  log(`JSON: ${sanitizeLogValue(resolve(`${outputBase}.json`))}`);
+  log(`CSV:  ${sanitizeLogValue(resolve(`${outputBase}.csv`))}`);
+
+  return { outputBase, report };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
