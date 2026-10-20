@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -101,7 +102,7 @@ test("collects the operational Vercel signals and keeps their projections sorted
 });
 
 test("nearby Vercel justification is bounded to the preceding comment window", () => {
-  const fixtureRoot = fs.mkdtempSync(path.join(process.cwd(), ".artifacts", "vercel-audit-test-"));
+  const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-vercel-audit-test-"));
   const fixturePath = path.join(fixtureRoot, "route.ts");
   try {
     fs.writeFileSync(fixturePath, [
