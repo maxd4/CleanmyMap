@@ -118,6 +118,22 @@ describe("POST /api/reports/generations/[id]", () => {
     expect(releaseQuotaMock).not.toHaveBeenCalled();
   });
 
+  it("denies anonymous derivation before reading the source or consuming quota", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
+
+    const response = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
+
+    expect(response.status).toBe(401);
+    expect(getSnapshotMock).not.toHaveBeenCalled();
+    expect(reserveQuotaMock).not.toHaveBeenCalled();
+    expect(persistDerivedMock).not.toHaveBeenCalled();
+    expect(auditMock).not.toHaveBeenCalled();
+  });
+
   it("refuses a third-party or incompatible source before quota", async () => {
     getSnapshotMock.mockResolvedValueOnce(null);
     await expect(POST(request(), { params: Promise.resolve({ id: sourceId }) })).resolves.toMatchObject({ status: 404 });
