@@ -838,6 +838,12 @@ Le registre ne modifie ni Knip ni `dead-code-baseline.json` et ne remplace
 jamais une correction de configuration ou d'entrypoint Knip lorsqu'un finding
 est un faux positif technique.
 
+Les futurs lots dead-code visent indicativement la correction de 60 à 100
+findings actionnables par lot, lorsque le périmètre et le risque le permettent.
+Les `KEEP_JUSTIFIED` n'entrent pas dans cette cible. Ce volume reste un repère
+de lot et ne remplace jamais la qualification individuelle, la vérification des
+consommateurs ni la requalification explicite d'un finding devenu stale.
+
 ## Mutation ciblée des tests
 
 La qualité des tests de quelques fonctions pures critiques est mesurée avec
