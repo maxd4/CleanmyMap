@@ -63,6 +63,15 @@ describe("GET historical scientific CSV", () => {
     expect(body).toContain("NA");
   });
 
+  it("returns 404 when the owner-scoped snapshot is absent", async () => {
+    getSnapshotMock.mockResolvedValueOnce(null);
+
+    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ id }) });
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "Rapport historique introuvable." });
+  });
+
   it.each([
     ["invalid id", new InvalidReportGenerationIdErrorMock(), 400, "Identifiant de rapport invalide."],
     ["incompatible snapshot", new InvalidReportGenerationSnapshotErrorMock(), 422, "Le snapshot historique est invalide ou incompatible."],
