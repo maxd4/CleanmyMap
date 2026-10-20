@@ -3,7 +3,8 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { FormState } from "../model";
 import { useBeforeActionForm } from "./use-before-action-form";
-import { buildBeforeActionFallbackForm, useBeforeActionSubmission } from "./use-before-action-workflow";
+import { buildBeforeActionFallbackForm } from "./before-action-form-conversions";
+import { useBeforeActionSubmission } from "./use-before-action-workflow";
 import { ACTION_DECLARATION_DRAFT_KEY } from "../draft-storage";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });

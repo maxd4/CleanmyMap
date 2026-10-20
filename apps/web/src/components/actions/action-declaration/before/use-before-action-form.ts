@@ -15,7 +15,6 @@ import {
   type TerminalPreActionStatus,
 } from "./model";
 import {
-  buildBeforeActionFallbackForm,
   useBeforeActionFieldUpdates,
   useBeforeActionHydration,
   useBeforeActionPublication,
@@ -23,6 +22,7 @@ import {
   mergeBeforeActionHydrationWithLocalChanges,
   resolveBeforeActionMutationId,
 } from "./use-before-action-workflow";
+import { buildBeforeActionFallbackForm } from "./before-action-form-conversions";
 import { useBeforeActionPersistence } from "./use-before-action-persistence";
 import { fetchActionDuplicatePrefill } from "@/lib/actions/http-action-editor";
 import { applyDuplicatePrefillPreservingLocalChanges } from "./duplicate-prefill";

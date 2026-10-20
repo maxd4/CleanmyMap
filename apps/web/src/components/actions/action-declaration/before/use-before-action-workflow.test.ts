@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ActionEditorRecord } from "@/lib/actions/http";
-import { applyPreparationContextToForm, buildBeforeActionFormFromAction, buildBeforeActionInitialForm, mergeBeforeActionHydrationWithLocalChanges, resolveBeforeActionMutationId } from "./use-before-action-workflow";
+import { buildBeforeActionFormFromAction, buildBeforeActionInitialForm } from "./before-action-form-conversions";
+import { applyPreparationContextToForm, mergeBeforeActionHydrationWithLocalChanges, resolveBeforeActionMutationId } from "./use-before-action-workflow";
 import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
 
 describe("before-action resume hydration", () => {

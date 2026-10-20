@@ -51,7 +51,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | `apps/web/src/lib/pdf-export/official-report-html.ts` | ALREADY_MODULARIZED | NONE | préserver échappement HTML, Markdown, tableaux, callouts et PdfReportPayload | nouvelle responsabilité indépendante ajoutée au compositeur |
 | `apps/web/src/lib/auth/sync.ts` | ALREADY_MODULARIZED | NONE | préserver scope utilisateur, service-role server-only, idempotence et ordre d'upsert | nouvelle responsabilité autonome réintroduite dans la façade ou opacification AuthN/AuthZ |
 | `apps/web/src/components/actions/action-creation-shell.tsx` | DEFERRED_SPLIT | AFTER_ACTIVE_CHANGES | préserver l'isolation par `actionId`, les transitions d'état et l'URL reprenable | frontière indépendante et testée entre navigation/sections, état workflow et orchestration de persistance |
-| `apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts` | DEFERRED_SPLIT | AFTER_ACTIVE_CHANGES | préserver les modifications utilisateur, le premier identifiant persistant et la publication toujours explicite | cycles de vie hydration/champs/persistance-publication indépendants avec contrats de reprise démontrés |
+| `apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts` | EXTRACTED_PURE_CONTRACT | CURRENT | préserver les modifications utilisateur, le premier identifiant persistant et la publication toujours explicite ; conversions pures dans `before-action-form-conversions.ts` | nouvelle responsabilité autonome réintroduite dans le workflow ou couplage qui compromet la reprise et la publication explicite |
 
 ### Décisions établies — grille détaillée
 
@@ -841,16 +841,16 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 
 | Champ | Valeur |
 | --- | --- |
-| RESPONSIBILITIES | hydratation d'action/draft/handoff, mises à jour de champs, persistance avant publication et publication explicite |
-| PUBLIC_CONTRACTS | hooks `useBeforeActionHydration`, `useBeforeActionFieldUpdates`, `useBeforeActionSubmission`, `useBeforeActionPublication` et helpers de reprise |
+| RESPONSIBILITIES | hydratation d'action/draft/handoff, mises à jour de champs, persistance avant publication et publication explicite ; les conversions action → `FormState` vivent dans `before-action-form-conversions.ts` |
+| PUBLIC_CONTRACTS | hooks `useBeforeActionHydration`, `useBeforeActionFieldUpdates`, `useBeforeActionSubmission`, `useBeforeActionPublication` et helpers de reprise ; builders de formulaire consommés depuis l'owner de conversions |
 | SIDE_EFFECTS | lectures/écritures d'action, draft local, handoff planner, tracking et publication serveur explicite |
 | MAIN_CONSUMERS | formulaire avant déclaration et shell de création d'action |
-| TEST_BOUNDARY | `use-before-action-workflow.test.ts`, tests du formulaire avant déclaration et tests de reprise/hydratation |
-| COUPLING | hydratation, édition locale, persistance et publication partagent l'identité de mutation et le contrat de reprise |
-| NATURAL_EXTRACTION_BOUNDARY | lifecycle d'hydratation, mises à jour de champs et persistance/publication, sans dupliquer la source de vérité du formulaire |
-| ARCHITECTURE_DECISION | DEFERRED_SPLIT |
-| RATIONALE | le fichier atteint le plafond REVIEW après l'extraction déjà réalisée de la préparation ; un découpage immédiat risquerait de séparer les garanties de saisie concurrente, d'identité et de publication avant stabilisation du parcours |
-| PRIORITY | AFTER_ACTIVE_CHANGES |
+| TEST_BOUNDARY | `use-before-action-workflow.test.ts`, `use-before-action-recovery.test.tsx`, tests du formulaire avant déclaration et tests de reprise/hydratation |
+| COUPLING | le workflow conserve l'identité de mutation et le contrat de reprise ; l'owner de conversions n'a que des dépendances de modèle, préparation, topologie et draft initial |
+| NATURAL_EXTRACTION_BOUNDARY | `before-action-form-conversions.ts` porte les valeurs initiales et les conversions action → `FormState` ; le workflow porte les hooks, effets et publication sans second moteur de formulaire |
+| ARCHITECTURE_DECISION | EXTRACTED_PURE_CONTRACT |
+| RATIONALE | les conversions étaient pures, cohésives et séparables sans déplacer les hooks ni la séquence d'effets ; l'extraction ramène le workflow à 399 lignes et conserve les preuves de reprise, de persistance et de publication explicite |
+| PRIORITY | CURRENT |
 | DEPENDENCY_OR_BLOCKER | préserver les modifications utilisateur, le premier identifiant persistant et la publication toujours explicite |
-| NEXT_TRIGGER | cycles de vie hydration/champs/persistance-publication indépendants avec contrats de reprise démontrés |
+| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans le workflow ou couplage qui compromet la reprise et la publication explicite |
 <!-- RADAR:HUMAN_DECISIONS:END -->
