@@ -300,6 +300,36 @@ aucune frontière sûre n'existe, le résultat est `BLOCKED` jusqu'à une décis
 de modularisation ; il ne faut ni relever/abaisser la baseline, ni modifier le
 seuil ou l'exclusion pour obtenir un succès.
 
+### Sûreté typée et asynchrone
+
+L'audit auxiliaire `type-safety` est lançable isolément par
+`quality:type-safety` et est projeté dans `audit:quality -- all` après mesure
+de son coût. Il réutilise `typescript-eslint` 8.71.2 et les `tsconfig` réels
+des workspaces. Les familles sont séparées :
+
+- `TYPE_SAFETY` : `no-unsafe-assignment`, `no-unsafe-member-access`,
+  `no-unsafe-call`, `no-unsafe-return` et `no-explicit-any` seulement sur
+  Mobile, où la configuration ESLint locale le désactive déjà ; Web conserve
+  sa couverture ESLint existante pour `no-explicit-any` afin d'éviter un
+  diagnostic équivalent ;
+- `ASYNC_SAFETY` : `no-floating-promises` et `no-misused-promises` ; un
+  `void Promise...` n'est accepté comme fire-and-forget que s'il porte une
+  justification locale explicite.
+
+Les rapports conservent le chemin canonique, la règle, la position, le
+message, la sévérité, la fonction lorsque résolue, la provenance, la couverture
+effective et le statut `HISTORICAL` ou `NEW_CANDIDATE_UNVERIFIED`. Les
+directives TypeScript ou ESLint non justifiées sont inventoriées séparément ;
+les exceptions documentées restent visibles. La mesure initiale ne crée pas de
+baseline permissive ni de ratchet bloquant. Une version TypeScript hors de la
+peer range déclarée par `typescript-eslint` est marquée
+`UNSUPPORTED_CONFIGURATION`/`NOT_MEASURED`, jamais considérée comme couverte.
+
+Le contrôle est non bloquant pour les cinq moteurs de gate historiques. Son
+rapport reste cependant en attention lorsqu'une dette ou un diagnostic de
+mesure est observé. Il ne modifie ni les contrats runtime, ni les types
+publics, ni les contrôles Clerk/Supabase.
+
 ## Dead code et ratchet Knip
 
 La commande informative historique reste disponible :

@@ -309,6 +309,34 @@ test("projette la complexité cognitive et les défauts locaux avec leurs relati
   assert.equal(index.auditCategories.some((category) => category.id === "local-maintainability"), true);
 });
 
+test("projette séparément TYPE_SAFETY et ASYNC_SAFETY par fichier", () => {
+  const run = buildRun();
+  run.reports["type-safety"] = {
+    status: "FAIL",
+    kind: "quality-type-safety",
+    measurementStatus: "MEASURED_NOT_RATCHETED",
+    coverage: [{ workspace: "mobile", effectiveCoverage: "TYPED", filesMeasured: 2 }],
+    diagnostics: [],
+    findings: [
+      { family: "TYPE_SAFETY", ruleId: "@typescript-eslint/no-unsafe-call", file: fileA, line: 7, column: 3, message: "unsafe call", status: "HISTORICAL" },
+      { family: "ASYNC_SAFETY", ruleId: "@typescript-eslint/no-misused-promises", file: fileB, line: 8, column: 5, message: "misused promise", status: "HISTORICAL" },
+    ],
+    summary: { filesInScope: 2, filesMeasured: 2, filesWithTypedCoverage: 2, findingsByFamily: { TYPE_SAFETY: 1, ASYNC_SAFETY: 1 }, findingsByRule: { "@typescript-eslint/no-unsafe-call": 1, "@typescript-eslint/no-misused-promises": 1 } },
+  };
+  const index = buildQualityFileIndex({ run, mode: "ALL" });
+  const indexedA = index.files.find((file) => file.path === fileA);
+  const indexedB = index.files.find((file) => file.path === fileB);
+  assert.equal(index.globalCounts.typeSafetyFindings, 1);
+  assert.equal(index.globalCounts.asyncSafetyFindings, 1);
+  assert.equal(indexedA.findings.typeSafety.state, "PRESENT");
+  assert.equal(indexedA.findings.asyncSafety.state, "NOT_MEASURED");
+  assert.equal(indexedB.findings.asyncSafety.state, "PRESENT");
+  assert.ok(index.auditCategories.some((category) => category.id === "type-safety"));
+  assert.ok(index.auditCategories.some((category) => category.id === "async-safety"));
+  assert.match(buildQualityFileIndexMarkdown(index), /TYPE_SAFETY/);
+  assert.match(buildQualityFileIndexMarkdown(index), /ASYNC_SAFETY/);
+});
+
 test("projette la maintenabilité documentaire dans les fichiers et le domain index", () => {
   const run = buildRun();
   run.documentation = documentationReport();

@@ -28,8 +28,8 @@ import { validateDocumentationReport } from "../audits/documentation-maintainabi
 import { buildArchitectureImportGraph } from "./generate-architecture-import-graph.mjs";
 import { createCorrelationSignalsFromAuditResults } from "./generate-modularity-radar.mjs";
 
-export const QUALITY_INDEX_SCHEMA_VERSION = 3;
-export const QUALITY_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability"]);
+export const QUALITY_INDEX_SCHEMA_VERSION = 5;
+export const QUALITY_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability"]);
 export const QUALITY_GATE_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
 export const QUALITY_INDEX_PREFIX = "quality-index";
 export const QUALITY_ARCHITECTURE_DOMAIN_PREFIX = "architecture:";
@@ -294,6 +294,9 @@ function validateReport(audit, report) {
   if (audit === "maintainability" && (!Array.isArray(report.metrics) || !Array.isArray(report.findings) || !report.summary)) {
     throw new Error("Rapport maintainability incomplet.");
   }
+  if (audit === "type-safety" && (!Array.isArray(report.findings) || !Array.isArray(report.diagnostics) || !Array.isArray(report.coverage) || !report.summary)) {
+    throw new Error("Rapport type-safety incomplet.");
+  }
   return report;
 }
 
@@ -319,28 +322,28 @@ export function readOfflineQualityRun({ root = REPOSITORY_ROOT, auditedSha, runI
     sourceFiles.push(paths.manifest, paths.report, paths.summary);
   }
 
-  if (manifestPathExists(root, auditedSha, runId, "maintainability", fsApi)) {
-    const paths = createAuditPaths({ root, auditedHead: auditedSha, audit: "maintainability", runId });
-    const manifest = validateManifest(readJson(paths.manifest, fsApi), { audit: "maintainability", auditedSha, runId });
-    const report = validateReport("maintainability", readJson(paths.report, fsApi));
-    const measuredStatus = reportStatus("maintainability", report);
-    if (measuredStatus && measuredStatus !== manifest.status) throw new Error("Rapport maintainability contradictoire avec son manifeste: status.");
-    try { fsApi.readFileSync(paths.summary, "utf8"); } catch { throw new Error("Résumé maintainability absent ou illisible."); }
-    manifests.maintainability = manifest;
-    reports.maintainability = report;
+  for (const audit of ["maintainability", "type-safety", "hotspots", "testability"]) {
+    if (!manifestPathExists(root, auditedSha, runId, audit, fsApi)) continue;
+    const paths = createAuditPaths({ root, auditedHead: auditedSha, audit, runId });
+    const manifest = validateManifest(readJson(paths.manifest, fsApi), { audit, auditedSha, runId });
+    const report = validateReport(audit, readJson(paths.report, fsApi));
+    const measuredStatus = reportStatus(audit, report);
+    if (measuredStatus && measuredStatus !== manifest.status) throw new Error(`Rapport ${audit} contradictoire avec son manifeste: status.`);
+    try { fsApi.readFileSync(paths.summary, "utf8"); } catch { throw new Error(`Résumé ${audit} absent ou illisible.`); }
+    manifests[audit] = manifest;
+    reports[audit] = report;
     sourceFiles.push(paths.manifest, paths.report, paths.summary);
   }
-
   const allPaths = createAuditPaths({ root, auditedHead: auditedSha, audit: "all", runId });
   const aggregateManifest = validateManifest(readJson(allPaths.manifest, fsApi), { audit: "all", auditedSha, runId });
   const aggregateReport = readJson(allPaths.report, fsApi);
   try { fsApi.readFileSync(allPaths.summary, "utf8"); } catch { throw new Error("Résumé all absent ou illisible."); }
-  const hasMaintainability = Boolean(manifestPathExists(root, auditedSha, runId, "maintainability", fsApi));
-  if (!Array.isArray(aggregateReport?.audits) || aggregateReport.audits.length !== QUALITY_GATE_INDEX_AUDITS.length + (hasMaintainability ? 1 : 0)) {
-    throw new Error("Rapport all incomplet: les cinq audits de gate et, lorsqu'il existe, l'auxiliaire de maintenabilité sont attendus.");
+  const optionalAudits = ["maintainability", "type-safety", "hotspots", "testability"].filter((audit) => Boolean(manifestPathExists(root, auditedSha, runId, audit, fsApi)));
+  if (!Array.isArray(aggregateReport?.audits) || aggregateReport.audits.length !== QUALITY_GATE_INDEX_AUDITS.length + optionalAudits.length) {
+    throw new Error("Rapport all incomplet: les cinq audits de gate et les auxiliaires présents sont attendus.");
   }
   const aggregateAudits = new Map(aggregateReport.audits.map((entry) => [entry.audit, entry]));
-  const expectedAudits = hasMaintainability ? [...QUALITY_GATE_INDEX_AUDITS, "maintainability"] : QUALITY_GATE_INDEX_AUDITS;
+  const expectedAudits = [...QUALITY_GATE_INDEX_AUDITS, ...optionalAudits];
   if (aggregateAudits.size !== expectedAudits.length || expectedAudits.some((audit) => !aggregateAudits.has(audit))) {
     throw new Error("Rapport all incohérent: audit manquant ou dupliqué.");
   }
@@ -386,6 +389,9 @@ function ensureFile(files, filePath) {
       topHeavy: { measurements: null, findings: new Map(), exceptions: [] },
       complexity: { metrics: [], findings: new Map() },
       maintainability: { cognitiveMetrics: [], findings: new Map() },
+      typeSafety: { findings: new Map() },
+      hotspots: { measurement: null, findings: new Map() },
+      testability: { measurement: null, findings: new Map() },
       deadCode: { findings: new Map(), exceptions: [] },
       duplication: { findings: new Map() },
       cycles: { findings: new Map() },
@@ -637,6 +643,92 @@ function addMaintainability(report, files, domains, complexityReport) {
     },
     rules: report.rules ?? {},
     summary: report.summary ?? null,
+  };
+}
+
+function addTypeSafety(report, files, domains) {
+  if (!report || report.error) return { state: "NOT_MEASURED", status: report?.error ? "FAIL" : "NOT_MEASURED", error: report?.error ?? null, measuredFiles: 0, findingCounts: {} };
+  for (const finding of report.findings ?? []) {
+    const file = ensureFile(files, finding.file);
+    const domain = finding.family === "ASYNC_SAFETY" ? "async-safety" : "type-safety";
+    const findingId = addFinding(file, "typeSafety", finding, domain, stableId(`type-safety:${finding.ruleId}`, finding));
+    addDomain(domains, domain, domain === "async-safety" ? "promesses flottantes et callbacks asynchrones mal utilisés" : "contournements et opérations non sûres du système de types", file, findingId);
+  }
+  return {
+    state: "PRESENT",
+    status: report.status,
+    measurementStatus: report.measurementStatus ?? "MEASURED_NOT_RATCHETED",
+    measuredFiles: report.summary?.filesMeasured ?? 0,
+    filesInScope: report.summary?.filesInScope ?? 0,
+    typedFiles: report.summary?.filesWithTypedCoverage ?? 0,
+    findingCounts: {
+      typeSafety: report.summary?.findingsByFamily?.TYPE_SAFETY ?? 0,
+      asyncSafety: report.summary?.findingsByFamily?.ASYNC_SAFETY ?? 0,
+      byRule: report.summary?.findingsByRule ?? {},
+    },
+    coverage: report.coverage ?? [],
+    diagnostics: report.diagnostics ?? [],
+    summary: report.summary ?? null,
+  };
+}
+
+function addHotspots(report, files, domains, architecture) {
+  if (!report || report.error) return { state: "NOT_MEASURED", status: report?.error ? "FAIL" : "NOT_MEASURED", error: report?.error ?? null, measuredFiles: 0, findingCounts: {} };
+  const architectureByFile = new Map((architecture?.files ?? []).map((entry) => [normalizePath(entry.path), entry]));
+  for (const item of report.files ?? []) {
+    const file = ensureFile(files, item.file);
+    if (!file) continue;
+    const coupling = architectureByFile.get(item.file)?.metrics ?? null;
+    file.hotspots.measurement = {
+      activity: item.activity,
+      structuralDebt: item.structuralDebt,
+      regressionRecurrence: item.regressionRecurrence,
+      coupling: coupling ? { state: "PRESENT", value: coupling } : { state: "NOT_MEASURED", reason: "ARCHITECTURE_PROJECTION_ABSENT" },
+      provenance: item.provenance,
+    };
+    if (item.hotspotCandidate) {
+      const findingId = addFinding(file, "hotspots", {
+        type: "activity-structural-debt-candidate",
+        file: item.file,
+        position: item.position,
+        activity: item.activity,
+        structuralDebt: item.structuralDebt,
+        severity: item.severity,
+        relation: "correlation only; not a new gate finding",
+      }, "hotspots", stableId("hotspots:candidate", item));
+      addDomain(domains, "hotspots", "activité Git et dette structurelle corrélées", file, findingId);
+    }
+  }
+  return {
+    state: "PRESENT",
+    status: report.status,
+    measurementStatus: report.measurementStatus,
+    measuredFiles: report.summary?.filesMeasured ?? report.files?.length ?? 0,
+    findingCounts: { hotspotCandidates: report.summary?.hotspotCandidates ?? 0, highActivityFiles: report.summary?.highActivityFiles ?? 0 },
+    methodology: report.methodology,
+    summary: report.summary,
+    diagnostics: report.diagnostics ?? [],
+  };
+}
+
+function addTestability(report, domains) {
+  if (!report || report.error) return { state: "NOT_MEASURED", status: report?.error ? "FAIL" : "NOT_MEASURED", error: report?.error ?? null, measuredDomains: 0, findingCounts: {} };
+  for (const item of report.domains ?? []) {
+    const id = `testability:${item.domain}`;
+    const domain = domains.get(id) ?? { id, responsibility: "qualité des preuves de test", files: new Set(), findingIds: new Set(), candidateGroups: new Set() };
+    domain.testability = item;
+    domains.set(id, domain);
+  }
+  return {
+    state: report.measurementStatus === "NOT_MEASURED" ? "NOT_MEASURED" : "PRESENT",
+    status: report.status,
+    measurementStatus: report.measurementStatus,
+    measuredDomains: report.summary?.domainsMeasured ?? report.domains?.length ?? 0,
+    criticalDomainsWithoutSufficientEvidence: report.summary?.criticalDomainsWithoutSufficientEvidence ?? null,
+    sources: report.sources,
+    methodology: report.methodology,
+    summary: report.summary,
+    diagnostics: report.diagnostics ?? [],
   };
 }
 
@@ -906,6 +998,9 @@ function finalizeFiles(files, reports, architecture) {
     topHeavy: reports["top-heavy"]?.error ? "NOT_MEASURED" : "PRESENT",
     complexity: reports.complexity?.error ? "NOT_MEASURED" : "PRESENT",
     maintainability: !reports.maintainability || reports.maintainability.error ? "NOT_MEASURED" : "PRESENT",
+    typeSafety: !reports["type-safety"] || reports["type-safety"].error || reports["type-safety"].measurementStatus === "MEASUREMENT_FAILED" ? "NOT_MEASURED" : "PRESENT",
+    hotspots: !reports.hotspots || reports.hotspots.error ? "NOT_MEASURED" : "PRESENT",
+    testability: !reports.testability || reports.testability.error || reports.testability.measurementStatus === "NOT_MEASURED" ? "NOT_MEASURED" : "PRESENT",
     deadCode: reports["dead-code"]?.error ? "NOT_MEASURED" : "PRESENT",
     duplication: reports.duplication?.error ? "NOT_MEASURED" : "PRESENT",
     cycles: reports.cycles?.error ? "NOT_MEASURED" : "PRESENT",
@@ -918,6 +1013,8 @@ function finalizeFiles(files, reports, architecture) {
     const functionLengthItems = complexityItems.filter((item) => complexityFindingCategory(item) === "functionLength");
     const complexityFindingItems = complexityItems.filter((item) => complexityFindingCategory(item) === "complexity");
     const maintainabilityFindingItems = [...file.maintainability.findings.values()];
+    const typeSafetyFindingItems = [...file.typeSafety.findings.values()];
+    const hotspotFindingItems = [...file.hotspots.findings.values()];
     const cognitiveMetrics = file.maintainability.cognitiveMetrics;
     const category = (auditKey, findingItems, measured, detail) => {
       if (findingItems.length > 0) return state("PRESENT", `${findingItems.length} finding(s)`, findingItems);
@@ -933,6 +1030,9 @@ function finalizeFiles(files, reports, architecture) {
         topHeavy: file.topHeavy.measurements ? state("PRESENT", "mesure de taille disponible", [file.topHeavy.measurements]) : categoryAvailability.topHeavy === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport top-heavy en échec") : state("NOT_APPLICABLE", "fichier hors roots top-heavy"),
         complexity: file.complexity.metrics.length > 0 ? state("PRESENT", `${file.complexity.metrics.length} fonction(s) mesurée(s)`, file.complexity.metrics) : categoryAvailability.complexity === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport complexity en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
         cognitiveComplexity: cognitiveMetrics.length > 0 ? state("PRESENT", `${cognitiveMetrics.length} fonction(s) mesurée(s)`, cognitiveMetrics) : categoryAvailability.maintainability === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport maintainability en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
+        typeSafety: categoryAvailability.typeSafety === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport type-safety en échec ou couverture typée indisponible") : state(typeSafetyFindingItems.length > 0 ? "PRESENT" : "NONE", `${typeSafetyFindingItems.length} finding(s) TYPE_SAFETY/ASYNC_SAFETY`, typeSafetyFindingItems),
+        hotspots: file.hotspots.measurement ? state("PRESENT", "activité et dette structurelle mesurées", [file.hotspots.measurement]) : categoryAvailability.hotspots === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport hotspots absent ou en échec") : state("NOT_APPLICABLE", "aucune observation hotspot pour ce fichier"),
+        testability: categoryAvailability.testability === "NOT_MEASURED" ? state("NOT_MEASURED", "preuve de testabilité absente, périmée ou non attribuable") : state("NOT_MEASURED", "aucune correspondance fichier inventée depuis une mesure par domaine"),
         architecture: file.architecture
           ? { state: "PRESENT", detail: "graphe d'import architectural disponible", value: file.architecture.metrics }
           : state(architecture?.state === "NOT_MEASURED" ? "NOT_MEASURED" : "NOT_APPLICABLE", architecture?.detail ?? "fichier absent du graphe architectural"),
@@ -946,6 +1046,10 @@ function finalizeFiles(files, reports, architecture) {
         functionLength: category("complexity", functionLengthItems, file.complexity.metrics.some((metric) => metric.metric === "functionLength"), "rapport complexity en échec"),
         cognitiveComplexity: category("maintainability", maintainabilityFindingItems.filter((finding) => finding.category === "cognitive-complexity"), cognitiveMetrics.length > 0, "rapport maintainability en échec"),
         localMaintainability: category("maintainability", maintainabilityFindingItems.filter((finding) => finding.category !== "cognitive-complexity"), Boolean(file.maintainability.findings.size), "rapport maintainability en échec"),
+        typeSafety: category("typeSafety", typeSafetyFindingItems, Boolean(file.typeSafety.findings.size), "rapport type-safety en échec ou couverture typée indisponible"),
+        asyncSafety: category("typeSafety", typeSafetyFindingItems.filter((finding) => finding.family === "ASYNC_SAFETY"), typeSafetyFindingItems.some((finding) => finding.family === "ASYNC_SAFETY"), "rapport type-safety en échec ou couverture typée indisponible"),
+        hotspots: category("hotspots", hotspotFindingItems, Boolean(file.hotspots.measurement), "rapport hotspots absent ou sans fichier mesuré"),
+        testability: category("testability", [...file.testability.findings.values()], Boolean(file.testability.measurement), "la source de testabilité ne fournit pas de correspondance fichier sans preuve"),
         deadCode: category("deadCode", [...file.deadCode.findings.values()], false, "rapport dead-code en échec"),
         duplication: category("duplication", [...file.duplication.findings.values()], false, "rapport duplication en échec"),
         cycles: category("cycles", [...file.cycles.findings.values()], false, "rapport cycles en échec"),
@@ -963,9 +1067,12 @@ function finalizeFiles(files, reports, architecture) {
         topHeavy: reports["top-heavy"]?.readProvenance ?? null,
         complexity: reports.complexity?.readProvenance ?? null,
         maintainability: reports.maintainability?.readProvenance ?? null,
+        typeSafety: reports["type-safety"]?.readProvenance ?? null,
         deadCode: reports["dead-code"]?.readProvenance ?? null,
         duplication: reports.duplication?.readProvenance ?? null,
         cycles: reports.cycles?.readProvenance ?? null,
+        hotspots: reports.hotspots?.readProvenance ?? null,
+        testability: reports.testability?.readProvenance ?? null,
         documentation: reports.documentation?.provenance ?? null,
       },
     });
@@ -981,6 +1088,7 @@ function finalizeAuditCategories(domains) {
     findingIds: [...domain.findingIds].sort(),
     candidateGroups: [...domain.candidateGroups].sort(),
     coupling: domain.coupling ?? null,
+    testability: domain.testability ?? null,
   })).sort((left, right) => left.id.localeCompare(right.id));
 }
 
@@ -1044,6 +1152,9 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
   const topHeavy = addTopHeavy(run.reports["top-heavy"], files, auditCategories);
   const complexity = addComplexity(run.reports.complexity, files, auditCategories);
   const maintainability = addMaintainability(run.reports.maintainability, files, auditCategories, run.reports.complexity);
+  const typeSafety = addTypeSafety(run.reports["type-safety"], files, auditCategories);
+  const hotspots = addHotspots(run.reports.hotspots, files, auditCategories, architectureProjection);
+  const testability = addTestability(run.reports.testability, auditCategories);
   const deadCode = addDeadCode(run.reports["dead-code"], files, auditCategories);
   const duplication = addDuplication(run.reports.duplication, files, auditCategories, candidateGroups);
   const cycles = addCycles(run.reports.cycles, files, auditCategories, candidateGroups);
@@ -1059,6 +1170,9 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
     topHeavy,
     complexity,
     maintainability,
+    typeSafety,
+    hotspots,
+    testability,
     deadCode,
     duplication,
     cycles,
@@ -1106,6 +1220,10 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       documentationFiles: documentation.summary?.trackedDocuments ?? 0,
       documentationInvalidReferences: documentation.summary?.invalidReferences ?? 0,
       documentationUnverifiedReferences: documentation.summary?.unverifiedReferences ?? 0,
+      typeSafetyFindings: typeSafety.findingCounts?.typeSafety ?? 0,
+      asyncSafetyFindings: typeSafety.findingCounts?.asyncSafety ?? 0,
+      hotspotCandidates: hotspots.findingCounts?.hotspotCandidates ?? 0,
+      testabilityDomains: testability.measuredDomains ?? 0,
     },
     files: finalFiles,
     auditCategories: finalAuditCategories,
@@ -1119,6 +1237,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       "Les groupes candidats sont fondés uniquement sur les fingerprints de duplication et les participants de cycles ; aucun regroupement par dossier ou score n'est inféré.",
       "Le couplage architectural est mesuré sur le SHA Git exact en mode all ; en projection offline sans source architecturale, il reste NOT_MEASURED.",
       "La maintenabilité documentaire est une dimension expérimentale non bloquante ; un run historique sans rapport documentaire reste NOT_MEASURED.",
+      "La sûreté de typage et d'asynchronisme reste une dimension auxiliaire non bloquante ; une configuration TypeScript hors de la peer range est explicitement NOT_MEASURED, jamais traitée comme une couverture typée.",
     ],
   };
 }
@@ -1143,7 +1262,7 @@ export function buildQualityFileIndexMarkdown(index) {
     `- Fichiers indexés : **${index.globalCounts.files}**`,
     `- Groupes candidats relationnels : **${index.globalCounts.candidateGroups}**`,
     "",
-    "La projection lit les cinq moteurs de gate, le moteur auxiliaire de maintenabilité et la dimension documentaire du run identifié lorsqu'ils existent. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines.",
+    "La projection lit les cinq moteurs de gate, les audits auxiliaires de maintenabilité et de sûreté typée/asynchrone, ainsi que la dimension documentaire du run identifié lorsqu'ils existent. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines.",
     "",
     "## États et audits",
     "",
@@ -1151,11 +1270,12 @@ export function buildQualityFileIndexMarkdown(index) {
     "| --- | --- | --- | --- |",
   ];
   for (const audit of QUALITY_INDEX_AUDITS) {
-    const summary = index.audits[audit === "top-heavy" ? "topHeavy" : audit === "dead-code" ? "deadCode" : audit];
+    const summary = index.audits[audit === "top-heavy" ? "topHeavy" : audit === "dead-code" ? "deadCode" : audit === "type-safety" ? "typeSafety" : audit];
     const source = index.source.sourceReports.find((entry) => entry.audit === audit);
     lines.push(`| ${audit} | ${summary.state ?? "PRESENT"} | ${source?.status ?? "NOT_MEASURED"} | ${source?.readProvenance ?? "NOT_MEASURED"} |`);
   }
   lines.push(`| documentation-maintainability | ${index.audits.documentation.state} | ${index.source.documentation.status} | ${index.source.documentation.readProvenance} |`);
+  lines.push(`| type-safety | ${index.audits.typeSafety?.state ?? "NOT_MEASURED"} | ${index.source.sourceReports.find((entry) => entry.audit === "type-safety")?.status ?? "NOT_MEASURED"} | ${index.source.sourceReports.find((entry) => entry.audit === "type-safety")?.readProvenance ?? "NOT_MEASURED"} |`);
   lines.push("", "## Top-heavy : verdict initial et réévaluation dérivée", "", "| Vue | État | Statut | Violations ratchet REVIEW |", "| --- | --- | --- | ---: |");
   lines.push(`| Initiale | ${index.audits.topHeavy.initialVerdict.evaluation.state} | ${index.audits.topHeavy.initialVerdict.status} | ${index.audits.topHeavy.initialVerdict.evaluation.counts.reviewRatchetViolations ?? 0} |`);
   lines.push(`| Dérivée | ${index.audits.topHeavy.derivedReevaluation.state} | ${index.audits.topHeavy.derivedReevaluation.status ?? "NOT_MEASURED"} | ${index.audits.topHeavy.derivedReevaluation.counts?.reviewRatchetViolations ?? 0} |`);
@@ -1164,9 +1284,9 @@ export function buildQualityFileIndexMarkdown(index) {
     lines.push(`| ${rank + 1} | \`${escapeMarkdown(document.path)}\` | ${document.level} | ${document.lines} | ${document.largestSection ? `L${document.largestSection.startLine}-${document.largestSection.endLine} (${document.largestSection.lines}) : ${escapeMarkdown(document.largestSection.title)}` : "—"} | ${document.internalLinks?.invalid?.length ?? 0} | ${document.lifecycle?.statuses?.join(" / ") || "NOT_STATED"} |`);
   }
   lines.push("", "## Couplage architectural", "", `- État : **${index.architecture?.state ?? "NOT_MEASURED"}**`, `- Imports : **${index.architecture?.graphSummary?.imports ?? "NOT_MEASURED"}**`, `- Frontières bloquantes : **${index.architecture?.boundary?.blocking?.length ?? "NOT_MEASURED"}**`, `- Imports internes non résolus : **${index.architecture?.graphSummary?.unresolvedInternalImports ?? "NOT_MEASURED"}**`, "", "Les métriques de centralité sont informatives ; seuls les findings de frontière explicitement interdits sont bloquants.");
-  lines.push("", "## FILE INDEX", "", "| Fichier | Catégories d'audit | Domaines fonctionnels | Top-heavy | Complexité cyclomatique | Longueur de fonction | Complexité cognitive | Défaut local de maintenabilité | Dead-code | Duplication | Cycles | Documentation | Architecture |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+  lines.push("", "## FILE INDEX", "", "| Fichier | Catégories d'audit | Domaines fonctionnels | Top-heavy | Complexité cyclomatique | Longueur de fonction | Complexité cognitive | Défaut local de maintenabilité | TYPE_SAFETY | ASYNC_SAFETY | Dead-code | Duplication | Cycles | Documentation | Architecture |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const file of index.files) {
-    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.auditCategories.join(", ") || "—")} | ${escapeMarkdown(file.functionalDomains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.cognitiveComplexity)} | ${stateLabel(file.findings.localMaintainability)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} | ${stateLabel(file.findings.documentation)} | ${stateLabel(file.metrics.architecture)} |`);
+    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.auditCategories.join(", ") || "—")} | ${escapeMarkdown(file.functionalDomains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.cognitiveComplexity)} | ${stateLabel(file.findings.localMaintainability)} | ${stateLabel(file.findings.typeSafety)} | ${stateLabel(file.findings.asyncSafety)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} | ${stateLabel(file.findings.documentation)} | ${stateLabel(file.metrics.architecture)} |`);
   }
   lines.push("", "## AUDIT CATEGORY INDEX", "", "Les catégories décrivent les familles de contrôles ; elles ne constituent pas des domaines fonctionnels.", "");
   for (const domain of index.auditCategories) {

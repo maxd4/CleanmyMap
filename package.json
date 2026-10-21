@@ -74,6 +74,7 @@
     "quality:dead-code": "node scripts/checks/dead-code-policy.mjs",
     "quality:complexity": "node scripts/checks/check-complexity-policy.mjs",
     "quality:maintainability": "node scripts/checks/check-maintainability.mjs",
+    "quality:type-safety": "node scripts/checks/check-type-safety.mjs",
     "quality:duplication": "node scripts/checks/check-duplication.mjs",
     "quality:cycles": "node scripts/checks/check-cycles.mjs",
     "audit:quality": "node scripts/audits/run-quality-audit.mjs",

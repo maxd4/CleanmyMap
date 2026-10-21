@@ -17,6 +17,7 @@ import { formatDuplicationReport, runDuplicationPolicy } from "../checks/check-d
 import { runCycleGate } from "../checks/check-cycles.mjs";
 import { runComplexityPolicy } from "../checks/check-complexity-policy.mjs";
 import { runMaintainabilityAudit } from "../checks/check-maintainability.mjs";
+import { runTypeSafetyAudit } from "../checks/check-type-safety.mjs";
 import { runTopHeavyPolicy } from "../checks/check-top-heavy-files.mjs";
 import { createRepositoryView } from "../checks/repository-view.mjs";
 import {
@@ -27,6 +28,7 @@ import {
   readHumanDecisionsFromView,
 } from "../reports/generate-modularity-radar.mjs";
 import { buildArchitectureCouplingFromRepository, buildArchitectureCouplingProjection, generateQualityFileIndex } from "../reports/quality-file-index.mjs";
+import { buildQualityHotspotsReport, buildQualityTestabilityReport } from "../reports/quality-audit-signals.mjs";
 import { buildDocumentationMaintainabilityReport, buildDocumentationNotMeasured } from "./documentation-maintainability.mjs";
 import {
   QUALITY_AUDIT_ROOT,
@@ -38,7 +40,7 @@ import {
 } from "./quality-audit-storage.mjs";
 
 export const QUALITY_GATE_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
-export const AUXILIARY_AUDITS = Object.freeze(["maintainability"]);
+export const AUXILIARY_AUDITS = Object.freeze(["maintainability", "type-safety", "hotspots", "testability"]);
 export const AUDIT_MODES = Object.freeze([...QUALITY_GATE_AUDITS, ...AUXILIARY_AUDITS, "all"]);
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const ACQUIRED_ARCHITECTURE_DECISIONS = new Set([
@@ -171,6 +173,34 @@ function isMaintainabilityResult(result) {
     && Array.isArray(result.diagnostics);
 }
 
+function isTypeSafetyResult(result) {
+  return Boolean(result)
+    && (result.status === "PASS" || result.status === "FAIL")
+    && result.kind === "quality-type-safety"
+    && result.summary
+    && Array.isArray(result.findings)
+    && Array.isArray(result.diagnostics)
+    && Array.isArray(result.coverage);
+}
+
+function isHotspotsResult(result) {
+  return Boolean(result)
+    && result.kind === "quality-hotspots"
+    && (result.status === "PASS" || result.status === "FAIL")
+    && Array.isArray(result.files)
+    && result.methodology
+    && result.summary;
+}
+
+function isTestabilityResult(result) {
+  return Boolean(result)
+    && result.kind === "quality-testability"
+    && (result.status === "PASS" || result.status === "FAIL")
+    && Array.isArray(result.domains)
+    && Array.isArray(result.diagnostics)
+    && result.summary;
+}
+
 function preserveMalformedAsyncResult(audit, result) {
   return {
     ...(result && typeof result === "object" ? result : {}),
@@ -230,6 +260,12 @@ export function attentionRequired(audit, result) {
       || (result.findings?.length ?? 0) > 0
       || (result.summary?.cognitiveComplexityAboveTarget ?? 0) > 0;
   }
+  if (audit === "type-safety") {
+    return result.measurementStatus !== "MEASURED_NOT_RATCHETED"
+      || (result.findings?.length ?? 0) > 0
+      || (result.summary?.newCandidateFindings ?? 0) > 0;
+  }
+  if (audit === "hotspots" || audit === "testability") return false;
   return false;
 }
 
@@ -340,6 +376,33 @@ function makeSummary({ audit, manifest, result, paths }) {
       `- Elapsed: ${result.summary.elapsedMs} ms`,
     );
   }
+  if (audit === "type-safety" && result?.summary) {
+    lines.splice(6, 0,
+      `- Files in scope/measured: ${result.summary.filesInScope}/${result.summary.filesMeasured}`,
+      `- Typed coverage: ${result.summary.filesWithTypedCoverage}`,
+      `- TYPE_SAFETY findings: ${result.summary.findingsByFamily?.TYPE_SAFETY ?? 0}`,
+      `- ASYNC_SAFETY findings: ${result.summary.findingsByFamily?.ASYNC_SAFETY ?? 0}`,
+      `- Measurement diagnostics: ${result.diagnostics?.length ?? 0}`,
+      `- Elapsed: ${result.summary.elapsedMs} ms`,
+    );
+  }
+  if (audit === "hotspots" && result?.summary) {
+    lines.splice(6, 0,
+      `- Window: ${result.methodology?.historyWindowDays ?? "—"} days`,
+      `- Files measured: ${result.summary.filesMeasured ?? 0}`,
+      `- High activity: ${result.summary.highActivityFiles ?? 0}`,
+      `- Hotspot candidates: ${result.summary.hotspotCandidates ?? 0}`,
+      `- Regression recurrence: ${result.summary.regressionRecurrence ?? "NOT_MEASURED"}`,
+    );
+  }
+  if (audit === "testability" && result?.summary) {
+    lines.splice(6, 0,
+      `- Domains measured: ${result.summary.domainsMeasured ?? 0}`,
+      `- Critical domains without sufficient evidence: ${result.summary.criticalDomainsWithoutSufficientEvidence ?? "NOT_MEASURED"}`,
+      `- Diagnostics: ${result.diagnostics?.length ?? 0}`,
+      "- Coverage, test presence and mutation are reported only when attributable; no test runner is launched by this audit.",
+    );
+  }
   if (audit === "cycles" && result?.comparison) {
     lines.splice(6, 0, `- Current cycles: ${result.cycles.length}`, `- New cycles: ${result.comparison.added.length}`, `- Stale baseline entries: ${result.comparison.stale.length}`);
   }
@@ -355,7 +418,11 @@ export async function executeAudit(
     complexityRunner = runComplexityPolicy,
     cycleRunner = runCycleGate,
     maintainabilityRunner = runMaintainabilityAudit,
+    typeSafetyRunner = runTypeSafetyAudit,
+    hotspotsRunner = buildQualityHotspotsReport,
+    testabilityRunner = buildQualityTestabilityReport,
     complexityResult = null,
+    previousResults = {},
     topHeavyRunner = runTopHeavyPolicy,
     repositoryViewFactory = createRepositoryView,
   } = {},
@@ -382,6 +449,24 @@ export async function executeAudit(
     const result = await complexityRunner();
     return isComplexityResult(result)
       ? { ...result, readProvenance: "WORKTREE_LIVE" }
+      : preserveMalformedAsyncResult(audit, result);
+  }
+  if (audit === "type-safety") {
+    const result = await typeSafetyRunner({ root });
+    return isTypeSafetyResult(result)
+      ? { ...result, readProvenance: "WORKTREE_LIVE" }
+      : preserveMalformedAsyncResult(audit, result);
+  }
+  if (audit === "hotspots") {
+    const result = hotspotsRunner({ root, auditedSha, reports: previousResults });
+    return isHotspotsResult(result)
+      ? { ...result, readProvenance: "COMMITTED_SNAPSHOT" }
+      : preserveMalformedAsyncResult(audit, result);
+  }
+  if (audit === "testability") {
+    const result = testabilityRunner({ root, auditedSha });
+    return isTestabilityResult(result)
+      ? { ...result, readProvenance: "MIXED" }
       : preserveMalformedAsyncResult(audit, result);
   }
   if (audit === "cycles") {
@@ -506,10 +591,10 @@ export async function runQualityAudit(mode, {
       manifests.push({ ...entry, paths, manifest, ...evidence });
     }
 
-    const gateManifests = manifests.filter((entry) => QUALITY_GATE_AUDITS.includes(entry.audit));
-    const overallStatus = gateManifests.some((entry) => entry.status === "FAIL")
+    const evaluatedManifests = mode === "all" ? manifests.filter((entry) => QUALITY_GATE_AUDITS.includes(entry.audit)) : manifests;
+    const overallStatus = evaluatedManifests.some((entry) => entry.status === "FAIL")
       ? "FAIL"
-      : gateManifests.some((entry) => entry.status === "PASS_WITH_GRACE")
+      : evaluatedManifests.some((entry) => entry.status === "PASS_WITH_GRACE")
         ? "PASS_WITH_GRACE"
         : "PASS";
     const overallAttention = manifests.some((entry) => entry.attentionRequired);
