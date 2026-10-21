@@ -8,6 +8,7 @@ export function LeaderboardOptInSetting({ fr }: { fr: boolean }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [eligible, setEligible] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -15,11 +16,12 @@ export function LeaderboardOptInSetting({ fr }: { fr: boolean }) {
       .then(async (response) => {
         const payload = await response.json().catch(() => null);
         if (!response.ok) throw new Error("leaderboard preference load failed");
-        return payload as { leaderboardPublicOptIn?: unknown };
+        return payload as { leaderboardPublicOptIn?: unknown; optionalTreatmentAllowed?: unknown };
       })
-      .then((payload: { leaderboardPublicOptIn?: unknown }) => {
+      .then((payload: { leaderboardPublicOptIn?: unknown; optionalTreatmentAllowed?: unknown }) => {
         if (!active) return;
         setEnabled(payload.leaderboardPublicOptIn === true);
+        setEligible(payload.optionalTreatmentAllowed === true);
         setLoaded(true);
       })
       .catch(() => {
@@ -43,9 +45,10 @@ export function LeaderboardOptInSetting({ fr }: { fr: boolean }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leaderboardPublicOptIn: nextValue }),
       });
-      const payload = await response.json().catch(() => null) as { leaderboardPublicOptIn?: unknown } | null;
+      const payload = await response.json().catch(() => null) as { leaderboardPublicOptIn?: unknown; optionalTreatmentAllowed?: unknown } | null;
       if (!response.ok) throw new Error("leaderboard preference update failed");
       setEnabled(payload?.leaderboardPublicOptIn === true);
+      setEligible(payload?.optionalTreatmentAllowed === true);
       setSaved(true);
     } catch {
       setError(true);
@@ -60,13 +63,17 @@ export function LeaderboardOptInSetting({ fr }: { fr: boolean }) {
         type="checkbox"
         className="mt-1 h-4 w-4 accent-[#c51f1f]"
         checked={enabled}
-        disabled={!loaded || saving}
+        disabled={!loaded || saving || !eligible}
         onChange={(event) => void updatePreference(event.target.checked)}
       />
       <span>
         {fr
-          ? "Apparaître dans le classement public — Lorsque cette option est activée, votre nom public et vos compteurs de niveau, XP validée et badges peuvent apparaître dans le classement public CleanMyMap. Vos contributions détaillées, votre impact personnel et vos données privées restent masqués."
-          : "Appear in the public leaderboard — When enabled, your public name and level, validated XP and badge counters may appear in the CleanMyMap public leaderboard. Your detailed contributions, personal impact and private data remain hidden."}
+          ? eligible
+            ? "Apparaître dans le classement public — Lorsque cette option est activée, votre nom public et vos compteurs de niveau, XP validée et badges peuvent apparaître dans le classement public CleanMyMap. Vos contributions détaillées, votre impact personnel et vos données privées restent masqués."
+            : "Le classement public reste désactivé tant qu’une tranche d’âge autorisée n’est pas déclarée."
+          : eligible
+            ? "Appear in the public leaderboard — When enabled, your public name and level, validated XP and badge counters may appear in the CleanMyMap public leaderboard. Your detailed contributions, personal impact and private data remain hidden."
+            : "The public leaderboard stays disabled until an eligible age band is declared."}
       </span>
       {error ? <span role="alert">{fr ? "Impossible de mettre à jour cette préférence." : "Unable to update this preference."}</span> : null}
       {saved ? <span role="status">{fr ? "Préférence enregistrée." : "Preference saved."}</span> : null}

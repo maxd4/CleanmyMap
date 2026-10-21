@@ -69,6 +69,16 @@ function CookiePolicySections() {
           pour appliquer le choix côté navigateur et côté serveur.
         </p>
         <p className="cmm-text-body">
+          Pour les traitements facultatifs soumis au consentement, une tranche
+          d&apos;âge minimale peut être déclarée : moins de 15 ans, 15 ans ou
+          plus, ou statut inconnu. Cette déclaration est conservée dans le
+          cookie <code className="rounded bg-slate-100 px-1 py-0.5">cleanmymap_age_band</code>.
+          Aucune date de naissance exacte ni pièce d&apos;identité n&apos;est
+          demandée. Les moins de 15 ans et les statuts inconnus ne déclenchent
+          pas ces traitements facultatifs ; l&apos;accès public au site reste
+          disponible.
+        </p>
+        <p className="cmm-text-body">
           Le parrainage et les liens d&apos;invitation n&apos;utilisent pas de
           cookie dédié : ils sont suivis en base de données via le profil
           utilisateur.

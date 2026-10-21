@@ -4,6 +4,8 @@ import { getCurrentUserLocationPreferences } from "@/lib/auth/user-location";
 import type { UserLocationPreferences } from "@/lib/user-location-preference";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import type { AppProfile, AppRoleLabel, DisplayNameMode } from "@/lib/profiles";
+import type { AgeBand } from "@/lib/minor-consent";
+import { getUserOptionalConsentEligibility } from "@/lib/minor-consent-server";
 import { toProfile } from "@/lib/profiles";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 
@@ -14,6 +16,7 @@ export type AccountCompletionGateState = {
   clerkReachable: boolean;
   initialHandle?: string | null;
   initialDisplayNameMode?: DisplayNameMode;
+  initialAgeBand?: AgeBand;
   initialArrondissement: number | null;
   initialLocationType: "residence" | "work" | null;
   initialResidence?: UserLocationPreferences["residence"];
@@ -62,9 +65,10 @@ export async function loadAccountCompletionGateState(
     };
   }
 
-  const [requirement, locationPreferences] = await Promise.all([
+  const [requirement, locationPreferences, consentEligibility] = await Promise.all([
     getCurrentUserAccountSetupRequirement().catch(() => NO_SETUP_REQUIRED),
     getCurrentUserLocationPreferences().catch(() => ({ residence: null, work: null })),
+    getUserOptionalConsentEligibility(resolvedSession.userId),
   ]);
   const existingPreference = locationPreferences.residence ?? locationPreferences.work;
 
@@ -75,6 +79,7 @@ export async function loadAccountCompletionGateState(
     clerkReachable: resolvedSession.clerkReachable,
     initialHandle: identity?.handle,
     initialDisplayNameMode: identity?.displayNameMode,
+    initialAgeBand: consentEligibility.ageBand,
     initialArrondissement: existingPreference?.arrondissement ?? null,
     initialLocationType: locationPreferences.residence
       ? "residence"

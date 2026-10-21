@@ -48,6 +48,7 @@
 - La décision est stockée dans `cleanmymap_cookie_consent` et synchronisée dans `cleanmymap_analytics_consent` ; une décision locale expirée est nettoyée et redevient absente.
 - Le retrait désactive le rendu Vercel Analytics / Speed Insights et arrête une instance PostHog déjà initialisée avant de réautoriser une nouvelle capture.
 - PostHog ne reçoit, après consentement, que les événements explicites autorisés ; l'autocapture, le session replay et les données privées dans les payloads analytiques sont exclus.
+- Les traitements facultatifs reposant sur le consentement restent désactivés côté serveur et navigateur pour une personne déclarée âgée de moins de 15 ans sans consentement parental conjoint vérifiable ; le statut inconnu applique la même prudence sans bloquer la consultation publique ni supprimer l'historique.
 - **Gérer mes cookies** est accessible en permanence depuis le footer et rouvre la bannière de choix.
 - La politique décrit les catégories réellement traitées, les bases légales, les destinataires, les transferts non vérifiés comme tels, les critères de rétention et le délai d'exercice des droits.
 - Stripe est documenté comme prestataire de paiement. CleanMyMap ne conserve que les identifiants, montants, catégorie, devise, statuts et dates des faits de paiement et des événements webhook réellement persistés ; les données de carte sont saisies et traitées sur Checkout Stripe.

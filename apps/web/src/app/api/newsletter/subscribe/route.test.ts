@@ -4,6 +4,10 @@ const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
 const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 const requireBotIdHumanMock = vi.hoisted(() => vi.fn());
+const authMock = vi.hoisted(() => vi.fn());
+const optionalTreatmentAllowedMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
@@ -14,6 +18,9 @@ vi.mock("@/lib/rate-limit/server", () => ({
 }));
 vi.mock("@/lib/botid/server", () => ({
   requireBotIdHuman: requireBotIdHumanMock,
+}));
+vi.mock("@/lib/minor-consent-server", () => ({
+  isOptionalConsentTreatmentAllowedForUser: optionalTreatmentAllowedMock,
 }));
 
 function makeSupabase(options: {
@@ -46,6 +53,7 @@ function request(overrides: Record<string, unknown> = {}) {
     body: JSON.stringify({
       email: "Person@Example.org",
       gdprConsent: true,
+      ageBand: "15_or_over",
       source: "security-01-test",
       ...overrides,
     }),
@@ -58,6 +66,8 @@ describe("POST /api/newsletter/subscribe", () => {
     requireBotIdHumanMock.mockResolvedValue(null);
     verifyRateLimitMock.mockResolvedValue({ allowed: true, retryAfter: 0 });
     createServerRateLimitResponseMock.mockReturnValue(null);
+    authMock.mockResolvedValue({ userId: null });
+    optionalTreatmentAllowedMock.mockResolvedValue(true);
   });
 
   it("reactivates an inactive subscription through the service upsert conflict path", async () => {
@@ -151,6 +161,15 @@ describe("POST /api/newsletter/subscribe", () => {
 
     const { POST } = await import("./route");
     const response = await POST(request());
+
+    expect(response.status).toBe(403);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it.each(["under_15", "unknown"] as const)("rejects the public treatment for age band %s", async (ageBand) => {
+    optionalTreatmentAllowedMock.mockResolvedValue(false);
+    const { POST } = await import("./route");
+    const response = await POST(request({ ageBand }));
 
     expect(response.status).toBe(403);
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();

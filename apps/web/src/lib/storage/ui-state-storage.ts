@@ -15,6 +15,7 @@ import {
   type Locale,
   type ThemeMode,
 } from "@/lib/ui/preferences";
+import { parseAgeBand, type AgeBand } from "@/lib/minor-consent";
 
 type ConsentChoice = "accepted" | "rejected" | null;
 
@@ -22,6 +23,7 @@ export type CookieConsentState = {
   choice: ConsentChoice;
   timestamp: number | null;
   analytics: boolean;
+  ageBand: AgeBand;
 };
 
 const COOKIE_CONSENT_KEY = "cleanmymap_cookie_consent";
@@ -32,6 +34,7 @@ const DEFAULT_COOKIE_CONSENT_STATE: CookieConsentState = {
   choice: null,
   timestamp: null,
   analytics: false,
+  ageBand: "unknown",
 };
 
 const DEFAULT_GUIDE_CHECKLIST = {
@@ -105,6 +108,7 @@ export const cookieConsentStorage = createLocalStorageStore<CookieConsentState>(
         const choice = (parsed as { choice?: unknown }).choice;
         const timestamp = (parsed as { timestamp?: unknown }).timestamp;
         const analytics = (parsed as { analytics?: unknown }).analytics;
+        const ageBand = (parsed as { ageBand?: unknown }).ageBand;
 
         if (
           (choice === "accepted" || choice === "rejected") &&
@@ -120,6 +124,7 @@ export const cookieConsentStorage = createLocalStorageStore<CookieConsentState>(
             choice === "accepted" || choice === "rejected" ? choice : null,
           timestamp: typeof timestamp === "number" ? timestamp : null,
           analytics: typeof analytics === "boolean" ? analytics : false,
+          ageBand: parseAgeBand(ageBand),
         };
       } catch {
         return { ...DEFAULT_COOKIE_CONSENT_STATE };

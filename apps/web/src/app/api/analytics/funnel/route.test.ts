@@ -7,6 +7,8 @@ const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const listFunnelEventsMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
 const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
+const getAnalyticsAgeBandCookieDecisionMock = vi.hoisted(() => vi.fn());
+const optionalTreatmentAllowedMock = vi.hoisted(() => vi.fn());
 const { verifyRateLimit: verifyRateLimitMock, createServerRateLimitResponse: createServerRateLimitResponseMock } = rateLimitMocks;
 
 vi.mock("@clerk/nextjs/server", () => ({
@@ -28,6 +30,11 @@ vi.mock("@/lib/public-surface-snapshot-service", () => createPublicSnapshotModul
 
 vi.mock("@/lib/analytics-consent", () => ({
   hasAnalyticsConsentCookie: hasAnalyticsConsentCookieMock,
+  getAnalyticsAgeBandCookieDecision: getAnalyticsAgeBandCookieDecisionMock,
+}));
+
+vi.mock("@/lib/minor-consent-server", () => ({
+  isOptionalConsentTreatmentAllowedForUser: optionalTreatmentAllowedMock,
 }));
 
 vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
@@ -47,6 +54,8 @@ describe("POST /api/analytics/funnel", () => {
   beforeEach(() => {
     resetFunnelMocks();
     hasAnalyticsConsentCookieMock.mockReturnValue(true);
+  getAnalyticsAgeBandCookieDecisionMock.mockReturnValue("15_or_over");
+  optionalTreatmentAllowedMock.mockResolvedValue(true);
     verifyRateLimitMock.mockResolvedValue({
       allowed: true,
       limit: 60,
@@ -132,6 +141,20 @@ describe("POST /api/analytics/funnel", () => {
     expect(await response.json()).toEqual({ status: "ignored", count: 0 });
     expect(appendFunnelEventMock).not.toHaveBeenCalled();
     expect(verifyRateLimitMock).not.toHaveBeenCalled();
+  });
+
+  it("ignores events for an under-15 user without joint parental consent", async () => {
+    optionalTreatmentAllowedMock.mockResolvedValue(false);
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost/api/analytics/funnel", {
+      method: "POST",
+      body: JSON.stringify({ sessionId: "session-under-15", step: "page_view", mode: "complete" }),
+      headers: { "Content-Type": "application/json", cookie: "cleanmymap_age_band=under_15" },
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "ignored", count: 0 });
+    expect(appendFunnelEventMock).not.toHaveBeenCalled();
   });
 
   it("does not write events when the consented request is rate limited", async () => {

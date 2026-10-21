@@ -13,6 +13,8 @@ import type { DisplayNameMode } from "@/lib/profiles";
 import type { UserLocationPreferences } from "@/lib/user-location-preference";
 import type { Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
+import type { AgeBand } from "@/lib/minor-consent";
+import { requestCookieConsentPreferences } from "@/lib/storage/ui-state-storage";
 
 type SaveState = "idle" | "saving" | "saved" | "pending" | "error";
 type HandleError = "validation" | "conflict" | "unavailable" | null;
@@ -26,6 +28,7 @@ export type AccountSettingsInitialData = {
   displayNameMode: DisplayNameMode;
   locationPreferences: UserLocationPreferences;
   activityStatus: "active" | "inactive";
+  ageBand: AgeBand;
 };
 
 type Copy = {
@@ -73,6 +76,14 @@ type Copy = {
   deletionDescription: string;
   requestDeletion: string;
   noLocation: string;
+  ageBandTitle: string;
+  ageBandDescription: string;
+  ageUnder15: string;
+  age15OrOver: string;
+  ageUnknown: string;
+  ageSaved: string;
+  ageError: string;
+  manageAnalytics: string;
 };
 
 const COPY: Record<Locale, Copy> = {
@@ -121,6 +132,14 @@ const COPY: Record<Locale, Copy> = {
     deletionDescription: "La suppression est une demande traitée, pas une suppression immédiate.",
     requestDeletion: "Faire une demande RGPD",
     noLocation: "Aucune localisation enregistrée.",
+    ageBandTitle: "Tranche d’âge pour les traitements facultatifs",
+    ageBandDescription: "Une déclaration minimale suffit. Aucune date de naissance ni pièce d’identité n’est demandée. Le statut inconnu conserve l’accès au site mais désactive les traitements facultatifs concernés.",
+    ageUnder15: "Moins de 15 ans",
+    age15OrOver: "15 ans ou plus",
+    ageUnknown: "Je ne souhaite pas préciser",
+    ageSaved: "Tranche d’âge enregistrée.",
+    ageError: "Impossible d’enregistrer cette tranche d’âge.",
+    manageAnalytics: "Gérer le consentement analytics",
   },
   en: {
     identity: "Personal information",
@@ -167,6 +186,14 @@ const COPY: Record<Locale, Copy> = {
     deletionDescription: "Deletion is a request to be processed, not an immediate deletion.",
     requestDeletion: "Make a GDPR request",
     noLocation: "No location saved.",
+    ageBandTitle: "Age band for optional treatments",
+    ageBandDescription: "A minimal declaration is enough. No exact date of birth or identity document is requested. Unknown status keeps site access but disables the affected optional treatments.",
+    ageUnder15: "Under 15",
+    age15OrOver: "15 or over",
+    ageUnknown: "I prefer not to say",
+    ageSaved: "Age band saved.",
+    ageError: "Unable to save this age band.",
+    manageAnalytics: "Manage analytics consent",
   },
 };
 
@@ -216,6 +243,8 @@ export function AccountSettingsEditor({ locale, initialData }: { locale: Locale;
   const [modeState, setModeState] = useState<SaveState>("idle");
   const [locationState, setLocationState] = useState<{ residence: SaveState; work: SaveState }>({ residence: "idle", work: "idle" });
   const [activityState, setActivityState] = useState<SaveState>("idle");
+  const [ageBand, setAgeBand] = useState<AgeBand>(initialData.ageBand);
+  const [ageBandState, setAgeBandState] = useState<SaveState>("idle");
 
   const fullNamePreview = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || "—";
 
@@ -324,6 +353,24 @@ export function AccountSettingsEditor({ locale, initialData }: { locale: Locale;
     }
   }
 
+  async function saveAgeBand(nextAgeBand: AgeBand) {
+    if (ageBandState === "saving") return;
+    setAgeBandState("saving");
+    try {
+      const response = await fetch("/api/account/age-band", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ageBand: nextAgeBand }),
+      });
+      if (!response.ok) throw new Error("age band update failed");
+      const payload = await response.json().catch(() => null) as { ageBand?: AgeBand } | null;
+      setAgeBand(payload?.ageBand ?? nextAgeBand);
+      setAgeBandState("saved");
+    } catch {
+      setAgeBandState("error");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <AccountIdentitySection copy={copy} firstName={firstName} lastName={lastName} setFirstName={setFirstName} setLastName={setLastName} initialData={initialData} identityState={identityState} saveIdentity={() => void saveIdentity()} />
@@ -349,6 +396,26 @@ export function AccountSettingsEditor({ locale, initialData }: { locale: Locale;
         <p className="mt-1 text-sm text-slate-600">{copy.accountPreference}</p>
         <div className="mt-5 rounded-2xl border border-sky-200/70 bg-sky-50/80 p-4"><div className="flex items-start justify-between gap-4"><div><h3 className="font-bold text-slate-900">{copy.activity}</h3><p className="mt-1 cmm-text-small leading-relaxed text-slate-700">{copy.activityDescription}</p></div><button type="button" role="switch" aria-checked={activityStatus === "active"} onClick={() => void saveActivity(activityStatus === "active" ? "inactive" : "active")} disabled={activityState === "saving"} className={cn("min-h-10 rounded-full px-4 py-2 text-sm font-bold", activityStatus === "active" ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-800")}>{activityStatus === "active" ? "Actif" : "Inactif"}</button></div><div className="mt-3"><SaveStatus state={activityState} copy={copy} /></div></div>
         <div className="mt-5"><LeaderboardOptInSetting fr={locale === "fr"} /></div>
+        <div className="mt-5 rounded-2xl border border-sky-200/70 bg-sky-50/80 p-4">
+          <h3 className="font-bold text-slate-900">{copy.ageBandTitle}</h3>
+          <p className="mt-1 cmm-text-small leading-relaxed text-slate-700">{copy.ageBandDescription}</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label={copy.ageBandTitle}>
+            {([
+              ["under_15", copy.ageUnder15],
+              ["15_or_over", copy.age15OrOver],
+              ["unknown", copy.ageUnknown],
+            ] as const).map(([value, label]) => (
+              <label key={value} className="flex items-start gap-2 rounded-xl border border-sky-200 bg-white p-3 text-sm text-slate-800">
+                <input type="radio" name="settings-age-band" value={value} checked={ageBand === value} onChange={() => void saveAgeBand(value)} disabled={ageBandState === "saving"} />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <SaveStatus state={ageBandState} copy={{ ...copy, saved: copy.ageSaved, error: copy.ageError }} />
+            <button type="button" onClick={requestCookieConsentPreferences} className="text-sm font-bold text-sky-800 underline underline-offset-2">{copy.manageAnalytics}</button>
+          </div>
+        </div>
         <div className="mt-5"><NotificationPreferencesSetting locale={locale} /></div>
       </SectionCard>
 

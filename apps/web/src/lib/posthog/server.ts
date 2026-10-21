@@ -5,6 +5,7 @@ import {
   getPostHogHost,
   getPostHogKey,
 } from "@/lib/posthog/config";
+import { isOptionalConsentTreatmentAllowedForUser } from "@/lib/minor-consent-server";
 
 let posthogNode: PostHog | null = null;
 let envWarningLogged = false;
@@ -39,6 +40,15 @@ export async function trackServerEvent(
   options: { consentGranted?: boolean } = {},
 ): Promise<boolean> {
   if (!options.consentGranted) {
+    return false;
+  }
+
+  if (
+    !(await isOptionalConsentTreatmentAllowedForUser(
+      userId,
+      userId ? "unknown" : "15_or_over",
+    ))
+  ) {
     return false;
   }
 

@@ -32,9 +32,15 @@ du compte web est gérée par Clerk. Toute personne qui utilise un compte doit
 fournir des informations exactes lorsqu'un parcours les demande et protéger
 les moyens d'accès placés sous son contrôle.
 
-Les présentes CGU ne fixent pas de seuil d'âge général qui ne serait pas imposé
-par un contrôle effectivement déployé. Les règles impératives applicables à
-une situation particulière restent applicables.
+Le site public reste consultable sans déclaration d'âge générale. Lorsqu'un
+traitement facultatif fondé sur le consentement est proposé, CleanMyMap demande
+seulement une tranche d'âge : moins de 15 ans, 15 ans ou plus, ou statut
+inconnu. Aucune date de naissance exacte ni pièce d'identité n'est demandée.
+
+Un traitement facultatif concerné reste désactivé pour une personne déclarée
+âgée de moins de 15 ans tant qu'un consentement parental conjoint vérifiable
+n'est pas établi. Le statut inconnu applique la même prudence pour ces
+traitements sans bloquer la consultation publique.
 
 Le service ne promet ni compte unique par personne ni fusion automatique de
 comptes. Une difficulté d'accès doit être signalée via le

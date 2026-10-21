@@ -13,6 +13,7 @@ import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { HOME_ROUTE } from "@/lib/home-routes";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { resolvePageFamily } from "@/lib/ui/page-families";
+import { getUserOptionalConsentEligibility } from "@/lib/minor-consent-server";
 
 const REGLAGES_COPY = {
   fr: {
@@ -55,11 +56,13 @@ function ReglagesPageContent({
   locale,
   identity,
   user,
+  consentEligibility,
 }: {
   copy: (typeof REGLAGES_COPY)[keyof typeof REGLAGES_COPY];
   locale: keyof typeof REGLAGES_COPY;
   identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
   user: ReglagesUser;
+  consentEligibility: Awaited<ReturnType<typeof getUserOptionalConsentEligibility>>;
 }) {
   const pageFamily = resolvePageFamily("/reglages");
 
@@ -99,6 +102,7 @@ function ReglagesPageContent({
                 displayNameMode: identity.displayNameMode ?? "full_name",
                 locationPreferences: extractLocationPreferencesFromMetadata(user.unsafeMetadata),
                 activityStatus: user.unsafeMetadata?.activity_status === "inactive" ? "inactive" : "active",
+                ageBand: consentEligibility.ageBand,
               }}
             />
           ) : null}
@@ -119,12 +123,13 @@ export default async function ReglagesPage() {
     redirect("/sign-in");
   }
 
-  const [identity, locale, user] = await Promise.all([
+  const [identity, locale, user, consentEligibility] = await Promise.all([
     getCurrentUserIdentity(),
     getServerLocale(),
     clerkClient().then((client) => client.users.getUser(userId)),
+    getUserOptionalConsentEligibility(userId),
   ]);
 
   const copy = REGLAGES_COPY[locale];
-  return <ReglagesPageContent copy={copy} locale={locale} identity={identity} user={user} />;
+  return <ReglagesPageContent copy={copy} locale={locale} identity={identity} user={user} consentEligibility={consentEligibility} />;
 }

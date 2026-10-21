@@ -28,6 +28,7 @@ export function AccountCompletionGate({
         clerkReachable={state.clerkReachable}
         initialHandle={state.initialHandle}
         initialDisplayNameMode={state.initialDisplayNameMode}
+        initialAgeBand={state.initialAgeBand}
         initialResidence={state.initialResidence}
         initialWork={state.initialWork}
         initialArrondissement={state.initialArrondissement}

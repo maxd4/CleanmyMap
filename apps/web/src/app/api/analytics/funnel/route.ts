@@ -8,7 +8,11 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { appendFunnelEvent, listFunnelEvents } from "@/lib/analytics/funnel-store";
 import { computeFunnelMetricsWithBaseline } from "@/lib/analytics/funnel-metrics";
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
-import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
+import {
+  getAnalyticsAgeBandCookieDecision,
+  hasAnalyticsConsentCookie,
+} from "@/lib/analytics-consent";
+import { isOptionalConsentTreatmentAllowedForUser } from "@/lib/minor-consent-server";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { readJsonBodyWithLimit } from "@/lib/http/request-body";
 import { sanitizeFunnelMeta } from "@/lib/analytics/sanitize-analytics-payload";
@@ -105,7 +109,15 @@ function normalizeEvents(payload: FunnelPayload): Array<{
 }
 
 export async function POST(request: Request) {
-  if (!hasAnalyticsConsentCookie(request.headers.get("cookie"))) {
+  const cookieSource = request.headers.get("cookie");
+  const userId = await resolveFunnelUserId();
+  if (
+    !hasAnalyticsConsentCookie(cookieSource) ||
+    !(await isOptionalConsentTreatmentAllowedForUser(
+      userId,
+      getAnalyticsAgeBandCookieDecision(cookieSource),
+    ))
+  ) {
     return NextResponse.json({ status: "ignored", count: 0 });
   }
 
@@ -138,7 +150,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const userId = await resolveFunnelUserId();
   const events = normalizeEvents(parsed.data);
   for (const event of events) {
     await appendFunnelEvent({

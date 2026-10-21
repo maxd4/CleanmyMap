@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const getPostHogKeyMock = vi.hoisted(() => vi.fn<() => string | null>());
 const getPostHogHostMock = vi.hoisted(() => vi.fn<() => string>());
 const getPostHogDeprecatedEnvWarningsMock = vi.hoisted(() => vi.fn<() => string[]>());
+const optionalTreatmentAllowedMock = vi.hoisted(() => vi.fn());
 
 const captureMock = vi.hoisted(() => vi.fn());
 const shutdownMock = vi.hoisted(() => vi.fn(async () => {}));
@@ -24,6 +25,9 @@ vi.mock("@/lib/posthog/config", () => ({
 vi.mock("posthog-node", () => ({
   PostHog: postHogCtorMock,
 }));
+vi.mock("@/lib/minor-consent-server", () => ({
+  isOptionalConsentTreatmentAllowedForUser: optionalTreatmentAllowedMock,
+}));
 
 describe("posthog server integration", () => {
   beforeEach(() => {
@@ -32,6 +36,7 @@ describe("posthog server integration", () => {
     getPostHogKeyMock.mockReturnValue("phc_test_key");
     getPostHogHostMock.mockReturnValue("https://eu.i.posthog.com");
     getPostHogDeprecatedEnvWarningsMock.mockReturnValue([]);
+    optionalTreatmentAllowedMock.mockResolvedValue(true);
   });
 
   it("captures a server event and flushes immediately", async () => {
@@ -107,5 +112,15 @@ describe("posthog server integration", () => {
     expect(result).toBe(false);
     expect(postHogCtorMock).not.toHaveBeenCalled();
     expect(captureMock).not.toHaveBeenCalled();
+  });
+
+  it("does not capture an under-15 user's event without joint parental consent", async () => {
+    optionalTreatmentAllowedMock.mockResolvedValue(false);
+    const { trackServerEvent } = await import("./server");
+
+    const result = await trackServerEvent("user_123", "spot_created", {}, { consentGranted: true });
+
+    expect(result).toBe(false);
+    expect(postHogCtorMock).not.toHaveBeenCalled();
   });
 });

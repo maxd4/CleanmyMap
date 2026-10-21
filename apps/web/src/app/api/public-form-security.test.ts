@@ -102,6 +102,7 @@ describe("public form security guardrails", () => {
         body: JSON.stringify({
           email: "test@example.org",
           gdprConsent: true,
+          ageBand: "15_or_over",
           honeypot: "bot",
           submittedAt: Date.now(),
         }),

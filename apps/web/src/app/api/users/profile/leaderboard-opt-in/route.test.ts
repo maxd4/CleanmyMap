@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const serverClientMock = vi.hoisted(() => vi.fn());
+const eligibilityMock = vi.hoisted(() => vi.fn());
 
 function makeMutationChain(data: unknown, error: Error | null = null) {
   const chain = {
@@ -26,12 +27,16 @@ async function patchPreference(value: boolean) {
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: requireAuthenticatedAccessMock }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: serverClientMock }));
+vi.mock("@/lib/minor-consent-server", () => ({
+  getUserOptionalConsentEligibility: eligibilityMock,
+}));
 
 describe("/api/users/profile/leaderboard-opt-in", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
+    eligibilityMock.mockResolvedValue({ ageBand: "15_or_over", parentalConsentVerified: false });
   });
 
   it("keeps the default private and lets the owner enable it", async () => {
@@ -79,6 +84,14 @@ describe("/api/users/profile/leaderboard-opt-in", () => {
     const { GET, PATCH } = await import("./route");
     expect((await GET()).status).toBe(401);
     expect((await PATCH(new Request("http://localhost/api/users/profile/leaderboard-opt-in", { method: "PATCH", body: "{}" }))).status).toBe(401);
+    expect(serverClientMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects enabling the public treatment for an under-15 user", async () => {
+    eligibilityMock.mockResolvedValue({ ageBand: "under_15", parentalConsentVerified: false });
+    const response = await patchPreference(true);
+
+    expect(response.status).toBe(403);
     expect(serverClientMock).not.toHaveBeenCalled();
   });
 });

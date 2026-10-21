@@ -42,6 +42,20 @@ export const accountAnalyticsAuthorizationContract = {
       evidence: ["requireActionRequestAccess", "enforceServerRateLimitForAuthenticatedUser", "access.userId", "updateUser", "syncClerkUserToSupabase"],
     },
   },
+  "account/age-band": {
+    GET: {
+      expected: "Authenticated current account reads only its own declared age band",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireActionRequestAccess scopes the Clerk private metadata read to access.userId; no exact birth date or identity document is read",
+      evidence: ["requireActionRequestAccess", "access.userId", "privateMetadata"],
+    },
+    PATCH: {
+      expected: "Authenticated current account updates only its declared age band; parental verification is server-owned",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireActionRequestAccess scopes a Clerk private metadata update to access.userId; the client cannot write parental verification",
+      evidence: ["requireActionRequestAccess", "access.userId", "updateUserMetadata", "privateMetadata"],
+    },
+  },
   "account/locations": {
     PATCH: {
       expected: "Authenticated owner updates or removes only its own residence/work territoryPreferences without replacing unrelated Clerk metadata",
@@ -63,8 +77,8 @@ export const accountAnalyticsAuthorizationContract = {
       expected: "Public-safe validated funnel ingestion with optional current-user attribution",
       dimensions: ["public-safe"],
       actual:
-        "Bounded Zod payload; anonymous events remain accepted and auth() is used only when Clerk attribution is available",
-      evidence: ["appendFunnelEvent", "resolveFunnelUserId"],
+        "Bounded Zod payload; analytics cookie consent and the age-band gate are required before anonymous or authenticated events are accepted, with Clerk metadata checked for authenticated attribution",
+      evidence: ["appendFunnelEvent", "resolveFunnelUserId", "hasAnalyticsConsentCookie", "isOptionalConsentTreatmentAllowedForUser"],
       evidenceScope: "module",
     },
     GET: {

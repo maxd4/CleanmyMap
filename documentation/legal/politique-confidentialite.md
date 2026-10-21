@@ -25,6 +25,11 @@ Selon les parcours utilisés, CleanMyMap traite notamment :
   Clerk, email, téléphone lorsqu'il est fourni, nom d'affichage, avatar, rôle,
   visibilité, badges, progression, préférence d'opt-in du classement public,
   arrondissement et rattachement de parrainage ;
+- **Tranche d'âge déclarée** : statut `under_15`, `15_or_over` ou `unknown`
+  pour les traitements facultatifs. Il est conservé dans les métadonnées
+  privées Clerk et, pour le contrôle analytique côté navigateur, dans le
+  cookie dédié. Aucune date de naissance exacte ni pièce d'identité n'est
+  collectée ;
 - **Authentification et sécurité** : données de session, identifiants
   techniques, données nécessaires à la prévention des abus et au diagnostic ;
 - **Actions, lieux et médias** : dates, types, libellés, coordonnées, notes,
@@ -73,6 +78,12 @@ parrainage ou un contenu.
 | Parrainage et progression | Relier une invitation et fournir les éléments de progression | Exécution du service ; intérêt légitime d'animation |
 | Classement public sur opt-in | Afficher une projection publique limitée du profil lorsque la personne active son choix | Consentement ou choix explicite de la personne ; retrait possible depuis `/reglages` |
 
+Les traitements facultatifs reposant sur le consentement, notamment analytics,
+newsletter et classement public, restent désactivés pour une personne déclarée
+âgée de moins de 15 ans sans consentement parental conjoint vérifiable. Le
+statut inconnu est traité avec la même prudence. Ce contrôle ne bloque pas la
+consultation publique et ne supprime pas les données historiques.
+
 Lorsque le choix est activé, la projection du classement public peut contenir
 uniquement un label public autorisé, le niveau, l'XP validée et les compteurs de
 badges. Elle ne contient pas les identifiants Clerk, l'email, les metadata, le rôle,
@@ -89,7 +100,8 @@ facultatifs lorsqu'ils ne sont pas nécessaires à cette fonction.
 
 Le choix cookies est conservé dans `localStorage` sous
 `cleanmymap_cookie_consent` et dans le cookie
-`cleanmymap_analytics_consent`. L'acceptation comme le refus sont mémorisés
+`cleanmymap_analytics_consent`, ainsi que la tranche minimale dans
+`cleanmymap_age_band`. L'acceptation comme le refus sont mémorisés
 pendant six mois ; une décision expirée est nettoyée et le choix est reproposé.
 
 PostHog, Vercel Analytics et Vercel Speed Insights ne sont rendus ou activés
@@ -101,6 +113,11 @@ et de parcours métier autorisés : aucune autocapture d'interaction ni session
 replay n'est activée, et les payloads sont filtrés pour exclure les valeurs de
 formulaires, frappes clavier, emails, identités nominatives, coordonnées
 précises et données privées.
+
+La consultation publique n'est pas conditionnée à une déclaration d'âge. Le
+statut `under_15` ou `unknown` bloque toutefois l'activation des traitements
+facultatifs concernés côté navigateur et côté serveur tant qu'aucun
+consentement parental conjoint vérifiable n'est disponible.
 
 Sentry n'est pas présenté comme un outil d'analytics soumis au consentement.
 Lorsqu'une DSN est configurée, il sert à l'observabilité, au diagnostic et à la

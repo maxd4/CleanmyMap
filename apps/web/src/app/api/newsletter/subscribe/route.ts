@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { z } from"zod";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
@@ -8,10 +9,13 @@ import {
   hasRecentSubmission,
 } from"@/lib/security/validation";
 import { requireBotIdHuman } from "@/lib/botid/server";
+import { isOptionalConsentTreatmentAllowedForUser } from "@/lib/minor-consent-server";
+import { parseAgeBand } from "@/lib/minor-consent";
 
 const subscribeSchema = z.object({
  email: z.string().trim().email("Format d'email invalide"),
  gdprConsent: z.literal(true,"Le consentement RGPD est obligatoire"),
+  ageBand: z.enum(["under_15", "15_or_over", "unknown"]),
  source: z.string().optional().default("landing"),
  honeypot: z.string().optional().default(""),
  submittedAt: z.number().int().positive().optional(),
@@ -50,13 +54,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const { email, gdprConsent, source, honeypot, submittedAt } = validated.data;
+    const { email, gdprConsent, ageBand, source, honeypot, submittedAt } = validated.data;
     if (hasHoneypotSignal(honeypot)) {
       return createPublicRateLimitResponse("Impossible de vous inscrire pour le moment.");
     }
 
     if (hasRecentSubmission(submittedAt)) {
       return createPublicRateLimitResponse("Impossible de vous inscrire pour le moment.");
+    }
+
+    const userId = await auth().then(({ userId: currentUserId }) => currentUserId).catch(() => null);
+    const optionalTreatmentAllowed = await isOptionalConsentTreatmentAllowedForUser(
+      userId,
+      parseAgeBand(ageBand),
+    );
+    if (!optionalTreatmentAllowed) {
+      return NextResponse.json(
+        { error: "Cette inscription nécessite une tranche d’âge autorisée pour ce traitement." },
+        { status: 403 },
+      );
     }
 
     const normalizedEmail = email.toLowerCase();

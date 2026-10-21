@@ -17,6 +17,7 @@ function createPersistenceDependencies() {
       void patch;
     }),
     updateActiveProfile: vi.fn(async () => undefined),
+    updateAgeBand: vi.fn(async () => undefined),
     saveDisplayMode: vi.fn(),
   };
 }
@@ -35,6 +36,7 @@ describe("account setup persistence", () => {
       lastName: "Curie",
       metadata: { profileSetupCompleted: true },
       selectedProfile: "scientifique",
+      ageBand: "15_or_over",
       ...dependencies,
     });
 
@@ -46,7 +48,7 @@ describe("account setup persistence", () => {
     expect(dependencies.updateActiveProfile).toHaveBeenCalledWith("scientifique");
   });
 
-  it.each(["identity", "activeProfile", "metadata", "displayMode"] as const)(
+  it.each(["identity", "activeProfile", "metadata", "displayMode", "ageBand"] as const)(
     "resumes after a partial %s success without replaying completed steps",
     async (failedStep) => {
       const completedSteps = new Set<AccountSetupPersistenceStep>();
@@ -63,25 +65,29 @@ describe("account setup persistence", () => {
       });
       const updateMetadata = vi.fn(async () => failOnce("metadata"));
       const updateActiveProfile = vi.fn(async () => failOnce("activeProfile"));
+      const updateAgeBand = vi.fn(async () => failOnce("ageBand"));
       const saveDisplayMode = vi.fn(() => failOnce("displayMode"));
       const runPersistence = () => persistAccountSetupChanges({
         firstName: "Marie",
         lastName: "Curie",
         metadata: { profileSetupCompleted: true },
         selectedProfile: "scientifique",
+        ageBand: "15_or_over",
         updateUser,
         updateMetadata,
         updateActiveProfile,
+        updateAgeBand,
         saveDisplayMode,
         completedSteps,
       });
 
       await expect(runPersistence()).rejects.toThrow(`${failedStep} failed`);
       await expect(runPersistence()).resolves.toBeUndefined();
-      expect(completedSteps).toEqual(new Set(["identity", "activeProfile", "metadata", "displayMode"]));
+      expect(completedSteps).toEqual(new Set(["identity", "activeProfile", "metadata", "displayMode", "ageBand"]));
       expect(updateUser).toHaveBeenCalledTimes(failedStep === "identity" ? 2 : 1);
       expect(updateMetadata).toHaveBeenCalledTimes(failedStep === "metadata" ? 2 : 1);
       expect(updateActiveProfile).toHaveBeenCalledTimes(failedStep === "activeProfile" ? 2 : 1);
+      expect(updateAgeBand).toHaveBeenCalledTimes(failedStep === "ageBand" ? 2 : 1);
       expect(saveDisplayMode).toHaveBeenCalledTimes(failedStep === "displayMode" ? 2 : 1);
     },
   );
@@ -101,6 +107,7 @@ describe("account setup persistence", () => {
       lastName: "Curie",
       metadata: { profileSetupCompleted: true },
       selectedProfile: "scientifique",
+      ageBand: "15_or_over",
       ...dependencies,
       completedSteps,
     });
@@ -112,7 +119,7 @@ describe("account setup persistence", () => {
     expect(dependencies.updateUser).toHaveBeenCalledTimes(1);
     expect(dependencies.updateMetadata).toHaveBeenCalledTimes(1);
     expect(dependencies.updateActiveProfile).toHaveBeenCalledTimes(1);
-    expect(completedSteps).toEqual(new Set(["identity", "displayMode", "metadata", "activeProfile"]));
+    expect(completedSteps).toEqual(new Set(["identity", "displayMode", "metadata", "activeProfile", "ageBand"]));
   });
 
   it("runs the terminal Supabase projection when the active profile is unchanged", async () => {
@@ -122,6 +129,7 @@ describe("account setup persistence", () => {
       lastName: "Curie",
       metadata: { profileSetupCompleted: true },
       selectedProfile: "benevole",
+      ageBand: "15_or_over",
       ...dependencies,
     });
     expect(dependencies.updateActiveProfile).toHaveBeenCalledWith("benevole");

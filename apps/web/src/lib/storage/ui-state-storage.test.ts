@@ -73,12 +73,14 @@ describe("ui state storage", () => {
         choice: "accepted",
         timestamp: Date.now(),
         analytics: true,
+        ageBand: "15_or_over",
       }),
     ).toBe(true);
     expect(cookieConsentStorage.read()).toEqual({
       choice: "accepted",
       timestamp: expect.any(Number),
       analytics: true,
+      ageBand: "15_or_over",
     });
 
     memory.set("cleanmymap_cookie_consent", "{\"choice\":\"accepted\"}");

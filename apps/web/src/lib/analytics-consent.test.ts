@@ -36,7 +36,7 @@ function installMockBrowser(initialCookie = "", withLocalStorage = true) {
         return cookieValue;
       },
       set cookie(value: string) {
-        cookieValue = value;
+        cookieValue = cookieValue ? `${cookieValue}; ${value}` : value;
       },
     } as Document,
   );
@@ -60,15 +60,16 @@ describe("analytics consent", () => {
   });
 
   it("falls back to the mirrored cookie when local storage is empty", () => {
-    installMockBrowser("cleanmymap_analytics_consent=1", false);
+    installMockBrowser("cleanmymap_analytics_consent=1; cleanmymap_age_band=15_or_over", false);
 
     expect(hasAnalyticsConsent()).toBe(true);
-    expect(hasAnalyticsConsentCookie("cleanmymap_analytics_consent=1")).toBe(
+    expect(hasAnalyticsConsentCookie("cleanmymap_analytics_consent=1; cleanmymap_age_band=15_or_over")).toBe(
       true,
     );
     expect(
       getAnalyticsConsentCookieDecision("cleanmymap_analytics_consent=0"),
     ).toBe(false);
+    expect(hasAnalyticsConsentCookie("cleanmymap_analytics_consent=1; cleanmymap_age_band=unknown")).toBe(false);
   });
 
   it("syncs the consent cookie from client state changes", () => {
@@ -79,12 +80,13 @@ describe("analytics consent", () => {
         choice: "accepted",
         timestamp: Date.now(),
         analytics: true,
+        ageBand: "15_or_over",
       }),
     ).toBe(true);
 
     expect(hasAnalyticsConsent()).toBe(true);
 
-    syncAnalyticsConsentCookie(true);
+    syncAnalyticsConsentCookie(true, "15_or_over");
     expect(browser.cookie()).toContain(
       `cleanmymap_analytics_consent=1; Path=/; Max-Age=${ANALYTICS_CONSENT_MAX_AGE_SECONDS}`,
     );
@@ -103,6 +105,7 @@ describe("analytics consent", () => {
         choice: "rejected",
         timestamp: Date.now(),
         analytics: false,
+        ageBand: "unknown",
       }),
     ).toBe(true);
 
@@ -111,6 +114,7 @@ describe("analytics consent", () => {
       choice: "rejected",
       timestamp: expect.any(Number),
       analytics: false,
+      ageBand: "unknown",
     });
   });
 
@@ -122,5 +126,13 @@ describe("analytics consent", () => {
     expect(browser.cookie()).toContain(
       "cleanmymap_analytics_consent=; Path=/; Max-Age=0",
     );
+  });
+
+  it.each([
+    ["under_15", false],
+    ["unknown", false],
+    ["15_or_over", true],
+  ] as const)("applies the age-band gate to %s", (ageBand, expected) => {
+    expect(hasAnalyticsConsentCookie(`cleanmymap_analytics_consent=1; cleanmymap_age_band=${ageBand}`)).toBe(expected);
   });
 });

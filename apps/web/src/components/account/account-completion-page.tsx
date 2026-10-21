@@ -19,6 +19,7 @@ export function AccountCompletionPage({
   clerkReachable,
   initialHandle,
   initialDisplayNameMode,
+  initialAgeBand,
   initialResidence,
   initialWork,
   initialArrondissement,
@@ -36,6 +37,7 @@ export function AccountCompletionPage({
           clerkReachable={clerkReachable}
           initialHandle={initialHandle}
           initialDisplayNameMode={initialDisplayNameMode}
+          initialAgeBand={initialAgeBand}
           initialResidence={initialResidence}
           initialWork={initialWork}
           initialArrondissement={initialArrondissement}

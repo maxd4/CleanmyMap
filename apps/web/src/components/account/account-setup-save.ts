@@ -1,4 +1,5 @@
 import type { AppProfile } from "@/lib/profiles";
+import type { AgeBand } from "@/lib/minor-consent";
 
 export type AccountSetupUserUpdate = {
   firstName?: string;
@@ -9,7 +10,8 @@ export type AccountSetupPersistenceStep =
   | "identity"
   | "activeProfile"
   | "metadata"
-  | "displayMode";
+  | "displayMode"
+  | "ageBand";
 
 const ACCOUNT_SETUP_DEFERRED_METADATA_KEYS = [
   "profileSetupDeferred",
@@ -58,9 +60,11 @@ export async function persistAccountSetupChanges({
   lastName,
   metadata,
   selectedProfile,
+  ageBand,
   updateUser,
   updateMetadata,
   updateActiveProfile,
+  updateAgeBand,
   saveDisplayMode,
   completedSteps = new Set<AccountSetupPersistenceStep>(),
 }: {
@@ -68,9 +72,11 @@ export async function persistAccountSetupChanges({
   lastName: string;
   metadata: Record<string, unknown>;
   selectedProfile: AppProfile;
+  ageBand: AgeBand;
   updateUser: (update: AccountSetupUserUpdate) => Promise<unknown>;
   updateMetadata: (metadataPatch: Record<string, unknown>) => Promise<unknown>;
   updateActiveProfile: (profile: AppProfile) => Promise<void>;
+  updateAgeBand: (ageBand: AgeBand) => Promise<void>;
   saveDisplayMode: () => void | Promise<void>;
   /**
    * Progress owned by the caller and reused for a retry after a partial
@@ -106,5 +112,10 @@ export async function persistAccountSetupChanges({
   if (!completedSteps.has("activeProfile")) {
     await updateActiveProfile(selectedProfile);
     completedSteps.add("activeProfile");
+  }
+
+  if (!completedSteps.has("ageBand")) {
+    await updateAgeBand(ageBand);
+    completedSteps.add("ageBand");
   }
 }

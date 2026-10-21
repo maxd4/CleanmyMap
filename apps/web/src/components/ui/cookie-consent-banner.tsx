@@ -12,6 +12,7 @@ import {
   notifyCookieConsentChanged,
   type CookieConsentState,
 } from "@/lib/storage/ui-state-storage";
+import { isOptionalConsentTreatmentAllowed, type AgeBand } from "@/lib/minor-consent";
 
 export const COOKIE_CONSENT_ACTION_CLASS_NAME =
   "min-h-10 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800";
@@ -20,6 +21,7 @@ export function CookieConsentBanner() {
   const [isClient] = useState(() => typeof window !== "undefined");
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [, setConsentRevision] = useState(0);
+  const [selectedAgeBand, setSelectedAgeBand] = useState<AgeBand | null>(null);
 
   useEffect(() => {
     if (!isClient) {
@@ -37,17 +39,20 @@ export function CookieConsentBanner() {
   }, [isClient]);
 
   const consent: CookieConsentState = isClient
-    ? cookieConsentStorage.read() ?? { choice: null, timestamp: null, analytics: false }
-    : { choice: null, timestamp: null, analytics: false };
-  const showBanner = isClient && (consent.choice === null || isPreferencesOpen);
+    ? cookieConsentStorage.read() ?? { choice: null, timestamp: null, analytics: false, ageBand: "unknown" }
+    : { choice: null, timestamp: null, analytics: false, ageBand: "unknown" };
+  const ageBand = selectedAgeBand ?? consent.ageBand;
+  const showBanner = isClient && (consent.choice === null || (consent.choice === "accepted" && consent.ageBand === "unknown") || isPreferencesOpen);
 
   const handleDecision = (analytics: boolean) => {
+    const analyticsAllowed = analytics && isOptionalConsentTreatmentAllowed({ ageBand });
     cookieConsentStorage.write({
       choice: analytics ? "accepted" : "rejected",
       timestamp: Date.now(),
-      analytics,
+      analytics: analyticsAllowed,
+      ageBand,
     });
-    syncAnalyticsConsentCookie(analytics);
+    syncAnalyticsConsentCookie(analyticsAllowed, ageBand);
     notifyCookieConsentChanged();
     setIsPreferencesOpen(false);
   };
@@ -87,6 +92,33 @@ export function CookieConsentBanner() {
                 Analytiques
               </span>
             </div>
+
+            <fieldset className="space-y-2 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+              <legend className="px-1 text-sm font-semibold cmm-text-primary">
+                Tranche d’âge pour les traitements facultatifs
+              </legend>
+              <p className="text-xs cmm-text-muted">
+                Une déclaration suffit : aucune date de naissance ni pièce d’identité n’est demandée. Le statut inconnu conserve l’accès public mais ne permet pas d’activer ces traitements.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {([
+                  ["under_15", "Moins de 15 ans"],
+                  ["15_or_over", "15 ans ou plus"],
+                  ["unknown", "Statut inconnu"],
+                ] as const).map(([value, label]) => (
+                  <label key={value} className="flex items-start gap-2 rounded-lg border border-slate-200 p-2 text-xs cmm-text-body dark:border-slate-700">
+                    <input
+                      type="radio"
+                      name="cookie-age-band"
+                      value={value}
+                      checked={ageBand === value}
+                      onChange={() => setSelectedAgeBand(value)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
             <div className="flex flex-wrap gap-3 pt-2">
               <button

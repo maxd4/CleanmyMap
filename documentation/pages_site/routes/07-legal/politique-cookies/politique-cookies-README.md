@@ -51,6 +51,7 @@
 - Le contrôle permanent **Gérer mes cookies**, présent dans le footer, rouvre les choix sans suppression manuelle du stockage navigateur.
 - Après un retrait, PostHog arrête explicitement la capture, réinitialise son identité et sa persistance utile ; un nouveau consentement peut le réactiver.
 - Après acceptation, PostHog reste limité aux événements explicites autorisés de navigation et de parcours métier ; l'autocapture, le session replay et les payloads contenant des valeurs de formulaires, frappes clavier, emails, identités nominatives ou coordonnées précises sont exclus.
+- Les traitements facultatifs concernés demandent seulement une tranche `under_15`, `15_or_over` ou `unknown` ; les moins de 15 ans et les statuts inconnus restent bloqués pour ces traitements sans bloquer la consultation publique ni collecter une date de naissance exacte ou une pièce d'identité.
 
 ## Références legacy
 

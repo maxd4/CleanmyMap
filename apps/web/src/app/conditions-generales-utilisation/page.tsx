@@ -61,7 +61,8 @@ const legalSections: LegalSection[] = [
             "Certaines fonctions nécessitent un compte authentifié géré par Clerk.",
             "L'utilisateur fournit des informations exactes lorsqu'un parcours les demande.",
             "Les moyens d'accès placés sous son contrôle doivent rester confidentiels.",
-            "Ces CGU ne fixent pas de seuil d'âge général non imposé par un contrôle effectivement déployé.",
+            "Le site public reste consultable sans déclaration d'âge générale. Lorsqu'un traitement facultatif fondé sur le consentement est proposé, CleanMyMap demande seulement une tranche d'âge (moins de 15 ans, 15 ans ou plus, ou statut inconnu) ; aucune date de naissance exacte ni pièce d'identité n'est demandée.",
+            "Un traitement facultatif concerné reste désactivé pour une personne déclarée âgée de moins de 15 ans tant qu'un consentement parental conjoint vérifiable n'est pas établi. Le statut inconnu applique la même prudence pour ces traitements sans bloquer la consultation publique.",
             <>
               CleanMyMap ne promet ni compte unique par personne ni fusion automatique
               de comptes. En cas de difficulté, utilisez le{" "}

@@ -1,5 +1,11 @@
 import { canUseLocalStorage } from "@/lib/storage/local-storage";
 import {
+  AGE_BAND_COOKIE_NAME,
+  isOptionalConsentTreatmentAllowed,
+  parseAgeBand,
+  type AgeBand,
+} from "@/lib/minor-consent";
+import {
   cookieConsentStorage,
   COOKIE_CONSENT_CHANGE_EVENT,
   COOKIE_CONSENT_MAX_AGE_MS,
@@ -25,14 +31,14 @@ function parseCookieValue(rawValue: string | null): boolean | null {
   return null;
 }
 
-function readCookieValue(cookieSource: string | null): string | null {
+function readCookieValue(cookieSource: string | null, cookieName: string): string | null {
   if (!cookieSource) {
     return null;
   }
 
   for (const segment of cookieSource.split(";")) {
     const [rawName, ...rawValueParts] = segment.trim().split("=");
-    if (rawName !== ANALYTICS_CONSENT_COOKIE_NAME) {
+    if (rawName !== cookieName) {
       continue;
     }
 
@@ -48,19 +54,34 @@ function readCookieValue(cookieSource: string | null): string | null {
 }
 
 export function hasAnalyticsConsentCookie(cookieSource: string | null): boolean {
-  return getAnalyticsConsentCookieDecision(cookieSource) ?? false;
+  return Boolean(
+    getAnalyticsConsentCookieDecision(cookieSource) &&
+      isAnalyticsAllowedForAge(getAnalyticsAgeBandCookieDecision(cookieSource)),
+  );
 }
 
 export function getAnalyticsConsentCookieDecision(
   cookieSource: string | null,
 ): boolean | null {
-  return parseCookieValue(readCookieValue(cookieSource));
+  return parseCookieValue(
+    readCookieValue(cookieSource, ANALYTICS_CONSENT_COOKIE_NAME),
+  );
+}
+
+export function getAnalyticsAgeBandCookieDecision(
+  cookieSource: string | null,
+): AgeBand {
+  return parseAgeBand(readCookieValue(cookieSource, AGE_BAND_COOKIE_NAME));
+}
+
+function isAnalyticsAllowedForAge(ageBand: AgeBand): boolean {
+  return isOptionalConsentTreatmentAllowed({ ageBand });
 }
 
 export function getAnalyticsConsentDecision(): boolean | null {
   const consent = cookieConsentStorage.read();
   if (consent?.choice === "accepted") {
-    return consent.analytics;
+    return consent.analytics && isAnalyticsAllowedForAge(consent.ageBand);
   }
   if (consent?.choice === "rejected") {
     return false;
@@ -100,19 +121,29 @@ export function hasAnalyticsConsent(): boolean {
   }
 
   const cookieDecision = getAnalyticsConsentCookieDecision(document.cookie);
-  return cookieDecision ?? false;
+  return Boolean(
+    cookieDecision &&
+      isAnalyticsAllowedForAge(getAnalyticsAgeBandCookieDecision(document.cookie)),
+  );
 }
 
-export function syncAnalyticsConsentCookie(hasConsent: boolean): void {
+export function syncAnalyticsConsentCookie(
+  hasConsent: boolean,
+  ageBand?: AgeBand,
+): void {
   if (typeof document === "undefined" || typeof window === "undefined") {
     return;
   }
 
   const secureAttribute = window.location.protocol === "https:" ? "; Secure" : "";
   const value = hasConsent ? "1" : "0";
+  const resolvedAgeBand = ageBand ?? cookieConsentStorage.read()?.ageBand ?? "unknown";
 
   document.cookie =
     `${ANALYTICS_CONSENT_COOKIE_NAME}=${encodeURIComponent(value)}` +
+    `; Path=/; Max-Age=${ANALYTICS_CONSENT_MAX_AGE_SECONDS}; SameSite=Lax${secureAttribute}`;
+  document.cookie =
+    `${AGE_BAND_COOKIE_NAME}=${encodeURIComponent(resolvedAgeBand)}` +
     `; Path=/; Max-Age=${ANALYTICS_CONSENT_MAX_AGE_SECONDS}; SameSite=Lax${secureAttribute}`;
 }
 

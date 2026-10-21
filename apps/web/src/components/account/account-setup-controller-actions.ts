@@ -1,6 +1,7 @@
 import type { Dispatch, FormEvent, MutableRefObject, SetStateAction } from "react";
 import type { TerritoryLocationSelection } from "@/lib/user-location-preference";
 import type { AppProfile, DisplayNameMode } from "@/lib/profiles";
+import type { AgeBand } from "@/lib/minor-consent";
 import {
   clearLocationPreferenceMetadata,
   createLocationPreferencesMetadata,
@@ -96,6 +97,7 @@ export async function submitAccountSetup({
   setSubmitAttempted,
   formIsValid,
   selectedProfile,
+  ageBand,
   displayNameMode,
   activeResidence,
   activeWork,
@@ -106,6 +108,7 @@ export async function submitAccountSetup({
   completedPersistenceSteps,
   setIsDirty,
   updateActiveProfile,
+  updateAgeBand,
   saveDisplayMode,
   onRetry,
   onRefresh,
@@ -118,6 +121,7 @@ export async function submitAccountSetup({
   setSubmitAttempted: Dispatch<SetStateAction<boolean>>;
   formIsValid: boolean;
   selectedProfile: AppProfile;
+  ageBand: AgeBand;
   displayNameMode: DisplayNameMode;
   activeResidence: boolean;
   activeWork: boolean;
@@ -128,6 +132,7 @@ export async function submitAccountSetup({
   completedPersistenceSteps: Set<AccountSetupPersistenceStep>;
   setIsDirty: Dispatch<SetStateAction<boolean>>;
   updateActiveProfile: (activeProfile: AppProfile) => Promise<void>;
+  updateAgeBand: (ageBand: AgeBand) => Promise<void>;
   saveDisplayMode: () => void | Promise<void>;
   onRetry: () => void;
   onRefresh: () => void;
@@ -177,12 +182,14 @@ export async function submitAccountSetup({
       lastName: trimmedLastName,
       metadata: metadataPatch,
       selectedProfile,
+      ageBand,
       updateUser: (update) => state.user!.update({
         firstName: update.firstName ?? "",
         lastName: update.lastName ?? "",
       }),
       updateMetadata: (patch) => state.user!.updateMetadata({ unsafeMetadata: patch }),
       updateActiveProfile,
+      updateAgeBand,
       saveDisplayMode,
       completedSteps: completedPersistenceSteps,
     });

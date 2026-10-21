@@ -6,6 +6,7 @@ import {
   hasAnalyticsConsent,
   subscribeAnalyticsConsent,
 } from "@/lib/analytics-consent";
+import { useOptionalAnalyticsEligibility } from "@/components/posthog-provider";
 
 const DeferredProjectPageviewTracker = dynamic(
   () =>
@@ -32,8 +33,9 @@ export function ConditionalAnalytics() {
     hasAnalyticsConsent,
     () => false,
   );
+  const optionalAnalyticsAllowed = useOptionalAnalyticsEligibility();
 
-  if (!hasConsent) {
+  if (!hasConsent || !optionalAnalyticsAllowed) {
     return null;
   }
 

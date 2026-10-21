@@ -12,6 +12,7 @@ import {
 } from "@/lib/user-location-preference";
 import { resolveAccountDisplayName, type AppProfile, type DisplayNameMode } from "@/lib/profiles";
 import type { Role } from "@/lib/domain-language";
+import type { AgeBand } from "@/lib/minor-consent";
 import type { AppError } from "@/lib/errors/app-errors";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import {
@@ -40,10 +41,6 @@ import {
   submitAccountSetup,
 } from "@/components/account/account-setup-controller-actions";
 
-function buildAccountSetupControllerResult<T>(args: T) {
-  return args;
-}
-
 function resolveAccountSetupControllerValidation(args: Parameters<typeof resolveAccountSetupValidation>[0]) {
   return resolveAccountSetupValidation(args);
 }
@@ -61,6 +58,7 @@ type AccountSetupSubmissionProps = {
   handleNext: () => void;
   formIsValid: boolean;
   selectedProfile: AppProfile;
+  ageBand: AgeBand;
   displayNameMode: DisplayNameMode;
   activeResidence: boolean;
   activeWork: boolean;
@@ -75,9 +73,9 @@ type AccountSetupSubmissionProps = {
   navigateAfterSetup: () => void;
 };
 
-function useAccountSetupSubmission({ user, saveInFlight, setError, setIsSaving, setSubmitAttempted, setIsDirty, isSaving, isDirty, currentStep, handleNext, formIsValid, selectedProfile, displayNameMode, activeResidence, activeWork, residence, work, trimmedFirstName, trimmedLastName, completedPersistenceSteps, selectedDisplayMode, setDisplayMode, router, navigateAfterSetup }: AccountSetupSubmissionProps) {
+function useAccountSetupSubmission({ user, saveInFlight, setError, setIsSaving, setSubmitAttempted, setIsDirty, isSaving, isDirty, currentStep, handleNext, formIsValid, selectedProfile, ageBand, displayNameMode, activeResidence, activeWork, residence, work, trimmedFirstName, trimmedLastName, completedPersistenceSteps, selectedDisplayMode, setDisplayMode, router, navigateAfterSetup }: AccountSetupSubmissionProps) {
   const handleDefer = () => deferAccountSetup({ user, saveInFlight, setError, setIsSaving, isDirty, completedPersistenceSteps: completedPersistenceSteps.current, confirmDeferral: (message) => typeof window === "undefined" || window.confirm(message), navigateAfterSetup });
-  const handleSubmit = (event?: Parameters<typeof submitAccountSetup>[0]["event"]) => submitAccountSetup({ event, isSaving, saveInFlight, setError, setIsSaving, user, currentStep, onAdvance: handleNext, setSubmitAttempted, formIsValid, selectedProfile, displayNameMode, activeResidence, activeWork, residence, work, trimmedFirstName, trimmedLastName, completedPersistenceSteps: completedPersistenceSteps.current, setIsDirty, updateActiveProfile, saveDisplayMode: () => setDisplayMode(selectedDisplayMode), onRetry: () => void handleSubmit(), onRefresh: () => router.refresh(), navigateAfterSetup });
+  const handleSubmit = (event?: Parameters<typeof submitAccountSetup>[0]["event"]) => submitAccountSetup({ event, isSaving, saveInFlight, setError, setIsSaving, user, currentStep, onAdvance: handleNext, setSubmitAttempted, formIsValid, selectedProfile, ageBand, displayNameMode, activeResidence, activeWork, residence, work, trimmedFirstName, trimmedLastName, completedPersistenceSteps: completedPersistenceSteps.current, setIsDirty, updateActiveProfile, updateAgeBand, saveDisplayMode: () => setDisplayMode(selectedDisplayMode), onRetry: () => void handleSubmit(), onRefresh: () => router.refresh(), navigateAfterSetup });
   return { handleDefer, handleSubmit };
 }
 
@@ -88,6 +86,7 @@ export type AccountSetupFormProps = {
   clerkReachable: boolean;
   initialHandle?: string | null;
   initialDisplayNameMode?: DisplayNameMode | null;
+  initialAgeBand?: AgeBand | null;
   initialResidence?: TerritoryLocationSelection | null;
   initialWork?: TerritoryLocationSelection | null;
   /** Legacy props remain accepted while older server callers converge. */
@@ -116,6 +115,18 @@ async function updateActiveProfile(activeProfile: AppProfile) {
   }
 }
 
+async function updateAgeBand(ageBand: AgeBand) {
+  const response = await fetch("/api/account/age-band", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ageBand }),
+  });
+  const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+  if (!response.ok) {
+    throw new Error(payload?.error ?? "La déclaration de tranche d’âge est refusée.");
+  }
+}
+
 function readDisplayNameMode(metadata: Record<string, unknown> | null | undefined): DisplayNameMode {
   const value = metadata?.["display_name_mode"] ?? metadata?.["displayNameMode"];
   return resolveAccountSetupDisplayNameMode(typeof value === "string" ? value : undefined);
@@ -127,6 +138,7 @@ function useAccountSetupHydration({ user, isLoaded, resolvedInitialResidence, re
   resolvedInitialResidence: TerritoryLocationSelection | null;
   resolvedInitialWork: TerritoryLocationSelection | null;
   initialDisplayNameMode?: DisplayNameMode | null;
+  initialAgeBand?: AgeBand | null;
   setResidence: (value: TerritoryLocationSelection | null) => void;
   setWork: (value: TerritoryLocationSelection | null) => void;
   setResidenceEnabled: (value: boolean) => void;
@@ -249,6 +261,7 @@ export function useAccountSetupController({
   initialResidence,
   initialWork,
   initialDisplayNameMode,
+  initialAgeBand,
   initialArrondissement = null,
   initialLocationType = null,
   submitMode = "navigate",
@@ -277,6 +290,7 @@ export function useAccountSetupController({
   const [displayNameMode, setDisplayNameMode] = useState<DisplayNameMode>(() =>
     resolveAccountSetupDisplayNameMode(initialDisplayNameMode),
   );
+  const [ageBand, setAgeBand] = useState<AgeBand>(initialAgeBand ?? "unknown");
   const [manualDisplayMode, setManualDisplayMode] = useState<DisplayMode | null>(null);
   const [residence, setResidence] = useState<TerritoryLocationSelection | null>(resolvedInitialResidence);
   const [work, setWork] = useState<TerritoryLocationSelection | null>(resolvedInitialWork);
@@ -333,9 +347,17 @@ export function useAccountSetupController({
     setError,
   });
 
-  const { handleDefer, handleSubmit } = useAccountSetupSubmission({ user, saveInFlight, setError, setIsSaving, setSubmitAttempted, setIsDirty, isSaving, isDirty, currentStep, handleNext, formIsValid, selectedProfile, displayNameMode, activeResidence, activeWork, residence, work, trimmedFirstName, trimmedLastName, completedPersistenceSteps, selectedDisplayMode, setDisplayMode, router, navigateAfterSetup });
+  const handleAgeBandChange = (nextAgeBand: AgeBand) => {
+    completedPersistenceSteps.current.clear();
+    setIsDirty(true);
+    setAgeBand(nextAgeBand);
+  };
+  const { handleDefer, handleSubmit } = useAccountSetupSubmission({ user, saveInFlight, setError, setIsSaving, setSubmitAttempted, setIsDirty, isSaving, isDirty, currentStep, handleNext, formIsValid, selectedProfile, ageBand, displayNameMode, activeResidence, activeWork, residence, work, trimmedFirstName, trimmedLastName, completedPersistenceSteps, selectedDisplayMode, setDisplayMode, router, navigateAfterSetup });
   const getDeferralLabel = useCallback(() => getAccountSetupDeferralLabel(isDirty, completedPersistenceSteps.current.size), [isDirty]);
 
-  const controllerResult = buildAccountSetupControllerResult({ user, isLoaded, clerkReachable, locale, profileOptions, selectedProfile, currentStep, displayNameMode, publicDisplayName, publicHandle: initialHandle?.trim() || null, firstName, lastName, selectedDisplayMode, residence, work, residenceEnabled, workEnabled, noneSelected, isSaving, isDirty, error, firstNameError, lastNameError, profileError, locationError, shouldShowFieldError, markFormDirty, touchField, handleFirstNameChange, handleLastNameChange, handleProfileChange, handleDisplayModeChange, handleDisplayNameModeChange, updateResidence, updateWork, updateResidenceEnabled, updateWorkEnabled, updateNoneSelected, handleDefer, handleSubmit, handleNext, handlePrevious });
+  // The controller exposes event handlers that close over persistence refs.
+  // Keep this construction explicit so the React refs lint rule does not
+  // interpret the generic result helper as a render-time ref read.
+  const controllerResult = { user, isLoaded, clerkReachable, locale, profileOptions, selectedProfile, ageBand, currentStep, displayNameMode, publicDisplayName, publicHandle: initialHandle?.trim() || null, firstName, lastName, selectedDisplayMode, residence, work, residenceEnabled, workEnabled, noneSelected, isSaving, isDirty, error, firstNameError, lastNameError, profileError, locationError, shouldShowFieldError, markFormDirty, touchField, handleFirstNameChange, handleLastNameChange, handleProfileChange, handleDisplayModeChange, handleDisplayNameModeChange, handleAgeBandChange, updateResidence, updateWork, updateResidenceEnabled, updateWorkEnabled, updateNoneSelected, handleDefer, handleSubmit, handleNext, handlePrevious };
   return { ...controllerResult, getDeferralLabel };
 }

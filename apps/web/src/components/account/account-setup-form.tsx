@@ -23,6 +23,7 @@ import {
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
+import type { AgeBand } from "@/lib/minor-consent";
 
 export type { AccountSetupFormProps } from "@/components/account/use-account-setup-controller";
 
@@ -112,6 +113,22 @@ export function AccountSetupForm(props: AccountSetupFormProps) {
                 <p className="mt-1 text-xl font-black text-white">{controller.publicDisplayName}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-200">Le choix d’un pseudonyme masque votre nom dans cette présentation, mais ne rend pas automatiquement anonymes toutes vos contributions ou les données nécessaires aux équipes autorisées.</p>
               </aside>
+              <fieldset className="mt-5 rounded-2xl border border-slate-300/25 bg-slate-950/35 p-4">
+                <legend className="px-1 text-sm font-bold text-white">Tranche d’âge pour les traitements facultatifs</legend>
+                <p className="mt-1 text-sm leading-6 text-slate-200">Une déclaration minimale suffit : aucune date de naissance ni pièce d’identité n’est demandée. Le statut inconnu conserve l’accès au site mais désactive les traitements facultatifs concernés jusqu’à une déclaration autorisée.</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Tranche d’âge">
+                  {([
+                    ["under_15", "Moins de 15 ans"],
+                    ["15_or_over", "15 ans ou plus"],
+                    ["unknown", "Je ne souhaite pas préciser"],
+                  ] as const).map(([value, label]) => (
+                    <label key={value} className="flex items-start gap-2 rounded-xl border border-slate-300/25 p-3 text-sm text-slate-100">
+                      <input type="radio" name="account-age-band" value={value} checked={controller.ageBand === value} onChange={() => controller.handleAgeBandChange(value as AgeBand)} />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
             </AccountSetupSection>
             <AccountSetupSection title="Affichage du site" description="Un réglage facultatif de présentation, sans étape supplémentaire ni effet sur vos droits." headingId="account-display-mode-title" headingAside={<a href="/methodologie#modes-affichage" aria-label="Comprendre les modes d’affichage" className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300/60 text-slate-100 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"><Info className="h-4 w-4" aria-hidden="true" /></a>}>
               <AccountSetupDisplayModeGrid selectedMode={controller.selectedDisplayMode} locale={controller.locale} onChange={controller.handleDisplayModeChange} ariaLabelledBy="account-display-mode-title" />

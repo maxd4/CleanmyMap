@@ -7,6 +7,7 @@ import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { claimReferralInviteForUser } from "@/lib/gamification/referrals/referrals";
+import { getUserOptionalConsentEligibility } from "@/lib/minor-consent-server";
 
 export const metadata: Metadata = {
   title: "Configuration initiale",
@@ -62,7 +63,10 @@ export default async function OnboardingPage({
     });
   }
 
-  const locationPreferences = await getCurrentUserLocationPreferences();
+  const [locationPreferences, consentEligibility] = await Promise.all([
+    getCurrentUserLocationPreferences(),
+    getUserOptionalConsentEligibility(userId),
+  ]);
   const profile = identity.activeRole;
   const nextPath = sanitizeNextPath(resolvedSearchParams.next);
 
@@ -75,6 +79,7 @@ export default async function OnboardingPage({
       clerkReachable={clerkReachable}
       initialHandle={identity.handle}
       initialDisplayNameMode={identity.displayNameMode}
+      initialAgeBand={consentEligibility.ageBand}
       initialResidence={locationPreferences.residence}
       initialWork={locationPreferences.work}
     />

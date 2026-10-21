@@ -26,6 +26,13 @@ mois :
 - `cleanmymap_analytics_consent=1` ou `cleanmymap_analytics_consent=0` dans
   le cookie de consentement, avec la même durée.
 
+Pour les traitements facultatifs soumis au consentement, la tranche déclarée
+est limitée à `under_15`, `15_or_over` ou `unknown` et est reflétée dans
+`cleanmymap_age_band`. Aucune date de naissance exacte ni pièce d'identité
+n'est demandée. Les moins de 15 ans et les statuts inconnus ne déclenchent pas
+les traitements facultatifs concernés ; la consultation publique reste
+possible.
+
 Lorsque la décision locale est expirée, elle est nettoyée et le choix est
 proposé à nouveau. Le contrôle permanent **Gérer mes cookies**, présent dans le
 pied de page, permet de rouvrir les préférences sans supprimer manuellement le
@@ -67,6 +74,10 @@ le session replay, les heatmaps et les captures automatiques de performance ou
 d'erreurs sont désactivés. Les payloads analytiques n'incluent pas les valeurs
 de formulaires, frappes clavier, emails, identités nominatives, coordonnées
 précises ni autres données privées.
+
+La même restriction d'âge est appliquée côté serveur aux traitements
+facultatifs concernés : un compte déclaré âgé de moins de 15 ans ne peut pas
+les activer sans consentement parental conjoint vérifiable.
 
 Sentry n'est pas classé comme analytics soumis à ce consentement. Lorsqu'il est
 activé par une DSN, il sert à l'observabilité, à la sécurité et au diagnostic
