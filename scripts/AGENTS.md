@@ -140,6 +140,14 @@ diagnostic explicite. Une rétention différée par verrou ou protection active 
 modifie pas la limite de référence et expose son état (`LOCK_ACTIVE`, owner
 ambigu ou `DELETE_FAILED`) au caller.
 
+Le mode `all` ajoute aussi, dans le rapport agrégé et la projection consolidée,
+une dimension documentaire non bloquante calculée sur les fichiers Markdown et
+MDX suivis par Git du SHA audité. Elle mesure lignes, octets, titres, sections,
+liens internes et cycle de vie explicitement attesté ; elle n'applique pas les
+seuils du code TypeScript et ne modifie aucun document inspecté. Un ancien run
+dont le rapport agrégé ne contient pas cette dimension reste `NOT_MEASURED` en
+projection offline.
+
 - les contrôles manuels de changements peuvent utiliser la portée `WORKTREE` :
   c’est l’état partagé et évolutif du checkout, qui peut inclure le dirty state
   et les untracked étrangers ; ce scope n’autorise pas à modifier un chemin

@@ -179,6 +179,35 @@ function buildRun() {
   };
 }
 
+function documentationReport() {
+  const document = {
+    path: "README.md",
+    domain: "root",
+    lifecycle: { statuses: [], source: "NOT_STATED" },
+    lines: 1_200,
+    bytes: 24_000,
+    headingCount: 4,
+    maxHeadingDepth: 3,
+    sections: [{ title: "Guide", depth: 1, startLine: 1, endLine: 1_200, lines: 1_200 }],
+    largestSection: { title: "Guide", depth: 1, startLine: 1, endLine: 1_200, lines: 1_200 },
+    internalLinks: { count: 2, items: [], invalid: [] },
+    level: "REVIEW_REQUIRED",
+  };
+  return {
+    schemaVersion: 1,
+    kind: "documentation-maintainability",
+    status: "PASS",
+    attentionRequired: true,
+    auditedHead: sha,
+    runId,
+    provenance: "COMMITTED_SNAPSHOT",
+    thresholds: { surveillance: 601, reviewRequired: 1_001, architectureReview: 1_501 },
+    documents: [document],
+    ranking: [document],
+    summary: { trackedDocuments: 1, surveillance: 0, reviewRequired: 1, architectureReview: 0, invalidReferences: 0 },
+  };
+}
+
 function writeRun(root) {
   const run = buildRun();
   const shaRoot = path.join(root, "artifacts", "quality-audits", sha);
@@ -223,6 +252,24 @@ test("construit un index exhaustif sans confondre complexity et functionLength",
   assert.deepEqual(index.files.find((file) => file.path === fileA).functionalDomains, []);
   assert.equal(index.domains, undefined);
   assert.match(buildQualityFileIndexMarkdown(index), /verdict initial et réévaluation dérivée/);
+  assert.equal(index.audits.documentation.state, "NOT_MEASURED");
+  assert.equal(index.documentationDomains.state, "NOT_MEASURED");
+});
+
+test("projette la maintenabilité documentaire dans les fichiers et le domain index", () => {
+  const run = buildRun();
+  run.documentation = documentationReport();
+  const index = buildQualityFileIndex({ run, mode: "ALL" });
+  const document = index.files.find((file) => file.path === "README.md");
+
+  assert.equal(index.audits.documentation.state, "PRESENT");
+  assert.equal(index.globalCounts.documentationFiles, 1);
+  assert.equal(document.metrics.documentation.items[0].largestSection.lines, 1_200);
+  assert.equal(document.findings.documentation.state, "PRESENT");
+  assert.equal(index.documentationDomains.items[0].id, "root");
+  assert.equal(index.documentationDomains.items[0].levels.REVIEW_REQUIRED, 1);
+  assert.match(buildQualityFileIndexMarkdown(index), /DOCUMENTATION MAINTAINABILITY/);
+  assert.match(buildQualityFileIndexMarkdown(index), /DOCUMENTATION DOMAIN INDEX/);
 });
 
 test("projette le couplage architectural par fichier et domaine sans confondre les types ni les tests", () => {
@@ -256,6 +303,7 @@ test("le mode offline lit un run exact, crée le bundle sans réécrire les orig
 
     assert.equal(generated.index.mode, "OFFLINE");
     assert.equal(generated.run.provenance, "MIXED");
+    assert.equal(generated.index.audits.documentation.state, "NOT_MEASURED");
     assert.equal(generated.bundle.entries.length, 20);
     assert.deepEqual(listFlatQualityProjectionArtifacts({ root, auditedSha: sha }).map((entry) => entry.kind).sort(), ["bundle", "index", "summary"]);
     for (const [name, digest] of before) {

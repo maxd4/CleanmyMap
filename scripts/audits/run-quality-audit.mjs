@@ -26,6 +26,7 @@ import {
   readHumanDecisionsFromView,
 } from "../reports/generate-modularity-radar.mjs";
 import { buildArchitectureCouplingFromRepository, buildArchitectureCouplingProjection, generateQualityFileIndex } from "../reports/quality-file-index.mjs";
+import { buildDocumentationMaintainabilityReport, buildDocumentationNotMeasured } from "./documentation-maintainability.mjs";
 import {
   QUALITY_AUDIT_ROOT,
   beginActiveAudit,
@@ -389,6 +390,7 @@ export async function runQualityAudit(mode, {
   snapshot = () => captureRepositorySnapshot({ root }),
   engine = executeAudit,
   architectureBuilder = buildArchitectureCouplingFromRepository,
+  documentationRunner = buildDocumentationMaintainabilityReport,
   fsApi = fs,
   now = () => new Date().toISOString(),
   runId = randomUUID(),
@@ -471,7 +473,13 @@ export async function runQualityAudit(mode, {
     let allPaths = null;
     let projectionPaths = null;
     let projectionStatus = mode === "all" ? "NOT_MEASURED" : null;
+    let documentation = null;
     if (mode === "all") {
+      try {
+        documentation = await documentationRunner({ root, auditedSha: start.auditedHead, runId });
+      } catch (error) {
+        documentation = buildDocumentationNotMeasured({ auditedHead: start.auditedHead, runId, error });
+      }
       let architecture;
       try {
         architecture = architectureBuilder({ root, auditedSha: start.auditedHead });
@@ -509,6 +517,7 @@ export async function runQualityAudit(mode, {
           status: overallStatus,
           attentionRequired: overallAttention,
           audits: manifests.map(({ audit, status, attentionRequired: attention, readProvenance, reproducible, resultClass }) => ({ audit, status, attentionRequired: attention, readProvenance, reproducible, resultClass })),
+          documentation,
         }),
         manifest: serialize(manifest),
         summary: [
@@ -519,6 +528,7 @@ export async function runQualityAudit(mode, {
           `- Attention required: **${overallAttention ? "yes" : "no"}**`,
           "",
           ...manifests.map((entry) => `- ${entry.audit}: **${entry.status}**, attention **${entry.attentionRequired ? "yes" : "no"}**`),
+          `- documentation-maintainability: **${documentation.status}**, attention **${documentation.attentionRequired ? "yes" : "no"}**`,
         ].join("\n") + "\n",
         fsApi,
       });
@@ -560,6 +570,7 @@ export async function runQualityAudit(mode, {
       allPaths,
       projectionPaths,
       projectionStatus,
+      documentation,
       retention,
       results: manifests,
     };
@@ -575,6 +586,7 @@ export function formatQualityAuditCliResult(result) {
   ];
   for (const entry of result.results) lines.push(`${entry.audit}: ${entry.status}; attention=${entry.attentionRequired}`);
   if (result.projectionStatus) lines.push(`QUALITY_AUDIT_PROJECTION_STATUS: ${result.projectionStatus}`);
+  if (result.documentation) lines.push(`QUALITY_AUDIT_DOCUMENTATION: ${result.documentation.status}; attention=${result.documentation.attentionRequired}`);
   if (result.projectionPaths?.error) lines.push(`QUALITY_AUDIT_PROJECTION_ERROR: ${result.projectionPaths.error}`);
   if (result.retention?.diagnostics?.length) lines.push(`QUALITY_AUDIT_RETENTION: ${result.retention.status}; ${result.retention.diagnostics.join(", ")}`);
   return lines;

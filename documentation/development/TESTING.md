@@ -1172,6 +1172,18 @@ offline, elle, refuse tout run incomplet ou incohérent et exige l'identité
 exacte du couple demandé, sans exiger artificiellement une reproductibilité
 ou un `origin/main` égal au SHA audité.
 
+Le mode `all` conserve aussi dans le rapport agrégé une dimension documentaire
+non bloquante, calculée sur les fichiers Markdown et MDX suivis par Git du SHA
+audité. Elle mesure les lignes, octets, titres, profondeur, sections, liens
+internes et références invalides vérifiables, puis classe les documents selon
+les marqueurs de cycle de vie explicitement présents (`CURRENT`, `PLAN`,
+`AUDIT`, `HISTORY`, `SNAPSHOT`, `ADR`, `GENERATED`). Un statut absent reste
+`NOT_STATED` ; aucune scission ou modification du document audité n'est
+automatique. Les seuils documentaires expérimentaux sont `SURVEILLANCE` à
+partir de 601 lignes, `REVIEW_REQUIRED` à partir de 1 001 et
+`ARCHITECTURE_REVIEW` à partir de 1 501. Un run historique sans cette
+dimension est projeté en `NOT_MEASURED`.
+
 En mode `all`, l'index enrichit également chaque fichier et domaine avec le
 graphe TypeScript canonique de `generate-architecture-import-graph.mjs`, lu sur
 le SHA Git exact du run, et l'évaluation des frontières de

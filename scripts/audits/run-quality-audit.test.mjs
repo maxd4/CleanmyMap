@@ -43,6 +43,35 @@ function fixtureResult(audit) {
   return { gateStatus: "PASS", status: "PASS", cycles: [], cycleObjects: [], comparison: { added: [], stale: [] } };
 }
 
+function fixtureDocumentation(auditedHead = sha, runId = "documentation-run") {
+  const document = {
+    path: "README.md",
+    domain: "root",
+    lifecycle: { statuses: [], source: "NOT_STATED" },
+    lines: 10,
+    bytes: 120,
+    headingCount: 1,
+    maxHeadingDepth: 1,
+    sections: [{ title: "Readme", depth: 1, startLine: 1, endLine: 10, lines: 10 }],
+    largestSection: { title: "Readme", depth: 1, startLine: 1, endLine: 10, lines: 10 },
+    internalLinks: { count: 0, items: [], invalid: [] },
+    level: "NONE",
+  };
+  return {
+    schemaVersion: 1,
+    kind: "documentation-maintainability",
+    status: "PASS",
+    attentionRequired: false,
+    auditedHead,
+    runId,
+    provenance: "COMMITTED_SNAPSHOT",
+    thresholds: { surveillance: 601, reviewRequired: 1_001, architectureReview: 1_501 },
+    documents: [document],
+    ranking: [document],
+    summary: { trackedDocuments: 1, surveillance: 0, reviewRequired: 0, architectureReview: 0, invalidReferences: 0 },
+  };
+}
+
 function complexityEngineResult() {
   return {
     baseline: { entries: [] },
@@ -190,6 +219,52 @@ test("all writes every gate and the aggregate as flat files for one run", async 
     });
     assert.equal(fs.statSync(result.projectionPaths.bundle).isFile(), true);
     assert.equal(result.allPaths.runRoot, result.allPaths.shaRoot);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("all intègre la dimension documentaire dans l'agrégat, l'index et le ZIP", async () => {
+  const root = tempRoot();
+  try {
+    const result = await runQualityAudit("all", {
+      root,
+      runId: "run-documentation",
+      snapshot: () => stableSnapshot,
+      engine: async (audit) => fixtureResult(audit),
+      documentationRunner: () => fixtureDocumentation(sha, "run-documentation"),
+    });
+    const aggregate = JSON.parse(fs.readFileSync(result.allPaths.report, "utf8"));
+    const index = JSON.parse(fs.readFileSync(result.projectionPaths.index, "utf8"));
+
+    assert.equal(result.status, "PASS");
+    assert.equal(result.results.length, 5);
+    assert.equal(aggregate.documentation.kind, "documentation-maintainability");
+    assert.equal(index.audits.documentation.state, "PRESENT");
+    assert.equal(index.globalCounts.documentationFiles, 1);
+    assert.equal(fs.statSync(result.projectionPaths.bundle).isFile(), true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("un échec documentaire reste NOT_MEASURED sans modifier le verdict des cinq moteurs", async () => {
+  const root = tempRoot();
+  try {
+    const result = await runQualityAudit("all", {
+      root,
+      runId: "run-documentation-failure",
+      snapshot: () => stableSnapshot,
+      engine: async (audit) => fixtureResult(audit),
+      documentationRunner: () => { throw new Error("documentation fixture failure"); },
+    });
+    const index = JSON.parse(fs.readFileSync(result.projectionPaths.index, "utf8"));
+
+    assert.equal(result.status, "PASS");
+    assert.equal(result.results.length, 5);
+    assert.equal(result.documentation.status, "NOT_MEASURED");
+    assert.equal(result.projectionStatus, "PASS");
+    assert.equal(index.audits.documentation.state, "NOT_MEASURED");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

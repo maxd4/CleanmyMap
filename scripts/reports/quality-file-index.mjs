@@ -24,6 +24,7 @@ import {
   createQualityProjectionPaths,
   writeNewFile,
 } from "../audits/quality-audit-storage.mjs";
+import { validateDocumentationReport } from "../audits/documentation-maintainability.mjs";
 import { buildArchitectureImportGraph } from "./generate-architecture-import-graph.mjs";
 import { createCorrelationSignalsFromAuditResults } from "./generate-modularity-radar.mjs";
 
@@ -333,6 +334,7 @@ export function readOfflineQualityRun({ root = REPOSITORY_ROOT, auditedSha, runI
     throw new Error("Manifeste all incohérent: attentionRequired.");
   }
   sourceFiles.push(allPaths.manifest, allPaths.report, allPaths.summary);
+  const documentation = validateDocumentationReport(aggregateReport.documentation ?? null, { auditedSha, runId });
 
   const readProvenance = new Set(Object.values(manifests).map((manifest) => manifest.readProvenance));
   readProvenance.add(aggregateManifest.readProvenance);
@@ -344,6 +346,7 @@ export function readOfflineQualityRun({ root = REPOSITORY_ROOT, auditedSha, runI
     manifests,
     aggregateManifest,
     aggregateReport,
+    documentation,
     sourceFiles,
     shaRoot: allPaths.shaRoot,
     provenance: readProvenance.size === 1 ? [...readProvenance][0] : "MIXED",
@@ -363,6 +366,7 @@ function ensureFile(files, filePath) {
       deadCode: { findings: new Map(), exceptions: [] },
       duplication: { findings: new Map() },
       cycles: { findings: new Map() },
+      documentation: { measurements: null, findings: new Map(), lifecycle: null, domain: null },
       architecture: null,
     });
   }
@@ -645,6 +649,76 @@ function addCycles(report, files, domains, candidateGroups) {
   return { state: cycles.length > 0 ? "PRESENT" : "NONE", status: report.status, cycles };
 }
 
+function addDocumentation(report, files, domains) {
+  if (!report || report.status === "NOT_MEASURED") {
+    return { state: "NOT_MEASURED", status: "NOT_MEASURED", detail: "run historique sans dimension documentaire", documents: [], ranking: [] };
+  }
+  if (report.error) return { state: "NOT_MEASURED", status: "FAIL", error: report.error, documents: [], ranking: [] };
+  const findingCounts = { surveillance: 0, reviewRequired: 0, architectureReview: 0, invalidReferences: 0 };
+  for (const document of report.documents ?? []) {
+    const file = ensureFile(files, document.path);
+    if (!file) continue;
+    file.documentation.measurements = {
+      lines: document.lines,
+      bytes: document.bytes,
+      headingCount: document.headingCount,
+      maxHeadingDepth: document.maxHeadingDepth,
+      sections: document.sections,
+      largestSection: document.largestSection,
+      internalLinks: document.internalLinks,
+      level: document.level,
+    };
+    file.documentation.lifecycle = document.lifecycle;
+    file.documentation.domain = document.domain;
+    const domainId = document.domain;
+    const domain = domains.get(domainId) ?? {
+      id: domainId,
+      responsibility: "maintenabilité des documents Markdown et MDX",
+      files: new Set(),
+      findingIds: new Set(),
+      candidateGroups: new Set(),
+      statuses: new Map(),
+      levels: new Map(),
+      invalidReferences: 0,
+    };
+    domain.files.add(document.path);
+    for (const status of document.lifecycle?.statuses ?? []) domain.statuses.set(status, (domain.statuses.get(status) ?? 0) + 1);
+    domain.levels.set(document.level, (domain.levels.get(document.level) ?? 0) + 1);
+    domain.invalidReferences += document.internalLinks?.invalid?.length ?? 0;
+    domains.set(domainId, domain);
+    if (document.level === "SURVEILLANCE") findingCounts.surveillance += 1;
+    if (document.level === "REVIEW_REQUIRED") findingCounts.reviewRequired += 1;
+    if (document.level === "ARCHITECTURE_REVIEW") findingCounts.architectureReview += 1;
+    findingCounts.invalidReferences += document.internalLinks?.invalid?.length ?? 0;
+    const signals = document.level === "NONE" && (document.internalLinks?.invalid?.length ?? 0) === 0
+      ? []
+      : [{
+        type: "documentation-maintainability",
+        path: document.path,
+        level: document.level,
+        lines: document.lines,
+        bytes: document.bytes,
+        largestSection: document.largestSection,
+        invalidReferences: document.internalLinks?.invalid ?? [],
+        lifecycle: document.lifecycle,
+      }];
+    for (const finding of signals) {
+      const findingId = addFinding(file, "documentation", finding, domainId, stableId("documentation-maintainability", finding));
+      addDomain(domains, domainId, "maintenabilité des documents Markdown et MDX", file, findingId);
+    }
+  }
+  return {
+    state: "PRESENT",
+    status: report.status,
+    attentionRequired: Boolean(report.attentionRequired),
+    thresholds: report.thresholds,
+    summary: report.summary,
+    findingCounts,
+    documents: report.documents ?? [],
+    ranking: report.ranking ?? [],
+  };
+}
+
 function addArchitecture(architecture, files, domains) {
   if (!architecture || architecture.state !== "PRESENT") return;
   for (const architectureFile of architecture.files) {
@@ -674,6 +748,7 @@ function finalizeFiles(files, reports, architecture) {
     deadCode: reports["dead-code"]?.error ? "NOT_MEASURED" : "PRESENT",
     duplication: reports.duplication?.error ? "NOT_MEASURED" : "PRESENT",
     cycles: reports.cycles?.error ? "NOT_MEASURED" : "PRESENT",
+    documentation: !reports.documentation || reports.documentation.status === "NOT_MEASURED" ? "NOT_MEASURED" : "PRESENT",
   };
   const output = [];
   for (const file of files.values()) {
@@ -697,6 +772,9 @@ function finalizeFiles(files, reports, architecture) {
         architecture: file.architecture
           ? { state: "PRESENT", detail: "graphe d'import architectural disponible", value: file.architecture.metrics }
           : state(architecture?.state === "NOT_MEASURED" ? "NOT_MEASURED" : "NOT_APPLICABLE", architecture?.detail ?? "fichier absent du graphe architectural"),
+        documentation: file.documentation.measurements
+          ? state("PRESENT", "mesures de maintenabilité documentaire disponibles", [file.documentation.measurements])
+          : state(categoryAvailability.documentation === "NOT_MEASURED" ? "NOT_MEASURED" : "NOT_APPLICABLE", categoryAvailability.documentation === "NOT_MEASURED" ? "rapport documentaire absent du run" : "fichier hors projection documentaire"),
       },
       findings: {
         topHeavy: category("topHeavy", topHeavyFindingItems, Boolean(file.topHeavy.measurements), "rapport top-heavy en échec"),
@@ -705,6 +783,7 @@ function finalizeFiles(files, reports, architecture) {
         deadCode: category("deadCode", [...file.deadCode.findings.values()], false, "rapport dead-code en échec"),
         duplication: category("duplication", [...file.duplication.findings.values()], false, "rapport duplication en échec"),
         cycles: category("cycles", [...file.cycles.findings.values()], false, "rapport cycles en échec"),
+        documentation: category("documentation", [...file.documentation.findings.values()], Boolean(file.documentation.measurements), "rapport documentaire absent du run"),
       },
       architecture: file.architecture ?? {
         state: architecture?.state === "NOT_MEASURED" ? "NOT_MEASURED" : "NOT_APPLICABLE",
@@ -720,6 +799,7 @@ function finalizeFiles(files, reports, architecture) {
         deadCode: reports["dead-code"]?.readProvenance ?? null,
         duplication: reports.duplication?.readProvenance ?? null,
         cycles: reports.cycles?.readProvenance ?? null,
+        documentation: reports.documentation?.provenance ?? null,
       },
     });
   }
@@ -754,6 +834,25 @@ function finalizeFunctionalDomains(domains, architecture) {
   };
 }
 
+function finalizeDocumentationDomains(domains, report) {
+  if (!report || report.state === "NOT_MEASURED") {
+    return { state: "NOT_MEASURED", detail: "run historique sans regroupement documentaire", items: [] };
+  }
+  return {
+    state: "PRESENT",
+    detail: "regroupements dérivés des chemins documentaires et des marqueurs de cycle de vie présents",
+    items: [...domains.values()].map((domain) => ({
+      id: domain.id,
+      responsibility: domain.responsibility,
+      files: [...domain.files].sort(),
+      findingIds: [...domain.findingIds].sort(),
+      lifecycleStatuses: Object.fromEntries([...domain.statuses.entries()].sort(([left], [right]) => left.localeCompare(right))),
+      levels: Object.fromEntries([...domain.levels.entries()].sort(([left], [right]) => left.localeCompare(right))),
+      invalidReferences: domain.invalidReferences,
+    })).sort((left, right) => left.id.localeCompare(right.id)),
+  };
+}
+
 export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new Date().toISOString(), architecture = null } = {}) {
   if (!run?.reports || !run?.auditedSha || !run?.runId) throw new Error("Run quality absent pour construire l'index.");
   const architectureProjection = architecture ?? {
@@ -766,6 +865,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
   const files = new Map();
   const auditCategories = new Map();
   const functionalDomains = new Map();
+  const documentationDomains = new Map();
   const candidateGroups = new Map();
   const correlationSignals = createCorrelationSignalsFromAuditResults(run.reports);
   const topHeavy = addTopHeavy(run.reports["top-heavy"], files, auditCategories);
@@ -773,16 +873,20 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
   const deadCode = addDeadCode(run.reports["dead-code"], files, auditCategories);
   const duplication = addDuplication(run.reports.duplication, files, auditCategories, candidateGroups);
   const cycles = addCycles(run.reports.cycles, files, auditCategories, candidateGroups);
+  const documentation = addDocumentation(run.documentation, files, documentationDomains);
   addArchitecture(architectureProjection, files, functionalDomains);
-  const finalFiles = finalizeFiles(files, run.reports, architectureProjection);
+  const reports = { ...run.reports, documentation: run.documentation };
+  const finalFiles = finalizeFiles(files, reports, architectureProjection);
   const finalAuditCategories = finalizeAuditCategories(auditCategories);
   const finalFunctionalDomains = finalizeFunctionalDomains(functionalDomains, architectureProjection);
+  const finalDocumentationDomains = finalizeDocumentationDomains(documentationDomains, documentation);
   const categorySummaries = {
     topHeavy,
     complexity,
     deadCode,
     duplication,
     cycles,
+    documentation,
   };
   const findingsByCategory = Object.fromEntries(Object.entries(categorySummaries).map(([key, value]) => [key, value.findingCounts ?? value.counts ?? {}]));
   return {
@@ -798,6 +902,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       provenance: run.provenance,
       aggregateManifest: run.aggregateManifest,
       auditManifests: run.manifests,
+      documentation: run.documentation ? { status: run.documentation.status, readProvenance: run.documentation.provenance, attentionRequired: run.documentation.attentionRequired } : { status: "NOT_MEASURED", readProvenance: "NOT_MEASURED", attentionRequired: false },
       initialStatus: run.aggregateManifest.status,
       attentionRequired: run.aggregateManifest.attentionRequired,
       reproducible: run.aggregateManifest.reproducible,
@@ -822,10 +927,13 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       architectureFiles: architectureProjection.files?.length ?? 0,
       architectureBlockingBoundaryCount: architectureProjection.boundary?.blocking?.length ?? 0,
       architectureUnresolvedInternalCount: architectureProjection.graphSummary?.unresolvedInternalImports ?? 0,
+      documentationFiles: documentation.summary?.trackedDocuments ?? 0,
+      documentationInvalidReferences: documentation.summary?.invalidReferences ?? 0,
     },
     files: finalFiles,
     auditCategories: finalAuditCategories,
     functionalDomains: finalFunctionalDomains,
+    documentationDomains: finalDocumentationDomains,
     candidateGroups: [...candidateGroups.values()].map((group) => ({ ...group, files: [...group.files].sort() })).sort((left, right) => left.id.localeCompare(right.id)),
     limitations: [
       "Les rapports originaux et leur verdict initial ne sont pas modifiés.",
@@ -833,6 +941,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       "Une catégorie en échec sans mesures exploitables reste NOT_MEASURED.",
       "Les groupes candidats sont fondés uniquement sur les fingerprints de duplication et les participants de cycles ; aucun regroupement par dossier ou score n'est inféré.",
       "Le couplage architectural est mesuré sur le SHA Git exact en mode all ; en projection offline sans source architecturale, il reste NOT_MEASURED.",
+      "La maintenabilité documentaire est une dimension expérimentale non bloquante ; un run historique sans rapport documentaire reste NOT_MEASURED.",
     ],
   };
 }
@@ -857,7 +966,7 @@ export function buildQualityFileIndexMarkdown(index) {
     `- Fichiers indexés : **${index.globalCounts.files}**`,
     `- Groupes candidats relationnels : **${index.globalCounts.candidateGroups}**`,
     "",
-    "La projection lit uniquement les cinq rapports du run identifié. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines.",
+    "La projection lit uniquement les cinq rapports et la dimension documentaire du run identifié lorsqu'elle existe. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines.",
     "",
     "## États et audits",
     "",
@@ -869,13 +978,18 @@ export function buildQualityFileIndexMarkdown(index) {
     const source = index.source.sourceReports.find((entry) => entry.audit === audit);
     lines.push(`| ${audit} | ${summary.state ?? "PRESENT"} | ${source?.status ?? "NOT_MEASURED"} | ${source?.readProvenance ?? "NOT_MEASURED"} |`);
   }
+  lines.push(`| documentation-maintainability | ${index.audits.documentation.state} | ${index.source.documentation.status} | ${index.source.documentation.readProvenance} |`);
   lines.push("", "## Top-heavy : verdict initial et réévaluation dérivée", "", "| Vue | État | Statut | Violations ratchet REVIEW |", "| --- | --- | --- | ---: |");
   lines.push(`| Initiale | ${index.audits.topHeavy.initialVerdict.evaluation.state} | ${index.audits.topHeavy.initialVerdict.status} | ${index.audits.topHeavy.initialVerdict.evaluation.counts.reviewRatchetViolations ?? 0} |`);
   lines.push(`| Dérivée | ${index.audits.topHeavy.derivedReevaluation.state} | ${index.audits.topHeavy.derivedReevaluation.status ?? "NOT_MEASURED"} | ${index.audits.topHeavy.derivedReevaluation.counts?.reviewRatchetViolations ?? 0} |`);
+  lines.push("", "## DOCUMENTATION MAINTAINABILITY", "", `- État : **${index.audits.documentation.state}**`, `- Documents suivis : **${index.globalCounts.documentationFiles}**`, `- Surveillance : **${index.audits.documentation.summary?.surveillance ?? "NOT_MEASURED"}**`, `- REVIEW_REQUIRED : **${index.audits.documentation.summary?.reviewRequired ?? "NOT_MEASURED"}**`, `- ARCHITECTURE_REVIEW : **${index.audits.documentation.summary?.architectureReview ?? "NOT_MEASURED"}**`, `- Références internes invalides : **${index.audits.documentation.summary?.invalidReferences ?? "NOT_MEASURED"}**`, "", "| Rang | Document | Niveau | Lignes | Plus grande section | Références invalides | Cycle de vie |", "| ---: | --- | --- | ---: | --- | ---: | --- |");
+  for (const [rank, document] of (index.audits.documentation.ranking ?? []).slice(0, 20).entries()) {
+    lines.push(`| ${rank + 1} | \`${escapeMarkdown(document.path)}\` | ${document.level} | ${document.lines} | ${document.largestSection ? `L${document.largestSection.startLine}-${document.largestSection.endLine} (${document.largestSection.lines}) : ${escapeMarkdown(document.largestSection.title)}` : "—"} | ${document.internalLinks?.invalid?.length ?? 0} | ${document.lifecycle?.statuses?.join(" / ") || "NOT_STATED"} |`);
+  }
   lines.push("", "## Couplage architectural", "", `- État : **${index.architecture?.state ?? "NOT_MEASURED"}**`, `- Imports : **${index.architecture?.graphSummary?.imports ?? "NOT_MEASURED"}**`, `- Frontières bloquantes : **${index.architecture?.boundary?.blocking?.length ?? "NOT_MEASURED"}**`, `- Imports internes non résolus : **${index.architecture?.graphSummary?.unresolvedInternalImports ?? "NOT_MEASURED"}**`, "", "Les métriques de centralité sont informatives ; seuls les findings de frontière explicitement interdits sont bloquants.");
-  lines.push("", "## FILE INDEX", "", "| Fichier | Catégories d'audit | Domaines fonctionnels | Top-heavy | Complexity | FunctionLength | Dead-code | Duplication | Cycles | Architecture |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+  lines.push("", "## FILE INDEX", "", "| Fichier | Catégories d'audit | Domaines fonctionnels | Top-heavy | Complexity | FunctionLength | Dead-code | Duplication | Cycles | Documentation | Architecture |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const file of index.files) {
-    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.auditCategories.join(", ") || "—")} | ${escapeMarkdown(file.functionalDomains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} | ${stateLabel(file.metrics.architecture)} |`);
+    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.auditCategories.join(", ") || "—")} | ${escapeMarkdown(file.functionalDomains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} | ${stateLabel(file.findings.documentation)} | ${stateLabel(file.metrics.architecture)} |`);
   }
   lines.push("", "## AUDIT CATEGORY INDEX", "", "Les catégories décrivent les familles de contrôles ; elles ne constituent pas des domaines fonctionnels.", "");
   for (const domain of index.auditCategories) {
@@ -885,7 +999,11 @@ export function buildQualityFileIndexMarkdown(index) {
     }
     if (domain.candidateGroups.length > 0) lines.push(`Groupes : ${domain.candidateGroups.map((id) => `\`${id}\``).join(", ")}`, "");
   }
-  lines.push("## FUNCTIONAL DOMAIN INDEX", "", `État : **${index.functionalDomains.state}**`, index.functionalDomains.detail, "");
+  lines.push("## DOCUMENTATION DOMAIN INDEX", "", `État : **${index.documentationDomains.state}**`, index.documentationDomains.detail, "", "| Domaine | Fichiers | Cycle de vie | Niveaux | Références invalides |", "| --- | ---: | --- | --- | ---: |");
+  for (const domain of index.documentationDomains.items) {
+    lines.push(`| ${domain.id} | ${domain.files.length} | ${escapeMarkdown(Object.entries(domain.lifecycleStatuses).map(([status, count]) => `${status}:${count}`).join(", ") || "NOT_STATED")} | ${escapeMarkdown(Object.entries(domain.levels).map(([level, count]) => `${level}:${count}`).join(", "))} | ${domain.invalidReferences} |`);
+  }
+  lines.push("", "## FUNCTIONAL DOMAIN INDEX", "", `État : **${index.functionalDomains.state}**`, index.functionalDomains.detail, "");
   for (const domain of index.functionalDomains.items) {
     lines.push(`### ${domain.id}`, "", `Responsabilité : ${domain.responsibility}`, "", `- Fichiers : ${domain.files.length}`, `- Relations de contrôle : ${domain.findingIds.length}`, "");
     if (domain.coupling) {
