@@ -126,6 +126,16 @@ non bloquant pour ce runner. Les résultats `INFORMATIVE` ne constituent pas une
 preuve de candidat publié et aucun audit ne modifie automatiquement une
 baseline, une justification ou un seuil.
 
+Pour `all`, les projections `quality-index--<runId>--{index.json,summary.md,bundle.zip}`
+restent dans le dossier SHA et sont des artefacts système reconnus par le même
+inventaire. Leur présence ne rend pas un SHA inconnu et ils sont supprimés avec
+le dossier lorsqu'il sort des trois versions conservées. Aucun ZIP système
+n'est stocké hors de ce périmètre ; les fichiers externes, noms inconnus,
+preuves ambiguës et suppressions incertaines restent préservés avec un
+diagnostic explicite. Une rétention différée par verrou ou protection active ne
+modifie pas la limite de référence et expose son état (`LOCK_ACTIVE`, owner
+ambigu ou `DELETE_FAILED`) au caller.
+
 - les contrôles manuels de changements peuvent utiliser la portée `WORKTREE` :
   c’est l’état partagé et évolutif du checkout, qui peut inclure le dirty state
   et les untracked étrangers ; ce scope n’autorise pas à modifier un chemin

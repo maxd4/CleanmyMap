@@ -1186,7 +1186,13 @@ ratifie aucune baseline. Le `--bundle` écrit un ZIP dans le même dossier avec
 les dix-huit fichiers originaux et les deux projections, chemins plats
 préservés, sans écraser un fichier existant. Les contrôles de rétention
 reconnaissent ces trois artefacts de projection sans les confondre avec les
-triplets des engines.
+triplets des engines : ils sont stockés dans le dossier SHA et suivent donc la
+suppression atomique de ce SHA lorsqu'il sort des trois versions conservées.
+Aucun ZIP système n'est stocké hors des dossiers SHA ; un éventuel fichier
+extérieur ou artefact de nom inconnu reste préservé et diagnostiqué, sans
+nettoyage implicite. Un verrou actif, un owner ambigu, une collision ou une
+suppression incertaine conserve l'artefact et expose un diagnostic explicite
+(`LOCK_ACTIVE`, `ACTIVE_MARKER_AMBIGUOUS_PRESERVED` ou `DELETE_FAILED`).
 
 L’audit architectural ponctuel est distinct du radar top-heavy :
 

@@ -249,7 +249,7 @@ function inspectShaDirectory(root, entry, fsApi = fs) {
   });
   const manifests = inventory.artifacts.filter((artifact) => artifact.kind === "manifest");
   const manifestKeys = new Set(manifests.map((artifact) => `${artifact.audit}:${artifact.runId}`));
-  inventory.artifacts = inventory.artifacts.filter((artifact) => manifestKeys.has(`${artifact.audit}:${artifact.runId}`));
+  inventory.artifacts = inventory.artifacts.filter((artifact) => artifact.projection || manifestKeys.has(`${artifact.audit}:${artifact.runId}`));
   for (const key of manifestKeys) {
     for (const kind of Object.keys(ARTIFACT_SUFFIXES)) {
       if (!inventory.artifacts.some((artifact) => `${artifact.audit}:${artifact.runId}` === key && artifact.kind === kind)) {

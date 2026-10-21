@@ -15,7 +15,7 @@ import {
   runQualityAudit,
   serialize,
 } from "./run-quality-audit.mjs";
-import { acquireRetentionLock, beginActiveAudit, endActiveAudit, releaseRetentionLock, retainQualityAuditArtifacts } from "./quality-audit-storage.mjs";
+import { acquireRetentionLock, beginActiveAudit, createQualityProjectionPaths, endActiveAudit, listFlatQualityProjectionArtifacts, releaseRetentionLock, retainQualityAuditArtifacts } from "./quality-audit-storage.mjs";
 
 const sha = "a".repeat(40);
 const stableSnapshot = {
@@ -569,6 +569,29 @@ test("retention keeps the three most recently executed SHA directories", async (
     const directories = fs.readdirSync(path.join(root, "artifacts", "quality-audits"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
     assert.equal(retention.status, "PASS");
     assert.deepEqual(directories, ["1".repeat(40), "2".repeat(40), "3".repeat(40)]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("les projections JSON, Markdown et ZIP reconnues suivent la rétention du SHA", async () => {
+  const root = tempRoot();
+  const oldest = "0".repeat(40);
+  try {
+    writeFlatQualityRun(root, oldest, "run-old", "2026-10-01T00:00:00.000Z");
+    const projection = createQualityProjectionPaths({ root, auditedHead: oldest, runId: "run-old" });
+    fs.writeFileSync(projection.index, JSON.stringify({ schemaVersion: 1, kind: "quality-file-index", auditedHead: oldest, runId: "run-old" }));
+    fs.writeFileSync(projection.summary, "# quality index\n");
+    fs.writeFileSync(projection.bundle, Buffer.from("PK\x03\x04fixture"));
+    assert.equal(listFlatQualityProjectionArtifacts({ root, auditedSha: oldest }).length, 3);
+    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.equal(retention.status, "PASS");
+    assert.ok(retention.removedSha.includes(oldest));
+    assert.equal(fs.existsSync(path.join(root, "artifacts", "quality-audits", oldest)), false);
+    assert.equal(retention.diagnostics.some((entry) => entry.includes("UNKNOWN_CONTENT_PRESERVED")), false);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
