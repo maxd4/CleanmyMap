@@ -6,25 +6,25 @@
       "path": "apps/mobile/App.tsx",
       "kind": "runtime",
       "status": "IMPROVED",
-      "reviewedRef": "ffb9128699c4ef16c714eca1e7c270b026240074",
-      "maxLines": 464,
-      "maxBytes": 12436
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 309,
+      "maxBytes": 8285
     },
     {
       "path": "apps/web/src/app/api/admin/legal-content-reports/decision/route.ts",
       "kind": "runtime",
       "status": "IMPROVED",
-      "reviewedRef": "ffb9128699c4ef16c714eca1e7c270b026240074",
-      "maxLines": 496,
-      "maxBytes": 20230
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 194,
+      "maxBytes": 6289
     },
     {
       "path": "apps/web/src/app/api/admin/moderation/route.action.ts",
       "kind": "runtime",
       "status": "IMPROVED",
-      "reviewedRef": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
-      "maxLines": 398,
-      "maxBytes": 12043
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 384,
+      "maxBytes": 11255
     },
     {
       "path": "apps/web/src/app/api/chat/route.post.ts",
@@ -86,9 +86,9 @@
       "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts",
       "kind": "runtime",
       "status": "IMPROVED",
-      "reviewedRef": "425a62e9555e2fb5bcbe1facca7483e34b541d0a",
-      "maxLines": 375,
-      "maxBytes": 12646
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 160,
+      "maxBytes": 5824
     },
     {
       "path": "apps/web/src/components/actions/action-declaration/payload.ts",
@@ -141,10 +141,10 @@
     {
       "path": "apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 634,
-      "maxBytes": 16787
+      "status": "IMPROVED",
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 202,
+      "maxBytes": 6254
     },
     {
       "path": "apps/web/src/components/actions/map/layers/map-layers-shape-layers.tsx",
@@ -173,10 +173,10 @@
     {
       "path": "apps/web/src/components/chat/discussion-guidance.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 522,
-      "maxBytes": 20700
+      "status": "IMPROVED",
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 452,
+      "maxBytes": 18195
     },
     {
       "path": "apps/web/src/components/dashboard/storage-usage-panel.tsx",
@@ -190,25 +190,25 @@
       "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx",
       "kind": "runtime",
       "status": "IMPROVED",
-      "reviewedRef": "6b55bca097f057c101dd120bf3590a48c4755aeb",
-      "maxLines": 123,
-      "maxBytes": 4967
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 122,
+      "maxBytes": 4859
     },
     {
       "path": "apps/web/src/components/learn/quiz/environmental-quiz.tsx",
       "kind": "runtime",
       "status": "IMPROVED",
-      "reviewedRef": "4c5382958adc641c41cb3368e0a2a26335aec925",
-      "maxLines": 182,
-      "maxBytes": 9209
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 175,
+      "maxBytes": 8678
     },
     {
       "path": "apps/web/src/components/reports/web-document/reports-web-document.shared.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 615,
-      "maxBytes": 21754
+      "status": "IMPROVED",
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 148,
+      "maxBytes": 4811
     },
     {
       "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
@@ -270,9 +270,9 @@
       "path": "apps/web/src/components/sections/rubriques/weather-section.conditions.tsx",
       "kind": "runtime",
       "status": "IMPROVED",
-      "reviewedRef": "cd94bd8b40dd55d14ab9799cd2e01bddbe5f0a5b",
-      "maxLines": 58,
-      "maxBytes": 1850
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 32,
+      "maxBytes": 1220
     },
     {
       "path": "apps/web/src/lib/actions/exports/export-form-media.ts",
@@ -318,17 +318,17 @@
       "path": "apps/web/src/lib/actions/participation/organizers.ts",
       "kind": "runtime",
       "status": "IMPROVED",
-      "reviewedRef": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
-      "maxLines": 499,
-      "maxBytes": 13090
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 425,
+      "maxBytes": 11469
     },
     {
       "path": "apps/web/src/lib/actions/pollution/corridor-history.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 559,
-      "maxBytes": 16514
+      "status": "IMPROVED",
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 375,
+      "maxBytes": 12370
     },
     {
       "path": "apps/web/src/lib/actions/pollution/current-place-state.ts",
@@ -446,9 +446,9 @@
       "path": "apps/web/src/lib/pdf-export/official-report-html.ts",
       "kind": "runtime",
       "status": "IMPROVED",
-      "reviewedRef": "ac18cddcff680e21188f92da59a7f594fa659760",
-      "maxLines": 238,
-      "maxBytes": 9215
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 34,
+      "maxBytes": 1144
     },
     {
       "path": "apps/web/src/lib/pdf-export/simple-pdf.ts",
@@ -517,18 +517,18 @@
     {
       "path": "apps/web/src/components/actions/action-declaration/payload.test.ts",
       "kind": "test",
-      "status": "REVIEW",
-      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50",
-      "maxLines": 1010,
-      "maxBytes": 34800
+      "status": "IMPROVED",
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 166,
+      "maxBytes": 5258
     },
     {
       "path": "apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50",
-      "maxLines": 502,
-      "maxBytes": 21231
+      "status": "IMPROVED",
+      "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",
+      "maxLines": 400,
+      "maxBytes": 17191
     }
   ]
 }
