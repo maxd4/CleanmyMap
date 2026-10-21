@@ -25,6 +25,8 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | `apps/web/src/lib/route/route-predicted-targets.ts` | ALREADY_MODULARIZED | NONE | préserver budgets planner, audits et contrats API route | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/sections/rubriques/route/route-section.tsx` | ALREADY_MODULARIZED | NONE | préserver les textes, états async, origine carte, deep-links et CTA planner | nouvelle responsabilité autonome réintroduite dans RouteSection ou couplage anormal entre owners |
 | `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | EXTRACTED_PURE_CONTRACT | CURRENT | préserver l'usage du renderer PDF commun et la compatibilité des snapshots historiques | évolution indépendante des modules ou du contrat PDF |
+| `apps/web/src/app/(app)/reports/page.tsx` | ALREADY_MODULARIZED | NONE | préserver la frontière App Router serveur, les contrôles AuthN/AuthZ et les contrats de reprise/génération | nouvelle responsabilité serveur autonome réintroduite dans la page ou déplacement d'un contrôle d'accès vers le client |
+| `apps/web/src/lib/pdf-export/report-pdf-theme.ts` | ALREADY_MODULARIZED | NONE | préserver `buildOfficialReportCss`, l'ordre exact des familles CSS et les sorties PDF existantes | nouvelle famille de règles CSS indépendante ou logique de tokens réintroduite dans la façade |
 | `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | COHESIVE_SINGLE_FILE | NONE | conserver réponses FR/EN et projection canonique Waste alignées | famille de règles indépendante ou catalogue de contenu autonome démontré |
 | `apps/web/src/lib/route/route-trace.ts` | COHESIVE_SINGLE_FILE | NONE | un seul owner du contrat RouteRecommendationTrace et de sa construction | nouveau sous-contrat de trace consommé indépendamment du builder principal |
 | `apps/web/src/components/accueil/accueil-community-credibility.tsx` | ALREADY_MODULARIZED | NONE | préserver fallback, contrat activity, accessibilité et façades exportées | nouvelle responsabilité autonome réintroduite dans la façade |
@@ -394,6 +396,40 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | PRIORITY | CURRENT |
 | DEPENDENCY_OR_BLOCKER | préserver l'usage du renderer PDF commun et la compatibilité des snapshots historiques |
 | NEXT_TRIGGER | évolution indépendante des modules ou du contrat PDF |
+
+#### `apps/web/src/app/(app)/reports/page.tsx`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | façade App Router serveur, résolution des paramètres d'onglet et délégation vers les flux bibliothèque, analyse, génération et fichiers |
+| PUBLIC_CONTRACTS | export par défaut `ReportsPage`, métadonnées de `/reports` et paramètres de navigation compatibles |
+| SIDE_EFFECTS | lecture serveur de session, rôle, identité, complétion de compte et données de rapport via les loaders existants |
+| MAIN_CONSUMERS | route Next.js `/reports` et `page.test.ts` |
+| TEST_BOUNDARY | `page.test.ts`, tests des loaders/orchestrateurs et tests génération/reprise/export des rapports |
+| COUPLING | paramètres URL, session Clerk côté serveur, AuthZ, complétion de compte, locale et composition des onglets |
+| NATURAL_EXTRACTION_BOUNDARY | page shell ; orchestration serveur dans `page-orchestration.tsx` ; chargement dans `page-loaders.ts` et `page-generation-context.ts` ; contenu dans `page-content.tsx` |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | la page est une façade App Router mince ; chargement, génération, reprise, droits et présentation ont des owners distincts, tandis que les contrôles AuthN/AuthZ restent exécutés côté serveur |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver la frontière App Router serveur, les contrôles AuthN/AuthZ et les contrats de reprise/génération |
+| NEXT_TRIGGER | nouvelle responsabilité serveur autonome réintroduite dans la page ou déplacement d'un contrôle d'accès vers le client |
+
+#### `apps/web/src/lib/pdf-export/report-pdf-theme.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | façade d'assemblage du CSS officiel de rapport à partir des tokens et familles de règles spécialisées |
+| PUBLIC_CONTRACTS | `buildOfficialReportCss` comme façade unique de génération CSS officielle et contrats de thème consommés par les exports |
+| SIDE_EFFECTS | aucun effet externe ; génération CSS pure |
+| MAIN_CONSUMERS | `official-report-html-*`, `browser-report`, templates HTML et prototype de thème |
+| TEST_BOUNDARY | `report-pdf-theme.test.ts`, snapshot CSS, tests browser-report et rendu PDF réel |
+| COUPLING | tokens de thème, ordre d'assemblage CSS, familles page/hero/contenu/print et compatibilité des snapshots |
+| NATURAL_EXTRACTION_BOUNDARY | tokens dans `report-pdf-theme.tokens.ts` ; règles hero, contenu, page et print dans leurs modules spécialisés ; façade d'assemblage dans ce fichier |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | les tokens et familles CSS ont des owners cohésifs ; la façade conserve uniquement l'ordre et le contrat public, ce qui permet de préserver les sorties PDF sans dupliquer la génération |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver `buildOfficialReportCss`, l'ordre exact des familles CSS et les sorties PDF existantes |
+| NEXT_TRIGGER | nouvelle famille de règles CSS indépendante ou logique de tokens réintroduite dans la façade |
 
 #### `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts`
 

@@ -129,7 +129,7 @@ test("the migrated registry preserves every human decision and manual field", ()
     "TEST_BOUNDARY",
     "file",
   ].sort();
-  assert.equal(decisions.length, 47);
+  assert.equal(decisions.length, 49);
   assert.ok(decisions.every((entry) => JSON.stringify(Object.keys(entry).sort()) === JSON.stringify(expectedKeys)));
   assert.ok(decisions.every((entry) => entry.file && entry.ARCHITECTURE_DECISION && entry.PRIORITY));
   const view = {
@@ -138,11 +138,11 @@ test("the migrated registry preserves every human decision and manual field", ()
   };
   const result = readHumanDecisionsFromView(view, { requireRegistry: true });
   assert.equal(result.legacy, false);
-  assert.equal(result.decisions.length, 47);
+  assert.equal(result.decisions.length, 49);
   const summaryRows = extractHumanDecisions(registry)
     .split(/\r?\n/)
     .filter((line) => /^\| `[^`]+` \|/.test(line));
-  assert.equal(summaryRows.length, 47);
+  assert.equal(summaryRows.length, 49);
   const decisionsByFile = new Map(result.decisions.map((entry) => [entry.file, entry]));
   for (const row of summaryRows) {
     const [fileCell, architectureDecision, priority, dependency, nextTrigger] = row
