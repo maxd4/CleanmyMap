@@ -46,15 +46,9 @@ export function AdminPageContent({
   const moderationBlocks = buildModerationBlockSummaries(adminSources);
   const switchableProfiles = getSwitchableProfiles(grantedRole);
   const profileLink = buildProfileRoute(profile);
-  const profileCountLabel = switchableProfiles.length > 1
-    ? `${switchableProfiles.length} profils`
-    : "Profil actif";
-  const creatorIdentity = role === "max" ? identity : null;
-  const creatorDisplayName = creatorIdentity?.displayName?.trim() ||
-    creatorIdentity?.firstName?.trim() ||
-    creatorIdentity?.handle ||
-    creatorIdentity?.username ||
-    "Administration avancée";
+  const profileCountLabel = formatProfileCountLabel(switchableProfiles.length);
+  const creatorDisplayName = getCreatorDisplayName(role, identity);
+  const moderationFilters = getModerationFilters(moderationPreset);
   const adminTools: AdminActionItem[] = [
     {
       id: "quiz-bank",
@@ -111,8 +105,8 @@ export function AdminPageContent({
           <div id="moderation-par-bloc"><ModerationByBlockPanel blocks={moderationBlocks} /></div>
           <section id="workflow-administration">
             <ActionsReportPanel
-              initialRecordTypeFilter={moderationPreset === "signalements" ? "signalements" : undefined}
-              initialStatus={moderationPreset === "signalements" ? "pending" : undefined}
+              initialRecordTypeFilter={moderationFilters.initialRecordTypeFilter}
+              initialStatus={moderationFilters.initialStatus}
             />
           </section>
           {adminSources.creatorInbox.status === "available" && adminSources.audit.status === "available" ? (
@@ -151,4 +145,18 @@ export function AdminPageContent({
       </CmmPageLayout>
     </main>
   );
+}
+
+function formatProfileCountLabel(count: number) {
+  return count > 1 ? `${count} profils` : "Profil actif";
+}
+
+function getCreatorDisplayName(role: UserIdentity["activeRole"], identity: UserIdentity) {
+  if (role !== "max") return "Administration avancée";
+  return identity.displayName?.trim() || identity.firstName?.trim() || identity.handle || identity.username || "Administration avancée";
+}
+
+function getModerationFilters(preset: "signalements" | null) {
+  if (preset === "signalements") return { initialRecordTypeFilter: "signalements" as const, initialStatus: "pending" as const };
+  return { initialRecordTypeFilter: undefined, initialStatus: undefined };
 }
