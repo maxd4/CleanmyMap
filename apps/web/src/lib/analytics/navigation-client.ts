@@ -1,6 +1,7 @@
 "use client";
 
 import { initPostHogClient } from "@/lib/posthog/client";
+import { sanitizeAnalyticsProperties } from "@/lib/analytics/sanitize-analytics-payload";
 import type { CtaSlot } from "@/lib/domain-language";
 
 type NavClickPayload = {
@@ -18,11 +19,12 @@ type CtaClickPayload = {
 };
 
 function capture(eventName: string, payload: Record<string, unknown>): void {
+  const sanitizedPayload = sanitizeAnalyticsProperties(payload);
   void initPostHogClient().then((posthog) => {
     if (!posthog) {
       return;
     }
-    posthog.capture(eventName, payload);
+    posthog.capture(eventName, sanitizedPayload);
   });
 }
 

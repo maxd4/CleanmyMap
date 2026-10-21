@@ -1,20 +1,66 @@
 const EMAIL_PATTERN = /\b[^\s@]+@[^\s@]+\.[^\s@]+\b/iu;
 const COORDINATE_PATTERN = /-?\d{1,3}(?:\.\d+)?\s*[,;]\s*-?\d{1,3}(?:\.\d+)?/u;
-const OPAQUE_PATH_SEGMENT_PATTERN = [
-  /^[0-9a-f]{8,}$/iu,
-  /^[0-9a-f]{8}-[0-9a-f-]{27,}$/iu,
-  /^\d{6,}$/u,
-];
 
+const PRIVATE_IDENTIFIER_KEY_PATTERN =
+  /(?:^|[_-])(?:id|uuid|identifier|token)(?:$|[_-])|(?:Id|ID|Uuid|UUID|Identifier|Token)$/u;
 const SENSITIVE_KEY_PATTERN =
   /(?:email|phone|telephone|password|secret|token|address|location|coordinate|latitude|longitude|keystroke|form.?value|input.?value|message|description|notes?|content|user.?name|display.?name|first.?name|last.?name)/iu;
+const URL_KEY_PATTERN = /(?:^|_)(?:url|href|referrer|path)$/iu;
 
-const URL_KEY_PATTERN = /(?:^|_)(?:url|href|referrer)$/iu;
+const ANALYTICS_ROUTE_KINDS = new Set([
+  "home",
+  "admin",
+  "community",
+  "profile",
+  "methodology",
+  "explorer",
+  "actions",
+  "reports",
+  "missions",
+  "sections",
+  "spogomi",
+  "docs",
+  "parcours",
+  "sign-in",
+  "sign-up",
+  "signaler-contenu-illicite",
+  "politique-cookies",
+  "contact",
+  "onboarding",
+  "mentions-legales",
+  "conditions-utilisation",
+  "conditions-generales-utilisation",
+  "learn",
+  "en",
+  "preview",
+  "sponsor-portal",
+  "messagerie",
+  "dashboard",
+  "gamification",
+  "compte",
+  "prints",
+  "pilotage",
+  "partners",
+  "open-data",
+  "signalement",
+  "other",
+]);
+
+const ANALYTICS_ROUTE_CHILDREN = new Map<string, ReadonlySet<string>>([
+  ["actions", new Set(["new", "map", "history", "invite"])],
+  ["sections", new Set(["open-data", "rejoindre-une-action"])],
+]);
+
+const ROUTE_KIND_ALIASES: Record<string, string> = {
+  profil: "profile",
+  methodologie: "methodology",
+};
 
 const FUNNEL_META_KEYS = new Set([
   "source",
   "kind",
   "pagePath",
+  "routePath",
   "routeKind",
   "routeSection",
   "routeDepth",
@@ -25,6 +71,35 @@ const FUNNEL_META_KEYS = new Set([
   "recordType",
   "formVariant",
   "isAuthenticated",
+]);
+
+const FUNNEL_CATEGORY_VALUES: Record<string, ReadonlySet<string>> = {
+  source: new Set([
+    "route_tracker",
+    "action_declaration_form",
+    "action_before_declaration_form",
+    "form",
+  ]),
+  kind: new Set(["pageview"]),
+  routeKind: ANALYTICS_ROUTE_KINDS,
+  routeSection: new Set([
+    ...ANALYTICS_ROUTE_KINDS,
+    "new",
+    "map",
+    "history",
+    "invite",
+    "open-data",
+    "rejoindre-une-action",
+  ]),
+  declarationMode: new Set(["quick", "complete"]),
+  recordType: new Set(["action", "clean_place", "spot", "other"]),
+  formVariant: new Set(["legacy", "quick"]),
+};
+
+const FUNNEL_NUMERIC_KEYS = new Set([
+  "routeDepth",
+  "routeSegmentCount",
+  "queryParamCount",
 ]);
 
 export const POSTHOG_PROPERTY_DENYLIST = [
@@ -57,32 +132,99 @@ export const POSTHOG_PROPERTY_DENYLIST = [
   "clerk_user_id",
 ] as const;
 
+function decodePathSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
 function isSensitiveKey(key: string): boolean {
   return (
     POSTHOG_PROPERTY_DENYLIST.includes(
       key.toLowerCase() as (typeof POSTHOG_PROPERTY_DENYLIST)[number],
-    ) || SENSITIVE_KEY_PATTERN.test(key)
+    ) ||
+    PRIVATE_IDENTIFIER_KEY_PATTERN.test(key) ||
+    SENSITIVE_KEY_PATTERN.test(key)
   );
 }
 
-function isOpaquePathSegment(segment: string): boolean {
-  return OPAQUE_PATH_SEGMENT_PATTERN.some((pattern) => pattern.test(segment));
-}
-
-export function sanitizeAnalyticsPath(value: string): string {
+function normalizeRouteSegments(value: string): string[] {
   const rawPath = value.split(/[?#]/u, 1)[0] ?? "/";
   const segments = rawPath
     .split("/")
     .filter(Boolean)
-    .filter((segment) => {
-      return (
-        !EMAIL_PATTERN.test(segment) &&
-        !COORDINATE_PATTERN.test(segment) &&
-        !isOpaquePathSegment(segment)
-      );
-    });
+    .map(decodePathSegment)
+    .map((segment) => segment.trim())
+    .filter(Boolean);
 
-  return `/${segments.slice(0, 4).join("/")}` || "/";
+  if (segments.length === 0) {
+    return [];
+  }
+
+  const root = segments[0]?.toLowerCase() ?? "";
+  if (
+    !ANALYTICS_ROUTE_KINDS.has(root) &&
+    !Object.hasOwn(ROUTE_KIND_ALIASES, root)
+  ) {
+    return ["other"];
+  }
+  if (root === "profil" || root === "parcours" || root === "spogomi") {
+    return [root];
+  }
+  if (root === "sections" || root === "docs" || root === "missions") {
+    return [
+      root,
+      ...(root === "sections" &&
+      ANALYTICS_ROUTE_CHILDREN.get(root)?.has(segments[1]?.toLowerCase() ?? "")
+        ? [segments[1]!.toLowerCase()]
+        : []),
+    ];
+  }
+
+  const knownChildren = ANALYTICS_ROUTE_CHILDREN.get(root);
+  if (knownChildren) {
+    const child = segments[1]?.toLowerCase();
+    return [root, ...(child && knownChildren.has(child) ? [child] : [])];
+  }
+
+  return [root];
+}
+
+function routeKindForRoot(root: string): string {
+  const alias = ROUTE_KIND_ALIASES[root];
+  if (alias) {
+    return alias;
+  }
+  return ANALYTICS_ROUTE_KINDS.has(root) ? root : "other";
+}
+
+export type NormalizedAnalyticsRoute = {
+  path: string;
+  routeKind: string;
+  routeSection: string;
+  routeDepth: number;
+  routeSegmentCount: number;
+};
+
+export function normalizeAnalyticsRoute(value: string): NormalizedAnalyticsRoute {
+  const segments = normalizeRouteSegments(value);
+  const root = segments[0] ?? "";
+  const routeKind = root ? routeKindForRoot(root) : "home";
+  const routeSection = segments[1] ?? routeKind;
+
+  return {
+    path: segments.length > 0 ? `/${segments.join("/")}` : "/",
+    routeKind,
+    routeSection,
+    routeDepth: segments.length,
+    routeSegmentCount: segments.length,
+  };
+}
+
+export function sanitizeAnalyticsPath(value: string): string {
+  return normalizeAnalyticsRoute(value).path;
 }
 
 export function sanitizeAnalyticsUrl(value: string): string {
@@ -97,10 +239,21 @@ export function sanitizeAnalyticsUrl(value: string): string {
   }
 }
 
+function sanitizeCategory(key: string, value: string): string | undefined {
+  const allowedValues = FUNNEL_CATEGORY_VALUES[key];
+  if (!allowedValues) {
+    return value;
+  }
+  return allowedValues.has(value) ? value : undefined;
+}
+
 function sanitizeValue(key: string, value: unknown): unknown {
   if (typeof value === "string") {
-    if (URL_KEY_PATTERN.test(key) || key === "pagePath") {
+    if (URL_KEY_PATTERN.test(key) || key === "pagePath" || key === "routePath") {
       return sanitizeAnalyticsUrl(value);
+    }
+    if (FUNNEL_CATEGORY_VALUES[key]) {
+      return sanitizeCategory(key, value);
     }
     if (EMAIL_PATTERN.test(value) || COORDINATE_PATTERN.test(value)) {
       return undefined;
@@ -140,6 +293,21 @@ export function sanitizeAnalyticsProperties(
   return sanitized;
 }
 
+function sanitizeFunnelValue(key: string, value: unknown): unknown {
+  if (FUNNEL_NUMERIC_KEYS.has(key)) {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return undefined;
+    }
+    return Math.max(0, Math.min(20, Math.trunc(value)));
+  }
+
+  if (key === "hasQuery" || key === "isAuthenticated") {
+    return typeof value === "boolean" ? value : undefined;
+  }
+
+  return sanitizeValue(key, value);
+}
+
 export function sanitizeFunnelMeta(
   meta: Record<string, unknown> | undefined,
 ): Record<string, unknown> | undefined {
@@ -149,12 +317,15 @@ export function sanitizeFunnelMeta(
 
   const allowed: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(meta)) {
-    if (!FUNNEL_META_KEYS.has(key)) {
+    if (!FUNNEL_META_KEYS.has(key) || isSensitiveKey(key)) {
       continue;
     }
 
-    const sanitizedValue = sanitizeValue(key, value);
-    if (sanitizedValue !== undefined && (typeof sanitizedValue !== "object" || sanitizedValue === null)) {
+    const sanitizedValue = sanitizeFunnelValue(key, value);
+    if (
+      sanitizedValue !== undefined &&
+      (typeof sanitizedValue !== "object" || sanitizedValue === null)
+    ) {
       allowed[key] = sanitizedValue;
     }
   }

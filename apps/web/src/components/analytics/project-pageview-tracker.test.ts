@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { shouldTrackPageview } from "./project-pageview-tracker";
+import type { ReadonlyURLSearchParams } from "next/navigation";
+import {
+  buildRouteMeta,
+  shouldTrackPageview,
+} from "./project-pageview-tracker";
 
 function installMockBrowser() {
   const memory = new Map<string, string>();
@@ -48,5 +52,25 @@ describe("shouldTrackPageview", () => {
 
     vi.spyOn(Date, "now").mockReturnValue(4_999);
     expect(shouldTrackPageview("/community")).toBe(false);
+  });
+});
+
+describe("buildRouteMeta", () => {
+  it("uses normalized categories for dynamic private routes", () => {
+    const meta = buildRouteMeta(
+      "/actions/invite/AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_abcde",
+      new URLSearchParams("token=private-value") as unknown as ReadonlyURLSearchParams,
+    );
+
+    expect(meta).toMatchObject({
+      pagePath: "/actions/invite",
+      routeKind: "actions",
+      routeSection: "invite",
+      routeDepth: 2,
+      routeSegmentCount: 2,
+      queryParamCount: 1,
+      hasQuery: true,
+    });
+    expect(JSON.stringify(meta)).not.toContain("AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_abcde");
   });
 });

@@ -113,6 +113,9 @@ et de parcours métier autorisés : aucune autocapture d'interaction ni session
 replay n'est activée, et les payloads sont filtrés pour exclure les valeurs de
 formulaires, frappes clavier, emails, identités nominatives, coordonnées
 précises et données privées.
+Les chemins, URL, liens, référents et métadonnées de tunnel sont normalisés
+vers des catégories de routes connues ; les segments dynamiques, paramètres et
+fragments privés ne sont pas conservés.
 
 La consultation publique n'est pas conditionnée à une déclaration d'âge. Le
 statut `under_15` ou `unknown` bloque toutefois l'activation des traitements

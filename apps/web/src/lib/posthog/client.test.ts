@@ -130,14 +130,17 @@ describe("posthog client integration", () => {
           profile: "benevole",
           email: "personne@example.com",
           location: "48.8566, 2.3522",
-          href: "/actions/new?email=personne@example.com",
+          href: "/actions/invite/AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_abcde?email=personne@example.com",
+          referrer: "/missions/550e8400-e29b-41d4-a716-446655440000#private",
+          routeSection: "550e8400-e29b-41d4-a716-446655440000",
         },
       }),
     ).toEqual({
       event: "cmm_navigation_click",
       properties: {
         profile: "benevole",
-        href: "/actions/new",
+        href: "/actions/invite",
+        referrer: "/missions",
       },
     });
   });

@@ -122,8 +122,9 @@ function CookiePolicySections() {
             d&apos;écran et performance.
           </li>
           <li>
-            URL, horodatage et identifiant anonyme de session selon le
-            fournisseur.
+            Chemins et URL de route normalisés, horodatage et identifiant
+            anonyme de session selon le fournisseur ; les segments dynamiques,
+            paramètres et fragments privés ne sont pas conservés.
           </li>
           <li>
             Les événements sont destinés à l&apos;amélioration produit et à la

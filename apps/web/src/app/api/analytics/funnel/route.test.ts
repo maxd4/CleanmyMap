@@ -245,6 +245,39 @@ describe("POST /api/analytics/funnel", () => {
     );
   });
 
+  it("normalizes dynamic paths and rejects arbitrary values for known categories", async () => {
+    const { POST } = await import("./route");
+    const inviteToken = "AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_abcde";
+    const missionId = "550e8400-e29b-41d4-a716-446655440000";
+    const response = await POST(
+      new Request("http://localhost/api/analytics/funnel", {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId: "session-normalized-meta",
+          step: "page_view",
+          mode: "complete",
+          meta: {
+            pagePath: `/actions/invite/${inviteToken}?token=${inviteToken}`,
+            routeKind: "actions",
+            routeSection: missionId,
+            source: "private-source",
+          },
+        }),
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(appendFunnelEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        meta: { pagePath: "/actions/invite", routeKind: "actions" },
+      }),
+    );
+    const storedMeta = appendFunnelEventMock.mock.calls[0]?.[0]?.meta;
+    expect(JSON.stringify(storedMeta)).not.toContain(inviteToken);
+    expect(JSON.stringify(storedMeta)).not.toContain(missionId);
+  });
+
   it("rejects oversized or unbounded analytics metadata before writing", async () => {
     const { POST } = await import("./route");
     const response = await POST(

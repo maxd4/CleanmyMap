@@ -74,7 +74,7 @@ function readQueuedPageviews(): FunnelEventPayload[] {
           mode: record.mode as ActionSubmissionMode,
           meta:
             record.meta && typeof record.meta === "object"
-              ? (record.meta as Record<string, unknown>)
+              ? sanitizeFunnelMeta(record.meta as Record<string, unknown>)
               : undefined,
         });
       }

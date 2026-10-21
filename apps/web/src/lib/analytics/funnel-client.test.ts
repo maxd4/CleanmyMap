@@ -113,6 +113,10 @@ describe("trackFunnel", () => {
 
     await trackFunnel("start_form", "complete", {
       source: "action_declaration_form",
+      pagePath: "/actions/invite/AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_abcde?token=private",
+      routeKind: "actions",
+      routeSection: "invite",
+      linkedEventId: "private-action-id",
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -124,6 +128,12 @@ describe("trackFunnel", () => {
 
     expect(body.step).toBe("start_form");
     expect(body.sessionId).toBe("uuid-123");
-    expect(body.meta).toMatchObject({ source: "action_declaration_form" });
+    expect(body.meta).toMatchObject({
+      source: "action_declaration_form",
+      pagePath: "/actions/invite",
+      routeKind: "actions",
+      routeSection: "invite",
+    });
+    expect(body.meta).not.toHaveProperty("linkedEventId");
   });
 });

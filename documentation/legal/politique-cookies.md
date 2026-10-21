@@ -73,7 +73,9 @@ de navigation et de parcours métier autorisés : l'autocapture des interactions
 le session replay, les heatmaps et les captures automatiques de performance ou
 d'erreurs sont désactivés. Les payloads analytiques n'incluent pas les valeurs
 de formulaires, frappes clavier, emails, identités nominatives, coordonnées
-précises ni autres données privées.
+précises ni autres données privées. Les chemins, URL, liens, référents et
+métadonnées de tunnel sont normalisés vers des catégories de routes connues ;
+les segments dynamiques, paramètres et fragments privés ne sont pas conservés.
 
 La même restriction d'âge est appliquée côté serveur aux traitements
 facultatifs concernés : un compte déclaré âgé de moins de 15 ans ne peut pas
