@@ -118,6 +118,11 @@ function writeLegacyQualityRun(root, auditedHead, runId, generatedAt) {
   }
 }
 
+function snapshotShaFiles(root, auditedHead) {
+  const shaRoot = path.join(root, "artifacts", "quality-audits", auditedHead);
+  return new Map(fs.readdirSync(shaRoot).filter((name) => fs.statSync(path.join(shaRoot, name)).isFile()).map((name) => [name, fs.readFileSync(path.join(shaRoot, name)).toString("base64")]));
+}
+
 test("CLI parser accepts exactly the six audit modes and rejects unknown input", () => {
   for (const mode of AUDIT_MODES) assert.equal(parseAuditMode([mode]), mode);
   assert.throws(() => parseAuditMode(["knip"]), /Mode d'audit inconnu/);
@@ -647,17 +652,20 @@ test("retention keeps the three most recently executed SHA directories", async (
   }
 });
 
-test("les projections JSON, Markdown et ZIP reconnues suivent la rétention du SHA", async () => {
+test("quatre SHA valides avec projections suivent la rétention du SHA", async () => {
   const root = tempRoot();
   const oldest = "0".repeat(40);
   try {
-    writeFlatQualityRun(root, oldest, "run-old", "2026-10-01T00:00:00.000Z");
-    const projection = createQualityProjectionPaths({ root, auditedHead: oldest, runId: "run-old" });
-    fs.writeFileSync(projection.index, JSON.stringify({ schemaVersion: 1, kind: "quality-file-index", auditedHead: oldest, runId: "run-old" }));
-    fs.writeFileSync(projection.summary, "# quality index\n");
-    fs.writeFileSync(projection.bundle, Buffer.from("PK\x03\x04fixture"));
-    assert.equal(listFlatQualityProjectionArtifacts({ root, auditedSha: oldest }).length, 3);
-    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+    for (let index = 0; index < 4; index += 1) {
+      const auditedHead = String(index).repeat(40);
+      const runId = `run-${index}`;
+      writeFlatQualityRun(root, auditedHead, runId, `2026-10-0${index + 1}T00:00:00.000Z`, [...qualityAudits, "all"]);
+      const projection = createQualityProjectionPaths({ root, auditedHead, runId });
+      fs.writeFileSync(projection.index, JSON.stringify({ schemaVersion: 1, kind: "quality-file-index", auditedHead, runId }));
+      fs.writeFileSync(projection.summary, "# quality index\n");
+      fs.writeFileSync(projection.bundle, Buffer.from("PK\x03\x04fixture"));
+      assert.equal(listFlatQualityProjectionArtifacts({ root, auditedSha: auditedHead }).length, 3);
+    }
 
     const retention = await retainQualityAuditArtifacts({ root });
 
@@ -665,6 +673,73 @@ test("les projections JSON, Markdown et ZIP reconnues suivent la rétention du S
     assert.ok(retention.removedSha.includes(oldest));
     assert.equal(fs.existsSync(path.join(root, "artifacts", "quality-audits", oldest)), false);
     assert.equal(retention.diagnostics.some((entry) => entry.includes("UNKNOWN_CONTENT_PRESERVED")), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("les projections orphelines préservent le SHA entier et exposent leur diagnostic", async () => {
+  for (const kind of ["index", "summary", "bundle"]) {
+    const root = tempRoot();
+    const oldest = "0".repeat(40);
+    try {
+      writeFlatQualityRun(root, oldest, "run-old", "2026-10-01T00:00:00.000Z", [...qualityAudits, "all"]);
+      const projection = createQualityProjectionPaths({ root, auditedHead: oldest, runId: "run-orphan" });
+      fs.writeFileSync(projection[kind], kind === "bundle" ? Buffer.from("PK\x03\x04orphan") : kind === "index" ? "{}" : "# orphan\n");
+      const before = snapshotShaFiles(root, oldest);
+      for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+
+      const retention = await retainQualityAuditArtifacts({ root });
+
+      assert.equal(retention.removedSha.includes(oldest), false);
+      assert.ok(retention.diagnostics.some((entry) => entry.includes(`${oldest}:orphan-projection:`)));
+      assert.deepEqual(snapshotShaFiles(root, oldest), before);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+test("un rapport classique sans manifeste empêche toute suppression partielle du SHA", async () => {
+  const root = tempRoot();
+  const oldest = "0".repeat(40);
+  try {
+    writeFlatQualityRun(root, oldest, "run-old", "2026-10-01T00:00:00.000Z");
+    const shaRoot = path.join(root, "artifacts", "quality-audits", oldest);
+    fs.writeFileSync(path.join(shaRoot, "dead-code--run-orphan--report.json"), "orphan report");
+    const before = snapshotShaFiles(root, oldest);
+    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.equal(retention.removedSha.includes(oldest), false);
+    assert.ok(retention.diagnostics.some((entry) => entry.includes(`${oldest}:unattributed-artifact:dead-code--run-orphan--report.json`)));
+    assert.deepEqual(snapshotShaFiles(root, oldest), before);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("les projections de plusieurs runs valides restent rattachées à leurs manifestes", async () => {
+  const root = tempRoot();
+  const multi = "1".repeat(40);
+  try {
+    writeFlatQualityRun(root, "0".repeat(40), "run-old", "2026-10-01T00:00:00.000Z", [...qualityAudits, "all"]);
+    for (const [runId, day] of [["run-a", "02"], ["run-b", "03"]]) {
+      writeFlatQualityRun(root, multi, runId, `2026-10-${day}T00:00:00.000Z`, [...qualityAudits, "all"]);
+      const projection = createQualityProjectionPaths({ root, auditedHead: multi, runId });
+      fs.writeFileSync(projection.index, JSON.stringify({ runId }));
+      fs.writeFileSync(projection.summary, `# ${runId}\n`);
+      fs.writeFileSync(projection.bundle, Buffer.from(`PK\x03\x04${runId}`));
+    }
+    for (const index of [2, 3]) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 2}T00:00:00.000Z`, [...qualityAudits, "all"]);
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.ok(retention.removedSha.includes("0".repeat(40)));
+    assert.equal(fs.existsSync(createQualityProjectionPaths({ root, auditedHead: multi, runId: "run-a" }).index), true);
+    assert.equal(fs.existsSync(createQualityProjectionPaths({ root, auditedHead: multi, runId: "run-b" }).bundle), true);
+    assert.equal(retention.diagnostics.some((entry) => entry.includes(`${multi}:UNKNOWN_CONTENT_PRESERVED`)), false);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -773,12 +848,15 @@ test("unknown files and ZIP archives are preserved by retention", async () => {
   const shaToPreserve = "0".repeat(40);
   try {
     writeFlatQualityRun(root, shaToPreserve, "run-old", "2026-10-01T00:00:00.000Z");
-    fs.writeFileSync(path.join(root, "artifacts", "quality-audits", shaToPreserve, "user-note.txt"), "keep");
+    const shaRoot = path.join(root, "artifacts", "quality-audits", shaToPreserve);
+    fs.writeFileSync(path.join(shaRoot, "user-note.txt"), "keep");
+    fs.symlinkSync("user-note.txt", path.join(shaRoot, "user-note-link"), "file");
     fs.writeFileSync(path.join(root, "artifacts", "quality-audits", "archive.zip"), "zip");
     for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
     const retention = await retainQualityAuditArtifacts({ root });
     assert.ok(retention.diagnostics.some((entry) => entry.includes("UNKNOWN_CONTENT_PRESERVED")));
     assert.ok(fs.existsSync(path.join(root, "artifacts", "quality-audits", shaToPreserve, "user-note.txt")));
+    assert.equal(fs.lstatSync(path.join(shaRoot, "user-note-link")).isSymbolicLink(), true);
     assert.ok(fs.existsSync(path.join(root, "artifacts", "quality-audits", "archive.zip")));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

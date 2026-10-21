@@ -1212,12 +1212,16 @@ runId, de verdicts ou les rapports incomplets. Le `--bundle` écrit un ZIP dans 
 les dix-huit fichiers originaux et les deux projections, chemins plats
 préservés, sans écraser un fichier existant. Les contrôles de rétention
 reconnaissent ces trois artefacts de projection sans les confondre avec les
-triplets des engines : ils sont stockés dans le dossier SHA et suivent donc la
-suppression atomique de ce SHA lorsqu'il sort des trois versions conservées.
-Aucun ZIP système n'est stocké hors des dossiers SHA ; un éventuel fichier
-extérieur ou artefact de nom inconnu reste préservé et diagnostiqué, sans
-nettoyage implicite. Un verrou actif, un owner ambigu, une collision ou une
-suppression incertaine conserve l'artefact et expose un diagnostic explicite
+triplets des engines uniquement lorsqu'un manifeste `all` valide du même SHA
+et du même `runId` les rattache au run : ils sont alors stockés dans le dossier
+SHA et suivent la suppression atomique de ce SHA lorsqu'il sort des trois
+versions conservées. Une projection orpheline, ou un rapport/résumé classique
+sans manifeste correspondant, rend l'inventaire ambigu ; le SHA entier est
+préservé, sans suppression partielle, avec le chemin de l'artefact dans le
+diagnostic. Aucun ZIP système n'est stocké hors des dossiers SHA ; un éventuel
+fichier extérieur ou artefact de nom inconnu reste préservé et diagnostiqué,
+sans nettoyage implicite. Un verrou actif, un owner ambigu, une collision ou
+une suppression incertaine conserve l'artefact et expose un diagnostic explicite
 (`LOCK_ACTIVE`, `ACTIVE_MARKER_AMBIGUOUS_PRESERVED` ou `DELETE_FAILED`).
 
 Le résultat du runner expose séparément `projectionStatus` et l'erreur exacte ;

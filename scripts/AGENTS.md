@@ -128,7 +128,11 @@ baseline, une justification ou un seuil.
 
 Pour `all`, les projections `quality-index--<runId>--{index.json,summary.md,bundle.zip}`
 restent dans le dossier SHA et sont des artefacts système reconnus par le même
-inventaire. Leur présence ne rend pas un SHA inconnu et ils sont supprimés avec
+inventaire uniquement lorsqu'un manifeste `all` valide du même SHA et du même
+`runId` les rattache au run. Une projection orpheline, comme un rapport ou
+résumé classique sans manifeste correspondant, rend le SHA ambigu : aucune
+preuve du dossier ne doit alors être migrée ou supprimée, et le diagnostic doit
+identifier l'artefact concerné. Les projections valides sont supprimées avec
 le dossier lorsqu'il sort des trois versions conservées. Aucun ZIP système
 n'est stocké hors de ce périmètre ; les fichiers externes, noms inconnus,
 preuves ambiguës et suppressions incertaines restent préservés avec un

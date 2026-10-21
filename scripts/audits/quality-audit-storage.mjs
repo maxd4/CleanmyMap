@@ -167,6 +167,10 @@ function validManifest(manifest, { auditedHead, audit, runId }) {
     && !Number.isNaN(Date.parse(manifest.generatedAt));
 }
 
+function inventoryArtifactPath(inventory, artifact) {
+  return path.relative(inventory.path, artifact.sourcePath);
+}
+
 function addArtifact(inventory, artifact) {
   const key = `${artifact.projection ?? artifact.audit}:${artifact.runId}:${artifact.kind}`;
   if (inventory.artifactKeys.has(key)) {
@@ -249,7 +253,19 @@ function inspectShaDirectory(root, entry, fsApi = fs) {
   });
   const manifests = inventory.artifacts.filter((artifact) => artifact.kind === "manifest");
   const manifestKeys = new Set(manifests.map((artifact) => `${artifact.audit}:${artifact.runId}`));
-  inventory.artifacts = inventory.artifacts.filter((artifact) => artifact.projection || manifestKeys.has(`${artifact.audit}:${artifact.runId}`));
+  const aggregateRunIds = new Set(manifests.filter((artifact) => artifact.audit === "all").map((artifact) => artifact.runId));
+  for (const artifact of inventory.artifacts) {
+    if (artifact.kind === "manifest") continue;
+    if (artifact.projection) {
+      if (!aggregateRunIds.has(artifact.runId)) {
+        inventory.unknown.push(`orphan-projection:${inventoryArtifactPath(inventory, artifact)}`);
+      }
+      continue;
+    }
+    if (!manifestKeys.has(`${artifact.audit}:${artifact.runId}`)) {
+      inventory.unknown.push(`unattributed-artifact:${inventoryArtifactPath(inventory, artifact)}`);
+    }
+  }
   for (const key of manifestKeys) {
     for (const kind of Object.keys(ARTIFACT_SUFFIXES)) {
       if (!inventory.artifacts.some((artifact) => `${artifact.audit}:${artifact.runId}` === key && artifact.kind === kind)) {
@@ -363,6 +379,11 @@ function removeEmptyAncestors(filePath, stopPath, fsApi = fs) {
 }
 
 function removeGeneratedSha(inventory, fsApi = fs) {
+  if (!inventory.generated || inventory.unknown.length > 0) {
+    const error = new Error("Refus de suppression d'un SHA dont le contenu est ambigu");
+    error.code = "AMBIGUOUS_CONTENT";
+    throw error;
+  }
   for (const artifact of inventory.artifacts) {
     if (fsApi.existsSync(artifact.sourcePath)) {
       fsApi.unlinkSync(artifact.sourcePath);
@@ -394,6 +415,11 @@ export async function retainQualityAuditArtifacts({ root, now = () => new Date()
     for (const sha of active) retained.add(sha);
 
     for (const inventory of inventories) {
+      if (!inventory.generated) {
+        diagnostics.push(...inventory.unknown.map((reason) => `${inventory.name}:${reason}`));
+        diagnostics.push(`${inventory.name}:UNKNOWN_CONTENT_PRESERVED`);
+        continue;
+      }
       if (active.has(inventory.name)) {
         // An active SHA cannot be deleted, but completed legacy runs in that
         // SHA are independent from the active run and can be migrated safely.
@@ -416,10 +442,6 @@ export async function retainQualityAuditArtifacts({ root, now = () => new Date()
         for (const artifact of inventory.artifacts.filter((candidate) => candidate.legacy)) {
           removeEmptyAncestors(artifact.sourcePath, inventory.path, fsApi);
         }
-        continue;
-      }
-      if (!inventory.generated) {
-        diagnostics.push(`${inventory.name}:UNKNOWN_CONTENT_PRESERVED`);
         continue;
       }
       try {
