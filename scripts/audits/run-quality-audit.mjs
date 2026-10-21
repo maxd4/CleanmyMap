@@ -470,6 +470,7 @@ export async function runQualityAudit(mode, {
     const overallAttention = manifests.some((entry) => entry.attentionRequired);
     let allPaths = null;
     let projectionPaths = null;
+    let projectionStatus = mode === "all" ? "NOT_MEASURED" : null;
     if (mode === "all") {
       let architecture;
       try {
@@ -533,8 +534,10 @@ export async function runQualityAudit(mode, {
           fsApi,
         });
         projectionPaths = projection.paths;
+        projectionStatus = "PASS";
       } catch (error) {
         projectionPaths = { error: error.message };
+        projectionStatus = "FAIL";
       }
     }
 
@@ -556,6 +559,7 @@ export async function runQualityAudit(mode, {
       worktreeChanged,
       allPaths,
       projectionPaths,
+      projectionStatus,
       retention,
       results: manifests,
     };
@@ -564,15 +568,28 @@ export async function runQualityAudit(mode, {
   }
 }
 
+export function formatQualityAuditCliResult(result) {
+  const lines = [
+    `QUALITY_AUDIT_STATUS: ${result.status}`,
+    `QUALITY_AUDIT_HEAD: ${result.auditedHead}`,
+  ];
+  for (const entry of result.results) lines.push(`${entry.audit}: ${entry.status}; attention=${entry.attentionRequired}`);
+  if (result.projectionStatus) lines.push(`QUALITY_AUDIT_PROJECTION_STATUS: ${result.projectionStatus}`);
+  if (result.projectionPaths?.error) lines.push(`QUALITY_AUDIT_PROJECTION_ERROR: ${result.projectionPaths.error}`);
+  if (result.retention?.diagnostics?.length) lines.push(`QUALITY_AUDIT_RETENTION: ${result.retention.status}; ${result.retention.diagnostics.join(", ")}`);
+  return lines;
+}
+
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
   try {
     const mode = parseAuditMode();
     const result = await runQualityAudit(mode);
-    console.log(`QUALITY_AUDIT_STATUS: ${result.status}`);
-    console.log(`QUALITY_AUDIT_HEAD: ${result.auditedHead}`);
-    for (const entry of result.results) console.log(`${entry.audit}: ${entry.status}; attention=${entry.attentionRequired}`);
-    if (result.retention?.diagnostics?.length) console.error(`QUALITY_AUDIT_RETENTION: ${result.retention.status}; ${result.retention.diagnostics.join(", ")}`);
-    if (result.status === "FAIL") process.exitCode = 1;
+    const lines = formatQualityAuditCliResult(result);
+    for (const line of lines) {
+      if (line.startsWith("QUALITY_AUDIT_PROJECTION_ERROR:") || line.startsWith("QUALITY_AUDIT_RETENTION:")) console.error(line);
+      else console.log(line);
+    }
+    if (result.status === "FAIL" || result.projectionStatus === "FAIL") process.exitCode = 1;
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;

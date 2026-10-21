@@ -1168,8 +1168,9 @@ initial et réévaluation dérivée), et ne transforme pas une erreur de gate en
 mesure nulle. Une projection ne peut pas modifier les rapports, manifestes,
 baselines, justifications ou seuils. Si un run de développement est incomplet,
 le runner conserve les gates et expose l'erreur de projection ; la projection
-offline, elle, refuse tout run incomplet, incohérent ou dont l'identité ne
-correspond pas exactement à la demande.
+offline, elle, refuse tout run incomplet ou incohérent et exige l'identité
+exacte du couple demandé, sans exiger artificiellement une reproductibilité
+ou un `origin/main` égal au SHA audité.
 
 En mode `all`, l'index enrichit également chaque fichier et domaine avec le
 graphe TypeScript canonique de `generate-architecture-import-graph.mjs`, lu sur
@@ -1184,6 +1185,15 @@ frontière explicitement interdites sont bloquants dans cette projection. Une
 erreur de construction du graphe ne modifie pas les cinq verdicts ni le ZIP ;
 elle produit un état architectural `NOT_MEASURED` avec son diagnostic.
 
+L'index sépare `auditCategories` (familles de contrôles),
+`functionalDomains` (classifications issues d'une source canonique compatible
+avec le SHA audité) et `candidateGroups` (relations prouvées par duplication ou
+cycles). Les anciens rapports sans classification fonctionnelle portent
+`functionalDomains.state: NOT_MEASURED` ; aucune appartenance métier n'est
+déduite d'une proximité de chemin. Les vues top-heavy `INITIAL` et `DERIVED`
+restent distinctes, et chaque finding dérivé est attribué au fichier avec sa
+provenance et ses plafonds.
+
 Pour projeter un run existant sans relancer de scanner :
 
 ```bash
@@ -1194,8 +1204,11 @@ npm run report:quality-index -- --offline --sha=<SHA> --run-id=<runId> --bundle
 Le mode `--offline` lit exclusivement les cinq rapports, leurs manifestes et
 le rapport agrégé du couple exact `SHA/runId`. Il conserve la provenance
 `COMMITTED_SNAPSHOT`, `WORKTREE_LIVE` ou `MIXED` et les limites de reproductibilité
-du run ; il ne relit pas le HEAD courant, ne recalcule aucune métrique et ne
-ratifie aucune baseline. Le `--bundle` écrit un ZIP dans le même dossier avec
+du run ; il accepte donc un run informatif avec `origin/main` absent ou différent
+et `reproducible: false`, sans le requalifier en preuve `COMMITTED_SNAPSHOT`.
+Il ne relit pas le HEAD courant, ne recalcule aucune métrique et ne ratifie
+aucune baseline. Il refuse uniquement les mélanges d'identité, de SHA, de
+runId, de verdicts ou les rapports incomplets. Le `--bundle` écrit un ZIP dans le même dossier avec
 les dix-huit fichiers originaux et les deux projections, chemins plats
 préservés, sans écraser un fichier existant. Les contrôles de rétention
 reconnaissent ces trois artefacts de projection sans les confondre avec les
@@ -1206,6 +1219,10 @@ extérieur ou artefact de nom inconnu reste préservé et diagnostiqué, sans
 nettoyage implicite. Un verrou actif, un owner ambigu, une collision ou une
 suppression incertaine conserve l'artefact et expose un diagnostic explicite
 (`LOCK_ACTIVE`, `ACTIVE_MARKER_AMBIGUOUS_PRESERVED` ou `DELETE_FAILED`).
+
+Le résultat du runner expose séparément `projectionStatus` et l'erreur exacte ;
+la CLI affiche `QUALITY_AUDIT_PROJECTION_STATUS` et
+`QUALITY_AUDIT_PROJECTION_ERROR` lorsque l'index ou le ZIP ne sont pas produits.
 
 L’audit architectural ponctuel est distinct du radar top-heavy :
 

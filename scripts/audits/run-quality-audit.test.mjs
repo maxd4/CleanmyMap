@@ -11,6 +11,7 @@ import {
   enrichTopHeavyEvaluation,
   createAuditPaths,
   executeAudit,
+  formatQualityAuditCliResult,
   parseAuditMode,
   runQualityAudit,
   serialize,
@@ -36,10 +37,10 @@ function emptyComparison() {
 
 function fixtureResult(audit) {
   if (audit === "dead-code") return { currentFindings: [], baseline: { findings: [] }, justifications: { justifications: [] }, comparison: emptyComparison(), status: "PASS" };
-  if (audit === "duplication") return { results: [{ scopeName: "runtime", metrics: { clones: 0, duplicatedLines: 0, duplicatedTokens: 0, newClones: 0 }, comparison: { status: "PASS", failures: [] } }], justificationReport: { stale: [] } };
+  if (audit === "duplication") return { status: "PASS", results: [{ scopeName: "runtime", metrics: { clones: 0, duplicatedLines: 0, duplicatedTokens: 0, newClones: 0 }, comparison: { status: "PASS", failures: [] } }], justificationReport: { stale: [] } };
   if (audit === "top-heavy") return { status: "PASS", rows: [], proximityRows: [], radarProjection: { rows: [] }, evaluation: { blockingFindings: [], reviewWarnings: [], reviewImprovements: [], staleReviewBaselineEntries: [], staleBaselineEntries: [] } };
   if (audit === "complexity") return { status: "PASS", metrics: [], result: { failures: [], stale: [], improvements: [], reviews: [] } };
-  return { gateStatus: "PASS", cycles: [], cycleObjects: [], comparison: { added: [], stale: [] } };
+  return { gateStatus: "PASS", status: "PASS", cycles: [], cycleObjects: [], comparison: { added: [], stale: [] } };
 }
 
 function complexityEngineResult() {
@@ -219,6 +220,43 @@ test("all enrichit l'index avec la projection architecturale du même SHA/run", 
     assert.equal(index.architecture.state, "PRESENT");
     assert.equal(index.globalCounts.architectureFiles, 1);
     assert.equal(index.files.find((file) => file.path.endsWith("fixture.ts")).metrics.architecture.state, "PRESENT");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("all produit la projection pour un checkout informatif dont origin/main diffère", async () => {
+  const root = tempRoot();
+  try {
+    const result = await runQualityAudit("all", {
+      root,
+      runId: "run-informative",
+      snapshot: () => ({ ...stableSnapshot, originMain: "b".repeat(40), worktree: " M foreign.ts", worktreeClean: false, baselineStable: false }),
+      engine: async (audit) => fixtureResult(audit),
+    });
+    assert.equal(result.status, "PASS");
+    assert.equal(result.projectionStatus, "PASS");
+    assert.ok(result.projectionPaths.index);
+    assert.equal(JSON.parse(fs.readFileSync(result.projectionPaths.index, "utf8")).source.reproducible, false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("un échec de projection est exposé sans transformer le verdict des engines en faux résultat", async () => {
+  const root = tempRoot();
+  try {
+    const result = await runQualityAudit("all", {
+      root,
+      runId: "run-projection-failure",
+      snapshot: () => stableSnapshot,
+      engine: async (audit) => fixtureResult(audit),
+      architectureBuilder: () => ({ state: "PRESENT", files: null, domains: [] }),
+    });
+    assert.equal(result.status, "PASS");
+    assert.equal(result.projectionStatus, "FAIL");
+    assert.match(result.projectionPaths.error, /is not iterable/);
+    assert.ok(formatQualityAuditCliResult(result).some((line) => line.startsWith("QUALITY_AUDIT_PROJECTION_ERROR:")));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

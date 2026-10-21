@@ -174,7 +174,7 @@ function buildRun() {
     reports: auditReports,
     manifests: manifests(),
     aggregateManifest: aggregateManifest(),
-    aggregateReport: { audits: Object.keys(auditReports).map((audit) => ({ audit })) },
+    aggregateReport: { audits: Object.keys(auditReports).map((audit) => ({ audit, status: manifests()[audit].status })) },
     provenance: "MIXED",
   };
 }
@@ -206,6 +206,11 @@ test("construit un index exhaustif sans confondre complexity et functionLength",
   assert.equal(indexedB.findings.functionLength.state, "NOT_MEASURED");
   assert.equal(index.audits.topHeavy.initialVerdict.evaluation.counts.reviewRatchetViolations, 0);
   assert.equal(index.audits.topHeavy.derivedReevaluation.counts.reviewRatchetViolations, 1);
+  const topHeavyFindings = indexedA.findings.topHeavy.items;
+  assert.equal(topHeavyFindings.filter((finding) => finding.provenance === "INITIAL").length, 0);
+  assert.equal(topHeavyFindings.filter((finding) => finding.provenance === "DERIVED" && finding.type === "reviewRatchetViolations").length, 1);
+  assert.equal(topHeavyFindings.find((finding) => finding.provenance === "DERIVED").limits.ratified.maxLines, 500);
+  assert.deepEqual(index.audits.topHeavy.findingViews, { initial: { count: 0 }, derived: { count: 2 } });
   assert.equal(index.audits.duplication.fingerprints.length, 1);
   assert.deepEqual(index.audits.duplication.fingerprints[0].occurrences[0], {
     occurrenceA: { path: fileA, startLine: 12, endLine: 15 },
@@ -213,6 +218,10 @@ test("construit un index exhaustif sans confondre complexity et functionLength",
   });
   assert.equal(index.audits.cycles.cycles.length, 1);
   assert.equal(index.candidateGroups.length, 2);
+  assert.ok(index.auditCategories.some((category) => category.id === "top-heavy"));
+  assert.equal(index.functionalDomains.state, "NOT_MEASURED");
+  assert.deepEqual(index.files.find((file) => file.path === fileA).functionalDomains, []);
+  assert.equal(index.domains, undefined);
   assert.match(buildQualityFileIndexMarkdown(index), /verdict initial et réévaluation dérivée/);
 });
 
@@ -267,6 +276,60 @@ test("offline refuse un run incomplet ou un rapport cycles en erreur est conserv
     const index = buildQualityFileIndex({ run, mode: "OFFLINE" });
     assert.equal(index.audits.cycles.state, "NOT_MEASURED");
     assert.equal(index.correlation.state, "NOT_MEASURED");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("offline accepte un run informatif sans confondre reproductibilité et identité SHA/run", async () => {
+  const root = tempRoot();
+  try {
+    writeRun(root);
+    const shaRoot = path.join(root, "artifacts", "quality-audits", sha);
+    for (const audit of [...Object.keys(reports()), "all"]) {
+      const manifestPath = path.join(shaRoot, `${audit}--${runId}--manifest.json`);
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      if (audit === "all") delete manifest.originMain;
+      else manifest.originMain = null;
+      manifest.baselineStable = false;
+      manifest.worktreeClean = false;
+      manifest.reproducible = false;
+      manifest.resultClass = "INFORMATIVE";
+      fs.writeFileSync(manifestPath, `${JSON.stringify(manifest)}\n`);
+    }
+    const run = readOfflineQualityRun({ root, auditedSha: sha, runId });
+    assert.equal(run.provenance, "MIXED");
+    const generated = await generateQualityFileIndex({ root, auditedSha: sha, runId, includeBundle: true });
+    assert.equal(generated.index.source.reproducible, false);
+    assert.equal(generated.bundle.entries.length, 20);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("offline refuse un mélange de manifestes appartenant à un autre run", () => {
+  const root = tempRoot();
+  try {
+    writeRun(root);
+    const manifestPath = path.join(root, "artifacts", "quality-audits", sha, `complexity--${runId}--manifest.json`);
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    manifest.runId = "other-run";
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest)}\n`);
+    assert.throws(() => readOfflineQualityRun({ root, auditedSha: sha, runId }), /Manifest complexity incohérent: runId/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("offline refuse un verdict agrégé contradictoire avec les manifestes individuels", () => {
+  const root = tempRoot();
+  try {
+    writeRun(root);
+    const reportPath = path.join(root, "artifacts", "quality-audits", sha, `all--${runId}--report.json`);
+    const aggregate = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+    aggregate.audits.find((entry) => entry.audit === "complexity").status = "PASS";
+    fs.writeFileSync(reportPath, `${JSON.stringify(aggregate)}\n`);
+    assert.throws(() => readOfflineQualityRun({ root, auditedSha: sha, runId }), /Rapport all incohérent: verdict complexity/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

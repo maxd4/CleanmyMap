@@ -27,7 +27,7 @@ import {
 import { buildArchitectureImportGraph } from "./generate-architecture-import-graph.mjs";
 import { createCorrelationSignalsFromAuditResults } from "./generate-modularity-radar.mjs";
 
-export const QUALITY_INDEX_SCHEMA_VERSION = 1;
+export const QUALITY_INDEX_SCHEMA_VERSION = 2;
 export const QUALITY_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
 export const QUALITY_INDEX_PREFIX = "quality-index";
 export const QUALITY_ARCHITECTURE_DOMAIN_PREFIX = "architecture:";
@@ -252,14 +252,29 @@ function validateManifest(manifest, { audit, auditedSha, runId }) {
   for (const [field, expected] of [["audit", audit], ["auditedHead", auditedSha], ["runId", runId]]) {
     if (manifest[field] !== expected) throw new Error(`Manifest ${audit} incohérent: ${field}.`);
   }
-  if (manifest.originMain !== auditedSha) throw new Error(`Manifest ${audit} incohérent: originMain.`);
+  if (manifest.originMain !== null && manifest.originMain !== undefined && typeof manifest.originMain !== "string") {
+    throw new Error(`Manifest ${audit} incohérent: originMain.`);
+  }
   if (typeof manifest.baselineStable !== "boolean" || typeof manifest.worktreeClean !== "boolean") {
     throw new Error(`Manifest ${audit} incohérent: baseline/worktree absents.`);
   }
-  if (manifest.reproducible !== true) throw new Error(`Manifest ${audit} non reproductible.`);
+  if (typeof manifest.reproducible !== "boolean") throw new Error(`Manifest ${audit} sans qualification de reproductibilité.`);
   if (typeof manifest.readProvenance !== "string") throw new Error(`Manifest ${audit} sans readProvenance.`);
-  if (typeof manifest.status !== "string") throw new Error(`Manifest ${audit} sans status.`);
+  if (!["PASS", "PASS_WITH_GRACE", "FAIL"].includes(manifest.status)) throw new Error(`Manifest ${audit} sans status valide.`);
   return manifest;
+}
+
+function reportStatus(audit, report) {
+  if (report?.error) return "FAIL";
+  if (typeof report?.status === "string") return report.status;
+  if (audit === "cycles" && typeof report?.gateStatus === "string") return report.gateStatus === "PASS" ? "PASS" : "FAIL";
+  return null;
+}
+
+function expectedOverallStatus(statuses) {
+  if (statuses.includes("FAIL")) return "FAIL";
+  if (statuses.includes("PASS_WITH_GRACE")) return "PASS_WITH_GRACE";
+  return "PASS";
 }
 
 function validateReport(audit, report) {
@@ -287,6 +302,8 @@ export function readOfflineQualityRun({ root = REPOSITORY_ROOT, auditedSha, runI
     const paths = createAuditPaths({ root, auditedHead: auditedSha, audit, runId });
     const manifest = validateManifest(readJson(paths.manifest, fsApi), { audit, auditedSha, runId });
     const report = validateReport(audit, readJson(paths.report, fsApi));
+    const measuredStatus = reportStatus(audit, report);
+    if (measuredStatus && measuredStatus !== manifest.status) throw new Error(`Rapport ${audit} contradictoire avec son manifeste: status.`);
     try { fsApi.readFileSync(paths.summary, "utf8"); } catch { throw new Error(`Résumé ${audit} absent ou illisible.`); }
     manifests[audit] = manifest;
     reports[audit] = report;
@@ -300,8 +317,21 @@ export function readOfflineQualityRun({ root = REPOSITORY_ROOT, auditedSha, runI
   if (!Array.isArray(aggregateReport?.audits) || aggregateReport.audits.length !== QUALITY_INDEX_AUDITS.length) {
     throw new Error("Rapport all incomplet: les cinq audits ne sont pas présents.");
   }
-  const aggregateAudits = new Set(aggregateReport.audits.map((entry) => entry.audit));
-  if (QUALITY_INDEX_AUDITS.some((audit) => !aggregateAudits.has(audit))) throw new Error("Rapport all incohérent: audit manquant.");
+  const aggregateAudits = new Map(aggregateReport.audits.map((entry) => [entry.audit, entry]));
+  if (aggregateAudits.size !== QUALITY_INDEX_AUDITS.length || QUALITY_INDEX_AUDITS.some((audit) => !aggregateAudits.has(audit))) {
+    throw new Error("Rapport all incohérent: audit manquant ou dupliqué.");
+  }
+  for (const audit of QUALITY_INDEX_AUDITS) {
+    const entry = aggregateAudits.get(audit);
+    if (!entry || typeof entry.status !== "string" || entry.status !== manifests[audit].status) {
+      throw new Error(`Rapport all incohérent: verdict ${audit}.`);
+    }
+  }
+  const individualStatuses = QUALITY_INDEX_AUDITS.map((audit) => manifests[audit].status);
+  if (aggregateManifest.status !== expectedOverallStatus(individualStatuses)) throw new Error("Manifeste all incohérent: verdict global.");
+  if (aggregateManifest.attentionRequired !== Object.values(manifests).some((manifest) => manifest.attentionRequired)) {
+    throw new Error("Manifeste all incohérent: attentionRequired.");
+  }
   sourceFiles.push(allPaths.manifest, allPaths.report, allPaths.summary);
 
   const readProvenance = new Set(Object.values(manifests).map((manifest) => manifest.readProvenance));
@@ -326,7 +356,8 @@ function ensureFile(files, filePath) {
   if (!files.has(normalized)) {
     files.set(normalized, {
       path: normalized,
-      domains: new Set(),
+      auditCategories: new Set(),
+      functionalDomains: new Set(),
       topHeavy: { measurements: null, findings: new Map(), exceptions: [] },
       complexity: { metrics: [], findings: new Map() },
       deadCode: { findings: new Map(), exceptions: [] },
@@ -342,7 +373,7 @@ function addFinding(file, category, finding, domain, key = stableId(category, fi
   if (!file) return;
   const target = file[category].findings;
   if (!target.has(key)) target.set(key, { id: key, ...finding });
-  file.domains.add(domain);
+  file.auditCategories.add(domain);
   return key;
 }
 
@@ -407,7 +438,27 @@ function deriveTopHeavyEvaluation(report) {
   };
 }
 
-function addTopHeavy(report, files, domains) {
+function topHeavyFinding(item, type, provenance, report) {
+  const filePath = item.file ?? item.path;
+  const row = report.rows?.find((candidate) => candidate.file === filePath) ?? null;
+  const policy = row ? FILE_KIND_POLICY[row.kind] ?? FILE_KIND_POLICY.runtime : null;
+  const ratified = [...(report.baseline?.allowed ?? []), ...(report.baseline?.review ?? [])].find((entry) => entry.path === filePath) ?? null;
+  return {
+    type,
+    provenance,
+    file: filePath,
+    kind: row?.kind ?? item.kind ?? null,
+    lines: row?.lines ?? item.lines ?? null,
+    bytes: row?.bytes ?? item.bytes ?? null,
+    limits: {
+      policy: policy ? { review: policy.review ?? null, hard: policy.hard ?? null } : null,
+      ratified: ratified ? { maxLines: ratified.maxLines ?? null, maxBytes: ratified.maxBytes ?? null, status: ratified.status ?? null, reviewedRef: ratified.reviewedRef ?? null } : null,
+    },
+    ...item,
+  };
+}
+
+function addTopHeavy(report, files, auditCategories) {
   if (report.error) {
     return {
       state: "NOT_MEASURED",
@@ -446,14 +497,27 @@ function addTopHeavy(report, files, domains) {
   for (const key of findingKeys) {
     for (const item of evaluation?.[key] ?? []) {
       const file = ensureFile(files, item.file ?? item.path);
-      const findingId = addFinding(file, "topHeavy", { type: key, ...item }, "top-heavy");
-      addDomain(domains, "top-heavy", "seuils, plafonds et ratchets de taille", file, findingId);
+      const findingId = addFinding(file, "topHeavy", topHeavyFinding(item, key, "INITIAL", report), "top-heavy");
+      addDomain(auditCategories, "top-heavy", "seuils, plafonds et ratchets de taille", file, findingId);
+    }
+  }
+  const derivedReevaluation = deriveTopHeavyEvaluation(report);
+  const derivedFindings = derivedReevaluation.findings ?? {};
+  for (const [key, items] of Object.entries(derivedFindings)) {
+    for (const item of items) {
+      const file = ensureFile(files, item.file ?? item.path);
+      const findingId = addFinding(file, "topHeavy", topHeavyFinding(item, key, "DERIVED", report), "top-heavy");
+      addDomain(auditCategories, "top-heavy", "seuils, plafonds et ratchets de taille", file, findingId);
     }
   }
   return {
     state: "PRESENT",
     initialVerdict: { status: report.status, evaluation: summarizeEvaluation(evaluation) },
-    derivedReevaluation: deriveTopHeavyEvaluation(report),
+    derivedReevaluation,
+    findingViews: {
+      initial: { count: findingKeys.reduce((sum, key) => sum + (evaluation?.[key]?.length ?? 0), 0) },
+      derived: { count: Object.values(derivedFindings).reduce((sum, items) => sum + items.length, 0) },
+    },
     measuredFiles: rows.size,
   };
 }
@@ -586,7 +650,7 @@ function addArchitecture(architecture, files, domains) {
   for (const architectureFile of architecture.files) {
     const file = ensureFile(files, architectureFile.path);
     file.architecture = architectureFile;
-    file.domains.add(`${QUALITY_ARCHITECTURE_DOMAIN_PREFIX}${architectureFile.domain}`);
+    file.functionalDomains.add(architectureFile.domain);
   }
   for (const architectureDomain of architecture.domains) {
     const domain = domains.get(architectureDomain.id) ?? {
@@ -625,7 +689,8 @@ function finalizeFiles(files, reports, architecture) {
     };
     output.push({
       path: file.path,
-      domains: [...file.domains].sort(),
+      auditCategories: [...file.auditCategories].sort(),
+      functionalDomains: [...file.functionalDomains].sort(),
       metrics: {
         topHeavy: file.topHeavy.measurements ? state("PRESENT", "mesure de taille disponible", [file.topHeavy.measurements]) : categoryAvailability.topHeavy === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport top-heavy en échec") : state("NOT_APPLICABLE", "fichier hors roots top-heavy"),
         complexity: file.complexity.metrics.length > 0 ? state("PRESENT", `${file.complexity.metrics.length} fonction(s) mesurée(s)`, file.complexity.metrics) : categoryAvailability.complexity === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport complexity en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
@@ -661,7 +726,7 @@ function finalizeFiles(files, reports, architecture) {
   return output.sort((left, right) => left.path.localeCompare(right.path));
 }
 
-function finalizeDomains(domains) {
+function finalizeAuditCategories(domains) {
   return [...domains.values()].map((domain) => ({
     id: domain.id,
     responsibility: domain.responsibility,
@@ -670,6 +735,23 @@ function finalizeDomains(domains) {
     candidateGroups: [...domain.candidateGroups].sort(),
     coupling: domain.coupling ?? null,
   })).sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function finalizeFunctionalDomains(domains, architecture) {
+  return {
+    state: architecture?.state === "PRESENT" ? "PRESENT" : "NOT_MEASURED",
+    detail: architecture?.state === "PRESENT"
+      ? "domaines issus de la classification du graphe architectural sur le SHA audité"
+      : "classification fonctionnelle absente des rapports historiques",
+    items: [...domains.values()].map((domain) => ({
+      id: domain.id,
+      responsibility: domain.responsibility,
+      files: [...domain.files].sort(),
+      findingIds: [...domain.findingIds].sort(),
+      candidateGroups: [...domain.candidateGroups].sort(),
+      coupling: domain.coupling ?? null,
+    })).sort((left, right) => left.id.localeCompare(right.id)),
+  };
 }
 
 export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new Date().toISOString(), architecture = null } = {}) {
@@ -682,17 +764,19 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
     boundary: { state: "NOT_MEASURED", blocking: [], current: [] },
   };
   const files = new Map();
-  const domains = new Map();
+  const auditCategories = new Map();
+  const functionalDomains = new Map();
   const candidateGroups = new Map();
   const correlationSignals = createCorrelationSignalsFromAuditResults(run.reports);
-  const topHeavy = addTopHeavy(run.reports["top-heavy"], files, domains);
-  const complexity = addComplexity(run.reports.complexity, files, domains);
-  const deadCode = addDeadCode(run.reports["dead-code"], files, domains);
-  const duplication = addDuplication(run.reports.duplication, files, domains, candidateGroups);
-  const cycles = addCycles(run.reports.cycles, files, domains, candidateGroups);
-  addArchitecture(architectureProjection, files, domains);
+  const topHeavy = addTopHeavy(run.reports["top-heavy"], files, auditCategories);
+  const complexity = addComplexity(run.reports.complexity, files, auditCategories);
+  const deadCode = addDeadCode(run.reports["dead-code"], files, auditCategories);
+  const duplication = addDuplication(run.reports.duplication, files, auditCategories, candidateGroups);
+  const cycles = addCycles(run.reports.cycles, files, auditCategories, candidateGroups);
+  addArchitecture(architectureProjection, files, functionalDomains);
   const finalFiles = finalizeFiles(files, run.reports, architectureProjection);
-  const finalDomains = finalizeDomains(domains);
+  const finalAuditCategories = finalizeAuditCategories(auditCategories);
+  const finalFunctionalDomains = finalizeFunctionalDomains(functionalDomains, architectureProjection);
   const categorySummaries = {
     topHeavy,
     complexity,
@@ -728,7 +812,8 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
     architecture: architectureProjection,
     globalCounts: {
       files: finalFiles.length,
-      domains: finalDomains.length,
+      auditCategories: finalAuditCategories.length,
+      functionalDomains: finalFunctionalDomains.items.length,
       candidateGroups: candidateGroups.size,
       findingsByCategory,
       duplicationFingerprintCount: duplication.fingerprints?.length ?? 0,
@@ -739,7 +824,8 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       architectureUnresolvedInternalCount: architectureProjection.graphSummary?.unresolvedInternalImports ?? 0,
     },
     files: finalFiles,
-    domains: finalDomains,
+    auditCategories: finalAuditCategories,
+    functionalDomains: finalFunctionalDomains,
     candidateGroups: [...candidateGroups.values()].map((group) => ({ ...group, files: [...group.files].sort() })).sort((left, right) => left.id.localeCompare(right.id)),
     limitations: [
       "Les rapports originaux et leur verdict initial ne sont pas modifiés.",
@@ -787,17 +873,24 @@ export function buildQualityFileIndexMarkdown(index) {
   lines.push(`| Initiale | ${index.audits.topHeavy.initialVerdict.evaluation.state} | ${index.audits.topHeavy.initialVerdict.status} | ${index.audits.topHeavy.initialVerdict.evaluation.counts.reviewRatchetViolations ?? 0} |`);
   lines.push(`| Dérivée | ${index.audits.topHeavy.derivedReevaluation.state} | ${index.audits.topHeavy.derivedReevaluation.status ?? "NOT_MEASURED"} | ${index.audits.topHeavy.derivedReevaluation.counts?.reviewRatchetViolations ?? 0} |`);
   lines.push("", "## Couplage architectural", "", `- État : **${index.architecture?.state ?? "NOT_MEASURED"}**`, `- Imports : **${index.architecture?.graphSummary?.imports ?? "NOT_MEASURED"}**`, `- Frontières bloquantes : **${index.architecture?.boundary?.blocking?.length ?? "NOT_MEASURED"}**`, `- Imports internes non résolus : **${index.architecture?.graphSummary?.unresolvedInternalImports ?? "NOT_MEASURED"}**`, "", "Les métriques de centralité sont informatives ; seuls les findings de frontière explicitement interdits sont bloquants.");
-  lines.push("", "## FILE INDEX", "", "| Fichier | Domaines | Top-heavy | Complexity | FunctionLength | Dead-code | Duplication | Cycles | Architecture |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+  lines.push("", "## FILE INDEX", "", "| Fichier | Catégories d'audit | Domaines fonctionnels | Top-heavy | Complexity | FunctionLength | Dead-code | Duplication | Cycles | Architecture |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const file of index.files) {
-    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.domains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} | ${stateLabel(file.metrics.architecture)} |`);
+    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.auditCategories.join(", ") || "—")} | ${escapeMarkdown(file.functionalDomains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} | ${stateLabel(file.metrics.architecture)} |`);
   }
-  lines.push("", "## DOMAIN INDEX", "", "Les domaines sont des responsabilités de contrôle ou des relations prouvées par les rapports. Aucun regroupement n'est déduit d'une proximité de chemin.", "");
-  for (const domain of index.domains) {
+  lines.push("", "## AUDIT CATEGORY INDEX", "", "Les catégories décrivent les familles de contrôles ; elles ne constituent pas des domaines fonctionnels.", "");
+  for (const domain of index.auditCategories) {
     lines.push(`### ${domain.id}`, "", `Responsabilité : ${domain.responsibility}`, "", `- Fichiers : ${domain.files.length}`, `- Findings dédupliqués : ${domain.findingIds.length}`, `- Groupes candidats : ${domain.candidateGroups.length}`, "");
     if (domain.coupling) {
       lines.push(`- Fan-in runtime/type-only/tests : ${domain.coupling.runtimeFanIn}/${domain.coupling.typeOnlyFanIn}/${domain.coupling.testFanIn}`, `- Fan-out runtime/type-only/tests : ${domain.coupling.runtimeFanOut}/${domain.coupling.typeOnlyFanOut}/${domain.coupling.testFanOut}`, "");
     }
     if (domain.candidateGroups.length > 0) lines.push(`Groupes : ${domain.candidateGroups.map((id) => `\`${id}\``).join(", ")}`, "");
+  }
+  lines.push("## FUNCTIONAL DOMAIN INDEX", "", `État : **${index.functionalDomains.state}**`, index.functionalDomains.detail, "");
+  for (const domain of index.functionalDomains.items) {
+    lines.push(`### ${domain.id}`, "", `Responsabilité : ${domain.responsibility}`, "", `- Fichiers : ${domain.files.length}`, `- Relations de contrôle : ${domain.findingIds.length}`, "");
+    if (domain.coupling) {
+      lines.push(`- Fan-in runtime/type-only/tests : ${domain.coupling.runtimeFanIn}/${domain.coupling.typeOnlyFanIn}/${domain.coupling.testFanIn}`, `- Fan-out runtime/type-only/tests : ${domain.coupling.runtimeFanOut}/${domain.coupling.typeOnlyFanOut}/${domain.coupling.testFanOut}`, "");
+    }
   }
   lines.push("## Limites conservées", "", ...index.limitations.map((limitation) => `- ${limitation}`), "");
   return `${lines.join("\n")}\n`;
