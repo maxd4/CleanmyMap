@@ -1171,6 +1171,19 @@ le runner conserve les gates et expose l'erreur de projection ; la projection
 offline, elle, refuse tout run incomplet, incohérent ou dont l'identité ne
 correspond pas exactement à la demande.
 
+En mode `all`, l'index enrichit également chaque fichier et domaine avec le
+graphe TypeScript canonique de `generate-architecture-import-graph.mjs`, lu sur
+le SHA Git exact du run, et l'évaluation des frontières de
+`check-architecture-import-boundary.mjs` avec la baseline correspondante. Les
+relations conservent les chemins, formes, lignes, spécifieurs, domaines et
+couches ; les fan-in/fan-out distinguent runtime, type-only et tests. Les
+imports inter-domaines, traversées de couches, accès aux façades et imports
+internes non résolus restent attribués aux fichiers concernés. La centralité
+est informative : seuls les nouveaux ou réintroduits findings des règles de
+frontière explicitement interdites sont bloquants dans cette projection. Une
+erreur de construction du graphe ne modifie pas les cinq verdicts ni le ZIP ;
+elle produit un état architectural `NOT_MEASURED` avec son diagnostic.
+
 Pour projeter un run existant sans relancer de scanner :
 
 ```bash

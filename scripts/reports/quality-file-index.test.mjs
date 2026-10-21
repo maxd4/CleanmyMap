@@ -6,6 +6,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  buildArchitectureCouplingProjection,
   buildQualityFileIndex,
   buildQualityFileIndexMarkdown,
   generateQualityFileIndex,
@@ -17,6 +18,55 @@ const sha = "c".repeat(40);
 const runId = "projection-run";
 const fileA = "apps/web/src/a.ts";
 const fileB = "apps/web/src/b.ts";
+
+function architectureProjectionFixture() {
+  const ui = "apps/web/src/components/entry.tsx";
+  const domain = "apps/web/src/lib/domain/value.ts";
+  const infrastructure = "apps/web/src/lib/supabase/adapter.ts";
+  const testFile = "apps/web/src/components/entry.test.tsx";
+  const nodes = [
+    { path: ui, domain: "components", layer: "ui", effectiveLayer: "ui", sourceKind: "runtime", clientEntry: true, clientReachable: true, serverBoundary: false, publicFacade: false, facadeOwner: null },
+    { path: domain, domain: "domain", layer: "domain", effectiveLayer: "domain", sourceKind: "runtime", clientEntry: false, clientReachable: false, serverBoundary: false, publicFacade: false, facadeOwner: null },
+    { path: infrastructure, domain: "supabase", layer: "infrastructure", effectiveLayer: "infrastructure", sourceKind: "runtime", clientEntry: false, clientReachable: false, serverBoundary: false, publicFacade: true, facadeOwner: "apps/web/src/lib/supabase" },
+    { path: testFile, domain: "components", layer: "test", effectiveLayer: "test", sourceKind: "test", clientEntry: false, clientReachable: false, serverBoundary: false, publicFacade: false, facadeOwner: null },
+  ];
+  const edge = (from, to, kind, sourceKind, line, flags = {}) => ({
+    from, to, kind, sourceKind, form: "import", specifier: `./${path.basename(to, path.extname(to))}`, line,
+    fromDomain: nodes.find((node) => node.path === from).domain,
+    toDomain: nodes.find((node) => node.path === to).domain,
+    fromLayer: nodes.find((node) => node.path === from).layer,
+    toLayer: nodes.find((node) => node.path === to).layer,
+    fromEffectiveLayer: nodes.find((node) => node.path === from).effectiveLayer,
+    toEffectiveLayer: nodes.find((node) => node.path === to).effectiveLayer,
+    crossDomain: true,
+    targetsPublicFacade: false,
+    importsOwnFacade: false,
+    uiToInfrastructure: false,
+    domainToUi: false,
+    invertedLayer: false,
+    ...flags,
+  });
+  const edges = [
+    edge(ui, domain, "runtime", "runtime", 4, { crossDomain: true }),
+    edge(ui, infrastructure, "runtime", "runtime", 5, { crossDomain: true, targetsPublicFacade: true, uiToInfrastructure: true }),
+    edge(testFile, domain, "type-only", "test", 2, { crossDomain: true }),
+  ];
+  const graph = {
+    gitSha: sha,
+    provenance: { gitRef: sha, measuredSource: "git", verified: true },
+    nodes,
+    edges,
+    summary: { files: nodes.length, imports: edges.length, unresolvedInternalImports: 1, crossDomainImports: 3, uiToInfrastructure: 1 },
+    findings: { unresolvedInternal: [{ from: ui, specifier: "@/missing", line: 8 }] },
+    domains: [
+      { domain: "components", layers: ["ui", "test"], files: 2, runtimeFanIn: 0, runtimeFanOut: 2, typeOnlyFanIn: 0, typeOnlyFanOut: 0, testFanIn: 0, testFanOut: 1 },
+      { domain: "domain", layers: ["domain"], files: 1, runtimeFanIn: 1, runtimeFanOut: 0, typeOnlyFanIn: 0, typeOnlyFanOut: 0, testFanIn: 1, testFanOut: 0 },
+      { domain: "supabase", layers: ["infrastructure"], files: 1, runtimeFanIn: 1, runtimeFanOut: 0, typeOnlyFanIn: 0, typeOnlyFanOut: 0, testFanIn: 0, testFanOut: 0 },
+    ],
+  };
+  const violation = { id: "boundary-1", signature: "UI_TO_INFRASTRUCTURE|fixture", rule: "UI_TO_INFRASTRUCTURE", from: ui, to: infrastructure, kind: "runtime", sourceKind: "runtime", specifier: "./adapter", line: 5 };
+  return buildArchitectureCouplingProjection({ graph, boundary: { status: "FAIL", currentViolations: [violation], newViolations: [violation], reintroduced: [], staleExceptions: [], invalidExceptions: [] } });
+}
 
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-quality-index-"));
@@ -164,6 +214,26 @@ test("construit un index exhaustif sans confondre complexity et functionLength",
   assert.equal(index.audits.cycles.cycles.length, 1);
   assert.equal(index.candidateGroups.length, 2);
   assert.match(buildQualityFileIndexMarkdown(index), /verdict initial et réévaluation dérivée/);
+});
+
+test("projette le couplage architectural par fichier et domaine sans confondre les types ni les tests", () => {
+  const architecture = architectureProjectionFixture();
+  assert.deepEqual(architecture, architectureProjectionFixture());
+  const entry = architecture.files.find((file) => file.path.endsWith("components/entry.tsx"));
+  const testFile = architecture.files.find((file) => file.path.endsWith("components/entry.test.tsx"));
+  const domain = architecture.domains.find((item) => item.id === "architecture:domain");
+
+  assert.deepEqual(entry.metrics.fanOut, { runtime: 2, typeOnly: 0, tests: 0 });
+  assert.deepEqual(entry.metrics.fanIn, { runtime: 0, typeOnly: 0, tests: 0 });
+  assert.deepEqual(testFile.metrics.fanOut, { runtime: 0, typeOnly: 0, tests: 1 });
+  assert.equal(entry.relations.dependencies.find((relation) => relation.to.endsWith("supabase/adapter.ts"))?.specifier, "./adapter");
+  assert.equal(entry.findings.boundaryViolations.state, "PRESENT");
+  assert.equal(entry.findings.unresolvedInternal.state, "PRESENT");
+  assert.equal(architecture.boundary.blockingStatus, "FAIL");
+  assert.deepEqual(domain.metrics, {
+    layers: ["domain"], files: 1, runtimeFanIn: 1, runtimeFanOut: 0,
+    typeOnlyFanIn: 0, typeOnlyFanOut: 0, testFanIn: 1, testFanOut: 0,
+  });
 });
 
 test("le mode offline lit un run exact, crée le bundle sans réécrire les originaux et refuse les collisions", async () => {

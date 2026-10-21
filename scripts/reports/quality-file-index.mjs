@@ -17,16 +17,20 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { evaluatePolicy } from "../checks/check-top-heavy-files.mjs";
 import { FILE_KIND_POLICY, isAboveHard, isAboveReview } from "../checks/top-heavy-policy.mjs";
+import { loadBoundaryBaseline, evaluateBoundary } from "../checks/check-architecture-import-boundary.mjs";
+import { createRepositoryView } from "../checks/repository-view.mjs";
 import {
   createAuditPaths,
   createQualityProjectionPaths,
   writeNewFile,
 } from "../audits/quality-audit-storage.mjs";
+import { buildArchitectureImportGraph } from "./generate-architecture-import-graph.mjs";
 import { createCorrelationSignalsFromAuditResults } from "./generate-modularity-radar.mjs";
 
 export const QUALITY_INDEX_SCHEMA_VERSION = 1;
 export const QUALITY_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
 export const QUALITY_INDEX_PREFIX = "quality-index";
+export const QUALITY_ARCHITECTURE_DOMAIN_PREFIX = "architecture:";
 
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
@@ -35,6 +39,190 @@ const QUALITY_STATUS_STATES = new Set(["PRESENT", "NONE", "NOT_MEASURED", "NOT_A
 
 function normalizePath(value) {
   return String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
+}
+
+function architectureEdgeId(edge) {
+  return stableId("architecture-edge", {
+    from: edge.from,
+    to: edge.to,
+    kind: edge.kind,
+    sourceKind: edge.sourceKind,
+    form: edge.form,
+    specifier: edge.specifier,
+    line: edge.line,
+  });
+}
+
+function serializeArchitectureEdge(edge) {
+  return {
+    id: architectureEdgeId(edge),
+    from: edge.from,
+    to: edge.to,
+    kind: edge.kind,
+    sourceKind: edge.sourceKind,
+    form: edge.form,
+    specifier: edge.specifier,
+    line: edge.line,
+    fromDomain: edge.fromDomain,
+    toDomain: edge.toDomain,
+    fromLayer: edge.fromLayer,
+    toLayer: edge.toLayer,
+    fromEffectiveLayer: edge.fromEffectiveLayer ?? edge.fromLayer,
+    toEffectiveLayer: edge.toEffectiveLayer ?? edge.toLayer,
+    crossDomain: Boolean(edge.crossDomain),
+    targetsPublicFacade: Boolean(edge.targetsPublicFacade),
+    importsOwnFacade: Boolean(edge.importsOwnFacade),
+    uiToInfrastructure: Boolean(edge.uiToInfrastructure),
+    domainToUi: Boolean(edge.domainToUi),
+    invertedLayer: Boolean(edge.invertedLayer),
+  };
+}
+
+function architectureState(items, detail) {
+  return state(items.length > 0 ? "PRESENT" : "NONE", detail, items);
+}
+
+function architectureBucket(edge) {
+  if (edge.sourceKind === "test") return "tests";
+  return edge.kind === "type-only" ? "typeOnly" : "runtime";
+}
+
+export function buildArchitectureCouplingProjection({ graph, boundary = null, error = null } = {}) {
+  if (error || !graph) {
+    return {
+      state: "NOT_MEASURED",
+      detail: error?.message ?? "graphe d'import architectural absent",
+      error: error ? { name: error.name, message: error.message, code: error.code ?? null } : null,
+      files: [],
+      domains: [],
+      boundary: { state: "NOT_MEASURED", blocking: [], current: [] },
+    };
+  }
+
+  const outgoing = new Map((graph.nodes ?? []).map((node) => [node.path, []]));
+  const incoming = new Map((graph.nodes ?? []).map((node) => [node.path, []]));
+  for (const edge of graph.edges ?? []) {
+    const serialized = serializeArchitectureEdge(edge);
+    outgoing.get(edge.from)?.push(serialized);
+    incoming.get(edge.to)?.push(serialized);
+  }
+  for (const relations of [...outgoing.values(), ...incoming.values()]) relations.sort((left, right) => left.id.localeCompare(right.id));
+
+  const unresolvedByFile = new Map();
+  for (const unresolved of graph.findings?.unresolvedInternal ?? []) {
+    const item = { from: unresolved.from, specifier: unresolved.specifier, line: unresolved.line };
+    const values = unresolvedByFile.get(unresolved.from) ?? [];
+    values.push(item);
+    unresolvedByFile.set(unresolved.from, values);
+  }
+  for (const values of unresolvedByFile.values()) values.sort((left, right) => `${left.specifier}:${left.line}`.localeCompare(`${right.specifier}:${right.line}`));
+
+  const currentBoundary = boundary?.currentViolations ?? [];
+  const blockingBoundaryIds = new Set([
+    ...(boundary?.newViolations ?? []),
+    ...(boundary?.reintroduced ?? []),
+  ].map((violation) => violation.id));
+  const boundaryByFile = new Map();
+  for (const violation of currentBoundary) {
+    const item = { ...violation, blocking: blockingBoundaryIds.has(violation.id) };
+    const values = boundaryByFile.get(violation.from) ?? [];
+    values.push(item);
+    boundaryByFile.set(violation.from, values);
+  }
+  for (const values of boundaryByFile.values()) values.sort((left, right) => left.signature.localeCompare(right.signature));
+
+  const files = (graph.nodes ?? []).map((node) => {
+    const dependencies = outgoing.get(node.path) ?? [];
+    const dependents = incoming.get(node.path) ?? [];
+    const countByBucket = (relations) => Object.fromEntries(["runtime", "typeOnly", "tests"].map((bucket) => [bucket, relations.filter((edge) => architectureBucket(edge) === bucket).length]));
+    const crossDomainImports = dependencies.filter((edge) => edge.crossDomain);
+    const layerCrossings = dependencies.filter((edge) => edge.fromLayer !== edge.toLayer || edge.fromEffectiveLayer !== edge.toEffectiveLayer);
+    const boundaryFindings = boundaryByFile.get(node.path) ?? [];
+    const unresolved = unresolvedByFile.get(node.path) ?? [];
+    return {
+      path: node.path,
+      domain: node.domain,
+      layer: node.layer,
+      effectiveLayer: node.effectiveLayer,
+      sourceKind: node.sourceKind,
+      clientEntry: node.clientEntry,
+      clientReachable: node.clientReachable,
+      serverBoundary: node.serverBoundary,
+      publicFacade: node.publicFacade,
+      facadeOwner: node.facadeOwner,
+      metrics: {
+        fanIn: countByBucket(dependents),
+        fanOut: countByBucket(dependencies),
+        totalFanIn: dependents.length,
+        totalFanOut: dependencies.length,
+      },
+      relations: {
+        dependencies,
+        dependents,
+        crossDomainImports,
+        layerCrossings,
+      },
+      findings: {
+        crossDomainImports: architectureState(crossDomainImports, "imports sortants vers un autre domaine"),
+        layerCrossings: architectureState(layerCrossings, "imports sortants traversant une couche"),
+        boundaryViolations: architectureState(boundaryFindings, "règles de frontière architecturale explicites"),
+        unresolvedInternal: architectureState(unresolved, "imports internes non résolus"),
+      },
+    };
+  }).sort((left, right) => left.path.localeCompare(right.path));
+
+  const domainFiles = new Map();
+  for (const file of files) {
+    const values = domainFiles.get(file.domain) ?? [];
+    values.push(file.path);
+    domainFiles.set(file.domain, values);
+  }
+  const domains = (graph.domains ?? []).map((domain) => ({
+    id: `${QUALITY_ARCHITECTURE_DOMAIN_PREFIX}${domain.domain}`,
+    domain: domain.domain,
+    responsibility: "couplage issu du graphe d'import TypeScript",
+    files: [...(domainFiles.get(domain.domain) ?? [])].sort(),
+    metrics: {
+      layers: domain.layers,
+      files: domain.files,
+      runtimeFanIn: domain.runtimeFanIn,
+      runtimeFanOut: domain.runtimeFanOut,
+      typeOnlyFanIn: domain.typeOnlyFanIn,
+      typeOnlyFanOut: domain.typeOnlyFanOut,
+      testFanIn: domain.testFanIn,
+      testFanOut: domain.testFanOut,
+    },
+  })).sort((left, right) => left.id.localeCompare(right.id));
+
+  const blocking = [...(boundary?.newViolations ?? []), ...(boundary?.reintroduced ?? [])].sort((left, right) => left.signature.localeCompare(right.signature));
+  return {
+    state: "PRESENT",
+    gitSha: graph.gitSha,
+    provenance: graph.provenance,
+    graphSummary: graph.summary,
+    files,
+    domains,
+    boundary: {
+      state: boundary ? "PRESENT" : "NOT_MEASURED",
+      status: boundary?.status ?? "NOT_MEASURED",
+      blocking,
+      current: currentBoundary,
+      new: boundary?.newViolations ?? [],
+      reintroduced: boundary?.reintroduced ?? [],
+      stale: boundary?.staleExceptions ?? [],
+      invalid: boundary?.invalidExceptions ?? [],
+      blockingStatus: blocking.length > 0 ? "FAIL" : "PASS",
+    },
+  };
+}
+
+export function buildArchitectureCouplingFromRepository({ root = REPOSITORY_ROOT, auditedSha } = {}) {
+  if (!SHA_PATTERN.test(auditedSha ?? "")) throw new Error(`SHA architecture invalide: ${auditedSha}`);
+  const view = createRepositoryView({ root, ref: auditedSha });
+  const graph = buildArchitectureImportGraph({ root, source: "git-ref", ref: auditedSha, view });
+  const baseline = loadBoundaryBaseline({ view });
+  const boundary = evaluateBoundary(graph, baseline);
+  return buildArchitectureCouplingProjection({ graph, boundary });
 }
 
 function stableId(scope, value) {
@@ -144,6 +332,7 @@ function ensureFile(files, filePath) {
       deadCode: { findings: new Map(), exceptions: [] },
       duplication: { findings: new Map() },
       cycles: { findings: new Map() },
+      architecture: null,
     });
   }
   return files.get(normalized);
@@ -392,7 +581,29 @@ function addCycles(report, files, domains, candidateGroups) {
   return { state: cycles.length > 0 ? "PRESENT" : "NONE", status: report.status, cycles };
 }
 
-function finalizeFiles(files, reports) {
+function addArchitecture(architecture, files, domains) {
+  if (!architecture || architecture.state !== "PRESENT") return;
+  for (const architectureFile of architecture.files) {
+    const file = ensureFile(files, architectureFile.path);
+    file.architecture = architectureFile;
+    file.domains.add(`${QUALITY_ARCHITECTURE_DOMAIN_PREFIX}${architectureFile.domain}`);
+  }
+  for (const architectureDomain of architecture.domains) {
+    const domain = domains.get(architectureDomain.id) ?? {
+      id: architectureDomain.id,
+      responsibility: architectureDomain.responsibility,
+      files: new Set(),
+      findingIds: new Set(),
+      candidateGroups: new Set(),
+      coupling: null,
+    };
+    for (const file of architectureDomain.files) domain.files.add(file);
+    domain.coupling = architectureDomain.metrics;
+    domains.set(architectureDomain.id, domain);
+  }
+}
+
+function finalizeFiles(files, reports, architecture) {
   const categoryAvailability = {
     topHeavy: reports["top-heavy"]?.error ? "NOT_MEASURED" : "PRESENT",
     complexity: reports.complexity?.error ? "NOT_MEASURED" : "PRESENT",
@@ -418,6 +629,9 @@ function finalizeFiles(files, reports) {
       metrics: {
         topHeavy: file.topHeavy.measurements ? state("PRESENT", "mesure de taille disponible", [file.topHeavy.measurements]) : categoryAvailability.topHeavy === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport top-heavy en échec") : state("NOT_APPLICABLE", "fichier hors roots top-heavy"),
         complexity: file.complexity.metrics.length > 0 ? state("PRESENT", `${file.complexity.metrics.length} fonction(s) mesurée(s)`, file.complexity.metrics) : categoryAvailability.complexity === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport complexity en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
+        architecture: file.architecture
+          ? { state: "PRESENT", detail: "graphe d'import architectural disponible", value: file.architecture.metrics }
+          : state(architecture?.state === "NOT_MEASURED" ? "NOT_MEASURED" : "NOT_APPLICABLE", architecture?.detail ?? "fichier absent du graphe architectural"),
       },
       findings: {
         topHeavy: category("topHeavy", topHeavyFindingItems, Boolean(file.topHeavy.measurements), "rapport top-heavy en échec"),
@@ -426,6 +640,10 @@ function finalizeFiles(files, reports) {
         deadCode: category("deadCode", [...file.deadCode.findings.values()], false, "rapport dead-code en échec"),
         duplication: category("duplication", [...file.duplication.findings.values()], false, "rapport duplication en échec"),
         cycles: category("cycles", [...file.cycles.findings.values()], false, "rapport cycles en échec"),
+      },
+      architecture: file.architecture ?? {
+        state: architecture?.state === "NOT_MEASURED" ? "NOT_MEASURED" : "NOT_APPLICABLE",
+        detail: architecture?.detail ?? "fichier absent du graphe architectural",
       },
       exceptions: {
         topHeavy: file.topHeavy.exceptions,
@@ -450,11 +668,19 @@ function finalizeDomains(domains) {
     files: [...domain.files].sort(),
     findingIds: [...domain.findingIds].sort(),
     candidateGroups: [...domain.candidateGroups].sort(),
+    coupling: domain.coupling ?? null,
   })).sort((left, right) => left.id.localeCompare(right.id));
 }
 
-export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new Date().toISOString() } = {}) {
+export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new Date().toISOString(), architecture = null } = {}) {
   if (!run?.reports || !run?.auditedSha || !run?.runId) throw new Error("Run quality absent pour construire l'index.");
+  const architectureProjection = architecture ?? {
+    state: "NOT_MEASURED",
+    detail: "projection du graphe architectural absente pour ce run",
+    files: [],
+    domains: [],
+    boundary: { state: "NOT_MEASURED", blocking: [], current: [] },
+  };
   const files = new Map();
   const domains = new Map();
   const candidateGroups = new Map();
@@ -464,7 +690,8 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
   const deadCode = addDeadCode(run.reports["dead-code"], files, domains);
   const duplication = addDuplication(run.reports.duplication, files, domains, candidateGroups);
   const cycles = addCycles(run.reports.cycles, files, domains, candidateGroups);
-  const finalFiles = finalizeFiles(files, run.reports);
+  addArchitecture(architectureProjection, files, domains);
+  const finalFiles = finalizeFiles(files, run.reports, architectureProjection);
   const finalDomains = finalizeDomains(domains);
   const categorySummaries = {
     topHeavy,
@@ -498,6 +725,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       source: "scripts/reports/generate-modularity-radar.mjs#createCorrelationSignalsFromAuditResults",
     },
     audits: categorySummaries,
+    architecture: architectureProjection,
     globalCounts: {
       files: finalFiles.length,
       domains: finalDomains.length,
@@ -506,6 +734,9 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       duplicationFingerprintCount: duplication.fingerprints?.length ?? 0,
       duplicationOccurrencePairCount: duplication.scopes?.reduce((sum, scope) => sum + scope.occurrencePairCount, 0) ?? 0,
       cycleCount: cycles.cycles?.length ?? 0,
+      architectureFiles: architectureProjection.files?.length ?? 0,
+      architectureBlockingBoundaryCount: architectureProjection.boundary?.blocking?.length ?? 0,
+      architectureUnresolvedInternalCount: architectureProjection.graphSummary?.unresolvedInternalImports ?? 0,
     },
     files: finalFiles,
     domains: finalDomains,
@@ -515,6 +746,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       "La réévaluation top-heavy est dérivée uniquement des lignes et de la baseline contenues dans le rapport historique.",
       "Une catégorie en échec sans mesures exploitables reste NOT_MEASURED.",
       "Les groupes candidats sont fondés uniquement sur les fingerprints de duplication et les participants de cycles ; aucun regroupement par dossier ou score n'est inféré.",
+      "Le couplage architectural est mesuré sur le SHA Git exact en mode all ; en projection offline sans source architecturale, il reste NOT_MEASURED.",
     ],
   };
 }
@@ -554,13 +786,17 @@ export function buildQualityFileIndexMarkdown(index) {
   lines.push("", "## Top-heavy : verdict initial et réévaluation dérivée", "", "| Vue | État | Statut | Violations ratchet REVIEW |", "| --- | --- | --- | ---: |");
   lines.push(`| Initiale | ${index.audits.topHeavy.initialVerdict.evaluation.state} | ${index.audits.topHeavy.initialVerdict.status} | ${index.audits.topHeavy.initialVerdict.evaluation.counts.reviewRatchetViolations ?? 0} |`);
   lines.push(`| Dérivée | ${index.audits.topHeavy.derivedReevaluation.state} | ${index.audits.topHeavy.derivedReevaluation.status ?? "NOT_MEASURED"} | ${index.audits.topHeavy.derivedReevaluation.counts?.reviewRatchetViolations ?? 0} |`);
-  lines.push("", "## FILE INDEX", "", "| Fichier | Domaines | Top-heavy | Complexity | FunctionLength | Dead-code | Duplication | Cycles |", "| --- | --- | --- | --- | --- | --- | --- | --- |");
+  lines.push("", "## Couplage architectural", "", `- État : **${index.architecture?.state ?? "NOT_MEASURED"}**`, `- Imports : **${index.architecture?.graphSummary?.imports ?? "NOT_MEASURED"}**`, `- Frontières bloquantes : **${index.architecture?.boundary?.blocking?.length ?? "NOT_MEASURED"}**`, `- Imports internes non résolus : **${index.architecture?.graphSummary?.unresolvedInternalImports ?? "NOT_MEASURED"}**`, "", "Les métriques de centralité sont informatives ; seuls les findings de frontière explicitement interdits sont bloquants.");
+  lines.push("", "## FILE INDEX", "", "| Fichier | Domaines | Top-heavy | Complexity | FunctionLength | Dead-code | Duplication | Cycles | Architecture |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const file of index.files) {
-    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.domains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} |`);
+    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.domains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} | ${stateLabel(file.metrics.architecture)} |`);
   }
   lines.push("", "## DOMAIN INDEX", "", "Les domaines sont des responsabilités de contrôle ou des relations prouvées par les rapports. Aucun regroupement n'est déduit d'une proximité de chemin.", "");
   for (const domain of index.domains) {
     lines.push(`### ${domain.id}`, "", `Responsabilité : ${domain.responsibility}`, "", `- Fichiers : ${domain.files.length}`, `- Findings dédupliqués : ${domain.findingIds.length}`, `- Groupes candidats : ${domain.candidateGroups.length}`, "");
+    if (domain.coupling) {
+      lines.push(`- Fan-in runtime/type-only/tests : ${domain.coupling.runtimeFanIn}/${domain.coupling.typeOnlyFanIn}/${domain.coupling.testFanIn}`, `- Fan-out runtime/type-only/tests : ${domain.coupling.runtimeFanOut}/${domain.coupling.typeOnlyFanOut}/${domain.coupling.testFanOut}`, "");
+    }
     if (domain.candidateGroups.length > 0) lines.push(`Groupes : ${domain.candidateGroups.map((id) => `\`${id}\``).join(", ")}`, "");
   }
   lines.push("## Limites conservées", "", ...index.limitations.map((limitation) => `- ${limitation}`), "");
@@ -616,9 +852,9 @@ function zipEntryNames(buffer) {
   return names;
 }
 
-export async function generateQualityFileIndex({ root = REPOSITORY_ROOT, auditedSha, runId, mode = "OFFLINE", generatedAt = new Date().toISOString(), includeBundle = false, fsApi = fs } = {}) {
+export async function generateQualityFileIndex({ root = REPOSITORY_ROOT, auditedSha, runId, mode = "OFFLINE", generatedAt = new Date().toISOString(), includeBundle = false, architecture = null, fsApi = fs } = {}) {
   const run = readOfflineQualityRun({ root, auditedSha, runId, fsApi });
-  const index = buildQualityFileIndex({ run, mode, generatedAt });
+  const index = buildQualityFileIndex({ run, mode, generatedAt, architecture });
   const markdown = buildQualityFileIndexMarkdown(index);
   const paths = createQualityProjectionPaths({ root, auditedHead: auditedSha, runId });
   fsApi.mkdirSync(paths.shaRoot, { recursive: true });

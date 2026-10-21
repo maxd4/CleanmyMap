@@ -189,6 +189,41 @@ test("all writes every gate and the aggregate as flat files for one run", async 
   }
 });
 
+test("all enrichit l'index avec la projection architecturale du même SHA/run", async () => {
+  const root = tempRoot();
+  try {
+    const architecture = {
+      state: "PRESENT",
+      gitSha: sha,
+      graphSummary: { imports: 2, unresolvedInternalImports: 0 },
+      files: [{
+        path: "apps/web/src/fixture.ts",
+        domain: "fixture",
+        metrics: { fanIn: { runtime: 0, typeOnly: 0, tests: 0 }, fanOut: { runtime: 1, typeOnly: 0, tests: 0 }, totalFanIn: 0, totalFanOut: 1 },
+        findings: { crossDomainImports: { state: "NONE" }, layerCrossings: { state: "NONE" }, boundaryViolations: { state: "NONE" }, unresolvedInternal: { state: "NONE" } },
+        relations: { dependencies: [], dependents: [], crossDomainImports: [], layerCrossings: [] },
+      }],
+      domains: [{ id: "architecture:fixture", domain: "fixture", responsibility: "fixture", files: ["apps/web/src/fixture.ts"], metrics: { runtimeFanIn: 0, runtimeFanOut: 1, typeOnlyFanIn: 0, typeOnlyFanOut: 0, testFanIn: 0, testFanOut: 0 } }],
+      boundary: { state: "PRESENT", blocking: [], current: [], blockingStatus: "PASS" },
+    };
+    const result = await runQualityAudit("all", {
+      root,
+      runId: "run-architecture",
+      snapshot: () => stableSnapshot,
+      engine: async (audit) => fixtureResult(audit),
+      architectureBuilder: () => architecture,
+    });
+    const index = JSON.parse(fs.readFileSync(result.projectionPaths.index, "utf8"));
+    assert.equal(index.auditedHead, sha);
+    assert.equal(index.runId, "run-architecture");
+    assert.equal(index.architecture.state, "PRESENT");
+    assert.equal(index.globalCounts.architectureFiles, 1);
+    assert.equal(index.files.find((file) => file.path.endsWith("fixture.ts")).metrics.architecture.state, "PRESENT");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("all produit index et ZIP même lorsqu'un contrôle échoue avec un diagnostic exploitable", async () => {
   const root = tempRoot();
   try {

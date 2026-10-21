@@ -25,7 +25,7 @@ import {
   parseHumanDecisions,
   readHumanDecisionsFromView,
 } from "../reports/generate-modularity-radar.mjs";
-import { generateQualityFileIndex } from "../reports/quality-file-index.mjs";
+import { buildArchitectureCouplingFromRepository, buildArchitectureCouplingProjection, generateQualityFileIndex } from "../reports/quality-file-index.mjs";
 import {
   QUALITY_AUDIT_ROOT,
   beginActiveAudit,
@@ -388,6 +388,7 @@ export async function runQualityAudit(mode, {
   root = REPOSITORY_ROOT,
   snapshot = () => captureRepositorySnapshot({ root }),
   engine = executeAudit,
+  architectureBuilder = buildArchitectureCouplingFromRepository,
   fsApi = fs,
   now = () => new Date().toISOString(),
   runId = randomUUID(),
@@ -470,6 +471,12 @@ export async function runQualityAudit(mode, {
     let allPaths = null;
     let projectionPaths = null;
     if (mode === "all") {
+      let architecture;
+      try {
+        architecture = architectureBuilder({ root, auditedSha: start.auditedHead });
+      } catch (error) {
+        architecture = buildArchitectureCouplingProjection({ error });
+      }
       allPaths = createAuditPaths({ root, auditedHead: start.auditedHead, audit: "all", runId });
       const aggregateEvidence = {
         readProvenance: manifests.every((entry) => entry.readProvenance === "COMMITTED_SNAPSHOT")
@@ -522,6 +529,7 @@ export async function runQualityAudit(mode, {
           mode: "ALL",
           generatedAt,
           includeBundle: true,
+          architecture,
           fsApi,
         });
         projectionPaths = projection.paths;

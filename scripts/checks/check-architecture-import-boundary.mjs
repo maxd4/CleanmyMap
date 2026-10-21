@@ -165,12 +165,19 @@ export function validateExceptionRegistry(baseline) {
   return issues.sort((left, right) => [left.collection, left.index, left.code, left.message].join("\0").localeCompare([right.collection, right.index, right.code, right.message].join("\0")));
 }
 
-function loadBaseline() {
-  const baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
+export function loadBoundaryBaseline({ root = repositoryRoot, view = null } = {}) {
+  const baselineSource = view
+    ? view.readText("scripts/checks/architecture-import-boundary-baseline.json")
+    : fs.readFileSync(path.join(root, "scripts/checks/architecture-import-boundary-baseline.json"), "utf8");
+  const baseline = JSON.parse(baselineSource);
   if (baseline.schemaVersion !== 1 || !Array.isArray(baseline.exceptions) || !Array.isArray(baseline.retired)) {
     throw new Error("architecture import boundary baseline malformed");
   }
   return baseline;
+}
+
+function loadBaseline() {
+  return loadBoundaryBaseline();
 }
 
 export function evaluateBoundary(graph, baseline) {
