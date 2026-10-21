@@ -11,6 +11,7 @@ import {
   getCurrentUserActiveRole,
   pickTraceableActorName,
   requireAuthenticatedAccess,
+  type UserIdentity,
 } from "@/lib/authz";
 import {
   toActionListItem,
@@ -151,16 +152,18 @@ async function executeActionCreation({
   userId,
   payload,
   idempotencyKey,
+  identity,
+  isCreatorGlobalAdmin,
 }: {
   request: Request;
   userId: string;
   payload: CreateActionRequest;
   idempotencyKey?: string;
+  identity: UserIdentity | null;
+  isCreatorGlobalAdmin: boolean;
 }) {
   const supabase = getSupabaseServerClient(true);
   const { ActionCreationValidationError, createActionSubmission } = await import("@/lib/actions/create-submission");
-  const identity = await getCurrentUserIdentity({ userId });
-  const isCreatorGlobalAdmin = canManageActionsGlobally(identity);
   const resolvedIdentity = identity ?? {
     displayName: userId,
     handle: userId,
@@ -452,11 +455,15 @@ export async function POST(request: Request) {
   }
 
   try {
+    const identity = await getCurrentUserIdentity({ userId });
+    const isCreatorGlobalAdmin = canManageActionsGlobally(identity);
     return await executeActionCreation({
       request,
       userId,
       payload: parsed.data,
       idempotencyKey,
+      identity,
+      isCreatorGlobalAdmin,
     });
   } catch (error) {
     return handleApiError(error, "api/actions");

@@ -97,6 +97,40 @@ describe("POST /api/actions — rôles et modération", () => {
     expectPendingActionCreation();
   }, 15000);
 
+  it("does not grant global management from a privileged granted role when the active role is benevole", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-test-1",
+      displayName: "Admin en parcours bénévole",
+      firstName: "Admin",
+      username: "admin@example.org",
+      currentLevel: 1,
+      actorNameOptions: ["Admin en parcours bénévole"],
+      role: "admin",
+      activeRole: "benevole",
+      badges: [],
+    });
+
+    const response = await postSubmitPayload(
+      buildSubmitPayload({
+        actorName: "Admin en parcours bénévole",
+        locationLabel: "Lieu rôle actif bénévole",
+        submissionMode: "complete",
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expectPendingActionCreation();
+  }, 15000);
+
+  it("keeps the normal pending fallback when the canonical profile identity is unavailable", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce(null);
+
+    const response = await postSubmitPayload(buildSubmitPayload({ submissionMode: "complete" }));
+
+    expect(response.status).toBe(201);
+    expectPendingActionCreation();
+  }, 15000);
+
   it("keeps an elected account in the normal pending flow while active as elected", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "elu-1",
@@ -138,5 +172,7 @@ describe("POST /api/actions — rôles et modération", () => {
     const body = (await response.json()) as { error?: string };
     expect(response.status).toBe(401);
     expect(body.error).toBe("Vous devez vous reconnecter pour continuer.");
+    expect(getCurrentUserIdentityMock).not.toHaveBeenCalled();
+    expect(createActionMock).not.toHaveBeenCalled();
   });
 });
