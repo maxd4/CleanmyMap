@@ -140,9 +140,9 @@
   }
 
   /* Native inputs: apply consistent focus ring via a global rule */
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]):focus,
-  textarea:focus,
-  select:focus {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not(.cmm-field-control):focus,
+  textarea:not(.cmm-field-control):focus,
+  select:not(.cmm-field-control):focus {
     outline: none;
     box-shadow:
       0 0 0 2px rgba(16, 185, 129, 0.18),

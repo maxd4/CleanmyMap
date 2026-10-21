@@ -87,6 +87,7 @@ describe("canonical form fields", () => {
     expect(css).toContain('[data-display-mode="minimaliste"] .cmm-field-control');
     expect(css).toContain('[data-display-mode="sobre"] .cmm-field-control');
     expect(css).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(css).toContain(":not(.cmm-field-control):focus");
 
     const fieldCss = css.slice(css.indexOf("FORM FIELDS - shared geometry"), css.indexOf("FORM FIELD POLISH"));
     expect(fieldCss).not.toContain("gradient");
