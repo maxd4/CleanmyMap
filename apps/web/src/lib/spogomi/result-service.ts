@@ -24,6 +24,15 @@ export { buildSpogomiRegulation } from "./regulation";
 
 type EventRegulationRow = import("./regulation").SpogomiEventRegulationRow;
 type CategoryRow = import("./regulation").SpogomiCategoryRegulationRow;
+type SpogomiTeamResultItem = {
+  category_rule_id: string;
+  quantity: number | string | null;
+  mass_grams: number | string | null;
+  object_count: number | string | null;
+  measurement_method: string | null;
+  provenance: string;
+  arbitration_comment: string | null;
+};
 
 export async function resolveSpogomiReviewerRole(params: {
   supabase: SupabaseClient;
@@ -112,15 +121,7 @@ export type SpogomiTeamResultForm = {
   team: { id: string; teamNumber: number; publicName: string };
   divisionId: string;
   categories: Array<{ id: string; code: string; label: string; measurementKind: string; unit: string; isComplete: boolean }>;
-  latestSubmission: { id: string; version: number; status: string; correctionReason: string | null; items: Array<{
-    category_rule_id: string;
-    quantity: number | string | null;
-    mass_grams: number | string | null;
-    object_count: number | string | null;
-    measurement_method: string | null;
-    provenance: string;
-    arbitration_comment: string | null;
-  }> } | null;
+  latestSubmission: { id: string; version: number; status: string; correctionReason: string | null; items: SpogomiTeamResultItem[] } | null;
   presentParticipants: number;
   officialScoreAvailable: boolean;
 };
@@ -144,15 +145,7 @@ export async function loadSpogomiTeamResultForm(params: {
   const event = { ...eventResult.data, mode: divisionResult.data.division_type, division_id: session.divisionId, regulation_version: divisionResult.data.regulation_version, regulation_status: divisionResult.data.regulation_status, regulation_source_reference: divisionResult.data.regulation_source_reference, regulation_config: divisionResult.data.regulation_config, team_size_config: divisionResult.data.team_size_config } as EventRegulationRow;
   const categoryRows = categories as unknown as CategoryRow[];
   const submission = submissionResult.data as { id: string; version: number; status: string; correction_reason: string | null } | null;
-  let items: Array<{
-    category_rule_id: string;
-    quantity: number | string | null;
-    mass_grams: number | string | null;
-    object_count: number | string | null;
-    measurement_method: string | null;
-    provenance: string;
-    arbitration_comment: string | null;
-  }> = [];
+  let items: SpogomiTeamResultItem[] = [];
   if (submission) {
     items = await readAllSpogomiPages("team result items", (from, to) => params.supabase.from("spogomi_result_items").select("id, division_id, category_rule_id, measurement_kind, unit, quantity, mass_grams, object_count, measurement_method, provenance, arbitration_comment, source_reference").eq("submission_id", submission.id).eq("division_id", session.divisionId).order("created_at", { ascending: true }).order("id", { ascending: true }).range(from, to)) as typeof items;
   }

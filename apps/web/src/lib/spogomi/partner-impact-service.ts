@@ -23,6 +23,22 @@ type ActionRow = {
   moderation_visibility: string | null;
 };
 
+async function loadPartnerActions(
+  supabase: SupabaseClient,
+  actionIds: string[],
+  operation: string,
+): Promise<ActionRow[]> {
+  return await readAllSpogomiPages(operation, (from, to) =>
+    supabase
+      .from("actions")
+      .select("id, organizer_id, organizer_name, status, published_at, moderation_visibility", { count: "exact" })
+      .in("id", actionIds)
+      .order("id", { ascending: true })
+      .range(from, to),
+    { requireExactCount: true },
+  ) as unknown as ActionRow[];
+}
+
 type PublishedEventRow = {
   id: string;
   event_slug: string | null;
@@ -149,16 +165,8 @@ async function loadSpogomiPartnerImpact(params: {
   if (!events.length) return aggregateSpogomiPartnerImpact([]);
 
   const actionIds = events.map((event) => event.action_id);
-  const actionRows = await readAllSpogomiPages("partner SPOGOMI published actions", (from, to) =>
-    supabase
-      .from("actions")
-      .select("id, organizer_id, organizer_name, status, published_at, moderation_visibility", { count: "exact" })
-      .in("id", actionIds)
-      .order("id", { ascending: true })
-      .range(from, to),
-    { requireExactCount: true },
-  );
-  const actionById = new Map((actionRows as unknown as ActionRow[]).map((action) => [String(action.id), action]));
+  const actionRows = await loadPartnerActions(supabase, actionIds, "partner SPOGOMI published actions");
+  const actionById = new Map(actionRows.map((action) => [String(action.id), action]));
   const ownedEvents = events.filter((event) => {
     const action = actionById.get(event.action_id);
     return Boolean(action && action.organizer_id === params.organizerId && isPublishedAction(action));
@@ -232,17 +240,9 @@ export async function listPublishedSpogomiPartnerImpacts(params: {
   );
   const actionIds = [...new Set((eventRows as unknown as Array<{ action_id: string }>).map((row) => String(row.action_id)))];
   if (!actionIds.length) return [];
-  const actionRows = await readAllSpogomiPages("partner SPOGOMI organizer actions", (from, to) =>
-    supabase
-      .from("actions")
-      .select("id, organizer_id, organizer_name, status, published_at, moderation_visibility", { count: "exact" })
-      .in("id", actionIds)
-      .order("id", { ascending: true })
-      .range(from, to),
-    { requireExactCount: true },
-  );
+  const actionRows = await loadPartnerActions(supabase, actionIds, "partner SPOGOMI organizer actions");
   const organizerIds = [...new Set(
-    (actionRows as unknown as ActionRow[])
+    actionRows
       .filter(isPublishedAction)
       .map((action) => action.organizer_id)
       .filter((id): id is string => Boolean(id)),

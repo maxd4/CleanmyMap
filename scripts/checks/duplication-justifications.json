@@ -2570,22 +2570,6 @@
       "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
     },
     {
-      "scope": "runtime",
-      "fingerprint": "cc3f722bfe64dfb1",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les deux blocs du service partenaire appartiennent à des étapes distinctes du calcul d'impact et n'ont pas de contrat réutilisable indépendant.",
-      "evidence": "lib/spogomi/partner-impact-service.ts:152-161 et lib/spogomi/partner-impact-service.ts:235-244 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "557abfd22677e9b3",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les deux projections du service de résultats construisent des lignes voisines mais correspondent à des branches de classement différentes ; aucune extraction ne supprimerait une divergence métier.",
-      "evidence": "lib/spogomi/result-service.ts:94-102 et lib/spogomi/result-service.ts:125-133 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
-    },
-    {
       "scope": "tests",
       "fingerprint": "09d1875fc16fbbe2",
       "classification": "NO_ACTION_NOISE",
