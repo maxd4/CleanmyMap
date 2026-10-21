@@ -169,6 +169,19 @@ test("un retour au-dessus de REVIEW après amélioration échoue", () => {
   });
 });
 
+test("une entrée IMPROVED qui regrossit sous REVIEW échoue par ratchet", () => {
+  const baselineSource = makeContent(400);
+  withFixture({
+    source: makeContent(401),
+    baseline: { version: 3, allowed: [], review: [reviewEntry(baselineSource, { status: "IMPROVED" })] },
+  }, (root) => {
+    const result = runChecker(root, ["--enforce"]);
+    assert.equal(result.status, 1, result.output);
+    assert.match(result.output, /plafonds REVIEW ratifiés/);
+    assert.doesNotMatch(result.output, /retour au-dessus du seuil REVIEW/);
+  });
+});
+
 test("un nouveau dépassement HARD échoue", () => {
   withFixture({ source: makeContent(1001) }, (root) => {
     const result = runChecker(root, ["--enforce"]);

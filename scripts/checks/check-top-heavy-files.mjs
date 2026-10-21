@@ -80,7 +80,7 @@ function evaluatePolicy({ rows, baseline }) {
   });
   const staleBaselineEntries = [...allowedBaseline.values()].filter((entry) => !hardOffenderPaths.has(entry.path));
   const newReviewOffenders = reviewWarnings.filter((row) => !reviewBaseline.has(row.file) && !allowedBaseline.has(row.file));
-  const reviewRatchetViolations = reviewWarnings.filter((row) => {
+  const reviewRatchetViolations = checkedRows.filter((row) => {
     const entry = reviewBaseline.get(row.file);
     return entry && (row.lines > entry.maxLines || row.bytes > entry.maxBytes);
   });
