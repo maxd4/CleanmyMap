@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Bug,
   ChevronDown,
+  HandCoins,
   Lightbulb,
   MessageSquare,
   Settings2,
@@ -57,6 +58,12 @@ export function RibbonMenus({
       label: "Nous contacter",
       icon: UsersRound,
       iconClassName: "text-emerald-300",
+    },
+    {
+      href: "/sections/funding",
+      label: "Soutenir CleanMyMap",
+      icon: HandCoins,
+      iconClassName: "text-cyan-300",
     },
   ] as const;
 
@@ -164,7 +171,10 @@ export function RibbonMenus({
                 icon={item.icon}
                 iconClassName={item.iconClassName}
                 compact
-                onClick={() => onTrackNavigation(item.href, item.label, null)}
+                onClick={() => {
+                  setIsFeedbackOpen(false);
+                  onTrackNavigation(item.href, item.label, null);
+                }}
               />
             ))}
           </div>

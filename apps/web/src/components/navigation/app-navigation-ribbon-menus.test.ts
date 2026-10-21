@@ -28,7 +28,31 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(source).toContain("Signaler un problème technique");
     expect(source).toContain("Proposer une idée ou suggestion");
     expect(source).toContain('label: "Nous contacter"');
+    expect(source).toContain('href: "/sections/funding"');
+    expect(source).toContain('label: "Soutenir CleanMyMap"');
     expect(source).not.toContain("Nous contacter pour travailler ensemble");
+  });
+
+  it("keeps the four Feedback destinations in their documented order", () => {
+    const source = readSource("app-navigation-ribbon-menus.tsx");
+    const feedbackLinksStart = source.indexOf("const feedbackLinks = [");
+    const feedbackLinksEnd = source.indexOf("  ] as const;", feedbackLinksStart);
+    const feedbackLinks = source.slice(feedbackLinksStart, feedbackLinksEnd);
+    const labels = [
+      "Signaler un problème technique",
+      "Proposer une idée ou suggestion",
+      "Nous contacter",
+      "Soutenir CleanMyMap",
+    ];
+
+    expect(feedbackLinks).toContain('href: "/sections/feedback#bug"');
+    expect(feedbackLinks).toContain('href: "/sections/feedback#improvement"');
+    expect(feedbackLinks).toContain('href: "/sections/feedback#collaboration"');
+    expect(feedbackLinks).toContain('href: "/sections/funding"');
+
+    const labelPositions = labels.map((label) => feedbackLinks.indexOf(`label: "${label}"`));
+    expect(labelPositions.every((position) => position >= 0)).toBe(true);
+    expect(labelPositions).toEqual([...labelPositions].sort((a, b) => a - b));
   });
 
   it("uses the critical button treatment only for the Feedback trigger", () => {

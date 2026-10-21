@@ -21,6 +21,9 @@ async function resetBrowserPersistence(page: Page): Promise<void> {
 
 async function dismissCookies(page: Page): Promise<void> {
   const refuse = page.getByRole("button", { name: "Tout refuser" });
+  if (await refuse.count()) {
+    await expect(refuse).toBeVisible({ timeout: 3000 }).catch(() => undefined);
+  }
   if (await refuse.isVisible().catch(() => false)) {
     await refuse.click();
     await expect(refuse).toHaveCount(0);
@@ -46,6 +49,15 @@ async function openPreferences(page: Page): Promise<Locator> {
   await expect(trigger).toBeVisible();
   await trigger.click();
   const panel = page.locator("#preferences-menu-panel:visible");
+  await expect(panel).toBeVisible({ timeout: 1000 });
+  return panel;
+}
+
+async function openFeedback(page: Page): Promise<Locator> {
+  const trigger = page.getByRole("button", { name: "Menu Feedback", exact: true });
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  const panel = page.locator("#feedback-menu-panel:visible");
   await expect(panel).toBeVisible({ timeout: 1000 });
   return panel;
 }
@@ -85,6 +97,41 @@ test.afterAll(async () => {
 });
 
 test.describe("campaign 3A - public navigation and local interactions", () => {
+  test("Feedback exposes the four ordered public destinations", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await dismissCookies(page);
+
+    const panel = await openFeedback(page);
+    const links = panel.getByRole("link");
+    await expect(links).toHaveCount(4);
+    await expect(links.nth(0)).toHaveText("Signaler un problème technique");
+    await expect(links.nth(0)).toHaveAttribute("href", "/sections/feedback#bug");
+    await expect(links.nth(1)).toHaveText("Proposer une idée ou suggestion");
+    await expect(links.nth(1)).toHaveAttribute("href", "/sections/feedback#improvement");
+    await expect(links.nth(2)).toHaveText("Nous contacter");
+    await expect(links.nth(2)).toHaveAttribute("href", "/sections/feedback#collaboration");
+    await expect(links.nth(3)).toHaveText("Soutenir CleanMyMap");
+    await expect(links.nth(3)).toHaveAttribute("href", "/sections/funding");
+
+    await links.nth(3).click();
+    await expect(page).toHaveURL(/\/sections\/funding$/);
+    await expect(page.locator("body")).toBeVisible();
+    await assertNoClerkRedirect(page);
+    await assertNoConsoleErrors(page, "feedback-menu");
+    evidence.push({
+      id: "E2E-3A-FEEDBACK-MENU",
+      PAGE: "PAGE_OK",
+      INTERACTION: "INTERACTION_OK",
+      END_TO_END: "END_TO_END_OK",
+      destinations: [
+        "/sections/feedback#bug",
+        "/sections/feedback#improvement",
+        "/sections/feedback#collaboration",
+        "/sections/funding",
+      ],
+    });
+  });
+
   test("public canonical routes and primary CTAs reach their final targets", async ({ page }) => {
     await dismissCookies(page);
 
