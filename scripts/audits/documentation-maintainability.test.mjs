@@ -41,6 +41,54 @@ test("mesure un document court, ignore les blocs de code et valide les liens rel
   assert.deepEqual(before["README.md"], "# Intro\n\n[Guide](./guide.md#target)\n[Absent](./missing.md)\n\n## Exemple\n\n```md\n# faux titre\n[ignoré](./missing-in-code.md)\n```\n");
 });
 
+test("classe les liens locaux, externes et les chemins relatifs sans fallback racine", () => {
+  const report = run({
+    "docs/index.md": "# Index\n\n[Guide](guide.md)\n[Guide relative](./guide.md#section)\n[Encodé](./guide%2Emd)\n[Absent](missing.md)\n[Externe](https://example.com/guide.md)\n",
+    "docs/guide.md": "# Section\n\nTexte\n",
+    "docs/section/other.md": "# Other\n\n[Homonyme racine](./guide.md)\n",
+    "guide.md": "# Root guide\n",
+  });
+  const index = report.documents.find((document) => document.path === "docs/index.md");
+  const other = report.documents.find((document) => document.path === "docs/section/other.md");
+
+  assert.equal(index.internalLinks.count, 4);
+  assert.equal(index.internalLinks.invalid.length, 1);
+  assert.equal(index.internalLinks.invalid[0].reason, "TARGET_NOT_FOUND");
+  assert.equal(index.internalLinks.invalid[0].resolvedPath, "docs/missing.md");
+  assert.equal(index.internalLinks.items.some((link) => link.target.startsWith("https://")), false);
+  assert.equal(other.internalLinks.invalid.length, 1);
+  assert.equal(other.internalLinks.unverified.length, 0);
+  assert.equal(other.internalLinks.items[0].target, "./guide.md");
+  assert.equal(other.internalLinks.items[0].line, 3);
+  assert.equal(other.internalLinks.invalid[0].resolvedPath, "docs/section/guide.md");
+});
+
+test("signale séparément les références dont la syntaxe ne permet pas une vérification certaine", () => {
+  const report = run({ "docs/index.md": "# Index\n\n[Route](guide)\n" });
+  const document = report.documents[0];
+
+  assert.equal(document.internalLinks.count, 1);
+  assert.deepEqual(document.internalLinks.invalid, []);
+  assert.equal(document.internalLinks.unverified[0].reason, "UNVERIFIED_REFERENCE");
+  assert.equal(report.summary.invalidReferences, 0);
+  assert.equal(report.summary.unverifiedReferences, 1);
+});
+
+test("respecte la longueur des fences, ignore le code inline et mesure le Setext initial", () => {
+  const report = run({
+    "docs/code.md": "Title\n=====\n\n````text\n# faux titre\n[fausse](missing.md)\n```\n# toujours dans le code\n````\n\n`[inline](missing-inline.md)`\n\n# Réel\n",
+  });
+  const document = report.documents[0];
+
+  assert.equal(document.headingCount, 2);
+  assert.deepEqual(document.sections.map((section) => ({ title: section.title, startLine: section.startLine })), [
+    { title: "Title", startLine: 1 },
+    { title: "Réel", startLine: 13 },
+  ]);
+  assert.equal(document.internalLinks.count, 0);
+  assert.deepEqual(document.internalLinks.invalid, []);
+});
+
 test("classe un document de 2 000 lignes en ARCHITECTURE_REVIEW", () => {
   const content = ["# Long document", ...Array.from({ length: 1_999 }, (_, index) => `line ${index + 1}`)].join("\n");
   const document = run({ "documentation/long.md": content }).documents[0];

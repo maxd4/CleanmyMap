@@ -20,6 +20,8 @@ const ATX_HEADING_PATTERN = /^\s{0,3}(#{1,6})(?:\s+|$)(.*?)\s*$/;
 const SETEXT_HEADING_PATTERN = /^\s{0,3}(=+|-+)\s*$/;
 const LINK_PATTERN = /!?(\[([^\]]*)\])\(\s*(<[^>]+>|[^)\s]+)(?:\s+[^)]*)?\)/g;
 const ANCHOR_ID_PATTERN = /\b(?:id|name)=["']([^"']+)["']/gi;
+const LOCAL_LINK_EXTENSIONS = new Set([".md", ".mdx", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".pdf"]);
+const EXTERNAL_HOST_PATTERN = /^(?:www\.)?[^/#\s?:]+\.(?:com|org|net|edu|gov|mil|int|io|ai|app|dev|co|uk|fr|de|be|nl|es|it|ca|us|info|biz|xyz)(?:[/:?#]|$)/i;
 
 function normalizePath(value) {
   return String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
@@ -56,6 +58,58 @@ function addHeading(headings, line, depth, title) {
   headings.push({ line, depth, title: cleanTitle, slug: slugifyHeading(cleanTitle) });
 }
 
+function readFence(line) {
+  const match = line.match(FENCE_PATTERN);
+  return match ? { marker: match[1][0], length: match[1].length } : null;
+}
+
+function updateFence(fence, line) {
+  const candidate = readFence(line);
+  if (!candidate) return { fence, isFence: false };
+  if (!fence) return { fence: candidate, isFence: true };
+  if (candidate.marker === fence.marker && candidate.length >= fence.length) return { fence: null, isFence: true };
+  return { fence, isFence: true };
+}
+
+function inlineCodeRanges(line) {
+  const ranges = [];
+  for (let index = 0; index < line.length;) {
+    if (line[index] !== "`") {
+      index += 1;
+      continue;
+    }
+    const start = index;
+    while (index < line.length && line[index] === "`") index += 1;
+    const length = index - start;
+    let close = index;
+    while (close < line.length) {
+      const candidate = line.indexOf("`", close);
+      if (candidate < 0) {
+        ranges.push([start, line.length]);
+        index = line.length;
+        break;
+      }
+      let end = candidate;
+      while (end < line.length && line[end] === "`") end += 1;
+      if (end - candidate === length) {
+        ranges.push([start, end]);
+        index = end;
+        break;
+      }
+      close = end;
+    }
+    if (close >= line.length && index !== line.length && !ranges.some(([rangeStart]) => rangeStart === start)) {
+      ranges.push([start, line.length]);
+      index = line.length;
+    }
+  }
+  return ranges;
+}
+
+function isInsideInlineCode(ranges, index) {
+  return ranges.some(([start, end]) => index >= start && index < end);
+}
+
 function parseMarkdownStructure(text) {
   const lines = text.split("\n");
   const headings = [];
@@ -63,21 +117,22 @@ function parseMarkdownStructure(text) {
   let fence = null;
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    const fenceMatch = line.match(FENCE_PATTERN);
-    if (fenceMatch) {
-      const marker = fenceMatch[1][0];
-      if (!fence) fence = marker;
-      else if (fence === marker) fence = null;
+    const fenceState = updateFence(fence, line);
+    if (fenceState.isFence) {
+      fence = fenceState.fence;
       continue;
     }
     if (fence) continue;
-    for (const match of line.matchAll(ANCHOR_ID_PATTERN)) explicitAnchors.add(match[1]);
+    const inlineRanges = inlineCodeRanges(line);
+    for (const match of line.matchAll(ANCHOR_ID_PATTERN)) {
+      if (!isInsideInlineCode(inlineRanges, match.index ?? -1)) explicitAnchors.add(match[1]);
+    }
     const atx = line.match(ATX_HEADING_PATTERN);
     if (atx) {
       addHeading(headings, index + 1, atx[1].length, atx[2]);
       continue;
     }
-    if (index === 0 || !line.trim() || !lines[index + 1] || !SETEXT_HEADING_PATTERN.test(lines[index + 1])) continue;
+    if (!line.trim() || !lines[index + 1] || !SETEXT_HEADING_PATTERN.test(lines[index + 1])) continue;
     addHeading(headings, index + 1, lines[index + 1].trim().startsWith("=") ? 1 : 2, line.trim());
     index += 1;
   }
@@ -134,55 +189,78 @@ function documentDomain(file) {
   return parts[0] || "root";
 }
 
-function isInternalLink(target) {
-  return target.startsWith("#")
-    || !/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(target)
-    && !/^(?:www\.)?[^/#\s]+\.[a-z]{2,}(?:\/|$)/i.test(target);
+function decodePath(value) {
+  try { return decodeURIComponent(value); } catch { return null; }
+}
+
+function linkPath(target) {
+  const hashIndex = target.indexOf("#");
+  const beforeFragment = hashIndex >= 0 ? target.slice(0, hashIndex) : target;
+  const queryIndex = beforeFragment.indexOf("?");
+  return queryIndex >= 0 ? beforeFragment.slice(0, queryIndex) : beforeFragment;
+}
+
+function isInternalLink(target, file, files) {
+  if (target.startsWith("#")) return true;
+  if (/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(target) || /^www\./i.test(target)) return false;
+  const rawPath = linkPath(target);
+  const decodedPath = decodePath(rawPath);
+  if (decodedPath === null) return true;
+  const relativeCandidate = normalizePath(path.posix.normalize(path.posix.join(path.posix.dirname(file), decodedPath)));
+  const rootCandidate = normalizePath(decodedPath.replace(/^\//, ""));
+  if (files.has(relativeCandidate) || files.has(rootCandidate)) return true;
+  if (LOCAL_LINK_EXTENSIONS.has(path.posix.extname(decodedPath).toLowerCase())) return true;
+  return !EXTERNAL_HOST_PATTERN.test(target);
 }
 
 function decodeFragment(fragment) {
-  try { return decodeURIComponent(fragment); } catch { return fragment; }
+  return decodePath(fragment);
 }
 
 function resolveDocumentTarget(file, target, files) {
-  const withoutQuery = target.split("?")[0];
-  const hashIndex = withoutQuery.indexOf("#");
-  const rawPath = hashIndex >= 0 ? withoutQuery.slice(0, hashIndex) : withoutQuery;
-  const fragment = hashIndex >= 0 ? decodeFragment(withoutQuery.slice(hashIndex + 1)) : null;
-  const candidates = rawPath
-    ? [
-      rawPath.startsWith("/") ? normalizePath(rawPath.slice(1)) : normalizePath(path.posix.normalize(path.posix.join(path.posix.dirname(file), rawPath))),
-      normalizePath(rawPath),
-    ]
-    : [file];
+  const hashIndex = target.indexOf("#");
+  const beforeFragment = hashIndex >= 0 ? target.slice(0, hashIndex) : target;
+  const rawFragment = hashIndex >= 0 ? target.slice(hashIndex + 1) : null;
+  const queryIndex = beforeFragment.indexOf("?");
+  const rawPath = queryIndex >= 0 ? beforeFragment.slice(0, queryIndex) : beforeFragment;
+  const decodedPath = decodePath(rawPath);
+  const fragment = rawFragment === null ? null : decodeFragment(rawFragment);
+  if (decodedPath === null || rawFragment !== null && fragment === null) return { targetFile: null, fragment: null, exists: false, verifiable: false, reason: "UNVERIFIED_REFERENCE" };
+  const candidate = rawPath
+    ? rawPath.startsWith("/") ? normalizePath(path.posix.normalize(decodedPath.slice(1))) : normalizePath(path.posix.normalize(path.posix.join(path.posix.dirname(file), decodedPath)))
+    : normalizePath(file);
   const existsAsFile = (candidate) => files.has(candidate);
   const existsAsDirectory = (candidate) => [...files].some((entry) => entry.startsWith(`${candidate}/`));
-  const targetFile = candidates.find((candidate) => existsAsFile(candidate) || existsAsDirectory(candidate)) ?? candidates[0];
+  const targetFile = candidate;
   const exists = existsAsFile(targetFile) || existsAsDirectory(targetFile);
-  const verifiable = exists || Boolean(path.posix.extname(rawPath)) || !rawPath;
+  const verifiable = exists || Boolean(path.posix.extname(decodedPath)) || !rawPath;
   return { targetFile, fragment, exists, verifiable };
 }
 
 function inspectLinks(file, lines, files, headingsByFile) {
   const links = [];
   const invalid = [];
+  const unverified = [];
   let fence = null;
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    const fenceMatch = line.match(FENCE_PATTERN);
-    if (fenceMatch) {
-      const marker = fenceMatch[1][0];
-      if (!fence) fence = marker;
-      else if (fence === marker) fence = null;
+    const fenceState = updateFence(fence, line);
+    if (fenceState.isFence) {
+      fence = fenceState.fence;
       continue;
     }
     if (fence) continue;
+    const inlineRanges = inlineCodeRanges(line);
     for (const match of line.matchAll(LINK_PATTERN)) {
       const rawTarget = match[3].startsWith("<") ? match[3].slice(1, -1) : match[3];
-      if (!isInternalLink(rawTarget)) continue;
+      if (isInsideInlineCode(inlineRanges, match.index ?? -1) || !isInternalLink(rawTarget, file, files)) continue;
       const link = { text: match[2], target: rawTarget, line: index + 1 };
       links.push(link);
       const resolved = resolveDocumentTarget(file, rawTarget, files);
+      if (!resolved.verifiable) {
+        unverified.push({ ...link, reason: resolved.reason ?? "UNVERIFIED_REFERENCE" });
+        continue;
+      }
       if (!resolved.exists && resolved.verifiable) {
         invalid.push({ ...link, reason: "TARGET_NOT_FOUND", resolvedPath: resolved.targetFile });
         continue;
@@ -194,7 +272,7 @@ function inspectLinks(file, lines, files, headingsByFile) {
       if (!anchor) invalid.push({ ...link, reason: "ANCHOR_NOT_FOUND", resolvedPath: resolved.targetFile });
     }
   }
-  return { links, invalid };
+  return { links, invalid, unverified };
 }
 
 function levelFor(lines) {
@@ -223,12 +301,13 @@ function analyzeDocument(file, content, files, headingsByFile) {
       count: links.links.length,
       items: links.links,
       invalid: links.invalid,
+      unverified: links.unverified,
     },
     level: levelFor(measurements.lines),
   };
 }
 
-export function buildDocumentationNotMeasured({ auditedHead = null, runId = null, error = null } = {}) {
+export function buildDocumentationNotMeasured({ auditedHead = null, runId = null, error = null, reason = error ? "MEASUREMENT_FAILED" : "HISTORICAL_ABSENCE" } = {}) {
   return {
     schemaVersion: DOCUMENTATION_MAINTAINABILITY_SCHEMA_VERSION,
     kind: "documentation-maintainability",
@@ -237,11 +316,12 @@ export function buildDocumentationNotMeasured({ auditedHead = null, runId = null
     auditedHead,
     runId,
     provenance: "NOT_MEASURED",
+    reason,
     error: error ? { name: error.name, message: error.message, code: error.code ?? null } : null,
     thresholds: DOCUMENTATION_THRESHOLDS,
     documents: [],
     ranking: [],
-    summary: { trackedDocuments: 0, surveillance: 0, reviewRequired: 0, architectureReview: 0, invalidReferences: 0 },
+    summary: { trackedDocuments: 0, surveillance: 0, reviewRequired: 0, architectureReview: 0, invalidReferences: 0, unverifiedReferences: 0 },
   };
 }
 
@@ -260,6 +340,7 @@ export function buildDocumentationMaintainabilityReport({ root = process.cwd(), 
     reviewRequired: documents.filter((document) => document.level === "REVIEW_REQUIRED").length,
     architectureReview: documents.filter((document) => document.level === "ARCHITECTURE_REVIEW").length,
     invalidReferences: documents.reduce((sum, document) => sum + document.internalLinks.invalid.length, 0),
+    unverifiedReferences: documents.reduce((sum, document) => sum + document.internalLinks.unverified.length, 0),
   };
   return {
     schemaVersion: DOCUMENTATION_MAINTAINABILITY_SCHEMA_VERSION,

@@ -263,8 +263,13 @@ test("un échec documentaire reste NOT_MEASURED sans modifier le verdict des cin
     assert.equal(result.status, "PASS");
     assert.equal(result.results.length, 5);
     assert.equal(result.documentation.status, "NOT_MEASURED");
+    assert.equal(result.documentation.reason, "MEASUREMENT_FAILED");
+    assert.equal(result.documentation.error.message, "documentation fixture failure");
     assert.equal(result.projectionStatus, "PASS");
     assert.equal(index.audits.documentation.state, "NOT_MEASURED");
+    assert.equal(index.audits.documentation.reason, "MEASUREMENT_FAILED");
+    assert.equal(index.source.documentation.reason, "MEASUREMENT_FAILED");
+    assert.match(fs.readFileSync(result.projectionPaths.summary, "utf8"), /documentation-maintainability/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

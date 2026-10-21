@@ -478,7 +478,7 @@ export async function runQualityAudit(mode, {
       try {
         documentation = await documentationRunner({ root, auditedSha: start.auditedHead, runId });
       } catch (error) {
-        documentation = buildDocumentationNotMeasured({ auditedHead: start.auditedHead, runId, error });
+        documentation = buildDocumentationNotMeasured({ auditedHead: start.auditedHead, runId, error, reason: "MEASUREMENT_FAILED" });
       }
       let architecture;
       try {

@@ -253,7 +253,9 @@ test("construit un index exhaustif sans confondre complexity et functionLength",
   assert.equal(index.domains, undefined);
   assert.match(buildQualityFileIndexMarkdown(index), /verdict initial et réévaluation dérivée/);
   assert.equal(index.audits.documentation.state, "NOT_MEASURED");
+  assert.equal(index.audits.documentation.reason, "HISTORICAL_ABSENCE");
   assert.equal(index.documentationDomains.state, "NOT_MEASURED");
+  assert.equal(index.documentationDomains.reason, "HISTORICAL_ABSENCE");
 });
 
 test("projette la maintenabilité documentaire dans les fichiers et le domain index", () => {

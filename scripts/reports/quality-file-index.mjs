@@ -650,10 +650,13 @@ function addCycles(report, files, domains, candidateGroups) {
 }
 
 function addDocumentation(report, files, domains) {
-  if (!report || report.status === "NOT_MEASURED") {
-    return { state: "NOT_MEASURED", status: "NOT_MEASURED", detail: "run historique sans dimension documentaire", documents: [], ranking: [] };
+  if (!report) {
+    return { state: "NOT_MEASURED", status: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", detail: "run historique sans dimension documentaire", documents: [], ranking: [] };
   }
-  if (report.error) return { state: "NOT_MEASURED", status: "FAIL", error: report.error, documents: [], ranking: [] };
+  if (report.status === "NOT_MEASURED" || report.error) {
+    const reason = report.reason ?? (report.error ? "MEASUREMENT_FAILED" : "HISTORICAL_ABSENCE");
+    return { state: "NOT_MEASURED", status: "NOT_MEASURED", reason, detail: reason === "MEASUREMENT_FAILED" ? "mesure documentaire échouée" : "run historique sans dimension documentaire", error: report.error ?? null, documents: [], ranking: [] };
+  }
   const findingCounts = { surveillance: 0, reviewRequired: 0, architectureReview: 0, invalidReferences: 0 };
   for (const document of report.documents ?? []) {
     const file = ensureFile(files, document.path);
@@ -905,7 +908,7 @@ function finalizeFunctionalDomains(domains, architecture) {
 
 function finalizeDocumentationDomains(domains, report) {
   if (!report || report.state === "NOT_MEASURED") {
-    return { state: "NOT_MEASURED", detail: "run historique sans regroupement documentaire", items: [] };
+    return { state: "NOT_MEASURED", reason: report?.reason ?? "HISTORICAL_ABSENCE", detail: report?.detail ?? "run historique sans regroupement documentaire", items: [] };
   }
   return {
     state: "PRESENT",
@@ -972,7 +975,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       provenance: run.provenance,
       aggregateManifest: run.aggregateManifest,
       auditManifests: run.manifests,
-      documentation: run.documentation ? { status: run.documentation.status, readProvenance: run.documentation.provenance, attentionRequired: run.documentation.attentionRequired } : { status: "NOT_MEASURED", readProvenance: "NOT_MEASURED", attentionRequired: false },
+      documentation: run.documentation ? { status: run.documentation.status, readProvenance: run.documentation.provenance, reason: run.documentation.reason ?? null, error: run.documentation.error ?? null, attentionRequired: run.documentation.attentionRequired } : { status: "NOT_MEASURED", readProvenance: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", error: null, attentionRequired: false },
       initialStatus: run.aggregateManifest.status,
       attentionRequired: run.aggregateManifest.attentionRequired,
       reproducible: run.aggregateManifest.reproducible,
@@ -999,6 +1002,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       architectureUnresolvedInternalCount: architectureProjection.graphSummary?.unresolvedInternalImports ?? 0,
       documentationFiles: documentation.summary?.trackedDocuments ?? 0,
       documentationInvalidReferences: documentation.summary?.invalidReferences ?? 0,
+      documentationUnverifiedReferences: documentation.summary?.unverifiedReferences ?? 0,
     },
     files: finalFiles,
     auditCategories: finalAuditCategories,
@@ -1052,7 +1056,7 @@ export function buildQualityFileIndexMarkdown(index) {
   lines.push("", "## Top-heavy : verdict initial et réévaluation dérivée", "", "| Vue | État | Statut | Violations ratchet REVIEW |", "| --- | --- | --- | ---: |");
   lines.push(`| Initiale | ${index.audits.topHeavy.initialVerdict.evaluation.state} | ${index.audits.topHeavy.initialVerdict.status} | ${index.audits.topHeavy.initialVerdict.evaluation.counts.reviewRatchetViolations ?? 0} |`);
   lines.push(`| Dérivée | ${index.audits.topHeavy.derivedReevaluation.state} | ${index.audits.topHeavy.derivedReevaluation.status ?? "NOT_MEASURED"} | ${index.audits.topHeavy.derivedReevaluation.counts?.reviewRatchetViolations ?? 0} |`);
-  lines.push("", "## DOCUMENTATION MAINTAINABILITY", "", `- État : **${index.audits.documentation.state}**`, `- Documents suivis : **${index.globalCounts.documentationFiles}**`, `- Surveillance : **${index.audits.documentation.summary?.surveillance ?? "NOT_MEASURED"}**`, `- REVIEW_REQUIRED : **${index.audits.documentation.summary?.reviewRequired ?? "NOT_MEASURED"}**`, `- ARCHITECTURE_REVIEW : **${index.audits.documentation.summary?.architectureReview ?? "NOT_MEASURED"}**`, `- Références internes invalides : **${index.audits.documentation.summary?.invalidReferences ?? "NOT_MEASURED"}**`, "", "| Rang | Document | Niveau | Lignes | Plus grande section | Références invalides | Cycle de vie |", "| ---: | --- | --- | ---: | --- | ---: | --- |");
+  lines.push("", "## DOCUMENTATION MAINTAINABILITY", "", `- État : **${index.audits.documentation.state}**`, `- Raison : **${index.audits.documentation.reason ?? (index.audits.documentation.state === "PRESENT" ? "MEASURED" : index.source.documentation.reason ?? "NOT_MEASURED")}**`, `- Diagnostic : **${index.audits.documentation.error?.message ?? "—"}**`, `- Documents suivis : **${index.globalCounts.documentationFiles}**`, `- Surveillance : **${index.audits.documentation.summary?.surveillance ?? "NOT_MEASURED"}**`, `- REVIEW_REQUIRED : **${index.audits.documentation.summary?.reviewRequired ?? "NOT_MEASURED"}**`, `- ARCHITECTURE_REVIEW : **${index.audits.documentation.summary?.architectureReview ?? "NOT_MEASURED"}**`, `- Références internes invalides : **${index.audits.documentation.summary?.invalidReferences ?? "NOT_MEASURED"}**`, `- Références non vérifiées : **${index.globalCounts.documentationUnverifiedReferences ?? "NOT_MEASURED"}**`, "", "| Rang | Document | Niveau | Lignes | Plus grande section | Références invalides | Cycle de vie |", "| ---: | --- | --- | ---: | --- | ---: | --- |");
   for (const [rank, document] of (index.audits.documentation.ranking ?? []).slice(0, 20).entries()) {
     lines.push(`| ${rank + 1} | \`${escapeMarkdown(document.path)}\` | ${document.level} | ${document.lines} | ${document.largestSection ? `L${document.largestSection.startLine}-${document.largestSection.endLine} (${document.largestSection.lines}) : ${escapeMarkdown(document.largestSection.title)}` : "—"} | ${document.internalLinks?.invalid?.length ?? 0} | ${document.lifecycle?.statuses?.join(" / ") || "NOT_STATED"} |`);
   }
