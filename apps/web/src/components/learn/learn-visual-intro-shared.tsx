@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 import type { LearnLinkCard, LearnLocale } from "@/lib/learning/learn-rubric-data";
 
@@ -74,7 +74,6 @@ export function LearnVisualIntroLead({
   eyebrow,
   action,
   chips,
-  actionClassName,
 }: {
   locale: LearnLocale;
   card: LearnLinkCard;
@@ -83,7 +82,6 @@ export function LearnVisualIntroLead({
   eyebrow: string;
   action: LearnVisualIntroAction;
   chips: ReactNode;
-  actionClassName: string;
 }) {
   const tone = LEARN_VISUAL_INTRO_TONES[card.visual.tone];
 
@@ -115,10 +113,10 @@ export function LearnVisualIntroLead({
 
       {chips}
 
-      <Link href={action.href} className={actionClassName}>
+      <CmmButton href={action.href} tone="critical" size="md" variant="pill" className="w-fit">
         {action.label}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </Link>
+      </CmmButton>
     </div>
   );
 }

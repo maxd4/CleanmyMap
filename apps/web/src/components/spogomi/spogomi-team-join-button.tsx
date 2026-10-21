@@ -73,15 +73,15 @@ export function SpogomiTeamJoinButton({
   if (request?.status === "pending") {
     return (
       <div className="space-y-1" aria-live="polite">
-        <p className="text-xs font-semibold text-amber-800">En attente de validation administrative</p>
+        <p className="cmm-text-small font-semibold text-amber-900">En attente de validation administrative</p>
         <CmmButton type="button" size="sm" tone="secondary" disabled={busy} onClick={() => void cancelRequest()}>
           Annuler la demande
         </CmmButton>
       </div>
     );
   }
-  if (request?.status === "approved") return <p className="text-xs font-bold text-emerald-800" role="status">Rattachement accepté</p>;
-  if (request?.status === "rejected") return <p className="text-xs font-semibold text-slate-700" role="status">Demande refusée</p>;
+  if (request?.status === "approved") return <p className="cmm-text-small font-bold text-emerald-800" role="status">Rattachement accepté</p>;
+  if (request?.status === "rejected") return <p className="cmm-text-small font-semibold text-slate-700" role="status">Demande refusée</p>;
   if (request?.status === "cancelled") return <CmmButton type="button" size="sm" tone="secondary" disabled={busy} onClick={() => void sendRequest()}>Rejoindre cette équipe</CmmButton>;
 
   return (
@@ -89,7 +89,7 @@ export function SpogomiTeamJoinButton({
       <CmmButton type="button" size="sm" tone="secondary" disabled={busy} loading={busy} onClick={() => void sendRequest()}>
         {busy ? "Envoi…" : "Rejoindre cette équipe"}
       </CmmButton>
-      {error ? <p role="alert" className="max-w-56 text-xs font-semibold text-rose-700">{error}</p> : null}
+      {error ? <p role="alert" className="cmm-text-small max-w-56 font-semibold text-rose-700">{error}</p> : null}
     </div>
   );
 }

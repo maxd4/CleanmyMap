@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { ArrowLeft, ArrowRight, Compass, Layers3, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -124,29 +124,27 @@ export function LearnRubricShell({
         >
           <div className="space-y-6">
             <div className="flex flex-wrap items-center gap-3">
-              <Link
+              <CmmButton
                 href={backHref}
-                className={
-                isLightOrange
-                    ? "inline-flex min-h-10 items-center gap-2 rounded-full border border-amber-200 bg-white px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/60"
-                    : "inline-flex min-h-10 items-center gap-2 rounded-full border border-white/18 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/16 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-              }
+                tone="secondary"
+                size="sm"
+                variant="pill"
+                className="shrink-0"
               >
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 {backLabel[locale]}
-              </Link>
+              </CmmButton>
               {cta ? (
-                <Link
+                <CmmButton
                   href={cta.href}
-                  className={
-                    isLightOrange
-                      ? "inline-flex min-h-10 items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-900 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/60"
-                      : "inline-flex min-h-10 items-center gap-2 rounded-full border border-white/18 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/16 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-                }
+                  tone="critical"
+                  size="sm"
+                  variant="pill"
+                  className="shrink-0"
                 >
                   {cta.label[locale]}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
+                </CmmButton>
               ) : null}
             </div>
 
@@ -174,8 +172,8 @@ export function LearnRubricShell({
                   <p
                     className={
                       isLightOrange
-                        ? "text-[11px] font-black uppercase tracking-[0.22em] text-amber-700"
-                        : "text-[11px] font-black uppercase tracking-[0.22em] text-white"
+                        ? "cmm-text-small font-black uppercase tracking-[0.18em] text-amber-700"
+                        : "cmm-text-small font-black uppercase tracking-[0.18em] text-white"
                     }
                   >
                     {isFrench ? "Lecture visuelle" : "Visual read"}
@@ -222,8 +220,8 @@ export function LearnRubricShell({
                     <span
                       className={
                         isLightOrange
-                          ? "text-[10px] font-black uppercase tracking-[0.18em] text-amber-700"
-                          : "text-[10px] font-black uppercase tracking-[0.18em] text-white/68"
+                          ? "cmm-text-caption font-black uppercase tracking-[0.16em] text-amber-700"
+                          : "cmm-text-caption font-black uppercase tracking-[0.16em] text-white/80"
                       }
                     >
                       01
@@ -274,8 +272,8 @@ export function LearnRubricShell({
                     <span
                       className={
                         isLightOrange
-                          ? "text-[10px] font-black uppercase tracking-[0.18em] text-amber-700"
-                          : "text-[10px] font-black uppercase tracking-[0.18em] text-white/68"
+                          ? "cmm-text-caption font-black uppercase tracking-[0.16em] text-amber-700"
+                          : "cmm-text-caption font-black uppercase tracking-[0.16em] text-white/80"
                       }
                     >
                       02
@@ -287,8 +285,8 @@ export function LearnRubricShell({
                         key={item[locale]}
                         className={
                           isLightOrange
-                            ? "inline-flex items-center rounded-2xl border border-amber-200 bg-orange-50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-amber-900"
-                            : "inline-flex items-center rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white"
+                            ? "inline-flex items-center rounded-2xl border border-amber-200 bg-orange-50 px-3 py-2 cmm-text-small font-black uppercase tracking-[0.16em] text-amber-900"
+                            : "inline-flex items-center rounded-2xl border border-white/14 bg-white/10 px-3 py-2 cmm-text-small font-black uppercase tracking-[0.16em] text-white"
                         }
                       >
                         {item[locale]}
@@ -326,8 +324,8 @@ export function LearnRubricShell({
                     <span
                       className={
                         isLightOrange
-                          ? "text-[10px] font-black uppercase tracking-[0.18em] text-amber-700"
-                          : "text-[10px] font-black uppercase tracking-[0.18em] text-white/68"
+                          ? "cmm-text-caption font-black uppercase tracking-[0.16em] text-amber-700"
+                          : "cmm-text-caption font-black uppercase tracking-[0.16em] text-white/80"
                       }
                     >
                       03

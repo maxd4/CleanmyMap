@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
 import { notFound } from "next/navigation";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { SpogomiPublicRouteMap } from "@/components/spogomi/spogomi-public-route-map";
 import { SpogomiIdentityLinkCard } from "@/components/spogomi/spogomi-identity-link-card";
@@ -52,11 +53,11 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
           <div className="space-y-6">
             <CmmCard tone="emerald" variant="glass" className="space-y-3 p-5">
               <h2 className="text-xl font-black text-emerald-950">Informations pratiques</h2>
-              <p className="flex items-center gap-2 text-sm text-slate-700"><CalendarDays size={16} className="text-emerald-700" />{formatDate(event.startsAt, event.officialTimezone)}{event.endsAt ? ` → ${formatDate(event.endsAt, event.officialTimezone)}` : ""}</p>
-              <p className="flex items-center gap-2 text-sm text-slate-700"><MapPin size={16} className="text-emerald-700" />{event.locationLabel}</p>
-              {event.actionHref ? <Link href={event.actionHref} className="inline-flex min-h-11 items-center font-bold text-emerald-800 hover:underline">Voir l’action CleanMyMap associée</Link> : <p className="text-sm text-slate-600">L’action CleanMyMap associée n’est pas publiée dans cette vue.</p>}
-              <Link href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" className="inline-flex min-h-11 items-center font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Discuter avec la communauté</Link>
-              <p className="cmm-text-caption text-slate-700">Ce salon est une discussion communautaire. Le règlement et les résultats officiels sont ceux publiés par l’organisateur habilité.</p>
+              <p className="flex items-center gap-2 text-sm text-slate-700"><CalendarDays size={16} className="text-emerald-700" aria-hidden="true" />{formatDate(event.startsAt, event.officialTimezone)}{event.endsAt ? ` → ${formatDate(event.endsAt, event.officialTimezone)}` : ""}</p>
+              <p className="flex items-center gap-2 text-sm text-slate-700"><MapPin size={16} className="text-emerald-700" aria-hidden="true" />{event.locationLabel}</p>
+              {event.actionHref ? <CmmButton href={event.actionHref} tone="primary" size="sm" variant="pill">Voir l’action CleanMyMap associée</CmmButton> : <p className="text-sm text-slate-600">L’action CleanMyMap associée n’est pas publiée dans cette vue.</p>}
+              <CmmButton href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" tone="secondary" size="sm" variant="pill">Discuter avec la communauté</CmmButton>
+              <p className="cmm-text-small text-slate-700">Ce salon est une discussion communautaire. Le règlement et les résultats officiels sont ceux publiés par l’organisateur habilité.</p>
             </CmmCard>
             {event.organizer ? (
               <CmmCard tone="slate" variant="glass" className="space-y-3 p-5">
@@ -75,7 +76,7 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
             ) : null}
             <CmmCard tone="emerald" variant="glass" className="space-y-4 p-5">
               <div><h2 className="text-xl font-black text-emerald-950">Équipes</h2><p className="cmm-text-body mt-1 text-slate-900">Seuls les noms publics d’équipe sont affichés. Le roster nominatif reste privé.</p></div>
-              {event.teams.length ? <div className="grid gap-3 sm:grid-cols-2">{event.teams.map((team) => <div key={`${team.divisionId}-${team.teamNumber}`} className="rounded-xl border border-emerald-100 bg-white/75 p-3"><p className="text-xs font-black uppercase tracking-wide text-emerald-700">{team.divisionType === "world_cup" ? "World Cup" : "Casual"}</p><p className="font-bold text-slate-900">{team.publicName}</p><p className="mt-1 text-xs text-slate-500">Équipe {team.teamNumber}</p><div className="mt-3"><SpogomiTeamJoinButton eventId={event.id} teamId={team.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} /></div></div>)}</div> : <p className="rounded-xl border border-dashed border-emerald-200 p-4 text-sm text-slate-600">La composition publique n’est pas encore disponible.</p>}
+              {event.teams.length ? <div className="grid gap-3 sm:grid-cols-2">{event.teams.map((team) => <div key={`${team.divisionId}-${team.teamNumber}`} className="rounded-xl border border-emerald-100 bg-white/75 p-3"><p className="cmm-text-small font-black uppercase tracking-wide text-emerald-800">{team.divisionType === "world_cup" ? "World Cup" : "Casual"}</p><p className="font-bold text-slate-900">{team.publicName}</p><p className="cmm-text-small mt-1 text-slate-600">Équipe {team.teamNumber}</p><div className="mt-3"><SpogomiTeamJoinButton eventId={event.id} teamId={team.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} /></div></div>)}</div> : <p className="rounded-xl border border-dashed border-emerald-200 p-4 text-sm text-slate-600">La composition publique n’est pas encore disponible.</p>}
             </CmmCard>
             {event.route ? <CmmCard tone="amber" variant="glass" className="space-y-3 p-5"><h2 className="text-xl font-black text-amber-950">Parcours officiel de référence</h2><p className="cmm-text-body text-slate-900">{event.route.fileName} · {event.route.referenceDistanceKm} km calculés depuis le fichier. Cette géométrie ne constitue pas une trace réellement parcourue.</p><SpogomiPublicRouteMap coordinates={event.route.coordinates} /></CmmCard> : <CmmCard tone="slate" variant="glass" className="border-dashed p-5"><p className="font-bold text-slate-900">Aucun parcours officiel publié.</p></CmmCard>}
             <SpogomiPublicResults eventSlug={event.slug} initial={event.results} />

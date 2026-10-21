@@ -18,7 +18,7 @@ export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) 
     <section className="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+          <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-slate-600">
             {isFrench ? "Repères de séance" : "Session cues"}
           </p>
           <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
@@ -40,7 +40,7 @@ export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) 
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-slate-600">
                 {isFrench ? "Fiche enseignant" : "Teacher sheet"}
               </p>
               <h4 className="mt-1 text-xl font-black tracking-tight text-slate-900 md:text-2xl">
@@ -69,7 +69,7 @@ export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) 
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-slate-600">
                 {isFrench ? "Fiche élève" : "Student sheet"}
               </p>
               <h4 className="mt-1 text-xl font-black tracking-tight text-slate-900 md:text-2xl">
@@ -106,7 +106,7 @@ export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) 
       <div className="rounded-[2rem] border border-amber-200 bg-amber-50/70 p-5 shadow-sm md:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="max-w-3xl">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+            <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-amber-800">
               {isFrench ? "Déroulé de l'atelier" : "Workshop flow"}
             </p>
             <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
@@ -118,7 +118,7 @@ export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) 
                 : "The quiz-30 stays direct; atelier-60 adds a teaching sequence between the pre-quiz and post-quiz."}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-xs font-black uppercase tracking-[0.18em] text-amber-800">
+          <div className="grid grid-cols-2 gap-2 cmm-text-small font-black uppercase tracking-[0.18em] text-amber-800">
             {WORKSHOP_SUMMARY.map((item) => (
               <span key={item.label.fr} className="rounded-full border border-amber-200 bg-white px-3 py-2 text-center shadow-sm">
                 {item.value} {item.label[locale]}
@@ -134,7 +134,7 @@ export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) 
                 <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-600 text-sm font-black text-white">
                   {String(index + 1).padStart(2, "0")}
                 </span>
-                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+                <span className="cmm-text-small font-black uppercase tracking-[0.18em] text-amber-800">
                   {index === 0 ? "Intro" : index === 1 ? "Quiz" : index === 2 ? "Discussion" : "Conclusion"}
                 </span>
               </div>

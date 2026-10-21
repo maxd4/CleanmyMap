@@ -91,19 +91,19 @@ export default async function SpogomiIndexPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 className="text-xl font-black text-emerald-950">{event.name}</h3>
-                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.15em] text-emerald-700">{lifecycleLabels[event.lifecycle]}</p>
+                      <p className="cmm-text-small mt-1 font-bold uppercase tracking-[0.15em] text-emerald-800">{lifecycleLabels[event.lifecycle]}</p>
                     </div>
-                    <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700">
+                    <span className="cmm-text-small rounded-full border border-slate-200 bg-white/80 px-3 py-1 font-bold text-slate-800">
                       {event.mode === "mixed" ? "Casual & World Cup" : event.mode === "world_cup" ? "World Cup" : "Casual"}
                     </span>
                   </div>
                   <div className="space-y-2 text-sm text-slate-700">
-                    <p className="flex items-center gap-2"><CalendarDays size={15} className="text-emerald-700" />{formatDate(event.startsAt, event.officialTimezone)}</p>
-                    <p className="flex items-center gap-2"><MapPin size={15} className="text-emerald-700" />{event.locationLabel}</p>
+                    <p className="flex items-center gap-2"><CalendarDays size={15} className="text-emerald-700" aria-hidden="true" />{formatDate(event.startsAt, event.officialTimezone)}</p>
+                    <p className="flex items-center gap-2"><MapPin size={15} className="text-emerald-700" aria-hidden="true" />{event.locationLabel}</p>
                   </div>
-                  <Link href={`/spogomi/${encodeURIComponent(event.slug)}`} className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                  <CmmButton href={`/spogomi/${encodeURIComponent(event.slug)}`} tone="primary" size="sm" variant="pill">
                     Voir la compétition <ArrowRight size={16} />
-                  </Link>
+                  </CmmButton>
                 </CmmCard>
               ))}
             </div>

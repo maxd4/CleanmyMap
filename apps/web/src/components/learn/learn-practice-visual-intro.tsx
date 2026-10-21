@@ -78,7 +78,7 @@ function StepTile({
         <div className={cn("inline-flex h-10 w-10 items-center justify-center rounded-2xl", tone.badge)}>
           <Icon className="h-4 w-4" aria-hidden="true" />
         </div>
-        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+        <span className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
           {step.title[locale]}
         </span>
       </div>
@@ -99,7 +99,7 @@ function QuickCue({
   const Icon = icon;
 
   return (
-    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-slate-600 shadow-sm">
+    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 cmm-text-small font-black uppercase tracking-[0.14em] text-slate-700 shadow-sm">
       <Icon className="h-4 w-4 text-slate-400" aria-hidden="true" />
       {label}
     </div>
@@ -123,7 +123,6 @@ export function LearnPracticeVisualIntro({
         clue={clue}
         eyebrow={locale === "fr" ? "Parcours adaptatif" : "Adaptive path"}
         action={action}
-        actionClassName="inline-flex min-h-11 items-center gap-2 rounded-full border border-amber-200 bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 text-sm font-black text-white shadow-[0_12px_24px_-14px_rgba(249,115,22,0.55)] transition hover:-translate-y-[1px] hover:from-amber-600 hover:to-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50"
         chips={
           <div className="flex flex-wrap gap-2">
             {card.visual.chips.map((chip) => (
@@ -141,7 +140,7 @@ export function LearnPracticeVisualIntro({
       <div className="space-y-3 rounded-[1.6rem] border border-slate-200/80 bg-white/85 p-5 shadow-sm md:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
                 {locale === "fr" ? "Ce qu'on fait ici" : "What happens here"}
               </p>
               <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
@@ -177,7 +176,7 @@ export function LearnPracticeVisualIntro({
           <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
                   {locale === "fr" ? "Rythme" : "Rhythm"}
                 </p>
                 <p className="text-sm font-semibold text-slate-700">

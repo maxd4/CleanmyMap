@@ -163,7 +163,8 @@ function SourceCardView({
         href={card.href}
         tone="secondary"
         variant="pill"
-        className="mt-4 w-full justify-between px-4 py-3 cmm-text-caption font-black uppercase tracking-[0.18em]"
+        size="sm"
+        className="mt-4 w-full justify-between"
       >
         {card.externalLabel[locale]}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />

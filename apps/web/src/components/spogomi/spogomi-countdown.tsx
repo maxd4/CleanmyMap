@@ -15,13 +15,13 @@ export function SpogomiCountdown({ startsAt }: { startsAt: string | null | undef
   }, [startsAt]);
 
   if (state.kind === "unknown") {
-    return <p className="text-xs font-bold text-amber-900">Date et heure à confirmer</p>;
+    return <p className="cmm-text-small font-bold text-amber-900">Date et heure à confirmer</p>;
   }
   if (state.kind === "invalid") {
-    return <p className="text-xs font-bold text-amber-900">Date indisponible</p>;
+    return <p className="cmm-text-small font-bold text-amber-900">Date indisponible</p>;
   }
   if (state.kind === "started") {
-    return <p className="text-xs font-bold text-emerald-800">Décompte terminé</p>;
+    return <p className="cmm-text-small font-bold text-emerald-800">Décompte terminé</p>;
   }
   return (
     <p className="font-mono text-sm font-black tabular-nums text-amber-950" aria-live="polite">

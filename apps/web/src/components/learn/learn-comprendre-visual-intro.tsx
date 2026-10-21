@@ -56,7 +56,7 @@ function StatBadge({
   return (
     <div className="rounded-[1.3rem] border border-slate-200 bg-white px-4 py-3 shadow-sm">
       <p className={cn("text-2xl font-black tracking-tight", accent)}>{value}</p>
-      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+      <p className="mt-1 cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
         {getLocaleText(locale, label)}
       </p>
     </div>
@@ -82,7 +82,7 @@ function RightCard({
     <div className="rounded-[1.4rem] border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+          <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
             {title}
           </p>
           <p className="text-sm font-bold text-slate-800">{subtitle}</p>
@@ -105,11 +105,11 @@ function renderArtwork(card: LearnLinkCard, locale: LearnLocale) {
       <div className="space-y-3">
         <div className="rounded-[1.4rem] border border-slate-200 bg-white/90 p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <div className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em]", tone.badge)}>
+        <div className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.16em]", tone.badge)}>
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
               {card.visual.badge[locale]}
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+          <span className="cmm-text-caption font-black uppercase tracking-[0.16em] text-slate-600">
               01
             </span>
           </div>
@@ -190,7 +190,7 @@ function renderArtwork(card: LearnLinkCard, locale: LearnLocale) {
             <Icon className="h-5 w-5" aria-hidden="true" />
           </span>
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+            <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
               {card.title}
             </p>
             <p className="text-sm font-bold text-slate-800">{card.detail}</p>
@@ -218,14 +218,13 @@ export function LearnComprendreVisualIntro({
         clue={clue}
         eyebrow={locale === "fr" ? "Aperçu visuel" : "Visual overview"}
         action={action}
-        actionClassName="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-slate-900 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
         chips={
           <div className="flex flex-wrap gap-2">
             {card.visual.chips.map((chip) => (
               <span
                 key={`${card.title}-${chip[locale]}`}
                 className={cn(
-                  "inline-flex min-h-8 items-center rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em]",
+                  "cmm-text-small inline-flex min-h-8 items-center rounded-full border px-3 py-1.5 font-bold uppercase tracking-[0.16em]",
                   LEARN_VISUAL_INTRO_TONES[card.visual.tone].chip,
                 )}
               >
@@ -239,7 +238,7 @@ export function LearnComprendreVisualIntro({
       <div className="space-y-3 rounded-[1.6rem] border border-slate-200/80 bg-white/85 p-5 shadow-sm md:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
                 {locale === "fr" ? "Lecture en 3 couches" : "Three-layer reading"}
               </p>
               <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
@@ -255,7 +254,7 @@ export function LearnComprendreVisualIntro({
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
                 {locale === "fr" ? "Contexte" : "Context"}
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-700">
@@ -265,7 +264,7 @@ export function LearnComprendreVisualIntro({
               </p>
             </div>
             <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
                 {locale === "fr" ? "Amplitude" : "Magnitude"}
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-700">
@@ -275,7 +274,7 @@ export function LearnComprendreVisualIntro({
               </p>
             </div>
             <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-slate-600">
                 {locale === "fr" ? "Méthode" : "Method"}
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-700">

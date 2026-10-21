@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 import {
   DeferredGIECContent,
@@ -53,18 +53,12 @@ export function LearnDirectPathSection({ locale }: { locale: Locale }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link
-            href="/learn/sentrainer"
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-amber-200 bg-amber-600 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
-          >
+          <CmmButton href="/learn/sentrainer" tone="critical" variant="pill" size="md" className="w-full sm:w-auto">
             {locale === "fr" ? "Passer au quiz" : "Go to the quiz"}
-          </Link>
-          <Link
-            href="/methodologie"
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-900 transition hover:-translate-y-[1px] hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
-          >
+          </CmmButton>
+          <CmmButton href="/methodologie" tone="secondary" variant="pill" size="md" className="w-full sm:w-auto">
             {locale === "fr" ? "Voir la méthodologie" : "See the methodology"}
-          </Link>
+          </CmmButton>
         </div>
       </div>
     </section>

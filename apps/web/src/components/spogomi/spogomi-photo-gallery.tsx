@@ -51,7 +51,7 @@ export function SpogomiPhotoGallery({ photos }: { photos: SpogomiPublicGalleryPh
             </> : null}
             <div className="absolute bottom-2 left-2 right-2 rounded-xl bg-slate-950/80 p-3 text-sm text-white">
               <p>{activePhoto.caption ?? activePhoto.alt}</p>
-              {activePhoto.credit ? <p className="mt-1 text-xs text-slate-200">Crédit : {activePhoto.credit}</p> : null}
+              {activePhoto.credit ? <p className="cmm-text-small mt-1 text-slate-200">Crédit : {activePhoto.credit}</p> : null}
             </div>
           </div>
         </div>

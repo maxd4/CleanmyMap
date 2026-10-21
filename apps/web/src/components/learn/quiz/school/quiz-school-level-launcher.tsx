@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, GraduationCap } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
 import {
@@ -62,7 +62,7 @@ export function QuizSchoolLevelLauncher({ locale }: { locale: SupportedLocale })
       <div className="flex items-start gap-3">
         <GraduationCap className="mt-0.5 h-7 w-7 shrink-0 text-amber-700" aria-hidden="true" />
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+          <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-amber-700">
             {getQuizUiCopy(locale, "school.levelPrompt")}
           </p>
           <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
@@ -90,7 +90,7 @@ export function QuizSchoolLevelLauncher({ locale }: { locale: SupportedLocale })
             <p className="mt-2 text-sm leading-relaxed opacity-80">
               {getQuizUiCopy(locale, `school.level.${level}.description`)}
             </p>
-            <p className="mt-3 text-[10px] font-black uppercase tracking-[0.18em] opacity-70">
+            <p className="cmm-text-small mt-3 font-black uppercase tracking-[0.18em] opacity-80">
               {getQuizUiCopy(locale, "school.questionsLabel")} · {getQuizUiCopy(locale, "school.durationLabel")}
             </p>
           </button>
@@ -104,7 +104,7 @@ export function QuizSchoolLevelLauncher({ locale }: { locale: SupportedLocale })
             <button type="button" onClick={() => setSelectedLevel(null)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600">{getQuizUiCopy(locale, "school.format.back")}</button>
           </div>
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4" aria-live="polite">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">{getQuizUiCopy(locale, "school.sessionCuesLabel")}</p>
+            <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-amber-700">{getQuizUiCopy(locale, "school.sessionCuesLabel")}</p>
             <p className="mt-1 text-lg font-black text-slate-950">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).duration}</p>
             <p className="cmm-text-body mt-2">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).materials}</p>
             <p className="cmm-text-body mt-1">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).flow}</p>
@@ -117,9 +117,9 @@ export function QuizSchoolLevelLauncher({ locale }: { locale: SupportedLocale })
               </button>
             ))}
           </div>
-          <Link href={getQuizSchoolLaunchHref(selectedLevel, selectedFormat)} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2">
+          <CmmButton href={getQuizSchoolLaunchHref(selectedLevel, selectedFormat)} tone="critical" variant="pill" size="md" className="mt-4">
             {getQuizUiCopy(locale, "school.format.cta")}<ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
+          </CmmButton>
         </div>
       ) : null}
     </section>

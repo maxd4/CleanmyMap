@@ -180,7 +180,8 @@ export function LearnGestesPropresInsightsSection({
             href="https://www.gestespropres.com/actualites"
             tone="secondary"
             variant="pill"
-            className="min-h-11 px-4 py-2.5 cmm-text-caption font-black uppercase tracking-[0.16em]"
+            size="sm"
+            className="w-full justify-between"
           >
             {config.actionLabel?.[locale] ?? "See news"}
             <ExternalLink className="h-4 w-4" aria-hidden="true" />
