@@ -122,7 +122,20 @@ setup("authenticate and save official Clerk state", async ({ page }) => {
     page,
     emailAddress: process.env.E2E_CLERK_USER_EMAIL!,
   });
-  await page.goto("/sections/route");
-  await page.getByRole("heading", { name: "Où agir", exact: true }).first().waitFor();
+
+  await page.waitForFunction(() => {
+    const clerk = (window as Window & {
+      Clerk?: { loaded?: boolean; user?: { id?: string } | null; session?: { id?: string; status?: string } | null };
+    }).Clerk;
+    return Boolean(clerk?.loaded && clerk.user?.id && clerk.session?.id && clerk.session.status === "active");
+  });
+
+  // This is a server-authenticated surface. Its main element is rendered only
+  // after getSafeAuthSession has resolved a real userId; the anonymous preview
+  // is deliberately not accepted as setup evidence.
+  await page.goto("/dashboard");
+  await page.locator("main[data-display-mode]").waitFor();
+  await page.locator("[data-auth-gate-card]").waitFor({ state: "detached" });
+  await page.waitForFunction(() => !window.location.pathname.startsWith("/sign-in"));
   await page.context().storageState({ path: authFileForTests });
 });
