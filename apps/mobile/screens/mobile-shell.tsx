@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { Alert, BackHandler, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Alert, BackHandler, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Linking from 'expo-linking'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { CircleUserRound, ExternalLink, HandHelping, House, Map, UsersRound, GraduationCap, ArrowLeft, type LucideIcon } from 'lucide-react-native'
@@ -48,14 +49,16 @@ export function MobileShell({ onSignOut, onSessionExpired, onStartActivity }: Mo
     return () => subscription.remove()
   }, [actSubview, surface])
 
-  return <SafeAreaView style={styles.root}>
+  return <SafeAreaView edges={['top', 'bottom']} style={styles.root}>
     <StatusBar style="light" />
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <View style={surface === 'act' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'act' ? 'auto' : 'none'}><ActScreen actSubview={actSubview} onActSubview={setActSubview} onStart={onStartActivity} onSessionExpired={onSessionExpired} /></View>
-      <View style={surface === 'map' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'map' ? 'auto' : 'none'}><MapScreen /></View>
-      <View style={surface === 'account' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'account' ? 'auto' : 'none'}><AccountScreen onSignOut={onSignOut} onSessionExpired={onSessionExpired} onOpenWeb={(path) => void openWebPath(path)} /></View>
-    </ScrollView>
-    <View style={styles.tabBar} accessibilityRole="tablist">{MOBILE_DESTINATIONS.map((item) => { const selected = surface === item.id; const Icon = NAV_ICONS[item.icon]; return <TouchableOpacity key={item.id} accessibilityRole="tab" accessibilityLabel={item.label} accessibilityState={{ selected }} style={[styles.tab, selected && styles.tabSelected]} onPress={() => navigate(item.id)}><Icon size={22} color={selected ? '#34d399' : '#cbd5e1'} strokeWidth={selected ? 2.5 : 2} /><Text style={[styles.tabLabel, selected && styles.tabLabelSelected]}>{item.label}</Text></TouchableOpacity> })}</View>
+    <KeyboardAvoidingView style={styles.keyboardAvoider} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={surface === 'act' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'act' ? 'auto' : 'none'}><ActScreen actSubview={actSubview} onActSubview={setActSubview} onStart={onStartActivity} onSessionExpired={onSessionExpired} /></View>
+        <View style={surface === 'map' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'map' ? 'auto' : 'none'}><MapScreen /></View>
+        <View style={surface === 'account' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'account' ? 'auto' : 'none'}><AccountScreen onSignOut={onSignOut} onSessionExpired={onSessionExpired} onOpenWeb={(path) => void openWebPath(path)} /></View>
+      </ScrollView>
+      <View style={styles.tabBar} accessibilityRole="tablist">{MOBILE_DESTINATIONS.map((item) => { const selected = surface === item.id; const Icon = NAV_ICONS[item.icon]; return <TouchableOpacity key={item.id} accessibilityRole="tab" accessibilityLabel={item.label} accessibilityState={{ selected }} style={[styles.tab, selected && styles.tabSelected]} onPress={() => navigate(item.id)}><Icon size={22} color={selected ? '#34d399' : '#cbd5e1'} strokeWidth={selected ? 2.5 : 2} /><Text style={[styles.tabLabel, selected && styles.tabLabelSelected]}>{item.label}</Text></TouchableOpacity> })}</View>
+    </KeyboardAvoidingView>
   </SafeAreaView>
 }
 
@@ -79,10 +82,10 @@ function WebButton({ path, label }: { path: string; label: string }) { return <T
 function InfoCard({ title, description }: { title: string; description: string }) { return <View style={styles.infoCard}><Map size={24} color="#34d399" /><View style={styles.infoCopy}><Text style={styles.infoTitle}>{title}</Text><Text style={styles.infoDescription}>{description}</Text></View></View> }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#020617' }, content: { flexGrow: 1, padding: 24, paddingTop: 56, paddingBottom: 32 }, visibleSurface: { flex: 1 }, visibleSubview: { flex: 1 }, hiddenSubview: { display: 'none' },
+  root: { flex: 1, backgroundColor: '#020617' }, keyboardAvoider: { flex: 1 }, content: { flexGrow: 1, padding: 24, paddingTop: 24, paddingBottom: 24 }, visibleSurface: { flex: 1 }, visibleSubview: { flex: 1 }, hiddenSubview: { display: 'none' },
   eyebrow: { color: '#34d399', fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 8 }, title: { color: '#f8fafc', fontSize: 32, fontWeight: '900', letterSpacing: -1, marginBottom: 16 }, separator: { height: 1, backgroundColor: '#1e293b', marginBottom: 24 }, bodyText: { color: '#cbd5e1', fontSize: 16, lineHeight: 24, marginBottom: 20 },
   primaryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#34d399', borderRadius: 16, minHeight: 48, paddingVertical: 18, paddingHorizontal: 16, marginBottom: 12 }, primaryButtonLabel: { color: '#022c22', fontSize: 14, fontWeight: '900' }, subviewButton: { flexDirection: 'row', alignItems: 'center', borderColor: '#334155', borderRadius: 16, borderWidth: 1, minHeight: 48, paddingVertical: 16, paddingHorizontal: 16, marginBottom: 12 }, subviewCopy: { flex: 1 }, subviewLabel: { color: '#f8fafc', fontSize: 15, fontWeight: '900' }, subviewDescription: { color: '#94a3b8', fontSize: 12, lineHeight: 18, marginTop: 4 }, subviewChevron: { color: '#34d399', fontSize: 26, fontWeight: '300', marginLeft: 12 }, backButton: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingVertical: 10, marginBottom: 16 }, backLabel: { color: '#a7f3d0', fontSize: 13, fontWeight: '800' }, secondaryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderColor: '#334155', borderRadius: 16, borderWidth: 1, minHeight: 48, paddingVertical: 16, paddingHorizontal: 16, marginBottom: 12 }, secondaryButtonLabel: { color: '#a7f3d0', fontSize: 13, fontWeight: '800' },
   surfaceDivider: { backgroundColor: '#1e293b', height: 1, marginVertical: 28 },
   infoCard: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: 18, borderWidth: 1, padding: 16, marginTop: 20 }, infoCopy: { flex: 1, marginLeft: 12 }, infoTitle: { color: '#e2e8f0', fontSize: 14, fontWeight: '800', marginBottom: 5 }, infoDescription: { color: '#94a3b8', fontSize: 12, lineHeight: 18 }, signOutButton: { alignItems: 'center', paddingVertical: 18, marginTop: 12 }, signOutLabel: { color: '#94a3b8', fontSize: 12, fontWeight: '800', letterSpacing: 1 },
-  tabBar: { flexDirection: 'row', backgroundColor: '#0f172a', borderTopColor: '#1e293b', borderTopWidth: 1, paddingHorizontal: 8, paddingTop: 8, paddingBottom: 12 }, tab: { alignItems: 'center', flex: 1, gap: 4, minHeight: 48, paddingVertical: 4 }, tabSelected: { backgroundColor: '#172033', borderRadius: 12 }, tabLabel: { color: '#cbd5e1', fontSize: 13, fontWeight: '700' }, tabLabelSelected: { color: '#34d399' },
+  tabBar: { flexDirection: 'row', backgroundColor: '#0f172a', borderTopColor: '#1e293b', borderTopWidth: 1, paddingHorizontal: 8, paddingTop: 8, paddingBottom: 12 }, tab: { alignItems: 'center', flex: 1, gap: 4, justifyContent: 'center', minHeight: 48, paddingVertical: 4 }, tabSelected: { backgroundColor: '#172033', borderRadius: 12 }, tabLabel: { color: '#cbd5e1', flexShrink: 1, fontSize: 13, fontWeight: '700', textAlign: 'center' }, tabLabelSelected: { color: '#34d399' },
 })

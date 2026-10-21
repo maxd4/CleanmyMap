@@ -19,7 +19,7 @@ export function MobileFormField({
 }
 
 const styles = StyleSheet.create({
-  field: { flex: 1, marginBottom: 12 },
+  field: { flex: 1, marginBottom: 12, minWidth: '46%' },
   label: { color: '#a7f3d0', fontSize: 13, lineHeight: 18, fontWeight: '800', marginBottom: 6 },
   input: { backgroundColor: '#020617', borderColor: '#334155', borderRadius: 10, borderWidth: 1, color: '#f8fafc', minHeight: 44, paddingHorizontal: 12, paddingVertical: 10 },
   multiline: { minHeight: 76, textAlignVertical: 'top' },

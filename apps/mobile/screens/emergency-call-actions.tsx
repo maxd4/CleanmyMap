@@ -110,8 +110,8 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   compactPanel: { backgroundColor: '#020617e8', borderColor: '#475569', marginBottom: 0, padding: 8 },
-  compactRow: { alignItems: 'center', flexDirection: 'row', minHeight: 48 },
-  compactLabel: { alignItems: 'center', flex: 1, flexDirection: 'row' },
+  compactRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', minHeight: 48 },
+  compactLabel: { alignItems: 'center', flex: 1, flexDirection: 'row', minWidth: 88 },
   compactTitle: { color: '#fef3c7', fontSize: 13, fontWeight: '800', marginLeft: 8 },
   compactButton: {
     alignItems: 'center',

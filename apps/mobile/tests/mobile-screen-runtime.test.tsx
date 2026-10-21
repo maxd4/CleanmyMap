@@ -28,8 +28,10 @@ vi.mock('react-native', () => ({
   Alert: { alert: state.alert },
   AppState: { addEventListener: vi.fn(() => ({ remove: vi.fn() })) },
   BackHandler: { addEventListener: vi.fn(() => ({ remove: vi.fn() })) },
+  KeyboardAvoidingView: nativeComponent('KeyboardAvoidingView'),
   Image: nativeComponent('Image'),
   Linking: { openURL: vi.fn(async (url: string) => { state.openedUrls.push(url) }) },
+  Platform: { OS: 'ios' },
   SafeAreaView: nativeComponent('SafeAreaView'),
   ScrollView: nativeComponent('ScrollView'),
   StyleSheet: { create: (styles: unknown) => styles },
@@ -40,6 +42,11 @@ vi.mock('react-native', () => ({
 }))
 
 vi.mock('expo-status-bar', () => ({ StatusBar: nativeComponent('StatusBar') }))
+vi.mock('react-native-safe-area-context', () => ({
+  SafeAreaProvider: nativeComponent('SafeAreaProvider'),
+  SafeAreaView: nativeComponent('SafeAreaView'),
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}))
 vi.mock('@clerk/expo', () => ({
   ClerkProvider: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => React.createElement('ClerkProvider', props, children),
 }))
@@ -213,6 +220,9 @@ describe('mobile native shell runtime', () => {
     expect([...new Set(primaryTabs.map((tab) => tab.props.accessibilityLabel))]).toEqual(['Agir', 'Carte', 'Compte'])
     expect([...new Set(primaryTabs.filter((tab) => tab.props.accessibilityState?.selected).map((tab) => tab.props.accessibilityLabel))]).toHaveLength(1)
     expect(renderer.root.findAllByProps({ accessibilityRole: 'tablist' })).not.toHaveLength(0)
+    const safeRoot = renderer.root.findByType('SafeAreaView' as unknown as React.ElementType)
+    expect(safeRoot.props.edges).toEqual(['top', 'bottom'])
+    expect(renderer.root.findByType('KeyboardAvoidingView' as unknown as React.ElementType).props.behavior).toBe('padding')
     for (const tab of primaryTabs) {
       const tabStyle = Object.assign({}, ...(Array.isArray(tab.props.style) ? tab.props.style : [tab.props.style]))
       const label = tab.findAllByType('Text' as unknown as React.ElementType).at(-1)

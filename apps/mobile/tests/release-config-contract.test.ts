@@ -20,6 +20,7 @@ describe('mobile distributable configuration', () => {
     expect(appConfig.version).toBe('1.0.0')
     expect(appConfig.android.versionCode).toBe(1)
     expect(appConfig.ios.buildNumber).toBe('1')
+    expect(appConfig.userInterfaceStyle).toBe('dark')
   })
 
   it('does not advertise an unimplemented HTTPS incoming-link surface', () => {
@@ -59,6 +60,7 @@ describe('mobile distributable configuration', () => {
     expect(packageConfig.dependencies.expo).toMatch(/^~57\./)
     expect(packageConfig.dependencies['@clerk/expo']).toBeTruthy()
     expect(packageConfig.dependencies['react-native-maps']).toBeTruthy()
+    expect(packageConfig.dependencies['react-native-safe-area-context']).toMatch(/^~5\./)
     expect(packageConfig.dependencies['react-native-svg']).toBeTruthy()
 
     for (const asset of ['icon.png', 'adaptive-icon.png', 'splash-icon.png']) {

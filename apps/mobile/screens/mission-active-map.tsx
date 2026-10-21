@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, AppState, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { AccessibilityInfo, ActivityIndicator, AppState, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import * as Location from 'expo-location'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MapView, { Marker, Polyline, type Region } from 'react-native-maps'
 import { getMissionTrack } from '../lib/tracking-service'
 import { getStoredForegroundTrack, saveStoredForegroundTrack } from '../lib/storage'
@@ -70,6 +71,7 @@ function useMissionForegroundTrack(ownerId: string, missionId: string, mapRef: R
   const [track, setTrack] = useState<ForegroundTrackPoint[]>([])
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('restoring')
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
+  const reduceMotionRef = useRef(false)
 
   useEffect(() => {
     let active = true
@@ -126,7 +128,7 @@ function useMissionForegroundTrack(ownerId: string, missionId: string, mapRef: R
           ...coordinate,
           ...FOLLOW_REGION_DELTAS,
         },
-        500,
+        reduceMotionRef.current ? 0 : 500,
       )
     }
 
@@ -184,10 +186,20 @@ function useMissionForegroundTrack(ownerId: string, missionId: string, mapRef: R
       }
     })
 
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (active) {
+        reduceMotionRef.current = enabled
+      }
+    })
+    const reduceMotionSubscription = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
+      reduceMotionRef.current = enabled
+    })
+
     void restoreAndResume()
 
     return () => {
       active = false
+      reduceMotionSubscription.remove()
       appStateSubscription.remove()
       stopForegroundSubscription()
     }
@@ -215,6 +227,7 @@ export function MissionActiveMap({
 }) {
   const mapRef = useRef<MapView | null>(null)
   const { currentPosition, track, gpsStatus, syncMessage } = useMissionForegroundTrack(ownerId, missionId, mapRef)
+  const insets = useSafeAreaInsets()
 
   const polylineCoordinates = track.map(({ latitude, longitude }) => ({ latitude, longitude }))
   const liveDistance = calculateTrackDistanceMeters(track)
@@ -237,11 +250,11 @@ export function MissionActiveMap({
         ) : null}
       </MapView>
 
-      <View pointerEvents="none" style={styles.statusOverlay}>
+      <View pointerEvents="none" style={[styles.statusOverlay, { top: Math.max(insets.top + 12, 12) }]}>
         <View style={styles.statusHeader}>
           <View style={styles.statusTitleGroup}>
             <Text style={styles.statusTitle}>{GPS_STATUS_LABEL[gpsStatus]}</Text>
-            <Text numberOfLines={1} style={styles.missionLabel}>{missionLabel}</Text>
+            <Text style={styles.missionLabel}>{missionLabel}</Text>
           </View>
           <View style={styles.livePill}>
             <View style={styles.liveDot} />
@@ -261,7 +274,7 @@ export function MissionActiveMap({
         {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
       </View>
 
-      <View style={styles.actionOverlay}>
+      <View style={[styles.actionOverlay, { bottom: Math.max(insets.bottom + 12, 12) }]}>
         <EmergencyCallActions compact />
         <TouchableOpacity
           accessibilityRole="button"
@@ -303,7 +316,7 @@ const styles = StyleSheet.create({
   },
   statusOverlay: {
     position: 'absolute',
-    top: 56,
+    top: 12,
     left: 12,
     right: 12,
     borderRadius: 14,
@@ -313,10 +326,11 @@ const styles = StyleSheet.create({
   statusHeader: {
     alignItems: 'flex-start',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  statusTitleGroup: { flex: 1, marginRight: 8 },
-  missionLabel: { color: '#f8fafc', fontSize: 15, fontWeight: '800', marginTop: 3 },
+  statusTitleGroup: { flex: 1, flexShrink: 1, marginRight: 8, minWidth: 0 },
+  missionLabel: { color: '#f8fafc', flexShrink: 1, fontSize: 15, fontWeight: '800', lineHeight: 20, marginTop: 3 },
   livePill: {
     alignItems: 'center',
     backgroundColor: '#064e3b',
@@ -327,13 +341,13 @@ const styles = StyleSheet.create({
   },
   liveDot: { backgroundColor: '#34d399', borderRadius: 4, height: 8, marginRight: 5, width: 8 },
   liveText: { color: '#d1fae5', fontSize: 12, fontWeight: '900', letterSpacing: 0.6 },
-  metricsRow: { flexDirection: 'row', marginTop: 12 },
-  metric: { flex: 1 },
+  metricsRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 12 },
+  metric: { flex: 1, minWidth: '48%' },
   metricLabel: { color: '#94a3b8', fontSize: 12, lineHeight: 16, fontWeight: '700' },
   metricValue: { color: '#ffffff', fontSize: 18, fontWeight: '900', marginTop: 2 },
   actionOverlay: {
     alignItems: 'stretch',
-    bottom: 16,
+    bottom: 12,
     left: 12,
     position: 'absolute',
     right: 12,

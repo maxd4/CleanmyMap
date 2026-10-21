@@ -6,7 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "updates": {
       "enabled": false
     },
@@ -34,7 +34,7 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#f8fafc"
+          "backgroundColor": "#020617"
         }
       ],
       "@clerk/expo",

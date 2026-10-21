@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar'
 import { ClerkProvider } from '@clerk/expo'
 import { useHostedAuth } from '@clerk/expo/hosted-auth'
 import { tokenCache } from '@clerk/expo/token-cache'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { useCompanionMissionController } from './hooks/use-companion-mission-controller'
 import { MobileShell } from './screens/mobile-shell'
 import { MissionActiveMap } from './screens/mission-active-map'
@@ -27,10 +28,11 @@ function CompanionApp() {
 
   if (!isLoaded) {
     return (
-      <View style={styles.darkCenter}>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.darkCenter}>
+        <StatusBar style="light" />
         <ActivityIndicator size="large" color="#10b981" />
         <Text style={styles.hudLabel}>CHARGEMENT...</Text>
-      </View>
+      </SafeAreaView>
     )
   }
 
@@ -48,10 +50,11 @@ function CompanionApp() {
 
   if (phase === 'requesting') {
     return (
-      <View style={styles.darkCenter}>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.darkCenter}>
+        <StatusBar style="light" />
         <ActivityIndicator size="large" color="#10b981" />
         <Text style={styles.hudLabel}>PRÉPARATION DU SUIVI...</Text>
-      </View>
+      </SafeAreaView>
     )
   }
 
@@ -132,7 +135,8 @@ function SignedOutScreen({ initialError }: { initialError?: string | null }) {
   }
 
   return (
-    <View style={styles.darkCenter}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.darkCenter}>
+      <StatusBar style="light" />
       <Text style={styles.hudTitle}>CLEANMYMAP</Text>
       <Text style={styles.hudSubtitle}>SATELLITE COMPANION</Text>
       <Text style={styles.authDescription}>
@@ -149,32 +153,33 @@ function SignedOutScreen({ initialError }: { initialError?: string | null }) {
       <TouchableOpacity accessibilityLabel="Créer un compte" accessibilityRole="button" accessibilityState={{ disabled: loading }} style={styles.hudBtnSecondary} onPress={handleSignUp} disabled={loading}>
         <Text style={styles.hudBtnSecondaryText}>CRÉER UN COMPTE</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   )
 }
 
 function MissingClerkConfiguration() {
   return (
-    <View style={styles.darkCenter}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.darkCenter}>
+      <StatusBar style="light" />
       <Text style={styles.hudTitle}>CLEANMYMAP</Text>
       <Text style={styles.hudSubtitle}>CONFIGURATION REQUISE</Text>
       <Text style={styles.authDescription}>
         EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY est nécessaire pour ouvrir le compagnon.
       </Text>
-    </View>
+    </SafeAreaView>
   )
 }
 
 export default function App() {
-  if (!clerkPublishableKey) {
-    return <MissingClerkConfiguration />
-  }
-
-  return (
-    <ClerkProvider publishableKey={clerkPublishableKey} tokenCache={tokenCache}>
-      <CompanionApp />
-    </ClerkProvider>
-  )
+  return <SafeAreaProvider>
+    {!clerkPublishableKey ? (
+      <MissingClerkConfiguration />
+    ) : (
+      <ClerkProvider publishableKey={clerkPublishableKey} tokenCache={tokenCache}>
+        <CompanionApp />
+      </ClerkProvider>
+    )}
+  </SafeAreaProvider>
 }
 
 const styles = StyleSheet.create({

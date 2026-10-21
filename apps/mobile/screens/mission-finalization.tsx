@@ -1,6 +1,7 @@
 import React from 'react'
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { formatServerDistance, formatServerDuration } from '../lib/mission-summary'
 import type { Mission, MissionFinalizationStage } from '../types/mission'
 
@@ -8,7 +9,7 @@ export function MissionFinalizationScreen({ stage }: { stage: MissionFinalizatio
   const isSynchronizing = stage === 'synchronizing'
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       <StatusBar style="light" />
       <ActivityIndicator size="large" color="#10b981" />
       <Text style={styles.eyebrow}>MISSION EN COURS</Text>
@@ -17,7 +18,7 @@ export function MissionFinalizationScreen({ stage }: { stage: MissionFinalizatio
         <FinalizationStep label="Points GPS" complete={!isSynchronizing} active={isSynchronizing} />
         <FinalizationStep label="Mission" complete={false} active={!isSynchronizing} />
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 
@@ -39,7 +40,7 @@ export function MissionCompletionScreen({
   onReturnHome: () => void
 }) {
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       <StatusBar style="light" />
       <Text style={styles.eyebrow}>MISSION TERMINÉE</Text>
       <Text style={styles.title}>{mission.label}</Text>
@@ -52,7 +53,7 @@ export function MissionCompletionScreen({
       <TouchableOpacity accessibilityLabel="Revenir à l’accueil" accessibilityRole="button" style={styles.homeButton} onPress={onReturnHome}>
         <Text style={styles.homeButtonText}>REVENIR À L’ACCUEIL</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   )
 }
 
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
   },
   stepDotActive: { backgroundColor: '#fbbf24' },
   stepDotComplete: { backgroundColor: '#10b981' },
-  stepText: { color: '#cbd5e1', flex: 1, fontSize: 14, fontWeight: '700' },
+  stepText: { color: '#cbd5e1', flex: 1, flexShrink: 1, fontSize: 14, fontWeight: '700' },
   stepTextActive: { color: '#f8fafc' },
   stepStatus: { color: '#cbd5e1', fontSize: 12, lineHeight: 16, fontWeight: '900', letterSpacing: 0.8 },
   summary: {
@@ -140,7 +141,7 @@ const styles = StyleSheet.create({
     minHeight: 58,
   },
   summaryLabel: { color: '#cbd5e1', fontSize: 12, lineHeight: 16, fontWeight: '900', letterSpacing: 0.8 },
-  summaryValue: { color: '#f8fafc', fontSize: 15, fontWeight: '800', marginLeft: 16, textAlign: 'right' },
+  summaryValue: { color: '#f8fafc', flexShrink: 1, fontSize: 15, fontWeight: '800', marginLeft: 16, textAlign: 'right' },
   homeButton: {
     alignSelf: 'stretch',
     backgroundColor: '#10b981',

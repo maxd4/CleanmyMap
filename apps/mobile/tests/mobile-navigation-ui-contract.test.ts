@@ -13,11 +13,25 @@ describe('mobile native navigation UI contract', () => {
     expect(shellSource).toContain('accessibilityState={{ selected }}')
     expect(shellSource).toContain("color={selected ? '#34d399' : '#cbd5e1'}")
     expect(shellSource).toContain('minHeight: 48')
+    expect(shellSource).toContain("from 'react-native-safe-area-context'")
+    expect(shellSource).toContain("edges={['top', 'bottom']}")
+    expect(shellSource).toContain('KeyboardAvoidingView')
+    expect(shellSource).not.toContain('paddingTop: 56')
     expect(shellSource).toContain('SafeAreaView')
     expect(shellSource).not.toContain('Ionicons')
     expect(appSource).toContain('MissionActiveScreen')
     expect(shellSource).toContain('surface === \'act\' ? styles.visibleSurface : styles.hiddenSubview')
     expect(shellSource).toContain('surface === \'account\' ? styles.visibleSurface : styles.hiddenSubview')
+  })
+
+  it('keeps the GPS overlays inside the native safe areas and allows large labels to wrap', () => {
+    const mapSource = readFileSync(resolve(__dirname, '../screens/mission-active-map.tsx'), 'utf8')
+    expect(mapSource).toContain('useSafeAreaInsets')
+    expect(mapSource).toContain('insets.top + 12')
+    expect(mapSource).toContain('insets.bottom + 12')
+    expect(mapSource).toContain('isReduceMotionEnabled')
+    expect(mapSource).toContain('reduceMotionRef.current ? 0 : 500')
+    expect(mapSource).not.toContain('numberOfLines={1}')
   })
 
   it('separates the three Agir workflows and the Account hub sections', () => {

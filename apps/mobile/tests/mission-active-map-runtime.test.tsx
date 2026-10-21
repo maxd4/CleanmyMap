@@ -26,6 +26,10 @@ const state = vi.hoisted(() => ({
 
 vi.mock('react-native', () => ({
   ActivityIndicator: 'ActivityIndicator',
+  AccessibilityInfo: {
+    isReduceMotionEnabled: vi.fn(async () => false),
+    addEventListener: vi.fn(() => ({ remove: vi.fn() })),
+  },
   AppState: {
     addEventListener: vi.fn((_event: string, listener: (nextState: string) => void) => {
       state.appStateListener = listener
@@ -49,6 +53,10 @@ vi.mock('expo-location', () => ({
   getForegroundPermissionsAsync: vi.fn(async () => ({ status: state.foregroundPermission })),
   getCurrentPositionAsync: state.getCurrentPosition,
   watchPositionAsync: state.watchPosition,
+}))
+
+vi.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 24, right: 0, bottom: 20, left: 0 }),
 }))
 
 vi.mock('../lib/storage', () => ({
@@ -218,6 +226,8 @@ describe('MissionActiveMap runtime', () => {
     const stopButton = renderer.root.findByProps({ accessibilityLabel: 'Terminer la mission' })
     expect(stopButton.props.accessibilityRole).toBe('button')
     expect(stopButton.props.style.minHeight).toBe(54)
+    const safeInsetStyle = renderer.root.findAllByType('View' as any).map((node) => node.props.style).find((style) => Array.isArray(style) && style[1]?.top === 36)
+    expect(safeInsetStyle).toBeDefined()
   })
 
   it('keeps local points when the server is offline and distinguishes an empty local fallback', async () => {
