@@ -90,6 +90,47 @@ function ActionPopupActions({ compact, isAction, actionId, signalementId, onView
   </>;
 }
 
+function ActionPopupMobilizationBlock({ compact, operationalEngagementHours }: Pick<ActionPopupContentBodyProps, "compact" | "operationalEngagementHours">) {
+  return <div className={compact
+    ? "rounded-xl border border-emerald-100/70 bg-gradient-to-br from-emerald-50 to-white p-2.5 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/20 dark:to-slate-900/30"
+    : "rounded-2xl border border-emerald-100/70 bg-gradient-to-br from-emerald-50 to-white p-3 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/20 dark:to-slate-900/30"}>
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Zap size={14} className="text-emerald-600" />
+        <span className={compact
+          ? "text-xs font-semibold text-emerald-700 dark:text-emerald-400"
+          : "cmm-text-caption font-bold uppercase text-emerald-700 dark:text-emerald-400"}>
+          {compact ? "Mobilisation" : "Impact Mobilisation"}
+        </span>
+      </div>
+      <span className="cmm-text-small font-bold text-emerald-700 dark:text-emerald-400">
+        {operationalEngagementHours === null ? "n/a" : `${formatNumber(operationalEngagementHours)}h-p`}
+      </span>
+    </div>
+  </div>;
+}
+
+function resolveActionPopupBodyPresentation({ compact, isAction, hasPollution }: Pick<ActionPopupContentBodyProps, "compact" | "isAction" | "hasPollution">) {
+  return {
+    wasteLabel: compact || !isAction ? "Déchets" : "Déchets collectés",
+    buttsLabel: compact || !isAction ? "Mégots" : "Mégots collectés",
+    actionLabel: isAction
+      ? "Nouvelle action ici"
+      : hasPollution
+        ? "Déclarer une action"
+        : "Mettre à jour l’état du lieu",
+    metricCellClass: compact
+      ? "space-y-0.5 bg-white p-2.5 dark:bg-slate-900"
+      : "space-y-1 bg-white p-4 dark:bg-slate-900",
+    metricLabelClass: compact
+      ? "text-xs font-semibold"
+      : "cmm-text-caption font-bold uppercase tracking-wider",
+    metricValueClass: compact
+      ? "text-lg font-bold tracking-tight text-slate-950"
+      : "text-xl font-bold tracking-tight text-slate-950",
+  };
+}
+
 export function ActionPopupContentBody({
   wasteKg,
   butts,
@@ -113,50 +154,19 @@ export function ActionPopupContentBody({
   geometryKind,
   compact = false,
 }: ActionPopupContentBodyProps) {
-  const wasteLabel = compact || !isAction ? "Déchets" : "Déchets collectés";
-  const buttsLabel = compact || !isAction ? "Mégots" : "Mégots collectés";
-  const actionLabel = isAction
-    ? "Nouvelle action ici"
-    : hasPollution
-      ? "Déclarer une action"
-      : "Mettre à jour l’état du lieu";
-  const metricCellClass = compact
-    ? "space-y-0.5 bg-white p-2.5 dark:bg-slate-900"
-    : "space-y-1 bg-white p-4 dark:bg-slate-900";
-  const metricLabelClass = compact
-    ? "text-xs font-semibold"
-    : "cmm-text-caption font-bold uppercase tracking-wider";
-  const metricValueClass = compact
-    ? "text-lg font-bold tracking-tight text-slate-950"
-    : "text-xl font-bold tracking-tight text-slate-950";
+  const presentation = resolveActionPopupBodyPresentation({ compact, isAction, hasPollution });
 
   return (
     <div className={compact ? "space-y-3 p-4" : "space-y-4 p-5"}>
-      <ActionPopupMetricGrid compact={compact} wasteLabel={wasteLabel} buttsLabel={buttsLabel} metricCellClass={metricCellClass} metricLabelClass={metricLabelClass} metricValueClass={metricValueClass} wasteKg={wasteKg} butts={butts} volunteers={volunteers} durationMinutes={durationMinutes} />
+      <ActionPopupMetricGrid compact={compact} wasteLabel={presentation.wasteLabel} buttsLabel={presentation.buttsLabel} metricCellClass={presentation.metricCellClass} metricLabelClass={presentation.metricLabelClass} metricValueClass={presentation.metricValueClass} wasteKg={wasteKg} butts={butts} volunteers={volunteers} durationMinutes={durationMinutes} />
 
-      <div className={compact
-        ? "rounded-xl border border-emerald-100/70 bg-gradient-to-br from-emerald-50 to-white p-2.5 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/20 dark:to-slate-900/30"
-        : "rounded-2xl border border-emerald-100/70 bg-gradient-to-br from-emerald-50 to-white p-3 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/20 dark:to-slate-900/30"}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Zap size={14} className="text-emerald-600" />
-            <span className={compact
-              ? "text-xs font-semibold text-emerald-700 dark:text-emerald-400"
-              : "cmm-text-caption font-bold uppercase text-emerald-700 dark:text-emerald-400"}>
-              {compact ? "Mobilisation" : "Impact Mobilisation"}
-            </span>
-          </div>
-          <span className="cmm-text-small font-bold text-emerald-700 dark:text-emerald-400">
-            {operationalEngagementHours === null ? "n/a" : `${formatNumber(operationalEngagementHours)}h-p`}
-          </span>
-        </div>
-      </div>
+      <ActionPopupMobilizationBlock compact={compact} operationalEngagementHours={operationalEngagementHours} />
 
       <ActionPopupContextBlock compact={compact} associationName={associationName} departure={departure} arrival={arrival} />
 
       <ActionPopupNotesBlock compact={compact} notes={notes} />
 
-      <ActionPopupActions compact={compact} isAction={isAction} actionId={actionId} signalementId={signalementId} onViewGeometry={onViewGeometry} geometryKind={geometryKind} observedAt={observedAt} sourceLabel={sourceLabel} updateHref={updateHref} actionLabel={actionLabel} joinHref={joinHref} joinStatusLabel={joinStatusLabel} />
+      <ActionPopupActions compact={compact} isAction={isAction} actionId={actionId} signalementId={signalementId} onViewGeometry={onViewGeometry} geometryKind={geometryKind} observedAt={observedAt} sourceLabel={sourceLabel} updateHref={updateHref} actionLabel={presentation.actionLabel} joinHref={joinHref} joinStatusLabel={joinStatusLabel} />
     </div>
   );
 }
