@@ -113,8 +113,12 @@ Les exécutions utilisent un `runId` dans des noms de fichiers plats sous
 `<audit>--<runId>--{report,manifest}.json` et
 `<audit>--<runId>--summary.md`. Le mode `all` ajoute le même triplet avec
 `audit=all`. Le `runId` et l'écriture atomique empêchent deux audits parallèles
-de s'écraser. Un marqueur d'exécution protège les SHA actifs ; un verrou borné
-protège l'inventaire, la migration et la rétention. Après chaque audit terminé,
+de s'écraser. L'enregistrement et la lecture d'un marqueur d'exécution passent
+par le même verrou borné que l'inventaire, la migration et la rétention, ce qui
+empêche un démarrage de se glisser entre l'inventaire et une suppression. Un
+owner du même hôte dont le PID est démontré absent peut être récupéré ; les
+marqueurs anciens, ambigus ou invérifiables restent préservés avec diagnostic.
+Après chaque audit terminé,
 le runner conserve les trois SHA les plus récemment exécutés, sauf les SHA
 encore actifs, et migre les artefacts legacy reconnus sans supprimer un fichier
 inconnu, un lien symbolique ou une archive. `baselineStable` est descriptif et

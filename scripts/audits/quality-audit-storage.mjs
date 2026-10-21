@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -12,6 +13,7 @@ const ARTIFACT_SUFFIXES = Object.freeze({ report: "report.json", manifest: "mani
 const ACTIVE_MARKER_PREFIX = ".active-";
 const LOCK_DIRECTORY = ".retention.lock";
 const LOCK_WAIT_MS = 5_000;
+const PROCESS_INSTANCE_ID = randomUUID();
 
 function qualityRoot(root) {
   return path.join(root, QUALITY_AUDIT_ROOT);
@@ -86,11 +88,24 @@ function activeMarkerPath(root, auditedHead, runId) {
   return path.join(qualityRoot(root), `${ACTIVE_MARKER_PREFIX}${auditedHead}--${runId}.json`);
 }
 
-export function beginActiveAudit({ root, auditedHead, runId, now = () => new Date().toISOString(), fsApi = fs } = {}) {
+function currentOwner() {
+  return { pid: process.pid, hostname: os.hostname(), instanceId: PROCESS_INSTANCE_ID };
+}
+
+export async function beginActiveAudit({ root, auditedHead, runId, now = () => new Date().toISOString(), fsApi = fs, lockWaitMs = LOCK_WAIT_MS } = {}) {
   const marker = activeMarkerPath(root, auditedHead, runId);
-  fsApi.mkdirSync(qualityRoot(root), { recursive: true });
-  fsApi.writeFileSync(marker, `${JSON.stringify({ schemaVersion: 1, kind: "quality-audit-active", auditedHead, runId, startedAt: now() })}\n`, { encoding: "utf8", flag: "wx" });
-  return marker;
+  const lock = await acquireRetentionLock(root, { fsApi, waitMs: lockWaitMs });
+  if (lock.status !== "ACQUIRED") {
+    const error = new Error(`Impossible d'enregistrer l'audit actif: verrou de rétention indisponible (${lock.lockPath})`);
+    error.code = "RETENTION_LOCK_ACTIVE";
+    throw error;
+  }
+  try {
+    fsApi.writeFileSync(marker, `${JSON.stringify({ schemaVersion: 1, kind: "quality-audit-active", auditedHead, runId, startedAt: now(), owner: currentOwner() })}\n`, { encoding: "utf8", flag: "wx" });
+    return marker;
+  } finally {
+    releaseRetentionLock(lock, fsApi);
+  }
 }
 
 export function endActiveAudit(marker, fsApi = fs) {
@@ -212,19 +227,52 @@ function inspectShaDirectory(root, entry, fsApi = fs) {
   return inventory;
 }
 
-function activeShaSet(root, fsApi = fs) {
-  const active = new Set();
-  let entries;
-  try { entries = fsApi.readdirSync(qualityRoot(root), { withFileTypes: true }); } catch { return active; }
-  for (const entry of entries) {
-    if (!entry.isFile() || entry.isSymbolicLink() || !entry.name.startsWith(ACTIVE_MARKER_PREFIX)) continue;
-    const marker = readJson(path.join(qualityRoot(root), entry.name), fsApi);
-    if (marker?.schemaVersion === 1 && marker.kind === "quality-audit-active" && SHA_PATTERN.test(marker.auditedHead ?? "")) active.add(marker.auditedHead);
+function markerOwnerState(owner) {
+  if (!owner || owner.hostname !== os.hostname() || !Number.isInteger(owner.pid) || owner.pid <= 0) return "AMBIGUOUS";
+  try {
+    process.kill(owner.pid, 0);
+    return "ALIVE";
+  } catch (error) {
+    if (error?.code === "ESRCH" || error?.code === "ENOENT") return "ABSENT";
+    return "AMBIGUOUS";
   }
-  return active;
 }
 
-async function acquireRetentionLock(root, { fsApi = fs, waitMs = LOCK_WAIT_MS } = {}) {
+function activeMarkerDiagnostics(entryName, marker, fsApi = fs) {
+  const state = markerOwnerState(marker.owner);
+  if (state === "ALIVE") return { activeSha: marker.auditedHead };
+  if (state === "ABSENT") {
+    return { abandoned: true, diagnostic: `${entryName}:ABANDONED_MARKER_RECOVERED` };
+  }
+  return { activeSha: marker.auditedHead, diagnostic: `${entryName}:ACTIVE_MARKER_AMBIGUOUS_PRESERVED` };
+}
+
+function activeShaSet(root, fsApi = fs) {
+  const active = new Set();
+  const diagnostics = [];
+  let entries;
+  try { entries = fsApi.readdirSync(qualityRoot(root), { withFileTypes: true }); } catch { return { active, diagnostics }; }
+  for (const entry of entries) {
+    if (!entry.isFile() || entry.isSymbolicLink() || !entry.name.startsWith(ACTIVE_MARKER_PREFIX)) continue;
+    const markerPath = path.join(qualityRoot(root), entry.name);
+    const marker = readJson(markerPath, fsApi);
+    if (marker?.schemaVersion !== 1 || marker.kind !== "quality-audit-active" || !SHA_PATTERN.test(marker.auditedHead ?? "")) {
+      diagnostics.push(`${entry.name}:ACTIVE_MARKER_AMBIGUOUS_PRESERVED`);
+      continue;
+    }
+    const state = activeMarkerDiagnostics(entry.name, marker, fsApi);
+    if (state.activeSha) active.add(state.activeSha);
+    if (state.diagnostic) diagnostics.push(state.diagnostic);
+    if (state.abandoned) {
+      try { fsApi.unlinkSync(markerPath); } catch (error) {
+        diagnostics.push(`${entry.name}:ABANDONED_MARKER_RECOVERY_FAILED:${error?.code ?? error?.message ?? String(error)}`);
+      }
+    }
+  }
+  return { active, diagnostics };
+}
+
+export async function acquireRetentionLock(root, { fsApi = fs, waitMs = LOCK_WAIT_MS } = {}) {
   const rootPath = qualityRoot(root);
   fsApi.mkdirSync(rootPath, { recursive: true });
   const lockPath = path.join(rootPath, LOCK_DIRECTORY);
@@ -232,7 +280,7 @@ async function acquireRetentionLock(root, { fsApi = fs, waitMs = LOCK_WAIT_MS } 
   while (Date.now() - started <= waitMs) {
     try {
       fsApi.mkdirSync(lockPath);
-      fsApi.writeFileSync(path.join(lockPath, "owner.json"), `${JSON.stringify({ pid: process.pid, acquiredAt: new Date().toISOString() })}\n`, "utf8");
+      fsApi.writeFileSync(path.join(lockPath, "owner.json"), `${JSON.stringify({ ...currentOwner(), acquiredAt: new Date().toISOString() })}\n`, "utf8");
       return { lockPath, status: "ACQUIRED" };
     } catch (error) {
       if (error?.code !== "EEXIST") throw error;
@@ -242,7 +290,7 @@ async function acquireRetentionLock(root, { fsApi = fs, waitMs = LOCK_WAIT_MS } 
   return { lockPath, status: "LOCK_ACTIVE" };
 }
 
-function releaseRetentionLock(lock, fsApi = fs) {
+export function releaseRetentionLock(lock, fsApi = fs) {
   if (lock?.status !== "ACQUIRED") return;
   try { fsApi.unlinkSync(path.join(lock.lockPath, "owner.json")); } catch (error) { if (error?.code !== "ENOENT") throw error; }
   try { fsApi.rmdirSync(lock.lockPath); } catch (error) { if (error?.code !== "ENOENT") throw error; }
@@ -292,15 +340,17 @@ function listShaInventories(root, fsApi = fs) {
   return entries.filter(isSafeShaDirectory).map((entry) => inspectShaDirectory(root, entry, fsApi));
 }
 
-export async function retainQualityAuditArtifacts({ root, now = () => new Date().toISOString(), fsApi = fs } = {}) {
-  const lock = await acquireRetentionLock(root, { fsApi });
+export async function retainQualityAuditArtifacts({ root, now = () => new Date().toISOString(), fsApi = fs, lockWaitMs = LOCK_WAIT_MS } = {}) {
+  const lock = await acquireRetentionLock(root, { fsApi, waitMs: lockWaitMs });
   if (lock.status !== "ACQUIRED") return { status: "DEFERRED", diagnostics: ["LOCK_ACTIVE"], retainedSha: [], removedSha: [], migrated: [] };
   const diagnostics = [];
   const migrated = [];
   const removedSha = [];
   try {
     const inventories = listShaInventories(root, fsApi);
-    const active = activeShaSet(root, fsApi);
+    const activeState = activeShaSet(root, fsApi);
+    const active = activeState.active;
+    diagnostics.push(...activeState.diagnostics);
     const ranked = inventories.filter((inventory) => inventory.generated).sort((left, right) => right.lastExecuted - left.lastExecuted || left.name.localeCompare(right.name));
     const retained = new Set(ranked.slice(0, QUALITY_AUDIT_RETENTION_LIMIT).map((inventory) => inventory.name));
     for (const sha of active) retained.add(sha);

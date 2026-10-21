@@ -1136,9 +1136,12 @@ contient la baseline descriptive, la provenance et le statut, `report.json`
 conserve le résultat brut de la gate et `summary.md` en est la projection
 lisible. Le mode `all` ajoute le même triplet avec `audit=all`. Aucun
 sous-dossier d’exécution ou de moteur n’est créé. Le `runId`, l’écriture
-atomique et le verrou de rétention empêchent deux exécutions concurrentes de
-s’écraser ; un marqueur actif empêche la suppression d’une exécution encore en
-cours. Après chaque audit, le runner classe les SHA par `generatedAt`, migre
+atomique et le même verrou de rétention coordonne l’enregistrement des
+marqueurs avec l’inventaire, la migration et la suppression ; un démarrage ne
+peut donc pas se glisser entre le dernier contrôle d’inactivité et une
+suppression. Un marqueur dont l’owner du même hôte est démontré absent peut
+être récupéré ; l’ancienneté seule ne suffit jamais et les owners ambigus ou
+invérifiables sont préservés avec diagnostic. Après chaque audit, le runner classe les SHA par `generatedAt`, migre
 les variantes legacy reconnues et conserve au plus les trois SHA les plus
 récents hors exécutions actives. Les fichiers inconnus, liens symboliques,
 collisions et archives sont préservés avec un diagnostic explicite. Le radar

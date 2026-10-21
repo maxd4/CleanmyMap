@@ -15,7 +15,7 @@ import {
   runQualityAudit,
   serialize,
 } from "./run-quality-audit.mjs";
-import { beginActiveAudit, endActiveAudit, retainQualityAuditArtifacts } from "./quality-audit-storage.mjs";
+import { acquireRetentionLock, beginActiveAudit, endActiveAudit, releaseRetentionLock, retainQualityAuditArtifacts } from "./quality-audit-storage.mjs";
 
 const sha = "a".repeat(40);
 const stableSnapshot = {
@@ -544,7 +544,7 @@ test("a failed audit is retained and active executions are never removed", async
   try {
     writeFlatQualityRun(root, oldest, "run-old", "2026-10-01T00:00:00.000Z");
     for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
-    const marker = beginActiveAudit({ root, auditedHead: oldest, runId: "active-run" });
+    const marker = await beginActiveAudit({ root, auditedHead: oldest, runId: "active-run" });
     const retention = await retainQualityAuditArtifacts({ root });
     assert.equal(retention.status, "PASS");
     assert.ok(fs.existsSync(path.join(root, "artifacts", "quality-audits", oldest)));
@@ -560,6 +560,77 @@ test("a failed audit is retained and active executions are never removed", async
     });
     assert.equal(failed.status, "FAIL");
     assert.ok(fs.existsSync(failed.results[0].paths.report));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("l'enregistrement actif attend le même verrou que la rétention", async () => {
+  const root = tempRoot();
+  try {
+    const lock = await acquireRetentionLock(root, { waitMs: 100 });
+    assert.equal(lock.status, "ACQUIRED");
+    const pending = beginActiveAudit({ root, auditedHead: sha, runId: "concurrent-run", lockWaitMs: 250 });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const markerPath = path.join(root, "artifacts", "quality-audits", ".active-" + sha + "--concurrent-run.json");
+    assert.equal(fs.existsSync(markerPath), false);
+    releaseRetentionLock(lock);
+    const released = await pending;
+    assert.equal(released, markerPath);
+    assert.equal(JSON.parse(fs.readFileSync(markerPath, "utf8")).owner.hostname, os.hostname());
+    endActiveAudit(markerPath);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("un marqueur actif ancien reste protégé tant que son owner est vivant", async () => {
+  const root = tempRoot();
+  try {
+    const marker = await beginActiveAudit({ root, auditedHead: "0".repeat(40), runId: "old-active", now: () => "2020-01-01T00:00:00.000Z" });
+    const retention = await retainQualityAuditArtifacts({ root });
+    assert.equal(retention.status, "PASS");
+    assert.ok(fs.existsSync(marker));
+    assert.ok(retention.retainedSha.includes("0".repeat(40)));
+    endActiveAudit(marker);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("un owner absent est récupéré, mais un owner ambigu reste préservé", async () => {
+  const root = tempRoot();
+  const qualityRoot = path.join(root, "artifacts", "quality-audits");
+  const abandonedSha = "0".repeat(40);
+  const ambiguousSha = "1".repeat(40);
+  try {
+    fs.mkdirSync(qualityRoot, { recursive: true });
+    const abandonedPath = path.join(qualityRoot, `.active-${abandonedSha}--crashed.json`);
+    const ambiguousPath = path.join(qualityRoot, `.active-${ambiguousSha}--unknown.json`);
+    fs.writeFileSync(abandonedPath, `${JSON.stringify({ schemaVersion: 1, kind: "quality-audit-active", auditedHead: abandonedSha, runId: "crashed", startedAt: "2020-01-01T00:00:00.000Z", owner: { pid: 2147483647, hostname: os.hostname(), instanceId: "crashed-process" } })}\n`);
+    fs.writeFileSync(ambiguousPath, `${JSON.stringify({ schemaVersion: 1, kind: "quality-audit-active", auditedHead: ambiguousSha, runId: "unknown", startedAt: "2020-01-01T00:00:00.000Z", owner: { pid: process.pid, hostname: "unknown-host" } })}\n`);
+    const retention = await retainQualityAuditArtifacts({ root });
+    assert.ok(retention.diagnostics.some((entry) => entry.includes("ABANDONED_MARKER_RECOVERED")));
+    assert.ok(retention.diagnostics.some((entry) => entry.includes("ACTIVE_MARKER_AMBIGUOUS_PRESERVED")));
+    assert.equal(fs.existsSync(abandonedPath), false);
+    assert.equal(fs.existsSync(ambiguousPath), true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("un verrou de rétention indisponible reporte sans supprimer", async () => {
+  const root = tempRoot();
+  const qualityRoot = path.join(root, "artifacts", "quality-audits");
+  const oldest = "0".repeat(40);
+  try {
+    writeFlatQualityRun(root, oldest, "run-old", "2020-01-01T00:00:00.000Z");
+    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+    fs.mkdirSync(path.join(qualityRoot, ".retention.lock"));
+    const retention = await retainQualityAuditArtifacts({ root, lockWaitMs: 25 });
+    assert.equal(retention.status, "DEFERRED");
+    assert.deepEqual(retention.diagnostics, ["LOCK_ACTIVE"]);
+    assert.ok(fs.existsSync(path.join(qualityRoot, oldest)));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

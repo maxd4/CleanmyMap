@@ -394,7 +394,7 @@ export async function runQualityAudit(mode, {
   if (!AUDIT_MODES.includes(mode)) throw new QualityAuditError(`Mode d'audit inconnu. ${usage()}`, "INVALID_MODE");
   const audits = mode === "all" ? AUDIT_MODES.slice(0, -1) : [mode];
   const start = snapshot();
-  const activeMarker = beginActiveAudit({ root, auditedHead: start.auditedHead, runId, fsApi });
+  const activeMarker = await beginActiveAudit({ root, auditedHead: start.auditedHead, runId, fsApi });
 
   try {
     const results = [];
