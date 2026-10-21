@@ -20,6 +20,10 @@ const FOCUSED_ACTIVE_DOCS = [
   "documentation/operations/data-import/pipeline-import.md",
   "documentation/development/api-standard.md",
   "documentation/development/runtime-version-matrix.md",
+  "documentation/development/TESTING.md",
+  "documentation/development/testing-execution.md",
+  "documentation/development/testing-quality.md",
+  "documentation/development/testing-platforms.md",
   "documentation/pages_site/INDEX.md",
   "apps/web/AGENTS.md",
   "apps/mobile/README.md",
@@ -78,6 +82,10 @@ export const OTHER_FAMILY = {};
     "documentation/operations/data-import/pipeline-import.md": dataContractContent,
     "documentation/development/api-standard.md": "API contracts by route.",
     "documentation/development/runtime-version-matrix.md": "Web: Next.js 16.3.1; React 19.2.3; TypeScript 7.0.2.\nMobile: React 19.2.3; TypeScript 6.0.3.",
+    "documentation/development/TESTING.md": "Testing guide entry point.",
+    "documentation/development/testing-execution.md": "Testing execution module.",
+    "documentation/development/testing-quality.md": "Testing quality module.",
+    "documentation/development/testing-platforms.md": "Testing platforms module.",
     "documentation/pages_site/INDEX.md": indexContent,
     "apps/web/AGENTS.md": "Next.js 16.3.1; TypeScript 7; web governance.",
     "apps/mobile/README.md": "Expo 57; TypeScript 6; mobile release governance.",
@@ -164,6 +172,40 @@ describe("stack and documentation drift governance", () => {
     writeFile(fixture, "README.md", "TypeScript 6\n");
     try {
       assert.ok(findingsFor(fixture).some((finding) => finding.message.includes("TypeScript major 6")));
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("covers all four canonical Testing guide documents", () => {
+    const testingDocs = [
+      "documentation/development/TESTING.md",
+      "documentation/development/testing-execution.md",
+      "documentation/development/testing-quality.md",
+      "documentation/development/testing-platforms.md",
+    ];
+    assert.deepEqual(testingDocs.filter((documentPath) => !ACTIVE_DOCS.includes(documentPath)), []);
+    assert.deepEqual(testingDocs.filter((documentPath) => !FOCUSED_ACTIVE_DOCS.includes(documentPath)), []);
+  });
+
+  it("rejects a stale TypeScript major in a specialized Testing module", () => {
+    const fixture = createFixture();
+    writeFile(fixture, "documentation/development/testing-quality.md", "TypeScript 6\n");
+    try {
+      assert.ok(findingsFor(fixture).some((finding) => (
+        finding.file === "documentation/development/testing-quality.md"
+        && finding.message.includes("TypeScript major 6")
+      )));
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts the current TypeScript major in a specialized Testing module", () => {
+    const fixture = createFixture();
+    writeFile(fixture, "documentation/development/testing-quality.md", "TypeScript 7\n");
+    try {
+      assert.deepEqual(findingsFor(fixture).filter((finding) => finding.file === "documentation/development/testing-quality.md"), []);
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }
