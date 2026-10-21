@@ -5,7 +5,7 @@ import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs"
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
-const scanExtensions = new Set([".md", ".txt", ".yml", ".yaml", ".html", ".htm"]);
+const scanExtensions = new Set([".md", ".mdx", ".txt", ".yml", ".yaml", ".html", ".htm"]);
 const skippedPathParts = [
   "documentation/operations/agent-memory-governance.md",
   "documentation/plans-perso/",

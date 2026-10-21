@@ -98,6 +98,51 @@ test("a synthetic secret in a Python file is detected", () => {
   assert.match(result.stderr, /AWS access key/);
 });
 
+for (const candidatePath of [".env.production", "documentation/secret-fixture.mdx", "documentation/secret-fixture.html"]) {
+  test(`a synthetic secret in ${candidatePath} is detected`, () => {
+    const syntheticAccessKey = ["AKIA", "1234567890123456"].join("");
+    const result = runAudit({
+      candidatePath,
+      candidateContent: `AWS_ACCESS_KEY_ID=${syntheticAccessKey}\n`,
+      foreignContent: "no secret here\n",
+    });
+
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, new RegExp(candidatePath.replaceAll(".", "\\.")));
+    assert.match(result.stderr, /AWS access key/);
+    assert.doesNotMatch(result.stderr, new RegExp(syntheticAccessKey));
+  });
+}
+
+for (const candidatePath of [".env", ".env.production", "documentation/clean-fixture.mdx", "documentation/clean-fixture.html", "documentation/clean-fixture.htm"]) {
+  test(`a clean ${candidatePath} passes`, () => {
+    const result = runAudit({
+      candidatePath,
+      candidateContent: "no secret here\n",
+      foreignContent: "no secret here\n",
+    });
+
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    assert.match(result.stdout, /1 file\(s\) scanned/);
+  });
+}
+
+test("a secret in a foreign .env.* file is not scanned by PUSH_CANDIDATE", () => {
+  const syntheticAccessKey = ["AKIA", "1234567890123456"].join("");
+  const result = runAudit({
+    candidatePath: "candidate.md",
+    candidateContent: "candidate only\n",
+    foreignPath: ".env.production",
+    foreignContent: `AWS_ACCESS_KEY_ID=${syntheticAccessKey}\n`,
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /PUSH_CANDIDATE/);
+  assert.match(result.stdout, /1 file\(s\) scanned/);
+  assert.doesNotMatch(result.stdout, /\.env\.production/);
+  assert.doesNotMatch(result.stderr, /\.env\.production/);
+});
+
 test("a clean Python file passes", () => {
   const result = runAudit({
     candidatePath: "maintenance/python/src/clean_fixture.py",

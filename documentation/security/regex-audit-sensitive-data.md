@@ -10,7 +10,7 @@ Objectif : detecter avant commit ou en CI les valeurs sensibles exposees par err
 
 ## Perimetre
 
-Le scan couvre les fichiers `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.json`, les templates `.env*.example`, `.md`, `.yml` et `.yaml`.
+Le scan couvre les fichiers `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.json`, `.md`, `.mdx`, `.html`, `.htm`, `.yml`, `.yaml`, ainsi que les fichiers `.env` et `.env.*` lorsqu'ils appartiennent réellement à la portée Git demandée (`WORKTREE`, `STAGED`, `REF` ou `PUSH_CANDIDATE`). Les fichiers `.env` ignorés par Git et étrangers à cette portée ne sont jamais forcés dans le scan.
 
 Les dossiers et fichiers generes sont exclus : `node_modules`, `.git`, `.next`, `.playwright-mcp`, `dist`, `build`, `coverage`, `artifacts`, lockfiles et fichiers `generated`. Les sorties Playwright sont centralisees dans `artifacts/playwright/report` et `artifacts/playwright/results`.
 

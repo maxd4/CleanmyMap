@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { findConcurrentActiveRoadmaps } from "./check-documentation-governance.mjs";
+import { findConcurrentActiveRoadmaps, validateDocumentationGovernance } from "./check-documentation-governance.mjs";
 
 function createView(files) {
   return {
@@ -11,8 +11,14 @@ function createView(files) {
     readText(filePath) {
       return files[filePath];
     },
+    exists(filePath) {
+      return Object.hasOwn(files, filePath);
+    },
   };
 }
+
+const DEPENDENCY_ADVISORY_PATH = "documentation/security/dependency-advisory-governance.md";
+const DEPENDENCY_ADVISORY_CONTENT = `GHSA-w3rx-r6r6-pgpr\nCVE-2025-71330\nGHSA-5p2g-fcmc-qvqq\nCVE-2025-71329\nGHSA-528h-pc64-c93x\nCVE-2026-71429\nimage-size@2.0.3\napps/mobile/vendor/image-size\nstream-json ^1.9.1\napps/mobile/vendor/stream-json\njayson@4.3.0\nStreamValues\nVerifier\nLes modules de filtres\nrelease upstream compatible\nn'est pas une release npm upstream\nmetro@0.84.5\nmetro@0.87.0\nversion contenant les deux correctifs\napps/web\nAucun asset non fiable ne doit entrer dans un build Metro.\n`;
 
 describe("documentation roadmap governance", () => {
   it("rejects two roadmap documents without a distinct historical status", () => {
@@ -35,5 +41,30 @@ describe("documentation roadmap governance", () => {
     });
 
     assert.deepEqual(findConcurrentActiveRoadmaps(view), []);
+  });
+
+  it("scans MDX for forbidden documentation references", () => {
+    const view = createView({
+      "documentation/features/fixture.mdx": "See plans/internal-roadmap.md\n",
+      [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
+    });
+
+    const violations = validateDocumentationGovernance(view);
+
+    assert.ok(violations.some((violation) =>
+      violation.file === "documentation/features/fixture.mdx" && violation.pattern === "plans/",
+    ));
+  });
+
+  it("accepts compliant MDX and keeps documentary exclusions", () => {
+    const view = createView({
+      "documentation/features/fixture.mdx": "# Public feature\n\nNo internal reference.\n",
+      "documentation/plans/fixture.mdx": "See plans/internal-roadmap.md\n",
+      [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
+    });
+
+    const violations = validateDocumentationGovernance(view);
+
+    assert.deepEqual(violations, []);
   });
 });

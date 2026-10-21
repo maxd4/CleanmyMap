@@ -7,8 +7,29 @@ import { gitExecutable } from "../ci/git-executable.mjs";
 const ROOT = resolve(".");
 const SENSITIVE_PREFIXES = [
   "apps/web/src/",
+  "apps/mobile/",
   "documentation/",
+  "scripts/",
 ];
+const IGNORED_PATH_SEGMENTS = new Set([
+  ".git",
+  ".next",
+  ".cache",
+  ".artifacts",
+  ".expo",
+  ".playwright-mcp",
+  ".turbo",
+  "node_modules",
+  "vendor",
+  "dist",
+  "build",
+  "coverage",
+  "artifacts",
+  "generated",
+  "__generated__",
+  "playwright-report",
+  "test-results",
+]);
 const TEXT_EXTENSIONS = new Set([
   ".ts",
   ".tsx",
@@ -23,6 +44,9 @@ const TEXT_EXTENSIONS = new Set([
 
 function isSensitiveTextFile(path) {
   if (!SENSITIVE_PREFIXES.some((prefix) => path.startsWith(prefix))) {
+    return false;
+  }
+  if (path.split("/").some((segment) => IGNORED_PATH_SEGMENTS.has(segment))) {
     return false;
   }
   const lastDot = path.lastIndexOf(".");

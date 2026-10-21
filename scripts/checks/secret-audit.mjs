@@ -18,6 +18,9 @@ const SCANNED_EXTENSIONS = new Set([
   ".cjs",
   ".json",
   ".md",
+  ".mdx",
+  ".html",
+  ".htm",
   ".yml",
   ".yaml",
   ".py",
@@ -329,6 +332,7 @@ function listCandidateFiles(candidates) {
 function shouldScan(relativePath) {
   const normalized = relativePath.replace(/\\/g, "/");
   const parts = normalized.split("/");
+  const filename = parts.at(-1) ?? "";
 
   if (GENERATED_UNTRACKED_PATHS.some((pattern) => pattern.test(normalized))) {
     return false;
@@ -344,8 +348,8 @@ function shouldScan(relativePath) {
   }
   if (
     EXACT_SCANNED_FILES.has(normalized) ||
-    normalized.endsWith("/.env.example") ||
-    normalized.endsWith("/.env.local.example")
+    filename === ".env" ||
+    filename.startsWith(".env.")
   ) {
     return true;
   }
