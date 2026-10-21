@@ -198,6 +198,10 @@ function SaveStatus({ state, copy }: { state: SaveState; copy: Copy }) {
   return <p className={cn("text-sm font-semibold", state === "error" ? "text-rose-700" : "text-sky-700")} role={state === "error" ? "alert" : "status"}>{message}</p>;
 }
 
+function AccountIdentitySection({ copy, firstName, lastName, setFirstName, setLastName, initialData, identityState, saveIdentity }: { copy: Copy; firstName: string; lastName: string; setFirstName: (value: string) => void; setLastName: (value: string) => void; initialData: AccountSettingsInitialData; identityState: SaveState; saveIdentity: () => void }) {
+  return <SectionCard title={copy.identity} description={copy.identityDescription}><div className="grid gap-4 sm:grid-cols-2"><label className="grid gap-1.5 text-sm font-semibold text-slate-800"><span>{copy.firstName}</span><input value={firstName} onChange={(event) => setFirstName(event.target.value)} autoComplete="given-name" className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-sky-500" /></label><label className="grid gap-1.5 text-sm font-semibold text-slate-800"><span>{copy.lastName}</span><input value={lastName} onChange={(event) => setLastName(event.target.value)} autoComplete="family-name" className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-sky-500" /></label></div><div className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-3"><div><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{copy.email}</p><p className="mt-1 break-words text-sm text-slate-900">{initialData.email || "—"}</p></div><div><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{copy.avatar}</p><p className="mt-1 text-sm text-slate-900">{initialData.imageUrl ? "Photo Clerk active" : "—"}</p></div><div className="flex items-center justify-start sm:justify-end"><UserButton /></div></div><p className="mt-3 text-sm text-slate-600">{copy.nativeAccount}</p><div className="mt-4 flex flex-wrap items-center gap-3"><button type="button" onClick={saveIdentity} disabled={identityState === "saving"} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700 disabled:cursor-wait disabled:opacity-60"><Save className="h-4 w-4" aria-hidden="true" />{identityState === "saving" ? copy.saving : copy.save}</button><SaveStatus state={identityState} copy={copy} /></div></SectionCard>;
+}
+
 export function AccountSettingsEditor({ locale, initialData }: { locale: Locale; initialData: AccountSettingsInitialData }) {
   const copy = COPY[locale];
   const [firstName, setFirstName] = useState(initialData.firstName);
@@ -322,19 +326,7 @@ export function AccountSettingsEditor({ locale, initialData }: { locale: Locale;
 
   return (
     <div className="space-y-6">
-      <SectionCard title={copy.identity} description={copy.identityDescription}>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="grid gap-1.5 text-sm font-semibold text-slate-800"><span>{copy.firstName}</span><input value={firstName} onChange={(event) => setFirstName(event.target.value)} autoComplete="given-name" className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-sky-500" /></label>
-          <label className="grid gap-1.5 text-sm font-semibold text-slate-800"><span>{copy.lastName}</span><input value={lastName} onChange={(event) => setLastName(event.target.value)} autoComplete="family-name" className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-sky-500" /></label>
-        </div>
-        <div className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-3">
-          <div><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{copy.email}</p><p className="mt-1 break-words text-sm text-slate-900">{initialData.email || "—"}</p></div>
-          <div><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{copy.avatar}</p><p className="mt-1 text-sm text-slate-900">{initialData.imageUrl ? "Photo Clerk active" : "—"}</p></div>
-          <div className="flex items-center justify-start sm:justify-end"><UserButton /></div>
-        </div>
-        <p className="mt-3 text-sm text-slate-600">{copy.nativeAccount}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-3"><button type="button" onClick={() => void saveIdentity()} disabled={identityState === "saving"} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700 disabled:cursor-wait disabled:opacity-60"><Save className="h-4 w-4" aria-hidden="true" />{identityState === "saving" ? copy.saving : copy.save}</button><SaveStatus state={identityState} copy={copy} /></div>
-      </SectionCard>
+      <AccountIdentitySection copy={copy} firstName={firstName} lastName={lastName} setFirstName={setFirstName} setLastName={setLastName} initialData={initialData} identityState={identityState} saveIdentity={() => void saveIdentity()} />
 
       <SectionCard title={copy.publicIdentity} description={copy.publicIdentityDescription}>
         <div className="grid gap-3 sm:grid-cols-2">

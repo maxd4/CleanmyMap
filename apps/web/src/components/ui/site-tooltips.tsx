@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { MutableRefObject } from "react";
 import { cn } from "@/lib/utils";
 
 type TooltipPlacement = "top" | "bottom" | "left" | "right";
@@ -43,7 +44,6 @@ function normalizeTooltipContent(raw: string) {
 
   return `${sentence.slice(0, 117).trimEnd()}…`;
 }
-
 function getPreferredPlacement(trigger: HTMLElement): TooltipPlacement {
   const raw = trigger.getAttribute("data-tooltip-placement");
   if (raw === "bottom" || raw === "left" || raw === "right" || raw === "top") {
@@ -51,7 +51,6 @@ function getPreferredPlacement(trigger: HTMLElement): TooltipPlacement {
   }
   return "top";
 }
-
 function choosePlacement(
   triggerRect: DOMRect,
   tooltipSize: { width: number; height: number },
@@ -146,107 +145,7 @@ function computePosition(trigger: HTMLElement, tooltipEl: HTMLElement, preferred
   return { top, left, arrowTop, placement };
 }
 
-export function SiteTooltips() {
-  const [mounted] = useState(() => typeof window !== "undefined");
-  const [activeTooltip, setActiveTooltip] = useState<ActiveTooltip | null>(null);
-  const [position, setPosition] = useState<TooltipPosition | null>(null);
-  const timerRef = useRef<number | null>(null);
-  const activeTriggerRef = useRef<HTMLElement | null>(null);
-  const tooltipRef = useRef<HTMLDivElement | null>(null);
-  const restoreStateRef = useRef<{
-    title?: string;
-    describedBy?: string;
-  } | null>(null);
-
-  const clearTimer = useCallback(() => {
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  const restoreTrigger = useCallback(() => {
-    const trigger = activeTriggerRef.current;
-    if (trigger && restoreStateRef.current) {
-      const { title, describedBy } = restoreStateRef.current;
-      if (title !== undefined && trigger.getAttribute("data-tooltip-source") === "title") {
-        trigger.setAttribute("title", title);
-      }
-      if (describedBy !== undefined) {
-        if (describedBy) {
-          trigger.setAttribute("aria-describedby", describedBy);
-        } else {
-          trigger.removeAttribute("aria-describedby");
-        }
-      }
-      trigger.removeAttribute("data-tooltip-source");
-      trigger.removeAttribute("data-tooltip-original-title");
-    }
-    restoreStateRef.current = null;
-    activeTriggerRef.current = null;
-  }, []);
-
-  const hideTooltip = useCallback(() => {
-    clearTimer();
-    restoreTrigger();
-    setActiveTooltip(null);
-    setPosition(null);
-  }, [clearTimer, restoreTrigger]);
-
-  const updatePosition = useCallback(() => {
-    if (!activeTooltip || !tooltipRef.current) {
-      return;
-    }
-
-    setPosition(computePosition(activeTooltip.trigger, tooltipRef.current, activeTooltip.placement));
-  }, [activeTooltip]);
-
-  const showTooltip = useCallback((trigger: HTMLElement, source: TooltipTriggerSource) => {
-    clearTimer();
-
-    const rawContent =
-      source === "data"
-        ? trigger.getAttribute("data-tooltip-content") ?? ""
-        : trigger.getAttribute("title") ?? trigger.getAttribute("data-tooltip-original-title") ?? "";
-
-    const content = normalizeTooltipContent(rawContent);
-    if (!content) {
-      return;
-    }
-
-    if (source === "title") {
-      const existingTitle = trigger.getAttribute("title");
-      if (existingTitle !== null) {
-        trigger.setAttribute("data-tooltip-original-title", existingTitle);
-        trigger.setAttribute("data-tooltip-source", "title");
-        trigger.removeAttribute("title");
-      }
-    } else {
-      trigger.setAttribute("data-tooltip-source", "data");
-    }
-
-    const describedBy = trigger.getAttribute("aria-describedby");
-    restoreStateRef.current = {
-      title: source === "title" ? (trigger.getAttribute("data-tooltip-original-title") ?? undefined) : undefined,
-      describedBy: describedBy ?? "",
-    };
-
-    activeTriggerRef.current = trigger;
-    timerRef.current = window.setTimeout(() => {
-      activeTriggerRef.current = trigger;
-      const preferredPlacement = getPreferredPlacement(trigger);
-      setActiveTooltip({
-        id: TOOLTIP_ID,
-        content,
-        placement: preferredPlacement,
-        trigger,
-        source,
-      });
-      trigger.setAttribute("aria-describedby", TOOLTIP_ID);
-      setPosition(null);
-    }, SHOW_DELAY_MS);
-  }, [clearTimer]);
-
+function useTooltipEventListeners({ activeTooltip, clearTimer, hideTooltip, showTooltip, updatePosition, activeTriggerRef, tooltipRef }: { activeTooltip: ActiveTooltip | null; clearTimer: () => void; hideTooltip: () => void; showTooltip: (trigger: HTMLElement, source: TooltipTriggerSource) => void; updatePosition: () => void; activeTriggerRef: MutableRefObject<HTMLElement | null>; tooltipRef: MutableRefObject<HTMLDivElement | null> }) {
   useEffect(() => {
     const getTrigger = (target: EventTarget | null) => {
       if (!(target instanceof Element)) {
@@ -385,21 +284,19 @@ export function SiteTooltips() {
       window.removeEventListener("resize", onScrollOrResize);
       window.removeEventListener("scroll", onScrollOrResize, true);
     };
-  }, [activeTooltip, clearTimer, hideTooltip, showTooltip, updatePosition]);
+  }, [activeTooltip, activeTriggerRef, clearTimer, hideTooltip, showTooltip, tooltipRef, updatePosition]);
+}
 
-  useEffect(() => () => {
-    clearTimer();
-    restoreTrigger();
-  }, [clearTimer, restoreTrigger]);
+function TooltipArrow({ position }: { position: TooltipPosition | null }) {
+  if (!position) return null;
+  const isVertical = position.placement === "top" || position.placement === "bottom";
+  return <span aria-hidden="true" className={cn("absolute h-2.5 w-2.5 rotate-45 border border-[rgba(161,227,235,0.18)] bg-[linear-gradient(135deg,rgba(65,124,132,0.98),rgba(44,95,119,0.96),rgba(91,95,207,0.88))]", position.placement === "top" && "bottom-[-5px]", position.placement === "bottom" && "top-[-5px]", position.placement === "left" && "right-[-5px]", position.placement === "right" && "left-[-5px]")} style={isVertical ? { left: `${position.arrowLeft ?? 24}px`, transform: "translateX(-50%) rotate(45deg)" } : { top: `${position.arrowTop ?? 24}px`, transform: "translateY(-50%) rotate(45deg)" }} />;
+}
 
-  useLayoutEffect(() => {
-    if (!activeTooltip || !tooltipRef.current) {
-      return;
-    }
-
-    const nextPosition = computePosition(activeTooltip.trigger, tooltipRef.current, activeTooltip.placement);
-    setPosition(nextPosition);
-  }, [activeTooltip]);
+function TooltipPortal({ activeTooltip, position, tooltipRef, mounted }: { activeTooltip: ActiveTooltip | null; position: TooltipPosition | null; tooltipRef: import("react").RefObject<HTMLDivElement | null>; mounted: boolean }) {
+  if (!mounted) {
+    return null;
+  }
 
   const tooltipNode = activeTooltip ? (
     <div
@@ -418,27 +315,129 @@ export function SiteTooltips() {
       }}
     >
       <span className="relative z-10 block">{activeTooltip.content}</span>
-      <span
-        aria-hidden="true"
-        className={cn(
-          "absolute h-2.5 w-2.5 rotate-45 border border-[rgba(161,227,235,0.18)] bg-[linear-gradient(135deg,rgba(65,124,132,0.98),rgba(44,95,119,0.96),rgba(91,95,207,0.88))]",
-          position?.placement === "top" && "bottom-[-5px]",
-          position?.placement === "bottom" && "top-[-5px]",
-          position?.placement === "left" && "right-[-5px]",
-          position?.placement === "right" && "left-[-5px]",
-        )}
-        style={
-          position?.placement === "top" || position?.placement === "bottom"
-            ? { left: `${position?.arrowLeft ?? 24}px`, transform: "translateX(-50%) rotate(45deg)" }
-            : { top: `${position?.arrowTop ?? 24}px`, transform: "translateY(-50%) rotate(45deg)" }
-        }
-      />
+      <TooltipArrow position={position} />
     </div>
   ) : null;
 
-  if (!mounted) {
-    return null;
-  }
-
   return createPortal(tooltipNode, document.body);
+}
+
+export function SiteTooltips() {
+  const [mounted] = useState(() => typeof window !== "undefined");
+  const [activeTooltip, setActiveTooltip] = useState<ActiveTooltip | null>(null);
+  const [position, setPosition] = useState<TooltipPosition | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const activeTriggerRef = useRef<HTMLElement | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const restoreStateRef = useRef<{
+    title?: string;
+    describedBy?: string;
+  } | null>(null);
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const restoreTrigger = useCallback(() => {
+    const trigger = activeTriggerRef.current;
+    if (trigger && restoreStateRef.current) {
+      const { title, describedBy } = restoreStateRef.current;
+      if (title !== undefined && trigger.getAttribute("data-tooltip-source") === "title") {
+        trigger.setAttribute("title", title);
+      }
+      if (describedBy !== undefined) {
+        if (describedBy) {
+          trigger.setAttribute("aria-describedby", describedBy);
+        } else {
+          trigger.removeAttribute("aria-describedby");
+        }
+      }
+      trigger.removeAttribute("data-tooltip-source");
+      trigger.removeAttribute("data-tooltip-original-title");
+    }
+    restoreStateRef.current = null;
+    activeTriggerRef.current = null;
+  }, []);
+
+  const hideTooltip = useCallback(() => {
+    clearTimer();
+    restoreTrigger();
+    setActiveTooltip(null);
+    setPosition(null);
+  }, [clearTimer, restoreTrigger]);
+
+  const updatePosition = useCallback(() => {
+    if (!activeTooltip || !tooltipRef.current) {
+      return;
+    }
+
+    setPosition(computePosition(activeTooltip.trigger, tooltipRef.current, activeTooltip.placement));
+  }, [activeTooltip]);
+
+  const showTooltip = useCallback((trigger: HTMLElement, source: TooltipTriggerSource) => {
+    clearTimer();
+
+    const rawContent =
+      source === "data"
+        ? trigger.getAttribute("data-tooltip-content") ?? ""
+        : trigger.getAttribute("title") ?? trigger.getAttribute("data-tooltip-original-title") ?? "";
+
+    const content = normalizeTooltipContent(rawContent);
+    if (!content) {
+      return;
+    }
+
+    if (source === "title") {
+      const existingTitle = trigger.getAttribute("title");
+      if (existingTitle !== null) {
+        trigger.setAttribute("data-tooltip-original-title", existingTitle);
+        trigger.setAttribute("data-tooltip-source", "title");
+        trigger.removeAttribute("title");
+      }
+    } else {
+      trigger.setAttribute("data-tooltip-source", "data");
+    }
+
+    const describedBy = trigger.getAttribute("aria-describedby");
+    restoreStateRef.current = {
+      title: source === "title" ? (trigger.getAttribute("data-tooltip-original-title") ?? undefined) : undefined,
+      describedBy: describedBy ?? "",
+    };
+
+    activeTriggerRef.current = trigger;
+    timerRef.current = window.setTimeout(() => {
+      activeTriggerRef.current = trigger;
+      const preferredPlacement = getPreferredPlacement(trigger);
+      setActiveTooltip({
+        id: TOOLTIP_ID,
+        content,
+        placement: preferredPlacement,
+        trigger,
+        source,
+      });
+      trigger.setAttribute("aria-describedby", TOOLTIP_ID);
+      setPosition(null);
+    }, SHOW_DELAY_MS);
+  }, [clearTimer]);
+
+  useTooltipEventListeners({ activeTooltip, clearTimer, hideTooltip, showTooltip, updatePosition, activeTriggerRef, tooltipRef });
+
+  useEffect(() => () => {
+    clearTimer();
+    restoreTrigger();
+  }, [clearTimer, restoreTrigger]);
+
+  useLayoutEffect(() => {
+    if (!activeTooltip || !tooltipRef.current) {
+      return;
+    }
+
+    const nextPosition = computePosition(activeTooltip.trigger, tooltipRef.current, activeTooltip.placement);
+    setPosition(nextPosition);
+  }, [activeTooltip]);
+
+  return <TooltipPortal activeTooltip={activeTooltip} position={position} tooltipRef={tooltipRef} mounted={mounted} />;
 }

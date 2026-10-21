@@ -109,6 +109,17 @@ export function HelpCard() {
 }
 
 
+function ActionCardStatusBadge({ cardStatus, statusLabel }: { cardStatus: ActionCardStatus; statusLabel: string }) {
+  const tone = cardStatus === "pending" ? "amber" : cardStatus === "closed" || cardStatus === "cancelled" ? "slate" : "emerald";
+  return <PillBadge tone={tone}><span className={`h-2 w-2 rounded-full ${getStatusDotTone(cardStatus)}`} />{statusLabel}</PillBadge>;
+}
+
+function ActionCardParticipationBadges({ item, fr, usesRegistration, isPreAction, status, requestCountLabel }: { item: JoinableActionItem; fr: boolean; usesRegistration: boolean; isPreAction: boolean; status: ReturnType<typeof getActionDisplayStatus>; requestCountLabel: string }) {
+  const participationLabel = usesRegistration ? fr ? "Inscriptions confirmées" : "Confirmed registrations" : fr ? "Participations confirmées" : "Confirmed participations";
+  const lifecycleNote = isPreAction ? status === "closed" ? fr ? "Action future fermée" : "Future action closed" : fr ? "Ouvert aux bénévoles" : "Open to volunteers" : fr ? "Déclaration complète" : "Complete declaration";
+  return <div className="flex flex-wrap gap-2"><span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">{formatCount(item.participantsCount)}/{item.volunteers_count === null ? (fr ? "non renseigné" : "not provided") : formatCount(item.volunteers_count)} {participationLabel}</span><span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">{requestCountLabel}</span><span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">{lifecycleNote}</span></div>;
+}
+
 function ActionCardDetails({
   item,
   fr,
@@ -147,10 +158,7 @@ function ActionCardDetails({
             </p>
           </div>
         </div>
-        <PillBadge tone={cardStatus === "pending" ? "amber" : cardStatus === "closed" || cardStatus === "cancelled" ? "slate" : "emerald"}>
-          <span className={`h-2 w-2 rounded-full ${getStatusDotTone(cardStatus)}`} />
-          {statusLabel}
-        </PillBadge>
+        <ActionCardStatusBadge cardStatus={cardStatus} statusLabel={statusLabel} />
       </div>
 
       <div className="space-y-1 text-sm text-slate-600">
@@ -167,34 +175,7 @@ function ActionCardDetails({
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
-          {formatCount(item.participantsCount)}/{item.volunteers_count === null ? (fr ? "non renseigné" : "not provided") : formatCount(item.volunteers_count)}{" "}
-          {usesRegistration
-            ? fr
-              ? "Inscriptions confirmées"
-              : "Confirmed registrations"
-            : fr
-              ? "Participations confirmées"
-              : "Confirmed participations"}
-        </span>
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
-          {requestCountLabel}
-        </span>
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
-          {isPreAction
-            ? status === "closed"
-              ? fr
-                ? "Action future fermée"
-                : "Future action closed"
-              : fr
-                ? "Ouvert aux bénévoles"
-                : "Open to volunteers"
-            : fr
-              ? "Déclaration complète"
-              : "Complete declaration"}
-        </span>
-      </div>
+      <ActionCardParticipationBadges item={item} fr={fr} usesRegistration={usesRegistration} isPreAction={isPreAction} status={status} requestCountLabel={requestCountLabel} />
     </div>
   );
 }

@@ -17,6 +17,162 @@ import { cn } from "@/lib/utils";
 import { listPublishedSpogomiPartnerImpacts } from "@/lib/spogomi/partner-impact-service";
 import { ShieldCheck, ClipboardCheck, Users, MapPin, AlertCircle } from "lucide-react";
 
+type PartnerDashboardContentProps = {
+  classes: ReturnType<typeof getBlockClasses>;
+  pageFamily: ReturnType<typeof resolvePageFamily>;
+  publishedEntries: Awaited<ReturnType<typeof listPublishedPartnerAnnuaireEntries>>;
+  publishedLoadError: string | null;
+  onboardingRequestCount: number | null;
+  onboardingLoadError: string | null;
+  spogomiPartnerImpacts: Awaited<ReturnType<typeof listPublishedSpogomiPartnerImpacts>>;
+  spogomiImpactLoadError: string | null;
+  currentRole: string | null;
+};
+
+function PartnerDashboardContent({
+  classes,
+  pageFamily,
+  publishedEntries,
+  publishedLoadError,
+  onboardingRequestCount,
+  onboardingLoadError,
+  spogomiPartnerImpacts,
+  spogomiImpactLoadError,
+  currentRole,
+}: PartnerDashboardContentProps) {
+  const acceptedPublishedEntries = publishedEntries.filter(
+    (entry) => entry.publicationStatus === "accepted",
+  );
+  const reviewPublishedEntries = publishedEntries.filter(
+    (entry) => entry.publicationStatus !== "accepted",
+  );
+  const totalEntries = acceptedPublishedEntries.length;
+  const activeEntries = acceptedPublishedEntries.filter(
+    (entry) =>
+      entry.qualificationStatus === "partenaire_actif" &&
+      entry.verificationStatus === "verifie" &&
+      hasRecentActivity(entry.recentActivityAt),
+  );
+  const staleEntries = publishedEntries.filter(
+    (entry) =>
+      entry.verificationStatus !== "verifie" || !hasRecentActivity(entry.recentActivityAt),
+  );
+  const coveredZones = new Set(
+    acceptedPublishedEntries.flatMap((entry) => entry.coveredArrondissements),
+  );
+
+  return (
+    <CmmPageLayout>
+      <PageHeader
+        family={pageFamily}
+        title="Gouvernance des partenariats"
+        subtitle="Suivi des demandes d'onboarding, modération des fiches et analyse de la couverture territoriale."
+      />
+
+      <CmmSectionGroup>
+        <section className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5">
+          {[
+            { label: "Fiches publiées", val: publishedLoadError ? "n/a" : totalEntries, icon: <ClipboardCheck size={20} />, color: "slate" },
+            { label: "Partenaires actifs", val: publishedLoadError ? "n/a" : activeEntries.length, icon: <Users size={20} />, color: "emerald" },
+            { label: "Zones couvertes", val: publishedLoadError ? "n/a" : coveredZones.size, icon: <MapPin size={20} />, color: "sky" },
+            { label: "À valider", val: onboardingRequestCount ?? "n/a", icon: <ShieldCheck size={20} />, color: "amber", sub: "Décision requise" },
+            { label: "Fiches à revoir", val: publishedLoadError ? "n/a" : reviewPublishedEntries.length, icon: <AlertCircle size={20} />, color: "rose" },
+          ].map((card, i) => (
+            <div key={i} className={cn(
+              "p-8 rounded-[2.5rem] border flex flex-col justify-between transition-all duration-700 group relative overflow-hidden",
+              classes.surface,
+              classes.shadow,
+              "hover:border-slate-400/30",
+            )}>
+              <div className={cn("transition-transform group-hover:scale-110 duration-700 mb-6", `text-${card.color}-400`)}>
+                {card.icon}
+              </div>
+              <div className="space-y-1">
+                <p className="text-3xl font-black text-white">{card.val}</p>
+                <p className="cmm-text-caption font-black uppercase tracking-widest text-white/60">{card.label}</p>
+                {card.sub && <p className="cmm-text-caption font-bold text-amber-400/80 mt-1">{card.sub}</p>}
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {publishedLoadError ? (
+          <section className="rounded-[2rem] border border-rose-400/20 bg-rose-400/5 p-6 flex items-center gap-4 text-rose-200/70 text-sm font-medium">
+            <AlertCircle size={20} className="text-rose-400 shrink-0" />
+            {publishedLoadError}
+          </section>
+        ) : publishedEntries.length === 0 ? (
+          <section className="rounded-[2rem] border border-slate-400/20 bg-slate-400/5 p-6 flex items-center gap-4 text-slate-200/60 text-sm font-medium">
+            <ClipboardCheck size={20} className="text-slate-400 shrink-0" />
+            Aucune fiche partenaire persistée n’est disponible pour le moment.
+          </section>
+        ) : null}
+
+        {onboardingLoadError && (
+          <section className="rounded-[2rem] border border-amber-400/20 bg-amber-400/5 p-6 flex items-center gap-4 text-amber-200/60 text-sm font-medium">
+            <AlertCircle size={20} className="text-amber-400 shrink-0" />
+            {onboardingLoadError}
+          </section>
+        )}
+
+        <section className={cn("space-y-5 rounded-[3rem] border p-8", classes.surface, classes.shadow)} aria-labelledby="spogomi-partner-impact-title">
+          <div>
+            <h2 id="spogomi-partner-impact-title" className="text-xl font-black text-white">Éditions SPOGOMI publiées</h2>
+            <p className="cmm-text-body mt-1 text-white/60">Projection des événements publics et de leurs bilans environnementaux certifiés. Les données personnelles et les rosters restent exclus.</p>
+          </div>
+          {spogomiImpactLoadError ? <p className="rounded-xl border border-rose-400/20 bg-rose-400/5 p-4 text-sm text-rose-200">{spogomiImpactLoadError}</p> : spogomiPartnerImpacts.length === 0 ? <p className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">Aucune édition SPOGOMI publiable n’est associée à un organisateur canonique.</p> : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {spogomiPartnerImpacts.map((impact) => {
+                const organizer = impact.events[0]?.organizer;
+                return <article key={organizer?.organizerId ?? impact.events[0]?.actionId} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                  <h3 className="font-black text-white">{organizer?.verifiedName ?? "Organisateur vérifié"}</h3>
+                  <p className="mt-1 text-xs font-bold uppercase tracking-[0.15em] text-white/50">{impact.publishedEditionCount} édition{impact.publishedEditionCount === 1 ? "" : "s"} publiée{impact.publishedEditionCount === 1 ? "" : "s"}</p>
+                  <dl className="mt-4 grid gap-2 text-sm text-white/70 sm:grid-cols-2">
+                    <div><dt className="font-bold text-white">Participations terrain</dt><dd>{impact.confirmedTerrainParticipations ?? "Non disponible"}</dd></div>
+                    <div><dt className="font-bold text-white">Déchets mesurés</dt><dd>{impact.totalWasteMassKg === null ? "Non disponible" : `${impact.totalWasteMassKg.toFixed(2)} kg`}</dd></div>
+                    <div><dt className="font-bold text-white">Mégots comptés</dt><dd>{impact.countedCigaretteButts ?? "Non disponible"}</dd></div>
+                    <div><dt className="font-bold text-white">Missions certifiées</dt><dd>{impact.certifiedVolunteerMissionCount}</dd></div>
+                  </dl>
+                  <div className="mt-4 space-y-2">
+                    {impact.events.map((event) => <Link key={event.eventId} href={event.eventSlug ? `/spogomi/${encodeURIComponent(event.eventSlug)}` : "/spogomi"} className="block rounded-xl border border-white/10 bg-black/10 p-3 text-sm font-bold text-white hover:bg-white/10">{event.name} · {event.locationLabel}</Link>)}
+                  </div>
+                  {impact.notes.map((note) => <p key={note} className="mt-3 text-xs text-amber-200/80">{note}</p>)}
+                </article>;
+              })}
+            </div>
+          )}
+        </section>
+
+        <div className="grid lg:grid-cols-3 gap-10">
+          <section className={cn("lg:col-span-2 p-10 rounded-[3rem] border space-y-8", classes.surface, classes.shadow)}>
+            <div className="flex items-center gap-3 text-slate-400">
+              <ClipboardCheck size={16} />
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/40">Checklist de gouvernance</h3>
+            </div>
+            <ul className="grid gap-4">
+              {["Examiner les demandes selon leur statut persistant", "Vérifier les fiches dont la modération nécessite une revue", "Comparer la couverture déclarée des fiches acceptées", "Documenter chaque décision et sa date dans les données de modération"].map((item, i) => (
+                <li key={i} className="flex items-center gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/[0.07] transition-all">
+                  <span className="w-8 h-8 rounded-lg bg-slate-400/10 flex items-center justify-center cmm-text-caption font-black text-slate-400 group-hover:bg-slate-400 group-hover:text-black transition-all">0{i + 1}</span>
+                  <span className="text-sm font-medium text-white/60 group-hover:text-white transition-colors">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <aside className="space-y-10">
+            <div className="bg-white/5 rounded-[3rem] p-10 space-y-6 border border-white/5 shadow-inner relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-slate-400/5 rounded-full blur-[80px]" />
+              <h3 className="text-xl font-black text-white tracking-tight relative z-10 flex items-center gap-3"><ShieldCheck size={20} className="text-slate-400" />Vérification</h3>
+              <p className="cmm-text-body cmm-text-inverse font-medium relative z-10">{staleEntries.length} fiches nécessitent une confirmation de données ou une vérification d&apos;activité récente.</p>
+            </div>
+            {currentRole === "admin" && reviewPublishedEntries.length > 0 && <PublishedAnnuaireReviewPanel items={reviewPublishedEntries} />}
+          </aside>
+        </div>
+      </CmmSectionGroup>
+    </CmmPageLayout>
+  );
+}
+
 export default async function PartnersDashboardPage() {
   const { userId, clerkReachable } = await getSafeAuthSession();
   const classes = getBlockClasses("network");
@@ -33,26 +189,8 @@ export default async function PartnersDashboardPage() {
     publishedLoadError = "Fiches partenaires indisponibles (configuration persistance).";
   }
   const currentRole = userId ? await getCurrentUserRoleLabel().catch(() => null) : null;
-  
-  const acceptedPublishedEntries = publishedEntries.filter(
-    (entry) => entry.publicationStatus === "accepted",
-  );
-  const reviewPublishedEntries = publishedEntries.filter(
-    (entry) => entry.publicationStatus !== "accepted",
-  );
 
-  const totalEntries = acceptedPublishedEntries.length;
-  const activeEntries = acceptedPublishedEntries.filter(
-    (entry) =>
-      entry.qualificationStatus === "partenaire_actif" &&
-      entry.verificationStatus === "verifie" &&
-      hasRecentActivity(entry.recentActivityAt),
-  );
-  const staleEntries = publishedEntries.filter(
-    (entry) =>
-      entry.verificationStatus !== "verifie" || !hasRecentActivity(entry.recentActivityAt),
-  );
-  
+
   let onboardingRequestCount: number | null = null;
   let onboardingLoadError: string | null = null;
   if (!canUseSupabaseServerPersistence()) {
@@ -65,9 +203,6 @@ export default async function PartnersDashboardPage() {
       onboardingLoadError = "Demandes onboarding indisponibles (configuration persistance).";
     }
   }
-  const coveredZones = new Set(
-    acceptedPublishedEntries.flatMap((entry) => entry.coveredArrondissements),
-  );
   let spogomiPartnerImpacts: Awaited<ReturnType<typeof listPublishedSpogomiPartnerImpacts>> = [];
   let spogomiImpactLoadError: string | null = null;
   try {
@@ -78,128 +213,17 @@ export default async function PartnersDashboardPage() {
   }
 
   const page = (
-    <CmmPageLayout>
-      <PageHeader
-        family={pageFamily}
-        title="Gouvernance des partenariats"
-        subtitle="Suivi des demandes d'onboarding, modération des fiches et analyse de la couverture territoriale."
-      />
-
-      <CmmSectionGroup>
-      {/* Stats Grid */}
-      <section className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5">
-        {[
-          { label: "Fiches publiées", val: publishedLoadError ? "n/a" : totalEntries, icon: <ClipboardCheck size={20} />, color: "slate" },
-          { label: "Partenaires actifs", val: publishedLoadError ? "n/a" : activeEntries.length, icon: <Users size={20} />, color: "emerald" },
-          { label: "Zones couvertes", val: publishedLoadError ? "n/a" : coveredZones.size, icon: <MapPin size={20} />, color: "sky" },
-          { label: "À valider", val: onboardingRequestCount ?? "n/a", icon: <ShieldCheck size={20} />, color: "amber", sub: "Décision requise" },
-          { label: "Fiches à revoir", val: publishedLoadError ? "n/a" : reviewPublishedEntries.length, icon: <AlertCircle size={20} />, color: "rose" },
-        ].map((card, i) => (
-          <div key={i} className={cn(
-            "p-8 rounded-[2.5rem] border flex flex-col justify-between transition-all duration-700 group relative overflow-hidden",
-            classes.surface,
-            classes.shadow,
-            "hover:border-slate-400/30"
-          )}>
-            <div className={cn("transition-transform group-hover:scale-110 duration-700 mb-6", `text-${card.color}-400`)}>
-              {card.icon}
-            </div>
-            <div className="space-y-1">
-              <p className="text-3xl font-black text-white">{card.val}</p>
-              <p className="cmm-text-caption font-black uppercase tracking-widest text-white/60">{card.label}</p>
-              {card.sub && <p className="cmm-text-caption font-bold text-amber-400/80 mt-1">{card.sub}</p>}
-            </div>
-          </div>
-        ))}
-      </section>
-
-      {publishedLoadError ? (
-        <section className="rounded-[2rem] border border-rose-400/20 bg-rose-400/5 p-6 flex items-center gap-4 text-rose-200/70 text-sm font-medium">
-          <AlertCircle size={20} className="text-rose-400 shrink-0" />
-          {publishedLoadError}
-        </section>
-      ) : publishedEntries.length === 0 ? (
-        <section className="rounded-[2rem] border border-slate-400/20 bg-slate-400/5 p-6 flex items-center gap-4 text-slate-200/60 text-sm font-medium">
-          <ClipboardCheck size={20} className="text-slate-400 shrink-0" />
-          Aucune fiche partenaire persistée n’est disponible pour le moment.
-        </section>
-      ) : null}
-
-      {onboardingLoadError && (
-        <section className="rounded-[2rem] border border-amber-400/20 bg-amber-400/5 p-6 flex items-center gap-4 text-amber-200/60 text-sm font-medium">
-          <AlertCircle size={20} className="text-amber-400 shrink-0" />
-          {onboardingLoadError}
-        </section>
-      )}
-
-      <section className={cn("space-y-5 rounded-[3rem] border p-8", classes.surface, classes.shadow)} aria-labelledby="spogomi-partner-impact-title">
-        <div>
-          <h2 id="spogomi-partner-impact-title" className="text-xl font-black text-white">Éditions SPOGOMI publiées</h2>
-          <p className="cmm-text-body mt-1 text-white/60">Projection des événements publics et de leurs bilans environnementaux certifiés. Les données personnelles et les rosters restent exclus.</p>
-        </div>
-        {spogomiImpactLoadError ? <p className="rounded-xl border border-rose-400/20 bg-rose-400/5 p-4 text-sm text-rose-200">{spogomiImpactLoadError}</p> : spogomiPartnerImpacts.length === 0 ? <p className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">Aucune édition SPOGOMI publiable n’est associée à un organisateur canonique.</p> : (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {spogomiPartnerImpacts.map((impact) => {
-              const organizer = impact.events[0]?.organizer;
-              return <article key={organizer?.organizerId ?? impact.events[0]?.actionId} className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <h3 className="font-black text-white">{organizer?.verifiedName ?? "Organisateur vérifié"}</h3>
-                <p className="mt-1 text-xs font-bold uppercase tracking-[0.15em] text-white/50">{impact.publishedEditionCount} édition{impact.publishedEditionCount === 1 ? "" : "s"} publiée{impact.publishedEditionCount === 1 ? "" : "s"}</p>
-                <dl className="mt-4 grid gap-2 text-sm text-white/70 sm:grid-cols-2">
-                  <div><dt className="font-bold text-white">Participations terrain</dt><dd>{impact.confirmedTerrainParticipations ?? "Non disponible"}</dd></div>
-                  <div><dt className="font-bold text-white">Déchets mesurés</dt><dd>{impact.totalWasteMassKg === null ? "Non disponible" : `${impact.totalWasteMassKg.toFixed(2)} kg`}</dd></div>
-                  <div><dt className="font-bold text-white">Mégots comptés</dt><dd>{impact.countedCigaretteButts ?? "Non disponible"}</dd></div>
-                  <div><dt className="font-bold text-white">Missions certifiées</dt><dd>{impact.certifiedVolunteerMissionCount}</dd></div>
-                </dl>
-                <div className="mt-4 space-y-2">
-                  {impact.events.map((event) => <Link key={event.eventId} href={event.eventSlug ? `/spogomi/${encodeURIComponent(event.eventSlug)}` : "/spogomi"} className="block rounded-xl border border-white/10 bg-black/10 p-3 text-sm font-bold text-white hover:bg-white/10">{event.name} · {event.locationLabel}</Link>)}
-                </div>
-                {impact.notes.map((note) => <p key={note} className="mt-3 text-xs text-amber-200/80">{note}</p>)}
-              </article>;
-            })}
-          </div>
-        )}
-      </section>
-
-      <div className="grid lg:grid-cols-3 gap-10">
-        <section className={cn("lg:col-span-2 p-10 rounded-[3rem] border space-y-8", classes.surface, classes.shadow)}>
-          <div className="flex items-center gap-3 text-slate-400">
-            <ClipboardCheck size={16} />
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/40">Checklist de gouvernance</h3>
-          </div>
-          <ul className="grid gap-4">
-            {[
-              "Examiner les demandes selon leur statut persistant",
-              "Vérifier les fiches dont la modération nécessite une revue",
-              "Comparer la couverture déclarée des fiches acceptées",
-              "Documenter chaque décision et sa date dans les données de modération",
-            ].map((item, i) => (
-              <li key={i} className="flex items-center gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/[0.07] transition-all">
-                <span className="w-8 h-8 rounded-lg bg-slate-400/10 flex items-center justify-center cmm-text-caption font-black text-slate-400 group-hover:bg-slate-400 group-hover:text-black transition-all">0{i+1}</span>
-                <span className="text-sm font-medium text-white/60 group-hover:text-white transition-colors">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <aside className="space-y-10">
-          <div className="bg-white/5 rounded-[3rem] p-10 space-y-6 border border-white/5 shadow-inner relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-slate-400/5 rounded-full blur-[80px]" />
-             <h3 className="text-xl font-black text-white tracking-tight relative z-10 flex items-center gap-3">
-               <ShieldCheck size={20} className="text-slate-400" />
-               Vérification
-             </h3>
-             <p className="cmm-text-body cmm-text-inverse font-medium relative z-10">
-               {staleEntries.length} fiches nécessitent une confirmation de données ou une vérification d&apos;activité récente.
-             </p>
-          </div>
-
-          {currentRole === "admin" && reviewPublishedEntries.length > 0 && (
-            <PublishedAnnuaireReviewPanel items={reviewPublishedEntries} />
-          )}
-        </aside>
-      </div>
-      </CmmSectionGroup>
-    </CmmPageLayout>
+    <PartnerDashboardContent
+      classes={classes}
+      pageFamily={pageFamily}
+      publishedEntries={publishedEntries}
+      publishedLoadError={publishedLoadError}
+      onboardingRequestCount={onboardingRequestCount}
+      onboardingLoadError={onboardingLoadError}
+      spogomiPartnerImpacts={spogomiPartnerImpacts}
+      spogomiImpactLoadError={spogomiImpactLoadError}
+      currentRole={currentRole}
+    />
   );
 
   return (

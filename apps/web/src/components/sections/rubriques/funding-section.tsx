@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { HandCoins, Heart, Laptop, PackageCheck, ShieldCheck } from "lucide-react";
+import {
+  HandCoins,
+  Heart,
+  Laptop,
+  PackageCheck,
+  ShieldCheck,
+} from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
@@ -16,21 +22,42 @@ import {
 } from "@/lib/funding/config";
 
 type FundingAggregate = { netAmountCents: number; currency: string };
-type AggregateResponse = { categories: Record<FundingCategory, FundingAggregate> };
+type AggregateResponse = {
+  categories: Record<FundingCategory, FundingAggregate>;
+};
 
 const CATEGORY_ICONS = {
   equipment: PackageCheck,
   development: Laptop,
 } satisfies Record<FundingCategory, typeof PackageCheck>;
 
-const CATEGORY_BULLETS: Record<FundingCategory, { fr: string[]; en: string[] }> = {
+const CATEGORY_BULLETS: Record<
+  FundingCategory,
+  { fr: string[]; en: string[] }
+> = {
   equipment: {
-    fr: ["Équipement partagé et durable", "Logistique des actions terrain", "Prototypes et essais FabLab"],
-    en: ["Shared and durable equipment", "Field action logistics", "FabLab prototypes and trials"],
+    fr: [
+      "Équipement partagé et durable",
+      "Logistique des actions terrain",
+      "Prototypes et essais FabLab",
+    ],
+    en: [
+      "Shared and durable equipment",
+      "Field action logistics",
+      "FabLab prototypes and trials",
+    ],
   },
   development: {
-    fr: ["Hébergement et domaine", "Services numériques et outils", "Maintenance et développement bénévole"],
-    en: ["Hosting and domain", "Digital services and tools", "Maintenance and volunteer development"],
+    fr: [
+      "Hébergement et domaine",
+      "Services numériques et outils",
+      "Maintenance et développement bénévole",
+    ],
+    en: [
+      "Hosting and domain",
+      "Digital services and tools",
+      "Maintenance and volunteer development",
+    ],
   },
 };
 
@@ -39,14 +66,177 @@ type FundingSectionProps = {
   headingLevel?: "h1" | "h2";
 };
 
-export function FundingSection({ onParticipeUrl, headingLevel = "h1" }: FundingSectionProps) {
+function FundingCategoryCard({
+  category,
+  locale,
+  fr,
+  aggregate,
+  aggregateState,
+  onParticipe,
+  onRetry,
+}: {
+  category: FundingCategory;
+  locale: "fr" | "en";
+  fr: boolean;
+  aggregate?: FundingAggregate;
+  aggregateState: "loading" | "ready" | "error";
+  onParticipe: ReturnType<typeof resolveOnParticipeFundingDestination>;
+  onRetry: () => void;
+}) {
+  const Icon = CATEGORY_ICONS[category];
+  return (
+    <CmmCard
+      as="article"
+      tone={category === "equipment" ? "pink" : "indigo"}
+      variant="elevated"
+      size="lg"
+      className="flex h-full flex-col gap-6"
+      data-funding-card={category}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="rounded-2xl border border-pink-200/70 bg-white/80 p-3 text-pink-700">
+          <Icon size={24} aria-hidden="true" />
+        </div>
+        <div className="text-right">
+          <p className="cmm-text-small font-semibold uppercase tracking-[0.16em] text-slate-600">
+            {fr
+              ? "Total net confirmé par Stripe"
+              : "Net total confirmed by Stripe"}
+          </p>
+          {aggregateState === "loading" ? (
+            <p
+              className="mt-2 text-sm font-semibold text-slate-500"
+              aria-live="polite"
+            >
+              {fr ? "Chargement…" : "Loading…"}
+            </p>
+          ) : aggregateState === "error" ? (
+            <p className="mt-2 text-sm font-semibold text-red-700">
+              {fr ? "Indisponible" : "Unavailable"}
+            </p>
+          ) : (
+            <p
+              className="mt-2 text-2xl font-black text-slate-950"
+              data-funding-total={category}
+            >
+              {formatFundingAmount(aggregate?.netAmountCents ?? 0, locale)}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="space-y-3">
+        <h2 className="text-2xl font-black tracking-tight text-slate-950">
+          {FUNDING_CATEGORY_LABELS[category][locale]}
+        </h2>
+        <p className="text-sm leading-6 text-slate-800">
+          {FUNDING_CATEGORY_DESCRIPTIONS[category][locale]}
+        </p>
+      </div>
+      <ul className="space-y-2 text-sm font-medium text-slate-700">
+        {CATEGORY_BULLETS[category][locale].map((bullet) => (
+          <li key={bullet} className="flex items-start gap-2">
+            <span
+              className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-pink-500"
+              aria-hidden="true"
+            />
+            <span>{bullet}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-auto space-y-4 border-t border-slate-200 pt-5">
+        <CmmButton
+          type="button"
+          tone="primary"
+          variant="pill"
+          width="wide"
+          href={onParticipe.configured ? onParticipe.url : undefined}
+          disabled={!onParticipe.configured}
+        >
+          {onParticipe.configured
+            ? fr
+              ? "Soutenir via OnParticipe"
+              : "Support via OnParticipe"
+            : fr
+              ? "Non disponible"
+              : "Unavailable"}
+        </CmmButton>
+        {aggregateState === "error" ? (
+          <CmmButton
+            type="button"
+            tone="secondary"
+            variant="ghost"
+            width="wide"
+            onClick={onRetry}
+          >
+            {fr ? "Réessayer le chargement" : "Retry loading"}
+          </CmmButton>
+        ) : null}
+      </div>
+    </CmmCard>
+  );
+}
+
+function FundingAllocationCard({ fr }: { fr: boolean }) {
+  return (
+    <CmmCard
+      as="section"
+      tone="slate"
+      variant="outlined"
+      size="lg"
+      className="space-y-5"
+      data-funding-allocation
+    >
+      <div className="flex items-start gap-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3 text-slate-700">
+          <ShieldCheck size={22} aria-hidden="true" />
+        </div>
+        <div>
+          <h2 className="text-xl font-black text-slate-950">
+            {fr ? "Où va l’argent ?" : "Where does the money go?"}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-800">
+            {fr
+              ? "Les contributions à la cagnotte soutiennent les deux familles de besoins présentées ici : matériel et logistique pour les actions terrain, ainsi qu’hébergement, outils et dépenses nécessaires au fonctionnement et au développement. La cagnotte OnParticipe est commune : le bouton utilisé ne sélectionne pas une affectation particulière et CleanMyMap ne garantit aucune affectation par catégorie. Les totaux nets affichés correspondent uniquement aux paiements Stripe confirmés, diminués des remboursements enregistrés ; ils n’incluent pas les contributions OnParticipe et ne représentent pas le total global du financement."
+              : "Contributions to the campaign support both needs presented here: equipment and logistics for field actions, as well as hosting, tools and expenses needed for operations and development. The OnParticipe campaign is shared: the button used does not select a specific allocation, and CleanMyMap does not guarantee an allocation by category. The net totals shown include only Stripe-confirmed payments, less recorded refunds; they exclude OnParticipe contributions and are not the global funding total."}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3 rounded-2xl bg-pink-50 px-4 py-3 text-sm font-semibold text-slate-800">
+        <Heart
+          size={18}
+          className="mt-0.5 shrink-0 text-pink-600"
+          aria-hidden="true"
+        />
+        <p>
+          {fr
+            ? "La contribution soutient le projet mais ne donne aucun pouvoir sur la modération, les décisions éditoriales ou les règles de la plateforme."
+            : "A contribution supports the project but gives no power over moderation, editorial decisions or platform rules."}
+        </p>
+      </div>
+      <p className="text-sm leading-6 text-slate-800">
+        {fr
+          ? "La confirmation ou le reçu Stripe, lorsqu’il est disponible, confirme le traitement du paiement mais n’est pas un reçu fiscal. CleanMyMap n’annonce ni réduction fiscale ni mécénat fiscal."
+          : "A Stripe confirmation or receipt, when available, confirms payment processing but is not a tax receipt. CleanMyMap does not advertise tax relief or tax-deductible sponsorship."}
+      </p>
+    </CmmCard>
+  );
+}
+
+export function FundingSection({
+  onParticipeUrl,
+  headingLevel = "h1",
+}: FundingSectionProps) {
   const { locale } = useSitePreferences();
   const searchParams = useSearchParams();
   const fr = locale === "fr";
   const onParticipe = resolveOnParticipeFundingDestination(onParticipeUrl);
   const [aggregates, setAggregates] = useState<AggregateResponse | null>(null);
-  const [aggregateState, setAggregateState] = useState<"loading" | "ready" | "error">("loading");
-  const [confirmation, setConfirmation] = useState<"pending" | "confirmed" | null>(null);
+  const [aggregateState, setAggregateState] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
+  const [confirmation, setConfirmation] = useState<
+    "pending" | "confirmed" | null
+  >(null);
 
   const status = searchParams.get("status");
   const sessionId = searchParams.get("session_id");
@@ -54,7 +244,9 @@ export function FundingSection({ onParticipeUrl, headingLevel = "h1" }: FundingS
   async function loadAggregates() {
     setAggregateState("loading");
     try {
-      const response = await fetch("/api/funding/aggregate", { cache: "no-store" });
+      const response = await fetch("/api/funding/aggregate", {
+        cache: "no-store",
+      });
       if (!response.ok) throw new Error("aggregate_unavailable");
       setAggregates((await response.json()) as AggregateResponse);
       setAggregateState("ready");
@@ -79,7 +271,9 @@ export function FundingSection({ onParticipeUrl, headingLevel = "h1" }: FundingS
       .catch(() => {
         if (!cancelled) setAggregateState("error");
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -88,9 +282,15 @@ export function FundingSection({ onParticipeUrl, headingLevel = "h1" }: FundingS
     }
 
     let cancelled = false;
-    if (!sessionId) return () => { cancelled = true; };
+    if (!sessionId)
+      return () => {
+        cancelled = true;
+      };
 
-    void fetch(`/api/funding/checkout-status?session_id=${encodeURIComponent(sessionId)}`, { cache: "no-store" })
+    void fetch(
+      `/api/funding/checkout-status?session_id=${encodeURIComponent(sessionId)}`,
+      { cache: "no-store" },
+    )
       .then((response) => (response.ok ? response.json() : null))
       .then((payload: { confirmed?: boolean } | null) => {
         if (!cancelled && payload?.confirmed) {
@@ -100,18 +300,32 @@ export function FundingSection({ onParticipeUrl, headingLevel = "h1" }: FundingS
       })
       .catch(() => undefined);
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [sessionId, status]);
 
   const notice = useMemo(() => {
     if (status === "cancelled") {
-      return { text: fr ? "Paiement annulé. Aucun montant n’a été confirmé." : "Payment cancelled. No amount was confirmed." };
+      return {
+        text: fr
+          ? "Paiement annulé. Aucun montant n’a été confirmé."
+          : "Payment cancelled. No amount was confirmed.",
+      };
     }
     if (status === "success" && confirmation === "confirmed") {
-      return { text: fr ? "Contribution confirmée par CleanMyMap." : "Contribution confirmed by CleanMyMap." };
+      return {
+        text: fr
+          ? "Contribution confirmée par CleanMyMap."
+          : "Contribution confirmed by CleanMyMap.",
+      };
     }
     if (status === "success") {
-      return { text: fr ? "Paiement reçu par Stripe · confirmation en cours." : "Payment received by Stripe · confirmation in progress." };
+      return {
+        text: fr
+          ? "Paiement reçu par Stripe · confirmation en cours."
+          : "Payment received by Stripe · confirmation in progress.",
+      };
     }
     return null;
   }, [confirmation, fr, status]);
@@ -120,106 +334,43 @@ export function FundingSection({ onParticipeUrl, headingLevel = "h1" }: FundingS
     <SectionShell
       id="funding"
       title={fr ? "Soutenir CleanMyMap" : "Support CleanMyMap"}
-      subtitle={fr
-        ? "Des contributions volontaires pour les actions terrain et le développement d’un outil indépendant."
-        : "Voluntary contributions for field actions and the development of an independent tool."}
+      subtitle={
+        fr
+          ? "Des contributions volontaires pour les actions terrain et le développement d’un outil indépendant."
+          : "Voluntary contributions for field actions and the development of an independent tool."
+      }
       icon={HandCoins}
       headingLevel={headingLevel}
       gradient="from-pink-500/20 via-indigo-500/10 to-transparent"
     >
       <div className="space-y-8" data-funding-page>
         {notice ? (
-          <div className="rounded-2xl border border-pink-200/70 bg-white/80 px-5 py-4 text-sm font-semibold text-slate-800 shadow-sm" role="status" data-funding-return={status}>
+          <div
+            className="rounded-2xl border border-pink-200/70 bg-white/80 px-5 py-4 text-sm font-semibold text-slate-800 shadow-sm"
+            role="status"
+            data-funding-return={status}
+          >
             {notice.text}
           </div>
         ) : null}
 
         <div className="grid gap-6 lg:grid-cols-2">
-          {(Object.keys(FUNDING_CATEGORY_LABELS) as FundingCategory[]).map((category) => {
-            const Icon = CATEGORY_ICONS[category];
-            const aggregate = aggregates?.categories?.[category];
-            return (
-              <CmmCard key={category} as="article" tone={category === "equipment" ? "pink" : "indigo"} variant="elevated" size="lg" className="flex h-full flex-col gap-6" data-funding-card={category}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="rounded-2xl border border-pink-200/70 bg-white/80 p-3 text-pink-700">
-                    <Icon size={24} aria-hidden="true" />
-                  </div>
-                  <div className="text-right">
-                    <p className="cmm-text-small font-semibold uppercase tracking-[0.16em] text-slate-600">{fr ? "Total net confirmé par Stripe" : "Net total confirmed by Stripe"}</p>
-                    {aggregateState === "loading" ? (
-                      <p className="mt-2 text-sm font-semibold text-slate-500" aria-live="polite">{fr ? "Chargement…" : "Loading…"}</p>
-                    ) : aggregateState === "error" ? (
-                      <p className="mt-2 text-sm font-semibold text-red-700">{fr ? "Indisponible" : "Unavailable"}</p>
-                    ) : (
-                      <p className="mt-2 text-2xl font-black text-slate-950" data-funding-total={category}>
-                        {formatFundingAmount(aggregate?.netAmountCents ?? 0, locale)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950">{FUNDING_CATEGORY_LABELS[category][locale]}</h2>
-                  <p className="text-sm leading-6 text-slate-800">{FUNDING_CATEGORY_DESCRIPTIONS[category][locale]}</p>
-                </div>
-
-                <ul className="space-y-2 text-sm font-medium text-slate-700">
-                  {CATEGORY_BULLETS[category][locale].map((bullet) => (
-                    <li key={bullet} className="flex items-start gap-2">
-                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-pink-500" aria-hidden="true" />
-                      <span>{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-auto space-y-4 border-t border-slate-200 pt-5">
-                  <CmmButton
-                    type="button"
-                    tone="primary"
-                    variant="pill"
-                    width="wide"
-                    href={onParticipe.configured ? onParticipe.url : undefined}
-                    disabled={!onParticipe.configured}
-                  >
-                    {onParticipe.configured
-                      ? fr ? "Soutenir via OnParticipe" : "Support via OnParticipe"
-                      : fr ? "Non disponible" : "Unavailable"}
-                  </CmmButton>
-                  {aggregateState === "error" ? (
-                    <CmmButton type="button" tone="secondary" variant="ghost" width="wide" onClick={() => void loadAggregates()}>
-                      {fr ? "Réessayer le chargement" : "Retry loading"}
-                    </CmmButton>
-                  ) : null}
-                </div>
-              </CmmCard>
-            );
-          })}
+          {(Object.keys(FUNDING_CATEGORY_LABELS) as FundingCategory[]).map(
+            (category) => (
+              <FundingCategoryCard
+                key={category}
+                category={category}
+                locale={locale}
+                fr={fr}
+                aggregate={aggregates?.categories?.[category]}
+                aggregateState={aggregateState}
+                onParticipe={onParticipe}
+                onRetry={() => void loadAggregates()}
+              />
+            ),
+          )}
         </div>
-
-        <CmmCard as="section" tone="slate" variant="outlined" size="lg" className="space-y-5" data-funding-allocation>
-          <div className="flex items-start gap-4">
-            <div className="rounded-2xl border border-slate-200 bg-white p-3 text-slate-700">
-              <ShieldCheck size={22} aria-hidden="true" />
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-slate-950">{fr ? "Où va l’argent ?" : "Where does the money go?"}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-800">
-                {fr
-                  ? "Les contributions à la cagnotte soutiennent les deux familles de besoins présentées ici : matériel et logistique pour les actions terrain, ainsi qu’hébergement, outils et dépenses nécessaires au fonctionnement et au développement. La cagnotte OnParticipe est commune : le bouton utilisé ne sélectionne pas une affectation particulière et CleanMyMap ne garantit aucune affectation par catégorie. Les totaux nets affichés correspondent uniquement aux paiements Stripe confirmés, diminués des remboursements enregistrés ; ils n’incluent pas les contributions OnParticipe et ne représentent pas le total global du financement."
-                  : "Contributions to the campaign support both needs presented here: equipment and logistics for field actions, as well as hosting, tools and expenses needed for operations and development. The OnParticipe campaign is shared: the button used does not select a specific allocation, and CleanMyMap does not guarantee an allocation by category. The net totals shown include only Stripe-confirmed payments, less recorded refunds; they exclude OnParticipe contributions and are not the global funding total."}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 rounded-2xl bg-pink-50 px-4 py-3 text-sm font-semibold text-slate-800">
-            <Heart size={18} className="mt-0.5 shrink-0 text-pink-600" aria-hidden="true" />
-            <p>{fr ? "La contribution soutient le projet mais ne donne aucun pouvoir sur la modération, les décisions éditoriales ou les règles de la plateforme." : "A contribution supports the project but gives no power over moderation, editorial decisions or platform rules."}</p>
-          </div>
-          <p className="text-sm leading-6 text-slate-800">
-            {fr
-              ? "La confirmation ou le reçu Stripe, lorsqu’il est disponible, confirme le traitement du paiement mais n’est pas un reçu fiscal. CleanMyMap n’annonce ni réduction fiscale ni mécénat fiscal."
-              : "A Stripe confirmation or receipt, when available, confirms payment processing but is not a tax receipt. CleanMyMap does not advertise tax relief or tax-deductible sponsorship."}
-          </p>
-        </CmmCard>
+        <FundingAllocationCard fr={fr} />
       </div>
     </SectionShell>
   );

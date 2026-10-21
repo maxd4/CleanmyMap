@@ -10,17 +10,17 @@ import { buildPageMetadata } from "@/lib/metadata";
 export const metadata: Metadata = buildPageMetadata(
   "/politique-confidentialite",
   {
-  title: "Politique de confidentialité",
-  description:
-    "Politique de confidentialité CleanMyMap : données traitées, finalités, bases légales, droits RGPD, sous-traitants, rétention et sécurité.",
-  keywords: [
-    "politique de confidentialité",
-    "RGPD",
-    "CleanMyMap",
-    "données personnelles",
-    "droits RGPD",
-    "cookies",
-  ],
+    title: "Politique de confidentialité",
+    description:
+      "Politique de confidentialité CleanMyMap : données traitées, finalités, bases légales, droits RGPD, sous-traitants, rétention et sécurité.",
+    keywords: [
+      "politique de confidentialité",
+      "RGPD",
+      "CleanMyMap",
+      "données personnelles",
+      "droits RGPD",
+      "cookies",
+    ],
   },
 );
 
@@ -60,22 +60,59 @@ function PrivacyContactAndSecurity({ contactEmail }: { contactEmail: string }) {
         />
       </section>
       <section className="rounded-3xl border border-slate-200 bg-emerald-50 p-5">
-        <h2 className="text-xl font-bold text-slate-950">12. Contact et réclamation</h2>
+        <h2 className="text-xl font-bold text-slate-950">
+          12. Contact et réclamation
+        </h2>
         <p className="cmm-text-body mt-2">
           Questions RGPD, retrait du consentement ou exercice de droits:{" "}
-          <a href={`mailto:${contactEmail}`} className="font-medium text-emerald-700 hover:underline">{contactEmail}</a>.
+          <a
+            href={`mailto:${contactEmail}`}
+            className="font-medium text-emerald-700 hover:underline"
+          >
+            {contactEmail}
+          </a>
+          .
         </p>
         <p className="cmm-text-body mt-2">
-          Si vous estimez que votre demande n&apos;a pas été correctement traitée,
-          vous pouvez saisir la CNIL via{" "}
-          <a href="https://www.cnil.fr/fr/adresser-une-plainte" className="font-medium text-emerald-700 hover:underline">son site officiel</a>.
+          Si vous estimez que votre demande n&apos;a pas été correctement
+          traitée, vous pouvez saisir la CNIL via{" "}
+          <a
+            href="https://www.cnil.fr/fr/adresser-une-plainte"
+            className="font-medium text-emerald-700 hover:underline"
+          >
+            son site officiel
+          </a>
+          .
         </p>
         <p className="cmm-text-body mt-2">
           Documents associés:{" "}
-          <Link href="/conditions-generales-utilisation" className="font-medium text-emerald-700 hover:underline">CGU</Link>{" · "}
-          <Link href="/politique-cookies" className="font-medium text-emerald-700 hover:underline">politique cookies</Link>{" · "}
-          <Link href="/mentions-legales" className="font-medium text-emerald-700 hover:underline">mentions légales</Link>{" · "}
-          <Link href="/signaler-contenu-illicite" className="font-medium text-emerald-700 hover:underline">notification de contenu</Link>
+          <Link
+            href="/conditions-generales-utilisation"
+            className="font-medium text-emerald-700 hover:underline"
+          >
+            CGU
+          </Link>
+          {" · "}
+          <Link
+            href="/politique-cookies"
+            className="font-medium text-emerald-700 hover:underline"
+          >
+            politique cookies
+          </Link>
+          {" · "}
+          <Link
+            href="/mentions-legales"
+            className="font-medium text-emerald-700 hover:underline"
+          >
+            mentions légales
+          </Link>
+          {" · "}
+          <Link
+            href="/signaler-contenu-illicite"
+            className="font-medium text-emerald-700 hover:underline"
+          >
+            notification de contenu
+          </Link>
         </p>
       </section>
     </>
@@ -87,23 +124,42 @@ function PrivacyIdentityAndData({ contactEmail }: { contactEmail: string }) {
     <>
       <section className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 lg:grid-cols-2">
         <div className="space-y-2">
-          <h2 className="text-xl font-bold text-slate-950">Responsable du traitement</h2>
+          <h2 className="text-xl font-bold text-slate-950">
+            Responsable du traitement
+          </h2>
           <p className="cmm-text-body">
-            Le responsable du traitement est <strong>Maxence Deroome</strong>, personne physique éditant CleanMyMap à titre non professionnel dans le cadre d&apos;un projet étudiant. Aucune société, entreprise, association ou autre personne morale n&apos;exploite actuellement le service. Le point de contact actuellement configuré pour les questions RGPD est :{" "}
-            <a href={`mailto:${contactEmail}`} className="font-medium text-emerald-700 hover:underline">{contactEmail}</a>.
+            Le responsable du traitement est <strong>Maxence Deroome</strong>,
+            personne physique éditant CleanMyMap à titre non professionnel dans
+            le cadre d&apos;un projet étudiant. Aucune société, entreprise,
+            association ou autre personne morale n&apos;exploite actuellement le
+            service. Le point de contact actuellement configuré pour les
+            questions RGPD est :{" "}
+            <a
+              href={`mailto:${contactEmail}`}
+              className="font-medium text-emerald-700 hover:underline"
+            >
+              {contactEmail}
+            </a>
+            .
           </p>
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-bold text-slate-950">Principe appliqué</h2>
+          <h2 className="text-xl font-bold text-slate-950">
+            Principe appliqué
+          </h2>
           <p className="cmm-text-body">
-            Les traitements sont limités aux besoins du service. Les analytics et la mesure d&apos;audience soumis au consentement ne sont activés qu&apos;après un choix positif, conservé six mois.
+            Les traitements sont limités aux besoins du service. Les analytics
+            et la mesure d&apos;audience soumis au consentement ne sont activés
+            qu&apos;après un choix positif, conservé six mois.
           </p>
         </div>
       </section>
       <section className="space-y-5">
         <div className="space-y-2">
           <Pill>Données traitées</Pill>
-          <h2 className="text-2xl font-bold text-slate-950">1. Compte, authentification et profil</h2>
+          <h2 className="text-2xl font-bold text-slate-950">
+            1. Compte, authentification et profil
+          </h2>
         </div>
         <DataList
           items={[
@@ -117,13 +173,18 @@ function PrivacyIdentityAndData({ contactEmail }: { contactEmail: string }) {
           ]}
         />
         <p className="cmm-text-body">
-          L&apos;adresse email et les éléments nécessaires à l&apos;authentification sont obligatoires pour un compte. Le téléphone et les informations de profil complémentaires sont facultatifs lorsqu&apos;ils ne sont pas nécessaires à une fonctionnalité choisie.
+          L&apos;adresse email et les éléments nécessaires à
+          l&apos;authentification sont obligatoires pour un compte. Le téléphone
+          et les informations de profil complémentaires sont facultatifs
+          lorsqu&apos;ils ne sont pas nécessaires à une fonctionnalité choisie.
         </p>
       </section>
       <section className="space-y-5">
         <div className="space-y-2">
           <Pill>Contributions</Pill>
-          <h2 className="text-2xl font-bold text-slate-950">2. Signalements, actions et lieux</h2>
+          <h2 className="text-2xl font-bold text-slate-950">
+            2. Signalements, actions et lieux
+          </h2>
         </div>
         <DataList
           items={[
@@ -139,7 +200,9 @@ function PrivacyIdentityAndData({ contactEmail }: { contactEmail: string }) {
       <section className="space-y-5">
         <div className="space-y-2">
           <Pill>Communauté et support</Pill>
-          <h2 className="text-2xl font-bold text-slate-950">3. Événements, messages et demandes</h2>
+          <h2 className="text-2xl font-bold text-slate-950">
+            3. Événements, messages et demandes
+          </h2>
         </div>
         <DataList
           items={[
@@ -155,13 +218,18 @@ function PrivacyIdentityAndData({ contactEmail }: { contactEmail: string }) {
           ]}
         />
         <p className="cmm-text-body">
-          Certaines données peuvent être reçues indirectement lorsqu&apos;un autre utilisateur vous associe à un événement, une participation, une action, un message ou un parrainage. Elles sont alors utilisées pour la fonctionnalité concernée et soumises aux mêmes droits.
+          Certaines données peuvent être reçues indirectement lorsqu&apos;un
+          autre utilisateur vous associe à un événement, une participation, une
+          action, un message ou un parrainage. Elles sont alors utilisées pour
+          la fonctionnalité concernée et soumises aux mêmes droits.
         </p>
       </section>
       <section className="space-y-5">
         <div className="space-y-2">
           <Pill>Cookies et mesure</Pill>
-          <h2 className="text-2xl font-bold text-slate-950">4. Préférences, analytics et observabilité</h2>
+          <h2 className="text-2xl font-bold text-slate-950">
+            4. Préférences, analytics et observabilité
+          </h2>
         </div>
         <DataList
           items={[
@@ -177,163 +245,257 @@ function PrivacyIdentityAndData({ contactEmail }: { contactEmail: string }) {
   );
 }
 
+function PrivacyPurposesSection() {
+  return (
+    <section className="space-y-5">
+      <div className="space-y-2">
+        <Pill>Finalités</Pill>
+        <h2 className="text-2xl font-bold text-slate-950">
+          5. Finalités et bases légales
+        </h2>
+      </div>
+      <div className="cmm-data-table-wrap">
+        <table className="cmm-data-table">
+          <caption className="sr-only">
+            Traitements de données personnelles, finalités et bases légales
+          </caption>
+          <thead className="bg-slate-100 text-slate-900">
+            <tr>
+              <th scope="col" className="font-semibold">
+                Traitement
+              </th>
+              <th scope="col" className="font-semibold">
+                Finalité
+              </th>
+              <th scope="col" className="font-semibold">
+                Base légale
+              </th>
+            </tr>
+          </thead>
+          <tbody className="text-slate-600">
+            {[
+              [
+                "Compte et profil",
+                "Créer, authentifier et fournir les fonctionnalités du compte",
+                "Exécution du service / mesures précontractuelles lorsque pertinentes ; intérêt légitime de sécurité",
+              ],
+              [
+                "Actions, spots, événements et messagerie",
+                "Enregistrer les contributions, coordonner la communauté et afficher les fonctionnalités choisies",
+                "Exécution du service",
+              ],
+              [
+                "Support et demandes RGPD",
+                "Répondre aux messages, exercer les droits et assurer le suivi de la demande",
+                "Intérêt légitime pour le support ; obligation légale pour les demandes de droits",
+              ],
+              [
+                "Notifications de contenu",
+                "Recevoir, examiner et suivre les notifications électroniques concernant un contenu potentiellement illicite",
+                "Intérêt légitime ; obligation légale lorsque le traitement concerné l'impose",
+              ],
+              [
+                "Décisions de modération liées aux notifications",
+                "Examiner la légalité ou la conformité aux CGU, appliquer si possible une mesure canonique, assurer l'audit et informer les personnes concernées",
+                "Intérêt légitime ; obligation légale lorsque la traçabilité ou l'information l'impose",
+              ],
+              [
+                "Newsletter",
+                "Envoyer les communications auxquelles la personne s'est inscrite",
+                "Consentement",
+              ],
+              [
+                "Analytics et mesure d'audience",
+                "Mesurer les parcours et la performance après accord",
+                "Consentement",
+              ],
+              [
+                "Sentry et sécurité",
+                "Détecter, diagnostiquer et prévenir les erreurs, abus et incidents",
+                "Intérêt légitime",
+              ],
+              [
+                "Parrainage et progression",
+                "Relier les invitations et afficher les éléments de progression du service",
+                "Exécution du service ; intérêt légitime d'animation de la communauté",
+              ],
+              [
+                "Classement public sur opt-in",
+                "Afficher une projection publique limitée lorsque la personne active cette préférence ; le retrait la rend à nouveau absente",
+                "Consentement ou choix explicite de la personne ; retrait possible depuis `/reglages`",
+              ],
+              [
+                "Contributions financières via Stripe",
+                "Créer la session Checkout demandée, confirmer le paiement, prévenir la fraude, suivre les remboursements et conserver la traçabilité applicable",
+                "Étapes demandées pour le paiement ; intérêt légitime de sécurité et de prévention de la fraude ; obligation légale lorsqu'elle s'applique",
+              ],
+            ].map(([treatment, purpose, basis]) => (
+              <tr key={treatment}>
+                <td className="font-medium text-slate-900">{treatment}</td>
+                <td>{purpose}</td>
+                <td>{basis}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function PrivacyProcessingSections() {
+  return (
+    <>
+      <PrivacyPurposesSection />
+      <section className="space-y-5">
+        <div className="space-y-2">
+          <Pill>Destinataires</Pill>
+          <h2 className="text-2xl font-bold text-slate-950">
+            6. Sous-traitants et destinataires
+          </h2>
+        </div>
+        <DataList
+          items={[
+            "Clerk : identité, authentification et métadonnées de compte.",
+            "Supabase : base de données, stockage et synchronisation métier.",
+            "Vercel : hébergement et exécution du site ; Analytics et Speed Insights seulement avec consentement.",
+            "Resend : envoi des emails transactionnels, de support et de notification.",
+            "PostHog : mesure d'audience et analytics seulement avec consentement.",
+            "Sentry : observabilité et sécurité uniquement si la DSN est configurée.",
+            "Stripe : page Checkout et traitement du paiement, confirmation, prévention de la fraude et gestion technique des remboursements liés aux contributions. Les données de carte sont saisies et traitées sur l'environnement Stripe et ne sont pas stockées par CleanMyMap.",
+            "Autorités compétentes ou autres destinataires : uniquement lorsque la loi ou le traitement concerné le justifie.",
+          ]}
+        />
+      </section>
+
+      <section className="space-y-5">
+        <div className="space-y-2">
+          <Pill>Transferts</Pill>
+          <h2 className="text-2xl font-bold text-slate-950">
+            7. Transferts hors EEE
+          </h2>
+        </div>
+        <p className="cmm-text-body">
+          La configuration du projet privilégie l&apos;hôte UE par défaut de
+          PostHog, mais elle permet aussi un hôte configurable et ne suffit pas
+          à établir la localisation effective de chaque fournisseur ni la
+          garantie applicable à chaque flux. Aucune localisation précise,
+          décision d&apos;adéquation ou garantie contractuelle n&apos;est donc
+          affirmée ici sans vérification du fournisseur et de la configuration
+          en production. Lorsque le traitement l&apos;exige, les transferts sont
+          encadrés par le mécanisme légal applicable et les informations du
+          fournisseur en vigueur.
+        </p>
+      </section>
+
+      <section className="space-y-5">
+        <div className="space-y-2">
+          <Pill>Rétention</Pill>
+          <h2 className="text-2xl font-bold text-slate-950">
+            8. Durées et critères de conservation
+          </h2>
+        </div>
+        <DataList
+          items={[
+            "Consentement cookies : six mois ; une décision expirée est retirée du stockage local et le choix est reproposé.",
+            "contact_requests : la table Supabase est la persistence serveur canonique. Le store fichier n'est autorisé qu'en développement local explicitement configuré et n'est jamais utilisé sur Vercel. La table est couverte par le script de nettoyage générique, dont le seuil opérationnel par défaut est de 120 jours lorsqu'il est exécuté ; ce script n'est pas une preuve d'exécution planifiée ni une durée garantie pour toutes les demandes.",
+            "Buffer GPS mobile hors ligne : les points restent temporairement dans le stockage local de l'application, dans l'espace de l'identité Clerk propriétaire, jusqu'à reprise ou échec signalé ; aucune durée fixe supplémentaire n'est affirmée par le client. Un changement de compte ou une session expirée ne lit pas ce namespace.",
+            "Stores locaux couverts par le nettoyage : les enregistrements dépassant le seuil fourni au script sont retirés ; le store local est aussi borné en nombre pour certains flux. Les archives de nettoyage ne contiennent plus les lignes personnelles ni les chemins de fichiers, seulement des comptages et métadonnées de run.",
+            "Tables et fichiers opérationnels couverts par le script : `app_messages`, `community_events`, `training_examples`, `community_bug_reports`, `promotion_requests`, `partner_onboarding_requests`, `contact_requests`, ainsi que certains objets des buckets configurés. Le seuil par défaut est modifiable par l'opérateur.",
+            "legal_content_reports : aucun nettoyage automatique spécifique n'est identifié dans ce dépôt ; les signalements sont conservés selon le suivi nécessaire de la notification, les obligations applicables et l'examen d'une demande de droits. Ils ne sont pas supprimés par le nettoyage générique actuel.",
+            "legal_content_report_decisions : l'historique des décisions et de l'audit est conservé avec le signalement pour la traçabilité. Les états d'envoi sont enrichis de manière bornée pour distinguer un envoi réussi d'un échec ; aucune durée fixe supplémentaire n'est configurée. Une demande d'effacement ou de limitation est examinée au regard des obligations de preuve, des droits des tiers et de la nécessité du suivi.",
+            "Profils, actions, lieux, médias de signalement, rapports, notifications, progression et audit : aucun mécanisme générique de suppression périodique n'est identifié dans ce dépôt ; conservation selon le fonctionnement du service et examen au cas par cas lors d'une demande de droits.",
+            "Faits de paiement et événements Stripe : conservation selon les besoins de confirmation, de remboursement, de prévention de la fraude et de traçabilité applicable. Aucun mécanisme de purge ni durée fixe propre à ces tables n'est démontré par le dépôt ; les agrégats publics sont des projections de montants sans données de carte ni PII.",
+            "Newsletter : l'inscription reste active jusqu'à son retrait ou sa mise à jour ; le code actuel ne fournit pas de parcours public de désinscription dédié, le retrait peut être demandé via le contact RGPD.",
+            "PostHog, Vercel et Sentry : la durée de conservation des données chez ces fournisseurs n'est pas configurée par ce dépôt ; elle dépend de leurs paramètres et conditions applicables et n'est pas présentée comme une durée CleanMyMap.",
+          ]}
+        />
+      </section>
+
+    </>
+  );
+}
+
+function PrivacyRightsSections() {
+  return (
+    <>
+      <section className="space-y-5">
+        <div className="space-y-2">
+          <Pill>Droits</Pill>
+          <h2 className="text-2xl font-bold text-slate-950">
+            9. Vos droits RGPD
+          </h2>
+        </div>
+        <DataList
+          items={[
+            "Droit d'accès, de rectification, d'effacement et de limitation du traitement.",
+            "Droit d'opposition lorsque le traitement est fondé sur l'intérêt légitime, et droit à la portabilité lorsque les conditions sont réunies.",
+            "Droit de retirer votre consentement à tout moment pour les traitements fondés sur celui-ci ; ce retrait ne remet pas en cause les traitements antérieurs.",
+            "Droit d'introduire une réclamation auprès de la CNIL.",
+          ]}
+        />
+        <p className="cmm-text-body">
+          Aucune fonctionnalité identifiée ne prend actuellement une décision
+          exclusivement automatisée produisant des effets juridiques ou un effet
+          significatif similaire à votre égard.
+        </p>
+      </section>
+
+      <section className="space-y-5 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+        <h2 className="text-2xl font-bold text-slate-950">
+          10. Exercer vos droits
+        </h2>
+        <p className="cmm-text-body">
+          Utilisez le formulaire de la page{" "}
+          <Link
+            href="/contact"
+            className="font-medium text-emerald-700 hover:underline"
+          >
+            Contact
+          </Link>{" "}
+          ou le formulaire ci-dessous pour une demande d&apos;accès, de
+          rectification, d&apos;effacement ou de portabilité. Une vérification
+          raisonnable de votre identité peut être demandée lorsque cela est
+          nécessaire pour protéger les données d&apos;autrui.
+        </p>
+        <RgpdRequestForm />
+        <p className="text-xs text-slate-500">
+          Réponse dans un délai d&apos;un mois à compter de la réception. Ce
+          délai peut être prolongé de deux mois lorsque la complexité ou le
+          nombre de demandes le justifie ; vous en serez informé dans le premier
+          mois.
+        </p>
+      </section>
+    </>
+  );
+}
+
 export default function PolitiqueConfidentialitePage() {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   return (
     <div>
       <CmmPageLayout>
-      <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
-        <CmmSectionGroup>
-        <PageHeader
-          tone="slate"
-          title="Politique de confidentialité"
-          subtitle="Cette page décrit les données réellement traitées par CleanMyMap, les finalités, les destinataires, les critères de conservation et les droits des personnes."
-          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 20 septembre 2026</p>}
-        />
+        <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
+          <CmmSectionGroup>
+            <PageHeader
+              tone="slate"
+              title="Politique de confidentialité"
+              subtitle="Cette page décrit les données réellement traitées par CleanMyMap, les finalités, les destinataires, les critères de conservation et les droits des personnes."
+              action={
+                <p className="text-sm font-medium text-slate-500">
+                  Dernière mise à jour : 20 septembre 2026
+                </p>
+              }
+            />
 
-        <PrivacyIdentityAndData contactEmail={contactEmail} />
-        <section className="space-y-5">
-          <div className="space-y-2">
-            <Pill>Finalités</Pill>
-            <h2 className="text-2xl font-bold text-slate-950">5. Finalités et bases légales</h2>
-          </div>
-          <div className="cmm-data-table-wrap">
-            <table className="cmm-data-table">
-              <caption className="sr-only">
-                Traitements de données personnelles, finalités et bases légales
-              </caption>
-              <thead className="bg-slate-100 text-slate-900">
-                <tr>
-                  <th scope="col" className="font-semibold">Traitement</th>
-                  <th scope="col" className="font-semibold">Finalité</th>
-                  <th scope="col" className="font-semibold">Base légale</th>
-                </tr>
-              </thead>
-              <tbody className="text-slate-600">
-                {[
-                  ["Compte et profil", "Créer, authentifier et fournir les fonctionnalités du compte", "Exécution du service / mesures précontractuelles lorsque pertinentes ; intérêt légitime de sécurité"],
-                  ["Actions, spots, événements et messagerie", "Enregistrer les contributions, coordonner la communauté et afficher les fonctionnalités choisies", "Exécution du service"],
-                  ["Support et demandes RGPD", "Répondre aux messages, exercer les droits et assurer le suivi de la demande", "Intérêt légitime pour le support ; obligation légale pour les demandes de droits"],
-                  ["Notifications de contenu", "Recevoir, examiner et suivre les notifications électroniques concernant un contenu potentiellement illicite", "Intérêt légitime ; obligation légale lorsque le traitement concerné l'impose"],
-                  ["Décisions de modération liées aux notifications", "Examiner la légalité ou la conformité aux CGU, appliquer si possible une mesure canonique, assurer l'audit et informer les personnes concernées", "Intérêt légitime ; obligation légale lorsque la traçabilité ou l'information l'impose"],
-                  ["Newsletter", "Envoyer les communications auxquelles la personne s'est inscrite", "Consentement"],
-                  ["Analytics et mesure d'audience", "Mesurer les parcours et la performance après accord", "Consentement"],
-                  ["Sentry et sécurité", "Détecter, diagnostiquer et prévenir les erreurs, abus et incidents", "Intérêt légitime"],
-                  ["Parrainage et progression", "Relier les invitations et afficher les éléments de progression du service", "Exécution du service ; intérêt légitime d'animation de la communauté"],
-                  ["Classement public sur opt-in", "Afficher une projection publique limitée lorsque la personne active cette préférence ; le retrait la rend à nouveau absente", "Consentement ou choix explicite de la personne ; retrait possible depuis `/reglages`"],
-                  ["Contributions financières via Stripe", "Créer la session Checkout demandée, confirmer le paiement, prévenir la fraude, suivre les remboursements et conserver la traçabilité applicable", "Étapes demandées pour le paiement ; intérêt légitime de sécurité et de prévention de la fraude ; obligation légale lorsqu'elle s'applique"],
-                ].map(([treatment, purpose, basis]) => (
-                  <tr key={treatment}>
-                    <td className="font-medium text-slate-900">{treatment}</td>
-                    <td>{purpose}</td>
-                    <td>{basis}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+            <PrivacyIdentityAndData contactEmail={contactEmail} />
+            <PrivacyProcessingSections />
+            <PrivacyRightsSections />
 
-        <section className="space-y-5">
-          <div className="space-y-2">
-            <Pill>Destinataires</Pill>
-            <h2 className="text-2xl font-bold text-slate-950">6. Sous-traitants et destinataires</h2>
-          </div>
-          <DataList
-            items={[
-              "Clerk : identité, authentification et métadonnées de compte.",
-              "Supabase : base de données, stockage et synchronisation métier.",
-              "Vercel : hébergement et exécution du site ; Analytics et Speed Insights seulement avec consentement.",
-              "Resend : envoi des emails transactionnels, de support et de notification.",
-              "PostHog : mesure d'audience et analytics seulement avec consentement.",
-              "Sentry : observabilité et sécurité uniquement si la DSN est configurée.",
-              "Stripe : page Checkout et traitement du paiement, confirmation, prévention de la fraude et gestion technique des remboursements liés aux contributions. Les données de carte sont saisies et traitées sur l'environnement Stripe et ne sont pas stockées par CleanMyMap.",
-              "Autorités compétentes ou autres destinataires : uniquement lorsque la loi ou le traitement concerné le justifie.",
-            ]}
-          />
-        </section>
-
-        <section className="space-y-5">
-          <div className="space-y-2">
-            <Pill>Transferts</Pill>
-            <h2 className="text-2xl font-bold text-slate-950">7. Transferts hors EEE</h2>
-          </div>
-          <p className="cmm-text-body">
-            La configuration du projet privilégie l&apos;hôte UE par défaut de PostHog,
-            mais elle permet aussi un hôte configurable et ne suffit pas à établir
-            la localisation effective de chaque fournisseur ni la garantie applicable
-            à chaque flux. Aucune localisation précise, décision d&apos;adéquation ou
-            garantie contractuelle n&apos;est donc affirmée ici sans vérification du
-            fournisseur et de la configuration en production. Lorsque le traitement
-            l&apos;exige, les transferts sont encadrés par le mécanisme légal applicable
-            et les informations du fournisseur en vigueur.
-          </p>
-        </section>
-
-        <section className="space-y-5">
-          <div className="space-y-2">
-            <Pill>Rétention</Pill>
-            <h2 className="text-2xl font-bold text-slate-950">8. Durées et critères de conservation</h2>
-          </div>
-          <DataList
-            items={[
-              "Consentement cookies : six mois ; une décision expirée est retirée du stockage local et le choix est reproposé.",
-              "contact_requests : la table Supabase est la persistence serveur canonique. Le store fichier n'est autorisé qu'en développement local explicitement configuré et n'est jamais utilisé sur Vercel. La table est couverte par le script de nettoyage générique, dont le seuil opérationnel par défaut est de 120 jours lorsqu'il est exécuté ; ce script n'est pas une preuve d'exécution planifiée ni une durée garantie pour toutes les demandes.",
-              "Buffer GPS mobile hors ligne : les points restent temporairement dans le stockage local de l'application, dans l'espace de l'identité Clerk propriétaire, jusqu'à reprise ou échec signalé ; aucune durée fixe supplémentaire n'est affirmée par le client. Un changement de compte ou une session expirée ne lit pas ce namespace.",
-              "Stores locaux couverts par le nettoyage : les enregistrements dépassant le seuil fourni au script sont retirés ; le store local est aussi borné en nombre pour certains flux. Les archives de nettoyage ne contiennent plus les lignes personnelles ni les chemins de fichiers, seulement des comptages et métadonnées de run.",
-              "Tables et fichiers opérationnels couverts par le script : `app_messages`, `community_events`, `training_examples`, `community_bug_reports`, `promotion_requests`, `partner_onboarding_requests`, `contact_requests`, ainsi que certains objets des buckets configurés. Le seuil par défaut est modifiable par l'opérateur.",
-              "legal_content_reports : aucun nettoyage automatique spécifique n'est identifié dans ce dépôt ; les signalements sont conservés selon le suivi nécessaire de la notification, les obligations applicables et l'examen d'une demande de droits. Ils ne sont pas supprimés par le nettoyage générique actuel.",
-              "legal_content_report_decisions : l'historique des décisions et de l'audit est conservé avec le signalement pour la traçabilité. Les états d'envoi sont enrichis de manière bornée pour distinguer un envoi réussi d'un échec ; aucune durée fixe supplémentaire n'est configurée. Une demande d'effacement ou de limitation est examinée au regard des obligations de preuve, des droits des tiers et de la nécessité du suivi.",
-              "Profils, actions, lieux, médias de signalement, rapports, notifications, progression et audit : aucun mécanisme générique de suppression périodique n'est identifié dans ce dépôt ; conservation selon le fonctionnement du service et examen au cas par cas lors d'une demande de droits.",
-              "Faits de paiement et événements Stripe : conservation selon les besoins de confirmation, de remboursement, de prévention de la fraude et de traçabilité applicable. Aucun mécanisme de purge ni durée fixe propre à ces tables n'est démontré par le dépôt ; les agrégats publics sont des projections de montants sans données de carte ni PII.",
-              "Newsletter : l'inscription reste active jusqu'à son retrait ou sa mise à jour ; le code actuel ne fournit pas de parcours public de désinscription dédié, le retrait peut être demandé via le contact RGPD.",
-              "PostHog, Vercel et Sentry : la durée de conservation des données chez ces fournisseurs n'est pas configurée par ce dépôt ; elle dépend de leurs paramètres et conditions applicables et n'est pas présentée comme une durée CleanMyMap.",
-            ]}
-          />
-        </section>
-
-        <section className="space-y-5">
-          <div className="space-y-2">
-            <Pill>Droits</Pill>
-            <h2 className="text-2xl font-bold text-slate-950">9. Vos droits RGPD</h2>
-          </div>
-          <DataList
-            items={[
-              "Droit d'accès, de rectification, d'effacement et de limitation du traitement.",
-              "Droit d'opposition lorsque le traitement est fondé sur l'intérêt légitime, et droit à la portabilité lorsque les conditions sont réunies.",
-              "Droit de retirer votre consentement à tout moment pour les traitements fondés sur celui-ci ; ce retrait ne remet pas en cause les traitements antérieurs.",
-              "Droit d'introduire une réclamation auprès de la CNIL.",
-            ]}
-          />
-          <p className="cmm-text-body">
-            Aucune fonctionnalité identifiée ne prend actuellement une décision
-            exclusivement automatisée produisant des effets juridiques ou un effet
-            significatif similaire à votre égard.
-          </p>
-        </section>
-
-        <section className="space-y-5 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-          <h2 className="text-2xl font-bold text-slate-950">10. Exercer vos droits</h2>
-          <p className="cmm-text-body">
-            Utilisez le formulaire de la page{" "}
-            <Link href="/contact" className="font-medium text-emerald-700 hover:underline">Contact</Link>{" "}
-            ou le formulaire ci-dessous pour une demande d&apos;accès, de rectification,
-            d&apos;effacement ou de portabilité. Une vérification raisonnable de votre
-            identité peut être demandée lorsque cela est nécessaire pour protéger
-            les données d&apos;autrui.
-          </p>
-          <RgpdRequestForm />
-          <p className="text-xs text-slate-500">
-            Réponse dans un délai d&apos;un mois à compter de la réception. Ce délai peut
-            être prolongé de deux mois lorsque la complexité ou le nombre de demandes
-            le justifie ; vous en serez informé dans le premier mois.
-          </p>
-        </section>
-
-        <PrivacyContactAndSecurity contactEmail={contactEmail} />
-        </CmmSectionGroup>
-      </div>
+            <PrivacyContactAndSecurity contactEmail={contactEmail} />
+          </CmmSectionGroup>
+        </div>
       </CmmPageLayout>
     </div>
   );

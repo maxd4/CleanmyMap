@@ -8,9 +8,9 @@ import { fetchActions, fetchMapActions } from "@/lib/actions/http";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { RecyclingQuestionAssistant } from "./recycling-question-assistant/index";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
-import { 
-  RecyclingKpiGrid, 
-  RecyclingWorkflowCard, 
+import {
+  RecyclingKpiGrid,
+  RecyclingWorkflowCard,
   RecyclingDataUsageCard,
 } from "./recycling-components";
 import { RecyclingBreakdownDetails } from "./recycling-breakdown-details";
@@ -40,7 +40,9 @@ function buildRecyclingStats(
     0,
   );
   const withTrace = mapItems.filter(
-    (item) => (item.contract?.geometry.kind ?? item.geometry_kind ?? "point") !== "point",
+    (item) =>
+      (item.contract?.geometry.kind ?? item.geometry_kind ?? "point") !==
+      "point",
   ).length;
   const mixedIndex =
     totalKg !== null && totalKg > 0
@@ -55,6 +57,121 @@ function buildRecyclingStats(
     count: items.length,
     wasteCoverageRate: breakdown?.wasteCoverageRate ?? null,
   };
+}
+
+function RecyclingSectionBody({
+  fr,
+  isLoading,
+  hasError,
+  stats,
+  identityKey,
+  handleBreakdownLoaded,
+}: {
+  fr: boolean;
+  isLoading: boolean;
+  hasError: boolean;
+  stats: ReturnType<typeof buildRecyclingStats>;
+  identityKey: string | null;
+  handleBreakdownLoaded: (
+    data: PublicSectionBreakdown,
+    loadedIdentityKey: string,
+  ) => void;
+}) {
+  return (
+    <CmmSectionGroup>
+      <RubriqueCard
+        initial={{ opacity: 1, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        themeColor="emerald"
+        withTopBar={false}
+        className="flex flex-col justify-between gap-8 lg:flex-row lg:items-center group"
+      >
+        <div className="space-y-3 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <Recycle size={18} />
+            </div>
+            <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">
+              {fr ? "Flux de Valorisation" : "Recovery Flows"}
+            </h3>
+          </div>
+          <div className="flex items-center gap-4 cmm-text-caption text-slate-500 font-black uppercase tracking-widest">
+            <span className="flex items-center gap-1.5">
+              <MapPin size={12} className="text-slate-400" />{" "}
+              {fr ? "Périmètre Global" : "Global Scope"}
+            </span>
+            <div className="w-1 h-1 rounded-full bg-white/10" />
+            <span className="flex items-center gap-1.5">
+              <Sparkles size={12} className="text-slate-400" />{" "}
+              {fr ? "Intelligence Circulaire" : "Circular Intelligence"}
+            </span>
+          </div>
+        </div>
+        <div className="relative z-10 flex gap-4">
+          <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400">
+            <Search size={16} />
+            <span className="cmm-text-caption font-black uppercase tracking-widest">
+              {fr ? "Rechercher une filière" : "Search a stream"}
+            </span>
+          </div>
+        </div>
+      </RubriqueCard>
+      <RubriqueCard themeColor="emerald" withTopBar={true}>
+        <RecyclingQuestionAssistant />
+      </RubriqueCard>
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-[var(--cmm-section-gap)] lg:grid-cols-12">
+          <div className="cmm-content-group lg:col-span-8">
+            <CmmSkeleton className="h-48 rounded-[2.5rem]" />
+            <CmmSkeleton className="h-[500px] rounded-[3rem]" />
+          </div>
+          <div className="cmm-content-group lg:col-span-4">
+            <CmmSkeleton className="h-96 rounded-[3rem]" />
+            <CmmSkeleton className="h-64 rounded-[3rem]" />
+          </div>
+        </div>
+      ) : hasError ? (
+        <div className="p-20 text-center rounded-[3rem] border border-white/5 bg-slate-900/20 backdrop-blur-xl">
+          <AlertCircle className="mx-auto text-rose-500 mb-6" size={48} />
+          <h3 className="text-2xl font-black text-white mb-2">
+            Flux non disponibles
+          </h3>
+          <p className="text-slate-400">
+            Une erreur est survenue lors de la récupération des données de
+            recyclage.
+          </p>
+        </div>
+      ) : (
+        <motion.div
+          variants={RUBRIQUE_CONTAINER_VARIANTS}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 items-start gap-[var(--cmm-section-gap)] lg:grid-cols-12"
+        >
+          <div className="cmm-content-group lg:col-span-8">
+            <motion.div variants={RUBRIQUE_ITEM_VARIANTS}>
+              <RecyclingKpiGrid stats={stats} fr={fr} />
+            </motion.div>
+            <motion.div variants={RUBRIQUE_ITEM_VARIANTS}>
+              <RecyclingBreakdownDetails
+                key={identityKey ?? "recycling-breakdown-anonymous"}
+                fr={fr}
+                onLoaded={handleBreakdownLoaded}
+              />
+            </motion.div>
+            <div className="grid grid-cols-1 gap-[var(--cmm-section-gap)] md:grid-cols-2">
+              <RubriqueCard themeColor="emerald" withTopBar={true}>
+                <RecyclingWorkflowCard fr={fr} />
+              </RubriqueCard>
+              <RubriqueCard themeColor="emerald" withTopBar={true}>
+                <RecyclingDataUsageCard fr={fr} />
+              </RubriqueCard>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </CmmSectionGroup>
+  );
 }
 
 export function RecyclingSection({
@@ -96,7 +213,7 @@ export function RecyclingSection({
     },
     [],
   );
-  
+
   const actions = useSWR<PublicSectionActionListResponse>(
     ["section-recycling-actions"],
     () => fetchActions({ status: "approved", limit: 350 }),
@@ -107,9 +224,14 @@ export function RecyclingSection({
     () => fetchMapActions({ status: "approved", days: 365, limit: 300 }),
     { fallbackData: initialData?.map ?? undefined },
   );
-  
+
   const stats = useMemo(
-    () => buildRecyclingStats(actions.data?.items ?? [], map.data?.items ?? [], breakdownData),
+    () =>
+      buildRecyclingStats(
+        actions.data?.items ?? [],
+        map.data?.items ?? [],
+        breakdownData,
+      ),
     [actions.data?.items, breakdownData, map.data?.items],
   );
 
@@ -125,97 +247,22 @@ export function RecyclingSection({
     <SectionShell
       id="recycling"
       title={fr ? "Cycle des Ressources" : "Resource Cycle"}
-      subtitle={fr ? "Suivi de la valorisation, des flux de tri et optimisation circulaire." : "Tracking recovery, sorting flows, and circular optimization."}
+      subtitle={
+        fr
+          ? "Suivi de la valorisation, des flux de tri et optimisation circulaire."
+          : "Tracking recovery, sorting flows, and circular optimization."
+      }
       icon={Recycle}
       gradient="from-emerald-500/20 via-slate-500/10 to-transparent"
     >
-      <CmmSectionGroup>
-        {/* Top Control & Search Bar */}
-        <RubriqueCard 
-          initial={{ opacity: 1, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          themeColor="emerald"
-          withTopBar={false}
-          className="flex flex-col justify-between gap-8 lg:flex-row lg:items-center group"
-        >
-          <div className="space-y-3 relative z-10">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                <Recycle size={18} />
-              </div>
-              <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">
-                {fr ? "Flux de Valorisation" : "Recovery Flows"}
-              </h3>
-            </div>
-            <div className="flex items-center gap-4 text-slate-500 text-[10px] font-black uppercase tracking-widest">
-              <span className="flex items-center gap-1.5"><MapPin size={12} className="text-slate-400" /> {fr ? "Périmètre Global" : "Global Scope"}</span>
-              <div className="w-1 h-1 rounded-full bg-white/10" />
-              <span className="flex items-center gap-1.5"><Sparkles size={12} className="text-slate-400" /> {fr ? "Intelligence Circulaire" : "Circular Intelligence"}</span>
-            </div>
-          </div>
-
-          <div className="relative z-10 flex gap-4">
-             <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400">
-                <Search size={16} />
-                <span className="text-[10px] font-black uppercase tracking-widest">{fr ? "Rechercher une filière" : "Search a stream"}</span>
-             </div>
-          </div>
-        </RubriqueCard>
-
-        <RubriqueCard themeColor="emerald" withTopBar={true}>
-          <RecyclingQuestionAssistant />
-        </RubriqueCard>
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 gap-[var(--cmm-section-gap)] lg:grid-cols-12">
-            <div className="cmm-content-group lg:col-span-8">
-               <CmmSkeleton className="h-48 rounded-[2.5rem]" />
-               <CmmSkeleton className="h-[500px] rounded-[3rem]" />
-            </div>
-            <div className="cmm-content-group lg:col-span-4">
-               <CmmSkeleton className="h-96 rounded-[3rem]" />
-               <CmmSkeleton className="h-64 rounded-[3rem]" />
-            </div>
-          </div>
-        ) : hasError ? (
-          <div className="p-20 text-center rounded-[3rem] border border-white/5 bg-slate-900/20 backdrop-blur-xl">
-            <AlertCircle className="mx-auto text-rose-500 mb-6" size={48} />
-            <h3 className="text-2xl font-black text-white mb-2">Flux non disponibles</h3>
-            <p className="text-slate-400">Une erreur est survenue lors de la récupération des données de recyclage.</p>
-          </div>
-        ) : (
-          <motion.div 
-            variants={RUBRIQUE_CONTAINER_VARIANTS}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 items-start gap-[var(--cmm-section-gap)] lg:grid-cols-12"
-          >
-            <div className="cmm-content-group lg:col-span-8">
-              <motion.div variants={RUBRIQUE_ITEM_VARIANTS}>
-                <RecyclingKpiGrid stats={stats} fr={fr} />
-              </motion.div>
-
-              <motion.div variants={RUBRIQUE_ITEM_VARIANTS}>
-                <RecyclingBreakdownDetails
-                  key={identityKey ?? "recycling-breakdown-anonymous"}
-                  fr={fr}
-                  onLoaded={handleBreakdownLoaded}
-                />
-              </motion.div>
-
-              <div className="grid grid-cols-1 gap-[var(--cmm-section-gap)] md:grid-cols-2">
-                <RubriqueCard themeColor="emerald" withTopBar={true}>
-                  <RecyclingWorkflowCard fr={fr} />
-                </RubriqueCard>
-                <RubriqueCard themeColor="emerald" withTopBar={true}>
-                  <RecyclingDataUsageCard fr={fr} />
-                </RubriqueCard>
-              </div>
-            </div>
-
-          </motion.div>
-        )}
-      </CmmSectionGroup>
+      <RecyclingSectionBody
+        fr={fr}
+        isLoading={isLoading}
+        hasError={hasError}
+        stats={stats}
+        identityKey={identityKey}
+        handleBreakdownLoaded={handleBreakdownLoaded}
+      />
     </SectionShell>
   );
 }

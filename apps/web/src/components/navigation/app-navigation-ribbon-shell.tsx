@@ -40,6 +40,10 @@ type AppNavigationRibbonShellProps = AppNavigationRibbonProps & {
   showAccountActions: boolean;
 };
 
+function RibbonDesktopSpaceNavigation({ spaces, activeSpaceId, locale, onTrackNavigation, pathname, openSpaceId, onOpenChange }: { spaces: NavigationSpace[]; activeSpaceId: NavigationSpace["id"] | null; locale: Parameters<typeof AppNavigationBlockDropdown>[0]["locale"]; onTrackNavigation: Parameters<typeof AppNavigationBlockDropdown>[0]["onTrackNavigation"]; pathname: string; openSpaceId: NavigationSpace["id"] | null; onOpenChange: (spaceId: NavigationSpace["id"], open: boolean) => void }) {
+  return <div className="hidden items-center justify-center xl:col-start-2 xl:flex"><nav aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"} className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)]">{spaces.map((space) => <AppNavigationBlockDropdown key={space.id} activeSpaceId={activeSpaceId} locale={locale} onTrackNavigation={onTrackNavigation} onOpenChange={onOpenChange} open={openSpaceId === space.id} pathname={pathname} space={space} />)}</nav></div>;
+}
+
 function AppNavigationRibbonFrame({
   currentProfile,
   profileLabel,
@@ -156,29 +160,7 @@ function AppNavigationRibbonFrame({
             </div>
           </div>
 
-          <div className="hidden items-center justify-center xl:col-start-2 xl:flex">
-            <nav
-              aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}
-              className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)]"
-            >
-              {spaces.map((space) => (
-                <AppNavigationBlockDropdown
-                  key={space.id}
-                  activeSpaceId={activeSpaceId}
-                  locale={locale}
-                  onTrackNavigation={onTrackNavigation}
-                  onOpenChange={(spaceId, open) => {
-                    setOpenSpaceId((currentSpaceId) =>
-                      resolveOpenNavigationSpaceId(currentSpaceId, spaceId, open),
-                    );
-                  }}
-                  open={openSpaceId === space.id}
-                  pathname={pathname}
-                  space={space}
-                />
-              ))}
-            </nav>
-          </div>
+          <RibbonDesktopSpaceNavigation spaces={spaces} activeSpaceId={activeSpaceId} locale={locale} onTrackNavigation={onTrackNavigation} pathname={pathname} openSpaceId={openSpaceId} onOpenChange={(spaceId, open) => setOpenSpaceId((currentSpaceId) => resolveOpenNavigationSpaceId(currentSpaceId, spaceId, open))} />
 
           <div className="ml-auto flex min-w-0 items-center gap-1.5 max-[380px]:gap-1 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:ml-0 xl:justify-end">
             <div className="lg:hidden">

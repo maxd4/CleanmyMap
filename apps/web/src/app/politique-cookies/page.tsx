@@ -44,164 +44,192 @@ function CookieTypeCard({
   );
 }
 
+function CookiePolicySections() {
+  return (
+    <>
+      <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+        <h2 className="text-xl font-bold text-slate-950">
+          1. Choix de consentement
+        </h2>
+        <p className="cmm-text-body">
+          La bannière de consentement propose deux choix de même niveau : tout
+          accepter ou tout refuser. Les services essentiels au fonctionnement du
+          site restent actifs dans les deux cas. Le choix est mémorisé pendant 6
+          mois.
+        </p>
+        <p className="cmm-text-body">
+          La préférence est enregistrée dans <strong>localStorage</strong> sous{" "}
+          <code className="rounded bg-slate-100 px-1 py-0.5">
+            cleanmymap_cookie_consent
+          </code>{" "}
+          et synchronisée avec le cookie analytique{" "}
+          <code className="rounded bg-slate-100 px-1 py-0.5">
+            cleanmymap_analytics_consent
+          </code>{" "}
+          pour appliquer le choix côté navigateur et côté serveur.
+        </p>
+        <p className="cmm-text-body">
+          Le parrainage et les liens d&apos;invitation n&apos;utilisent pas de
+          cookie dédié : ils sont suivis en base de données via le profil
+          utilisateur.
+        </p>
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <CookieTypeCard
+          label="Essentiels"
+          title="Cookies et stockages nécessaires"
+          items={[
+            "Authentification Clerk : cookies de session requis pour l'accès au compte et la sécurité.",
+            "Préférences techniques du site : langue (`cleanmymap.locale`) et mode d'affichage (`cleanmymap.display_mode`) synchronisées via cookies SameSite=Lax.",
+            "Mode d'affichage en attente de synchronisation (`cleanmymap.display_mode_pending_sync`).",
+            "Consentement utilisateur enregistré pour éviter d'afficher la bannière à chaque visite.",
+            "Cookie Cloudflare `_cfuvid` lorsque l'infrastructure du fournisseur le nécessite.",
+          ]}
+        />
+        <CookieTypeCard
+          label="Analytiques"
+          title="Mesure d'audience et performance"
+          items={[
+            "PostHog, uniquement si le consentement analytique est donné et avec `respect_dnt` activé.",
+            "Vercel Analytics et Vercel Speed Insights, chargés uniquement après consentement.",
+            "Les mesures servent à comprendre les usages, les performances et les erreurs de navigation.",
+            "Aucun cookie analytique n'est déposé avant le consentement explicite.",
+          ]}
+        />
+      </div>
+
+      <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
+        <h2 className="text-xl font-bold text-slate-950">
+          2. Données collectées par les analytics
+        </h2>
+        <ul className="cmm-text-body space-y-2">
+          <li>
+            Pages consultées, durée de visite et événements de navigation.
+          </li>
+          <li>
+            Informations techniques agrégées : navigateur, appareil, taille
+            d&apos;écran et performance.
+          </li>
+          <li>
+            URL, horodatage et identifiant anonyme de session selon le
+            fournisseur.
+          </li>
+          <li>
+            Les événements sont destinés à l&apos;amélioration produit et à la
+            correction des problèmes.
+          </li>
+        </ul>
+      </section>
+
+      <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+        <h2 className="text-xl font-bold text-slate-950">
+          3. Comment modifier ou retirer votre choix
+        </h2>
+        <ul className="cmm-text-body space-y-2">
+          <li>
+            Cliquer sur <strong>Gérer mes cookies</strong>, disponible en
+            permanence dans le pied de page, pour rouvrir les choix.
+          </li>
+          <li>
+            Un choix expiré après 6 mois est automatiquement nettoyé et la
+            bannière est reproposée.
+          </li>
+        </ul>
+      </section>
+
+      <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
+        <h2 className="text-xl font-bold text-slate-950">
+          4. Durées de conservation
+        </h2>
+        <div className="cmm-data-table-wrap">
+          <table className="cmm-data-table">
+            <caption className="sr-only">
+              Durées de conservation des cookies, consentements, sessions et
+              préférences de site
+            </caption>
+            <thead className="bg-slate-100 text-slate-900">
+              <tr>
+                <th scope="col" className="font-semibold">
+                  Élément
+                </th>
+                <th scope="col" className="font-semibold">
+                  Durée
+                </th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-600">
+              <tr>
+                <td>Consentement</td>
+                <td>6 mois</td>
+              </tr>
+              <tr>
+                <td>Cookies analytiques</td>
+                <td>6 mois lorsque le consentement est donné</td>
+              </tr>
+              <tr>
+                <td>Sessions d&apos;authentification</td>
+                <td>Durée de session ou limite du fournisseur</td>
+              </tr>
+              <tr>
+                <td>Préférences de site</td>
+                <td>Jusqu&apos;à suppression locale par l&apos;utilisateur</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </>
+  );
+}
+
+function CookieAssociatedPages() {
+  return (
+    <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+      <h2 className="text-xl font-bold text-slate-950">5. Pages associées</h2>
+      <p className="cmm-text-body">
+        Pour les données personnelles et les droits RGPD, consultez la{" "}
+        <Link
+          href="/politique-confidentialite"
+          className="font-medium text-emerald-700 hover:underline"
+        >
+          Politique de confidentialité
+        </Link>
+        . Pour le cadre général d&apos;utilisation, consultez les{" "}
+        <Link
+          href="/conditions-generales-utilisation"
+          className="font-medium text-emerald-700 hover:underline"
+        >
+          CGU
+        </Link>
+        .
+      </p>
+    </section>
+  );
+}
+
 export default function PolitiqueCookiesPage() {
   return (
     <div>
       <CmmPageLayout>
-      <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
-        <CmmSectionGroup>
-        <PageHeader
-          tone="slate"
-          title="Politique cookies"
-          subtitle="CleanMyMap utilise des cookies et du stockage local pour faire fonctionner l'application, mémoriser vos préférences et, si vous y consentez, mesurer l'usage du site."
-          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 1 juin 2026</p>}
-        />
+        <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
+          <CmmSectionGroup>
+            <PageHeader
+              tone="slate"
+              title="Politique cookies"
+              subtitle="CleanMyMap utilise des cookies et du stockage local pour faire fonctionner l'application, mémoriser vos préférences et, si vous y consentez, mesurer l'usage du site."
+              action={
+                <p className="text-sm font-medium text-slate-500">
+                  Dernière mise à jour : 1 juin 2026
+                </p>
+              }
+            />
 
-        <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-          <h2 className="text-xl font-bold text-slate-950">
-            1. Choix de consentement
-          </h2>
-          <p className="cmm-text-body">
-            La bannière de consentement propose deux choix de même niveau :
-            tout accepter ou tout refuser. Les services essentiels au
-            fonctionnement du site restent actifs dans les deux cas. Le choix
-            est mémorisé pendant 6 mois.
-          </p>
-          <p className="cmm-text-body">
-            La préférence est enregistrée dans <strong>localStorage</strong>{" "}
-            sous <code className="rounded bg-slate-100 px-1 py-0.5">cleanmymap_cookie_consent</code>{" "}
-            et synchronisée avec le cookie analytique{" "}
-            <code className="rounded bg-slate-100 px-1 py-0.5">
-              cleanmymap_analytics_consent
-            </code>{" "}
-            pour appliquer le choix côté navigateur et côté serveur.
-          </p>
-          <p className="cmm-text-body">
-            Le parrainage et les liens d&apos;invitation n&apos;utilisent pas de
-            cookie dédié : ils sont suivis en base de données via le profil
-            utilisateur.
-          </p>
-        </section>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <CookieTypeCard
-            label="Essentiels"
-            title="Cookies et stockages nécessaires"
-            items={[
-              "Authentification Clerk : cookies de session requis pour l'accès au compte et la sécurité.",
-              "Préférences techniques du site : langue (`cleanmymap.locale`) et mode d'affichage (`cleanmymap.display_mode`) synchronisées via cookies SameSite=Lax.",
-              "Mode d'affichage en attente de synchronisation (`cleanmymap.display_mode_pending_sync`).",
-              "Consentement utilisateur enregistré pour éviter d'afficher la bannière à chaque visite.",
-              "Cookie Cloudflare `_cfuvid` lorsque l'infrastructure du fournisseur le nécessite.",
-            ]}
-          />
-
-          <CookieTypeCard
-            label="Analytiques"
-            title="Mesure d'audience et performance"
-            items={[
-              "PostHog, uniquement si le consentement analytique est donné et avec `respect_dnt` activé.",
-              "Vercel Analytics et Vercel Speed Insights, chargés uniquement après consentement.",
-              "Les mesures servent à comprendre les usages, les performances et les erreurs de navigation.",
-              "Aucun cookie analytique n'est déposé avant le consentement explicite.",
-            ]}
-          />
+            <CookiePolicySections />
+            <CookieAssociatedPages />
+          </CmmSectionGroup>
         </div>
-
-        <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
-          <h2 className="text-xl font-bold text-slate-950">
-            2. Données collectées par les analytics
-          </h2>
-          <ul className="cmm-text-body space-y-2">
-            <li>Pages consultées, durée de visite et événements de navigation.</li>
-            <li>Informations techniques agrégées : navigateur, appareil, taille d&apos;écran et performance.</li>
-            <li>
-              URL, horodatage et identifiant anonyme de session selon le fournisseur.
-            </li>
-            <li>
-              Les événements sont destinés à l&apos;amélioration produit et à la
-              correction des problèmes.
-            </li>
-          </ul>
-        </section>
-
-        <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-          <h2 className="text-xl font-bold text-slate-950">
-            3. Comment modifier ou retirer votre choix
-          </h2>
-          <ul className="cmm-text-body space-y-2">
-            <li>
-              Cliquer sur <strong>Gérer mes cookies</strong>, disponible en
-              permanence dans le pied de page, pour rouvrir les choix.
-            </li>
-            <li>
-              Un choix expiré après 6 mois est automatiquement nettoyé et la
-              bannière est reproposée.
-            </li>
-          </ul>
-        </section>
-
-        <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
-          <h2 className="text-xl font-bold text-slate-950">
-            4. Durées de conservation
-          </h2>
-          <div className="cmm-data-table-wrap">
-            <table className="cmm-data-table">
-              <caption className="sr-only">
-                Durées de conservation des cookies, consentements, sessions et préférences de site
-              </caption>
-              <thead className="bg-slate-100 text-slate-900">
-                <tr>
-                  <th scope="col" className="font-semibold">Élément</th>
-                  <th scope="col" className="font-semibold">Durée</th>
-                </tr>
-              </thead>
-              <tbody className="text-slate-600">
-                <tr>
-                  <td>Consentement</td>
-                  <td>6 mois</td>
-                </tr>
-                <tr>
-                  <td>Cookies analytiques</td>
-                  <td>6 mois lorsque le consentement est donné</td>
-                </tr>
-                <tr>
-                  <td>Sessions d&apos;authentification</td>
-                  <td>Durée de session ou limite du fournisseur</td>
-                </tr>
-                <tr>
-                  <td>Préférences de site</td>
-                  <td>Jusqu&apos;à suppression locale par l&apos;utilisateur</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-          <h2 className="text-xl font-bold text-slate-950">
-            5. Pages associées
-          </h2>
-          <p className="cmm-text-body">
-            Pour les données personnelles et les droits RGPD, consultez la{" "}
-            <Link
-              href="/politique-confidentialite"
-              className="font-medium text-emerald-700 hover:underline"
-            >
-              Politique de confidentialité
-            </Link>
-            . Pour le cadre général d&apos;utilisation, consultez les{" "}
-            <Link
-              href="/conditions-generales-utilisation"
-              className="font-medium text-emerald-700 hover:underline"
-            >
-              CGU
-            </Link>
-            .
-          </p>
-        </section>
-        </CmmSectionGroup>
-      </div>
       </CmmPageLayout>
     </div>
   );

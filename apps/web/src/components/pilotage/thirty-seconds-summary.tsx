@@ -75,10 +75,49 @@ export function normalizeThirtySecondsSummaryProps(
   };
 }
 
+function SummaryAlertCard({ alert, style }: { alert: SummaryAlert; style: ReturnType<typeof alertStyles> }) {
+  return (
+    <motion.div initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }} className={cn("group relative overflow-hidden rounded-[3rem] border p-10 backdrop-blur-3xl", style.border, style.bg, style.glow)}>
+      <div className="pointer-events-none absolute right-0 top-0 p-12 opacity-5 transition-transform duration-1000 group-hover:scale-110"><AlertTriangle size={160} className={style.text} /></div>
+      <div className="relative z-10 flex flex-col items-start gap-8 md:flex-row md:items-center">
+        <div className={cn("rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl transition-transform duration-500 group-hover:scale-110", style.text)}><AlertTriangle size={32} className="animate-pulse" /></div>
+        <div className="flex-1 space-y-4">
+          <div className="flex items-center gap-3"><span className={cn("rounded-full px-4 py-1.5 cmm-text-caption font-black uppercase tracking-[0.12em] shadow-2xl", style.badge)}>{alert.severity === "critical" ? "Critique" : alert.severity === "high" ? "Urgent" : "Attention"}</span><div className="h-1 w-1 rounded-full bg-slate-700" /><span className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-300">Protocole d&apos;Alerte Alpha</span></div>
+          <h4 className="text-3xl font-black leading-none tracking-tighter text-white">{alert.title}</h4>
+          <p className="cmm-text-body cmm-text-inverse max-w-3xl font-bold">{alert.detail}</p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function SummaryKpiGrid({ kpis }: { kpis: SummaryKpi[] }) {
+  return kpis.length > 0 ? (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {kpis.map((kpi, i) => {
+        const styles = deltaStyles(kpi.interpretation);
+        const DeltaIcon = styles.icon;
+        return <motion.div key={kpi.label} initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="group relative overflow-hidden rounded-[3rem] border border-white/5 bg-slate-900/40 p-10 shadow-2xl backdrop-blur-3xl transition-all hover:bg-white/5">
+          <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-white/5 blur-3xl translate-x-16 -translate-y-16" />
+          <div className="relative z-10 space-y-8">
+            <div className="flex items-center justify-between"><div className="flex items-center gap-3"><div className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-300"><Activity size={14} /></div><span className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-300">{kpi.label}</span></div><Link href="/methodologie" aria-label="Consulter la méthodologie" className="rounded-lg bg-white/5 p-2 text-slate-300 transition-all hover:bg-white/10 hover:text-white"><Info size={14} /></Link></div>
+            <div className="space-y-2"><p className="text-6xl font-black tracking-tighter text-white">{kpi.value}</p><div className="flex items-center gap-3"><div className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 cmm-text-small font-black tracking-tight", styles.bg, styles.color)}><DeltaIcon size={12} />{kpi.deltaPercent}</div><span className="cmm-text-small font-bold italic text-slate-300">vs last period</span></div></div>
+            <div className="border-t border-white/5 pt-6"><p className="cmm-text-small font-bold italic leading-relaxed text-slate-300">Previous baseline: <span className="font-black text-slate-400">{kpi.previousValue}</span></p></div>
+          </div>
+        </motion.div>;
+      })}
+    </div>
+  ) : <div className="rounded-[3rem] border border-white/5 bg-slate-900/40 p-10 text-center backdrop-blur-3xl"><p className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-300">Synthèse indisponible</p><h4 className="mt-3 text-2xl font-black tracking-tighter text-white">Aucun KPI à afficher</h4><p className="cmm-text-body cmm-text-inverse mt-3 font-medium">Les données de pilotage n&apos;ont pas encore été chargées pour cette vue.</p></div>;
+}
+
+function SummaryRecommendedAction({ actionLabel, actionHref, actionReason }: { actionLabel?: string; actionHref?: string; actionReason?: string }) {
+  if (!actionLabel || !actionHref) return null;
+  return <div className="flex flex-col gap-4 rounded-[3rem] border border-white/5 bg-white/5 p-6 backdrop-blur-3xl md:flex-row md:items-center md:justify-between"><div className="space-y-1"><p className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-300">Action recommandée</p>{actionReason ? <p className="cmm-text-body cmm-text-inverse max-w-3xl font-medium">{actionReason}</p> : null}</div><Link href={actionHref} className="inline-flex shrink-0 items-center gap-3 rounded-2xl bg-white px-6 py-4 cmm-text-small font-black uppercase tracking-[0.12em] text-slate-950 shadow-2xl transition-transform hover:translate-x-2">{actionLabel}<ArrowRight size={16} /></Link></div>;
+}
+
 export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
   const { kpis, alert, recommendedAction, recommendedReason } =
     normalizeThirtySecondsSummaryProps(props);
-  const hasKpis = kpis.length > 0;
   const actionLabel = recommendedAction?.label;
   const actionHref = recommendedAction?.href;
   const actionReason = recommendedReason?.trim();
@@ -86,168 +125,12 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
 
   return (
     <div className="space-y-8">
-      {alert ? (
-        <motion.div
-          initial={{ opacity: 1, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={cn(
-            "group relative overflow-hidden rounded-[3rem] border p-10 backdrop-blur-3xl",
-            alertStyle?.border,
-            alertStyle?.bg,
-            alertStyle?.glow,
-          )}
-        >
-          <div className="pointer-events-none absolute right-0 top-0 p-12 opacity-5 transition-transform duration-1000 group-hover:scale-110">
-            <AlertTriangle size={160} className={alertStyle?.text} />
-          </div>
-
-          <div className="relative z-10 flex flex-col items-start gap-8 md:flex-row md:items-center">
-            <div
-              className={cn(
-                "rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl transition-transform duration-500 group-hover:scale-110",
-                alertStyle?.text,
-              )}
-            >
-              <AlertTriangle size={32} className="animate-pulse" />
-            </div>
-            <div className="flex-1 space-y-4">
-              <div className="flex items-center gap-3">
-                <span
-                  className={cn(
-                    "rounded-full px-4 py-1.5 cmm-text-caption font-black uppercase tracking-[0.12em] shadow-2xl",
-                    alertStyle?.badge,
-                  )}
-                >
-                  {alert.severity === "critical"
-                    ? "Critique"
-                    : alert.severity === "high"
-                      ? "Urgent"
-                      : "Attention"}
-                </span>
-                <div className="h-1 w-1 rounded-full bg-slate-700" />
-                <span className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-300">
-                  Protocole d&apos;Alerte Alpha
-                </span>
-              </div>
-              <h4 className="text-3xl font-black leading-none tracking-tighter text-white">
-                {alert.title}
-              </h4>
-              <p className="cmm-text-body cmm-text-inverse max-w-3xl font-bold">
-                {alert.detail}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      ) : null}
+      {alert && alertStyle ? <SummaryAlertCard alert={alert} style={alertStyle} /> : null}
 
       {/* KPI Grid */}
-      {hasKpis ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {kpis.map((kpi, i) => {
-            const styles = deltaStyles(kpi.interpretation);
-            const DeltaIcon = styles.icon;
+      <SummaryKpiGrid kpis={kpis} />
 
-            return (
-              <motion.div
-                key={kpi.label}
-                initial={{ opacity: 1, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="group relative overflow-hidden rounded-[3rem] border border-white/5 bg-slate-900/40 p-10 shadow-2xl backdrop-blur-3xl transition-all hover:bg-white/5"
-              >
-                <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-white/5 blur-3xl translate-x-16 -translate-y-16" />
-
-                <div className="relative z-10 space-y-8">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-300">
-                        <Activity size={14} />
-                      </div>
-                      <span className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-300">
-                        {kpi.label}
-                      </span>
-                    </div>
-                    <Link
-                      href="/methodologie"
-                      aria-label="Consulter la méthodologie"
-                      className="rounded-lg bg-white/5 p-2 text-slate-300 transition-all hover:bg-white/10 hover:text-white"
-                    >
-                      <Info size={14} />
-                    </Link>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-baseline gap-3">
-                      <p className="text-6xl font-black tracking-tighter text-white">
-                        {kpi.value}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full px-3 py-1 cmm-text-small font-black tracking-tight",
-                          styles.bg,
-                          styles.color,
-                        )}
-                      >
-                        <DeltaIcon size={12} />
-                        {kpi.deltaPercent}
-                      </div>
-                      <span className="cmm-text-small font-bold italic text-slate-300">
-                        vs last period
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-white/5 pt-6">
-                    <p className="cmm-text-small font-bold italic leading-relaxed text-slate-300">
-                      Previous baseline:{" "}
-                      <span className="font-black text-slate-400">
-                        {kpi.previousValue}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="rounded-[3rem] border border-white/5 bg-slate-900/40 p-10 text-center backdrop-blur-3xl">
-          <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-300">
-            Synthèse indisponible
-          </p>
-          <h4 className="mt-3 text-2xl font-black tracking-tighter text-white">
-            Aucun KPI à afficher
-          </h4>
-          <p className="cmm-text-body cmm-text-inverse mt-3 font-medium">
-            Les données de pilotage n&apos;ont pas encore été chargées pour cette vue.
-          </p>
-        </div>
-      )}
-
-      {actionLabel && actionHref ? (
-        <div className="flex flex-col gap-4 rounded-[3rem] border border-white/5 bg-white/5 p-6 backdrop-blur-3xl md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1">
-            <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-300">
-              Action recommandée
-            </p>
-            {actionReason ? (
-              <p className="cmm-text-body cmm-text-inverse max-w-3xl font-medium">
-                {actionReason}
-              </p>
-            ) : null}
-          </div>
-          <Link
-            href={actionHref}
-            className="inline-flex shrink-0 items-center gap-3 rounded-2xl bg-white px-6 py-4 cmm-text-small font-black uppercase tracking-[0.12em] text-slate-950 shadow-2xl transition-transform hover:translate-x-2"
-          >
-            {actionLabel}
-            <ArrowRight size={16} />
-          </Link>
-        </div>
-      ) : null}
+      <SummaryRecommendedAction actionLabel={actionLabel} actionHref={actionHref} actionReason={actionReason} />
     </div>
   );
 }

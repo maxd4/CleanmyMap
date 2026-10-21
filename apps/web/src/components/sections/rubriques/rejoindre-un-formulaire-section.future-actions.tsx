@@ -32,6 +32,24 @@ function timeWindowFor(item: ActionListItem): string | null {
   return [start, end].filter(Boolean).join(" – ");
 }
 
+function FutureActionParticipants({ item, fr }: { item: ActionListItem; fr: boolean }) {
+  const participants = plannedParticipants(item);
+  return <p className="flex items-center gap-2"><Users2 size={14} className="text-slate-400" />{participants === null ? (fr ? "Participants non renseignés" : "Participants not provided") : `${formatCount(participants)} ${fr ? "participants prévus" : "planned participants"}`}</p>;
+}
+
+function FutureActionRegistration({ item, authenticated, fr, onShareAction }: { item: ActionListItem; authenticated: boolean; fr: boolean; onShareAction?: (actionId: string) => void }) {
+  const shareButton = onShareAction ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>Partager dans la messagerie</CmmButton> : null;
+  if (item.contract?.metadata.groupJoinEnabled === true) return <div className="flex flex-wrap gap-2"><CmmButton href={`/sections/rejoindre-une-action?actionId=${encodeURIComponent(item.id)}`} tone="primary" variant="pill" size="sm">{authenticated ? (fr ? "Rejoindre" : "Join") : (fr ? "Se connecter pour rejoindre" : "Sign in to join")}</CmmButton>{shareButton}</div>;
+  return <div className="flex flex-wrap items-center gap-2"><span className="text-xs font-semibold text-slate-500">{fr ? "Inscriptions fermées" : "Registration closed"}</span>{shareButton}</div>;
+}
+
+function FutureActionCard({ item, authenticated, fr, onShareAction }: { item: ActionListItem; authenticated: boolean; fr: boolean; onShareAction?: (actionId: string) => void }) {
+  const title = titleFor(item);
+  const eventRef = eventRefFor(item);
+  const timeWindow = timeWindowFor(item);
+  return <article className="rounded-[1.2rem] border border-sky-100 bg-white p-4 shadow-sm"><div className="space-y-3"><div><h3 className="text-lg font-black tracking-tight text-sky-950">{title}</h3><p className="mt-1 flex items-center gap-2 text-sm text-slate-600"><MapPin size={14} className="text-slate-400" />{item.location_label}</p></div><div className="grid gap-2 text-sm text-slate-600"><p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{formatDate(item.action_date, fr ? "fr" : "en")}</p>{timeWindow ? <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{timeWindow}</p> : null}<FutureActionParticipants item={item} fr={fr} /><p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{item.geometry_kind ? (fr ? "Itinéraire prévu disponible" : "Planned route available") : (fr ? "Lieu uniquement" : "Location only")}</p><p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "estimés" : "estimated"}</p></div><p className="text-xs text-slate-500">{fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}</p><AdministrativeRequirementsStatus actionId={item.id} surface="summary" />{eventRef ? <p className="text-xs font-semibold text-slate-500">{fr ? "Événement associé : " : "Linked event: "}{eventRef}</p> : null}<FutureActionRegistration item={item} authenticated={authenticated} fr={fr} onShareAction={onShareAction} /></div></article>;
+}
+
 export function FutureActionsPanel({
   items,
   loading,
@@ -74,56 +92,7 @@ export function FutureActionsPanel({
       ) : null}
 
       <div className="grid gap-3 md:grid-cols-2">
-        {items.map((item) => {
-          const groupJoinEnabled = item.contract?.metadata.groupJoinEnabled === true;
-          const title = titleFor(item);
-          const eventRef = eventRefFor(item);
-          const timeWindow = timeWindowFor(item);
-          return (
-            <article key={item.id} className="rounded-[1.2rem] border border-sky-100 bg-white p-4 shadow-sm">
-              <div className="space-y-3">
-                <div>
-                  <h3 className="text-lg font-black tracking-tight text-sky-950">{title}</h3>
-                  <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
-                    <MapPin size={14} className="text-slate-400" />
-                    {item.location_label}
-                  </p>
-                </div>
-                <div className="grid gap-2 text-sm text-slate-600">
-                  <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{formatDate(item.action_date, fr ? "fr" : "en")}</p>
-                  {timeWindow ? <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{timeWindow}</p> : null}
-                  <p className="flex items-center gap-2"><Users2 size={14} className="text-slate-400" />{plannedParticipants(item) === null ? (fr ? "Participants non renseignés" : "Participants not provided") : `${formatCount(plannedParticipants(item) as number)} ${fr ? "participants prévus" : "planned participants"}`}</p>
-                  <p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{item.geometry_kind ? (fr ? "Itinéraire prévu disponible" : "Planned route available") : (fr ? "Lieu uniquement" : "Location only")}</p>
-                  <p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "estimés" : "estimated"}</p>
-                </div>
-                 <p className="text-xs text-slate-500">
-                   {fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}
-                 </p>
-                 <AdministrativeRequirementsStatus actionId={item.id} surface="summary" />
-                {eventRef ? (
-                  <p className="text-xs font-semibold text-slate-500">
-                    {fr ? "Événement associé : " : "Linked event: "}{eventRef}
-                  </p>
-                ) : null}
-                {groupJoinEnabled ? (
-                  <div className="flex flex-wrap gap-2">
-                    <CmmButton
-                      href={`/sections/rejoindre-une-action?actionId=${encodeURIComponent(item.id)}`}
-                      tone="primary"
-                      variant="pill"
-                      size="sm"
-                    >
-                      {authenticated ? (fr ? "Rejoindre" : "Join") : (fr ? "Se connecter pour rejoindre" : "Sign in to join")}
-                    </CmmButton>
-                    {onShareAction ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>Partager dans la messagerie</CmmButton> : null}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap items-center gap-2"><span className="text-xs font-semibold text-slate-500">{fr ? "Inscriptions fermées" : "Registration closed"}</span>{onShareAction ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>Partager dans la messagerie</CmmButton> : null}</div>
-                )}
-              </div>
-            </article>
-          );
-        })}
+        {items.map((item) => <FutureActionCard key={item.id} item={item} authenticated={authenticated} fr={fr} onShareAction={onShareAction} />)}
       </div>
     </section>
   );

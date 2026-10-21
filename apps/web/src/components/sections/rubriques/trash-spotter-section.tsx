@@ -1,13 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  Leaf,
-  MessageSquareMore,
-  MapPin,
-  ShieldCheck,
-  Target,
-} from "lucide-react";
+import { Leaf, MessageSquareMore, MapPin, ShieldCheck, Target } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { PageHeader } from "@/components/ui/page-header";
@@ -17,324 +11,32 @@ import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
 import { useTrashSpotter } from "./use-trash-spotter";
 import { SpotterRecentList } from "./trash-spotter-components";
 
-const containerVariants = {
-  hidden: { opacity: 1 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.12,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 1, y: 18 },
-  visible: { opacity: 1, y: 0 },
-};
+const containerVariants = { hidden: { opacity: 1 }, visible: { opacity: 1, transition: { staggerChildren: 0.12 } } };
+const itemVariants = { hidden: { opacity: 1, y: 18 }, visible: { opacity: 1, y: 0 } };
 
 function resolveUrgencyLabel(fr: boolean, coveragePercent: number) {
-  if (coveragePercent >= 70) {
-    return fr ? "Élevée" : "High";
-  }
-  if (coveragePercent >= 40) {
-    return fr ? "Modérée" : "Moderate";
-  }
+  if (coveragePercent >= 70) return fr ? "Élevée" : "High";
+  if (coveragePercent >= 40) return fr ? "Modérée" : "Moderate";
   return fr ? "À surveiller" : "Watch";
+}
+function TrashSpotterSectionHero({ fr, quality, coveragePercent, urgencyLabel }: { fr: boolean; quality: ReturnType<typeof useTrashSpotter>["quality"]; coveragePercent: number; urgencyLabel: string }) {
+  return <motion.div variants={containerVariants} initial="hidden" animate="visible" className="relative overflow-hidden rounded-[2rem] border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(250,253,248,0.98),rgba(243,249,241,0.98))] p-6 shadow-[0_24px_72px_-42px_rgba(34,197,94,0.24)] sm:p-8 lg:p-10"><div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(187,247,208,0.45),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(134,239,172,0.2),transparent_30%)]" /><div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(300px,0.92fr)] lg:items-center"><motion.div variants={itemVariants} className="space-y-5"><PageHeader title={fr ? "Suivi Trash Spotter" : "Trash Spotter monitoring"} subtitle={fr ? "Consultez les signalements approuvés et la carte des points actuellement actionnables." : "Review approved reports and the map of currently actionable points."} /></motion.div><motion.div variants={itemVariants} className="relative min-h-[240px] overflow-hidden rounded-2xl border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(234,247,231,0.92),rgba(248,252,246,0.98))] shadow-[0_16px_44px_-30px_rgba(22,163,74,0.2)]"><div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-300 via-emerald-500 to-emerald-300" /><div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(134,239,172,0.45),transparent_25%),radial-gradient(circle_at_20%_80%,rgba(187,247,208,0.45),transparent_24%)]" /><div className="relative h-full p-5"><div className="absolute left-6 top-6 flex gap-2"><div className="h-4 w-4 rounded-full bg-emerald-500/80" /><div className="h-4 w-4 rounded-full bg-emerald-300/70" /><div className="h-4 w-4 rounded-full bg-white/80" /></div><div className="absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,transparent,rgba(16,76,44,0.08))]" /><div className="absolute right-6 top-8 h-28 w-28 rounded-full bg-emerald-200/50 blur-3xl" /><div className="absolute bottom-7 left-5 right-5 rounded-2xl border border-emerald-200/70 bg-white/90 p-4 shadow-[0_12px_28px_-22px_rgba(15,23,42,0.22)]"><div className="flex items-start justify-between gap-3"><div className="space-y-1"><p className="cmm-text-small font-black uppercase tracking-[0.18em] text-emerald-700">{fr ? "Signalements actifs" : "Active reports"}</p><p className="text-3xl font-black tracking-[-0.06em] text-emerald-950">{quality.received}</p></div><div className="space-y-2 text-right"><div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-800">{fr ? "En direct" : "Live"}</div><div className="rounded-full border border-emerald-200 bg-white px-3 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-900">{coveragePercent}% · {urgencyLabel}</div></div></div><div className="mt-4 h-2 rounded-full bg-emerald-100"><div className="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400" style={{ width: String(Math.max(24, coveragePercent)) + "%" }} /></div></div></div></motion.div></div></motion.div>;
+}
+function TrashSpotterMonitoring({ fr, error, isLoading, quality }: { fr: boolean; error: unknown; isLoading: boolean; quality: ReturnType<typeof useTrashSpotter>["quality"] }) {
+  const approvedLabel = fr ? String(quality.approved) + " point" + (quality.approved > 1 ? "s" : "") + " approuvé" + (quality.approved > 1 ? "s" : "") : String(quality.approved) + " approved point" + (quality.approved === 1 ? "" : "s");
+  return <div className="grid gap-6 lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]"><motion.div variants={itemVariants} initial="hidden" animate="visible" className="scroll-mt-24">{error ? <CmmCard tone="rose" variant="muted" className="text-rose-900"><div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-rose-200 bg-white text-rose-500"><MessageSquareMore size={18} /></div><div><p className="text-lg font-black tracking-[-0.03em]">{fr ? "Données temporairement indisponibles" : "Data temporarily unavailable"}</p><p className="text-sm font-medium text-rose-900">{error instanceof Error ? error.message : fr ? "Impossible de charger les signalements récents." : "Unable to load recent reports."}</p></div></div></CmmCard> : <CmmCard tone="emerald" variant="glass"><div className="flex items-start gap-4"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700"><MapPin size={18} /></div><div className="space-y-2"><p className="cmm-text-small font-black uppercase tracking-[0.18em] text-emerald-700">{fr ? "Lecture de suivi" : "Monitoring view"}</p><h3 className="text-2xl font-black tracking-[-0.04em] text-slate-950">{fr ? "Une carte pour observer, un formulaire pour signaler" : "A map to monitor, a form to report"}</h3><p className="cmm-text-body font-medium">{fr ? "Cette surface est dédiée à la consultation des points Trash Spotter. Pour créer une observation et la retrouver dans Mes observations, utilisez l’entrée canonique de signalement." : "This surface is dedicated to reviewing Trash Spotter points. To create a report and find it in My observations, use the canonical reporting entry."}</p></div></div><div className="mt-6 flex flex-wrap items-center gap-3"><CmmButton href="/signalement" tone="secondary" variant="pill">{fr ? "Signaler un déchet" : "Report waste"}</CmmButton><span className="cmm-text-small font-semibold text-slate-600">{isLoading ? fr ? "Chargement des données de suivi…" : "Loading monitoring data…" : approvedLabel}</span></div></CmmCard>}</motion.div><motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-6"><div id="trash-spotter-map" className="scroll-mt-24 space-y-4"><div className="flex items-center justify-between gap-3 px-1"><div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700"><MapPin size={18} /></div><div><h3 className="text-lg font-black tracking-[-0.03em] text-slate-950">{fr ? "Carte des signalements" : "Reports map"}</h3><p className="cmm-text-body font-medium">{fr ? "Carte globale des signalements dédiés" : "Global map of Trash Spotter points"}</p></div></div><div className="flex items-center gap-2"><span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 cmm-text-small font-black uppercase tracking-[0.14em] text-slate-700"><ShieldCheck size={12} className="text-emerald-600" />{fr ? "Filtrer" : "Filter"}</span><span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-800"><span className="h-2 w-2 rounded-full bg-emerald-500" />{fr ? "En direct" : "Live"}</span></div></div><ActionsMapFeed types={["spot"]} days={180} statusFilter="approved" impactFilter="all" qualityMin={0} presentation="immersive" tone="emerald" showIntro={false} showStoriesCarousel={false} deferUntilVisible /></div><CmmCard tone="emerald" variant="glass" size="sm"><SpotterRecentList fr={fr} recent={quality.recent} /></CmmCard></motion.div></div>;
+}
+
+function TrashSpotterGuide({ fr }: { fr: boolean }) {
+  const steps = [{ step: "01", title: fr ? "Repérer" : "Spot", text: fr ? "Identifier un point visible." : "Identify a visible point." }, { step: "02", title: fr ? "Signaler" : "Report", text: fr ? "Ajouter une description précise." : "Add a precise description." }, { step: "03", title: fr ? "Traiter" : "Act", text: fr ? "Prioriser les zones utiles." : "Prioritize useful areas." }];
+  return <div className="grid gap-6 lg:grid-cols-2"><CmmCard as="div" tone="emerald" variant="glass" className="overflow-hidden"><div className="flex items-start gap-4"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700"><Target size={18} /></div><div className="space-y-2"><h3 className="text-xl font-black tracking-[-0.03em] text-slate-950">{fr ? "Comment ça marche ?" : "How it works"}</h3><p className="cmm-text-body font-medium">{fr ? "Le signalement alimente la carte globale, le calque dédié, l'itinéraire IA et le rapport d'impact." : "The report feeds the global map, the Trash Spotter layer, AI routing and the impact report."}</p></div></div><div className="mt-6 grid gap-3 sm:grid-cols-3">{steps.map((step) => <CmmCard key={step.step} tone="emerald" variant="muted" size="sm"><div className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-800">{step.step}</div><p className="mt-3 text-sm font-black tracking-[-0.02em] text-slate-950">{step.title}</p><p className="cmm-text-body mt-1 font-medium">{step.text}</p></CmmCard>)}</div></CmmCard><CmmCard as="div" tone="emerald" variant="glass" className="overflow-hidden"><div className="flex items-start gap-4"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700"><ShieldCheck size={18} /></div><div className="space-y-2"><h3 className="text-xl font-black tracking-[-0.03em] text-slate-950">{fr ? "Modération & géovérification" : "Moderation & geovariation"}</h3><p className="cmm-text-body font-medium">{fr ? "Chaque signalement est vérifié pour éviter les doublons et sécuriser les données exploitées par les cartes et les rapports." : "Every report is checked to avoid duplicates and secure the data used by maps and reports."}</p></div></div><div className="mt-6 grid gap-3 sm:grid-cols-2"><CmmCard tone="emerald" variant="muted" size="sm"><p className="cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-700">{fr ? "Données sécurisées" : "Secured data"}</p><p className="cmm-text-body mt-2 font-medium">{fr ? "Confidentielles et protégées." : "Confidential and protected."}</p></CmmCard><CmmCard tone="emerald" variant="muted" size="sm"><p className="cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-700">{fr ? "Impact mesurable" : "Measurable impact"}</p><p className="cmm-text-body mt-2 font-medium">{fr ? "Suivi des actions et résultats." : "Actions and results tracking."}</p></CmmCard></div><div className="mt-6 flex items-center justify-end"><div className="flex h-16 w-16 items-center justify-center rounded-[1.6rem] bg-emerald-100 text-emerald-600"><Leaf size={28} /></div></div></CmmCard></div>;
 }
 
 export function TrashSpotterSection() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
-
-  const {
-    isLoading,
-    error,
-    quality,
-  } = useTrashSpotter();
-
-  const coveragePercent =
-    quality.received > 0 ? Math.round((quality.withCoords / quality.received) * 100) : 0;
+  const { isLoading, error, quality } = useTrashSpotter();
+  const coveragePercent = quality.received > 0 ? Math.round((quality.withCoords / quality.received) * 100) : 0;
   const urgencyLabel = resolveUrgencyLabel(fr, coveragePercent);
-
-  return (
-    <SectionShell
-      id="trash-spotter"
-      hideHeader
-      gradient="from-emerald-100/80 via-emerald-50 to-transparent"
-    >
-      <div className="space-y-8 pt-6">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="relative overflow-hidden rounded-[2rem] border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(250,253,248,0.98),rgba(243,249,241,0.98))] p-6 shadow-[0_24px_72px_-42px_rgba(34,197,94,0.24)] sm:p-8 lg:p-10"
-        >
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(187,247,208,0.45),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(134,239,172,0.2),transparent_30%)]" />
-
-          <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(300px,0.92fr)] lg:items-center">
-            <motion.div variants={itemVariants} className="space-y-5">
-              <PageHeader
-                title={fr ? "Suivi Trash Spotter" : "Trash Spotter monitoring"}
-                subtitle={
-                  fr
-                    ? "Consultez les signalements approuvés et la carte des points actuellement actionnables."
-                    : "Review approved reports and the map of currently actionable points."
-                }
-              />
-            </motion.div>
-
-            <motion.div
-              variants={itemVariants}
-              className="relative min-h-[240px] overflow-hidden rounded-2xl border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(234,247,231,0.92),rgba(248,252,246,0.98))] shadow-[0_16px_44px_-30px_rgba(22,163,74,0.2)]"
-            >
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-300 via-emerald-500 to-emerald-300" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(134,239,172,0.45),transparent_25%),radial-gradient(circle_at_20%_80%,rgba(187,247,208,0.45),transparent_24%)]" />
-
-              <div className="relative h-full p-5">
-                <div className="absolute left-6 top-6 flex gap-2">
-                  <div className="h-4 w-4 rounded-full bg-emerald-500/80" />
-                  <div className="h-4 w-4 rounded-full bg-emerald-300/70" />
-                  <div className="h-4 w-4 rounded-full bg-white/80" />
-                </div>
-
-                <div className="absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,transparent,rgba(16,76,44,0.08))]" />
-                <div className="absolute right-6 top-8 h-28 w-28 rounded-full bg-emerald-200/50 blur-3xl" />
-                <div className="absolute bottom-7 left-5 right-5 rounded-2xl border border-emerald-200/70 bg-white/90 p-4 shadow-[0_12px_28px_-22px_rgba(15,23,42,0.22)]">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-emerald-700">
-                        {fr ? "Signalements actifs" : "Active reports"}
-                      </p>
-                      <p className="text-3xl font-black tracking-[-0.06em] text-emerald-950">
-                        {quality.received}
-                      </p>
-                    </div>
-                    <div className="space-y-2 text-right">
-                      <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-800">
-                        {fr ? "En direct" : "Live"}
-                      </div>
-                      <div className="rounded-full border border-emerald-200 bg-white px-3 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-900">
-                        {coveragePercent}% · {urgencyLabel}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 h-2 rounded-full bg-emerald-100">
-                    <div
-                      className="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
-                      style={{ width: `${Math.max(24, coveragePercent)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-        </motion.div>
-
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]">
-          <motion.div variants={itemVariants} initial="hidden" animate="visible" className="scroll-mt-24">
-            {error ? (
-              <CmmCard tone="rose" variant="muted" className="text-rose-900">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-rose-200 bg-white text-rose-500">
-                    <MessageSquareMore size={18} />
-                  </div>
-                  <div>
-                    <p className="text-lg font-black tracking-[-0.03em]">
-                      {fr ? "Données temporairement indisponibles" : "Data temporarily unavailable"}
-                    </p>
-                    <p className="text-sm font-medium text-rose-900">
-                      {error instanceof Error
-                        ? error.message
-                        : fr
-                          ? "Impossible de charger les signalements récents."
-                          : "Unable to load recent reports."}
-                    </p>
-                  </div>
-                </div>
-              </CmmCard>
-            ) : (
-              <CmmCard tone="emerald" variant="glass">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
-                    <MapPin size={18} />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-emerald-700">
-                      {fr ? "Lecture de suivi" : "Monitoring view"}
-                    </p>
-                    <h3 className="text-2xl font-black tracking-[-0.04em] text-slate-950">
-                      {fr ? "Une carte pour observer, un formulaire pour signaler" : "A map to monitor, a form to report"}
-                    </h3>
-                    <p className="cmm-text-body font-medium">
-                      {fr
-                        ? "Cette surface est dédiée à la consultation des points Trash Spotter. Pour créer une observation et la retrouver dans Mes observations, utilisez l’entrée canonique de signalement."
-                        : "This surface is dedicated to reviewing Trash Spotter points. To create a report and find it in My observations, use the canonical reporting entry."}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-6 flex flex-wrap items-center gap-3">
-                  <CmmButton href="/signalement" tone="secondary" variant="pill">
-                    {fr ? "Signaler un déchet" : "Report waste"}
-                  </CmmButton>
-                  <span className="cmm-text-small font-semibold text-slate-600">
-                    {isLoading
-                      ? fr
-                        ? "Chargement des données de suivi…"
-                        : "Loading monitoring data…"
-                      : fr
-                        ? `${quality.approved} point${quality.approved > 1 ? "s" : ""} approuvé${quality.approved > 1 ? "s" : ""}`
-                        : `${quality.approved} approved point${quality.approved === 1 ? "" : "s"}`}
-                  </span>
-                </div>
-              </CmmCard>
-            )}
-          </motion.div>
-
-          <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-6">
-            <div id="trash-spotter-map" className="scroll-mt-24 space-y-4">
-              <div className="flex items-center justify-between gap-3 px-1">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
-                    <MapPin size={18} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black tracking-[-0.03em] text-slate-950">
-                      {fr ? "Carte des signalements" : "Reports map"}
-                    </h3>
-                    <p className="cmm-text-body font-medium">
-                      {fr ? "Carte globale des signalements dédiés" : "Global map of Trash Spotter points"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 cmm-text-small font-black uppercase tracking-[0.14em] text-slate-700">
-                    <ShieldCheck size={12} className="text-emerald-600" />
-                    {fr ? "Filtrer" : "Filter"}
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-800">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    {fr ? "En direct" : "Live"}
-                  </span>
-                </div>
-              </div>
-
-              <ActionsMapFeed
-                types={["spot"]}
-                days={180}
-                statusFilter="approved"
-                impactFilter="all"
-                qualityMin={0}
-                presentation="immersive"
-                tone="emerald"
-                showIntro={false}
-                showStoriesCarousel={false}
-                deferUntilVisible
-              />
-            </div>
-
-            <CmmCard tone="emerald" variant="glass" size="sm">
-              <SpotterRecentList fr={fr} recent={quality.recent} />
-            </CmmCard>
-          </motion.div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <CmmCard as="div" tone="emerald" variant="glass" className="overflow-hidden">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
-                <Target size={18} />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-black tracking-[-0.03em] text-slate-950">
-                  {fr ? "Comment ça marche ?" : "How it works"}
-                </h3>
-                <p className="cmm-text-body font-medium">
-                  {fr
-                    ? "Le signalement alimente la carte globale, le calque dédié, l'itinéraire IA et le rapport d'impact."
-                    : "The report feeds the global map, the Trash Spotter layer, AI routing and the impact report."}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              {[
-                {
-                  step: "01",
-                  title: fr ? "Repérer" : "Spot",
-                  text: fr ? "Identifier un point visible." : "Identify a visible point.",
-                },
-                {
-                  step: "02",
-                  title: fr ? "Signaler" : "Report",
-                  text: fr ? "Ajouter une description précise." : "Add a precise description.",
-                },
-                {
-                  step: "03",
-                  title: fr ? "Traiter" : "Act",
-                  text: fr ? "Prioriser les zones utiles." : "Prioritize useful areas.",
-                },
-              ].map((step) => (
-                <CmmCard key={step.step} tone="emerald" variant="muted" size="sm">
-                  <div className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-800">
-                    {step.step}
-                  </div>
-                  <p className="mt-3 text-sm font-black tracking-[-0.02em] text-slate-950">
-                    {step.title}
-                  </p>
-                  <p className="cmm-text-body mt-1 font-medium">
-                    {step.text}
-                  </p>
-                </CmmCard>
-              ))}
-            </div>
-          </CmmCard>
-
-          <CmmCard as="div" tone="emerald" variant="glass" className="overflow-hidden">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
-                <ShieldCheck size={18} />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-black tracking-[-0.03em] text-slate-950">
-                  {fr ? "Modération & géovérification" : "Moderation & geovariation"}
-                </h3>
-                <p className="cmm-text-body font-medium">
-                  {fr
-                    ? "Chaque signalement est vérifié pour éviter les doublons et sécuriser les données exploitées par les cartes et les rapports."
-                    : "Every report is checked to avoid duplicates and secure the data used by maps and reports."}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <CmmCard tone="emerald" variant="muted" size="sm">
-                <p className="cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-700">
-                  {fr ? "Données sécurisées" : "Secured data"}
-                </p>
-                <p className="cmm-text-body mt-2 font-medium">
-                  {fr ? "Confidentielles et protégées." : "Confidential and protected."}
-                </p>
-              </CmmCard>
-              <CmmCard tone="emerald" variant="muted" size="sm">
-                <p className="cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-700">
-                  {fr ? "Impact mesurable" : "Measurable impact"}
-                </p>
-                <p className="cmm-text-body mt-2 font-medium">
-                  {fr ? "Suivi des actions et résultats." : "Actions and results tracking."}
-                </p>
-              </CmmCard>
-            </div>
-
-            <div className="mt-6 flex items-center justify-end">
-              <div className="flex h-16 w-16 items-center justify-center rounded-[1.6rem] bg-emerald-100 text-emerald-600">
-                <Leaf size={28} />
-              </div>
-            </div>
-          </CmmCard>
-        </div>
-      </div>
-    </SectionShell>
-  );
+  return <SectionShell id="trash-spotter" hideHeader gradient="from-emerald-100/80 via-emerald-50 to-transparent"><div className="space-y-8 pt-6"><TrashSpotterSectionHero fr={fr} quality={quality} coveragePercent={coveragePercent} urgencyLabel={urgencyLabel} /><TrashSpotterMonitoring fr={fr} error={error} isLoading={isLoading} quality={quality} /><TrashSpotterGuide fr={fr} /></div></SectionShell>;
 }

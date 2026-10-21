@@ -37,6 +37,30 @@ function DetailState({ children, tone = "default" }: { children: ReactNode; tone
   );
 }
 
+function BreakdownAccessPrompt({ fr, onRequest }: { fr: boolean; onRequest: () => void }) {
+  return <DetailState><div className="space-y-4"><div><h3 className="text-lg font-black text-white">{fr ? "Répartition détaillée des déchets" : "Detailed waste breakdown"}</h3><p className="mt-2 text-sm leading-6 text-slate-300">{fr ? "Cette lecture authentifiée est chargée uniquement à votre demande." : "This authenticated read loads only when you ask for it."}</p></div><CmmButton type="button" onClick={onRequest} tone="primary" variant="pill">{fr ? "Voir la répartition détaillée des déchets" : "View the detailed waste breakdown"}</CmmButton></div></DetailState>;
+}
+
+function BreakdownSignedOut({ fr }: { fr: boolean }) {
+  return <DetailState><div className="space-y-4"><div><h3 className="text-lg font-black text-white">{fr ? "Répartition détaillée des déchets" : "Detailed waste breakdown"}</h3><p className="mt-2 text-sm leading-6 text-slate-300">{fr ? "Connectez-vous pour consulter les flux privés et leurs indicateurs de qualité." : "Sign in to view private waste streams and their quality indicators."}</p></div><CmmButton href={buildSignInRedirectHref("/sections/recycling")} tone="primary" variant="pill">{fr ? "Voir la répartition détaillée des déchets" : "View the detailed waste breakdown"}</CmmButton></div></DetailState>;
+}
+
+function BreakdownLoading({ fr }: { fr: boolean }) {
+  return <DetailState><p role="status" aria-live="polite" className="text-sm font-semibold text-slate-300">{fr ? "Chargement de la répartition détaillée…" : "Loading the detailed breakdown…"}</p></DetailState>;
+}
+
+function BreakdownUnavailable({ fr, onRetry }: { fr: boolean; onRetry: () => void }) {
+  return <DetailState><div className="space-y-4"><h3 className="text-lg font-black text-white">{fr ? "Répartition indisponible" : "Breakdown unavailable"}</h3><p className="text-sm leading-6 text-slate-300">{fr ? "Le snapshot détaillé n’est pas disponible ; aucune valeur inconnue n’est présentée comme zéro." : "The detailed snapshot is unavailable; unknown values are not shown as zero."}</p><CmmButton type="button" onClick={onRetry} tone="secondary" variant="pill">{fr ? "Réessayer" : "Retry"}</CmmButton></div></DetailState>;
+}
+
+function BreakdownErrorState({ fr, authRequired, onRetry }: { fr: boolean; authRequired: boolean; onRetry: () => void }) {
+  return <DetailState tone="error"><div className="space-y-4"><div><h3 className="text-lg font-black text-white">{fr ? "Répartition indisponible" : "Breakdown unavailable"}</h3><p role="alert" className="mt-2 text-sm leading-6 text-rose-200">{authRequired ? (fr ? "Votre session n’est plus disponible. Reconnectez-vous pour réessayer." : "Your session is no longer available. Sign in again to retry.") : (fr ? "La ventilation détaillée n’a pas pu être chargée. Aucune valeur n’est remplacée par zéro." : "The detailed breakdown could not be loaded. No value is replaced with zero.")}</p></div><CmmButton type="button" onClick={onRetry} tone="secondary" variant="pill">{fr ? "Réessayer" : "Retry"}</CmmButton></div></DetailState>;
+}
+
+function BreakdownResult({ fr, data }: { fr: boolean; data: PublicSectionBreakdown }) {
+  return <div className="space-y-8" data-breakdown-state="success"><p role="status" className="text-sm font-semibold text-emerald-300">{fr ? "Répartition détaillée disponible depuis le snapshot réel." : "Detailed breakdown loaded from the real snapshot."}</p><RecyclingStreamTable breakdown={data} fr={fr} /><div className="grid gap-8 lg:grid-cols-2"><RecyclingQualitySummary quality={data.triQuality} fr={fr} /><DetailState><h3 className="text-lg font-black text-white">{fr ? "Qualité de la mesure" : "Measurement quality"}</h3><dl className="mt-5 space-y-3 text-sm text-slate-300"><div className="flex justify-between gap-4"><dt>{fr ? "Actions avec masse renseignée" : "Actions with recorded mass"}</dt><dd className="font-black text-white">{data.wasteCoverageRate.toFixed(1)} %</dd></div><div className="flex justify-between gap-4"><dt>{fr ? "Snapshot généré le" : "Snapshot generated"}</dt><dd className="font-black text-white">{new Date(data.generatedAt).toLocaleString(fr ? "fr-FR" : "en-GB")}</dd></div></dl></DetailState></div></div>;
+}
+
 export function RecyclingBreakdownDetails({
   fr,
   onLoaded,
@@ -83,103 +107,24 @@ export function RecyclingBreakdownDetails({
   }
 
   if (!isSignedIn) {
-    return (
-      <DetailState>
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-black text-white">{fr ? "Répartition détaillée des déchets" : "Detailed waste breakdown"}</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              {fr ? "Connectez-vous pour consulter les flux privés et leurs indicateurs de qualité." : "Sign in to view private waste streams and their quality indicators."}
-            </p>
-          </div>
-          <CmmButton href={buildSignInRedirectHref("/sections/recycling")} tone="primary" variant="pill">
-            {fr ? "Voir la répartition détaillée des déchets" : "View the detailed waste breakdown"}
-          </CmmButton>
-        </div>
-      </DetailState>
-    );
+    return <BreakdownSignedOut fr={fr} />;
   }
 
   if (!requested) {
-    return (
-      <DetailState>
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-black text-white">{fr ? "Répartition détaillée des déchets" : "Detailed waste breakdown"}</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              {fr ? "Cette lecture authentifiée est chargée uniquement à votre demande." : "This authenticated read loads only when you ask for it."}
-            </p>
-          </div>
-          <CmmButton type="button" onClick={() => identityKey && setRequestedIdentity(identityKey)} tone="primary" variant="pill">
-            {fr ? "Voir la répartition détaillée des déchets" : "View the detailed waste breakdown"}
-          </CmmButton>
-        </div>
-      </DetailState>
-    );
+    return <BreakdownAccessPrompt fr={fr} onRequest={() => { if (identityKey) setRequestedIdentity(identityKey); }} />;
   }
 
   if (isLoading || (isValidating && !visibleData)) {
-    return (
-      <DetailState>
-        <p role="status" aria-live="polite" className="text-sm font-semibold text-slate-300">
-          {fr ? "Chargement de la répartition détaillée…" : "Loading the detailed breakdown…"}
-        </p>
-      </DetailState>
-    );
+    return <BreakdownLoading fr={fr} />;
   }
 
   if (error) {
-    return (
-      <DetailState tone="error">
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-black text-white">{fr ? "Répartition indisponible" : "Breakdown unavailable"}</h3>
-            <p role="alert" className="mt-2 text-sm leading-6 text-rose-200">
-              {error.message === "breakdown_auth_required"
-                ? (fr ? "Votre session n’est plus disponible. Reconnectez-vous pour réessayer." : "Your session is no longer available. Sign in again to retry.")
-                : (fr ? "La ventilation détaillée n’a pas pu être chargée. Aucune valeur n’est remplacée par zéro." : "The detailed breakdown could not be loaded. No value is replaced with zero.")}
-            </p>
-          </div>
-          <CmmButton type="button" onClick={() => setRequestedIdentity(null)} tone="secondary" variant="pill">
-            {fr ? "Réessayer" : "Retry"}
-          </CmmButton>
-        </div>
-      </DetailState>
-    );
+    return <BreakdownErrorState fr={fr} authRequired={error.message === "breakdown_auth_required"} onRetry={() => setRequestedIdentity(null)} />;
   }
 
   if (!visibleData) {
-    return (
-      <DetailState>
-        <div className="space-y-4">
-          <h3 className="text-lg font-black text-white">{fr ? "Répartition indisponible" : "Breakdown unavailable"}</h3>
-          <p className="text-sm leading-6 text-slate-300">
-            {fr ? "Le snapshot détaillé n’est pas disponible ; aucune valeur inconnue n’est présentée comme zéro." : "The detailed snapshot is unavailable; unknown values are not shown as zero."}
-          </p>
-          <CmmButton type="button" onClick={() => setRequestedIdentity(null)} tone="secondary" variant="pill">
-            {fr ? "Réessayer" : "Retry"}
-          </CmmButton>
-        </div>
-      </DetailState>
-    );
+    return <BreakdownUnavailable fr={fr} onRetry={() => setRequestedIdentity(null)} />;
   }
 
-  return (
-    <div className="space-y-8" data-breakdown-state="success">
-      <p role="status" className="text-sm font-semibold text-emerald-300">
-        {fr ? "Répartition détaillée disponible depuis le snapshot réel." : "Detailed breakdown loaded from the real snapshot."}
-      </p>
-      <RecyclingStreamTable breakdown={visibleData} fr={fr} />
-      <div className="grid gap-8 lg:grid-cols-2">
-        <RecyclingQualitySummary quality={visibleData.triQuality} fr={fr} />
-        <DetailState>
-          <h3 className="text-lg font-black text-white">{fr ? "Qualité de la mesure" : "Measurement quality"}</h3>
-          <dl className="mt-5 space-y-3 text-sm text-slate-300">
-            <div className="flex justify-between gap-4"><dt>{fr ? "Actions avec masse renseignée" : "Actions with recorded mass"}</dt><dd className="font-black text-white">{visibleData.wasteCoverageRate.toFixed(1)} %</dd></div>
-            <div className="flex justify-between gap-4"><dt>{fr ? "Snapshot généré le" : "Snapshot generated"}</dt><dd className="font-black text-white">{new Date(visibleData.generatedAt).toLocaleString(fr ? "fr-FR" : "en-GB")}</dd></div>
-          </dl>
-        </DetailState>
-      </div>
-    </div>
-  );
+  return <BreakdownResult fr={fr} data={visibleData} />;
 }

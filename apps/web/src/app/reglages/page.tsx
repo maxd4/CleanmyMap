@@ -33,6 +33,8 @@ const REGLAGES_COPY = {
   },
 } as const;
 
+type ReglagesUser = Awaited<ReturnType<Awaited<ReturnType<typeof clerkClient>>["users"]["getUser"]>>;
+
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
   const copy = REGLAGES_COPY[locale];
@@ -48,9 +50,71 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+function ReglagesPageContent({
+  copy,
+  locale,
+  identity,
+  user,
+}: {
+  copy: (typeof REGLAGES_COPY)[keyof typeof REGLAGES_COPY];
+  locale: keyof typeof REGLAGES_COPY;
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
+  user: ReglagesUser;
+}) {
+  const pageFamily = resolvePageFamily("/reglages");
+
+  return (
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_rgba(186,230,253,0.45)_0%,_rgba(255,255,255,0.96)_52%,_rgba(248,250,252,1)_100%)]">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-20 top-20 h-72 w-72 rounded-full bg-sky-400/10 blur-3xl" />
+        <div className="absolute -right-16 bottom-20 h-80 w-80 rounded-full bg-sky-400/8 blur-3xl" />
+      </div>
+
+      <CmmPageLayout>
+        <PageHeader
+          family={pageFamily}
+          title={copy.title}
+          subtitle={copy.subtitle}
+          action={
+            <Link
+              href={PROFIL_ROUTE}
+              className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-2.5 text-sm font-black text-sky-800 transition hover:-translate-y-[1px] hover:bg-sky-50"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              {copy.back}
+            </Link>
+          }
+        />
+
+        <CmmSectionGroup>
+          {identity ? (
+            <AccountSettingsEditor
+              locale={locale}
+              initialData={{
+                firstName: user.firstName ?? identity.firstName ?? "",
+                lastName: user.lastName ?? "",
+                email: user.primaryEmailAddress?.emailAddress ?? identity.email,
+                imageUrl: user.imageUrl ?? null,
+                handle: identity.handle,
+                displayNameMode: identity.displayNameMode ?? "full_name",
+                locationPreferences: extractLocationPreferencesFromMetadata(user.unsafeMetadata),
+                activityStatus: user.unsafeMetadata?.activity_status === "inactive" ? "inactive" : "active",
+              }}
+            />
+          ) : null}
+          <div className="flex flex-wrap gap-3 rounded-2xl border border-sky-100 bg-white/70 p-4 text-sm">
+            <Link href={PROFIL_ROUTE} className="font-bold text-sky-800 underline underline-offset-2">{locale === "fr" ? "Consulter mon profil" : "View my profile"}</Link>
+            <Link href={HOME_ROUTE} className="font-bold text-sky-800 underline underline-offset-2">{locale === "fr" ? "Accueil" : "Home"}</Link>
+          </div>
+        </CmmSectionGroup>
+      </CmmPageLayout>
+    </main>
+  );
+}
+
 export default async function ReglagesPage() {
   const { userId } = await getSafeAuthSession();
-  
+
   if (!userId) {
     redirect("/sign-in");
   }
@@ -62,53 +126,5 @@ export default async function ReglagesPage() {
   ]);
 
   const copy = REGLAGES_COPY[locale];
-  const pageFamily = resolvePageFamily("/reglages");
-
-  return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_rgba(186,230,253,0.45)_0%,_rgba(255,255,255,0.96)_52%,_rgba(248,250,252,1)_100%)]">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-20 top-20 h-72 w-72 rounded-full bg-sky-400/10 blur-3xl" />
-        <div className="absolute -right-16 bottom-20 h-80 w-80 rounded-full bg-sky-400/8 blur-3xl" />
-      </div>
-
-      <CmmPageLayout>
-          <PageHeader
-            family={pageFamily}
-            title={copy.title}
-            subtitle={copy.subtitle}
-            action={
-              <Link
-                href={PROFIL_ROUTE}
-                className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-2.5 text-sm font-black text-sky-800 transition hover:-translate-y-[1px] hover:bg-sky-50"
-              >
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                {copy.back}
-              </Link>
-            }
-          />
-
-          <CmmSectionGroup>
-            {identity ? (
-              <AccountSettingsEditor
-                locale={locale}
-                initialData={{
-                  firstName: user.firstName ?? identity.firstName ?? "",
-                  lastName: user.lastName ?? "",
-                  email: user.primaryEmailAddress?.emailAddress ?? identity.email,
-                  imageUrl: user.imageUrl ?? null,
-                  handle: identity.handle,
-                  displayNameMode: identity.displayNameMode ?? "full_name",
-                  locationPreferences: extractLocationPreferencesFromMetadata(user.unsafeMetadata),
-                  activityStatus: user.unsafeMetadata?.activity_status === "inactive" ? "inactive" : "active",
-                }}
-              />
-            ) : null}
-            <div className="flex flex-wrap gap-3 rounded-2xl border border-sky-100 bg-white/70 p-4 text-sm">
-              <Link href={PROFIL_ROUTE} className="font-bold text-sky-800 underline underline-offset-2">{locale === "fr" ? "Consulter mon profil" : "View my profile"}</Link>
-              <Link href={HOME_ROUTE} className="font-bold text-sky-800 underline underline-offset-2">{locale === "fr" ? "Accueil" : "Home"}</Link>
-            </div>
-          </CmmSectionGroup>
-      </CmmPageLayout>
-    </main>
-  );
+  return <ReglagesPageContent copy={copy} locale={locale} identity={identity} user={user} />;
 }

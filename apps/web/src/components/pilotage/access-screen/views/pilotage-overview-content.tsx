@@ -92,28 +92,53 @@ function PilotageOperationsDisclosure({
   );
 }
 
-export function PilotageOverviewContent({ locale, copy, overview, overviewLinks, accessAllowed, lastUpdatedAt, communityOperations, communityOperationsState, communityOperationsRetryHref, canExportCommunityFunnel }: PilotageOverviewContentProps) {
-  const topZones = overview?.zones.slice(0, 3) ?? [];
-  const topPriorities = overview?.priorities ?? [];
-  if (!overview) {
-    return (
-      <>
-        {communityOperationsState !== "NOT_REQUESTED" ? (
-          <PilotageOperationsDisclosure
-            state={communityOperationsState}
-            retryHref={communityOperationsRetryHref}
-          />
-        ) : null}
-        <PilotageOverviewSupportSections
-          locale={locale}
-          accessEyebrow={copy.accessEyebrow}
-          overview={null}
-          overviewLinks={overviewLinks}
-          accessAllowed={accessAllowed}
-        />
-      </>
-    );
-  }
+function PilotageOverviewEmpty({
+  locale,
+  copy,
+  overviewLinks,
+  accessAllowed,
+  communityOperationsState,
+  communityOperationsRetryHref,
+}: Pick<PilotageOverviewContentProps, "locale" | "copy" | "overviewLinks" | "accessAllowed" | "communityOperationsState" | "communityOperationsRetryHref">) {
+  return (
+    <>
+      {communityOperationsState !== "NOT_REQUESTED" ? <PilotageOperationsDisclosure state={communityOperationsState} retryHref={communityOperationsRetryHref} /> : null}
+      <PilotageOverviewSupportSections locale={locale} accessEyebrow={copy.accessEyebrow} overview={null} overviewLinks={overviewLinks} accessAllowed={accessAllowed} />
+    </>
+  );
+}
+
+function PilotageOverviewDetails({
+  locale,
+  copy,
+  overview,
+  overviewLinks,
+  accessAllowed,
+  lastUpdatedAt,
+  communityOperations,
+  communityOperationsState,
+  communityOperationsRetryHref,
+  canExportCommunityFunnel,
+}: Omit<PilotageOverviewContentProps, "overview"> & { overview: PilotageOverview }) {
   const notices = buildReportDataAvailabilityNotices(overview.dataAvailability);
-  return <><>{notices.length > 0 ? <div role="status" aria-live="polite" className="rounded-2xl border border-amber-200/40 bg-amber-100/10 p-4 text-sm leading-6 text-orange-100">{notices.join(" ")}</div> : null}</><PilotageScopeNotice copy={copy} isEmpty={overview.contracts.length === 0} /><PilotageOverviewSurfaceTabs locale={locale} overview={overview} /><PilotageOperationsDisclosure state={communityOperationsState} retryHref={communityOperationsRetryHref} />{(communityOperationsState === "AVAILABLE" || communityOperationsState === "PARTIAL") && communityOperations ? <PilotageCommunityOperationsPanel operations={communityOperations} canExportFunnel={canExportCommunityFunnel} /> : null}<PilotageOverviewSummary locale={locale} copy={copy} overview={overview} lastUpdatedAt={lastUpdatedAt} /><PilotageOverviewMetrics locale={locale} copy={copy} overview={overview} /><PilotageOverviewPriorities locale={locale} copy={copy} topPriorities={topPriorities} topZones={topZones} /><PilotageOverviewSupportSections locale={locale} accessEyebrow={copy.accessEyebrow} overview={overview} overviewLinks={overviewLinks} accessAllowed={accessAllowed} /></>;
+  return (
+    <>
+      {notices.length > 0 ? <div role="status" aria-live="polite" className="rounded-2xl border border-amber-200/40 bg-amber-100/10 p-4 text-sm leading-6 text-orange-100">{notices.join(" ")}</div> : null}
+      <PilotageScopeNotice copy={copy} isEmpty={overview.contracts.length === 0} />
+      <PilotageOverviewSurfaceTabs locale={locale} overview={overview} />
+      <PilotageOperationsDisclosure state={communityOperationsState} retryHref={communityOperationsRetryHref} />
+      {(communityOperationsState === "AVAILABLE" || communityOperationsState === "PARTIAL") && communityOperations ? <PilotageCommunityOperationsPanel operations={communityOperations} canExportFunnel={canExportCommunityFunnel} /> : null}
+      <PilotageOverviewSummary locale={locale} copy={copy} overview={overview} lastUpdatedAt={lastUpdatedAt} />
+      <PilotageOverviewMetrics locale={locale} copy={copy} overview={overview} />
+      <PilotageOverviewPriorities locale={locale} copy={copy} topPriorities={overview.priorities} topZones={overview.zones.slice(0, 3)} />
+      <PilotageOverviewSupportSections locale={locale} accessEyebrow={copy.accessEyebrow} overview={overview} overviewLinks={overviewLinks} accessAllowed={accessAllowed} />
+    </>
+  );
+}
+
+export function PilotageOverviewContent({ locale, copy, overview, overviewLinks, accessAllowed, lastUpdatedAt, communityOperations, communityOperationsState, communityOperationsRetryHref, canExportCommunityFunnel }: PilotageOverviewContentProps) {
+  if (!overview) {
+    return <PilotageOverviewEmpty locale={locale} copy={copy} overviewLinks={overviewLinks} accessAllowed={accessAllowed} communityOperationsState={communityOperationsState} communityOperationsRetryHref={communityOperationsRetryHref} />;
+  }
+  return <PilotageOverviewDetails locale={locale} copy={copy} overview={overview} overviewLinks={overviewLinks} accessAllowed={accessAllowed} lastUpdatedAt={lastUpdatedAt} communityOperations={communityOperations} communityOperationsState={communityOperationsState} communityOperationsRetryHref={communityOperationsRetryHref} canExportCommunityFunnel={canExportCommunityFunnel} />;
 }
