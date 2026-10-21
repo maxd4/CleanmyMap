@@ -9,6 +9,7 @@ import { ReportsAnalysisDashboard } from "@/components/reports/reports-analysis-
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { CTAGroup, SectionHeader } from "@/components/ui/page-structure";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
@@ -131,10 +132,8 @@ function buildReportsAnalysisContent({
         monthlyData={monthlyData}
       />
 
-        <section
-          id="exports"
-          className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md"
-        >
+        <section id="exports">
+          <CmmCard as="div" tone="red" variant="glass" className="space-y-4">
           <SectionHeader
             eyebrow="Exports"
             title="Livrables"
@@ -150,6 +149,7 @@ function buildReportsAnalysisContent({
               initialDailyExportAvailability={dailyExportAvailability}
             />
           </CTAGroup>
+          </CmmCard>
         </section>
     </div>
   );
@@ -172,8 +172,11 @@ function buildReportsPublicSummaryContent(
   ) : null;
 
   return publicSummary ? (
-    <section
-      className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+    <CmmCard
+      as="section"
+      tone="red"
+      variant="glass"
+      className="space-y-4"
       data-testid="reports-public-summary"
     >
       <div>
@@ -195,18 +198,20 @@ function buildReportsPublicSummaryContent(
           ["Déchets récoltés", `${publicSummary.wasteKg} kg`],
           ["Bénévoles mobilisés", publicSummary.volunteers],
         ].map(([label, value]) => (
-          <div key={String(label)} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+          <CmmCard key={String(label)} tone="red" variant="muted" size="sm">
             <p className="text-xs font-semibold text-slate-500">{label}</p>
             <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
-          </div>
+          </CmmCard>
         ))}
       </div>
       {detailedCta}
-    </section>
+    </CmmCard>
   ) : (
-    <section role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
-      La synthèse publique est temporairement indisponible.
-      {detailedCta}
+    <section role="alert">
+      <CmmCard as="div" tone="amber" variant="muted" className="space-y-4 text-amber-900">
+        La synthèse publique est temporairement indisponible.
+        {detailedCta}
+      </CmmCard>
     </section>
   );
 }
@@ -229,11 +234,8 @@ function buildReportsGenerationContent({
   if (singleActionError) {
     const targetUnavailable = singleActionError === "not_admissible";
     return (
-      <section
-        role="alert"
-        data-testid="single-action-report-unavailable"
-        className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 shadow-[0_10px_24px_-18px_rgba(180,83,9,0.25)]"
-      >
+      <section role="alert" data-testid="single-action-report-unavailable">
+        <CmmCard as="div" tone="amber" variant="muted" className="space-y-4 text-amber-900">
         <p className="text-sm font-black uppercase tracking-[0.16em] text-amber-700">
           {targetUnavailable ? "Action non admissible" : "Résolution indisponible"}
         </p>
@@ -255,6 +257,7 @@ function buildReportsGenerationContent({
         >
           Revenir à l&apos;historique
         </CmmButton>
+        </CmmCard>
       </section>
     );
   }
@@ -274,7 +277,7 @@ function buildReportsGenerationContent({
       singleAction={singleAction ?? undefined}
     />
   ) : (
-    <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">
+    <CmmCard as="section" tone="red" variant="glass" className="space-y-4">
       <p className="text-sm font-black uppercase tracking-[0.16em] text-red-600">
         Génération indisponible
       </p>
@@ -284,16 +287,14 @@ function buildReportsGenerationContent({
       <p className="cmm-text-body mt-2">
         Réessayez dans un instant. Le chargement serveur des contrats a échoué.
       </p>
-    </section>
+    </CmmCard>
   );
 }
 
 function buildReportsAnalysisUnavailableContent() {
   return (
-    <section
-      role="alert"
-      className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 shadow-[0_10px_24px_-18px_rgba(180,83,9,0.25)]"
-    >
+    <section role="alert">
+      <CmmCard as="div" tone="amber" variant="muted" className="space-y-4 text-amber-900">
       <p className="text-sm font-black uppercase tracking-[0.16em] text-amber-700">
         Analyse temporairement indisponible
       </p>
@@ -304,6 +305,7 @@ function buildReportsAnalysisUnavailableContent() {
         Réessayez dans un instant. Aucun zéro n&apos;est affiché tant que les données Analyse ne
         sont pas disponibles.
       </p>
+      </CmmCard>
     </section>
   );
 }
@@ -316,7 +318,7 @@ function buildAnonymousGenerationContent(clerkReachable: boolean) {
       mode="blur"
       stateHeadingLevel="h2"
       lockedPreview={
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <CmmCard as="section" tone="slate" variant="muted">
           <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-700">
             Compte requis pour générer
           </p>
@@ -324,7 +326,7 @@ function buildAnonymousGenerationContent(clerkReachable: boolean) {
             La synthèse est publique. Connectez-vous uniquement pour préparer un export détaillé ou
             consulter votre historique.
           </p>
-        </section>
+        </CmmCard>
       }
     >
       <div />

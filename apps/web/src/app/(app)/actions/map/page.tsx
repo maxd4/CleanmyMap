@@ -9,6 +9,7 @@ import {
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { buildPageMetadata } from "@/lib/metadata";
 import { ActionsMapPageClient } from "./page-client";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = buildPageMetadata("/actions/map", {
   title: "Carte des actions",
@@ -34,24 +35,22 @@ export default function ActionsMapPage() {
 
   return (
     <>
-      <header className="cmm-page-header cmm-page-header--left cmm-page-width px-6 pt-6">
-        <div className="flex w-full flex-col gap-4 items-start">
-          <div className="min-w-0 w-full">
-            <h1 className={`cmm-page-header-title ${resolvePageFamily("/actions/map").hero.titleColor}`}>
-              Cartographie des actions
-            </h1>
-            <p className="cmm-page-header-subtitle max-w-4xl text-slate-700">
-              Cette carte expose les actions et les données publiques autorisées par le contrat
-              CleanMyMap. Selon le mode choisi, les couleurs peuvent représenter une observation
-              ou une projection ; une projection n&apos;est pas une mesure actuelle du terrain.
-              Les calculs et leurs limites sont documentés dans la{" "}
-              <Link href="/methodologie" className="font-semibold text-emerald-700 hover:underline">
-                méthodologie
-              </Link>.
-            </p>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        family={resolvePageFamily("/actions/map")}
+        title="Cartographie des actions"
+        subtitle={(
+          <>
+            Cette carte expose les actions et les données publiques autorisées par le contrat
+            CleanMyMap. Selon le mode choisi, les couleurs peuvent représenter une observation
+            ou une projection ; une projection n&apos;est pas une mesure actuelle du terrain.
+            Les calculs et leurs limites sont documentés dans la{" "}
+            <Link href="/methodologie" className="font-semibold text-emerald-700 hover:underline">
+              méthodologie
+            </Link>.
+          </>
+        )}
+        className="cmm-page-width px-6 pt-6"
+      />
       <Suspense
         fallback={<ActionsMapPageClient impactMetrics={emptyImpactMetrics} />}
       >

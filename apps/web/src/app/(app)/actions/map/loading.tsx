@@ -1,5 +1,7 @@
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 import { MapLoadingState } from "@/components/actions/map-feed/_layouts/map-loading-state";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export default function Loading() {
   return (
@@ -9,11 +11,11 @@ export default function Loading() {
           <div className="absolute -left-24 -top-24 h-[600px] w-[600px] rounded-full bg-sky-500/10 blur-[120px]" />
 
           <div className="max-w-4xl space-y-4">
-            <CmmSkeleton variant="text" className="w-44" />
-            <h1 className="cmm-page-header-title text-sky-900">
-              Cartographie des actions
-            </h1>
-            <CmmSkeleton variant="text" className="w-[32rem]" />
+            <PageHeader
+              family={resolvePageFamily("/actions/map")}
+              title="Cartographie des actions"
+              subtitle={<CmmSkeleton variant="text" className="w-[32rem]" />}
+            />
           </div>
 
           <div className="flex flex-wrap gap-3">

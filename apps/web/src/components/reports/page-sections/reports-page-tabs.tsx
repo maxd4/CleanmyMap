@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BarChart3, FileText, FolderOpen, LibraryBig } from "lucide-react";
+import { CmmCard } from "@/components/ui/cmm-card";
 
 export type ReportsPageTabId = "generation" | "analysis" | "files" | "library";
 
@@ -57,7 +58,7 @@ export function ReportsPageTabs({ activeTab }: ReportsPageTabsProps) {
       data-testid="reports-page-tabs"
       className="w-fit max-w-full"
     >
-      <div className="inline-flex max-w-full flex-wrap gap-1 rounded-2xl border border-rose-100 bg-white/90 p-1 shadow-[0_12px_28px_-22px_rgba(190,24,93,0.35)]">
+      <CmmCard tone="red" variant="outlined" size="sm" className="inline-flex max-w-full flex-wrap gap-1">
       {TAB_DEFINITIONS.map((tab) => {
         const Icon = tab.icon;
         const active = activeTab === tab.id;
@@ -79,7 +80,7 @@ export function ReportsPageTabs({ activeTab }: ReportsPageTabsProps) {
           </Link>
         );
       })}
-      </div>
+      </CmmCard>
     </nav>
   );
 }

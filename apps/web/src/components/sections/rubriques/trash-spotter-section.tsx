@@ -12,6 +12,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
 import { useTrashSpotter } from "./use-trash-spotter";
 import { SpotterRecentList } from "./trash-spotter-components";
@@ -133,7 +134,7 @@ export function TrashSpotterSection() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]">
           <motion.div variants={itemVariants} initial="hidden" animate="visible" className="scroll-mt-24">
             {error ? (
-              <div className="rounded-[2rem] border border-rose-200 bg-rose-50 p-6 text-rose-900 shadow-[0_18px_48px_-34px_rgba(244,63,94,0.18)]">
+              <CmmCard tone="rose" variant="muted" className="text-rose-900">
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-rose-200 bg-white text-rose-500">
                     <MessageSquareMore size={18} />
@@ -151,9 +152,9 @@ export function TrashSpotterSection() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </CmmCard>
             ) : (
-              <div className="rounded-[2rem] border border-emerald-100 bg-white/90 p-6 shadow-[0_18px_48px_-34px_rgba(34,197,94,0.22)] sm:p-8">
+              <CmmCard tone="emerald" variant="glass">
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
                     <MapPin size={18} />
@@ -186,7 +187,7 @@ export function TrashSpotterSection() {
                         : `${quality.approved} approved point${quality.approved === 1 ? "" : "s"}`}
                   </span>
                 </div>
-              </div>
+              </CmmCard>
             )}
           </motion.div>
 
@@ -233,14 +234,14 @@ export function TrashSpotterSection() {
               />
             </div>
 
-            <div className="rounded-[2rem] border border-emerald-100/90 bg-white/96 p-5 shadow-[0_18px_56px_-38px_rgba(34,197,94,0.22)]">
+            <CmmCard tone="emerald" variant="glass" size="sm">
               <SpotterRecentList fr={fr} recent={quality.recent} />
-            </div>
+            </CmmCard>
           </motion.div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="overflow-hidden rounded-[2rem] border border-emerald-100 bg-[linear-gradient(180deg,rgba(247,252,246,0.98),rgba(239,248,236,0.98))] p-6 shadow-[0_18px_56px_-38px_rgba(34,197,94,0.18)]">
+          <CmmCard as="div" tone="emerald" variant="glass" className="overflow-hidden">
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
                 <Target size={18} />
@@ -275,10 +276,7 @@ export function TrashSpotterSection() {
                   text: fr ? "Prioriser les zones utiles." : "Prioritize useful areas.",
                 },
               ].map((step) => (
-                <div
-                  key={step.step}
-                  className="rounded-[1.4rem] border border-emerald-100 bg-white/90 p-4 shadow-sm"
-                >
+                <CmmCard key={step.step} tone="emerald" variant="muted" size="sm">
                   <div className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-800">
                     {step.step}
                   </div>
@@ -288,12 +286,12 @@ export function TrashSpotterSection() {
                   <p className="cmm-text-body mt-1 font-medium">
                     {step.text}
                   </p>
-                </div>
+                </CmmCard>
               ))}
             </div>
-          </div>
+          </CmmCard>
 
-          <div className="overflow-hidden rounded-[2rem] border border-emerald-100 bg-[linear-gradient(180deg,rgba(242,249,239,0.98),rgba(255,255,255,0.98))] p-6 shadow-[0_18px_56px_-38px_rgba(34,197,94,0.18)]">
+          <CmmCard as="div" tone="emerald" variant="glass" className="overflow-hidden">
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
                 <ShieldCheck size={18} />
@@ -311,22 +309,22 @@ export function TrashSpotterSection() {
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[1.4rem] border border-emerald-100 bg-white/90 p-4">
+              <CmmCard tone="emerald" variant="muted" size="sm">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
                   {fr ? "Données sécurisées" : "Secured data"}
                 </p>
                 <p className="cmm-text-body mt-2 font-medium">
                   {fr ? "Confidentielles et protégées." : "Confidential and protected."}
                 </p>
-              </div>
-              <div className="rounded-[1.4rem] border border-emerald-100 bg-white/90 p-4">
+              </CmmCard>
+              <CmmCard tone="emerald" variant="muted" size="sm">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
                   {fr ? "Impact mesurable" : "Measurable impact"}
                 </p>
                 <p className="cmm-text-body mt-2 font-medium">
                   {fr ? "Suivi des actions et résultats." : "Actions and results tracking."}
                 </p>
-              </div>
+              </CmmCard>
             </div>
 
             <div className="mt-6 flex items-center justify-end">
@@ -334,7 +332,7 @@ export function TrashSpotterSection() {
                 <Leaf size={28} />
               </div>
             </div>
-          </div>
+          </CmmCard>
         </div>
       </div>
     </SectionShell>

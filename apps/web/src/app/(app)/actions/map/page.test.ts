@@ -15,14 +15,14 @@ const canvasViewSource = readFileSync(
 
 describe("actions map public semantics", () => {
   it("keeps the primary heading and stable public introduction in the server boundary", () => {
-    expect(serverSource).toContain("<h1");
+    expect(serverSource).toContain("<PageHeader");
     expect(serverSource).toContain("Cartographie des actions");
     expect(serverSource).toContain("actions et les données publiques autorisées par le contrat");
     expect(serverSource).toContain("une projection n&apos;est pas une mesure actuelle du terrain");
     expect(serverSource).toContain('href="/methodologie"');
     expect(serverSource).toContain("<Suspense");
     expect(serverSource).toContain("async function ActionsMapContent");
-    expect(loadingSource).toContain("<h1");
+    expect(loadingSource).toContain("<PageHeader");
     expect(loadingSource).toContain("Cartographie des actions");
     expect(source).toContain("title={null}");
     expect(source).toContain("Comparaison départementale active.");

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -155,7 +156,7 @@ export function OpenDataSection() {
             />
           </div>
 
-          <div className="relative rounded-[2rem] border border-violet-100 bg-white/85 p-6 shadow-[0_24px_72px_-58px_rgba(79,70,229,0.45)]">
+          <CmmCard tone="violet" variant="glass" className="relative">
             <div className="absolute right-0 top-0 hidden h-full w-32 overflow-hidden rounded-r-[2rem] lg:block">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.12),transparent_68%)]" />
               <div className="absolute inset-y-0 right-4 w-px bg-violet-100/70" />
@@ -175,18 +176,15 @@ export function OpenDataSection() {
                   : "The public JSON API exposes a projection of approved mapped actions for consultation and reuse."}
               </p>
             </div>
-          </div>
+          </CmmCard>
         </section>
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           {FEATURE_CARDS.map((card) => {
             const Icon = card.icon;
             return (
-              <article
-                key={card.title.fr}
-                id={card.anchor}
-                className="rounded-[1.7rem] border border-violet-100 bg-white p-5 shadow-[0_18px_54px_-42px_rgba(79,70,229,0.4)]"
-              >
+              <article key={card.title.fr} id={card.anchor}>
+                <CmmCard as="div" tone="violet" variant="glass" size="sm" className="h-full">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_14px_30px_-18px_rgba(79,70,229,0.85)]">
                   <Icon size={22} />
                 </div>
@@ -203,12 +201,14 @@ export function OpenDataSection() {
                     <ArrowRight size={14} />
                   </Link>
                 </div>
+                </CmmCard>
               </article>
             );
           })}
         </section>
 
-        <section id="api" className="mt-6 grid gap-5 rounded-[1.8rem] border border-violet-100 bg-white/90 p-5 shadow-[0_18px_54px_-42px_rgba(79,70,229,0.4)] lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+        <section id="api" className="mt-6">
+          <CmmCard as="div" tone="violet" variant="glass" className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_18px_42px_-28px_rgba(79,70,229,0.8)]">
               <Code size={28} />
@@ -243,9 +243,11 @@ export function OpenDataSection() {
               {fr ? "Réponse JSON de l’API publique" : "Public API JSON response"}
             </p>
           </div>
+          </CmmCard>
         </section>
 
-        <section id="economy" className="mt-6 rounded-[2rem] border border-violet-100 bg-[linear-gradient(180deg,rgba(245,240,255,0.95)_0%,rgba(255,255,255,0.98)_100%)] p-5 shadow-[0_18px_54px_-42px_rgba(79,70,229,0.24)] sm:p-6">
+        <section id="economy" className="mt-6">
+          <CmmCard as="div" tone="violet" variant="glass" className="space-y-5">
           <div className="flex flex-col gap-2">
             <div className="inline-flex items-center gap-2 text-violet-500">
               <Sparkles size={18} />
@@ -267,10 +269,8 @@ export function OpenDataSection() {
             {ECONOMY_CARDS.map((card) => {
               const Icon = card.icon;
               return (
-                <article
-                  key={card.title.fr}
-                  className="rounded-[1.5rem] border border-violet-100 bg-white p-4 shadow-[0_16px_40px_-34px_rgba(79,70,229,0.32)]"
-                >
+                <article key={card.title.fr}>
+                  <CmmCard as="div" tone="violet" variant="muted" size="sm" className="h-full">
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-50 text-violet-600">
                     <Icon size={24} />
                   </div>
@@ -280,10 +280,12 @@ export function OpenDataSection() {
                   <p className="mt-3 text-[0.92rem] leading-[1.65] text-slate-600">
                     {localize(locale, card.description)}
                   </p>
+                  </CmmCard>
                 </article>
               );
             })}
           </div>
+          </CmmCard>
         </section>
 
         <section id="partenaire" className="mt-6 overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,#9f1f81_0%,#7f1d8c_52%,#d61f6b_100%)] p-6 text-white shadow-[0_28px_90px_-54px_rgba(168,85,247,0.55)]">

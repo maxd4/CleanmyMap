@@ -47,7 +47,7 @@ export default async function SpogomiIndexPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50 px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50 px-4 py-10">
       <div className="cmm-page-width space-y-8">
         <PageHeader
           family={resolvePageFamily("/spogomi")}
@@ -80,14 +80,14 @@ export default async function SpogomiIndexPage() {
               Les compétitions publiées ne peuvent pas être chargées pour le moment. Réessayez plus tard.
             </CmmFeedback>
           ) : events.length === 0 ? (
-            <CmmCard tone="slate" variant="glass" className="border-dashed p-6">
+            <CmmCard tone="slate" variant="glass" className="border-dashed">
               <p className="font-bold text-slate-900">Aucune compétition SPOGOMI publiée pour le moment.</p>
               <p className="mt-2 text-sm text-slate-600">Les brouillons et compétitions privées ne sont pas exposés sur cette page.</p>
             </CmmCard>
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
               {events.map((event) => (
-                <CmmCard key={event.id} tone="emerald" variant="glass" className="space-y-4 p-5">
+                <CmmCard key={event.id} tone="emerald" variant="glass" className="space-y-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 className="text-xl font-black text-emerald-950">{event.name}</h3>
@@ -117,7 +117,7 @@ export default async function SpogomiIndexPage() {
             </h2>
             <p className="cmm-text-body mt-1 text-slate-900">{t("understanding.description")}</p>
           </div>
-          <CmmCard tone="emerald" variant="glass" className="space-y-3 p-4 sm:p-5">
+          <CmmCard tone="emerald" variant="glass" className="space-y-3">
             <CmmDisclosure
               summary={(
                 <span className="flex items-center gap-3">
@@ -191,6 +191,6 @@ export default async function SpogomiIndexPage() {
           }}
         />
       </div>
-    </main>
+    </div>
   );
 }
