@@ -290,34 +290,58 @@ export async function validateStoredObject(
   supabase: SupabaseClient,
   row: BugReportScreenshotRow,
 ): Promise<void> {
-  if (!row.screenshot_storage_path || !row.screenshot_mime_type || !row.screenshot_size_bytes) {
-    throw new BugReportScreenshotError("La capture n'a pas de métadonnées valides.", "storage_invalid");
-  }
+  assertStoredMetadata(row);
   const info = await supabase.storage
     .from(BUG_REPORT_SCREENSHOT_BUCKET)
     .info(row.screenshot_storage_path);
-  if (info.error || !info.data) {
-    throw new BugReportScreenshotError("La capture n'a pas été reçue par le stockage.", "storage_missing");
-  }
-  const infoSize = Number(info.data.metadata?.size ?? info.data.size ?? Number.NaN);
-  if (!Number.isInteger(infoSize) || infoSize <= 0 || infoSize > BUG_REPORT_SCREENSHOT_MAX_SIZE_BYTES) {
-    throw new BugReportScreenshotError("La taille réelle de la capture est invalide.", "storage_invalid");
-  }
-  if (infoSize !== row.screenshot_size_bytes) {
-    throw new BugReportScreenshotError("La taille de la capture ne correspond pas à sa déclaration.", "storage_invalid");
-  }
+  assertStoredInfo(info);
+  assertStoredSize(info.data, row.screenshot_size_bytes);
 
   const downloaded = await supabase.storage
     .from(BUG_REPORT_SCREENSHOT_BUCKET)
     .download(row.screenshot_storage_path);
-  if (downloaded.error || !downloaded.data) {
-    throw new BugReportScreenshotError("La capture ne peut pas être vérifiée.", "storage_missing");
-  }
-  if (downloaded.data.size !== row.screenshot_size_bytes) {
-    throw new BugReportScreenshotError("La taille de la capture ne correspond pas à son contenu.", "storage_invalid");
-  }
+  assertDownloadedObject(downloaded, row.screenshot_size_bytes);
   const detected = detectImageMimeType(new Uint8Array(await downloaded.data.arrayBuffer()));
   if (!detected || detected !== row.screenshot_mime_type) {
     throw new BugReportScreenshotError("Le contenu de la capture ne correspond pas à son type déclaré.", "storage_invalid");
+  }
+}
+
+function assertStoredMetadata(row: BugReportScreenshotRow): asserts row is BugReportScreenshotRow & {
+  screenshot_storage_path: string;
+  screenshot_mime_type: BugReportScreenshotMimeType;
+  screenshot_size_bytes: number;
+} {
+  if (row.screenshot_storage_path && row.screenshot_mime_type && row.screenshot_size_bytes) return;
+  throw new BugReportScreenshotError("La capture n'a pas de métadonnées valides.", "storage_invalid");
+}
+
+function assertStoredInfo(info: { error: unknown; data: unknown }): asserts info is { error: null; data: { metadata?: { size?: unknown }; size?: unknown } } {
+  if (!info.error && info.data) return;
+  throw new BugReportScreenshotError("La capture n'a pas été reçue par le stockage.", "storage_missing");
+}
+
+function assertStoredSize(
+  info: { metadata?: { size?: unknown }; size?: unknown },
+  expectedSize: number,
+): void {
+  const infoSize = Number(info.metadata?.size ?? info.size ?? Number.NaN);
+  if (!Number.isInteger(infoSize) || infoSize <= 0 || infoSize > BUG_REPORT_SCREENSHOT_MAX_SIZE_BYTES) {
+    throw new BugReportScreenshotError("La taille réelle de la capture est invalide.", "storage_invalid");
+  }
+  if (infoSize !== expectedSize) {
+    throw new BugReportScreenshotError("La taille de la capture ne correspond pas à sa déclaration.", "storage_invalid");
+  }
+}
+
+function assertDownloadedObject(
+  downloaded: { error: unknown; data: Blob | null },
+  expectedSize: number,
+): asserts downloaded is { error: null; data: Blob } {
+  if (downloaded.error || !downloaded.data) {
+    throw new BugReportScreenshotError("La capture ne peut pas être vérifiée.", "storage_missing");
+  }
+  if (downloaded.data.size !== expectedSize) {
+    throw new BugReportScreenshotError("La taille de la capture ne correspond pas à son contenu.", "storage_invalid");
   }
 }

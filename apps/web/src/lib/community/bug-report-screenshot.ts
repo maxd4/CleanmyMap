@@ -89,33 +89,47 @@ export async function createBugReportScreenshotUploadIntent(
     throw storageError("Une autre tentative de capture est déjà active.");
   }
 
-  if (row.screenshot_storage_path) {
-    const oldObjectRemoved = await removeStorageObject(
-      supabase,
-      row.screenshot_storage_path,
-    ).catch(() => false);
-    if (!oldObjectRemoved) {
-      await markFailedAndCleanup(supabase, params.feedbackId, attemptId, path);
-      throw storageError("La capture précédente ne peut pas être nettoyée.");
-    }
-  }
-
-  const signedUpload = await supabase.storage
-    .from(BUG_REPORT_SCREENSHOT_BUCKET)
-    .createSignedUploadUrl(path, { upsert: false });
-  if (signedUpload.error || !signedUpload.data?.token) {
-    await markFailedAndCleanup(supabase, params.feedbackId, attemptId, path);
-    throw storageError("La capture ne peut pas recevoir son accès d'upload.");
-  }
+  await cleanupPreviousScreenshot(supabase, row, params.feedbackId, attemptId, path);
+  const token = await createSignedUploadToken(supabase, params.feedbackId, attemptId, path);
 
   return {
     feedbackId: params.feedbackId,
     attemptId,
     bucket: BUG_REPORT_SCREENSHOT_BUCKET,
     path,
-    token: signedUpload.data.token,
+    token,
     uploadState: "pending",
   };
+}
+
+async function cleanupPreviousScreenshot(
+  supabase: SupabaseClient,
+  row: BugReportScreenshotRow,
+  feedbackId: string,
+  attemptId: string,
+  path: string,
+): Promise<void> {
+  if (!row.screenshot_storage_path) return;
+  const removed = await removeStorageObject(supabase, row.screenshot_storage_path).catch(() => false);
+  if (removed) return;
+  await markFailedAndCleanup(supabase, feedbackId, attemptId, path);
+  throw storageError("La capture précédente ne peut pas être nettoyée.");
+}
+
+async function createSignedUploadToken(
+  supabase: SupabaseClient,
+  feedbackId: string,
+  attemptId: string,
+  path: string,
+): Promise<string> {
+  const signedUpload = await supabase.storage
+    .from(BUG_REPORT_SCREENSHOT_BUCKET)
+    .createSignedUploadUrl(path, { upsert: false });
+  if (signedUpload.error || !signedUpload.data?.token) {
+    await markFailedAndCleanup(supabase, feedbackId, attemptId, path);
+    throw storageError("La capture ne peut pas recevoir son accès d'upload.");
+  }
+  return signedUpload.data.token;
 }
 
 export async function finalizeBugReportScreenshot(

@@ -1,7 +1,5 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useUser } from "@clerk/nextjs";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import {
@@ -10,7 +8,7 @@ import {
   type PersonalFeedbackTrackingStatus,
 } from "@/lib/community/feedback-history-contract";
 import type { Locale } from "../feedback-section.shared";
-import { fetchPersonalFeedbackPage } from "./feedback-history-loader";
+import { useFeedbackHistory } from "./use-feedback-history";
 
 const FEEDBACK_TYPE_LABELS: Record<PersonalFeedbackItem["type"], { fr: string; en: string }> = {
   bug: { fr: "Bug", en: "Bug" },
@@ -50,29 +48,6 @@ function formatFeedbackDate(createdAt: string, locale: Locale): string {
   return new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", {
     dateStyle: "medium",
   }).format(new Date(createdAt));
-}
-
-type FeedbackHistoryState = {
-  ownerId: string | null;
-  items: PersonalFeedbackItem[];
-  nextCursor: string | null;
-  hasMore: boolean;
-  state: "loading" | "ready" | "error";
-  errorMessage: string | null;
-};
-
-function createFeedbackHistoryState(
-  ownerId: string | null,
-  state: FeedbackHistoryState["state"],
-): FeedbackHistoryState {
-  return {
-    ownerId,
-    items: [],
-    nextCursor: null,
-    hasMore: false,
-    state,
-    errorMessage: null,
-  };
 }
 
 function FeedbackHistoryItem({ item, locale }: { item: PersonalFeedbackItem; locale: Locale }) {
@@ -134,122 +109,7 @@ function FeedbackHistoryItem({ item, locale }: { item: PersonalFeedbackItem; loc
 }
 
 export function FeedbackHistory({ locale }: { locale: Locale }) {
-  const { isLoaded, isSignedIn, user } = useUser();
-  const ownerId = isLoaded && isSignedIn ? user?.id ?? null : null;
-  const ownerIdRef = useRef<string | null>(ownerId);
-  const requestSequenceRef = useRef(0);
-  const [history, setHistory] = useState<FeedbackHistoryState>(() =>
-    createFeedbackHistoryState(null, "loading"),
-  );
-  const [loadingMoreOwnerId, setLoadingMoreOwnerId] = useState<string | null>(null);
-
-  const isCurrentRequest = useCallback(
-    (requestOwnerId: string, requestSequence: number) =>
-      requestSequenceRef.current === requestSequence &&
-      ownerIdRef.current === requestOwnerId,
-    [],
-  );
-
-  const loadPage = useCallback(
-    async (cursor: string | null, append: boolean) => {
-      if (!ownerId) return;
-
-      const requestOwnerId = ownerId;
-      const requestSequence = ++requestSequenceRef.current;
-      setLoadingMoreOwnerId(append ? requestOwnerId : null);
-      if (append) {
-        setHistory((current) =>
-          current.ownerId === requestOwnerId
-            ? { ...current, errorMessage: null }
-            : current,
-        );
-      } else {
-        setHistory(
-          createFeedbackHistoryState(requestOwnerId, "loading"),
-        );
-      }
-
-      try {
-        const page = await fetchPersonalFeedbackPage(cursor);
-        if (!isCurrentRequest(requestOwnerId, requestSequence)) return;
-        setHistory((current) => ({
-          ownerId: requestOwnerId,
-          items: append ? [...current.items, ...page.items] : page.items,
-          nextCursor: page.nextCursor,
-          hasMore: page.hasMore,
-          state: "ready",
-          errorMessage: null,
-        }));
-      } catch {
-        if (!isCurrentRequest(requestOwnerId, requestSequence)) return;
-        setHistory((current) => ({
-          ...(current.ownerId === requestOwnerId
-            ? current
-            : createFeedbackHistoryState(requestOwnerId, append ? "ready" : "error")),
-          state: append ? "ready" : "error",
-          errorMessage:
-            locale === "fr"
-              ? "Impossible de charger vos retours."
-              : "Unable to load your feedback.",
-        }));
-      } finally {
-        if (isCurrentRequest(requestOwnerId, requestSequence)) {
-          setLoadingMoreOwnerId(null);
-        }
-      }
-    },
-    [isCurrentRequest, locale, ownerId],
-  );
-
-  useEffect(() => {
-    ownerIdRef.current = ownerId;
-  }, [ownerId]);
-
-  useEffect(() => {
-    const requestOwnerId = ownerId;
-    const requestSequence = ++requestSequenceRef.current;
-    if (!isLoaded || !isSignedIn || !requestOwnerId) {
-      return () => {
-        if (requestSequenceRef.current === requestSequence) {
-          requestSequenceRef.current += 1;
-        }
-      };
-    }
-
-    void fetchPersonalFeedbackPage(null)
-      .then((page) => {
-        if (!isCurrentRequest(requestOwnerId, requestSequence)) return;
-        setHistory({
-          ownerId: requestOwnerId,
-          items: page.items,
-          nextCursor: page.nextCursor,
-          hasMore: page.hasMore,
-          state: "ready",
-          errorMessage: null,
-        });
-      })
-      .catch(() => {
-        if (!isCurrentRequest(requestOwnerId, requestSequence)) return;
-        setHistory({
-          ...createFeedbackHistoryState(requestOwnerId, "error"),
-          errorMessage:
-            locale === "fr"
-              ? "Impossible de charger vos retours."
-              : "Unable to load your feedback.",
-        });
-      });
-    return () => {
-      if (requestSequenceRef.current === requestSequence) {
-        requestSequenceRef.current += 1;
-      }
-    };
-  }, [isCurrentRequest, isLoaded, isSignedIn, locale, ownerId]);
-
-  const visibleHistory =
-    history.ownerId === ownerId
-      ? history
-      : createFeedbackHistoryState(ownerId, "loading");
-  const loadingMore = loadingMoreOwnerId === ownerId;
+  const { isLoaded, isSignedIn, visibleHistory, loadingMore, loadPage } = useFeedbackHistory(locale);
 
   const fr = locale === "fr";
   const signInHref = buildSignInRedirectHref("/sections/feedback#mes-retours");
@@ -273,74 +133,20 @@ export function FeedbackHistory({ locale }: { locale: Locale }) {
         </div>
       </div>
 
-      {!isLoaded ? (
-        <p className="mt-5 text-sm text-slate-600" role="status" aria-live="polite">
-          {fr ? "Vérification de la session..." : "Checking your session..."}
-        </p>
-      ) : !isSignedIn ? (
-        <div className="mt-5 rounded-2xl border border-rose-100 bg-rose-50/70 p-4">
-          <p className="text-sm text-slate-700">
-            {fr ? "Connectez-vous pour consulter vos retours." : "Sign in to view your feedback."}
-          </p>
-          <CmmButton href={signInHref} tone="secondary" variant="pill" className="mt-3 text-pink-700">
-            {fr ? "Se connecter" : "Sign in"}
-          </CmmButton>
-        </div>
-      ) : visibleHistory.state === "loading" ? (
-        <p className="mt-5 text-sm text-slate-600" role="status" aria-live="polite">
-          {fr ? "Chargement de vos retours..." : "Loading your feedback..."}
-        </p>
-      ) : visibleHistory.state === "error" ? (
-        <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50/70 p-4">
-          <p className="text-sm text-rose-800" role="alert">
-            {visibleHistory.errorMessage ?? (fr ? "Impossible de charger vos retours." : "Unable to load your feedback.")}
-          </p>
-          <CmmButton
-            type="button"
-            tone="secondary"
-            variant="pill"
-            className="mt-3 text-pink-700"
-            onClick={() => void loadPage(null, false)}
-          >
-            {fr ? "Réessayer" : "Retry"}
-          </CmmButton>
-        </div>
-      ) : visibleHistory.items.length === 0 ? (
-        <p className="mt-5 rounded-2xl border border-dashed border-rose-200 p-4 text-sm text-slate-600">
-          {fr ? "Aucun retour envoyé pour le moment." : "No feedback submitted yet."}
-        </p>
-      ) : (
-        <>
-          <ul className="mt-5 space-y-3" aria-label={fr ? "Historique de mes retours" : "My feedback history"}>
-            {visibleHistory.items.map((item) => (
-              <FeedbackHistoryItem key={item.id} item={item} locale={locale} />
-            ))}
-          </ul>
-          {visibleHistory.errorMessage ? (
-            <p className="mt-3 text-sm text-rose-800" role="alert">
-              {visibleHistory.errorMessage}
-            </p>
-          ) : null}
-          {visibleHistory.hasMore && visibleHistory.nextCursor ? (
-            <CmmButton
-              type="button"
-              tone="secondary"
-              variant="pill"
-              className="mt-4 text-pink-700"
-              disabled={loadingMore}
-              onClick={() => void loadPage(visibleHistory.nextCursor, true)}
-            >
-              {loadingMore
-                ? fr
-                  ? "Chargement..."
-                  : "Loading..."
-                : fr
-                  ? "Voir plus"
-                  : "Load more"}
-            </CmmButton>
-          ) : null}
-        </>
-      )}
+      <FeedbackHistoryContent isLoaded={isLoaded} isSignedIn={isSignedIn} locale={locale} fr={fr} signInHref={signInHref} visibleHistory={visibleHistory} loadingMore={loadingMore} loadPage={loadPage} />
     </section>
   );
+}
+
+function FeedbackHistoryContent({ isLoaded, isSignedIn, locale, fr, signInHref, visibleHistory, loadingMore, loadPage }: { isLoaded: boolean; isSignedIn: boolean | undefined; locale: Locale; fr: boolean; signInHref: string; visibleHistory: ReturnType<typeof useFeedbackHistory>["visibleHistory"]; loadingMore: boolean; loadPage: (cursor: string | null, append: boolean) => Promise<void> }) {
+  if (!isLoaded) return <p className="mt-5 text-sm text-slate-600" role="status" aria-live="polite">{fr ? "Vérification de la session..." : "Checking your session..."}</p>;
+  if (!isSignedIn) return <div className="mt-5 rounded-2xl border border-rose-100 bg-rose-50/70 p-4"><p className="text-sm text-slate-700">{fr ? "Connectez-vous pour consulter vos retours." : "Sign in to view your feedback."}</p><CmmButton href={signInHref} tone="secondary" variant="pill" className="mt-3 text-pink-700">{fr ? "Se connecter" : "Sign in"}</CmmButton></div>;
+  if (visibleHistory.state === "loading") return <p className="mt-5 text-sm text-slate-600" role="status" aria-live="polite">{fr ? "Chargement de vos retours..." : "Loading your feedback..."}</p>;
+  if (visibleHistory.state === "error") return <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50/70 p-4"><p className="text-sm text-rose-800" role="alert">{visibleHistory.errorMessage ?? (fr ? "Impossible de charger vos retours." : "Unable to load your feedback.")}</p><CmmButton type="button" tone="secondary" variant="pill" className="mt-3 text-pink-700" onClick={() => void loadPage(null, false)}>{fr ? "Réessayer" : "Retry"}</CmmButton></div>;
+  return <FeedbackHistoryReadyContent locale={locale} fr={fr} visibleHistory={visibleHistory} loadingMore={loadingMore} loadPage={loadPage} />;
+}
+
+function FeedbackHistoryReadyContent({ locale, fr, visibleHistory, loadingMore, loadPage }: { locale: Locale; fr: boolean; visibleHistory: ReturnType<typeof useFeedbackHistory>["visibleHistory"]; loadingMore: boolean; loadPage: (cursor: string | null, append: boolean) => Promise<void> }) {
+  if (visibleHistory.items.length === 0) return <p className="mt-5 rounded-2xl border border-dashed border-rose-200 p-4 text-sm text-slate-600">{fr ? "Aucun retour envoyé pour le moment." : "No feedback submitted yet."}</p>;
+  return <><ul className="mt-5 space-y-3" aria-label={fr ? "Historique de mes retours" : "My feedback history"}>{visibleHistory.items.map((item) => <FeedbackHistoryItem key={item.id} item={item} locale={locale} />)}</ul>{visibleHistory.errorMessage ? <p className="mt-3 text-sm text-rose-800" role="alert">{visibleHistory.errorMessage}</p> : null}{visibleHistory.hasMore && visibleHistory.nextCursor ? <CmmButton type="button" tone="secondary" variant="pill" className="mt-4 text-pink-700" disabled={loadingMore} onClick={() => void loadPage(visibleHistory.nextCursor, true)}>{loadingMore ? fr ? "Chargement..." : "Loading..." : fr ? "Voir plus" : "Load more"}</CmmButton> : null}</>;
 }

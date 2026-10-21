@@ -1,0 +1,154 @@
+import {
+  AdminActionGrid,
+  AdminInfoBanner,
+  AdminOperationalMetricGrid,
+  AdminPillLink,
+  AdminProfileSwitchStrip,
+  AdminSectionHeader,
+} from "@/components/admin/admin-dashboard-ui";
+import type { AdminActionItem } from "@/components/admin/admin-dashboard-ui";
+import { AdminMaxTools } from "@/components/admin/admin-max-tools";
+import { AdminFeedbackAuditTabs } from "@/components/admin/admin-feedback-audit-tabs";
+import { ModerationByBlockPanel } from "@/components/admin/moderation-by-block-panel";
+import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
+import { PageHeader } from "@/components/ui/page-header";
+import { canUseSupabaseServerPersistence } from "@/lib/persistence/runtime-store";
+import { buildProfileRoute, ADMIN_GODMODE_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { getProfileLabel, getSwitchableProfiles, type AppProfile } from "@/lib/profiles";
+import { resolvePageFamily } from "@/lib/ui/page-families";
+import { buildAdminAlert, buildAdminMetricItems, buildModerationBlockSummaries, loadAdminSources } from "@/lib/admin/admin-dashboard-contract";
+import { isImuOwnerIdentity } from "@/lib/auth/role-resolution";
+import { env } from "@/lib/env";
+import type { UserIdentity } from "@/lib/authz-identity";
+
+type AdminPageContentProps = {
+  adminSources: Awaited<ReturnType<typeof loadAdminSources>>;
+  identity: UserIdentity;
+  profile: AppProfile;
+  role: UserIdentity["activeRole"];
+  grantedRole: UserIdentity["role"];
+  locale: "fr" | "en";
+  moderationPreset: "signalements" | null;
+};
+
+export function AdminPageContent({
+  adminSources,
+  identity,
+  profile,
+  role,
+  grantedRole,
+  locale,
+  moderationPreset,
+}: AdminPageContentProps) {
+  const adminAlert = buildAdminAlert(adminSources);
+  const metricItems = buildAdminMetricItems(adminSources);
+  const moderationBlocks = buildModerationBlockSummaries(adminSources);
+  const switchableProfiles = getSwitchableProfiles(grantedRole);
+  const profileLink = buildProfileRoute(profile);
+  const profileCountLabel = switchableProfiles.length > 1
+    ? `${switchableProfiles.length} profils`
+    : "Profil actif";
+  const creatorIdentity = role === "max" ? identity : null;
+  const creatorDisplayName = creatorIdentity?.displayName?.trim() ||
+    creatorIdentity?.firstName?.trim() ||
+    creatorIdentity?.handle ||
+    creatorIdentity?.username ||
+    "Administration avancée";
+  const adminTools: AdminActionItem[] = [
+    {
+      id: "quiz-bank",
+      icon: "BookOpenText",
+      title: "Revue quiz",
+      description: "Filtrer et corriger la banque de questions.",
+      href: "/admin/quiz-bank",
+      badge: "Audit",
+      iconWrapClassName: "bg-amber-100 text-amber-700 border-amber-200/60",
+      iconClassName: "text-amber-700",
+    },
+    {
+      id: "site-health",
+      icon: "HardDrive",
+      title: "Services & santé",
+      description: "Contrôler les flux et l’état général.",
+      href: "/admin/services",
+      badge: "Rapide",
+      iconWrapClassName: "bg-sky-100 text-sky-700 border-sky-200/60",
+      iconClassName: "text-sky-700",
+    },
+    {
+      id: "system-control",
+      icon: "Activity",
+      title: "Contrôle système",
+      description: "Ouvrir l’arbitrage et les outils sensibles.",
+      href: ADMIN_GODMODE_ROUTE,
+      badge: "Supervision",
+      iconWrapClassName: "bg-violet-100 text-violet-700 border-violet-200/60",
+      iconClassName: "text-violet-700",
+    },
+  ];
+
+  return (
+    <main className="min-h-screen bg-[linear-gradient(180deg,#fffaf5_0%,#f7efe6_52%,#efe4d8_100%)] text-stone-950">
+      <CmmPageLayout className="relative z-10">
+        <PageHeader
+          family={resolvePageFamily("/admin")}
+          title="Cockpit opérationnel"
+          subtitle="Supervision des files, du workflow et de l’état des services."
+          action={<AdminPillLink href={profileLink}>Voir profil</AdminPillLink>}
+        />
+        <CmmSectionGroup>
+          <AdminInfoBanner
+            eyebrow="Alerte"
+            title={adminAlert.title}
+            description={adminAlert.detail}
+            icon="AlertTriangle"
+            tone="light"
+            compact={adminAlert.title === "Aucune urgence de modération détectée"}
+            action={adminAlert.action ? <AdminPillLink href={adminAlert.action.href}>{adminAlert.action.label}</AdminPillLink> : undefined}
+          />
+          <AdminOperationalMetricGrid items={metricItems} className="gap-4" />
+          <div id="moderation-par-bloc"><ModerationByBlockPanel blocks={moderationBlocks} /></div>
+          <section id="workflow-administration">
+            <ActionsReportPanel
+              initialRecordTypeFilter={moderationPreset === "signalements" ? "signalements" : undefined}
+              initialStatus={moderationPreset === "signalements" ? "pending" : undefined}
+            />
+          </section>
+          {adminSources.creatorInbox.status === "available" && adminSources.audit.status === "available" ? (
+            <AdminFeedbackAuditTabs
+              feedbackItems={adminSources.creatorInbox.data}
+              auditEntries={adminSources.audit.data}
+              canQualify={isImuOwnerIdentity(identity, env.CLERK_IMU_OWNER_USER_ID) && canUseSupabaseServerPersistence()}
+            />
+          ) : (
+            <AdminInfoBanner
+              eyebrow="Retours et journal"
+              title="Surface administrative indisponible"
+              description="Les retours utilisateurs ou le journal administrateurs ne sont pas disponibles pour le moment."
+              icon="AlertTriangle"
+              tone="light"
+            />
+          )}
+          <section>
+            <AdminSectionHeader eyebrow="Outils d’administration" description="Accès directs aux fonctions propres à la supervision." />
+            <AdminActionGrid items={adminTools} compact columnsClassName="md:grid-cols-2 xl:grid-cols-3" className="mt-3" />
+          </section>
+          {switchableProfiles.length > 1 ? (
+            <section aria-label="Profils administratifs disponibles">
+              <AdminProfileSwitchStrip
+                profiles={switchableProfiles}
+                activeProfile={profile}
+                getProfileLabel={getProfileLabel}
+                locale={locale}
+                label={`${profileCountLabel} disponibles`}
+                getHref={buildProfileRoute}
+              />
+            </section>
+          ) : null}
+          {role === "max" ? <AdminMaxTools displayName={creatorDisplayName} identity={identity} /> : null}
+        </CmmSectionGroup>
+      </CmmPageLayout>
+    </main>
+  );
+}

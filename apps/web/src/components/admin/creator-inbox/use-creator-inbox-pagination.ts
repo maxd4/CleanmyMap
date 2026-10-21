@@ -31,6 +31,51 @@ type PendingPageRequest = {
   generation: number;
 };
 
+async function loadCreatorInboxNextPage({
+  paginationState,
+  generationRef,
+  pendingRequestRef,
+  replacementGenerationRef,
+  setLoadingNextPage,
+  setPaginationState,
+  onError,
+}: {
+  paginationState: CreatorInboxPaginationState;
+  generationRef: { current: number };
+  pendingRequestRef: { current: PendingPageRequest | null };
+  replacementGenerationRef: { current: number | null };
+  setLoadingNextPage: Dispatch<SetStateAction<boolean>>;
+  setPaginationState: Dispatch<SetStateAction<CreatorInboxPaginationState>>;
+  onError: (error: unknown) => void;
+}) {
+  if (
+    replacementGenerationRef.current !== null ||
+    !paginationState.hasMore ||
+    !paginationState.nextCursor ||
+    pendingRequestRef.current
+  ) return;
+
+  const request = { cursor: paginationState.nextCursor, generation: generationRef.current };
+  pendingRequestRef.current = request;
+  setLoadingNextPage(true);
+  try {
+    const page = await fetchCreatorInboxPage({ cursor: request.cursor });
+    if (pendingRequestRef.current !== request || generationRef.current !== request.generation) return;
+    setPaginationState((currentState) => {
+      const merged = new Map(currentState.items.map((item) => [`${item.source}:${item.sourceRecordId}`, item]));
+      for (const item of page.items) merged.set(`${item.source}:${item.sourceRecordId}`, item);
+      return { items: Array.from(merged.values()), hasMore: page.hasMore, nextCursor: page.nextCursor };
+    });
+  } catch (error) {
+    if (pendingRequestRef.current === request && generationRef.current === request.generation) onError(error);
+  } finally {
+    if (pendingRequestRef.current === request) {
+      pendingRequestRef.current = null;
+      setLoadingNextPage(false);
+    }
+  }
+}
+
 function serializeInitialPage(params: {
   items: CreatorInboxItem[];
   hasMore: boolean;
@@ -132,63 +177,6 @@ export function useCreatorInboxPagination({
     return true;
   }
 
-  async function loadNextPage() {
-    const current = paginationState;
-    if (
-      replacementGenerationRef.current !== null ||
-      !current.hasMore ||
-      !current.nextCursor ||
-      pendingRequestRef.current
-    ) {
-      return;
-    }
-
-    const request = {
-      cursor: current.nextCursor,
-      generation: generationRef.current,
-    };
-    pendingRequestRef.current = request;
-    setLoadingNextPage(true);
-    try {
-      const page = await fetchCreatorInboxPage({ cursor: request.cursor });
-      if (
-        pendingRequestRef.current !== request ||
-        generationRef.current !== request.generation
-      ) {
-        return;
-      }
-
-      setPaginationState((currentState) => {
-        const merged = new Map(
-          currentState.items.map((item) => [
-            `${item.source}:${item.sourceRecordId}`,
-            item,
-          ]),
-        );
-        for (const item of page.items) {
-          merged.set(`${item.source}:${item.sourceRecordId}`, item);
-        }
-        return {
-          items: Array.from(merged.values()),
-          hasMore: page.hasMore,
-          nextCursor: page.nextCursor,
-        };
-      });
-    } catch (error) {
-      if (
-        pendingRequestRef.current === request &&
-        generationRef.current === request.generation
-      ) {
-        onError(error);
-      }
-    } finally {
-      if (pendingRequestRef.current === request) {
-        pendingRequestRef.current = null;
-        setLoadingNextPage(false);
-      }
-    }
-  }
-
   return {
     items: paginationState.items,
     loadingNextPage,
@@ -198,6 +186,6 @@ export function useCreatorInboxPagination({
     beginReplacement,
     cancelReplacement,
     replacePage,
-    loadNextPage,
+    loadNextPage: () => loadCreatorInboxNextPage({ paginationState, generationRef, pendingRequestRef, replacementGenerationRef, setLoadingNextPage, setPaginationState, onError }),
   };
 }

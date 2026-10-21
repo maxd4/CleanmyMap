@@ -85,137 +85,174 @@ export function FeedbackQualificationControls({
           ? `Dernière décision : ${DECISION_LABELS[item.qualification?.status ?? "pending"][locale]} · ${formatQualificationDate(item.qualification?.decidedAt ?? null, locale)}`
           : `Last decision: ${DECISION_LABELS[item.qualification?.status ?? "pending"][locale]} · ${formatQualificationDate(item.qualification?.decidedAt ?? null, locale)}`}
       </p>
-      <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <label className="space-y-1">
-          <span className="cmm-text-caption font-semibold cmm-text-secondary">
-            {fr ? "Décision" : "Decision"}
-          </span>
-          <select
-            value={decision}
-            onChange={(event) => {
-              setDecision(event.target.value as FeedbackQualificationDecision);
-              setConfirming(false);
-            }}
-            disabled={busy}
-            className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary"
-          >
-            {(Object.keys(DECISION_LABELS) as FeedbackQualificationDecision[]).map((value) => (
-              <option key={value} value={value}>
-                {DECISION_LABELS[value][locale]}
-              </option>
-            ))}
-          </select>
-        </label>
-        {decision === "duplicate" ? (
-          <label className="space-y-1">
-            <span className="cmm-text-caption font-semibold cmm-text-secondary">
-              {fr ? "Retour doublon" : "Duplicate feedback"}
-            </span>
-            <select
-              value={duplicateFeedbackId}
-              onChange={(event) => {
-                setDuplicateFeedbackId(event.target.value);
-                setConfirming(false);
-              }}
-              disabled={busy}
-              className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary"
-            >
-              <option value="">{fr ? "Sélectionner une référence" : "Select a reference"}</option>
-              {feedbackOptions
-                .filter((option) => option.sourceRecordId !== item.sourceRecordId)
-                .map((option) => (
-                  <option key={option.sourceRecordId} value={option.sourceRecordId}>
-                    {option.title} · {option.sourceRecordId}
-                  </option>
-                ))}
-            </select>
-            {selectedDuplicate ? (
-              <span className="block text-xs text-amber-900/80">{selectedDuplicate.title}</span>
-            ) : null}
-          </label>
-        ) : null}
-      </div>
-      {similarFeedback.length > 0 ? (
-        <div className="mt-3 rounded-lg border border-amber-300/70 bg-white/70 p-3 text-xs text-amber-950" role="note">
-          <p className="font-bold">
-            {fr ? "Dossiers potentiellement similaires" : "Potentially similar cases"}
-          </p>
-          <ul className="mt-1 list-disc space-y-1 pl-4">
-            {similarFeedback.map((match) => (
-              <li key={match.id}>{match.title} · {match.id}</li>
-            ))}
-          </ul>
-          <p className="mt-1">
-            {fr ? "Suggestion d'aide uniquement : la décision reste manuelle." : "Assistive suggestion only: the decision remains manual."}
-          </p>
-        </div>
-      ) : null}
-      <label className="mt-3 block space-y-1">
-        <span className="cmm-text-caption font-semibold cmm-text-secondary">
-          {fr ? "Motif public" : "Public reason"}
-          {reasonRequired ? " *" : ""}
-        </span>
-        <textarea
-          value={reason}
-          onChange={(event) => {
-            setReason(event.target.value);
-            setConfirming(false);
-          }}
-          minLength={reasonRequired ? 5 : undefined}
-          maxLength={500}
-          required={reasonRequired}
-          rows={2}
-          disabled={busy}
-          placeholder={fr ? "Expliquez la décision..." : "Explain the decision..."}
-          className="w-full resize-y rounded-lg border border-amber-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary"
-        />
-        <span className="cmm-text-caption cmm-text-muted">{reason.length}/500</span>
-      </label>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {!confirming ? (
-          <button
-            type="button"
-            disabled={
-              busy ||
-              (reasonRequired && reason.trim().length < 5) ||
-              (decision === "duplicate" && !duplicateFeedbackId)
-            }
-            onClick={prepareConfirmation}
-            className="rounded-lg bg-amber-700 px-3 py-2 cmm-text-caption font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {fr ? "Qualifier" : "Qualify"}
-          </button>
-        ) : (
-          <>
-            <span className="self-center text-sm font-semibold text-amber-950">
-              {fr ? "Confirmer cette décision ?" : "Confirm this decision?"}
-            </span>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                onQualify({
-                  decision,
-                  reason: reason.trim(),
-                  duplicateFeedbackId: decision === "duplicate" ? duplicateFeedbackId : null,
-                });
-                setConfirming(false);
-              }}
-              className="rounded-lg bg-amber-700 px-3 py-2 cmm-text-caption font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {busy ? copy.states.processing : fr ? "Confirmer" : "Confirm"}
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setConfirming(false)}
-              className="rounded-lg border border-amber-300 bg-white px-3 py-2 cmm-text-caption font-semibold text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {fr ? "Annuler" : "Cancel"}
-            </button>
-          </>
-        )}
-      </div>
+      <FeedbackQualificationDecisionFields
+        item={item}
+        feedbackOptions={feedbackOptions}
+        locale={locale}
+        decision={decision}
+        duplicateFeedbackId={duplicateFeedbackId}
+        selectedDuplicate={selectedDuplicate}
+        busy={busy}
+        onDecisionChange={(value) => {
+          setDecision(value);
+          setConfirming(false);
+        }}
+        onDuplicateChange={(value) => {
+          setDuplicateFeedbackId(value);
+          setConfirming(false);
+        }}
+      />
+      <FeedbackQualificationReasonAndActions
+        locale={locale}
+        copy={copy}
+        busy={busy}
+        confirming={confirming}
+        similarFeedback={similarFeedback}
+        reason={reason}
+        reasonRequired={reasonRequired}
+        onReasonChange={(value) => {
+          setReason(value);
+          setConfirming(false);
+        }}
+        disabled={reasonRequired && reason.trim().length < 5 || decision === "duplicate" && !duplicateFeedbackId}
+        onPrepare={prepareConfirmation}
+        onConfirm={() => {
+          onQualify({
+            decision,
+            reason: reason.trim(),
+            duplicateFeedbackId: decision === "duplicate" ? duplicateFeedbackId : null,
+          });
+          setConfirming(false);
+        }}
+        onCancel={() => setConfirming(false)}
+      />
     </fieldset>
+  );
+}
+
+function FeedbackQualificationReasonAndActions({
+  locale,
+  copy,
+  busy,
+  confirming,
+  similarFeedback,
+  reason,
+  reasonRequired,
+  disabled,
+  onReasonChange,
+  onPrepare,
+  onConfirm,
+  onCancel,
+}: {
+  locale: CreatorInboxLocale;
+  copy: CreatorInboxCopy;
+  busy: boolean;
+  confirming: boolean;
+  similarFeedback: ReturnType<typeof findPotentiallySimilarFeedback>;
+  reason: string;
+  reasonRequired: boolean;
+  disabled: boolean;
+  onReasonChange: (value: string) => void;
+  onPrepare: () => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const fr = locale === "fr";
+  return <>
+    {similarFeedback.length > 0 ? <FeedbackQualificationSimilarFeedback locale={locale} matches={similarFeedback} /> : null}
+    <label className="mt-3 block space-y-1">
+      <span className="cmm-text-caption font-semibold cmm-text-secondary">{fr ? "Motif public" : "Public reason"}{reasonRequired ? " *" : ""}</span>
+      <textarea value={reason} onChange={(event) => onReasonChange(event.target.value)} minLength={reasonRequired ? 5 : undefined} maxLength={500} required={reasonRequired} rows={2} disabled={busy} placeholder={fr ? "Expliquez la décision..." : "Explain the decision..."} className="w-full resize-y rounded-lg border border-amber-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary" />
+      <span className="cmm-text-caption cmm-text-muted">{reason.length}/500</span>
+    </label>
+    <FeedbackQualificationActions locale={locale} copy={copy} busy={busy} confirming={confirming} disabled={disabled} onPrepare={onPrepare} onConfirm={onConfirm} onCancel={onCancel} />
+  </>;
+}
+
+function FeedbackQualificationDecisionFields({
+  item,
+  feedbackOptions,
+  locale,
+  decision,
+  duplicateFeedbackId,
+  selectedDuplicate,
+  busy,
+  onDecisionChange,
+  onDuplicateChange,
+}: {
+  item: CreatorInboxItem;
+  feedbackOptions: CreatorInboxItem[];
+  locale: CreatorInboxLocale;
+  decision: FeedbackQualificationDecision;
+  duplicateFeedbackId: string;
+  selectedDuplicate?: CreatorInboxItem;
+  busy: boolean;
+  onDecisionChange: (value: FeedbackQualificationDecision) => void;
+  onDuplicateChange: (value: string) => void;
+}) {
+  const fr = locale === "fr";
+  return (
+    <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <label className="space-y-1">
+        <span className="cmm-text-caption font-semibold cmm-text-secondary">{fr ? "Décision" : "Decision"}</span>
+        <select value={decision} onChange={(event) => onDecisionChange(event.target.value as FeedbackQualificationDecision)} disabled={busy} className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary">
+          {(Object.keys(DECISION_LABELS) as FeedbackQualificationDecision[]).map((value) => <option key={value} value={value}>{DECISION_LABELS[value][locale]}</option>)}
+        </select>
+      </label>
+      {decision === "duplicate" ? (
+        <label className="space-y-1">
+          <span className="cmm-text-caption font-semibold cmm-text-secondary">{fr ? "Retour doublon" : "Duplicate feedback"}</span>
+          <select value={duplicateFeedbackId} onChange={(event) => onDuplicateChange(event.target.value)} disabled={busy} className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary">
+            <option value="">{fr ? "Sélectionner une référence" : "Select a reference"}</option>
+            {feedbackOptions.filter((option) => option.sourceRecordId !== item.sourceRecordId).map((option) => <option key={option.sourceRecordId} value={option.sourceRecordId}>{option.title} · {option.sourceRecordId}</option>)}
+          </select>
+          {selectedDuplicate ? <span className="block text-xs text-amber-900/80">{selectedDuplicate.title}</span> : null}
+        </label>
+      ) : null}
+    </div>
+  );
+}
+
+function FeedbackQualificationSimilarFeedback({ locale, matches }: { locale: CreatorInboxLocale; matches: ReturnType<typeof findPotentiallySimilarFeedback> }) {
+  const fr = locale === "fr";
+  return (
+    <div className="mt-3 rounded-lg border border-amber-300/70 bg-white/70 p-3 text-xs text-amber-950" role="note">
+      <p className="font-bold">{fr ? "Dossiers potentiellement similaires" : "Potentially similar cases"}</p>
+      <ul className="mt-1 list-disc space-y-1 pl-4">{matches.map((match) => <li key={match.id}>{match.title} · {match.id}</li>)}</ul>
+      <p className="mt-1">{fr ? "Suggestion d'aide uniquement : la décision reste manuelle." : "Assistive suggestion only: the decision remains manual."}</p>
+    </div>
+  );
+}
+
+function FeedbackQualificationActions({
+  locale,
+  copy,
+  busy,
+  confirming,
+  disabled,
+  onPrepare,
+  onConfirm,
+  onCancel,
+}: {
+  locale: CreatorInboxLocale;
+  copy: CreatorInboxCopy;
+  busy: boolean;
+  confirming: boolean;
+  disabled: boolean;
+  onPrepare: () => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const fr = locale === "fr";
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {!confirming ? <button type="button" disabled={busy || disabled} onClick={onPrepare} className="rounded-lg bg-amber-700 px-3 py-2 cmm-text-caption font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60">{fr ? "Qualifier" : "Qualify"}</button> : (
+        <>
+          <span className="self-center text-sm font-semibold text-amber-950">{fr ? "Confirmer cette décision ?" : "Confirm this decision?"}</span>
+          <button type="button" disabled={busy} onClick={onConfirm} className="rounded-lg bg-amber-700 px-3 py-2 cmm-text-caption font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60">{busy ? copy.states.processing : fr ? "Confirmer" : "Confirm"}</button>
+          <button type="button" disabled={busy} onClick={onCancel} className="rounded-lg border border-amber-300 bg-white px-3 py-2 cmm-text-caption font-semibold text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60">{fr ? "Annuler" : "Cancel"}</button>
+        </>
+      )}
+    </div>
   );
 }

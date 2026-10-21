@@ -4,6 +4,8 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type Dispatch,
+  type SetStateAction,
 } from "react";
 
 type SpeechRecognitionResultLike = {
@@ -140,6 +142,99 @@ function cancelOwnedSession(owner: object): void {
   }
 }
 
+function startSpeechRecognitionSession({
+  fieldKey,
+  locale,
+  recognition,
+  owner,
+  transcriptHandlerRef,
+  setErrorMessage,
+  setIsListening,
+  setIsStopping,
+  setActiveFieldKey,
+  setInterimTranscript,
+}: {
+  fieldKey: string;
+  locale: "fr" | "en";
+  recognition: SpeechRecognitionLike;
+  owner: object;
+  transcriptHandlerRef: { current: (fieldKey: string, transcript: string) => void };
+  setErrorMessage: Dispatch<SetStateAction<string | null>>;
+  setIsListening: Dispatch<SetStateAction<boolean>>;
+  setIsStopping: Dispatch<SetStateAction<boolean>>;
+  setActiveFieldKey: Dispatch<SetStateAction<string | null>>;
+  setInterimTranscript: Dispatch<SetStateAction<string>>;
+}) {
+  const sessionId = ++nextSessionId;
+  const finalizedResultIndexes = new Set<number>();
+  const session: ActiveSession = {
+    id: sessionId,
+    owner,
+    recognition,
+    status: "active",
+    deactivate: () => {
+      setIsListening(false);
+      setIsStopping(false);
+      setActiveFieldKey(null);
+      setInterimTranscript("");
+    },
+    markStopping: () => {
+      setIsListening(false);
+      setIsStopping(true);
+      setInterimTranscript("");
+    },
+  };
+  const isCurrentSession = () => activeSession?.id === sessionId;
+  activeSession = session;
+  recognition.lang = locale === "fr" ? "fr-FR" : "en-US";
+  recognition.interimResults = true;
+  recognition.continuous = true;
+  recognition.onstart = () => {
+    if (!isCurrentSession() || session.status === "stopping") return;
+    setIsListening(true);
+    setIsStopping(false);
+    setActiveFieldKey(fieldKey);
+    setInterimTranscript("");
+    setErrorMessage(null);
+  };
+  recognition.onresult = (event) => {
+    if (!isCurrentSession()) return;
+    const interimParts: string[] = [];
+    for (let index = event.resultIndex; index < event.results.length; index += 1) {
+      const result = event.results[index];
+      const transcript = result?.[0]?.transcript?.trim() ?? "";
+      if (!transcript) continue;
+      if (result?.isFinal) {
+        if (!finalizedResultIndexes.has(index)) {
+          finalizedResultIndexes.add(index);
+          transcriptHandlerRef.current(fieldKey, transcript);
+        }
+      } else {
+        interimParts.push(transcript);
+      }
+    }
+    setInterimTranscript(interimParts.join(" "));
+  };
+  recognition.onerror = (event) => {
+    if (!isCurrentSession()) return;
+    setErrorMessage(messageForError(event.error, locale));
+    cancelActiveSession();
+  };
+  recognition.onend = () => {
+    if (!isCurrentSession()) return;
+    activeSession = null;
+    session.deactivate();
+  };
+  try {
+    recognition.start();
+  } catch {
+    if (isCurrentSession()) {
+      cancelActiveSession();
+      setErrorMessage(messageForError(undefined, locale));
+    }
+  }
+}
+
 export function useSpeechRecognition({
   locale,
   onFinalTranscript,
@@ -199,76 +294,18 @@ export function useSpeechRecognition({
       setErrorMessage(messageForError(undefined, locale));
       return;
     }
-    const sessionId = ++nextSessionId;
-    const finalizedResultIndexes = new Set<number>();
-    const session: ActiveSession = {
-      id: sessionId,
-      owner: ownerRef.current,
+    startSpeechRecognitionSession({
+      fieldKey,
+      locale,
       recognition,
-      status: "active",
-      deactivate: () => {
-        setIsListening(false);
-        setIsStopping(false);
-        setActiveFieldKey(null);
-        setInterimTranscript("");
-      },
-      markStopping: () => {
-        setIsListening(false);
-        setIsStopping(true);
-        setInterimTranscript("");
-      },
-    };
-
-    const isCurrentSession = () => activeSession?.id === sessionId;
-    activeSession = session;
-    recognition.lang = locale === "fr" ? "fr-FR" : "en-US";
-    recognition.interimResults = true;
-    recognition.continuous = true;
-    recognition.onstart = () => {
-      if (!isCurrentSession() || session.status === "stopping") return;
-      setIsListening(true);
-      setIsStopping(false);
-      setActiveFieldKey(fieldKey);
-      setInterimTranscript("");
-      setErrorMessage(null);
-    };
-    recognition.onresult = (event) => {
-      if (!isCurrentSession()) return;
-      const interimParts: string[] = [];
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const result = event.results[index];
-        const transcript = result?.[0]?.transcript?.trim() ?? "";
-        if (!transcript) continue;
-        if (result?.isFinal) {
-          if (!finalizedResultIndexes.has(index)) {
-            finalizedResultIndexes.add(index);
-            transcriptHandlerRef.current(fieldKey, transcript);
-          }
-        } else {
-          interimParts.push(transcript);
-        }
-      }
-      setInterimTranscript(interimParts.join(" "));
-    };
-    recognition.onerror = (event) => {
-      if (!isCurrentSession()) return;
-      setErrorMessage(messageForError(event.error, locale));
-      cancelActiveSession();
-    };
-    recognition.onend = () => {
-      if (!isCurrentSession()) return;
-      activeSession = null;
-      session.deactivate();
-    };
-
-    try {
-      recognition.start();
-    } catch {
-      if (isCurrentSession()) {
-        cancelActiveSession();
-        setErrorMessage(messageForError(undefined, locale));
-      }
-    }
+      owner: ownerRef.current,
+      transcriptHandlerRef,
+      setErrorMessage,
+      setIsListening,
+      setIsStopping,
+      setActiveFieldKey,
+      setInterimTranscript,
+    });
   }, [locale]);
 
   useEffect(() => {

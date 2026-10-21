@@ -15,45 +15,25 @@ import {
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
-import { getInfiniteBadgeTotals } from "@/lib/gamification/infinite-badges-server";
 import { InfiniteBadgesPanel } from "@/components/gamification/infinite-badges/InfiniteBadgesPanel";
-import { computeMonthlyRegularitySummary } from "@/lib/gamification/monthly-regularity";
-import { createFallbackSensitiveZoneApaisementSummary } from "@/lib/gamification/sensitive-zone-badge";
-import { fetchCachedReferralSummary } from "@/lib/gamification/referrals/referrals-cache";
-import { loadCachedReferralLineageView } from "@/lib/gamification/referrals/referral-lineage";
 import { ReferralProfileTabs } from "@/components/gamification/referral-profile-tabs";
 import { ProfileGamificationSummary } from "@/components/gamification/profile-gamification-summary";
 import { MilestonesPanel } from "@/components/gamification/milestones-panel";
-import { buildCurrentMilestones } from "@/lib/gamification/milestones";
-import { getUserProgression } from "@/lib/gamification/progression";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadSpogomiCollectionForUser } from "@/lib/spogomi/recognition-service";
-import { loadSpogomiVolunteerSummaryForUser } from "@/lib/spogomi/volunteer";
 import { ProfileSpogomiSummary } from "@/components/gamification/profile-spogomi-summary";
-import type { SpogomiCollection } from "@/lib/spogomi/collection";
 import type { UserIdentity } from "@/lib/authz-identity";
-import type { ComponentProps } from "react";
+import { loadProfilePageData, type ProfilePageData } from "./profile-page-data";
 
 type ProfilPageProps = {
   params: Promise<{ profile: string }>;
 };
 
-type ProfilePageContentProps = {
+type ProfilePageContentProps = ProfilePageData & {
   normalized: AppProfile;
   profileLabel: string;
   profileSubtitle: string;
   grantedRole: UserIdentity["role"];
   activeProfile: UserIdentity["activeRole"];
-  gamification: Awaited<ReturnType<typeof getUserProgression>> | null;
-  infiniteTotals: ComponentProps<typeof InfiniteBadgesPanel>["totals"] & {
-    milestones: ComponentProps<typeof MilestonesPanel>["milestones"];
-  };
-  referralSummary: Awaited<ReturnType<typeof fetchCachedReferralSummary>>;
-  referralLineageView: Awaited<ReturnType<typeof loadCachedReferralLineageView>> | null;
-  referralLineageError: string | null;
   referralInviteHref: string;
-  spogomiCollection: SpogomiCollection | null;
-  spogomiVolunteerSummary: Awaited<ReturnType<typeof loadSpogomiVolunteerSummaryForUser>> | null;
 };
 
 function ProfilePageContent({
@@ -160,78 +140,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
 
   const profileLabel = getProfileLabel(normalized, "fr");
   const profileSubtitle = getProfileSubtitle(normalized, "fr");
-  const gamification = await getUserProgression(
-    getSupabaseServerClient(true),
-    userId,
-  ).catch(() => null);
-  const spogomiCollection = await loadSpogomiCollectionForUser(
-    getSupabaseServerClient(true),
-    userId,
-  ).catch(() => null);
-  const spogomiVolunteerSummary = await loadSpogomiVolunteerSummaryForUser(
-    getSupabaseServerClient(true),
-    userId,
-  ).catch(() => null);
-  const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => ({
-    wasteKg: 0,
-    butts: 0,
-    newPlaces: 0,
-    organisationCount: 0,
-    actionBalance: {
-      spontaneous: 0,
-      association: 0,
-      enterprise: 0,
-      totalValidated: 0,
-      balancedCycles: 0,
-      totalXpAwarded: 0,
-      currentCycleTarget: 1,
-      currentCycleProgress: 0,
-      currentCycleXpReward: 1,
-      missingCounts: {
-        spontaneous: 1,
-        association: 1,
-        enterprise: 1,
-      },
-      currentGrade: {
-        id: "balance-observateur",
-        label: "Observateur",
-        threshold: 0,
-        iconVariant: "sliders-horizontal",
-        visualVariant: "stone",
-        tooltip: "Aucun cycle équilibré encore",
-        xp: 0,
-      },
-      nextGrade: null,
-      progressPercent: 0,
-      currentLabel: "Observateur",
-      nextLabel: null,
-      awards: [],
-    },
-    monthlyRegularity: computeMonthlyRegularitySummary([]),
-    sensitiveZoneApaisement: createFallbackSensitiveZoneApaisementSummary(),
-    milestones: buildCurrentMilestones({ completeActionsCount: 0, events: [] }),
-    moderationProgression: null,
-  }));
-  const referralSummary = await fetchCachedReferralSummary(userId).catch(
-    () => ({
-      referralCode: null,
-      inviteUrl: null,
-      invitedUsersCount: 0,
-      invitedBy: null,
-      badgeUnlocked: false,
-      referralAwardedXp: 0,
-    }),
-  );
-  let referralLineageView = null;
-  let referralLineageError: string | null = null;
-  try {
-    referralLineageView = await loadCachedReferralLineageView(userId);
-  } catch (error) {
-    referralLineageError =
-      error instanceof Error
-        ? error.message
-        : "Impossible de charger l'arborescence de parrainage.";
-  }
+  const profileData = await loadProfilePageData(userId);
   const referralInviteHref = `${buildProfileRoute(normalized)}#parrainage`;
 
   return (
@@ -241,14 +150,8 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       profileSubtitle={profileSubtitle}
       grantedRole={grantedRole}
       activeProfile={activeProfile}
-      gamification={gamification}
-      infiniteTotals={infiniteTotals}
-      referralSummary={referralSummary}
-      referralLineageView={referralLineageView}
-      referralLineageError={referralLineageError}
+      {...profileData}
       referralInviteHref={referralInviteHref}
-      spogomiCollection={spogomiCollection}
-      spogomiVolunteerSummary={spogomiVolunteerSummary}
     />
   );
 }

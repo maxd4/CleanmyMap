@@ -1,47 +1,19 @@
 import type { Metadata } from "next";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
-import { AdminMaxTools } from "@/components/admin/admin-max-tools";
-import { AdminFeedbackAuditTabs } from "@/components/admin/admin-feedback-audit-tabs";
 import { AdminAccessState } from "@/components/ui/admin-access-state";
-import { PageHeader } from "@/components/ui/page-header";
-import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
-import {
-  AdminActionGrid,
-  AdminInfoBanner,
-  AdminOperationalMetricGrid,
-  AdminPillLink,
-  AdminProfileSwitchStrip,
-  AdminSectionHeader,
-} from "@/components/admin/admin-dashboard-ui";
-import type { AdminActionItem } from "@/components/admin/admin-dashboard-ui";
-import {
-  ModerationByBlockPanel,
-} from "@/components/admin/moderation-by-block-panel";
-import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
 import { getCurrentUserIdentity } from "@/lib/authz";
-import { env } from "@/lib/env";
-import { isImuOwnerIdentity } from "@/lib/auth/role-resolution";
-import { canUseSupabaseServerPersistence } from "@/lib/persistence/runtime-store";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import {
-  getProfileLabel,
-  getSwitchableProfiles,
   isAdminLikeProfile,
   toProfile,
 } from "@/lib/profiles";
 import { getServerLocale } from "@/lib/server-preferences";
-import { buildProfileRoute, ADMIN_GODMODE_ROUTE } from "@/lib/accueil-pilotage-routes";
-import { resolvePageFamily } from "@/lib/ui/page-families";
-import {
-  buildAdminAlert,
-  buildAdminMetricItems,
-  buildModerationBlockSummaries,
-  loadAdminSources,
-} from "@/lib/admin/admin-dashboard-contract";
+import { loadAdminSources } from "@/lib/admin/admin-dashboard-contract";
 import {
   parseAdminModerationParam,
 } from "@/components/reports/admin-workflow/helpers";
+import { AdminPageContent } from "./admin-page-content";
 
 export const metadata: Metadata = {
   title: "Administration",
@@ -88,15 +60,6 @@ export default async function AdminPage({
   const role = identity?.activeRole ?? "benevole";
   const grantedRole = identity?.role ?? "benevole";
   const profile = toProfile(role);
-  const pageFamily = resolvePageFamily("/admin");
-  const creatorIdentity =
-    role === "max" ? identity : null;
-  const creatorDisplayName =
-    creatorIdentity?.displayName?.trim() ||
-    creatorIdentity?.firstName?.trim() ||
-    creatorIdentity?.handle ||
-    creatorIdentity?.username ||
-    "Administration avancée";
 
   if (!isAdminLikeProfile(profile)) {
     return (
@@ -108,150 +71,27 @@ export default async function AdminPage({
     );
   }
 
+  if (!identity) {
+    return (
+      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(255,249,243,0.98)_0%,_rgba(246,239,228,0.96)_48%,_rgba(238,231,219,0.98)_100%)] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-4xl items-center justify-center"><AdminAccessState className="w-full" /></div>
+      </div>
+    );
+  }
+
   const adminSources = await loadAdminSources();
-  const adminAlert = buildAdminAlert(adminSources);
-  const metricItems = buildAdminMetricItems(adminSources);
-  const switchableProfiles = getSwitchableProfiles(grantedRole);
-  const profileLink = buildProfileRoute(profile);
-  const profileCountLabel =
-    switchableProfiles.length > 1
-      ? `${switchableProfiles.length} profils`
-      : "Profil actif";
-
-  const adminTools: AdminActionItem[] = [
-    {
-      id: "quiz-bank",
-      icon: "BookOpenText",
-      title: "Revue quiz",
-      description: "Filtrer et corriger la banque de questions.",
-      href: "/admin/quiz-bank",
-      badge: "Audit",
-      iconWrapClassName: "bg-amber-100 text-amber-700 border-amber-200/60",
-      iconClassName: "text-amber-700",
-    },
-    {
-      id: "site-health",
-      icon: "HardDrive",
-      title: "Services & santé",
-      description: "Contrôler les flux et l’état général.",
-      href: "/admin/services",
-      badge: "Rapide",
-      iconWrapClassName: "bg-sky-100 text-sky-700 border-sky-200/60",
-      iconClassName: "text-sky-700",
-    },
-    {
-      id: "system-control",
-      icon: "Activity",
-      title: "Contrôle système",
-      description: "Ouvrir l’arbitrage et les outils sensibles.",
-      href: ADMIN_GODMODE_ROUTE,
-      badge: "Supervision",
-      iconWrapClassName: "bg-violet-100 text-violet-700 border-violet-200/60",
-      iconClassName: "text-violet-700",
-    },
-  ];
-
-  const moderationBlocks = buildModerationBlockSummaries(adminSources);
 
   return (
     <AccountCompletionGate state={accountCompletion}>
-      <main className="min-h-screen bg-[linear-gradient(180deg,#fffaf5_0%,#f7efe6_52%,#efe4d8_100%)] text-stone-950">
-        <CmmPageLayout className="relative z-10">
-          <PageHeader
-            family={pageFamily}
-            title="Cockpit opérationnel"
-            subtitle="Supervision des files, du workflow et de l’état des services."
-            action={<AdminPillLink href={profileLink}>Voir profil</AdminPillLink>}
-          />
-
-          <CmmSectionGroup>
-          <AdminInfoBanner
-            eyebrow="Alerte"
-            title={adminAlert.title}
-            description={adminAlert.detail}
-            icon="AlertTriangle"
-            tone="light"
-            compact={adminAlert.title === "Aucune urgence de modération détectée"}
-            action={
-              adminAlert.action ? (
-                <AdminPillLink href={adminAlert.action.href}>
-                  {adminAlert.action.label}
-                </AdminPillLink>
-              ) : undefined
-            }
-          />
-
-          <AdminOperationalMetricGrid items={metricItems} className="gap-4" />
-
-          <div id="moderation-par-bloc">
-            <ModerationByBlockPanel blocks={moderationBlocks} />
-          </div>
-
-          <section id="workflow-administration">
-            <ActionsReportPanel
-              initialRecordTypeFilter={
-                moderationPreset === "signalements" ? "signalements" : undefined
-              }
-              initialStatus={moderationPreset === "signalements" ? "pending" : undefined}
-            />
-          </section>
-
-          {adminSources.creatorInbox.status === "available" &&
-          adminSources.audit.status === "available" ? (
-            <AdminFeedbackAuditTabs
-              feedbackItems={adminSources.creatorInbox.data}
-              auditEntries={adminSources.audit.data}
-              canQualify={
-                isImuOwnerIdentity(identity, env.CLERK_IMU_OWNER_USER_ID) &&
-                canUseSupabaseServerPersistence()
-              }
-            />
-          ) : (
-            <AdminInfoBanner
-              eyebrow="Retours et journal"
-              title="Surface administrative indisponible"
-              description="Les retours utilisateurs ou le journal administrateurs ne sont pas disponibles pour le moment."
-              icon="AlertTriangle"
-              tone="light"
-            />
-          )}
-
-          <section>
-            <AdminSectionHeader
-              eyebrow="Outils d’administration"
-              description="Accès directs aux fonctions propres à la supervision."
-            />
-
-            <AdminActionGrid
-              items={adminTools}
-              compact
-              columnsClassName="md:grid-cols-2 xl:grid-cols-3"
-              className="mt-3"
-            />
-          </section>
-
-          {switchableProfiles.length > 1 ? (
-            <section aria-label="Profils administratifs disponibles">
-              <AdminProfileSwitchStrip
-                profiles={switchableProfiles}
-                activeProfile={profile}
-                getProfileLabel={getProfileLabel}
-                locale={locale}
-                label={`${profileCountLabel} disponibles`}
-                getHref={buildProfileRoute}
-              />
-            </section>
-          ) : null}
-
-          {role === "max" ? (
-            <AdminMaxTools
-              displayName={creatorDisplayName}
-              identity={identity}
-            />
-          ) : null}
-          </CmmSectionGroup>
-        </CmmPageLayout>
-      </main>
+      <AdminPageContent
+        adminSources={adminSources}
+        identity={identity}
+        profile={profile}
+        role={role}
+        grantedRole={grantedRole}
+        locale={locale}
+        moderationPreset={moderationPreset}
+      />
     </AccountCompletionGate>
   );
 }

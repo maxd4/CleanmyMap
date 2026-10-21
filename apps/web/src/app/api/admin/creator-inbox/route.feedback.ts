@@ -226,6 +226,56 @@ async function archiveFeedbackInboxItem(params: FeedbackStateMutationParams) {
   return NextResponse.json({ status: "ok", item: buildFeedbackInboxItem(finalRecord) });
 }
 
+async function loadFeedbackForAction(params: {
+  itemId: string;
+  reason: string;
+  audit: CreatorInboxAudit;
+}): Promise<{ current: FeedbackRecord } | { response: NextResponse }> {
+  try {
+    const current = await getCommunityBugReportById(params.itemId);
+    if (current) return { current };
+  } catch {
+    await appendCreatorInboxLookupError({
+      audit: params.audit,
+      source: "feedback",
+      targetId: params.itemId,
+      reason: params.reason,
+    });
+    return { response: mutationErrorResponse() };
+  }
+
+  await appendCreatorInboxLookupError({
+    audit: params.audit,
+    source: "feedback",
+    targetId: params.itemId,
+    reason: params.reason,
+  });
+  return { response: NextResponse.json({ error: "Report not found" }, { status: 404 }) };
+}
+
+async function rejectRespondedFeedback(params: {
+  itemId: string;
+  reason: string;
+  targetUserId?: string;
+  previousValue: Record<string, unknown>;
+  audit: CreatorInboxAudit;
+}) {
+  await params.audit({
+    outcome: "error",
+    targetId: params.itemId,
+    reason: params.reason,
+    targetUserId: params.targetUserId,
+    previousValue: params.previousValue,
+    newValue: params.previousValue,
+    stage: "update",
+    partialMutation: false,
+  });
+  return NextResponse.json(
+    { error: "Un feedback ne peut être marqué répondu qu'après l'envoi d'un DM." },
+    { status: 409 },
+  );
+}
+
 export async function handleCreatorInboxFeedback(
   params: CreatorInboxHandlerParams | FeedbackQualificationParams | FeedbackTrackingParams,
 ) {
@@ -239,28 +289,9 @@ export async function handleCreatorInboxFeedback(
   }
 
   const audit = createCreatorInboxAudit(params);
-
-  let current;
-  try {
-    current = await getCommunityBugReportById(itemId);
-  } catch {
-    await appendCreatorInboxLookupError({
-      audit,
-      source: "feedback",
-      targetId: itemId,
-      reason,
-    });
-    return mutationErrorResponse();
-  }
-  if (!current) {
-    await appendCreatorInboxLookupError({
-      audit,
-      source: "feedback",
-      targetId: itemId,
-      reason,
-    });
-    return NextResponse.json({ error: "Report not found" }, { status: 404 });
-  }
+  const lookup = await loadFeedbackForAction({ itemId, reason, audit });
+  if ("response" in lookup) return lookup.response;
+  const { current } = lookup;
 
   if (action === "delete") {
     return deleteFeedbackInboxItem({
@@ -275,20 +306,13 @@ export async function handleCreatorInboxFeedback(
   const previousValue = buildSnapshot("feedback", current);
 
   if (action === "responded") {
-    await audit({
-      outcome: "error",
-      targetId: itemId,
+    return rejectRespondedFeedback({
+      itemId,
       reason,
       targetUserId,
       previousValue,
-      newValue: previousValue,
-      stage: "update",
-      partialMutation: false,
+      audit,
     });
-    return NextResponse.json(
-      { error: "Un feedback ne peut être marqué répondu qu'après l'envoi d'un DM." },
-      { status: 409 },
-    );
   }
 
   if (action === "mark_treated") {

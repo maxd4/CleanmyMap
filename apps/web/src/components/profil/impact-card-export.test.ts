@@ -179,7 +179,11 @@ describe("impact card export", () => {
   });
 
   it("ne garde plus de ref morte ni de génération PNG dupliquée dans la page", () => {
-    const source = readFileSync(new URL("./impact-profile-page.tsx", import.meta.url), "utf8");
+    const source = [
+      readFileSync(new URL("./impact-profile-page.tsx", import.meta.url), "utf8"),
+      readFileSync(new URL("./use-impact-profile-actions.ts", import.meta.url), "utf8"),
+      readFileSync(new URL("./impact-profile-authenticated-view.tsx", import.meta.url), "utf8"),
+    ].join("\n");
 
     expect(source).not.toContain("cardRef");
     expect(source).not.toContain("toPng");

@@ -26,66 +26,7 @@ function parsePersonalFeedbackPage(value: unknown): PersonalFeedbackPage {
     throw new Error("Invalid personal feedback response.");
   }
 
-  const items = value.items.map((item) => {
-    const qualificationDecidedByUserId =
-      item && typeof item === "object" && "qualificationDecidedByUserId" in item
-        ? item.qualificationDecidedByUserId
-        : null;
-    const description =
-      item && typeof item === "object" && typeof item.description === "string"
-        ? item.description
-        : "";
-    const trackingStatus =
-      item && typeof item === "object" && "trackingStatus" in item
-        ? item.trackingStatus
-        : "not_planned";
-    const trackingPublicSummary =
-      item && typeof item === "object" && "trackingPublicSummary" in item
-        ? item.trackingPublicSummary
-        : null;
-    const trackingReference =
-      item && typeof item === "object" && "trackingReference" in item
-        ? item.trackingReference
-        : null;
-    const trackingShippedOn =
-      item && typeof item === "object" && "trackingShippedOn" in item
-        ? item.trackingShippedOn
-        : null;
-    if (
-      !isRecord(item) ||
-      typeof item.id !== "string" ||
-      typeof item.title !== "string" ||
-      typeof item.createdAt !== "string" ||
-      !isPersonalFeedbackStatus(item.status) ||
-      !isPersonalFeedbackType(item.type) ||
-      !isPersonalFeedbackQualificationStatus(item.qualificationStatus) ||
-      !isPersonalFeedbackTrackingStatus(trackingStatus) ||
-      (qualificationDecidedByUserId !== null &&
-        typeof qualificationDecidedByUserId !== "string") ||
-      (typeof trackingPublicSummary !== "string" && trackingPublicSummary !== null) ||
-      (typeof trackingReference !== "string" && trackingReference !== null) ||
-      (typeof trackingShippedOn !== "string" && trackingShippedOn !== null) ||
-      (item.qualificationReason !== null &&
-        typeof item.qualificationReason !== "string")
-    ) {
-      throw new Error("Invalid personal feedback item.");
-    }
-    return {
-      id: item.id,
-      title: item.title,
-      type: item.type,
-      createdAt: item.createdAt,
-      status: item.status,
-      qualificationStatus: item.qualificationStatus,
-      qualificationReason: item.qualificationReason,
-      qualificationDecidedByUserId,
-      description,
-      trackingStatus,
-      trackingPublicSummary,
-      trackingReference,
-      trackingShippedOn,
-    };
-  });
+  const items = value.items.map(parsePersonalFeedbackItem);
 
   if (
     (value.nextCursor !== null && typeof value.nextCursor !== "string") ||
@@ -100,6 +41,71 @@ function parsePersonalFeedbackPage(value: unknown): PersonalFeedbackPage {
     nextCursor: value.nextCursor,
     hasMore: value.hasMore,
   };
+}
+
+function parsePersonalFeedbackItem(value: unknown): PersonalFeedbackItem {
+  if (!isRecord(value)) throw new Error("Invalid personal feedback item.");
+
+  const qualificationDecidedByUserId = optionalField(value, "qualificationDecidedByUserId");
+  const description = typeof value.description === "string" ? value.description : "";
+  const trackingStatus = optionalField(value, "trackingStatus") ?? "not_planned";
+  const trackingPublicSummary = optionalField(value, "trackingPublicSummary");
+  const trackingReference = optionalField(value, "trackingReference");
+  const trackingShippedOn = optionalField(value, "trackingShippedOn");
+  const qualificationReason = value.qualificationReason;
+
+  if (!isValidPersonalFeedbackItem(value, trackingStatus, qualificationDecidedByUserId, qualificationReason, trackingPublicSummary, trackingReference, trackingShippedOn)) {
+    throw new Error("Invalid personal feedback item.");
+  }
+
+  return {
+    id: value.id as string,
+    title: value.title as string,
+    type: value.type as PersonalFeedbackItem["type"],
+    createdAt: value.createdAt as string,
+    status: value.status as PersonalFeedbackItem["status"],
+    qualificationStatus: value.qualificationStatus as PersonalFeedbackItem["qualificationStatus"],
+    qualificationReason: qualificationReason as string | null,
+    qualificationDecidedByUserId: qualificationDecidedByUserId as string | null,
+    description,
+    trackingStatus: trackingStatus as PersonalFeedbackItem["trackingStatus"],
+    trackingPublicSummary: trackingPublicSummary as string | null,
+    trackingReference: trackingReference as string | null,
+    trackingShippedOn: trackingShippedOn as string | null,
+  };
+}
+
+function optionalField(record: Record<string, unknown>, key: string): unknown {
+  return key in record ? record[key] : null;
+}
+
+function isValidPersonalFeedbackItem(
+  item: Record<string, unknown>,
+  trackingStatus: unknown,
+  qualificationDecidedByUserId: unknown,
+  qualificationReason: unknown,
+  trackingPublicSummary: unknown,
+  trackingReference: unknown,
+  trackingShippedOn: unknown,
+): boolean {
+  return (
+    typeof item.id === "string" &&
+    typeof item.title === "string" &&
+    typeof item.createdAt === "string" &&
+    isPersonalFeedbackStatus(item.status) &&
+    isPersonalFeedbackType(item.type) &&
+    isPersonalFeedbackQualificationStatus(item.qualificationStatus) &&
+    isPersonalFeedbackTrackingStatus(trackingStatus) &&
+    isNullableString(qualificationDecidedByUserId) &&
+    isNullableString(trackingPublicSummary) &&
+    isNullableString(trackingReference) &&
+    isNullableString(trackingShippedOn) &&
+    isNullableString(qualificationReason)
+  );
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
 }
 
 export async function fetchPersonalFeedbackPage(

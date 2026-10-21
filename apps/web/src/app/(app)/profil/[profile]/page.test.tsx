@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const pageSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const pageDataSource = readFileSync(new URL("./profile-page-data.ts", import.meta.url), "utf8");
 
 describe("detailed profile gamification contract", () => {
   it("composes the compact summary from the page's existing data", () => {
@@ -17,8 +18,8 @@ describe("detailed profile gamification contract", () => {
   });
 
   it("does not add another gamification/progression data source", () => {
-    expect((pageSource.match(/getInfiniteBadgeTotals\(userId\)/g) ?? [])).toHaveLength(1);
-    expect(pageSource).toContain("getUserProgression");
+    expect((pageDataSource.match(/getInfiniteBadgeTotals\(userId\)/g) ?? [])).toHaveLength(1);
+    expect(pageDataSource).toContain("getUserProgression");
     expect(pageSource).not.toContain("identity.badges");
   });
 

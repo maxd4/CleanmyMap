@@ -50,31 +50,14 @@ export function FeedbackTrackingControls({
           ? "Ce suivi est indépendant de la pertinence et ne modifie pas les XP."
           : "This tracking state is independent from relevance and does not change XP."}
       </p>
-      <div className="mt-3 grid gap-3 md:grid-cols-2">
-        <label className="space-y-1">
-          <span className="cmm-text-caption font-semibold cmm-text-secondary">{fr ? "État" : "Status"}</span>
-          <select
-            value={status}
-            disabled={busy}
-            onChange={(event) => setStatus(event.target.value as FeedbackTrackingStatus)}
-            className="w-full rounded-lg border border-cyan-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary"
-          >
-            {(Object.keys(STATUS_LABELS) as FeedbackTrackingStatus[]).map((value) => (
-              <option key={value} value={value}>{STATUS_LABELS[value][locale]}</option>
-            ))}
-          </select>
-        </label>
-        <label className="space-y-1">
-          <span className="cmm-text-caption font-semibold cmm-text-secondary">{fr ? "Livré le" : "Delivered on"}</span>
-          <input
-            type="date"
-            value={shippedOn}
-            disabled={busy}
-            onChange={(event) => setShippedOn(event.target.value)}
-            className="w-full rounded-lg border border-cyan-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary"
-          />
-        </label>
-      </div>
+      <FeedbackTrackingStatusFields
+        locale={locale}
+        status={status}
+        shippedOn={shippedOn}
+        busy={busy}
+        onStatusChange={setStatus}
+        onShippedOnChange={setShippedOn}
+      />
       <label className="mt-3 block space-y-1">
         <span className="cmm-text-caption font-semibold cmm-text-secondary">{fr ? "Résumé public" : "Public summary"}</span>
         <textarea
@@ -97,24 +80,71 @@ export function FeedbackTrackingControls({
           className="w-full rounded-lg border border-cyan-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary"
         />
       </label>
-      {shippedNeedsFields ? (
-        <p className="mt-2 text-xs font-semibold text-cyan-950" role="status">
-          {fr ? "Un résumé et une date confirmée sont requis pour déclarer la livraison." : "A summary and confirmed date are required to mark delivery."}
-        </p>
-      ) : null}
-      <button
-        type="button"
-        disabled={busy || shippedNeedsFields}
-        onClick={() => onUpdate({
+      <FeedbackTrackingSubmit
+        locale={locale}
+        busy={busy}
+        incomplete={shippedNeedsFields}
+        onSubmit={() => onUpdate({
           status,
           publicSummary: summary.trim() || null,
           reference: reference.trim() || null,
           shippedOn: shippedOn || null,
         })}
-        className="mt-3 rounded-lg bg-cyan-800 px-3 py-2 cmm-text-caption font-semibold text-white hover:bg-cyan-900 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {busy ? (fr ? "Enregistrement..." : "Saving...") : (fr ? "Enregistrer le suivi" : "Save follow-up")}
-      </button>
+      />
     </fieldset>
+  );
+}
+
+function FeedbackTrackingStatusFields({
+  locale,
+  status,
+  shippedOn,
+  busy,
+  onStatusChange,
+  onShippedOnChange,
+}: {
+  locale: CreatorInboxLocale;
+  status: FeedbackTrackingStatus;
+  shippedOn: string;
+  busy: boolean;
+  onStatusChange: (value: FeedbackTrackingStatus) => void;
+  onShippedOnChange: (value: string) => void;
+}) {
+  const fr = locale === "fr";
+  return (
+    <div className="mt-3 grid gap-3 md:grid-cols-2">
+      <label className="space-y-1">
+        <span className="cmm-text-caption font-semibold cmm-text-secondary">{fr ? "État" : "Status"}</span>
+        <select value={status} disabled={busy} onChange={(event) => onStatusChange(event.target.value as FeedbackTrackingStatus)} className="w-full rounded-lg border border-cyan-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary">
+          {(Object.keys(STATUS_LABELS) as FeedbackTrackingStatus[]).map((value) => <option key={value} value={value}>{STATUS_LABELS[value][locale]}</option>)}
+        </select>
+      </label>
+      <label className="space-y-1">
+        <span className="cmm-text-caption font-semibold cmm-text-secondary">{fr ? "Livré le" : "Delivered on"}</span>
+        <input type="date" value={shippedOn} disabled={busy} onChange={(event) => onShippedOnChange(event.target.value)} className="w-full rounded-lg border border-cyan-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary" />
+      </label>
+    </div>
+  );
+}
+
+function FeedbackTrackingSubmit({
+  locale,
+  busy,
+  incomplete,
+  onSubmit,
+}: {
+  locale: CreatorInboxLocale;
+  busy: boolean;
+  incomplete: boolean;
+  onSubmit: () => void;
+}) {
+  const fr = locale === "fr";
+  return (
+    <>
+      {incomplete ? <p className="mt-2 text-xs font-semibold text-cyan-950" role="status">{fr ? "Un résumé et une date confirmée sont requis pour déclarer la livraison." : "A summary and confirmed date are required to mark delivery."}</p> : null}
+      <button type="button" disabled={busy || incomplete} onClick={onSubmit} className="mt-3 rounded-lg bg-cyan-800 px-3 py-2 cmm-text-caption font-semibold text-white hover:bg-cyan-900 disabled:cursor-not-allowed disabled:opacity-60">
+        {busy ? fr ? "Enregistrement..." : "Saving..." : fr ? "Enregistrer le suivi" : "Save follow-up"}
+      </button>
+    </>
   );
 }

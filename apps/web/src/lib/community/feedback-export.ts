@@ -38,51 +38,50 @@ function redactPrivateQueryParameters(
 
   while (cursor < value.length) {
     if (metrics) metrics.cursorSteps += 1;
-    if (value[cursor] !== "?" && value[cursor] !== "&") {
+    const match = findPrivateQueryParameter(value, cursor, metrics);
+    if (!match) {
       cursor += 1;
       continue;
     }
-
-    const keyStart = cursor + 1;
-    let keyEnd = keyStart;
-    while (
-      keyEnd < value.length
-      && !isWhitespace(value[keyEnd])
-      && !["?", "&", "#", "="].includes(value[keyEnd])
-    ) {
-      if (metrics) metrics.keySteps += 1;
-      keyEnd += 1;
-    }
-
-    if (keyEnd === keyStart || value[keyEnd] !== "=") {
-      cursor = keyEnd;
-      continue;
-    }
-
-    const valueStart = keyEnd + 1;
-    let valueEnd = valueStart;
-    while (
-      valueEnd < value.length
-      && !isWhitespace(value[valueEnd])
-      && value[valueEnd] !== "&"
-      && value[valueEnd] !== "#"
-    ) {
-      if (metrics) metrics.valueSteps += 1;
-      valueEnd += 1;
-    }
-
-    if (valueEnd === valueStart) {
-      cursor += 1;
-      continue;
-    }
-
     output.push(value.slice(literalStart, cursor), PRIVATE_QUERY_REPLACEMENT);
-    cursor = valueEnd;
+    cursor = match.valueEnd;
     literalStart = cursor;
   }
 
   output.push(value.slice(literalStart));
   return output.join("");
+}
+
+function findPrivateQueryParameter(
+  value: string,
+  cursor: number,
+  metrics?: QueryScanMetrics,
+): { valueEnd: number } | null {
+  if (value[cursor] !== "?" && value[cursor] !== "&") return null;
+  const keyStart = cursor + 1;
+  let keyEnd = keyStart;
+  while (
+    keyEnd < value.length &&
+    !isWhitespace(value[keyEnd]) &&
+    !["?", "&", "#", "="].includes(value[keyEnd])
+  ) {
+    if (metrics) metrics.keySteps += 1;
+    keyEnd += 1;
+  }
+  if (keyEnd === keyStart || value[keyEnd] !== "=") return null;
+
+  const valueStart = keyEnd + 1;
+  let valueEnd = valueStart;
+  while (
+    valueEnd < value.length &&
+    !isWhitespace(value[valueEnd]) &&
+    value[valueEnd] !== "&" &&
+    value[valueEnd] !== "#"
+  ) {
+    if (metrics) metrics.valueSteps += 1;
+    valueEnd += 1;
+  }
+  return valueEnd === valueStart ? null : { valueEnd };
 }
 
 export function redactPrivateQueryParametersWithMetrics(value: string): {
@@ -133,24 +132,8 @@ function neutralizeUntrustedDelimiters(value: string): string {
   let nextClosingBracket = value.indexOf(">");
 
   while (cursor < value.length) {
-    if (value[cursor] !== "<") {
-      cursor += 1;
-      continue;
-    }
-
-    let tagStart = cursor + 1;
-    while (tagStart < value.length && isWhitespace(value[tagStart])) tagStart += 1;
-    if (value[tagStart] === "/") tagStart += 1;
-    while (tagStart < value.length && isWhitespace(value[tagStart])) tagStart += 1;
-
-    const tagNameEnd = delimiterNameAt(value, tagStart);
+    const tagNameEnd = findUntrustedDelimiter(value, cursor);
     if (tagNameEnd === null) {
-      cursor += 1;
-      continue;
-    }
-
-    const nextCharacter = value[tagNameEnd];
-    if (nextCharacter && !isWhitespace(nextCharacter) && nextCharacter !== "/" && nextCharacter !== ">") {
       cursor += 1;
       continue;
     }
@@ -166,6 +149,20 @@ function neutralizeUntrustedDelimiters(value: string): string {
 
   output.push(value.slice(literalStart));
   return output.join("");
+}
+
+function findUntrustedDelimiter(value: string, cursor: number): number | null {
+  if (value[cursor] !== "<") return null;
+  let tagStart = cursor + 1;
+  while (tagStart < value.length && isWhitespace(value[tagStart])) tagStart += 1;
+  if (value[tagStart] === "/") tagStart += 1;
+  while (tagStart < value.length && isWhitespace(value[tagStart])) tagStart += 1;
+  const tagNameEnd = delimiterNameAt(value, tagStart);
+  if (tagNameEnd === null) return null;
+  const nextCharacter = value[tagNameEnd];
+  return !nextCharacter || isWhitespace(nextCharacter) || nextCharacter === "/" || nextCharacter === ">"
+    ? tagNameEnd
+    : null;
 }
 
 function quoteUntrustedText(value: string | null | undefined): string {

@@ -10,7 +10,6 @@ import {
   type SetStateAction,
 } from "react";
 import { useUser } from "@clerk/nextjs";
-import { ArrowRight } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -33,13 +32,7 @@ import {
 } from "@/lib/community/feedback-screenshot-client";
 import { findPotentiallySimilarFeedback } from "@/lib/community/feedback-similarity";
 import { useSpeechRecognition } from "./use-speech-recognition";
-import {
-  QuestionnaireFields,
-  QuestionnaireSpeechNotice,
-} from "./questionnaire-card-fields";
-import { QuestionnaireRecognitionNotice } from "./questionnaire-card-notices";
-import { QuestionnaireScreenshotField } from "./questionnaire-card-screenshot";
-import { QuestionnaireSubmissionStatus } from "./questionnaire-card-status";
+import { QuestionnaireCardForm } from "./questionnaire-card-form";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
@@ -203,53 +196,12 @@ export function QuestionnaireCard({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) return;
-
     speech.cancel();
-    setSubmitState("submitting");
-    setErrorMessage(null);
-
-    try {
-      const result = await submitFeedbackQuestionnaire({
-        questionnaire,
-        values,
-        pagePath,
-        source,
-        locale,
-        honeypot,
-        submittedAt: formStartedAt.current ?? Date.now(),
-        screenshotFile: questionnaire.id === "bug" ? screenshotFile : null,
-      });
-
-      setSubmitState("success");
-      setRequestId(result.requestId);
-      setScreenshotError(result.screenshotError);
-      setValues(Object.fromEntries(questionnaire.fields.map((field) => [field.key, ""])));
-    } catch (error) {
-      setSubmitState("error");
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : locale === "fr"
-            ? "Une erreur inattendue est survenue."
-            : "An unexpected error occurred.",
-      );
-    }
+    await submitQuestionnaireForm({ questionnaire, values, pagePath, source, locale, honeypot, submittedAt: formStartedAt.current ?? Date.now(), screenshotFile: questionnaire.id === "bug" ? screenshotFile : null, setSubmitState, setErrorMessage, setRequestId, setScreenshotError, setValues });
   }
 
   function handleScreenshotChange(event: ChangeEvent<HTMLInputElement>) {
-    setScreenshotError(null);
-    const file = event.target.files?.[0];
-    if (!file) {
-      replaceScreenshotFile(null);
-      return;
-    }
-    const validationError = validateFeedbackScreenshotFile(file);
-    if (validationError) {
-      replaceScreenshotFile(null);
-      setScreenshotError(validationError);
-      return;
-    }
-    replaceScreenshotFile(file);
+    handleScreenshotFileChange(event, setScreenshotError, replaceScreenshotFile);
   }
 
   const Icon = questionnaire.icon;
@@ -262,141 +214,87 @@ export function QuestionnaireCard({
   })();
   const accentClasses = ACCENT_CLASSES[questionnaire.accent];
 
-  return (
-    <CmmCard
-      tone="slate"
-      variant="glass"
-      size="lg"
-      className={cn("scroll-mt-28 rounded-[1.75rem]", accentClasses.border)}
-      header={
-        <div className="flex items-center gap-3">
-          <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl border", accentClasses.border, accentClasses.bg)}>
-            <Icon className={cn("h-5 w-5", accentClasses.icon)} aria-hidden="true" />
-          </div>
-          <div>
-            <p className="cmm-text-small font-semibold uppercase tracking-[0.2em] text-slate-100">
-              {questionnaire.title[locale]}
-            </p>
-            <p className={cn("mt-1 text-sm leading-relaxed", accentClasses.title)}>
-              {questionnaire.intro[locale]}
-            </p>
-          </div>
-        </div>
-      }
-    >
-      <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden opacity-0" aria-hidden="true">
-        <label htmlFor={`feedback-website-${questionnaire.id}`}>Website</label>
-        <input
-          id={`feedback-website-${questionnaire.id}`}
-          name="website"
-          tabIndex={-1}
-          autoComplete="off"
-          value={honeypot}
-          onChange={(event) => setHoneypot(event.target.value)}
-        />
-      </div>
-      {isLoaded && !isSignedIn ? (
-        <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-          <p className="text-sm font-medium text-slate-100">
-            {locale === "fr" ? "Connecte-toi pour envoyer ce questionnaire." : "Sign in to submit this questionnaire."}
-          </p>
-          <p className="mt-1 text-sm leading-relaxed text-slate-300">
-            {locale === "fr" ? "Après envoi, le retour est transmis à CleanMyMap pour examen." : "After submission, your feedback is sent to CleanMyMap for review."}
-          </p>
-          <CmmButton
-            href={buildSignInRedirectHref(returnPath)}
-            tone="secondary"
-            variant="pill"
-            className={cn("mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2", accentClasses.button)}
-          >
-            {locale === "fr" ? "Se connecter" : "Sign in"}
-          </CmmButton>
-        </div>
-      ) : null}
+  return <QuestionnaireCardView questionnaire={questionnaire} locale={locale} accentClasses={accentClasses} Icon={Icon} isLoaded={isLoaded} isSignedIn={isSignedIn} returnPath={returnPath} honeypot={honeypot} setHoneypot={setHoneypot} values={values} submitState={submitState} speech={speech} similarFeedback={similarFeedback} screenshotFile={screenshotFile} screenshotPreview={screenshotPreview} screenshotError={screenshotError} serializedDescription={serializedDescription} descriptionTooLong={descriptionTooLong} requestId={requestId} errorMessage={errorMessage} handleSubmit={handleSubmit} updateField={updateField} handleScreenshotChange={handleScreenshotChange} removeScreenshot={() => { replaceScreenshotFile(null); setScreenshotError(null); }} />;
+}
 
-      {isLoaded && isSignedIn ? (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {questionnaire.id !== "collaboration" ? <QuestionnaireRecognitionNotice locale={locale} /> : null}
-          {questionnaire.id !== "collaboration" ? <QuestionnaireSpeechNotice locale={locale} speech={speech} /> : null}
-          <div className="grid gap-3">
-            {similarFeedback.length > 0 ? (
-              <aside className="rounded-2xl border border-cyan-200/30 bg-cyan-500/10 px-4 py-3 text-slate-100" role="status">
-                <p className="text-sm font-bold">
-                  {locale === "fr" ? "Des retours personnels semblent proches" : "Some of your feedback looks similar"}
-                </p>
-                <p className="mt-1 text-sm leading-relaxed text-slate-300">
-                  {locale === "fr" ? "Vérifiez vos retours précédents avant d'envoyer. Cette suggestion ne bloque pas la soumission." : "Check your previous feedback before sending. This suggestion does not block submission."}
-                </p>
-                <ul className="mt-2 space-y-1 text-sm">
-                  {similarFeedback.map((match) => (
-                    <li key={match.id}>
-                      <a href="/sections/feedback#mes-retours" className="font-semibold text-cyan-100 underline-offset-2 hover:underline">
-                        {match.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </aside>
-            ) : null}
-            <QuestionnaireFields
-              questionnaire={questionnaire}
-              locale={locale}
-              values={values}
-              submitState={submitState}
-              speech={speech}
-              onUpdateField={updateField}
-            />
-          </div>
+function handleScreenshotFileChange(event: ChangeEvent<HTMLInputElement>, setScreenshotError: (message: string | null) => void, replaceScreenshotFile: (file: File | null) => void) {
+  setScreenshotError(null);
+  const file = event.target.files?.[0];
+  if (!file) return replaceScreenshotFile(null);
+  const validationError = validateFeedbackScreenshotFile(file);
+  if (validationError) {
+    replaceScreenshotFile(null);
+    return setScreenshotError(validationError);
+  }
+  replaceScreenshotFile(file);
+}
 
-          {questionnaire.id === "bug" ? (
-            <QuestionnaireScreenshotField
-              file={screenshotFile}
-              preview={screenshotPreview}
-              error={screenshotError}
-              onChange={handleScreenshotChange}
-              onRemove={() => {
-                replaceScreenshotFile(null);
-                setScreenshotError(null);
-              }}
-            />
-          ) : null}
+async function submitQuestionnaireForm({ questionnaire, values, pagePath, source, locale, honeypot, submittedAt, screenshotFile, setSubmitState, setErrorMessage, setRequestId, setScreenshotError, setValues }: {
+  questionnaire: QuestionnaireConfig;
+  values: Record<string, string>;
+  pagePath: string;
+  source: "feedback_section" | "feedback_discussion";
+  locale: "fr" | "en";
+  honeypot: string;
+  submittedAt: number;
+  screenshotFile: File | null;
+  setSubmitState: (state: SubmitState) => void;
+  setErrorMessage: (message: string | null) => void;
+  setRequestId: (id: string | null) => void;
+  setScreenshotError: (message: string | null) => void;
+  setValues: (values: Record<string, string>) => void;
+}) {
+  try {
+    const result = await submitFeedbackQuestionnaire({ questionnaire, values, pagePath, source, locale, honeypot, submittedAt, screenshotFile });
+    setSubmitState("success");
+    setRequestId(result.requestId);
+    setScreenshotError(result.screenshotError);
+    setValues(Object.fromEntries(questionnaire.fields.map((field) => [field.key, ""])));
+  } catch (error) {
+    setSubmitState("error");
+    setErrorMessage(error instanceof Error ? error.message : locale === "fr" ? "Une erreur inattendue est survenue." : "An unexpected error occurred.");
+  }
+}
 
-          {descriptionTooLong ? (
-            <p role="alert" className="rounded-xl border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
-              {locale === "fr"
-                ? `Votre retour dépasse la limite de ${FEEDBACK_DESCRIPTION_MAX_LENGTH} caractères (${serializedDescription.length}). Raccourcissez-le pour pouvoir l'envoyer.`
-                : `Your feedback exceeds the ${FEEDBACK_DESCRIPTION_MAX_LENGTH}-character limit (${serializedDescription.length}). Shorten it before sending.`}
-            </p>
-          ) : null}
+function QuestionnaireCardView({ questionnaire, locale, accentClasses, Icon, isLoaded, isSignedIn, returnPath, honeypot, setHoneypot, values, submitState, speech, similarFeedback, screenshotFile, screenshotPreview, screenshotError, serializedDescription, descriptionTooLong, requestId, errorMessage, handleSubmit, updateField, handleScreenshotChange, removeScreenshot }: {
+  questionnaire: QuestionnaireConfig;
+  locale: "fr" | "en";
+  accentClasses: (typeof ACCENT_CLASSES)[QuestionnaireConfig["accent"]];
+  Icon: QuestionnaireConfig["icon"];
+  isLoaded: boolean;
+  isSignedIn: boolean | undefined;
+  returnPath: string;
+  honeypot: string;
+  setHoneypot: (value: string) => void;
+  values: Record<string, string>;
+  submitState: SubmitState;
+  speech: ReturnType<typeof useSpeechRecognition>;
+  similarFeedback: ReturnType<typeof findPotentiallySimilarFeedback>;
+  screenshotFile: File | null;
+  screenshotPreview: FeedbackScreenshotPreview | null;
+  screenshotError: string | null;
+  serializedDescription: string;
+  descriptionTooLong: boolean;
+  requestId: string | null;
+  errorMessage: string | null;
+  handleSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  updateField: (fieldKey: string, value: string) => void;
+  handleScreenshotChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  removeScreenshot: () => void;
+}) {
+  return <CmmCard tone="slate" variant="glass" size="lg" className={cn("scroll-mt-28 rounded-[1.75rem]", accentClasses.border)} header={<div className="flex items-center gap-3"><div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl border", accentClasses.border, accentClasses.bg)}><Icon className={cn("h-5 w-5", accentClasses.icon)} aria-hidden="true" /></div><div><p className="cmm-text-small font-semibold uppercase tracking-[0.2em] text-slate-100">{questionnaire.title[locale]}</p><p className={cn("mt-1 text-sm leading-relaxed", accentClasses.title)}>{questionnaire.intro[locale]}</p></div></div>}>
+    <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden opacity-0" aria-hidden="true"><label htmlFor={`feedback-website-${questionnaire.id}`}>Website</label><input id={`feedback-website-${questionnaire.id}`} name="website" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(event) => setHoneypot(event.target.value)} /></div>
+    {isLoaded && !isSignedIn ? <QuestionnaireSignInPrompt locale={locale} returnPath={returnPath} buttonClassName={accentClasses.button} /> : null}
+    {isLoaded && isSignedIn ? <QuestionnaireCardForm questionnaire={questionnaire} locale={locale} values={values} submitState={submitState} speech={speech} similarFeedback={similarFeedback} screenshotFile={screenshotFile} screenshotPreview={screenshotPreview} screenshotError={screenshotError} serializedDescription={serializedDescription} descriptionTooLong={descriptionTooLong} requestId={requestId} errorMessage={errorMessage} accentButtonClassName={accentClasses.button} onSubmit={handleSubmit} onUpdateField={updateField} onScreenshotChange={handleScreenshotChange} onRemoveScreenshot={removeScreenshot} /> : null}
+  </CmmCard>;
+}
 
-          <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="cmm-text-caption text-slate-300">
-              {locale === "fr" ? "Le retour est transmis à CleanMyMap pour examen." : "Your feedback is sent to CleanMyMap for review."}
-            </p>
-            <CmmButton
-              type="submit"
-              disabled={!canSubmit}
-              tone="primary"
-              variant="pill"
-              className={cn("inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-55", accentClasses.button)}
-            >
-              {submitState === "submitting"
-                ? locale === "fr" ? "Envoi..." : "Sending..."
-                : locale === "fr" ? "Envoyer" : "Send"}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </CmmButton>
-          </div>
-
-          <QuestionnaireSubmissionStatus
-            locale={locale}
-            questionnaire={questionnaire}
-            state={submitState}
-            requestId={requestId}
-            screenshotError={screenshotError}
-            errorMessage={errorMessage}
-          />
-        </form>
-      ) : null}
-    </CmmCard>
-  );
+function QuestionnaireSignInPrompt({ locale, returnPath, buttonClassName }: { locale: "fr" | "en"; returnPath: string; buttonClassName: string }) {
+  return <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+    <p className="text-sm font-medium text-slate-100">{locale === "fr" ? "Connecte-toi pour envoyer ce questionnaire." : "Sign in to submit this questionnaire."}</p>
+    <p className="mt-1 text-sm leading-relaxed text-slate-300">{locale === "fr" ? "Après envoi, le retour est transmis à CleanMyMap pour examen." : "After submission, your feedback is sent to CleanMyMap for review."}</p>
+    <CmmButton href={buildSignInRedirectHref(returnPath)} tone="secondary" variant="pill" className={cn("mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2", buttonClassName)}>
+      {locale === "fr" ? "Se connecter" : "Sign in"}
+    </CmmButton>
+  </div>;
 }

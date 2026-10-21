@@ -40,29 +40,7 @@ export function CreatorInboxPanel({
       }
     >
       <div className="space-y-6">
-        {inbox.feedbackMetrics ? (
-          <section className="rounded-2xl border border-slate-200 bg-white p-4" aria-label="Indicateurs de suivi des feedbacks">
-            <h2 className="text-sm font-bold text-slate-900">Indicateurs des retours</h2>
-            <p className="mt-1 text-xs text-slate-600">
-              Période : depuis l&apos;origine · périmètre : feedbacks communautaires · les erreurs de lecture restent des erreurs.
-            </p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-              {[
-                ["Reçus", inbox.feedbackMetrics.received],
-                ["À qualifier", inbox.feedbackMetrics.pendingQualification],
-                ["Pertinents", inbox.feedbackMetrics.accepted],
-                ["Doublons", inbox.feedbackMetrics.duplicate],
-                ["Non retenus", inbox.feedbackMetrics.rejected],
-                ["Livrés", inbox.feedbackMetrics.shipped],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-xs font-semibold text-slate-500">{label}</p>
-                  <p className="mt-1 text-xl font-black text-slate-900">{value}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        ) : null}
+        <CreatorInboxFeedbackMetrics metrics={inbox.feedbackMetrics} />
         <InboxFilterBar
           copy={inbox.copy}
           query={inbox.query}
@@ -176,5 +154,31 @@ export function CreatorInboxPanel({
         ) : null}
       </div>
     </AdminPanelShell>
+  );
+}
+
+function CreatorInboxFeedbackMetrics({ metrics }: { metrics?: CommunityBugReportFollowUpMetrics }) {
+  if (!metrics) return null;
+  const values = [
+    ["Reçus", metrics.received],
+    ["À qualifier", metrics.pendingQualification],
+    ["Pertinents", metrics.accepted],
+    ["Doublons", metrics.duplicate],
+    ["Non retenus", metrics.rejected],
+    ["Livrés", metrics.shipped],
+  ] as const;
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-4" aria-label="Indicateurs de suivi des feedbacks">
+      <h2 className="text-sm font-bold text-slate-900">Indicateurs des retours</h2>
+      <p className="mt-1 text-xs text-slate-600">Période : depuis l&apos;origine · périmètre : feedbacks communautaires · les erreurs de lecture restent des erreurs.</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {values.map(([label, value]) => (
+          <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <p className="text-xs font-semibold text-slate-500">{label}</p>
+            <p className="mt-1 text-xl font-black text-slate-900">{value}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

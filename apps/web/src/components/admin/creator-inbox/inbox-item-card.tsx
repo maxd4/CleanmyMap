@@ -105,66 +105,58 @@ export function InboxItemCard({
         />
       ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        {item.source === "legal_content_report" && onLegalDecision ? (
-          <InboxItemLegalDecision
-            item={item}
-            actionBusy={actionBusy}
-            onLegalDecision={onLegalDecision}
-          />
-        ) : null}
-
-        <InboxItemContextualActions
-          item={item}
-          copy={copy}
-          copiedKey={copiedKey}
-          onCopySummary={onCopySummary}
-        />
-
-        {item.source !== "event" && item.source !== "legal_content_report" ? (
-          <InboxItemProcessingReason
-            locale={locale}
-            actionReason={actionReason}
-            onActionReasonChange={onActionReasonChange}
-          />
-        ) : null}
-
-        {item.source === "promotion" && item.sourceStatus === "pending_owner_review" ? (
-          <InboxItemReviewActions
-            item={item}
-            locale={locale}
-            copy={copy}
-            reason={promotionReason}
-            onReasonChange={onPromotionReasonChange}
-            actionBusy={actionBusy}
-            onAccept={onAcceptPromotion}
-            onReject={onRejectPromotion}
-          />
-        ) : null}
-
-        {item.source === "partner" && item.sourceStatus === "pending_admin_review" ? (
-          <InboxItemReviewActions
-            item={item}
-            locale={locale}
-            copy={copy}
-            reason={partnerReason}
-            onReasonChange={onPartnerReasonChange}
-            actionBusy={actionBusy}
-            onAccept={onAcceptPartner}
-            onReject={onRejectPartner}
-          />
-        ) : null}
-
-        {item.source !== "event" && item.source !== "legal_content_report" ? (
-          <InboxItemProcessingActions
-            item={item}
-            copy={copy}
-            actionReason={actionReason}
-            actionBusy={actionBusy}
-            onApplyInboxAction={onApplyInboxAction}
-          />
-        ) : null}
-      </div>
+      <InboxItemCardActions
+        item={item}
+        locale={locale}
+        copy={copy}
+        copiedKey={copiedKey}
+        promotionReason={promotionReason}
+        onPromotionReasonChange={onPromotionReasonChange}
+        partnerReason={partnerReason}
+        onPartnerReasonChange={onPartnerReasonChange}
+        actionReason={actionReason}
+        onActionReasonChange={onActionReasonChange}
+        actionBusy={actionBusy}
+        onCopySummary={onCopySummary}
+        onAcceptPromotion={onAcceptPromotion}
+        onRejectPromotion={onRejectPromotion}
+        onAcceptPartner={onAcceptPartner}
+        onRejectPartner={onRejectPartner}
+        onApplyInboxAction={onApplyInboxAction}
+        onLegalDecision={onLegalDecision}
+      />
     </article>
+  );
+}
+
+function InboxItemCardActions({
+  item,
+  locale,
+  copy,
+  copiedKey,
+  promotionReason,
+  onPromotionReasonChange,
+  partnerReason,
+  onPartnerReasonChange,
+  actionReason,
+  onActionReasonChange,
+  actionBusy,
+  onCopySummary,
+  onAcceptPromotion,
+  onRejectPromotion,
+  onAcceptPartner,
+  onRejectPartner,
+  onApplyInboxAction,
+  onLegalDecision,
+}: Omit<InboxItemCardProps, "canQualify" | "feedbackOptions" | "onQualifyFeedback" | "onUpdateFeedbackTracking">) {
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      {item.source === "legal_content_report" && onLegalDecision ? <InboxItemLegalDecision item={item} actionBusy={actionBusy} onLegalDecision={onLegalDecision} /> : null}
+      <InboxItemContextualActions item={item} copy={copy} copiedKey={copiedKey} onCopySummary={onCopySummary} />
+      {item.source !== "event" && item.source !== "legal_content_report" ? <InboxItemProcessingReason locale={locale} actionReason={actionReason} onActionReasonChange={onActionReasonChange} /> : null}
+      {item.source === "promotion" && item.sourceStatus === "pending_owner_review" ? <InboxItemReviewActions item={item} locale={locale} copy={copy} reason={promotionReason} onReasonChange={onPromotionReasonChange} actionBusy={actionBusy} onAccept={onAcceptPromotion} onReject={onRejectPromotion} /> : null}
+      {item.source === "partner" && item.sourceStatus === "pending_admin_review" ? <InboxItemReviewActions item={item} locale={locale} copy={copy} reason={partnerReason} onReasonChange={onPartnerReasonChange} actionBusy={actionBusy} onAccept={onAcceptPartner} onReject={onRejectPartner} /> : null}
+      {item.source !== "event" && item.source !== "legal_content_report" ? <InboxItemProcessingActions item={item} copy={copy} actionReason={actionReason} actionBusy={actionBusy} onApplyInboxAction={onApplyInboxAction} /> : null}
+    </div>
   );
 }

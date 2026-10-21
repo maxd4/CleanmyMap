@@ -17,55 +17,64 @@ const baseActionSchema = z.object({
 
 export const actionSchema = baseActionSchema.superRefine((value, context) => {
   if (value.action === "qualify") {
-    if (value.source !== "feedback") {
-      context.addIssue({ code: "custom", path: ["source"], message: "Qualification is limited to feedback." });
-    }
-    if (!value.decision) {
-      context.addIssue({ code: "custom", path: ["decision"], message: "Qualification decision is required." });
-    }
-    if (["needs_info", "duplicate", "rejected"].includes(value.decision ?? "") && (value.reason?.length ?? 0) < 5) {
-      context.addIssue({ code: "custom", path: ["reason"], message: "A reason of at least 5 characters is required." });
-    }
-    if (value.reason && value.reason.length > 500) {
-      context.addIssue({ code: "custom", path: ["reason"], message: "Qualification reason is too long." });
-    }
-    if (value.decision === "duplicate" && !value.duplicateFeedbackId) {
-      context.addIssue({ code: "custom", path: ["duplicateFeedbackId"], message: "A duplicate feedback reference is required." });
-    }
-    if (value.decision !== "duplicate" && value.duplicateFeedbackId) {
-      context.addIssue({ code: "custom", path: ["duplicateFeedbackId"], message: "Duplicate feedback reference is only valid for duplicate decisions." });
-    }
+    validateQualificationAction(value, context);
     return;
   }
 
   if (value.action === "update_tracking") {
-    if (value.source !== "feedback") {
-      context.addIssue({ code: "custom", path: ["source"], message: "Product tracking is limited to feedback." });
-    }
-    if (!value.trackingStatus) {
-      context.addIssue({ code: "custom", path: ["trackingStatus"], message: "Tracking status is required." });
-    }
-    if (value.trackingStatus === "shipped") {
-      if ((value.trackingPublicSummary?.length ?? 0) < 5) {
-        context.addIssue({ code: "custom", path: ["trackingPublicSummary"], message: "A public delivery summary is required." });
-      }
-      if (!value.trackingShippedOn) {
-        context.addIssue({ code: "custom", path: ["trackingShippedOn"], message: "A confirmed delivery date is required." });
-      }
-    }
-    if (value.decision || value.duplicateFeedbackId) {
-      context.addIssue({ code: "custom", path: ["decision"], message: "Qualification fields are not valid for tracking." });
-    }
+    validateTrackingAction(value, context);
     return;
   }
 
-  if (!value.reason || value.reason.length < 5) {
-    context.addIssue({ code: "custom", path: ["reason"], message: "A reason of at least 5 characters is required." });
-  }
-  if (value.decision || value.duplicateFeedbackId) {
-    context.addIssue({ code: "custom", path: ["decision"], message: "Qualification fields are not valid for this action." });
-  }
+  validateStandardAction(value, context);
 });
+
+function validateQualificationAction(
+  value: z.infer<typeof baseActionSchema>,
+  context: z.RefinementCtx,
+): void {
+  addIssueIf(context, value.source !== "feedback", "source", "Qualification is limited to feedback.");
+  addIssueIf(context, !value.decision, "decision", "Qualification decision is required.");
+  addIssueIf(
+    context,
+    ["needs_info", "duplicate", "rejected"].includes(value.decision ?? "") && (value.reason?.length ?? 0) < 5,
+    "reason",
+    "A reason of at least 5 characters is required.",
+  );
+  addIssueIf(context, Boolean(value.reason && value.reason.length > 500), "reason", "Qualification reason is too long.");
+  addIssueIf(context, value.decision === "duplicate" && !value.duplicateFeedbackId, "duplicateFeedbackId", "A duplicate feedback reference is required.");
+  addIssueIf(context, value.decision !== "duplicate" && Boolean(value.duplicateFeedbackId), "duplicateFeedbackId", "Duplicate feedback reference is only valid for duplicate decisions.");
+}
+
+function validateTrackingAction(
+  value: z.infer<typeof baseActionSchema>,
+  context: z.RefinementCtx,
+): void {
+  addIssueIf(context, value.source !== "feedback", "source", "Product tracking is limited to feedback.");
+  addIssueIf(context, !value.trackingStatus, "trackingStatus", "Tracking status is required.");
+  if (value.trackingStatus === "shipped") {
+    addIssueIf(context, (value.trackingPublicSummary?.length ?? 0) < 5, "trackingPublicSummary", "A public delivery summary is required.");
+    addIssueIf(context, !value.trackingShippedOn, "trackingShippedOn", "A confirmed delivery date is required.");
+  }
+  addIssueIf(context, Boolean(value.decision || value.duplicateFeedbackId), "decision", "Qualification fields are not valid for tracking.");
+}
+
+function validateStandardAction(
+  value: z.infer<typeof baseActionSchema>,
+  context: z.RefinementCtx,
+): void {
+  addIssueIf(context, !value.reason || value.reason.length < 5, "reason", "A reason of at least 5 characters is required.");
+  addIssueIf(context, Boolean(value.decision || value.duplicateFeedbackId), "decision", "Qualification fields are not valid for this action.");
+}
+
+function addIssueIf(
+  context: z.RefinementCtx,
+  condition: boolean,
+  path: string,
+  message: string,
+): void {
+  if (condition) context.addIssue({ code: "custom", path: [path], message });
+}
 
 export type CreatorInboxAction = z.infer<typeof actionSchema>;
 export type CreatorInboxMutationSource = Exclude<
