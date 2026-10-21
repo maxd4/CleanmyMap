@@ -93,7 +93,7 @@ Ne pas basculer une page entière côté client pour contourner une erreur de
 frontière.
 
 Référence :
-[`../development/client-server-bundle-splitting.md`](../development/client-server-bundle-splitting.md).
+[`../architecture/frontend-backend-boundaries.md`](../architecture/frontend-backend-boundaries.md).
 
 ## Cache `.next` et générés
 
@@ -225,4 +225,4 @@ Le diagnostic est suffisamment fermé lorsque :
 - [`runbook-deploiement.md`](./runbook-deploiement.md)
 - [`../development/TESTING.md`](../development/TESTING.md)
 - [`../development/typescript-precision-policy.md`](../development/typescript-precision-policy.md)
-- [`../development/client-server-bundle-splitting.md`](../development/client-server-bundle-splitting.md)
+- [`../architecture/frontend-backend-boundaries.md`](../architecture/frontend-backend-boundaries.md)

@@ -1,9 +1,9 @@
-# AI Developer Guide — CleanMyMap
+# Repères Codex : développement CleanMyMap
 
-Ce guide complète les fichiers de gouvernance à la racine du dépôt. Ils restent
-les sources canoniques pour les règles transversales d'exécution, de sécurité,
-de Git, de validation et de collaboration. Ce document ne les duplique pas ;
-il fournit uniquement les repères propres au développement de CleanMyMap.
+Statut : `CURRENT` (orientation spécialisée, non normative pour Git, tests ou AuthZ).
+Pour le contrat d’exécution : les sources de gouvernance racine et scoped. Pour le contrat
+documentaire : `documentation/development/DOCUMENTATION_POLICY.md`.
+Ne lire que les sections pertinentes à la tâche.
 
 ## 1. Vocabulaire métier canonique
 

@@ -54,6 +54,20 @@ protège l'absence d'un second arbre.
 | Exploitation | Vercel, CI, scripts existants | Surveiller quotas, latences et erreurs ; pas de mutation implicite |
 | Maintenance scientifique | `maintenance/python/` | Pandas/scripts reproductibles, séparés du runtime |
 
+### Orientation machine des propriétaires et couplages
+
+| Besoin | Owner runtime à examiner | Limite |
+|---|---|---|
+| Routes, redirects et pages | `apps/web/src/app/` | Pas de modèle métier concurrent dans une page |
+| Navigation et métadonnées de rubrique | `apps/web/src/lib/navigation.ts`, `apps/web/src/lib/sections-registry/config.ts` | Les règles canoniques appartiennent au registre |
+| Rendu des rubriques | `apps/web/src/components/sections/rubriques/section-renderer.tsx` | Assemble l'UI, sans gouverner les alias |
+| Actions, imports et carte | `apps/web/src/lib/actions/`, API Actions, RPC `actions_map_feed` | Imports et rapports consomment le contrat Actions |
+| Communauté et gamification | `apps/web/src/lib/community/`, `apps/web/src/lib/gamification/` | Les APIs spécialisées ne créent pas une seconde logique métier |
+| Rapports et pilotage | `apps/web/src/lib/pilotage/`, `apps/web/src/lib/reports/` et routes API concernées | Flux dérivés du domaine et de Supabase |
+| AuthN/AuthZ | `apps/web/src/lib/authz.ts`, `apps/web/src/lib/auth/api-authorization-contract.ts`, handlers | Le proxy seul ne prouve pas l'autorisation |
+
+Couplages à examiner lors d'un changement : `navigation ↔ registre ↔ rendu`, `Actions ↔ exports ↔ rapports`, `identité ↔ capacités ↔ API/RLS`. Cette table sert de point d'entrée pour lire le code actuel, et non d'inventaire exhaustif des routes.
+
 ## 3. Exigences non fonctionnelles
 
 ### TRD-01. Sécurité et permissions
@@ -102,6 +116,17 @@ protège l'absence d'un second arbre.
 - Les exports et PDF précompilés sont servis avec vérification d'accès et URLs signées selon leur route ; un lien de Storage ne remplace pas l'autorisation métier.
 - Le code actuel de partage PDF historique expose une capacité séparée : création/révocation owner-scoped d'un lien bearer expirant, token stocké sous forme de hash, PDF déjà rendu conservé dans Storage privé. Un lien valide donne accès seulement au PDF associé. Protéger contre l'indexation, les referrers et les mises en cache inappropriées ; vérifier l'expiration et la révocation au téléchargement. Une migration publiée ne vaut pas déploiement appliqué.
 - Les erreurs doivent être explicites sans exposer les détails internes du fournisseur.
+
+### Snapshot public d'impact : lecture et régénération
+
+Owner exécutable : `apps/web/src/lib/impact/public-impact-snapshot.ts` ; consommateurs de la homepage : `apps/web/src/lib/accueil/data.ts`.
+
+- **HIT :** `loadLatestPublicImpactSnapshot` retourne uniquement une charge valide, avec clé, version publique, mois courant, cohérence `generatedAt`/période et versions de méthodologie et de contrat de résultats correspondantes. La lecture ne persiste ni ne recalcule le snapshot.
+- **MISS :** en absence de snapshot valide, `loadLandingSummary` passe par `loadRecentCommunityActivityData` et `buildLandingSummaryFromContracts`, dans les limites du contrat de santé de source ; aucune donnée obsolète ne doit être présentée comme actuelle par substitution silencieuse.
+- **JOB :** `generateAndPersistPublicImpactSnapshot` peut réutiliser un snapshot courant en l'absence de `force`/`rebuild`. Sinon il reconstruit ou avance l'état Actions, recalcule, persiste et traite le cas d'une écriture plus récente déjà retenue. Le job ne doit pas être décrit comme une simple lecture.
+- **ERREUR :** une défaillance de la source canonique doit produire un état explicite du domaine, jamais une valeur inventée.
+
+Preuves spécialisées : `apps/web/src/lib/impact/public-impact-snapshot.test.ts`, `apps/web/src/lib/accueil/landing-summary.test.ts` et `apps/web/src/app/api/cron/impact/route.test.ts`. Tout changement de fraîcheur, de versions ou de fallback doit être vérifié dans ces propriétaires avant d'actualiser cette synthèse.
 
 ### Flux Actions et surfaces dérivées
 
@@ -178,7 +203,7 @@ la lecture des callers et des tests du lot.
 
 ## 8. Références
 
-- `documentation/architecture/master-architecture.md`, `frontend-backend-boundaries.md` et la façade de compatibilité `system-overview.md`.
+- `frontend-backend-boundaries.md`, `section-ownership-boundaries.md` et la façade de compatibilité `system-overview.md`.
 - `documentation/architecture/adr/ADR-001-clerk-auth.md`, `ADR-004-companion-identity.md`, `ADR-006-supabase-migrations-source-of-truth.md`.
 - `documentation/security/authz-authn-regles.md`, `authorization-capabilities.md`.
 - `documentation/architecture/data-governance.md`.

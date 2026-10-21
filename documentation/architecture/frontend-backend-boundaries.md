@@ -174,3 +174,16 @@ Toute évolution de contrat backend doit avoir :
 - validation API ;
 - validation UI si la surface change ;
 - documentation si la décision est durable.
+
+## Bundle et hydratation (contrat de placement)
+
+- Garder pages, layouts et compositions déclaratives côté serveur ; isoler le plus petit sous-arbre interactif qui exige le navigateur.
+- Pour un effet léger (tracking, stockage local, préférence), préférer un îlot client plutôt que convertir toute une page. Réutiliser la locale existante.
+- Ne différer un widget lourd (Leaflet, quiz, visualisation ou éditeur) que si le bénéfice est mesuré et que le contrat de chargement, focus, erreurs et accessibilité reste préservé.
+- Utiliser `next/dynamic` et `ssr: false` dans une frontière client compatible avec Next.js ; ne pas ajouter `"use client"` à un parent pour contourner un import.
+- Les props Server → Client doivent être sérialisables, minimales et sans secret, SDK privilégié ni capacité d'autorisation implicite.
+- Éviter fetchs redondants, hydratation massive et données déjà disponibles dans la composition serveur.
+- Ne pas importer Leaflet ou une dépendance UI lourde dans un shell global.
+- Une extraction de fichier n'est pas une preuve de réduction de bundle : mesurer le build ou le diagnostic initialement motivant, puis vérifier typecheck, lint et tests de régression du périmètre.
+
+Source de performance et de coûts : [`../operations/platform-cost-governance.md`](../operations/platform-cost-governance.md). Le présent document porte la frontière d'architecture, non une mesure de bundle persistée.

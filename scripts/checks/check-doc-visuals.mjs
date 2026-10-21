@@ -5,7 +5,7 @@ const ROOT = process.cwd();
 
 const FIXED_PRIORITY_DOCS = [
   "documentation/architecture/system-overview.md",
-  "documentation/architecture/modules-cles-et-dependances.md",
+  "documentation/architecture/master-architecture.md",
   "documentation/security/authz-authn-regles.md",
   "documentation/operations/incidents-frequents-et-reprise.md",
   "documentation/product/vision-et-objectifs.md",

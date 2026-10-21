@@ -1,46 +1,26 @@
-# Development — Index documentaire
+# Développement : index de lecture Codex
 
-Ce dossier contient la documentation spécialisée du développement CleanMyMap.
-Les règles transversales de travail, de sécurité, de Git, de périmètre et de
-validation restent canoniques dans les fichiers de gouvernance à la racine du
-dépôt. Ce README est un index ; il ne crée pas une hiérarchie de gouvernance
-concurrente.
+Statut : `CURRENT` (routage). La gouvernance applicable est celle de la racine et du scope de la cible ; ce document ne la recopie pas.
 
-## Documents canoniques de ce dossier
+| Besoin | Owner documentaire | Mode de lecture |
+|---|---|---|
+| Quand/où documenter, formats et statuts | [`DOCUMENTATION_POLICY.md`](./DOCUMENTATION_POLICY.md) | CURRENT ; propriété documentaire |
+| API HTTP, erreur et garde | [`api-standard.md`](./api-standard.md) | CURRENT ; puis handler réel |
+| Vocabulaire, FR/EN, interactions UI | [`AI_DEVELOPER_GUIDE.md`](./AI_DEVELOPER_GUIDE.md) | Orientation, puis owners spécialisés |
+| Stratégie de test, niveaux de preuve | [`TESTING.md`](./TESTING.md) | CURRENT, point d'entrée |
+| Exécution et CI | [`testing-execution.md`](./testing-execution.md) | Procédures spécialisées |
+| Qualité, audits de tests | [`testing-quality.md`](./testing-quality.md) | Contrats spécialisés |
+| Plateformes et intégration | [`testing-platforms.md`](./testing-platforms.md) | Contrats spécialisés |
+| Qualité du dépôt | [`repo-quality-rules.md`](./repo-quality-rules.md) | CURRENT |
+| Modularisation | [`conventions-modularisation.md`](./conventions-modularisation.md) | Règles avant extraction |
+| Nommage | [`file-naming-conventions.md`](./file-naming-conventions.md) | Convention des nouveaux fichiers |
+| TypeScript | [`typescript-precision-policy.md`](./typescript-precision-policy.md) | Entrées non fiables, casts, frontières |
+| Lint / diagnostic statique | [`lint-refactor-playbook.md`](./lint-refactor-playbook.md) | Playbook de correction |
+| Versions runtime/outillage | [`runtime-version-matrix.md`](./runtime-version-matrix.md) | Instantané explicatif ; manifestes font foi |
+| Environnement host et Git | [`host-environment.md`](./host-environment.md) | Diagnostic local spécialisé |
+| Mode rapide explicitement demandé | [`rapid-development-mode.md`](./rapid-development-mode.md) | Mode conditionnel, non défaut |
+| Kaizen, audit ciblé | [`kaizen/README.md`](./kaizen/README.md) | Doctrine et méthode |
 
-- [AI Developer Guide](./AI_DEVELOPER_GUIDE.md) — vocabulaire métier et repères
-  propres au développement CleanMyMap ;
-- [API standard](./api-standard.md) — contrats de réponse par domaine, erreurs
-  et invariants HTTP/AuthN/AuthZ ;
-- [Documentation Policy](./DOCUMENTATION_POLICY.md) — critère de documentation,
-  choix de la source spécialisée et traitement de l'historique ;
-- [Testing](./TESTING.md) — stratégie et commandes de test ;
-  Les modules spécialisés sont [exécution et CI](./testing-execution.md), [qualité et audits](./testing-quality.md) et [surfaces et intégration](./testing-platforms.md).
-- [Client/server bundle splitting](./client-server-bundle-splitting.md) — règles
-  de découpage des frontières serveur/client et du bundle ;
-- [Repo quality rules](./repo-quality-rules.md) — règles qualité spécialisées ;
-- [TypeScript Precision Policy](./typescript-precision-policy.md) — contrat
-  durable pour les frontières non fiables, types, casts et accès dynamiques ;
-- [Runtime version matrix](./runtime-version-matrix.md) — versions et
-  configurations distinctes des surfaces Web, Mobile, outillage et Python ;
-- [Lint & Static Analysis Refactor Playbook](./lint-refactor-playbook.md) —
-  méthode de correction des diagnostics statiques sans masquer la cause racine ;
-- [Mode de développement rapide](./rapid-development-mode.md) — protocole
-  borné pour un commit local par exécution, sans push ;
-- [Environnement local et diagnostics host](./host-environment.md) — copies,
-  temporaires, verrous Git, diagnostics volumineux et contraintes de charge ;
-- [Conventions de modularisation](./conventions-modularisation.md) — décision
-  d'extraction, cohésion, contrats et validation des refactors structurels ;
-- [Doctrine Kaizen](./kaizen/README.md) — amélioration continue, méthode d'audit
-  et template canonique de développement.
+Frontière Server/Client et bundle : [`../architecture/frontend-backend-boundaries.md`](../architecture/frontend-backend-boundaries.md) (source unique). Les modules web et mobile possèdent leurs README locaux ; ne pas les déplacer vers le présent index.
 
-## Routage rapide
-
-- architecture, frontières et radar des monolithes : `../architecture/` ;
-- sécurité et autorisations : `../security/` ;
-- design system et pages : `../design-system/` et `../pages_site/` ;
-- exploitation, services et quotas : `../operations/`.
-
-Pour une tâche, consulter uniquement les documents spécialisés réellement
-concernés. Ne pas recopier une règle générale dans ce dossier si une source
-canonique existe déjà.
+**Sélection :** lire seulement les sources associées à la responsabilité modifiée ; les README orientent, ils ne répètent pas les contrats. Les commandes de validation et l'état Git sont régis par les sources spécialisées et la gouvernance racine.

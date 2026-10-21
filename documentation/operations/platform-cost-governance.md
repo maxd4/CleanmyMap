@@ -23,7 +23,7 @@ Sources complémentaires :
 - [Gouvernance des données](../architecture/data-governance.md) : sources de vérité et cycle de vie.
 - [Capacités d'autorisation](../security/authorization-capabilities.md) : AuthN, AuthZ, RLS et scopes.
 - [Playbook Supabase](../database/supabase-table-optimization-playbook.md) : plans d'exécution, index et requêtes.
-- [Découpage client/serveur](../development/client-server-bundle-splitting.md) : frontières Next.js et poids du navigateur.
+- [Découpage client/serveur](../architecture/frontend-backend-boundaries.md) : frontières Next.js et poids du navigateur.
 - [Documentation de test](../development/TESTING.md) : niveaux de preuve.
 
 **Invariant supérieur :** la sécurité, les permissions, l'intégrité des données,
@@ -733,7 +733,7 @@ Références spécialisées :
 - [Documentation Database](../database/README.md)
 - [Playbook d'optimisation Supabase](../database/supabase-table-optimization-playbook.md)
 - [Capacités d'autorisation](../security/authorization-capabilities.md)
-- [Client/server bundle splitting](../development/client-server-bundle-splitting.md)
+- [Client/server bundle splitting](../architecture/frontend-backend-boundaries.md)
 - [Testing](../development/TESTING.md)
 - [Résolution des builds Vercel](./vercel-build-troubleshooting.md)
 - [Index des audits historiques](./audits/README.md)

@@ -214,3 +214,20 @@ Puis :
 
 Le critère de réussite est une documentation compréhensible et correctement
 classée, pas une arborescence parfaite.
+
+## Format orienté Codex (choix de représentation)
+
+L'audience de travail principale de cette documentation technique est Codex, intégrateur du dépôt. **Machine-readable** signifie ici : chemins canoniques explicites, états non ambigus, titres stables, exemples exécutables et données vérifiables. Cela **n'autorise pas** à retirer un invariant nécessaire au seul motif qu'il est long. Les contenus légaux, publics et institutionnels gardent leur audience propre.
+
+| Information | Format préférentiel | Condition |
+|---|---|---|
+| Contrat, ADR, guide, index | `.md` à rubriques stables | Lecture ciblée et diff Git |
+| Spécification OpenAPI réellement consommée | `.yaml` ou `.json` | Validée dans le workflow ; ne pas créer un second contrat |
+| JSON Schema réellement contrôlé | `.json` | Le schéma possède un propriétaire et un consommateur |
+| Diagramme de contrat | bloc `mermaid` dans `.md` | Un `.mmd` autonome seulement si partagé ou rendu séparément |
+| Rapport scientifique reproductible | `.qmd` / `.tex` | Calculs, sources et publication justifient le format |
+| Notebook exécutable | `.ipynb` | Exécution et artefacts reproductibles nécessaires |
+| Journal / sortie machine | `.json` / `.txt` | Généralement généré, non CURRENT |
+| MDX ou formats alternatifs | selon moteur existant | Jamais pour cosmétique ou sans outil consommateur |
+
+Pour chaque création, conversion ou fusion : `owner`, `état`, `source canonique`, `consommateurs`, `preuve`, `chemin stable`. Réutiliser une source et lier plutôt qu'instaurer un registre JSON/YAML miroir. Les compteurs, listes de routes et valeurs runtime dérivables doivent rester générés ou contrôlés, pas figés dans un inventaire manuel.

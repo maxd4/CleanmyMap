@@ -15,6 +15,16 @@ Avant toute modification ciblant le dépôt :
 3. consulter uniquement les sources canoniques utiles au périmètre ;
 4. confronter tout plan ou audit ancien au code et aux contrats actuels.
 
+## Lecture opérationnelle par Codex
+
+1. Identifier les consignes scoped du chemin réellement modifié.
+2. Choisir une source canonique par domaine dans la table ci-dessous ; ne lire que les documents nécessaires au contrat affecté.
+3. Distinguer `CURRENT`, `COMPATIBILITY`, `PLAN`, `AUDIT`, `HISTORY`, `SNAPSHOT`, `ADR`, `GENERATED` avant de réutiliser un énoncé.
+4. Comparer systématiquement les constats documentaires avec le code, les tests et l'environnement effectivement vérifiés.
+5. En cas de suppression ou déplacement, rechercher chemins historiques dans scripts, CI, Markdown et skills ; ne pas masquer un défaut en désactivant un contrôle.
+
+Le critère d'optimisation est la **précision de récupération de contexte**, pas la lisibilité éditoriale ni un nombre minimal de fichiers. Une source spécialisée peut rester longue si son contrat n'est pas divisible. La politique de formats appartient à [`development/DOCUMENTATION_POLICY.md`](./development/DOCUMENTATION_POLICY.md).
+
 ## Domaines documentaires
 
 | Domaine | Responsabilité principale |

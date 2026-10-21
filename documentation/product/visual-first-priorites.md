@@ -20,9 +20,9 @@ flowchart LR
 4. [documentation/product/parcours-utilisateurs.md](./parcours-utilisateurs.md) - parcours et persona
 5. [documentation/product/roadmap-priorisee.md](./roadmap-priorisee.md) - ordre d'execution
 6. [documentation/product/SCIENTIFIC_PROTOCOL.md](./SCIENTIFIC_PROTOCOL.md) - methodologie des indicateurs
-7. [documentation/architecture/master-architecture.md](../architecture/master-architecture.md) - source de vérité architecture
-8. [documentation/architecture/master-architecture.md](../architecture/master-architecture.md) - vue d'ensemble technique
-9. [documentation/architecture/modules-cles-et-dependances.md](../architecture/modules-cles-et-dependances.md) - dépendances et zones cles
+7. [architecture canonique](../architecture/master-architecture.md) - architecture et propriétaires des modules
+8. [frontières serveur/client](../architecture/frontend-backend-boundaries.md) - couches et dépendances du runtime
+9. [ownership des rubriques](../architecture/section-ownership-boundaries.md) - registre, rendu et routes
 10. [documentation/security/authz-authn-regles.md](../security/authz-authn-regles.md) - regles d'acces
 11. [documentation/operations/incidents-frequents-et-reprise.md](../operations/incidents-frequents-et-reprise.md) - reprise et incidents
 

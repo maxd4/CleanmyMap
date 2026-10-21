@@ -1,115 +1,36 @@
-# Architecture — Guide IA
+# Architecture : index de lecture Codex
 
-Point d'entrée de l'architecture CleanMyMap.
+Statut : `CURRENT` (index). Source globale : [`master-architecture.md`](./master-architecture.md).
 
-## Source de vérité
+## Routage par responsabilité
 
-Lire d'abord :
+| Signal de tâche | Source à lire | Statut / portée |
+|---|---|---|
+| Architecture générale, stack, projections, owners | [`master-architecture.md`](./master-architecture.md) | CURRENT, synthèse transversale |
+| Frontière Server/Client, bundle et hydratation | [`frontend-backend-boundaries.md`](./frontend-backend-boundaries.md) | CURRENT, frontières runtime |
+| Rubriques, navigation, ownership UI | [`section-ownership-boundaries.md`](./section-ownership-boundaries.md) | CURRENT, registre ↔ rendu ↔ route |
+| Données, ingestion, gouvernance | [`data-governance.md`](./data-governance.md) | CURRENT, détails du contrat |
+| Documents, contenus et validation | [`content-validation.md`](./content-validation.md) | Source spécialisée |
+| Interfaces techniques versionnées | [`technical-inventory.md`](./technical-inventory.md) | Inventaire, vérifier contre les manifestes |
+| Matrice route → composant → API | [`traceability-matrix.md`](./traceability-matrix.md) | Inventaire contextuel, pas source runtime |
+| Itinéraires | [`methodologie-creation-itineraire.md`](./methodologie-creation-itineraire.md) | Méthodologie de domaine |
+| Risque / serviceabilité Paris | [`paris-pressure-risk-model.md`](./paris-pressure-risk-model.md), [`paris-municipal-cleaning-serviceability.md`](./paris-municipal-cleaning-serviceability.md), [`route-predicted-risk-integration.md`](./route-predicted-risk-integration.md) | Contrats spécialisés |
+| Taxonomie déchets | [`waste-taxonomy-governance.md`](./waste-taxonomy-governance.md) | Gouvernance spécialisée |
+| Audit de surface produit | [`product-surface-accessibility-audit.md`](./product-surface-accessibility-audit.md) | AUDIT, ne pas inférer CURRENT |
+| Décisions de modularisation | [`modularity-decisions.md`](./modularity-decisions.md) | Décisions humaines |
+| Radar / métriques de monolithes | [`monolith-split-plan.md`](./monolith-split-plan.md) | Snapshot / dérivé, vérifier fraîcheur |
+| Refactors encore à conduire | [`refactor-priorities-plan.md`](./refactor-priorities-plan.md) | PLAN, jamais preuve runtime |
+| Vue système historique | [`system-overview.md`](./system-overview.md) | COMPATIBILITY : ne pas étendre |
+| Fonctionnement général et quotas datés | [`methodologie-fonctionnement-site.md`](./methodologie-fonctionnement-site.md) | Mélange explicatif et relevés datés : ne pas prendre les chiffres pour des quotas actuels |
+| Symboles et inventaire | [`ACTION_SYMBOL_INVENTORY.md`](./ACTION_SYMBOL_INVENTORY.md) | Inventaire, vérifier runtime |
 
-1. `master-architecture.md` ;
-2. ADR pertinents ;
-3. document de domaine concerné.
+## ADR : historique décisionnel, pas copie des contrats
 
-`system-overview.md` reste une façade `COMPATIBILITY` pour les liens
-historiques ; il ne porte plus une vue concurrente.
+- [`ADR-001`](./adr/ADR-001-clerk-auth.md) : identité Clerk ; [`ADR-002`](./adr/ADR-002-service-role-key.md) : service role serveur.
+- [`ADR-003`](./adr/ADR-003-monorepo-structure.md) : monorepo ; [`ADR-004`](./adr/ADR-004-companion-identity.md) : mobile.
+- [`ADR-005`](./adr/ADR-005-next-canary-policy.md) : politique historique canary de Next.js ; [`ADR-006`](./adr/ADR-006-supabase-migrations-source-of-truth.md) : arbre de migrations.
+- [`ADR-007`](./adr/ADR-007-capability-scoped-authorization.md) : capacité et scope.
 
-## Vues principales
+## Priorité de preuve
 
-| Fichier | Rôle |
-|---|---|
-| `master-architecture.md` | Architecture globale canonique |
-| `system-overview.md` | Façade de compatibilité vers l'architecture globale |
-| `ARCHITECTURE.md` | Entrée compacte pour assistants |
-| `frontend-backend-boundaries.md` | Frontières UI/API/domaine/data |
-| `data-governance.md` | Contrats et gouvernance des données |
-| `modules-cles-et-dependances.md` | Modules structurants |
-| `section-ownership-boundaries.md` | Ownership app/registry/UI |
-| `traceability-matrix.md` | Rattachement code/documentation |
-| `monolith-split-plan.md` | Radar généré et snapshot des métriques de modularisation |
-| `modularity-decisions.md` | Registre canonique des décisions architecturales humaines |
-| `refactor-priorities-plan.md` | Plan courant des priorités de refactoring |
-
-## ADR
-
-Décisions existantes :
-
-- `ADR-001-clerk-auth.md` — Clerk comme identité principale ;
-- `ADR-002-service-role-key.md` — usage des clés privilégiées ;
-- `ADR-003-monorepo-structure.md` — structure du dépôt ;
-- `ADR-004-companion-identity.md` — identité de l'application mobile (historique companion) ;
-- `ADR-005-next-canary-policy.md` — politique de stabilité Next.js, stable par défaut (contexte canary historique) ;
-- `ADR-006-supabase-migrations-source-of-truth.md` — arbre canonique des migrations ;
-- `ADR-007-capability-scoped-authorization.md` — autorisation par capacités et périmètres.
-
-## Architecture active
-
-```txt
-apps/web/              application web principale
-apps/web/src/app/      pages et API routes
-apps/web/src/lib/      domaine, services, sécurité, data
-apps/web/supabase/     configuration Supabase active du workspace
-apps/mobile/           application mobile GPS
-scripts/               garde-fous et maintenance
-maintenance/python/    maintenance Python hors runtime principal
-documentation/         documentation structurée
-```
-
-Document fonctionnel de référence :
-[méthodologie de création d'itinéraire](methodologie-creation-itineraire.md).
-
-## Règles de modification
-
-Avant une décision d'architecture :
-
-1. vérifier le code réel ;
-2. identifier les contrats publics ;
-3. consulter les ADR existants ;
-4. éviter une nouvelle abstraction si un module canonique existe ;
-5. ajouter un ADR seulement pour une décision durable et transversale.
-
-## Points sensibles
-
-- identité Clerk ↔ Supabase ;
-- `service_role` strictement serveur ;
-- AuthZ par capacité + scope ;
-- RLS ;
-- frontières serveur/client ;
-- routes publiques/protégées/admin ;
-- migrations Supabase ;
-- quotas Vercel/Supabase ;
-- application mobile et géolocalisation.
-
-Pour les permissions et périmètres :
-
-```txt
-documentation/security/authorization-capabilities.md
-documentation/security/authz-authn-regles.md
-```
-
-## Refactoring
-
-Pour un gros fichier :
-
-1. lire `monolith-split-plan.md` pour les mesures et le radar généré ;
-2. lire `modularity-decisions.md` pour les décisions architecturales et leurs invariants ;
-3. une cible par lot ;
-4. conserver props, exports, routes et comportement public ;
-5. ajouter ou maintenir les tests ;
-6. supprimer l'ancien chemin seulement après validation.
-
-## Validation
-
-Après changement architectural :
-
-```bash
-npm run checks
-```
-
-Selon le périmètre :
-
-```bash
-npm run test:security
-npm run test:regression-gates
-npm run build
-npm run test:e2e
-```
+`runtime + tests réellement pertinents` → `contrat CURRENT propriétaire` → `index` → `snapshot/audit`. Ne pas recopier les contrats sécurité, SQL, mobile ou scientifiques dans une seconde synthèse. Pour sécurité et permissions : [`../security/README.md`](../security/README.md) ; pour mobile : [`../../apps/mobile/README.md`](../../apps/mobile/README.md).

@@ -146,3 +146,15 @@ Recommended file patterns:
 - Every standalone page must remain outside the section registry.
 - Canonical routes and aliases must stay stable unless there is an explicit migration plan.
 - Registry files must stay free of React imports.
+
+## Placement de nouveaux composants : cas de routage
+
+| Changement | Owner | Contrôle minimal |
+|---|---|---|
+| Nouvelle route autonome | `apps/web/src/app/(app)/<route>/page.tsx` | Route réelle résolue ; ne pas créer de rubrique implicitement |
+| Nouvelle rubrique | `apps/web/src/lib/sections-registry/config.ts` + `apps/web/src/components/sections/rubriques/` | Id et alias dans le registre, rendu accessible par `section-renderer.tsx` |
+| Rubrique simple | `apps/web/src/components/sections/rubriques/<name>-section.tsx` | Ne pas mélanger logique métier partagée |
+| Rubrique complexe | `apps/web/src/components/sections/rubriques/<name>/index.tsx` et modules internes | Une entrée UI publique, composants internes cohésifs |
+| Domaine partagé ou appel API | `apps/web/src/lib/<domain>/` et API spécialisée | Tests du contrat et frontières d'autorisation conservés |
+
+Exemples de décision : `/accessibilite` est une route autonome, pas un identifiant de rubrique ; une rubrique de suivi partenaires requiert une entrée dans le registre et une correspondance dans le renderer ; un calcul partagé entre plusieurs rubriques appartient à un owner de `lib/`, pas au composant UI. Ne jamais dupliquer labels, alias ou droits hors du registre.

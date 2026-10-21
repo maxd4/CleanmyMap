@@ -8,7 +8,6 @@ export const ACTIVE_DOCS = Object.freeze([
   "README.md",
   "documentation/README.md",
   "documentation/architecture/README.md",
-  "documentation/architecture/ARCHITECTURE.md",
   "documentation/architecture/system-overview.md",
   "documentation/architecture/data-governance.md",
   "documentation/architecture/adr/ADR-005-next-canary-policy.md",
