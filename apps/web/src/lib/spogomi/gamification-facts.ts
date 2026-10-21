@@ -6,6 +6,29 @@ import { formatCivilDateInTimeZone } from "@/lib/time/civil-date";
 
 type Row = Record<string, unknown>;
 
+function buildFirstRefereeFact(input: { missions: Row[]; participants: Row[]; events: Map<string, Row>; confirmedActionIds: Set<string>; userId: string }): GamificationSourceFact | null {
+  const participantById = new Map(input.participants.map((row) => [String(row.id), row]));
+  const eligibleMissions = input.missions.filter((mission) => {
+    const participant = participantById.get(String(mission.participant_id));
+    const event = input.events.get(String(mission.event_id));
+    if (!participant || !event || event.state !== "certified" || String(event.id) !== String(participant.event_id) || !input.confirmedActionIds.has(String(event.action_id))) return false;
+    const typedParticipant: Pick<SpogomiRecognitionParticipant, "registrationStatus" | "attendanceStatus" | "identityVerified" | "actionParticipationConfirmed" | "userId"> = { registrationStatus: String(participant.registration_status) as SpogomiRecognitionParticipant["registrationStatus"], attendanceStatus: String(participant.attendance_status) as SpogomiRecognitionParticipant["attendanceStatus"], identityVerified: participant.account_link_status === "verified" && String(participant.clerk_id) === input.userId, actionParticipationConfirmed: true, userId: input.userId };
+    return String(mission.evidence_reference ?? "").trim().length > 0 && isEligibleSpogomiMissionParticipant(typedParticipant);
+  });
+  const ordered = eligibleMissions.map((mission) => {
+    const event = input.events.get(String(mission.event_id))!;
+    const startsAt = typeof event.starts_at === "string" ? event.starts_at : String(mission.certified_at ?? "9999-12-31");
+    const timezone = typeof event.official_timezone === "string" ? event.official_timezone : "UTC";
+    let localDate = "9999-12-31";
+    try { localDate = formatCivilDateInTimeZone(startsAt, timezone); } catch { /* invalid legacy timezone falls behind valid official facts */ }
+    return { mission, event, startsAt, localDate };
+  }).sort((left, right) => `${left.localDate}:${left.startsAt}:${String(left.mission.certified_at ?? "")}:${String(left.mission.id)}`.localeCompare(`${right.localDate}:${right.startsAt}:${String(right.mission.certified_at ?? "")}:${String(right.mission.id)}`));
+  const mission = ordered[0]?.mission;
+  if (!mission) return null;
+  const event = input.events.get(String(mission.event_id))!;
+  return { mechanicId: "spogomi_first_referee", eventType: "spogomi_first_referee_certified", sourceTable: "spogomi_recognition_attestations", sourceId: input.userId, occurredOn: typeof event.starts_at === "string" ? event.starts_at : String(mission.certified_at), statusPhase: "validated", xpAwarded: 1, eligible: true, badgeId: "spogomi_first_referee", metadata: { missionId: String(mission.id), eventId: String(mission.event_id), certificationVersion: String(mission.certification_version) } };
+}
+
 /** Returns at most one current fact so the first-referee milestone stays one-shot. */
 export async function loadSpogomiFirstRefereeFact(supabase: SupabaseClient, userId: string): Promise<GamificationSourceFact | null> {
   const participants = await readAllSpogomiPages("first referee participants", (from, to) =>
@@ -56,36 +79,5 @@ export async function loadSpogomiFirstRefereeFact(supabase: SupabaseClient, user
       { requireExactCount: true },
     );
   const confirmedActionIds = new Set(confirmedActionRows.map((row) => String((row as Row).action_id)));
-  const participantById = new Map(participants.map((row) => [String(row.id), row]));
-
-  const eligibleMissions = missions.filter((mission) => {
-    const participant = participantById.get(String(mission.participant_id));
-    const event = events.get(String(mission.event_id));
-    if (!participant || !event || event.state !== "certified" || String(event.id) !== String(participant.event_id) || !confirmedActionIds.has(String(event.action_id))) return false;
-    const typedParticipant: Pick<SpogomiRecognitionParticipant, "registrationStatus" | "attendanceStatus" | "identityVerified" | "actionParticipationConfirmed" | "userId"> = {
-      registrationStatus: String(participant.registration_status) as SpogomiRecognitionParticipant["registrationStatus"],
-      attendanceStatus: String(participant.attendance_status) as SpogomiRecognitionParticipant["attendanceStatus"],
-      identityVerified: participant.account_link_status === "verified" && String(participant.clerk_id) === userId,
-      actionParticipationConfirmed: true,
-      userId,
-    };
-    return String(mission.evidence_reference ?? "").trim().length > 0 && isEligibleSpogomiMissionParticipant(typedParticipant);
-  });
-  const ordered = eligibleMissions.map((mission) => {
-    const event = events.get(String(mission.event_id))!;
-    const startsAt = typeof event.starts_at === "string" ? event.starts_at : String(mission.certified_at ?? "9999-12-31");
-    const timezone = typeof event.official_timezone === "string" ? event.official_timezone : "UTC";
-    let localDate = "9999-12-31";
-    try { localDate = formatCivilDateInTimeZone(startsAt, timezone); } catch { /* invalid legacy timezone falls behind valid official facts */ }
-    return { mission, event, startsAt, localDate };
-  }).sort((left, right) => `${left.localDate}:${left.startsAt}:${String(left.mission.certified_at ?? "")}:${String(left.mission.id)}`.localeCompare(`${right.localDate}:${right.startsAt}:${String(right.mission.certified_at ?? "")}:${String(right.mission.id)}`));
-  const mission = ordered[0]?.mission;
-  if (!mission) return null;
-  const event = events.get(String(mission.event_id))!;
-  return {
-    mechanicId: "spogomi_first_referee", eventType: "spogomi_first_referee_certified", sourceTable: "spogomi_recognition_attestations",
-    sourceId: userId, occurredOn: typeof event.starts_at === "string" ? event.starts_at : String(mission.certified_at),
-    statusPhase: "validated", xpAwarded: 1, eligible: true, badgeId: "spogomi_first_referee",
-    metadata: { missionId: String(mission.id), eventId: String(mission.event_id), certificationVersion: String(mission.certification_version) },
-  };
+  return buildFirstRefereeFact({ missions, participants, events, confirmedActionIds, userId });
 }

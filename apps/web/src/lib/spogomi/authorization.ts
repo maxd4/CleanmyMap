@@ -36,6 +36,37 @@ export function hasSpogomiCapability(
   return Boolean(access?.capabilities.has(capability));
 }
 
+async function loadSpogomiAccessRelations(params: { supabase: SupabaseClient; eventId: string; userId: string; actionId: string }) {
+  const [organizersResult, reviewersResult, participantResult] = await Promise.all([
+    params.supabase.from("action_organizers").select("organizer_clerk_id").eq("action_id", params.actionId),
+    params.supabase.from("spogomi_event_reviewers").select("role").eq("event_id", params.eventId).eq("clerk_id", params.userId).is("revoked_at", null),
+    params.supabase.from("spogomi_participants").select("id").eq("event_id", params.eventId).eq("clerk_id", params.userId).eq("account_link_status", "verified").maybeSingle(),
+  ]);
+  for (const result of [organizersResult, reviewersResult, participantResult]) if (result.error) throw result.error;
+  return { organizersResult, reviewersResult, participantResult };
+}
+
+function buildSpogomiCapabilities(isOrganizer: boolean, reviewerRoles: SpogomiAssignedAccessRole[], participantId: string | null): Set<SpogomiCapability> {
+  const capabilities = new Set<SpogomiCapability>();
+  if (participantId) capabilities.add("private_read");
+  if (isOrganizer || reviewerRoles.includes("observer") || reviewerRoles.includes("referee")) capabilities.add("observe");
+  if (isOrganizer || reviewerRoles.includes("referee")) capabilities.add("arbitrate");
+  if (isOrganizer || reviewerRoles.includes("checkin")) capabilities.add("checkin");
+  if (isOrganizer) {
+    capabilities.add("manage");
+    capabilities.add("assign_event_access");
+  }
+  return capabilities;
+}
+
+function resolveSpogomiRole(isOrganizer: boolean, reviewerRoles: SpogomiAssignedAccessRole[], participantId: string | null): SpogomiEventAccessRole | null {
+  if (isOrganizer) return "organizer";
+  if (reviewerRoles.includes("referee")) return "referee";
+  if (reviewerRoles.includes("checkin")) return "checkin";
+  if (reviewerRoles.includes("observer")) return "observer";
+  return participantId ? "participant" : null;
+}
+
 export async function resolveSpogomiEventAccess(params: {
   supabase: SupabaseClient;
   eventId: string;
@@ -52,28 +83,7 @@ export async function resolveSpogomiEventAccess(params: {
   const identity = await getCurrentUserIdentity({ userId: params.userId });
   if (!identity || identity.userId !== params.userId) return null;
 
-  const [organizersResult, reviewersResult, participantResult] = await Promise.all([
-    params.supabase
-      .from("action_organizers")
-      .select("organizer_clerk_id")
-      .eq("action_id", eventResult.data.action_id),
-    params.supabase
-      .from("spogomi_event_reviewers")
-      .select("role")
-      .eq("event_id", params.eventId)
-      .eq("clerk_id", params.userId)
-      .is("revoked_at", null),
-    params.supabase
-      .from("spogomi_participants")
-      .select("id")
-      .eq("event_id", params.eventId)
-      .eq("clerk_id", params.userId)
-      .eq("account_link_status", "verified")
-      .maybeSingle(),
-  ]);
-  for (const result of [organizersResult, reviewersResult, participantResult]) {
-    if (result.error) throw result.error;
-  }
+  const { organizersResult, reviewersResult, participantResult } = await loadSpogomiAccessRelations({ ...params, actionId: eventResult.data.action_id });
 
   const event = eventResult.data as SpogomiEventAccessDecision["event"];
   const organizerIds = (organizersResult.data ?? []).map((row) => String(row.organizer_clerk_id));
@@ -86,28 +96,8 @@ export async function resolveSpogomiEventAccess(params: {
     organizerIds,
   );
   const participantId = participantResult.data?.id ? String(participantResult.data.id) : null;
-  const capabilities = new Set<SpogomiCapability>();
-
-  if (participantId) capabilities.add("private_read");
-  if (isOrganizer || reviewerRoles.includes("observer") || reviewerRoles.includes("referee")) capabilities.add("observe");
-  if (isOrganizer || reviewerRoles.includes("referee")) capabilities.add("arbitrate");
-  if (isOrganizer || reviewerRoles.includes("checkin")) capabilities.add("checkin");
-  if (isOrganizer) {
-    capabilities.add("manage");
-    capabilities.add("assign_event_access");
-  }
-
-  const role = isOrganizer
-    ? "organizer"
-    : reviewerRoles.includes("referee")
-      ? "referee"
-      : reviewerRoles.includes("checkin")
-        ? "checkin"
-      : reviewerRoles.includes("observer")
-        ? "observer"
-        : participantId
-          ? "participant"
-          : null;
+  const capabilities = buildSpogomiCapabilities(isOrganizer, reviewerRoles, participantId);
+  const role = resolveSpogomiRole(isOrganizer, reviewerRoles, participantId);
 
   return {
     event,

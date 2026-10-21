@@ -363,44 +363,30 @@ export type SpogomiTeamCompositionPreview = {
   explanation: string[];
 };
 
+async function loadCompositionParticipants(supabase: SupabaseClient, event: EventRow, division?: SpogomiDivisionContext) {
+  let query = supabase.from("spogomi_participants").select("id, group_preference, source_row_number, team_id, registration_status, source_system, ticket_status, ticket_deleted").eq("event_id", event.id).eq("registration_status", "registered").order("source_row_number", { ascending: true });
+  if (division) query = query.eq("division_id", division.id);
+  const result = await query;
+  if (result.error) throw result.error;
+  const rows = result.data ?? [];
+  if (rows.some((row) => row.source_system === "cachan_ticketing" && isCancelledCachanTicket(row.ticket_status, Boolean(row.ticket_deleted)))) throw conflict("une place billetterie annulée ou supprimée reste enregistrée comme active ; une résolution organisateur est requise avant toute composition.");
+  return rows.filter((row) => isCachanTicketCompositionEligible({ sourceSystem: row.source_system, ticketStatus: row.ticket_status, ticketDeleted: Boolean(row.ticket_deleted), registrationStatus: String(row.registration_status) })).map((row) => ({ id: String(row.id), sourceOrder: row.source_row_number ?? 0, groupPreference: row.group_preference, teamId: row.team_id, registrationStatus: String(row.registration_status) }));
+}
+
+async function loadExistingCompositionTeams(supabase: SupabaseClient, event: EventRow, division?: SpogomiDivisionContext) {
+  let query = supabase.from("spogomi_teams").select("id, team_number, composition_state").eq("event_id", event.id).order("team_number", { ascending: true });
+  if (division) query = query.eq("division_id", division.id);
+  const result = await query;
+  if (result.error) throw result.error;
+  if ((result.data ?? []).some((team) => team.composition_state === "locked" || team.composition_state === "verified")) throw new Error("Validation: une équipe possède déjà une composition verrouillée ou vérifiée.");
+  return (result.data ?? []).map((row) => ({ id: String(row.id), teamNumber: Number(row.team_number), compositionState: String(row.composition_state) }));
+}
+
 export async function previewSpogomiTeams(supabase: SupabaseClient, event: EventRow, division?: SpogomiDivisionContext): Promise<SpogomiTeamCompositionPreview> {
   if (event.mode === "mixed" && !division) throw new Error("Validation: une division explicite est requise pour composer un événement mixte.");
   if (event.state === "composition_locked") throw new Error("Validation: la composition est déjà verrouillée.");
-  let participantsQuery = supabase.from("spogomi_participants")
-    .select("id, group_preference, source_row_number, team_id, registration_status, source_system, ticket_status, ticket_deleted")
-    .eq("event_id", event.id)
-    .eq("registration_status", "registered")
-    .order("source_row_number", { ascending: true });
-  if (division) participantsQuery = participantsQuery.eq("division_id", division.id);
-  const participants = await participantsQuery;
-  if (participants.error) throw participants.error;
-  const unresolvedTicketCancellations = (participants.data ?? []).filter((row) =>
-    row.source_system === "cachan_ticketing" &&
-    isCancelledCachanTicket(row.ticket_status, Boolean(row.ticket_deleted))
-  );
-  if (unresolvedTicketCancellations.length) {
-    throw conflict("une place billetterie annulée ou supprimée reste enregistrée comme active ; une résolution organisateur est requise avant toute composition.");
-  }
-  let existingTeamsQuery = supabase.from("spogomi_teams").select("id, team_number, composition_state").eq("event_id", event.id).order("team_number", { ascending: true });
-  if (division) existingTeamsQuery = existingTeamsQuery.eq("division_id", division.id);
-  const existingTeams = await existingTeamsQuery;
-  if (existingTeams.error) throw existingTeams.error;
-  if ((existingTeams.data ?? []).some((team) => team.composition_state === "locked" || team.composition_state === "verified")) {
-    throw new Error("Validation: une équipe possède déjà une composition verrouillée ou vérifiée.");
-  }
-  const participantRows = (participants.data ?? []).filter((row) => isCachanTicketCompositionEligible({
-    sourceSystem: row.source_system,
-    ticketStatus: row.ticket_status,
-    ticketDeleted: Boolean(row.ticket_deleted),
-    registrationStatus: String(row.registration_status),
-  })).map((row) => ({
-    id: String(row.id),
-    sourceOrder: row.source_row_number ?? 0,
-    groupPreference: row.group_preference,
-    teamId: row.team_id,
-    registrationStatus: String(row.registration_status),
-  }));
-  const teamRows = (existingTeams.data ?? []).map((row) => ({ id: String(row.id), teamNumber: Number(row.team_number), compositionState: String(row.composition_state) }));
+  const participantRows = await loadCompositionParticipants(supabase, event, division);
+  const teamRows = await loadExistingCompositionTeams(supabase, event, division);
   const formation = buildDeterministicTeamFormation({
     mode: division?.division_type ?? (event.mode === "mixed" ? "casual" : event.mode),
     casualTeamSize: event.team_size_config?.casual?.maxMembers ?? null,

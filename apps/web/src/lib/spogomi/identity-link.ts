@@ -76,6 +76,21 @@ function mapRpcError(error: unknown): SpogomiIdentityLinkError {
   return new SpogomiIdentityLinkError("La liaison SPOGOMI n’a pas pu être vérifiée.", "validation");
 }
 
+function parseClaimedIdentity(row: Record<string, unknown> | null): SpogomiIdentityLinkResult {
+  const participantId = typeof row?.participant_id === "string" ? row.participant_id : null;
+  const actionId = typeof row?.action_id === "string" ? row.action_id : null;
+  const linkStatus = resolveLinkStatus(row?.link_status);
+  const attendanceStatus = row?.attendance_status === "present" || row?.attendance_status === "absent" ? row.attendance_status : "unknown";
+  if (!participantId || !actionId || !linkStatus) throw new SpogomiIdentityLinkError("La liaison SPOGOMI n’a pas pu être vérifiée.", "validation");
+  return { linkStatus, participantId, actionId, attendanceStatus };
+}
+
+function resolveLinkStatus(value: unknown): SpogomiIdentityLinkResult["linkStatus"] | null {
+  if (value === "already_linked") return "already_linked";
+  if (value === "linked") return "linked";
+  return null;
+}
+
 export async function issueSpogomiIdentityCode(
   supabase: SupabaseClient,
   params: { eventId: string; participantId: string; organizerId: string; now?: Date },
@@ -106,15 +121,7 @@ export async function claimSpogomiIdentityLink(
     p_clerk_id: params.clerkId,
   });
   if (result.error) throw mapRpcError(result.error);
-  const row = toRpcRow(result.data);
-  const participantId = typeof row?.participant_id === "string" ? row.participant_id : null;
-  const actionId = typeof row?.action_id === "string" ? row.action_id : null;
-  const linkStatus = row?.link_status === "already_linked" ? "already_linked" : row?.link_status === "linked" ? "linked" : null;
-  const attendanceStatus = row?.attendance_status === "present" || row?.attendance_status === "absent" ? row.attendance_status : "unknown";
-  if (!participantId || !actionId || !linkStatus) {
-    throw new SpogomiIdentityLinkError("La liaison SPOGOMI n’a pas pu être vérifiée.", "validation");
-  }
-  return { linkStatus, participantId, actionId, attendanceStatus };
+  return parseClaimedIdentity(toRpcRow(result.data));
 }
 
 export async function requestCleanMyMapParticipation(
@@ -169,6 +176,14 @@ type VerifiedSpogomiIdentity = {
   actionPhase: "pre_action" | "post_action_draft" | "post_action_complete" | null;
 };
 
+function resolveIdentityActionPhase(value: unknown): VerifiedSpogomiIdentity["actionPhase"] {
+  return value === "pre_action" || value === "post_action_draft" || value === "post_action_complete" ? value : null;
+}
+
+function resolveAttendanceStatus(value: unknown): VerifiedSpogomiIdentity["attendanceStatus"] {
+  return value === "present" || value === "absent" ? value : "unknown";
+}
+
 function createIdentityNotFoundError(): SpogomiIdentityLinkError {
   return new SpogomiIdentityLinkError(
     "La liaison SPOGOMI n’est pas disponible pour ce compte.",
@@ -214,14 +229,8 @@ async function loadVerifiedSpogomiIdentity(
     .eq("id", actionId)
     .maybeSingle();
   if (actionResult.error) throw actionResult.error;
-  const actionPhase = actionResult.data?.action_phase === "pre_action" ||
-    actionResult.data?.action_phase === "post_action_draft" ||
-    actionResult.data?.action_phase === "post_action_complete"
-    ? actionResult.data.action_phase
-    : null;
-  const attendanceStatus = participant.attendance_status === "present" || participant.attendance_status === "absent"
-    ? participant.attendance_status
-    : "unknown";
+  const actionPhase = resolveIdentityActionPhase(actionResult.data?.action_phase);
+  const attendanceStatus = resolveAttendanceStatus(participant.attendance_status);
 
   return {
     participantId: participant.id,
@@ -262,31 +271,8 @@ async function loadLinkedTeam(
   if (teamResult.error) throw teamResult.error;
   if (!teamResult.data) return null;
   const teamDivisionId = typeof teamResult.data.division_id === "string" ? teamResult.data.division_id : null;
-
-  let divisionType: SpogomiLinkedTeam["divisionType"] = null;
-  if (teamDivisionId) {
-    const divisionResult = await supabase
-      .from("spogomi_divisions")
-      .select("division_type")
-      .eq("id", teamDivisionId)
-      .eq("event_id", params.eventId)
-      .maybeSingle();
-    if (divisionResult.error) throw divisionResult.error;
-    divisionType = divisionResult.data?.division_type === "casual" || divisionResult.data?.division_type === "world_cup"
-      ? divisionResult.data.division_type
-      : null;
-  }
-
-  const projection = await loadSpogomiResultsProjection({
-    supabase,
-    eventId: params.eventId,
-    publicOnly: true,
-  });
-  const divisionResults = projection?.event?.mode === "mixed"
-    ? teamDivisionId ? projection.results.divisions?.find((division) => division.id === teamDivisionId) ?? null : null
-    : projection?.results ?? null;
-  const sport = divisionResults ? mapPublishedTeamResult(divisionResults.sport.entries, params.identity.teamId) : null;
-  const butts = divisionResults ? mapPublishedTeamResult(divisionResults.butts.entries, params.identity.teamId) : null;
+  const divisionType = await loadLinkedDivisionType(supabase, params.eventId, teamDivisionId);
+  const publishedResults = await loadLinkedPublishedResults(supabase, params.eventId, params.identity.teamId, teamDivisionId);
 
   return {
     publicName: String(teamResult.data.public_name),
@@ -294,8 +280,23 @@ async function loadLinkedTeam(
     divisionType,
     attendanceStatus: params.identity.attendanceStatus,
     participationStatus: params.participationStatus,
-    publishedResults: sport || butts ? { sport, butts } : null,
+    publishedResults,
   };
+}
+
+async function loadLinkedDivisionType(supabase: SupabaseClient, eventId: string, divisionId: string | null): Promise<SpogomiLinkedTeam["divisionType"]> {
+  if (!divisionId) return null;
+  const result = await supabase.from("spogomi_divisions").select("division_type").eq("id", divisionId).eq("event_id", eventId).maybeSingle();
+  if (result.error) throw result.error;
+  return result.data?.division_type === "casual" || result.data?.division_type === "world_cup" ? result.data.division_type : null;
+}
+
+async function loadLinkedPublishedResults(supabase: SupabaseClient, eventId: string, teamId: string, divisionId: string | null): Promise<SpogomiLinkedTeam["publishedResults"]> {
+  const projection = await loadSpogomiResultsProjection({ supabase, eventId, publicOnly: true });
+  const divisionResults = projection?.event?.mode === "mixed" ? divisionId ? projection.results.divisions?.find((division) => division.id === divisionId) ?? null : null : projection?.results ?? null;
+  const sport = divisionResults ? mapPublishedTeamResult(divisionResults.sport.entries, teamId) : null;
+  const butts = divisionResults ? mapPublishedTeamResult(divisionResults.butts.entries, teamId) : null;
+  return sport || butts ? { sport, butts } : null;
 }
 
 async function loadStoredParticipation(

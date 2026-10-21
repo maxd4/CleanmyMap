@@ -209,42 +209,35 @@ async function ensureAttemptFingerprint(
   identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>,
   fingerprint: string,
 ): Promise<CreationFingerprintProof> {
-  const attemptProof = attempt.intention_fingerprint
-    ? fingerprintProof(input, attempt.intention_fingerprint)
-    : null;
+  const attemptProof = attempt.intention_fingerprint ? fingerprintProof(input, attempt.intention_fingerprint) : null;
   if (attempt.intention_fingerprint && !attemptProof) throw conflict("la clé d'idempotence a reçu une empreinte historique inconnue.");
-
-  const event = attempt.event_id
-    ? await loadEventById(supabase, attempt.event_id)
-    : await loadEventByKey(supabase, input.idempotencyKey);
-  if (event && (!eventMatchesInput(event, input) || event.created_by_clerk_id !== userId || event.idempotency_key !== input.idempotencyKey)) {
-    throw conflict("la clé d'idempotence a reçu des paramètres ou des relations différents.");
-  }
-  if (event && attempt.action_id && event.action_id !== attempt.action_id) {
-    throw conflict("la relation tentative-action-événement est incohérente.");
-  }
-
+  const event = attempt.event_id ? await loadEventById(supabase, attempt.event_id) : await loadEventByKey(supabase, input.idempotencyKey);
+  assertAttemptEventConsistency(event, attempt, input, userId);
   const actionId = attempt.action_id ?? event?.action_id ?? await findCorrelatedActionId(supabase, input.idempotencyKey);
-  const proofs = attemptProof ? [attemptProof] : [];
-  const actionProof = actionId
-    ? await assertActionOwnership(supabase, String(actionId), userId, identity, input, input.idempotencyKey, proofs)
-    : null;
-  const proof = mergeFingerprintProofs(actionProof ? [...proofs, actionProof] : proofs);
+  const proof = await buildAttemptFingerprintProof(supabase, actionId, attemptProof, userId, identity, input);
   if (!proof) throw conflict("une ancienne tentative sans empreinte complète ne peut pas être vérifiée.");
-
-  if (attempt.intention_fingerprint !== fingerprint) {
-    let fingerprintUpdate = supabase
-      .from("spogomi_event_creation_attempts")
-      .update({ intention_fingerprint: fingerprint })
-      .eq("id", attempt.id);
-    fingerprintUpdate = attempt.intention_fingerprint
-      ? fingerprintUpdate.eq("intention_fingerprint", attempt.intention_fingerprint)
-      : fingerprintUpdate.is("intention_fingerprint", null);
-    const fingerprinted = await fingerprintUpdate.select("*").maybeSingle();
-    if (fingerprinted.error) throw fingerprinted.error;
-    if (!fingerprinted.data) throw conflict("la tentative a été modifiée pendant sa reprise.");
-  }
+  await persistAttemptFingerprint(supabase, attempt, fingerprint);
   return proof;
+}
+
+function assertAttemptEventConsistency(event: CreationEvent | null, attempt: CreationAttempt, input: CreationInput, userId: string): void {
+  if (event && (!eventMatchesInput(event, input) || event.created_by_clerk_id !== userId || event.idempotency_key !== input.idempotencyKey)) throw conflict("la clé d'idempotence a reçu des paramètres ou des relations différents.");
+  if (event && attempt.action_id && event.action_id !== attempt.action_id) throw conflict("la relation tentative-action-événement est incohérente.");
+}
+
+async function buildAttemptFingerprintProof(supabase: SupabaseClient, actionId: string | null | undefined, attemptProof: CreationFingerprintProof | null, userId: string, identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>, input: CreationInput): Promise<CreationFingerprintProof | null> {
+  const proofs = attemptProof ? [attemptProof] : [];
+  const actionProof = actionId ? await assertActionOwnership(supabase, String(actionId), userId, identity, input, input.idempotencyKey, proofs) : null;
+  return mergeFingerprintProofs(actionProof ? [...proofs, actionProof] : proofs);
+}
+
+async function persistAttemptFingerprint(supabase: SupabaseClient, attempt: CreationAttempt, fingerprint: string): Promise<void> {
+  if (attempt.intention_fingerprint === fingerprint) return;
+  let update = supabase.from("spogomi_event_creation_attempts").update({ intention_fingerprint: fingerprint }).eq("id", attempt.id);
+  update = attempt.intention_fingerprint ? update.eq("intention_fingerprint", attempt.intention_fingerprint) : update.is("intention_fingerprint", null);
+  const result = await update.select("*").maybeSingle();
+  if (result.error) throw result.error;
+  if (!result.data) throw conflict("la tentative a été modifiée pendant sa reprise.");
 }
 
 async function reclaimCreationAttempt(

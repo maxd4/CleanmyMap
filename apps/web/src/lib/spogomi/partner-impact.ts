@@ -86,19 +86,26 @@ export function buildSpogomiPublicOrganizer(params: {
   if (!catalogEntry && !params.partnerEntry) return null;
   return {
     organizerId,
-    verifiedName: catalogEntry?.name ?? organizerName,
+    verifiedName: organizerIdentity(catalogEntry, organizerName),
     role: "local_organizer",
-    territory:
-      catalogEntry?.city && catalogEntry.region
-        ? `${catalogEntry.city} · ${catalogEntry.region}`
-        : catalogEntry?.geographicScope === "national"
-          ? "France"
-          : params.eventTerritory.trim() || null,
-    officialSiteUrl: params.partnerEntry?.websiteUrl ?? catalogEntry?.websiteUrl ?? null,
-    partnerEntryId: params.partnerEntry?.id ?? null,
-    partnerProfileHref: params.partnerEntry ? "/sections/annuaire#annuaire" : null,
+    territory: organizerTerritory(catalogEntry, params.eventTerritory),
+    ...organizerLinks(catalogEntry, params.partnerEntry),
     officialCleanMyMapPartnership: false,
   };
+}
+
+function organizerTerritory(catalogEntry: ReturnType<typeof getCanonicalStaticOrganizerById>, eventTerritory: string): string | null {
+  if (catalogEntry?.city && catalogEntry.region) return `${catalogEntry.city} · ${catalogEntry.region}`;
+  if (catalogEntry?.geographicScope === "national") return "France";
+  return eventTerritory.trim() || null;
+}
+
+function organizerIdentity(catalogEntry: ReturnType<typeof getCanonicalStaticOrganizerById>, fallback: string): string {
+  return catalogEntry?.name ?? fallback;
+}
+
+function organizerLinks(catalogEntry: ReturnType<typeof getCanonicalStaticOrganizerById>, partnerEntry?: Pick<PublishedAnnuaireEntry, "id" | "websiteUrl"> | null) {
+  return { officialSiteUrl: partnerEntry?.websiteUrl ?? catalogEntry?.websiteUrl ?? null, partnerEntryId: partnerEntry?.id ?? null, partnerProfileHref: partnerEntry ? "/sections/annuaire#annuaire" : null };
 }
 
 function parseNonNegative(value: number | null): number | null {
@@ -114,9 +121,7 @@ function yearOf(value: string): string {
   return Number.isFinite(year) && year > 1970 ? String(year) : "inconnu";
 }
 
-export function aggregateSpogomiPartnerImpact(
-  input: Iterable<SpogomiPartnerEventInput>,
-): SpogomiPartnerImpact {
+function selectPartnerEvents(input: Iterable<SpogomiPartnerEventInput>): SpogomiPartnerEventInput[] {
   const events: SpogomiPartnerEventInput[] = [];
   const seenActionIds = new Set<string>();
   for (const event of input) {
@@ -124,37 +129,20 @@ export function aggregateSpogomiPartnerImpact(
     seenActionIds.add(event.actionId);
     events.push(event);
   }
+  return events;
+}
 
+function collectPartnerMetrics(events: SpogomiPartnerEventInput[]) {
   const availableEnvironmental = events.filter((event) => event.environmental.status === "available");
-  const totalMasses = availableEnvironmental
-    .map((event) => parseNonNegative(event.environmental.totalWasteMassGrams))
-    .filter((value): value is number => value !== null);
-  const buttMasses = availableEnvironmental
-    .map((event) => parseNonNegative(event.environmental.cigaretteButtsMassGrams))
-    .filter((value): value is number => value !== null);
-  const buttCounts = availableEnvironmental
-    .map((event) => parseNonNegative(event.environmental.cigaretteButtsCount))
-    .filter((value): value is number => value !== null);
-  const participationValues = events
-    .map((event) => parseNonNegative(event.environmental.participantsPresent))
-    .filter((value): value is number => value !== null);
-  const identityReliable = events.length > 0 && events.every((event) => event.participantIdentitiesReliable);
-  const uniqueIds = new Set(events.flatMap((event) => event.verifiedParticipantIds));
-  const missionCounts: Partial<Record<SpogomiRecognitionKind, number>> = {};
-  for (const mission of events.flatMap((event) => event.certifiedMissions)) {
-    missionCounts[mission.kind] = (missionCounts[mission.kind] ?? 0) + 1;
-  }
+  const values = (field: "totalWasteMassGrams" | "cigaretteButtsMassGrams" | "cigaretteButtsCount" | "participantsPresent") => availableEnvironmental.map((event) => parseNonNegative(event.environmental[field])).filter((value): value is number => value !== null);
+  return { availableEnvironmental, totalMasses: values("totalWasteMassGrams"), buttMasses: values("cigaretteButtsMassGrams"), buttCounts: values("cigaretteButtsCount"), participationValues: values("participantsPresent") };
+}
 
+function buildPartnerYearlyTotals(events: SpogomiPartnerEventInput[]): SpogomiPartnerImpact["byYear"] {
   const byYear: SpogomiPartnerImpact["byYear"] = {};
   for (const event of events) {
     const year = yearOf(event.startsAt);
-    const current = byYear[year] ?? {
-      publishedEditionCount: 0,
-      confirmedTerrainParticipations: null,
-      totalWasteMassKg: null,
-      cigaretteButtsMassKg: null,
-      countedCigaretteButts: null,
-    };
+    const current = byYear[year] ?? { publishedEditionCount: 0, confirmedTerrainParticipations: null, totalWasteMassKg: null, cigaretteButtsMassKg: null, countedCigaretteButts: null };
     current.publishedEditionCount += 1;
     const participants = parseNonNegative(event.environmental.participantsPresent);
     if (participants !== null) current.confirmedTerrainParticipations = (current.confirmedTerrainParticipations ?? 0) + participants;
@@ -166,6 +154,31 @@ export function aggregateSpogomiPartnerImpact(
     if (buttCount !== null) current.countedCigaretteButts = (current.countedCigaretteButts ?? 0) + buttCount;
     byYear[year] = current;
   }
+  return byYear;
+}
+
+function buildPartnerNotes(events: SpogomiPartnerEventInput[], availableCount: number, identityReliable: boolean): string[] {
+  return [
+    ...(events.length !== availableCount ? ["Certains résultats environnementaux publiables sont absents ou incomplets."] : []),
+    ...(events.some((event) => parseNonNegative(event.environmental.totalWasteMassGrams) === null || parseNonNegative(event.environmental.cigaretteButtsMassGrams) === null || parseNonNegative(event.environmental.cigaretteButtsCount) === null) ? ["Certaines composantes de masse ou de comptage sont absentes ; les totaux non comparables restent signalés."] : []),
+    ...(identityReliable ? [] : ["Le nombre de bénévoles uniques n'est pas comparable avec les sources d'identité disponibles."]),
+    ...(events.some((event) => event.environmental.cigaretteButtsMassGrams !== null || event.environmental.cigaretteButtsCount !== null) ? ["La masse de mégots et le comptage observé restent séparés ; aucune conversion n'est appliquée."] : []),
+  ];
+}
+
+export function aggregateSpogomiPartnerImpact(
+  input: Iterable<SpogomiPartnerEventInput>,
+): SpogomiPartnerImpact {
+  const events = selectPartnerEvents(input);
+  const { availableEnvironmental, totalMasses, buttMasses, buttCounts, participationValues } = collectPartnerMetrics(events);
+  const identityReliable = events.length > 0 && events.every((event) => event.participantIdentitiesReliable);
+  const uniqueIds = new Set(events.flatMap((event) => event.verifiedParticipantIds));
+  const missionCounts: Partial<Record<SpogomiRecognitionKind, number>> = {};
+  for (const mission of events.flatMap((event) => event.certifiedMissions)) {
+    missionCounts[mission.kind] = (missionCounts[mission.kind] ?? 0) + 1;
+  }
+
+  const byYear = buildPartnerYearlyTotals(events);
 
   const totalWasteMassKg = totalMasses.length ? sumNullable(totalMasses) as number / 1000 : null;
   const cigaretteButtsMassKg = buttMasses.length ? sumNullable(buttMasses) as number / 1000 : null;
@@ -177,18 +190,7 @@ export function aggregateSpogomiPartnerImpact(
   const nonCigaretteWasteMassKg = completeMassInputs && totalWasteMassKg !== null && cigaretteButtsMassKg !== null && cigaretteButtsMassKg <= totalWasteMassKg
     ? totalWasteMassKg - cigaretteButtsMassKg
     : null;
-  const notes = [
-    ...(events.length !== availableEnvironmental.length ? ["Certains résultats environnementaux publiables sont absents ou incomplets."] : []),
-    ...(events.some((event) =>
-      parseNonNegative(event.environmental.totalWasteMassGrams) === null ||
-      parseNonNegative(event.environmental.cigaretteButtsMassGrams) === null ||
-      parseNonNegative(event.environmental.cigaretteButtsCount) === null,
-    ) ? ["Certaines composantes de masse ou de comptage sont absentes ; les totaux non comparables restent signalés."] : []),
-    ...(identityReliable ? [] : ["Le nombre de bénévoles uniques n'est pas comparable avec les sources d'identité disponibles."]),
-    ...(events.some((event) => event.environmental.cigaretteButtsMassGrams !== null || event.environmental.cigaretteButtsCount !== null)
-      ? ["La masse de mégots et le comptage observé restent séparés ; aucune conversion n'est appliquée."]
-      : []),
-  ];
+  const notes = buildPartnerNotes(events, availableEnvironmental.length, identityReliable);
 
   return {
     publishedEditionCount: events.length,

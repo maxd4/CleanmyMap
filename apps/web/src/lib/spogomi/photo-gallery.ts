@@ -111,27 +111,31 @@ function galleryContent(base: ParsedGalleryBase) {
   };
 }
 
+function isValidPublishedGalleryRecord(record: UnknownRecord, status: string): boolean {
+  if (status === "draft") return false;
+  if (record.rightsStatus !== "authorized" || record.approvedForPublication !== true) return false;
+  if (record.subjectProtectionReviewed !== true || record.minorProtectionReviewed !== true) return false;
+  return status === "published" ? Boolean(nonEmptyString(record.publishedAt, 80)) : Boolean(nonEmptyString(record.withdrawnAt, 80));
+}
+
 export function parseSpogomiGalleryPhoto(value: unknown): SpogomiGalleryPhoto | null {
   const base = parseGalleryBase(value);
   if (!base) return null;
   const { record } = base;
   const status = record.status;
   if (status !== "draft" && status !== "published" && status !== "withdrawn") return null;
+  const publishedStatus = status as "published" | "withdrawn";
   const approvedAt = nonEmptyString(record.approvedAt, 80);
   const approvedByUserId = nonEmptyString(record.approvedByUserId, 255);
   if (!approvedAt || !approvedByUserId) return null;
-  if (status === "draft") return null;
-  if (record.rightsStatus !== "authorized" || record.approvedForPublication !== true) return null;
-  if (record.subjectProtectionReviewed !== true || record.minorProtectionReviewed !== true) return null;
-  if (status === "published" && !nonEmptyString(record.publishedAt, 80)) return null;
-  if (status === "withdrawn" && !nonEmptyString(record.withdrawnAt, 80)) return null;
+  if (!isValidPublishedGalleryRecord(record, publishedStatus)) return null;
   return {
     ...galleryContent(base),
     rightsStatus: "authorized",
     approvedForPublication: true,
     subjectProtectionReviewed: true,
     minorProtectionReviewed: true,
-    status,
+    status: publishedStatus,
     approvedAt,
     approvedByUserId,
     publishedAt: nonEmptyString(record.publishedAt, 80),

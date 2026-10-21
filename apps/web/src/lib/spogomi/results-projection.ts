@@ -219,6 +219,10 @@ function compareRankingValues(left: TeamComputed, right: TeamComputed, kind: "po
   }
   const score = compareDescending(left.result?.officialScore, right.result?.officialScore);
   if (score) return score;
+  return compareRankingTiebreakers(left, right, tiebreakers);
+}
+
+function compareRankingTiebreakers(left: TeamComputed, right: TeamComputed, tiebreakers: SpogomiRegulation["tiebreakers"]): number {
   for (const tiebreaker of tiebreakers ?? []) {
     if (tiebreaker === "sporting_score") continue;
     const value = tiebreaker === "mass_grams"
@@ -266,6 +270,77 @@ function normalizeSnapshot(value: unknown): unknown {
   return value;
 }
 
+function isRankingEntryEligible(entry: TeamComputed, kind: "points" | "butts"): boolean {
+  if (!entry.closure.sportEligible || !entry.result) return false;
+  return kind === "points"
+    ? entry.result.officialScore !== null && entry.result.ineligibleReason === null
+    : entry.result.comparableForButtsPerParticipant;
+}
+
+function hasPublishedOfficialSet(source: SpogomiResultsSource, computed: TeamComputed[], kind: "points" | "butts", official: Map<string, SpogomiResultsSource["officialRankings"][number]>): boolean {
+  return source.event.state === "certified" && computed.every((entry) => !isRankingEntryEligible(entry, kind) || official.has(entry.team.id));
+}
+
+function rankingReason(
+  entry: TeamComputed,
+  kind: "points" | "butts",
+  regulationComplete: boolean,
+  comparable: boolean,
+  status: SpogomiPublicRankingEntry["status"],
+): string | null {
+  if (!regulationComplete && kind === "points") return "Règlement incomplet : aucun classement sportif officiel calculé.";
+  if (!entry.submission) return "Aucun résultat publié pour cette équipe.";
+  if (!comparable) return kind === "butts" ? "Non comparable : comptage direct et présence vérifiée requis." : entry.result?.ineligibleReason ?? "Résultat non éligible.";
+  return status === "unavailable" ? "Résultat non publié." : null;
+}
+
+function rankingEntryStatus(eligible: boolean, canShowProvisional: boolean, selected: boolean, visibility: SpogomiPublicResultsVisibility, publishedOfficial: SpogomiResultsSource["officialRankings"][number] | null): SpogomiPublicRankingEntry["status"] {
+  if (!eligible || !canShowProvisional || !selected) return "unavailable";
+  if (visibility === "certified") return publishedOfficial ? "certified" : "unavailable";
+  return publishedOfficial ? "certified" : "provisional";
+}
+
+function rankingBase(entry: TeamComputed, kind: "points" | "butts", eligible: boolean, status: SpogomiPublicRankingEntry["status"], rank: number | null, reason: string | null) {
+  return {
+    teamId: entry.team.id,
+    divisionId: entry.team.division_id,
+    teamNumber: entry.team.team_number,
+    publicName: entry.team.public_name,
+    rank,
+    status,
+    eligible,
+    reason: entry.closure.sportEligible ? reason : `Équipe non éligible : ${entry.closure.status}.`,
+    valueUnit: (kind === "points" ? "points" : "mégots/participant") as SpogomiPublicRankingEntry["valueUnit"],
+  };
+}
+
+function exposeRankingValues(base: ReturnType<typeof rankingBase>, entry: TeamComputed, kind: "points" | "butts", regulationComplete: boolean): SpogomiPublicRankingEntry {
+  if (base.status === "unavailable") return base;
+  return { ...base, score: kind === "points" && regulationComplete ? entry.result?.officialScore ?? null : null, countedButts: entry.result?.physicalTotals.countedButts ?? null, presentParticipants: entry.presentParticipants, numerator: entry.result?.physicalTotals.countedButts ?? null, denominator: entry.presentParticipants, ratio: entry.result?.buttsPerParticipant ?? null };
+}
+
+function buildRankingEntry(params: {
+  entry: TeamComputed;
+  kind: "points" | "butts";
+  regulationComplete: boolean;
+  canShowProvisional: boolean;
+  rankingSource: TeamComputed[];
+  ranking: Map<string, number>;
+  official: Map<string, SpogomiResultsSource["officialRankings"][number]>;
+  hasOfficialSet: boolean;
+  visibility: SpogomiPublicResultsVisibility;
+}): SpogomiPublicRankingEntry {
+  const { entry, kind, regulationComplete, canShowProvisional, rankingSource, ranking, official, hasOfficialSet, visibility } = params;
+  const result = entry.result;
+  const comparable = Boolean(result && (kind === "points" ? result.officialScore !== null : result.comparableForButtsPerParticipant));
+  const eligible = isRankingEntryEligible(entry, kind);
+  const selected = rankingSource.includes(entry);
+  const publishedOfficial = hasOfficialSet && entry.submission?.status === "certified" ? official.get(entry.team.id) ?? null : null;
+  const status = rankingEntryStatus(eligible, canShowProvisional, selected, visibility, publishedOfficial);
+  const rank = status === "certified" ? publishedOfficial?.rank ?? null : status === "provisional" ? ranking.get(entry.team.id) ?? null : null;
+  return exposeRankingValues(rankingBase(entry, kind, eligible, status, rank, rankingReason(entry, kind, regulationComplete, comparable, status)), entry, kind, regulationComplete);
+}
+
 function buildRankingEntries(params: {
   source: SpogomiResultsSource;
   computed: TeamComputed[];
@@ -276,205 +351,162 @@ function buildRankingEntries(params: {
 }): SpogomiPublicRankingEntry[] {
   const { source, computed, kind, regulationComplete, regulation, publicationSourceSnapshot } = params;
   const official = currentOfficialRankings(source, kind, publicationSourceSnapshot);
-  const hasOfficialSet = source.event.state === "certified" && computed.every((entry) => {
-    if (!entry.closure.sportEligible) return true;
-    if (!entry.result) return false;
-    const eligible = kind === "points"
-      ? entry.result.officialScore !== null && entry.result.ineligibleReason === null
-      : entry.result.comparableForButtsPerParticipant;
-    return !eligible || official.has(entry.team.id);
-  });
+  const hasOfficialSet = hasPublishedOfficialSet(source, computed, kind, official);
   const canShowProvisional = source.event.publicResultsVisibility === "provisional" || source.event.publicResultsVisibility === "certified";
   const provisionalEntries = computed.filter((entry) => entry.submission && ["submitted", "provisional", "certified"].includes(entry.submission.status));
   const rankingSource = source.event.publicResultsVisibility === "certified"
     ? computed.filter((entry) => entry.submission?.status === "certified")
     : provisionalEntries;
   const ranking = rankBy(rankingSource, kind, regulation);
-  const entries = computed.map((entry): SpogomiPublicRankingEntry => {
-    const result = entry.result;
-    const comparable = Boolean(result && (kind === "points" ? result.officialScore !== null : result.comparableForButtsPerParticipant));
-    const eligible = entry.closure.sportEligible && (kind === "points" ? Boolean(result && result.officialScore !== null && result.ineligibleReason === null) : comparable);
-    const selected = rankingSource.includes(entry);
-    const publishedOfficial = hasOfficialSet && entry.submission?.status === "certified" ? official.get(entry.team.id) ?? null : null;
-    const status: SpogomiPublicRankingEntry["status"] = !eligible || !canShowProvisional || !selected ? "unavailable" : source.event.publicResultsVisibility === "certified" ? (publishedOfficial ? "certified" : "unavailable") : publishedOfficial ? "certified" : "provisional";
-    const reason = !regulationComplete && kind === "points"
-      ? "Règlement incomplet : aucun classement sportif officiel calculé."
-      : !entry.submission
-        ? "Aucun résultat publié pour cette équipe."
-        : !comparable
-          ? kind === "butts" ? "Non comparable : comptage direct et présence vérifiée requis." : result?.ineligibleReason ?? "Résultat non éligible."
-          : status === "unavailable" ? "Résultat non publié." : null;
-    const exposeValues = status !== "unavailable";
-    const base = {
-      teamId: entry.team.id,
-      divisionId: entry.team.division_id,
-      teamNumber: entry.team.team_number,
-      publicName: entry.team.public_name,
-      rank: status === "certified" ? (publishedOfficial?.rank ?? null) : status === "provisional" ? (ranking.get(entry.team.id) ?? null) : null,
-      status,
-      eligible,
-      reason: entry.closure.sportEligible ? reason : `Équipe non éligible : ${entry.closure.status}.`,
-      valueUnit: (kind === "points" ? "points" : "mégots/participant") as SpogomiPublicRankingEntry["valueUnit"],
-    };
-    return exposeValues ? {
-      ...base,
-      score: kind === "points" && regulationComplete ? result?.officialScore ?? null : null,
-      countedButts: result?.physicalTotals.countedButts ?? null,
-      presentParticipants: entry.presentParticipants,
-      numerator: result?.physicalTotals.countedButts ?? null,
-      denominator: entry.presentParticipants,
-      ratio: result?.buttsPerParticipant ?? null,
-    } : base;
-  });
+  const entries = computed.map((entry) => buildRankingEntry({ entry, kind, regulationComplete, canShowProvisional, rankingSource, ranking, official, hasOfficialSet, visibility: source.event.publicResultsVisibility }));
   return entries.sort((left, right) => (left.rank ?? Number.MAX_SAFE_INTEGER) - (right.rank ?? Number.MAX_SAFE_INTEGER) || left.teamNumber - right.teamNumber);
 }
 
-export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refreshedAt = new Date().toISOString()): SpogomiExportProjection {
-  const divisionRows = source.event.divisions ?? [];
-  if (source.event.mode === "mixed" && divisionRows.length === 2) {
-    const projections = divisionRows.map((division) => buildSpogomiResultsProjection({
-      ...source,
-      event: {
-        ...source.event,
-        mode: division.division_type,
-        divisions: [division],
-        ...(division.regulation_version ? { regulationVersion: division.regulation_version } : {}),
-        ...(division.regulation_status ? { regulationStatus: division.regulation_status } : {}),
-        ...(division.regulation_source_reference !== undefined ? { regulationSourceReference: division.regulation_source_reference } : {}),
-        ...(division.regulation_config !== undefined ? { regulationConfig: division.regulation_config } : {}),
-        ...(division.team_size_config !== undefined ? { teamSizeConfig: division.team_size_config } : {}),
-      },
-      categories: source.categories.filter((row) => row.division_id === division.id),
-      teams: source.teams.filter((row) => row.division_id === division.id),
-      submissions: source.submissions.filter((row) => row.division_id === division.id),
-      items: source.items.filter((row) => row.division_id === division.id),
-      participants: source.participants.filter((row) => row.division_id === division.id),
-      officialRankings: source.officialRankings.filter((row) => row.division_id === division.id),
-    }, refreshedAt));
-    const first = projections[0];
-    if (!first) throw new Error("Validation: une édition mixte doit posséder deux divisions.");
-    const environmental = source.actionIsPublished && source.consolidation?.projection
-      ? {
-          status: "available" as const,
-          totalWasteMassGrams: parseNumber(source.consolidation.projection.totalWasteMassGrams),
-          cigaretteButtsMassGrams: parseNumber(source.consolidation.projection.cigaretteButtsMassGrams),
-          cigaretteButtsCount: parseNumber(source.consolidation.projection.cigaretteButtsCount),
-          participantsPresent: parseNumber(source.consolidation.projection.participantsPresent),
-          projectionVersion: typeof source.consolidation.projection.projectionVersion === "string" ? source.consolidation.projection.projectionVersion : null,
-          sourceHash: typeof source.consolidation.projection.sourceHash === "string" ? source.consolidation.projection.sourceHash : null,
-        }
-      : { status: "unavailable" as const, totalWasteMassGrams: null, cigaretteButtsMassGrams: null, cigaretteButtsCount: null, participantsPresent: null, projectionVersion: null, sourceHash: null };
-    const mixedProjection: SpogomiExportProjection = {
-      ...first,
-      event: source.event,
-      teams: projections.flatMap((projection, index) => projection.teams.map((team) => ({ ...team, division_id: divisionRows[index]?.id }))),
-      sourceSubmissionIds: projections.flatMap((projection) => projection.sourceSubmissionIds),
-      results: {
-        ...first.results,
-        regulationComplete: projections.every((projection) => projection.results.regulationComplete),
-        environmental,
-        divisions: projections.map((projection, index) => ({ id: divisionRows[index]!.id, type: divisionRows[index]!.division_type, regulationVersion: projection.results.regulationVersion, regulationComplete: projection.results.regulationComplete, sport: projection.results.sport, butts: projection.results.butts })),
-      },
-    };
-    divisionProjectionStore.set(mixedProjection, projections);
-    return mixedProjection;
-  }
-  const regulation = buildSpogomiRegulation(sourceEvent(source.event), source.categories);
-  const publicationSourceSnapshot = buildPublicationSourceSnapshot(source);
-  const regulationComplete = regulation.status === "complete" && regulation.categories.every((category) => category.isComplete);
-  const computed: TeamComputed[] = source.teams.map((team) => {
-    const submission = latestSubmission(team.id, source.submissions, team.certified_submission_id);
-    const items = submission ? source.items.filter((item) => String(item.submission_id) === submission.id) : [];
-    const itemInputs = items.map((item) => toSpogomiResultItemInput(item, source.categories.find((category) => category.id === String(item.category_rule_id))?.code ?? ""));
-    const teamParticipants = source.participants.filter((participant) => participant.team_id === team.id && participant.registration_status === "registered");
-    const presentParticipants = teamParticipants.filter((participant) => participant.attendance_status === "present").length;
-    const hasSubmissionForSport = Boolean(submission && ["submitted", "provisional", "certified"].includes(submission.status));
-    const closure = effectiveSpogomiTeamClosureDecision({
-      teamId: team.id,
-      divisionId: team.division_id ?? "",
-      certifiedSubmission: submission?.status === "certified",
-      decision: team.closure_status
-        ? { teamId: team.id, divisionId: team.division_id ?? "", status: team.closure_status, sportEligible: team.sport_eligible ?? !["absent", "forfeit", "excluded", "disqualified", "result_missing", "contested"].includes(team.closure_status), environmentalEligibility: (team.environmental_eligibility as "eligible" | "excluded" | "unknown" | undefined) ?? "eligible", decisionVersion: 0, reason: "Projection source" }
-        : { teamId: team.id, divisionId: team.division_id ?? "", status: hasSubmissionForSport ? "present_measured" : "result_missing", sportEligible: hasSubmissionForSport, environmentalEligibility: submission?.status === "certified" ? "eligible" : "unknown", decisionVersion: 0, reason: "Projection source" },
-    });
-    return {
-      team,
-      submission,
-      result: submission ? calculateSpogomiCompetitionResult({ regulation, items: itemInputs, presentParticipants, submissionStatus: submission.status as "submitted" | "provisional" | "certified" }) : null,
-      presentParticipants,
-      registeredParticipants: teamParticipants.length,
-      items,
-      closure,
-    };
+function buildEnvironmentalProjection(source: SpogomiResultsSource): SpogomiPublicResults["environmental"] {
+  if (!source.actionIsPublished || !source.consolidation?.projection) return { status: "unavailable", totalWasteMassGrams: null, cigaretteButtsMassGrams: null, cigaretteButtsCount: null, participantsPresent: null, projectionVersion: null, sourceHash: null };
+  const projection = source.consolidation.projection;
+  return {
+    status: "available",
+    totalWasteMassGrams: parseNumber(projection.totalWasteMassGrams),
+    cigaretteButtsMassGrams: parseNumber(projection.cigaretteButtsMassGrams),
+    cigaretteButtsCount: parseNumber(projection.cigaretteButtsCount),
+    participantsPresent: parseNumber(projection.participantsPresent),
+    projectionVersion: typeof projection.projectionVersion === "string" ? projection.projectionVersion : null,
+    sourceHash: typeof projection.sourceHash === "string" ? projection.sourceHash : null,
+  };
+}
+
+function buildTeamClosure(team: SpogomiResultsSource["teams"][number], submission: SpogomiResultsSource["submissions"][number] | null, hasSubmissionForSport: boolean) {
+  const divisionId = team.division_id ?? "";
+  return effectiveSpogomiTeamClosureDecision({
+    teamId: team.id,
+    divisionId,
+    certifiedSubmission: submission?.status === "certified",
+    decision: team.closure_status
+      ? { teamId: team.id, divisionId, status: team.closure_status, sportEligible: team.sport_eligible ?? !["absent", "forfeit", "excluded", "disqualified", "result_missing", "contested"].includes(team.closure_status), environmentalEligibility: (team.environmental_eligibility as "eligible" | "excluded" | "unknown" | undefined) ?? "eligible", decisionVersion: 0, reason: "Projection source" }
+      : { teamId: team.id, divisionId, status: hasSubmissionForSport ? "present_measured" : "result_missing", sportEligible: hasSubmissionForSport, environmentalEligibility: submission?.status === "certified" ? "eligible" : "unknown", decisionVersion: 0, reason: "Projection source" },
   });
-  const publicResults: SpogomiPublicResults = {
+}
+
+function computeTeam(source: SpogomiResultsSource, team: SpogomiResultsSource["teams"][number], regulation: SpogomiRegulation): TeamComputed {
+  const submission = latestSubmission(team.id, source.submissions, team.certified_submission_id);
+  const items = submission ? source.items.filter((item) => String(item.submission_id) === submission.id) : [];
+  const itemInputs = items.map((item) => toSpogomiResultItemInput(item, source.categories.find((category) => category.id === String(item.category_rule_id))?.code ?? ""));
+  const teamParticipants = source.participants.filter((participant) => participant.team_id === team.id && participant.registration_status === "registered");
+  const presentParticipants = teamParticipants.filter((participant) => participant.attendance_status === "present").length;
+  const hasSubmissionForSport = Boolean(submission && ["submitted", "provisional", "certified"].includes(submission.status));
+  return {
+    team,
+    submission,
+    result: submission ? calculateSpogomiCompetitionResult({ regulation, items: itemInputs, presentParticipants, submissionStatus: submission.status as "submitted" | "provisional" | "certified" }) : null,
+    presentParticipants,
+    registeredParticipants: teamParticipants.length,
+    items,
+    closure: buildTeamClosure(team, submission, hasSubmissionForSport),
+  };
+}
+
+function buildComputedTeams(source: SpogomiResultsSource, regulation: SpogomiRegulation): TeamComputed[] {
+  return source.teams.map((team) => computeTeam(source, team, regulation));
+}
+
+function rankingStatus(entries: SpogomiPublicRankingEntry[]): "certified" | "provisional" | "unavailable" {
+  if (entries.some((entry) => entry.status === "provisional")) return "provisional";
+  return entries.every((entry) => entry.status === "certified" || entry.status === "unavailable") && entries.some((entry) => entry.status === "certified") ? "certified" : "unavailable";
+}
+
+function buildRankingSection(source: SpogomiResultsSource, computed: TeamComputed[], kind: "points" | "butts", regulationComplete: boolean, regulation: SpogomiRegulation, publicationSourceSnapshot: SpogomiPublicationSourceSnapshot): SpogomiPublicResults["sport"] {
+  if (source.event.publicResultsVisibility === "hidden") return { status: "hidden", reason: kind === "points" ? "Les résultats sportifs ne sont pas publiés." : "Les résultats ne sont pas publiés.", entries: [] };
+  const entries = buildRankingEntries({ source, computed, kind, regulationComplete, regulation, publicationSourceSnapshot });
+  if (kind === "points" && !regulationComplete) return { status: "unavailable", reason: "Règlement incomplet : aucun classement sportif officiel calculé.", entries };
+  const status = rankingStatus(entries);
+  return { status, reason: kind === "points" && status === "unavailable" ? "Classement sportif certifié non publié pour les équipes éligibles." : null, entries };
+}
+
+function buildPublicResults(source: SpogomiResultsSource, computed: TeamComputed[], regulation: SpogomiRegulation, regulationComplete: boolean, refreshedAt: string, publicationSourceSnapshot: SpogomiPublicationSourceSnapshot): SpogomiPublicResults {
+  return {
     visibility: source.event.publicResultsVisibility,
     regulationVersion: regulation.version,
     regulationComplete,
     refreshedAt,
-    sport: source.event.publicResultsVisibility === "hidden"
-      ? { status: "hidden", reason: "Les résultats sportifs ne sont pas publiés.", entries: [] }
-      : !regulationComplete
-        ? { status: "unavailable", reason: "Règlement incomplet : aucun classement sportif officiel calculé.", entries: buildRankingEntries({ source, computed, kind: "points", regulationComplete, regulation, publicationSourceSnapshot }) }
-        : (() => { const entries = buildRankingEntries({ source, computed, kind: "points", regulationComplete, regulation, publicationSourceSnapshot }); const status = entries.some((entry) => entry.status === "provisional") ? "provisional" : entries.every((entry) => entry.status === "certified" || entry.status === "unavailable") && entries.some((entry) => entry.status === "certified") ? "certified" : "unavailable"; return { status, reason: status === "unavailable" ? "Classement sportif certifié non publié pour les équipes éligibles." : null, entries }; })(),
-    butts: source.event.publicResultsVisibility === "hidden"
-      ? { status: "hidden", reason: "Les résultats ne sont pas publiés.", entries: [] }
-      : (() => { const entries = buildRankingEntries({ source, computed, kind: "butts", regulationComplete, regulation, publicationSourceSnapshot }); const status = entries.some((entry) => entry.status === "provisional") ? "provisional" : entries.every((entry) => entry.status === "certified" || entry.status === "unavailable") && entries.some((entry) => entry.status === "certified") ? "certified" : "unavailable"; return { status, reason: null, entries }; })(),
-    environmental: source.actionIsPublished && source.consolidation?.projection
-      ? {
-          status: "available",
-          totalWasteMassGrams: parseNumber(source.consolidation.projection.totalWasteMassGrams),
-          cigaretteButtsMassGrams: parseNumber(source.consolidation.projection.cigaretteButtsMassGrams),
-          cigaretteButtsCount: parseNumber(source.consolidation.projection.cigaretteButtsCount),
-          participantsPresent: parseNumber(source.consolidation.projection.participantsPresent),
-          projectionVersion: typeof source.consolidation.projection.projectionVersion === "string" ? source.consolidation.projection.projectionVersion : null,
-          sourceHash: typeof source.consolidation.projection.sourceHash === "string" ? source.consolidation.projection.sourceHash : null,
-        }
-      : { status: "unavailable", totalWasteMassGrams: null, cigaretteButtsMassGrams: null, cigaretteButtsCount: null, participantsPresent: null, projectionVersion: null, sourceHash: null },
+    sport: buildRankingSection(source, computed, "points", regulationComplete, regulation, publicationSourceSnapshot),
+    butts: buildRankingSection(source, computed, "butts", regulationComplete, regulation, publicationSourceSnapshot),
+    environmental: buildEnvironmentalProjection(source),
   };
+}
+
+function buildExportCategories(source: SpogomiResultsSource, entry: TeamComputed): SpogomiExportTeam["categories"] {
+  return source.categories.filter((category) => (category.division_id ?? null) === (entry.team.division_id ?? null)).map((category) => {
+    const item = entry.items.find((candidate) => String(candidate.category_rule_id) === category.id);
+    return { code: category.code, label: category.label, measurementKind: category.measurement_kind, unit: category.unit, quantity: parseNumber(item?.quantity), massGrams: parseNumber(item?.mass_grams), objectCount: parseNumber(item?.object_count), environmentalCategorySlug: category.environmental_category_slug, provenance: typeof item?.provenance === "string" ? item.provenance : "", measurementMethod: typeof item?.measurement_method === "string" ? item.measurement_method : null, submissionStatus: entry.submission?.status ?? null };
+  });
+}
+
+function exportTeamDecisions(entry: TeamComputed, officialSport: ReturnType<typeof currentOfficialRankings>, officialButts: ReturnType<typeof currentOfficialRankings>) {
+  if (entry.submission?.status !== "certified") return { sport: null, butts: null };
+  return { sport: officialSport.get(entry.team.id) ?? null, butts: officialButts.get(entry.team.id) ?? null };
+}
+
+function exportTeamMeasurementValues(entry: TeamComputed) {
+  if (entry.submission?.status !== "certified") return { buttsCount: null, buttsPerParticipant: null };
+  return { buttsCount: entry.result?.physicalTotals.countedButts ?? null, buttsPerParticipant: entry.result?.buttsPerParticipant ?? null };
+}
+
+function exportTeamStatusFields(entry: TeamComputed, decisions: ReturnType<typeof exportTeamDecisions>, measurements: ReturnType<typeof exportTeamMeasurementValues>, regulationComplete: boolean) {
+  return {
+    sportRank: decisions.sport?.rank ?? null,
+    sportStatus: decisions.sport ? "certified" : "unavailable",
+    sportScore: decisions.sport && regulationComplete ? entry.result?.officialScore ?? null : null,
+    buttsRank: decisions.butts?.rank ?? null,
+    buttsStatus: decisions.butts ? "certified" : "unavailable",
+    buttsCount: measurements.buttsCount,
+    buttsPerParticipant: measurements.buttsPerParticipant,
+  };
+}
+
+function buildExportTeam(source: SpogomiResultsSource, entry: TeamComputed, officialSport: ReturnType<typeof currentOfficialRankings>, officialButts: ReturnType<typeof currentOfficialRankings>, regulationComplete: boolean): SpogomiExportTeam {
+  const decisions = exportTeamDecisions(entry, officialSport, officialButts);
+  const measurements = exportTeamMeasurementValues(entry);
+  const statusFields = exportTeamStatusFields(entry, decisions, measurements, regulationComplete);
+  const certified = entry.submission?.status === "certified";
+  return {
+    teamId: entry.team.id, divisionId: entry.team.division_id, teamNumber: entry.team.team_number, publicName: entry.team.public_name,
+    registeredParticipants: entry.registeredParticipants, presentParticipants: entry.presentParticipants, submissionStatus: entry.submission?.status ?? null, submissionVersion: entry.submission?.version ?? null,
+    ...statusFields,
+    closureStatus: entry.closure.status, sportEligible: entry.closure.sportEligible, environmentalEligibility: entry.closure.environmentalEligibility, categories: certified ? buildExportCategories(source, entry) : [],
+  };
+}
+
+function buildMixedProjection(source: SpogomiResultsSource, divisionRows: NonNullable<SpogomiResultsSource["event"]["divisions"]>, refreshedAt: string): SpogomiExportProjection {
+  const projections = divisionRows.map((division) => buildSpogomiResultsProjection({
+    ...source,
+    event: { ...source.event, mode: division.division_type, divisions: [division], ...(division.regulation_version ? { regulationVersion: division.regulation_version } : {}), ...(division.regulation_status ? { regulationStatus: division.regulation_status } : {}), ...(division.regulation_source_reference !== undefined ? { regulationSourceReference: division.regulation_source_reference } : {}), ...(division.regulation_config !== undefined ? { regulationConfig: division.regulation_config } : {}), ...(division.team_size_config !== undefined ? { teamSizeConfig: division.team_size_config } : {}) },
+    categories: source.categories.filter((row) => row.division_id === division.id), teams: source.teams.filter((row) => row.division_id === division.id), submissions: source.submissions.filter((row) => row.division_id === division.id), items: source.items.filter((row) => row.division_id === division.id), participants: source.participants.filter((row) => row.division_id === division.id), officialRankings: source.officialRankings.filter((row) => row.division_id === division.id),
+  }, refreshedAt));
+  const first = projections[0];
+  if (!first) throw new Error("Validation: une édition mixte doit posséder deux divisions.");
+  const mixedProjection: SpogomiExportProjection = {
+    ...first,
+    event: source.event,
+    teams: projections.flatMap((projection, index) => projection.teams.map((team) => ({ ...team, division_id: divisionRows[index]?.id }))),
+    sourceSubmissionIds: projections.flatMap((projection) => projection.sourceSubmissionIds),
+    results: { ...first.results, regulationComplete: projections.every((projection) => projection.results.regulationComplete), environmental: buildEnvironmentalProjection(source), divisions: projections.map((projection, index) => ({ id: divisionRows[index]!.id, type: divisionRows[index]!.division_type, regulationVersion: projection.results.regulationVersion, regulationComplete: projection.results.regulationComplete, sport: projection.results.sport, butts: projection.results.butts })) },
+  };
+  divisionProjectionStore.set(mixedProjection, projections);
+  return mixedProjection;
+}
+
+export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refreshedAt = new Date().toISOString()): SpogomiExportProjection {
+  const divisionRows = source.event.divisions ?? [];
+  if (source.event.mode === "mixed" && divisionRows.length === 2) return buildMixedProjection(source, divisionRows, refreshedAt);
+  const regulation = buildSpogomiRegulation(sourceEvent(source.event), source.categories);
+  const publicationSourceSnapshot = buildPublicationSourceSnapshot(source);
+  const regulationComplete = regulation.status === "complete" && regulation.categories.every((category) => category.isComplete);
+  const computed = buildComputedTeams(source, regulation);
+  const publicResults = buildPublicResults(source, computed, regulation, regulationComplete, refreshedAt, publicationSourceSnapshot);
   const officialSport = currentOfficialRankings(source, "points", publicationSourceSnapshot);
   const officialButts = currentOfficialRankings(source, "butts", publicationSourceSnapshot);
-  const exportTeams = computed.map((entry): SpogomiExportTeam => {
-    const certified = entry.submission?.status === "certified";
-    const sportDecision = certified ? officialSport.get(entry.team.id) ?? null : null;
-    const buttsDecision = certified ? officialButts.get(entry.team.id) ?? null : null;
-    return {
-      teamId: entry.team.id,
-      divisionId: entry.team.division_id,
-      teamNumber: entry.team.team_number,
-      publicName: entry.team.public_name,
-      registeredParticipants: entry.registeredParticipants,
-      presentParticipants: entry.presentParticipants,
-      submissionStatus: entry.submission?.status ?? null,
-      submissionVersion: entry.submission?.version ?? null,
-      sportRank: sportDecision?.rank ?? null,
-      sportStatus: sportDecision ? "certified" : "unavailable",
-      sportScore: sportDecision && regulationComplete ? entry.result?.officialScore ?? null : null,
-      buttsRank: buttsDecision?.rank ?? null,
-      buttsStatus: buttsDecision ? "certified" : "unavailable",
-      buttsCount: certified ? entry.result?.physicalTotals.countedButts ?? null : null,
-      buttsPerParticipant: certified ? entry.result?.buttsPerParticipant ?? null : null,
-      closureStatus: entry.closure.status,
-      sportEligible: entry.closure.sportEligible,
-      environmentalEligibility: entry.closure.environmentalEligibility,
-      categories: certified ? source.categories.filter((category) => (category.division_id ?? null) === (entry.team.division_id ?? null)).map((category) => {
-        const item = entry.items.find((candidate) => String(candidate.category_rule_id) === category.id);
-        return {
-          code: category.code,
-          label: category.label,
-          measurementKind: category.measurement_kind,
-          unit: category.unit,
-          quantity: parseNumber(item?.quantity),
-          massGrams: parseNumber(item?.mass_grams),
-          objectCount: parseNumber(item?.object_count),
-          environmentalCategorySlug: category.environmental_category_slug,
-          provenance: typeof item?.provenance === "string" ? item.provenance : "",
-          measurementMethod: typeof item?.measurement_method === "string" ? item.measurement_method : null,
-          submissionStatus: entry.submission?.status ?? null,
-        };
-      }) : [],
-    };
-  });
+  const exportTeams = computed.map((entry) => buildExportTeam(source, entry, officialSport, officialButts, regulationComplete));
   const sourceSubmissionIds = computed.filter((entry) => entry.closure.environmentalEligibility === "eligible").map((entry) => entry.team.certified_submission_id).filter((id): id is string => Boolean(id));
   const projection: SpogomiExportProjection = { event: source.event, regulation, results: publicResults, teams: exportTeams, consolidation: source.consolidation?.projection ?? null, categories: source.categories, sourceSubmissionIds, publicationSourceSnapshot };
   divisionProjectionStore.set(projection, [projection]);

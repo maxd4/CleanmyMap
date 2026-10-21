@@ -24,6 +24,32 @@ function safeSearchTerm(value: string | null | undefined): string | null {
   return normalized.length ? normalized : null;
 }
 
+function resolveAttendanceTeamFilter(teams: AttendanceTeamRow[], divisionId: string | null | undefined, search: string | null): { teamIds: string[] | null; numericTeam: number | null; namedTeamIds: string[] } {
+  const selectedTeams = divisionId ? teams.filter((team) => team.division_id === divisionId) : teams;
+  const numericTeam = search && /^\d+$/.test(search) ? Number(search) : null;
+  const teamIds = numericTeam === null ? null : selectedTeams.filter((team) => team.team_number === numericTeam).map((team) => team.id);
+  const namedTeamIds = search && numericTeam === null ? selectedTeams.filter((team) => team.public_name.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map((team) => team.id) : [];
+  return { teamIds, numericTeam, namedTeamIds };
+}
+
+function buildAttendanceParticipantsQuery(params: { supabase: SupabaseClient; eventId: string; divisionId?: string | null; search: string | null; teamFilter: ReturnType<typeof resolveAttendanceTeamFilter>; page: number; pageSize: number }) {
+  const { supabase, eventId, divisionId, search, teamFilter, page, pageSize } = params;
+  let query = supabase.from("spogomi_participants").select("id, division_id, display_name, external_reference, source_row_number, team_id, attendance_status, registration_status, updated_at", { count: "exact" }).eq("event_id", eventId);
+  if (divisionId) query = query.eq("division_id", divisionId);
+  if (teamFilter.teamIds) query = teamFilter.teamIds.length ? query.or(`source_row_number.eq.${teamFilter.numericTeam},team_id.in.(${teamFilter.teamIds.join(",")})`) : query.eq("source_row_number", teamFilter.numericTeam);
+  if (search && teamFilter.numericTeam === null) {
+    const teamClause = teamFilter.namedTeamIds.length ? `,team_id.in.(${teamFilter.namedTeamIds.join(",")})` : "";
+    query = query.or(`display_name.ilike.%${search}%,external_reference.ilike.%${search}%${teamClause}`);
+  }
+  const from = page * pageSize;
+  return query.order("source_row_number", { ascending: true, nullsFirst: false }).order("id", { ascending: true }).range(from, from + pageSize - 1);
+}
+
+function mapAttendanceParticipant(participant: AttendanceParticipantRow, teamById: Map<string, AttendanceTeamRow>) {
+  const team = participant.team_id ? teamById.get(participant.team_id) : undefined;
+  return { id: participant.id, divisionId: participant.division_id, displayName: participant.display_name, externalReference: participant.external_reference, place: participant.source_row_number, team: team ? { id: team.id, number: team.team_number, publicName: team.public_name } : null, attendanceStatus: participant.attendance_status, registrationStatus: participant.registration_status, updatedAt: participant.updated_at };
+}
+
 export async function loadSpogomiAttendanceProjection(params: {
   supabase: SupabaseClient;
   eventId: string;
@@ -46,48 +72,11 @@ export async function loadSpogomiAttendanceProjection(params: {
     .order("team_number", { ascending: true });
   if (teamsResult.error) throw teamsResult.error;
   const teams = (teamsResult.data ?? []) as AttendanceTeamRow[];
-  const selectedTeams = params.divisionId ? teams.filter((team) => team.division_id === params.divisionId) : teams;
-  const numericTeam = search && /^\d+$/.test(search) ? Number(search) : null;
-  const teamIds = numericTeam === null
-    ? null
-    : selectedTeams.filter((team) => team.team_number === numericTeam).map((team) => team.id);
-  const namedTeamIds = search && numericTeam === null
-    ? selectedTeams.filter((team) => team.public_name.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map((team) => team.id)
-    : [];
-
-  let participantsQuery = params.supabase
-    .from("spogomi_participants")
-    .select("id, division_id, display_name, external_reference, source_row_number, team_id, attendance_status, registration_status, updated_at", { count: "exact" })
-    .eq("event_id", params.eventId);
-  if (params.divisionId) participantsQuery = participantsQuery.eq("division_id", params.divisionId);
-  if (teamIds) {
-    participantsQuery = teamIds.length
-      ? participantsQuery.or(`source_row_number.eq.${numericTeam},team_id.in.(${teamIds.join(",")})`)
-      : participantsQuery.eq("source_row_number", numericTeam);
-  }
-  if (search && numericTeam === null) {
-    const teamClause = namedTeamIds.length ? `,team_id.in.(${namedTeamIds.join(",")})` : "";
-    participantsQuery = participantsQuery.or(`display_name.ilike.%${search}%,external_reference.ilike.%${search}%${teamClause}`);
-  }
-  const from = page * pageSize;
-  const participantsResult = await participantsQuery.order("source_row_number", { ascending: true, nullsFirst: false }).order("id", { ascending: true }).range(from, from + pageSize - 1);
+  const teamFilter = resolveAttendanceTeamFilter(teams, params.divisionId, search);
+  const participantsResult = await buildAttendanceParticipantsQuery({ supabase: params.supabase, eventId: params.eventId, divisionId: params.divisionId, search, teamFilter, page, pageSize });
   if (participantsResult.error) throw participantsResult.error;
   const teamById = new Map(teams.map((team) => [team.id, team]));
-  const participants = (participantsResult.data ?? [] as AttendanceParticipantRow[]).map((participant) => {
-    const row = participant as AttendanceParticipantRow;
-    const team = row.team_id ? teamById.get(row.team_id) : undefined;
-    return {
-      id: row.id,
-      divisionId: row.division_id,
-      displayName: row.display_name,
-      externalReference: row.external_reference,
-      place: row.source_row_number,
-      team: team ? { id: team.id, number: team.team_number, publicName: team.public_name } : null,
-      attendanceStatus: row.attendance_status,
-      registrationStatus: row.registration_status,
-      updatedAt: row.updated_at,
-    };
-  });
+  const participants = (participantsResult.data ?? [] as AttendanceParticipantRow[]).map((participant) => mapAttendanceParticipant(participant as AttendanceParticipantRow, teamById));
   return {
     eventId: params.eventId,
     divisionId: params.divisionId ?? null,

@@ -104,32 +104,27 @@ export function validateTeamComposition(
   memberCount: number,
   teamSize: SpogomiRegulation["teamSize"],
 ): SpogomiValidationResult {
-  if (!Number.isInteger(memberCount) || memberCount < 0) {
-    return invalid("member_count_must_be_a_non_negative_integer");
-  }
-  if (mode === "world_cup" && memberCount !== 3) {
-    return invalid("world_cup_requires_exactly_three_members");
-  }
+  const memberValidation = validateMemberCount(mode, memberCount);
+  if (!memberValidation.ok) return memberValidation;
+  return mode === "casual" ? validateCasualTeamBounds(memberCount, teamSize.casual) : { ok: true };
+}
 
-  const { minMembers, maxMembers } = teamSize.casual;
-  if (mode === "casual") {
-    if (minMembers !== null && (!Number.isInteger(minMembers) || minMembers < 1)) {
-      return invalid("casual_min_members_invalid");
-    }
-    if (maxMembers !== null && (!Number.isInteger(maxMembers) || maxMembers < 1)) {
-      return invalid("casual_max_members_invalid");
-    }
-    if (minMembers !== null && maxMembers !== null && minMembers > maxMembers) {
-      return invalid("casual_team_bounds_invalid");
-    }
-    if (minMembers !== null && memberCount < minMembers) {
-      return invalid("casual_team_below_minimum");
-    }
-    if (maxMembers !== null && memberCount > maxMembers) {
-      return invalid("casual_team_above_maximum");
-    }
-  }
+function validateMemberCount(mode: SpogomiEventMode, memberCount: number): SpogomiValidationResult {
+  if (!Number.isInteger(memberCount) || memberCount < 0) return invalid("member_count_must_be_a_non_negative_integer");
+  if (mode === "world_cup" && memberCount !== 3) return invalid("world_cup_requires_exactly_three_members");
+  return { ok: true };
+}
 
+function validateCasualTeamBounds(
+  memberCount: number,
+  bounds: SpogomiRegulation["teamSize"]["casual"],
+): SpogomiValidationResult {
+  const { minMembers, maxMembers } = bounds;
+  if (minMembers !== null && (!Number.isInteger(minMembers) || minMembers < 1)) return invalid("casual_min_members_invalid");
+  if (maxMembers !== null && (!Number.isInteger(maxMembers) || maxMembers < 1)) return invalid("casual_max_members_invalid");
+  if (minMembers !== null && maxMembers !== null && minMembers > maxMembers) return invalid("casual_team_bounds_invalid");
+  if (minMembers !== null && memberCount < minMembers) return invalid("casual_team_below_minimum");
+  if (maxMembers !== null && memberCount > maxMembers) return invalid("casual_team_above_maximum");
   return { ok: true };
 }
 
@@ -153,22 +148,22 @@ export function validateResultItem(
     return invalid("measurement_kind_must_match_category");
   }
   if (item.unit !== category.unit) return invalid("measurement_unit_must_match_category");
-  if (item.quantity !== null && (!Number.isFinite(item.quantity) || item.quantity < 0 || item.quantity > 1_000_000_000_000)) {
-    return invalid("quantity_must_be_a_non_negative_finite_number");
-  }
-  if (item.measurementKind === "count" && item.quantity !== null && !Number.isSafeInteger(item.quantity)) {
-    return invalid("count_must_be_an_integer");
-  }
+  const valueValidation = validateQuantity(item.quantity, item.measurementKind);
+  if (!valueValidation.ok) return valueValidation;
   if (!item.provenance.trim()) return invalid("measurement_provenance_required");
-  if (item.massGrams !== undefined && item.massGrams !== null && (!Number.isFinite(item.massGrams) || item.massGrams < 0 || item.massGrams > 1_000_000_000)) {
-    return invalid("mass_grams_must_be_non_negative_and_bounded");
-  }
-  if (item.objectCount !== undefined && item.objectCount !== null && (!Number.isSafeInteger(item.objectCount) || item.objectCount < 0)) {
-    return invalid("object_count_must_be_a_non_negative_integer");
-  }
-  if (item.measurementMethod !== undefined && item.measurementMethod !== null && !item.measurementMethod.trim()) {
-    return invalid("measurement_method_required_when_provided");
-  }
+  return validateOptionalMeasurementFields(item);
+}
+
+function validateQuantity(quantity: number | null, measurementKind: SpogomiResultItemInput["measurementKind"]): SpogomiValidationResult {
+  if (quantity !== null && (!Number.isFinite(quantity) || quantity < 0 || quantity > 1_000_000_000_000)) return invalid("quantity_must_be_a_non_negative_finite_number");
+  if (measurementKind === "count" && quantity !== null && !Number.isSafeInteger(quantity)) return invalid("count_must_be_an_integer");
+  return { ok: true };
+}
+
+function validateOptionalMeasurementFields(item: SpogomiResultItemInput): SpogomiValidationResult {
+  if (item.massGrams !== undefined && item.massGrams !== null && (!Number.isFinite(item.massGrams) || item.massGrams < 0 || item.massGrams > 1_000_000_000)) return invalid("mass_grams_must_be_non_negative_and_bounded");
+  if (item.objectCount !== undefined && item.objectCount !== null && (!Number.isSafeInteger(item.objectCount) || item.objectCount < 0)) return invalid("object_count_must_be_a_non_negative_integer");
+  if (item.measurementMethod !== undefined && item.measurementMethod !== null && !item.measurementMethod.trim()) return invalid("measurement_method_required_when_provided");
   return { ok: true };
 }
 

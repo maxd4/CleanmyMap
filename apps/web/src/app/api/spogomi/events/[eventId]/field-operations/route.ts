@@ -31,6 +31,26 @@ const measurementSchema = baseSchema.extend({ action: z.literal("measurement"), 
 const measurementDecisionSchema = baseSchema.extend({ action: z.literal("measurement_decision"), measurementId: z.string().uuid(), decision: z.enum(["certified", "rejected"]), rejectionReason: z.string().trim().max(1000).nullable().optional() });
 const bodySchema = z.discriminatedUnion("action", [configureSchema, phaseSchema, returnSchema, incidentSchema, incidentDecisionSchema, measurementSchema, measurementDecisionSchema]);
 
+function buildFieldOperationRequest(input: z.infer<typeof bodySchema>, eventId: string, userId: string): { rpc: string; args: Record<string, unknown> } {
+  switch (input.action) {
+    case "configure": return configureRequest(input, eventId, userId);
+    case "phase": return phaseRequest(input, eventId, userId);
+    case "return": return returnRequest(input, eventId, userId);
+    case "incident": return incidentRequest(input, eventId, userId);
+    case "incident_decision": return incidentDecisionRequest(input, eventId, userId);
+    case "measurement": return measurementRequest(input, eventId, userId);
+    case "measurement_decision": return measurementDecisionRequest(input, eventId, userId);
+  }
+}
+
+function configureRequest(input: z.infer<typeof configureSchema>, eventId: string, userId: string) { return { rpc: "spogomi_configure_field_operation", args: { p_event_id: eventId, p_division_id: input.divisionId, p_timezone_name: input.timezoneName, p_regulation_version: input.regulationVersion, p_official_start_at: input.officialStartAt?.toISOString() ?? null, p_collection_limit_at: input.collectionLimitAt?.toISOString() ?? null, p_sorting_limit_at: input.sortingLimitAt?.toISOString() ?? null, p_weighing_start_at: input.weighingStartAt?.toISOString() ?? null, p_weighing_end_at: input.weighingEndAt?.toISOString() ?? null, p_actor_clerk_id: userId, p_reason: input.reason, p_provenance: input.provenance } }; }
+function phaseRequest(input: z.infer<typeof phaseSchema>, eventId: string, userId: string) { return { rpc: "spogomi_launch_field_phase", args: { p_event_id: eventId, p_division_id: input.divisionId, p_phase: input.phase, p_at: input.at.toISOString(), p_actor_clerk_id: userId, p_reason: input.reason, p_provenance: input.provenance } }; }
+function returnRequest(input: z.infer<typeof returnSchema>, eventId: string, userId: string) { return { rpc: "spogomi_record_team_return", args: { p_event_id: eventId, p_division_id: input.divisionId, p_team_id: input.teamId, p_actual_return_at: input.actualReturnAt.toISOString(), p_note: input.note ?? null, p_actor_clerk_id: userId, p_reason: input.reason } }; }
+function incidentRequest(input: z.infer<typeof incidentSchema>, eventId: string, userId: string) { return { rpc: "spogomi_record_field_incident", args: { p_event_id: eventId, p_division_id: input.divisionId, p_team_id: input.teamId ?? null, p_category: input.category, p_observed_at: input.observedAt.toISOString(), p_location: input.location ?? null, p_raw_observation: input.rawObservation, p_actor_clerk_id: userId, p_reason: input.reason } }; }
+function incidentDecisionRequest(input: z.infer<typeof incidentDecisionSchema>, eventId: string, userId: string) { return { rpc: "spogomi_decide_field_incident", args: { p_event_id: eventId, p_division_id: input.divisionId, p_incident_id: input.incidentId, p_decision_kind: input.decisionKind, p_decision_points: input.decisionPoints ?? null, p_rule_reference: input.ruleReference, p_justification: input.justification, p_score_effect: input.scoreEffect, p_actor_clerk_id: userId } }; }
+function measurementRequest(input: z.infer<typeof measurementSchema>, eventId: string, userId: string) { return { rpc: "spogomi_upsert_operational_measurement", args: { p_event_id: eventId, p_division_id: input.divisionId, p_team_id: input.teamId, p_category_rule_id: input.categoryRuleId, p_measurement_kind: input.measurementKind, p_unit: input.unit, p_quantity: input.quantity ?? null, p_mass_grams: input.massGrams ?? null, p_object_count: input.objectCount ?? null, p_measurement_method: input.measurementMethod, p_provenance: input.provenance, p_source_kind: input.sourceKind, p_source_reference: input.sourceReference ?? null, p_actor_clerk_id: userId, p_reason: input.reason } }; }
+function measurementDecisionRequest(input: z.infer<typeof measurementDecisionSchema>, eventId: string, userId: string) { return { rpc: "spogomi_decide_operational_measurement", args: { p_event_id: eventId, p_division_id: input.divisionId, p_measurement_id: input.measurementId, p_decision: input.decision, p_rejection_reason: input.rejectionReason ?? null, p_actor_clerk_id: userId } }; }
+
 export async function GET(request: Request, context: { params: Promise<{ eventId: string }> }) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse();
@@ -65,37 +85,22 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
     const fieldAccess = await loadSpogomiFieldOperationsAccess({ supabase, eventId, userId: access.userId });
     if (!fieldAccess) return forbiddenJsonResponse();
     const input = parsed.data;
-    let rpc: string;
-    let args: Record<string, unknown>;
     if (input.action === "configure") {
       assertSpogomiFieldCapability(fieldAccess, "timing");
-      rpc = "spogomi_configure_field_operation";
-      args = { p_event_id: eventId, p_division_id: input.divisionId, p_timezone_name: input.timezoneName, p_regulation_version: input.regulationVersion, p_official_start_at: input.officialStartAt?.toISOString() ?? null, p_collection_limit_at: input.collectionLimitAt?.toISOString() ?? null, p_sorting_limit_at: input.sortingLimitAt?.toISOString() ?? null, p_weighing_start_at: input.weighingStartAt?.toISOString() ?? null, p_weighing_end_at: input.weighingEndAt?.toISOString() ?? null, p_actor_clerk_id: access.userId, p_reason: input.reason, p_provenance: input.provenance };
     } else if (input.action === "phase") {
       assertSpogomiFieldCapability(fieldAccess, "timing");
-      rpc = "spogomi_launch_field_phase";
-      args = { p_event_id: eventId, p_division_id: input.divisionId, p_phase: input.phase, p_at: input.at.toISOString(), p_actor_clerk_id: access.userId, p_reason: input.reason, p_provenance: input.provenance };
     } else if (input.action === "return") {
       assertSpogomiFieldCapability(fieldAccess, "arrival");
-      rpc = "spogomi_record_team_return";
-      args = { p_event_id: eventId, p_division_id: input.divisionId, p_team_id: input.teamId, p_actual_return_at: input.actualReturnAt.toISOString(), p_note: input.note ?? null, p_actor_clerk_id: access.userId, p_reason: input.reason };
     } else if (input.action === "incident") {
       assertSpogomiFieldCapability(fieldAccess, "arbitration");
-      rpc = "spogomi_record_field_incident";
-      args = { p_event_id: eventId, p_division_id: input.divisionId, p_team_id: input.teamId ?? null, p_category: input.category, p_observed_at: input.observedAt.toISOString(), p_location: input.location ?? null, p_raw_observation: input.rawObservation, p_actor_clerk_id: access.userId, p_reason: input.reason };
     } else if (input.action === "incident_decision") {
       assertSpogomiFieldCapability(fieldAccess, "arbitration");
-      rpc = "spogomi_decide_field_incident";
-      args = { p_event_id: eventId, p_division_id: input.divisionId, p_incident_id: input.incidentId, p_decision_kind: input.decisionKind, p_decision_points: input.decisionPoints ?? null, p_rule_reference: input.ruleReference, p_justification: input.justification, p_score_effect: input.scoreEffect, p_actor_clerk_id: access.userId };
     } else if (input.action === "measurement") {
       if (!fieldAccess.capabilities.has("measurement_entry") && !fieldAccess.capabilities.has("weighing")) throw new Error("SPOGOMI field operation is forbidden.");
-      rpc = "spogomi_upsert_operational_measurement";
-      args = { p_event_id: eventId, p_division_id: input.divisionId, p_team_id: input.teamId, p_category_rule_id: input.categoryRuleId, p_measurement_kind: input.measurementKind, p_unit: input.unit, p_quantity: input.quantity ?? null, p_mass_grams: input.massGrams ?? null, p_object_count: input.objectCount ?? null, p_measurement_method: input.measurementMethod, p_provenance: input.provenance, p_source_kind: input.sourceKind, p_source_reference: input.sourceReference ?? null, p_actor_clerk_id: access.userId, p_reason: input.reason };
     } else {
       assertSpogomiFieldCapability(fieldAccess, "certification");
-      rpc = "spogomi_decide_operational_measurement";
-      args = { p_event_id: eventId, p_division_id: input.divisionId, p_measurement_id: input.measurementId, p_decision: input.decision, p_rejection_reason: input.rejectionReason ?? null, p_actor_clerk_id: access.userId };
     }
+    const { rpc, args } = buildFieldOperationRequest(input, eventId, access.userId);
     return NextResponse.json({ result: await callSpogomiFieldOperation({ supabase, rpc, args }) }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && /forbidden/i.test(error.message)) return forbiddenJsonResponse();

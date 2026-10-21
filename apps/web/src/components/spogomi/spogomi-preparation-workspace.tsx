@@ -1,32 +1,17 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import { CmmButton } from "@/components/ui/cmm-button";
-import { CmmCard } from "@/components/ui/cmm-card";
-import { PageHeader } from "@/components/ui/page-header";
 import { validateProposedTeamFormation } from "@/lib/spogomi/preparation";
-import { spogomiDivisionTypesForMode, spogomiModeLabel, type SpogomiDivisionType, type SpogomiRosterPreview, type SpogomiTeamFormation } from "@/lib/spogomi/types";
+import { spogomiModeLabel, type SpogomiDivisionType, type SpogomiRosterPreview, type SpogomiTeamFormation } from "@/lib/spogomi/types";
 import type { SpogomiTeamCompositionPreview } from "@/lib/spogomi/preparation-service";
-import { SpogomiTeamAccessLinks } from "./spogomi-team-access-links";
-import { SpogomiResultReviewPanel } from "./spogomi-result-review-panel";
-import { SpogomiReviewerManagement } from "./spogomi-reviewer-management";
-import { SpogomiConsolidationPanel } from "./spogomi-consolidation-panel";
-import { SpogomiVolunteerAttestationPanel } from "./spogomi-volunteer-attestation-panel";
-import { SpogomiIdentityAssistancePanel } from "./spogomi-identity-assistance-panel";
-import { SpogomiTeamJoinRequestsPanel } from "./spogomi-team-join-requests-panel";
-import { SpogomiAdmissionRequestsPanel } from "./spogomi-admission-requests-panel";
-import { SpogomiAttendancePanel } from "./spogomi-attendance-panel";
-import { SpogomiDayReadinessChecklist } from "./spogomi-day-readiness-checklist";
+import { SpogomiPreparationWorkspaceView } from "./spogomi-preparation-workspace-view";
 
-const OfficialRouteMap = dynamic(() => import("./spogomi-official-route-map").then((module) => module.SpogomiOfficialRouteMap), { ssr: false });
-
-type WorkspaceData = { event: { id: string; event_slug: string | null; public_visibility: "private" | "published"; public_results_visibility: "hidden" | "provisional" | "certified"; name: string; location_label: string; mode: "casual" | "world_cup" | "mixed"; state: string; starts_at: string; ends_at: string | null; composition_revision?: number; team_size_config?: { casual?: { minMembers?: number | null; maxMembers?: number | null } } }; divisions: Array<{ id: string; event_id: string; division_type: SpogomiDivisionType; division_key: SpogomiDivisionType; regulation_version?: string; regulation_status?: "incomplete" | "complete"; regulation_source_reference?: string | null; regulation_config?: { [key: string]: unknown }; team_size_config?: { casual?: { minMembers?: number | null; maxMembers?: number | null } } }>; participants: Array<{ id: string; division_id: string; display_name: string | null; external_reference: string | null; group_preference: string | null; team_id: string | null; attendance_status: "unknown" | "present" | "absent"; account_link_status: "unlinked" | "pending" | "verified" | "rejected"; source_system?: string | null; ticket_status?: string | null; ticket_deleted?: boolean; composition_eligible?: boolean }>; teams: Array<{ id: string; division_id: string; team_number: number; public_name: string; composition_state: string }>; route: { file_name: string; reference_distance_km: number; geometry_geojson: { coordinates: [number, number][] } } | null; categoryRules: Array<{ division_id: string; label: string; measurement_kind: string; unit: string; is_complete: boolean }>; eventAccess: Array<{ role: string; revoked_at: string | null }> };
+export type WorkspaceData = { event: { id: string; event_slug: string | null; public_visibility: "private" | "published"; public_results_visibility: "hidden" | "provisional" | "certified"; name: string; location_label: string; mode: "casual" | "world_cup" | "mixed"; state: string; starts_at: string; ends_at: string | null; composition_revision?: number; team_size_config?: { casual?: { minMembers?: number | null; maxMembers?: number | null } } }; divisions: Array<{ id: string; event_id: string; division_type: SpogomiDivisionType; division_key: SpogomiDivisionType; regulation_version?: string; regulation_status?: "incomplete" | "complete"; regulation_source_reference?: string | null; regulation_config?: { [key: string]: unknown }; team_size_config?: { casual?: { minMembers?: number | null; maxMembers?: number | null } } }>; participants: Array<{ id: string; division_id: string; display_name: string | null; external_reference: string | null; group_preference: string | null; team_id: string | null; attendance_status: "unknown" | "present" | "absent"; account_link_status: "unlinked" | "pending" | "verified" | "rejected"; source_system?: string | null; ticket_status?: string | null; ticket_deleted?: boolean; composition_eligible?: boolean }>; teams: Array<{ id: string; division_id: string; team_number: number; public_name: string; composition_state: string }>; route: { file_name: string; reference_distance_km: number; geometry_geojson: { coordinates: [number, number][] } } | null; categoryRules: Array<{ division_id: string; label: string; measurement_kind: string; unit: string; is_complete: boolean }>; eventAccess: Array<{ role: string; revoked_at: string | null }> };
 
 export type SpogomiPreparationWorkspaceSection = "teams" | "attendance" | "results" | "arbitration" | "bilan" | "settings";
 
-const ROSTER_PAGE_SIZE = 50;
-const ROSTER_MAPPING_FIELDS = [
+export const ROSTER_PAGE_SIZE = 50;
+export const ROSTER_MAPPING_FIELDS = [
   ["ticketReference", "Référence billet"],
   ["orderReference", "Référence commande"],
   ["orderAlternativeReference", "Référence commande avancée"],
@@ -38,6 +23,63 @@ const ROSTER_MAPPING_FIELDS = [
   ["group", "Groupe"],
   ["sourceRowId", "Identifiant de ligne"],
 ] as const;
+export const SPOGOMI_PUBLIC_TEAM_NAME_TEMPLATE = "Équipe {team.team_number} — {team.public_name}";
+export const SPOGOMI_COMPOSITION_ARBITRATION_MESSAGE = "Une absence ou un remplacement nécessite une procédure d’arbitrage versionnée";
+export const SPOGOMI_COMPOSITION_ELIGIBILITY_WARNING = "Billet annulé ou supprimé : affectation bloquée";
+export const SPOGOMI_TEAM_EDITOR_LABELS = { edit: "Modifier", save: "Enregistrer", cancel: "Annuler" } as const;
+
+export function SpogomiTeamNameInput({ value, disabled, onChange, label }: { value: string; disabled: boolean; onChange: (value: string) => void; label: string }) {
+  return <input aria-label={label} className="mt-1 w-full rounded-lg border border-black/10 bg-white p-2 font-normal" maxLength={60} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} />;
+}
+
+export function buildSpogomiCompositionRevision(data: WorkspaceData): { expectedRevision: number } {
+  return { expectedRevision: data.event.composition_revision ?? 0 };
+}
+
+type ImportSummary = { created: number; unchanged: number; changed: number; conflicts: number; excluded: number };
+
+function countAssignedParticipants(data: WorkspaceData | null): number {
+  return data?.participants.filter((participant) => participant.team_id).length ?? 0;
+}
+
+function getValidRosterRows(preview: SpogomiRosterPreview | null): SpogomiRosterPreview["rows"] {
+  if (!preview) return [];
+  const invalidRows = new Set(preview.errors.map((item) => item.rowNumber));
+  return preview.rows.filter((row) => !invalidRows.has(row.rowNumber));
+}
+
+function summarizeSelectedImport(acceptedRowNumbers: number[], preview: SpogomiRosterPreview | null): ImportSummary {
+  const summary: ImportSummary = { created: 0, unchanged: 0, changed: 0, conflicts: 0, excluded: 0 };
+  for (const rowNumber of acceptedRowNumbers) {
+    const effect = preview?.rowEffects?.[String(rowNumber)];
+    if (effect === "created") summary.created += 1;
+    else if (effect === "unchanged") summary.unchanged += 1;
+    else if (effect === "changed") summary.changed += 1;
+    else if (effect === "conflict") summary.conflicts += 1;
+    else summary.excluded += 1;
+  }
+  return summary;
+}
+
+function teamPreviewValidationInput(data: WorkspaceData, activeDivisionId: string | null, teamPreview: SpogomiTeamCompositionPreview) {
+  const division = data.divisions.find((candidate) => candidate.id === activeDivisionId);
+  const mode = division?.division_type ?? (data.event.mode === "mixed" ? "casual" : data.event.mode);
+  const bounds = {
+    minMembers: division?.team_size_config?.casual?.minMembers ?? data.event.team_size_config?.casual?.minMembers ?? null,
+    maxMembers: division?.team_size_config?.casual?.maxMembers ?? data.event.team_size_config?.casual?.maxMembers ?? null,
+  };
+  return { formation: teamPreview.formation, participantIds: teamPreview.formation.teams.flatMap((team) => team.participantIds).concat(teamPreview.formation.unassignedParticipantIds), mode, casualTeamBounds: bounds };
+}
+
+function validateTeamPreview(data: WorkspaceData | null, activeDivisionId: string | null, teamPreview: SpogomiTeamCompositionPreview | null): string | null {
+  if (!data || !teamPreview) return null;
+  try {
+    validateProposedTeamFormation(teamPreviewValidationInput(data, activeDivisionId, teamPreview));
+    return null;
+  } catch (reason) {
+    return reason instanceof Error ? reason.message : "La composition est invalide.";
+  }
+}
 
 export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHeader = true, showAdminTeamJoinRequests = false }: { eventId: string; section?: SpogomiPreparationWorkspaceSection; showHeader?: boolean; showAdminTeamJoinRequests?: boolean }) {
   const [data, setData] = useState<WorkspaceData | null>(null);
@@ -51,7 +93,7 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
   const [identityCodes, setIdentityCodes] = useState<Record<string, string>>({});
   const [acceptedRowNumbers, setAcceptedRowNumbers] = useState<number[]>([]);
   const [mappingSelection, setMappingSelection] = useState<Record<string, string>>({});
-  const [sheetSelection, setSheetSelection] = useState<string>("");
+  const [sheetSelection, setSheetSelection] = useState("");
   const [headerRowSelection, setHeaderRowSelection] = useState<number | undefined>(undefined);
   const [rosterPage, setRosterPage] = useState(0);
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
@@ -61,54 +103,22 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
   const refresh = async () => { const response = await fetch(`/api/spogomi/events/${eventId}${divisionQuery}`, { cache: "no-store" }); const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "Événement indisponible."); setData(body); };
   useEffect(() => {
     let active = true;
-    void fetch(`/api/spogomi/events/${eventId}`, { cache: "no-store" })
-      .then(async (response) => {
-        const body = await response.json();
-        if (!response.ok) throw new Error(body.error ?? "Événement indisponible.");
-        if (active) { setData(body); if (!activeDivisionId && body.divisions?.[0]?.id) setActiveDivisionId(body.divisions[0].id); }
-      })
-      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Événement indisponible."); });
+    void fetch(`/api/spogomi/events/${eventId}`, { cache: "no-store" }).then(async (response) => { const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "Événement indisponible."); if (active) { setData(body); if (!activeDivisionId && body.divisions?.[0]?.id) setActiveDivisionId(body.divisions[0].id); } }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Événement indisponible."); });
     return () => { active = false; };
   }, [eventId, activeDivisionId]);
-  const assignedCount = useMemo(() => data?.participants.filter((participant) => participant.team_id).length ?? 0, [data]);
+  const assignedCount = useMemo(() => countAssignedParticipants(data), [data]);
   const compositionEditable = data ? ["draft", "registration_open"].includes(data.event.state) : false;
-  const teamPreviewError = useMemo(() => {
-    if (!data || !teamPreview) return null;
-    try {
-      validateProposedTeamFormation({
-        formation: teamPreview.formation,
-        participantIds: teamPreview.formation.teams.flatMap((team) => team.participantIds).concat(teamPreview.formation.unassignedParticipantIds),
-        mode: data.divisions.find((division) => division.id === activeDivisionId)?.division_type ?? (data.event.mode === "mixed" ? "casual" : data.event.mode),
-        casualTeamBounds: {
-          minMembers: data.divisions.find((division) => division.id === activeDivisionId)?.team_size_config?.casual?.minMembers ?? data.event.team_size_config?.casual?.minMembers ?? null,
-          maxMembers: data.divisions.find((division) => division.id === activeDivisionId)?.team_size_config?.casual?.maxMembers ?? data.event.team_size_config?.casual?.maxMembers ?? null,
-        },
-      });
-      return null;
-    } catch (reason) {
-      return reason instanceof Error ? reason.message : "La composition est invalide.";
-    }
-  }, [activeDivisionId, data, teamPreview]);
+  const compositionLocked = !compositionEditable;
+  const teamPreviewError = useMemo(() => validateTeamPreview(data, activeDivisionId, teamPreview), [activeDivisionId, data, teamPreview]);
   async function action(url: string, init?: RequestInit): Promise<Record<string, unknown> | null> { setBusy(true); setError(null); setMessage(null); try { const response = await fetch(scopedUrl(url), init); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error ?? "Opération refusée."); setMessage("Opération enregistrée."); await refresh(); return body as Record<string, unknown>; } catch (reason) { setError(reason instanceof Error ? reason.message : "Opération refusée."); return null; } finally { setBusy(false); } }
   async function issueIdentityCode(participantId: string) { const body = await action(`/api/spogomi/events/${eventId}/participants/${participantId}/identity-code`, { method: "POST" }); if (body && typeof body.code === "string") setIdentityCodes((current) => ({ ...current, [participantId]: body.code as string })); }
   async function previewRoster(file: File, options?: { mapping?: Record<string, string>; sheetName?: string; headerRow?: number; allowIncompatibleMapping?: boolean }) { const form = new FormData(); form.set("file", file); if (activeDivisionId) form.set("divisionId", activeDivisionId); if (options?.mapping) form.set("mapping", JSON.stringify(options.mapping)); if (options?.sheetName) form.set("sheetName", options.sheetName); if (options?.headerRow) form.set("headerRow", String(options.headerRow)); if (options?.allowIncompatibleMapping) form.set("allowIncompatibleMapping", "true"); setRosterFile(file); setBusy(true); setError(null); try { const response = await fetch(`/api/spogomi/events/${eventId}/imports/preview`, { method: "POST", body: form }); const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "Aperçu impossible."); const nextPreview = body as SpogomiRosterPreview; setPreview(nextPreview); setMappingSelection(nextPreview.mapping); setSheetSelection(nextPreview.sheetName ?? ""); setHeaderRowSelection(nextPreview.headerRow || undefined); setRosterPage(0); const invalidRows = new Set(nextPreview.errors.map((item) => item.rowNumber)); setAcceptedRowNumbers(nextPreview.rows.filter((row) => !invalidRows.has(row.rowNumber)).map((row) => row.rowNumber)); } catch (reason) { setPreview(null); setError(reason instanceof Error ? reason.message : "Aperçu impossible."); } finally { setBusy(false); } }
   async function confirmRoster() { if (!preview || !rosterFile || !acceptedRowNumbers.length) return; const form = new FormData(); form.set("file", rosterFile); form.set("mapping", JSON.stringify(mappingSelection)); if (activeDivisionId) form.set("divisionId", activeDivisionId); if (preview.sheetName) form.set("sheetName", preview.sheetName); if (preview.headerRow) form.set("headerRow", String(preview.headerRow)); form.set("acceptedRowNumbers", JSON.stringify(acceptedRowNumbers)); const result = await action(`/api/spogomi/events/${eventId}/imports/confirm`, { method: "POST", body: form }); if (result) { setPreview(null); setRosterFile(null); setAcceptedRowNumbers([]); } }
   function toggleAcceptedRow(rowNumber: number) { setAcceptedRowNumbers((current) => current.includes(rowNumber) ? current.filter((value) => value !== rowNumber) : [...current, rowNumber].sort((a, b) => a - b)); }
-  const validRosterRows = useMemo(() => { if (!preview) return []; const invalidRows = new Set(preview.errors.map((item) => item.rowNumber)); return preview.rows.filter((row) => !invalidRows.has(row.rowNumber)); }, [preview]);
+  const validRosterRows = useMemo(() => getValidRosterRows(preview), [preview]);
   const visibleRosterRows = useMemo(() => validRosterRows.slice(rosterPage * ROSTER_PAGE_SIZE, (rosterPage + 1) * ROSTER_PAGE_SIZE), [rosterPage, validRosterRows]);
   const rosterPageCount = Math.max(1, Math.ceil(validRosterRows.length / ROSTER_PAGE_SIZE));
-  const selectedImportSummary = useMemo(() => {
-    const summary = { created: 0, unchanged: 0, changed: 0, conflicts: 0, excluded: 0 };
-    for (const rowNumber of acceptedRowNumbers) {
-      const effect = preview?.rowEffects?.[String(rowNumber)];
-      if (effect === "created") summary.created += 1;
-      else if (effect === "unchanged") summary.unchanged += 1;
-      else if (effect === "changed") summary.changed += 1;
-      else if (effect === "conflict") summary.conflicts += 1;
-      else summary.excluded += 1;
-    }
-    return summary;
-  }, [acceptedRowNumbers, preview]);
+  const selectedImportSummary = useMemo(() => summarizeSelectedImport(acceptedRowNumbers, preview), [acceptedRowNumbers, preview]);
   async function previewTeams() { const result = await action(`/api/spogomi/events/${eventId}/teams/auto`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ divisionId: activeDivisionId }) }); if (result) setTeamPreview(result as unknown as SpogomiTeamCompositionPreview); }
   function movePreviewParticipant(participantId: string, teamNumber: number | null) { setTeamPreview((current) => { if (!current) return current; const teams = current.formation.teams.map((team) => ({ ...team, participantIds: team.participantIds.filter((id) => id !== participantId) })); let unassignedParticipantIds = current.formation.unassignedParticipantIds.filter((id) => id !== participantId); if (teamNumber === null) unassignedParticipantIds = [...unassignedParticipantIds, participantId]; else { const target = teams.find((team) => team.teamNumber === teamNumber); if (!target) return current; target.participantIds = [...target.participantIds, participantId]; } const formation: SpogomiTeamFormation = { ...current.formation, teams, unassignedParticipantIds }; return { ...current, formation }; }); }
   async function confirmTeams() { if (!teamPreview || teamPreviewError) return; const result = await action(`/api/spogomi/events/${eventId}/teams/auto`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ confirm: true, divisionId: activeDivisionId, expectedRevision: teamPreview.expectedRevision, proposalFingerprint: teamPreview.proposalFingerprint, formation: teamPreview.formation }) }); if (result) setTeamPreview(null); }
@@ -118,43 +128,5 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
   if (!data) return <main className="p-8">Chargement de l’événement…</main>;
   const activeDivision = data.divisions.find((division) => division.id === activeDivisionId) ?? data.divisions[0] ?? null;
   const divisionLabel = activeDivision ? (activeDivision.division_type === "world_cup" ? "World Cup" : "Casual") : spogomiModeLabel(data.event.mode);
-  return <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-orange-50 px-4 py-10"><div className="cmm-page-width space-y-6">{showHeader ? <PageHeader tone="stone" title={data.event.name} subtitle={`${data.event.location_label} · ${divisionLabel} · ${data.event.public_visibility === "published" ? "publication publique" : "brouillon privé"}`} /> : null}
-    {data.event.mode === "mixed" && data.divisions.length === spogomiDivisionTypesForMode(data.event.mode).length ? <div className="flex flex-wrap gap-2" role="tablist" aria-label="Divisions SPOGOMI">{data.divisions.map((division) => <button key={division.id} type="button" role="tab" aria-selected={division.id === activeDivision?.id} className={`min-h-11 rounded-xl px-4 py-2 text-sm font-black transition ${division.id === activeDivision?.id ? "bg-emerald-700 text-white" : "border border-slate-300 bg-white text-slate-800"}`} onClick={() => { setTeamPreview(null); setActiveDivisionId(division.id); }}>{division.division_type === "world_cup" ? "World Cup" : "Casual"}</button>)}</div> : null}
-    <div hidden={section !== "settings"}><CmmCard tone="slate" variant="glass" className="space-y-3 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-black text-slate-900">Publication publique</h2><p className="text-sm text-slate-600">URL stable : {data.event.event_slug ? `/spogomi/${data.event.event_slug}` : "en attente"}. La publication n’expose jamais le roster.</p></div><CmmButton type="button" tone={data.event.public_visibility === "published" ? "secondary" : "primary"} disabled={busy || !data.event.event_slug} onClick={() => void action(`/api/spogomi/events/${eventId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ publicVisibility: data.event.public_visibility === "published" ? "private" : "published" }) })}>{data.event.public_visibility === "published" ? "Rendre privé" : "Publier l’événement"}</CmmButton></div></CmmCard></div>
-    <div hidden={section !== "settings"}><CmmCard tone="slate" variant="glass" className="space-y-4 p-5"><SpogomiIdentityAssistancePanel eventId={eventId} participants={data.participants} /></CmmCard></div>
-    {showAdminTeamJoinRequests ? <div hidden={section !== "settings"}><CmmCard tone="slate" variant="glass" className="space-y-4 p-5"><SpogomiTeamJoinRequestsPanel eventId={eventId} participants={data.participants} teams={data.teams} /></CmmCard></div> : null}
-    {showAdminTeamJoinRequests ? <div hidden={section !== "settings"}><CmmCard tone="slate" variant="glass" className="space-y-4 p-5"><SpogomiAdmissionRequestsPanel eventId={eventId} /></CmmCard></div> : null}
-    <div hidden={section !== "settings"}><CmmCard tone="slate" variant="muted" className="space-y-3 p-5"><div><h2 className="font-black text-slate-900">Règlement</h2><p className="text-sm text-slate-600">Versions et sources actuellement enregistrées pour les divisions de cette édition.</p></div>{data.divisions.length ? <div className="grid gap-3 sm:grid-cols-2">{data.divisions.map((division) => <div key={division.id} className="rounded-xl border border-black/10 bg-white/75 p-3 text-sm"><p className="font-bold">{division.division_type === "world_cup" ? "World Cup" : "Casual"}</p><p className="mt-1 text-slate-700">Statut : {division.regulation_status ?? "non renseigné"}</p><p className="text-slate-700">Version : {division.regulation_version ?? "non renseignée"}</p>{division.regulation_source_reference ? <p className="text-slate-700">Source : {division.regulation_source_reference}</p> : null}</div>)}</div> : <p className="text-sm text-slate-700">Aucune division réglementaire distincte n’est exposée par cette édition historique.</p>}</CmmCard></div>
-    <div hidden={section !== "attendance"} className="space-y-4"><SpogomiDayReadinessChecklist data={{ event: data.event, divisions: data.divisions, participants: data.participants, teams: data.teams, route: data.route, categoryRules: data.categoryRules, eventAccess: data.eventAccess }} /><SpogomiAttendancePanel eventId={eventId} divisionId={activeDivisionId} /></div>
-    {message ? <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{message}</p> : null}{error ? <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p> : null}
-    <div hidden={section !== "results"}><CmmCard tone="slate" variant="glass" className="space-y-3 p-5"><div><h2 className="font-black text-slate-900">Publication des résultats</h2><p className="text-sm text-slate-600">Les résultats non certifiés restent masqués sauf choix explicite « provisoire ». Le classement certifié exige les règles complètes et les décisions officielles.</p></div><div className="flex flex-wrap items-center gap-3"><select aria-label="Visibilité publique des résultats" className="min-h-11 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-bold text-slate-900 sm:max-w-md" value={data.event.public_results_visibility} disabled={busy || data.event.public_visibility !== "published"} onChange={(event) => void action(`/api/spogomi/events/${eventId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ publicResultsVisibility: event.target.value }) })}><option value="hidden">Masqués</option><option value="provisional">Provisoires autorisés</option><option value="certified">Certifiés uniquement</option></select><CmmButton type="button" tone="important" disabled={busy || data.event.state !== "certified"} onClick={() => void action(`/api/spogomi/events/${eventId}/rankings`, { method: "POST" })}>Publier les classements officiels</CmmButton></div></CmmCard>
-    <CmmCard tone="slate" variant="glass" className="flex flex-wrap items-center justify-between gap-3 p-5"><div><h2 className="font-black text-slate-900">Export organisateur</h2><p className="text-sm text-slate-600">Classeur XLSX réel avec synthèse, équipes, catégories et traçabilité. Les mesures brutes non certifiées sont exclues du contenu exporté.</p></div><a href={`/api/spogomi/events/${eventId}/export.xlsx`} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-black text-slate-900 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Télécharger le XLSX</a></CmmCard></div>
-    <div className="grid gap-6 lg:grid-cols-2">
-    <div hidden={section !== "teams"}><CmmCard tone="amber" variant="glass" className="space-y-4 p-5"><h2 className="cmm-text-h3">Roster privé</h2><p className="cmm-text-small">CSV, TSV, XLSX, XLS ou ODS. Le fichier brut n’est pas conservé par défaut ; la confirmation reparcourt le fichier original côté serveur.</p><input type="file" accept=".csv,.tsv,.xlsx,.xls,.ods" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void previewRoster(file); }} />{preview ? <div className="space-y-3 rounded-xl bg-white/75 p-4"><p className="cmm-text-small">{preview.rows.length} lignes lues ({preview.rowsRead} données) · format {preview.format.toUpperCase()} · encodage {preview.encoding} · feuille {preview.sheetName ?? "—"} · en-tête ligne {preview.headerRow || "—"}</p><p className="cmm-text-small">{preview.unknownHeaders.length} colonnes inconnues · {preview.errors.length} anomalies · {acceptedRowNumbers.length}/{validRosterRows.length} ligne(s) admissible(s) sélectionnée(s)</p><p className="text-sm text-slate-700">Effet sélectionné : {selectedImportSummary.created} création(s), {selectedImportSummary.unchanged} inchangée(s), {selectedImportSummary.changed} changement(s), {selectedImportSummary.conflicts} conflit(s), {selectedImportSummary.excluded} exclusion(s).</p>{preview.sourceSystem === "cachan_ticketing" ? <p className="text-sm text-slate-700">Billetterie : {preview.cancelledRowNumbers.length} annulation(s) signalée(s) sans révocation automatique · {(preview.changedRowNumbers ?? []).length} changement(s) détecté(s) depuis l’import précédent · {(preview.conflictRowNumbers ?? []).length} conflit(s) nécessitant une résolution explicite.</p> : null}{preview.sheetCandidates.length > 1 ? <label className="block text-sm font-bold">Feuille<select className="mt-1 w-full rounded-lg border border-black/10 bg-white p-2" value={sheetSelection} onChange={(event) => { setSheetSelection(event.target.value); if (rosterFile) void previewRoster(rosterFile, { mapping: mappingSelection, sheetName: event.target.value, allowIncompatibleMapping: true }); }}><option value="">Choisir une feuille</option>{preview.sheetCandidates.map((candidate) => <option key={candidate.name} value={candidate.name}>{candidate.name} · {candidate.recognizedFieldCount} colonne(s) reconnue(s)</option>)}</select></label> : null}<div className="space-y-2">{ROSTER_MAPPING_FIELDS.map(([field, label]) => { const diagnostic = preview.columnDiagnostics.find((item) => item.field === field); return <label key={field} className="block text-sm font-bold">{label} · {diagnostic?.status === "ambiguous" ? "ambiguë" : diagnostic?.status === "recognized" ? "reconnue" : "à associer"}<select className="mt-1 w-full rounded-lg border border-black/10 bg-white p-2" value={mappingSelection[field] ?? ""} onChange={(event) => { const next = { ...mappingSelection }; if (event.target.value) next[field] = event.target.value; else delete next[field]; setMappingSelection(next); if (rosterFile) void previewRoster(rosterFile, { mapping: next, sheetName: sheetSelection || undefined, headerRow: headerRowSelection }); }}><option value="">Aucune</option>{preview.headers.map((header) => <option key={header} value={header}>{header}</option>)}</select></label>; })}</div>{preview.errors.length ? <div className="max-h-32 overflow-auto rounded-lg bg-amber-50 p-2 text-xs">{preview.errors.slice(0, 12).map((item, index) => <p key={`${item.rowNumber}-${item.code}-${index}`}>Ligne {item.rowNumber} · {item.message}</p>)}</div> : null}<div className="space-y-2 text-sm"><div className="flex flex-wrap gap-2"><CmmButton type="button" size="sm" tone="secondary" disabled={busy || !validRosterRows.length} onClick={() => setAcceptedRowNumbers(validRosterRows.map((row) => row.rowNumber))}>Sélectionner toutes les lignes admissibles</CmmButton><CmmButton type="button" size="sm" tone="secondary" disabled={busy || !acceptedRowNumbers.length} onClick={() => setAcceptedRowNumbers([])}>Tout désélectionner</CmmButton></div><div className="max-h-64 space-y-1 overflow-auto">{visibleRosterRows.map((row) => <label key={row.rowNumber} className="flex items-center gap-2"><input type="checkbox" checked={acceptedRowNumbers.includes(row.rowNumber)} onChange={() => toggleAcceptedRow(row.rowNumber)} /><span>{row.rowNumber} — {row.name ?? "Place à identifier"}{row.externalReference ? ` · ${row.externalReference}` : ""}{row.groupPreference ? ` · ${row.groupPreference}` : ""}</span></label>)}</div><div className="flex items-center justify-between gap-2"><CmmButton type="button" size="sm" tone="secondary" disabled={busy || rosterPage === 0} onClick={() => setRosterPage((page) => Math.max(0, page - 1))}>Page précédente</CmmButton><span>Page {Math.min(rosterPage + 1, rosterPageCount)} / {rosterPageCount}</span><CmmButton type="button" size="sm" tone="secondary" disabled={busy || rosterPage + 1 >= rosterPageCount} onClick={() => setRosterPage((page) => Math.min(rosterPageCount - 1, page + 1))}>Page suivante</CmmButton></div></div><CmmButton type="button" tone="primary" disabled={busy || !acceptedRowNumbers.length || preview.requiresExplicitSelection || !rosterFile} onClick={() => void confirmRoster()}>Confirmer la sélection</CmmButton></div> : null}</CmmCard></div>
-      <div hidden={section !== "settings"}><CmmCard tone="amber" variant="glass" className="space-y-4 p-5"><h2 className="cmm-text-h3">Parcours officiel</h2><p className="cmm-text-small">La distance affichée est calculée depuis le fichier de référence. Elle n’est pas une distance observée sur le terrain.</p><input type="file" accept=".gpx,application/gpx+xml" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) { const form = new FormData(); form.set("file", file); void action(`/api/spogomi/events/${eventId}/route-gpx`, { method: "POST", body: form }); } }} />{data.route ? <><p className="cmm-text-small">{data.route.file_name} · {data.route.reference_distance_km} km de référence</p><OfficialRouteMap coordinates={data.route.geometry_geojson.coordinates} /></> : <p className="cmm-text-small">Aucun GPX officiel associé.</p>}</CmmCard></div>
-    </div>
-    <div hidden={section !== "teams"}><CmmCard tone="amber" variant="glass" className="space-y-4 p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="cmm-text-h3">Composition des équipes</h2><p className="cmm-text-small">{assignedCount}/{data.participants.length} participants affectés. Les échanges manuels sont autorisés uniquement pendant la préparation et sur une équipe sans dépendance protégée.</p>{!compositionEditable ? <p className="mt-1 text-sm font-bold text-amber-800">La composition est protégée par l’état courant de l’événement. Une absence ou un remplacement nécessite une procédure d’arbitrage versionnée.</p> : null}</div><div className="flex gap-2"><CmmButton type="button" tone="important" disabled={busy || !compositionEditable} onClick={() => void previewTeams()}>Prévisualiser ou régénérer</CmmButton><CmmButton type="button" tone="critical" disabled={busy || !compositionEditable} onClick={() => void action(`/api/spogomi/events/${eventId}/teams/lock`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ divisionId: activeDivisionId, expectedRevision: data.event.composition_revision ?? 0 }) })}>Verrouiller {activeDivision ? `la division ${divisionLabel}` : ""}</CmmButton></div></div>
-      {teamPreview ? <div className="space-y-4 rounded-xl bg-white/75 p-4">
-        <p className="text-sm font-bold">Aperçu explicable : {teamPreview.formation.teams.length} équipe(s), {teamPreview.formation.unassignedParticipantIds.length} place(s) en attente.</p>
-        {teamPreview.explanation.map((line) => <p key={line} className="text-sm text-slate-700">{line}</p>)}
-        {teamPreviewError ? <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{teamPreviewError}</p> : null}
-        <div className="grid gap-3 md:grid-cols-2">
-          {teamPreview.formation.teams.map((team) => <div key={team.draftKey} className="rounded-xl border border-black/10 bg-white p-3">
-            <p className="font-bold">Équipe {team.teamNumber} · {team.participantIds.length} place(s)</p>
-            <div className="mt-2 space-y-2">{team.participantIds.map((participantId) => { const participant = data.participants.find((candidate) => candidate.id === participantId); return <label key={participantId} className="flex items-center gap-2 text-sm"><span className="min-w-0 flex-1">{participant?.display_name ?? "Place à identifier"}{participant?.external_reference ? ` · ${participant.external_reference}` : ""}</span><select aria-label={`Affectation de la place ${participantId}`} className="rounded-lg border border-black/10 bg-white p-2" value={String(team.teamNumber)} disabled={busy} onChange={(event) => movePreviewParticipant(participantId, event.target.value ? Number(event.target.value) : null)}><option value="">En attente</option>{teamPreview.formation.teams.map((option) => <option key={option.teamNumber} value={option.teamNumber}>Équipe {option.teamNumber}</option>)}</select></label>; })}</div>
-          </div>)}
-        </div>
-        <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-3"><p className="font-bold">Places à affecter · {teamPreview.formation.unassignedParticipantIds.length}</p>{teamPreview.formation.unassignedParticipantIds.length ? <div className="mt-2 space-y-2">{teamPreview.formation.unassignedParticipantIds.map((participantId) => { const participant = data.participants.find((candidate) => candidate.id === participantId); return <label key={participantId} className="flex items-center gap-2 text-sm"><span className="min-w-0 flex-1">{participant?.display_name ?? "Place à identifier"}{participant?.external_reference ? ` · ${participant.external_reference}` : ""}</span><select aria-label={`Affectation de la place ${participantId}`} className="rounded-lg border border-black/10 bg-white p-2" value="" disabled={busy} onChange={(event) => movePreviewParticipant(participantId, event.target.value ? Number(event.target.value) : null)}><option value="">En attente</option>{teamPreview.formation.teams.map((option) => <option key={option.teamNumber} value={option.teamNumber}>Équipe {option.teamNumber}</option>)}</select></label>; })}</div> : <p className="mt-1 text-sm text-slate-700">Aucune place en attente.</p>}</div>
-        <div className="flex gap-2"><CmmButton type="button" tone="primary" disabled={busy || Boolean(teamPreviewError)} onClick={() => void confirmTeams()}>Confirmer cette proposition</CmmButton><CmmButton type="button" tone="secondary" disabled={busy} onClick={() => setTeamPreview(null)}>Annuler</CmmButton></div>
-      </div> : null}
-      <div className="grid gap-3 md:grid-cols-2" aria-label="Pseudonymes publics des équipes">{data.teams.map((team) => <div key={team.id} className="rounded-xl border border-black/10 bg-white/70 p-3"><div className="flex items-start justify-between gap-3">{editingTeamId === team.id ? <label className="min-w-0 flex-1 text-sm font-bold">Pseudonyme de l’équipe {team.team_number}<input aria-label={`Pseudonyme public de l’équipe ${team.team_number}`} className="mt-1 w-full rounded-lg border border-black/10 bg-white p-2 font-normal" maxLength={60} value={teamNameDraft} onChange={(event) => setTeamNameDraft(event.target.value)} disabled={busy} /></label> : <div><p className="font-bold">Équipe {team.team_number} — {team.public_name}</p><p className="mt-1 text-xs text-slate-600">État de composition : {team.composition_state}. Le numéro et les accès restent inchangés.</p></div>}{editingTeamId === team.id ? <div className="flex shrink-0 gap-2"><CmmButton type="button" size="sm" tone="primary" disabled={busy} onClick={() => void saveTeamName(team)}>Enregistrer</CmmButton><CmmButton type="button" size="sm" tone="secondary" disabled={busy} onClick={cancelTeamNameEdit}>Annuler</CmmButton></div> : <CmmButton type="button" size="sm" tone="secondary" disabled={busy} onClick={() => beginTeamNameEdit(team)}>Modifier</CmmButton>}</div></div>)}</div>
-      <div className="grid gap-3 md:grid-cols-2">{data.participants.map((participant) => <div key={participant.id} className="rounded-xl border border-black/10 bg-white/70 p-3 text-sm"><p className="font-bold">{participant.display_name ?? "Place à identifier"}{participant.group_preference ? <span className="ml-2 font-normal text-slate-500">({participant.group_preference})</span> : null}</p><p className="mt-1 text-xs text-slate-600">Présence : {participant.attendance_status} · Compte : {participant.account_link_status}</p>{participant.composition_eligible === false ? <p className="mt-1 rounded-lg bg-amber-50 p-2 text-xs font-bold text-amber-900">Billet annulé ou supprimé : affectation bloquée. Une résolution organisateur est requise.</p> : null}<select className="mt-2 w-full rounded-lg border border-black/10 bg-white p-2" value={participant.team_id ?? ""} disabled={busy || !compositionEditable || participant.composition_eligible === false} onChange={(event) => void action(`/api/spogomi/events/${eventId}/teams/move`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ participantId: participant.id, teamId: event.target.value || null, expectedRevision: data.event.composition_revision ?? 0 }) })}><option value="">À affecter</option>{data.teams.map((team) => <option key={team.id} value={team.id}>{team.public_name}</option>)}</select><CmmButton type="button" size="sm" tone="secondary" className="mt-2" disabled={busy || participant.account_link_status === "verified"} onClick={() => void issueIdentityCode(participant.id)}>Émettre un code de liaison</CmmButton>{identityCodes[participant.id] ? <p className="mt-2 rounded-lg bg-emerald-50 p-2 font-mono text-xs text-emerald-900">{identityCodes[participant.id]}<br /><span className="font-sans">À remettre directement, sans le publier.</span></p> : null}</div>)}</div>
-    </CmmCard></div>
-    <div hidden={section !== "teams"}><CmmCard tone="amber" variant="glass" className="space-y-4 p-5"><SpogomiTeamAccessLinks eventId={eventId} teams={data.teams} /></CmmCard></div>
-    <div hidden={section !== "settings"}><CmmCard tone="slate" variant="glass" className="space-y-4 p-5"><SpogomiReviewerManagement eventId={eventId} /></CmmCard></div>
-     <div hidden={section !== "teams"}><CmmCard tone="emerald" variant="glass" className="space-y-4 p-5"><SpogomiVolunteerAttestationPanel eventId={eventId} divisionId={activeDivisionId} participants={data.participants} /></CmmCard></div>
-     <div hidden={section !== "arbitration"}><CmmCard tone="emerald" variant="glass" className="space-y-4 p-5"><SpogomiResultReviewPanel eventId={eventId} divisionId={activeDivisionId} /></CmmCard></div>
-    <div hidden={section !== "bilan"}><CmmCard tone="emerald" variant="glass" className="space-y-4 p-5"><SpogomiConsolidationPanel eventId={eventId} /></CmmCard></div>
-  </div></main>;
+  return <SpogomiPreparationWorkspaceView eventId={eventId} section={section} showHeader={showHeader} showAdminTeamJoinRequests={showAdminTeamJoinRequests} data={data} activeDivisionId={activeDivisionId} activeDivision={activeDivision} divisionLabel={divisionLabel} busy={busy} message={message} error={error} compositionEditable={compositionEditable} compositionLocked={compositionLocked} publicTeamNameTemplate={SPOGOMI_PUBLIC_TEAM_NAME_TEMPLATE} compositionArbitrationMessage={SPOGOMI_COMPOSITION_ARBITRATION_MESSAGE} compositionEligibilityWarning={SPOGOMI_COMPOSITION_ELIGIBILITY_WARNING} compositionRevision={() => buildSpogomiCompositionRevision(data)} teamEditorLabels={SPOGOMI_TEAM_EDITOR_LABELS} teamNameInput={SpogomiTeamNameInput} assignedCount={assignedCount} preview={preview} rosterFile={rosterFile} acceptedRowNumbers={acceptedRowNumbers} mappingSelection={mappingSelection} sheetSelection={sheetSelection} headerRowSelection={headerRowSelection} rosterPage={rosterPage} validRosterRows={validRosterRows} visibleRosterRows={visibleRosterRows} rosterPageCount={rosterPageCount} selectedImportSummary={selectedImportSummary} teamPreview={teamPreview} teamPreviewError={teamPreviewError} identityCodes={identityCodes} editingTeamId={editingTeamId} teamNameDraft={teamNameDraft} action={action} setActiveDivisionId={setActiveDivisionId} setTeamPreview={setTeamPreview} setAcceptedRowNumbers={setAcceptedRowNumbers} setMappingSelection={setMappingSelection} setSheetSelection={setSheetSelection} setRosterPage={setRosterPage} previewRoster={previewRoster} confirmRoster={confirmRoster} toggleAcceptedRow={toggleAcceptedRow} previewTeams={previewTeams} movePreviewParticipant={movePreviewParticipant} confirmTeams={confirmTeams} beginTeamNameEdit={beginTeamNameEdit} cancelTeamNameEdit={cancelTeamNameEdit} saveTeamName={saveTeamName} issueIdentityCode={issueIdentityCode} setTeamNameDraft={setTeamNameDraft} />;
 }

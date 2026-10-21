@@ -4,6 +4,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isCachanTicketCompositionEligible } from "./ticket-reconciliation";
 import type { EventRow } from "./preparation-service";
 
+function mapManagementParticipants(participants: Array<Record<string, unknown>>) {
+  return participants.map((participant) => ({ ...participant, composition_eligible: isCachanTicketCompositionEligible({ sourceSystem: participant.source_system as string | null, ticketStatus: participant.ticket_status as string | null, ticketDeleted: Boolean(participant.ticket_deleted), registrationStatus: String(participant.registration_status) }) }));
+}
+
 /**
  * Organizer-only projection. The caller must have already passed the canonical
  * event-management guard; this projection intentionally contains roster data.
@@ -63,15 +67,7 @@ export async function loadSpogomiManagementProjection(params: {
   return {
     event,
     divisions: divisions.data ?? [],
-    participants: (participants.data ?? []).map((participant) => ({
-      ...participant,
-      composition_eligible: isCachanTicketCompositionEligible({
-        sourceSystem: participant.source_system,
-        ticketStatus: participant.ticket_status,
-        ticketDeleted: Boolean(participant.ticket_deleted),
-        registrationStatus: String(participant.registration_status),
-      }),
-    })),
+    participants: mapManagementParticipants((participants.data ?? []) as Array<Record<string, unknown>>),
     teams: teams.data ?? [],
     route: route.data ?? null,
     eventAccess: eventAccess.data ?? [],

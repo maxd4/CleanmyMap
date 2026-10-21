@@ -33,6 +33,84 @@ function decimal(value: string | undefined): number | null {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
+const MEASUREMENT_COLUMN_NAMES = {
+  team: ["equipe", "team", "team number", "numero equipe", "numero dequipe", "team id"],
+  category: ["categorie", "category", "code categorie", "category code", "code"],
+  value: ["valeur", "value", "mesure", "measurement", "quantite", "quantity", "masse g", "mass grams", "count"],
+  kind: ["type", "kind", "measurement kind", "nature"],
+  unit: ["unite", "unit"],
+  method: ["methode", "method", "measurement method"],
+  provenance: ["provenance", "source", "origine"],
+};
+
+type MeasurementColumnIndexes = Record<keyof typeof MEASUREMENT_COLUMN_NAMES, number>;
+
+function findMeasurementColumns(headers: string[]): MeasurementColumnIndexes {
+  return Object.fromEntries(Object.entries(MEASUREMENT_COLUMN_NAMES).map(([key, names]) => [key, columnIndex(headers, names)])) as MeasurementColumnIndexes;
+}
+
+function buildMeasurementRow(
+  row: string[],
+  offset: number,
+  columns: MeasurementColumnIndexes,
+  teamsByNumber: Map<string, { id: string; team_number: number; public_name: string }>,
+  categoriesByCode: Map<string, { id: string; code: string; measurement_kind: string; unit: string }>,
+) {
+  const teamValue = normalizeValue(row[columns.team]);
+  const categoryValue = normalizeHeader(row[columns.category] ?? "");
+  const team = teamsByNumber.get(teamValue);
+  const category = categoriesByCode.get(categoryValue);
+  const measurementKind = resolveMeasurementKind(row[columns.kind], category?.measurement_kind);
+  const value = decimal(row[columns.value]);
+  const diagnostics = measurementDiagnostics(team, category, measurementKind, value);
+  return { rowNumber: offset + 2, teamNumber: Number(teamValue) || null, teamId: team?.id ?? null, categoryCode: categoryValue || null, categoryRuleId: category?.id ?? null, measurementKind, ...measurementValues(measurementKind, value), ...measurementMetadata(row, columns, category), selected: diagnostics.length === 0, diagnostics };
+}
+
+function measurementValues(measurementKind: "mass" | "count" | "volume" | null, value: number | null) {
+  return { quantity: measurementKind === "volume" ? value : null, massGrams: measurementKind === "mass" ? value : null, objectCount: measurementKind === "count" ? value : null };
+}
+
+function measurementMetadata(row: string[], columns: MeasurementColumnIndexes, category: { unit: string } | undefined) {
+  return { unit: normalizeValue(row[columns.unit] ?? category?.unit ?? "") || null, measurementMethod: normalizeValue(row[columns.method] ?? "import Excel") || "import Excel", provenance: normalizeValue(row[columns.provenance] ?? "import_excel") || "import_excel" };
+}
+
+function resolveMeasurementKind(value: string | undefined, categoryKind: string | undefined): "mass" | "count" | "volume" | null {
+  const kind = normalizeHeader(value ?? categoryKind ?? "");
+  if (kind === "mass" || kind === "count" || kind === "volume") return kind;
+  return categoryKind === "mass" || categoryKind === "count" || categoryKind === "volume" ? categoryKind : null;
+}
+
+function measurementDiagnostics(team: unknown, category: { measurement_kind: string } | undefined, measurementKind: string | null, value: number | null): string[] {
+  const diagnostics: string[] = [];
+  if (!team) diagnostics.push("Équipe introuvable dans cette division.");
+  if (!category) diagnostics.push("Catégorie introuvable dans ce règlement.");
+  if (!measurementKind) diagnostics.push("Nature de mesure inconnue.");
+  if (value === null) diagnostics.push("Valeur numérique absente ou invalide.");
+  if (category && measurementKind !== category.measurement_kind) diagnostics.push("La nature de mesure ne correspond pas au règlement.");
+  return diagnostics;
+}
+
+function buildMeasurementColumnMapping(headers: string[], columns: MeasurementColumnIndexes): Record<string, string> {
+  const mapping: Record<string, string> = { team: headers[columns.team], category: headers[columns.category], value: headers[columns.value] };
+  if (columns.kind >= 0) mapping.kind = headers[columns.kind];
+  if (columns.unit >= 0) mapping.unit = headers[columns.unit];
+  if (columns.method >= 0) mapping.method = headers[columns.method];
+  if (columns.provenance >= 0) mapping.provenance = headers[columns.provenance];
+  return mapping;
+}
+
+async function reserveMeasurementImport(params: { supabase: SupabaseClient; eventId: string; divisionId: string; contentHash: string; fileName: string; format: SpogomiImportFormat; sheetName: string; columnMapping: Record<string, string>; importKey: string; actorClerkId: string }): Promise<{ importId: string; alreadyConfirmed: boolean }> {
+  const existing = await params.supabase.from("spogomi_measurement_imports").select("id, status, import_key, content_sha256, sheet_name, column_mapping").eq("event_id", params.eventId).eq("division_id", params.divisionId).eq("content_sha256", params.contentHash).eq("sheet_name", params.sheetName).eq("column_mapping", params.columnMapping).maybeSingle();
+  if (existing.error) throw existing.error;
+  if (existing.data?.id) return { importId: String(existing.data.id), alreadyConfirmed: existing.data.status === "confirmed" };
+  const inserted = await params.supabase.from("spogomi_measurement_imports").insert({ event_id: params.eventId, division_id: params.divisionId, content_sha256: params.contentHash, import_key: params.importKey, file_name: params.fileName, format: params.format, sheet_name: params.sheetName, column_mapping: params.columnMapping, imported_by_clerk_id: params.actorClerkId }).select("id").single();
+  if (!inserted.error) return { importId: String(inserted.data.id), alreadyConfirmed: false };
+  if (inserted.error.code !== "23505") throw inserted.error;
+  const raced = await params.supabase.from("spogomi_measurement_imports").select("id, status").eq("event_id", params.eventId).eq("division_id", params.divisionId).eq("content_sha256", params.contentHash).eq("sheet_name", params.sheetName).eq("column_mapping", params.columnMapping).single();
+  if (raced.error) throw raced.error;
+  return { importId: String(raced.data.id), alreadyConfirmed: raced.data.status === "confirmed" };
+}
+
 export async function previewSpogomiMeasurementWorkbook(params: { supabase: SupabaseClient; eventId: string; divisionId: string; file: File; sheetName?: string; actorClerkId: string }): Promise<unknown> {
   const bytes = new Uint8Array(await params.file.arrayBuffer());
   if (!bytes.length || bytes.byteLength > MAX_FILE_BYTES) throw new Error("Classeur refusé : taille absente ou supérieure à 5 Mo.");
@@ -42,14 +120,8 @@ export async function previewSpogomiMeasurementWorkbook(params: { supabase: Supa
   const selectedSheet = params.sheetName ? workbook.sheets.find((sheet) => sheet.name === params.sheetName) : workbook.sheets[0];
   if (!selectedSheet) throw new Error("La feuille demandée est introuvable.");
   const headers = selectedSheet.rows[0] ?? [];
-  const teamIndex = columnIndex(headers, ["equipe", "team", "team number", "numero equipe", "numero dequipe", "team id"]);
-  const categoryIndex = columnIndex(headers, ["categorie", "category", "code categorie", "category code", "code"]);
-  const valueIndex = columnIndex(headers, ["valeur", "value", "mesure", "measurement", "quantite", "quantity", "masse g", "mass grams", "count"]);
-  const kindIndex = columnIndex(headers, ["type", "kind", "measurement kind", "nature"]);
-  const unitIndex = columnIndex(headers, ["unite", "unit"]);
-  const methodIndex = columnIndex(headers, ["methode", "method", "measurement method"]);
-  const provenanceIndex = columnIndex(headers, ["provenance", "source", "origine"]);
-  if (teamIndex < 0 || categoryIndex < 0 || valueIndex < 0) throw new Error("L’aperçu doit contenir équipe, catégorie et valeur.");
+  const columns = findMeasurementColumns(headers);
+  if (columns.team < 0 || columns.category < 0 || columns.value < 0) throw new Error("L’aperçu doit contenir équipe, catégorie et valeur.");
   const [teamsResult, categoriesResult] = await Promise.all([
     params.supabase.from("spogomi_teams").select("id, team_number, public_name").eq("event_id", params.eventId).eq("division_id", params.divisionId),
     params.supabase.from("spogomi_category_rules").select("id, code, measurement_kind, unit").eq("event_id", params.eventId).eq("division_id", params.divisionId),
@@ -58,53 +130,16 @@ export async function previewSpogomiMeasurementWorkbook(params: { supabase: Supa
   if (categoriesResult.error) throw categoriesResult.error;
   const teamsByNumber = new Map((teamsResult.data ?? []).map((team) => [String(team.team_number), team]));
   const categoriesByCode = new Map((categoriesResult.data ?? []).map((category) => [normalizeHeader(String(category.code)), category]));
-  const rows = selectedSheet.rows.slice(1).map((row, offset) => {
-    const teamValue = normalizeValue(row[teamIndex]);
-    const categoryValue = normalizeHeader(row[categoryIndex] ?? "");
-    const team = teamsByNumber.get(teamValue);
-    const category = categoriesByCode.get(categoryValue);
-    const kind = normalizeHeader(row[kindIndex] ?? category?.measurement_kind ?? "");
-    const measurementKind = kind === "mass" || kind === "count" || kind === "volume" ? kind : category?.measurement_kind ?? null;
-    const value = decimal(row[valueIndex]);
-    const diagnostics: string[] = [];
-    if (!team) diagnostics.push("Équipe introuvable dans cette division.");
-    if (!category) diagnostics.push("Catégorie introuvable dans ce règlement.");
-    if (!measurementKind) diagnostics.push("Nature de mesure inconnue.");
-    if (value === null) diagnostics.push("Valeur numérique absente ou invalide.");
-    if (category && measurementKind !== category.measurement_kind) diagnostics.push("La nature de mesure ne correspond pas au règlement.");
-    return { rowNumber: offset + 2, teamNumber: Number(teamValue) || null, teamId: team?.id ?? null, categoryCode: categoryValue || null, categoryRuleId: category?.id ?? null, measurementKind, unit: normalizeValue(row[unitIndex] ?? category?.unit ?? "") || null, quantity: measurementKind === "volume" ? value : null, massGrams: measurementKind === "mass" ? value : null, objectCount: measurementKind === "count" ? value : null, measurementMethod: normalizeValue(row[methodIndex] ?? "import Excel") || "import Excel", provenance: normalizeValue(row[provenanceIndex] ?? "import_excel") || "import_excel", selected: diagnostics.length === 0, diagnostics };
-  });
-  const columnMapping: Record<string, string> = {
-    team: headers[teamIndex],
-    category: headers[categoryIndex],
-    value: headers[valueIndex],
-  };
-  if (kindIndex >= 0) columnMapping.kind = headers[kindIndex];
-  if (unitIndex >= 0) columnMapping.unit = headers[unitIndex];
-  if (methodIndex >= 0) columnMapping.method = headers[methodIndex];
-  if (provenanceIndex >= 0) columnMapping.provenance = headers[provenanceIndex];
+  const rows = selectedSheet.rows.slice(1).map((row, offset) => buildMeasurementRow(row, offset, columns, teamsByNumber, categoriesByCode));
+  const columnMapping = buildMeasurementColumnMapping(headers, columns);
   const mappingKey = JSON.stringify(columnMapping);
   const importKey = `${params.eventId}:${params.divisionId}:${contentHash}:${selectedSheet.name}:${mappingKey}`;
-  const existing = await params.supabase.from("spogomi_measurement_imports").select("id, status, import_key, content_sha256, sheet_name, column_mapping").eq("event_id", params.eventId).eq("division_id", params.divisionId).eq("content_sha256", contentHash).eq("sheet_name", selectedSheet.name).eq("column_mapping", columnMapping).maybeSingle();
-  if (existing.error) throw existing.error;
-  let importId = existing.data?.id as string | undefined;
-  if (!importId) {
-    const inserted = await params.supabase.from("spogomi_measurement_imports").insert({ event_id: params.eventId, division_id: params.divisionId, content_sha256: contentHash, import_key: importKey, file_name: params.file.name, format, sheet_name: selectedSheet.name, column_mapping: columnMapping, imported_by_clerk_id: params.actorClerkId }).select("id").single();
-    if (inserted.error) {
-      if (inserted.error.code !== "23505") throw inserted.error;
-      const raced = await params.supabase.from("spogomi_measurement_imports").select("id, status").eq("event_id", params.eventId).eq("division_id", params.divisionId).eq("content_sha256", contentHash).eq("sheet_name", selectedSheet.name).eq("column_mapping", columnMapping).single();
-      if (raced.error) throw raced.error;
-      importId = raced.data.id;
-    } else importId = inserted.data.id;
-  }
-  if (!importId) throw new Error("L’import n’a pas pu être réservé.");
-  if (existing.data?.status === "confirmed") {
-    return { importId, contentHash, fileName: params.file.name, format, sheetName: selectedSheet.name, rows, alreadyConfirmed: true };
-  }
-  const rowsInsert = rows.map((row) => ({ ...row, import_id: importId, event_id: params.eventId, division_id: params.divisionId, diagnostics: row.diagnostics }));
+  const reservation = await reserveMeasurementImport({ supabase: params.supabase, eventId: params.eventId, divisionId: params.divisionId, contentHash, fileName: params.file.name, format, sheetName: selectedSheet.name, columnMapping, importKey, actorClerkId: params.actorClerkId });
+  if (reservation.alreadyConfirmed) return { importId: reservation.importId, contentHash, fileName: params.file.name, format, sheetName: selectedSheet.name, rows, alreadyConfirmed: true };
+  const rowsInsert = rows.map((row) => ({ ...row, import_id: reservation.importId, event_id: params.eventId, division_id: params.divisionId, diagnostics: row.diagnostics }));
   const rowsResult = await params.supabase.from("spogomi_measurement_import_rows").upsert(rowsInsert, { onConflict: "import_id,row_number" });
   if (rowsResult.error) throw rowsResult.error;
-  return { importId, contentHash, fileName: params.file.name, format, sheetName: selectedSheet.name, rows, alreadyConfirmed: existing.data?.status === "confirmed" };
+  return { importId: reservation.importId, contentHash, fileName: params.file.name, format, sheetName: selectedSheet.name, rows, alreadyConfirmed: false };
 }
 
 export async function confirmSpogomiMeasurementImport(params: { supabase: SupabaseClient; eventId: string; divisionId: string; importId: string; selectedRowNumbers?: number[]; actorClerkId: string }): Promise<{ imported: number; alreadyConfirmed: boolean }> {

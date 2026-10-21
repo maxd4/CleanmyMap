@@ -34,6 +34,25 @@ export type SpogomiObserverProjection = {
   };
 };
 
+function latestObserverSubmissions(submissions: Array<{ team_id: string; status: string; version: number; submitted_at: string | null }>): Map<string, { status: string; version: number; submittedAt: string | null }> {
+  const latest = new Map<string, { status: string; version: number; submittedAt: string | null }>();
+  for (const submission of submissions) {
+    const teamId = String(submission.team_id);
+    if (!latest.has(teamId)) latest.set(teamId, { status: String(submission.status), version: Number(submission.version), submittedAt: submission.submitted_at ? String(submission.submitted_at) : null });
+  }
+  return latest;
+}
+
+function buildObserverProjection(access: NonNullable<Awaited<ReturnType<typeof resolveSpogomiEventAccess>>>, divisionsResult: { data: Array<Record<string, unknown>> | null }, teams: unknown[], submissions: unknown[], registeredResult: { count?: number | null }, presentResult: { count?: number | null }): SpogomiObserverProjection {
+  const latest = latestObserverSubmissions(submissions as Array<{ team_id: string; status: string; version: number; submitted_at: string | null }>);
+  return {
+    event: { id: String(access.event.id), name: String(access.event.name), eventSlug: access.event.event_slug ? String(access.event.event_slug) : null, mode: String(access.event.mode), state: String(access.event.state), startsAt: String(access.event.starts_at), endsAt: access.event.ends_at ? String(access.event.ends_at) : null, publicVisibility: String(access.event.public_visibility), publicResultsVisibility: String(access.event.public_results_visibility) },
+    divisions: (divisionsResult.data ?? []).map((division) => ({ id: String(division.id), divisionType: String(division.division_type), divisionKey: String(division.division_key) })),
+    teams: (teams as Array<Record<string, unknown>>).map((team) => { const submission = latest.get(String(team.id)); return { id: String(team.id), divisionId: team.division_id ? String(team.division_id) : null, teamNumber: Number(team.team_number), publicName: String(team.public_name), compositionState: String(team.composition_state), submissionStatus: submission?.status ?? null, submissionVersion: submission?.version ?? null, submittedAt: submission?.submittedAt ?? null, certified: Boolean(team.certified_submission_id) }; }),
+    participation: { registered: registeredResult.count ?? 0, present: presentResult.count ?? 0 },
+  };
+}
+
 export async function loadSpogomiObserverProjection(params: {
   supabase: SupabaseClient;
   eventId: string;
@@ -85,52 +104,5 @@ export async function loadSpogomiObserverProjection(params: {
     if (result.error) throw result.error;
   }
 
-  const latestSubmissionByTeam = new Map<string, { status: string; version: number; submittedAt: string | null }>();
-  for (const submission of submissions as Array<{ team_id: string; status: string; version: number; submitted_at: string | null }>) {
-    const teamId = String(submission.team_id);
-    if (!latestSubmissionByTeam.has(teamId)) {
-      latestSubmissionByTeam.set(teamId, {
-        status: String(submission.status),
-        version: Number(submission.version),
-        submittedAt: submission.submitted_at ? String(submission.submitted_at) : null,
-      });
-    }
-  }
-
-  return {
-    event: {
-      id: String(access.event.id),
-      name: String(access.event.name),
-      eventSlug: access.event.event_slug ? String(access.event.event_slug) : null,
-      mode: String(access.event.mode),
-      state: String(access.event.state),
-      startsAt: String(access.event.starts_at),
-      endsAt: access.event.ends_at ? String(access.event.ends_at) : null,
-      publicVisibility: String(access.event.public_visibility),
-      publicResultsVisibility: String(access.event.public_results_visibility),
-    },
-    divisions: (divisionsResult.data ?? []).map((division) => ({
-      id: String(division.id),
-      divisionType: String(division.division_type),
-      divisionKey: String(division.division_key),
-    })),
-    teams: (teams as Array<Record<string, unknown>>).map((team) => {
-      const submission = latestSubmissionByTeam.get(String(team.id));
-      return {
-        id: String(team.id),
-        divisionId: team.division_id ? String(team.division_id) : null,
-        teamNumber: Number(team.team_number),
-        publicName: String(team.public_name),
-        compositionState: String(team.composition_state),
-        submissionStatus: submission?.status ?? null,
-        submissionVersion: submission?.version ?? null,
-        submittedAt: submission?.submittedAt ?? null,
-        certified: Boolean(team.certified_submission_id),
-      };
-    }),
-    participation: {
-      registered: registeredResult.count ?? 0,
-      present: presentResult.count ?? 0,
-    },
-  };
+  return buildObserverProjection(access, divisionsResult as { data: Array<Record<string, unknown>> | null }, teams, submissions, registeredResult, presentResult);
 }

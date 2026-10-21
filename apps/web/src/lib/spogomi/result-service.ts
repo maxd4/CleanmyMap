@@ -186,6 +186,22 @@ export type SaveTeamSubmissionInput = {
   }>;
 };
 
+function validateSubmissionForSave(input: SaveTeamSubmissionInput, categoryRows: CategoryRow[], regulation: ReturnType<typeof buildSpogomiRegulation>, latest: { id: string; status: string; version: number } | null): string | null {
+  const categoryById = new Map(categoryRows.map((category) => [category.id, category]));
+  const itemsForEngine = input.items.map((item) => ({ ...item, categoryCode: categoryById.get(item.categoryRuleId)?.code ?? "" }));
+  const validation = validateCompetitionItems({ regulation, items: itemsForEngine, presentParticipants: 0 });
+  if (!validation.ok) throw new Error(`Validation: ${validation.reason}`);
+  if (new Set(input.items.map((item) => item.categoryRuleId)).size !== input.items.length) throw new Error("Validation: each category can appear only once.");
+  if (input.status === "submitted" && (input.items.length !== categoryRows.length || input.items.some((item) => item.quantity === null || !item.measurementMethod?.trim() || !item.provenance.trim()))) throw new Error("Validation: every category needs a quantity, a measurement method and a provenance before submission.");
+  const replacesSubmissionId = input.submissionId ? null : latest && latest.status !== "draft" ? latest.id : null;
+  if (input.status === "submitted" && replacesSubmissionId && !input.correctionReason?.trim()) throw new Error("Validation: un motif est obligatoire pour corriger une version déjà soumise.");
+  return replacesSubmissionId;
+}
+
+function submissionRpcItems(items: SaveTeamSubmissionInput["items"]) {
+  return items.map((item) => ({ category_rule_id: item.categoryRuleId, measurement_kind: item.measurementKind, unit: item.unit, quantity: item.quantity, mass_grams: item.massGrams, object_count: item.objectCount, measurement_method: item.measurementMethod, provenance: item.provenance, arbitration_comment: item.arbitrationComment, source_reference: "team_form" }));
+}
+
 export async function saveSpogomiTeamSubmission(params: {
   supabase: SupabaseClient;
   sessionToken: string | null | undefined;
@@ -205,25 +221,8 @@ export async function saveSpogomiTeamSubmission(params: {
   if (division.error) throw division.error;
   const regulationEvent = { ...eventResult.data, mode: division.data.division_type, division_id: session.divisionId, regulation_version: division.data.regulation_version, regulation_status: division.data.regulation_status, regulation_source_reference: division.data.regulation_source_reference, regulation_config: division.data.regulation_config, team_size_config: division.data.team_size_config } as EventRegulationRow;
   const regulation = buildSpogomiRegulation(regulationEvent, categoryRows);
-  const categoryById = new Map(categoryRows.map((category) => [category.id, category]));
-  const itemsForEngine = params.input.items.map((item) => {
-    const category = categoryById.get(item.categoryRuleId);
-    return { ...item, categoryCode: category?.code ?? "" };
-  });
-  const validation = validateCompetitionItems({ regulation, items: itemsForEngine, presentParticipants: 0 });
-  if (!validation.ok) throw new Error(`Validation: ${validation.reason}`);
-  const uniqueCategoryIds = new Set(params.input.items.map((item) => item.categoryRuleId));
-  if (uniqueCategoryIds.size !== params.input.items.length) throw new Error("Validation: each category can appear only once.");
-  if (params.input.status === "submitted") {
-    if (params.input.items.length !== categoryRows.length || params.input.items.some((item) => item.quantity === null || !item.measurementMethod?.trim() || !item.provenance.trim())) {
-      throw new Error("Validation: every category needs a quantity, a measurement method and a provenance before submission.");
-    }
-  }
   const latest = latestResult.data as { id: string; status: string; version: number } | null;
-  const replacesSubmissionId = params.input.submissionId ? null : latest && latest.status !== "draft" ? latest.id : null;
-  if (params.input.status === "submitted" && replacesSubmissionId && !params.input.correctionReason?.trim()) {
-    throw new Error("Validation: un motif est obligatoire pour corriger une version déjà soumise.");
-  }
+  const replacesSubmissionId = validateSubmissionForSave(params.input, categoryRows, regulation, latest);
   const rpc = await params.supabase.rpc("spogomi_save_team_submission_for_division", {
     p_event_id: session.eventId,
     p_division_id: session.divisionId,
@@ -235,18 +234,7 @@ export async function saveSpogomiTeamSubmission(params: {
     p_replaces_submission_id: replacesSubmissionId,
     p_correction_reason: params.input.correctionReason?.trim() || null,
     p_actor_kind: "team_session",
-    p_items: params.input.items.map((item) => ({
-      category_rule_id: item.categoryRuleId,
-      measurement_kind: item.measurementKind,
-      unit: item.unit,
-      quantity: item.quantity,
-      mass_grams: item.massGrams,
-      object_count: item.objectCount,
-      measurement_method: item.measurementMethod,
-      provenance: item.provenance,
-      arbitration_comment: item.arbitrationComment,
-      source_reference: "team_form",
-    })),
+    p_items: submissionRpcItems(params.input.items),
   });
   if (rpc.error) {
     if (rpc.error.code === "23505" || rpc.error.code === "40001") throw new Error("Conflict: cette version a changé entre-temps.");

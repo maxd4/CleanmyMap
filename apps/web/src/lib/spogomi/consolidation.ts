@@ -217,6 +217,44 @@ function conversionForUnit(unit: string): { targetUnit: "grams"; factor: number 
   return null;
 }
 
+type MappingParams = Parameters<typeof deriveSpogomiEnvironmentalMapping>[0];
+
+function mappingBase(params: MappingParams, overrides: Partial<SpogomiEnvironmentalMapping>): SpogomiEnvironmentalMapping {
+  return {
+    categoryRuleId: params.categoryRuleId,
+    categoryCode: params.categoryCode,
+    mappingVersion: params.mappingVersion,
+    environmentalCategorySlug: params.environmentalCategorySlug,
+    sourceField: null,
+    sourceUnit: params.unit,
+    targetUnit: null,
+    unitFactorToTarget: null,
+    countsTowardTotal: false,
+    isMegots: false,
+    status: "unmapped",
+    exclusionReason: null,
+    ...overrides,
+  };
+}
+
+function buildUnmappedMapping(params: MappingParams): SpogomiEnvironmentalMapping {
+  return mappingBase(params, { status: "unmapped", exclusionReason: "Aucune catégorie environnementale CleanMyMap configurée." });
+}
+
+function buildCountMapping(params: MappingParams, isMegots: boolean): SpogomiEnvironmentalMapping {
+  return mappingBase(params, { sourceField: isMegots ? "object_count" : "quantity", targetUnit: "count", unitFactorToTarget: 1, countsTowardTotal: !isMegots, isMegots, status: "mapped" });
+}
+
+function buildExcludedMapping(params: MappingParams): SpogomiEnvironmentalMapping {
+  const isMegots = params.environmentalCategorySlug === "cigarette_butt";
+  return mappingBase(params, { sourceField: "mass_grams", targetUnit: "grams", countsTowardTotal: !isMegots, isMegots, status: "excluded", exclusionReason: `Unité non convertible : ${params.unit}.` });
+}
+
+function buildConvertedMapping(params: MappingParams, conversion: NonNullable<ReturnType<typeof conversionForUnit>>): SpogomiEnvironmentalMapping {
+  const isMegots = params.environmentalCategorySlug === "cigarette_butt";
+  return mappingBase(params, { sourceField: "mass_grams", targetUnit: conversion.targetUnit, unitFactorToTarget: conversion.factor, countsTowardTotal: !isMegots, isMegots, status: "mapped" });
+}
+
 export function deriveSpogomiEnvironmentalMapping(params: {
   categoryRuleId: string;
   categoryCode: string;
@@ -227,85 +265,10 @@ export function deriveSpogomiEnvironmentalMapping(params: {
   persisted?: SpogomiEnvironmentalMapping | null;
 }): SpogomiEnvironmentalMapping {
   if (params.persisted) return params.persisted;
-  if (!params.environmentalCategorySlug) {
-    return {
-      categoryRuleId: params.categoryRuleId,
-      categoryCode: params.categoryCode,
-      mappingVersion: params.mappingVersion,
-      environmentalCategorySlug: null,
-      sourceField: null,
-      sourceUnit: params.unit,
-      targetUnit: null,
-      unitFactorToTarget: null,
-      countsTowardTotal: false,
-      isMegots: false,
-      status: "unmapped",
-      exclusionReason: "Aucune catégorie environnementale CleanMyMap configurée.",
-    };
-  }
-  if (params.measurementKind === "count" && params.environmentalCategorySlug === "cigarette_butt") {
-    return {
-      categoryRuleId: params.categoryRuleId,
-      categoryCode: params.categoryCode,
-      mappingVersion: params.mappingVersion,
-      environmentalCategorySlug: params.environmentalCategorySlug,
-      sourceField: "object_count",
-      sourceUnit: params.unit,
-      targetUnit: "count",
-      unitFactorToTarget: 1,
-      countsTowardTotal: false,
-      isMegots: true,
-      status: "mapped",
-      exclusionReason: null,
-    };
-  }
-  if (params.measurementKind === "count") {
-    return {
-      categoryRuleId: params.categoryRuleId,
-      categoryCode: params.categoryCode,
-      mappingVersion: params.mappingVersion,
-      environmentalCategorySlug: params.environmentalCategorySlug,
-      sourceField: "quantity",
-      sourceUnit: params.unit,
-      targetUnit: "count",
-      unitFactorToTarget: 1,
-      countsTowardTotal: true,
-      isMegots: false,
-      status: "mapped",
-      exclusionReason: null,
-    };
-  }
+  if (!params.environmentalCategorySlug) return buildUnmappedMapping(params);
+  if (params.measurementKind === "count") return buildCountMapping(params, params.environmentalCategorySlug === "cigarette_butt");
   const conversion = conversionForUnit(params.unit);
-  if (!conversion) {
-    return {
-      categoryRuleId: params.categoryRuleId,
-      categoryCode: params.categoryCode,
-      mappingVersion: params.mappingVersion,
-      environmentalCategorySlug: params.environmentalCategorySlug,
-      sourceField: "mass_grams",
-      sourceUnit: params.unit,
-      targetUnit: "grams",
-      unitFactorToTarget: null,
-      countsTowardTotal: params.environmentalCategorySlug !== "cigarette_butt",
-      isMegots: params.environmentalCategorySlug === "cigarette_butt",
-      status: "excluded",
-      exclusionReason: `Unité non convertible : ${params.unit}.`,
-    };
-  }
-  return {
-    categoryRuleId: params.categoryRuleId,
-    categoryCode: params.categoryCode,
-    mappingVersion: params.mappingVersion,
-    environmentalCategorySlug: params.environmentalCategorySlug,
-    sourceField: "mass_grams",
-    sourceUnit: params.unit,
-    targetUnit: conversion.targetUnit,
-    unitFactorToTarget: conversion.factor,
-    countsTowardTotal: params.environmentalCategorySlug !== "cigarette_butt",
-    isMegots: params.environmentalCategorySlug === "cigarette_butt",
-    status: "mapped",
-    exclusionReason: null,
-  };
+  return conversion ? buildConvertedMapping(params, conversion) : buildExcludedMapping(params);
 }
 
 function sourceValue(item: SpogomiConsolidationSourceItem, mapping: SpogomiEnvironmentalMapping): number | null {
@@ -325,155 +288,132 @@ function buildSpogomiConsolidationKey(eventId: string, mappingVersion: string): 
   return `${SPOGOMI_CONSOLIDATION_KEY_PREFIX}:${eventId}:${mappingVersion}`;
 }
 
-export function aggregateSpogomiEnvironmentalProjection(input: SpogomiConsolidationInput): Omit<SpogomiConsolidationProjection, "sourceHash"> {
-  const mappings = new Map(input.mappings.map((mapping) => [mapping.categoryRuleId, mapping]));
-  const categoryTotals = new Map<string, SpogomiEnvironmentalCategoryTotal>();
-  const excludedMeasures: SpogomiExcludedMeasure[] = [];
-  const sourceSubmissionIds: string[] = [];
-  let totalWasteMassGrams = 0;
-  let hasWasteMass = false;
-  let cigaretteButtsMassGrams = 0;
-  let hasCigaretteButtsMass = false;
-  let cigaretteButtsCount = 0;
-  let hasCigaretteButtsCount = false;
-  let teamsIncluded = 0;
+type AggregationState = {
+  categoryTotals: Map<string, SpogomiEnvironmentalCategoryTotal>;
+  excludedMeasures: SpogomiExcludedMeasure[];
+  sourceSubmissionIds: string[];
+  totalWasteMassGrams: number;
+  hasWasteMass: boolean;
+  cigaretteButtsMassGrams: number;
+  hasCigaretteButtsMass: boolean;
+  cigaretteButtsCount: number;
+  hasCigaretteButtsCount: boolean;
+  teamsIncluded: number;
+};
 
-  for (const team of input.teams) {
-    const hasExplicitClosure = team.environmentalEligibility !== undefined || team.closureStatus !== undefined;
-    if (!hasExplicitClosure && (team.certifiedSubmissionId === null || team.certifiedSubmissionStatus !== "certified")) {
-      excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: "*", reason: "team_not_certified" });
-      continue;
-    }
-    const environmentalEligibility = team.environmentalEligibility ?? (team.certifiedSubmissionId && team.certifiedSubmissionStatus === "certified" ? "eligible" : "unknown");
-    const closureStatus = team.closureStatus ?? (environmentalEligibility === "eligible" ? "present_measured" : "result_missing");
-    if (environmentalEligibility === "excluded") {
-      const reason = closureStatus === "absent" ? "team_absent" : closureStatus === "forfeit" ? "team_forfeit" : "team_excluded";
-      excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: "*", reason });
-      continue;
-    }
-    if (environmentalEligibility === "unknown") {
-      const reason = closureStatus === "contested" ? "team_contested" : "team_result_missing";
-      excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: "*", reason });
-      continue;
-    }
-    if (team.certifiedSubmissionId === null || team.certifiedSubmissionStatus !== "certified") {
-      excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: "*", reason: "team_not_certified" });
-      continue;
-    }
-    teamsIncluded += 1;
-    sourceSubmissionIds.push(team.certifiedSubmissionId);
-    const expectedCategoryIds = new Set(input.mappings.map((mapping) => mapping.categoryRuleId));
-    const seenCategoryIds = new Set<string>();
-    let hasIncompleteItems = team.items.length !== expectedCategoryIds.size;
-    for (const item of team.items) {
-      if (seenCategoryIds.has(item.categoryRuleId)) hasIncompleteItems = true;
-      seenCategoryIds.add(item.categoryRuleId);
-      const mapping = mappings.get(item.categoryRuleId);
-      if (!mapping || mapping.status === "unmapped") {
-        excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: item.categoryCode, reason: "category_without_mapping" });
-        continue;
-      }
-      if (mapping.status === "excluded") {
-        excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: item.categoryCode, reason: "explicitly_excluded" });
-        continue;
-      }
-      const value = sourceValue(item, mapping);
-      if (value === null) {
-        excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: item.categoryCode, reason: mapping.unitFactorToTarget === null ? "unknown_unit" : "missing_source_value" });
-        continue;
-      }
-      const slug = mapping.environmentalCategorySlug;
-      const totalKey = `${slug ?? "unmapped"}:${mapping.targetUnit ?? "quantity"}:${mapping.isMegots ? "megots" : "waste"}`;
-      const previous = categoryTotals.get(totalKey) ?? {
-        categoryCode: item.categoryCode,
-        categoryLabel: item.categoryLabel,
-        environmentalCategorySlug: slug,
-        unit: mapping.targetUnit ?? "unmapped",
-        total: 0,
-        provenance: [],
-        teamCount: 0,
-        countsTowardTotal: mapping.countsTowardTotal,
-        isMegots: mapping.isMegots,
-      };
-      previous.total = normalizeNumber((previous.total ?? 0) + value);
-      if (!previous.provenance.includes(item.provenance)) previous.provenance.push(item.provenance);
-      previous.teamCount += 1;
-      categoryTotals.set(totalKey, previous);
-      if (mapping.targetUnit === "grams" && mapping.isMegots) {
-        cigaretteButtsMassGrams += value;
-        hasCigaretteButtsMass = true;
-      } else if (mapping.targetUnit === "grams" && mapping.countsTowardTotal) {
-        totalWasteMassGrams += value;
-        hasWasteMass = true;
-      } else if (mapping.targetUnit === "count" && mapping.isMegots) {
-        cigaretteButtsCount += value;
-        hasCigaretteButtsCount = true;
-      }
-    }
-    for (const categoryRuleId of expectedCategoryIds) {
-      if (seenCategoryIds.has(categoryRuleId)) continue;
-      const mapping = mappings.get(categoryRuleId);
-      excludedMeasures.push({
-        teamId: team.teamId,
-        submissionId: team.certifiedSubmissionId,
-        categoryCode: mapping?.categoryCode ?? categoryRuleId,
-        reason: "incomplete_submission",
-      });
-    }
-    if (hasIncompleteItems && !expectedCategoryIds.size) {
-      excludedMeasures.push({
-        teamId: team.teamId,
-        submissionId: team.certifiedSubmissionId,
-        categoryCode: "*",
-        reason: "incomplete_submission",
-      });
-    }
+function createAggregationState(): AggregationState {
+  return { categoryTotals: new Map(), excludedMeasures: [], sourceSubmissionIds: [], totalWasteMassGrams: 0, hasWasteMass: false, cigaretteButtsMassGrams: 0, hasCigaretteButtsMass: false, cigaretteButtsCount: 0, hasCigaretteButtsCount: false, teamsIncluded: 0 };
+}
+
+function teamExclusionReason(team: SpogomiConsolidationSourceTeam): SpogomiExcludedMeasure["reason"] | null {
+  const hasExplicitClosure = team.environmentalEligibility !== undefined || team.closureStatus !== undefined;
+  if (!hasExplicitClosure && (team.certifiedSubmissionId === null || team.certifiedSubmissionStatus !== "certified")) return "team_not_certified";
+  const eligibility = team.environmentalEligibility ?? (team.certifiedSubmissionId && team.certifiedSubmissionStatus === "certified" ? "eligible" : "unknown");
+  const status = team.closureStatus ?? (eligibility === "eligible" ? "present_measured" : "result_missing");
+  if (eligibility === "excluded") return excludedTeamReason(status);
+  if (eligibility === "unknown") return status === "contested" ? "team_contested" : "team_result_missing";
+  return team.certifiedSubmissionId === null || team.certifiedSubmissionStatus !== "certified" ? "team_not_certified" : null;
+}
+
+function excludedTeamReason(status: string): SpogomiExcludedMeasure["reason"] {
+  if (status === "absent") return "team_absent";
+  if (status === "forfeit") return "team_forfeit";
+  return "team_excluded";
+}
+
+function excludeTeam(state: AggregationState, team: SpogomiConsolidationSourceTeam, reason: SpogomiExcludedMeasure["reason"]): void {
+  state.excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: "*", reason });
+}
+
+function addCategoryValue(state: AggregationState, item: SpogomiConsolidationSourceItem, mapping: SpogomiEnvironmentalMapping, value: number): void {
+  const totalKey = `${mapping.environmentalCategorySlug ?? "unmapped"}:${mapping.targetUnit ?? "quantity"}:${mapping.isMegots ? "megots" : "waste"}`;
+  const previous = state.categoryTotals.get(totalKey) ?? { categoryCode: item.categoryCode, categoryLabel: item.categoryLabel, environmentalCategorySlug: mapping.environmentalCategorySlug, unit: mapping.targetUnit ?? "unmapped", total: 0, provenance: [], teamCount: 0, countsTowardTotal: mapping.countsTowardTotal, isMegots: mapping.isMegots };
+  previous.total = normalizeNumber((previous.total ?? 0) + value);
+  if (!previous.provenance.includes(item.provenance)) previous.provenance.push(item.provenance);
+  previous.teamCount += 1;
+  state.categoryTotals.set(totalKey, previous);
+  if (mapping.targetUnit === "grams" && mapping.isMegots) {
+    state.cigaretteButtsMassGrams += value;
+    state.hasCigaretteButtsMass = true;
+  } else if (mapping.targetUnit === "grams" && mapping.countsTowardTotal) {
+    state.totalWasteMassGrams += value;
+    state.hasWasteMass = true;
+  } else if (mapping.targetUnit === "count" && mapping.isMegots) {
+    state.cigaretteButtsCount += value;
+    state.hasCigaretteButtsCount = true;
   }
+}
 
-  const participantsPresent = new Set(
-    input.participants
-      .filter((participant) => participant.registrationStatus === "registered" && participant.attendanceStatus === "present")
-      .map((participant) => participant.id),
-  ).size;
+function addItemExclusion(state: AggregationState, team: SpogomiConsolidationSourceTeam, item: SpogomiConsolidationSourceItem, reason: SpogomiExcludedMeasure["reason"]): void {
+  state.excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: item.categoryCode, reason });
+}
+
+function accumulateTeamItems(state: AggregationState, team: SpogomiConsolidationSourceTeam, mappings: Map<string, SpogomiEnvironmentalMapping>, expectedCategoryIds: Set<string>): void {
+  const seenCategoryIds = new Set<string>();
+  let hasIncompleteItems = team.items.length !== expectedCategoryIds.size;
+  for (const item of team.items) {
+    if (seenCategoryIds.has(item.categoryRuleId)) hasIncompleteItems = true;
+    seenCategoryIds.add(item.categoryRuleId);
+    const mapping = mappings.get(item.categoryRuleId);
+    if (!mapping || mapping.status === "unmapped") {
+      addItemExclusion(state, team, item, "category_without_mapping");
+      continue;
+    }
+    if (mapping.status === "excluded") {
+      addItemExclusion(state, team, item, "explicitly_excluded");
+      continue;
+    }
+    const value = sourceValue(item, mapping);
+    if (value === null) {
+      addItemExclusion(state, team, item, mapping.unitFactorToTarget === null ? "unknown_unit" : "missing_source_value");
+      continue;
+    }
+    addCategoryValue(state, item, mapping, value);
+  }
+  for (const categoryRuleId of expectedCategoryIds) {
+    if (seenCategoryIds.has(categoryRuleId)) continue;
+    const mapping = mappings.get(categoryRuleId);
+    state.excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: mapping?.categoryCode ?? categoryRuleId, reason: "incomplete_submission" });
+  }
+  if (hasIncompleteItems && !expectedCategoryIds.size) state.excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: "*", reason: "incomplete_submission" });
+}
+
+function aggregateTeams(input: SpogomiConsolidationInput, state: AggregationState, mappings: Map<string, SpogomiEnvironmentalMapping>): void {
+  const expectedCategoryIds = new Set(input.mappings.map((mapping) => mapping.categoryRuleId));
+  for (const team of input.teams) {
+    const exclusion = teamExclusionReason(team);
+    if (exclusion) {
+      excludeTeam(state, team, exclusion);
+      continue;
+    }
+    state.teamsIncluded += 1;
+    state.sourceSubmissionIds.push(team.certifiedSubmissionId!);
+    accumulateTeamItems(state, team, mappings, expectedCategoryIds);
+  }
+}
+
+function buildAggregationProjection(input: SpogomiConsolidationInput, state: AggregationState): Omit<SpogomiConsolidationProjection, "sourceHash"> {
+  const participantsPresent = new Set(input.participants.filter((participant) => participant.registrationStatus === "registered" && participant.attendanceStatus === "present").map((participant) => participant.id)).size;
   const categoriesWithoutMapping = input.mappings.filter((mapping) => mapping.status === "unmapped").map((mapping) => mapping.categoryCode);
-  const blockingExclusions = excludedMeasures.filter((measure) => !["team_absent", "team_forfeit", "team_excluded"].includes(measure.reason));
-  const readyForPublication = teamsIncluded > 0 && blockingExclusions.length === 0 && categoriesWithoutMapping.length === 0;
+  const blockingExclusions = state.excludedMeasures.filter((measure) => !["team_absent", "team_forfeit", "team_excluded"].includes(measure.reason));
+  const readyForPublication = state.teamsIncluded > 0 && blockingExclusions.length === 0 && categoriesWithoutMapping.length === 0;
   const consolidationKey = buildSpogomiConsolidationKey(input.eventId, input.mappingVersion);
-  const totalWaste = hasWasteMass ? normalizeNumber(totalWasteMassGrams) : null;
-  const buttsMass = hasCigaretteButtsMass ? normalizeNumber(cigaretteButtsMassGrams) : null;
-  const buttsCount = hasCigaretteButtsCount ? Math.trunc(cigaretteButtsCount) : null;
+  const totalWaste = state.hasWasteMass ? normalizeNumber(state.totalWasteMassGrams) : null;
+  const buttsMass = state.hasCigaretteButtsMass ? normalizeNumber(state.cigaretteButtsMassGrams) : null;
+  const buttsCount = state.hasCigaretteButtsCount ? Math.trunc(state.cigaretteButtsCount) : null;
   const actionWasteKg = totalWaste === null ? null : Number((totalWaste / 1000).toFixed(2));
   return {
-    readyForPublication: readyForPublication && blockingExclusions.length === 0,
-    consolidationKey,
-    projectionVersion: input.mappingVersion,
-    eventId: input.eventId,
-    actionId: input.actionId,
-    teamsIncluded,
-    participantsPresent,
-    totalWasteMassGrams: totalWaste,
-    cigaretteButtsMassGrams: buttsMass,
-    cigaretteButtsCount: buttsCount,
-    categoryTotals: [...categoryTotals.values()].sort((left, right) => left.categoryCode.localeCompare(right.categoryCode)),
-    categoriesWithoutMapping,
-    excludedMeasures,
-    officialRoute: input.officialRoute,
-    organizer: input.organizer,
-    sourceSnapshot: input.sourceSnapshot,
-    sourceSubmissionIds: [...new Set(sourceSubmissionIds)].sort((left, right) => left < right ? -1 : left > right ? 1 : 0),
-    action: { wasteKg: actionWasteKg, cigaretteButts: buttsCount, volunteersCount: participantsPresent },
-    consolidation: {
-      consolidationKey,
-      projectionVersion: input.mappingVersion,
-      sourceHash: "",
-      teamsIncluded,
-      participantsPresent,
-      totalWasteMassGrams: totalWaste,
-      cigaretteButtsMassGrams: buttsMass,
-      cigaretteButtsCount: buttsCount,
-      categoriesWithoutMapping,
-      excludedMeasures: excludedMeasures.map((measure) => `${measure.teamId}:${measure.categoryCode}:${measure.reason}`),
-      officialReferenceOnly: input.officialRoute !== null,
-    },
+    readyForPublication: readyForPublication && blockingExclusions.length === 0, consolidationKey, projectionVersion: input.mappingVersion, eventId: input.eventId, actionId: input.actionId,
+    teamsIncluded: state.teamsIncluded, participantsPresent, totalWasteMassGrams: totalWaste, cigaretteButtsMassGrams: buttsMass, cigaretteButtsCount: buttsCount,
+    categoryTotals: [...state.categoryTotals.values()].sort((left, right) => left.categoryCode.localeCompare(right.categoryCode)), categoriesWithoutMapping, excludedMeasures: state.excludedMeasures, officialRoute: input.officialRoute, organizer: input.organizer, sourceSnapshot: input.sourceSnapshot,
+    sourceSubmissionIds: [...new Set(state.sourceSubmissionIds)].sort((left, right) => left < right ? -1 : left > right ? 1 : 0), action: { wasteKg: actionWasteKg, cigaretteButts: buttsCount, volunteersCount: participantsPresent },
+    consolidation: { consolidationKey, projectionVersion: input.mappingVersion, sourceHash: "", teamsIncluded: state.teamsIncluded, participantsPresent, totalWasteMassGrams: totalWaste, cigaretteButtsMassGrams: buttsMass, cigaretteButtsCount: buttsCount, categoriesWithoutMapping, excludedMeasures: state.excludedMeasures.map((measure) => `${measure.teamId}:${measure.categoryCode}:${measure.reason}`), officialReferenceOnly: input.officialRoute !== null },
   };
+}
+
+export function aggregateSpogomiEnvironmentalProjection(input: SpogomiConsolidationInput): Omit<SpogomiConsolidationProjection, "sourceHash"> {
+  const mappings = new Map(input.mappings.map((mapping) => [mapping.categoryRuleId, mapping]));
+  const state = createAggregationState();
+  aggregateTeams(input, state, mappings);
+  return buildAggregationProjection(input, state);
 }

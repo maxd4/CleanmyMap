@@ -36,27 +36,34 @@ export class SpogomiAdmissionRequestError extends Error {
 }
 
 function mapError(error: unknown): SpogomiAdmissionRequestError {
-  const code = error && typeof error === "object" && typeof (error as { code?: unknown }).code === "string"
-    ? (error as { code: string }).code
-    : null;
-  const message = error && typeof error === "object" && typeof (error as { message?: unknown }).message === "string"
-    ? (error as { message: string }).message
-    : "";
+  const code = errorCode(error);
+  const message = errorMessage(error);
   if (code === "P0002") return new SpogomiAdmissionRequestError("Cette édition n’est pas disponible pour ce parcours.", "unavailable");
-  if (code === "23505" || code === "40001") {
-    if (message.includes("spogomi_admission_request_scope_conflict")) {
-      return new SpogomiAdmissionRequestError("Une demande active existe déjà dans une autre division ou équipe.", "conflict");
-    }
-    return new SpogomiAdmissionRequestError("Une demande ou une liaison existe déjà pour ce compte.", "conflict");
-  }
-  if (code === "42501") {
-    if (message.includes("external_ticketing")) return new SpogomiAdmissionRequestError("Cette édition doit être rejointe par la billetterie officielle.", "forbidden");
-    if (message.includes("capacity")) return new SpogomiAdmissionRequestError("La capacité d’inscription de cette édition est atteinte.", "forbidden");
-    if (message.includes("world_cup")) return new SpogomiAdmissionRequestError("Cette division World Cup doit être rejointe par le parcours officiel.", "forbidden");
-    return new SpogomiAdmissionRequestError("Cette demande n’est pas autorisée dans l’état actuel de l’édition.", "forbidden");
-  }
+  if (code === "23505" || code === "40001") return mapConflict(message);
+  if (code === "42501") return mapForbidden(message);
   if (code === "22023") return new SpogomiAdmissionRequestError("La division ou les informations de la demande sont invalides.", "validation");
   return new SpogomiAdmissionRequestError("La demande SPOGOMI n’a pas pu être traitée.", "validation");
+}
+
+function errorCode(error: unknown): string | null {
+  return error && typeof error === "object" && typeof (error as { code?: unknown }).code === "string" ? (error as { code: string }).code : null;
+}
+
+function errorMessage(error: unknown): string {
+  return error && typeof error === "object" && typeof (error as { message?: unknown }).message === "string" ? (error as { message: string }).message : "";
+}
+
+function mapConflict(message: string): SpogomiAdmissionRequestError {
+  return message.includes("spogomi_admission_request_scope_conflict")
+    ? new SpogomiAdmissionRequestError("Une demande active existe déjà dans une autre division ou équipe.", "conflict")
+    : new SpogomiAdmissionRequestError("Une demande ou une liaison existe déjà pour ce compte.", "conflict");
+}
+
+function mapForbidden(message: string): SpogomiAdmissionRequestError {
+  if (message.includes("external_ticketing")) return new SpogomiAdmissionRequestError("Cette édition doit être rejointe par la billetterie officielle.", "forbidden");
+  if (message.includes("capacity")) return new SpogomiAdmissionRequestError("La capacité d’inscription de cette édition est atteinte.", "forbidden");
+  if (message.includes("world_cup")) return new SpogomiAdmissionRequestError("Cette division World Cup doit être rejointe par le parcours officiel.", "forbidden");
+  return new SpogomiAdmissionRequestError("Cette demande n’est pas autorisée dans l’état actuel de l’édition.", "forbidden");
 }
 
 function asKind(value: unknown): SpogomiAdmissionRequestKind {

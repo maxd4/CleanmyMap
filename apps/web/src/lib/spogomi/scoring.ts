@@ -16,6 +16,48 @@ function sumNullable(values: Array<number | null | undefined>): number | null {
   const present = values.filter((value): value is number => value !== null && value !== undefined);
   return present.length ? present.reduce((total, value) => total + value, 0) : null;
 }
+
+function buildPhysicalTotals(input: SpogomiCompetitionInput, buttItems: SpogomiCompetitionInput["items"], hasCompleteButtCount: boolean): SpogomiPhysicalTotals {
+  return {
+    massGrams: sumNullable(input.items.map((item) => item.massGrams)),
+    countedObjects: sumNullable(input.items.map((item) => item.objectCount)),
+    countedButts: hasCompleteButtCount ? sumNullable(buttItems.map((item) => item.objectCount)) : null,
+    buttMassGrams: sumNullable(buttItems.map((item) => item.massGrams)),
+    presentParticipants: input.presentParticipants,
+  };
+}
+
+function unavailableResult(
+  physicalTotals: SpogomiPhysicalTotals,
+  appliedPenalties: NonNullable<SpogomiCompetitionInput["appliedPenalties"]>,
+  comparableForButtsPerParticipant: boolean,
+  buttsPerParticipant: number | null,
+  ineligibleReason: string,
+): SpogomiCompetitionResult {
+  return { physicalTotals, officialScore: null, scoreStatus: "unavailable", appliedPenalties, comparableForButtsPerParticipant, buttsPerParticipant, ineligibleReason };
+}
+
+function hasAllRequiredCategories(input: SpogomiCompetitionInput): boolean {
+  const categoryCodes = new Set(input.regulation.categories.map((category) => category.code));
+  const measuredCodes = new Set(input.items.filter((item) => item.quantity !== null).map((item) => item.categoryCode));
+  return measuredCodes.size === categoryCodes.size && [...categoryCodes].every((code) => measuredCodes.has(code));
+}
+
+function calculateOfficialScore(input: SpogomiCompetitionInput): number {
+  const categories = new Map(input.regulation.categories.map((category) => [category.code, category]));
+  const scoreBeforePenalties = input.items.reduce((total, item) => {
+    const category = categories.get(item.categoryCode);
+    return !category || item.quantity === null || category.coefficient === null ? total : total + item.quantity * category.coefficient;
+  }, 0);
+  const penaltyPoints = (input.appliedPenalties ?? []).reduce((total, penalty) => total + penalty.points, 0);
+  return round(scoreBeforePenalties - penaltyPoints, input.regulation.rounding!.decimals, input.regulation.rounding!.mode);
+}
+
+function completeButtCount(input: SpogomiCompetitionInput, buttCategoryCodes: Set<string>): { items: SpogomiCompetitionInput["items"]; complete: boolean } {
+  const items = input.items.filter((item) => buttCategoryCodes.has(item.categoryCode));
+  return { items, complete: buttCategoryCodes.size > 0 && items.length === buttCategoryCodes.size && items.every((item) => item.objectCount !== null && item.objectCount !== undefined) };
+}
+
 export function calculateSpogomiCompetitionResult(input: SpogomiCompetitionInput): SpogomiCompetitionResult {
   const { regulation } = input;
   const buttCategoryCodes = new Set(
@@ -23,18 +65,8 @@ export function calculateSpogomiCompetitionResult(input: SpogomiCompetitionInput
       .filter((category) => category.environmentalCategorySlug === "cigarette_butt")
       .map((category) => category.code),
   );
-  const buttItems = input.items.filter((item) => buttCategoryCodes.has(item.categoryCode));
-  const hasCompleteButtCount =
-    buttCategoryCodes.size > 0 &&
-    buttItems.length === buttCategoryCodes.size &&
-    buttItems.every((item) => item.objectCount !== null && item.objectCount !== undefined);
-  const physicalTotals: SpogomiPhysicalTotals = {
-    massGrams: sumNullable(input.items.map((item) => item.massGrams)),
-    countedObjects: sumNullable(input.items.map((item) => item.objectCount)),
-    countedButts: hasCompleteButtCount ? sumNullable(buttItems.map((item) => item.objectCount)) : null,
-    buttMassGrams: sumNullable(buttItems.map((item) => item.massGrams)),
-    presentParticipants: input.presentParticipants,
-  };
+  const buttCount = completeButtCount(input, buttCategoryCodes);
+  const physicalTotals = buildPhysicalTotals(input, buttCount.items, buttCount.complete);
   const comparableForButtsPerParticipant = physicalTotals.countedButts !== null && input.presentParticipants > 0;
   const buttsPerParticipant = comparableForButtsPerParticipant
     ? physicalTotals.countedButts! / input.presentParticipants
@@ -42,71 +74,26 @@ export function calculateSpogomiCompetitionResult(input: SpogomiCompetitionInput
   const appliedPenalties = input.appliedPenalties ?? [];
 
   if (!isRegulationReadyForCertification(regulation)) {
-    return {
-      physicalTotals,
-      officialScore: null,
-      scoreStatus: "unavailable",
-      appliedPenalties,
-      comparableForButtsPerParticipant,
-      buttsPerParticipant,
-      ineligibleReason: "regulation_incomplete",
-    };
+    return unavailableResult(physicalTotals, appliedPenalties, comparableForButtsPerParticipant, buttsPerParticipant, "regulation_incomplete");
   }
 
   const itemValidation = validateCompetitionItems(input);
   if (!itemValidation.ok) {
-    return {
-      physicalTotals,
-      officialScore: null,
-      scoreStatus: "unavailable",
-      appliedPenalties,
-      comparableForButtsPerParticipant,
-      buttsPerParticipant,
-      ineligibleReason: itemValidation.reason,
-    };
+    return unavailableResult(physicalTotals, appliedPenalties, comparableForButtsPerParticipant, buttsPerParticipant, itemValidation.reason);
   }
 
   if (input.submissionStatus === "certified" && regulation.eligibility?.requiresAllCategories) {
-    const categoryCodes = new Set(regulation.categories.map((category) => category.code));
-    const measuredCodes = new Set(input.items.filter((item) => item.quantity !== null).map((item) => item.categoryCode));
-    if (measuredCodes.size !== categoryCodes.size || [...categoryCodes].some((code) => !measuredCodes.has(code))) {
-      return {
-        physicalTotals,
-        officialScore: null,
-        scoreStatus: "unavailable",
-        appliedPenalties,
-        comparableForButtsPerParticipant,
-        buttsPerParticipant,
-        ineligibleReason: "all_categories_required",
-      };
-    }
+    if (!hasAllRequiredCategories(input)) return unavailableResult(physicalTotals, appliedPenalties, comparableForButtsPerParticipant, buttsPerParticipant, "all_categories_required");
   }
 
   const minimumPresent = regulation.eligibility?.minimumPresentParticipants ?? null;
   if (minimumPresent !== null && input.presentParticipants < minimumPresent) {
-    return {
-      physicalTotals,
-      officialScore: null,
-      scoreStatus: "unavailable",
-      appliedPenalties,
-      comparableForButtsPerParticipant,
-      buttsPerParticipant,
-      ineligibleReason: "minimum_present_participants_not_met",
-    };
+    return unavailableResult(physicalTotals, appliedPenalties, comparableForButtsPerParticipant, buttsPerParticipant, "minimum_present_participants_not_met");
   }
-
-  const categories = new Map(regulation.categories.map((category) => [category.code, category]));
-  const scoreBeforePenalties = input.items.reduce((total, item) => {
-    const category = categories.get(item.categoryCode);
-    if (!category || item.quantity === null || category.coefficient === null) return total;
-    return total + item.quantity * category.coefficient;
-  }, 0);
-  const penaltyPoints = appliedPenalties.reduce((total, penalty) => total + penalty.points, 0);
-  const rounded = round(scoreBeforePenalties - penaltyPoints, regulation.rounding!.decimals, regulation.rounding!.mode);
 
   return {
     physicalTotals,
-    officialScore: rounded,
+    officialScore: calculateOfficialScore(input),
     scoreStatus: input.submissionStatus === "certified" ? "official" : "preview",
     appliedPenalties,
     comparableForButtsPerParticipant,

@@ -180,6 +180,21 @@ function resolveSPOGOMIFranceOrganizer(action: ActionRow): SpogomiConsolidationI
   return null;
 }
 
+function buildConsolidationSourceSnapshot(event: EventRow, action: ActionRow, categoryRows: CategoryRow[], mappings: unknown[], teams: unknown[], submissions: unknown[], rawItems: Array<Record<string, unknown>>, participants: unknown[], decisions: ClosureDecisionRow[], route: { id: unknown; updated_at: unknown } | null): SpogomiConsolidationSourceSnapshot {
+  return {
+    event: { id: event.id, updatedAt: event.updated_at, name: event.name, locationLabel: event.location_label, startsAt: event.starts_at, endsAt: event.ends_at, mappingVersion: event.environmental_mapping_version },
+    action: { id: event.action_id, updatedAt: String(action.updated_at), organizerId: action.organizer_id, organizerName: action.organizer_name, organizerType: action.organizer_type },
+    categories: categoryRows.map((row) => ({ id: String(row.id), divisionId: row.division_id, updatedAt: String(row.updated_at) })),
+    mappings: (mappings as PersistedMappingRow[]).map((row) => ({ id: String(row.id), divisionId: row.division_id, updatedAt: String(row.updated_at) })),
+    teams: teams.map((row) => { const value = row as { id: unknown; division_id?: unknown; updated_at?: unknown }; return { id: String(value.id), divisionId: value.division_id ? String(value.division_id) : undefined, updatedAt: String(value.updated_at) }; }),
+    submissions: submissions.map((row) => { const value = row as { id: unknown; division_id?: unknown; updated_at?: unknown }; return { id: String(value.id), divisionId: value.division_id ? String(value.division_id) : undefined, updatedAt: String(value.updated_at) }; }),
+    items: rawItems.map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
+    participants: participants.map((row) => { const value = row as { id: unknown; division_id?: unknown; updated_at?: unknown }; return { id: String(value.id), divisionId: value.division_id ? String(value.division_id) : undefined, updatedAt: String(value.updated_at) }; }),
+    decisions: decisions.map((row) => ({ id: String(row.id), divisionId: String(row.division_id), teamId: String(row.team_id), status: row.status, sportEligible: Boolean(row.sport_eligible), environmentalEligibility: row.environmental_eligibility, decisionVersion: Number(row.decision_version), updatedAt: String(row.updated_at ?? "") })),
+    route: route ? { id: String(route.id), updatedAt: String(route.updated_at) } : null,
+  };
+}
+
 export type SpogomiConsolidationPreview = {
   event: Pick<EventRow, "id" | "action_id" | "name" | "location_label" | "starts_at" | "ends_at" | "state" | "environmental_mapping_version">;
   mappings: SpogomiEnvironmentalMapping[];
@@ -271,32 +286,7 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
     attendanceStatus: String(participant.attendance_status),
     registrationStatus: String(participant.registration_status),
   }));
-  const sourceSnapshot: SpogomiConsolidationSourceSnapshot = {
-    event: {
-      id: event.id,
-      updatedAt: event.updated_at,
-      name: event.name,
-      locationLabel: event.location_label,
-      startsAt: event.starts_at,
-      endsAt: event.ends_at,
-      mappingVersion: event.environmental_mapping_version,
-    },
-    action: {
-      id: event.action_id,
-      updatedAt: String((actionResult.data as ActionRow).updated_at),
-      organizerId: action.organizer_id,
-      organizerName: action.organizer_name,
-      organizerType: action.organizer_type,
-    },
-    categories: categoryRows.map((row) => ({ id: String(row.id), divisionId: row.division_id, updatedAt: String(row.updated_at) })),
-    mappings: ((mappings ?? []) as unknown as PersistedMappingRow[]).map((row) => ({ id: String(row.id), divisionId: row.division_id, updatedAt: String(row.updated_at) })),
-    teams: (teams ?? []).map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
-    submissions: (submissions ?? []).map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
-    items: rawItems.map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
-    participants: (participants ?? []).map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
-    decisions: ((decisions ?? []) as unknown as ClosureDecisionRow[]).map((row) => ({ id: String(row.id), divisionId: String(row.division_id), teamId: String(row.team_id), status: row.status, sportEligible: Boolean(row.sport_eligible), environmentalEligibility: row.environmental_eligibility, decisionVersion: Number(row.decision_version), updatedAt: String(row.updated_at ?? "") })),
-    route: routeResult.data ? { id: String(routeResult.data.id), updatedAt: String(routeResult.data.updated_at) } : null,
-  };
+  const sourceSnapshot = buildConsolidationSourceSnapshot(event, action, categoryRows, mappings ?? [], teams ?? [], submissions ?? [], rawItems, participants ?? [], (decisions ?? []) as unknown as ClosureDecisionRow[], routeResult.data as { id: unknown; updated_at: unknown } | null);
   const input: SpogomiConsolidationInput = {
     eventId: event.id,
     actionId: event.action_id,
