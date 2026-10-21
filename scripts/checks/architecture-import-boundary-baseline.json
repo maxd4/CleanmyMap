@@ -1284,6 +1284,28 @@
       "sourceKind": "runtime",
       "reason": "Constatée sur le graphe client effectif avant ce correctif ; cette entrée documente un état préexistant et n autorise aucune signature future.",
       "reviewedRef": "ad3d4280a2d47914e65b35806b42ee49d42fad9c"
+    },
+    {
+      "id": "2cf4c2ea702790b090523574",
+      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/components/sections/rubriques/route/route-pdf-export.ts|apps/web/src/lib/security/html-escape.ts|runtime|runtime",
+      "rule": "UI_TO_INFRASTRUCTURE",
+      "from": "apps/web/src/components/sections/rubriques/route/route-pdf-export.ts",
+      "to": "apps/web/src/lib/security/html-escape.ts",
+      "kind": "runtime",
+      "sourceKind": "runtime",
+      "reason": "Le générateur HTML/SVG d’export doit utiliser l’owner de sécurité canonique pour échapper les données non fiables ; une façade PDF supplémentaire dupliquerait ou masquerait cette protection.",
+      "reviewedRef": "a64198d74b0cc646f6efcf8037a88e913dd7dc0a"
+    },
+    {
+      "id": "88e38cf1c039f73f113801eb",
+      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/lib/pdf-export/browser-report.ts|apps/web/src/lib/security/html-escape.ts|runtime|runtime",
+      "rule": "UI_TO_INFRASTRUCTURE",
+      "from": "apps/web/src/lib/pdf-export/browser-report.ts",
+      "to": "apps/web/src/lib/security/html-escape.ts",
+      "kind": "runtime",
+      "sourceKind": "runtime",
+      "reason": "L’adaptateur d’impression navigateur construit une réponse HTML à partir de données non fiables et réutilise directement l’owner de sécurité canonique ; une copie locale réduirait la cohérence de l’échappement.",
+      "reviewedRef": "a64198d74b0cc646f6efcf8037a88e913dd7dc0a"
     }
   ],
   "retired": [

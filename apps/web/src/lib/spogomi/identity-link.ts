@@ -16,15 +16,6 @@ import type {
   SpogomiPublishedTeamResult,
 } from "./identity-link-contract";
 
-export type {
-  SpogomiIdentityLinkResult,
-  SpogomiIdentityParticipation,
-  SpogomiIdentityState,
-  SpogomiIdentityStateResult,
-  SpogomiLinkedTeam,
-  SpogomiPublishedTeamResult,
-} from "./identity-link-contract";
-
 const IDENTITY_CODE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export class SpogomiIdentityLinkError extends Error {

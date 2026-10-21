@@ -192,7 +192,7 @@ export function buildReportTitle(scopeLabel: string, detailLevel: DetailLevelId)
   return `Rapport d'impact - ${scopeLabel} - ${detailLevelShortLabel(detailLevel)}`;
 }
 
-export type ReportsWebDocumentModelLike = {
+type ReportsWebDocumentModelLike = {
   report: ReportModel;
   wasteProfile: {
     dominantLabel: string;

@@ -3,7 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type SpogomiAdmissionRequestKind = "registration" | "presence_regularization";
-export type SpogomiAdmissionRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
+type SpogomiAdmissionRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
 
 export type SpogomiAdmissionRequesterView = {
   id: string;

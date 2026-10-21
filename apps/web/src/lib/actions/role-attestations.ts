@@ -21,24 +21,6 @@ export type ActionRoleAttestation = {
   updated_at: string;
 };
 
-export type ActionRoleAttestationAudit = {
-  id: string;
-  action_id: string;
-  attestation_id: string | null;
-  user_id: string;
-  role_code: string;
-  event_code: string;
-  actor_clerk_id: string;
-  reviewer_clerk_id: string | null;
-  previous_status: string | null;
-  next_status: string;
-  decision_reason: string | null;
-  responsibility_provenance: ActionRoleAttestationProvenance;
-  provenance_snapshot: Record<string, unknown>;
-  revision: number;
-  created_at: string;
-};
-
 export type ActionRoleAttestationState = {
   assignments: ActionFieldRoleAssignment[];
   attestations: ActionRoleAttestation[];

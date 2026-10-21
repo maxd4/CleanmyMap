@@ -39,7 +39,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | `apps/web/src/components/actions/action-declaration/before/sections.tsx` | ALREADY_MODULARIZED | NONE | préserver la façade d'exports, BaseSectionProps, validation, focus et updateField | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 | `apps/web/src/app/api/route/recommend/route.response.ts` | ALREADY_MODULARIZED | NONE | préserver DTO, planner proof/snapshot, calibration et la façade `buildRouteRecommendationResponse` | nouveau mode de réponse ou sous-contrat consommé indépendamment |
 | `apps/web/src/lib/actions/participation/group-participation-review.ts` | ALREADY_MODULARIZED | NONE | préserver AuthZ, ownership, idempotence, audit et ordre des mutations | nouvelle responsabilité autonome réintroduite dans la façade ou divergence de contrat |
-| `apps/web/src/lib/actions/pollution/corridor-history.ts` | EXTRACTED_PURE_CONTRACT | CURRENT | préserver les constantes géographiques, `CorridorPolyline`/`CorridorHistory` et l'ordre matching → historique → score ; garder la géométrie extraite comme module pur à sens unique | nouveau mode de corridor, sous-modèle historique indépendant ou consommateur géométrique autonome |
+| `apps/web/src/lib/actions/pollution/corridor-history.ts` | EXTRACTED_PURE_CONTRACT | CURRENT | préserver les constantes géographiques, `CorridorPolyline`/`CorridorHistory`, les unités et l'ordre matching → historique → score ; ne pas créer de second owner du domaine Pollution | nouveau mode de corridor, sous-modèle historique indépendant ou consommateur géométrique autonome |
 | `apps/web/src/lib/actions/http.ts` | ALREADY_MODULARIZED | NONE | préserver URL, méthode, payload et erreurs de chaque famille endpoint | nouvelle famille de contrat réintroduite dans la façade ou divergence URL/méthode/payload |
 | `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts` | COHESIVE_SINGLE_FILE | NONE | owner unique du modèle de preuve/confiance/serviceabilité | nouveau type de preuve autonome ou changement indépendant de matérialisation |
 | `apps/web/src/app/api/chat/route.post.ts` | ALREADY_MODULARIZED | NONE | aucun ; la frontière serveur reste séparée du client et les contrats POST sont préservés | nouvelle responsabilité autonome réintroduite dans la route ou opacification d'une décision AuthN/AuthZ |
@@ -51,7 +51,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | `apps/web/src/lib/pdf-export/official-report-html.ts` | ALREADY_MODULARIZED | NONE | préserver échappement HTML, Markdown, tableaux, callouts et PdfReportPayload | nouvelle responsabilité indépendante ajoutée au compositeur |
 | `apps/web/src/lib/auth/sync.ts` | ALREADY_MODULARIZED | NONE | préserver scope utilisateur, service-role server-only, idempotence et ordre d'upsert | nouvelle responsabilité autonome réintroduite dans la façade ou opacification AuthN/AuthZ |
 | `apps/web/src/components/actions/action-creation-shell.tsx` | DEFERRED_SPLIT | AFTER_ACTIVE_CHANGES | préserver l'isolation par `actionId`, les transitions d'état et l'URL reprenable | frontière indépendante et testée entre navigation/sections, état workflow et orchestration de persistance |
-| `apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts` | EXTRACTED_PURE_CONTRACT | CURRENT | préserver les modifications utilisateur, le premier identifiant persistant et la publication toujours explicite ; conversions pures dans `before-action-form-conversions.ts` | nouvelle responsabilité autonome réintroduite dans le workflow ou couplage qui compromet la reprise et la publication explicite |
+| `apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts` | EXTRACTED_PURE_CONTRACT | CURRENT | préserver les modifications utilisateur, le premier identifiant persistant et la publication toujours explicite | nouvelle responsabilité autonome réintroduite dans le workflow ou couplage qui compromet la reprise et la publication explicite |
 
 ### Décisions établies — grille détaillée
 
@@ -646,7 +646,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | NATURAL_EXTRACTION_BOUNDARY | `corridor-history-geometry.ts` porte projection, échantillonnage, plus proche point et couverture ; la façade conserve conversion métier, matching, groupement, historique et scores |
 | ARCHITECTURE_DECISION | EXTRACTED_PURE_CONTRACT |
 | RATIONALE | la lecture des consommateurs confirme que la géométrie est un noyau pur testable indépendamment des actions et de l'historique ; la façade conserve le contrat corridor public et l'ordre matching → historique → score, tandis que les seuils restent définis dans l'owner métier et sont passés explicitement à la couverture |
-| PRIORITY | NONE |
+| PRIORITY | CURRENT |
 | DEPENDENCY_OR_BLOCKER | préserver les constantes géographiques, `CorridorPolyline`/`CorridorHistory`, les unités et l'ordre matching → historique → score ; ne pas créer de second owner du domaine Pollution |
 | NEXT_TRIGGER | nouveau mode de corridor, sous-modèle historique indépendant ou consommateur géométrique autonome |
 

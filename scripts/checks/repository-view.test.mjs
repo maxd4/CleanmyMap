@@ -59,6 +59,21 @@ test("Git repository view reads the committed tree and ignores dirty/untracked f
   assert.equal(filesystemView.exists("documentation/parallel.md"), true);
 });
 
+test("filesystem repository view excludes ignored local artifacts while retaining tracked files", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-repository-view-ignored-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  execFileSync("git", ["init", "-q"], { cwd: root });
+  writeFile(root, ".gitignore", "tmp/\n");
+  writeFile(root, "README.md", "tracked\n");
+  writeFile(root, "tmp/generated.log", "local\n");
+
+  const view = createFilesystemRepositoryView(root);
+  assert.deepEqual(view.listFiles(), [".gitignore", "README.md"]);
+  assert.deepEqual(view.rootDirectories(), []);
+  assert.equal(view.exists("tmp/generated.log"), false);
+});
+
 test("Git repository view reads bounded blob batches without leaving the ref", (t) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-repository-view-batches-"));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));

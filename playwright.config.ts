@@ -39,12 +39,12 @@ export default defineConfig({
     {
       name: "local public",
       testMatch:
-        /(?:smoke-public|reports-public|spogomi-navigation|network-demand-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries|accessibility-lighthouse-controls)\.spec\.ts/,
+        /(?:smoke-public|reports-public|spogomi-navigation|network-demand-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries|accessibility-lighthouse-controls)\.(?:spec|test)\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "accessibility mobile",
-      testMatch: /accessibility-lighthouse-controls\.spec\.ts/,
+      testMatch: /accessibility-lighthouse-controls\.(?:spec|test)\.ts/,
       use: { ...devices["Pixel 5"] },
     },
     {
@@ -84,7 +84,7 @@ export default defineConfig({
     },
     {
       name: "pdf export browser",
-      testMatch: /pdf-export-browser-report\.spec\.ts/,
+      testMatch: /pdf-export-browser-report\.(?:spec|test)\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
     {
@@ -105,7 +105,7 @@ export default defineConfig({
     },
     {
       name: "authenticated campaign",
-      testMatch: /authenticated-(?:campaign|spogomi)\.spec\.ts/,
+      testMatch: /authenticated-(?:campaign|spogomi)\.(?:spec|test)\.ts/,
       dependencies: ["global setup"],
       use: { ...devices["Desktop Chrome"] },
     },

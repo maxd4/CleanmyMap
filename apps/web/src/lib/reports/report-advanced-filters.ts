@@ -116,7 +116,7 @@ function passesBinary(
   return selection === "with" ? value : !value;
 }
 
-export function assertReportAdvancedFilterSources(params: {
+function assertReportAdvancedFilterSources(params: {
   filters: ReportAdvancedFilters;
   actionMediaAvailability: ReportAdvancedFilterMediaAvailability;
 }): void {

@@ -8,7 +8,7 @@ import type { ReportScopeKind } from "./scope";
 import type { ReportPdfTheme } from "@/lib/pdf-export/report-pdf-theme";
 import type { ReportGenerationSnapshotRecord } from "./report-generation-history-store";
 
-export type ReportGenerationResumeScopeKind = ReportScopeKind | "single_action";
+type ReportGenerationResumeScopeKind = ReportScopeKind | "single_action";
 
 export type ReportGenerationResumeConfig = {
   generationId: string;

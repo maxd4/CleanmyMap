@@ -1,11 +1,10 @@
 import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
-import { escapeCsvCell } from "./csv";
 import type { ReportGenerationSnapshotRecord } from "./report-generation-history-store";
 
-export const REPORT_SCIENTIFIC_EXPORT_SCHEMA_VERSION =
+const REPORT_SCIENTIFIC_EXPORT_SCHEMA_VERSION =
   "reports-scientific-export-v1" as const;
 
-export const REPORT_SCIENTIFIC_DATA_STATUSES = [
+const REPORT_SCIENTIFIC_DATA_STATUSES = [
   "OBSERVED",
   "DERIVED",
   "DECLARED",
@@ -14,7 +13,7 @@ export const REPORT_SCIENTIFIC_DATA_STATUSES = [
   "NA",
 ] as const;
 
-export type ReportScientificDataStatus =
+type ReportScientificDataStatus =
   (typeof REPORT_SCIENTIFIC_DATA_STATUSES)[number];
 
 type JsonValue =
@@ -56,18 +55,18 @@ export type ReportScientificReference = {
   citationText: string;
 };
 
-export type ReportScientificTableColumn = {
+type ReportScientificTableColumn = {
   id: string;
   label: string;
   unit: string | null;
 };
 
-export type ReportScientificCell = {
+type ReportScientificCell = {
   value: JsonValue;
   status: ReportScientificDataStatus | null;
 };
 
-export type ReportScientificTable = {
+type ReportScientificTable = {
   id: string;
   title: string;
   source: string;
@@ -146,7 +145,6 @@ function toJsonValue(value: unknown): JsonValue {
   }
   return String(value);
 }
-
 function normalizeScientificCellValue(value: JsonValue): JsonValue {
   if (typeof value !== "string") return value;
   return ABSENCE_SENTINELS.has(value.trim().toUpperCase()) ? null : value;
@@ -461,72 +459,4 @@ export function buildReportScientificExport(
     tables,
     limitations: buildLimitations(generation, tables),
   };
-}
-
-function csvValue(value: JsonValue): string {
-  if (value === null) return "";
-  return typeof value === "object" ? JSON.stringify(value) : String(value);
-}
-
-export function buildReportScientificCsv(
-  generation: ReportGenerationSnapshotRecord,
-): string {
-  const exportData = buildReportScientificExport(generation);
-  const reference = exportData.reference;
-  const headers = [
-    "generation_id",
-    "report_title",
-    "generated_at",
-    "period_id",
-    "period_from",
-    "period_to",
-    "period_timezone",
-    "scope_kind",
-    "scope_value",
-    "scope_label",
-    "table_id",
-    "table_title",
-    "row_index",
-    "field_id",
-    "field_label",
-    "unit",
-    "value",
-    "status",
-  ];
-  const lines = [headers.map((header) => escapeCsvCell(header)).join(",")];
-  for (const table of exportData.tables) {
-    for (const row of table.rows) {
-      for (const column of table.columns) {
-        const cell = row.values[column.id];
-        lines.push([
-          reference.generationId,
-          reference.title,
-          reference.generatedAt,
-          reference.period.id,
-          reference.period.from,
-          reference.period.to,
-          reference.period.timeZone,
-          reference.scope.kind,
-          reference.scope.value,
-          reference.scope.label,
-          table.id,
-          table.title,
-          row.index,
-          column.id,
-          column.label,
-          column.unit,
-          csvValue(cell.value),
-          cell.status,
-        ].map((value) => escapeCsvCell(value)).join(","));
-      }
-    }
-  }
-  return `\uFEFF${lines.join("\r\n")}\r\n`;
-}
-
-export function buildReportScientificExportFilename(
-  filename: string,
-  extension: "json" | "csv",
-): string {
-  return filename.replace(/\.pdf$/i, `.${extension}`);
 }

@@ -26,7 +26,7 @@ type ReportCommunityEventRow = {
   description: string | null;
 };
 
-export type ReportCommunityEventsAvailability = "available" | "partial" | "unavailable";
+type ReportCommunityEventsAvailability = "available" | "partial" | "unavailable";
 
 export type ReportCommunityEventsLoadResult = {
   items: CommunityEventItem[];

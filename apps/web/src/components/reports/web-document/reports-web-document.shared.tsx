@@ -27,7 +27,6 @@ import {
   reportPeriodLabel,
   type DetailLevelId,
   type ModuleState,
-  type PeriodId,
   type SelectedPeriodId,
 } from "@/lib/reports/report-pdf-data";
 
@@ -53,7 +52,6 @@ export {
 export type {
   DetailLevelId,
   ModuleState,
-  PeriodId,
   SelectedPeriodId,
   ReportPdfTheme,
   ReportAdvancedFilters,

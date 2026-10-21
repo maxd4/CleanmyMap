@@ -2651,14 +2651,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "54558d2d2ac81fc6",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les deux états de la carte identity-link ont volontairement la même structure d'affichage avec des textes et transitions différents ; le clone est du rendu local.",
-      "evidence": "components/spogomi/spogomi-identity-link-card.tsx:87-95 et components/spogomi/spogomi-identity-link-card.tsx:110-118 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "b2f082a389beddbe",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les deux modules calculent des métriques à partir de données de domaines différents ; la similarité porte sur une boucle de projection sans règle commune.",

@@ -6,10 +6,8 @@ import {
   InvalidReportGenerationIdError,
 } from "@/lib/reports/report-generation-history-store";
 import { InvalidReportGenerationSnapshotError } from "@/lib/reports/report-generation-payload";
-import {
-  buildReportScientificExport,
-  buildReportScientificExportFilename,
-} from "@/lib/reports/report-scientific-export";
+import { buildReportScientificExport } from "@/lib/reports/report-scientific-export";
+import { buildReportScientificExportFilename } from "@/lib/reports/report-scientific-csv";
 
 export const runtime = "nodejs";
 

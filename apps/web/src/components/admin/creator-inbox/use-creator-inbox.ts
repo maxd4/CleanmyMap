@@ -13,6 +13,7 @@ import { acceptPartnerRequest, acceptPromotionRequest, applyCreatorInboxAction, 
 import { refreshList } from "./inbox-constants";
 import { getCreatorInboxCopy, PARTNER_CONFIRM_PHRASE, type CreatorInboxLocale } from "./creator-inbox-copy";
 import { useCreatorInboxPagination } from "./use-creator-inbox-pagination";
+import { buildCreatorInboxSummary, resolveInboxMessage, type CreatorInboxSummary } from "./use-creator-inbox.helpers";
 import type {
   LegalContentReportDecisionAction,
   LegalContentReportDecisionOrigin,
@@ -25,31 +26,6 @@ type UseCreatorInboxParams = {
   initialCanQualify?: boolean;
   initialFeedbackMetrics?: CommunityBugReportFollowUpMetrics;
 };
-
-type Summary = {
-  feedback: number;
-  promotion: number;
-  partner: number;
-  event: number;
-  legalContentReport: number;
-};
-
-function resolveInboxMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message.trim().length > 0) {
-    return error.message;
-  }
-  return fallback;
-}
-
-function buildCreatorInboxSummary(items: CreatorInboxItem[]): Summary {
-  return {
-    feedback: items.filter((item) => item.source === "feedback").length,
-    promotion: items.filter((item) => item.source === "promotion").length,
-    partner: items.filter((item) => item.source === "partner").length,
-    event: items.filter((item) => item.source === "event").length,
-    legalContentReport: items.filter((item) => item.source === "legal_content_report").length,
-  };
-}
 
 export function useCreatorInbox({
   initialItems,
@@ -102,7 +78,7 @@ export function useCreatorInbox({
   const setItems = pagination.setItems;
   const [promotionReasons, setPromotionReasons] = useState<Record<string, string>>({});
 
-  const summary = useMemo(() => buildCreatorInboxSummary(items), [items]);
+  const summary = useMemo<CreatorInboxSummary>(() => buildCreatorInboxSummary(items), [items]);
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();

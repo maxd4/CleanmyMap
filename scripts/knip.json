@@ -4,7 +4,9 @@
     ".": {
       "entry": [
         "playwright.config.ts",
-        "e2e/**/*.spec.ts",
+        "e2e/**/*.{spec,test}.ts",
+        "apps/web/vitest.spogomi.config.ts",
+        "scripts/ci/run-python-tests.mjs",
         "e2e/global.setup.ts",
         "e2e/global.teardown.ts",
         "e2e/run-*.mjs",
@@ -25,11 +27,15 @@
         "scripts/**/*.{js,mjs,cjs,ts,tsx}",
         "documentation/pages_site/screen/**/*.mjs"
       ],
-      "ignore": ["scripts/security/semgrep/fixtures/**"],
+      "ignore": [
+        "scripts/security/semgrep/fixtures/**",
+        "scripts/checks/fixtures/architecture-import-boundary/**"
+      ],
       "ignoreBinaries": ["pwsh"],
       "ignoreDependencies": ["next", "image-size", "jscpd", "stream-json"]
     },
     "apps/web": {
+      "entry": ["vitest.spogomi.config.ts"],
       "ignoreIssues": {
         "src/lib/learning/quiz/quiz-quality-audit.ts": ["exports"],
         "src/lib/learning/quiz/quiz-source-audit.ts": ["exports"]

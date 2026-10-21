@@ -63,8 +63,8 @@ test("FULL is global even for documentation-only candidates", () => {
     assert.ok(ids(plan).includes(id), `missing FULL check ${id}`);
   }
   assert.deepEqual(plan.checks.find((check) => check.id === "python-tests").command, {
-    executable: "python",
-    args: ["-m", "pytest", "-q", "maintenance/python/tests"],
+    executable: process.execPath,
+    args: ["scripts/ci/run-python-tests.mjs"],
   });
   assert.ok(plan.deduplicated.some((entry) => entry.id === "test:security" && entry.status === "ALREADY_PROVEN"));
   assert.ok(plan.deduplicated.some((entry) => entry.id === "test:regression-gates" && entry.status === "ALREADY_PROVEN"));

@@ -41,9 +41,9 @@ export type MobileActionReviewItem = {
   participationSource: string
 }
 
-export type MobileFieldRoleOption = { code: string; label: string; description: string }
-export type MobileFieldRoleAssignment = { id: string; action_id: string; user_id: string; role_code: string; assignment_status: 'active' | 'revoked' }
-export type MobileFieldRoleParticipant = { userId: string; displayName: string; handle: string | null; registrationStatus: string }
+type MobileFieldRoleOption = { code: string; label: string; description: string }
+type MobileFieldRoleAssignment = { id: string; action_id: string; user_id: string; role_code: string; assignment_status: 'active' | 'revoked' }
+type MobileFieldRoleParticipant = { userId: string; displayName: string; handle: string | null; registrationStatus: string }
 export type MobileFieldRoleState = {
   status: string
   actionId: string

@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   ResolvedActionOrganizer,
   ResolvedActionParticipant,
@@ -15,37 +14,6 @@ type ActionRegistrationInsertRow = {
   registration_status: ActionRegistrationStatus;
   registration_source: ActionRegistrationSource;
 };
-
-/**
- * Creation-only persistence. Editing an action must use the atomic organizer
- * synchronization RPC instead of this cleanup-oriented workflow.
- */
-export async function insertCreatedActionOrganizers(
-  supabase: SupabaseClient,
-  actionId: string,
-  organizers: ResolvedActionOrganizer[],
-): Promise<void> {
-  if (organizers.length === 0) {
-    throw new Error("At least one organizer is required for action creation.");
-  }
-
-  const organizerRows = organizers.map((organizer, index) => ({
-    action_id: actionId,
-    organizer_clerk_id: organizer.userId,
-    organizer_label: organizer.displayName,
-    organizer_handle: organizer.handle,
-    is_primary: organizer.isPrimary || index === 0,
-  }));
-
-  const organizersInserted = await supabase
-    .from("action_organizers")
-    .insert(organizerRows);
-
-  if (organizersInserted.error) {
-    await supabase.from("actions").delete().eq("id", actionId);
-    throw organizersInserted.error;
-  }
-}
 
 export function buildInitialActionRegistrationRows(params: {
   actionId: string;
@@ -99,28 +67,4 @@ export function buildInitialActionRegistrationRows(params: {
   }
 
   return rows;
-}
-
-/**
- * Creation-only persistence. The compensating deletes are intentionally
- * scoped to a partially-created action and must never be reused by PATCH.
- */
-export async function insertCreatedActionRegistrations(
-  supabase: SupabaseClient,
-  actionId: string,
-  rows: ActionRegistrationInsertRow[],
-): Promise<void> {
-  if (rows.length === 0) {
-    return;
-  }
-
-  const registrationsInserted = await supabase
-    .from("action_registrations")
-    .insert(rows);
-
-  if (registrationsInserted.error) {
-    await supabase.from("action_organizers").delete().eq("action_id", actionId);
-    await supabase.from("actions").delete().eq("id", actionId);
-    throw registrationsInserted.error;
-  }
 }

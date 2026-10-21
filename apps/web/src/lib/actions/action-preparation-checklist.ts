@@ -15,19 +15,15 @@ import {
   isActionEquipmentProvided,
 } from "./preparation-contract";
 
-export const ACTION_CHECKLIST_PROVENANCES = [
-  "preparation",
-  "organizer",
-  "waste_catalog",
-  "weather_forecast",
-] as const;
+export type ActionWeatherState = "idle" | "loading" | "success" | "unavailable" | "error";
 
-export const ACTION_WEATHER_STATES = ["idle", "loading", "success", "unavailable", "error"] as const;
-export type ActionWeatherState = (typeof ACTION_WEATHER_STATES)[number];
+export type ActionChecklistProvenance =
+  | "preparation"
+  | "organizer"
+  | "waste_catalog"
+  | "weather_forecast";
 
-export type ActionChecklistProvenance = (typeof ACTION_CHECKLIST_PROVENANCES)[number];
-
-export type ActionVolunteerChecklistItem = {
+type ActionVolunteerChecklistItem = {
   key: string;
   label: string;
   detail: string | null;
@@ -55,7 +51,7 @@ export type ActionVolunteerChecklist = {
   insufficiencies: string[];
 };
 
-export type ActionVolunteerWeatherRequest = Pick<
+type ActionVolunteerWeatherRequest = Pick<
   PlannerWeatherContextRequest,
   "latitude" | "longitude" | "scheduledStartAt" | "scheduledEndAt"
 >;
@@ -82,7 +78,6 @@ const PROVENANCE_LABELS: Record<ActionChecklistProvenance, string> = {
 export function actionChecklistProvenanceLabel(value: ActionChecklistProvenance): string {
   return PROVENANCE_LABELS[value];
 }
-
 function normalizedText(value: string): string {
   return value.trim().toLocaleLowerCase("fr-FR");
 }
@@ -380,5 +375,3 @@ export function projectActionVolunteerChecklistForPublic(
     insufficiencies: [...checklist.insufficiencies],
   };
 }
-
-export const buildActionVolunteerChecklist = deriveActionVolunteerChecklist;

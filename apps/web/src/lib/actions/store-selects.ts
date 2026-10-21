@@ -51,7 +51,7 @@ export const ACTION_SELECT_FIELDS_WITH_PHASE = [
   "preparation_data",
 ].join(", ");
 
-export const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS
+const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS
   .filter(
     (field) =>
       field !== "published_at" &&
@@ -62,7 +62,7 @@ export const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS
   )
   .join(", ");
 
-export const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT = ACTION_BASE_SELECT_FIELDS
+const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT = ACTION_BASE_SELECT_FIELDS
   .filter(
     (field) =>
       field !== "department_code" &&

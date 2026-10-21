@@ -7,9 +7,9 @@ export const TERRAIN_SPECIALIZATION_RULES_VERSION = "terrain-specializations-202
 export const TERRAIN_SPECIALIZATION_INTRODUCED_REVISION = 16 as const;
 export const TERRAIN_SPECIALIZATION_EVENT_TYPE = "terrain_specialization_tier_unlock" as const;
 
-export const TERRAIN_SPECIALIZATION_THRESHOLDS = [1, 3, 5, 10, 20] as const;
+const TERRAIN_SPECIALIZATION_THRESHOLDS = [1, 3, 5, 10, 20] as const;
 
-export type TerrainSpecializationId =
+type TerrainSpecializationId =
   | "organizer_primary"
   | "coorganizer"
   | "group_lead"

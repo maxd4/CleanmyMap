@@ -2,11 +2,11 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 export const REPORT_PDF_ARTIFACT_BUCKET = "reports" as const;
 export const REPORT_PDF_ARTIFACT_RENDERER_VERSION = "chromium-official-report-pdf-v1" as const;
-export const REPORT_PDF_ARTIFACT_WAIT_MS = 5_000;
+const REPORT_PDF_ARTIFACT_WAIT_MS = 5_000;
 export const REPORT_PDF_ARTIFACT_RENDERING_LEASE_MS = 90_000;
 
 export type ReportPdfArtifactTheme = "impact" | "scientific";
-export type ReportPdfArtifactStatus = "rendering" | "ready" | "failed";
+type ReportPdfArtifactStatus = "rendering" | "ready" | "failed";
 
 export type ReportPdfArtifact = {
   id: string;

@@ -51,6 +51,26 @@ function listFilesystemFiles(root) {
   return files.sort(compareRepositoryPaths);
 }
 
+function filterGitIgnoredPaths(root, paths) {
+  if (paths.length === 0) return paths;
+
+  try {
+    const output = execFileSync("git", ["check-ignore", "--stdin", "-z", "--"], {
+      cwd: root,
+      input: Buffer.from(`${paths.join("\0")}\0`, "utf8"),
+      maxBuffer: Math.max(1024 * 1024, paths.join("\0").length * 2),
+    });
+    const ignored = new Set(output.toString("utf8").split("\0").filter(Boolean));
+    return paths.filter((relativePath) => !ignored.has(relativePath));
+  } catch (error) {
+    // A fixture may be a plain directory rather than a Git checkout. In that
+    // case there is no ignore policy to apply, and the filesystem view keeps
+    // its historical behaviour.
+    if (error?.status === 1 || error?.status === 128) return paths;
+    throw error;
+  }
+}
+
 function createView({ files, directories = [], readBinary, mode }) {
   const fileList = [...new Set(files.map(normalizeRepositoryPath))].sort(compareRepositoryPaths);
   const fileSet = new Set(fileList);
@@ -105,7 +125,8 @@ function createView({ files, directories = [], readBinary, mode }) {
 
 export function createFilesystemRepositoryView(root = process.cwd(), { snapshotExtensions = [] } = {}) {
   const repositoryRoot = path.resolve(root);
-  const files = listFilesystemFiles(repositoryRoot);
+  const filesystemFiles = listFilesystemFiles(repositoryRoot);
+  const files = filterGitIgnoredPaths(repositoryRoot, filesystemFiles);
   const directories = [];
   const visitDirectories = (current) => {
     for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
@@ -117,6 +138,7 @@ export function createFilesystemRepositoryView(root = process.cwd(), { snapshotE
     }
   };
   visitDirectories(repositoryRoot);
+  const visibleDirectories = filterGitIgnoredPaths(repositoryRoot, directories);
   const snapshot = new Map();
   const extensions = new Set(snapshotExtensions.map((extension) => extension.toLowerCase()));
   for (const relativePath of files) {
@@ -135,7 +157,7 @@ export function createFilesystemRepositoryView(root = process.cwd(), { snapshotE
   return createView({
     mode: "filesystem",
     files: visibleFiles,
-    directories,
+    directories: visibleDirectories,
     readBinary(relativePath) {
       const normalizedPath = normalizeRepositoryPath(relativePath);
       if (snapshot.has(normalizedPath)) return snapshot.get(normalizedPath);

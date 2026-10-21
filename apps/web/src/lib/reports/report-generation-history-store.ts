@@ -1,7 +1,6 @@
 import { buildPdfReportFilename } from "@/lib/pdf-export/simple-pdf";
 import {
   REPORT_GENERATION_HISTORY_LIMIT,
-  REPORT_GENERATION_HISTORY_PAGE_SIZE,
   toReportGenerationHistoryRow,
   type ReportGenerationHistoryFilters,
   type ReportGenerationHistoryInput,
@@ -178,7 +177,7 @@ function normalizePage(page: number | undefined): number {
 
 function normalizeLimit(limit: number): number {
   if (!Number.isFinite(limit)) {
-    return REPORT_GENERATION_HISTORY_PAGE_SIZE;
+    return REPORT_GENERATION_HISTORY_LIMIT;
   }
   return Math.min(Math.max(Math.trunc(limit), 1), 50);
 }
@@ -218,7 +217,7 @@ export async function listReportGenerationHistoryPage(
   filters: ReportGenerationHistoryFilters = {},
 ): Promise<ReportGenerationHistoryPage> {
   const page = normalizePage(filters.page);
-  const pageSize = normalizeLimit(filters.pageSize ?? REPORT_GENERATION_HISTORY_PAGE_SIZE);
+  const pageSize = normalizeLimit(filters.pageSize ?? REPORT_GENERATION_HISTORY_LIMIT);
   const search = filters.search?.trim();
   let query = getSupabaseAdminClient()
     .from("report_generations")

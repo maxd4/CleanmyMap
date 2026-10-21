@@ -25,7 +25,7 @@ export function ActionMediaProofs({ actionId }: { actionId: string }) {
   );
 }
 
-export function ActionMediaProofsView({
+function ActionMediaProofsView({
   snapshot,
   onLoad,
   onRetry,

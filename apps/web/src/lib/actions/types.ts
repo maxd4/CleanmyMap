@@ -90,8 +90,7 @@ export type ActionPhase =
   | "pre_action"
   | "post_action_draft"
   | "post_action_complete";
-export const ACTION_ACCESS_MODES = ["public", "invite_link"] as const;
-export type ActionAccessMode = (typeof ACTION_ACCESS_MODES)[number];
+export type ActionAccessMode = "public" | "invite_link";
 export type { ActionQualityGrade } from "./quality/quality-rules";
 export type ActionImpactLevel = "faible" | "moyen" | "fort" | "critique";
 export type ActionVisionSource = "heuristic" | "hybrid" | "vision";

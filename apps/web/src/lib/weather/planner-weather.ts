@@ -16,7 +16,7 @@ export const PLANNER_WEATHER_SNAPSHOT_VERSION = "planner-weather-snapshot-v1" as
 const PLANNER_WEATHER_PROVIDER = "open-meteo" as const;
 const PLANNER_WEATHER_TIMEZONE = "Europe/Paris" as const;
 export const PLANNER_WEATHER_FORECAST_DAYS = 16;
-export const PLANNER_WEATHER_CONTEXT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+const PLANNER_WEATHER_CONTEXT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 const PLANNER_WEATHER_COORDINATE_TOLERANCE = 0.000001;
 
 type PlannerWeatherStatus = "available" | "unavailable";

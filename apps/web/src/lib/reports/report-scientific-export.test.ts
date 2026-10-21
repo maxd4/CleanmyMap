@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { buildOfficialReportHtml } from "@/lib/pdf-export/official-report-html";
 import type { ReportGenerationSnapshotRecord } from "./report-generation-history-store";
 import {
-  buildReportScientificCsv,
   buildReportScientificExport,
   buildReportScientificReference,
 } from "./report-scientific-export";
+import { buildReportScientificCsv } from "./report-scientific-csv";
 
 function generation(overrides: Partial<ReportGenerationSnapshotRecord> = {}): ReportGenerationSnapshotRecord {
   const snapshot = {

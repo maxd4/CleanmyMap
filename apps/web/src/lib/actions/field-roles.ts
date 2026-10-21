@@ -39,8 +39,8 @@ export const ACTION_FIELD_ROLE_OPTIONS = [
 ] as const;
 
 export type ActionFieldRoleCode = (typeof ACTION_FIELD_ROLE_OPTIONS)[number]["code"];
-export type ActionFieldRoleAssignmentStatus = "active" | "revoked";
-export type ActionFieldRoleTransferStatus =
+type ActionFieldRoleAssignmentStatus = "active" | "revoked";
+type ActionFieldRoleTransferStatus =
   | "pending"
   | "accepted"
   | "rejected"
@@ -92,9 +92,6 @@ export function normalizeActionFieldRoleCodes(values: readonly string[]): Action
   return [...new Set(values.map((value) => value.trim()).filter(isActionFieldRoleCode))];
 }
 
-export function actionFieldRoleLabel(code: ActionFieldRoleCode): string {
-  return ACTION_FIELD_ROLE_OPTIONS.find((option) => option.code === code)?.label ?? code;
-}
 
 export async function loadActionFieldRoleState(
   supabase: SupabaseClient,

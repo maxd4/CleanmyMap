@@ -8,7 +8,6 @@ import {
 import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 
 export const REPORT_GENERATION_HISTORY_LIMIT = 12;
-export const REPORT_GENERATION_HISTORY_PAGE_SIZE = REPORT_GENERATION_HISTORY_LIMIT;
 
 export type ReportGenerationHistoryTheme = "impact" | "scientific";
 export type ReportGenerationHistorySort = "asc" | "desc";

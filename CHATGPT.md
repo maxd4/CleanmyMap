@@ -202,6 +202,22 @@ des contrôles automatiques `DEVELOPMENT` ; les exiger seulement si un risque
 ciblé le justifie, ou dans `FULL` lorsqu'il est autorisé. Cette règle prévaut
 sur les anciennes listes de commandes systématiques.
 
+## MAIN-ONLY / MULTI-WRITER COORDONNÉ
+
+Le workflow normal du dépôt autorise des writers concurrents sur des fichiers
+distincts. ChatGPT doit préserver les changements dirty, staged et untracked
+étrangers ; cette règle MAIN-ONLY / MULTI-WRITER est héritée automatiquement par tous les prompts Codex. ChatGPT ne doit pas demander de nettoyer le checkout
+et ne transforme pas une
+collision d’attribution en écrasement silencieux. Les scopes `WORKTREE_LIVE`,
+`STAGED`, `COMMITTED_SNAPSHOT` et `PUSH_CANDIDATE` restent distincts ; une
+preuve locale ne devient pas une preuve de publication.
+
+Hors mode de développement rapide : validation → commit isolé → push main →
+vérification de convergence.
+
+Mode de développement rapide explicitement activé : commit local selon son
+protocole, sans push tant que le mode reste actif.
+
 ## 8. Exécution, tests, qualité et publication
 
 ChatGPT respecte `MAIN-ONLY / MULTI-WRITER COORDONNÉ` sans imposer de checkout

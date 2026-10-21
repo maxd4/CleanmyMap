@@ -1,7 +1,7 @@
 import type { PdfReportChapter } from "@/lib/pdf-export/simple-pdf-content";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 
-export type ReportDetailModuleFlags = {
+type ReportDetailModuleFlags = {
   dataAndCartography: boolean;
   transparencyAndMethods: boolean;
   rawData: boolean;

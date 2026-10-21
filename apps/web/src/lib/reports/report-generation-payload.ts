@@ -115,7 +115,7 @@ const snapshotMetadataSchema = z.object({
   }).strict(),
 }).strict();
 
-export const reportGenerationPayloadSchema = z.object({
+const reportGenerationPayloadSchema = z.object({
   title: z.string().trim().min(1).max(240),
   rubrique: z.literal("reporting"),
   periode: z.enum([

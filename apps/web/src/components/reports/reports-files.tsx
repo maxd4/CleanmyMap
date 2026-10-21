@@ -6,7 +6,7 @@ import { Search } from "lucide-react";
 import { ReportsWebDocumentDeliveryHistory } from "@/components/reports/web-document/reports-web-document-delivery";
 import { createReportsWebDocumentHistoryActions } from "@/components/reports/reports-web-document-history-actions";
 import {
-  REPORT_GENERATION_HISTORY_PAGE_SIZE,
+  REPORT_GENERATION_HISTORY_LIMIT,
   type ReportGenerationHistoryPage,
   type ReportGenerationHistorySort,
   type ReportGenerationHistoryTheme,
@@ -55,7 +55,7 @@ export function ReportsFiles({ initialPage, initialAvailability = "available" }:
     setError(null);
     const params = new URLSearchParams({
       page: String(nextPage),
-      pageSize: String(page.pageSize || REPORT_GENERATION_HISTORY_PAGE_SIZE),
+      pageSize: String(page.pageSize || REPORT_GENERATION_HISTORY_LIMIT),
       search: search.trim(),
       period,
       theme,

@@ -15,8 +15,6 @@ export const REPORT_THEME_PROTOTYPE_BLOCK_IDS = [
   "footer",
 ] as const;
 
-export type ReportThemePrototypeBlockId = (typeof REPORT_THEME_PROTOTYPE_BLOCK_IDS)[number];
-
 export type ReportThemePrototypeSnapshot = {
   title: string;
   period: string;

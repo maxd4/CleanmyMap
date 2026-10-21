@@ -78,7 +78,7 @@ export async function uploadActionMedia(actionId: string, assets: ActionPhotoAss
   return { uploadedCount, failed };
 }
 
-export async function fetchActionMedia(actionId: string): Promise<ActionMediaReadItem[]> {
+async function fetchActionMedia(actionId: string): Promise<ActionMediaReadItem[]> {
   const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/media`, { cache: "no-store", headers: { Accept: "application/json" } });
   if (!response.ok) throw new Error(await parseError(response, "Les photos de bilan n'ont pas pu être chargées."));
   const body = (await response.json()) as { items?: unknown };

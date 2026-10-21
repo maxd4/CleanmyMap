@@ -42,6 +42,7 @@ export const PROTECTED_APP_PAGE_ROUTE_PREFIXES = [
 export const CLERK_CONTEXT_ROUTE_PREFIXES = [
   "/pilotage",
   "/reports",
+  "/spogomi",
   "/actions/new",
   "/signalement",
   "/sections/annuaire",
@@ -215,7 +216,10 @@ function shouldSkipClerkForAnonymousPublicRequest(req: NextRequest): boolean {
     return false;
   }
 
-  return isClerkContextOnlyRoute(req.nextUrl.pathname) || isAnonymousSafeApiRequest(req);
+  return (
+    (isClerkContextOnlyRoute(req.nextUrl.pathname) && !req.nextUrl.pathname.startsWith("/spogomi")) ||
+    isAnonymousSafeApiRequest(req)
+  );
 }
 
 function clerkUnavailableResponse(req: NextRequest): NextResponse {
@@ -339,6 +343,7 @@ export const config = {
     "/sponsor-portal(.*)",
     "/pilotage(.*)",
     "/reports(.*)",
+    "/spogomi(.*)",
     "/actions/new(.*)",
     "/signalement(.*)",
     "/sections/annuaire(.*)",

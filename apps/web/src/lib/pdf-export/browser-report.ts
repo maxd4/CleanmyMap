@@ -84,7 +84,7 @@ export class IncompatibleReportRendererError extends Error {
   }
 }
 
-export class PrintableReportDeliveryError extends Error {
+class PrintableReportDeliveryError extends Error {
   constructor() {
     super("Le document imprimable n'a pas pu être sécurisé ou chargé.");
     this.name = "PrintableReportDeliveryError";

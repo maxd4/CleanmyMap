@@ -61,13 +61,28 @@ un besoin sémantique réel. Vérifier la fraîcheur et lire les sources avant t
 décision. GitNexus reste facultatif et soumis aux conditions documentées dans
 `TESTING.md`.
 
-## Exécution Git : MAIN-ONLY / MULTI-WRITER COORDONNÉ
+## Modèle d’exécution
+
+Le workflow courant est `MAIN-ONLY / MULTI-WRITER COORDONNÉ`.
+
+Plusieurs writers Codex peuvent travailler dans le checkout canonique ; ils doivent ne jamais écraser silencieusement les changements d’un autre writer. Les
+modifications sur des fichiers distincts peuvent progresser en parallèle ; un
+même fichier, l’index, `HEAD` et les opérations Git mutantes doivent être
+relus et coordonnés explicitement. Les fichiers scoped restent la source des
+règles spécialisées de chaque sous-arbre.
+
+main publié = référence versionnée ; une candidate locale explicitement
+fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à
+intégration ; tout changement local préexistant doit être préservé et ne doit
+jamais être écrasé par une synchronisation avec Git.
 
 - Travail normal sur `main` dans le checkout canonique. Plusieurs writers
   peuvent intervenir sur des chemins distincts. **Ne jamais créer** branche de
   chantier, clone, worktree, coordinateur ou claim persistant pour ce workflow.
 - Un checkout dirty, des untracked, des commits locaux non publiés ou
   `HEAD != origin/main` **ne bloquent pas** l'analyse ni le travail indépendant.
+  Cette présence ne constitue jamais un motif d'arrêt global.
+  Ces exigences ne deviennent pas des préconditions de diagnostic local ; elles ne deviennent pas des préconditions de diagnostic local.
   Les exigences de candidat exact s'appliquent au contrôle et à la publication,
   pas comme préconditions d'un diagnostic.
 - Capturer dès le départ l'état Git (dont chemins dirty/untracked), identifier
@@ -81,11 +96,14 @@ décision. GitNexus reste facultatif et soumis aux conditions documentées dans
   Une synchronisation de refs n'autorise jamais à écraser un fichier étranger.
 - L'allowlist du lot gouverne le staging ; ne jamais utiliser `git add -A` par
   commodité. Vérifier `git diff --cached --name-only`, le diff staged et
-  l'ascendance non publiée, y compris les commits d'autres writers. Un fichier
+l'ascendance non publiée avec `git log --oneline origin/main..HEAD`, y compris les commits d'autres writers. Un fichier
   apparu après capture de l'allowlist n'est pas inclus implicitement.
 - Tous les fichiers modifiés ou créés **par le lot** et nécessaires à son
   contrat doivent être intégrés au commit validé ; ne laisser aucun changement
   du lot dirty/untracked. Les chemins étrangers restent intacts et sont signalés.
+
+Hors mode de développement rapide : validation → commit isolé → push main →
+vérification de convergence.
 
 **Workflow normal** : validation → staging ciblé complet → commit isolé non
 signé → push fast-forward sur `main` → fetch → vérification
@@ -93,15 +111,19 @@ signé → push fast-forward sur `main` → fetch → vérification
 pas de travailler ; il impose toutefois l'audit de l'ascendance avant
 publication. Un `main` distant qui a avancé ou divergé bloque ce push :
 refetcher pour caractériser, **ne pas** intégrer silencieusement, réconcilier
-les fichiers étrangers ou forcer l'historique. Respecter tout blocage de garde,
+les fichiers étrangers ou forcer l'historique ; aucun `force-push`. Respecter tout blocage de garde,
 d'attribution, de sécurité ou d'index avant commit/push.
+
+Mode de développement rapide explicitement activé : commit local selon son
+protocole, sans push tant que le mode reste actif.
 
 **Mode de développement rapide**, uniquement sur activation explicite : commit
 local isolé par lot selon `documentation/development/rapid-development-mode.md`,
 sans push tant que le mode est actif. Une demande explicite de ne pas committer
 ou pousser prévaut. Les mécanismes Git exacts, candidats `WORKTREE_LIVE`,
 `STAGED`, `COMMITTED_SNAPSHOT`, `PUSH_CANDIDATE`, `DYNAMIC_CANDIDATE`, hooks
-et cas d'environnement sont définis dans `scripts/AGENTS.md`,
+Les hooks `pre-commit` et `pre-push` et cas d'environnement sont définis dans
+`scripts/AGENTS.md`,
 `documentation/development/TESTING.md` et `host-environment.md`.
 
 ### Fichiers fournis et protection des modifications préexistantes
@@ -141,6 +163,11 @@ Si un ratchet bloquant `FULL` ou un contrôle ciblé justifié impose une répar
 réaliser une extraction **substantielle**, sans reformater, raccourcir les lignes,
 déplacer intact un monolithe ou assouplir une baseline pour passer le seuil.
 Sans frontière sûre, signaler le blocage.
+
+### LEGACY / COMPATIBILITY
+
+Les anciens noms, coordinateurs et métadonnées de migration décrivent
+uniquement l’historique ; ils ne gouvernent aucun nouveau lot.
 
 ### Dead code, duplication et compatibilité
 

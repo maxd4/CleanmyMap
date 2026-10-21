@@ -9,7 +9,7 @@ import { InvalidReportGenerationSnapshotError } from "@/lib/reports/report-gener
 import {
   buildReportScientificCsv,
   buildReportScientificExportFilename,
-} from "@/lib/reports/report-scientific-export";
+} from "@/lib/reports/report-scientific-csv";
 
 export const runtime = "nodejs";
 

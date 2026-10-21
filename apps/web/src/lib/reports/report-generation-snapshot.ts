@@ -10,7 +10,7 @@ export const REPORT_SNAPSHOT_SCHEMA_VERSION = 2 as const;
 export const REPORT_TEMPLATE_VERSION = "reports-template-v1" as const;
 export const REPORT_RENDERER_VERSION = "official-report-html-v1" as const;
 
-export type ReportGenerationSnapshotScopeKind =
+type ReportGenerationSnapshotScopeKind =
   | "global"
   | "account"
   | "association"
