@@ -90,8 +90,8 @@ export const platformAuthorizationContract = {
     POST: {
       expected: "Authenticated user may persist their own Reports generation snapshot",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess before validating and persisting the generation metadata",
-      evidence: ["requireAuthenticatedAccess", "persistReportGeneration"],
+      actual: "requireAuthenticatedAccess before delegating to generateReportGeneration with the authenticated userId; the generation owner validates input, reserves quota, and persists the snapshot through persistReportGeneration",
+      evidence: ["requireAuthenticatedAccess", "generateReportGeneration"],
     },
   },
   "reports/exports.csv": {
@@ -112,15 +112,11 @@ export const platformAuthorizationContract = {
     POST: {
       expected: "Authenticated owner may derive a compatible Reports generation snapshot with the existing daily quota and audit contract",
       dimensions: ["authentication", "ownership", "audit"],
-      actual: "requireAuthenticatedAccess + owner-scoped source lookup + atomic daily quota reservation + immutable derived persistence + post-persistence audit",
+      actual: "requireAuthenticatedAccess before delegating the authenticated userId to deriveReportGeneration, whose owner-scoped source lookup performs the atomic quota reservation, immutable derived persistence, and post-persistence audit",
       evidence: [
         "requireAuthenticatedAccess",
-        "getReportGenerationSnapshotById",
-        "reserveReportExportSlot",
-        "persistDerivedReportGeneration",
-        "resolveDerivedReportGenerationPersistence",
-        "releaseReportExportSlot",
-        "appendAdminOperationAudit",
+        "access.userId",
+        "deriveReportGeneration",
       ],
     },
   },

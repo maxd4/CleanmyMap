@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRateLimitModule, mockAllowedRateLimit, mockRejectedRateLimit } from "@/app/api/test-helpers";
+import { createRateLimitModule, mockAllowedRateLimit, mockRejectedRateLimit, rateLimitMocks } from "@/app/api/test-helpers";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const persistReportGenerationMock = vi.hoisted(() => vi.fn());
@@ -153,6 +153,9 @@ describe("POST /api/reports/generations", () => {
     );
 
     expect(response.status).toBe(401);
+    expect(rateLimitMocks.verifyRateLimit).not.toHaveBeenCalled();
+    expect(getReportExportAvailabilityMock).not.toHaveBeenCalled();
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
     expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
   });
@@ -172,6 +175,9 @@ describe("POST /api/reports/generations", () => {
       input: expect.objectContaining({ ...multiInput, theme: "impact" }),
     });
     expect(reserveReportExportSlotMock).toHaveBeenCalledWith("user-1");
+    expect(reserveReportExportSlotMock.mock.invocationCallOrder[0]).toBeLessThan(
+      persistReportGenerationMock.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+    );
     await expect(response.json()).resolves.toMatchObject({
       item: { id: "generation-1" },
       filename: "rapport_reporting_six_months.pdf",
@@ -386,6 +392,7 @@ describe("POST /api/reports/generations", () => {
 
     expect(response.status).toBe(429);
     expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+    expect(getReportExportAvailabilityMock).not.toHaveBeenCalled();
     expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
   });
