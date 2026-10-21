@@ -46,31 +46,43 @@ function createGpsClient(options: {
   readError?: Error | null
   changeUserIdOnRead?: string
 }) {
-  const upsert = vi.fn(async () => ({ error: options.upsertError ?? null }))
-  const select = vi.fn(() => ({
-    eq: vi.fn((column: string, value: string) => {
-      expect(column).toBe('mission_id')
-      return {
-        eq: vi.fn((clientPointColumn: string, clientPointId: string) => {
-          expect(clientPointColumn).toBe('client_point_id')
-          return {
-            maybeSingle: vi.fn(async () => {
-              const result = {
-                data: options.persistedPointKeys?.includes(`${value}:${clientPointId}`)
-                  ? { mission_id: value, client_point_id: clientPointId }
-                  : null,
-                error: options.readError ?? null,
-              }
-              if (options.changeUserIdOnRead) state.currentUserId = options.changeUserIdOnRead
-              return result
-            }),
-          }
-        }),
-      }
-    }),
-  }))
+  const upsert = vi.fn(async () => ({ error: resolveUpsertError(options) }))
+  const select = vi.fn(() => buildGpsSelectMock(options))
 
   return { from: vi.fn(() => ({ upsert, select })) }
+}
+
+function resolveUpsertError(options: Parameters<typeof createGpsClient>[0]) {
+  return options.upsertError ?? null
+}
+
+function buildGpsSelectMock(options: Parameters<typeof createGpsClient>[0]) {
+  return {
+    eq: vi.fn((column: string, value: string) => buildMissionQueryMock(options, column, value)),
+  }
+}
+
+function buildMissionQueryMock(options: Parameters<typeof createGpsClient>[0], column: string, value: string) {
+  expect(column).toBe('mission_id')
+  return {
+    eq: vi.fn((clientPointColumn: string, clientPointId: string) => buildPointLookupMock(options, clientPointColumn, value, clientPointId)),
+  }
+}
+
+function buildPointLookupMock(options: Parameters<typeof createGpsClient>[0], clientPointColumn: string, value: string, clientPointId: string) {
+  expect(clientPointColumn).toBe('client_point_id')
+  return { maybeSingle: vi.fn(async () => readPersistedPoint(options, value, clientPointId)) }
+}
+
+function readPersistedPoint(options: Parameters<typeof createGpsClient>[0], value: string, clientPointId: string) {
+  const result = {
+    data: options.persistedPointKeys?.includes(`${value}:${clientPointId}`)
+      ? { mission_id: value, client_point_id: clientPointId }
+      : null,
+    error: options.readError ?? null,
+  }
+  if (options.changeUserIdOnRead) state.currentUserId = options.changeUserIdOnRead
+  return result
 }
 
 beforeEach(resetStorageState)

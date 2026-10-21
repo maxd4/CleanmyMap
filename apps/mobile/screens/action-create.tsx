@@ -1,233 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React from 'react'
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import * as Location from 'expo-location'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
-import { createLinkedMission } from '../lib/linked-mission-service'
-import { createLocalIdentifier } from '../lib/local-identifier'
-import {
-  createMobileAction,
-  loadMobileActionDay,
-  loadMobileActionEditor,
-  publishMobileAction,
-  updateMobileAction,
-  type MobileActionDraftPayload,
-} from '../lib/mobile-actions-service'
 import { MobileFormField } from '../lib/mobile-form-field'
+import { SECTIONS, useActionCreateController, type Draft } from '../hooks/use-action-create-controller'
 
 type ActionCreateProps = { onSessionExpired: () => void }
-type Section = 'essentiel' | 'terrain' | 'equipe' | 'verification'
-type Draft = {
-  title: string
-  description: string
-  association: string
-  date: string
-  start: string
-  end: string
-  location: string
-  latitude: string
-  longitude: string
-  meetingPoint: string
-  materials: string
-  recommendedMaterials: string
-  logistics: string
-  checklist: string
-  safety: string
-  accessibility: string
-  coorganizers: string
-  invitees: string
-  departure: string
-  arrival: string
-  routeTopology: 'loop' | 'point_to_point'
-  participants: string
-  duration: string
-  notes: string
-}
-
-const STORAGE_KEY = 'cleanmymap.mobile.action-create.v1'
-const SECTIONS: Array<{ id: Section; label: string }> = [
-  { id: 'essentiel', label: 'Essentiel' },
-  { id: 'terrain', label: 'Terrain' },
-  { id: 'equipe', label: 'Équipe et logistique' },
-  { id: 'verification', label: 'Vérifier et publier' },
-]
-const EMPTY: Draft = {
-  title: '', description: '', association: 'Mon organisation', date: '', start: '', end: '', location: '',
-  latitude: '', longitude: '', meetingPoint: '', materials: '', recommendedMaterials: '', logistics: '', checklist: '', safety: '', accessibility: '', coorganizers: '', invitees: '', departure: '', arrival: '', routeTopology: 'loop', participants: '1',
-  duration: '60', notes: '',
-}
 
 export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
-  const [section, setSection] = useState<Section>('essentiel')
-  const [draft, setDraft] = useState<Draft>(EMPTY)
-  const [draftHydrated, setDraftHydrated] = useState(false)
-  const [draftReadAttempt, setDraftReadAttempt] = useState(0)
-  const [draftReadError, setDraftReadError] = useState(false)
-  const [draftWriteError, setDraftWriteError] = useState(false)
-  const [clientRequestId, setClientRequestId] = useState(() => createLocalIdentifier('action-create'))
-  const [actionId, setActionId] = useState<string | null>(null)
-  const [published, setPublished] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let active = true
-    let readSucceeded = false
-    setDraftHydrated(false)
-    setDraftReadError(false)
-    const restoreDraft = async () => {
-      try {
-        const value = await AsyncStorage.getItem(STORAGE_KEY)
-        if (!active) return
-        if (!value) {
-          readSucceeded = true
-          return
-        }
-        try {
-          const parsed = JSON.parse(value) as { draft?: Draft; actionId?: string | null; section?: Section; published?: boolean; clientRequestId?: string }
-          if (parsed.draft) setDraft({ ...EMPTY, ...parsed.draft })
-          if (parsed.actionId) setActionId(parsed.actionId)
-          if (parsed.section && SECTIONS.some((item) => item.id === parsed.section)) setSection(parsed.section)
-          if (parsed.published) setPublished(true)
-          if (typeof parsed.clientRequestId === 'string' && parsed.clientRequestId.trim()) setClientRequestId(parsed.clientRequestId)
-        } catch { /* A malformed local draft must not block a new server-backed draft. */ }
-        readSucceeded = true
-      } catch {
-        if (active) setDraftReadError(true)
-      }
-      finally {
-        if (active && readSucceeded) setDraftHydrated(true)
-      }
-    }
-    void restoreDraft()
-    return () => { active = false }
-  }, [draftReadAttempt])
-
-  useEffect(() => {
-    if (!draftHydrated) return
-    let active = true
-    setDraftWriteError(false)
-    void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ draft, actionId, section, published, clientRequestId })).catch(() => {
-      if (active) setDraftWriteError(true)
-    })
-    return () => { active = false }
-  }, [actionId, clientRequestId, draft, draftHydrated, published, section])
-
-  const update = (key: keyof Draft, value: string) => setDraft((current) => ({ ...current, [key]: value }))
-  const sectionIndex = SECTIONS.findIndex((item) => item.id === section)
-
-  async function getCurrentPosition() {
-    const permission = await Location.requestForegroundPermissionsAsync()
-    if (permission.status !== 'granted') { setError('La permission de localisation est nécessaire pour utiliser la position actuelle.'); return }
-    const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
-    setDraft((current) => ({ ...current, latitude: position.coords.latitude.toFixed(6), longitude: position.coords.longitude.toFixed(6) }))
-    setMessage('Position actuelle ajoutée. Vérifiez-la avant de sauvegarder.')
-  }
-
-  const payload = useMemo<MobileActionDraftPayload>(() => ({
-    clientRequestId,
-    actionDate: draft.date,
-    locationLabel: draft.location,
-    latitude: draft.latitude ? Number(draft.latitude) : undefined,
-    longitude: draft.longitude ? Number(draft.longitude) : undefined,
-    associationName: draft.association || 'Mon organisation',
-    organizerType: 'association',
-    organizerAccounts: splitTokens(draft.coorganizers),
-    participantAccounts: splitTokens(draft.invitees),
-    groupJoinEnabled: true,
-    actionPhase: 'pre_action',
-    submissionMode: 'complete',
-    eventStartTime: draft.start || null,
-    eventEndTime: draft.end || null,
-    routeTopology: draft.routeTopology,
-    routeStyle: 'souple',
-    departureLocationLabel: draft.departure || undefined,
-    arrivalLocationLabel: draft.routeTopology === 'point_to_point' ? draft.arrival || undefined : undefined,
-    wasteKg: 0,
-    cigaretteButts: 0,
-    volunteersCount: Math.max(1, Number(draft.participants) || 1),
-    durationMinutes: Math.max(0, Number(draft.duration) || 0),
-    wasteMeasurementMethod: 'manual',
-    notes: draft.notes || undefined,
-    preparationData: {
-      actionTitle: draft.title,
-      shortDescription: draft.description,
-      pointDeRendezVous: draft.meetingPoint || draft.location,
-      meetingTime: draft.start || undefined,
-      safetyInstructions: draft.safety,
-      materialsProvided: draft.materials,
-      recommendedMaterials: draft.recommendedMaterials,
-      logisticsNotes: draft.logistics,
-      accessibility: draft.accessibility,
-      accessibilityStatus: draft.accessibility ? 'conditions_reported' : 'not_evaluated',
-      participantMessage: 'Merci de respecter les consignes de sécurité sur place.',
-      volunteersExpected: Math.max(1, Number(draft.participants) || 1),
-      groupJoinEnabled: true,
-      actionDate: draft.date,
-      preparationChecklist: draft.checklist.split('\n').map((label, index) => ({ key: `mobile-${index + 1}`, label: label.trim(), checked: false })).filter((item) => item.label).slice(0, 12),
-      routeTopology: draft.routeTopology,
-    },
-  }), [clientRequestId, draft])
-
-  const mutationsBlocked = !draftHydrated || draftReadError || busy
-
-  function handleError(value: unknown) {
-    if ((value as { status?: number }).status === 401) onSessionExpired()
-    else setError(value instanceof Error ? value.message : 'La sauvegarde n’a pas abouti.')
-  }
-
-  async function saveDraft() {
-    if (mutationsBlocked) return
-    setBusy(true); setError(null); setMessage(null)
-    try {
-      const result = actionId
-        ? await updateMobileAction(actionId, payload)
-        : await createMobileAction(payload)
-      if (!actionId && 'id' in result) setActionId(result.id)
-      setMessage('Brouillon enregistré sur le serveur. Vous pouvez reprendre plus tard.')
-    } catch (value) { handleError(value) } finally { setBusy(false) }
-  }
-
-  async function publish() {
-    if (mutationsBlocked || published) return
-    setBusy(true); setError(null); setMessage(null)
-    try {
-      if (!actionId) {
-        const created = await createMobileAction(payload)
-        setActionId(created.id)
-        await publishMobileAction(created.id)
-      } else {
-        await updateMobileAction(actionId, payload)
-        await publishMobileAction(actionId)
-      }
-      setPublished(true)
-      setMessage('Publication confirmée par le serveur.')
-    } catch (value) { handleError(value) } finally { setBusy(false) }
-  }
-
-  async function linkGps() {
-    if (!actionId) { setError('Enregistrez le brouillon avant de relier une activité GPS.'); return }
-    setBusy(true); setError(null)
-    const result = await createLinkedMission(draft.title || draft.location || 'Action mobile', actionId)
-    setBusy(false)
-    if (result.ok) setMessage('Suivi GPS lié. Il sera réconcilié par le serveur après finalisation.')
-    else setError(result.error)
-  }
-
-  async function loadDayBriefing() {
-    if (!actionId) return
-    setBusy(true); setError(null)
-    try { await loadMobileActionDay(actionId); setMessage('Les espaces Préparer et Jour J sont disponibles pour cette action.') }
-    catch (value) { handleError(value) } finally { setBusy(false) }
-  }
-
-  useEffect(() => {
-    if (!actionId) return
-    void loadMobileActionEditor(actionId).catch((value) => {
-      if ((value as { status?: number }).status === 401) onSessionExpired()
-    })
-  }, [actionId, onSessionExpired])
+  const controller = useActionCreateController({ onSessionExpired })
+  const { section, setSection, draft, update, actionId, published, sectionIndex, getCurrentPosition, draftReadError, draftWriteError, error, message, mutationsBlocked, busy, retryDraftRead, saveDraft, publish, linkGps, loadDayBriefing } = controller
 
   return <View style={styles.root}>
     <Text style={styles.eyebrow}>ORGANISER</Text>
@@ -236,7 +17,7 @@ export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
     <View style={styles.steps} accessibilityRole="tablist">
       {SECTIONS.map((item, index) => <TouchableOpacity key={item.id} onPress={() => setSection(item.id)} accessibilityRole="tab" accessibilityState={{ selected: section === item.id }} style={[styles.step, section === item.id && styles.stepSelected]}><Text style={[styles.stepNumber, section === item.id && styles.stepNumberSelected]}>{index + 1}</Text><Text style={[styles.stepLabel, section === item.id && styles.stepLabelSelected]}>{item.label}</Text></TouchableOpacity>)}
     </View>
-    {draftReadError ? <View style={styles.error}><Text style={styles.errorText}>Le brouillon local n’a pas pu être relu. Il reste protégé tant que la récupération n’a pas réussi.</Text><TouchableOpacity style={styles.outlineButton} onPress={() => setDraftReadAttempt((attempt) => attempt + 1)} accessibilityRole="button"><Text style={styles.secondaryLabel}>Réessayer la récupération locale</Text></TouchableOpacity></View> : null}
+    {draftReadError ? <View style={styles.error}><Text style={styles.errorText}>Le brouillon local n’a pas pu être relu. Il reste protégé tant que la récupération n’a pas réussi.</Text><TouchableOpacity style={styles.outlineButton} onPress={retryDraftRead} accessibilityRole="button"><Text style={styles.secondaryLabel}>Réessayer la récupération locale</Text></TouchableOpacity></View> : null}
     {draftWriteError ? <Text style={styles.error} accessibilityRole="alert">Le brouillon local n’a pas pu être sauvegardé. Vos saisies restent visibles ; réessayez.</Text> : null}
     {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
     {message ? <Text style={styles.success}>{message}</Text> : null}
@@ -253,7 +34,6 @@ export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
   </View>
 }
 
-function splitTokens(value: string): string[] { return [...new Set(value.split(',').map((item) => item.trim()).filter(Boolean))].slice(0, 20) }
 function Card({ title, children }: { title: string; children: React.ReactNode }) { return <View style={styles.card}><Text style={styles.cardTitle}>{title}</Text>{children}</View> }
 function Essentiel({ draft, update, onPosition }: { draft: Draft; update: (key: keyof Draft, value: string) => void; onPosition: () => void }) { return <Card title="Identité et rendez-vous"><MobileFormField label="Titre de l’action" value={draft.title} onChangeText={(value) => update('title', value)} placeholder="Nettoyage du parc..." /><MobileFormField label="Objectif" value={draft.description} onChangeText={(value) => update('description', value)} placeholder="Ce que les bénévoles vont faire" multiline /><MobileFormField label="Organisateur" value={draft.association} onChangeText={(value) => update('association', value)} /><MobileFormField label="Date (AAAA-MM-JJ)" value={draft.date} onChangeText={(value) => update('date', value)} placeholder="2026-10-25" /><View style={styles.row}><MobileFormField label="Début (HH:MM)" value={draft.start} onChangeText={(value) => update('start', value)} placeholder="10:00" /><MobileFormField label="Fin (HH:MM)" value={draft.end} onChangeText={(value) => update('end', value)} placeholder="12:00" /></View><MobileFormField label="Lieu" value={draft.location} onChangeText={(value) => update('location', value)} placeholder="Parc ou commune" /><MobileFormField label="Point de rendez-vous" value={draft.meetingPoint} onChangeText={(value) => update('meetingPoint', value)} placeholder="Entrée principale" /><TouchableOpacity style={styles.outlineButton} onPress={onPosition} accessibilityRole="button"><Ionicons name="navigate-outline" size={18} color="#a7f3d0" /><Text style={styles.secondaryLabel}>Utiliser ma position actuelle</Text></TouchableOpacity></Card> }
 function Terrain({ draft, update, onPosition }: { draft: Draft; update: (key: keyof Draft, value: string) => void; onPosition: () => void }) { return <Card title="Carte et terrain"><Text style={styles.helper}>La localisation manuelle reste possible. La géométrie et l’itinéraire sont validés et calculés par les contrats Actions.</Text><View style={styles.row}><MobileFormField label="Latitude" value={draft.latitude} onChangeText={(value) => update('latitude', value)} keyboardType="numeric" placeholder="48.8566" /><MobileFormField label="Longitude" value={draft.longitude} onChangeText={(value) => update('longitude', value)} keyboardType="numeric" placeholder="2.3522" /></View><TouchableOpacity style={styles.outlineButton} onPress={onPosition} accessibilityRole="button"><Ionicons name="locate-outline" size={18} color="#a7f3d0" /><Text style={styles.secondaryLabel}>Actualiser la position</Text></TouchableOpacity><Text style={styles.label}>Topologie du parcours</Text><View style={styles.row}><TouchableOpacity style={[styles.outlineButton, draft.routeTopology === 'loop' && styles.topologySelected]} onPress={() => update('routeTopology', 'loop')} accessibilityRole="radio" accessibilityState={{ checked: draft.routeTopology === 'loop' }}><Text style={styles.secondaryLabel}>Boucle</Text></TouchableOpacity><TouchableOpacity style={[styles.outlineButton, draft.routeTopology === 'point_to_point' && styles.topologySelected]} onPress={() => update('routeTopology', 'point_to_point')} accessibilityRole="radio" accessibilityState={{ checked: draft.routeTopology === 'point_to_point' }}><Text style={styles.secondaryLabel}>Point à point</Text></TouchableOpacity></View><MobileFormField label="Départ" value={draft.departure} onChangeText={(value) => update('departure', value)} placeholder="Point de départ" />{draft.routeTopology === 'point_to_point' ? <MobileFormField label="Arrivée" value={draft.arrival} onChangeText={(value) => update('arrival', value)} placeholder="Point d'arrivée" /> : null}<MobileFormField label="Consignes de sécurité" value={draft.safety} onChangeText={(value) => update('safety', value)} multiline placeholder="Risques connus et consignes" /></Card> }
