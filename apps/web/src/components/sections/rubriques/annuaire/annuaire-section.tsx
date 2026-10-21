@@ -8,6 +8,8 @@ import { AnnuaireExplorationView } from "./annuaire-exploration-view";
 import { AcademieClimatWorkshopsPanel } from "./academie-climat-workshops-panel";
 import { useAnnuaireLogic } from "./use-annuaire-logic";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmSectionGroup } from "@/components/ui/cmm-section";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { motion } from "framer-motion";
 
@@ -53,8 +55,8 @@ export function AnnuaireSection() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
-        className="space-y-40 pt-12"
       >
+        <CmmSectionGroup>
         {/* Workshops Panel - Premium Spotlight */}
         <motion.div variants={itemVariants} className="relative z-10">
           <AcademieClimatWorkshopsPanel />
@@ -63,8 +65,8 @@ export function AnnuaireSection() {
         {/* Featured Actors - Elegant Presentation */}
         <motion.section variants={itemVariants} className="relative">
           <div className="absolute -inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent" />
-          <div className="pt-24">
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 mb-20 px-4">
+          <div>
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-8">
               <div className="space-y-8 max-w-3xl">
                 <div className="inline-flex items-center gap-3 px-5 py-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-xs font-black uppercase tracking-[0.3em] text-violet-400 shadow-2xl">
                   <Building2 size={14} className="animate-pulse" />
@@ -91,14 +93,14 @@ export function AnnuaireSection() {
         <motion.section 
           variants={itemVariants}
           id="exploration-canvas-anchor"
-          className="relative py-24 px-8 md:px-16 rounded-[4rem] bg-slate-900/40 border border-white/10 overflow-hidden shadow-[0_0_100px_rgba(99,102,241,0.1)] backdrop-blur-3xl"
+          className="relative overflow-hidden rounded-[var(--radius-lg)] border border-white/10 bg-slate-900/40 p-8 shadow-[0_0_100px_rgba(99,102,241,0.1)] backdrop-blur-3xl md:p-10"
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.15),transparent_70%)]" />
           <div className="absolute -top-24 -right-24 p-24 opacity-5 text-violet-400 pointer-events-none">
               <Target size={300} />
           </div>
           
-          <div className="relative space-y-24">
+          <CmmSectionGroup>
             <div className="text-center space-y-6 max-w-3xl mx-auto">
                <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
                   <Globe size={12} />
@@ -126,13 +128,16 @@ export function AnnuaireSection() {
               setSearchTerm={setSearchTerm}
               fr={fr}
             />
-          </div>
+          </CmmSectionGroup>
         </motion.section>
 
         {/* Final CTA - Institutional Premium */}
-        <motion.div 
+        <RubriqueCard
           variants={itemVariants}
-          className="p-16 rounded-[4rem] border border-violet-500/30 bg-gradient-to-br from-violet-600/20 to-sky-600/5 backdrop-blur-3xl shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12 group"
+          themeColor="violet"
+          withTopBar={false}
+          withHover={false}
+          className="relative flex flex-col items-center justify-between gap-8 overflow-hidden md:flex-row"
         >
           <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
              <Building2 size={160} className="text-violet-400" />
@@ -151,13 +156,14 @@ export function AnnuaireSection() {
               tone="primary"
               variant="default"
               ariaLabel={fr ? "Référencer ma structure — ouvrir le parcours partenaire" : "Register my structure — open the partner onboarding"}
-              className="px-10 py-5 rounded-[1.5rem] bg-white text-slate-950 font-black uppercase tracking-[0.2em] shadow-2xl flex items-center gap-3"
+              className="flex items-center gap-3 bg-white font-black uppercase tracking-[0.2em] text-slate-950 shadow-2xl"
             >
               {fr ? "Référencer ma structure" : "Register my structure"}
               <ArrowRight size={20} />
             </CmmButton>
           </div>
-        </motion.div>
+        </RubriqueCard>
+        </CmmSectionGroup>
       </motion.div>
     </SectionShell>
   );

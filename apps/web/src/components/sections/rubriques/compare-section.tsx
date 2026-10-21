@@ -8,6 +8,7 @@ import { fetchActions } from "@/lib/actions/http";
 import { computeZoneCompare } from "@/lib/analytics/compare-zones";
 import { dashboardPeriodStorage } from "@/lib/storage/ui-state-storage";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { CompareLoading, ComparePeriodPicker, CompareSectionResults } from "./compare-section-view";
 
 export function CompareSection() {
@@ -26,5 +27,5 @@ export function CompareSection() {
   }), [data?.items, periodDays]);
   const topRows = comparison.rows.slice(0, 10);
 
-  return <SectionShell id="compare-zones" title="Benchmark Territorial" subtitle="Analyse comparative et performance relative des zones d'intervention." icon={BarChart3} headingLevel="h2" gradient="from-indigo-500/20 via-slate-500/10 to-transparent"><div className="space-y-12 pt-8"><ComparePeriodPicker periodDays={periodDays} setPeriodDays={setPeriodDays} />{isLoading ? <CompareLoading /> : error ? <div className="rounded-[3rem] border border-white/5 bg-slate-900/20 p-20 text-center backdrop-blur-xl"><AlertTriangle className="mx-auto mb-6 text-rose-500" size={48} /><h3 className="mb-2 text-2xl font-black text-white">Erreur de chargement</h3><p className="cmm-text-body">Impossible de générer le benchmark territorial.</p></div> : <CompareSectionResults comparison={comparison} topRows={topRows} />}</div></SectionShell>;
+  return <SectionShell id="compare-zones" title="Benchmark Territorial" subtitle="Analyse comparative et performance relative des zones d'intervention." icon={BarChart3} headingLevel="h2" gradient="from-indigo-500/20 via-slate-500/10 to-transparent"><CmmSectionGroup><ComparePeriodPicker periodDays={periodDays} setPeriodDays={setPeriodDays} />{isLoading ? <CompareLoading /> : error ? <div className="rounded-[3rem] border border-white/5 bg-slate-900/20 p-20 text-center backdrop-blur-xl"><AlertTriangle className="mx-auto mb-6 text-rose-500" size={48} /><h3 className="mb-2 text-2xl font-black text-white">Erreur de chargement</h3><p className="cmm-text-body">Impossible de générer le benchmark territorial.</p></div> : <CompareSectionResults comparison={comparison} topRows={topRows} />}</CmmSectionGroup></SectionShell>;
 }

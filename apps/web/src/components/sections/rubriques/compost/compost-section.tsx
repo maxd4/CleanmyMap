@@ -18,6 +18,7 @@ import {
   SelectedPointsGrid,
 } from "./compost-components";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 
 const CompostMapCanvas = dynamic(
@@ -80,12 +81,12 @@ export function CompostSection() {
       icon={Leaf}
       gradient="from-emerald-500/20 via-teal-500/10 to-transparent"
     >
-      <div className="space-y-20 pt-12">
+      <CmmSectionGroup>
         {/* Navigation / Hero Link Row */}
         <RubriqueCard 
           themeColor="emerald" 
           withTopBar={false}
-          className="flex flex-col lg:flex-row items-center justify-between gap-8 p-10"
+          className="flex flex-col items-center justify-between gap-8 lg:flex-row"
         >
            <div className="flex items-center gap-8">
               <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform duration-700">
@@ -127,7 +128,7 @@ export function CompostSection() {
         </div>
 
         {/* Section 2: Map & Points */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-10 items-start">
+        <div className="grid grid-cols-1 items-start gap-[var(--cmm-section-gap)] xl:grid-cols-[1.5fr_1fr]">
            <div className="space-y-8">
               <div className="flex items-center gap-4">
                  <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400">
@@ -167,14 +168,14 @@ export function CompostSection() {
         </div>
 
         {/* Section 3: Rules & Steps */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10">
+        <div className="grid grid-cols-1 gap-[var(--cmm-section-gap)] lg:grid-cols-[1fr_2fr]">
            <RubriqueCard 
              initial={{ opacity: 1, x: -20 }}
              whileInView={{ opacity: 1, x: 0 }}
              themeColor="emerald"
              watermarkIcon={ShieldCheck}
              watermarkSize={160}
-             className="space-y-10 p-10"
+             className="space-y-6"
            >
               <div className="flex items-center gap-4">
                  <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
@@ -219,7 +220,7 @@ export function CompostSection() {
            </div>
            <OfficialMapsList links={COMPOST_TERRITORY_LINKS} fr={fr} />
         </div>
-      </div>
+      </CmmSectionGroup>
     </SectionShell>
   );
 }

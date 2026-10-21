@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatScorePercent } from "@/lib/formatters/score";
+import { CmmCard } from "@/components/ui/cmm-card";
 
 type RecyclingStats = {
   totalKg: number | null;
@@ -59,6 +60,7 @@ export const RecyclingKpiGrid = memo(function RecyclingKpiGrid({
       color: "text-emerald-400",
       bg: "bg-emerald-500/10",
       border: "border-emerald-500/20",
+      tone: "emerald" as const,
     },
     {
       label: fr ? "Mégots collectés" : "Cigarette butts",
@@ -67,6 +69,7 @@ export const RecyclingKpiGrid = memo(function RecyclingKpiGrid({
       color: "text-amber-400",
       bg: "bg-amber-500/10",
       border: "border-amber-500/20",
+      tone: "amber" as const,
     },
     {
       label: fr ? "Traçabilité géo" : "Geo traceability",
@@ -75,6 +78,7 @@ export const RecyclingKpiGrid = memo(function RecyclingKpiGrid({
       color: "text-blue-400",
       bg: "bg-blue-500/10",
       border: "border-blue-500/20",
+      tone: "sky" as const,
     },
     {
       label: fr ? "Indice tri propre" : "Clean sorting index",
@@ -83,22 +87,21 @@ export const RecyclingKpiGrid = memo(function RecyclingKpiGrid({
       color: "text-purple-400",
       bg: "bg-purple-500/10",
       border: "border-purple-500/20",
+      tone: "violet" as const,
     },
   ];
 
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
       {cards.map((card, i) => (
-        <motion.article
+        <motion.div
           key={i}
           initial={{ opacity: 1, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
-          className={cn(
-            "group relative overflow-hidden rounded-[2.5rem] border p-8 backdrop-blur-3xl shadow-2xl transition-all hover:bg-white/5",
-            card.border, card.bg
-          )}
+          className="group"
         >
+          <CmmCard as="article" tone={card.tone} variant="glass" className="relative h-full">
           <div className="relative z-10 space-y-6">
             <div className={cn(
               "flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900/40 border shadow-2xl group-hover:scale-110 transition-all duration-500",
@@ -121,7 +124,8 @@ export const RecyclingKpiGrid = memo(function RecyclingKpiGrid({
           )}>
             <card.icon size={220} />
           </div>
-        </motion.article>
+          </CmmCard>
+        </motion.div>
       ))}
     </div>
   );

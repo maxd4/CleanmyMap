@@ -14,8 +14,8 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
   if (entries.length === 0) return null;
 
   return (
-    <div className="space-y-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
+    <div>
+      <div className="grid grid-cols-1 gap-[var(--cmm-section-gap)] md:grid-cols-2 xl:grid-cols-3">
         {entries.map((entry, i) => (
           <motion.div
             key={entry.id}
@@ -26,7 +26,7 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
           >
             <CmmCard 
               variant="elevated" 
-              className="group relative flex h-full flex-col overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl transition-[background-color,border-color,box-shadow] duration-700 hover:bg-white/[0.03] hover:border-violet-500/30"
+              className="group relative flex h-full flex-col transition-[background-color,border-color,box-shadow] duration-700 hover:border-violet-500/30"
             >
               {/* Premium Glass Badge */}
               <div className="absolute top-8 right-8 z-10">
@@ -39,7 +39,7 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
                 </div>
               </div>
 
-              <div className="flex-1 space-y-6 p-10 pt-12">
+              <div className="flex-1 space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="h-1 w-6 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.5)]" />
@@ -91,7 +91,7 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
                 </div>
               </div>
 
-              <div className="p-10 pt-0 mt-auto">
+              <div className="mt-auto">
                 <CmmButton 
                   tone="primary"
                   variant="default"

@@ -8,6 +8,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { AnimatePresence } from "framer-motion";
 import { Globe } from "lucide-react";
+import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { ClimateLoadError, ClimateLoading, ClimatePeriodPicker, ClimateResults } from "./climate-section-view";
 import type {
   PublicSectionActionListResponse,
@@ -53,7 +54,7 @@ export function ClimateSection({
       icon={Globe}
       gradient="from-blue-500/20 via-emerald-500/10 to-transparent"
     >
-      <div className="space-y-16 pt-8">
+      <CmmSectionGroup>
         <ClimatePeriodPicker fr={fr} periodDays={periodDays} setPeriodDays={setPeriodDays} />
 
         {error && <ClimateLoadError fr={fr} mutate={mutate} />}
@@ -61,7 +62,7 @@ export function ClimateSection({
         <AnimatePresence mode="wait">
           {isLoading ? <ClimateLoading /> : <ClimateResults fr={fr} context={context} />}
         </AnimatePresence>
-      </div>
+      </CmmSectionGroup>
     </SectionShell>
   );
 }

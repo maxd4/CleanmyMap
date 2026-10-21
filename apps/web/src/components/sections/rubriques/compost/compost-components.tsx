@@ -149,7 +149,7 @@ export const OfficialMapsList = memo(function OfficialMapsList({
           <RubriqueCard 
             themeColor="emerald"
             withTopBar={false}
-            className="p-6 transition-all duration-500 hover:border-emerald-500/50"
+            className="transition-all duration-500 hover:border-emerald-500/50"
           >
             <div className="flex justify-between items-start gap-6">
               <div className="space-y-2">
@@ -188,7 +188,7 @@ export const SelectedPointsGrid = memo(function SelectedPointsGrid({
           transition={{ delay: idx * 0.05 }}
           themeColor="emerald"
           withTopBar={false}
-          className="p-6 hover:border-emerald-500/30 transition-all group"
+          className="hover:border-emerald-500/30 transition-all group"
         >
           <div className="flex justify-between items-start gap-4">
             <div className="space-y-3">

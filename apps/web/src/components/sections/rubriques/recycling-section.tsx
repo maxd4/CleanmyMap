@@ -21,6 +21,7 @@ import {
   SectionShell,
 } from "@/components/sections/rubriques/shared";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import type {
   PublicSectionActionListResponse,
   PublicSectionBreakdown,
@@ -128,14 +129,14 @@ export function RecyclingSection({
       icon={Recycle}
       gradient="from-emerald-500/20 via-slate-500/10 to-transparent"
     >
-      <div className="space-y-16 pt-8">
+      <CmmSectionGroup>
         {/* Top Control & Search Bar */}
         <RubriqueCard 
           initial={{ opacity: 1, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           themeColor="emerald"
           withTopBar={false}
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 p-8 group"
+          className="flex flex-col justify-between gap-8 lg:flex-row lg:items-center group"
         >
           <div className="space-y-3 relative z-10">
             <div className="flex items-center gap-3">
@@ -161,17 +162,17 @@ export function RecyclingSection({
           </div>
         </RubriqueCard>
 
-        <RubriqueCard themeColor="emerald" withTopBar={true} className="p-8">
+        <RubriqueCard themeColor="emerald" withTopBar={true}>
           <RecyclingQuestionAssistant />
         </RubriqueCard>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-            <div className="lg:col-span-8 space-y-12">
+          <div className="grid grid-cols-1 gap-[var(--cmm-section-gap)] lg:grid-cols-12">
+            <div className="cmm-content-group lg:col-span-8">
                <CmmSkeleton className="h-48 rounded-[2.5rem]" />
                <CmmSkeleton className="h-[500px] rounded-[3rem]" />
             </div>
-            <div className="lg:col-span-4 space-y-12">
+            <div className="cmm-content-group lg:col-span-4">
                <CmmSkeleton className="h-96 rounded-[3rem]" />
                <CmmSkeleton className="h-64 rounded-[3rem]" />
             </div>
@@ -187,9 +188,9 @@ export function RecyclingSection({
             variants={RUBRIQUE_CONTAINER_VARIANTS}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start"
+            className="grid grid-cols-1 items-start gap-[var(--cmm-section-gap)] lg:grid-cols-12"
           >
-            <div className="lg:col-span-8 space-y-16">
+            <div className="cmm-content-group lg:col-span-8">
               <motion.div variants={RUBRIQUE_ITEM_VARIANTS}>
                 <RecyclingKpiGrid stats={stats} fr={fr} />
               </motion.div>
@@ -202,11 +203,11 @@ export function RecyclingSection({
                 />
               </motion.div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <RubriqueCard themeColor="emerald" withTopBar={true} className="p-8">
+              <div className="grid grid-cols-1 gap-[var(--cmm-section-gap)] md:grid-cols-2">
+                <RubriqueCard themeColor="emerald" withTopBar={true}>
                   <RecyclingWorkflowCard fr={fr} />
                 </RubriqueCard>
-                <RubriqueCard themeColor="emerald" withTopBar={true} className="p-8">
+                <RubriqueCard themeColor="emerald" withTopBar={true}>
                   <RecyclingDataUsageCard fr={fr} />
                 </RubriqueCard>
               </div>
@@ -214,7 +215,7 @@ export function RecyclingSection({
 
           </motion.div>
         )}
-      </div>
+      </CmmSectionGroup>
     </SectionShell>
   );
 }

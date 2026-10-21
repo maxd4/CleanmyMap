@@ -85,7 +85,7 @@ export function ActorsSection({
       icon={Users}
       gradient="from-indigo-500/20 via-sky-500/10 to-transparent"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10 pt-8 items-start">
+      <div className="grid grid-cols-1 items-start gap-[var(--cmm-section-gap)] lg:grid-cols-[1fr_2fr]">
         <ActorsHotspotsCard fr={fr} loading={mapLoading} hotspots={hotspots} />
         <ActorsActivityGrid fr={fr} loading={actionsLoading} cards={actorActivityCards} />
       </div>
