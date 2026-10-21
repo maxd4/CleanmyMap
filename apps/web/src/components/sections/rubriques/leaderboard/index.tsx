@@ -14,7 +14,7 @@ export function LeaderboardSection() {
       }}
       gradient="from-rose-50 via-white to-transparent"
     >
-      <div className="cmm-page-width px-4 pb-12 sm:px-6 lg:px-8 lg:pb-16">
+      <div>
         <LeaderboardPanel />
       </div>
     </SectionShell>

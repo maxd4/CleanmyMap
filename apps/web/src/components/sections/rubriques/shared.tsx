@@ -4,6 +4,7 @@ import type { ReactNode, ElementType } from "react";
 import { usePathname } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
 import { LucideIcon, Sparkles } from "lucide-react";
 import { DASHBOARD_ROUTE, EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
@@ -71,45 +72,50 @@ export function SectionShell({
           gradient || hero.sectionGradient
         } pointer-events-none -z-10`}
       />
-      
-      {!hideHeader && title && (
-        <div className="mb-16 space-y-8">
-          <PageHeader
-            family={pageFamily}
-            title={
-              <span className="inline-flex items-center gap-4">
-                {Icon ? (
-                  <span className={hero.iconWrap}>
-                    <Icon size={24} className={hero.icon} aria-hidden="true" />
-                  </span>
-                ) : null}
-                <span>{t(locale, title)}</span>
-              </span>
-            }
-            subtitle={subtitle ? t(locale, subtitle) : undefined}
-            headingLevel={headingLevel}
-          />
-          
-          <div className="h-px w-full bg-gradient-to-r from-white/10 via-white/5 to-transparent" />
-        </div>
-      )}
 
-      {/* Legacy Support for Summarize/Act/Trace if needed, but usually sections handle their own layout now */}
-      {(summary || links || traceNote) ? (
-        <div className="grid gap-8">
+      <CmmPageLayout>
+        {!hideHeader && title ? (
+          <div className="space-y-4">
+            <PageHeader
+              family={pageFamily}
+              title={
+                <span className="inline-flex items-center gap-4">
+                  {Icon ? (
+                    <span className={hero.iconWrap}>
+                      <Icon size={24} className={hero.icon} aria-hidden="true" />
+                    </span>
+                  ) : null}
+                  <span>{t(locale, title)}</span>
+                </span>
+              }
+              subtitle={subtitle ? t(locale, subtitle) : undefined}
+              headingLevel={headingLevel}
+            />
+
+            <div className="h-px w-full bg-gradient-to-r from-white/10 via-white/5 to-transparent" />
+          </div>
+        ) : null}
+
+        <CmmSectionGroup>
           {summary && (
-            <div className="p-8 rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-xl">
-              <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">{fr ? "Synthèse" : "Summary"}</h3>
-              <div className="text-slate-300 font-medium leading-relaxed">{summary}</div>
+            <div className="rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 backdrop-blur-xl">
+              <h3 className="mb-4 text-xs font-black uppercase tracking-widest text-slate-500">{fr ? "Synthèse" : "Summary"}</h3>
+              <div className="font-medium leading-relaxed text-slate-300">{summary}</div>
             </div>
           )}
-          
-          <div className="rounded-[3rem] border border-white/10 bg-slate-950/20 p-4">
-            {children}
-          </div>
+
+          {(summary || links || traceNote) ? (
+            <div className="rounded-[3rem] border border-white/10 bg-slate-950/20 p-4">
+              {children}
+            </div>
+          ) : (
+            <div className="relative">
+              {children}
+            </div>
+          )}
 
           {links && (
-            <div className="flex flex-wrap gap-4 pt-4">
+            <div className="flex flex-wrap gap-4">
               {links.map((link) => (
                 <CmmButton
                   key={link.href}
@@ -125,16 +131,12 @@ export function SectionShell({
           )}
 
           {traceNote && (
-            <div className="mt-8 p-6 rounded-2xl border border-amber-500/10 bg-amber-500/5 text-amber-500/60 text-xs font-medium italic">
+            <div className="rounded-2xl border border-amber-500/10 bg-amber-500/5 p-6 text-xs font-medium italic text-amber-500/60">
               {traceNote}
             </div>
           )}
-        </div>
-      ) : (
-        <div className="relative">
-          {children}
-        </div>
-      )}
+        </CmmSectionGroup>
+      </CmmPageLayout>
     </section>
   );
 }

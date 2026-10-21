@@ -29,7 +29,7 @@ export function JoinActionSection() {
 
   return (
     <SectionShell id="rejoindre-une-action" hideHeader gradient="from-emerald-500/18 via-emerald-500/6 to-transparent">
-      <div className="cmm-page-width space-y-5 pt-4 text-slate-900">
+      <div className="space-y-5 text-slate-900">
         <section className="overflow-hidden rounded-3xl border border-emerald-100 bg-[linear-gradient(180deg,#f8fbf5_0%,#edf7e6_100%)] shadow-[0_20px_56px_-42px_rgba(15,23,42,0.28)]">
           <div className="grid gap-4 px-5 py-3.5 md:px-6 md:py-4 lg:grid-cols-[minmax(0,1.12fr)_minmax(260px,0.88fr)] lg:items-center">
             <div className="relative z-10 space-y-2.5">

@@ -8,6 +8,7 @@ import {
   type SectionRubriqueDefinition,
 } from "@/lib/sections-registry";
 import { PendingSection } from "./shared";
+import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import type { FeedbackSectionProps } from "./feedback-section.shared";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type { PublicSectionInitialData } from "@/lib/sections/public-section-snapshot-contract";
@@ -107,10 +108,10 @@ export const FINALIZED_SECTION_RENDERERS = {
   ),
   annuaire: () => <AnnuaireSection />,
   "open-data": () => (
-    <div className="space-y-12">
+    <CmmSectionGroup>
       <OpenDataSection />
       <OpenDataFundingLink />
-    </div>
+    </CmmSectionGroup>
   ),
   funding: (fundingOnParticipeUrl?: string) => (
     <FundingSection onParticipeUrl={fundingOnParticipeUrl} />
@@ -122,7 +123,7 @@ export const FINALIZED_SECTION_RENDERERS = {
   ),
   compost: () => <CompostSection />,
   climate: (_fundingOnParticipeUrl, initialData) => (
-    <div className="space-y-12">
+    <CmmSectionGroup>
       <ClimateSection initialData={initialData?.climate} />
       <div className="space-y-6">
         <h3 className="px-4 text-[11px] font-black uppercase tracking-[0.3em] text-slate-500">
@@ -130,7 +131,7 @@ export const FINALIZED_SECTION_RENDERERS = {
         </h3>
         <CompareSection />
       </div>
-    </div>
+    </CmmSectionGroup>
   ),
   messagerie: () => <ConnectSection defaultTab="discussions" />,
   elus: () => <ElusSection />,
