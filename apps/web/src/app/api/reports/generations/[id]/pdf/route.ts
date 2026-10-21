@@ -109,6 +109,68 @@ async function renderOwnedReportPdf(params: {
   }
 }
 
+type ReportGeneration = NonNullable<Awaited<ReturnType<typeof getReportGenerationSnapshotById>>>;
+type PdfDownload = Awaited<ReturnType<typeof downloadReportPdfArtifact>>;
+type PdfDeliveryResult = PdfDownload | { kind: "in_progress" };
+
+async function deliverReportPdfArtifact(params: {
+  generation: ReportGeneration;
+  userId: string;
+  theme: ReportPdfArtifactTheme;
+  operationId: string;
+}): Promise<PdfDeliveryResult> {
+  let claim = await claimReportPdfArtifact({
+    generationId: params.generation.id,
+    createdByClerkId: params.userId,
+    theme: params.theme,
+    rendererVersion: REPORT_PDF_ARTIFACT_RENDERER_VERSION,
+  });
+  let artifact = claim.artifact;
+  let downloaded: PdfDownload | null = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (claim.kind === "rendering") {
+      const completed = await waitForReportPdfArtifact({
+        generationId: params.generation.id,
+        theme: params.theme,
+        rendererVersion: REPORT_PDF_ARTIFACT_RENDERER_VERSION,
+      });
+      if (!completed || completed.status !== "ready") {
+        return { kind: "in_progress" };
+      }
+      artifact = completed;
+      claim = { kind: "ready", artifact: completed };
+      continue;
+    }
+    if (claim.kind === "owner") {
+      artifact = await renderOwnedReportPdf({
+        operationId: params.operationId,
+        generationId: params.generation.id,
+        artifactId: artifact.id,
+        storagePath: artifact.storagePath,
+        payload: params.generation.snapshot,
+        theme: params.theme,
+      });
+      claim = { kind: "ready", artifact };
+      continue;
+    }
+    downloaded = await downloadReportPdfArtifact(artifact.storagePath);
+    if (downloaded.data) break;
+    if (!isConfirmedReportPdfArtifactStorageAbsence(downloaded.error)) {
+      throw downloaded.error ?? new Error("PDF artifact is unavailable.");
+    }
+    claim = await reclaimMissingReportPdfArtifact({
+      artifactId: artifact.id,
+      generationId: params.generation.id,
+      createdByClerkId: params.userId,
+      theme: params.theme,
+      rendererVersion: REPORT_PDF_ARTIFACT_RENDERER_VERSION,
+    });
+    artifact = claim.artifact;
+  }
+  if (!downloaded?.data) throw new Error("PDF artifact recovery did not complete.");
+  return downloaded;
+}
+
 export async function GET(request: Request, { params }: ReportPdfRouteContext) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse({ hint: access.error });
@@ -144,62 +206,19 @@ export async function GET(request: Request, { params }: ReportPdfRouteContext) {
   }
 
   try {
-    let claim = await claimReportPdfArtifact({
-      generationId: generation.id,
-      createdByClerkId: access.userId,
+    const downloaded = await deliverReportPdfArtifact({
+      generation,
+      userId: access.userId,
       theme,
-      rendererVersion: REPORT_PDF_ARTIFACT_RENDERER_VERSION,
+      operationId,
     });
-    let artifact = claim.artifact;
-    let downloaded: Awaited<ReturnType<typeof downloadReportPdfArtifact>> | null = null;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      if (claim.kind === "rendering") {
-        const completed = await waitForReportPdfArtifact({
-          generationId: generation.id,
-          theme,
-          rendererVersion: REPORT_PDF_ARTIFACT_RENDERER_VERSION,
-        });
-        if (!completed || completed.status !== "ready") {
-          return NextResponse.json(
-            { error: "Le PDF est en cours de préparation. Réessayez dans quelques instants.", code: "pdf_render_in_progress" },
-            { status: 202, headers: { "Retry-After": "2" } },
-          );
-        }
-        artifact = completed;
-        claim = { kind: "ready", artifact: completed };
-        continue;
-      }
-
-      if (claim.kind === "owner") {
-        artifact = await renderOwnedReportPdf({
-          operationId,
-          generationId: generation.id,
-          artifactId: artifact.id,
-          storagePath: artifact.storagePath,
-          payload: generation.snapshot,
-          theme,
-        });
-        claim = { kind: "ready", artifact };
-        continue;
-      }
-
-      downloaded = await downloadReportPdfArtifact(artifact.storagePath);
-      if (downloaded.data) break;
-      if (!isConfirmedReportPdfArtifactStorageAbsence(downloaded.error)) {
-        throw downloaded.error ?? new Error("PDF artifact is unavailable.");
-      }
-
-      claim = await reclaimMissingReportPdfArtifact({
-        artifactId: artifact.id,
-        generationId: generation.id,
-        createdByClerkId: access.userId,
-        theme,
-        rendererVersion: REPORT_PDF_ARTIFACT_RENDERER_VERSION,
-      });
-      artifact = claim.artifact;
+    if ("kind" in downloaded) {
+      return NextResponse.json(
+        { error: "Le PDF est en cours de préparation. Réessayez dans quelques instants.", code: "pdf_render_in_progress" },
+        { status: 202, headers: { "Retry-After": "2" } },
+      );
     }
-
-    if (!downloaded?.data) throw new Error("PDF artifact recovery did not complete.");
+    if (!downloaded.data) throw new Error("PDF artifact recovery did not complete.");
     try {
       await appendAdminOperationAudit({
         operationId,

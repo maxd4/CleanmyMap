@@ -12,6 +12,13 @@ import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generati
 
 export type ReportGenerationReservation = Awaited<ReturnType<typeof reserveReportExportSlot>>;
 export type ReportGenerationItem = Awaited<ReturnType<typeof persistReportGeneration>>;
+type PersistenceParams = {
+  operationId: string;
+  actorUserId: string;
+  input: ReportGenerationHistoryInput;
+  reservation: ReportGenerationReservation;
+  generationId: string;
+};
 
 export function auditReportGenerationError(
   operationId: string,
@@ -30,13 +37,60 @@ export function auditReportGenerationError(
   });
 }
 
-export async function persistReportGenerationWithQuota(params: {
-  operationId: string;
-  actorUserId: string;
-  input: ReportGenerationHistoryInput;
-  reservation: ReportGenerationReservation;
-  generationId: string;
-}): Promise<
+async function handleUncertainPersistence(params: PersistenceParams, persistenceError: unknown): Promise<{ response: NextResponse }> {
+  console.error("Report generation persistence outcome is uncertain", {
+    operationId: params.operationId,
+    generationId: params.generationId,
+    error: persistenceError instanceof Error ? persistenceError.message : "unknown_error",
+  });
+  try {
+    await auditReportGenerationError(params.operationId, params.actorUserId, {
+      stage: "persistence",
+      code: "persistence_uncertain",
+      generationId: params.generationId,
+    }, params.generationId);
+  } catch (auditError) {
+    console.error("Report generation uncertainty audit failed", {
+      operationId: params.operationId,
+      generationId: params.generationId,
+      error: auditError instanceof Error ? auditError.message : "unknown_error",
+    });
+  }
+  return {
+    response: NextResponse.json({
+      error: "Le résultat de l'enregistrement est incertain. Ne relancez pas cette action avant vérification.",
+      code: "persistence_uncertain",
+      persisted: "unknown",
+      generationId: params.generationId,
+    }, { status: 503 }),
+  };
+}
+
+async function handleFailedPersistence(params: PersistenceParams): Promise<{ response: NextResponse }> {
+  await releaseReportExportSlot({ userId: params.actorUserId, quotaDay: params.reservation.quotaDay }).catch(() => undefined);
+  try {
+    await auditReportGenerationError(params.operationId, params.actorUserId, {
+      stage: "persistence",
+      code: "persistence_failed",
+      generationId: params.generationId,
+    }, params.generationId);
+  } catch (auditError) {
+    console.error("Report generation persistence failure audit failed", {
+      operationId: params.operationId,
+      generationId: params.generationId,
+      error: auditError instanceof Error ? auditError.message : "unknown_error",
+    });
+  }
+  return {
+    response: NextResponse.json({
+      error: "Impossible d'enregistrer l'historique du rapport.",
+      code: "persistence_failed",
+      persisted: false,
+    }, { status: 503 }),
+  };
+}
+
+export async function persistReportGenerationWithQuota(params: PersistenceParams): Promise<
   | { item: ReportGenerationItem; persistenceReconciled: boolean }
   | { response: NextResponse }
 > {
@@ -61,73 +115,9 @@ export async function persistReportGenerationWithQuota(params: {
         error: persistenceError instanceof Error ? persistenceError.message : "unknown_error",
       });
     } else if (resolution.kind === "uncertain") {
-      console.error("Report generation persistence outcome is uncertain", {
-        operationId: params.operationId,
-        generationId: params.generationId,
-        error: persistenceError instanceof Error ? persistenceError.message : "unknown_error",
-      });
-      try {
-        await auditReportGenerationError(
-          params.operationId,
-          params.actorUserId,
-          {
-            stage: "persistence",
-            code: "persistence_uncertain",
-            generationId: params.generationId,
-          },
-          params.generationId,
-        );
-      } catch (auditError) {
-        console.error("Report generation uncertainty audit failed", {
-          operationId: params.operationId,
-          generationId: params.generationId,
-          error: auditError instanceof Error ? auditError.message : "unknown_error",
-        });
-      }
-      return {
-        response: NextResponse.json(
-          {
-            error: "Le résultat de l'enregistrement est incertain. Ne relancez pas cette action avant vérification.",
-            code: "persistence_uncertain",
-            persisted: "unknown",
-            generationId: params.generationId,
-          },
-          { status: 503 },
-        ),
-      };
+      return handleUncertainPersistence(params, persistenceError);
     } else {
-      await releaseReportExportSlot({
-        userId: params.actorUserId,
-        quotaDay: params.reservation.quotaDay,
-      }).catch(() => undefined);
-      try {
-        await auditReportGenerationError(
-          params.operationId,
-          params.actorUserId,
-          {
-            stage: "persistence",
-            code: "persistence_failed",
-            generationId: params.generationId,
-          },
-          params.generationId,
-        );
-      } catch (auditError) {
-        console.error("Report generation persistence failure audit failed", {
-          operationId: params.operationId,
-          generationId: params.generationId,
-          error: auditError instanceof Error ? auditError.message : "unknown_error",
-        });
-      }
-      return {
-        response: NextResponse.json(
-          {
-            error: "Impossible d'enregistrer l'historique du rapport.",
-            code: "persistence_failed",
-            persisted: false,
-          },
-          { status: 503 },
-        ),
-      };
+      return handleFailedPersistence(params);
     }
   }
 

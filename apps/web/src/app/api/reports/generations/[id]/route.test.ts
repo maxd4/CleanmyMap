@@ -16,7 +16,7 @@ vi.mock("@/lib/reports/report-generation-payload", () => ({
   InvalidReportGenerationSnapshotError: class InvalidReportGenerationSnapshotError extends Error {},
 }));
 
-import { GET } from "./route";
+import { GET, POST } from "./route";
 import {
   InvalidReportGenerationIdError,
 } from "@/lib/reports/report-generation-history-store";
@@ -100,5 +100,25 @@ describe("GET /api/reports/generations/[id]", () => {
     await expect(unavailableResponse.json()).resolves.toEqual({
       error: "Impossible de charger le rapport historique.",
     });
+  });
+});
+
+describe("POST /api/reports/generations/[id]", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("rejects an anonymous derivation before rate limiting or source resolution", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
+
+    const response = await POST(
+      new Request(`http://localhost/api/reports/generations/${id}`, { method: "POST" }),
+      { params: Promise.resolve({ id }) },
+    );
+
+    expect(response.status).toBe(401);
+    expect(getSnapshotMock).not.toHaveBeenCalled();
   });
 });

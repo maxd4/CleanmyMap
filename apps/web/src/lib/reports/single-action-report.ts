@@ -1,21 +1,10 @@
-import { toActionListItem, toActionMapItem, type ActionDataContract } from "@/lib/actions/data-contract";
 import { toActionContract } from "@/lib/actions/unified-source/contracts";
 import { loadActionById } from "@/lib/actions/store-queries";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { computeReportModel } from "@/lib/reports/report-model";
-import { computeReportAccountScopeCoverage } from "@/lib/reports/scope";
-import { toReportsExportRow } from "@/lib/reports/page-data-export";
-import { buildPdfData, buildReportTitle, type DetailLevelId, type ModuleState } from "@/lib/reports/report-pdf-data";
+import type { ActionDataContract } from "@/lib/actions/data-contract";
+import type { DetailLevelId, ModuleState } from "@/lib/reports/report-pdf-data";
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
-import {
-  buildReportGenerationSnapshotMetadata,
-  REPORT_SNAPSHOT_SCHEMA_VERSION,
-} from "@/lib/reports/report-generation-snapshot";
-import { REPORT_GENERATION_TIME_ZONE, getReportGenerationPeriodDateBounds } from "@/lib/reports/generation-period";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
-import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
-import { randomUUID } from "node:crypto";
-import { REPORT_ADVANCED_FILTER_DEFAULTS } from "@/lib/reports/report-advanced-filters";
+import { buildSingleActionReportGenerationResult } from "@/lib/reports/single-action-report-builder";
 
 export type SingleActionReportRequest = {
   type: "single_action";
@@ -29,7 +18,13 @@ export class SingleActionReportTargetUnavailableError extends Error {
   }
 }
 
-function isEligibleSingleAction(row: { status: string; action_phase?: string | null; published_at?: string | null; moderation_visibility?: string | null; access_mode?: string | null }): boolean {
+function isEligibleSingleAction(row: {
+  status: string;
+  action_phase?: string | null;
+  published_at?: string | null;
+  moderation_visibility?: string | null;
+  access_mode?: string | null;
+}): boolean {
   return row.status === "approved" &&
     row.action_phase === "post_action_complete" &&
     Boolean(row.published_at) &&
@@ -49,25 +44,6 @@ export async function resolveSingleActionReportContract(actionId: string): Promi
   return contract;
 }
 
-function buildWasteProfile(contract: ActionDataContract) {
-  const definitions = [
-    ["megotsKg", "Mégots"],
-    ["plastiqueKg", "Plastique"],
-    ["verreKg", "Verre"],
-    ["metalKg", "Métal"],
-    ["mixteKg", "Déchets mixtes"],
-  ] as const;
-  const breakdown = contract.metadata.wasteBreakdown;
-  const categories = definitions
-    .map(([key, label]) => ({ key, label, kg: Number(breakdown?.[key] ?? 0), actions: Number(breakdown?.[key] ?? 0) > 0 ? 1 : 0 }))
-    .filter((category) => category.kg > 0);
-  return {
-    categories,
-    coveragePercent: breakdown ? 100 : 0,
-    dominantLabel: categories[0]?.label ?? "Déchets non typés",
-  };
-}
-
 export function getSingleActionReportScopeLabel(contract: ActionDataContract): string {
   const preparedTitle = contract.metadata.preparationData?.actionTitle;
   return typeof preparedTitle === "string" && preparedTitle.trim()
@@ -83,126 +59,14 @@ export function buildSingleActionReportGenerationInput(params: {
   now: Date;
   generationId?: string;
 }): ReportGenerationHistoryInput {
-  const { contract, detailLevel, modules, now, request } = params;
-  const generationId = params.generationId ?? randomUUID();
-  const listItem = toActionListItem(contract);
-  const mapItem = toActionMapItem(contract);
-  const report = computeReportModel({
-    allItems: [listItem],
-    approvedItems: [listItem],
-    mapItems: [mapItem],
-    events: [],
-    contracts: [contract],
-    moderationAvailability: "available",
-    now,
+  return buildSingleActionReportGenerationResult({
+    contract: params.contract,
+    actionId: params.request.actionId,
+    scopeLabel: getSingleActionReportScopeLabel(params.contract),
+    detailLevel: params.detailLevel,
+    modules: params.modules,
+    now: params.now,
+    generationId: params.generationId ?? randomUUID(),
   });
-  const impact = computeActionImpactKpis(contract);
-  const wasteKnown = impact.wasteKnown;
-  const buttsKnown = contract.metadata.cigaretteButts !== null && contract.metadata.cigaretteButts !== undefined && Number.isFinite(Number(contract.metadata.cigaretteButts));
-  const volunteersKnown = impact.volunteersKnown;
-  const reportWithKnownness = {
-    ...report,
-    totals: {
-      ...report.totals,
-      buttsKnownActions: buttsKnown ? 1 : 0,
-    },
-  };
-  const surfaceProxy = wasteKnown && volunteersKnown
-    ? report.totals.kg * IMPACT_PROXY_CONFIG.factors.surfaceM2PerWasteKg +
-      report.totals.hours * 60 * IMPACT_PROXY_CONFIG.factors.surfaceM2PerVolunteerMinute
-    : null;
-  const scopeLabel = getSingleActionReportScopeLabel(contract);
-  const generatedAt = now.toISOString();
-  const payloadData = buildPdfData({
-    reportTitle: buildReportTitle(scopeLabel, detailLevel),
-    scopeLabel,
-    period: "full_history",
-    detailLevel,
-    modules,
-    model: {
-      report: reportWithKnownness,
-      wasteProfile: buildWasteProfile(contract),
-      accountScopeCoverage: computeReportAccountScopeCoverage([listItem]),
-      exportRows: [toReportsExportRow(contract)],
-      dataAvailability: {
-        communityEventsAvailability: "unavailable",
-        isTruncated: false,
-        sourceHealth: {
-          partial: false,
-          failedSources: [],
-          availableSources: ["actions"],
-          warnings: [],
-        },
-      },
-    },
-    surfaceProxy,
-    generatedAt,
-    provenance: {
-      type: "single_action",
-      actionId: request.actionId,
-      source: "public.actions",
-      resolvedAt: generatedAt,
-    },
-  });
-
-  return {
-    payload: {
-      title: payloadData.title,
-      rubrique: "reporting",
-      periode: "full_history",
-      organizationType: "single_action",
-      organizationName: scopeLabel,
-      snapshotSchemaVersion: REPORT_SNAPSHOT_SCHEMA_VERSION,
-      snapshotMetadata: buildReportGenerationSnapshotMetadata({
-        generationId,
-        generatedAt,
-        period: {
-          id: "full_history",
-          from: null,
-          to: getReportGenerationPeriodDateBounds({ id: "full_history" }, now).to,
-          timeZone: REPORT_GENERATION_TIME_ZONE,
-        },
-        scope: {
-          kind: "single_action",
-          value: request.actionId,
-          label: scopeLabel,
-        },
-        detailLevel,
-        modules,
-        provenance: {
-          type: "single_action",
-          actionId: request.actionId,
-          source: "public.actions",
-          resolvedAt: generatedAt,
-        },
-        methodology: {
-          proxyVersion: report.impactMethodology.proxyVersion,
-          qualityRulesVersion: report.impactMethodology.qualityRulesVersion,
-        },
-        filters: REPORT_ADVANCED_FILTER_DEFAULTS,
-        dataAvailability: {
-          isTruncated: false,
-          sourceHealth: {
-            partial: false,
-            failedSources: [],
-            availableSources: ["actions"],
-            warnings: [],
-          },
-          communityEventsAvailability: "unavailable",
-        },
-      }),
-      provenance: {
-        type: "single_action",
-        actionId: request.actionId,
-        source: "public.actions",
-        resolvedAt: generatedAt,
-      },
-      data: payloadData,
-    },
-    scopeKind: "single_action",
-    scopeValue: request.actionId,
-    scopeLabel,
-    detailLevel,
-    modules,
-  };
 }
+import { randomUUID } from "node:crypto";
