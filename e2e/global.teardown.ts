@@ -3,6 +3,7 @@ import { readFile, unlink } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test as teardown } from "@playwright/test";
+import { assertClerkDevelopmentEnvironment, isOwnedTemporaryUser, parseManagedUserMetadata } from "./clerk-lifecycle.mjs";
 
 const authDirectory = path.join(process.cwd(), "artifacts", "playwright", "clerk");
 const authFile = path.join(authDirectory, "user.json");
@@ -36,9 +37,14 @@ teardown("delete automatically managed Clerk user", async () => {
   const secretKey = process.env.CLERK_SECRET_KEY;
   if (secretKey) {
     try {
-      const metadata = JSON.parse(await readFile(managedUserFile, "utf8")) as { userId?: string };
-      if (metadata.userId) {
-        await createClerkClient({ secretKey }).users.deleteUser(metadata.userId);
+      const metadata = parseManagedUserMetadata(await readFile(managedUserFile, "utf8"));
+      if (metadata) {
+        assertClerkDevelopmentEnvironment();
+        const client = createClerkClient({ secretKey });
+        const user = await client.users.getUser(metadata.userId).catch(() => null);
+        if (isOwnedTemporaryUser(metadata, user)) {
+          await client.users.deleteUser(metadata.userId);
+        }
       }
     } catch {
       // Cleanup is best effort; the harness never deletes a configured user.

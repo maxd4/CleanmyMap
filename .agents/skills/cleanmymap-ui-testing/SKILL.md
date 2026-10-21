@@ -66,6 +66,12 @@ PERSISTENCE: NONE | REMOTE_READONLY | CI_EPHEMERAL
 - Pour une cible UI fournie, comparer réellement le rendu aux largeurs pertinentes ; ne pas substituer une interprétation libre à la référence visuelle.
 - Une capture est une preuve visuelle, pas une preuve d'AuthZ ou de persistence.
 
+Le harness Clerk dérive son cycle de vie de `E2E_CLERK_USER_EMAIL` : absence =
+`TEMPORARY` supprimable seulement après vérification du marqueur distant et de
+l'adresse de test ; présence = `PERSISTENT_DEVELOPMENT` réutilisé et jamais
+supprimé automatiquement. Aucun rôle privilégié n'est ajouté implicitement.
+Les sessions humaines restent un repli manuel sans secret copié ou journalisé.
+
 ## Validation finale
 
 Rapporter ce qui a été réellement vérifié, l'URL/harness utilisé et les éventuels écarts restants. Ne jamais présenter un bypass serveur comme preuve d'une session Clerk client réelle.

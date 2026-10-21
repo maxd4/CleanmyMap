@@ -1474,6 +1474,31 @@ Avant toute validation navigateur, classifier la surface :
 - `E2E_MUTABLE_SUPABASE` : uniquement la lane CI éphémère dédiée, jamais
   Docker/Supabase local.
 
+Le harness Clerk distingue deux cycles de vie sans créer une seconde source de
+configuration :
+
+- `TEMPORARY` si `E2E_CLERK_USER_EMAIL` est absent. Le setup crée une adresse
+  Development de test, écrit un marqueur local d'appartenance borné au run et
+  le teardown ne peut supprimer que cet utilisateur si le marqueur distant
+  Clerk et l'adresse `+clerk_test` concordent ;
+- `PERSISTENT_DEVELOPMENT` si `E2E_CLERK_USER_EMAIL` est configuré. Le setup
+  réutilise l'utilisateur par adresse et ne supprime jamais ce compte, qu'il
+  soit préexistant ou provisionné une seule fois avec les credentials Clerk
+  Development vérifiés. Aucun rôle privilégié n'est ajouté implicitement.
+
+Le fichier `managed-user.json` est donc un marqueur local temporaire, jamais
+une autorisation de suppression à lui seul. Un marqueur absent, invalide,
+humain, persistent ou non possédé est conservé sans suppression distante ; les
+fichiers `storageState`, cookies, tokens et traces restent ignorés et ne sont
+jamais publiés. En CI, l'absence d'email dédié conserve le cycle `TEMPORARY`.
+
+Si le compte dédié n'est pas disponible, utiliser d'abord le protocole Clerk
+Development prévu. Une session humaine préautorisée peut servir de repli
+manuel, sans demander ni copier mot de passe, code, cookie ou token dans les
+sorties ; elle ne doit pas être transformée en privilège ou en session forgée.
+Un scénario admin exige un compte de test déjà autorisé ou cette session
+humaine préautorisée ; le harness ne donne jamais le rôle `admin` par défaut.
+
 GitHub Codespaces est un environnement interactif Development : il utilise une
 vraie AuthN Clerk avec les credentials Development fournis hors dépôt et ne
 peut jamais activer `CMM_DEV_AUTH_BYPASS`, même si `CODESPACES=true` et si un
@@ -1534,9 +1559,10 @@ Commande ciblée du scénario de retour :
 npx playwright test --project="soft-gate authentication" --grep="returns to the canonical route"
 ```
 
-Le projet dépend du global setup Clerk et de son teardown qui supprime
-l'utilisateur de développement géré. Exécuter ce parcours seul, sans test
-parallèle utilisant le même harness.
+Le projet dépend du global setup Clerk et de son teardown. Le teardown supprime
+uniquement un utilisateur `TEMPORARY` dont l'appartenance est prouvée ; il ne
+supprime jamais un compte `PERSISTENT_DEVELOPMENT`. Exécuter ce parcours seul,
+sans test parallèle utilisant le même harness.
 
 Annoncer avant le test :
 

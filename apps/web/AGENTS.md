@@ -88,6 +88,18 @@ protocole choisi :
 - `E2E_MUTABLE_SUPABASE` : lane CI éphémère dédiée uniquement ; jamais Docker
   ou Supabase local sur le poste.
 
+Le harness Clerk utilise `E2E_CLERK_USER_EMAIL` comme source unique du compte
+réel. Sans cette variable, le cycle est `TEMPORARY` et seul l'utilisateur de
+test créé par le run, avec son marqueur distant vérifié, peut être supprimé.
+Avec cette variable, le cycle est `PERSISTENT_DEVELOPMENT` : le compte est
+réutilisé ou provisionné une fois avec des credentials `*_test`, puis jamais
+supprimé automatiquement. Ne jamais attribuer implicitement un rôle privilégié
+et ne jamais mettre mot de passe, code, cookie, token ou `storageState` dans
+les logs, les commits ou les artefacts publics. Une session humaine
+préautorisée reste un repli manuel sans copie de secret ni contournement de
+l'AuthZ ; un scénario admin exige un compte déjà autorisé et n'entraîne aucune
+élévation implicite.
+
 Annoncer avant le test :
 
 ```text

@@ -62,6 +62,23 @@ Avant de démarrer, classifier la surface :
 - `E2E_MUTABLE_SUPABASE` : uniquement la lane CI éphémère dédiée ; jamais de
   Docker ou Supabase local sur le poste.
 
+Le harness Clerk distingue `TEMPORARY` et `PERSISTENT_DEVELOPMENT` à partir de
+la seule variable existante `E2E_CLERK_USER_EMAIL`. Sans email configuré, il
+crée un utilisateur de test et ne peut le supprimer qu'après vérification
+conjointe du marqueur distant d'appartenance, de l'identifiant et de l'adresse
+`+clerk_test`. Avec un email configuré, il réutilise ou provisionne une fois le
+compte Development et ne le supprime jamais automatiquement. Un fichier
+`managed-user.json` stale, humain, invalide ou non possédé n'autorise aucune
+suppression. Aucun rôle admin n'est attribué implicitement.
+
+Les credentials sont refusés si leur paire n'est pas `sk_test_*` / `pk_test_*`.
+Les fichiers de session restent locaux et ignorés : ne jamais publier ni
+journaliser secret, mot de passe, code, cookie, token, `storageState`, trace ou
+HAR. Une session humaine préautorisée est un repli manuel sans copie de secret
+et sans élévation de rôle ; elle ne remplace pas le harness Clerk Development.
+Un scénario admin exige un compte de test déjà autorisé ou cette session
+préautorisée ; aucune attribution `admin` n'est faite par le harness.
+
 Le launcher manuel/Codex peut donc annoncer un port de repli. Playwright Clerk
 doit libérer l'ancien serveur puis rester strict sur 3000 ; il ne doit jamais
 être lancé contre un serveur démarré avec le bypass, ni supposer

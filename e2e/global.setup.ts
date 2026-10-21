@@ -4,6 +4,16 @@ import { test as setup } from "@playwright/test";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import {
+  assertClerkDevelopmentEnvironment,
+  buildTemporaryEmail,
+  CLERK_LIFECYCLE,
+  createTemporaryMetadata,
+  isOwnedTemporaryUser,
+  parseManagedUserMetadata,
+  resolveClerkLifecycle,
+  TEMPORARY_OWNER,
+} from "./clerk-lifecycle.mjs";
 
 setup.describe.configure({ mode: "serial" });
 
@@ -39,15 +49,18 @@ function loadWebEnvironment(): void {
   }
 }
 
-async function deleteManagedUserIfPresent(client: ReturnType<typeof createClerkClient>): Promise<void> {
+async function deleteManagedTemporaryUserIfPresent(client: ReturnType<typeof createClerkClient>): Promise<void> {
   try {
     const raw = await readFile(managedUserFile, "utf8");
-    const metadata = JSON.parse(raw) as { userId?: string };
-    if (metadata.userId) {
-      await client.users.deleteUser(metadata.userId);
+    const metadata = parseManagedUserMetadata(raw);
+    if (metadata) {
+      const user = await client.users.getUser(metadata.userId).catch(() => null);
+      if (isOwnedTemporaryUser(metadata, user)) {
+        await client.users.deleteUser(metadata.userId);
+      }
     }
   } catch {
-    // A stale file or already deleted Clerk user must not block a fresh setup.
+    // A stale marker or already deleted temporary user must not block a fresh setup.
   } finally {
     await unlink(managedUserFile).catch(() => undefined);
     await unlink(authFile).catch(() => undefined);
@@ -56,19 +69,19 @@ async function deleteManagedUserIfPresent(client: ReturnType<typeof createClerkC
 
 setup("global setup", async () => {
   loadWebEnvironment();
+  assertClerkDevelopmentEnvironment();
   await clerkSetup({ dotenv: false });
 
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  if (!secretKey) {
-    throw new Error("CLERK_SECRET_KEY is required for the official Clerk Playwright harness.");
-  }
+  const secretKey = process.env.CLERK_SECRET_KEY!;
 
   const client = createClerkClient({ secretKey });
   await mkdir(authDirectory, { recursive: true });
-  await deleteManagedUserIfPresent(client);
+  await deleteManagedTemporaryUserIfPresent(client);
 
   const configuredEmail = process.env.E2E_CLERK_USER_EMAIL?.trim();
-  const email = configuredEmail || `cmm-e2e-${Date.now()}+clerk_test@example.com`;
+  const lifecycle = resolveClerkLifecycle({ configuredEmail });
+  const runId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  const email = configuredEmail || buildTemporaryEmail(runId);
   let userId: string;
 
   const existing = await client.users.getUserList({ emailAddress: [email] });
@@ -82,13 +95,19 @@ setup("global setup", async () => {
       skipPasswordRequirement: true,
       publicMetadata: {
         cleanmymapE2E: true,
+        ...(lifecycle === CLERK_LIFECYCLE.TEMPORARY ? { cleanmymapOwner: TEMPORARY_OWNER } : {}),
+        cleanmymapLifecycle: lifecycle,
         profileSetupCompleted: true,
         profileSetupVersion: 2,
       },
     });
     userId = user.id;
-    if (!configuredEmail) {
-      await writeFile(managedUserFile, JSON.stringify({ userId }), "utf8");
+    if (lifecycle === CLERK_LIFECYCLE.TEMPORARY) {
+      await writeFile(
+        managedUserFile,
+        JSON.stringify(createTemporaryMetadata({ userId, runId })),
+        { encoding: "utf8", mode: 0o600 },
+      );
     }
   }
   process.env.E2E_CLERK_USER_EMAIL = email;

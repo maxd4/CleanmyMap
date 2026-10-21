@@ -99,13 +99,14 @@ test("gamification soft-gate returns to the canonical route after Clerk sign-in"
   };
   expect(responseBody.response?.status).toBe("complete");
 
+  await authenticationRedirect;
+  await clerk.loaded({ page });
   await expect
     .poll(() =>
       page.evaluate(() => Boolean(window.Clerk?.session && window.Clerk?.user)),
     )
     .toBe(true);
 
-  await authenticationRedirect;
   await expect
     .poll(() => {
       const url = new URL(page.url());
