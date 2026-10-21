@@ -108,12 +108,19 @@ portent `WORKTREE_LIVE`. Une évolution du dépôt pendant l'exécution produit
 une sortie informative ou en échec, jamais une suppression silencieuse des
 résultats.
 
-Les exécutions utilisent un `runId` dans
-`artifacts/quality-audits/<SHA>/<runId>/` afin que deux audits parallèles ne
-s'écrasent pas. `baselineStable` est descriptif et non bloquant pour ce
-runner. Les résultats `INFORMATIVE` ne constituent pas une preuve de candidat
-publié et aucun audit ne modifie automatiquement une baseline, une
-justification ou un seuil.
+Les exécutions utilisent un `runId` dans des noms de fichiers plats sous
+`artifacts/quality-audits/<SHA>/` :
+`<audit>--<runId>--{report,manifest}.json` et
+`<audit>--<runId>--summary.md`. Le mode `all` ajoute le même triplet avec
+`audit=all`. Le `runId` et l'écriture atomique empêchent deux audits parallèles
+de s'écraser. Un marqueur d'exécution protège les SHA actifs ; un verrou borné
+protège l'inventaire, la migration et la rétention. Après chaque audit terminé,
+le runner conserve les trois SHA les plus récemment exécutés, sauf les SHA
+encore actifs, et migre les artefacts legacy reconnus sans supprimer un fichier
+inconnu, un lien symbolique ou une archive. `baselineStable` est descriptif et
+non bloquant pour ce runner. Les résultats `INFORMATIVE` ne constituent pas une
+preuve de candidat publié et aucun audit ne modifie automatiquement une
+baseline, une justification ou un seuil.
 
 - les contrôles manuels de changements peuvent utiliser la portée `WORKTREE` :
   c’est l’état partagé et évolutif du checkout, qui peut inclure le dirty state

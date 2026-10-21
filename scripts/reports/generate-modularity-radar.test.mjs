@@ -499,6 +499,53 @@ function writeQualityRun(root, auditedSha, runId, overrides = {}) {
   }
 }
 
+function writeFlatQualityRun(root, auditedSha, runId, overrides = {}) {
+  const target = path.join(root, "artifacts", "quality-audits", auditedSha);
+  fs.mkdirSync(target, { recursive: true });
+  for (const audit of ["dead-code", "duplication", "top-heavy", "complexity", "cycles"]) {
+    const manifest = {
+      schemaVersion: 1,
+      audit,
+      runId,
+      auditedHead: auditedSha,
+      originMain: auditedSha,
+      baselineStable: true,
+      worktreeClean: true,
+      reproducible: true,
+      resultClass: "REPRODUCIBLE",
+      generatedAt: overrides.generatedAt ?? "2026-10-10T00:00:00.000Z",
+    };
+    const prefix = `${audit}--${runId}`;
+    fs.writeFileSync(path.join(target, `${prefix}--manifest.json`), JSON.stringify(manifest));
+    fs.writeFileSync(path.join(target, `${prefix}--report.json`), JSON.stringify(overrides.report?.[audit] ?? auditResults()[audit]));
+    fs.writeFileSync(path.join(target, `${prefix}--summary.md`), "# summary\n");
+  }
+}
+
+test("loads the latest complete reproducible flat run without mixing runIds", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-radar-flat-"));
+  const auditedSha = "f".repeat(40);
+  try {
+    writeFlatQualityRun(root, auditedSha, "run-flat", { generatedAt: "2026-10-12T00:00:00.000Z" });
+    const loaded = loadQualityAuditArtifacts({ root, auditedSha });
+    assert.equal(loaded.measured, true);
+    assert.equal(loaded.complexityByFile instanceof Map, true);
+
+    const mixed = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-radar-mixed-"));
+    try {
+      writeFlatQualityRun(mixed, auditedSha, "run-flat", { generatedAt: "2026-10-12T00:00:00.000Z" });
+      const mixedRoot = path.join(mixed, "artifacts", "quality-audits", auditedSha);
+      fs.unlinkSync(path.join(mixedRoot, "cycles--run-flat--report.json"));
+      fs.writeFileSync(path.join(mixedRoot, "cycles--run-other--report.json"), JSON.stringify(auditResults().cycles));
+      assert.equal(loadQualityAuditArtifacts({ root: mixed, auditedSha }).measured, false);
+    } finally {
+      fs.rmSync(mixed, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("rejects absent, incorrect, unreadable and incomplete quality provenance", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-radar-invalid-proof-"));
   const auditedSha = "d".repeat(40);

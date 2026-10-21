@@ -1,0 +1,367 @@
+import fs from "node:fs";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+
+export const QUALITY_AUDIT_ROOT = "artifacts/quality-audits";
+export const QUALITY_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "all"]);
+export const QUALITY_AUDIT_RETENTION_LIMIT = 3;
+
+const RUN_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+const SHA_PATTERN = /^[0-9a-f]{40}$/i;
+const ARTIFACT_SUFFIXES = Object.freeze({ report: "report.json", manifest: "manifest.json", summary: "summary.md" });
+const ACTIVE_MARKER_PREFIX = ".active-";
+const LOCK_DIRECTORY = ".retention.lock";
+const LOCK_WAIT_MS = 5_000;
+
+function qualityRoot(root) {
+  return path.join(root, QUALITY_AUDIT_ROOT);
+}
+
+function assertSha(auditedHead) {
+  if (!SHA_PATTERN.test(auditedHead ?? "")) throw new Error(`SHA Git invalide pour les artefacts qualité: ${auditedHead}`);
+}
+
+function assertRunId(runId) {
+  if (typeof runId !== "string" || !RUN_ID_PATTERN.test(runId)) throw new Error(`Identifiant d'exécution invalide: ${runId}`);
+}
+
+function assertAudit(audit) {
+  if (!QUALITY_AUDITS.includes(audit)) throw new Error(`Audit qualité inconnu: ${audit}`);
+}
+
+export function artifactFileName({ audit, runId, kind }) {
+  assertAudit(audit);
+  assertRunId(runId);
+  const suffix = ARTIFACT_SUFFIXES[kind];
+  if (!suffix) throw new Error(`Type d'artefact inconnu: ${kind}`);
+  return `${audit}--${runId}--${suffix}`;
+}
+
+export function createAuditPaths({ root, auditedHead, audit, runId } = {}) {
+  assertSha(auditedHead);
+  assertAudit(audit);
+  assertRunId(runId);
+  const shaRoot = path.join(root, QUALITY_AUDIT_ROOT, auditedHead);
+  return {
+    shaRoot,
+    runRoot: shaRoot,
+    runId,
+    auditRoot: shaRoot,
+    manifest: path.join(shaRoot, artifactFileName({ audit, runId, kind: "manifest" })),
+    report: path.join(shaRoot, artifactFileName({ audit, runId, kind: "report" })),
+    summary: path.join(shaRoot, artifactFileName({ audit, runId, kind: "summary" })),
+  };
+}
+
+function writeNewFile(filePath, content, fsApi = fs) {
+  const temporaryPath = `${filePath}.${process.pid}-${randomUUID()}.tmp`;
+  try {
+    fsApi.writeFileSync(temporaryPath, content, { encoding: "utf8", flag: "wx" });
+    fsApi.renameSync(temporaryPath, filePath);
+  } catch (error) {
+    try { fsApi.unlinkSync(temporaryPath); } catch { /* preserve the original failure */ }
+    throw error;
+  }
+}
+
+export function writeAuditArtifactFiles({ paths, report, manifest, summary, fsApi = fs } = {}) {
+  fsApi.mkdirSync(paths.shaRoot, { recursive: true });
+  for (const filePath of [paths.report, paths.manifest, paths.summary]) {
+    if (fsApi.existsSync(filePath)) throw new Error(`Collision d'artefact qualité: ${filePath}`);
+  }
+  writeNewFile(paths.report, `${JSON.stringify(report, null, 2)}\n`, fsApi);
+  try {
+    writeNewFile(paths.summary, summary, fsApi);
+    writeNewFile(paths.manifest, `${JSON.stringify(manifest, null, 2)}\n`, fsApi);
+  } catch (error) {
+    // Generated files are deliberately retained for diagnosis; no partial
+    // success is reported by the caller when the bundle cannot be completed.
+    throw error;
+  }
+}
+
+function activeMarkerPath(root, auditedHead, runId) {
+  assertSha(auditedHead);
+  assertRunId(runId);
+  return path.join(qualityRoot(root), `${ACTIVE_MARKER_PREFIX}${auditedHead}--${runId}.json`);
+}
+
+export function beginActiveAudit({ root, auditedHead, runId, now = () => new Date().toISOString(), fsApi = fs } = {}) {
+  const marker = activeMarkerPath(root, auditedHead, runId);
+  fsApi.mkdirSync(qualityRoot(root), { recursive: true });
+  fsApi.writeFileSync(marker, `${JSON.stringify({ schemaVersion: 1, kind: "quality-audit-active", auditedHead, runId, startedAt: now() })}\n`, { encoding: "utf8", flag: "wx" });
+  return marker;
+}
+
+export function endActiveAudit(marker, fsApi = fs) {
+  try { fsApi.unlinkSync(marker); } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+}
+
+function isSafeShaDirectory(entry) {
+  return entry.isDirectory() && !entry.isSymbolicLink() && SHA_PATTERN.test(entry.name);
+}
+
+function parseFlatArtifactName(name) {
+  for (const audit of QUALITY_AUDITS) {
+    const prefix = `${audit}--`;
+    if (!name.startsWith(prefix)) continue;
+    for (const [kind, suffix] of Object.entries(ARTIFACT_SUFFIXES)) {
+      const ending = `--${suffix}`;
+      if (!name.endsWith(ending)) continue;
+      const runId = name.slice(prefix.length, -ending.length);
+      if (RUN_ID_PATTERN.test(runId)) return { audit, runId, kind };
+    }
+  }
+  return null;
+}
+
+function expectedLegacyFile(fileName) {
+  return fileName === "manifest.json" ? "manifest" : fileName === "report.json" ? "report" : fileName === "summary.md" ? "summary" : null;
+}
+
+function readJson(filePath, fsApi) {
+  try { return JSON.parse(fsApi.readFileSync(filePath, "utf8")); } catch { return null; }
+}
+
+function validManifest(manifest, { auditedHead, audit, runId }) {
+  return manifest?.schemaVersion === 1
+    && manifest.audit === audit
+    && manifest.auditedHead === auditedHead
+    && manifest.runId === runId
+    && typeof manifest.generatedAt === "string"
+    && !Number.isNaN(Date.parse(manifest.generatedAt));
+}
+
+function addArtifact(inventory, artifact) {
+  const key = `${artifact.audit}:${artifact.runId}:${artifact.kind}`;
+  if (inventory.artifactKeys.has(key)) {
+    inventory.unknown.push(`duplicate:${key}`);
+    return;
+  }
+  inventory.artifactKeys.add(key);
+  inventory.artifacts.push(artifact);
+}
+
+function inspectFlatEntry({ root, shaEntry, child, fsApi }) {
+  const parsed = parseFlatArtifactName(child.name);
+  if (!parsed || !child.isFile() || child.isSymbolicLink()) return null;
+  const filePath = path.join(shaEntry.path, child.name);
+  const artifact = { ...parsed, sourcePath: filePath, legacy: false };
+  if (parsed.kind === "manifest") artifact.manifest = readJson(filePath, fsApi);
+  return artifact;
+}
+
+function inspectLegacyRun({ shaEntry, runEntry, fsApi, inventory }) {
+  if (!runEntry.isDirectory() || runEntry.isSymbolicLink() || !RUN_ID_PATTERN.test(runEntry.name)) {
+    inventory.unknown.push(runEntry.name);
+    return;
+  }
+  const runPath = path.join(shaEntry.path, runEntry.name);
+  for (const child of fsApi.readdirSync(runPath, { withFileTypes: true })) {
+    if (child.isSymbolicLink()) { inventory.unknown.push(`${runEntry.name}/${child.name}`); continue; }
+    if (child.isFile()) {
+      const kind = expectedLegacyFile(child.name);
+      if (!kind) { inventory.unknown.push(`${runEntry.name}/${child.name}`); continue; }
+      const filePath = path.join(runPath, child.name);
+      addArtifact(inventory, { audit: "all", runId: runEntry.name, kind, sourcePath: filePath, legacy: true, manifest: kind === "manifest" ? readJson(filePath, fsApi) : null });
+      continue;
+    }
+    if (!child.isDirectory() || !QUALITY_AUDITS.includes(child.name)) { inventory.unknown.push(`${runEntry.name}/${child.name}`); continue; }
+    const auditPath = path.join(runPath, child.name);
+    for (const file of fsApi.readdirSync(auditPath, { withFileTypes: true })) {
+      const kind = file.isFile() && !file.isSymbolicLink() ? expectedLegacyFile(file.name) : null;
+      if (!kind) { inventory.unknown.push(`${runEntry.name}/${child.name}/${file.name}`); continue; }
+      const filePath = path.join(auditPath, file.name);
+      addArtifact(inventory, { audit: child.name, runId: runEntry.name, kind, sourcePath: filePath, legacy: true, manifest: kind === "manifest" ? readJson(filePath, fsApi) : null });
+    }
+  }
+}
+
+function inspectShaDirectory(root, entry, fsApi = fs) {
+  const shaEntry = { name: entry.name, path: path.join(qualityRoot(root), entry.name) };
+  const inventory = { ...shaEntry, artifacts: [], artifactKeys: new Set(), unknown: [] };
+  for (const child of fsApi.readdirSync(shaEntry.path, { withFileTypes: true })) {
+    const flat = inspectFlatEntry({ root, shaEntry, child, fsApi });
+    if (flat) { addArtifact(inventory, flat); continue; }
+    if (child.isDirectory() && !child.isSymbolicLink()) inspectLegacyRun({ shaEntry, runEntry: child, fsApi, inventory });
+    else inventory.unknown.push(child.name);
+  }
+  inventory.artifacts = inventory.artifacts.filter((artifact) => {
+    if (artifact.kind !== "manifest") return true;
+    const valid = validManifest(artifact.manifest, { auditedHead: entry.name, audit: artifact.audit, runId: artifact.runId });
+    if (!valid) inventory.unknown.push(`invalid-manifest:${path.relative(shaEntry.path, artifact.sourcePath)}`);
+    return valid;
+  });
+  const manifests = inventory.artifacts.filter((artifact) => artifact.kind === "manifest");
+  const manifestKeys = new Set(manifests.map((artifact) => `${artifact.audit}:${artifact.runId}`));
+  inventory.artifacts = inventory.artifacts.filter((artifact) => manifestKeys.has(`${artifact.audit}:${artifact.runId}`));
+  for (const key of manifestKeys) {
+    for (const kind of Object.keys(ARTIFACT_SUFFIXES)) {
+      if (!inventory.artifacts.some((artifact) => `${artifact.audit}:${artifact.runId}` === key && artifact.kind === kind)) {
+        inventory.unknown.push(`missing:${key}:${kind}`);
+      }
+    }
+  }
+  inventory.generated = inventory.unknown.length === 0 && manifests.length > 0;
+  inventory.lastExecuted = manifests.reduce((latest, artifact) => {
+    const time = Date.parse(artifact.manifest.generatedAt);
+    return time > latest ? time : latest;
+  }, 0);
+  return inventory;
+}
+
+function activeShaSet(root, fsApi = fs) {
+  const active = new Set();
+  let entries;
+  try { entries = fsApi.readdirSync(qualityRoot(root), { withFileTypes: true }); } catch { return active; }
+  for (const entry of entries) {
+    if (!entry.isFile() || entry.isSymbolicLink() || !entry.name.startsWith(ACTIVE_MARKER_PREFIX)) continue;
+    const marker = readJson(path.join(qualityRoot(root), entry.name), fsApi);
+    if (marker?.schemaVersion === 1 && marker.kind === "quality-audit-active" && SHA_PATTERN.test(marker.auditedHead ?? "")) active.add(marker.auditedHead);
+  }
+  return active;
+}
+
+async function acquireRetentionLock(root, { fsApi = fs, waitMs = LOCK_WAIT_MS } = {}) {
+  const rootPath = qualityRoot(root);
+  fsApi.mkdirSync(rootPath, { recursive: true });
+  const lockPath = path.join(rootPath, LOCK_DIRECTORY);
+  const started = Date.now();
+  while (Date.now() - started <= waitMs) {
+    try {
+      fsApi.mkdirSync(lockPath);
+      fsApi.writeFileSync(path.join(lockPath, "owner.json"), `${JSON.stringify({ pid: process.pid, acquiredAt: new Date().toISOString() })}\n`, "utf8");
+      return { lockPath, status: "ACQUIRED" };
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+  }
+  return { lockPath, status: "LOCK_ACTIVE" };
+}
+
+function releaseRetentionLock(lock, fsApi = fs) {
+  if (lock?.status !== "ACQUIRED") return;
+  try { fsApi.unlinkSync(path.join(lock.lockPath, "owner.json")); } catch (error) { if (error?.code !== "ENOENT") throw error; }
+  try { fsApi.rmdirSync(lock.lockPath); } catch (error) { if (error?.code !== "ENOENT") throw error; }
+}
+
+function artifactTargetPath(inventory, artifact) {
+  return path.join(inventory.path, artifactFileName(artifact));
+}
+
+function migrateArtifact(inventory, artifact, fsApi = fs) {
+  if (!artifact.legacy) return { migrated: false };
+  const destination = artifactTargetPath(inventory, artifact);
+  const sourceContent = fsApi.readFileSync(artifact.sourcePath);
+  if (fsApi.existsSync(destination)) {
+    const destinationContent = fsApi.readFileSync(destination);
+    if (!sourceContent.equals(destinationContent)) return { migrated: false, diagnostic: `collision:${path.basename(destination)}` };
+    fsApi.unlinkSync(artifact.sourcePath);
+    return { migrated: true, deduplicated: true };
+  }
+  writeNewFile(destination, sourceContent.toString("utf8"), fsApi);
+  if (!fsApi.readFileSync(destination).equals(sourceContent)) return { migrated: false, diagnostic: `integrity:${path.basename(destination)}` };
+  fsApi.unlinkSync(artifact.sourcePath);
+  return { migrated: true };
+}
+
+function removeEmptyAncestors(filePath, stopPath, fsApi = fs) {
+  let current = path.dirname(filePath);
+  while (current !== stopPath && current.startsWith(`${stopPath}${path.sep}`)) {
+    try { fsApi.rmdirSync(current); } catch { break; }
+    current = path.dirname(current);
+  }
+}
+
+function removeGeneratedSha(inventory, fsApi = fs) {
+  for (const artifact of inventory.artifacts) {
+    if (fsApi.existsSync(artifact.sourcePath)) {
+      fsApi.unlinkSync(artifact.sourcePath);
+      removeEmptyAncestors(artifact.sourcePath, inventory.path, fsApi);
+    }
+  }
+  if (fsApi.existsSync(inventory.path)) fsApi.rmdirSync(inventory.path);
+}
+
+function listShaInventories(root, fsApi = fs) {
+  let entries;
+  try { entries = fsApi.readdirSync(qualityRoot(root), { withFileTypes: true }); } catch { return []; }
+  return entries.filter(isSafeShaDirectory).map((entry) => inspectShaDirectory(root, entry, fsApi));
+}
+
+export async function retainQualityAuditArtifacts({ root, now = () => new Date().toISOString(), fsApi = fs } = {}) {
+  const lock = await acquireRetentionLock(root, { fsApi });
+  if (lock.status !== "ACQUIRED") return { status: "DEFERRED", diagnostics: ["LOCK_ACTIVE"], retainedSha: [], removedSha: [], migrated: [] };
+  const diagnostics = [];
+  const migrated = [];
+  const removedSha = [];
+  try {
+    const inventories = listShaInventories(root, fsApi);
+    const active = activeShaSet(root, fsApi);
+    const ranked = inventories.filter((inventory) => inventory.generated).sort((left, right) => right.lastExecuted - left.lastExecuted || left.name.localeCompare(right.name));
+    const retained = new Set(ranked.slice(0, QUALITY_AUDIT_RETENTION_LIMIT).map((inventory) => inventory.name));
+    for (const sha of active) retained.add(sha);
+
+    for (const inventory of inventories) {
+      if (active.has(inventory.name)) {
+        // An active SHA cannot be deleted, but completed legacy runs in that
+        // SHA are independent from the active run and can be migrated safely.
+        for (const artifact of inventory.artifacts.filter((candidate) => candidate.legacy)) {
+          const result = migrateArtifact(inventory, artifact, fsApi);
+          if (result.migrated) migrated.push(`${inventory.name}:${artifact.audit}:${artifact.runId}:${artifact.kind}`);
+          if (result.diagnostic) diagnostics.push(`${inventory.name}:${result.diagnostic}`);
+        }
+        for (const artifact of inventory.artifacts.filter((candidate) => candidate.legacy)) {
+          removeEmptyAncestors(artifact.sourcePath, inventory.path, fsApi);
+        }
+        continue;
+      }
+      if (retained.has(inventory.name)) {
+        for (const artifact of inventory.artifacts) {
+          const result = migrateArtifact(inventory, artifact, fsApi);
+          if (result.migrated) migrated.push(`${inventory.name}:${artifact.audit}:${artifact.runId}:${artifact.kind}`);
+          if (result.diagnostic) diagnostics.push(`${inventory.name}:${result.diagnostic}`);
+        }
+        for (const artifact of inventory.artifacts.filter((candidate) => candidate.legacy)) {
+          removeEmptyAncestors(artifact.sourcePath, inventory.path, fsApi);
+        }
+        continue;
+      }
+      if (!inventory.generated) {
+        diagnostics.push(`${inventory.name}:UNKNOWN_CONTENT_PRESERVED`);
+        continue;
+      }
+      try {
+        removeGeneratedSha(inventory, fsApi);
+        removedSha.push(inventory.name);
+      } catch (error) {
+        diagnostics.push(`${inventory.name}:DELETE_FAILED:${error?.code ?? error?.message ?? String(error)}`);
+      }
+    }
+    return {
+      status: diagnostics.length === 0 ? "PASS" : "INFORMATIVE",
+      generatedAt: now(),
+      retainedSha: [...retained].sort(),
+      removedSha,
+      migrated,
+      diagnostics,
+    };
+  } finally {
+    releaseRetentionLock(lock, fsApi);
+  }
+}
+
+export function listFlatQualityArtifacts({ root, auditedSha, fsApi = fs } = {}) {
+  assertSha(auditedSha);
+  const shaRoot = path.join(root, QUALITY_AUDIT_ROOT, auditedSha);
+  let entries;
+  try { entries = fsApi.readdirSync(shaRoot, { withFileTypes: true }); } catch { return []; }
+  return entries.map((entry) => {
+    if (!entry.isFile() || entry.isSymbolicLink()) return null;
+    const parsed = parseFlatArtifactName(entry.name);
+    return parsed ? { ...parsed, path: path.join(shaRoot, entry.name) } : null;
+  }).filter(Boolean);
+}

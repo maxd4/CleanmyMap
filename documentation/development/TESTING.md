@@ -1129,12 +1129,23 @@ l’exécution conserve les résultats mais les classe `INFORMATIVE` lorsque la
 lecture live n’est plus reproductible ; les échecs restent `FAILURE`.
 
 Les artefacts locaux régénérables sont écrits sous
-`artifacts/quality-audits/<auditedHead>/<runId>/<audit>/` : `manifest.json`
+`artifacts/quality-audits/<auditedHead>/` avec les noms plats
+`<audit>--<runId>--manifest.json`, `<audit>--<runId>--report.json` et
+`<audit>--<runId>--summary.md` : `manifest.json`
 contient la baseline descriptive, la provenance et le statut, `report.json`
 conserve le résultat brut de la gate et `summary.md` en est la projection
-lisible. Le mode `all` ajoute les mêmes fichiers au niveau
-`<auditedHead>/<runId>/`. Le `runId` empêche deux exécutions concurrentes de
-s’écraser. Ces artefacts ne sont pas versionnés et ne sont pas une source de
+lisible. Le mode `all` ajoute le même triplet avec `audit=all`. Aucun
+sous-dossier d’exécution ou de moteur n’est créé. Le `runId`, l’écriture
+atomique et le verrou de rétention empêchent deux exécutions concurrentes de
+s’écraser ; un marqueur actif empêche la suppression d’une exécution encore en
+cours. Après chaque audit, le runner classe les SHA par `generatedAt`, migre
+les variantes legacy reconnues et conserve au plus les trois SHA les plus
+récents hors exécutions actives. Les fichiers inconnus, liens symboliques,
+collisions et archives sont préservés avec un diagnostic explicite. Le radar
+exige les cinq manifestes et rapports du même `runId` et du même `auditedHead`,
+en privilégiant le run complet, reproductible et le plus récent ; en l’absence
+de preuve, il conserve `NOT_MEASURED`. Ces artefacts ne sont pas versionnés et
+ne sont pas une source de
 vérité ; les baselines, justifications et seuils des engines restent les
 seules sources normatives. Une sortie `REPRODUCIBLE` locale ne remplace pas
 une preuve `PUSH_CANDIDATE` ou FULL, et aucune baseline ou justification n’est

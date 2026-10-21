@@ -30,6 +30,7 @@ import {
 } from "../checks/top-heavy-policy.mjs";
 import { getComplexityTarget } from "../checks/complexity-policy.mjs";
 import { getRadarGroups } from "./analyze-heavy-files.mjs";
+import { listFlatQualityArtifacts } from "../audits/quality-audit-storage.mjs";
 
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const OUTPUT_PATH = "documentation/architecture/monolith-split-plan.md";
@@ -192,7 +193,7 @@ function qualityManifestIsReproducible(manifest, audit, auditedSha) {
     && (manifest.resultClass === undefined || manifest.resultClass === "REPRODUCIBLE");
 }
 
-function qualityAuditRunIds(root, auditedSha) {
+function legacyQualityAuditRunIds(root, auditedSha) {
   const shaRoot = path.join(root, "artifacts", "quality-audits", auditedSha);
   let entries = [];
   try {
@@ -203,26 +204,53 @@ function qualityAuditRunIds(root, auditedSha) {
   return [null, ...entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name)];
 }
 
+function readFlatQualityRun({ root, auditedSha, runId }) {
+  const artifacts = listFlatQualityArtifacts({ root, auditedSha });
+  const byKey = new Map(artifacts.filter((artifact) => artifact.runId === runId).map((artifact) => [`${artifact.audit}:${artifact.kind}`, artifact]));
+  const reports = {};
+  const generatedAt = [];
+  for (const audit of QUALITY_AUDITS) {
+    const manifestArtifact = byKey.get(`${audit}:manifest`);
+    const reportArtifact = byKey.get(`${audit}:report`);
+    const manifest = manifestArtifact ? readFilesystemJson(root, path.relative(root, manifestArtifact.path).replaceAll("\\", "/")) : null;
+    const report = reportArtifact ? readFilesystemJson(root, path.relative(root, reportArtifact.path).replaceAll("\\", "/")) : null;
+    if (!qualityManifestIsReproducible(manifest, audit, auditedSha) || !report || manifest.runId !== runId) return null;
+    generatedAt.push(Date.parse(manifest.generatedAt));
+    reports[audit] = report;
+  }
+  return { reports, generatedAt: Math.max(...generatedAt) };
+}
+
+function readLegacyQualityRun({ root, auditedSha, runId }) {
+  const reports = {};
+  const generatedAt = [];
+  for (const audit of QUALITY_AUDITS) {
+    const base = runId
+      ? `artifacts/quality-audits/${auditedSha}/${runId}/${audit}`
+      : `artifacts/quality-audits/${auditedSha}/${audit}`;
+    const manifest = readFilesystemJson(root, `${base}/manifest.json`);
+    const report = readFilesystemJson(root, `${base}/report.json`);
+    if (!qualityManifestIsReproducible(manifest, audit, auditedSha) || !report) return null;
+    generatedAt.push(Date.parse(manifest.generatedAt));
+    reports[audit] = report;
+  }
+  return { reports, generatedAt: Math.max(...generatedAt) };
+}
+
 export function loadQualityAuditArtifacts({ root = REPOSITORY_ROOT, auditedSha, runId } = {}) {
   if (!/^[0-9a-f]{40}$/i.test(auditedSha ?? "")) return createEmptyCorrelationSignals("RADAR_REF incomplet");
-  const candidateRunIds = runId === undefined ? qualityAuditRunIds(root, auditedSha) : [runId];
-  for (const candidateRunId of candidateRunIds) {
-    const reports = {};
-    let valid = true;
-    for (const audit of QUALITY_AUDITS) {
-      const base = candidateRunId
-        ? `artifacts/quality-audits/${auditedSha}/${candidateRunId}/${audit}`
-        : `artifacts/quality-audits/${auditedSha}/${audit}`;
-      const manifest = readFilesystemJson(root, `${base}/manifest.json`);
-      const report = readFilesystemJson(root, `${base}/report.json`);
-      if (!qualityManifestIsReproducible(manifest, audit, auditedSha) || !report) {
-        valid = false;
-        break;
-      }
-      reports[audit] = report;
-    }
-    if (valid) return createCorrelationSignalsFromAuditResults(reports);
-  }
+  const flatRunIds = [...new Set(listFlatQualityArtifacts({ root, auditedSha }).map((artifact) => artifact.runId))];
+  const flatCandidates = (runId === undefined ? flatRunIds : [runId])
+    .map((candidateRunId) => ({ runId: candidateRunId, run: readFlatQualityRun({ root, auditedSha, runId: candidateRunId }) }))
+    .filter((candidate) => candidate.run)
+    .sort((left, right) => right.run.generatedAt - left.run.generatedAt);
+  if (flatCandidates[0]) return createCorrelationSignalsFromAuditResults(flatCandidates[0].run.reports);
+
+  const legacyCandidates = (runId === undefined ? legacyQualityAuditRunIds(root, auditedSha) : [runId])
+    .map((candidateRunId) => ({ runId: candidateRunId, run: readLegacyQualityRun({ root, auditedSha, runId: candidateRunId }) }))
+    .filter((candidate) => candidate.run)
+    .sort((left, right) => right.run.generatedAt - left.run.generatedAt);
+  if (legacyCandidates[0]) return createCorrelationSignalsFromAuditResults(legacyCandidates[0].run.reports);
   return createEmptyCorrelationSignals(`preuve quality incomplète ou non stable pour ${auditedSha}`);
 }
 

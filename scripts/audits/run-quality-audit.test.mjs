@@ -15,6 +15,7 @@ import {
   runQualityAudit,
   serialize,
 } from "./run-quality-audit.mjs";
+import { beginActiveAudit, endActiveAudit, retainQualityAuditArtifacts } from "./quality-audit-storage.mjs";
 
 const sha = "a".repeat(40);
 const stableSnapshot = {
@@ -61,15 +62,70 @@ function cycleEngineResult() {
   };
 }
 
+const qualityAudits = ["dead-code", "duplication", "top-heavy", "complexity", "cycles"];
+
+function writeFlatQualityRun(root, auditedHead, runId, generatedAt, audits = qualityAudits) {
+  const shaRoot = path.join(root, "artifacts", "quality-audits", auditedHead);
+  fs.mkdirSync(shaRoot, { recursive: true });
+  for (const audit of audits) {
+    const manifest = {
+      schemaVersion: 1,
+      audit,
+      runId,
+      auditedHead,
+      originMain: auditedHead,
+      baselineStable: true,
+      worktreeClean: true,
+      readProvenance: "COMMITTED_SNAPSHOT",
+      worktreeChanged: false,
+      reproducible: true,
+      resultClass: "REPRODUCIBLE",
+      status: "PASS",
+      attentionRequired: false,
+      generatedAt,
+    };
+    const prefix = `${audit}--${runId}`;
+    fs.writeFileSync(path.join(shaRoot, `${prefix}--manifest.json`), `${JSON.stringify(manifest)}\n`);
+    fs.writeFileSync(path.join(shaRoot, `${prefix}--report.json`), JSON.stringify(fixtureResult(audit)));
+    fs.writeFileSync(path.join(shaRoot, `${prefix}--summary.md`), `# ${audit}\n`);
+  }
+}
+
+function writeLegacyQualityRun(root, auditedHead, runId, generatedAt) {
+  for (const audit of qualityAudits) {
+    const target = path.join(root, "artifacts", "quality-audits", auditedHead, runId, audit);
+    fs.mkdirSync(target, { recursive: true });
+    const manifest = {
+      schemaVersion: 1,
+      audit,
+      runId,
+      auditedHead,
+      originMain: auditedHead,
+      baselineStable: true,
+      worktreeClean: true,
+      readProvenance: "COMMITTED_SNAPSHOT",
+      worktreeChanged: false,
+      reproducible: true,
+      resultClass: "REPRODUCIBLE",
+      status: "PASS",
+      attentionRequired: false,
+      generatedAt,
+    };
+    fs.writeFileSync(path.join(target, "manifest.json"), `${JSON.stringify(manifest)}\n`);
+    fs.writeFileSync(path.join(target, "report.json"), JSON.stringify(fixtureResult(audit)));
+    fs.writeFileSync(path.join(target, "summary.md"), `# ${audit}\n`);
+  }
+}
+
 test("CLI parser accepts exactly the six audit modes and rejects unknown input", () => {
   for (const mode of AUDIT_MODES) assert.equal(parseAuditMode([mode]), mode);
   assert.throws(() => parseAuditMode(["knip"]), /Mode d'audit inconnu/);
   assert.throws(() => parseAuditMode([]), /Usage:/);
 });
 test("artifact paths are deterministic and SHA-scoped", () => {
-  const paths = createAuditPaths({ root: "C:/repo", auditedHead: sha, audit: "dead-code" });
-  assert.equal(paths.auditRoot, path.join("C:/repo", "artifacts/quality-audits", sha, "dead-code"));
-  assert.match(paths.report, new RegExp(`${sha}.*dead-code`));
+  const paths = createAuditPaths({ root: "C:/repo", auditedHead: sha, audit: "dead-code", runId: "run-path" });
+  assert.equal(paths.auditRoot, path.join("C:/repo", "artifacts/quality-audits", sha));
+  assert.match(paths.report, new RegExp(`${sha}.*dead-code--run-path--report\\.json`));
 });
 test("a single audit writes manifest, raw report and generated summary only below the artifact root", async () => {
   const root = tempRoot();
@@ -77,8 +133,8 @@ test("a single audit writes manifest, raw report and generated summary only belo
     const result = await runQualityAudit("dead-code", { root, runId: "run-single", snapshot: () => stableSnapshot, engine: async () => fixtureResult("dead-code"), now: () => "2026-10-04T00:00:00.000Z" });
     const auditRoot = result.results[0].paths.auditRoot;
     assert.equal(result.status, "PASS");
-    assert.deepEqual(fs.readdirSync(auditRoot).sort(), ["manifest.json", "report.json", "summary.md"]);
-    const manifest = JSON.parse(fs.readFileSync(path.join(auditRoot, "manifest.json"), "utf8"));
+    assert.deepEqual(fs.readdirSync(auditRoot).sort(), ["dead-code--run-single--manifest.json", "dead-code--run-single--report.json", "dead-code--run-single--summary.md"]);
+    const manifest = JSON.parse(fs.readFileSync(path.join(auditRoot, "dead-code--run-single--manifest.json"), "utf8"));
     assert.deepEqual(manifest, {
       schemaVersion: 1,
       audit: "dead-code",
@@ -100,6 +156,23 @@ test("a single audit writes manifest, raw report and generated summary only belo
     const artifactRoot = path.resolve(root, "artifacts", "quality-audits");
     const generatedRoot = path.resolve(root, "artifacts");
     assert.ok(files.every((file) => path.resolve(root, file) === generatedRoot || path.resolve(root, file).startsWith(artifactRoot)));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("all writes every gate and the aggregate as flat files for one run", async () => {
+  const root = tempRoot();
+  try {
+    const result = await runQualityAudit("all", { root, runId: "run-all", snapshot: () => stableSnapshot, engine: async (audit) => fixtureResult(audit) });
+    const names = fs.readdirSync(path.join(root, "artifacts", "quality-audits", sha)).sort();
+    assert.equal(names.length, 18);
+    for (const audit of [...qualityAudits, "all"]) {
+      assert.ok(names.includes(`${audit}--run-all--manifest.json`));
+      assert.ok(names.includes(`${audit}--run-all--report.json`));
+      assert.ok(names.includes(`${audit}--run-all--summary.md`));
+    }
+    assert.equal(result.allPaths.runRoot, result.allPaths.shaRoot);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -438,13 +511,97 @@ test("each engine retains provenance and concurrent runs use distinct artifact r
       runQualityAudit("all", { root, runId: "run-a", snapshot: () => stableSnapshot, engine }),
       runQualityAudit("all", { root, runId: "run-b", snapshot: () => stableSnapshot, engine }),
     ]);
-    assert.notEqual(first.allPaths.runRoot, second.allPaths.runRoot);
+    assert.notEqual(first.results[0].paths.report, second.results[0].paths.report);
     assert.ok(fs.existsSync(first.allPaths.manifest));
     assert.ok(fs.existsSync(second.allPaths.manifest));
     const topHeavy = first.results.find((entry) => entry.audit === "top-heavy");
     assert.equal(topHeavy.readProvenance, "COMMITTED_SNAPSHOT");
     assert.equal(topHeavy.reproducible, true);
     assert.equal(first.results.find((entry) => entry.audit === "dead-code").readProvenance, "WORKTREE_LIVE");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("retention keeps the three most recently executed SHA directories", async () => {
+  const root = tempRoot();
+  try {
+    for (let index = 0; index < 4; index += 1) {
+      writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+    }
+    const retention = await retainQualityAuditArtifacts({ root });
+    const directories = fs.readdirSync(path.join(root, "artifacts", "quality-audits"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
+    assert.equal(retention.status, "PASS");
+    assert.deepEqual(directories, ["1".repeat(40), "2".repeat(40), "3".repeat(40)]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a failed audit is retained and active executions are never removed", async () => {
+  const root = tempRoot();
+  const oldest = "0".repeat(40);
+  try {
+    writeFlatQualityRun(root, oldest, "run-old", "2026-10-01T00:00:00.000Z");
+    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+    const marker = beginActiveAudit({ root, auditedHead: oldest, runId: "active-run" });
+    const retention = await retainQualityAuditArtifacts({ root });
+    assert.equal(retention.status, "PASS");
+    assert.ok(fs.existsSync(path.join(root, "artifacts", "quality-audits", oldest)));
+    endActiveAudit(marker);
+    const afterRelease = await retainQualityAuditArtifacts({ root });
+    assert.ok(afterRelease.removedSha.includes(oldest));
+
+    const failed = await runQualityAudit("dead-code", {
+      root,
+      runId: "failed-run",
+      snapshot: () => stableSnapshot,
+      engine: async () => ({ status: "FAIL", error: { message: "fixture failure" } }),
+    });
+    assert.equal(failed.status, "FAIL");
+    assert.ok(fs.existsSync(failed.results[0].paths.report));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("unknown files and ZIP archives are preserved by retention", async () => {
+  const root = tempRoot();
+  const shaToPreserve = "0".repeat(40);
+  try {
+    writeFlatQualityRun(root, shaToPreserve, "run-old", "2026-10-01T00:00:00.000Z");
+    fs.writeFileSync(path.join(root, "artifacts", "quality-audits", shaToPreserve, "user-note.txt"), "keep");
+    fs.writeFileSync(path.join(root, "artifacts", "quality-audits", "archive.zip"), "zip");
+    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+    const retention = await retainQualityAuditArtifacts({ root });
+    assert.ok(retention.diagnostics.some((entry) => entry.includes("UNKNOWN_CONTENT_PRESERVED")));
+    assert.ok(fs.existsSync(path.join(root, "artifacts", "quality-audits", shaToPreserve, "user-note.txt")));
+    assert.ok(fs.existsSync(path.join(root, "artifacts", "quality-audits", "archive.zip")));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("legacy runs migrate atomically and collisions preserve both source and destination", async () => {
+  const root = tempRoot();
+  const sha = "a".repeat(40);
+  try {
+    writeLegacyQualityRun(root, sha, "legacy-run", "2026-10-04T00:00:00.000Z");
+    const before = fs.readFileSync(path.join(root, "artifacts", "quality-audits", sha, "legacy-run", "dead-code", "report.json"), "utf8");
+    const retention = await retainQualityAuditArtifacts({ root });
+    assert.equal(retention.status, "PASS");
+    const migrated = path.join(root, "artifacts", "quality-audits", sha, "dead-code--legacy-run--report.json");
+    assert.equal(fs.readFileSync(migrated, "utf8"), before);
+    assert.ok(!fs.existsSync(path.join(root, "artifacts", "quality-audits", sha, "legacy-run")));
+
+    writeLegacyQualityRun(root, "b".repeat(40), "legacy-collision", "2026-10-03T00:00:00.000Z");
+    const collision = path.join(root, "artifacts", "quality-audits", "b".repeat(40), "dead-code--legacy-collision--report.json");
+    fs.mkdirSync(path.dirname(collision), { recursive: true });
+    fs.writeFileSync(collision, "different");
+    const second = await retainQualityAuditArtifacts({ root });
+    assert.ok(second.diagnostics.some((entry) => entry.includes("UNKNOWN_CONTENT_PRESERVED")));
+    assert.ok(fs.existsSync(path.join(root, "artifacts", "quality-audits", "b".repeat(40), "legacy-collision", "dead-code", "report.json")));
+    assert.equal(fs.readFileSync(collision, "utf8"), "different");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
