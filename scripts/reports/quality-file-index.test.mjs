@@ -12,7 +12,7 @@ import {
   generateQualityFileIndex,
   readOfflineQualityRun,
 } from "./quality-file-index.mjs";
-import { createAuditPaths, createQualityProjectionPaths, listFlatQualityProjectionArtifacts } from "../audits/quality-audit-storage.mjs";
+import { createAuditPaths, listFlatQualityProjectionArtifacts } from "../audits/quality-audit-storage.mjs";
 
 const sha = "c".repeat(40);
 const runId = "projection-run";
@@ -332,6 +332,8 @@ test("rattache les findings des fichiers aux domaines fonctionnels sans confondr
   const uiFindingId = indexedUi.findings.deadCode.items.find((finding) => finding.name === "uiUnused")?.id;
   const testFindingId = indexedTest.findings.deadCode.items.find((finding) => finding.name === "testUnused")?.id;
   const duplicationFindingId = indexedA.findings.duplication.items[0].id;
+  const complexityFindingId = indexedA.findings.complexity.items[0].id;
+  const functionLengthFindingId = indexedA.findings.functionLength.items[0].id;
   const initialTopHeavyId = indexedA.findings.topHeavy.items.find((finding) => finding.provenance === "INITIAL")?.id;
   const derivedTopHeavyId = indexedA.findings.topHeavy.items.find((finding) => finding.provenance === "DERIVED")?.id;
 
@@ -342,6 +344,8 @@ test("rattache les findings des fichiers aux domaines fonctionnels sans confondr
   assert.notEqual(uiFindingId, testFindingId);
   assert.ok(components.qualityFindingIds.includes(uiFindingId));
   assert.ok(components.qualityFindingIds.includes(testFindingId));
+  assert.ok(components.qualityFindingIds.includes(complexityFindingId));
+  assert.ok(components.qualityFindingIds.includes(functionLengthFindingId));
   assert.ok(components.findingIds.includes("boundary-1"));
   assert.deepEqual(components.boundaryViolationIds, ["boundary-1"]);
   assert.ok(components.blockingBoundaryViolationIds.includes("boundary-1"));
@@ -352,10 +356,31 @@ test("rattache les findings des fichiers aux domaines fonctionnels sans confondr
   assert.notEqual(initialTopHeavyId, derivedTopHeavyId);
   assert.ok(components.findingReferences.some((reference) => reference.id === uiFindingId && reference.file === ui.path));
   assert.ok(components.findingReferences.some((reference) => reference.id === testFindingId && reference.file === testFile.path));
+  assert.deepEqual(
+    components.findingReferences.find((reference) => reference.id === complexityFindingId && reference.file === fileA),
+    { id: complexityFindingId, file: fileA, category: "complexity" },
+  );
+  assert.deepEqual(
+    components.findingReferences.find((reference) => reference.id === functionLengthFindingId && reference.file === fileA),
+    { id: functionLengthFindingId, file: fileA, category: "functionLength" },
+  );
+  for (const reference of components.findingReferences) {
+    const indexedFile = index.files.find((file) => file.path === reference.file);
+    const indexedFindings = reference.category === "boundaryViolations"
+      ? indexedFile?.architecture?.findings?.boundaryViolations?.items ?? []
+      : indexedFile?.findings?.[reference.category]?.items ?? [];
+    assert.ok(indexedFindings.some((finding) => finding.id === reference.id), `${reference.category}/${reference.id} must resolve in FILE INDEX`);
+  }
   assert.ok(components.findingIds.includes(duplicationFindingId));
   assert.ok(domain.findingIds.includes(duplicationFindingId));
   assert.equal(components.findingIds.filter((id) => id === duplicationFindingId).length, 1);
   assert.equal(domain.findingIds.filter((id) => id === duplicationFindingId).length, 1);
+  assert.equal(new Set(components.findingIds).size, components.findingIds.length);
+  assert.equal(new Set(components.qualityFindingIds).size, components.qualityFindingIds.length);
+  const supabase = index.functionalDomains.items.find((item) => item.id === "architecture:supabase");
+  assert.deepEqual(supabase.findingIds, []);
+  assert.deepEqual(supabase.qualityFindingIds, []);
+  assert.deepEqual(supabase.findingReferences, []);
 
   const markdown = buildQualityFileIndexMarkdown(index);
   assert.match(markdown, /Findings qualité :/);

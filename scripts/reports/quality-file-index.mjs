@@ -765,6 +765,10 @@ function architectureRelationReference(category, relation) {
   return { id, category };
 }
 
+function complexityFindingCategory(finding) {
+  return finding?.metric === "functionLength" ? "functionLength" : "complexity";
+}
+
 function attachFunctionalDomainFindings(files, domains) {
   for (const file of files.values()) {
     for (const domainId of file.functionalDomains) {
@@ -779,9 +783,10 @@ function attachFunctionalDomainFindings(files, domains) {
 
       for (const category of FUNCTIONAL_QUALITY_CATEGORIES) {
         for (const finding of file[category]?.findings?.values() ?? []) {
+          const publicCategory = category === "complexity" ? complexityFindingCategory(finding) : category;
           domain.qualityFindingIds.add(finding.id);
           domain.findingIds.add(finding.id);
-          domain.findingReferences.set(`${finding.id}:${file.path}`, { id: finding.id, file: file.path, category });
+          domain.findingReferences.set(`${finding.id}:${file.path}`, { id: finding.id, file: file.path, category: publicCategory });
         }
       }
 
@@ -820,8 +825,8 @@ function finalizeFiles(files, reports, architecture) {
   for (const file of files.values()) {
     const topHeavyFindingItems = [...file.topHeavy.findings.values()];
     const complexityItems = [...file.complexity.findings.values()];
-    const functionLengthItems = complexityItems.filter((item) => item.metric === "functionLength");
-    const complexityFindingItems = complexityItems.filter((item) => item.metric !== "functionLength");
+    const functionLengthItems = complexityItems.filter((item) => complexityFindingCategory(item) === "functionLength");
+    const complexityFindingItems = complexityItems.filter((item) => complexityFindingCategory(item) === "complexity");
     const category = (auditKey, findingItems, measured, detail) => {
       if (findingItems.length > 0) return state("PRESENT", `${findingItems.length} finding(s)`, findingItems);
       if (categoryAvailability[auditKey] === "NOT_MEASURED") return state("NOT_MEASURED", detail);
