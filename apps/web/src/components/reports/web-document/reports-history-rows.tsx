@@ -7,6 +7,80 @@ import {
   type ReportsWebDocumentDeliveryHistoryProps,
 } from "./reports-web-document-delivery";
 
+type HistoryRow = ReportsWebDocumentDeliveryHistoryProps["recentRows"][number];
+type HistoryActionProps = Parameters<typeof HistoryActionButtons>[0];
+
+function ReportsHistoryMobileRows({
+  rows,
+  actionProps,
+  actionStateById,
+}: {
+  rows: HistoryRow[];
+  actionProps: (row: HistoryRow) => HistoryActionProps;
+  actionStateById: NonNullable<
+    ReportsWebDocumentDeliveryHistoryProps["actionStateById"]
+  >;
+}) {
+  return (
+    <div className="grid gap-3 md:hidden">
+      {rows.map((row) => (
+        <article
+          key={row.id}
+          className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+              <FileText size={18} aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <h4 className="break-words text-base font-semibold text-slate-950">
+                {row.report}
+              </h4>
+              <p className="mt-1 break-words text-sm text-slate-600">
+                {row.generatedAt}
+              </p>
+            </div>
+          </div>
+          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <div>
+              <dt className="text-slate-500">Période</dt>
+              <dd className="mt-1 break-words font-medium text-slate-900">
+                {row.period}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Périmètre</dt>
+              <dd className="mt-1 break-words font-medium text-slate-900">
+                {row.perimeter}
+              </dd>
+            </div>
+            <div className="col-span-2">
+              <dt className="text-slate-500">Détail</dt>
+              <dd className="mt-1 break-words font-medium text-slate-900">
+                {row.detail}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Thème PDF</dt>
+              <dd className="mt-1 break-words font-medium text-slate-900">
+                {row.theme === "scientific"
+                  ? "Scientifique"
+                  : row.theme === "impact"
+                    ? "Impact"
+                    : "Non enregistré"}
+              </dd>
+            </div>
+          </dl>
+          <div className="mt-4">
+            <HistoryActionButtons {...actionProps(row)} />
+            <HistoryActionFeedback actionState={actionStateById[row.id]} />
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 export function ReportsHistoryRows(
   props: ReportsWebDocumentDeliveryHistoryProps,
 ) {
@@ -105,62 +179,11 @@ export function ReportsHistoryRows(
           </tbody>
         </table>
       </div>
-      <div className="grid gap-3 md:hidden">
-        {props.recentRows.map((row) => (
-          <article
-            key={row.id}
-            className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"
-          >
-            <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
-                <FileText size={18} aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <h4 className="break-words text-base font-semibold text-slate-950">
-                  {row.report}
-                </h4>
-                <p className="mt-1 break-words text-sm text-slate-600">
-                  {row.generatedAt}
-                </p>
-              </div>
-            </div>
-            <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-              <div>
-                <dt className="text-slate-500">Période</dt>
-                <dd className="mt-1 break-words font-medium text-slate-900">
-                  {row.period}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Périmètre</dt>
-                <dd className="mt-1 break-words font-medium text-slate-900">
-                  {row.perimeter}
-                </dd>
-              </div>
-              <div className="col-span-2">
-                <dt className="text-slate-500">Détail</dt>
-                <dd className="mt-1 break-words font-medium text-slate-900">
-                  {row.detail}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Thème PDF</dt>
-                <dd className="mt-1 break-words font-medium text-slate-900">
-                  {row.theme === "scientific"
-                    ? "Scientifique"
-                    : row.theme === "impact"
-                      ? "Impact"
-                      : "Non enregistré"}
-                </dd>
-              </div>
-            </dl>
-            <div className="mt-4">
-              <HistoryActionButtons {...actionProps(row)} />
-              <HistoryActionFeedback actionState={actionStateById[row.id]} />
-            </div>
-          </article>
-        ))}
-      </div>
+      <ReportsHistoryMobileRows
+        rows={props.recentRows}
+        actionProps={actionProps}
+        actionStateById={actionStateById}
+      />
     </>
   );
 }

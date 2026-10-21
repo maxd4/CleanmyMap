@@ -1,6 +1,13 @@
 import { escapeHtml } from "@/lib/security/html-escape";
-import { buildOfficialReportCss, type ReportPdfTheme } from "./report-pdf-theme";
-import { renderChapter, renderRows, renderStats } from "./official-report-sections";
+import {
+  buildOfficialReportCss,
+  type ReportPdfTheme,
+} from "./report-pdf-theme";
+import {
+  renderChapter,
+  renderRows,
+  renderStats,
+} from "./official-report-sections";
 import { renderInlineMarkdown } from "./official-report-markdown";
 import type { PdfReportPayload } from "./simple-pdf";
 
@@ -8,28 +15,12 @@ function renderList(items: string[]): string {
   return `<ul>${items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ul>`;
 }
 
-export function buildClassicReportHtml(
+function buildClassicCover(
   payload: PdfReportPayload,
   title: string,
   generatedAt: string,
-  summary: string[],
-  hasSummary: boolean,
-  hasStats: boolean,
-  hasChapters: boolean,
-  hasRows: boolean,
-  theme?: ReportPdfTheme,
 ): string {
-  return `<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(title)}</title>
-  <style>${buildOfficialReportCss(theme)}</style>
-</head>
-<body>
-  <main class="cmm-report" data-report-theme="${theme ?? "impact"}">
-    <section class="cmm-page cmm-cover">
+  return `    <section class="cmm-page cmm-cover">
       <div>
         <p class="cmm-kicker">Livrable officiel CleanMyMap</p>
         <h1>${escapeHtml(title)}</h1>
@@ -58,8 +49,18 @@ export function buildClassicReportHtml(
         <span>Version web A4</span>
       </footer>
     </section>
+`;
+}
 
-    <section class="cmm-page">
+function buildClassicContents(
+  payload: PdfReportPayload,
+  summary: string[],
+  hasSummary: boolean,
+  hasStats: boolean,
+  hasChapters: boolean,
+  hasRows: boolean,
+): string {
+  return `    <section class="cmm-page">
       <section class="cmm-section">
         <p class="cmm-kicker">Navigation</p>
         <h2 class="cmm-section-title">Sommaire</h2>
@@ -84,8 +85,11 @@ export function buildClassicReportHtml(
               <h2 class="cmm-section-title">Chapitres détaillés</h2>
               <div class="cmm-callout note">
                 <ul>
-                  ${payload.data.chapters!
-                    .map((chapter, index) => `<li><a href="#chapter-${index + 1}">${escapeHtml(chapter.title)}</a></li>`)
+                  ${payload.data
+                    .chapters!.map(
+                      (chapter, index) =>
+                        `<li><a href="#chapter-${index + 1}">${escapeHtml(chapter.title)}</a></li>`,
+                    )
                     .join("")}
                 </ul>
               </div>
@@ -95,8 +99,14 @@ export function buildClassicReportHtml(
           : ""
       }
       ${renderStats(payload)}
-      ${renderRows(payload)}
-      <section class="cmm-section">
+      ${renderRows(payload)}`;
+}
+
+function buildClassicMethodFooter(
+  payload: PdfReportPayload,
+  generatedAt: string,
+): string {
+  return `      <section class="cmm-section">
         <h2 class="cmm-section-title">Méthode et limites</h2>
         <div class="cmm-callout limite">
           <div class="cmm-callout-title">Limite de lecture</div>
@@ -107,7 +117,33 @@ export function buildClassicReportHtml(
         <span>Document généré le ${escapeHtml(generatedAt)}</span>
         <span>${escapeHtml(payload.rubrique)} - ${escapeHtml(payload.periode)}</span>
       </footer>
-    </section>
+    </section>`;
+}
+
+export function buildClassicReportHtml(
+  payload: PdfReportPayload,
+  title: string,
+  generatedAt: string,
+  summary: string[],
+  hasSummary: boolean,
+  hasStats: boolean,
+  hasChapters: boolean,
+  hasRows: boolean,
+  theme?: ReportPdfTheme,
+): string {
+  return `<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(title)}</title>
+  <style>${buildOfficialReportCss(theme)}</style>
+</head>
+<body>
+  <main class="cmm-report" data-report-theme="${theme ?? "impact"}">
+${buildClassicCover(payload, title, generatedAt)}
+${buildClassicContents(payload, summary, hasSummary, hasStats, hasChapters, hasRows)}
+${buildClassicMethodFooter(payload, generatedAt)}
   </main>
   <script>
     window.addEventListener("load", () => {

@@ -1,34 +1,43 @@
 import { escapeHtml } from "@/lib/security/html-escape";
-import { buildOfficialReportCss, type ReportPdfTheme } from "./report-pdf-theme";
+import {
+  buildOfficialReportCss,
+  type ReportPdfTheme,
+} from "./report-pdf-theme";
 import { renderInlineMarkdown } from "./official-report-markdown";
-import { renderChapter, renderRows, renderWebHero } from "./official-report-sections";
+import {
+  renderChapter,
+  renderRows,
+  renderWebHero,
+} from "./official-report-sections";
 import { formatPdfValue } from "./format-pdf-value";
 import type { PdfReportPayload } from "./simple-pdf";
 
-export function buildWebReportHtml(
+type ReportChapter = NonNullable<PdfReportPayload["data"]["chapters"]>[number];
+
+function buildWebReportStatCards(
+  stats: NonNullable<PdfReportPayload["data"]["stats"]>,
+): string {
+  return stats
+    .slice(0, 4)
+    .map(
+      (stat) => `
+                    <article class="cmm-card">
+                      <div class="cmm-card-label">${escapeHtml(stat.label)}</div>
+                      <div class="cmm-card-value">${escapeHtml(formatPdfValue(stat.value))}</div>
+                      ${stat.detail ? `<p class="cmm-muted">${escapeHtml(stat.detail)}</p>` : ""}
+                    </article>
+                  `,
+    )
+    .join("");
+}
+
+function buildWebReportHeader(
   payload: PdfReportPayload,
   title: string,
   generatedAt: string,
-  theme?: ReportPdfTheme,
 ): string {
-  const chapters = payload.data.chapters ?? [];
-  const heroChapter = chapters[0] ?? null;
-  const sectionChapters = chapters.slice(1);
   const hasStats = Boolean(payload.data.stats?.length);
-
-  if (!heroChapter) return "";
-
-  return `<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(title)}</title>
-  <style>${buildOfficialReportCss(theme)}</style>
-</head>
-<body>
-  <main class="cmm-report cmm-web-shell" data-report-theme="${theme ?? "impact"}">
-    <section class="cmm-web-header">
+  return `    <section class="cmm-web-header">
       <div class="cmm-web-header__top">
         <div>
           <p class="cmm-web-header__kicker">Livrable officiel CleanMyMap</p>
@@ -61,33 +70,27 @@ export function buildWebReportHtml(
         ${(payload.data.summary ?? [])
           .filter((line) => line.trim().length > 0)
           .slice(0, 3)
-          .map((line) => `<span class="cmm-web-pill">${renderInlineMarkdown(line)}</span>`)
+          .map(
+            (line) =>
+              `<span class="cmm-web-pill">${renderInlineMarkdown(line)}</span>`,
+          )
           .join("")}
       </div>
       ${
         hasStats
           ? `
             <div class="cmm-web-section__grid cmm-web-section__grid--4" style="margin-top: 4mm;">
-              ${(payload.data.stats ?? [])
-                .slice(0, 4)
-                .map(
-                  (stat) => `
-                    <article class="cmm-card">
-                      <div class="cmm-card-label">${escapeHtml(stat.label)}</div>
-                      <div class="cmm-card-value">${escapeHtml(formatPdfValue(stat.value))}</div>
-                      ${stat.detail ? `<p class="cmm-muted">${escapeHtml(stat.detail)}</p>` : ""}
-                    </article>
-                  `,
-                )
-                .join("")}
+              ${buildWebReportStatCards(payload.data.stats ?? [])}
             </div>
           `
           : ""
       }
     </section>
+`;
+}
 
-    <div class="cmm-web-layout">
-      <aside class="cmm-web-aside">
+function buildWebReportNavigation(chapters: ReportChapter[]): string {
+  return `      <aside class="cmm-web-aside">
         <p class="cmm-kicker">Navigation</p>
         <h2 class="cmm-section-title">Sommaire cliquable</h2>
         <nav>
@@ -107,12 +110,48 @@ export function buildWebReportHtml(
           <p>Le document imprimable reprend la même architecture visuelle que la vue web, avec les mêmes sections et le même rythme de lecture.</p>
         </div>
       </aside>
+`;
+}
 
-      <div class="cmm-web-main">
+function buildWebReportMain(
+  heroChapter: ReportChapter,
+  sectionChapters: ReportChapter[],
+  payload: PdfReportPayload,
+): string {
+  return `      <div class="cmm-web-main">
         ${renderWebHero(heroChapter, payload)}
         ${sectionChapters.map((chapter, index) => renderChapter(chapter, index + 2)).join("\n")}
         ${renderRows(payload)}
       </div>
+`;
+}
+
+export function buildWebReportHtml(
+  payload: PdfReportPayload,
+  title: string,
+  generatedAt: string,
+  theme?: ReportPdfTheme,
+): string {
+  const chapters = payload.data.chapters ?? [];
+  const heroChapter = chapters[0] ?? null;
+  const sectionChapters = chapters.slice(1);
+
+  if (!heroChapter) return "";
+
+  return `<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(title)}</title>
+  <style>${buildOfficialReportCss(theme)}</style>
+</head>
+<body>
+  <main class="cmm-report cmm-web-shell" data-report-theme="${theme ?? "impact"}">
+${buildWebReportHeader(payload, title, generatedAt)}
+    <div class="cmm-web-layout">
+${buildWebReportNavigation(chapters)}
+${buildWebReportMain(heroChapter, sectionChapters, payload)}
     </div>
   </main>
 </body>
