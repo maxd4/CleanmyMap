@@ -16,6 +16,7 @@ import {
 import { formatDuplicationReport, runDuplicationPolicy } from "../checks/check-duplication.mjs";
 import { runCycleGate } from "../checks/check-cycles.mjs";
 import { runComplexityPolicy } from "../checks/check-complexity-policy.mjs";
+import { runMaintainabilityAudit } from "../checks/check-maintainability.mjs";
 import { runTopHeavyPolicy } from "../checks/check-top-heavy-files.mjs";
 import { createRepositoryView } from "../checks/repository-view.mjs";
 import {
@@ -36,7 +37,9 @@ import {
   writeAuditArtifactFiles,
 } from "./quality-audit-storage.mjs";
 
-export const AUDIT_MODES = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "all"]);
+export const QUALITY_GATE_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
+export const AUXILIARY_AUDITS = Object.freeze(["maintainability"]);
+export const AUDIT_MODES = Object.freeze([...QUALITY_GATE_AUDITS, ...AUXILIARY_AUDITS, "all"]);
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const ACQUIRED_ARCHITECTURE_DECISIONS = new Set([
   "PROACTIVE_SPLIT",
@@ -158,6 +161,16 @@ function isCycleResult(result) {
     && Array.isArray(result.comparison?.stale);
 }
 
+function isMaintainabilityResult(result) {
+  return Boolean(result)
+    && (result.status === "PASS" || result.status === "FAIL")
+    && result.kind === "quality-maintainability"
+    && result.summary
+    && Array.isArray(result.metrics)
+    && Array.isArray(result.findings)
+    && Array.isArray(result.diagnostics);
+}
+
 function preserveMalformedAsyncResult(audit, result) {
   return {
     ...(result && typeof result === "object" ? result : {}),
@@ -211,6 +224,11 @@ export function attentionRequired(audit, result) {
     return result.gateStatus !== "PASS"
       || result.comparison?.added?.length > 0
       || result.comparison?.stale?.length > 0;
+  }
+  if (audit === "maintainability") {
+    return result.measurementStatus !== "MEASURED_NOT_RATCHETED"
+      || (result.findings?.length ?? 0) > 0
+      || (result.summary?.cognitiveComplexityAboveTarget ?? 0) > 0;
   }
   return false;
 }
@@ -277,7 +295,9 @@ function makeSummary({ audit, manifest, result, paths }) {
     `- Attention required: **${manifest.attentionRequired ? "yes" : "no"}**`,
     `- Raw report: \`${path.relative(path.dirname(paths.summary), paths.report).replaceAll("\\", "/")}\``,
     "",
-    "This summary is a generated projection of the raw gate result. `attentionRequired: false` means that no new top-heavy delta or unqualified REVIEW requiring a new analysis was observed; it does not mean that historical large-file debt is absent.",
+    audit === "maintainability"
+      ? "This summary is a generated projection of the raw auxiliary result. `attentionRequired: false` means that no measurement failure, selected local finding, or cognitive function above the informative target was observed; it does not define or waive a historical ratchet."
+      : "This summary is a generated projection of the raw gate result. `attentionRequired: false` means that no new top-heavy delta or unqualified REVIEW requiring a new analysis was observed; it does not mean that historical large-file debt is absent.",
   ];
   if (audit === "dead-code" && result?.comparison) {
     lines.splice(6, 0,
@@ -311,6 +331,15 @@ function makeSummary({ audit, manifest, result, paths }) {
   if (audit === "complexity" && result?.result) {
     lines.splice(6, 0, `- Measured functions: ${result.metrics.length}`, `- Violations: ${result.result.failures.length}`, `- Improvements: ${result.result.improvements.length}`, `- Review signals: ${result.result.reviews.length}`);
   }
+  if (audit === "maintainability" && result?.summary) {
+    lines.splice(6, 0,
+      `- Measured files/functions: ${result.summary.filesMeasured}/${result.summary.functionsMeasured}`,
+      `- Cognitive complexity functions: ${result.summary.cognitiveComplexityFunctions}`,
+      `- Cognitive complexity above target ${result.rules?.["sonarjs/cognitive-complexity"]?.thresholdTarget ?? "—"}: ${result.summary.cognitiveComplexityAboveTarget}`,
+      `- Local maintainability findings: ${result.summary.localMaintainabilityFindings}`,
+      `- Elapsed: ${result.summary.elapsedMs} ms`,
+    );
+  }
   if (audit === "cycles" && result?.comparison) {
     lines.splice(6, 0, `- Current cycles: ${result.cycles.length}`, `- New cycles: ${result.comparison.added.length}`, `- Stale baseline entries: ${result.comparison.stale.length}`);
   }
@@ -325,6 +354,8 @@ export async function executeAudit(
     auditedHead,
     complexityRunner = runComplexityPolicy,
     cycleRunner = runCycleGate,
+    maintainabilityRunner = runMaintainabilityAudit,
+    complexityResult = null,
     topHeavyRunner = runTopHeavyPolicy,
     repositoryViewFactory = createRepositoryView,
   } = {},
@@ -356,6 +387,12 @@ export async function executeAudit(
   if (audit === "cycles") {
     const result = await cycleRunner();
     return isCycleResult(result)
+      ? { ...result, readProvenance: "WORKTREE_LIVE" }
+      : preserveMalformedAsyncResult(audit, result);
+  }
+  if (audit === "maintainability") {
+    const result = await maintainabilityRunner({ root, complexityReport: complexityResult ?? null });
+    return isMaintainabilityResult(result)
       ? { ...result, readProvenance: "WORKTREE_LIVE" }
       : preserveMalformedAsyncResult(audit, result);
   }
@@ -396,7 +433,7 @@ export async function runQualityAudit(mode, {
   runId = randomUUID(),
 } = {}) {
   if (!AUDIT_MODES.includes(mode)) throw new QualityAuditError(`Mode d'audit inconnu. ${usage()}`, "INVALID_MODE");
-  const audits = mode === "all" ? AUDIT_MODES.slice(0, -1) : [mode];
+  const audits = mode === "all" ? [...QUALITY_GATE_AUDITS, ...AUXILIARY_AUDITS] : [mode];
   const start = snapshot();
   const activeMarker = await beginActiveAudit({ root, auditedHead: start.auditedHead, runId, fsApi });
 
@@ -405,7 +442,12 @@ export async function runQualityAudit(mode, {
     for (const audit of audits) {
       let raw;
       try {
-        raw = await engine(audit, root, { auditedHead: start.auditedHead, snapshot: start });
+        raw = await engine(audit, root, {
+          auditedHead: start.auditedHead,
+          snapshot: start,
+          complexityResult: results.find((entry) => entry.audit === "complexity")?.result ?? null,
+          previousResults: Object.fromEntries(results.map((entry) => [entry.audit, entry.result])),
+        });
       } catch (error) {
         raw = { status: "FAIL", error: { name: error?.name ?? "Error", message: error?.message ?? String(error), code: error?.code } };
       }
@@ -464,9 +506,10 @@ export async function runQualityAudit(mode, {
       manifests.push({ ...entry, paths, manifest, ...evidence });
     }
 
-    const overallStatus = manifests.some((entry) => entry.status === "FAIL")
+    const gateManifests = manifests.filter((entry) => QUALITY_GATE_AUDITS.includes(entry.audit));
+    const overallStatus = gateManifests.some((entry) => entry.status === "FAIL")
       ? "FAIL"
-      : manifests.some((entry) => entry.status === "PASS_WITH_GRACE")
+      : gateManifests.some((entry) => entry.status === "PASS_WITH_GRACE")
         ? "PASS_WITH_GRACE"
         : "PASS";
     const overallAttention = manifests.some((entry) => entry.attentionRequired);

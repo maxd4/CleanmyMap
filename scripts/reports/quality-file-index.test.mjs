@@ -258,6 +258,57 @@ test("construit un index exhaustif sans confondre complexity et functionLength",
   assert.equal(index.documentationDomains.reason, "HISTORICAL_ABSENCE");
 });
 
+test("projette la complexité cognitive et les défauts locaux avec leurs relations", () => {
+  const run = buildRun();
+  run.reports.maintainability = {
+    status: "PASS",
+    measurementStatus: "MEASURED_NOT_RATCHETED",
+    summary: { findingsByRule: { "sonarjs/no-redundant-boolean": 1 } },
+    rules: { "sonarjs/cognitive-complexity": { thresholdTarget: 15 } },
+    metrics: [{
+      category: "cognitive-complexity",
+      metric: "cognitiveComplexity",
+      path: fileA,
+      functionIdentity: "named:fixture#1",
+      function: "named:fixture",
+      line: 5,
+      functionStartLine: 5,
+      functionEndLine: 20,
+      value: 18,
+      thresholdTarget: 15,
+      relation: {
+        status: "PRESENT",
+        cyclomaticComplexity: { value: 12, category: "runtime/services/orchestration", line: 5 },
+        functionLength: { value: 44, category: "runtime/services/orchestration", line: 5 },
+      },
+    }],
+    findings: [{
+      category: "local-maintainability",
+      ruleId: "sonarjs/no-redundant-boolean",
+      file: fileA,
+      functionIdentity: "named:fixture#1",
+      line: 9,
+      column: 7,
+      endLine: 9,
+      endColumn: 11,
+      message: "fixture finding",
+      severity: "warning",
+      measure: { kind: "redundant boolean literal" },
+      relation: { status: "PRESENT", cyclomaticComplexity: { value: 12 }, functionLength: { value: 44 } },
+    }],
+    diagnostics: [],
+  };
+  const index = buildQualityFileIndex({ run, mode: "ALL" });
+  const indexedA = index.files.find((file) => file.path === fileA);
+
+  assert.equal(indexedA.metrics.cognitiveComplexity.items[0].value, 18);
+  assert.equal(indexedA.findings.cognitiveComplexity.state, "PRESENT");
+  assert.equal(indexedA.findings.localMaintainability.state, "PRESENT");
+  assert.deepEqual(indexedA.findings.cognitiveComplexity.items[0].relation.functionLength, { value: 44, category: "runtime/services/orchestration", line: 5 });
+  assert.equal(index.auditCategories.some((category) => category.id === "cognitive-complexity"), true);
+  assert.equal(index.auditCategories.some((category) => category.id === "local-maintainability"), true);
+});
+
 test("projette la maintenabilité documentaire dans les fichiers et le domain index", () => {
   const run = buildRun();
   run.documentation = documentationReport();

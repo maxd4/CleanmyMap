@@ -12,7 +12,7 @@ function createValidFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-agent-governance-"));
   const content = {
     "AGENTS.md": "apps/web scripts documentation fichiers scoped MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push\nPlusieurs writers Codex peuvent travailler dans le checkout canonique ; ils ne doivent jamais écraser silencieusement les changements d’un autre writer.\nLes modifications sur des fichiers distincts peuvent progresser en parallèle ; un même fichier, l’index, HEAD et les opérations Git mutantes doivent être relus et réconciliés explicitement.\nmain publié = référence versionnée ;\nune candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;\ntout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.\nHors mode de développement rapide : validation → commit isolé → push main → vérification de convergence\nMode de développement rapide explicitement activé : commit local selon son protocole, sans push tant que le mode reste actif\n\n### LEGACY / COMPATIBILITY\nMAIN-ONLY / SINGLE-WRITER workspace:start codex/<run-id> CleanMyMap-worktrees publication-acquire",
-    "CHATGPT.md": "MAIN-ONLY / MULTI-WRITER COORDONNÉ\nHors mode de développement rapide : validation → commit isolé → push main → vérification de convergence\nMode de développement rapide explicitement activé : commit local selon son protocole, sans push tant que le mode reste actif",
+    "CHATGPT.md": "MAIN-ONLY / MULTI-WRITER COORDONNÉ\nChatGPT est autorisé à modifier GitHub, committer et pousser sur main pour un lot demandé\nHors mode de développement rapide : validation → commit isolé → push main → vérification de convergence\nMode de développement rapide explicitement activé : commit local selon son protocole, sans push tant que le mode reste actif",
     "apps/web/AGENTS.md": "Next.js Server/Client Leaflet",
     "apps/web/src/app/api/AGENTS.md": "AuthN AuthZ contrat de réponse propre",
     "apps/web/supabase/AGENTS.md": "apps/web/supabase/migrations/ unique RLS",
@@ -108,14 +108,14 @@ describe("AGENTS hierarchy governance", () => {
     fs.writeFileSync(
       chatgptPath,
       fs.readFileSync(chatgptPath, "utf8").replace(
-        "push main",
-        "push origin/main sur demande explicite",
+        "ChatGPT est autorisé à modifier GitHub, committer et pousser sur main",
+        "ChatGPT utilise la lecture et vérification uniquement",
       ),
     );
     try {
       const findings = validateAgentGovernance(fixture);
       assert.ok(findings.some((finding) => finding.includes("global local-over-GitHub priority")));
-      assert.ok(findings.some((finding) => finding.includes("publication must not depend")));
+      assert.ok(findings.some((finding) => finding.includes("must authorize ChatGPT")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }

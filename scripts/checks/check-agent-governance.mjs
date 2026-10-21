@@ -110,6 +110,7 @@ function validateCurrentCoordinatorDoctrine(view, findings) {
 
 const normalPublicationPolicy = "validation → commit isolé → push main → vérification de convergence";
 const rapidPublicationPolicy = "commit local selon son protocole, sans push tant que le mode reste actif";
+const chatgptPublicationAuthorization = "ChatGPT est autorisé à modifier GitHub, committer et pousser";
 
 function validateCurrentWorkflowDoctrine(view, findings) {
   const rootAgents = readIfPresent(view, "AGENTS.md");
@@ -164,8 +165,11 @@ function validateCurrentWorkflowDoctrine(view, findings) {
   if (/l['’]état local est prioritaire sur l['’](?:état|etat) github/i.test(normalizedRoot)) {
     findings.push("AGENTS.md: global local-over-GitHub priority is not a CURRENT rule.");
   }
-  if (/push origin\/main sur demande explicite|demander commit et push le lot|committer et pousser sur main lorsque l'utilisateur l'a demandé/i.test(normalizedCurrentChatgpt)) {
-    findings.push("CHATGPT.md: publication must not depend on an explicit user request outside rapid mode.");
+  if (!normalizedCurrentChatgpt.toLocaleLowerCase("fr-FR").includes(chatgptPublicationAuthorization.toLocaleLowerCase("fr-FR"))) {
+    findings.push("CHATGPT.md: current policy must authorize ChatGPT to commit and push on main.");
+  }
+  if (/lecture et vérification uniquement|ne jamais modifier github, committer, pousser/i.test(normalizedCurrentChatgpt)) {
+    findings.push("CHATGPT.md: current GitHub policy must not remain read-only.");
   }
 }
 

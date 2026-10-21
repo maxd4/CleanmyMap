@@ -40,6 +40,7 @@ function fixtureResult(audit) {
   if (audit === "duplication") return { status: "PASS", results: [{ scopeName: "runtime", metrics: { clones: 0, duplicatedLines: 0, duplicatedTokens: 0, newClones: 0 }, comparison: { status: "PASS", failures: [] } }], justificationReport: { stale: [] } };
   if (audit === "top-heavy") return { status: "PASS", rows: [], proximityRows: [], radarProjection: { rows: [] }, evaluation: { blockingFindings: [], reviewWarnings: [], reviewImprovements: [], staleReviewBaselineEntries: [], staleBaselineEntries: [] } };
   if (audit === "complexity") return { status: "PASS", metrics: [], result: { failures: [], stale: [], improvements: [], reviews: [] } };
+  if (audit === "maintainability") return { schemaVersion: 1, kind: "quality-maintainability", status: "PASS", blocking: false, measurementStatus: "MEASURED_NOT_RATCHETED", summary: { filesMeasured: 0, functionsMeasured: 0, cognitiveComplexityFunctions: 0, cognitiveComplexityAboveTarget: 0, localMaintainabilityFindings: 0, findingsByRule: {} }, rules: {}, metrics: [], findings: [], diagnostics: [] };
   return { gateStatus: "PASS", status: "PASS", cycles: [], cycleObjects: [], comparison: { added: [], stale: [] } };
 }
 
@@ -92,7 +93,7 @@ function cycleEngineResult() {
   };
 }
 
-const qualityAudits = ["dead-code", "duplication", "top-heavy", "complexity", "cycles"];
+const qualityAudits = ["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability"];
 
 function writeFlatQualityRun(root, auditedHead, runId, generatedAt, audits = qualityAudits) {
   const shaRoot = path.join(root, "artifacts", "quality-audits", auditedHead);
@@ -201,7 +202,7 @@ test("all writes every gate and the aggregate as flat files for one run", async 
   try {
     const result = await runQualityAudit("all", { root, runId: "run-all", snapshot: () => stableSnapshot, engine: async (audit) => fixtureResult(audit) });
     const names = fs.readdirSync(path.join(root, "artifacts", "quality-audits", sha)).sort();
-    assert.equal(names.length, 21);
+    assert.equal(names.length, 24);
     for (const audit of [...qualityAudits, "all"]) {
       assert.ok(names.includes(`${audit}--run-all--manifest.json`));
       assert.ok(names.includes(`${audit}--run-all--report.json`));
@@ -238,7 +239,7 @@ test("all intègre la dimension documentaire dans l'agrégat, l'index et le ZIP"
     const index = JSON.parse(fs.readFileSync(result.projectionPaths.index, "utf8"));
 
     assert.equal(result.status, "PASS");
-    assert.equal(result.results.length, 5);
+    assert.equal(result.results.length, 6);
     assert.equal(aggregate.documentation.kind, "documentation-maintainability");
     assert.equal(index.audits.documentation.state, "PRESENT");
     assert.equal(index.globalCounts.documentationFiles, 1);
@@ -261,7 +262,7 @@ test("un échec documentaire reste NOT_MEASURED sans modifier le verdict des cin
     const index = JSON.parse(fs.readFileSync(result.projectionPaths.index, "utf8"));
 
     assert.equal(result.status, "PASS");
-    assert.equal(result.results.length, 5);
+    assert.equal(result.results.length, 6);
     assert.equal(result.documentation.status, "NOT_MEASURED");
     assert.equal(result.documentation.reason, "MEASUREMENT_FAILED");
     assert.equal(result.documentation.error.message, "documentation fixture failure");
@@ -529,7 +530,7 @@ test("une promesse asynchrone rejetée produit un FAIL diagnostiqué et laisse l
     const cyclesReport = JSON.parse(fs.readFileSync(cycles.paths.report, "utf8"));
     const manifest = JSON.parse(fs.readFileSync(result.allPaths.manifest, "utf8"));
 
-    assert.deepEqual(calls, ["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
+    assert.deepEqual(calls, ["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability"]);
     assert.equal(complexity.status, "FAIL");
     assert.equal(complexityReport.status, "FAIL");
     assert.equal(complexityReport.error.code, "FIXTURE_COMPLEXITY_FAILED");
@@ -592,8 +593,8 @@ test("all runs each engine once, aggregates statuses and retains other results a
         return fixtureResult(audit);
       },
     });
-    assert.deepEqual(calls, ["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
-    assert.equal(result.results.length, 5);
+    assert.deepEqual(calls, ["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability"]);
+    assert.equal(result.results.length, 6);
     assert.equal(result.status, "FAIL");
     assert.equal(result.results.find((entry) => entry.audit === "duplication").status, "FAIL");
     assert.equal(result.results.find((entry) => entry.audit === "cycles").status, "PASS");

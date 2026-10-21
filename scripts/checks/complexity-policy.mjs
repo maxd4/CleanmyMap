@@ -141,6 +141,28 @@ export function createFunctionMetadataResolver(file, source) {
   };
 }
 
+export function listFunctionMetadata(file, source) {
+  const scriptKind = file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, scriptKind);
+  const nodes = collectFunctionNodes(sourceFile);
+  const occurrenceByRole = new Map();
+  return nodes.map((node) => {
+    const role = functionRole(node, sourceFile);
+    const occurrence = (occurrenceByRole.get(role) ?? 0) + 1;
+    occurrenceByRole.set(role, occurrence);
+    const functionIdentity = `${role}#${occurrence}`;
+    const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+    const end = sourceFile.getLineAndCharacterOfPosition(node.end);
+    return {
+      functionIdentity,
+      functionStartLine: start.line + 1,
+      functionEndLine: end.line + 1,
+      line: start.line + 1,
+      name: role,
+    };
+  });
+}
+
 function createFunctionIdentityResolver(file, source) {
   const resolveMetadata = createFunctionMetadataResolver(file, source);
   return (line, message = "") => resolveMetadata(line, message)?.functionIdentity ?? `unresolved:${message || "function"}`;

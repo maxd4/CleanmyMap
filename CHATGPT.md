@@ -60,12 +60,16 @@ publie selon `AGENTS.md`. Il remonte un conflit réel, une impossibilité ou une
 meilleure alternative étayée ; il n'élargit pas unilatéralement la responsabilité
 du lot.
 
-**Politique GitHub de ChatGPT** : **lecture et vérification uniquement**. Ne
-jamais modifier GitHub, committer, pousser, créer branche, PR, clone ou
-worktree, ni réécrire l'historique. Fournir ici le fichier final ou un prompt
-Codex ; après intégration, relire le `main` réellement publié avant toute
-validation indépendante. Aucun compte rendu Codex n'est une preuve suffisante
-à lui seul.
+**Politique GitHub de ChatGPT** : ChatGPT est autorisé à modifier GitHub,
+committer et pousser sur `main` pour un lot demandé lorsque sa publication fait
+partie du périmètre. Il doit alors suivre le workflow normal décrit par
+`AGENTS.md` et `scripts/AGENTS.md` : validation proportionnée, staging explicite
+de l'allowlist, préservation des changements étrangers, push fast-forward,
+vérification de convergence et aucun force-push ni réécriture d'historique.
+La création d'une branche, d'une PR, d'un clone ou d'un worktree reste soumise
+à la demande du lot. Un compte rendu Codex ou un commit local ne constitue pas
+à lui seul une preuve de publication ; ChatGPT vérifie le `main` réellement
+publié après le push.
 
 ## 4. Conversation et prompts Codex
 

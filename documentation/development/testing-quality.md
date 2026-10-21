@@ -263,6 +263,33 @@ pour une baisse mesurée sur le candidat exact : on abaisse le plafond amélior�
 on n'augmente pas un ceiling et on n'ajoute pas d'exception pour faire passer
 le contrôle.
 
+### Complexité cognitive et maintenabilité locale
+
+Le Quality Audit conserve les cinq moteurs de gate existants et ajoute le moteur
+auxiliaire non bloquant `maintainability`, exécuté par `audit:quality -- all` ou
+isolément par `quality:maintainability`. Il utilise `eslint-plugin-sonarjs`
+`4.2.2` avec une sélection explicite de règles :
+
+- `sonarjs/cognitive-complexity`, mesurée par fonction avec un seuil de règle
+  technique `0` afin d'inventorier les valeurs positives ; la cible de
+  référence `15` est informative tant qu'aucune dette actuelle n'a été
+  mesurée et qualifiée ;
+- `sonarjs/no-redundant-boolean` pour les littéraux booléens redondants ;
+- `sonarjs/no-duplicated-branches` pour les branches identiques ;
+- `sonarjs/no-collapsible-if` pour les `if` imbriqués fusionnables ;
+- `sonarjs/nested-control-flow` avec une profondeur de référence `3`.
+
+La configuration `recommended` SonarJS n'est pas activée. Les findings restent
+informatifs et ne modifient pas les verdicts des cinq moteurs. Le rapport par
+fichier sépare explicitement la complexité cyclomatique de `quality:complexity`,
+la complexité cognitive, la longueur de fonction et les défauts locaux de
+maintenabilité. Chaque mesure conserve fichier, fonction, position, règle,
+valeur ou motif, cible éventuelle, gravité et relation avec les métriques
+cyclomatiques/longueur lorsqu'elles sont disponibles. Un ratchet cognitif ou
+local ne peut être défini qu'après mesure de la dette actuelle ; aucun seuil
+bloquant universel ni ratification automatique des violations historiques
+n'est créé par ce moteur.
+
 Lorsqu'un ratchet de longueur de fonction ou de poids de fichier bloque un
 contrôle `FULL` ou une vérification ciblée explicitement justifiée, la réparation validée
 doit inclure une extraction substantielle vers un nouveau fichier portant une
@@ -690,7 +717,8 @@ npm run report:quality-index -- --offline --sha=<SHA> --run-id=<runId>
 npm run report:quality-index -- --offline --sha=<SHA> --run-id=<runId> --bundle
 ```
 
-Le mode `--offline` lit exclusivement les cinq rapports, leurs manifestes et
+Le mode `--offline` lit exclusivement les cinq rapports de gate, le rapport
+auxiliaire de maintenabilité, leurs manifestes et
 le rapport agrégé du couple exact `SHA/runId`. Il conserve la provenance
 `COMMITTED_SNAPSHOT`, `WORKTREE_LIVE` ou `MIXED` et les limites de reproductibilité
 du run ; il accepte donc un run informatif avec `origin/main` absent ou différent
