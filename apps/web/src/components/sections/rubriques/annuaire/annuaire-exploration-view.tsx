@@ -223,6 +223,7 @@ export function AnnuaireExplorationView({
             onClick={() => setViewMode("map")}
             tone={viewMode === "map" ? "primary" : "tertiary"}
             variant="pill"
+            ariaLabel={fr ? "Afficher la carte" : "Show map"}
             className={cn(
               "px-4 py-2.5 rounded-xl flex items-center justify-center transition-all",
               viewMode === "map" ? "shadow-2xl" : "hover:shadow-md"
@@ -234,6 +235,7 @@ export function AnnuaireExplorationView({
             onClick={() => setViewMode("network")}
             tone={viewMode === "network" ? "primary" : "tertiary"}
             variant="pill"
+            ariaLabel={fr ? "Afficher le réseau" : "Show network"}
             className={cn(
               "px-4 py-2.5 rounded-xl flex items-center justify-center transition-all",
               viewMode === "network" ? "shadow-2xl" : "hover:shadow-md"
