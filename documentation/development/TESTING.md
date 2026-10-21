@@ -1156,6 +1156,37 @@ mise à jour automatiquement. `attentionRequired: false` signifie qu’aucun
 delta top-heavy ni REVIEW non qualifié nécessitant une nouvelle analyse n’a
 été observé, pas que la dette historique de fichiers volumineux est absente.
 
+`audit:quality -- all` produit en plus, après les cinq triplets et le triplet
+agrégé, une projection non normative dans le même SHA :
+`quality-index--<runId>--index.json` et
+`quality-index--<runId>--summary.md`. Cette projection est une vue par fichier,
+domaine et relation prouvée ; elle réutilise les résultats déjà calculés et la
+fonction de corrélation du radar. Elle distingue `PRESENT`, `NONE`,
+`NOT_MEASURED` et `NOT_APPLICABLE`, conserve les deux vues top-heavy (verdict
+initial et réévaluation dérivée), et ne transforme pas une erreur de gate en
+mesure nulle. Une projection ne peut pas modifier les rapports, manifestes,
+baselines, justifications ou seuils. Si un run de développement est incomplet,
+le runner conserve les gates et expose l'erreur de projection ; la projection
+offline, elle, refuse tout run incomplet, incohérent ou dont l'identité ne
+correspond pas exactement à la demande.
+
+Pour projeter un run existant sans relancer de scanner :
+
+```bash
+npm run report:quality-index -- --offline --sha=<SHA> --run-id=<runId>
+npm run report:quality-index -- --offline --sha=<SHA> --run-id=<runId> --bundle
+```
+
+Le mode `--offline` lit exclusivement les cinq rapports, leurs manifestes et
+le rapport agrégé du couple exact `SHA/runId`. Il conserve la provenance
+`COMMITTED_SNAPSHOT`, `WORKTREE_LIVE` ou `MIXED` et les limites de reproductibilité
+du run ; il ne relit pas le HEAD courant, ne recalcule aucune métrique et ne
+ratifie aucune baseline. Le `--bundle` écrit un ZIP dans le même dossier avec
+les dix-huit fichiers originaux et les deux projections, chemins plats
+préservés, sans écraser un fichier existant. Les contrôles de rétention
+reconnaissent ces trois artefacts de projection sans les confondre avec les
+triplets des engines.
+
 L’audit architectural ponctuel est distinct du radar top-heavy :
 
 ```bash

@@ -6,10 +6,12 @@ import { randomUUID } from "node:crypto";
 export const QUALITY_AUDIT_ROOT = "artifacts/quality-audits";
 export const QUALITY_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "all"]);
 export const QUALITY_AUDIT_RETENTION_LIMIT = 3;
+export const QUALITY_PROJECTION_PREFIX = "quality-index";
 
 const RUN_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 const ARTIFACT_SUFFIXES = Object.freeze({ report: "report.json", manifest: "manifest.json", summary: "summary.md" });
+const PROJECTION_SUFFIXES = Object.freeze({ index: "index.json", summary: "summary.md", bundle: "bundle.zip" });
 const ACTIVE_MARKER_PREFIX = ".active-";
 const LOCK_DIRECTORY = ".retention.lock";
 const LOCK_WAIT_MS = 5_000;
@@ -55,10 +57,26 @@ export function createAuditPaths({ root, auditedHead, audit, runId } = {}) {
   };
 }
 
-function writeNewFile(filePath, content, fsApi = fs) {
+export function createQualityProjectionPaths({ root, auditedHead, runId } = {}) {
+  assertSha(auditedHead);
+  assertRunId(runId);
+  const shaRoot = path.join(root, QUALITY_AUDIT_ROOT, auditedHead);
+  const fileName = (kind) => `${QUALITY_PROJECTION_PREFIX}--${runId}--${PROJECTION_SUFFIXES[kind]}`;
+  return {
+    shaRoot,
+    runId,
+    index: path.join(shaRoot, fileName("index")),
+    summary: path.join(shaRoot, fileName("summary")),
+    bundle: path.join(shaRoot, fileName("bundle")),
+  };
+}
+
+export function writeNewFile(filePath, content, fsApi = fs) {
+  if (fsApi.existsSync(filePath)) throw new Error(`Fichier déjà présent, refus d'écrasement: ${filePath}`);
   const temporaryPath = `${filePath}.${process.pid}-${randomUUID()}.tmp`;
   try {
     fsApi.writeFileSync(temporaryPath, content, { encoding: "utf8", flag: "wx" });
+    if (fsApi.existsSync(filePath)) throw new Error(`Fichier déjà présent, refus d'écrasement: ${filePath}`);
     fsApi.renameSync(temporaryPath, filePath);
   } catch (error) {
     try { fsApi.unlinkSync(temporaryPath); } catch { /* preserve the original failure */ }
@@ -150,7 +168,7 @@ function validManifest(manifest, { auditedHead, audit, runId }) {
 }
 
 function addArtifact(inventory, artifact) {
-  const key = `${artifact.audit}:${artifact.runId}:${artifact.kind}`;
+  const key = `${artifact.projection ?? artifact.audit}:${artifact.runId}:${artifact.kind}`;
   if (inventory.artifactKeys.has(key)) {
     inventory.unknown.push(`duplicate:${key}`);
     return;
@@ -166,6 +184,24 @@ function inspectFlatEntry({ root, shaEntry, child, fsApi }) {
   const artifact = { ...parsed, sourcePath: filePath, legacy: false };
   if (parsed.kind === "manifest") artifact.manifest = readJson(filePath, fsApi);
   return artifact;
+}
+
+function parseFlatProjectionName(name) {
+  const prefix = `${QUALITY_PROJECTION_PREFIX}--`;
+  if (!name.startsWith(prefix)) return null;
+  for (const [kind, suffix] of Object.entries(PROJECTION_SUFFIXES)) {
+    const ending = `--${suffix}`;
+    if (!name.endsWith(ending)) continue;
+    const runId = name.slice(prefix.length, -ending.length);
+    if (RUN_ID_PATTERN.test(runId)) return { projection: QUALITY_PROJECTION_PREFIX, runId, kind };
+  }
+  return null;
+}
+
+function inspectFlatProjectionEntry({ shaEntry, child }) {
+  const parsed = parseFlatProjectionName(child.name);
+  if (!parsed || !child.isFile() || child.isSymbolicLink()) return null;
+  return { ...parsed, sourcePath: path.join(shaEntry.path, child.name), legacy: false };
 }
 
 function inspectLegacyRun({ shaEntry, runEntry, fsApi, inventory }) {
@@ -200,6 +236,8 @@ function inspectShaDirectory(root, entry, fsApi = fs) {
   for (const child of fsApi.readdirSync(shaEntry.path, { withFileTypes: true })) {
     const flat = inspectFlatEntry({ root, shaEntry, child, fsApi });
     if (flat) { addArtifact(inventory, flat); continue; }
+    const projection = inspectFlatProjectionEntry({ shaEntry, child });
+    if (projection) { addArtifact(inventory, projection); continue; }
     if (child.isDirectory() && !child.isSymbolicLink()) inspectLegacyRun({ shaEntry, runEntry: child, fsApi, inventory });
     else inventory.unknown.push(child.name);
   }
@@ -412,6 +450,18 @@ export function listFlatQualityArtifacts({ root, auditedSha, fsApi = fs } = {}) 
   return entries.map((entry) => {
     if (!entry.isFile() || entry.isSymbolicLink()) return null;
     const parsed = parseFlatArtifactName(entry.name);
+    return parsed ? { ...parsed, path: path.join(shaRoot, entry.name) } : null;
+  }).filter(Boolean);
+}
+
+export function listFlatQualityProjectionArtifacts({ root, auditedSha, fsApi = fs } = {}) {
+  assertSha(auditedSha);
+  const shaRoot = path.join(root, QUALITY_AUDIT_ROOT, auditedSha);
+  let entries;
+  try { entries = fsApi.readdirSync(shaRoot, { withFileTypes: true }); } catch { return []; }
+  return entries.map((entry) => {
+    if (!entry.isFile() || entry.isSymbolicLink()) return null;
+    const parsed = parseFlatProjectionName(entry.name);
     return parsed ? { ...parsed, path: path.join(shaRoot, entry.name) } : null;
   }).filter(Boolean);
 }

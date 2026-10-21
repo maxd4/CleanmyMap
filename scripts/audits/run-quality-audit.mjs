@@ -25,6 +25,7 @@ import {
   parseHumanDecisions,
   readHumanDecisionsFromView,
 } from "../reports/generate-modularity-radar.mjs";
+import { generateQualityFileIndex } from "../reports/quality-file-index.mjs";
 import {
   QUALITY_AUDIT_ROOT,
   beginActiveAudit,
@@ -467,6 +468,7 @@ export async function runQualityAudit(mode, {
         : "PASS";
     const overallAttention = manifests.some((entry) => entry.attentionRequired);
     let allPaths = null;
+    let projectionPaths = null;
     if (mode === "all") {
       allPaths = createAuditPaths({ root, auditedHead: start.auditedHead, audit: "all", runId });
       const aggregateEvidence = {
@@ -512,6 +514,20 @@ export async function runQualityAudit(mode, {
         ].join("\n") + "\n",
         fsApi,
       });
+      try {
+        const projection = await generateQualityFileIndex({
+          root,
+          auditedSha: start.auditedHead,
+          runId,
+          mode: "ALL",
+          generatedAt,
+          includeBundle: false,
+          fsApi,
+        });
+        projectionPaths = projection.paths;
+      } catch (error) {
+        projectionPaths = { error: error.message };
+      }
     }
 
     const retention = await retainQualityAuditArtifacts({ root, now, fsApi });
@@ -526,6 +542,7 @@ export async function runQualityAudit(mode, {
       worktreeClean: start.worktreeClean,
       worktreeChanged,
       allPaths,
+      projectionPaths,
       retention,
       results: manifests,
     };

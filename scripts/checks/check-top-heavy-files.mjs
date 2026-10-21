@@ -66,7 +66,7 @@ export function createProximityRows(rows, limit) {
     .slice(0, limit);
 }
 
-function evaluatePolicy({ rows, baseline }) {
+export function evaluatePolicy({ rows, baseline }) {
   const { allowed: allowedBaseline, review: reviewBaseline } = baseline;
   const generatedRows = rows.filter((row) => row.kind === "generated");
   const checkedRows = rows.filter((row) => !isExcludedGeneratedRow(row));

@@ -35,7 +35,7 @@ function emptyComparison() {
 }
 
 function fixtureResult(audit) {
-  if (audit === "dead-code") return { comparison: emptyComparison() };
+  if (audit === "dead-code") return { currentFindings: [], baseline: { findings: [] }, justifications: { justifications: [] }, comparison: emptyComparison(), status: "PASS" };
   if (audit === "duplication") return { results: [{ scopeName: "runtime", metrics: { clones: 0, duplicatedLines: 0, duplicatedTokens: 0, newClones: 0 }, comparison: { status: "PASS", failures: [] } }], justificationReport: { stale: [] } };
   if (audit === "top-heavy") return { status: "PASS", rows: [], proximityRows: [], radarProjection: { rows: [] }, evaluation: { blockingFindings: [], reviewWarnings: [], reviewImprovements: [], staleReviewBaselineEntries: [], staleBaselineEntries: [] } };
   if (audit === "complexity") return { status: "PASS", metrics: [], result: { failures: [], stale: [], improvements: [], reviews: [] } };
@@ -166,12 +166,21 @@ test("all writes every gate and the aggregate as flat files for one run", async 
   try {
     const result = await runQualityAudit("all", { root, runId: "run-all", snapshot: () => stableSnapshot, engine: async (audit) => fixtureResult(audit) });
     const names = fs.readdirSync(path.join(root, "artifacts", "quality-audits", sha)).sort();
-    assert.equal(names.length, 18);
+    assert.equal(names.length, 20);
     for (const audit of [...qualityAudits, "all"]) {
       assert.ok(names.includes(`${audit}--run-all--manifest.json`));
       assert.ok(names.includes(`${audit}--run-all--report.json`));
       assert.ok(names.includes(`${audit}--run-all--summary.md`));
     }
+    assert.ok(names.includes("quality-index--run-all--index.json"));
+    assert.ok(names.includes("quality-index--run-all--summary.md"));
+    assert.deepEqual(result.projectionPaths, {
+      index: path.join(root, "artifacts", "quality-audits", sha, "quality-index--run-all--index.json"),
+      summary: path.join(root, "artifacts", "quality-audits", sha, "quality-index--run-all--summary.md"),
+      bundle: path.join(root, "artifacts", "quality-audits", sha, "quality-index--run-all--bundle.zip"),
+      shaRoot: path.join(root, "artifacts", "quality-audits", sha),
+      runId: "run-all",
+    });
     assert.equal(result.allPaths.runRoot, result.allPaths.shaRoot);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
