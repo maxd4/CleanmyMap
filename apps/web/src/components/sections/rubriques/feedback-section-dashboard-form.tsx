@@ -34,7 +34,7 @@ export function FeedbackSectionDashboardForm({
       >
         <div className="space-y-4">
           <div>
-            <h2 className="text-[0.9rem] font-black uppercase tracking-[0.18em] text-pink-600">
+            <h2 className="text-base font-black uppercase tracking-[0.18em] text-pink-600">
               {locale === "fr" ? "Quel est votre retour ?" : "What is your feedback?"}
             </h2>
             <p className="mt-2 text-[0.96rem] leading-[1.65] text-slate-600">
@@ -71,8 +71,8 @@ export function FeedbackSectionDashboardForm({
                     </span>
                     <span
                       className={[
-                        "mt-1 block text-xs leading-relaxed",
-                        isSelected ? "text-white/85" : "text-slate-500",
+                        "cmm-text-small mt-1 block leading-relaxed",
+                        isSelected ? "text-white" : "text-slate-600",
                       ].join(" ")}
                     >
                       {localize(locale, questionnaire.intro)}

@@ -93,7 +93,7 @@ export function CommunitySection() {
 
         <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
           <p className="text-sm font-semibold text-amber-950">Compétitions SPOGOMI</p>
-          <p className="mt-1 text-sm text-amber-900/80">Découvrez les événements SPOGOMI publiés, sans dupliquer les événements communautaires.</p>
+          <p className="mt-1 text-sm text-amber-900">Découvrez les événements SPOGOMI publiés, sans dupliquer les événements communautaires.</p>
           <CmmButton href="/spogomi" tone="secondary" variant="pill" size="sm" className="mt-3">Voir les événements SPOGOMI</CmmButton>
         </div>
 

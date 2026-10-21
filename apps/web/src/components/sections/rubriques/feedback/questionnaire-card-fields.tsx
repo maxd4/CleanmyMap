@@ -59,7 +59,7 @@ export function QuestionnaireFields({
         return (
           <div key={field.key} className="block space-y-1.5">
             <label htmlFor={fieldId} className="block">
-              <span className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-slate-200">
+              <span className="cmm-text-small font-semibold uppercase tracking-[0.12em] text-slate-100">
                 {field.label[locale]}
               </span>
             </label>
@@ -110,7 +110,7 @@ export function QuestionnaireFields({
               </div>
             ) : null}
             {field.helper ? (
-              <p className="cmm-text-caption text-slate-400">
+              <p className="cmm-text-small text-slate-300">
                 {field.helper[locale]}
               </p>
             ) : null}

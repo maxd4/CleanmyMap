@@ -67,7 +67,7 @@ export function TrashSpotterSection() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="relative overflow-hidden rounded-[2.75rem] border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(250,253,248,0.98),rgba(243,249,241,0.98))] p-6 shadow-[0_32px_100px_-48px_rgba(34,197,94,0.28)] sm:p-8 lg:p-10"
+          className="relative overflow-hidden rounded-[2rem] border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(250,253,248,0.98),rgba(243,249,241,0.98))] p-6 shadow-[0_24px_72px_-42px_rgba(34,197,94,0.24)] sm:p-8 lg:p-10"
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(187,247,208,0.45),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(134,239,172,0.2),transparent_30%)]" />
 
@@ -85,7 +85,7 @@ export function TrashSpotterSection() {
 
             <motion.div
               variants={itemVariants}
-              className="relative min-h-[240px] overflow-hidden rounded-[2.25rem] border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(234,247,231,0.92),rgba(248,252,246,0.98))] shadow-[0_20px_56px_-34px_rgba(22,163,74,0.22)]"
+              className="relative min-h-[240px] overflow-hidden rounded-2xl border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(234,247,231,0.92),rgba(248,252,246,0.98))] shadow-[0_16px_44px_-30px_rgba(22,163,74,0.2)]"
             >
               <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-300 via-emerald-500 to-emerald-300" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(134,239,172,0.45),transparent_25%),radial-gradient(circle_at_20%_80%,rgba(187,247,208,0.45),transparent_24%)]" />
@@ -99,10 +99,10 @@ export function TrashSpotterSection() {
 
                 <div className="absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,transparent,rgba(16,76,44,0.08))]" />
                 <div className="absolute right-6 top-8 h-28 w-28 rounded-full bg-emerald-200/50 blur-3xl" />
-                <div className="absolute bottom-7 left-5 right-5 rounded-[2rem] border border-emerald-200/70 bg-white/74 p-4 shadow-[0_16px_34px_-26px_rgba(15,23,42,0.25)] backdrop-blur">
+                <div className="absolute bottom-7 left-5 right-5 rounded-2xl border border-emerald-200/70 bg-white/90 p-4 shadow-[0_12px_28px_-22px_rgba(15,23,42,0.22)]">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700">
+                      <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-emerald-700">
                         {fr ? "Signalements actifs" : "Active reports"}
                       </p>
                       <p className="text-3xl font-black tracking-[-0.06em] text-emerald-950">
@@ -110,10 +110,10 @@ export function TrashSpotterSection() {
                       </p>
                     </div>
                     <div className="space-y-2 text-right">
-                      <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-800">
+                      <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-800">
                         {fr ? "En direct" : "Live"}
                       </div>
-                      <div className="rounded-full border border-emerald-200 bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-900">
+                      <div className="rounded-full border border-emerald-200 bg-white px-3 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-900">
                         {coveragePercent}% · {urgencyLabel}
                       </div>
                     </div>
@@ -143,7 +143,7 @@ export function TrashSpotterSection() {
                     <p className="text-lg font-black tracking-[-0.03em]">
                       {fr ? "Données temporairement indisponibles" : "Data temporarily unavailable"}
                     </p>
-                    <p className="text-sm font-medium text-rose-800/80">
+                    <p className="text-sm font-medium text-rose-900">
                       {error instanceof Error
                         ? error.message
                         : fr
@@ -160,7 +160,7 @@ export function TrashSpotterSection() {
                     <MapPin size={18} />
                   </div>
                   <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700">
+                    <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-emerald-700">
                       {fr ? "Lecture de suivi" : "Monitoring view"}
                     </p>
                     <h3 className="text-2xl font-black tracking-[-0.04em] text-slate-950">
@@ -177,7 +177,7 @@ export function TrashSpotterSection() {
                   <CmmButton href="/signalement" tone="secondary" variant="pill">
                     {fr ? "Signaler un déchet" : "Report waste"}
                   </CmmButton>
-                  <span className="text-xs font-semibold text-slate-500">
+                  <span className="cmm-text-small font-semibold text-slate-600">
                     {isLoading
                       ? fr
                         ? "Chargement des données de suivi…"
@@ -209,11 +209,11 @@ export function TrashSpotterSection() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 cmm-text-small font-black uppercase tracking-[0.14em] text-slate-700">
                     <ShieldCheck size={12} className="text-emerald-600" />
                     {fr ? "Filtrer" : "Filter"}
                   </span>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-800">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-800">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
                     {fr ? "En direct" : "Live"}
                   </span>
@@ -277,7 +277,7 @@ export function TrashSpotterSection() {
                 },
               ].map((step) => (
                 <CmmCard key={step.step} tone="emerald" variant="muted" size="sm">
-                  <div className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-800">
+                  <div className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-800">
                     {step.step}
                   </div>
                   <p className="mt-3 text-sm font-black tracking-[-0.02em] text-slate-950">
@@ -310,7 +310,7 @@ export function TrashSpotterSection() {
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <CmmCard tone="emerald" variant="muted" size="sm">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                <p className="cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-700">
                   {fr ? "Données sécurisées" : "Secured data"}
                 </p>
                 <p className="cmm-text-body mt-2 font-medium">
@@ -318,7 +318,7 @@ export function TrashSpotterSection() {
                 </p>
               </CmmCard>
               <CmmCard tone="emerald" variant="muted" size="sm">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                <p className="cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-700">
                   {fr ? "Impact mesurable" : "Measurable impact"}
                 </p>
                 <p className="cmm-text-body mt-2 font-medium">

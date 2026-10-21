@@ -50,7 +50,8 @@ export function QuestionnaireRecognitionNotice({ locale }: { locale: Locale }) {
             href="/sections/gamification"
             tone="secondary"
             variant="pill"
-            className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-xl border border-amber-300/80 bg-white/70 px-3 py-1.5 text-xs font-bold text-amber-900 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+            size="sm"
+            className="mt-3 inline-flex items-center gap-2 border border-amber-300/80 bg-white/70 font-bold text-amber-900 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
           >
             {locale === "fr" ? "Découvrir les badges" : "Discover the badges"}
             <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />

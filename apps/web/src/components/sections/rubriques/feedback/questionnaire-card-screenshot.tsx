@@ -55,7 +55,7 @@ export function QuestionnaireScreenshotField({
           />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-slate-100">{file.name}</p>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 cmm-text-small text-slate-300">
               {Math.ceil(file.size / 1024)} Ko · aperçu local uniquement avant l&apos;envoi
             </p>
             <button

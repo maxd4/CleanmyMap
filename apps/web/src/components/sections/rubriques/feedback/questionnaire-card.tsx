@@ -274,7 +274,7 @@ export function QuestionnaireCard({
             <Icon className={cn("h-5 w-5", accentClasses.icon)} aria-hidden="true" />
           </div>
           <div>
-            <p className="cmm-text-caption font-semibold uppercase tracking-[0.24em] text-white/55">
+            <p className="cmm-text-small font-semibold uppercase tracking-[0.2em] text-slate-100">
               {questionnaire.title[locale]}
             </p>
             <p className={cn("mt-1 text-sm leading-relaxed", accentClasses.title)}>

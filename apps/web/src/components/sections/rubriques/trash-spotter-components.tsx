@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { ArrowRight, Clock3, MapPin } from "lucide-react";
+import { Clock3, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { ActionMapItem } from "@/lib/actions/types";
@@ -75,7 +75,7 @@ export const SpotterRecentList = memo(function SpotterRecentList({
             </p>
           </div>
         </div>
-        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-800">
+        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-800">
           {fr ? "En direct" : "Live"}
         </span>
       </div>
@@ -97,7 +97,7 @@ export const SpotterRecentList = memo(function SpotterRecentList({
                     {spot.location_label}
                   </p>
                   <span className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em]",
+                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 cmm-text-small font-black uppercase tracking-[0.12em]",
                     statusTone.pill,
                   )}>
                     <span className={cn("h-1.5 w-1.5 rounded-full", statusTone.dot)} />
@@ -110,14 +110,7 @@ export const SpotterRecentList = memo(function SpotterRecentList({
                     : fr ? "Sans coordonnées" : "No coordinates"}
                 </p>
                 <div className="flex items-center justify-between gap-3 pt-1">
-                  <p className="truncate text-xs font-medium text-slate-500">{spot.location_label}</p>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1 rounded-full px-0 py-0 text-xs font-black uppercase tracking-[0.18em] text-emerald-700 transition hover:text-emerald-800"
-                  >
-                    {fr ? "Voir" : "Open"}
-                    <ArrowRight size={14} />
-                  </button>
+                  <p className="truncate cmm-text-small font-medium text-slate-600">{spot.location_label}</p>
                 </div>
               </div>
             </motion.article>

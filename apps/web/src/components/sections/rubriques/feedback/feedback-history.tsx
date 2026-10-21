@@ -91,7 +91,7 @@ function FeedbackHistoryItem({ item, locale }: { item: PersonalFeedbackItem; loc
             {FEEDBACK_QUALIFICATION_LABELS[item.qualificationStatus][locale]}
           </p>
           {item.qualificationStatus === "accepted" && item.type !== "collaboration" ? (
-            <p className="mt-1 text-xs font-medium text-slate-600">
+            <p className="mt-1 cmm-text-small font-medium text-slate-600">
               {locale === "fr"
                 ? "Contribution reconnue pour la progression Amélioration du produit."
                 : "Contribution recognized for the Product improvement progression."}
@@ -118,14 +118,14 @@ function FeedbackHistoryItem({ item, locale }: { item: PersonalFeedbackItem; loc
           ) : null}
           {item.qualificationStatus === "needs_info" && item.qualificationDecidedByUserId ? (
             <a
-              className="mt-2 inline-flex text-xs font-semibold text-pink-700 underline-offset-2 hover:underline"
+              className="mt-2 inline-flex cmm-text-small font-semibold text-pink-700 underline-offset-2 hover:underline"
               href={`/sections/messagerie?channel=dm&recipientId=${encodeURIComponent(item.qualificationDecidedByUserId)}&feedbackId=${encodeURIComponent(item.id)}`}
             >
               {locale === "fr" ? "Ajouter une précision dans le DM" : "Add details in the DM"}
             </a>
           ) : null}
         </div>
-        <span className="inline-flex w-fit shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-pink-700">
+        <span className="inline-flex w-fit shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 cmm-text-small font-bold text-pink-700">
           {FEEDBACK_STATUS_LABELS[item.status][locale]}
         </span>
       </div>
@@ -262,7 +262,7 @@ export function FeedbackHistory({ locale }: { locale: Locale }) {
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 id="mes-retours-title" className="text-[0.9rem] font-black uppercase tracking-[0.18em] text-pink-600">
+          <h2 id="mes-retours-title" className="text-base font-black uppercase tracking-[0.18em] text-pink-600">
             {fr ? "Mes retours" : "My feedback"}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-800">

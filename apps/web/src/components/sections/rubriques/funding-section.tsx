@@ -145,7 +145,7 @@ export function FundingSection({ onParticipeUrl, headingLevel = "h1" }: FundingS
                     <Icon size={24} aria-hidden="true" />
                   </div>
                   <div className="text-right">
-                    <p className="cmm-text-caption font-semibold uppercase tracking-[0.18em] text-slate-500">{fr ? "Total net confirmé par Stripe" : "Net total confirmed by Stripe"}</p>
+                    <p className="cmm-text-small font-semibold uppercase tracking-[0.16em] text-slate-600">{fr ? "Total net confirmé par Stripe" : "Net total confirmed by Stripe"}</p>
                     {aggregateState === "loading" ? (
                       <p className="mt-2 text-sm font-semibold text-slate-500" aria-live="polite">{fr ? "Chargement…" : "Loading…"}</p>
                     ) : aggregateState === "error" ? (

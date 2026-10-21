@@ -36,7 +36,7 @@ export function FeedbackSectionDashboardSupport({
                   <p className="text-[0.94rem] font-bold leading-tight text-slate-950">
                     {localize(locale, item.title)}
                   </p>
-                  <p className="cmm-text-caption leading-relaxed text-slate-500">
+                  <p className="cmm-text-small leading-relaxed text-slate-600">
                     {localize(locale, item.description)}
                   </p>
                 </div>

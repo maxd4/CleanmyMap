@@ -52,7 +52,7 @@ export function FeedbackSectionDashboardGuidance({
               href="/learn/comprendre"
               tone="secondary"
               variant="pill"
-              className="h-12 w-full px-6 text-xs font-black uppercase tracking-[0.18em] text-pink-600"
+              className="w-full px-6 cmm-text-small font-black uppercase tracking-[0.18em] text-pink-600"
             >
               {fr ? "En savoir plus" : "Learn more"}
               <ArrowRight size={16} />

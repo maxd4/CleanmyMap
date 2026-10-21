@@ -98,7 +98,7 @@ function FeedbackDiscussionMode({
                 <h3 className="text-xl font-black leading-tight tracking-[-0.03em] text-slate-950">
                   {fr ? "Besoin d'un contact direct ?" : "Need a direct contact?"}
                 </h3>
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
                   {fr ? "Support & partenariats" : "Support & partnerships"}
                 </p>
                 <p className="max-w-md text-[0.96rem] leading-[1.65] text-slate-600">
@@ -113,7 +113,7 @@ function FeedbackDiscussionMode({
             asChild
             tone="important"
             variant="pill"
-            className="relative z-10 mt-5 h-12 px-6 text-[11px] font-black uppercase tracking-[0.18em]"
+            className="relative z-10 mt-5 px-6 cmm-text-small font-black uppercase tracking-[0.16em]"
           >
             <a href={`mailto:${contactEmail}`}>
             {fr ? "Écrire un mail" : "Write an email"}
@@ -123,7 +123,7 @@ function FeedbackDiscussionMode({
         </div>
 
         <div className="rounded-[1.5rem] border border-rose-200/70 bg-white/92 p-5 shadow-sm">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-pink-600">
+          <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-pink-600">
             {fr ? "Centre d'aide" : "Help center"}
           </p>
           <div className="mt-4 space-y-3">
@@ -140,7 +140,7 @@ function FeedbackDiscussionMode({
                   <p className="text-sm font-bold text-slate-950">
                     {fr ? link.title.fr : link.title.en}
                   </p>
-                  <p className="text-xs leading-relaxed text-slate-500">
+                  <p className="cmm-text-small leading-relaxed text-slate-600">
                     {fr ? link.description.fr : link.description.en}
                   </p>
                 </div>

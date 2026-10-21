@@ -24,14 +24,14 @@ export function QuestionnaireSubmissionStatus({
         <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50" role="status" aria-live="polite">
           {questionnaire.success[locale]}
           {questionnaire.id !== "collaboration" ? (
-            <span className="mt-1 block text-emerald-100/90">
+            <span className="mt-1 block text-emerald-100">
               {locale === "fr"
                 ? "Il sera examiné pour déterminer s'il peut être comptabilisé dans votre progression Amélioration du produit."
                 : "It will be reviewed to determine whether it can count toward your Product improvement progression."}
             </span>
           ) : null}
           {requestId ? (
-            <span className="mt-1 block text-emerald-100/80">
+            <span className="mt-1 block text-emerald-100">
               {locale === "fr" ? "Référence" : "Reference"}: {requestId}
             </span>
           ) : null}
@@ -39,7 +39,8 @@ export function QuestionnaireSubmissionStatus({
             href="/sections/feedback#mes-retours"
             tone="secondary"
             variant="pill"
-            className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-xl border border-emerald-200/50 bg-white/10 px-3 py-1.5 text-xs font-bold text-emerald-50 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/60"
+            size="sm"
+            className="mt-3 inline-flex items-center gap-2 border border-emerald-200/50 bg-white/10 font-bold text-emerald-50 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/60"
           >
             {locale === "fr" ? "Voir mes retours" : "View my feedback"}
             <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
