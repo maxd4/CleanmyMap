@@ -292,9 +292,26 @@ function markerOwnerState(owner) {
   }
 }
 
-function activeMarkerDiagnostics(entryName, marker, fsApi = fs) {
+function parseActiveMarkerName(name) {
+  const suffix = ".json";
+  if (!name.startsWith(ACTIVE_MARKER_PREFIX) || !name.endsWith(suffix)) return null;
+  const identity = name.slice(ACTIVE_MARKER_PREFIX.length, -suffix.length);
+  const auditedHead = identity.slice(0, 40);
+  if (!SHA_PATTERN.test(auditedHead)) return null;
+  const runId = identity.slice(40, 42) === "--" ? identity.slice(42) : null;
+  return { auditedHead: auditedHead.toLowerCase(), runId: runId && RUN_ID_PATTERN.test(runId) ? runId : null };
+}
+
+function markerDeclaredIdentity(marker) {
+  return {
+    auditedHead: typeof marker?.auditedHead === "string" && SHA_PATTERN.test(marker.auditedHead) ? marker.auditedHead.toLowerCase() : null,
+    runId: typeof marker?.runId === "string" && RUN_ID_PATTERN.test(marker.runId) ? marker.runId : null,
+  };
+}
+
+function activeMarkerDiagnostics(entryName, marker) {
   const state = markerOwnerState(marker.owner);
-  if (state === "ALIVE") return { activeSha: marker.auditedHead };
+  if (state === "ALIVE") return { activeSha: marker.auditedHead.toLowerCase() };
   if (state === "ABSENT") {
     return { abandoned: true, diagnostic: `${entryName}:ABANDONED_MARKER_RECOVERED` };
   }
@@ -310,11 +327,23 @@ function activeShaSet(root, fsApi = fs) {
     if (!entry.isFile() || entry.isSymbolicLink() || !entry.name.startsWith(ACTIVE_MARKER_PREFIX)) continue;
     const markerPath = path.join(qualityRoot(root), entry.name);
     const marker = readJson(markerPath, fsApi);
-    if (marker?.schemaVersion !== 1 || marker.kind !== "quality-audit-active" || !SHA_PATTERN.test(marker.auditedHead ?? "")) {
-      diagnostics.push(`${entry.name}:ACTIVE_MARKER_AMBIGUOUS_PRESERVED`);
+    const namedIdentity = parseActiveMarkerName(entry.name);
+    const declaredIdentity = markerDeclaredIdentity(marker);
+    const protectedShas = new Set([namedIdentity?.auditedHead, declaredIdentity.auditedHead].filter(Boolean));
+    const identityContradiction = namedIdentity && declaredIdentity.auditedHead
+      && (namedIdentity.auditedHead !== declaredIdentity.auditedHead || namedIdentity.runId !== declaredIdentity.runId);
+    const valid = marker?.schemaVersion === 1
+      && marker.kind === "quality-audit-active"
+      && namedIdentity
+      && declaredIdentity.auditedHead === namedIdentity.auditedHead
+      && declaredIdentity.runId === namedIdentity.runId;
+    if (!valid) {
+      for (const protectedSha of protectedShas) active.add(protectedSha);
+      if (identityContradiction) diagnostics.push(`${entry.name}:ACTIVE_MARKER_IDENTITY_CONTRADICTION_PRESERVED`);
+      diagnostics.push(`${entry.name}:${protectedShas.size > 0 ? "ACTIVE_MARKER_AMBIGUOUS_PRESERVED" : "ACTIVE_MARKER_IDENTITY_UNRESOLVED_PRESERVED"}`);
       continue;
     }
-    const state = activeMarkerDiagnostics(entry.name, marker, fsApi);
+    const state = activeMarkerDiagnostics(entry.name, marker);
     if (state.activeSha) active.add(state.activeSha);
     if (state.diagnostic) diagnostics.push(state.diagnostic);
     if (state.abandoned) {

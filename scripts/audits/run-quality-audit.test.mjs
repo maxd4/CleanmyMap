@@ -820,6 +820,121 @@ test("les projections de plusieurs runs valides restent rattachées à leurs man
   }
 });
 
+test("un marqueur actif tronqué protège le SHA identifiable sans suppression partielle", async () => {
+  const root = tempRoot();
+  const oldest = "0".repeat(40);
+  try {
+    writeFlatQualityRun(root, oldest, "run-old", "2026-10-01T00:00:00.000Z", [...qualityAudits, "all"]);
+    const projection = createQualityProjectionPaths({ root, auditedHead: oldest, runId: "run-old" });
+    fs.writeFileSync(projection.index, "{\"runId\":\"run-old\"}");
+    fs.writeFileSync(projection.summary, "# old\n");
+    fs.writeFileSync(projection.bundle, Buffer.from("PK\\x03\\x04old"));
+    const before = snapshotShaFiles(root, oldest);
+    fs.writeFileSync(path.join(root, "artifacts", "quality-audits", `.active-${oldest}--truncated.json`), "{\"schemaVersion\":1");
+    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.equal(retention.removedSha.includes(oldest), false);
+    assert.ok(retention.retainedSha.includes(oldest));
+    assert.ok(retention.diagnostics.some((entry) => entry.includes(`${oldest}--truncated.json:ACTIVE_MARKER_AMBIGUOUS_PRESERVED`)));
+    assert.deepEqual(snapshotShaFiles(root, oldest), before);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("un JSON de marqueur invalide protège le SHA du nom et conserve toutes ses preuves", async () => {
+  const root = tempRoot();
+  const oldest = "0".repeat(40);
+  try {
+    writeFlatQualityRun(root, oldest, "run-old", "2026-10-01T00:00:00.000Z", [...qualityAudits, "all"]);
+    const projection = createQualityProjectionPaths({ root, auditedHead: oldest, runId: "run-old" });
+    fs.writeFileSync(projection.index, "{}");
+    fs.writeFileSync(projection.summary, "# old\n");
+    fs.writeFileSync(projection.bundle, Buffer.from("PK\\x03\\x04old"));
+    const before = snapshotShaFiles(root, oldest);
+    const markerPath = path.join(root, "artifacts", "quality-audits", `.active-${oldest}--invalid.json`);
+    fs.writeFileSync(markerPath, "not-json");
+    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.equal(retention.removedSha.includes(oldest), false);
+    assert.ok(fs.existsSync(path.join(root, "artifacts", "quality-audits", oldest)));
+    assert.ok(fs.existsSync(markerPath));
+    assert.ok(retention.diagnostics.some((entry) => entry.includes(`${oldest}--invalid.json:ACTIVE_MARKER_AMBIGUOUS_PRESERVED`)));
+    assert.deepEqual(snapshotShaFiles(root, oldest), before);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("une contradiction d'identité protège les SHA du nom et du contenu", async () => {
+  const root = tempRoot();
+  const namedSha = "1".repeat(40);
+  const declaredSha = "0".repeat(40);
+  try {
+    for (let index = 0; index < 5; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+    const beforeNamed = snapshotShaFiles(root, namedSha);
+    const beforeDeclared = snapshotShaFiles(root, declaredSha);
+    const markerPath = path.join(root, "artifacts", "quality-audits", `.active-${namedSha}--contradiction.json`);
+    fs.writeFileSync(markerPath, `${JSON.stringify({ schemaVersion: 1, kind: "quality-audit-active", auditedHead: declaredSha, runId: "contradiction", startedAt: "2020-01-01T00:00:00.000Z", owner: { pid: process.pid, hostname: os.hostname(), instanceId: "contradiction" } })}\n`);
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.equal(retention.removedSha.includes(namedSha), false);
+    assert.equal(retention.removedSha.includes(declaredSha), false);
+    assert.ok(retention.retainedSha.includes(namedSha));
+    assert.ok(retention.retainedSha.includes(declaredSha));
+    assert.ok(retention.diagnostics.some((entry) => entry.includes("ACTIVE_MARKER_IDENTITY_CONTRADICTION_PRESERVED")));
+    assert.equal(fs.existsSync(markerPath), true);
+    assert.deepEqual(snapshotShaFiles(root, namedSha), beforeNamed);
+    assert.deepEqual(snapshotShaFiles(root, declaredSha), beforeDeclared);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("un marqueur sans SHA identifiable conserve son diagnostic sans rattachement inventé", async () => {
+  const root = tempRoot();
+  const oldest = "0".repeat(40);
+  try {
+    writeFlatQualityRun(root, oldest, "run-old", "2026-10-01T00:00:00.000Z");
+    const markerPath = path.join(root, "artifacts", "quality-audits", ".active-corrupt.json");
+    fs.writeFileSync(markerPath, "{}");
+    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.ok(retention.removedSha.includes(oldest));
+    assert.ok(fs.existsSync(markerPath));
+    assert.ok(retention.diagnostics.some((entry) => entry.includes(".active-corrupt.json:ACTIVE_MARKER_IDENTITY_UNRESOLVED_PRESERVED")));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("un owner absent récupère le marqueur et la rétention supprime normalement le SHA expiré", async () => {
+  const root = tempRoot();
+  const oldest = "0".repeat(40);
+  try {
+    writeFlatQualityRun(root, oldest, "run-old", "2026-10-01T00:00:00.000Z");
+    const markerPath = path.join(root, "artifacts", "quality-audits", `.active-${oldest}--abandoned.json`);
+    fs.writeFileSync(markerPath, `${JSON.stringify({ schemaVersion: 1, kind: "quality-audit-active", auditedHead: oldest, runId: "abandoned", startedAt: "2020-01-01T00:00:00.000Z", owner: { pid: 2147483647, hostname: os.hostname(), instanceId: "abandoned" } })}\n`);
+    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.ok(retention.removedSha.includes(oldest));
+    assert.equal(fs.existsSync(path.join(root, "artifacts", "quality-audits", oldest)), false);
+    assert.equal(fs.existsSync(markerPath), false);
+    assert.ok(retention.diagnostics.some((entry) => entry.includes("ABANDONED_MARKER_RECOVERED")));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("a failed audit is retained and active executions are never removed", async () => {
   const root = tempRoot();
   const oldest = "0".repeat(40);
