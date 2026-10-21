@@ -28,7 +28,7 @@ import { validateDocumentationReport } from "../audits/documentation-maintainabi
 import { buildArchitectureImportGraph } from "./generate-architecture-import-graph.mjs";
 import { createCorrelationSignalsFromAuditResults } from "./generate-modularity-radar.mjs";
 
-export const QUALITY_INDEX_SCHEMA_VERSION = 2;
+export const QUALITY_INDEX_SCHEMA_VERSION = 3;
 export const QUALITY_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
 export const QUALITY_INDEX_PREFIX = "quality-index";
 export const QUALITY_ARCHITECTURE_DOMAIN_PREFIX = "architecture:";
@@ -721,10 +721,11 @@ function addDocumentation(report, files, domains) {
 
 function addArchitecture(architecture, files, domains) {
   if (!architecture || architecture.state !== "PRESENT") return;
+  const domainIdsByName = new Map((architecture.domains ?? []).map((domain) => [domain.domain, domain.id]));
   for (const architectureFile of architecture.files) {
     const file = ensureFile(files, architectureFile.path);
     file.architecture = architectureFile;
-    file.functionalDomains.add(architectureFile.domain);
+    file.functionalDomains.add(domainIdsByName.get(architectureFile.domain) ?? `${QUALITY_ARCHITECTURE_DOMAIN_PREFIX}${architectureFile.domain}`);
   }
   for (const architectureDomain of architecture.domains) {
     const domain = domains.get(architectureDomain.id) ?? {
@@ -738,6 +739,68 @@ function addArchitecture(architecture, files, domains) {
     for (const file of architectureDomain.files) domain.files.add(file);
     domain.coupling = architectureDomain.metrics;
     domains.set(architectureDomain.id, domain);
+  }
+}
+
+const FUNCTIONAL_QUALITY_CATEGORIES = Object.freeze([
+  "topHeavy",
+  "complexity",
+  "deadCode",
+  "duplication",
+  "cycles",
+  "documentation",
+]);
+
+const FUNCTIONAL_ARCHITECTURE_RELATION_CATEGORIES = Object.freeze([
+  "crossDomainImports",
+  "layerCrossings",
+  "unresolvedInternal",
+]);
+
+function architectureRelationReference(category, relation) {
+  const id = relation?.id ?? stableId(`architecture:${category}`, relation);
+  return { id, category };
+}
+
+function attachFunctionalDomainFindings(files, domains) {
+  for (const file of files.values()) {
+    for (const domainId of file.functionalDomains) {
+      const domain = domains.get(domainId);
+      if (!domain) continue;
+      domain.qualityFindingIds ??= new Set();
+      domain.boundaryViolationIds ??= new Set();
+      domain.blockingBoundaryViolationIds ??= new Set();
+      domain.informativeRelationIds ??= new Set();
+      domain.findingReferences ??= new Map();
+      domain.informativeRelationReferences ??= new Map();
+
+      for (const category of FUNCTIONAL_QUALITY_CATEGORIES) {
+        for (const finding of file[category]?.findings?.values() ?? []) {
+          domain.qualityFindingIds.add(finding.id);
+          domain.findingIds.add(finding.id);
+          domain.findingReferences.set(`${finding.id}:${file.path}`, { id: finding.id, file: file.path, category });
+        }
+      }
+
+      for (const finding of file.architecture?.findings?.boundaryViolations?.items ?? []) {
+        if (!finding?.id) continue;
+        domain.boundaryViolationIds.add(finding.id);
+        domain.findingIds.add(finding.id);
+        if (finding.blocking) domain.blockingBoundaryViolationIds.add(finding.id);
+        domain.findingReferences.set(`${finding.id}:${file.path}`, { id: finding.id, file: file.path, category: "boundaryViolations" });
+      }
+
+      for (const category of FUNCTIONAL_ARCHITECTURE_RELATION_CATEGORIES) {
+        for (const relation of file.architecture?.findings?.[category]?.items ?? []) {
+          const reference = architectureRelationReference(category, relation);
+          domain.informativeRelationIds.add(reference.id);
+          domain.informativeRelationReferences.set(`${reference.id}:${file.path}`, {
+            ...reference,
+            file: file.path,
+          });
+        }
+      }
+    }
   }
 }
 
@@ -828,6 +891,12 @@ function finalizeFunctionalDomains(domains, architecture) {
       responsibility: domain.responsibility,
       files: [...domain.files].sort(),
       findingIds: [...domain.findingIds].sort(),
+      qualityFindingIds: [...(domain.qualityFindingIds ?? [])].sort(),
+      boundaryViolationIds: [...(domain.boundaryViolationIds ?? [])].sort(),
+      blockingBoundaryViolationIds: [...(domain.blockingBoundaryViolationIds ?? [])].sort(),
+      informativeRelationIds: [...(domain.informativeRelationIds ?? [])].sort(),
+      findingReferences: [...(domain.findingReferences?.values() ?? [])].sort((left, right) => `${left.id}:${left.file}`.localeCompare(`${right.id}:${right.file}`)),
+      informativeRelationReferences: [...(domain.informativeRelationReferences?.values() ?? [])].sort((left, right) => `${left.id}:${left.file}`.localeCompare(`${right.id}:${right.file}`)),
       candidateGroups: [...domain.candidateGroups].sort(),
       coupling: domain.coupling ?? null,
     })).sort((left, right) => left.id.localeCompare(right.id)),
@@ -875,6 +944,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
   const cycles = addCycles(run.reports.cycles, files, auditCategories, candidateGroups);
   const documentation = addDocumentation(run.documentation, files, documentationDomains);
   addArchitecture(architectureProjection, files, functionalDomains);
+  attachFunctionalDomainFindings(files, functionalDomains);
   const reports = { ...run.reports, documentation: run.documentation };
   const finalFiles = finalizeFiles(files, reports, architectureProjection);
   const finalAuditCategories = finalizeAuditCategories(auditCategories);
@@ -1006,6 +1076,9 @@ export function buildQualityFileIndexMarkdown(index) {
   lines.push("", "## FUNCTIONAL DOMAIN INDEX", "", `État : **${index.functionalDomains.state}**`, index.functionalDomains.detail, "");
   for (const domain of index.functionalDomains.items) {
     lines.push(`### ${domain.id}`, "", `Responsabilité : ${domain.responsibility}`, "", `- Fichiers : ${domain.files.length}`, `- Relations de contrôle : ${domain.findingIds.length}`, "");
+    lines.push(`- Findings qualité : ${domain.qualityFindingIds.length}`, `- Violations de frontières : ${domain.boundaryViolationIds.length}`, `- Violations de frontières bloquantes : ${domain.blockingBoundaryViolationIds.length}`, `- Relations architecturales informatives : ${domain.informativeRelationIds.length}`, "");
+    if (domain.findingIds.length > 0) lines.push(`- Références FILE INDEX : ${domain.findingIds.map((id) => `\`${id}\``).join(", ")}`, "");
+    if (domain.informativeRelationIds.length > 0) lines.push(`- Références architecturales informatives : ${domain.informativeRelationIds.map((id) => `\`${id}\``).join(", ")}`, "");
     if (domain.coupling) {
       lines.push(`- Fan-in runtime/type-only/tests : ${domain.coupling.runtimeFanIn}/${domain.coupling.typeOnlyFanIn}/${domain.coupling.testFanIn}`, `- Fan-out runtime/type-only/tests : ${domain.coupling.runtimeFanOut}/${domain.coupling.typeOnlyFanOut}/${domain.coupling.testFanOut}`, "");
     }

@@ -300,6 +300,22 @@ test("all enrichit l'index avec la projection architecturale du même SHA/run", 
     assert.equal(index.architecture.state, "PRESENT");
     assert.equal(index.globalCounts.architectureFiles, 1);
     assert.equal(index.files.find((file) => file.path.endsWith("fixture.ts")).metrics.architecture.state, "PRESENT");
+    assert.deepEqual(index.functionalDomains.items.find((domain) => domain.id === "architecture:fixture"), {
+      id: "architecture:fixture",
+      responsibility: "fixture",
+      files: ["apps/web/src/fixture.ts"],
+      findingIds: [],
+      qualityFindingIds: [],
+      boundaryViolationIds: [],
+      blockingBoundaryViolationIds: [],
+      informativeRelationIds: [],
+      findingReferences: [],
+      informativeRelationReferences: [],
+      candidateGroups: [],
+      coupling: { runtimeFanIn: 0, runtimeFanOut: 1, typeOnlyFanIn: 0, typeOnlyFanOut: 0, testFanIn: 0, testFanOut: 0 },
+    });
+    assert.match(fs.readFileSync(result.projectionPaths.summary, "utf8"), /FUNCTIONAL DOMAIN INDEX/);
+    assert.equal(fs.statSync(result.projectionPaths.bundle).isFile(), true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

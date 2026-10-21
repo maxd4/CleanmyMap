@@ -292,6 +292,76 @@ test("projette le couplage architectural par fichier et domaine sans confondre l
   });
 });
 
+test("rattache les findings des fichiers aux domaines fonctionnels sans confondre les vues architecturales", () => {
+  const run = buildRun();
+  const architecture = architectureProjectionFixture();
+  const ui = architecture.files.find((file) => file.path.endsWith("components/entry.tsx"));
+  const testFile = architecture.files.find((file) => file.path.endsWith("components/entry.test.tsx"));
+  const emptyArchitectureFindings = {
+    crossDomainImports: { state: "NONE", detail: "", items: [] },
+    layerCrossings: { state: "NONE", detail: "", items: [] },
+    boundaryViolations: { state: "NONE", detail: "", items: [] },
+    unresolvedInternal: { state: "NONE", detail: "", items: [] },
+  };
+  const extraFile = (source, filePath, domain) => ({
+    ...source,
+    path: filePath,
+    domain,
+    findings: emptyArchitectureFindings,
+    relations: { dependencies: [], dependents: [], crossDomainImports: [], layerCrossings: [] },
+  });
+  architecture.files.push(extraFile(ui, fileA, "components"), extraFile(ui, fileB, "domain"));
+  architecture.domains.find((domain) => domain.id === "architecture:components").files.push(fileA);
+  architecture.domains.find((domain) => domain.id === "architecture:domain").files.push(fileB);
+
+  const deadCode = run.reports["dead-code"];
+  const uiFinding = { file: ui.path, type: "export", name: "uiUnused" };
+  const testFinding = { file: testFile.path, type: "export", name: "testUnused" };
+  deadCode.currentFindings.push(uiFinding, testFinding);
+  deadCode.comparison.newFindings.push(uiFinding, testFinding);
+  run.reports["top-heavy"].evaluation.reviewWarnings = [{ file: fileA, kind: "runtime", lines: 510, bytes: 41_000 }];
+
+  const index = buildQualityFileIndex({ run, architecture, mode: "ALL" });
+  const components = index.functionalDomains.items.find((domain) => domain.id === "architecture:components");
+  const domain = index.functionalDomains.items.find((item) => item.id === "architecture:domain");
+  const indexedA = index.files.find((file) => file.path === fileA);
+  const indexedUi = index.files.find((file) => file.path === ui.path);
+  const indexedTest = index.files.find((file) => file.path === testFile.path);
+  const uiFindingId = indexedUi.findings.deadCode.items.find((finding) => finding.name === "uiUnused")?.id;
+  const testFindingId = indexedTest.findings.deadCode.items.find((finding) => finding.name === "testUnused")?.id;
+  const duplicationFindingId = indexedA.findings.duplication.items[0].id;
+  const initialTopHeavyId = indexedA.findings.topHeavy.items.find((finding) => finding.provenance === "INITIAL")?.id;
+  const derivedTopHeavyId = indexedA.findings.topHeavy.items.find((finding) => finding.provenance === "DERIVED")?.id;
+
+  assert.ok(components);
+  assert.ok(domain);
+  assert.ok(uiFindingId);
+  assert.ok(testFindingId);
+  assert.notEqual(uiFindingId, testFindingId);
+  assert.ok(components.qualityFindingIds.includes(uiFindingId));
+  assert.ok(components.qualityFindingIds.includes(testFindingId));
+  assert.ok(components.findingIds.includes("boundary-1"));
+  assert.deepEqual(components.boundaryViolationIds, ["boundary-1"]);
+  assert.ok(components.blockingBoundaryViolationIds.includes("boundary-1"));
+  assert.ok(components.informativeRelationIds.length > 0);
+  assert.ok(components.informativeRelationIds.every((id) => !components.findingIds.includes(id)));
+  assert.ok(initialTopHeavyId);
+  assert.ok(derivedTopHeavyId);
+  assert.notEqual(initialTopHeavyId, derivedTopHeavyId);
+  assert.ok(components.findingReferences.some((reference) => reference.id === uiFindingId && reference.file === ui.path));
+  assert.ok(components.findingReferences.some((reference) => reference.id === testFindingId && reference.file === testFile.path));
+  assert.ok(components.findingIds.includes(duplicationFindingId));
+  assert.ok(domain.findingIds.includes(duplicationFindingId));
+  assert.equal(components.findingIds.filter((id) => id === duplicationFindingId).length, 1);
+  assert.equal(domain.findingIds.filter((id) => id === duplicationFindingId).length, 1);
+
+  const markdown = buildQualityFileIndexMarkdown(index);
+  assert.match(markdown, /Findings qualité :/);
+  assert.match(markdown, /Violations de frontières : 1/);
+  assert.match(markdown, /Relations architecturales informatives :/);
+  assert.match(markdown, new RegExp(`Références FILE INDEX : .*${uiFindingId}`));
+});
+
 test("le mode offline lit un run exact, crée le bundle sans réécrire les originaux et refuse les collisions", async () => {
   const root = tempRoot();
   try {
