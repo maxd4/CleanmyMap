@@ -1,5 +1,6 @@
 import type { ActionSubmissionMode } from "@/lib/actions/types";
 import { hasAnalyticsConsent } from "@/lib/analytics-consent";
+import { sanitizeFunnelMeta } from "@/lib/analytics/sanitize-analytics-payload";
 
 type FunnelStep = "view_new" | "page_view" | "start_form" | "submit_success";
 
@@ -256,7 +257,7 @@ function buildFunnelEvent(
     sessionId: getSessionId(),
     step,
     mode,
-    meta,
+    meta: sanitizeFunnelMeta(meta),
   };
 }
 

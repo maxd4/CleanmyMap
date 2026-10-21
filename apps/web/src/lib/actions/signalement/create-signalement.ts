@@ -137,7 +137,7 @@ export async function createSignalement(
       "spot_created",
       {
         waste_type: signalement.spot_type,
-        location: signalement.label,
+        has_spot_label: Boolean(signalement.label),
       },
       { consentGranted: true },
     );

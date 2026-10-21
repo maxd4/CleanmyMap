@@ -50,7 +50,6 @@ function buildRouteMeta(
   return {
     source: "route_tracker",
     kind: "pageview",
-    pagePath: pathname,
     routeKind: deriveRouteKind(pathname),
     routeSection: segments[1] ?? segments[0] ?? "home",
     routeDepth: segments.length,

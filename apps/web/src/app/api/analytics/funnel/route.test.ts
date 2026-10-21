@@ -71,13 +71,13 @@ describe("POST /api/analytics/funnel", () => {
               step: "page_view",
               mode: "complete",
               at: "2026-06-27T10:00:00.000Z",
-              meta: { pagePath: "/reports" },
+              meta: { pagePath: "/reports", routeKind: "reports" },
             },
             {
               step: "page_view",
               mode: "complete",
               at: "2026-06-27T10:00:05.000Z",
-              meta: { pagePath: "/actions" },
+              meta: { pagePath: "/actions", routeKind: "actions" },
             },
           ],
         }),
@@ -94,7 +94,7 @@ describe("POST /api/analytics/funnel", () => {
         sessionId: "session-123",
         step: "page_view",
         mode: "complete",
-        meta: { pagePath: "/reports" },
+        meta: { pagePath: "/reports", routeKind: "reports" },
       }),
     );
     expect(appendFunnelEventMock).toHaveBeenNthCalledWith(
@@ -103,7 +103,7 @@ describe("POST /api/analytics/funnel", () => {
         sessionId: "session-123",
         step: "page_view",
         mode: "complete",
-        meta: { pagePath: "/actions" },
+        meta: { pagePath: "/actions", routeKind: "actions" },
       }),
     );
     expect(verifyRateLimitMock).toHaveBeenCalledWith(request, {
@@ -189,6 +189,35 @@ describe("POST /api/analytics/funnel", () => {
         step: "start_form",
         mode: "complete",
         meta: { source: "form" },
+      }),
+    );
+  });
+
+  it("stores only allowlisted funnel metadata", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/analytics/funnel", {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId: "session-safe-meta",
+          step: "submit_success",
+          mode: "quick",
+          meta: {
+            routeKind: "actions",
+            email: "personne@example.com",
+            formValue: "secret",
+            createdId: "private-action-id",
+            isAuthenticated: true,
+          },
+        }),
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(appendFunnelEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        meta: { routeKind: "actions", isAuthenticated: true },
       }),
     );
   });

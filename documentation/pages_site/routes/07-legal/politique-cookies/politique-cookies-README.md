@@ -50,6 +50,7 @@
 - Une décision locale expirée est supprimée automatiquement et la bannière est reproposée.
 - Le contrôle permanent **Gérer mes cookies**, présent dans le footer, rouvre les choix sans suppression manuelle du stockage navigateur.
 - Après un retrait, PostHog arrête explicitement la capture, réinitialise son identité et sa persistance utile ; un nouveau consentement peut le réactiver.
+- Après acceptation, PostHog reste limité aux événements explicites autorisés de navigation et de parcours métier ; l'autocapture, le session replay et les payloads contenant des valeurs de formulaires, frappes clavier, emails, identités nominatives ou coordonnées précises sont exclus.
 
 ## Références legacy
 

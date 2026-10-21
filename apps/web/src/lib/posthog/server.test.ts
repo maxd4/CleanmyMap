@@ -39,6 +39,8 @@ describe("posthog server integration", () => {
 
     const result = await trackServerEvent("user_123", "spot_created", {
       location: "France",
+      email: "personne@example.com",
+      has_spot_label: true,
     }, {
       consentGranted: true,
     });
@@ -53,8 +55,14 @@ describe("posthog server integration", () => {
       expect.objectContaining({
         distinctId: "user_123",
       event: "spot_created",
-      properties: expect.objectContaining({ location: "France" }),
-    }),
+        properties: expect.objectContaining({ has_spot_label: true }),
+      }),
+    );
+    expect(captureMock.mock.calls[0]?.[0]?.properties).not.toHaveProperty(
+      "location",
+    );
+    expect(captureMock.mock.calls[0]?.[0]?.properties).not.toHaveProperty(
+      "email",
     );
     expect(shutdownMock).toHaveBeenCalledTimes(1);
   });
@@ -80,6 +88,21 @@ describe("posthog server integration", () => {
     const result = await trackServerEvent("user_123", "spot_created", {
       location: "France",
     });
+
+    expect(result).toBe(false);
+    expect(postHogCtorMock).not.toHaveBeenCalled();
+    expect(captureMock).not.toHaveBeenCalled();
+  });
+
+  it("does not send events outside the explicit server allowlist", async () => {
+    const { trackServerEvent } = await import("./server");
+
+    const result = await trackServerEvent(
+      "user_123",
+      "arbitrary_event",
+      {},
+      { consentGranted: true },
+    );
 
     expect(result).toBe(false);
     expect(postHogCtorMock).not.toHaveBeenCalled();

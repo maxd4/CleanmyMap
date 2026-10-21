@@ -72,6 +72,9 @@ describe("privacy policy contract", () => {
       expect(source).toContain("PostHog");
       expect(source).toContain("six mois");
       expect(source).toContain("consentement");
+      expect(source).toContain("autocapture");
+      expect(source).toMatch(/session\s+replay/iu);
+      expect(source).toContain("frappes clavier");
       expect(source).toContain("intérêt légitime");
       expect(source).toContain("CNIL");
       expect(source).toContain("un mois");

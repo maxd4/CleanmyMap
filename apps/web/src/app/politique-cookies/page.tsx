@@ -91,7 +91,7 @@ function CookiePolicySections() {
           label="Analytiques"
           title="Mesure d'audience et performance"
           items={[
-            "PostHog, uniquement si le consentement analytique est donné et avec `respect_dnt` activé.",
+            "PostHog, uniquement si le consentement analytique est donné et avec `respect_dnt` activé ; seuls les événements explicites de navigation et de parcours métier autorisés sont conservés, sans autocapture ni session replay.",
             "Vercel Analytics et Vercel Speed Insights, chargés uniquement après consentement.",
             "Les mesures servent à comprendre les usages, les performances et les erreurs de navigation.",
             "Aucun cookie analytique n'est déposé avant le consentement explicite.",

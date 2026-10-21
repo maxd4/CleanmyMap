@@ -1,5 +1,6 @@
 import type { ExportForm } from "./export-form-contract";
 import { createClientIdentifier } from "@/lib/client-identifier";
+import { LOCAL_PRINT_FONT_STACK } from "@/lib/pdf-export/print-font-stack";
 
 function esc(v: string): string {
   return v
@@ -65,9 +66,8 @@ export function exportFormAsPdf(form: ExportForm, actorName: string): boolean {
   <meta charset="utf-8"/>
   <title>Déclaration CleanMyMap</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     @page { size: A4; margin: 20mm 18mm; }
-    body { font-family: 'Inter', sans-serif; color: #0f172a; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: ${LOCAL_PRINT_FONT_STACK}; color: #0f172a; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     table tr:not(:last-child) td { border-bottom: 1px solid #e2e8f0; }
     @media print { .no-print { display: none !important; } }
   </style>

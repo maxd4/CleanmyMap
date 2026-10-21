@@ -1,4 +1,5 @@
 import { PostHog } from "posthog-node";
+import { sanitizeAnalyticsProperties } from "@/lib/analytics/sanitize-analytics-payload";
 import {
   getPostHogDeprecatedEnvWarnings,
   getPostHogHost,
@@ -7,6 +8,7 @@ import {
 
 let posthogNode: PostHog | null = null;
 let envWarningLogged = false;
+const ALLOWED_SERVER_EVENTS = new Set(["spot_created"]);
 
 function getPostHogServerClient() {
   const key = getPostHogKey();
@@ -40,6 +42,10 @@ export async function trackServerEvent(
     return false;
   }
 
+  if (!ALLOWED_SERVER_EVENTS.has(event)) {
+    return false;
+  }
+
   const client = getPostHogServerClient();
   if (!client) {
     return false;
@@ -50,7 +56,7 @@ export async function trackServerEvent(
       distinctId: userId || "anonymous_server_context",
       event,
       properties: {
-        ...properties,
+        ...sanitizeAnalyticsProperties(properties),
         $set: userId ? { last_api_interaction: new Date().toISOString() } : undefined,
       },
     });

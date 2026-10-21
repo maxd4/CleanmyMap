@@ -10,6 +10,7 @@ import {
 } from "@/lib/reports/report-model/formatters";
 import type { ChapterDef, ReportModel } from "@/lib/reports/report-model/types";
 import { buildPdfChapterHeader } from "./generate-pdf-html.templates";
+import { LOCAL_PRINT_FONT_STACK } from "./print-font-stack";
 
 export function buildPdfChapterContent(
   chapter: ChapterDef,
@@ -36,7 +37,7 @@ export function buildPdfChapterContent(
         <div style="display: grid; grid-template-columns: 300px 1fr; gap: 40px; background: #f8fafc; padding: 32px; border-radius: 24px; border: 1px solid #e2e8f0; margin-bottom: 40px;">
           <div>${radarSvg}</div>
           <div>
-            <h3 style="font-family: 'Outfit'; font-size: 20px; color: #1e293b; margin-bottom: 12px;">Indice de Readiness: <span style="color: #10b981;">${executive?.readinessScore}%</span></h3>
+            <h3 style="font-family: ${LOCAL_PRINT_FONT_STACK}; font-size: 20px; color: #1e293b; margin-bottom: 12px;">Indice de Readiness: <span style="color: #10b981;">${executive?.readinessScore}%</span></h3>
             <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 20px;">${executive?.summary}</p>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               ${executive?.evidence.slice(0, 4).map(e => `
@@ -68,7 +69,7 @@ export function buildPdfChapterContent(
     content += `
         <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px;">
           <div>
-            <h3 style="font-family: 'Outfit'; font-size: 18px; color: #1e293b; margin-bottom: 20px;">Tunnel de Modération & Qualité</h3>
+            <h3 style="font-family: ${LOCAL_PRINT_FONT_STACK}; font-size: 18px; color: #1e293b; margin-bottom: 20px;">Tunnel de Modération & Qualité</h3>
             <div style="background: #f8fafc; padding: 24px; border-radius: 20px; border: 1px solid #e2e8f0;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
                 <span style="font-size: 14px; color: #64748b;">Flux de validation</span>
@@ -272,7 +273,7 @@ export function buildPdfChapterContent(
             <div style="display: flex; flex-direction: column; gap: 20px;">
               ${MASTER_PACK_GLOSSARY.map(([k, v]) => `
                 <div>
-                  <div style="font-size: 13px; font-weight: 700; color: #1e293b; font-family: 'Outfit';">${k}</div>
+                  <div style="font-size: 13px; font-weight: 700; color: #1e293b; font-family: ${LOCAL_PRINT_FONT_STACK};">${k}</div>
                   <div style="font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.5;">${v}</div>
                 </div>
               `).join('')}

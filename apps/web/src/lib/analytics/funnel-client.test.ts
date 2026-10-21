@@ -57,7 +57,11 @@ describe("trackFunnel", () => {
     hasAnalyticsConsentMock.mockReturnValue(false);
     vi.stubGlobal("fetch", fetchMock);
 
-    await trackFunnel("page_view", "complete", { pagePath: "/reports" });
+    await trackFunnel("page_view", "complete", {
+      pagePath: "/reports?email=personne@example.com",
+      linkedEventId: "private-event-id",
+      routeKind: "reports",
+    });
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -71,8 +75,8 @@ describe("trackFunnel", () => {
       sendBeacon: vi.fn(),
     } as unknown as Navigator);
 
-    await trackFunnel("page_view", "complete", { pagePath: "/reports" });
-    await trackFunnel("page_view", "complete", { pagePath: "/actions" });
+    await trackFunnel("page_view", "complete", { routeKind: "reports" });
+    await trackFunnel("page_view", "complete", { routeKind: "actions" });
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(sessionStorage.setItem).toHaveBeenCalledTimes(3);
@@ -96,8 +100,9 @@ describe("trackFunnel", () => {
     expect(body.sessionId).toBe("uuid-123");
     expect(body.events).toHaveLength(2);
     expect(body.events?.[0]?.step).toBe("page_view");
-    expect(body.events?.[0]?.meta).toMatchObject({ pagePath: "/reports" });
-    expect(body.events?.[1]?.meta).toMatchObject({ pagePath: "/actions" });
+    expect(body.events?.[0]?.meta).toMatchObject({ routeKind: "reports" });
+    expect(body.events?.[1]?.meta).toMatchObject({ routeKind: "actions" });
+    expect(body.events?.[0]?.meta).not.toHaveProperty("linkedEventId");
   });
 
   it("sends conversion events immediately", async () => {

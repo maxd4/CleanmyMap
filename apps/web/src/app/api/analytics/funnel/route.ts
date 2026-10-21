@@ -11,6 +11,7 @@ import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapsho
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { readJsonBodyWithLimit } from "@/lib/http/request-body";
+import { sanitizeFunnelMeta } from "@/lib/analytics/sanitize-analytics-payload";
 
 export const runtime = "nodejs";
 
@@ -88,7 +89,7 @@ function normalizeEvents(payload: FunnelPayload): Array<{
       sessionId,
       step: event.step,
       mode: event.mode,
-      meta: event.meta,
+      meta: sanitizeFunnelMeta(event.meta),
     }));
   }
 
@@ -98,7 +99,7 @@ function normalizeEvents(payload: FunnelPayload): Array<{
       sessionId: payload.sessionId ?? randomUUID(),
       step: payload.step,
       mode: payload.mode,
-      meta: payload.meta,
+      meta: sanitizeFunnelMeta(payload.meta),
     },
   ];
 }

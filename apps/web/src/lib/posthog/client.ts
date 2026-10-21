@@ -2,6 +2,11 @@
 
 import { hasAnalyticsConsent } from "@/lib/analytics-consent";
 import {
+  POSTHOG_PROPERTY_DENYLIST,
+  sanitizeAnalyticsProperties,
+  sanitizeAnalyticsUrl,
+} from "@/lib/analytics/sanitize-analytics-payload";
+import {
   getPostHogDeprecatedEnvWarnings,
   getPostHogHost,
   getPostHogKey,
@@ -72,15 +77,41 @@ export async function initPostHogClient(enableAnalytics = true) {
   const posthog = posthogModule.default;
   posthog.init(key, {
     api_host: getPostHogHost(),
+    autocapture: false,
     capture_pageview: true,
     capture_pageleave: true,
+    capture_exceptions: false,
+    capture_heatmaps: false,
+    capture_performance: false,
+    disable_capture_url_hashes: true,
+    disable_session_recording: true,
+    disable_scroll_properties: true,
     loaded: () => {
       initialized = true;
     },
     disable_persistence: !enableAnalytics,
+    get_current_url: sanitizeAnalyticsUrl,
+    property_denylist: [...POSTHOG_PROPERTY_DENYLIST],
     opt_out_capturing_by_default: true,
     opt_out_persistence_by_default: true,
+    rageclick: false,
     respect_dnt: true,
+    before_send: (event) => {
+      if (["$autocapture", "$copy_autocapture", "$dead_click", "$rageclick"].includes(event.event)) {
+        return null;
+      }
+
+      return {
+        ...event,
+        properties: sanitizeAnalyticsProperties(event.properties),
+        ...(event.$set
+          ? { $set: sanitizeAnalyticsProperties(event.$set) }
+          : {}),
+        ...(event.$set_once
+          ? { $set_once: sanitizeAnalyticsProperties(event.$set_once) }
+          : {}),
+      };
+    },
   });
 
   initialized = true;
@@ -101,6 +132,7 @@ export async function disablePostHogClient(): Promise<void> {
 
   // reset() clears the identity and SDK persistence; the explicit opt-out is
   // applied last so the instance remains silent until a new consent is given.
+  posthog.stopSessionRecording();
   posthog.reset(true);
   posthog.opt_out_capturing();
 }

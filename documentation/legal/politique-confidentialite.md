@@ -96,7 +96,11 @@ PostHog, Vercel Analytics et Vercel Speed Insights ne sont rendus ou activés
 qu'après consentement analytics. Le contrôle permanent **Gérer mes cookies**
 permet de rouvrir les choix. Le retrait arrête la capture PostHog et empêche le
 rendu des intégrations Vercel conditionnelles ; un nouveau consentement peut
-les réactiver.
+les réactiver. PostHog ne conserve que les événements explicites de navigation
+et de parcours métier autorisés : aucune autocapture d'interaction ni session
+replay n'est activée, et les payloads sont filtrés pour exclure les valeurs de
+formulaires, frappes clavier, emails, identités nominatives, coordonnées
+précises et données privées.
 
 Sentry n'est pas présenté comme un outil d'analytics soumis au consentement.
 Lorsqu'une DSN est configurée, il sert à l'observabilité, au diagnostic et à la
@@ -118,7 +122,9 @@ du compte et des paramètres du fournisseur.
   seulement après consentement ;
 - **Resend** : emails transactionnels, de support et de notification lorsque
   cet envoi est utilisé ;
-- **PostHog** : analytics et mesure d'audience seulement après consentement ;
+- **PostHog** : analytics et mesure d'audience seulement après consentement,
+  limités aux événements explicites autorisés et sans autocapture ni session
+  replay ;
 - **Sentry** : observabilité et sécurité lorsque la DSN est configurée ;
 - **Stripe** : page Checkout et traitement du paiement, confirmation, prévention
   de la fraude et gestion technique des remboursements liés aux contributions.

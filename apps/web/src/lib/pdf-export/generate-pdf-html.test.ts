@@ -147,6 +147,9 @@ describe("generatePdfHtml", () => {
     expect(html).toContain('id="chapter-gouvernance"');
     expect(html).toContain('id="chapter-annexes"');
     expect(html).toContain("@page { size: A4; margin: 0; }");
+    expect(html).toContain("font-family: Segoe UI, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;");
+    expect(html).not.toContain("fonts.googleapis.com");
+    expect(html).not.toMatch(/font-family:\s*['\"](?:Inter|Outfit)/);
     expect(html).toContain(".master-pack-container { background: #fff; }");
     expect(html).toContain("window.addEventListener(\"afterprint\"");
   });

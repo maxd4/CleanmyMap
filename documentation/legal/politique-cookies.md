@@ -61,7 +61,12 @@ durée générique non vérifiée.
 PostHog n'est jamais chargé avant un consentement positif. Après un retrait,
 l'instance déjà initialisée est arrêtée, son identité et sa persistance utile
 sont réinitialisées et la capture reste désactivée jusqu'à un nouveau
-consentement.
+consentement. Après consentement, PostHog est limité aux événements explicites
+de navigation et de parcours métier autorisés : l'autocapture des interactions,
+le session replay, les heatmaps et les captures automatiques de performance ou
+d'erreurs sont désactivés. Les payloads analytiques n'incluent pas les valeurs
+de formulaires, frappes clavier, emails, identités nominatives, coordonnées
+précises ni autres données privées.
 
 Sentry n'est pas classé comme analytics soumis à ce consentement. Lorsqu'il est
 activé par une DSN, il sert à l'observabilité, à la sécurité et au diagnostic

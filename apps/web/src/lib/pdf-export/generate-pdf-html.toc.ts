@@ -1,5 +1,6 @@
 import { MASTER_PACK_CHAPTERS } from "@/lib/reports/master-pack/constants";
 import { escapeHtml } from "@/lib/security/html-escape";
+import { LOCAL_PRINT_FONT_STACK } from "./print-font-stack";
 
 export function buildPdfTableOfContents(): string {
   return `
@@ -10,10 +11,10 @@ export function buildPdfTableOfContents(): string {
       ${MASTER_PACK_CHAPTERS.filter(c => c.id !== "sommaire").map((chapter, i) => `
         <a href="#chapter-${escapeHtml(chapter.id)}" style="display: flex; justify-content: space-between; align-items: center; padding: 18px 0; border-bottom: 1px solid #f1f5f9; text-decoration: none; color: #1e293b;">
           <div style="display: flex; flex-direction: column; gap: 4px;">
-            <span style="font-weight: 700; font-size: 16px; font-family: 'Outfit';">${i + 1}. ${escapeHtml(chapter.title)}</span>
+            <span style="font-weight: 700; font-size: 16px; font-family: ${LOCAL_PRINT_FONT_STACK};">${i + 1}. ${escapeHtml(chapter.title)}</span>
             <span style="font-size: 12px; color: #64748b;">${escapeHtml(chapter.subtitle)}</span>
           </div>
-          <span style="font-family: 'Outfit'; font-weight: 600; color: #10b981; font-size: 12px;">PAGE ${i + 3}</span>
+          <span style="font-family: ${LOCAL_PRINT_FONT_STACK}; font-weight: 600; color: #10b981; font-size: 12px;">PAGE ${i + 3}</span>
         </a>
       `).join("")}
     </div>

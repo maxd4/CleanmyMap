@@ -235,8 +235,8 @@ function PrivacyIdentityAndData({ contactEmail }: { contactEmail: string }) {
           items={[
             "Préférences d'interface : langue, thème et mode d'affichage, stockés localement puis synchronisés dans des cookies SameSite=Lax lorsqu'ils sont actifs.",
             "Le choix cookies est mémorisé dans `localStorage` sous `cleanmymap_cookie_consent` et dans `cleanmymap_analytics_consent` pendant six mois. Une décision expirée est nettoyée et le choix est reproposé.",
-            "PostHog, Vercel Analytics et Vercel Speed Insights ne sont activés qu'après consentement analytics. Le retrait arrête la capture PostHog et empêche le rendu des intégrations Vercel ; un nouveau consentement peut les réactiver.",
-            "Le suivi de tunnel `funnel_events` reste bloqué sans consentement ; lorsqu'il est autorisé, il peut contenir un identifiant de session, une étape, un mode, un identifiant Clerk éventuel et des métadonnées de parcours.",
+            "PostHog, Vercel Analytics et Vercel Speed Insights ne sont activés qu'après consentement analytics. Le retrait arrête la capture PostHog et empêche le rendu des intégrations Vercel ; un nouveau consentement peut les réactiver. PostHog reste limité aux événements explicites autorisés, sans autocapture ni session replay.",
+            "Le suivi de tunnel `funnel_events` reste bloqué sans consentement ; lorsqu'il est autorisé, il est limité à un identifiant de session, une étape, un mode et des catégories de parcours. Les valeurs de formulaires, frappes clavier, emails, identités nominatives, coordonnées précises et données privées sont exclues des payloads analytiques.",
             "Sentry, lorsqu'il est activé par une DSN, est un outil d'observabilité et de sécurité, pas un outil d'analytics soumis au consentement cookies. Les erreurs peuvent contenir des traces, messages et métadonnées techniques utiles au diagnostic. Aucun masquage ou anonymisation spécifique supplémentaire n'est déclaré ici comme configuré.",
           ]}
         />
@@ -360,7 +360,7 @@ function PrivacyProcessingSections() {
             "Supabase : base de données, stockage et synchronisation métier.",
             "Vercel : hébergement et exécution du site ; Analytics et Speed Insights seulement avec consentement.",
             "Resend : envoi des emails transactionnels, de support et de notification.",
-            "PostHog : mesure d'audience et analytics seulement avec consentement.",
+            "PostHog : mesure d'audience et analytics seulement avec consentement, sur des événements explicites autorisés et sans autocapture ni session replay.",
             "Sentry : observabilité et sécurité uniquement si la DSN est configurée.",
             "Stripe : page Checkout et traitement du paiement, confirmation, prévention de la fraude et gestion technique des remboursements liés aux contributions. Les données de carte sont saisies et traitées sur l'environnement Stripe et ne sont pas stockées par CleanMyMap.",
             "Autorités compétentes ou autres destinataires : uniquement lorsque la loi ou le traitement concerné le justifie.",

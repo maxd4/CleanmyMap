@@ -3,8 +3,10 @@ import { build } from "vite";
 import { expect, test } from "@playwright/test";
 
 let browserReportBundle: string;
+let exportFormBundle: string;
+let printTemplateBundle: string;
 
-test.beforeAll(async () => {
+async function buildBrowserBundle(entry: string, name: string): Promise<string> {
   const result = await build({
     configFile: false,
     resolve: { alias: { "@": path.resolve("apps/web/src") } },
@@ -12,16 +14,24 @@ test.beforeAll(async () => {
       write: false,
       minify: false,
       lib: {
-        entry: path.resolve("apps/web/src/lib/pdf-export/browser-report.ts"),
+        entry: path.resolve(entry),
         formats: ["iife"],
-        name: "CmmPdfExport",
+        name,
       },
     },
   });
   const outputs = Array.isArray(result) ? result.flatMap((item) => item.output) : result.output;
   const bundle = outputs.find((item) => item.type === "chunk");
-  if (!bundle || bundle.type !== "chunk") throw new Error("Le bundle du renderer PDF est introuvable.");
-  browserReportBundle = bundle.code;
+  if (!bundle || bundle.type !== "chunk") throw new Error(`Le bundle ${name} est introuvable.`);
+  return bundle.code;
+}
+
+test.beforeAll(async () => {
+  [browserReportBundle, exportFormBundle, printTemplateBundle] = await Promise.all([
+    buildBrowserBundle("apps/web/src/lib/pdf-export/browser-report.ts", "CmmPdfExport"),
+    buildBrowserBundle("apps/web/src/lib/actions/exports/export-form-pdf.ts", "CmmFormPdfExport"),
+    buildBrowserBundle("apps/web/src/lib/pdf-export/generate-pdf-html.templates.ts", "CmmPrintTemplates"),
+  ]);
 });
 
 test("prints only after the navigated Blob document has completed loading", async ({ page }) => {
@@ -67,4 +77,109 @@ test("prints only after the navigated Blob document has completed loading", asyn
   expect(result.eventHandlers).toBe(0);
   expect(result.urlProtocol).toBe("blob:");
   await popup.close();
+});
+
+test("keeps the form and report print outputs local and A4", async ({ page }) => {
+  const googleFontRequests: string[] = [];
+  page.context().on("request", (request) => {
+    if (/fonts\.(?:googleapis|gstatic)\.com/i.test(request.url())) {
+      googleFontRequests.push(request.url());
+    }
+  });
+
+  await page.addInitScript(() => {
+    window.print = () => undefined;
+    window.close = () => undefined;
+  });
+  await page.goto("/");
+  await page.addScriptTag({ content: exportFormBundle });
+  await page.addScriptTag({ content: printTemplateBundle });
+
+  const popupPromise = page.waitForEvent("popup");
+  const reportStyles = await page.evaluate(() => {
+    const api = (window as unknown as {
+      CmmPrintTemplates: { buildPdfPrintStyles: () => string };
+    }).CmmPrintTemplates;
+    const styles = api.buildPdfPrintStyles();
+    const style = document.createElement("style");
+    style.textContent = styles;
+    document.head.appendChild(style);
+    const probe = document.createElement("div");
+    probe.textContent = "Rapport A4";
+    document.body.appendChild(probe);
+    return {
+      styles,
+      fontFamily: getComputedStyle(probe).fontFamily,
+    };
+  });
+
+  const opened = await page.evaluate(() => {
+    const api = (window as unknown as {
+      CmmFormPdfExport: {
+        exportFormAsPdf: (form: Record<string, string>, actorName: string) => boolean;
+      };
+    }).CmmFormPdfExport;
+    const printableWindow = window.open("", "_blank");
+    if (!printableWindow) return false;
+    const originalOpen = window.open;
+    Object.defineProperty(window, "open", {
+      configurable: true,
+      value: () => printableWindow,
+    });
+    try {
+      return api.exportFormAsPdf(
+        {
+          actionDate: "2026-08-23",
+          arrivalLocationLabel: "Place de la République",
+          associationName: "CleanMyMap",
+          departureLocationLabel: "Canal Saint-Martin",
+          durationMinutes: "90",
+          latitude: "48.8566",
+          locationLabel: "Paris 10e",
+          longitude: "2.3522",
+          notes: "Notes de terrain",
+          placeType: "Espace public",
+          recordType: "action",
+          volunteersCount: "12",
+          wasteKg: "18.5",
+          wasteMegotsKg: "2.1",
+        },
+        "Camille Martin",
+      );
+    } finally {
+      Object.defineProperty(window, "open", {
+        configurable: true,
+        value: originalOpen,
+      });
+    }
+  });
+  expect(opened).toBe(true);
+
+  const printable = await popupPromise;
+  await printable.waitForLoadState("load");
+  const printableState = await printable.evaluate(() => ({
+    styles: Array.from(document.querySelectorAll("style"), (style) => style.textContent ?? "").join("\n"),
+    bodyFontFamily: getComputedStyle(document.body).fontFamily,
+    bodyText: document.body.textContent ?? "",
+    html: document.documentElement.outerHTML,
+  }));
+  const renderPage = await page.context().newPage();
+  await renderPage.setContent(printableState.html.replace(/<script[\s\S]*?<\/script>/gi, ""), { waitUntil: "load" });
+  const pdf = await renderPage.pdf({ format: "A4", printBackground: true });
+
+  expect(reportStyles.styles).toContain("@page { size: A4; margin: 0; }");
+  expect(reportStyles.styles).not.toContain("fonts.googleapis.com");
+  expect(reportStyles.styles).not.toContain("fonts.gstatic.com");
+  expect(reportStyles.fontFamily).toContain("Segoe UI");
+  expect(printableState.styles).toContain("@page { size: A4; margin: 20mm 18mm; }");
+  expect(printableState.styles).not.toContain("fonts.googleapis.com");
+  expect(printableState.styles).not.toContain("fonts.gstatic.com");
+  expect(printableState.bodyFontFamily).toContain("Segoe UI");
+  expect(printableState.bodyText).toContain("Déclaration d'action");
+  expect(String.fromCharCode(...pdf.subarray(0, 5))).toBe("%PDF-");
+  expect(pdf.byteLength).toBeGreaterThan(1_000);
+  expect(googleFontRequests).toEqual([]);
+
+  await renderPage.close();
+  await printable.close();
 });

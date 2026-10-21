@@ -30,18 +30,9 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     }
 
     void initPostHogClient(true).then((posthog) => {
-      if (!posthog) {
-        return;
-      }
-
-      if (!hasAnalyticsConsent()) {
+      if (posthog && !hasAnalyticsConsent()) {
         void disablePostHogClient();
-        return;
       }
-
-      posthog.capture("cmm_posthog_initialized_with_consent", {
-        timestamp: Date.now(),
-      });
     });
   }, [consentDecision, hasConsent]);
 
