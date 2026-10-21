@@ -72,6 +72,182 @@ type UseActionDeclarationSubmissionParams = {
   setHasAttemptedSubmit: Dispatch<SetStateAction<boolean>>;
 };
 
+type SubmissionExecutionParams = Pick<
+  UseActionDeclarationSubmissionParams,
+  | "form"
+  | "declarationMode"
+  | "initialActionId"
+  | "loadedActionPhase"
+  | "manualDrawingEnabled"
+  | "manualDrawing"
+  | "manualDrawingSource"
+  | "drawingIsValid"
+  | "effectiveRoutePreviewDrawing"
+  | "routePreviewSource"
+  | "linkedEventId"
+  | "photoAssets"
+  | "visionEstimate"
+  | "userMetadata"
+  | "creationRequestId"
+>;
+
+type SubmissionValidationParams = Pick<
+  UseActionDeclarationSubmissionParams,
+  | "form"
+  | "payload"
+  | "isAuthenticated"
+  | "declarationMode"
+  | "hasValidDrawing"
+  | "hasServerRouteInput"
+  | "isCleanPlaceMode"
+  | "manualDrawingSource"
+>;
+
+function getSubmissionIssues(params: SubmissionValidationParams): ValidationIssue[] {
+  return getActionDeclarationSubmissionIssues({
+    form: params.form,
+    payload: params.payload,
+    isAuthenticated: params.isAuthenticated,
+    declarationMode: params.declarationMode,
+    hasValidDrawing: params.hasValidDrawing,
+    hasServerRouteInput: params.hasServerRouteInput,
+    isCleanPlaceMode: params.isCleanPlaceMode,
+    gpxImport: params.form.gpxImport,
+    manualDrawingSource: params.manualDrawingSource,
+  });
+}
+
+async function persistDeclarationSubmission(
+  params: SubmissionExecutionParams & { payload: CreateActionPayload },
+) {
+  const normalizedForm = normalizeActionDeclarationFormBeforeSubmit(params.form);
+  const submissionPayload = await prepareCreateActionPayload({
+    form: normalizedForm,
+    declarationMode: params.declarationMode,
+    isEntrepriseMode: false,
+    effectiveManualDrawingEnabled: params.manualDrawingEnabled,
+    drawingIsValid: params.drawingIsValid,
+    manualDrawing: params.manualDrawing,
+    manualDrawingSource: params.manualDrawingSource,
+    routePreviewDrawing: params.effectiveRoutePreviewDrawing,
+    routePreviewSource: params.routePreviewSource,
+    linkedEventId: params.linkedEventId,
+    photos: params.photoAssets,
+    visionEstimate: params.visionEstimate,
+    userMetadata: params.userMetadata,
+  });
+  const effectiveSubmissionPayload = params.initialActionId && params.loadedActionPhase === "pre_action"
+    ? { ...submissionPayload, actionPhase: "pre_action" as const }
+    : submissionPayload;
+  const result = params.initialActionId
+    ? await updateAction(params.initialActionId, effectiveSubmissionPayload)
+    : await createAction(effectiveSubmissionPayload, { idempotencyKey: params.creationRequestId ?? undefined });
+  const persistedActionId = "id" in result ? result.id : result.actionId;
+  const persistedAction = await fetchActionById(persistedActionId).catch(() => null);
+  const mediaResult = params.photoAssets.length > 0
+    ? await uploadActionMedia(persistedActionId, params.photoAssets)
+    : null;
+  return {
+    persistedActionId,
+    persistedAction,
+    retentionLoop: "retentionLoop" in result ? result.retentionLoop ?? null : null,
+    mediaResult,
+  };
+}
+
+async function retryActionMediaUploadBatch(
+  createdId: string,
+  failed: ActionMediaUploadFailure[],
+): Promise<Awaited<ReturnType<typeof uploadActionMedia>>> {
+  return uploadActionMedia(createdId, failed.map(({ asset }) => asset));
+}
+
+function submissionErrorMessage(error: unknown): string {
+  return error instanceof Error && error.message
+    ? error.message
+    : "Impossible de valider votre déclaration pour le moment. Veuillez vérifier vos informations et réessayer.";
+}
+
+type ConfirmSubmitParams = UseActionDeclarationSubmissionParams & {
+  submissionState: SubmissionState;
+  setSubmissionState: Dispatch<SetStateAction<SubmissionState>>;
+  setErrorMessage: Dispatch<SetStateAction<string | null>>;
+  setValidationIssues: Dispatch<SetStateAction<ValidationIssue[]>>;
+  setShowConfirmation: Dispatch<SetStateAction<boolean>>;
+  setCreatedId: Dispatch<SetStateAction<string | null>>;
+  setRecordedAction: Dispatch<SetStateAction<ActionEditorRecord | null>>;
+  setRetentionLoop: Dispatch<SetStateAction<PostActionRetentionLoop | null>>;
+  setActionMediaUpload: Dispatch<SetStateAction<ActionMediaUploadState>>;
+};
+
+async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> {
+  if (params.submissionState === "pending") return;
+  if (params.draftStorageReadError && !params.initialActionId) {
+    params.setErrorMessage(
+      "La lecture du brouillon local doit réussir avant de créer une nouvelle action. Réessayez sa lecture puis confirmez l’envoi.",
+    );
+    params.setSubmissionState("error");
+    params.setShowConfirmation(false);
+    return;
+  }
+
+  const validationIssuesForSubmission = getSubmissionIssues(params);
+  if (validationIssuesForSubmission.length > 0) {
+    params.setValidationIssues(validationIssuesForSubmission);
+    params.setHasAttemptedSubmit(true);
+    params.setErrorMessage(validationIssuesForSubmission[0]?.message ?? null);
+    params.setSubmissionState("error");
+    params.setShowConfirmation(false);
+    return;
+  }
+
+  params.setValidationIssues([]);
+  params.setSubmissionState("pending");
+  try {
+    const persisted = await persistDeclarationSubmission({
+      form: params.form,
+      declarationMode: params.declarationMode,
+      initialActionId: params.initialActionId,
+      loadedActionPhase: params.loadedActionPhase,
+      manualDrawingEnabled: params.manualDrawingEnabled,
+      manualDrawing: params.manualDrawing,
+      manualDrawingSource: params.manualDrawingSource,
+      drawingIsValid: params.drawingIsValid,
+      effectiveRoutePreviewDrawing: params.effectiveRoutePreviewDrawing,
+      routePreviewSource: params.routePreviewSource,
+      linkedEventId: params.linkedEventId,
+      photoAssets: params.photoAssets,
+      visionEstimate: params.visionEstimate,
+      userMetadata: params.userMetadata,
+      creationRequestId: params.creationRequestId,
+      payload: params.payload,
+    });
+    params.setCreatedId(persisted.persistedActionId);
+    params.setRetentionLoop(persisted.retentionLoop);
+    params.setRecordedAction(persisted.persistedAction);
+    if (persisted.mediaResult) {
+      params.setActionMediaUpload({ status: "uploading", uploadedCount: 0, failed: [] });
+      params.setActionMediaUpload({
+        status: persisted.mediaResult.failed.length > 0 ? "partial" : "complete",
+        uploadedCount: persisted.mediaResult.uploadedCount,
+        failed: persisted.mediaResult.failed,
+      });
+    }
+    params.setSubmissionState("success");
+    params.setShowConfirmation(false);
+    params.setLoadedActionPhase(
+      params.initialActionId && params.loadedActionPhase === "pre_action"
+        ? "pre_action"
+        : "post_action_complete",
+    );
+    params.clearDraft();
+  } catch (error: unknown) {
+    params.setSubmissionState("error");
+    params.setErrorMessage(submissionErrorMessage(error));
+    params.setShowConfirmation(false);
+  }
+}
+
 export function useActionDeclarationSubmission({
   form,
   declarationMode,
@@ -118,9 +294,9 @@ export function useActionDeclarationSubmission({
   async function retryActionMediaUploads() {
     if (!createdId || actionMediaUpload.failed.length === 0) return;
     setActionMediaUpload((current) => ({ ...current, status: "uploading" }));
-    const result = await uploadActionMedia(
+    const result = await retryActionMediaUploadBatch(
       createdId,
-      actionMediaUpload.failed.map(({ asset }) => asset),
+      actionMediaUpload.failed,
     );
     setActionMediaUpload({
       status: result.failed.length > 0 ? "partial" : "complete",
@@ -143,100 +319,41 @@ export function useActionDeclarationSubmission({
     }
   }
 
-  async function handleConfirmSubmit() {
-    if (submissionState === "pending") return;
-    if (draftStorageReadError && !initialActionId) {
-      setErrorMessage(
-        "La lecture du brouillon local doit réussir avant de créer une nouvelle action. Réessayez sa lecture puis confirmez l’envoi.",
-      );
-      setSubmissionState("error");
-      setShowConfirmation(false);
-      return;
-    }
-    const validationIssuesForSubmission = getActionDeclarationSubmissionIssues({
-      form,
-      payload,
-      isAuthenticated,
-      declarationMode,
-      hasValidDrawing,
-      hasServerRouteInput,
-      isCleanPlaceMode,
-      gpxImport: form.gpxImport,
-      manualDrawingSource,
-    });
-    if (validationIssuesForSubmission.length > 0) {
-      setValidationIssues(validationIssuesForSubmission);
-      setHasAttemptedSubmit(true);
-      setErrorMessage(validationIssuesForSubmission[0]?.message ?? null);
-      setSubmissionState("error");
-      setShowConfirmation(false);
-      return;
-    }
-
-    setValidationIssues([]);
-    setSubmissionState("pending");
-    const normalizedForm = normalizeActionDeclarationFormBeforeSubmit(form);
-    try {
-      const submissionPayload = await prepareCreateActionPayload({
-        form: normalizedForm,
-        declarationMode,
-        isEntrepriseMode: false,
-        effectiveManualDrawingEnabled: manualDrawingEnabled,
-        drawingIsValid,
-        manualDrawing,
-        manualDrawingSource,
-        routePreviewDrawing: effectiveRoutePreviewDrawing,
-        routePreviewSource,
-        linkedEventId,
-        photos: photoAssets,
-        visionEstimate,
-        userMetadata,
-      });
-      const effectiveSubmissionPayload =
-        initialActionId && loadedActionPhase === "pre_action"
-          ? { ...submissionPayload, actionPhase: "pre_action" as const }
-          : submissionPayload;
-      const result = initialActionId
-        ? await updateAction(initialActionId, effectiveSubmissionPayload)
-        : await createAction(effectiveSubmissionPayload, {
-            idempotencyKey: creationRequestId ?? undefined,
-          });
-      const persistedActionId = "id" in result ? result.id : result.actionId;
-      setCreatedId(persistedActionId);
-      setRetentionLoop(
-        "retentionLoop" in result ? result.retentionLoop ?? null : null,
-      );
-      const persistedAction = await fetchActionById(persistedActionId).catch(
-        () => null,
-      );
-      setRecordedAction(persistedAction);
-      if (photoAssets.length > 0) {
-        setActionMediaUpload({ status: "uploading", uploadedCount: 0, failed: [] });
-        const mediaResult = await uploadActionMedia(persistedActionId, photoAssets);
-        setActionMediaUpload({
-          status: mediaResult.failed.length > 0 ? "partial" : "complete",
-          uploadedCount: mediaResult.uploadedCount,
-          failed: mediaResult.failed,
-        });
-      }
-      setSubmissionState("success");
-      setShowConfirmation(false);
-      setLoadedActionPhase(
-        initialActionId && loadedActionPhase === "pre_action"
-          ? "pre_action"
-          : "post_action_complete",
-      );
-      clearDraft();
-    } catch (error: unknown) {
-      setSubmissionState("error");
-      setErrorMessage(
-        error instanceof Error && error.message
-          ? error.message
-          : "Impossible de valider votre déclaration pour le moment. Veuillez vérifier vos informations et réessayer.",
-      );
-      setShowConfirmation(false);
-    }
-  }
+  const handleConfirmSubmit = () => executeConfirmSubmit({
+    form,
+    declarationMode,
+    isAuthenticated,
+    draftStorageReadError,
+    initialActionId,
+    loadedActionPhase,
+    manualDrawingEnabled,
+    manualDrawing,
+    manualDrawingSource,
+    drawingIsValid,
+    effectiveRoutePreviewDrawing,
+    routePreviewSource,
+    hasValidDrawing,
+    hasServerRouteInput,
+    isCleanPlaceMode,
+    payload,
+    linkedEventId,
+    photoAssets,
+    visionEstimate,
+    userMetadata,
+    clearDraft,
+    creationRequestId,
+    setLoadedActionPhase,
+    setHasAttemptedSubmit,
+    submissionState,
+    setSubmissionState,
+    setErrorMessage,
+    setValidationIssues,
+    setShowConfirmation,
+    setCreatedId,
+    setRecordedAction,
+    setRetentionLoop,
+    setActionMediaUpload,
+  });
 
   return {
     submissionState,

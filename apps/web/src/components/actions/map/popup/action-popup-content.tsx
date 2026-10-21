@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   mapItemCigaretteButts,
   mapItemCoordinates,
@@ -274,13 +275,11 @@ function SingleActionPopupContent({
     </>
   );
 
-  if (!wrap) {
-    return content;
-  }
+  return <ActionPopupFrame content={content} wrap={wrap} />;
+}
 
-  return (
-    <div className="min-w-[300px] max-w-[340px] overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-950/95">
-      {content}
-    </div>
-  );
+function ActionPopupFrame({ content, wrap }: { content: ReactNode; wrap: boolean }) {
+  return wrap
+    ? <div className="min-w-[300px] max-w-[340px] overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-950/95">{content}</div>
+    : content;
 }

@@ -390,6 +390,35 @@ export function appendActionMetadataToNotes(
   return trimmedBase ? `${trimmedBase}\n${encoded}` : encoded;
 }
 
+function applyActionMetadataLine(line: string, state: ActionNotesExtractionState): void {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith(META_PREFIX)) {
+    const associationSeparator = trimmed.toLowerCase().indexOf("association");
+    const associationValue = associationSeparator === 0
+      ? trimmed.slice("association".length).trimStart().startsWith(":")
+        ? trimmed.slice("association".length).trimStart().slice(1).trim()
+        : null
+      : null;
+    if (associationValue) {
+      state.associationName = associationValue;
+      return;
+    }
+    state.cleanLines.push(line);
+    return;
+  }
+  const parsed = safeParseMeta(trimmed.slice(META_PREFIX.length));
+  if (parsed) applyParsedActionNotesMeta(parsed, state);
+}
+
+function cleanExtractedActionNotes(lines: string[]): string | null {
+  const cleanNotes = lines
+    .map((line) => (line.trim() === INGESTION_SYNC_MARKER ? "" : line))
+    .filter((line) => line.trim().length > 0)
+    .join("\n")
+    .trim();
+  return cleanNotes.length > 0 ? cleanNotes : null;
+}
+
 export function extractActionMetadataFromNotes(
   notes: string | null | undefined,
 ): ActionNotesExtractionResult {
@@ -400,40 +429,8 @@ export function extractActionMetadataFromNotes(
   const lines = notes.split(/\r?\n/);
   const state = initializeActionNotesExtractionState();
 
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed.startsWith(META_PREFIX)) {
-      const associationSeparator = trimmed.toLowerCase().indexOf("association");
-      const legacyAssociation = associationSeparator === 0
-        ? trimmed.slice("association".length).trimStart().startsWith(":")
-          ? trimmed.slice("association".length).trimStart().slice(1).trim()
-          : null
-        : null;
-      if (legacyAssociation) {
-        if (legacyAssociation) {
-          state.associationName = legacyAssociation;
-        }
-        continue;
-      }
-      state.cleanLines.push(line);
-      continue;
-    }
-    const parsed = safeParseMeta(trimmed.slice(META_PREFIX.length));
-    if (!parsed) {
-      continue;
-    }
-    applyParsedActionNotesMeta(parsed, state);
-  }
-
-  const cleanNotes = state.cleanLines
-    .map((line) => (line.trim() === INGESTION_SYNC_MARKER ? "" : line))
-    .filter((line) => line.trim().length > 0)
-    .join("\n")
-    .trim();
-  return toActionNotesExtractionResult(
-    state,
-    cleanNotes.length > 0 ? cleanNotes : null,
-  );
+  for (const line of lines) applyActionMetadataLine(line, state);
+  return toActionNotesExtractionResult(state, cleanExtractedActionNotes(state.cleanLines));
 }
 
 export function setActionGroupJoinEnabledInNotes(

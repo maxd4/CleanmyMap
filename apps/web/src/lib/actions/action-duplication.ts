@@ -60,29 +60,47 @@ function reusableRoute(preparation: ActionPreparationData): Pick<ActionDuplicate
   };
 }
 
-export function buildActionDuplicatePrefill(action: ActionRow): ActionDuplicatePrefill {
-  const preparation = normalizeActionPreparationData(action.preparation_data ?? {});
-  const fixedArea = preparation.interventionMode?.mode === "fixed_area";
-  const route = fixedArea
-    ? { operationalRoute: null, routeCalibrationContext: null }
-    : reusableRoute(preparation);
+function buildDuplicateLocationFields(
+  action: ActionRow,
+  preparation: ActionPreparationData,
+  fixedArea: boolean,
+): Pick<ActionDuplicatePrefill, "locationLabel" | "communeZoneLabel" | "meetingPoint" | "departureLocationLabel" | "midRouteLocationLabel" | "arrivalLocationLabel" | "latitude" | "longitude" | "arrivalCoordinates" | "midRouteCoordinates"> {
+  const locationLabel = text(action.location_label);
   return {
-    title: text(preparation.actionTitle),
-    shortDescription: text(preparation.shortDescription),
-    locationLabel: text(action.location_label),
+    locationLabel,
     communeZoneLabel: text(preparation.communeZoneLabel),
-    meetingPoint: text(preparation.pointDeRendezVous) || text(action.location_label),
-    departureLocationLabel: text(preparation.pointDeRendezVous) || text(action.location_label),
+    meetingPoint: text(preparation.pointDeRendezVous) || locationLabel,
+    departureLocationLabel: text(preparation.pointDeRendezVous) || locationLabel,
     midRouteLocationLabel: text(preparation.midRouteLocationLabel),
     arrivalLocationLabel: fixedArea ? "" : text(preparation.zoneCiblePrevue),
     latitude: typeof action.latitude === "number" && Number.isFinite(action.latitude) ? action.latitude : null,
     longitude: typeof action.longitude === "number" && Number.isFinite(action.longitude) ? action.longitude : null,
     arrivalCoordinates: fixedArea ? null : structuredClone(preparation.arrivalCoordinates ?? null),
     midRouteCoordinates: fixedArea ? null : structuredClone(preparation.midRouteCoordinates ?? null),
+  };
+}
+
+function buildDuplicateRouteFields(
+  preparation: ActionPreparationData,
+  fixedArea: boolean,
+): Pick<ActionDuplicatePrefill, "interventionMode" | "routeTopology" | "routeTargetDistanceKm" | "routeTargetDistanceSource" | "operationalRoute" | "routeCalibrationContext"> {
+  const route = fixedArea ? { operationalRoute: null, routeCalibrationContext: null } : reusableRoute(preparation);
+  return {
     interventionMode: preparation.interventionMode,
     routeTopology: fixedArea ? undefined : preparation.routeTopology,
     routeTargetDistanceKm: fixedArea ? null : (preparation.routeTargetDistanceKm ?? null),
     routeTargetDistanceSource: fixedArea ? undefined : preparation.routeTargetDistanceSource,
+    operationalRoute: route.operationalRoute,
+    routeCalibrationContext: route.routeCalibrationContext,
+  };
+}
+
+function buildDuplicatePreparationFields(
+  preparation: ActionPreparationData,
+): Pick<ActionDuplicatePrefill, "title" | "shortDescription" | "plannedObjective" | "placeType" | "estimatedDifficulty" | "accessibility" | "accessibilityStatus" | "safetyInstructions" | "recommendedMaterials" | "materialsProvided" | "suggestedMaterials" | "equipmentInventory" | "refreshmentsProvided" | "participantMessage" | "logisticsNotes" | "expectedWasteCategories"> {
+  return {
+    title: text(preparation.actionTitle),
+    shortDescription: text(preparation.shortDescription),
     plannedObjective: preparation.plannedObjective,
     placeType: text(preparation.placeType),
     estimatedDifficulty: preparation.estimatedDifficulty,
@@ -97,11 +115,29 @@ export function buildActionDuplicatePrefill(action: ActionRow): ActionDuplicateP
     participantMessage: text(preparation.participantMessage),
     logisticsNotes: text(preparation.logisticsNotes),
     expectedWasteCategories: [...(preparation.expectedWasteCategories ?? [])],
-    operationalRoute: route.operationalRoute,
-    routeCalibrationContext: route.routeCalibrationContext,
+  };
+}
+
+function buildDuplicateOrganizerFields(
+  action: ActionRow,
+  preparation: ActionPreparationData,
+): Pick<ActionDuplicatePrefill, "organizerType" | "organizerId" | "organizerName" | "associationName"> {
+  const organizerName = text(action.organizer_name);
+  return {
     organizerType: action.organizer_type ?? null,
     organizerId: action.organizer_id ?? null,
-    organizerName: text(action.organizer_name),
-    associationName: text(action.organizer_name) || text(preparation.communeZoneLabel),
+    organizerName,
+    associationName: organizerName || text(preparation.communeZoneLabel),
+  };
+}
+
+export function buildActionDuplicatePrefill(action: ActionRow): ActionDuplicatePrefill {
+  const preparation = normalizeActionPreparationData(action.preparation_data ?? {});
+  const fixedArea = preparation.interventionMode?.mode === "fixed_area";
+  return {
+    ...buildDuplicatePreparationFields(preparation),
+    ...buildDuplicateLocationFields(action, preparation, fixedArea),
+    ...buildDuplicateRouteFields(preparation, fixedArea),
+    ...buildDuplicateOrganizerFields(action, preparation),
   };
 }

@@ -8,7 +8,7 @@ import { canManageAction, canManageActionsGlobally } from "@/lib/actions/permiss
 import { loadActionById } from "@/lib/actions/store";
 import { loadActionOrganizerRowsForAction } from "@/lib/actions/participation/organizers";
 import { loadActionParticipationReviewPage } from "@/lib/actions/participation/group-participation";
-import { ACTION_FIELD_ROLE_OPTIONS, isActionFieldRoleCode } from "@/lib/actions/field-roles";
+import { ACTION_FIELD_ROLE_OPTIONS, isActionFieldRoleCode, type ActionFieldRoleCode } from "@/lib/actions/field-roles";
 import {
   isActionFinalizedForRoleAttestation,
   loadActionRoleAttestationState,
@@ -29,6 +29,8 @@ const reviewSchema = z.object({
   decision: z.enum(["confirm", "reject"]),
   reason: z.string().trim().max(1000).nullable().optional(),
 });
+
+type ReviewInput = Omit<z.infer<typeof reviewSchema>, "roleCode"> & { roleCode: ActionFieldRoleCode };
 
 async function resolveAccess(actionId: string, userId: string) {
   const supabase = getSupabaseServerClient(true);
@@ -68,6 +70,72 @@ function readPagination(request: Request) {
     limit: Number.isFinite(rawLimit) ? Math.max(1, Math.min(Math.trunc(rawLimit), 100)) : 100,
     offset: Number.isFinite(rawOffset) ? Math.max(0, Math.min(Math.trunc(rawOffset), 100_000)) : 0,
   };
+}
+
+async function executeRoleAttestationReview({
+  actionId,
+  reviewerUserId,
+  review,
+}: {
+  actionId: string;
+  reviewerUserId: string;
+  review: ReviewInput;
+}) {
+  const access = await resolveAccess(actionId, reviewerUserId);
+  if (!access.ok) return noStoreResponse({ error: "Action introuvable." }, access.status);
+  if (!access.isManager) return noStoreResponse({ error: "Seul un reviewer habilité peut modifier une mission." }, 403);
+  if (!isActionFinalizedForRoleAttestation(access.action)) {
+    return noStoreResponse({ error: "L’action doit être finalisée avant toute revue de mission." }, 409);
+  }
+
+  const [currentState, participationResult] = await Promise.all([
+    loadActionRoleAttestationState(access.supabase, access.action.id),
+    access.supabase
+      .from("action_participants")
+      .select("participation_status")
+      .eq("action_id", access.action.id)
+      .eq("user_id", review.userId)
+      .maybeSingle(),
+  ]);
+  if (participationResult.error) throw new Error(participationResult.error.message);
+  const current = currentState.attestations.find(
+    (attestation) => attestation.user_id === review.userId && attestation.role_code === review.roleCode,
+  );
+  const reason = review.reason?.trim() || null;
+  if (review.decision === "reject" && !reason) {
+    return validationErrorResponse({ reason: ["Un motif est requis pour rejeter une mission."] });
+  }
+
+  const policy = evaluateRoleAttestationPolicy({
+    actionFinalized: true,
+    participationStatus: (participationResult.data as { participation_status?: string } | null)?.participation_status,
+    reviewerAuthorized: access.isManager,
+    reviewerIsGlobalAdmin: access.isGlobalAdmin,
+    reviewerUserId,
+    targetUserId: review.userId,
+    hasPlannedAssignment: currentState.assignments.some(
+      (assignment) => assignment.user_id === review.userId && assignment.role_code === review.roleCode,
+    ),
+    decision: review.decision,
+    reason,
+    currentStatus: current?.verification_status ?? null,
+    currentReviewerUserId: current?.reviewer_clerk_id ?? null,
+    currentDecisionReason: current?.decision_reason ?? null,
+  });
+  if (!policy.allowed && policy.status === "denied") {
+    return noStoreResponse({ error: "La décision n’est pas compatible avec les preuves requises pour cette mission." }, 409);
+  }
+
+  const attestation = await reviewActionRoleAttestation(access.supabase, {
+    actionId: access.action.id,
+    userId: review.userId,
+    roleCode: review.roleCode,
+    decision: review.decision,
+    reviewerClerkId: reviewerUserId,
+    reason,
+    reviewerIsGlobalAdmin: access.isGlobalAdmin,
+  });
+  return noStoreResponse({ status: "ok", attestation });
 }
 
 export async function GET(request: Request, context: Context) {
@@ -137,59 +205,11 @@ export async function POST(request: Request, context: Context) {
   }
   try {
     const { actionId } = await context.params;
-    const access = await resolveAccess(actionId.trim(), auth.userId);
-    if (!access.ok) return noStoreResponse({ error: "Action introuvable." }, access.status);
-    if (!access.isManager) return noStoreResponse({ error: "Seul un reviewer habilité peut modifier une mission." }, 403);
-    if (!isActionFinalizedForRoleAttestation(access.action)) {
-      return noStoreResponse({ error: "L’action doit être finalisée avant toute revue de mission." }, 409);
-    }
-
-    const [currentState, participationResult] = await Promise.all([
-      loadActionRoleAttestationState(access.supabase, access.action.id),
-      access.supabase
-        .from("action_participants")
-        .select("participation_status")
-        .eq("action_id", access.action.id)
-        .eq("user_id", parsed.data.userId)
-        .maybeSingle(),
-    ]);
-    if (participationResult.error) throw new Error(participationResult.error.message);
-    const current = currentState.attestations.find(
-      (attestation) => attestation.user_id === parsed.data.userId && attestation.role_code === parsed.data.roleCode,
-    );
-    const reason = parsed.data.reason?.trim() || null;
-    if (parsed.data.decision === "reject" && !reason) {
-      return validationErrorResponse({ reason: ["Un motif est requis pour rejeter une mission."] });
-    }
-    const policy = evaluateRoleAttestationPolicy({
-      actionFinalized: isActionFinalizedForRoleAttestation(access.action),
-      participationStatus: (participationResult.data as { participation_status?: string } | null)?.participation_status,
-      reviewerAuthorized: access.isManager,
-      reviewerIsGlobalAdmin: access.isGlobalAdmin,
+    return await executeRoleAttestationReview({
+      actionId: actionId.trim(),
       reviewerUserId: auth.userId,
-      targetUserId: parsed.data.userId,
-      hasPlannedAssignment: currentState.assignments.some(
-        (assignment) => assignment.user_id === parsed.data.userId && assignment.role_code === parsed.data.roleCode,
-      ),
-      decision: parsed.data.decision,
-      reason,
-      currentStatus: current?.verification_status ?? null,
-      currentReviewerUserId: current?.reviewer_clerk_id ?? null,
-      currentDecisionReason: current?.decision_reason ?? null,
+      review: { ...parsed.data, roleCode: parsed.data.roleCode as ActionFieldRoleCode },
     });
-    if (!policy.allowed && policy.status === "denied") {
-      return noStoreResponse({ error: "La décision n’est pas compatible avec les preuves requises pour cette mission." }, 409);
-    }
-    const attestation = await reviewActionRoleAttestation(access.supabase, {
-      actionId: access.action.id,
-      userId: parsed.data.userId,
-      roleCode: parsed.data.roleCode,
-      decision: parsed.data.decision,
-      reviewerClerkId: auth.userId,
-      reason,
-      reviewerIsGlobalAdmin: access.isGlobalAdmin,
-    });
-    return noStoreResponse({ status: "ok", attestation });
   } catch (error) {
     const message = error instanceof Error ? error.message : "role_attestation_failed";
     const status = errorStatus(message);

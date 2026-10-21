@@ -337,22 +337,52 @@ function applyGroupJoinStoreUpdate(
   }
 }
 
+type ParticipantChainState = {
+  filters: Record<string, string>;
+  inFilters: Record<string, string[]>;
+  countRequested: boolean;
+  limitValue: number | null;
+  rangeFrom: number | null;
+  rangeTo: number | null;
+  inserting?: GroupJoinParticipantRow;
+  pendingUpdate?: Record<string, unknown>;
+  pendingInsert?: GroupJoinParticipantRow;
+};
+
+type ParticipantManyResult<T> = { data: T[]; error: null };
+type ParticipantSingleResult<T> = { data: T | null; error: { message: string } | null };
+type ParticipantChain = {
+  select: (columns: string, options?: { count?: string; head?: boolean }) => ParticipantChain;
+  eq: (field: string, value: string) => ParticipantChain;
+  in: (field: string, values: string[]) => ParticipantChain;
+  order: (field: string, options?: { ascending?: boolean }) => ParticipantChain;
+  range: (from: number, to: number) => ParticipantChain;
+  limit: (limit: number) => Promise<ParticipantManyResult<GroupJoinParticipantRow>>;
+  maybeSingle: () => Promise<ParticipantSingleResult<GroupJoinParticipantRow>>;
+  update: (values: Record<string, unknown>) => ParticipantChain;
+  single: () => Promise<ParticipantSingleResult<GroupJoinParticipantRow>>;
+  insert: (values: {
+    action_id: string;
+    user_id: string;
+    joined_at?: string;
+    participation_status?: "pending" | "confirmed" | "cancelled";
+    participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
+    registered_at?: string;
+    registration_status?: "pending" | "confirmed" | "cancelled";
+    registration_source?: "group_form" | "admin" | "admin_override" | "import";
+  }) => ParticipantChain;
+  then: (
+    resolve: (value: { data: GroupJoinParticipantRow[] | null; count?: number; error: { message: string } | null }) => void,
+    reject: (reason: unknown) => void,
+  ) => Promise<void>;
+};
+
 function createParticipantsChain(
   participants: GroupJoinParticipantRow[],
   errors?: GroupJoinSupabaseErrors,
   table: GroupJoinStoreTable = "participants",
 ) {
-  const state: {
-    filters: Record<string, string>;
-    inFilters: Record<string, string[]>;
-    countRequested: boolean;
-    limitValue: number | null;
-    rangeFrom: number | null;
-    rangeTo: number | null;
-    inserting?: GroupJoinParticipantRow;
-    pendingUpdate?: Record<string, unknown>;
-    pendingInsert?: GroupJoinParticipantRow;
-  } = {
+  const state: ParticipantChainState = {
     filters: {},
     inFilters: {},
     countRequested: false,
@@ -398,40 +428,6 @@ function createParticipantsChain(
       }
       return true;
     });
-  type ManyResult<T> = { data: T[]; error: null };
-  type SingleResult<T> = {
-    data: T | null;
-    error: { message: string } | null;
-  };
-  type ParticipantChain = {
-    select: (columns: string, options?: { count?: string; head?: boolean }) => ParticipantChain;
-    eq: (field: string, value: string) => ParticipantChain;
-    in: (field: string, values: string[]) => ParticipantChain;
-    order: (field: string, options?: { ascending?: boolean }) => ParticipantChain;
-    range: (from: number, to: number) => ParticipantChain;
-    limit: (limit: number) => Promise<ManyResult<GroupJoinParticipantRow>>;
-    maybeSingle: () => Promise<SingleResult<GroupJoinParticipantRow>>;
-    update: (values: Record<string, unknown>) => ParticipantChain;
-    single: () => Promise<SingleResult<GroupJoinParticipantRow>>;
-    insert: (values: {
-      action_id: string;
-      user_id: string;
-      joined_at?: string;
-      participation_status?: "pending" | "confirmed" | "cancelled";
-      participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
-      registered_at?: string;
-      registration_status?: "pending" | "confirmed" | "cancelled";
-      registration_source?: "group_form" | "admin" | "admin_override" | "import";
-    }) => ParticipantChain;
-    then: (
-      resolve: (value: {
-      data: GroupJoinParticipantRow[] | null;
-      count?: number;
-        error: { message: string } | null;
-      }) => void,
-      reject: (reason: unknown) => void,
-    ) => Promise<void>;
-  };
   const chain: ParticipantChain = {
     select: vi.fn((_: string, options?: { count?: string; head?: boolean }) => {
       state.countRequested = Boolean(options?.count || options?.head);

@@ -67,6 +67,69 @@ function declaredRefreshmentLines(refreshments: ActionRefreshmentsProvided): str
   return ACTION_REFRESHMENT_OPTIONS.flatMap((option) => refreshments[option.key] ? [option.label] : []);
 }
 
+type VolunteerChecklist = ReturnType<typeof deriveActionVolunteerChecklist>;
+
+function ChecklistLines({ values }: { values: VolunteerChecklist["toBring"] }) {
+  return values.length > 0
+    ? <ul className="mt-2 space-y-2 text-sm text-sky-950">{values.map((value) => <li key={value.key}><span className="font-semibold">{value.label}</span>{value.detail ? <span className="block text-xs text-sky-800">{value.detail}</span> : null}<span className="block text-xs text-sky-700">Source : {value.provenance.map(actionChecklistProvenanceLabel).join(", ")}</span></li>)}</ul>
+    : <p className="mt-2 text-sm text-sky-900/70">Aucun élément calculé.</p>;
+}
+
+function PreparationEquipmentPreview({
+  inventoryLines,
+  unavailableEquipmentLines,
+  refreshmentLines,
+  recommendedLines,
+  volunteerChecklist,
+  weatherState,
+  requestWeather,
+}: {
+  inventoryLines: string[];
+  unavailableEquipmentLines: string[];
+  refreshmentLines: string[];
+  recommendedLines: string[];
+  volunteerChecklist: VolunteerChecklist;
+  weatherState: string;
+  requestWeather: () => void;
+}) {
+  return <CmmCard tone="sky" variant="muted" size="md" data-testid="preparation-equipment-preview">
+    <div className="space-y-4">
+      <div>
+        <h5 className="text-sm font-black uppercase tracking-[0.12em] text-sky-900">Aperçu déclaré</h5>
+        <p className="mt-1 text-xs leading-5 text-sky-900/75">Lecture seule : seules les informations annoncées aux bénévoles sont reprises.</p>
+      </div>
+      <div>
+        <h6 className="text-sm font-bold text-sky-950">Équipements fournis</h6>
+        {inventoryLines.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-sky-950">{inventoryLines.map((line) => <li key={line}>{line}</li>)}</ul> : <p className="mt-2 text-sm text-sky-900/70">Aucun équipement fourni.</p>}
+      </div>
+      {unavailableEquipmentLines.length > 0 ? <div>
+        <h6 className="text-sm font-bold text-sky-950">Équipements explicitement non fournis</h6>
+        <ul className="mt-2 space-y-1 text-sm text-sky-900/80">{unavailableEquipmentLines.map((line) => <li key={line}>{line}</li>)}</ul>
+      </div> : null}
+      <div>
+        <h6 className="text-sm font-bold text-sky-950">Convivialité</h6>
+        {refreshmentLines.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-sky-950">{refreshmentLines.map((line) => <li key={line}>{line}</li>)}</ul> : <p className="mt-2 text-sm text-sky-900/70">Aucune prestation renseignée.</p>}
+      </div>
+      <div>
+        <h6 className="text-sm font-bold text-sky-950">Matériel actuellement conseillé</h6>
+        {recommendedLines.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-sky-950">{recommendedLines.map((line) => <li key={line}>{line}</li>)}</ul> : <p className="mt-2 text-sm text-sky-900/70">Aucun complément renseigné.</p>}
+      </div>
+      <div className="border-t border-sky-100 pt-4" data-testid="preparation-volunteer-checklist">
+        <div className="flex flex-wrap items-baseline justify-between gap-2"><h6 className="text-sm font-bold text-sky-950">Checklist bénévole calculée</h6><span className="text-xs font-semibold text-sky-800">{volunteerChecklist.weatherMessage}</span></div>
+        <p className="mt-1 text-xs leading-5 text-sky-900/75">{volunteerChecklist.staffing.label}. Les données se recalculent sans modifier la checklist interne.</p>
+        <div className="mt-3 space-y-3">
+          <div><p className="text-xs font-black uppercase tracking-wide text-sky-700">À apporter</p><ChecklistLines values={volunteerChecklist.toBring} /></div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-wide text-sky-700">Recommandé selon la météo</p>
+            {volunteerChecklist.weatherState === "success" ? <ChecklistLines values={volunteerChecklist.weatherRecommendations} /> : <div className="mt-2 space-y-2"><p className="text-sm text-sky-900/70">Les recommandations météo sont calculées uniquement sur demande.</p><button type="button" className="rounded-full bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" onClick={requestWeather} disabled={weatherState === "loading"} aria-busy={weatherState === "loading"}>Voir les recommandations selon la météo</button>{weatherState === "loading" ? <p role="status" className="text-xs font-semibold text-sky-800">Analyse des prévisions météo…</p> : null}</div>}
+          </div>
+          <div><p className="text-xs font-black uppercase tracking-wide text-sky-700">Fourni par l’organisateur</p><ChecklistLines values={volunteerChecklist.provided} /></div>
+        </div>
+      </div>
+    </div>
+  </CmmCard>;
+}
+
 export function PreparationEquipmentFields({ form, updateField }: BaseSectionProps) {
   const inventoryLines = declaredEquipmentLines(form.equipmentInventory);
   const unavailableEquipmentLines = explicitlyUnavailableEquipmentLines(form.equipmentInventory);
@@ -112,9 +175,6 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
     weatherRequest: weather.weatherRequest,
     weatherState: weather.weatherState,
   });
-  const checklistLines = (values: typeof volunteerChecklist.toBring) => values.length > 0
-    ? <ul className="mt-2 space-y-2 text-sm text-sky-950">{values.map((value) => <li key={value.key}><span className="font-semibold">{value.label}</span>{value.detail ? <span className="block text-xs text-sky-800">{value.detail}</span> : null}<span className="block text-xs text-sky-700">Source : {value.provenance.map(actionChecklistProvenanceLabel).join(", ")}</span></li>)}</ul>
-    : <p className="mt-2 text-sm text-sky-900/70">Aucun élément calculé.</p>;
 
   return (
     <div className="grid gap-4 lg:grid-cols-2" data-testid="preparation-equipment-fields">
@@ -183,43 +243,15 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
         </fieldset>
       </div>
 
-      <CmmCard tone="sky" variant="muted" size="md" data-testid="preparation-equipment-preview">
-        <div className="space-y-4">
-          <div>
-            <h5 className="text-sm font-black uppercase tracking-[0.12em] text-sky-900">Aperçu déclaré</h5>
-            <p className="mt-1 text-xs leading-5 text-sky-900/75">Lecture seule : seules les informations annoncées aux bénévoles sont reprises.</p>
-          </div>
-          <div>
-            <h6 className="text-sm font-bold text-sky-950">Équipements fournis</h6>
-            {inventoryLines.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-sky-950">{inventoryLines.map((line) => <li key={line}>{line}</li>)}</ul> : <p className="mt-2 text-sm text-sky-900/70">Aucun équipement fourni.</p>}
-          </div>
-          {unavailableEquipmentLines.length > 0 ? <div>
-            <h6 className="text-sm font-bold text-sky-950">Équipements explicitement non fournis</h6>
-            <ul className="mt-2 space-y-1 text-sm text-sky-900/80">{unavailableEquipmentLines.map((line) => <li key={line}>{line}</li>)}</ul>
-          </div>
-          : null}
-          <div>
-            <h6 className="text-sm font-bold text-sky-950">Convivialité</h6>
-            {refreshmentLines.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-sky-950">{refreshmentLines.map((line) => <li key={line}>{line}</li>)}</ul> : <p className="mt-2 text-sm text-sky-900/70">Aucune prestation renseignée.</p>}
-          </div>
-          <div>
-            <h6 className="text-sm font-bold text-sky-950">Matériel actuellement conseillé</h6>
-            {recommendedLines.length > 0 ? <ul className="mt-2 space-y-1 text-sm text-sky-950">{recommendedLines.map((line) => <li key={line}>{line}</li>)}</ul> : <p className="mt-2 text-sm text-sky-900/70">Aucun complément renseigné.</p>}
-          </div>
-          <div className="border-t border-sky-100 pt-4" data-testid="preparation-volunteer-checklist">
-            <div className="flex flex-wrap items-baseline justify-between gap-2"><h6 className="text-sm font-bold text-sky-950">Checklist bénévole calculée</h6><span className="text-xs font-semibold text-sky-800">{volunteerChecklist.weatherMessage}</span></div>
-            <p className="mt-1 text-xs leading-5 text-sky-900/75">{volunteerChecklist.staffing.label}. Les données se recalculent sans modifier la checklist interne.</p>
-            <div className="mt-3 space-y-3">
-              <div><p className="text-xs font-black uppercase tracking-wide text-sky-700">À apporter</p>{checklistLines(volunteerChecklist.toBring)}</div>
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-sky-700">Recommandé selon la météo</p>
-                {volunteerChecklist.weatherState === "success" ? checklistLines(volunteerChecklist.weatherRecommendations) : <div className="mt-2 space-y-2"><p className="text-sm text-sky-900/70">Les recommandations météo sont calculées uniquement sur demande.</p><button type="button" className="rounded-full bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" onClick={() => void weather.requestWeather()} disabled={weather.weatherState === "loading"} aria-busy={weather.weatherState === "loading"}>{"Voir les recommandations selon la météo"}</button>{weather.weatherState === "loading" ? <p role="status" className="text-xs font-semibold text-sky-800">Analyse des prévisions météo…</p> : null}</div>}
-              </div>
-              <div><p className="text-xs font-black uppercase tracking-wide text-sky-700">Fourni par l’organisateur</p>{checklistLines(volunteerChecklist.provided)}</div>
-            </div>
-          </div>
-        </div>
-      </CmmCard>
+      <PreparationEquipmentPreview
+        inventoryLines={inventoryLines}
+        unavailableEquipmentLines={unavailableEquipmentLines}
+        refreshmentLines={refreshmentLines}
+        recommendedLines={recommendedLines}
+        volunteerChecklist={volunteerChecklist}
+        weatherState={weather.weatherState}
+        requestWeather={() => void weather.requestWeather()}
+      />
     </div>
   );
 }

@@ -38,6 +38,7 @@ import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapsho
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import { isActionStartInFuture } from "@/lib/actions/temporal";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 // Justification Vercel: cette route varie selon la requete, le statut Clerk et le scope demande.
@@ -130,6 +131,83 @@ function resolveActionListFilters(url: URL) {
     toFixPriority: parseBooleanFlag(url.searchParams.get("toFixPriority")),
     impact: parseImpactParam(url.searchParams.get("impact")),
   };
+}
+
+type CreateActionRequest = z.infer<typeof createActionSchema>;
+
+function buildVolunteerValidationDetails(
+  issues: ReturnType<typeof getVolunteerActionValidationIssues>,
+): Record<string, string[]> {
+  return issues.reduce<Record<string, string[]>>((details, issue) => {
+    const current = details[issue.field] ?? [];
+    current.push(issue.message);
+    details[issue.field] = current;
+    return details;
+  }, {});
+}
+
+async function executeActionCreation({
+  request,
+  userId,
+  payload,
+  idempotencyKey,
+}: {
+  request: Request;
+  userId: string;
+  payload: CreateActionRequest;
+  idempotencyKey?: string;
+}) {
+  const supabase = getSupabaseServerClient(true);
+  const { ActionCreationValidationError, createActionSubmission } = await import("@/lib/actions/create-submission");
+  const identity = await getCurrentUserIdentity({ userId });
+  const isCreatorGlobalAdmin = canManageActionsGlobally(identity);
+  const resolvedIdentity = identity ?? {
+    displayName: userId,
+    handle: userId,
+    username: userId,
+    email: null,
+  };
+  const normalizedPayload = {
+    ...payload,
+    actorName: pickTraceableActorName(identity, payload.actorName),
+  };
+  if (normalizedPayload.submissionMode !== "quick") {
+    const volunteerIssues = getVolunteerActionValidationIssues(normalizedPayload);
+    if (volunteerIssues.length > 0) {
+      return validationErrorResponse(buildVolunteerValidationDetails(volunteerIssues));
+    }
+  }
+  try {
+    const created = await createActionSubmission({
+      supabase,
+      userId,
+      payload: normalizedPayload,
+      idempotencyKey,
+      creator: {
+        userId,
+        displayName: resolvedIdentity.displayName,
+        handle: resolvedIdentity.handle,
+        username: resolvedIdentity.username,
+        email: resolvedIdentity.email,
+      },
+      isCreatorGlobalAdmin,
+      consentGranted: hasAnalyticsConsentCookie(request.headers.get("cookie")),
+    });
+    return NextResponse.json(
+      {
+        status: "created",
+        id: created.id,
+        source: created.source,
+        retentionLoop: created.kind === "action" ? created.retentionLoop : null,
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    if (error instanceof ActionCreationValidationError) {
+      return validationErrorResponse(error.fieldErrors);
+    }
+    throw error;
+  }
 }
 
 async function buildActionsRoutePayload(
@@ -374,72 +452,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = getSupabaseServerClient(true);
-    const {
-      ActionCreationValidationError,
-      createActionSubmission,
-    } = await import("@/lib/actions/create-submission");
-    const identity = await getCurrentUserIdentity({ userId });
-    const isCreatorGlobalAdmin = canManageActionsGlobally(identity);
-    const resolvedIdentity = identity ?? {
-      displayName: userId,
-      handle: userId,
-      username: userId,
-      email: null,
-    };
-    const actorName = pickTraceableActorName(identity, parsed.data.actorName);
-    const normalizedPayload = {
-      ...parsed.data,
-      actorName,
-    };
-    const isQuickSubmission = normalizedPayload.submissionMode === "quick";
-    if (!isQuickSubmission) {
-      const volunteerIssues = getVolunteerActionValidationIssues(normalizedPayload);
-      if (volunteerIssues.length > 0) {
-        const details = volunteerIssues.reduce<Record<string, string[]>>(
-          (acc, issue) => {
-            const current = acc[issue.field] ?? [];
-            current.push(issue.message);
-            acc[issue.field] = current;
-            return acc;
-          },
-          {},
-        );
-        return validationErrorResponse(details);
-      }
-    }
-    try {
-      const created = await createActionSubmission({
-        supabase,
-        userId,
-        payload: normalizedPayload,
-        idempotencyKey,
-        creator: {
-          userId,
-          displayName: resolvedIdentity.displayName,
-          handle: resolvedIdentity.handle,
-          username: resolvedIdentity.username,
-          email: resolvedIdentity.email,
-        },
-        isCreatorGlobalAdmin,
-        consentGranted: hasAnalyticsConsentCookie(request.headers.get("cookie")),
-      });
-
-      return NextResponse.json(
-        {
-          status: "created",
-          id: created.id,
-          source: created.source,
-          retentionLoop: created.kind === "action" ? created.retentionLoop : null,
-        },
-        { status: 201 },
-      );
-    } catch (error) {
-      if (error instanceof ActionCreationValidationError) {
-        return validationErrorResponse(error.fieldErrors);
-      }
-      throw error;
-    }
+    return await executeActionCreation({
+      request,
+      userId,
+      payload: parsed.data,
+      idempotencyKey,
+    });
   } catch (error) {
     return handleApiError(error, "api/actions");
   }

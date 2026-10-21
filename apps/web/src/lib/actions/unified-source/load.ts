@@ -76,13 +76,25 @@ async function loadCanonicalSpots(
     if (!query) {
       return [];
     }
-    const result = await query;
-    if (result.error) {
-      throw result.error;
-    }
-    return (result.data ?? []) as TrashSpotterSpotRow[];
+    return fetchCanonicalSpotPage(query);
   }
 
+  return loadPaginatedCanonicalSpots(supabase, params, requestedLimit);
+}
+
+async function fetchCanonicalSpotPage(
+  query: NonNullable<ReturnType<typeof buildCanonicalSpotsQuery>>,
+): Promise<TrashSpotterSpotRow[]> {
+  const result = await query;
+  if (result.error) throw result.error;
+  return (result.data ?? []) as TrashSpotterSpotRow[];
+}
+
+async function loadPaginatedCanonicalSpots(
+  supabase: SupabaseClient,
+  params: UnifiedActionContractsParams,
+  requestedLimit: number | null,
+): Promise<TrashSpotterSpotRow[]> {
   const rows: TrashSpotterSpotRow[] = [];
   let offset = 0;
   let terminated = false;
@@ -105,11 +117,7 @@ async function loadCanonicalSpots(
       terminated = true;
       break;
     }
-    const result = await query;
-    if (result.error) {
-      throw result.error;
-    }
-    const page = (result.data ?? []) as TrashSpotterSpotRow[];
+    const page = await fetchCanonicalSpotPage(query);
     if (page.length === 0) {
       terminated = true;
       break;
@@ -142,20 +150,19 @@ function canUseLocalActionFallback(
   );
 }
 
-export async function loadUnifiedActionSourceData(
+type RemoteSourceResults = {
+  actions: PromiseSettledResult<Awaited<ReturnType<typeof fetchActions>>>;
+  spots: PromiseSettledResult<TrashSpotterSpotRow[]>;
+};
+
+async function loadRemoteSources(
   supabase: SupabaseClient,
   params: UnifiedActionContractsParams,
-): Promise<UnifiedActionSourceLoadResult> {
-  const sourceLimit = params.limit === null ? null : params.limit + 1;
-  const wantsActions =
-    !params.types || params.types.length === 0 || params.types.includes("action");
-  const wantsSpots =
-    !params.types ||
-    params.types.length === 0 ||
-    params.types.includes("spot") ||
-    params.types.includes("clean_place");
-
-  const [remoteRowsResult, remoteSpotsResult] = await Promise.allSettled([
+  sourceLimit: number | null,
+  wantsActions: boolean,
+  wantsSpots: boolean,
+): Promise<RemoteSourceResults> {
+  const [actions, spots] = await Promise.allSettled([
     wantsActions
       ? fetchActions(supabase, {
           actionId: params.actionId,
@@ -174,77 +181,97 @@ export async function loadUnifiedActionSourceData(
       : Promise.resolve([]),
     wantsSpots ? loadCanonicalSpots(supabase, params) : Promise.resolve([]),
   ]);
+  return { actions, spots };
+}
 
-  const shouldUseLocalFallback = canUseLocalActionFallback(params, remoteRowsResult, wantsActions);
-  const localContractsResult = shouldUseLocalFallback
-    ? (await Promise.allSettled([
-        loadLocalActionContracts({
-          status: params.status,
-          floorDate: params.floorDate,
-          ceilingDate: params.ceilingDate ?? null,
-          limit: sourceLimit,
-          requireCoordinates: params.requireCoordinates,
-        }),
-      ]))[0]
-    : null;
+async function loadLocalFallback(
+  params: UnifiedActionContractsParams,
+  sourceLimit: number | null,
+  shouldUseLocalFallback: boolean,
+) {
+  if (!shouldUseLocalFallback) return null;
+  return (await Promise.allSettled([
+    loadLocalActionContracts({
+      status: params.status,
+      floorDate: params.floorDate,
+      ceilingDate: params.ceilingDate ?? null,
+      limit: sourceLimit,
+      requireCoordinates: params.requireCoordinates,
+    }),
+  ]))[0];
+}
 
+function classifySourceAvailability(
+  wantsActions: boolean,
+  wantsSpots: boolean,
+  shouldUseLocalFallback: boolean,
+  remote: RemoteSourceResults,
+  local: Awaited<ReturnType<typeof loadLocalFallback>>,
+): Pick<UnifiedActionSourceLoadResult, "failedSources" | "availableSources"> {
   const failedSources: UnifiedActionSourceLoadResult["failedSources"] = [];
   const availableSources: UnifiedActionSourceLoadResult["availableSources"] = [];
-  const truncatedSources: UnifiedActionSourceLoadResult["truncatedSources"] = [];
-
-  if (wantsActions && remoteRowsResult.status === "rejected") {
+  if (wantsActions && remote.actions.status === "rejected") {
     failedSources.push("actions");
-    logFailure("UnifiedSource", "Actions fetch failed", remoteRowsResult.reason, {
-      source: "actions",
-    });
+    logFailure("UnifiedSource", "Actions fetch failed", remote.actions.reason, { source: "actions" });
   } else if (wantsActions) {
     availableSources.push("actions");
   }
-
-  if (wantsSpots && remoteSpotsResult.status === "rejected") {
+  if (wantsSpots && remote.spots.status === "rejected") {
     failedSources.push("spots");
-    logFailure("UnifiedSource", "Trash spotter fetch failed", remoteSpotsResult.reason, {
-      source: "trash_spotter_spots",
-    });
+    logFailure("UnifiedSource", "Trash spotter fetch failed", remote.spots.reason, { source: "trash_spotter_spots" });
   } else if (wantsSpots) {
     availableSources.push("spots");
   }
-
-  if (shouldUseLocalFallback && localContractsResult?.status === "fulfilled") {
+  if (shouldUseLocalFallback && local?.status === "fulfilled") {
     availableSources.push("local");
-  } else if (shouldUseLocalFallback && localContractsResult?.status === "rejected") {
+  } else if (shouldUseLocalFallback && local?.status === "rejected") {
     failedSources.push("local");
-    logFailure("UnifiedSource", "Local actions fallback failed", localContractsResult.reason, {
-      source: "local",
-    });
+    logFailure("UnifiedSource", "Local actions fallback failed", local.reason, { source: "local" });
   }
+  return { failedSources, availableSources };
+}
 
-  if (
-    wantsActions &&
-    sourceLimit !== null &&
-    remoteRowsResult.status === "fulfilled" &&
-    remoteRowsResult.value.length >= sourceLimit
-  ) {
-    truncatedSources.push("actions");
-  }
-  if (
-    wantsSpots &&
-    sourceLimit !== null &&
-    remoteSpotsResult.status === "fulfilled" &&
-    remoteSpotsResult.value.length >= sourceLimit
-  ) {
-    truncatedSources.push("spots");
-  }
+function classifyTruncatedSources(
+  wantsActions: boolean,
+  wantsSpots: boolean,
+  sourceLimit: number | null,
+  remote: RemoteSourceResults,
+): UnifiedActionSourceLoadResult["truncatedSources"] {
+  if (sourceLimit === null) return [];
+  return [
+    ...(wantsActions && remote.actions.status === "fulfilled" && remote.actions.value.length >= sourceLimit ? ["actions" as const] : []),
+    ...(wantsSpots && remote.spots.status === "fulfilled" && remote.spots.value.length >= sourceLimit ? ["spots" as const] : []),
+  ];
+}
+
+export async function loadUnifiedActionSourceData(
+  supabase: SupabaseClient,
+  params: UnifiedActionContractsParams,
+): Promise<UnifiedActionSourceLoadResult> {
+  const sourceLimit = params.limit === null ? null : params.limit + 1;
+  const wantsActions =
+    !params.types || params.types.length === 0 || params.types.includes("action");
+  const wantsSpots =
+    !params.types ||
+    params.types.length === 0 ||
+    params.types.includes("spot") ||
+    params.types.includes("clean_place");
+
+  const remote = await loadRemoteSources(supabase, params, sourceLimit, wantsActions, wantsSpots);
+
+  const shouldUseLocalFallback = canUseLocalActionFallback(params, remote.actions, wantsActions);
+  const localContractsResult = await loadLocalFallback(params, sourceLimit, shouldUseLocalFallback);
+  const availability = classifySourceAvailability(wantsActions, wantsSpots, shouldUseLocalFallback, remote, localContractsResult);
+  const truncatedSources = classifyTruncatedSources(wantsActions, wantsSpots, sourceLimit, remote);
 
   const localContractsValue =
     localContractsResult?.status === "fulfilled" ? localContractsResult.value : [];
 
   return {
-    remoteRows: remoteRowsResult.status === "fulfilled" ? remoteRowsResult.value : [],
-    remoteSpots: remoteSpotsResult.status === "fulfilled" ? remoteSpotsResult.value : [],
+    remoteRows: remote.actions.status === "fulfilled" ? remote.actions.value : [],
+    remoteSpots: remote.spots.status === "fulfilled" ? remote.spots.value : [],
     localContracts: localContractsValue,
-    failedSources,
-    availableSources,
+    ...availability,
     truncatedSources,
   };
 }

@@ -318,17 +318,18 @@ function resolveOrganizerRequirement(
     : undefined;
 }
 
-async function persistStandardActionSubmission(params: {
+type CreatedAction = Awaited<ReturnType<typeof createAction>>;
+
+async function createPersistedAction(params: {
   supabase: SupabaseClient;
   userId: string;
   payload: CreateActionPayload;
   idempotencyKey?: string;
   organizerResolution: OrganizerResolution;
   participantResolution: ParticipantResolution;
-}): Promise<Extract<CreateActionSubmissionResult, { kind: "action" }>> {
-  let created: Awaited<ReturnType<typeof createAction>>;
+}): Promise<CreatedAction> {
   try {
-    created = await createAction(params.supabase, {
+    return await createAction(params.supabase, {
       userId: params.userId,
       payload: params.payload,
       organizers: params.organizerResolution.organizers,
@@ -343,6 +344,149 @@ async function persistStandardActionSubmission(params: {
     }
     throw error;
   }
+}
+
+function buildInitialFormalitiesState(payload: CreateActionPayload) {
+  return resolveActionTerritory({
+    latitude: payload.latitude,
+    longitude: payload.longitude,
+    geometry: null,
+    departmentCode: payload.departmentCode,
+    departmentName: payload.departmentName,
+  }).then((resolvedTerritory) => {
+    const fallbackFacts = deriveActionFormalitiesFacts({
+      departmentCode: payload.departmentCode,
+      departmentName: payload.departmentName,
+      resolvedTerritory,
+      placeType: payload.placeType,
+      plannedObjective: payload.preparationData?.plannedObjective,
+    });
+    const providedFacts = actionFormalitiesFactsSchema.safeParse(
+      payload.preparationData?.formalitiesContext,
+    );
+    const facts = providedFacts.success
+      ? {
+          ...providedFacts.data,
+          territory:
+            resolvedTerritory || fallbackFacts.territory.code !== "FR-unknown"
+              ? fallbackFacts.territory
+              : providedFacts.data.territory,
+        }
+      : fallbackFacts;
+    const qualification = qualifyActionFormalities(facts);
+    const workflow = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      actionDependencies: {
+        locationLabel: payload.locationLabel,
+        actionDate: payload.actionDate,
+        territoryFingerprint: buildFormalitiesTerritoryFingerprint(facts.territory),
+      },
+    });
+    return { facts, workflow };
+  });
+}
+
+async function persistInitialFormalities(params: {
+  supabase: SupabaseClient;
+  actionId: string;
+  payload: CreateActionPayload;
+}): Promise<void> {
+  try {
+    const { facts, workflow } = await buildInitialFormalitiesState(params.payload);
+    if (typeof (params.supabase as unknown as { from?: unknown }).from !== "function") return;
+    const current = await loadActionById(params.supabase, params.actionId);
+    const result = await params.supabase
+      .from("actions")
+      .update({
+        preparation_data: {
+          ...(current?.preparation_data ?? params.payload.preparationData ?? {}),
+          formalitiesContext: facts,
+          formalitiesWorkflow: workflow,
+        },
+      })
+      .eq("id", params.actionId);
+    if (result.error) throw result.error;
+  } catch (error) {
+    logFailure(
+      "Actions/Create",
+      "Initial formalities qualification persistence failed",
+      error,
+      { actionId: params.actionId },
+    );
+  }
+}
+
+async function invalidateActionSnapshots(actionId: string): Promise<void> {
+  try {
+    await invalidatePublicSurfaceSnapshotsByRoute(["api/actions", "api/actions/map"]);
+  } catch (error) {
+    logFailure(
+      "Actions/Create",
+      "Public action map snapshot invalidation failed",
+      error,
+      { actionId },
+    );
+  }
+}
+
+async function buildActionRetentionLoop(
+  supabase: SupabaseClient,
+  userId: string,
+  actionId: string,
+) {
+  return buildPostActionRetentionLoop(supabase, { userId, actionId }).catch((error) => {
+    logFailure(
+      "Actions/Create",
+      "Post-action retention loop failed",
+      error,
+      { actionId, userId },
+    );
+    return null;
+  });
+}
+
+function validateSubmissionAccessMode(payload: CreateActionPayload): void {
+  const isSignalement = payload.recordType === "clean_place" || payload.recordType === "spot";
+  const invalidInviteLink = payload.accessMode === "invite_link" &&
+    (isSignalement || payload.actionPhase !== "pre_action");
+  if (invalidInviteLink) {
+    throw validationError(
+      "accessMode",
+      "Le mode privé sur invitation est réservé aux pré-actions.",
+    );
+  }
+}
+
+async function createStandardActionSubmission(
+  params: CreateActionSubmissionParams,
+): Promise<Extract<CreateActionSubmissionResult, { kind: "action" }>> {
+  const context = await resolveStandardActionContext({
+    supabase: params.supabase,
+    userId: params.userId,
+    payload: params.payload,
+    creator: params.creator,
+    isCreatorGlobalAdmin: params.isCreatorGlobalAdmin,
+  });
+  return persistStandardActionSubmission({
+    supabase: params.supabase,
+    userId: params.userId,
+    payload: context.payload,
+    idempotencyKey: params.idempotencyKey,
+    organizerResolution: context.organizerResolution,
+    participantResolution: context.participantResolution,
+  });
+}
+
+async function persistStandardActionSubmission(params: {
+  supabase: SupabaseClient;
+  userId: string;
+  payload: CreateActionPayload;
+  idempotencyKey?: string;
+  organizerResolution: OrganizerResolution;
+  participantResolution: ParticipantResolution;
+}): Promise<Extract<CreateActionSubmissionResult, { kind: "action" }>> {
+  const created = await createPersistedAction(params);
 
   if (created.replayed) {
     return {
@@ -354,77 +498,14 @@ async function persistStandardActionSubmission(params: {
   }
 
   if (params.payload.actionPhase === "pre_action") {
-    try {
-      const resolvedTerritory = await resolveActionTerritory({
-        latitude: params.payload.latitude,
-        longitude: params.payload.longitude,
-        geometry: null,
-        departmentCode: params.payload.departmentCode,
-        departmentName: params.payload.departmentName,
-      });
-      const fallbackFacts = deriveActionFormalitiesFacts({
-        departmentCode: params.payload.departmentCode,
-        departmentName: params.payload.departmentName,
-        resolvedTerritory,
-        placeType: params.payload.placeType,
-        plannedObjective: params.payload.preparationData?.plannedObjective,
-      });
-      const providedFacts = actionFormalitiesFactsSchema.safeParse(
-        params.payload.preparationData?.formalitiesContext,
-      );
-      const facts = providedFacts.success
-        ? {
-            ...providedFacts.data,
-            territory:
-              resolvedTerritory || fallbackFacts.territory.code !== "FR-unknown"
-                ? fallbackFacts.territory
-                : providedFacts.data.territory,
-          }
-        : fallbackFacts;
-      const qualification = qualifyActionFormalities(facts);
-      const workflow = buildFormalitiesWorkflowState({
-        facts,
-        qualification,
-        actionDependencies: {
-          locationLabel: params.payload.locationLabel,
-          actionDate: params.payload.actionDate,
-          territoryFingerprint: buildFormalitiesTerritoryFingerprint(facts.territory),
-        },
-      });
-      if (typeof (params.supabase as unknown as { from?: unknown }).from === "function") {
-        const current = await loadActionById(params.supabase, created.id);
-        const result = await params.supabase
-          .from("actions")
-          .update({
-          preparation_data: {
-            ...(current?.preparation_data ?? params.payload.preparationData ?? {}),
-            formalitiesContext: facts,
-            formalitiesWorkflow: workflow,
-          },
-          })
-          .eq("id", created.id);
-        if (result.error) throw result.error;
-      }
-    } catch (error) {
-      logFailure(
-        "Actions/Create",
-        "Initial formalities qualification persistence failed",
-        error,
-        { actionId: created.id },
-      );
-    }
+    await persistInitialFormalities({
+      supabase: params.supabase,
+      actionId: created.id,
+      payload: params.payload,
+    });
   }
 
-  try {
-    await invalidatePublicSurfaceSnapshotsByRoute(["api/actions", "api/actions/map"]);
-  } catch (error) {
-    logFailure(
-      "Actions/Create",
-      "Public action map snapshot invalidation failed",
-      error,
-      { actionId: created.id },
-    );
-  }
+  await invalidateActionSnapshots(created.id);
 
   await runActionCreationProgressionSideEffects({
     supabase: params.supabase,
@@ -432,18 +513,11 @@ async function persistStandardActionSubmission(params: {
     actionId: created.id,
     locationLabel: params.payload.locationLabel,
   });
-  const retentionLoop = await buildPostActionRetentionLoop(
+  const retentionLoop = await buildActionRetentionLoop(
     params.supabase,
-    { userId: params.userId, actionId: created.id },
-  ).catch((error) => {
-    logFailure(
-      "Actions/Create",
-      "Post-action retention loop failed",
-      error,
-      { actionId: created.id, userId: params.userId },
-    );
-    return null;
-  });
+    params.userId,
+    created.id,
+  );
 
   return {
     kind: "action",
@@ -457,37 +531,9 @@ export async function createActionSubmission(
   params: CreateActionSubmissionParams,
 ): Promise<CreateActionSubmissionResult> {
   const payload = params.payload;
-
+  validateSubmissionAccessMode(payload);
   if (payload.recordType === "clean_place" || payload.recordType === "spot") {
-    if (payload.accessMode === "invite_link") {
-      throw validationError(
-        "accessMode",
-        "Le mode privé sur invitation est réservé aux pré-actions.",
-      );
-    }
     return createSignalementSubmission(params);
   }
-
-  if (payload.accessMode === "invite_link" && payload.actionPhase !== "pre_action") {
-    throw validationError(
-      "accessMode",
-      "Le mode privé sur invitation est réservé aux pré-actions.",
-    );
-  }
-
-  const context = await resolveStandardActionContext({
-    supabase: params.supabase,
-    userId: params.userId,
-    payload,
-    creator: params.creator,
-    isCreatorGlobalAdmin: params.isCreatorGlobalAdmin,
-  });
-  return persistStandardActionSubmission({
-    supabase: params.supabase,
-    userId: params.userId,
-    payload: context.payload,
-    idempotencyKey: params.idempotencyKey,
-    organizerResolution: context.organizerResolution,
-    participantResolution: context.participantResolution,
-  });
+  return createStandardActionSubmission(params);
 }

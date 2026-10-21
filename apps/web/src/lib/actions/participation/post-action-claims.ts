@@ -81,6 +81,16 @@ function isDuplicateError(error: unknown): boolean {
 
 type ClaimParams = { actionId: string; userId: string; now?: Date; tokenHash?: string };
 
+type ClaimableAction = {
+  status: "pending" | "approved" | "rejected";
+  moderation_visibility?: "visible" | "hidden" | null;
+  action_phase: "pre_action" | "post_action_draft" | "post_action_complete";
+  access_mode?: "public" | "invite_link" | null;
+  action_date: string;
+  event_start_time?: string | null;
+  published_at?: string | null;
+};
+
 type PrivateClaimRpcRow = {
   action_id: string;
   participant_user_id: string;
@@ -201,25 +211,44 @@ async function insertClaimWithRecovery(
   }
 }
 
+async function loadClaimableAction(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<ClaimableAction | null> {
+  return runSingleActionQuery<ClaimableAction>(supabase, (query) =>
+    query
+      .select(ACTION_PARTICIPATION_COLUMNS)
+      .eq("id", actionId)
+      .maybeSingle(),
+  );
+}
+
+function isPublicClaimEligible(action: ClaimableAction | null, now: Date): boolean {
+  return Boolean(
+    action &&
+      action.status === "approved" &&
+      action.moderation_visibility !== "hidden" &&
+      action.published_at &&
+      action.action_phase === "post_action_complete" &&
+      !isActionStartInFuture(action, now),
+  );
+}
+
+async function claimPublicActionParticipation(
+  supabase: SupabaseClient,
+  params: ClaimParams,
+): Promise<PostActionClaimResult> {
+  const existing = await readParticipantRecord(supabase, params);
+  return existing
+    ? buildExistingClaimResult(existing, params) as PostActionClaimResult
+    : insertClaimWithRecovery(supabase, params);
+}
+
 export async function claimFinishedActionParticipation(
   supabase: SupabaseClient,
   params: ClaimParams,
 ): Promise<PostActionClaimResult> {
-  const action = await runSingleActionQuery<{
-    status: "pending" | "approved" | "rejected";
-    moderation_visibility?: "visible" | "hidden" | null;
-    action_phase: "pre_action" | "post_action_draft" | "post_action_complete";
-    access_mode?: "public" | "invite_link" | null;
-    action_date: string;
-    event_start_time?: string | null;
-    published_at?: string | null;
-  }>(supabase, (query) =>
-    query
-      .select(ACTION_PARTICIPATION_COLUMNS)
-      .eq("id", params.actionId)
-      .maybeSingle(),
-  );
-
+  const action = await loadClaimableAction(supabase, params.actionId);
   const now = params.now ?? new Date();
   if (action?.access_mode === "invite_link") {
     if (!params.tokenHash) throw createNotFoundError();
@@ -232,19 +261,8 @@ export async function claimFinishedActionParticipation(
   if (action?.access_mode !== "public" && action?.access_mode != null) {
     throw createNotFoundError();
   }
-  const eligible =
-    action?.status === "approved" &&
-    action.moderation_visibility !== "hidden" &&
-    Boolean(action.published_at) &&
-    action.action_phase === "post_action_complete" &&
-    !isActionStartInFuture(action, now);
-
-  if (!action || !eligible) {
+  if (!isPublicClaimEligible(action, now)) {
     throw createNotFoundError();
   }
-
-  const existing = await readParticipantRecord(supabase, params);
-  return existing
-    ? buildExistingClaimResult(existing, params) as PostActionClaimResult
-    : insertClaimWithRecovery(supabase, params);
+  return claimPublicActionParticipation(supabase, params);
 }

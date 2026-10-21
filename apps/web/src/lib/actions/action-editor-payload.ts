@@ -91,14 +91,12 @@ function buildEditorMediaFields(
   };
 }
 
-export function buildActionEditorPayload(row: ActionRow | null) {
-  if (!row) {
-    return null;
-  }
-
-  const parsedDrawing = parseDrawingFromNotes(row.notes);
-  const metadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
-  const preparationData = buildEditorPreparationData(row);
+function buildActionEditorResult(
+  row: ActionRow,
+  parsedDrawing: ReturnType<typeof parseDrawingFromNotes>,
+  metadata: ReturnType<typeof extractActionMetadataFromNotes>,
+  preparationData: ReturnType<typeof buildEditorPreparationData>,
+) {
   return {
     id: row.id,
     createdAt: row.created_at,
@@ -121,4 +119,11 @@ export function buildActionEditorPayload(row: ActionRow | null) {
     ...buildEditorRouteFields(metadata),
     ...buildEditorMediaFields(row, metadata, parsedDrawing),
   };
+}
+
+export function buildActionEditorPayload(row: ActionRow | null) {
+  if (!row) return null;
+  const parsedDrawing = parseDrawingFromNotes(row.notes);
+  const metadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
+  return buildActionEditorResult(row, parsedDrawing, metadata, buildEditorPreparationData(row));
 }

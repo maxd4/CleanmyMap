@@ -87,36 +87,37 @@ export const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT_AND_ACCESS_MODE = AC
   .filter((field) => field !== "access_mode")
   .join(", ");
 
-export function isMissingActionColumnError(error: unknown): boolean {
-  const message =
-    error instanceof Error
-      ? error.message
-      : typeof error === "string"
-        ? error
-        : error && typeof error === "object" && "message" in error
-          ? String((error as { message?: unknown }).message ?? "")
-          : "";
-  const normalized = message.toLowerCase();
+const ACTION_COLUMN_MARKERS = [
+  "action_phase",
+  "access_mode",
+  "organizer_id",
+  "organizer_name",
+  "preparation_data",
+  "moderation_visibility",
+  "hidden_at",
+  "hidden_by_clerk_id",
+  "hidden_reason",
+  "department_code",
+  "department_name",
+  "event_start_time",
+  "event_end_time",
+  "published_at",
+  "cancelled_at",
+  "cancelled_by_clerk_id",
+  "cancellation_reason",
+  "cancelled_from_status",
+] as const;
 
-  return (
-      normalized.includes("does not exist") &&
-    (normalized.includes("action_phase") ||
-      normalized.includes("access_mode") ||
-      normalized.includes("organizer_id") ||
-      normalized.includes("organizer_name") ||
-      normalized.includes("preparation_data") ||
-      normalized.includes("moderation_visibility") ||
-      normalized.includes("hidden_at") ||
-      normalized.includes("hidden_by_clerk_id") ||
-      normalized.includes("hidden_reason") ||
-      normalized.includes("department_code") ||
-      normalized.includes("department_name") ||
-      normalized.includes("event_start_time") ||
-      normalized.includes("event_end_time") ||
-      normalized.includes("published_at") ||
-      normalized.includes("cancelled_at") ||
-      normalized.includes("cancelled_by_clerk_id") ||
-      normalized.includes("cancellation_reason") ||
-      normalized.includes("cancelled_from_status"))
-  );
+function getActionColumnErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message?: unknown }).message ?? "");
+  }
+  return "";
+}
+
+export function isMissingActionColumnError(error: unknown): boolean {
+  const normalized = getActionColumnErrorMessage(error).toLowerCase();
+  return normalized.includes("does not exist") && ACTION_COLUMN_MARKERS.some((marker) => normalized.includes(marker));
 }

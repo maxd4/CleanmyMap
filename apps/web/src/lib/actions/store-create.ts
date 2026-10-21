@@ -218,47 +218,49 @@ export async function resolveCreateActionDrawing(
     : { drawing: null, geometrySource: null, routeGeometry: null, origin: null };
 }
 
-export async function createAction(
-  supabase: SupabaseClient,
-  params: {
-    userId: string;
-    payload: CreateActionPayload;
-    organizers: ResolvedActionOrganizer[];
-    organizerRequirement?: "required" | "optional";
-    manualParticipants?: ResolvedActionParticipant[];
-    status?: Exclude<ActionStatus, "cancelled">;
-    departmentAttribution?: {
-      trust: "trusted";
-      source: "admin_import";
-    };
-    clientRequestId?: string;
-  },
-): Promise<ActionCreationResult> {
-  params.payload = await resolveCanonicalCreateActionPayload({
-    supabase,
-    payload: params.payload,
+type CreateActionParams = {
+  userId: string;
+  payload: CreateActionPayload;
+  organizers: ResolvedActionOrganizer[];
+  organizerRequirement?: "required" | "optional";
+  manualParticipants?: ResolvedActionParticipant[];
+  status?: Exclude<ActionStatus, "cancelled">;
+  departmentAttribution?: { trust: "trusted"; source: "admin_import" };
+  clientRequestId?: string;
+};
+
+async function resolveCreateActionDepartment(
+  params: CreateActionParams,
+  payload: CreateActionPayload,
+  persistedGeometry: ReturnType<typeof buildCreateActionGeometry>,
+) {
+  const resolver = params.departmentAttribution?.trust === "trusted"
+    ? resolveTrustedActionDepartmentForPersistence
+    : resolveActionDepartmentForPersistence;
+  return resolver({
+    latitude: payload.latitude,
+    longitude: payload.longitude,
+    geometry: { kind: persistedGeometry.kind, coordinates: persistedGeometry.coordinates },
+    departmentCode: payload.departmentCode,
+    departmentName: payload.departmentName,
+    spatiallyChanged: params.departmentAttribution?.trust !== "trusted",
   });
+}
+
+async function resolveCreateActionPersistenceContext(
+  params: CreateActionParams,
+): Promise<{ payload: CreateActionPayload; baseInsert: ReturnType<typeof buildActionInsertPayload> }> {
   const { recordType, routeTopology } = resolveCreateActionRouteTopology(params.payload);
   const preparationData = routeTopology === undefined
     ? { ...(params.payload.preparationData ?? {}) }
-    : clearActionRouteArrivalForLoop(
-      {
-        ...(params.payload.preparationData ?? {}),
-        routeTopology,
-      },
-      { recordType, topology: routeTopology },
-    );
+    : clearActionRouteArrivalForLoop({ ...(params.payload.preparationData ?? {}), routeTopology }, { recordType, topology: routeTopology });
   const payload: CreateActionPayload = {
     ...params.payload,
     recordType,
     ...(routeTopology ? { routeTopology } : {}),
-    arrivalLocationLabel:
-      recordType === "action" && routeTopology === "loop"
-        ? undefined
-        : params.payload.arrivalLocationLabel,
+    arrivalLocationLabel: recordType === "action" && routeTopology === "loop" ? undefined : params.payload.arrivalLocationLabel,
     preparationData,
   };
-
   const resolvedTarget = routeTopology === undefined ? null : resolveRouteTargetDistance({
     durationMinutes: payload.durationMinutes,
     routeTargetDistanceKm: payload.preparationData?.routeTargetDistanceKm,
@@ -266,11 +268,8 @@ export async function createAction(
   });
   const payloadWithRouteTarget: CreateActionPayload = {
     ...payload,
-    preparationData: resolvedTarget
-      ? persistResolvedRouteTargetDistance(payload.preparationData ?? {}, resolvedTarget)
-      : payload.preparationData,
+    preparationData: resolvedTarget ? persistResolvedRouteTargetDistance(payload.preparationData ?? {}, resolvedTarget) : payload.preparationData,
   };
-
   const resolvedDrawing = await resolveCreateActionDrawing(payloadWithRouteTarget);
   const payloadWithCoordinates: CreateActionPayload = {
     ...payloadWithRouteTarget,
@@ -278,43 +277,31 @@ export async function createAction(
     longitude: payload.longitude ?? resolvedDrawing.origin?.[1],
   };
   const finalDrawing = resolvedDrawing.drawing;
-  const persistedGeometry = buildCreateActionGeometry(
-    payloadWithCoordinates,
-    finalDrawing,
-    resolvedDrawing.geometrySource,
-  );
-  const departmentResolver = params.departmentAttribution?.trust === "trusted"
-    ? resolveTrustedActionDepartmentForPersistence
-    : resolveActionDepartmentForPersistence;
-  const department = await departmentResolver({
-    latitude: payloadWithCoordinates.latitude,
-    longitude: payloadWithCoordinates.longitude,
-    geometry: {
-      kind: persistedGeometry.kind,
-      coordinates: persistedGeometry.coordinates,
-    },
-    departmentCode: payload.departmentCode,
-    departmentName: payload.departmentName,
-    spatiallyChanged: params.departmentAttribution?.trust !== "trusted",
-  });
+  const persistedGeometry = buildCreateActionGeometry(payloadWithCoordinates, finalDrawing, resolvedDrawing.geometrySource);
+  const department = await resolveCreateActionDepartment(params, payloadWithCoordinates, persistedGeometry);
   const payloadWithDepartment: CreateActionPayload = {
     ...payloadWithCoordinates,
     departmentCode: department.departmentCode ?? undefined,
     departmentName: department.departmentName ?? undefined,
   };
-  const baseInsert = buildActionInsertPayload({
-    userId: params.userId,
-    payload: payloadWithDepartment,
-    persistedGeometry,
-    finalDrawing,
-    routeGeometry: resolvedDrawing.routeGeometry,
-    status: params.status,
+  const baseInsert = buildActionInsertPayload({ userId: params.userId, payload: payloadWithDepartment, persistedGeometry, finalDrawing, routeGeometry: resolvedDrawing.routeGeometry, status: params.status });
+  return { payload: payloadWithDepartment, baseInsert };
+}
+
+export async function createAction(
+  supabase: SupabaseClient,
+  params: CreateActionParams,
+): Promise<ActionCreationResult> {
+  params.payload = await resolveCanonicalCreateActionPayload({
+    supabase,
+    payload: params.payload,
   });
+  const context = await resolveCreateActionPersistenceContext(params);
   const created = await persistActionWithRelations(supabase, {
     userId: params.userId,
     baseInsert: {
-      ...baseInsert,
-      action_phase: payloadWithDepartment.actionPhase ?? "post_action_complete",
+      ...context.baseInsert,
+      action_phase: context.payload.actionPhase ?? "post_action_complete",
     },
     organizers: params.organizers,
     organizerRequirement: params.organizerRequirement,
@@ -326,7 +313,7 @@ export async function createAction(
 
   await persistCreatedActionPostProcessing(supabase, {
     actionId: created.id,
-    payload: payloadWithDepartment,
+    payload: context.payload,
     status: params.status,
   });
 

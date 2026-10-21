@@ -91,22 +91,17 @@ function mapCanonicalSpotTypeToEntityType(
     : "clean_place";
 }
 
-function toActionContractFromRow(
+function buildActionContractInput(
   row: ActionRow,
-  policy: RouteDistancePolicy,
-): ActionDataContract {
-  const parsedNotes = parseDrawingFromNotes(row.notes);
-  const parsedMetadata = extractActionMetadataFromNotes(parsedNotes.cleanNotes);
-  const preparationData = rebaseRouteTargetDistancePolicy({
-    preparationData: row.preparation_data ?? {},
-    durationMinutes: row.duration_minutes,
-    policy,
-  });
-  const contract = buildActionDataContract({
+  parsedNotes: ReturnType<typeof parseDrawingFromNotes>,
+  parsedMetadata: ReturnType<typeof extractActionMetadataFromNotes>,
+  preparationData: ActionRow["preparation_data"],
+) {
+  return {
     id: row.id,
-    type: "action",
+    type: "action" as const,
     status: row.status,
-    source: "actions",
+    source: "actions" as const,
     sourceStatus: row.status,
     createdByClerkId: row.created_by_clerk_id,
     publishedAt: row.published_at ?? null,
@@ -150,8 +145,28 @@ function toActionContractFromRow(
     wasteMeasurementMethod: parsedMetadata.wasteMeasurementMethod,
     manualDrawing: parsedNotes.manualDrawing,
     manualDrawingGeoJson: toGeoJsonString(parsedNotes.manualDrawing),
-  });
+  };
+}
 
+function buildActionContractFromRow(
+  row: ActionRow,
+  policy: RouteDistancePolicy,
+): ActionDataContract {
+  const parsedNotes = parseDrawingFromNotes(row.notes);
+  const parsedMetadata = extractActionMetadataFromNotes(parsedNotes.cleanNotes);
+  const preparationData = rebaseRouteTargetDistancePolicy({
+    preparationData: row.preparation_data ?? {},
+    durationMinutes: row.duration_minutes,
+    policy,
+  });
+  return buildActionDataContract(buildActionContractInput(row, parsedNotes, parsedMetadata, preparationData));
+}
+
+function toActionContractFromRow(
+  row: ActionRow,
+  policy: RouteDistancePolicy,
+): ActionDataContract {
+  const contract = buildActionContractFromRow(row, policy);
   return {
     ...contract,
     dataQuality: auditActionData({

@@ -26,8 +26,71 @@ type ActionMediaReportCursor = {
   mediaId: string;
 };
 
+type ReportPageRead = {
+  page: ActionMediaReportPage;
+  cursor: ActionMediaReportCursor | null;
+};
+
 function unavailableReadiness(): ActionMediaReportReadiness {
   return { readyCountByActionId: new Map(), availability: "unavailable" };
+}
+
+async function readReportPage(
+  supabase: SupabaseClient,
+  actionIds: readonly string[],
+  cursor: ActionMediaReportCursor | null,
+): Promise<ReportPageRead | null> {
+  try {
+    let query = supabase
+      .from("action_media")
+      .select("id, action_id, created_by_clerk_id", { count: "exact" })
+      .in("action_id", [...actionIds])
+      .eq("upload_state", "ready");
+    if (cursor) {
+      query = query.or(`action_id.gt.${cursor.actionId},and(action_id.eq.${cursor.actionId},id.gt.${cursor.mediaId})`);
+    }
+    const page = (await query
+      .order("action_id", { ascending: true })
+      .order("id", { ascending: true })
+      .range(0, ACTION_MEDIA_REPORT_QUERY_PAGE_SIZE - 1)) as ActionMediaReportPage;
+    return { page, cursor };
+  } catch {
+    return null;
+  }
+}
+
+function validateReportPageEnvelope(
+  page: ActionMediaReportPage,
+  expectedCount: number | null,
+  rowsRead: number,
+  maxRows: number,
+): number | null {
+  if (page.error || !Array.isArray(page.data) || typeof page.count !== "number" || !Number.isInteger(page.count) || page.count < 0) return null;
+  const resolvedCount = expectedCount ?? page.count;
+  if (page.count !== resolvedCount - rowsRead || resolvedCount > maxRows) return null;
+  if (page.data.length > ACTION_MEDIA_REPORT_QUERY_PAGE_SIZE || rowsRead + page.data.length > maxRows) return null;
+  return resolvedCount;
+}
+
+function appendReportPageRows(
+  rows: ActionMediaReportRow[],
+  seenMediaIds: Set<string>,
+  page: ActionMediaReportPage,
+  cursor: ActionMediaReportCursor | null,
+): { cursor: ActionMediaReportCursor | null; valid: boolean } {
+  let nextCursor = cursor;
+  const pageRows = page.data as ActionMediaReportRow[];
+  for (const row of pageRows) {
+    if (typeof row.id !== "string" || row.id.length === 0 || seenMediaIds.has(row.id)) return { cursor: nextCursor, valid: false };
+    if (typeof row.action_id !== "string" || row.action_id.length === 0) return { cursor: nextCursor, valid: false };
+    if (nextCursor && (row.action_id < nextCursor.actionId || (row.action_id === nextCursor.actionId && row.id <= nextCursor.mediaId))) {
+      return { cursor: nextCursor, valid: false };
+    }
+    seenMediaIds.add(row.id);
+    nextCursor = { actionId: row.action_id, mediaId: row.id };
+    rows.push(row);
+  }
+  return { cursor: nextCursor, valid: true };
 }
 
 async function readActionMediaReportBatch(
@@ -41,81 +104,21 @@ async function readActionMediaReportBatch(
   let cursor: ActionMediaReportCursor | null = null;
 
   for (;;) {
-    let page: ActionMediaReportPage;
-    try {
-      let query = supabase
-        .from("action_media")
-        .select("id, action_id, created_by_clerk_id", { count: "exact" })
-        .in("action_id", [...actionIds])
-        .eq("upload_state", "ready");
-      if (cursor) {
-        query = query.or(
-          `action_id.gt.${cursor.actionId},and(action_id.eq.${cursor.actionId},id.gt.${cursor.mediaId})`,
-        );
-      }
-      page = (await query
-        .order("action_id", { ascending: true })
-        .order("id", { ascending: true })
-        .range(0, ACTION_MEDIA_REPORT_QUERY_PAGE_SIZE - 1)) as ActionMediaReportPage;
-    } catch {
-      return null;
-    }
-
-    if (
-      page.error ||
-      !Array.isArray(page.data) ||
-      typeof page.count !== "number" ||
-      !Number.isInteger(page.count) ||
-      page.count < 0
-    ) {
-      return null;
-    }
-
-    if (expectedCount === null) {
-      expectedCount = page.count;
-    }
-    const expectedRemainingCount = expectedCount - rows.length;
-    if (page.count !== expectedRemainingCount) {
-      return null;
-    }
-    if (expectedCount > maxRows) {
-      return null;
-    }
-
-    if (
-      page.data.length > ACTION_MEDIA_REPORT_QUERY_PAGE_SIZE ||
-      rows.length + page.data.length > maxRows
-    ) {
-      return null;
-    }
-
-    for (const row of page.data as ActionMediaReportRow[]) {
-      if (typeof row.id !== "string" || row.id.length === 0 || seenMediaIds.has(row.id)) {
-        return null;
-      }
-      if (typeof row.action_id !== "string" || row.action_id.length === 0) {
-        return null;
-      }
-      const currentCursor = { actionId: row.action_id, mediaId: row.id };
-      if (
-        cursor &&
-        (currentCursor.actionId < cursor.actionId ||
-          (currentCursor.actionId === cursor.actionId && currentCursor.mediaId <= cursor.mediaId))
-      ) {
-        return null;
-      }
-      seenMediaIds.add(row.id);
-      cursor = currentCursor;
-    }
-
-    rows.push(...(page.data as ActionMediaReportRow[]));
+    const pageRead = await readReportPage(supabase, actionIds, cursor);
+    if (!pageRead) return null;
+    const page = pageRead.page;
+    expectedCount = validateReportPageEnvelope(page, expectedCount, rows.length, maxRows);
+    if (expectedCount === null) return null;
+    const appended = appendReportPageRows(rows, seenMediaIds, page, cursor);
+    if (!appended.valid) return null;
+    cursor = appended.cursor;
     if (rows.length > expectedCount) {
       return null;
     }
     if (rows.length === expectedCount) {
       return rows;
     }
-    if (page.data.length < ACTION_MEDIA_REPORT_QUERY_PAGE_SIZE) {
+    if ((page.data as ActionMediaReportRow[]).length < ACTION_MEDIA_REPORT_QUERY_PAGE_SIZE) {
       return null;
     }
   }

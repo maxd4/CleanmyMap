@@ -23,6 +23,71 @@ function mapHref(map: ActionDayBriefing["action"]["map"]): string | null {
   return `https://www.openstreetmap.org/?mlat=${encodeURIComponent(map.latitude)}&mlon=${encodeURIComponent(map.longitude)}#map=17/${encodeURIComponent(map.latitude)}/${encodeURIComponent(map.longitude)}`;
 }
 
+type ActionDayAction = ActionDayBriefing["action"];
+type ActionDayChecklist = NonNullable<ActionDayAction["volunteerChecklist"]>;
+
+function ChecklistGroup({ values, empty }: { values: ActionDayChecklist["toBring"]; empty: string }) {
+  return values.length > 0
+    ? <ul className="space-y-2 text-sm text-emerald-950">{values.map((item) => <li key={item.key}><span className="font-semibold">{item.label}</span>{item.detail ? <span className="block text-xs text-emerald-800">{item.detail}</span> : null}<span className="block text-xs text-emerald-700">Source : {item.provenance.map(actionChecklistProvenanceLabel).join(", ")}</span></li>)}</ul>
+    : <p className="text-sm text-slate-600">{empty}</p>;
+}
+
+function ActionDayHero({
+  action,
+  briefing,
+  href,
+  calendarHref,
+  copyState,
+  onCopy,
+}: {
+  action: ActionDayAction;
+  briefing: ActionDayBriefing;
+  href: string | null;
+  calendarHref: string | null;
+  copyState: "idle" | "copied" | "error";
+  onCopy: () => void;
+}) {
+  return <CmmCard tone="emerald" variant="glass" size="lg">
+    <div className="space-y-4">
+      <div><p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Jour J</p><h2 className="mt-1 text-2xl font-black text-emerald-950">{action.title}</h2><p className="mt-1 cmm-text-caption text-emerald-700">Briefing opérationnel · {briefing.access === "organizer" ? "organisateur" : "bénévole inscrit"}</p></div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-emerald-100 bg-white/90 p-3"><p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-emerald-700"><CalendarDays size={14} />Date</p><p className="mt-1 text-sm font-semibold text-emerald-950">{action.actionDate}</p></div>
+        <div className="rounded-2xl border border-emerald-100 bg-white/90 p-3"><p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-emerald-700"><Clock3 size={14} />Créneau</p><p className="mt-1 text-sm font-semibold text-emerald-950">{[action.meetingTime ?? action.eventStartTime, action.eventEndTime].filter(Boolean).join(" – ") || "À confirmer"}</p></div>
+      </div>
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"><p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-emerald-700"><MapPin size={14} />Rendez-vous</p><p className="mt-1 text-sm font-semibold leading-6 text-emerald-950">{action.meetingPoint}</p>{action.locationLabel !== action.meetingPoint ? <p className="mt-1 cmm-text-caption text-emerald-700">Secteur : {action.locationLabel}</p> : null}{href ? <a className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-emerald-800 underline" href={href} target="_blank" rel="noreferrer"><Navigation size={14} />Ouvrir la carte</a> : <p className="mt-2 cmm-text-caption text-emerald-700">Coordonnées non disponibles : l’adresse enregistrée est conservée sans géolocalisation inventée.</p>}</div>
+      <div className="rounded-2xl border border-slate-200 bg-white/90 p-4"><p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-slate-600"><Navigation size={14} />Parcours retenu</p><p className="mt-1 text-sm font-semibold text-slate-900">{formatRoute(action)}</p>{action.route.departureLabel || action.route.arrivalLabel ? <p className="mt-1 text-sm text-slate-600">{[action.route.departureLabel, action.route.arrivalLabel].filter(Boolean).join(" → ")}</p> : null}{action.route.hasSelectedOperationalRoute ? <p className="mt-2 text-xs font-semibold text-emerald-700">Itinéraire validé par le planificateur</p> : null}</div>
+      <div className="flex flex-wrap gap-2 border-t border-emerald-100 pt-4 print:hidden"><CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={onCopy}><Copy size={14} />{copyState === "copied" ? "Briefing copié" : "Copier le briefing"}</CmmButton><CmmButton type="button" tone="tertiary" variant="pill" size="sm" onClick={() => window.print()}><Printer size={14} />Imprimer</CmmButton>{calendarHref ? <CmmButton tone="tertiary" variant="pill" size="sm" asChild><a href={calendarHref} download={`cleanmymap-${briefing.actionId}.ics`}><CalendarDays size={14} />Ajouter à mon calendrier</a></CmmButton> : null}{copyState === "error" ? <span role="status" className="self-center text-xs font-semibold text-amber-800">Copie indisponible sur cet appareil.</span> : null}</div>
+    </div>
+  </CmmCard>;
+}
+
+function ActionDayGuidanceCards({ action }: { action: ActionDayAction }) {
+  return <div className="grid gap-4 lg:grid-cols-2">
+    <CmmCard tone="emerald" variant="outlined" size="md"><div className="space-y-3"><h3 className="flex items-center gap-2 text-lg font-black text-emerald-950"><ShieldCheck size={18} />Consignes</h3>{action.safetyInstructions ? <p className="whitespace-pre-line cmm-text-body cmm-text-primary">{action.safetyInstructions}</p> : <p className="cmm-text-body cmm-text-primary">Aucune consigne particulière renseignée.</p>}{action.participantMessage ? <p className="rounded-xl bg-emerald-50 px-3 py-2 cmm-text-body cmm-text-primary">{action.participantMessage}</p> : null}{action.accessibilityStatus !== "not_evaluated" || action.accessibility ? <p className="cmm-text-caption text-emerald-700">Accessibilité : {action.accessibility || action.accessibilityStatus}</p> : null}</div></CmmCard>
+    <CmmCard tone="emerald" variant="outlined" size="md"><div className="space-y-3"><h3 className="flex items-center gap-2 text-lg font-black text-emerald-950"><Package size={18} />Matériel et convivialité</h3>{action.recommendedMaterials ? <p className="cmm-text-body cmm-text-primary"><strong>À prévoir :</strong> {action.recommendedMaterials}</p> : null}{action.materialsProvided ? <p className="cmm-text-body cmm-text-primary"><strong>Fourni :</strong> {action.materialsProvided}</p> : null}{action.equipmentProvided.length > 0 ? <p className="cmm-text-body cmm-text-primary"><strong>Équipements déclarés :</strong> {action.equipmentProvided.join(" · ")}</p> : null}{action.equipmentNotProvided?.length ? <p className="cmm-text-body cmm-text-primary"><strong>Équipements non fournis :</strong> {action.equipmentNotProvided.join(" · ")}</p> : null}{action.refreshmentsProvided.length > 0 ? <p className="cmm-text-body cmm-text-primary"><strong>Convivialité :</strong> {action.refreshmentsProvided.join(" · ")}</p> : null}{!action.recommendedMaterials && !action.materialsProvided && action.equipmentProvided.length === 0 && !action.equipmentNotProvided?.length && action.refreshmentsProvided.length === 0 ? <p className="cmm-text-body cmm-text-primary">Aucun matériel complémentaire renseigné.</p> : null}</div></CmmCard>
+  </div>;
+}
+
+function ActionDayChecklistCard({ checklist, onRequestWeather }: { checklist: ActionDayChecklist; onRequestWeather: () => void }) {
+  return <CmmCard tone="sky" variant="outlined" size="md" data-testid="action-day-volunteer-checklist">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2"><div><h3 className="text-lg font-black text-sky-950">Checklist bénévole</h3><p className="mt-1 text-sm text-sky-900">{checklist.staffing.label}. Les recommandations ne constituent pas une garantie de sécurité.</p></div>{checklist.weatherMessage ? <p className="text-xs font-semibold text-sky-800">{checklist.weatherMessage}</p> : null}</div>
+      <div className="grid gap-4 md:grid-cols-3">
+        <div><h4 className="mb-2 text-sm font-bold text-sky-950">À apporter</h4><ChecklistGroup values={checklist.toBring} empty="Aucun complément calculé." /></div>
+        <div><h4 className="mb-2 text-sm font-bold text-sky-950">Recommandé selon la météo</h4><ActionDayWeatherChecklist checklist={checklist} onRequestWeather={onRequestWeather} /></div>
+        <div><h4 className="mb-2 text-sm font-bold text-sky-950">Fourni par l’organisateur</h4><ChecklistGroup values={checklist.provided} empty="Aucun équipement déclaré." /></div>
+      </div>
+    </div>
+  </CmmCard>;
+}
+
+function ActionDayWeatherChecklist({ checklist, onRequestWeather }: { checklist: ActionDayChecklist; onRequestWeather: () => void }) {
+  if (checklist.weatherState === "success") {
+    return <><ChecklistGroup values={checklist.weatherRecommendations} empty="Aucune recommandation météo particulière." /><WeatherForecastMeta checklist={checklist} /></>;
+  }
+  return <div className="space-y-2"><p className="text-sm text-slate-600">{checklist.weatherState === "idle" ? "Les recommandations météo sont calculées uniquement sur demande." : checklist.weatherMessage}</p><CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={onRequestWeather} disabled={checklist.weatherState === "loading"} aria-busy={checklist.weatherState === "loading"}>Voir les recommandations selon la météo</CmmButton></div>;
+}
+
 export function ActionDayView({ actionId }: { actionId: string }) {
   const [loadedBriefing, setLoadedBriefing] = useState<ActionDayBriefing | null>(null);
   const [error, setError] = useState<{ actionId: string; message: string } | null>(null);
@@ -74,67 +139,12 @@ export function ActionDayView({ actionId }: { actionId: string }) {
       setCopyState("error");
     }
   };
-  const checklistGroup = (values: NonNullable<typeof checklist>["toBring"], empty: string) => values.length > 0
-    ? <ul className="space-y-2 text-sm text-emerald-950">{values.map((item) => <li key={item.key}><span className="font-semibold">{item.label}</span>{item.detail ? <span className="block text-xs text-emerald-800">{item.detail}</span> : null}<span className="block text-xs text-emerald-700">Source : {item.provenance.map(actionChecklistProvenanceLabel).join(", ")}</span></li>)}</ul>
-    : <p className="text-sm text-slate-600">{empty}</p>;
   return (
     <div data-testid="action-day-view" className="space-y-4">
-      <CmmCard tone="emerald" variant="glass" size="lg">
-        <div className="space-y-4">
-          <div><p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Jour J</p><h2 className="mt-1 text-2xl font-black text-emerald-950">{action.title}</h2><p className="mt-1 cmm-text-caption text-emerald-700">Briefing opérationnel · {briefing.access === "organizer" ? "organisateur" : "bénévole inscrit"}</p></div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-emerald-100 bg-white/90 p-3"><p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-emerald-700"><CalendarDays size={14} />Date</p><p className="mt-1 text-sm font-semibold text-emerald-950">{action.actionDate}</p></div>
-            <div className="rounded-2xl border border-emerald-100 bg-white/90 p-3"><p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-emerald-700"><Clock3 size={14} />Créneau</p><p className="mt-1 text-sm font-semibold text-emerald-950">{[action.meetingTime ?? action.eventStartTime, action.eventEndTime].filter(Boolean).join(" – ") || "À confirmer"}</p></div>
-          </div>
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"><p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-emerald-700"><MapPin size={14} />Rendez-vous</p><p className="mt-1 text-sm font-semibold leading-6 text-emerald-950">{action.meetingPoint}</p>{action.locationLabel !== action.meetingPoint ? <p className="mt-1 cmm-text-caption text-emerald-700">Secteur : {action.locationLabel}</p> : null}{href ? <a className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-emerald-800 underline" href={href} target="_blank" rel="noreferrer"><Navigation size={14} />Ouvrir la carte</a> : <p className="mt-2 cmm-text-caption text-emerald-700">Coordonnées non disponibles : l’adresse enregistrée est conservée sans géolocalisation inventée.</p>}</div>
-          <div className="rounded-2xl border border-slate-200 bg-white/90 p-4"><p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-slate-600"><Navigation size={14} />Parcours retenu</p><p className="mt-1 text-sm font-semibold text-slate-900">{formatRoute(action)}</p>{action.route.departureLabel || action.route.arrivalLabel ? <p className="mt-1 text-sm text-slate-600">{[action.route.departureLabel, action.route.arrivalLabel].filter(Boolean).join(" → ")}</p> : null}{action.route.hasSelectedOperationalRoute ? <p className="mt-2 text-xs font-semibold text-emerald-700">Itinéraire validé par le planificateur</p> : null}</div>
-          <div className="flex flex-wrap gap-2 border-t border-emerald-100 pt-4 print:hidden"><CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => void copyBriefing()}><Copy size={14} />{copyState === "copied" ? "Briefing copié" : "Copier le briefing"}</CmmButton><CmmButton type="button" tone="tertiary" variant="pill" size="sm" onClick={() => window.print()}><Printer size={14} />Imprimer</CmmButton>{calendarHref ? <CmmButton tone="tertiary" variant="pill" size="sm" asChild><a href={calendarHref} download={`cleanmymap-${briefing.actionId}.ics`}><CalendarDays size={14} />Ajouter à mon calendrier</a></CmmButton> : null}{copyState === "error" ? <span role="status" className="self-center text-xs font-semibold text-amber-800">Copie indisponible sur cet appareil.</span> : null}</div>
-        </div>
-      </CmmCard>
+      <ActionDayHero action={action} briefing={briefing} href={href} calendarHref={calendarHref} copyState={copyState} onCopy={() => void copyBriefing()} />
       <ActionFieldRolesPanel actionId={actionId} />
-      <div className="grid gap-4 lg:grid-cols-2">
-        <CmmCard tone="emerald" variant="outlined" size="md"><div className="space-y-3"><h3 className="flex items-center gap-2 text-lg font-black text-emerald-950"><ShieldCheck size={18} />Consignes</h3>{action.safetyInstructions ? <p className="whitespace-pre-line cmm-text-body cmm-text-primary">{action.safetyInstructions}</p> : <p className="cmm-text-body cmm-text-primary">Aucune consigne particulière renseignée.</p>}{action.participantMessage ? <p className="rounded-xl bg-emerald-50 px-3 py-2 cmm-text-body cmm-text-primary">{action.participantMessage}</p> : null}{action.accessibilityStatus !== "not_evaluated" || action.accessibility ? <p className="cmm-text-caption text-emerald-700">Accessibilité : {action.accessibility || action.accessibilityStatus}</p> : null}</div></CmmCard>
-        <CmmCard tone="emerald" variant="outlined" size="md"><div className="space-y-3"><h3 className="flex items-center gap-2 text-lg font-black text-emerald-950"><Package size={18} />Matériel et convivialité</h3>{action.recommendedMaterials ? <p className="cmm-text-body cmm-text-primary"><strong>À prévoir :</strong> {action.recommendedMaterials}</p> : null}{action.materialsProvided ? <p className="cmm-text-body cmm-text-primary"><strong>Fourni :</strong> {action.materialsProvided}</p> : null}{action.equipmentProvided.length > 0 ? <p className="cmm-text-body cmm-text-primary"><strong>Équipements déclarés :</strong> {action.equipmentProvided.join(" · ")}</p> : null}{action.equipmentNotProvided?.length ? <p className="cmm-text-body cmm-text-primary"><strong>Équipements non fournis :</strong> {action.equipmentNotProvided.join(" · ")}</p> : null}{action.refreshmentsProvided.length > 0 ? <p className="cmm-text-body cmm-text-primary"><strong>Convivialité :</strong> {action.refreshmentsProvided.join(" · ")}</p> : null}{!action.recommendedMaterials && !action.materialsProvided && action.equipmentProvided.length === 0 && !action.equipmentNotProvided?.length && action.refreshmentsProvided.length === 0 ? <p className="cmm-text-body cmm-text-primary">Aucun matériel complémentaire renseigné.</p> : null}</div></CmmCard>
-      </div>
-      {checklist ? (
-        <CmmCard tone="sky" variant="outlined" size="md" data-testid="action-day-volunteer-checklist">
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <div>
-                <h3 className="text-lg font-black text-sky-950">Checklist bénévole</h3>
-                <p className="mt-1 text-sm text-sky-900">{checklist.staffing.label}. Les recommandations ne constituent pas une garantie de sécurité.</p>
-              </div>
-              {checklist.weatherMessage ? <p className="text-xs font-semibold text-sky-800">{checklist.weatherMessage}</p> : null}
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div>
-                <h4 className="mb-2 text-sm font-bold text-sky-950">À apporter</h4>
-                {checklistGroup(checklist.toBring, "Aucun complément calculé.")}
-              </div>
-              <div>
-                <h4 className="mb-2 text-sm font-bold text-sky-950">Recommandé selon la météo</h4>
-                {checklist.weatherState === "success" ? (
-                  <>
-                    {checklistGroup(checklist.weatherRecommendations, "Aucune recommandation météo particulière.")}
-                    <WeatherForecastMeta checklist={checklist} />
-                  </>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-sm text-slate-600">{checklist.weatherState === "idle" ? "Les recommandations météo sont calculées uniquement sur demande." : checklist.weatherMessage}</p>
-                    <CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={() => void weather.requestWeather()} disabled={checklist.weatherState === "loading"} aria-busy={checklist.weatherState === "loading"}>
-                      Voir les recommandations selon la météo
-                    </CmmButton>
-                  </div>
-                )}
-              </div>
-              <div>
-                <h4 className="mb-2 text-sm font-bold text-sky-950">Fourni par l’organisateur</h4>
-                {checklistGroup(checklist.provided, "Aucun équipement déclaré.")}
-              </div>
-            </div>
-          </div>
-        </CmmCard>
-      ) : null}
+      <ActionDayGuidanceCards action={action} />
+      {checklist ? <ActionDayChecklistCard checklist={checklist} onRequestWeather={() => void weather.requestWeather()} /> : null}
     </div>
   );
 }

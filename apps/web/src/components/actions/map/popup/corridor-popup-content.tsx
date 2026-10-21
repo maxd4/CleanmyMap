@@ -125,93 +125,65 @@ export function CorridorPopupContent({
         </div>
       </div>
 
-      {activeTab === 0 ? (
-        <div
-          id="corridor-panel-summary"
-          role="tabpanel"
-          aria-labelledby="corridor-tab-summary"
-          className="space-y-4 p-5"
-        >
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 dark:border-slate-800 dark:bg-slate-800">
-            <SummaryMetric
-              icon={<Calendar size={13} />}
-              label="Période"
-              value={`${formatObservedDate(summary.firstActionAt)} → ${formatObservedDate(summary.lastActionAt)}`}
-            />
-            <SummaryMetric
-              icon={<Clock size={13} />}
-              label="Dernière action"
-              value={formatObservedDate(summary.lastActionAt)}
-            />
-            <SummaryMetric
-              icon={<Sparkles size={13} />}
-              label="Déchets / mégots"
-              value={`${formatNumber(summary.totalWasteKg, " kg")} (${Math.round(summary.wasteCoverageRate)}% renseigné) · ${formatNumber(summary.totalCigaretteButts)}`}
-            />
-            <SummaryMetric
-              icon={<Users size={13} />}
-              label="Bénévoles / heures"
-              value={`${summary.volunteersCoverageRate < 100 ? "n/a" : formatNumber(summary.totalVolunteers)} · ${summary.totalEngagementHours === null ? "n/a" : formatNumber(summary.totalEngagementHours, " h-p")}`}
-            />
-          </div>
-
-          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/90 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-            <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-slate-500">
-              Évolution des scores observés
-            </p>
-            {summary.scoreEvolution ? (
-              <p className="mt-2 text-sm font-bold text-slate-900 dark:text-slate-50">
-                {formatScorePercent(summary.scoreEvolution.first)} → {formatScorePercent(summary.scoreEvolution.latest)}
-                <span className="ml-2 text-xs font-semibold text-slate-500">
-                  ({summary.scoreEvolution.delta >= 0 ? "+" : ""}
-                  {summary.scoreEvolution.delta})
-                </span>
-              </p>
-            ) : (
-              <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                Données insuffisantes pour comparer les scores.
-              </p>
-            )}
-          </div>
-
-          {summary.latestProjection && (
-            <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 p-4 dark:border-amber-900/60 dark:bg-amber-950/25">
-              <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
-                État / projection courant
-              </p>
-              <p className="mt-2 text-sm font-bold text-slate-900 dark:text-slate-50">
-                {latestState?.source === "projected"
-                  ? `Pollution projetée : ${formatScorePercent(Math.round(latestState.score ?? summary.latestProjection.projectedScore))}`
-                  : latestState?.scoreKind === "unavailable"
-                    ? latestState.stateLabel
-                    : `Pollution observée : ${formatScorePercent(Math.round(latestState?.score ?? summary.latestProjection.projectedScore))}`}
-              </p>
-              <p className="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-200">
-                {latestState?.source === "projected"
-                  ? `${summary.latestProjection.elapsedDays} j depuis la dernière action · estimation, pas une mesure en temps réel`
-                  : `Observé le ${formatObservedDate(latestState?.date ?? summary.lastActionAt)}`}
-              </p>
-              {latestState?.source === "projected" || !displayMode ? (
-                <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                  {formatProjectionConfidenceLabel(
-                    summary.latestProjection.projectionConfidence.level,
-                  )}
-                </p>
-              ) : null}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div
-          id={`corridor-panel-${activeItem.id}`}
-          role="tabpanel"
-          aria-labelledby={`corridor-tab-${activeItem.id}`}
-        >
-          {renderAction(activeItem)}
-        </div>
-      )}
+      <CorridorPopupPanel
+        activeTab={activeTab}
+        activeItem={activeItem}
+        summary={summary}
+        latestState={latestState}
+        displayMode={displayMode}
+        renderAction={renderAction}
+      />
     </div>
   );
+}
+
+function CorridorPopupPanel({
+  activeTab,
+  activeItem,
+  summary,
+  latestState,
+  displayMode,
+  renderAction,
+}: {
+  activeTab: number;
+  activeItem: ActionMapItem;
+  summary: ReturnType<typeof summarizeCorridorHistory>;
+  latestState: CurrentPlaceState | null;
+  displayMode?: CurrentPlaceStateMode;
+  renderAction: (item: ActionMapItem) => ReactNode;
+}) {
+  if (activeTab !== 0) {
+    return <div id={`corridor-panel-${activeItem.id}`} role="tabpanel" aria-labelledby={`corridor-tab-${activeItem.id}`}>
+      {renderAction(activeItem)}
+    </div>;
+  }
+  return <div id="corridor-panel-summary" role="tabpanel" aria-labelledby="corridor-tab-summary" className="space-y-4 p-5">
+    <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 dark:border-slate-800 dark:bg-slate-800">
+      <SummaryMetric icon={<Calendar size={13} />} label="Période" value={`${formatObservedDate(summary.firstActionAt)} → ${formatObservedDate(summary.lastActionAt)}`} />
+      <SummaryMetric icon={<Clock size={13} />} label="Dernière action" value={formatObservedDate(summary.lastActionAt)} />
+      <SummaryMetric icon={<Sparkles size={13} />} label="Déchets / mégots" value={`${formatNumber(summary.totalWasteKg, " kg")} (${Math.round(summary.wasteCoverageRate)}% renseigné) · ${formatNumber(summary.totalCigaretteButts)}`} />
+      <SummaryMetric icon={<Users size={13} />} label="Bénévoles / heures" value={`${summary.volunteersCoverageRate < 100 ? "n/a" : formatNumber(summary.totalVolunteers)} · ${summary.totalEngagementHours === null ? "n/a" : formatNumber(summary.totalEngagementHours, " h-p")}`} />
+    </div>
+    <CorridorScoreSummary summary={summary} />
+    {summary.latestProjection ? <CorridorProjectionSummary summary={summary} latestState={latestState} displayMode={displayMode} /> : null}
+  </div>;
+}
+
+function CorridorScoreSummary({ summary }: { summary: ReturnType<typeof summarizeCorridorHistory> }) {
+  return <div className="rounded-2xl border border-slate-200/80 bg-slate-50/90 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+    <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-slate-500">Évolution des scores observés</p>
+    {summary.scoreEvolution ? <p className="mt-2 text-sm font-bold text-slate-900 dark:text-slate-50">{formatScorePercent(summary.scoreEvolution.first)} → {formatScorePercent(summary.scoreEvolution.latest)}<span className="ml-2 text-xs font-semibold text-slate-500">({summary.scoreEvolution.delta >= 0 ? "+" : ""}{summary.scoreEvolution.delta})</span></p> : <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">Données insuffisantes pour comparer les scores.</p>}
+  </div>;
+}
+
+function CorridorProjectionSummary({ summary, latestState, displayMode }: { summary: ReturnType<typeof summarizeCorridorHistory>; latestState: CurrentPlaceState | null; displayMode?: CurrentPlaceStateMode }) {
+  if (!summary.latestProjection) return null;
+  return <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 p-4 dark:border-amber-900/60 dark:bg-amber-950/25">
+    <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">État / projection courant</p>
+    <p className="mt-2 text-sm font-bold text-slate-900 dark:text-slate-50">{latestState?.source === "projected" ? `Pollution projetée : ${formatScorePercent(Math.round(latestState.score ?? summary.latestProjection.projectedScore))}` : latestState?.scoreKind === "unavailable" ? latestState.stateLabel : `Pollution observée : ${formatScorePercent(Math.round(latestState?.score ?? summary.latestProjection.projectedScore))}`}</p>
+    <p className="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-200">{latestState?.source === "projected" ? `${summary.latestProjection.elapsedDays} j depuis la dernière action · estimation, pas une mesure en temps réel` : `Observé le ${formatObservedDate(latestState?.date ?? summary.lastActionAt)}`}</p>
+    {latestState?.source === "projected" || !displayMode ? <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">{formatProjectionConfidenceLabel(summary.latestProjection.projectionConfidence.level)}</p> : null}
+  </div>;
 }
 
 function SummaryMetric({

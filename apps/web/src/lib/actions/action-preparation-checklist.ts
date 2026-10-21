@@ -179,6 +179,20 @@ function buildToBring(
     add(preparation.recommendedMaterials, "preparation", "preparation-recommended-materials");
   }
 
+  appendToBringRecommendations(preparation, staffing, guidance, add);
+  appendGloveShortage(items, insufficiencies, preparation, staffing);
+
+  // A zero or an unknown quantity is never converted into a shortage without
+  // an explicit, usable staffing count. Collective stock has no invented ratio.
+  return { items, insufficiencies };
+}
+
+function appendToBringRecommendations(
+  preparation: ActionPreparationData | null | undefined,
+  staffing: ActionVolunteerChecklist["staffing"],
+  guidance: ReturnType<typeof buildWasteFieldGuidance>,
+  add: (label: string, provenance: ActionChecklistProvenance, key: string, detail?: string | null) => void,
+): void {
   for (const suggestion of preparation?.suggestedMaterials ?? []) {
     const label = ACTION_MATERIAL_SUGGESTIONS.find((candidate) => candidate.value === suggestion)?.label;
     if (!label || (suggestion === "gloves" && isStructuredGlovesSuggestionCovered(preparation, staffing))) continue;
@@ -188,69 +202,61 @@ function buildToBring(
   for (const recommendation of guidance.toPrepare) {
     add(recommendation, "waste_catalog", `waste-material-${normalizedText(recommendation)}`);
   }
-
-  const gloves = inventoryValue(preparation, "glovesPairs");
-  if (staffing.count !== null && staffing.count > 0 && gloves !== null && gloves < staffing.count) {
-    const missing = staffing.count - gloves;
-    const label = gloves === 0
-      ? "Gants : aucune paire fournie"
-      : `Gants : quantité limitée (${gloves} paire(s) fournie(s) pour ${staffing.count})`;
-    const detail = `Prévoir ${missing} paire(s) complémentaire(s) au minimum selon l’effectif ${staffing.label.toLocaleLowerCase()}.`;
-    addRecommendation(items, item("shortage-gloves", label, "organizer", detail));
-    insufficiencies.push(detail);
-  }
-
-  // A zero or an unknown quantity is never converted into a shortage without
-  // an explicit, usable staffing count. Collective stock has no invented ratio.
-  return { items, insufficiencies };
 }
 
-function buildWeatherRecommendations(
+function appendGloveShortage(
+  items: ActionVolunteerChecklistItem[],
+  insufficiencies: string[],
+  preparation: ActionPreparationData | null | undefined,
+  staffing: ActionVolunteerChecklist["staffing"],
+): void {
+  const gloves = inventoryValue(preparation, "glovesPairs");
+  if (staffing.count === null || staffing.count <= 0 || gloves === null || gloves >= staffing.count) return;
+  const missing = staffing.count - gloves;
+  const label = gloves === 0
+    ? "Gants : aucune paire fournie"
+    : `Gants : quantité limitée (${gloves} paire(s) fournie(s) pour ${staffing.count})`;
+  const detail = `Prévoir ${missing} paire(s) complémentaire(s) au minimum selon l’effectif ${staffing.label.toLocaleLowerCase()}.`;
+  addRecommendation(items, item("shortage-gloves", label, "organizer", detail));
+  insufficiencies.push(detail);
+}
+
+function resolveWeatherState(
   context: PlannerWeatherContext | null | undefined,
   request: PlannerWeatherContextRequest | null | undefined,
   requestedState?: ActionWeatherState,
-): Pick<ActionVolunteerChecklist, "weatherRecommendations" | "weatherStatus" | "weatherMessage"> {
-  const state = requestedState ?? (
+): ActionWeatherState {
+  return requestedState ?? (
     !request
       ? "idle"
       : context?.status === "available" && isPlannerWeatherContextCompatible(context, request)
         ? "success"
         : "unavailable"
   );
+}
+
+function buildWeatherUnavailableResult(
+  state: Exclude<ActionWeatherState, "success">,
+): Pick<ActionVolunteerChecklist, "weatherRecommendations" | "weatherStatus" | "weatherMessage"> {
   if (state === "idle") {
-    return {
-      weatherRecommendations: [],
-      weatherStatus: "unavailable",
-      weatherMessage: "",
-    };
+    return { weatherRecommendations: [], weatherStatus: "unavailable", weatherMessage: "" };
   }
   if (state === "loading") {
-    return {
-      weatherRecommendations: [],
-      weatherStatus: "unavailable",
-      weatherMessage: "Analyse des prévisions météo…",
-    };
+    return { weatherRecommendations: [], weatherStatus: "unavailable", weatherMessage: "Analyse des prévisions météo…" };
   }
   if (state === "error") {
-    return {
-      weatherRecommendations: [],
-      weatherStatus: "unavailable",
-      weatherMessage: "Impossible d’analyser les prévisions météo. Réessayez.",
-    };
+    return { weatherRecommendations: [], weatherStatus: "unavailable", weatherMessage: "Impossible d’analyser les prévisions météo. Réessayez." };
   }
-  if (!isPlannerWeatherContextCompatible(context, request)) {
-    return {
-      weatherRecommendations: [],
-      weatherStatus: "unavailable",
-      weatherMessage: "Prévisions météo indisponibles pour cette action.",
-    };
-  }
+  return { weatherRecommendations: [], weatherStatus: "unavailable", weatherMessage: "Prévisions météo indisponibles pour cette action." };
+}
 
-  const points = context.hourly;
+function buildAvailableWeatherRecommendations(
+  context: PlannerWeatherContext,
+): Pick<ActionVolunteerChecklist, "weatherRecommendations" | "weatherStatus" | "weatherMessage"> {
   const recommendations: ActionVolunteerChecklistItem[] = [];
-  const temperatures = points.map((point) => point.temperatureC).filter((value): value is number => Number.isFinite(value));
-  const precipitation = points.map((point) => point.precipitationMm).filter((value): value is number => Number.isFinite(value));
-  const wind = points.map((point) => point.windKmh).filter((value): value is number => Number.isFinite(value));
+  const temperatures = context.hourly.map((point) => point.temperatureC).filter((value): value is number => Number.isFinite(value));
+  const precipitation = context.hourly.map((point) => point.precipitationMm).filter((value): value is number => Number.isFinite(value));
+  const wind = context.hourly.map((point) => point.windKmh).filter((value): value is number => Number.isFinite(value));
   if (precipitation.some((value) => value > 0)) {
     addRecommendation(recommendations, item("weather-rain", "Prévoir une veste imperméable", "weather_forecast"));
   }
@@ -263,7 +269,6 @@ function buildWeatherRecommendations(
   if (wind.some((value) => value >= 30)) {
     addRecommendation(recommendations, item("weather-wind", "Prévoir un coupe-vent et suivre les précautions opérationnelles", "weather_forecast"));
   }
-
   const operational = plannerWeatherOperationalAssessment(context);
   if (operational?.operationalLimitMinutes !== null && operational?.operationalLimitMinutes !== undefined) {
     addRecommendation(
@@ -276,12 +281,28 @@ function buildWeatherRecommendations(
       ),
     );
   }
+  return { weatherRecommendations: recommendations, weatherStatus: "available", weatherMessage: "Prévisions météo disponibles pour le créneau sélectionné" };
+}
 
-  return {
-    weatherRecommendations: recommendations,
-    weatherStatus: "available",
-    weatherMessage: "Prévisions météo disponibles pour le créneau sélectionné",
-  };
+function buildWeatherRecommendations(
+  context: PlannerWeatherContext | null | undefined,
+  request: PlannerWeatherContextRequest | null | undefined,
+  requestedState?: ActionWeatherState,
+): Pick<ActionVolunteerChecklist, "weatherRecommendations" | "weatherStatus" | "weatherMessage"> {
+  const state = resolveWeatherState(context, request, requestedState);
+  if (state !== "success" || !context || !isPlannerWeatherContextCompatible(context, request)) {
+    return buildWeatherUnavailableResult(state === "success" ? "unavailable" : state);
+  }
+  return buildAvailableWeatherRecommendations(context);
+}
+
+function buildWeatherForecast(
+  state: ActionWeatherState,
+  context: PlannerWeatherContext | null | undefined,
+): ActionVolunteerChecklist["weatherForecast"] {
+  return state === "success" && context?.coveredWindow
+    ? { fetchedAt: context.fetchedAt, coveredWindow: context.coveredWindow }
+    : null;
 }
 
 export function deriveActionVolunteerChecklist({
@@ -301,17 +322,9 @@ export function deriveActionVolunteerChecklist({
     ...declaredRefreshments(preparation),
   ];
   const toBring = buildToBring(preparation, staffing, guidance);
-  const resolvedWeatherState = weatherState ?? (
-    !weatherRequest
-      ? "idle"
-      : weatherContext?.status === "available" && isPlannerWeatherContextCompatible(weatherContext, weatherRequest)
-        ? "success"
-        : "unavailable"
-  );
+  const resolvedWeatherState = resolveWeatherState(weatherContext, weatherRequest, weatherState);
   const weather = buildWeatherRecommendations(weatherContext, weatherRequest, resolvedWeatherState);
-  const weatherForecast = resolvedWeatherState === "success" && weatherContext?.coveredWindow
-    ? { fetchedAt: weatherContext.fetchedAt, coveredWindow: weatherContext.coveredWindow }
-    : null;
+  const weatherForecast = buildWeatherForecast(resolvedWeatherState, weatherContext);
 
   return {
     toBring: toBring.items,

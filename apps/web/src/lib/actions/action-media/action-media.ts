@@ -78,37 +78,41 @@ export function validateActionMediaInput(input: {
   sortOrder?: number;
   clientUploadId: string;
 } {
-  if (
-    input.originalName.trim().length < 1 ||
-    input.originalName.trim().length > 255 ||
-    input.clientUploadId.trim().length < 1 ||
-    input.clientUploadId.trim().length > 128
-  ) {
+  validateActionMediaIdentity(input);
+  validateActionMediaMimeType(input.mimeType);
+  validateActionMediaSize(input.sizeBytes);
+  validateActionMediaDimensions(input.width, input.height);
+  validateActionMediaSortOrder(input.sortOrder);
+}
+
+function validateActionMediaIdentity(input: { originalName: string; clientUploadId: string }): void {
+  if (input.originalName.trim().length < 1 || input.originalName.trim().length > 255 || input.clientUploadId.trim().length < 1 || input.clientUploadId.trim().length > 128) {
     throw new ActionMediaError("Les métadonnées photo sont invalides.", "validation");
   }
-  if (!isActionMediaMimeType(input.mimeType)) {
+}
+
+function validateActionMediaMimeType(mimeType: string): asserts mimeType is ActionMediaMimeType {
+  if (!isActionMediaMimeType(mimeType)) {
     throw new ActionMediaError("Le format de photo n'est pas accepté.", "validation");
   }
-  if (
-    !Number.isInteger(input.sizeBytes) ||
-    input.sizeBytes <= 0 ||
-    input.sizeBytes > ACTION_MEDIA_MAX_SIZE_BYTES
-  ) {
+}
+
+function validateActionMediaSize(sizeBytes: number): void {
+  if (!Number.isInteger(sizeBytes) || sizeBytes <= 0 || sizeBytes > ACTION_MEDIA_MAX_SIZE_BYTES) {
     throw new ActionMediaError("La photo dépasse la taille autorisée.", "validation");
   }
-  for (const dimension of [input.width, input.height]) {
-    if (
-      dimension !== undefined &&
-      dimension !== null &&
-      (!Number.isInteger(dimension) || dimension < 1 || dimension > 10000)
-    ) {
+}
+
+function validateActionMediaDimensions(width?: number | null, height?: number | null): void {
+  for (const dimension of [width, height]) {
+    if (dimension !== undefined && dimension !== null && (!Number.isInteger(dimension) || dimension < 1 || dimension > 10000)) {
       throw new ActionMediaError("Les dimensions photo sont invalides.", "validation");
     }
   }
-  if (
-    input.sortOrder !== undefined &&
-    (!Number.isInteger(input.sortOrder) || input.sortOrder < 0 || input.sortOrder > 2)
-  ) {
+}
+
+function validateActionMediaSortOrder(sortOrder?: number): void {
+  if (sortOrder !== undefined && (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 2)) {
     throw new ActionMediaError("L'ordre des photos est invalide.", "validation");
   }
 }
@@ -264,139 +268,140 @@ function assertImmutableRetryMetadata(
   }
 }
 
-export async function createActionMediaUploadIntent(
-  supabase: SupabaseClient,
-  params: {
-    userId: string;
-    identity: ActionPermissionIdentity | null;
-    actionId: string;
-    originalName: string;
-    mimeType: string;
-    sizeBytes: number;
-    width?: number | null;
-    height?: number | null;
-    sortOrder?: number;
-    clientUploadId: string;
-  },
-): Promise<ActionMediaUploadIntent | { mediaId: string; uploadState: "ready" }> {
-  validateActionMediaInput(params);
-  await assertActionAccess({ supabase, ...params });
+type ActionMediaUploadParams = {
+  userId: string;
+  identity: ActionPermissionIdentity | null;
+  actionId: string;
+  originalName: string;
+  mimeType: ActionMediaMimeType;
+  sizeBytes: number;
+  width?: number | null;
+  height?: number | null;
+  sortOrder?: number;
+  clientUploadId: string;
+};
 
-  const existing = await supabase
+async function findExistingActionMedia(
+  supabase: SupabaseClient,
+  params: ActionMediaUploadParams,
+): Promise<ActionMediaRow | null> {
+  const result = await supabase
     .from("action_media")
     .select("*")
     .eq("action_id", params.actionId)
     .eq("created_by_clerk_id", params.userId)
     .eq("client_upload_id", params.clientUploadId.trim())
     .maybeSingle();
-  if (existing.error) throw storageError("La photo ne peut pas être préparée.");
+  if (result.error) throw storageError("La photo ne peut pas être préparée.");
+  return result.data ? result.data as ActionMediaRow : null;
+}
 
-  let row: ActionMediaRow;
-  let isRetry = false;
-  if (existing.data) {
-    row = existing.data as ActionMediaRow;
-    isRetry = true;
-  } else {
-    const active = await supabase
-      .from("action_media")
-      .select("id", { count: "exact", head: true })
-      .eq("action_id", params.actionId)
-      .in("upload_state", ["pending", "ready"]);
-    if (active.error) throw storageError("Le quota photo ne peut pas être vérifié.");
-    if ((active.count ?? 0) >= ACTION_MEDIA_MAX_MEDIA) {
-      throw new ActionMediaError(
-        "Cette action contient déjà le nombre maximal de photos de bilan.",
-        "limit_reached",
-      );
-    }
-
-    const mediaId = globalThis.crypto?.randomUUID?.();
-    if (!mediaId) throw storageError("Impossible de générer l'identifiant photo.");
-    const insert = await supabase
-      .from("action_media")
-      .insert({
-        id: mediaId,
-        action_id: params.actionId,
-        created_by_clerk_id: params.userId,
-        client_upload_id: params.clientUploadId.trim(),
-        storage_bucket: ACTION_MEDIA_BUCKET,
-        storage_path: buildActionMediaPath(params.actionId, mediaId, params.mimeType),
-        original_name: params.originalName.trim(),
-        mime_type: params.mimeType,
-        size_bytes: params.sizeBytes,
-        width: params.width ?? null,
-        height: params.height ?? null,
-        sort_order: params.sortOrder ?? 0,
-        upload_state: "pending",
-      })
-      .select("*")
-      .single();
-    if (insert.error || !insert.data) {
-      const concurrent = await supabase
-        .from("action_media")
-        .select("*")
-        .eq("action_id", params.actionId)
-        .eq("created_by_clerk_id", params.userId)
-        .eq("client_upload_id", params.clientUploadId.trim())
-        .maybeSingle();
-      if (concurrent.error || !concurrent.data) {
-        throw storageError("La photo ne peut pas être enregistrée.");
-      }
-      row = concurrent.data as ActionMediaRow;
-      isRetry = true;
-    } else {
-      row = insert.data as ActionMediaRow;
-    }
+async function insertNewActionMedia(
+  supabase: SupabaseClient,
+  params: ActionMediaUploadParams,
+): Promise<ActionMediaRow> {
+  const active = await supabase
+    .from("action_media")
+    .select("id", { count: "exact", head: true })
+    .eq("action_id", params.actionId)
+    .in("upload_state", ["pending", "ready"]);
+  if (active.error) throw storageError("Le quota photo ne peut pas être vérifié.");
+  if ((active.count ?? 0) >= ACTION_MEDIA_MAX_MEDIA) {
+    throw new ActionMediaError("Cette action contient déjà le nombre maximal de photos de bilan.", "limit_reached");
   }
 
-  if (isRetry) {
-    assertImmutableRetryMetadata(params.actionId, row, params);
-    if (row.upload_state === "ready") {
-      await verifyStoredActionMediaObject(supabase, row);
-      return { mediaId: row.id, uploadState: "ready" };
-    }
+  const mediaId = globalThis.crypto?.randomUUID?.();
+  if (!mediaId) throw storageError("Impossible de générer l'identifiant photo.");
+  const insert = await supabase
+    .from("action_media")
+    .insert({
+      id: mediaId,
+      action_id: params.actionId,
+      created_by_clerk_id: params.userId,
+      client_upload_id: params.clientUploadId.trim(),
+      storage_bucket: ACTION_MEDIA_BUCKET,
+      storage_path: buildActionMediaPath(params.actionId, mediaId, params.mimeType),
+      original_name: params.originalName.trim(),
+      mime_type: params.mimeType,
+      size_bytes: params.sizeBytes,
+      width: params.width ?? null,
+      height: params.height ?? null,
+      sort_order: params.sortOrder ?? 0,
+      upload_state: "pending",
+    })
+    .select("*")
+    .single();
+  if (!insert.error && insert.data) return insert.data as ActionMediaRow;
+  const concurrent = await findExistingActionMedia(supabase, params);
+  if (!concurrent) throw storageError("La photo ne peut pas être enregistrée.");
+  return concurrent;
+}
 
-    try {
-      await verifyStoredActionMediaObject(supabase, row);
-      const ready = await markActionMediaReady(supabase, row, transitionDependencies);
-      return { mediaId: ready.media.id, uploadState: "ready" };
-    } catch (error) {
-      if (!(error instanceof ActionMediaError) || error.code !== "storage_missing") {
-        throw error;
-      }
-    }
+async function resolveActionMediaRow(
+  supabase: SupabaseClient,
+  params: ActionMediaUploadParams,
+): Promise<{ row: ActionMediaRow; isRetry: boolean }> {
+  const existing = await findExistingActionMedia(supabase, params);
+  if (existing) return { row: existing, isRetry: true };
+  return { row: await insertNewActionMedia(supabase, params), isRetry: false };
+}
 
-    const prepared = await prepareRetryState(supabase, row, transitionDependencies);
-    if ("media" in prepared) return { mediaId: prepared.media.id, uploadState: "ready" };
-    row = prepared;
+async function resolveRetryUploadState(
+  supabase: SupabaseClient,
+  row: ActionMediaRow,
+  params: ActionMediaUploadParams,
+): Promise<{ row: ActionMediaRow; ready: { mediaId: string; uploadState: "ready" } | null }> {
+  assertImmutableRetryMetadata(params.actionId, row, params);
+  if (row.upload_state === "ready") {
+    await verifyStoredActionMediaObject(supabase, row);
+    return { row, ready: { mediaId: row.id, uploadState: "ready" } };
   }
+  try {
+    await verifyStoredActionMediaObject(supabase, row);
+    const ready = await markActionMediaReady(supabase, row, transitionDependencies);
+    return { row, ready: { mediaId: ready.media.id, uploadState: "ready" } };
+  } catch (error) {
+    if (!(error instanceof ActionMediaError) || error.code !== "storage_missing") throw error;
+  }
+  const prepared = await prepareRetryState(supabase, row, transitionDependencies);
+  if ("media" in prepared) return { row, ready: { mediaId: prepared.media.id, uploadState: "ready" } };
+  return { row: prepared, ready: null };
+}
 
+async function createSignedActionMediaUpload(
+  supabase: SupabaseClient,
+  row: ActionMediaRow,
+): Promise<ActionMediaUploadIntent | { mediaId: string; uploadState: "ready" }> {
   let signedUpload: { data: { token?: string } | null; error: unknown };
   try {
-    signedUpload = await supabase.storage
-      .from(ACTION_MEDIA_BUCKET)
-      .createSignedUploadUrl(row.storage_path);
+    signedUpload = await supabase.storage.from(ACTION_MEDIA_BUCKET).createSignedUploadUrl(row.storage_path);
   } catch (error) {
     signedUpload = { data: null, error };
   }
   if (signedUpload.error || !signedUpload.data?.token) {
-    const ready = await markActionMediaFailedIfCurrent(
-      supabase,
-      row,
-      "signed_upload_failed",
-      transitionDependencies,
-    );
+    const ready = await markActionMediaFailedIfCurrent(supabase, row, "signed_upload_failed", transitionDependencies);
     if (ready) return { mediaId: ready.media.id, uploadState: "ready" };
     throw storageError("La photo ne peut pas recevoir son accès d'upload.");
   }
+  return { mediaId: row.id, bucket: ACTION_MEDIA_BUCKET, path: row.storage_path, token: signedUpload.data.token, uploadState: "pending" };
+}
 
-  return {
-    mediaId: row.id,
-    bucket: ACTION_MEDIA_BUCKET,
-    path: row.storage_path,
-    token: signedUpload.data.token,
-    uploadState: "pending",
-  };
+export async function createActionMediaUploadIntent(
+  supabase: SupabaseClient,
+  params: Omit<ActionMediaUploadParams, "mimeType"> & { mimeType: string },
+): Promise<ActionMediaUploadIntent | { mediaId: string; uploadState: "ready" }> {
+  validateActionMediaInput(params);
+  await assertActionAccess({ supabase, ...params });
+  const normalizedParams = params as ActionMediaUploadParams;
+  const resolved = await resolveActionMediaRow(supabase, normalizedParams);
+  let row = resolved.row;
+
+  if (resolved.isRetry) {
+    const retry = await resolveRetryUploadState(supabase, row, normalizedParams);
+    if (retry.ready) return retry.ready;
+    row = retry.row;
+  }
+  return createSignedActionMediaUpload(supabase, row);
 }
 
 export async function finalizeActionMedia(

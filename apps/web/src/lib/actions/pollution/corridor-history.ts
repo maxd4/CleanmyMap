@@ -271,6 +271,77 @@ function resolveActionObservedScore(
   ).severityScore;
 }
 
+function isKnownWaste(action: ActionDataContract): boolean {
+  return action.metadata.wasteKg !== null && Number.isFinite(action.metadata.wasteKg) && action.metadata.wasteKg >= 0;
+}
+
+function buildCorridorMetrics(actions: readonly ActionDataContract[]): Pick<CorridorHistorySummary, "totalWasteKg" | "wasteKnownActions" | "wasteCoverageRate" | "totalCigaretteButts" | "totalVolunteers" | "volunteersKnownActions" | "volunteersCoverageRate" | "totalDurationMinutes" | "totalEngagementHours"> {
+  const wasteKnownActions = actions.filter(isKnownWaste).length;
+  const volunteersKnownActions = actions.filter((action) => action.metadata.volunteersCount !== null).length;
+  const totalDurationMinutes = actions.reduce((total, action) => total + Math.max(0, action.metadata.durationMinutes), 0);
+  const allVolunteersKnown = volunteersKnownActions === actions.length;
+  return {
+    totalWasteKg: actions.reduce((total, action) => total + (isKnownWaste(action) ? action.metadata.wasteKg! : 0), 0),
+    wasteKnownActions,
+    wasteCoverageRate: actions.length > 0 ? (wasteKnownActions / actions.length) * 100 : 0,
+    totalCigaretteButts: actions.reduce((total, action) => total + Math.max(0, action.metadata.cigaretteButts ?? 0), 0),
+    totalVolunteers: actions.reduce((total, action) => total + Math.max(0, action.metadata.volunteersCount ?? 0), 0),
+    volunteersKnownActions,
+    volunteersCoverageRate: actions.length > 0 ? (volunteersKnownActions / actions.length) * 100 : 0,
+    totalDurationMinutes,
+    totalEngagementHours: allVolunteersKnown
+      ? actions.reduce((total, action) => total + Math.max(0, action.metadata.durationMinutes) * Math.max(0, action.metadata.volunteersCount ?? 0), 0) / 60
+      : null,
+  };
+}
+
+function buildCorridorScoreSummary(
+  oldestScore: number | null,
+  latestScore: number | null,
+  latestProjection: ReturnType<typeof presentActionPollutionProjection> | null,
+): Pick<CorridorHistorySummary, "scoreEvolution" | "latestProjection"> {
+  return {
+    scoreEvolution: oldestScore === null || latestScore === null
+      ? null
+      : { first: oldestScore, latest: latestScore, delta: latestScore - oldestScore },
+    latestProjection: latestProjection
+      ? {
+          historicalScore: latestProjection.historicalScore,
+          projectedScore: latestProjection.projectedPollutionScore,
+          elapsedDays: latestProjection.elapsedDays,
+          isEstimate: latestProjection.isEstimate,
+          projectionConfidence: latestProjection.projectionConfidence,
+        }
+      : null,
+  };
+}
+
+function buildObservedScoreSeries(actions: readonly ActionDataContract[], references?: PollutionScoreReferences) {
+  return actions.map((action) => ({
+    actionId: action.id,
+    observedAt: action.dates.observedAt,
+    score: resolveActionObservedScore(action, references),
+  }));
+}
+
+function buildLatestCorridorProjection(
+  latestAction: ActionDataContract | undefined,
+  latestScore: number | null,
+  now: string | Date | number,
+) {
+  if (!latestAction || latestScore === null) return null;
+  return presentActionPollutionProjection(
+    latestScore,
+    latestAction.dates.observedAt,
+    now,
+    {
+      postActionScore: latestAction.metadata.postActionPollutionScore,
+      geometryConfidence: latestAction.geometry.confidence,
+      sourceCompleteness: "partial",
+    },
+  );
+}
+
 export function summarizeCorridorHistory(
   history: CorridorHistory,
   options: {
@@ -281,26 +352,12 @@ export function summarizeCorridorHistory(
   const actions = history.actions;
   const latestAction = actions[0];
   const oldestAction = actions.at(-1) ?? latestAction;
-  const observedScores = actions.map((action) => ({
-    actionId: action.id,
-    observedAt: action.dates.observedAt,
-    score: resolveActionObservedScore(action, options.references),
-  }));
+  const observedScores = buildObservedScoreSeries(actions, options.references);
   const latestScore = observedScores[0]?.score ?? null;
   const oldestScore = observedScores.at(-1)?.score ?? null;
-  const latestProjection =
-    latestAction && latestScore !== null
-      ? presentActionPollutionProjection(
-          latestScore,
-          latestAction.dates.observedAt,
-          options.now ?? new Date(),
-          {
-            postActionScore: latestAction.metadata.postActionPollutionScore,
-            geometryConfidence: latestAction.geometry.confidence,
-            sourceCompleteness: "partial",
-          },
-        )
-      : null;
+  const latestProjection = buildLatestCorridorProjection(latestAction, latestScore, options.now ?? new Date());
+  const metrics = buildCorridorMetrics(actions);
+  const scoreSummary = buildCorridorScoreSummary(oldestScore, latestScore, latestProjection);
 
   return {
     derivedCorridorKey: history.derivedCorridorKey,
@@ -309,89 +366,9 @@ export function summarizeCorridorHistory(
     actionCount: actions.length,
     firstActionAt: oldestAction?.dates.observedAt ?? "",
     lastActionAt: latestAction?.dates.observedAt ?? "",
-    totalWasteKg: actions.reduce(
-      (total, action) =>
-        total +
-        (action.metadata.wasteKg !== null &&
-        Number.isFinite(action.metadata.wasteKg) &&
-        action.metadata.wasteKg >= 0
-          ? action.metadata.wasteKg
-          : 0),
-      0,
-    ),
-    wasteKnownActions: actions.filter(
-      (action) =>
-        action.metadata.wasteKg !== null &&
-        Number.isFinite(action.metadata.wasteKg) &&
-        action.metadata.wasteKg >= 0,
-    ).length,
-    wasteCoverageRate:
-      actions.length > 0
-        ? (actions.filter(
-            (action) =>
-              action.metadata.wasteKg !== null &&
-              Number.isFinite(action.metadata.wasteKg) &&
-              action.metadata.wasteKg >= 0,
-          ).length /
-            actions.length) *
-          100
-        : 0,
-    totalCigaretteButts: actions.reduce(
-      (total, action) =>
-        total + Math.max(0, action.metadata.cigaretteButts ?? 0),
-      0,
-    ),
-    totalVolunteers: actions.reduce(
-      (total, action) =>
-        total +
-        (action.metadata.volunteersCount === null
-          ? 0
-          : Math.max(0, action.metadata.volunteersCount)),
-      0,
-    ),
-    volunteersKnownActions: actions.filter(
-      (action) => action.metadata.volunteersCount !== null,
-    ).length,
-    volunteersCoverageRate:
-      actions.length > 0
-        ? (actions.filter(
-            (action) => action.metadata.volunteersCount !== null,
-          ).length /
-            actions.length) *
-          100
-        : 0,
-    totalDurationMinutes: actions.reduce(
-      (total, action) => total + Math.max(0, action.metadata.durationMinutes),
-      0,
-    ),
-    totalEngagementHours:
-      actions.some((action) => action.metadata.volunteersCount === null)
-        ? null
-        : actions.reduce(
-            (total, action) =>
-              total +
-              Math.max(0, action.metadata.durationMinutes) *
-                Math.max(0, action.metadata.volunteersCount ?? 0),
-            0,
-          ) / 60,
+    ...metrics,
     observedScores,
-    scoreEvolution:
-      oldestScore === null || latestScore === null
-        ? null
-        : {
-            first: oldestScore,
-            latest: latestScore,
-            delta: latestScore - oldestScore,
-          },
-    latestProjection: latestProjection
-      ? {
-          historicalScore: latestProjection.historicalScore,
-          projectedScore: latestProjection.projectedPollutionScore,
-          elapsedDays: latestProjection.elapsedDays,
-          isEstimate: latestProjection.isEstimate,
-          projectionConfidence: latestProjection.projectionConfidence,
-        }
-      : null,
+    ...scoreSummary,
     calibrationInput: history.calibrationInput,
   };
 }

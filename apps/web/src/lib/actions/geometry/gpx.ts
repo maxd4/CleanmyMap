@@ -54,28 +54,34 @@ function parseAttributes(source: string): Record<string, string> {
   const attributes: Record<string, string> = {};
   let cursor = 0;
   while (cursor < source.length) {
-    while (/\s/.test(source[cursor] ?? "")) cursor += 1;
+    cursor = skipWhitespace(source, cursor);
     if (cursor >= source.length) break;
-    const nameStart = cursor;
-    while (/[A-Za-z0-9_:.\-]/.test(source[cursor] ?? "")) cursor += 1;
-    if (cursor === nameStart || !/[A-Za-z_]/.test(source[nameStart] ?? "")) {
-      throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
-    }
-    const name = source.slice(nameStart, cursor);
-    while (/\s/.test(source[cursor] ?? "")) cursor += 1;
-    if (source[cursor] !== "=") throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
-    cursor += 1;
-    while (/\s/.test(source[cursor] ?? "")) cursor += 1;
-    const quote = source[cursor];
-    if (quote !== '"' && quote !== "'") throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
-    cursor += 1;
-    const valueStart = cursor;
-    const valueEnd = source.indexOf(quote, valueStart);
-    if (valueEnd < 0) throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
-    attributes[localName(name)] = source.slice(valueStart, valueEnd);
-    cursor = valueEnd + 1;
+    const parsed = readAttribute(source, cursor);
+    attributes[localName(parsed.name)] = parsed.value;
+    cursor = parsed.nextCursor;
   }
   return attributes;
+}
+
+function skipWhitespace(source: string, cursor: number): number {
+  while (/\s/.test(source[cursor] ?? "")) cursor += 1;
+  return cursor;
+}
+
+function readAttribute(source: string, cursor: number): { name: string; value: string; nextCursor: number } {
+  const nameStart = cursor;
+  while (/[A-Za-z0-9_:.\-]/.test(source[cursor] ?? "")) cursor += 1;
+  if (cursor === nameStart || !/[A-Za-z_]/.test(source[nameStart] ?? "")) throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
+  const name = source.slice(nameStart, cursor);
+  cursor = skipWhitespace(source, cursor);
+  if (source[cursor] !== "=") throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
+  cursor = skipWhitespace(source, cursor + 1);
+  const quote = source[cursor];
+  if (quote !== '"' && quote !== "'") throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
+  const valueStart = cursor + 1;
+  const valueEnd = source.indexOf(quote, valueStart);
+  if (valueEnd < 0) throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
+  return { name, value: source.slice(valueStart, valueEnd), nextCursor: valueEnd + 1 };
 }
 
 function parseTag(rawTag: string): XmlTag | null {
@@ -110,13 +116,51 @@ function assertXmlSafe(xml: string): void {
   }
 }
 
+type GpxParserState = {
+  stack: string[];
+  segments: GeodesicCoordinate[][];
+  activeSegment: GeodesicCoordinate[] | null;
+  rootSeen: boolean;
+  rootClosed: boolean;
+};
+
+function consumeClosingTag(tag: XmlTag, state: GpxParserState): void {
+  const expected = state.stack.pop();
+  if (!expected || expected !== tag.name) throw new GpxImportError("Le fichier GPX n'est pas un XML bien formé.");
+  if (tag.name === "trkseg") {
+    if (state.activeSegment && state.activeSegment.length > 0) state.segments.push(state.activeSegment);
+    state.activeSegment = null;
+  }
+  if (tag.name === "gpx") state.rootClosed = true;
+}
+
+function appendTrackPoint(tag: XmlTag, state: GpxParserState): void {
+  if (!state.activeSegment) throw new GpxImportError("Les points GPX doivent appartenir à un segment de trace.");
+  const latitude = Number(tag.attributes.lat);
+  const longitude = Number(tag.attributes.lon);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    throw new GpxImportError("Le GPX contient une latitude ou une longitude invalide.");
+  }
+  state.activeSegment.push([Number(latitude.toFixed(6)), Number(longitude.toFixed(6))]);
+}
+
+function consumeOpeningTag(tag: XmlTag, state: GpxParserState): void {
+  if (!state.rootSeen) {
+    if (tag.name !== "gpx") throw new GpxImportError("Le fichier ne contient pas une racine GPX valide.");
+    state.rootSeen = true;
+  }
+  if (state.rootClosed) throw new GpxImportError("Le fichier GPX contient du contenu après sa racine XML.");
+  if (tag.name === "trkseg") {
+    if (state.activeSegment) throw new GpxImportError("Le fichier GPX contient des segments imbriqués.");
+    state.activeSegment = [];
+  }
+  if (tag.name === "trkpt") appendTrackPoint(tag, state);
+  if (!tag.selfClosing) state.stack.push(tag.name);
+}
+
 function parseTrackSegments(xml: string): GeodesicCoordinate[][] {
   assertXmlSafe(xml);
-  const stack: string[] = [];
-  const segments: GeodesicCoordinate[][] = [];
-  let activeSegment: GeodesicCoordinate[] | null = null;
-  let rootSeen = false;
-  let rootClosed = false;
+  const state: GpxParserState = { stack: [], segments: [], activeSegment: null, rootSeen: false, rootClosed: false };
   let cursor = 0;
   while (cursor < xml.length) {
     const tagStart = xml.indexOf("<", cursor);
@@ -126,74 +170,17 @@ function parseTrackSegments(xml: string): GeodesicCoordinate[][] {
     const tag = parseTag(xml.slice(tagStart, tagEnd + 1));
     cursor = tagEnd + 1;
     if (!tag) continue;
-
-    if (tag.closing) {
-      const expected = stack.pop();
-      if (!expected || expected !== tag.name) {
-        throw new GpxImportError("Le fichier GPX n'est pas un XML bien formé.");
-      }
-      if (tag.name === "trkseg") {
-        if (activeSegment && activeSegment.length > 0) {
-          segments.push(activeSegment);
-        }
-        activeSegment = null;
-      }
-      if (tag.name === "gpx") rootClosed = true;
-      continue;
-    }
-
-    if (!rootSeen) {
-      if (tag.name !== "gpx") {
-        throw new GpxImportError("Le fichier ne contient pas une racine GPX valide.");
-      }
-      rootSeen = true;
-    }
-
-    if (rootClosed) {
-      throw new GpxImportError("Le fichier GPX contient du contenu après sa racine XML.");
-    }
-
-    if (tag.name === "trkseg") {
-      if (activeSegment) {
-        throw new GpxImportError("Le fichier GPX contient des segments imbriqués.");
-      }
-      activeSegment = [];
-    }
-
-    if (tag.name === "trkpt") {
-      if (!activeSegment) {
-        throw new GpxImportError("Les points GPX doivent appartenir à un segment de trace.");
-      }
-      const latitude = Number(tag.attributes.lat);
-      const longitude = Number(tag.attributes.lon);
-      if (
-        !Number.isFinite(latitude) ||
-        !Number.isFinite(longitude) ||
-        latitude < -90 ||
-        latitude > 90 ||
-        longitude < -180 ||
-        longitude > 180
-      ) {
-        throw new GpxImportError("Le GPX contient une latitude ou une longitude invalide.");
-      }
-      activeSegment.push([
-        Number(latitude.toFixed(6)),
-        Number(longitude.toFixed(6)),
-      ]);
-    }
-
-    if (!tag.selfClosing) {
-      stack.push(tag.name);
-    }
+    if (tag.closing) consumeClosingTag(tag, state);
+    else consumeOpeningTag(tag, state);
   }
 
-  if (stack.length > 0 || !rootSeen || !rootClosed) {
+  if (state.stack.length > 0 || !state.rootSeen || !state.rootClosed) {
     throw new GpxImportError("Le fichier GPX n'est pas un XML bien formé.");
   }
-  if (segments.length === 0) {
+  if (state.segments.length === 0) {
     throw new GpxImportError("Le GPX ne contient aucun segment de trace exploitable.");
   }
-  return segments;
+  return state.segments;
 }
 
 function isGpxLoop(coordinates: readonly GeodesicCoordinate[]): boolean {

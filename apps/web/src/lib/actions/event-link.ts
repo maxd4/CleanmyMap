@@ -31,6 +31,21 @@ export function extractEventRefFromNotes(
   return normalizeEventId(last);
 }
 
+function readEventMarker(raw: string, markerStart: number): { candidateStart: number; candidateEnd: number; candidate: string } {
+  const candidateStart = markerStart + EVENT_REF_NOTE_PREFIX.length;
+  let candidateEnd = candidateStart;
+  while (candidateEnd < raw.length && /[a-zA-Z0-9-]/.test(raw[candidateEnd] ?? "")) candidateEnd += 1;
+  return { candidateStart, candidateEnd, candidate: raw.slice(candidateStart, candidateEnd) };
+}
+
+function removeEventMarker(raw: string, cursor: number, markerStart: number, marker: ReturnType<typeof readEventMarker>): { text: string; nextCursor: number } {
+  let replaceStart = markerStart;
+  while (replaceStart > cursor && /\s/.test(raw[replaceStart - 1] ?? "")) replaceStart -= 1;
+  let replaceEnd = marker.candidateEnd;
+  while (replaceEnd < raw.length && /\s/.test(raw[replaceEnd] ?? "")) replaceEnd += 1;
+  return { text: `${raw.slice(cursor, replaceStart)}\n`, nextCursor: replaceEnd };
+}
+
 export function stripEventRefFromNotes(
   notes: string | null | undefined,
 ): string | null {
@@ -46,22 +61,15 @@ export function stripEventRefFromNotes(
       stripped += raw.slice(cursor);
       break;
     }
-    const candidateStart = markerStart + EVENT_REF_NOTE_PREFIX.length;
-    let candidateEnd = candidateStart;
-    while (candidateEnd < raw.length && /[a-zA-Z0-9-]/.test(raw[candidateEnd] ?? "")) candidateEnd += 1;
-    const candidate = raw.slice(candidateStart, candidateEnd);
-    if (!normalizeEventId(candidate)) {
-      stripped += raw.slice(cursor, candidateStart);
-      cursor = candidateStart;
+    const marker = readEventMarker(raw, markerStart);
+    if (!normalizeEventId(marker.candidate)) {
+      stripped += raw.slice(cursor, marker.candidateStart);
+      cursor = marker.candidateStart;
       continue;
     }
-    let replaceStart = markerStart;
-    while (replaceStart > cursor && /\s/.test(raw[replaceStart - 1] ?? "")) replaceStart -= 1;
-    let replaceEnd = candidateEnd;
-    while (replaceEnd < raw.length && /\s/.test(raw[replaceEnd] ?? "")) replaceEnd += 1;
-    stripped += raw.slice(cursor, replaceStart);
-    stripped += "\n";
-    cursor = replaceEnd;
+    const removed = removeEventMarker(raw, cursor, markerStart, marker);
+    stripped += removed.text;
+    cursor = removed.nextCursor;
   }
   while (stripped.includes("\n\n")) stripped = stripped.replaceAll("\n\n", "\n");
   stripped = stripped.trim();

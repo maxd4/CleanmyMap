@@ -77,75 +77,135 @@ export function ActionBeforeVerificationSection({
   const readinessLabel = guidedReadiness === "ready" ? "Complet" : guidedReadiness === "blocked" ? "À vérifier" : "À compléter";
   const readinessTone = guidedReadiness === "ready" ? "emerald" : "amber";
 
-  return (
-    <CmmCard tone="emerald" variant="glass" size="lg">
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.14em] text-emerald-700">Vérifier et publier</p>
-            <h3 className="mt-2 text-2xl font-black tracking-tight text-emerald-950">Un dernier regard sur votre action</h3>
-            <p className="cmm-text-body cmm-text-primary mt-2 max-w-2xl">Les formalités et les contrôles restent distincts de l’enregistrement. Vous pouvez enregistrer maintenant et reprendre cette même action plus tard.</p>
-          </div>
-          <CmmPill tone={readinessTone} size="sm">{readinessLabel}</CmmPill>
+  return <ActionBeforeVerificationView
+    summary={summary}
+    draftFacts={draftFacts}
+    publicInformation={publicInformation}
+    weatherChecklist={weatherChecklist}
+    requestWeather={() => void weather.requestWeather()}
+    corrections={corrections}
+    checks={checks}
+    suggestions={suggestions}
+    readinessLabel={readinessLabel}
+    readinessTone={readinessTone}
+    submissionState={submissionState}
+    errorMessage={errorMessage}
+    isAuthenticated={isAuthenticated}
+    signInHref={signInHref}
+    signUpHref={signUpHref}
+    actionId={actionId}
+    onDraftFactsChange={(facts) => updateField("formalitiesContext", facts)}
+    onFormalitiesReadiness={onFormalitiesReadiness}
+  />;
+}
+
+type ActionBeforeVerificationViewProps = {
+  summary: ReturnType<typeof buildPublicationSummary>;
+  draftFacts: ActionFormalitiesFacts;
+  publicInformation: ReturnType<typeof buildPublicActionPracticalInformation>;
+  weatherChecklist: ReturnType<typeof deriveActionVolunteerChecklist>;
+  requestWeather: () => void;
+  corrections: string[];
+  checks: string[];
+  suggestions: string[];
+  readinessLabel: string;
+  readinessTone: "emerald" | "amber";
+  submissionState: "idle" | "pending" | "success" | "error";
+  errorMessage: string | null;
+  isAuthenticated: boolean;
+  signInHref?: string;
+  signUpHref?: string;
+  actionId?: string | null;
+  onDraftFactsChange: (facts: ActionFormalitiesFacts) => void;
+  onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
+};
+
+function ActionBeforeVerificationView({
+  summary,
+  draftFacts,
+  publicInformation,
+  weatherChecklist,
+  requestWeather,
+  corrections,
+  checks,
+  suggestions,
+  readinessLabel,
+  readinessTone,
+  submissionState,
+  errorMessage,
+  isAuthenticated,
+  signInHref,
+  signUpHref,
+  actionId,
+  onDraftFactsChange,
+  onFormalitiesReadiness,
+}: ActionBeforeVerificationViewProps) {
+  return <CmmCard tone="emerald" variant="glass" size="lg">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-black uppercase tracking-[0.14em] text-emerald-700">Vérifier et publier</p>
+          <h3 className="mt-2 text-2xl font-black tracking-tight text-emerald-950">Un dernier regard sur votre action</h3>
+          <p className="cmm-text-body cmm-text-primary mt-2 max-w-2xl">Les formalités et les contrôles restent distincts de l’enregistrement. Vous pouvez enregistrer maintenant et reprendre cette même action plus tard.</p>
         </div>
-
-        <dl className="grid gap-3 sm:grid-cols-2" data-testid="action-creation-preview-summary">
-          {summary.map((item) => (
-            <div key={item.label} className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3">
-              <dt className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">{item.label}</dt>
-              <dd className="mt-1 whitespace-pre-line text-sm leading-6 text-emerald-950">{item.value}</dd>
-            </div>
-          ))}
-        </dl>
-
-        <div className="grid gap-3 lg:grid-cols-3" data-testid="action-publication-review-groups">
-          <ReviewGroup title="À corriger avant publication" tone="rose" items={corrections.length > 0 ? corrections : ["Aucun blocage démontré."]} />
-          <ReviewGroup title="À vérifier" tone="amber" items={checks.length > 0 ? checks : ["Les informations affichées sont issues des données actuellement saisies."]} />
-          <ReviewGroup title="Suggestions" tone="sky" items={suggestions.length > 0 ? suggestions : ["Aucune suggestion supplémentaire."]} />
-        </div>
-
-        <div className="rounded-2xl border border-sky-200/70 bg-sky-50/60 px-4 py-4" data-testid="action-volunteer-preview">
-          <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-black uppercase tracking-[0.12em] text-sky-700">Aperçu bénévole</p><h3 className="mt-1 text-lg font-black text-sky-950">Informations pratiques publiques</h3></div><CmmPill tone="sky" size="sm">Sans notes internes</CmmPill></div>
-          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-            <PreviewValue label="Message" value={publicInformation.participantMessage ?? "Non renseigné"} />
-            <PreviewValue label="Sécurité" value={publicInformation.safetyInstructions ?? "Aucune consigne principale renseignée"} />
-            <PreviewValue label="Matériel à apporter" value={[publicInformation.materialsToBring, ...publicInformation.derivedMaterials, ...(publicInformation.suggestedMaterials ?? [])].filter(Boolean).join(" · ") || "Non renseigné"} />
-            <PreviewValue label="Équipements fournis" value={publicInformation.equipmentProvided.join(" · ") || "Non renseigné"} />
-            <PreviewValue label="Convivialité" value={publicInformation.refreshmentsProvided.join(" · ") || "Non renseignée"} />
-            <PreviewValue label="Checklist bénévole · à apporter" value={publicInformation.volunteerChecklist?.toBring.map((item) => item.label).join(" · ") || "Aucun complément calculé"} />
-            <PreviewWeatherValue checklist={weatherChecklist} onRequest={() => void weather.requestWeather()} />
-            <PreviewValue label="Accessibilité" value={publicInformation.accessibility ?? "Non évaluée"} />
-          </dl>
-        </div>
-
-        <ActionCreationLegalPanel
-          actionId={actionId}
-          draftFacts={draftFacts}
-          onDraftFactsChange={(facts) => updateField("formalitiesContext", facts)}
-          onReadinessChange={onFormalitiesReadiness}
-        />
-
-        {corrections.length > 0 || errorMessage ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-950" role="alert">
-            <div className="flex items-center gap-2 font-semibold"><AlertTriangle size={16} aria-hidden="true" />Certains éléments doivent être traités avant la publication.</div>
-            {corrections.length > 0 ? <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">{corrections.map((issue) => <li key={issue}>{issue}</li>)}</ul> : null}
-            {errorMessage && corrections.length === 0 ? <p className="mt-2 text-xs">{errorMessage}</p> : null}
-          </div>
-        ) : null}
-
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200/70 bg-white/90 px-4 py-3">
-          <div className="flex items-start gap-2 text-sm text-emerald-900/75"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" /><span>La publication reste explicite et ne crée jamais une seconde action.</span></div>
-          <div className="flex flex-wrap gap-2">
-            {!isAuthenticated ? <><CmmButton href={signInHref} tone="primary" variant="pill" size="sm">Se connecter et reprendre</CmmButton><CmmButton href={signUpHref} tone="secondary" variant="pill" size="sm">Créer un compte</CmmButton></> : null}
-            <CmmButton type="submit" tone="primary" variant="pill" size="md" disabled={submissionState === "pending"}>
-              {submissionState === "pending" ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <ArrowRight size={14} aria-hidden="true" />}
-              {submissionState === "pending" ? "Enregistrement…" : "Enregistrer la préparation"}
-            </CmmButton>
-          </div>
-        </div>
+        <CmmPill tone={readinessTone} size="sm">{readinessLabel}</CmmPill>
       </div>
-    </CmmCard>
-  );
+      <dl className="grid gap-3 sm:grid-cols-2" data-testid="action-creation-preview-summary">
+        {summary.map((item) => <div key={item.label} className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3"><dt className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">{item.label}</dt><dd className="mt-1 whitespace-pre-line text-sm leading-6 text-emerald-950">{item.value}</dd></div>)}
+      </dl>
+      <ActionBeforeReviewGroups corrections={corrections} checks={checks} suggestions={suggestions} />
+      <ActionBeforeVolunteerPreview publicInformation={publicInformation} weatherChecklist={weatherChecklist} requestWeather={requestWeather} />
+      <ActionCreationLegalPanel actionId={actionId} draftFacts={draftFacts} onDraftFactsChange={onDraftFactsChange} onReadinessChange={onFormalitiesReadiness} />
+      <ActionBeforeVerificationAlert corrections={corrections} errorMessage={errorMessage} />
+      <ActionBeforeVerificationFooter isAuthenticated={isAuthenticated} signInHref={signInHref} signUpHref={signUpHref} submissionState={submissionState} />
+    </div>
+  </CmmCard>;
+}
+
+function ActionBeforeReviewGroups({ corrections, checks, suggestions }: Pick<ActionBeforeVerificationViewProps, "corrections" | "checks" | "suggestions">) {
+  return <div className="grid gap-3 lg:grid-cols-3" data-testid="action-publication-review-groups">
+    <ReviewGroup title="À corriger avant publication" tone="rose" items={corrections.length > 0 ? corrections : ["Aucun blocage démontré."]} />
+    <ReviewGroup title="À vérifier" tone="amber" items={checks.length > 0 ? checks : ["Les informations affichées sont issues des données actuellement saisies."]} />
+    <ReviewGroup title="Suggestions" tone="sky" items={suggestions.length > 0 ? suggestions : ["Aucune suggestion supplémentaire."]} />
+  </div>;
+}
+
+function ActionBeforeVolunteerPreview({ publicInformation, weatherChecklist, requestWeather }: Pick<ActionBeforeVerificationViewProps, "publicInformation" | "weatherChecklist" | "requestWeather">) {
+  return <div className="rounded-2xl border border-sky-200/70 bg-sky-50/60 px-4 py-4" data-testid="action-volunteer-preview">
+    <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-black uppercase tracking-[0.12em] text-sky-700">Aperçu bénévole</p><h3 className="mt-1 text-lg font-black text-sky-950">Informations pratiques publiques</h3></div><CmmPill tone="sky" size="sm">Sans notes internes</CmmPill></div>
+    <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+      <PreviewValue label="Message" value={publicInformation.participantMessage ?? "Non renseigné"} />
+      <PreviewValue label="Sécurité" value={publicInformation.safetyInstructions ?? "Aucune consigne principale renseignée"} />
+      <PreviewValue label="Matériel à apporter" value={[publicInformation.materialsToBring, ...publicInformation.derivedMaterials, ...(publicInformation.suggestedMaterials ?? [])].filter(Boolean).join(" · ") || "Non renseigné"} />
+      <PreviewValue label="Équipements fournis" value={publicInformation.equipmentProvided.join(" · ") || "Non renseigné"} />
+      <PreviewValue label="Convivialité" value={publicInformation.refreshmentsProvided.join(" · ") || "Non renseignée"} />
+      <PreviewValue label="Checklist bénévole · à apporter" value={publicInformation.volunteerChecklist?.toBring.map((item) => item.label).join(" · ") || "Aucun complément calculé"} />
+      <PreviewWeatherValue checklist={weatherChecklist} onRequest={requestWeather} />
+      <PreviewValue label="Accessibilité" value={publicInformation.accessibility ?? "Non évaluée"} />
+    </dl>
+  </div>;
+}
+
+function ActionBeforeVerificationAlert({ corrections, errorMessage }: Pick<ActionBeforeVerificationViewProps, "corrections" | "errorMessage">) {
+  if (corrections.length === 0 && !errorMessage) return null;
+  return <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-950" role="alert">
+    <div className="flex items-center gap-2 font-semibold"><AlertTriangle size={16} aria-hidden="true" />Certains éléments doivent être traités avant la publication.</div>
+    {corrections.length > 0 ? <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">{corrections.map((issue) => <li key={issue}>{issue}</li>)}</ul> : null}
+    {errorMessage && corrections.length === 0 ? <p className="mt-2 text-xs">{errorMessage}</p> : null}
+  </div>;
+}
+
+function ActionBeforeVerificationFooter({ isAuthenticated, signInHref, signUpHref, submissionState }: Pick<ActionBeforeVerificationViewProps, "isAuthenticated" | "signInHref" | "signUpHref" | "submissionState">) {
+  return <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200/70 bg-white/90 px-4 py-3">
+    <div className="flex items-start gap-2 text-sm text-emerald-900/75"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" /><span>La publication reste explicite et ne crée jamais une seconde action.</span></div>
+    <div className="flex flex-wrap gap-2">
+      {!isAuthenticated ? <><CmmButton href={signInHref} tone="primary" variant="pill" size="sm">Se connecter et reprendre</CmmButton><CmmButton href={signUpHref} tone="secondary" variant="pill" size="sm">Créer un compte</CmmButton></> : null}
+      <CmmButton type="submit" tone="primary" variant="pill" size="md" disabled={submissionState === "pending"}>
+        {submissionState === "pending" ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <ArrowRight size={14} aria-hidden="true" />}
+        {submissionState === "pending" ? "Enregistrement…" : "Enregistrer la préparation"}
+      </CmmButton>
+    </div>
+  </div>;
 }
 
 function ReviewGroup({ title, tone, items }: { title: string; tone: "rose" | "amber" | "sky"; items: string[] }) {

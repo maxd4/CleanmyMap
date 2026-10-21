@@ -140,6 +140,44 @@ export function computeActionImpactKpis(
   };
 }
 
+function accumulateActionImpactTotals(
+  totals: ActionImpactTotals,
+  impact: ActionImpactKpis,
+): { wasteKnown: boolean; buttsKnown: boolean; volunteersKnown: boolean } {
+  totals.wasteKg += impact.wasteKg;
+  totals.butts += impact.butts;
+  totals.volunteers += impact.volunteers;
+  return {
+    wasteKnown: impact.wasteKnown,
+    buttsKnown: impact.buttsKnown,
+    volunteersKnown: impact.volunteersKnown,
+  };
+}
+
+function finalizeActionImpactTotals(
+  totals: ActionImpactTotals,
+  counts: { wasteKnown: number; wasteTotal: number; buttsKnown: number; buttsTotal: number; volunteersKnown: number; volunteersTotal: number },
+  totalDurationMinutes: number,
+): ActionImpactTotals {
+  totals.co2AvoidedKg = totals.wasteKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg;
+  totals.waterSavedLiters = Math.round(totals.butts * IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt);
+  totals.streetCleaningSavings = computeImpactTerrain2026StreetCleaningSavings({ wasteKg: totals.wasteKg, durationMinutes: totalDurationMinutes });
+  totals.euroSaved = Math.round(totals.streetCleaningSavings.massEstimateEuros);
+  totals.wasteKnownActions = counts.wasteKnown;
+  totals.wasteActionCount = counts.wasteTotal;
+  totals.wasteCoverageRate = counts.wasteTotal > 0 ? (counts.wasteKnown / counts.wasteTotal) * 100 : 0;
+  totals.wasteKnown = counts.wasteKnown > 0;
+  totals.buttsKnownActions = counts.buttsKnown;
+  totals.buttsActionCount = counts.buttsTotal;
+  totals.buttsCoverageRate = counts.buttsTotal > 0 ? (counts.buttsKnown / counts.buttsTotal) * 100 : 0;
+  totals.buttsKnown = counts.buttsKnown > 0;
+  totals.volunteersKnownActions = counts.volunteersKnown;
+  totals.volunteersActionCount = counts.volunteersTotal;
+  totals.volunteersCoverageRate = counts.volunteersTotal > 0 ? (counts.volunteersKnown / counts.volunteersTotal) * 100 : 0;
+  totals.volunteersKnown = counts.volunteersKnown > 0;
+  return totals;
+}
+
 export function sumActionImpactKpis(
   contracts: Iterable<ActionImpactInput>,
 ): ActionImpactTotals {
@@ -168,66 +206,24 @@ export function sumActionImpactKpis(
     euroSaved: 0,
   };
   let totalDurationMinutes = 0;
-  let wasteKnownActions = 0;
-  let wasteActionCount = 0;
-  let buttsKnownActions = 0;
-  let buttsActionCount = 0;
-  let volunteersKnownActions = 0;
-  let volunteersActionCount = 0;
+  const counts = { wasteKnown: 0, wasteTotal: 0, buttsKnown: 0, buttsTotal: 0, volunteersKnown: 0, volunteersTotal: 0 };
 
   for (const contract of contracts) {
-    wasteActionCount += 1;
+    counts.wasteTotal += 1;
     const impact = computeActionImpactKpis(contract);
-    totals.wasteKg += impact.wasteKg;
-    if (impact.wasteKnown) {
-      wasteKnownActions += 1;
-    }
-    buttsActionCount += 1;
-    if (impact.buttsKnown) {
-      buttsKnownActions += 1;
-    }
-    totals.butts += impact.butts;
-    totals.volunteers += impact.volunteers;
-    volunteersActionCount += 1;
-    if (impact.volunteersKnown) {
-      volunteersKnownActions += 1;
-    }
+    const known = accumulateActionImpactTotals(totals, impact);
+    counts.buttsTotal += 1;
+    counts.volunteersTotal += 1;
+    if (known.wasteKnown) counts.wasteKnown += 1;
+    if (known.buttsKnown) counts.buttsKnown += 1;
+    if (known.volunteersKnown) counts.volunteersKnown += 1;
     const durationMinutes = Number(contract.metadata.durationMinutes ?? 0);
     totalDurationMinutes += Number.isFinite(durationMinutes)
       ? Math.max(0, durationMinutes)
       : 0;
   }
 
-  totals.co2AvoidedKg =
-    totals.wasteKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg;
-  totals.waterSavedLiters = Math.round(
-    totals.butts * IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt,
-  );
-  totals.streetCleaningSavings =
-    computeImpactTerrain2026StreetCleaningSavings({
-      wasteKg: totals.wasteKg,
-      durationMinutes: totalDurationMinutes,
-    });
-  totals.euroSaved = Math.round(totals.streetCleaningSavings.massEstimateEuros);
-  totals.wasteKnownActions = wasteKnownActions;
-  totals.wasteActionCount = wasteActionCount;
-  totals.wasteCoverageRate =
-    wasteActionCount > 0 ? (wasteKnownActions / wasteActionCount) * 100 : 0;
-  totals.wasteKnown = wasteKnownActions > 0;
-  totals.buttsKnownActions = buttsKnownActions;
-  totals.buttsActionCount = buttsActionCount;
-  totals.buttsCoverageRate =
-    buttsActionCount > 0 ? (buttsKnownActions / buttsActionCount) * 100 : 0;
-  totals.buttsKnown = buttsKnownActions > 0;
-  totals.volunteersKnownActions = volunteersKnownActions;
-  totals.volunteersActionCount = volunteersActionCount;
-  totals.volunteersCoverageRate =
-    volunteersActionCount > 0
-      ? (volunteersKnownActions / volunteersActionCount) * 100
-      : 0;
-  totals.volunteersKnown = volunteersKnownActions > 0;
-
-  return totals;
+  return finalizeActionImpactTotals(totals, counts, totalDurationMinutes);
 }
 
 /**

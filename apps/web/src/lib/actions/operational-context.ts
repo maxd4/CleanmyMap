@@ -70,6 +70,22 @@ function normalizeOperationalRouteStyle(
   return null;
 }
 
+function resolveOperationalVolunteers(metadata: NonNullable<NonNullable<ActionOperationalContextSource>["metadata"]>): {
+  volunteersCount: number | null;
+  effectiveVolunteerUnits: number | null;
+  operationalVolunteerUnits: number | null;
+} {
+  const volunteersCount = metadata.volunteersCount === null || metadata.volunteersCount === undefined
+    ? null
+    : normalizeOperationalCount(metadata.volunteersCount);
+  const effectiveVolunteerUnits = resolveEffectiveVolunteerUnits(metadata.volunteerParticipation);
+  return {
+    volunteersCount,
+    effectiveVolunteerUnits,
+    operationalVolunteerUnits: effectiveVolunteerUnits ?? volunteersCount,
+  };
+}
+
 /**
  * Extrait le contexte opérationnel (volontaires, durée, engagement) d'un contrat ou d'une source compatible.
  */
@@ -82,14 +98,8 @@ export function getActionOperationalContext(
   const routeAdjustmentMessage = normalizeContextText(
     metadata?.routeAdjustmentMessage,
   );
-  const volunteersCount =
-    metadata?.volunteersCount === null || metadata?.volunteersCount === undefined
-      ? null
-      : normalizeOperationalCount(metadata.volunteersCount);
-  const effectiveVolunteerUnits = resolveEffectiveVolunteerUnits(
-    metadata?.volunteerParticipation,
-  );
-  const operationalVolunteerUnits = effectiveVolunteerUnits ?? volunteersCount;
+  const volunteers = resolveOperationalVolunteers(metadata ?? {});
+  const { volunteersCount, effectiveVolunteerUnits, operationalVolunteerUnits } = volunteers;
   const durationMinutes = normalizeOperationalCount(metadata?.durationMinutes);
   const engagementMinutes =
     operationalVolunteerUnits === null ? null : operationalVolunteerUnits * durationMinutes;
