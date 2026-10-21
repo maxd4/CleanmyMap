@@ -855,8 +855,8 @@
       "path": "apps/web/src/components/reports/web-document/use-reports-web-document-model.ts",
       "line": 41,
       "category": "hooks",
-      "ceiling": 26,
-      "status": "LEGACY",
+      "ceiling": 7,
+      "status": "IMPROVED",
       "functionIdentity": "named:useReportsWebDocumentModel#1"
     },
     {
@@ -2142,7 +2142,7 @@
       "path": "apps/web/src/app/(app)/reports/page.tsx",
       "line": 232,
       "category": "React/JSX",
-      "ceiling": 100,
+      "ceiling": 18,
       "status": "IMPROVED",
       "functionIdentity": "named:ReportsPage#1"
     },
@@ -3582,8 +3582,8 @@
       "path": "apps/web/src/components/reports/reports-web-document.tsx",
       "line": 69,
       "category": "React/JSX",
-      "ceiling": 288,
-      "status": "LEGACY",
+      "ceiling": 93,
+      "status": "IMPROVED",
       "functionIdentity": "named:ReportsWebDocument#1"
     },
     {
@@ -3597,20 +3597,11 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/reports/web-document/reports-web-document.shared.tsx",
-      "line": 306,
-      "category": "React/JSX",
-      "ceiling": 307,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildPdfData#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/reports/web-document/use-reports-web-document-model.ts",
       "line": 41,
       "category": "hooks",
-      "ceiling": 241,
-      "status": "LEGACY",
+      "ceiling": 62,
+      "status": "IMPROVED",
       "functionIdentity": "named:useReportsWebDocumentModel#1"
     },
     {
@@ -4770,8 +4761,8 @@
       "path": "apps/web/src/lib/pdf-export/report-pdf-theme.ts",
       "line": 43,
       "category": "métier/domain pur",
-      "ceiling": 438,
-      "status": "LEGACY",
+      "ceiling": 19,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildOfficialReportCss#1"
     },
     {
