@@ -9,6 +9,16 @@ tags: "[accessibility, a11y, keyboard, focus, semantics, contrast]"
 
 # CleanMyMap — accessibilité
 
+## Procédure canonique de revue
+
+Pour une revue UX CleanMyMap, appliquer la méthode commune de
+[`documentation/design-system/Design-system.md`](../../../documentation/design-system/Design-system.md), section 12, et distinguer les niveaux de preuve définis dans
+[`documentation/development/TESTING.md`](../../../documentation/development/TESTING.md).
+Ce skill conserve ses exigences d'accessibilité ; il ne crée pas de seconde
+charte. Les références Apple servent de méthode lorsqu'elles sont effectivement
+consultées, sans imposer de composant ou de capacité Apple absente de la
+surface Web ou React Native revue.
+
 ## But
 
 Préserver une interface utilisable au clavier, compréhensible sémantiquement et robuste avec les technologies d'assistance.

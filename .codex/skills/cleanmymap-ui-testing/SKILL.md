@@ -9,6 +9,16 @@ tags: "[ui, browser, playwright, screenshots, clerk, regression]"
 
 # CleanMyMap — validation UI et navigateur
 
+## Procédure canonique de revue
+
+Pour une revue UX CleanMyMap, appliquer la méthode commune de
+[`documentation/design-system/Design-system.md`](../../../documentation/design-system/Design-system.md), section 12, et distinguer les niveaux de preuve définis dans
+[`documentation/development/TESTING.md`](../../../documentation/development/TESTING.md).
+Ce skill conserve son routage de harness et ses exigences de preuve ; il ne
+crée pas de seconde charte. Les références Apple servent de méthode lorsqu'elles
+sont effectivement consultées, sans imposer de composant ou de capacité Apple
+absente de la surface Web ou React Native revue.
+
 ## But
 
 Choisir le bon harness d'authentification et produire une preuve visuelle/comportementale correspondant réellement à la surface testée.

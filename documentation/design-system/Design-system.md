@@ -153,3 +153,76 @@ ci-dessus. Les règles déjà portées par ces contrats ne sont pas recopiées i
 Ces principes orientent les futurs changements ; ils ne prouvent pas que les
 surfaces existantes les satisfont déjà. Une correction de code doit rester dans
 un lot distinct, avec une preuve d'exécution adaptée à la surface concernée.
+
+## 12. Méthode CURRENT de revue UX
+
+Cette procédure est la méthode commune de revue UX pour le Web CleanMyMap et
+pour l'application mobile Expo/React Native. Elle complète les contrats
+spécialisés ; elle ne crée ni nouvelle charte, ni nouvelle primitive, ni
+parité artificielle entre plateformes.
+
+Le skill `apple-design` apporte une méthode de questionnement et de craft. Sa
+présence ne prouve pas que ses références annoncées ont été consultées : une
+revue ne cite que les sources effectivement ouvertes et vérifiées. Les critères
+Web normatifs restent WCAG et les primitives CleanMyMap. Sur mobile, les
+principes HIG sont traduits en comportements React Native, Expo, Android et iOS
+réellement disponibles. SF Symbols, Liquid Glass, macOS, Apple Pay, iPhone Duo
+et Live Activities ne sont jamais des exigences lorsqu'aucune capacité
+correspondante n'existe dans la surface revue.
+
+### 12.1 Les cinq dimensions
+
+| Dimension | Questions à examiner | Références normatives à vérifier |
+| --- | --- | --- |
+| **Accessibilité** | Le contenu se lit-il avec le contraste, la taille, le reflow, le clavier, le lecteur d'écran et les préférences de mouvement applicables ? Les états et permissions ont-ils un repère autre que la couleur ? | WCAG applicable, `theme-visibility-rules.md`, `FORMS_CONTROLS.md`, `.codex/skills/cleanmymap-accessibility/SKILL.md` |
+| **Conventions de plateforme** | La navigation, le retour, le clavier, les zones sûres, les contrôles tactiles et les dialogues suivent-ils le Web ou le système natif réellement utilisé ? | `ACTIONS_BUTTONS.md`, `OVERLAYS_DIALOGS.md`, `DISPLAY_MODES_CANONICAL.md`, contrats de plateforme applicables |
+| **Conception visuelle et craft** | L'objectif, la hiérarchie, l'alignement, la densité, les couleurs et les détails servent-ils le contenu ? Quel décor peut disparaître sans perte ? | `PAGE_HEADER.md`, `LAYOUT_SPACING.md`, `BLOC_COLOR_SYSTEM_PREMIUM.md`, `SURFACES_CARDS.md`, `DISPLAY_MODES_CANONICAL.md` |
+| **Interactions et récupération** | Les actions fonctionnent-elles réellement ? Les chargements, erreurs, accès refusés, annulations, retours et reprises conservent-ils le contexte sans succès simulé ? | `STATES_FEEDBACK.md`, `MOTION_TRANSITIONS.md`, contrats AuthN/AuthZ et données concernés |
+| **Contenu, libellés et feedback** | Le libellé décrit-il l'effet réel ? L'aide, l'erreur, la confirmation, l'état vide et la source sont-ils compréhensibles et cohérents pendant tout le parcours ? | `FORMS_CONTROLS.md`, `STATES_FEEDBACK.md`, `DATA_DISPLAY_TABLES_KPI.md`, vocabulaire métier canonique |
+
+La revue porte sur un parcours et ses transitions, depuis l'entrée jusqu'à la
+sortie ou la reprise :
+
+1. formuler l'objectif principal de chaque écran et la prochaine action utile ;
+2. suivre navigation, retour, ouverture/fermeture, mutation, erreur, reprise et
+   changement de taille, mode ou plateforme ;
+3. vérifier lisibilité, hiérarchie, actions fonctionnelles, états, accessibilité,
+   caractère propre à CleanMyMap et détails décoratifs supprimables ;
+4. comparer le comportement aux contrats canoniques sans déduire une preuve
+   d'une capture isolée ;
+5. enregistrer les limites de rôle, d'environnement, de données ou de matériel.
+
+### 12.2 Fiche minimale d'un finding
+
+Chaque finding conservé contient les champs suivants :
+
+```text
+surface et scénario : route/écran, état, rôle, taille, mode, plateforme
+constat observable : comportement ou mesure reproductible
+gravité : Critical | High | Medium | Low
+contrat ou référence vérifiée : fichier + section effectivement consultée
+correction concrète : changement attendu dans le framework concerné
+preuve de clôture : STATIC_CONTRACT | EXECUTED_BEHAVIOR | INTEGRATION_PROOF
+                     + commande, test, observation ou limite correspondante
+```
+
+La gravité `Critical` couvre notamment une barrière d'accessibilité, une
+action inutilisable ou une confusion grave de sécurité, d'autorisation ou de
+donnée. `High` désigne une friction réelle, une lisibilité insuffisante ou une
+rupture de convention qui compromet le parcours. `Medium` couvre une
+incohérence ou une récupération sous-optimale ; `Low` couvre le polish et les
+cas limites sans perte de fonction.
+
+Les preuves restent séparées conformément à
+[`TESTING.md`](../development/TESTING.md) :
+
+- `STATIC_CONTRACT` vérifie documentation, source, structure ou configuration
+  sans exécuter la frontière concernée ;
+- `EXECUTED_BEHAVIOR` exécute le code dans le harness Web ou mobile approprié
+  et observe le comportement ;
+- `INTEGRATION_PROOF` exécute et observe une frontière externe ou persistante,
+  par exemple Clerk, HTTP, Supabase, Storage ou un appareil réel.
+
+Une capture, une classe CSS, un test mocké ou la présence d'un composant ne
+remplace pas une preuve d'exécution. Le compte rendu indique donc séparément
+ce qui est `PASS`, `FAIL` ou `NON_EVALUABLE`, ainsi que la limite restante.
