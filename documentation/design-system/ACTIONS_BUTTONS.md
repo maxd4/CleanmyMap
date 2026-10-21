@@ -73,6 +73,13 @@ Les états `hover`, `active`, `focus-visible`, `disabled` et `loading` sont
 centralisés dans la primitive CSS. Ne pas ajouter de classes locales de
 géométrie, d'effet ou de focus à `CmmButton`.
 
+Le garde-fou structurel vérifie également les consommateurs TSX : les
+dimensions, paddings, rayons, ombres, fonds et transformations arbitraires ne
+doivent pas recréer une variante locale. Les classes de placement (`flex`,
+`w-full`, `gap-*`) et la composition du contenu restent possibles. Une action
+réellement spécialisée doit rester dans son owner documenté ; elle ne doit
+pas élargir l'exception aux nouveaux boutons standards.
+
 ## Règles de migration
 
 - utiliser `CmmButton` pour une action qui se comporte comme un bouton ou un

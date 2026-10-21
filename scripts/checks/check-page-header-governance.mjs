@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
-const webSourceRoot = path.join(repositoryRoot, "apps/web/src");
 
 // Exceptions are intentionally small and mirror documentation/design-system/UI_EXCEPTION_PAGES.md.
 const rawH1Allowlist = new Map([
@@ -26,6 +26,10 @@ const rawH1Allowlist = new Map([
 ]);
 
 const forbiddenTypographyClass = /(?:^|\s)(?:text-|font-|leading-|tracking-|max-w-|whitespace-|line-clamp-)/;
+const forbiddenGeometryClass = /(?:^|\s)(?:rounded-|border(?:-|$)|bg-|shadow-|(?:p|px|py|h|min-h|max-h)-)/;
+const pageHeaderWrapperExceptions = new Map([
+  ["apps/web/src/components/sections/rubriques/connect-section-view.tsx", "documented compact messaging sub-view"],
+]);
 
 function collectSourceFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -34,10 +38,6 @@ function collectSourceFiles(directory) {
     if (!/\.tsx?$/.test(entry.name) || /\.test\.[jt]sx?$/.test(entry.name)) return [];
     return [entryPath];
   });
-}
-
-function relativePath(filePath) {
-  return path.relative(repositoryRoot, filePath).split(path.sep).join("/");
 }
 
 function extractOpeningTag(source, start) {
@@ -132,57 +132,76 @@ function hasTopLevelAttribute(tag, attributeName) {
   return false;
 }
 
-const violations = [];
-let pageHeaderCount = 0;
-let rawH1Count = 0;
-
-for (const sourcePath of collectSourceFiles(webSourceRoot)) {
-  const relative = relativePath(sourcePath);
-  const source = fs.readFileSync(sourcePath, "utf8");
-
-  for (const match of source.matchAll(/<PageHeader\b/g)) {
-    pageHeaderCount += 1;
-    const startLine = source.slice(0, match.index).split(/\r?\n/).length;
-    const openingTag = extractOpeningTag(source, match.index);
-    if (
-      relative !== "apps/web/src/components/ui/page-header.tsx" &&
-      ["eyebrow", "badge", "badges", "titleSize", "badgesClassName"].some((attribute) =>
-        hasTopLevelAttribute(openingTag, attribute),
-      )
-    ) {
-      violations.push(`${relative}:${startLine}: legacy PageHeader API usage`);
-    }
-    const localClassValues = topLevelAttributeValues(openingTag, "className");
-    if (localClassValues.some((value) => forbiddenTypographyClass.test(value))) {
-      violations.push(
-        `${relative}:${startLine}: PageHeader wrapper contains a local typography/width override`,
-      );
-    }
+export function auditPageHeaderLocalOverrides(className, sourceName = "source") {
+  if (pageHeaderWrapperExceptions.has(sourceName)) return [];
+  if (forbiddenTypographyClass.test(className)) {
+    return ["PageHeader wrapper contains a local typography/width override"];
   }
-
-  if (relative === "apps/web/src/components/ui/page-header.tsx") continue;
-  for (const match of source.matchAll(/<h1\b/g)) {
-    rawH1Count += 1;
-    const line = source.slice(0, match.index).split(/\r?\n/).length;
-    if (!rawH1Allowlist.has(relative)) {
-      violations.push(`${relative}:${line}: raw page heading bypasses PageHeader`);
-    }
+  if (forbiddenGeometryClass.test(className)) {
+    return ["PageHeader wrapper contains a local shell geometry override"];
   }
+  return [];
 }
 
-for (const [relative, reason] of rawH1Allowlist) {
-  const absolute = path.join(repositoryRoot, relative.replaceAll("/", path.sep));
-  if (!fs.existsSync(absolute)) {
-    violations.push(`${relative}: allowlisted exception file is missing (${reason})`);
+export function auditPageHeaderRepository(root = repositoryRoot) {
+  const sourceRoot = path.join(root, "apps/web/src");
+  const violations = [];
+  let pageHeaderCount = 0;
+  let rawH1Count = 0;
+
+  for (const sourcePath of collectSourceFiles(sourceRoot)) {
+    const relative = path.relative(root, sourcePath).split(path.sep).join("/");
+    const source = fs.readFileSync(sourcePath, "utf8");
+
+    for (const match of source.matchAll(/<PageHeader\b/g)) {
+      pageHeaderCount += 1;
+      const startLine = source.slice(0, match.index).split(/\r?\n/).length;
+      const openingTag = extractOpeningTag(source, match.index);
+      if (
+        relative !== "apps/web/src/components/ui/page-header.tsx" &&
+        ["eyebrow", "badge", "badges", "titleSize", "badgesClassName"].some((attribute) =>
+          hasTopLevelAttribute(openingTag, attribute),
+        )
+      ) {
+        violations.push(`${relative}:${startLine}: legacy PageHeader API usage`);
+      }
+      const localClassValues = topLevelAttributeValues(openingTag, "className");
+      for (const value of localClassValues) {
+        for (const violation of auditPageHeaderLocalOverrides(value, relative)) {
+          violations.push(`${relative}:${startLine}: ${violation}`);
+        }
+      }
+    }
+
+    if (relative === "apps/web/src/components/ui/page-header.tsx") continue;
+    for (const match of source.matchAll(/<h1\b/g)) {
+      rawH1Count += 1;
+      const line = source.slice(0, match.index).split(/\r?\n/).length;
+      if (!rawH1Allowlist.has(relative)) {
+        violations.push(`${relative}:${line}: raw page heading bypasses PageHeader`);
+      }
+    }
   }
+
+  for (const [relative, reason] of rawH1Allowlist) {
+    const absolute = path.join(root, relative.replaceAll("/", path.sep));
+    if (!fs.existsSync(absolute)) {
+      violations.push(`${relative}: allowlisted exception file is missing (${reason})`);
+    }
+  }
+
+  return { violations, pageHeaderCount, rawH1Count };
 }
 
-if (violations.length > 0) {
-  console.error("PageHeader governance check failed:");
-  for (const violation of violations) console.error(`- ${violation}`);
-  process.exitCode = 1;
-} else {
-  console.log(
-    `PageHeader governance check passed: ${pageHeaderCount} PageHeader usages, ${rawH1Count} documented specialized raw h1 usages.`,
-  );
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  const { violations, pageHeaderCount, rawH1Count } = auditPageHeaderRepository();
+  if (violations.length > 0) {
+    console.error("PageHeader governance check failed:");
+    for (const violation of violations) console.error(`- ${violation}`);
+    process.exitCode = 1;
+  } else {
+    console.log(
+      `PageHeader governance check passed: ${pageHeaderCount} PageHeader usages, ${rawH1Count} documented specialized raw h1 usages.`,
+    );
+  }
 }

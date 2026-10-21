@@ -48,6 +48,24 @@ export const canonicalTextSurfaceSelectors = [
 ];
 
 const cmmButtonScalePattern = /\b(?:hover|active|group-hover):scale-[^\s"'`}]+/g;
+const primitiveShellOverridePattern = /(?:^|\s)(?:(?:rounded|shadow|bg|border|ring|backdrop-blur|p|px|py|h|min-h|max-h)-\[[^\]]+\]|(?:hover|active|focus|group-hover):(?:scale|shadow)-[^\s"'`}]+)/;
+// These are bounded visual owners, not a repository-wide exemption. Their
+// specialized surface contracts are reviewed by role; new files remain gated.
+const documentedSpecializedSurfaceOverrides = new Map([
+  ["apps/web/src/components/dashboard/dashboard-priority-action.tsx", "dashboard priority CTA"],
+  ["apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx", "annuaire actor surface and CTAs"],
+  ["apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx", "annuaire map controls"],
+  ["apps/web/src/components/sections/rubriques/annuaire/annuaire-partner-drawer.tsx", "annuaire partner drawer controls"],
+  ["apps/web/src/components/sections/rubriques/annuaire/annuaire-partner-list.tsx", "annuaire pagination controls"],
+  ["apps/web/src/components/sections/rubriques/annuaire/annuaire-thematic-exploration.tsx", "annuaire thematic controls"],
+  ["apps/web/src/components/sections/rubriques/connect-components.tsx", "connect tab controls"],
+  ["apps/web/src/components/sections/rubriques/elus-section-navigation.tsx", "elected-official navigation and CTA"],
+  ["apps/web/src/components/sections/rubriques/feedback/feedback-header.tsx", "feedback entry surface"],
+  ["apps/web/src/components/sections/rubriques/feedback/questionnaire-card.tsx", "feedback questionnaire surface"],
+  ["apps/web/src/components/sections/rubriques/gamification/gamification-catalog-panel.tsx", "gamification feedback CTA"],
+  ["apps/web/src/components/sections/rubriques/open-data-section.tsx", "open-data API CTA"],
+  ["apps/web/src/components/sections/rubriques/weather-section.conditions.guidance.tsx", "weather safety guidance surface"],
+]);
 
 function collectStaticClassTexts(expression, texts = []) {
   if (!expression) return texts;
@@ -157,6 +175,58 @@ function isCmmButtonOpeningElement(node) {
   if (!ts.isJsxOpeningLikeElement(node)) return false;
   const tagName = node.tagName;
   return ts.isIdentifier(tagName) && tagName.text === "CmmButton";
+}
+
+function primitiveClassTexts(openingElement) {
+  const classNameProperty = openingElement.attributes.properties.find(
+    (property) => ts.isJsxAttribute(property) && property.name.text === "className",
+  );
+  if (!classNameProperty?.initializer) return [];
+  if (ts.isStringLiteral(classNameProperty.initializer)) return [classNameProperty.initializer.text];
+  if (ts.isJsxExpression(classNameProperty.initializer)) return collectStaticClassTexts(classNameProperty.initializer.expression);
+  return [];
+}
+
+export function auditPrimitiveConsumerOverridesInSource(source, sourceName = "source") {
+  const violations = [];
+  const sourceFile = ts.createSourceFile(sourceName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+
+  function visit(node) {
+    if (ts.isJsxOpeningLikeElement(node) && ts.isIdentifier(node.tagName) && ["CmmButton", "CmmCard"].includes(node.tagName.text)) {
+      const classes = primitiveClassTexts(node).join(" ");
+      if (primitiveShellOverridePattern.test(classes) && !documentedSpecializedSurfaceOverrides.has(sourceName)) {
+        const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+        violations.push(`${sourceName}:${line}: ${node.tagName.text} contains a local arbitrary shell/effect override; use the primitive contract or a documented specialized owner`);
+      }
+      primitiveShellOverridePattern.lastIndex = 0;
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+  return violations;
+}
+
+export function auditPrimitiveConsumerOverrides(root = repositoryRoot) {
+  const sourceRoot = path.join(root, "apps", "web", "src");
+  const violations = [];
+
+  function visit(directory) {
+    if (!fs.existsSync(directory)) return;
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(entryPath);
+        continue;
+      }
+      if (!entry.isFile() || !/\.(?:ts|tsx)$/.test(entry.name) || /\.test\.[jt]sx?$/.test(entry.name)) continue;
+      const relativePath = path.relative(root, entryPath).split(path.sep).join("/");
+      violations.push(...auditPrimitiveConsumerOverridesInSource(fs.readFileSync(entryPath, "utf8"), relativePath));
+    }
+  }
+
+  visit(sourceRoot);
+  return violations;
 }
 
 export function auditCmmButtonLocalScalesInSource(source, sourceName = "source") {
@@ -299,6 +369,7 @@ export function auditSurfaceRepository(root = repositoryRoot) {
 
   violations.push(...auditCanonicalTextSurfaceScales(globals, globalsPath));
   violations.push(...auditCmmButtonLocalScales(root));
+  violations.push(...auditPrimitiveConsumerOverrides(root));
 
   return { violations, globals };
 }

@@ -35,22 +35,23 @@ export default function ActionsMapPage() {
 
   return (
     <>
-      <PageHeader
-        family={resolvePageFamily("/actions/map")}
-        title="Cartographie des actions"
-        subtitle={(
-          <>
-            Cette carte expose les actions et les données publiques autorisées par le contrat
-            CleanMyMap. Selon le mode choisi, les couleurs peuvent représenter une observation
-            ou une projection ; une projection n&apos;est pas une mesure actuelle du terrain.
-            Les calculs et leurs limites sont documentés dans la{" "}
-            <Link href="/methodologie" className="font-semibold text-emerald-700 hover:underline">
-              méthodologie
-            </Link>.
-          </>
-        )}
-        className="cmm-page-width px-6 pt-6"
-      />
+      <div className="cmm-page-width px-6 pt-6">
+        <PageHeader
+          family={resolvePageFamily("/actions/map")}
+          title="Cartographie des actions"
+          subtitle={(
+            <>
+              Cette carte expose les actions et les données publiques autorisées par le contrat
+              CleanMyMap. Selon le mode choisi, les couleurs peuvent représenter une observation
+              ou une projection ; une projection n&apos;est pas une mesure actuelle du terrain.
+              Les calculs et leurs limites sont documentés dans la{" "}
+              <Link href="/methodologie" className="font-semibold text-emerald-700 hover:underline">
+                méthodologie
+              </Link>.
+            </>
+          )}
+        />
+      </div>
       <Suspense
         fallback={<ActionsMapPageClient impactMetrics={emptyImpactMetrics} />}
       >

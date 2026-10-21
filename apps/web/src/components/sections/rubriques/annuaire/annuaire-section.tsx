@@ -64,7 +64,7 @@ export function AnnuaireSection() {
 
         {/* Featured Actors - Elegant Presentation */}
         <motion.section variants={itemVariants} className="relative">
-          <div className="absolute -inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent" />
           <div>
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-8">
               <div className="space-y-8 max-w-3xl">

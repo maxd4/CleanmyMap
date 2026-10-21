@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import ts from "typescript";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const primitiveRelativePath = "apps/web/src/components/ui/cmm-section.tsx";
@@ -24,6 +25,9 @@ const structuralWidthAllowlist = new Map([
   ["apps/web/src/components/pilotage/access-screen/views/pilotage-locked-page.tsx", "access-state composition before the console"],
   ["apps/web/src/app/(app)/prints/report/page.tsx", "print/export paper composition"],
 ]);
+
+const structuralShellTags = new Set(["main", "section"]);
+const structuralShellClass = /(?:^|\s)(?:max-w-(?:6xl|7xl|screen-xl|screen-2xl)|max-w-\[(?:\d{2,}(?:rem|px)|[1-9]\d{3,}px)\]|w-\[(?:\d{2,}rem|[1-9]\d{3,}px)\]|container)(?=\s|$)/;
 function collectFiles(directory, predicate) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const entryPath = path.join(directory, entry.name);
@@ -51,6 +55,70 @@ function lineNumber(source, index) {
 
 function maskCssComments(source) {
   return source.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\r\n]/g, " "));
+}
+
+function collectStaticClassTexts(expression, texts = []) {
+  if (!expression) return texts;
+  if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
+    texts.push(expression.text);
+    return texts;
+  }
+  if (ts.isTemplateExpression(expression)) {
+    texts.push(expression.head.text);
+    for (const span of expression.templateSpans) {
+      collectStaticClassTexts(span.expression, texts);
+      texts.push(span.literal.text);
+    }
+    return texts;
+  }
+  if (ts.isConditionalExpression(expression)) {
+    collectStaticClassTexts(expression.whenTrue, texts);
+    collectStaticClassTexts(expression.whenFalse, texts);
+    return texts;
+  }
+  if (ts.isParenthesizedExpression(expression) || ts.isAsExpression(expression) || ts.isNonNullExpression(expression)) {
+    return collectStaticClassTexts(expression.expression, texts);
+  }
+  if (ts.isBinaryExpression(expression)) {
+    if ([ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(expression.operatorToken.kind)) {
+      collectStaticClassTexts(expression.left, texts);
+      collectStaticClassTexts(expression.right, texts);
+    }
+    return texts;
+  }
+  if (ts.isCallExpression(expression) && ts.isIdentifier(expression.expression) && expression.expression.text === "cn") {
+    for (const argument of expression.arguments) collectStaticClassTexts(argument, texts);
+  }
+  return texts;
+}
+
+function classNameTexts(openingElement) {
+  const attribute = openingElement.attributes.properties.find(
+    (property) => ts.isJsxAttribute(property) && property.name.text === "className",
+  );
+  if (!attribute?.initializer) return [];
+  if (ts.isStringLiteral(attribute.initializer)) return [attribute.initializer.text];
+  if (ts.isJsxExpression(attribute.initializer)) return collectStaticClassTexts(attribute.initializer.expression);
+  return [];
+}
+
+export function auditStructuralShellInSource(source, sourceName = "source") {
+  const violations = [];
+  const sourceFile = ts.createSourceFile(sourceName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+
+  function visit(node) {
+    if (ts.isJsxOpeningLikeElement(node) && ts.isIdentifier(node.tagName) && structuralShellTags.has(node.tagName.text)) {
+      const classes = classNameTexts(node).join(" ");
+      if (structuralShellClass.test(classes)) {
+        const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+        violations.push(`${sourceName}:${line}: structural shell width must use cmm-page-width or a documented special composition`);
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+  return violations;
 }
 
 export function auditTailwindZoomSources(entries) {
@@ -181,6 +249,9 @@ export function auditLayoutRepository(root = repositoryRoot) {
   }
 
   for (const { path: relative, source } of sourceEntries) {
+    if (!isAllowlistedStructuralWidth(relative)) {
+      violations.push(...auditStructuralShellInSource(source, relative));
+    }
     for (const match of source.matchAll(/className\s*=\s*["']([^"']*)["']/g)) {
       const className = match[1] ?? "";
       if (hardcodedStructuralWidth.test(className) && !isAllowlistedStructuralWidth(relative)) {

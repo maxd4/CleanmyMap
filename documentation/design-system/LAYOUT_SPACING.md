@@ -207,6 +207,21 @@ Une contrainte locale est acceptable uniquement si elle relève de la lecture
 ou d'une fonction précise ; elle doit alors rester imbriquée dans le shell
 canonique et non le remplacer.
 
+Le garde-fou de layout applique cette distinction à la structure TSX : un
+`max-w-*` de lecture ou de grille interne reste possible, tandis qu'un
+`main`/`section` qui recrée un plafond de page (`max-w-6xl`, `max-w-7xl`,
+`max-w-screen-*`, `container` ou une largeur arbitraire équivalente) doit
+réutiliser `cmm-page-width` ou relever d'une composition spéciale documentée.
+Il ne s'agit pas d'interdire toutes les classes `max-w-*`.
+
+La QA responsive des pages comparables vérifie les rectangles DOM et les
+valeurs CSS calculées à 390, 768 et 1440 px : axe du `PageHeader`, bords du
+shell, gutters, écart vers le premier bloc, rythme de groupe, cartes standard
+et absence de débordement horizontal. Les tolérances correspondent aux tokens
+du contrat et à l'arrondi de rendu (pas à une comparaison pixel par pixel).
+Les modes `exhaustif`, `minimaliste` et `sobre` sont contrôlés sur un panel
+représentatif sans créer un inventaire de routes concurrent.
+
 Les grilles internes doivent également neutraliser la largeur minimale
 intrinsèque des enfants. `minmax(0, ...)` borne les tracks et `min-w-0` permet
 au contenu long de se replier ou de défiler dans sa propre surface, sans

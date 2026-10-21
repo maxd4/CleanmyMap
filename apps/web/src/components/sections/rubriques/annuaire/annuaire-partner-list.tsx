@@ -57,7 +57,7 @@ export function AnnuairePartnerList({
       </motion.div>
 
       {totalPages > 1 ? (
-        <div className="mt-12 flex items-center justify-center gap-4 border-t border-white/5 pt-8">
+        <div className="mt-12 flex min-w-0 max-w-full flex-wrap items-center justify-center gap-3 border-t border-white/5 pt-8">
           <CmmButton
             disabled={currentPage === 1}
             onClick={() => onPageChange(currentPage - 1)}
@@ -68,7 +68,7 @@ export function AnnuairePartnerList({
             {fr ? "Précédent" : "Previous"}
           </CmmButton>
           
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <CmmButton
                 key={p}

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   auditCmmButtonLocalScalesInSource,
   auditCanonicalTextSurfaceScales,
+  auditPrimitiveConsumerOverridesInSource,
   auditSurfaceRepository,
   canonicalTextSurfaceSelectors,
 } from "./check-surface-governance.mjs";
@@ -76,4 +77,25 @@ test("allows decorative child scales outside the CmmButton className", () => {
     ),
     [],
   );
+});
+
+test("allows placement utilities on primitive consumers", () => {
+  assert.deepEqual(
+    auditPrimitiveConsumerOverridesInSource(
+      '<><CmmButton className="w-full flex items-center gap-2" /><CmmCard className="flex min-w-0" /></>',
+      "placement.tsx",
+    ),
+    [],
+  );
+});
+
+test("rejects arbitrary shell recipes on CmmButton and CmmCard consumers", () => {
+  const violations = auditPrimitiveConsumerOverridesInSource(
+    '<><CmmButton className="rounded-[2rem] shadow-[0_0_20px_rgba(0,0,0,.2)]" /><CmmCard className="bg-[linear-gradient(red,blue)] p-[3rem]" /></>',
+    "surface-overrides.tsx",
+  );
+
+  assert.equal(violations.length, 2);
+  assert.match(violations[0], /CmmButton/);
+  assert.match(violations[1], /CmmCard/);
 });

@@ -89,7 +89,7 @@ export default async function SponsorPortalPage() {
             subtitle="Analyse de la valeur territoriale générée par la mobilisation citoyenne et conformité aux standards ESG."
           />
           
-          <CmmButton tone="primary" variant="pill" className="group flex items-center gap-4 rounded-[2rem] px-10 py-7 cmm-text-small font-black uppercase tracking-[0.2em] text-black shadow-2xl shadow-white/10">
+          <CmmButton tone="primary" variant="pill" size="lg" className="group flex items-center gap-4 cmm-text-small font-black uppercase tracking-[0.2em] text-black">
             <Download size={20} />
             Exporter le bilan certifié
           </CmmButton>

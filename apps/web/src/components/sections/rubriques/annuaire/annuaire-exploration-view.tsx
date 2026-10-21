@@ -67,9 +67,9 @@ export function AnnuaireExplorationView({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-12 items-start">
+    <div className="flex min-w-0 w-full flex-col items-start gap-12 overflow-x-clip lg:flex-row">
       {/* LEFT COLUMN: Search & List (60%) */}
-      <div className="flex-1 lg:w-[60%] flex flex-col gap-12 order-2 lg:order-1">
+      <div className="order-2 flex min-w-0 w-full flex-1 flex-col gap-12 lg:order-1 lg:w-[60%]">
         
         {/* Search & Filter Header - Premium Glass Shell */}
         <div className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 p-10 shadow-2xl backdrop-blur-3xl group">
@@ -189,7 +189,7 @@ export function AnnuaireExplorationView({
       {/* RIGHT COLUMN: Sticky Map - Premium Frame (40%) */}
       <aside
         ref={mapShellRef}
-        className="relative order-1 h-[600px] w-full min-w-[320px] overflow-hidden rounded-[4rem] border border-white/10 bg-slate-900/40 shadow-2xl lg:sticky lg:top-24 lg:h-[calc(100vh-140px)] lg:w-[40%] lg:order-2 group backdrop-blur-3xl"
+        className="group relative order-1 h-[600px] w-full min-w-0 overflow-hidden rounded-[4rem] border border-white/10 bg-slate-900/40 shadow-2xl backdrop-blur-3xl lg:order-2 lg:sticky lg:top-24 lg:h-[calc(100vh-140px)] lg:w-[40%]"
       >
         {/* Futuristic Map Overlay */}
         <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(to_bottom,transparent_49%,rgba(255,255,255,0.01)_50%,transparent_51%)] bg-[length:100%_4px] opacity-20" />

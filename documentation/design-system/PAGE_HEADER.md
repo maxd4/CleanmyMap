@@ -113,6 +113,12 @@ gap: 1rem;
 
 Une page peut ajuster le placement du bloc dans son layout, mais pas recréer une largeur ou un rythme typographique parallèle.
 
+Le `className` du `PageHeader` reste donc limité au placement de son wrapper.
+Les overrides locaux de typographie, largeur, padding, radius, fond, bordure
+ou ombre sont refusés par le garde-fou de composition. Une exception doit être
+un sous-vue spécialisée déjà décrite dans `UI_EXCEPTION_PAGES.md` ; elle ne
+crée pas une variante typographique ou géométrique réutilisable.
+
 ## Variations autorisées
 
 ### Couleur

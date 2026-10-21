@@ -100,6 +100,15 @@ La présence de `CmmCard`, `CmmBlockCard` ou `RubriqueCard` ne garantit pas à e
 
 Les cartes spécialisées ne sont pas forcées dans `CmmCard` uniquement pour passer un garde-fou. Une exception doit rester **bornée à son rôle** et ne doit pas servir de précédent à toutes les pages de la famille.
 
+`check:surfaces` analyse les usages TSX de `CmmCard` et `CmmButton` : les
+recettes arbitraires de shell ou d'effet (rayon, padding, hauteur, fond,
+bordure, ombre, blur ou transformation) sont signalées lorsqu'elles ne sont
+pas rattachées à un owner spécialisé explicitement recensé. Les classes de
+placement et de contenu interne restent autorisées. Les exceptions actuelles
+sont limitées aux surfaces spécialisées existantes (annuaire, météo, feedback,
+gamification, connect, open-data et CTA dédiés) ; elles ne constituent pas une
+allowlist générale pour les nouvelles pages.
+
 La typographie et le contraste des éléments internes restent soumis à [`theme-visibility-rules.md`](./theme-visibility-rules.md) ; la disposition relative des cartes relève de [`LAYOUT_SPACING.md`](./LAYOUT_SPACING.md).
 
 ## Direction visuelle : profondeur maîtrisée, lisibilité et parcimonie
