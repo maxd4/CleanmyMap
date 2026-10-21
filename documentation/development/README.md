@@ -15,6 +15,7 @@ concurrente.
 - [Documentation Policy](./DOCUMENTATION_POLICY.md) — critère de documentation,
   choix de la source spécialisée et traitement de l'historique ;
 - [Testing](./TESTING.md) — stratégie et commandes de test ;
+  Les modules spécialisés sont [exécution et CI](./testing-execution.md), [qualité et audits](./testing-quality.md) et [surfaces et intégration](./testing-platforms.md).
 - [Client/server bundle splitting](./client-server-bundle-splitting.md) — règles
   de découpage des frontières serveur/client et du bundle ;
 - [Repo quality rules](./repo-quality-rules.md) — règles qualité spécialisées ;

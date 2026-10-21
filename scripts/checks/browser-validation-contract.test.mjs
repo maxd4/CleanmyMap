@@ -27,7 +27,7 @@ describe("browser validation contract", () => {
     const skill = read(".agents/skills/cleanmymap-ui-testing/SKILL.md");
     const mirror = read(".codex/skills/cleanmymap-ui-testing/SKILL.md");
     const securityPlaybook = read("documentation/security/CODEX_SECURITY_PLAYBOOK.md");
-    const testingGuide = read("documentation/development/TESTING.md");
+    const testingGuide = read("documentation/development/testing-platforms.md");
     const requiredFields = [
       "AUTH_SURFACE",
       "BROWSER_HARNESS",

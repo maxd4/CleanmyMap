@@ -31,7 +31,7 @@ function justificationFor(baseline, overrides = {}) {
     id: baseline.findings[0].id,
     classification: "KEEP_JUSTIFIED",
     reason: "Contrat framework verifie et conserve explicitement.",
-    evidence: "documentation/development/TESTING.md:358-386",
+    evidence: "documentation/development/testing-execution.md#trois-modes-canoniques",
     reviewedRef: sourceCommit,
     ...overrides,
   };
