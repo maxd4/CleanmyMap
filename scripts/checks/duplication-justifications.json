@@ -187,22 +187,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "2506618950d2f553",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "La longueur minimale du motif est une garde répétée dans deux décisions promotion accept/reject qui doivent rester auditables séparément ; extraire cette garde masquerait la décision et ses messages propres.",
-      "evidence": "apps/web/src/components/admin/creator-inbox/use-creator-inbox.ts:174-184 et apps/web/src/components/admin/creator-inbox/use-creator-inbox.ts:196-206 ; les deux branches persistent des décisions opposées.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "91b4fcde75a1a88a",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "La confirmation PARTNER et la validation du motif restent explicitement dans les branches accept/reject partner afin de préserver la preuve de l’opération sensible et son fail-closed local.",
-      "evidence": "apps/web/src/components/admin/creator-inbox/use-creator-inbox.ts:218-233 et apps/web/src/components/admin/creator-inbox/use-creator-inbox.ts:249-264 ; les deux branches déclenchent des mutations partner opposées.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "4a7545c2709f2238",
       "classification": "NO_ACTION_NOISE",
       "reason": "Le sous-ensemble de props du composer est répété par propagation entre deux composants, mais ChatComposer et ChatThreadPane restent des frontières de composition différentes ; aucun contrat métier autonome ne justifie une nouvelle façade de props.",
@@ -256,22 +240,6 @@
       "reason": "CmmSection conserve deux branches de rendu explicites : surface simple sans accent et CmmBlockCard avec accent de bloc. Les réunir sous une projection commune masquerait cette sémantique de design system.",
       "evidence": "apps/web/src/components/ui/cmm-section.tsx:61-71 et apps/web/src/components/ui/cmm-section.tsx:80-91 ; accentType=none et CmmBlockCard ont des contrats visuels distincts.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "4c48a0153af4b6c7",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "L’algorithme commun de franchissement des paliers est désormais dans quiz-milestones.ts ; la répétition restante persiste des événements aux tables, types et métadonnées propres à chaque moteur.",
-      "evidence": "apps/web/src/lib/gamification/quiz-balance-progress.ts:98-111 et apps/web/src/lib/gamification/quiz-progress.ts:95-108 ; sourceTable, eventType et metadata diffèrent intentionnellement.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "7fdd47f5ab0d9cd4",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les annonces de progression quiz et de progression équilibrée partagent une enveloppe de broadcast, mais leurs types, libellés, icônes et clés de déduplication portent deux contrats métier distincts.",
-      "evidence": "apps/web/src/lib/gamification/quiz-balance-progress.ts:133-138 et apps/web/src/lib/gamification/quiz-progress.ts:129-134 ; la distinction équilibré/type est conservée dans le payload ; pair CURRENT relu.",
-      "reviewedRef": "5c9866c3dc311a4269758c2602b5320771c4015f"
     },
     {
       "scope": "runtime",
@@ -511,30 +479,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/actions/route.test.ts:351-364 ; symboles: getCurrentUserActiveRoleMock, benevole, canModerateActionsGloballyMock, pending et app/api/actions/route.test.ts:369-382 ; symboles: getCurrentUserActiveRoleMock, canModerateActionsGloballyMock, pending, fetchUnifiedActionContractsMock restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
       "evidence": "app/api/actions/route.test.ts:351-364 et app/api/actions/route.test.ts:369-382 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "caa28ddbe706d917",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/admin/creator-inbox/route.test.ts:436-446 et app/api/admin/creator-inbox/route.test.ts:477-487 protègent des transitions creator-inbox et des audits de non-exposition ; les différences de source, statut et partialMutation doivent rester visibles.",
-      "evidence": "app/api/admin/creator-inbox/route.test.ts:436-446 et app/api/admin/creator-inbox/route.test.ts:477-487 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "57e863786ea1552b",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/admin/creator-inbox/route.test.ts:596-606 et app/api/admin/creator-inbox/route.test.ts:636-646 protègent des transitions creator-inbox et des audits de non-exposition ; les différences de source, statut et partialMutation doivent rester visibles.",
-      "evidence": "app/api/admin/creator-inbox/route.test.ts:596-606 et app/api/admin/creator-inbox/route.test.ts:636-646 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "b6520d4dbd7036c0",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/admin/creator-inbox/route.test.ts:635-644 et app/api/admin/partners/published-directory/route.test.ts:240-249 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/admin/creator-inbox/route.test.ts:635-644 et app/api/admin/partners/published-directory/route.test.ts:240-249 ; pair CURRENT relu.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
     },
     {
@@ -899,14 +843,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "d9dbdaded097c7f8",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre app/(app)/partners/dashboard/page.tsx:163-177 ; symboles: CmmSectionGroup, CmmPageLayout, ClerkRequiredGate, isAuthenticated et app/(app)/sponsor-portal/page.tsx:245-259 ; symboles: section, CmmPageLayout, ClerkRequiredGate, isAuthenticated reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/app/(app)/partners/dashboard/page.tsx:163-177 et apps/web/src/app/(app)/sponsor-portal/page.tsx:245-259 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "654dd08df7fd9b51",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/(app)/prints/report/page.tsx:190-198 ; symboles: CmmGrid, section, CmmGridItem, span et app/(app)/prints/report/page.tsx:221-229 ; symboles: section, CmmGridItem, span, mobile restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
@@ -1071,30 +1007,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre components/reports/admin-workflow/actions.ts:268-273 ; symboles: onDownloadCsv, void, onDownloadJson, onImportDryRun et components/reports/admin-workflow/types.ts:177-182 ; symboles: onDownloadCsv, void, onDownloadJson, onImportDryRun reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
       "evidence": "apps/web/src/components/reports/admin-workflow/actions.ts:268-273 et apps/web/src/components/reports/admin-workflow/types.ts:177-182 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "25f5250993095c3d",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/reports/web-document/use-reports-web-document-model.ts:319-331 ; symboles: Megots, impact, butts, voles et lib/reports/page-data-export.ts:21-34 ; symboles: Megots, contract, metadata, cigaretteButts reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/reports/web-document/use-reports-web-document-model.ts:319-331 et apps/web/src/lib/reports/page-data-export.ts:21-34 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "5c9866c3dc311a4269758c2602b5320771c4015f"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "17151fdcfcc6268c",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/sections/rubriques/annuaire/annuaire-exploration-view.tsx:134-140 ; symboles: showFilters, motion, data, role et components/sections/rubriques/climate/climate-components.tsx:239-245 ; symboles: isOpen, motion, data, role reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx:134-140 et apps/web/src/components/sections/rubriques/climate/climate-components.tsx:239-245 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "4ab5595c7cde0dc4",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/sections/rubriques/annuaire/annuaire-exploration-view.tsx:207-221 ; symboles: onSelectPartner, entry, handleActorClick, className et components/sections/rubriques/annuaire/annuaire-sidebar.tsx:51-65 ; symboles: highlightedItemId, highlightedActorId, className, flex reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx:207-221 et apps/web/src/components/sections/rubriques/annuaire/annuaire-sidebar.tsx:51-65 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
     },
     {
