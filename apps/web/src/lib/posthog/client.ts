@@ -83,6 +83,8 @@ export async function initPostHogClient(enableAnalytics = true) {
     capture_exceptions: false,
     capture_heatmaps: false,
     capture_performance: false,
+    save_campaign_params: false,
+    save_referrer: false,
     disable_capture_url_hashes: true,
     disable_session_recording: true,
     disable_scroll_properties: true,

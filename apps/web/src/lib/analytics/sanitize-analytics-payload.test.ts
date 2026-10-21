@@ -32,7 +32,7 @@ describe("sanitize analytics payload", () => {
     );
     expect(sanitizeAnalyticsUrl(
       `https://cleanmymap.fr/missions/${missionId}?id=${missionId}#${missionId}`,
-    )).toBe("https://cleanmymap.fr/missions");
+    )).toBe("/missions");
 
     const meta = sanitizeFunnelMeta({
       pagePath: `/missions/${missionId}`,
@@ -81,5 +81,28 @@ describe("sanitize analytics payload", () => {
     });
     expect(JSON.stringify(sanitized)).not.toContain(inviteToken);
     expect(JSON.stringify(sanitized)).not.toContain(missionId);
+  });
+
+  it("normalizes PostHog reserved path properties and drops free campaign values", () => {
+    const sanitized = sanitizeAnalyticsProperties({
+      "$referrer": `https://external.example/actions/invite/${inviteToken}`,
+      "$pathname": `/missions/${missionId}`,
+      "$prev_pageview_pathname": `/actions/invite/${inviteToken}`,
+      "$session_entry_pathname": `/missions/${missionId}`,
+      utm_campaign: inviteToken,
+      "$utm_source": missionId,
+      routeKind: "missions",
+    });
+
+    expect(sanitized).toEqual({
+      "$referrer": "/actions/invite",
+      "$pathname": "/missions",
+      "$prev_pageview_pathname": "/actions/invite",
+      "$session_entry_pathname": "/missions",
+      routeKind: "missions",
+    });
+    expect(JSON.stringify(sanitized)).not.toContain(inviteToken);
+    expect(JSON.stringify(sanitized)).not.toContain(missionId);
+    expect(JSON.stringify(sanitized)).not.toContain("external.example");
   });
 });

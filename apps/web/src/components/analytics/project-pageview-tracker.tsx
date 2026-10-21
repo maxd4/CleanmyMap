@@ -4,7 +4,10 @@ import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams, type ReadonlyURLSearchParams } from "next/navigation";
 import { hasAnalyticsConsent } from "@/lib/analytics-consent";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
-import { normalizeAnalyticsRoute } from "@/lib/analytics/sanitize-analytics-payload";
+import {
+  normalizeAnalyticsRoute,
+  sanitizeAnalyticsPath,
+} from "@/lib/analytics/sanitize-analytics-payload";
 
 const PAGEVIEW_TRACKING_STORAGE_KEY = "cleanmymap.funnel.pageviews";
 const PAGEVIEW_DEDUPE_WINDOW_MS = 5000;
@@ -50,15 +53,22 @@ function readTrackedPageviews(): TrackedPageviewMap {
       return {};
     }
 
-    return Object.entries(parsed as Record<string, unknown>).reduce<TrackedPageviewMap>(
+    const normalized = Object.entries(parsed as Record<string, unknown>).reduce<TrackedPageviewMap>(
       (acc, [key, value]) => {
-        if (typeof key === "string" && typeof value === "number") {
-          acc[key] = value;
+        if (typeof key === "string" && typeof value === "number" && Number.isFinite(value)) {
+          const safeKey = sanitizeAnalyticsPath(key);
+          acc[safeKey] = Math.max(acc[safeKey] ?? 0, value);
         }
         return acc;
       },
       {},
     );
+
+    if (JSON.stringify(normalized) !== raw) {
+      writeTrackedPageviews(normalized);
+    }
+
+    return normalized;
   } catch {
     return {};
   }
@@ -113,6 +123,7 @@ export function shouldTrackPageview(routeKey: string): boolean {
     return false;
   }
 
+  const safeRouteKey = sanitizeAnalyticsPath(routeKey);
   const now = Date.now();
   const lastTrackedAt = readLastTrackedPageviewAt();
   if (
@@ -123,7 +134,7 @@ export function shouldTrackPageview(routeKey: string): boolean {
   }
 
   const trackedPageviews = readTrackedPageviews();
-  const lastTrackedRouteAt = trackedPageviews[routeKey];
+  const lastTrackedRouteAt = trackedPageviews[safeRouteKey];
 
   if (
     typeof lastTrackedRouteAt === "number" &&
@@ -132,7 +143,7 @@ export function shouldTrackPageview(routeKey: string): boolean {
     return false;
   }
 
-  trackedPageviews[routeKey] = now;
+  trackedPageviews[safeRouteKey] = now;
   writeLastTrackedPageviewAt(now);
 
   for (const [trackedRouteKey, trackedAt] of Object.entries(trackedPageviews)) {

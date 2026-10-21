@@ -5,7 +5,9 @@ const PRIVATE_IDENTIFIER_KEY_PATTERN =
   /(?:^|[_-])(?:id|uuid|identifier|token)(?:$|[_-])|(?:Id|ID|Uuid|UUID|Identifier|Token)$/u;
 const SENSITIVE_KEY_PATTERN =
   /(?:email|phone|telephone|password|secret|token|address|location|coordinate|latitude|longitude|keystroke|form.?value|input.?value|message|description|notes?|content|user.?name|display.?name|first.?name|last.?name)/iu;
-const URL_KEY_PATTERN = /(?:^|_)(?:url|href|referrer|path)$/iu;
+const URL_KEY_PATTERN = /(?:^|[$_.-])(?:url|href|referrer|path|pathname)$/iu;
+const CAMPAIGN_KEY_PATTERN = /^(?:\$)?utm_(?:source|medium|campaign|content|term)$/iu;
+const SAFE_ANALYTICS_SESSION_ID_PATTERN = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|session-[0-9]{10,}|server-session)$/iu;
 
 const ANALYTICS_ROUTE_KINDS = new Set([
   "home",
@@ -130,6 +132,11 @@ export const POSTHOG_PROPERTY_DENYLIST = [
   "user_name",
   "user_id",
   "clerk_user_id",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
 ] as const;
 
 function decodePathSegment(segment: string): string {
@@ -140,11 +147,20 @@ function decodePathSegment(segment: string): string {
   }
 }
 
+function isPathLikeKey(key: string): boolean {
+  return key === "pagePath" || key === "routePath" || URL_KEY_PATTERN.test(key);
+}
+
 function isSensitiveKey(key: string): boolean {
+  if (isPathLikeKey(key)) {
+    return false;
+  }
+
   return (
     POSTHOG_PROPERTY_DENYLIST.includes(
       key.toLowerCase() as (typeof POSTHOG_PROPERTY_DENYLIST)[number],
     ) ||
+    CAMPAIGN_KEY_PATTERN.test(key) ||
     PRIVATE_IDENTIFIER_KEY_PATTERN.test(key) ||
     SENSITIVE_KEY_PATTERN.test(key)
   );
@@ -230,13 +246,14 @@ export function sanitizeAnalyticsPath(value: string): string {
 export function sanitizeAnalyticsUrl(value: string): string {
   try {
     const url = new URL(value, "https://cleanmymap.invalid");
-    const path = sanitizeAnalyticsPath(url.pathname);
-    return url.origin === "https://cleanmymap.invalid"
-      ? path
-      : `${url.origin}${path}`;
+    return sanitizeAnalyticsPath(url.pathname);
   } catch {
     return "/";
   }
+}
+
+export function isSafeAnalyticsSessionId(value: unknown): value is string {
+  return typeof value === "string" && SAFE_ANALYTICS_SESSION_ID_PATTERN.test(value);
 }
 
 function sanitizeCategory(key: string, value: string): string | undefined {
@@ -249,7 +266,7 @@ function sanitizeCategory(key: string, value: string): string | undefined {
 
 function sanitizeValue(key: string, value: unknown): unknown {
   if (typeof value === "string") {
-    if (URL_KEY_PATTERN.test(key) || key === "pagePath" || key === "routePath") {
+    if (isPathLikeKey(key)) {
       return sanitizeAnalyticsUrl(value);
     }
     if (FUNNEL_CATEGORY_VALUES[key]) {

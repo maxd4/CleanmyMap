@@ -10,6 +10,7 @@ const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
 const getAnalyticsAgeBandCookieDecisionMock = vi.hoisted(() => vi.fn());
 const optionalTreatmentAllowedMock = vi.hoisted(() => vi.fn());
 const { verifyRateLimit: verifyRateLimitMock, createServerRateLimitResponse: createServerRateLimitResponseMock } = rateLimitMocks;
+const validSessionId = "550e8400-e29b-41d4-a716-446655440001";
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -74,7 +75,7 @@ describe("POST /api/analytics/funnel", () => {
     const request = new Request("http://localhost/api/analytics/funnel", {
         method: "POST",
         body: JSON.stringify({
-          sessionId: "session-123",
+          sessionId: validSessionId,
           events: [
             {
               step: "page_view",
@@ -100,7 +101,7 @@ describe("POST /api/analytics/funnel", () => {
     expect(appendFunnelEventMock).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        sessionId: "session-123",
+        sessionId: validSessionId,
         step: "page_view",
         mode: "complete",
         meta: { pagePath: "/reports", routeKind: "reports" },
@@ -109,7 +110,7 @@ describe("POST /api/analytics/funnel", () => {
     expect(appendFunnelEventMock).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
-        sessionId: "session-123",
+        sessionId: validSessionId,
         step: "page_view",
         mode: "complete",
         meta: { pagePath: "/actions", routeKind: "actions" },
@@ -194,7 +195,7 @@ describe("POST /api/analytics/funnel", () => {
       new Request("http://localhost/api/analytics/funnel", {
         method: "POST",
         body: JSON.stringify({
-          sessionId: "session-456",
+          sessionId: "550e8400-e29b-41d4-a716-446655440002",
           step: "start_form",
           mode: "complete",
           meta: { source: "form" },
@@ -208,7 +209,7 @@ describe("POST /api/analytics/funnel", () => {
     expect(appendFunnelEventMock).toHaveBeenCalledTimes(1);
     expect(appendFunnelEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        sessionId: "session-456",
+        sessionId: "550e8400-e29b-41d4-a716-446655440002",
         step: "start_form",
         mode: "complete",
         meta: { source: "form" },
@@ -222,7 +223,7 @@ describe("POST /api/analytics/funnel", () => {
       new Request("http://localhost/api/analytics/funnel", {
         method: "POST",
         body: JSON.stringify({
-          sessionId: "session-safe-meta",
+          sessionId: "550e8400-e29b-41d4-a716-446655440003",
           step: "submit_success",
           mode: "quick",
           meta: {
@@ -253,7 +254,7 @@ describe("POST /api/analytics/funnel", () => {
       new Request("http://localhost/api/analytics/funnel", {
         method: "POST",
         body: JSON.stringify({
-          sessionId: "session-normalized-meta",
+          sessionId: "550e8400-e29b-41d4-a716-446655440004",
           step: "page_view",
           mode: "complete",
           meta: {
@@ -276,6 +277,27 @@ describe("POST /api/analytics/funnel", () => {
     const storedMeta = appendFunnelEventMock.mock.calls[0]?.[0]?.meta;
     expect(JSON.stringify(storedMeta)).not.toContain(inviteToken);
     expect(JSON.stringify(storedMeta)).not.toContain(missionId);
+  });
+
+  it("replaces a private session id before it reaches persistence", async () => {
+    const { POST } = await import("./route");
+    const privateSessionId = "personne@example.com";
+    const response = await POST(
+      new Request("http://localhost/api/analytics/funnel", {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId: privateSessionId,
+          step: "page_view",
+          mode: "complete",
+        }),
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    const persisted = appendFunnelEventMock.mock.calls[0]?.[0] as { sessionId?: string };
+    expect(persisted.sessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu);
+    expect(JSON.stringify(persisted)).not.toContain(privateSessionId);
   });
 
   it("rejects oversized or unbounded analytics metadata before writing", async () => {

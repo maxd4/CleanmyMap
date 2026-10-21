@@ -1,6 +1,9 @@
 import type { ActionSubmissionMode } from "@/lib/actions/types";
 import { hasAnalyticsConsent } from "@/lib/analytics-consent";
-import { sanitizeFunnelMeta } from "@/lib/analytics/sanitize-analytics-payload";
+import {
+  isSafeAnalyticsSessionId,
+  sanitizeFunnelMeta,
+} from "@/lib/analytics/sanitize-analytics-payload";
 
 type FunnelStep = "view_new" | "page_view" | "start_form" | "submit_success";
 
@@ -30,7 +33,7 @@ function getSessionId(): string {
   }
 
   const existing = window.sessionStorage.getItem(SESSION_KEY);
-  if (existing) {
+  if (isSafeAnalyticsSessionId(existing)) {
     return existing;
   }
 
@@ -63,7 +66,7 @@ function readQueuedPageviews(): FunnelEventPayload[] {
       const record = entry as Partial<FunnelEventPayload>;
       if (
         typeof record.at === "string" &&
-        typeof record.sessionId === "string" &&
+        isSafeAnalyticsSessionId(record.sessionId) &&
         typeof record.step === "string" &&
         typeof record.mode === "string"
       ) {

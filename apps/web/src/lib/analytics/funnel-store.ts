@@ -17,6 +17,7 @@ import {
   type LocalRecordStorePayload,
 } from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { isSafeAnalyticsSessionId } from "@/lib/analytics/sanitize-analytics-payload";
 
 export type FunnelStep = "view_new" | "page_view" | "start_form" | "submit_success";
 export type FunnelMode = "quick" | "complete";
@@ -79,7 +80,7 @@ function normalizeFunnelEvent(record: Record<string, unknown>): FunnelEvent | nu
   const userId = record.userId;
   if (
     typeof record.at !== "string" ||
-    typeof record.sessionId !== "string" ||
+    !isSafeAnalyticsSessionId(record.sessionId) ||
     (userId !== null && typeof userId !== "string") ||
     (step !== "view_new" && step !== "page_view" && step !== "start_form" && step !== "submit_success") ||
     (mode !== "quick" && mode !== "complete")
@@ -104,6 +105,10 @@ function throwIfFunnelPersistenceCannotFallback(error: unknown): void {
 }
 
 export async function appendFunnelEvent(event: FunnelEvent): Promise<void> {
+  if (!isSafeAnalyticsSessionId(event.sessionId)) {
+    throw new Error("Invalid analytics session id");
+  }
+
   assertPersistenceAvailable("funnel_events");
 
   if (canUseSupabaseServerPersistence()) {
@@ -153,6 +158,9 @@ export async function listFunnelEvents(
       if (!result.error) {
         return (result.data ?? [])
           .filter((entry) => {
+            if (!isSafeAnalyticsSessionId(entry.session_id)) {
+              return false;
+            }
             const ms = new Date(entry.at).getTime();
             return Number.isFinite(ms) && ms >= floor && ms <= nowMs;
           })

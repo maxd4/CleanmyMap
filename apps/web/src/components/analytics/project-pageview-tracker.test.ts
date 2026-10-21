@@ -53,6 +53,21 @@ describe("shouldTrackPageview", () => {
     vi.spyOn(Date, "now").mockReturnValue(4_999);
     expect(shouldTrackPageview("/community")).toBe(false);
   });
+
+  it("migrates legacy dynamic route keys before deduplicating", () => {
+    const memory = installMockBrowser();
+    const inviteToken = "AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_abcde";
+    memory.set(
+      "cleanmymap.funnel.pageviews",
+      JSON.stringify({ [`/actions/invite/${inviteToken}`]: 0 }),
+    );
+
+    expect(shouldTrackPageview(`/actions/invite/${inviteToken}`)).toBe(false);
+
+    const migrated = memory.get("cleanmymap.funnel.pageviews") ?? "";
+    expect(migrated).toBe(JSON.stringify({ "/actions/invite": 0 }));
+    expect(migrated).not.toContain(inviteToken);
+  });
 });
 
 describe("buildRouteMeta", () => {

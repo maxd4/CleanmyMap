@@ -32,7 +32,7 @@ function installBrowserMocks() {
     visibilityState: "visible",
   } as unknown as Document);
   vi.stubGlobal("crypto", {
-    randomUUID: () => "uuid-123",
+    randomUUID: () => "550e8400-e29b-41d4-a716-446655440099",
   } as Crypto);
   return sessionStorage;
 }
@@ -97,7 +97,7 @@ describe("trackFunnel", () => {
       events?: Array<{ step: string; meta?: Record<string, unknown> }>;
     };
 
-    expect(body.sessionId).toBe("uuid-123");
+    expect(body.sessionId).toBe("550e8400-e29b-41d4-a716-446655440099");
     expect(body.events).toHaveLength(2);
     expect(body.events?.[0]?.step).toBe("page_view");
     expect(body.events?.[0]?.meta).toMatchObject({ routeKind: "reports" });
@@ -127,7 +127,7 @@ describe("trackFunnel", () => {
     };
 
     expect(body.step).toBe("start_form");
-    expect(body.sessionId).toBe("uuid-123");
+    expect(body.sessionId).toBe("550e8400-e29b-41d4-a716-446655440099");
     expect(body.meta).toMatchObject({
       source: "action_declaration_form",
       pagePath: "/actions/invite",
@@ -135,5 +135,21 @@ describe("trackFunnel", () => {
       routeSection: "invite",
     });
     expect(body.meta).not.toHaveProperty("linkedEventId");
+  });
+
+  it("replaces a private stored session value before sending", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    const sessionStorage = installBrowserMocks();
+    sessionStorage.setItem("cleanmymap.funnel.session_id", "personne@example.com");
+    hasAnalyticsConsentMock.mockReturnValue(true);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await trackFunnel("start_form", "complete", { routeKind: "actions" });
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body ?? "{}")) as {
+      sessionId?: string;
+    };
+    expect(body.sessionId).toBe("550e8400-e29b-41d4-a716-446655440099");
+    expect(JSON.stringify(body)).not.toContain("personne@example.com");
   });
 });

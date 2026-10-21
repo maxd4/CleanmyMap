@@ -15,7 +15,10 @@ import {
 import { isOptionalConsentTreatmentAllowedForUser } from "@/lib/minor-consent-server";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { readJsonBodyWithLimit } from "@/lib/http/request-body";
-import { sanitizeFunnelMeta } from "@/lib/analytics/sanitize-analytics-payload";
+import {
+  isSafeAnalyticsSessionId,
+  sanitizeFunnelMeta,
+} from "@/lib/analytics/sanitize-analytics-payload";
 
 export const runtime = "nodejs";
 
@@ -79,6 +82,10 @@ function parsePeriodDays(raw: string | null): number {
   return 365;
 }
 
+function normalizeSessionId(value: string | undefined): string {
+  return isSafeAnalyticsSessionId(value) ? value : randomUUID();
+}
+
 function normalizeEvents(payload: FunnelPayload): Array<{
   at: string;
   sessionId: string;
@@ -87,7 +94,7 @@ function normalizeEvents(payload: FunnelPayload): Array<{
   meta?: Record<string, unknown>;
 }> {
   if ("events" in payload) {
-    const sessionId = payload.sessionId ?? randomUUID();
+    const sessionId = normalizeSessionId(payload.sessionId);
     return payload.events.map((event) => ({
       at: event.at ?? new Date().toISOString(),
       sessionId,
@@ -100,7 +107,7 @@ function normalizeEvents(payload: FunnelPayload): Array<{
   return [
     {
       at: payload.at ?? new Date().toISOString(),
-      sessionId: payload.sessionId ?? randomUUID(),
+      sessionId: normalizeSessionId(payload.sessionId),
       step: payload.step,
       mode: payload.mode,
       meta: sanitizeFunnelMeta(payload.meta),

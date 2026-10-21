@@ -72,6 +72,8 @@ describe("posthog client integration", () => {
         capture_exceptions: false,
         capture_heatmaps: false,
         capture_performance: false,
+        save_campaign_params: false,
+        save_referrer: false,
         disable_session_recording: true,
         disable_scroll_properties: true,
         opt_out_capturing_by_default: true,
@@ -125,6 +127,18 @@ describe("posthog client integration", () => {
     expect(options.before_send({ event: "$autocapture", properties: {} })).toBeNull();
     expect(
       options.before_send({
+        event: "$pageview",
+        properties: {
+          "$pathname": "/actions/invite/AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_abcde",
+          utm_campaign: "private-campaign",
+        },
+      }),
+    ).toEqual({
+      event: "$pageview",
+      properties: { "$pathname": "/actions/invite" },
+    });
+    expect(
+      options.before_send({
         event: "cmm_navigation_click",
         properties: {
           profile: "benevole",
@@ -132,6 +146,11 @@ describe("posthog client integration", () => {
           location: "48.8566, 2.3522",
           href: "/actions/invite/AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_abcde?email=personne@example.com",
           referrer: "/missions/550e8400-e29b-41d4-a716-446655440000#private",
+          "$referrer": "/actions/invite/AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_abcde",
+          "$pathname": "/missions/550e8400-e29b-41d4-a716-446655440000",
+          "$prev_pageview_pathname": "/actions/invite/AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_abcde",
+          "$session_entry_pathname": "/missions/550e8400-e29b-41d4-a716-446655440000",
+          utm_campaign: "private-campaign",
           routeSection: "550e8400-e29b-41d4-a716-446655440000",
         },
       }),
@@ -141,6 +160,10 @@ describe("posthog client integration", () => {
         profile: "benevole",
         href: "/actions/invite",
         referrer: "/missions",
+        "$referrer": "/actions/invite",
+        "$pathname": "/missions",
+        "$prev_pageview_pathname": "/actions/invite",
+        "$session_entry_pathname": "/missions",
       },
     });
   });
