@@ -18,6 +18,63 @@ async function assertFocusedControlIsVisible(page: Page): Promise<void> {
   expect(box?.height ?? 0).toBeGreaterThan(0);
 }
 
+async function assertVisibleControlsHaveAccessibleNames(page: Page): Promise<void> {
+  const unnamed = await page.locator(
+    'button:visible, a[href]:visible, input:visible, select:visible, textarea:visible, [role="button"]:visible, [role="tab"]:visible',
+  ).evaluateAll((elements) => elements.flatMap((element) => {
+    const ariaLabel = element.getAttribute("aria-label")?.trim();
+    const labelledBy = element.getAttribute("aria-labelledby")?.trim();
+    const labelledByText = labelledBy
+      ? labelledBy.split(/\s+/).map((id) => document.getElementById(id)?.textContent?.trim() ?? "").join(" ").trim()
+      : "";
+    const id = element.getAttribute("id");
+    const associatedLabel = id
+      ? Array.from(document.querySelectorAll("label")).find((label) => label.htmlFor === id)?.textContent?.trim() ?? ""
+      : element.closest("label")?.textContent?.trim() ?? "";
+    const text = element.textContent?.trim();
+    const title = element.getAttribute("title")?.trim();
+    const placeholder = element.getAttribute("placeholder")?.trim();
+    if (ariaLabel || labelledByText || associatedLabel || text || title || placeholder) return [];
+    return [element.outerHTML.slice(0, 240)];
+  }));
+
+  expect(unnamed, "visible controls must expose an accessible name").toEqual([]);
+}
+
+async function readFirstTextContrast(page: Page): Promise<{ ratio: number } | null> {
+  return page.locator("main .cmm-text-body, main p").first().evaluate((element) => {
+    const parse = (value: string): [number, number, number, number] | null => {
+      const match = value.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\)/);
+      if (!match) return null;
+      return [Number(match[1]), Number(match[2]), Number(match[3]), match[4] ? Number(match[4]) : 1];
+    };
+    const luminance = ([red, green, blue]: [number, number, number, number]) => {
+      const channel = (value: number) => {
+        const normalized = value / 255;
+        return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue);
+    };
+
+    const foreground = parse(getComputedStyle(element).color);
+    if (!foreground || foreground[3] < 1) return null;
+    let current: Element | null = element;
+    let background: [number, number, number, number] | null = null;
+    while (current) {
+      const candidate = parse(getComputedStyle(current).backgroundColor);
+      if (candidate && candidate[3] >= 1) {
+        background = candidate;
+        break;
+      }
+      current = current.parentElement;
+    }
+    if (!background) return null;
+    const foregroundLuminance = luminance(foreground);
+    const backgroundLuminance = luminance(background);
+    return { ratio: (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05) };
+  }).catch(() => null);
+}
+
 test.describe("accessibility Lighthouse keyboard criteria", () => {
   test("home focuses the skip link first and keeps global navigation keyboard accessible", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -52,6 +109,28 @@ test.describe("accessibility Lighthouse keyboard criteria", () => {
     await assertFocusedControlIsVisible(page);
     await page.keyboard.press("Escape");
     await expect(routeControl).toBeFocused();
+    await assertVisibleControlsHaveAccessibleNames(page);
+  });
+
+  test("public route remains readable with reduced motion and reports available text contrast", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
+    await dismissCookies(page);
+
+    await expect(page.locator("main#main-content")).toBeVisible();
+    await expect(page.locator("main#main-content")).toHaveCSS("overflow-x", /visible|auto|clip/);
+    expect(await page.evaluate(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
+    await assertVisibleControlsHaveAccessibleNames(page);
+
+    const contrast = await readFirstTextContrast(page);
+    if (contrast) {
+      expect(contrast.ratio, "normal reading text should meet WCAG AA when colors are solid").toBeGreaterThanOrEqual(4.5);
+    } else {
+      test.info().annotations.push({
+        type: "coverage",
+        description: "NON_EVALUABLE_CONTRAST: no solid foreground/background pair was exposed by the representative route",
+      });
+    }
   });
 
   test("methodology chart keeps the image landmark and offers native point controls", async ({ page }) => {

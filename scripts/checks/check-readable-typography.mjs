@@ -8,7 +8,8 @@ const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const MAX_DIFF_BUFFER_BYTES = 16 * 1024 * 1024;
 
 // Exceptions are deliberately narrow: previews and technical/export surfaces
-// may stay compact, but ordinary labels and instructions may not.
+// may stay compact, but ordinary labels and instructions may not. The
+// semantic role is still required before the 12px caption floor can apply.
 const allowlist = [
   {
     file: "apps/web/src/app/(app)/prints/report/page.tsx",
@@ -235,7 +236,8 @@ const allowlist = [
 ];
 
 const smallTextPattern = /text-\[((?:\d+(?:\.\d+)?|\.\d+))(px|rem)\]/g;
-const MIN_READABLE_FONT_SIZE_PX = 12;
+const MIN_FUNCTIONAL_FONT_SIZE_PX = 14;
+const MIN_CAPTION_FONT_SIZE_PX = 12;
 const ROOT_FONT_SIZE_PX = 16;
 const truncationPattern = /\b(?:truncate|line-clamp(?:-[1-9]\d*)?)\b/;
 const weakBodyColorPattern =
@@ -266,16 +268,40 @@ function isAllowlisted(file, rule, line) {
   );
 }
 
+function classifyTypographyRole(text) {
+  const isInteractive =
+    /<(?:a|button|input|select|textarea)\b|\b(?:href|htmlFor|onClick|onKeyDown)=|\brole=["'](?:button|link|tab|menuitem)["']/.test(
+      text,
+    );
+
+  if (isInteractive) return "functional";
+  if (/\baria-hidden=["']true["']/.test(text)) {
+    return "decorative";
+  }
+  if (
+    /\bcmm-text-caption\b|<small\b|<time\b/.test(text)
+  ) {
+    return "caption";
+  }
+  return "functional";
+}
+
 function extractSmallTextSizes(text) {
   const matches = [];
+  const role = classifyTypographyRole(text);
+  if (role === "decorative") return matches;
+  const minimumFontSizePx = role === "caption"
+    ? MIN_CAPTION_FONT_SIZE_PX
+    : MIN_FUNCTIONAL_FONT_SIZE_PX;
+
   for (const match of text.matchAll(smallTextPattern)) {
     const value = Number(match[1]);
     const unit = match[2];
     if (!Number.isFinite(value)) continue;
 
     const sizeInPixels = unit === "rem" ? value * ROOT_FONT_SIZE_PX : value;
-    if (sizeInPixels < MIN_READABLE_FONT_SIZE_PX) {
-      matches.push({ value, unit, sizeInPixels });
+    if (sizeInPixels < minimumFontSizePx) {
+      matches.push({ value, unit, sizeInPixels, minimumFontSizePx, role });
     }
   }
   return matches;

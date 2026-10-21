@@ -2,6 +2,10 @@ import { expect, test, type Page } from "@playwright/test";
 
 const viewports = [390, 768, 1440] as const;
 const displayModes = ["exhaustif", "minimaliste", "sobre"] as const;
+const zoomEquivalentViewports = [
+  { label: "125%", width: 614 },
+  { label: "150%", width: 512 },
+] as const;
 
 const pages = [
   { slug: "annuaire", path: "/sections/annuaire", family: "section" },
@@ -143,6 +147,34 @@ test.describe("UI consistency geometry", () => {
         if (geometry.cardWidth !== null) {
           expect(geometry.cardWidth).toBeGreaterThan(0);
           expect(geometry.cardPadding).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  test("keeps representative surfaces reflow-safe at zoom-equivalent CSS widths", async ({ page }, testInfo) => {
+    test.setTimeout(120_000);
+    testInfo.annotations.push({
+      type: "coverage",
+      description: "ZOOM_PROXY: 125% and 150% are exercised as equivalent CSS viewport widths; Playwright exposes no stable browser-chrome zoom API.",
+    });
+
+    for (const zoom of zoomEquivalentViewports) {
+      await page.setViewportSize({ width: zoom.width, height: 900 });
+      await page.emulateMedia({ reducedMotion: "reduce" });
+
+      for (const route of pages.slice(0, 3)) {
+        await page.goto(route.path, { waitUntil: "domcontentloaded" });
+        await expect(page.locator("main").first()).toBeVisible();
+        await page.locator(".cmm-page-header").first().waitFor({ state: "visible", timeout: 10_000 });
+
+        for (const mode of displayModes) {
+          await page.evaluate((displayMode) => {
+            document.documentElement.setAttribute("data-display-mode", displayMode);
+          }, mode);
+          await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+          const geometry = await measureGeometry(page, route.family, route.path);
+          expect(geometry.overflow, `${route.path} overflow at zoom ${zoom.label} in ${mode}`).toBeLessThanOrEqual(2);
         }
       }
     }

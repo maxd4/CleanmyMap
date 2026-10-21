@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { analyzeDiff } from "./check-readable-typography.mjs";
 
-test("rejects a new sub-12px text class on a user-facing surface", () => {
+test("rejects new functional text below the 14px floor on a user-facing surface", () => {
   const result = analyzeDiff(
     [
       "diff --git a/apps/web/src/app/(app)/dashboard/page.tsx b/apps/web/src/app/(app)/dashboard/page.tsx",
@@ -18,16 +18,18 @@ test("rejects a new sub-12px text class on a user-facing surface", () => {
   assert.equal(result.violations[0].rule, "small-text");
 });
 
-test("parses arbitrary decimal px and rem sizes at the 12px boundary", () => {
+test("enforces the 14px functional floor and keeps the 12px caption floor", () => {
   const cases = [
     ["text-[11.5px]", true],
     ["text-[11.99px]", true],
-    ["text-[12px]", false],
-    ["text-[12.5px]", false],
+    ["text-[12px]", true],
+    ["text-[13.5px]", true],
+    ["text-[14px]", false],
+    ["text-[14.5px]", false],
     ["text-[0.745rem]", true],
     ["text-[0.749rem]", true],
-    ["text-[0.75rem]", false],
-    ["text-[0.8rem]", false],
+    ["text-[0.8rem]", true],
+    ["text-[0.875rem]", false],
   ];
 
   for (const [className, shouldReject] of cases) {
@@ -47,6 +49,53 @@ test("parses arbitrary decimal px and rem sizes at the 12px boundary", () => {
       className,
     );
   }
+});
+
+test("allows a documented caption or metadata role down to 12px only", () => {
+  const caption = analyzeDiff([
+    "diff --git a/apps/web/src/app/other/page.tsx b/apps/web/src/app/other/page.tsx",
+    "--- a/apps/web/src/app/other/page.tsx",
+    "+++ b/apps/web/src/app/other/page.tsx",
+    "@@ -1,0 +2,2 @@",
+    '+<span className="cmm-text-caption text-[12px]">Meta</span>',
+    '+<time className="text-[12px]">2026</time>',
+  ].join("\n"));
+
+  const tooSmallCaption = analyzeDiff([
+    "diff --git a/apps/web/src/app/other/page.tsx b/apps/web/src/app/other/page.tsx",
+    "--- a/apps/web/src/app/other/page.tsx",
+    "+++ b/apps/web/src/app/other/page.tsx",
+    "@@ -1,0 +2 @@",
+    '+<span className="cmm-text-caption text-[11px]">Meta</span>',
+  ].join("\n"));
+
+  assert.equal(caption.violations.length, 0);
+  assert.equal(tooSmallCaption.violations.length, 1);
+});
+
+test("does not let a caption exception make an interactive control too small", () => {
+  const result = analyzeDiff([
+    "diff --git a/apps/web/src/components/ui/action.tsx b/apps/web/src/components/ui/action.tsx",
+    "--- a/apps/web/src/components/ui/action.tsx",
+    "+++ b/apps/web/src/components/ui/action.tsx",
+    "@@ -1,0 +2 @@",
+    '+<button className="cmm-text-caption text-[12px]" onClick={onClick}>Action</button>',
+  ].join("\n"));
+
+  assert.equal(result.violations.length, 1);
+  assert.equal(result.violations[0].rule, "small-text");
+});
+
+test("ignores explicitly decorative text that is hidden from assistive technology", () => {
+  const result = analyzeDiff([
+    "diff --git a/apps/web/src/components/ui/decorative.tsx b/apps/web/src/components/ui/decorative.tsx",
+    "--- a/apps/web/src/components/ui/decorative.tsx",
+    "+++ b/apps/web/src/components/ui/decorative.tsx",
+    "@@ -1,0 +2 @@",
+    '+<span aria-hidden="true" className="text-[10px]">•</span>',
+  ].join("\n"));
+
+  assert.equal(result.violations.length, 0);
 });
 
 test("does not flag arbitrary values from non-font-size classes", () => {

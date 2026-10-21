@@ -9,6 +9,9 @@ import type { Mission } from '../types/mission'
 const state = vi.hoisted(() => ({
   alert: vi.fn(),
   openedUrls: [] as string[],
+  backPress: null as (() => boolean) | null,
+  storedSurface: null as string | null,
+  surfaceWrites: [] as Array<{ key: string; value: string }>,
   accountDeletion: vi.fn(async () => ({ status: 'queued', requestId: 'request-1', notificationStatus: 'sent' as const, deletionProcessed: false, message: 'Demande enregistrée.' })),
 }))
 
@@ -27,7 +30,7 @@ vi.mock('react-native', () => ({
   ActivityIndicator: nativeComponent('ActivityIndicator'),
   Alert: { alert: state.alert },
   AppState: { addEventListener: vi.fn(() => ({ remove: vi.fn() })) },
-  BackHandler: { addEventListener: vi.fn(() => ({ remove: vi.fn() })) },
+  BackHandler: { addEventListener: vi.fn((_event: string, handler: () => boolean) => { state.backPress = handler; return { remove: vi.fn() } }) },
   KeyboardAvoidingView: nativeComponent('KeyboardAvoidingView'),
   Image: nativeComponent('Image'),
   Linking: { openURL: vi.fn(async (url: string) => { state.openedUrls.push(url) }) },
@@ -66,7 +69,11 @@ vi.mock('../screens/mission-finalization', () => ({
 }))
 vi.mock('expo-linking', () => ({ openURL: vi.fn(async (url: string) => { state.openedUrls.push(url) }) }))
 vi.mock('@react-native-async-storage/async-storage', () => ({
-  default: { getItem: vi.fn(async () => null), setItem: vi.fn(async () => undefined), removeItem: vi.fn(async () => undefined) },
+  default: {
+    getItem: vi.fn(async () => state.storedSurface),
+    setItem: vi.fn(async (key: string, value: string) => { state.surfaceWrites.push({ key, value }); state.storedSurface = value }),
+    removeItem: vi.fn(async () => undefined),
+  },
 }))
 vi.mock('@expo/vector-icons', () => ({ Ionicons: nativeComponent('Ionicons') }))
 vi.mock('lucide-react-native', () => ({
@@ -204,6 +211,9 @@ describe('mobile native shell runtime', () => {
   beforeEach(() => {
     state.alert.mockReset()
     state.openedUrls.length = 0
+    state.backPress = null
+    state.storedSurface = null
+    state.surfaceWrites.length = 0
     state.accountDeletion.mockClear()
     appState.controller = controller()
     appState.startHostedAuth.mockReset().mockResolvedValue(undefined)
@@ -246,6 +256,24 @@ describe('mobile native shell runtime', () => {
       expect(tab).toBeDefined()
       expect(tab.findAll((node) => String(node.type) === iconName)).not.toHaveLength(0)
     }
+  })
+
+  it('persists primary navigation and returns to Agir without losing the subview context', async () => {
+    const renderer = await renderShell()
+    const map = renderer.root.findByProps({ accessibilityLabel: 'Carte' })
+
+    await act(async () => { map.props.onPress(); await Promise.resolve() })
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Carte' }).props.accessibilityState).toEqual({ selected: true })
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Agir' }).props.accessibilityState).toEqual({ selected: false })
+    expect(state.surfaceWrites.at(-1)).toEqual({ key: 'cleanmymap.mobile.shell.surface.v2', value: 'map' })
+
+    await act(async () => { expect(state.backPress?.()).toBe(true); await Promise.resolve() })
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Agir' }).props.accessibilityState).toEqual({ selected: true })
+
+    await act(async () => { findTouchable(renderer, 'Rejoindre une action').props.onPress(); await Promise.resolve() })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Retour à Agir'))).not.toHaveLength(0)
+    await act(async () => { expect(state.backPress?.()).toBe(true); await Promise.resolve() })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Agir sur le terrain.'))).not.toHaveLength(0)
   })
 
   it('keeps account deletion explicit, confirmation-gated and server-owned', async () => {
