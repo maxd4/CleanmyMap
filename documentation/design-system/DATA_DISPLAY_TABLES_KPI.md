@@ -82,9 +82,10 @@ jamais être confondu avec `cmm-data-table-wrap`.
 
 ## État de migration
 
-Les consommateurs runtime suivis par le garde-fou canonique sont :
+Les owners runtime suivis par le garde-fou canonique sont :
 
-- `apps/web/src/components/admin/role-management-panel.tsx` ;
+- `apps/web/src/components/admin/role-management-panel-view.tsx` pour la
+  table d'administration effectivement rendue ;
 - `apps/web/src/components/dashboard/system-status-panel.tsx` ;
 - `apps/web/src/components/actions/actions-map-table.tsx`.
 

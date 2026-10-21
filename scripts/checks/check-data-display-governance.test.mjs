@@ -2,8 +2,20 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   auditRuntimeTables,
+  CANONICAL_CONSUMERS,
   LEGACY_RUNTIME_TABLE_ALLOWLIST,
 } from "./check-data-display-governance.mjs";
+
+test("tracks the component that owns the administration table", () => {
+  assert.equal(
+    CANONICAL_CONSUMERS.has("apps/web/src/components/admin/role-management-panel-view.tsx"),
+    true,
+  );
+  assert.equal(
+    CANONICAL_CONSUMERS.has("apps/web/src/components/admin/role-management-panel.tsx"),
+    false,
+  );
+});
 
 test("accepts a native table using the canonical class", () => {
   assert.deepEqual(

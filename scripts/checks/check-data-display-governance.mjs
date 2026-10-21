@@ -3,7 +3,7 @@ import path from "node:path";
 
 export const CANONICAL_CONSUMERS = new Set([
   "apps/web/src/components/actions/actions-map-table.tsx",
-  "apps/web/src/components/admin/role-management-panel.tsx",
+  "apps/web/src/components/admin/role-management-panel-view.tsx",
   "apps/web/src/components/dashboard/system-status-panel.tsx",
 ]);
 

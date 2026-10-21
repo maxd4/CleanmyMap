@@ -191,6 +191,31 @@ describe("ReportsWebDocumentDelivery", () => {
     expect(markup).toContain('min-h-11');
   });
 
+  it("uses the canonical warning feedback for explicit publication confirmation", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ReportsWebDocumentDeliveryHistory, {
+        recentRows: historyRows,
+        publicationPreviewById: {
+          "report-1": {
+            title: "Rapport d'impact",
+            period: "Six mois",
+            scope: "Global",
+            theme: "impact",
+            artifactReady: true,
+            documentUrl: "/reports/report-1",
+            communicatedContent: "Contenu prêt à publier.",
+          },
+        },
+        onView: vi.fn(),
+        onReexport: vi.fn(),
+      }),
+    );
+
+    expect(markup).toContain('data-feedback-tone="warning"');
+    expect(markup).toContain("Confirmer la publication");
+    expect(markup).toContain("Contenu prêt à publier.");
+  });
+
   it("renders the real empty state without synthetic rows", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ReportsWebDocumentDeliveryHistory, {
