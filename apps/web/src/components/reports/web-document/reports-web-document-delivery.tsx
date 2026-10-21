@@ -1,15 +1,16 @@
 "use client";
 
-import {
-  FileText,
-  type LucideIcon,
-} from "lucide-react";
+import { FileText, type LucideIcon } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
-import { SystemStateLayout, SystemStateTitle } from "@/components/ui/system-state";
+import {
+  SystemStateLayout,
+  SystemStateTitle,
+} from "@/components/ui/system-state";
 import type { ReportGenerationHistoryRow } from "@/lib/reports/report-generation-history-contract";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 import { ReportsWebDocumentHistorySharing } from "../reports-web-document-history-sharing";
+import { ReportsHistoryRows } from "./reports-history-rows";
 import type { ReportPdfTheme } from "./reports-web-document.shared";
 
 export type ReportsWebDocumentExportStatus = {
@@ -46,7 +47,18 @@ export type ReportsWebDocumentDeliveryHistoryProps = {
   onExportJson?: (id: string) => void;
   onExportCsv?: (id: string) => void;
   onResume?: (id: string) => void;
-  publicationPreviewById?: Record<string, { title: string; period: string; scope: string; theme: ReportPdfTheme; artifactReady: boolean; documentUrl: string; communicatedContent: string }>;
+  publicationPreviewById?: Record<
+    string,
+    {
+      title: string;
+      period: string;
+      scope: string;
+      theme: ReportPdfTheme;
+      artifactReady: boolean;
+      documentUrl: string;
+      communicatedContent: string;
+    }
+  >;
   onPublish?: (id: string) => void;
   onConfirmPublication?: (id: string) => void;
   onCancelPublication?: (id: string) => void;
@@ -54,12 +66,13 @@ export type ReportsWebDocumentDeliveryHistoryProps = {
 };
 
 export type ReportGenerationHistoryActionState = {
-  action: "view" | "reexport" | "print" | "derive" | "reference" | "json" | "csv";
+  action:
+    "view" | "reexport" | "print" | "derive" | "reference" | "json" | "csv";
   state: "pending" | "success" | "error";
   message: string;
 };
 
-function HistoryActionButtons({
+export function HistoryActionButtons({
   row,
   theme,
   rowId,
@@ -90,7 +103,15 @@ function HistoryActionButtons({
   onExportJson: (id: string) => void;
   onExportCsv: (id: string) => void;
   onResume: (id: string) => void;
-  publicationPreview?: { title: string; period: string; scope: string; theme: ReportPdfTheme; artifactReady: boolean; documentUrl: string; communicatedContent: string };
+  publicationPreview?: {
+    title: string;
+    period: string;
+    scope: string;
+    theme: ReportPdfTheme;
+    artifactReady: boolean;
+    documentUrl: string;
+    communicatedContent: string;
+  };
   onPublish: (id: string) => void;
   onConfirmPublication: (id: string) => void;
   onCancelPublication: (id: string) => void;
@@ -184,22 +205,77 @@ function HistoryActionButtons({
       </CmmButton>
       <CmmButton
         disabled={isPending}
-        onClick={() => row.publicationStatus === "published" ? onRevokePublication(rowId) : onPublish(rowId)}
-        title={row.publicationStatus === "published" ? "Retirer le document de la bibliothèque publique" : "Préparer la publication publique"}
+        onClick={() =>
+          row.publicationStatus === "published"
+            ? onRevokePublication(rowId)
+            : onPublish(rowId)
+        }
+        title={
+          row.publicationStatus === "published"
+            ? "Retirer le document de la bibliothèque publique"
+            : "Préparer la publication publique"
+        }
         tone="tertiary"
         variant="ghost"
         size="md"
         className="min-h-11"
       >
-        {row.publicationStatus === "published" ? "Retirer de la bibliothèque" : "Publier dans « Tous les fichiers »"}
+        {row.publicationStatus === "published"
+          ? "Retirer de la bibliothèque"
+          : "Publier dans « Tous les fichiers »"}
       </CmmButton>
-      {publicationPreview ? <CmmFeedback tone="warning" title={<>Confirmer la publication de « {publicationPreview.title} »</>} className="basis-full" action={<div className="flex gap-2"><CmmButton disabled={!publicationPreview.artifactReady || isPending} onClick={() => onConfirmPublication(rowId)} tone="primary" size="sm">Confirmer</CmmButton><CmmButton disabled={isPending} onClick={() => onCancelPublication(rowId)} tone="secondary" size="sm">Annuler</CmmButton></div>}><p>Période : {publicationPreview.period} · Périmètre : {publicationPreview.scope} · Thème : {publicationPreview.theme === "scientific" ? "Scientifique" : "Impact"}</p><p className="mt-1">{publicationPreview.communicatedContent}</p><a className="mt-2 inline-block font-semibold underline" href={publicationPreview.documentUrl} target="_blank" rel="noreferrer">Consulter le document réellement accessible</a></CmmFeedback> : null}
+      {publicationPreview ? (
+        <CmmFeedback
+          tone="warning"
+          title={
+            <>Confirmer la publication de « {publicationPreview.title} »</>
+          }
+          className="basis-full"
+          action={
+            <div className="flex gap-2">
+              <CmmButton
+                disabled={!publicationPreview.artifactReady || isPending}
+                onClick={() => onConfirmPublication(rowId)}
+                tone="primary"
+                size="sm"
+              >
+                Confirmer
+              </CmmButton>
+              <CmmButton
+                disabled={isPending}
+                onClick={() => onCancelPublication(rowId)}
+                tone="secondary"
+                size="sm"
+              >
+                Annuler
+              </CmmButton>
+            </div>
+          }
+        >
+          <p>
+            Période : {publicationPreview.period} · Périmètre :{" "}
+            {publicationPreview.scope} · Thème :{" "}
+            {publicationPreview.theme === "scientific"
+              ? "Scientifique"
+              : "Impact"}
+          </p>
+          <p className="mt-1">{publicationPreview.communicatedContent}</p>
+          <a
+            className="mt-2 inline-block font-semibold underline"
+            href={publicationPreview.documentUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Consulter le document réellement accessible
+          </a>
+        </CmmFeedback>
+      ) : null}
       <ReportsWebDocumentHistorySharing row={row} theme={resolvedTheme} />
     </div>
   );
 }
 
-function HistoryActionFeedback({
+export function HistoryActionFeedback({
   actionState,
 }: {
   actionState?: ReportGenerationHistoryActionState;
@@ -242,8 +318,14 @@ export function ReportsWebDocumentDelivery({
     <div className="space-y-4 border-t border-slate-200 pt-5">
       <div className="flex min-w-0 flex-col gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold text-slate-500">État de l&apos;export</p>
-          <CmmFeedback tone={feedbackTone} title={exportStatus.label} className="mt-2">
+          <p className="text-xs font-semibold text-slate-500">
+            État de l&apos;export
+          </p>
+          <CmmFeedback
+            tone={feedbackTone}
+            title={exportStatus.label}
+            className="mt-2"
+          >
             <span className="inline-flex items-start gap-2">
               <ExportStatusIcon size={18} aria-hidden="true" />
               {exportStatus.description}
@@ -265,8 +347,13 @@ export function ReportsWebDocumentDelivery({
         </CmmButton>
       </div>
 
-      <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-5 text-slate-700" role="status">
-        <strong>Quota :</strong> 1 export détaillé par jour civil · Europe/Paris. {dailyExportAvailability === "available"
+      <p
+        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-5 text-slate-700"
+        role="status"
+      >
+        <strong>Quota :</strong> 1 export détaillé par jour civil ·
+        Europe/Paris.{" "}
+        {dailyExportAvailability === "available"
           ? "Disponible aujourd'hui."
           : dailyExportAvailability === "used"
             ? "Déjà utilisé aujourd'hui ; prochain créneau le jour civil suivant."
@@ -274,12 +361,14 @@ export function ReportsWebDocumentDelivery({
       </p>
 
       {message && state !== "success" ? (
-        <CmmFeedback tone={state === "error" ? "error" : "info"}>{message}</CmmFeedback>
+        <CmmFeedback tone={state === "error" ? "error" : "info"}>
+          {message}
+        </CmmFeedback>
       ) : null}
       {historyWarning ? (
         <CmmFeedback tone="warning">{historyWarning}</CmmFeedback>
       ) : null}
-      </div>
+    </div>
   );
 }
 
@@ -310,134 +399,47 @@ export function ReportsWebDocumentDeliveryHistory({
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 id="reports-history-title" className="text-lg font-semibold text-slate-950">
+          <h3
+            id="reports-history-title"
+            className="text-lg font-semibold text-slate-950"
+          >
             Mes fichiers
           </h3>
-          <p className="mt-1 text-sm text-slate-500">Tous vos rapports générés et leurs métadonnées.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Tous vos rapports générés et leurs métadonnées.
+          </p>
         </div>
       </div>
-
       {historyAvailability === "unavailable" ? (
         <CmmFeedback tone="warning" className="mt-4">
           Historique temporairement indisponible
         </CmmFeedback>
       ) : recentRows.length === 0 ? (
         <SystemStateLayout variant="empty" className="mt-4">
-          <SystemStateTitle variant="empty">Aucun rapport généré</SystemStateTitle>
+          <SystemStateTitle variant="empty">
+            Aucun rapport généré
+          </SystemStateTitle>
         </SystemStateLayout>
       ) : (
         <div className="mt-4">
-          <div className="hidden overflow-x-auto rounded-xl border border-slate-200 md:block">
-            <table className="cmm-data-table">
-              <caption className="sr-only">Historique de mes rapports générés</caption>
-              <thead className="bg-slate-50 text-xs normal-case tracking-normal text-slate-500">
-                <tr>
-                  {["Rapport", "Période", "Périmètre", "Détail", "Thème PDF", "Généré le", "Actions"].map((header) => (
-                    <th key={header} scope="col" className="font-semibold normal-case tracking-normal">
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {recentRows.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
-                          <FileText size={16} aria-hidden="true" />
-                        </div>
-                        <p className="break-words text-sm font-semibold text-slate-900">{row.report}</p>
-                      </div>
-                    </td>
-                    <td className="break-words text-sm text-slate-600">{row.period}</td>
-                    <td className="break-words text-sm text-slate-600">{row.perimeter}</td>
-                    <td className="break-words text-sm text-slate-600">{row.detail}</td>
-                    <td className="break-words text-sm text-slate-600">{row.theme === "scientific" ? "Scientifique" : row.theme === "impact" ? "Impact" : "Non enregistré"}</td>
-                    <td className="break-words text-sm text-slate-600">{row.generatedAt}</td>
-                    <td>
-                      <HistoryActionButtons
-                        row={row}
-                        theme={theme}
-                        rowId={row.id}
-                        actionState={actionStateById[row.id]}
-                        onView={onView}
-                        onReexport={onReexport}
-                        onPrint={onPrint}
-                        onDerive={onDerive}
-                        onCopyReference={onCopyReference}
-                        onExportJson={onExportJson}
-                        onExportCsv={onExportCsv}
-                        onResume={onResume}
-                        publicationPreview={publicationPreviewById[row.id]}
-                        onPublish={onPublish}
-                        onConfirmPublication={onConfirmPublication}
-                        onCancelPublication={onCancelPublication}
-                        onRevokePublication={onRevokePublication}
-                      />
-                      <HistoryActionFeedback actionState={actionStateById[row.id]} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="grid gap-3 md:hidden">
-            {recentRows.map((row) => (
-              <article key={row.id} className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
-                    <FileText size={18} aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="break-words text-base font-semibold text-slate-950">{row.report}</h4>
-                    <p className="mt-1 break-words text-sm text-slate-600">{row.generatedAt}</p>
-                  </div>
-                </div>
-                <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                  <div>
-                    <dt className="text-slate-500">Période</dt>
-                    <dd className="mt-1 break-words font-medium text-slate-900">{row.period}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-slate-500">Périmètre</dt>
-                    <dd className="mt-1 break-words font-medium text-slate-900">{row.perimeter}</dd>
-                  </div>
-                  <div className="col-span-2">
-                    <dt className="text-slate-500">Détail</dt>
-                    <dd className="mt-1 break-words font-medium text-slate-900">{row.detail}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-slate-500">Thème PDF</dt>
-                    <dd className="mt-1 break-words font-medium text-slate-900">{row.theme === "scientific" ? "Scientifique" : row.theme === "impact" ? "Impact" : "Non enregistré"}</dd>
-                  </div>
-                </dl>
-                <div className="mt-4">
-                  <HistoryActionButtons
-                    row={row}
-                    theme={theme}
-                    rowId={row.id}
-                    actionState={actionStateById[row.id]}
-                    onView={onView}
-                    onReexport={onReexport}
-                    onPrint={onPrint}
-                    onDerive={onDerive}
-                    onCopyReference={onCopyReference}
-                    onExportJson={onExportJson}
-                    onExportCsv={onExportCsv}
-                    onResume={onResume}
-                        publicationPreview={publicationPreviewById[row.id]}
-                        onPublish={onPublish}
-                        onConfirmPublication={onConfirmPublication}
-                        onCancelPublication={onCancelPublication}
-                        onRevokePublication={onRevokePublication}
-                  />
-                  <HistoryActionFeedback actionState={actionStateById[row.id]} />
-                </div>
-              </article>
-            ))}
-          </div>
+          <ReportsHistoryRows
+            recentRows={recentRows}
+            theme={theme}
+            actionStateById={actionStateById}
+            onView={onView}
+            onReexport={onReexport}
+            onPrint={onPrint}
+            onDerive={onDerive}
+            onCopyReference={onCopyReference}
+            onExportJson={onExportJson}
+            onExportCsv={onExportCsv}
+            onResume={onResume}
+            publicationPreviewById={publicationPreviewById}
+            onPublish={onPublish}
+            onConfirmPublication={onConfirmPublication}
+            onCancelPublication={onCancelPublication}
+            onRevokePublication={onRevokePublication}
+          />
         </div>
       )}
     </section>

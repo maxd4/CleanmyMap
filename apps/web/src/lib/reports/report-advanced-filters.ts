@@ -128,6 +128,81 @@ function assertReportAdvancedFilterSources(params: {
   }
 }
 
+type ReportAdvancedFilterEvaluation = {
+  quality: ReturnType<typeof auditActionContract>;
+  qualityGrade: ActionQualityGrade;
+  coordinatesAreValid: boolean;
+  hasGeometry: boolean;
+  hasReadyPhoto: boolean;
+};
+
+function buildFilterEvaluation(
+  contract: ActionDataContract,
+  params: Parameters<typeof filterActionContractsByAdvancedFilters>[0],
+): ReportAdvancedFilterEvaluation {
+  const quality = auditActionContract(contract);
+  const qualityResult = evaluateActionQuality(toActionListItem(contract), params.now);
+  return {
+    quality,
+    qualityGrade: qualityResult.grade,
+    coordinatesAreValid: quality.geolocation.state === "valid",
+    hasGeometry: quality.geolocation.hasGeometry,
+    hasReadyPhoto: (params.actionMediaReadyCountByActionId?.get(contract.id) ?? 0) > 0,
+  };
+}
+
+function matchesQualityFilters(
+  filters: ReportAdvancedFilters,
+  evaluation: ReportAdvancedFilterEvaluation,
+): boolean {
+  if (filters.dataQuality === "without_blocking_anomaly" && evaluation.quality.blockingAnomalies.length > 0) {
+    return false;
+  }
+  if (
+    filters.qualityGradeAtLeast !== "any" &&
+    gradeRank(evaluation.qualityGrade) < gradeRank(filters.qualityGradeAtLeast)
+  ) {
+    return false;
+  }
+  return filters.measureProvenance === "any" ||
+    evaluation.quality.provenance.measures === filters.measureProvenance as ActionDataProvenance;
+}
+
+function matchesProvenanceFilters(
+  filters: ReportAdvancedFilters,
+  evaluation: ReportAdvancedFilterEvaluation,
+  contract: ActionDataContract,
+): boolean {
+  if (filters.validCoordinates === "required" && !evaluation.coordinatesAreValid) return false;
+  if (
+    filters.geometryProvenance !== "any" &&
+    evaluation.quality.provenance.geometry !== filters.geometryProvenance as ActionGeometryProvenance
+  ) return false;
+  return filters.declarationOrigin === "any" || contract.metadata.submissionMode === filters.declarationOrigin;
+}
+
+function matchesValueFilters(
+  filters: ReportAdvancedFilters,
+  evaluation: ReportAdvancedFilterEvaluation,
+  contract: ActionDataContract,
+): boolean {
+  return passesThreshold(contract.metadata.wasteKg, filters.wasteKgMin, filters.wasteKgMax) &&
+    passesThreshold(contract.metadata.cigaretteButts, filters.cigaretteButtsMin, filters.cigaretteButtsMax) &&
+    passesCategory(contract, filters.wasteCategory) &&
+    passesBinary(evaluation.hasGeometry, filters.exploitableGeometry) &&
+    passesBinary(evaluation.hasReadyPhoto, filters.photographicEvidence);
+}
+
+function shouldIncludeContract(
+  contract: ActionDataContract,
+  params: Parameters<typeof filterActionContractsByAdvancedFilters>[0],
+): boolean {
+  const evaluation = buildFilterEvaluation(contract, params);
+  return matchesQualityFilters(params.filters, evaluation) &&
+    matchesProvenanceFilters(params.filters, evaluation, contract) &&
+    matchesValueFilters(params.filters, evaluation, contract);
+}
+
 export function filterActionContractsByAdvancedFilters(params: {
   contracts: ActionDataContract[];
   filters: ReportAdvancedFilters;
@@ -141,39 +216,5 @@ export function filterActionContractsByAdvancedFilters(params: {
     actionMediaAvailability,
   });
 
-  return params.contracts.filter((contract) => {
-    const quality = auditActionContract(contract);
-    const qualityResult = evaluateActionQuality(toActionListItem(contract), params.now);
-    const coordinatesAreValid = quality.geolocation.state === "valid";
-    const hasGeometry = quality.geolocation.hasGeometry;
-    const hasReadyPhoto = (params.actionMediaReadyCountByActionId?.get(contract.id) ?? 0) > 0;
-
-    if (
-      params.filters.dataQuality === "without_blocking_anomaly" &&
-      quality.blockingAnomalies.length > 0
-    ) return false;
-    if (
-      params.filters.qualityGradeAtLeast !== "any" &&
-      gradeRank(qualityResult.grade) < gradeRank(params.filters.qualityGradeAtLeast)
-    ) return false;
-    if (
-      params.filters.measureProvenance !== "any" &&
-      quality.provenance.measures !== params.filters.measureProvenance as ActionDataProvenance
-    ) return false;
-    if (params.filters.validCoordinates === "required" && !coordinatesAreValid) return false;
-    if (
-      params.filters.geometryProvenance !== "any" &&
-      quality.provenance.geometry !== params.filters.geometryProvenance as ActionGeometryProvenance
-    ) return false;
-    if (
-      params.filters.declarationOrigin !== "any" &&
-      contract.metadata.submissionMode !== params.filters.declarationOrigin
-    ) return false;
-    if (!passesThreshold(contract.metadata.wasteKg, params.filters.wasteKgMin, params.filters.wasteKgMax)) return false;
-    if (!passesThreshold(contract.metadata.cigaretteButts, params.filters.cigaretteButtsMin, params.filters.cigaretteButtsMax)) return false;
-    if (!passesCategory(contract, params.filters.wasteCategory)) return false;
-    if (!passesBinary(hasGeometry, params.filters.exploitableGeometry)) return false;
-    if (!passesBinary(hasReadyPhoto, params.filters.photographicEvidence)) return false;
-    return true;
-  });
+  return params.contracts.filter((contract) => shouldIncludeContract(contract, params));
 }

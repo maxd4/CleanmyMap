@@ -5,10 +5,7 @@ import type {
   ReportPdfTypography,
 } from "./report-pdf-theme.tokens";
 
-export function buildReportSectionChromeCss(
-  theme: ReportPdfThemeTokens,
-  typography: ReportPdfTypography,
-): string {
+function buildLockedSectionCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
   return `    .cmm-web-section.is-locked {
       border-color: #D5DEE6;
       background: #F8FAFC;
@@ -43,7 +40,11 @@ export function buildReportSectionChromeCss(
       color: #64748B;
       margin-top: 1.2mm;
     }
-    .cmm-web-section__body {
+`;
+}
+
+function buildSectionLayoutCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
+  return `    .cmm-web-section__body {
       padding: 5mm 6mm;
       display: flex;
       flex-direction: column;
@@ -79,12 +80,11 @@ export function buildReportSectionChromeCss(
 `;
 }
 
-export function buildReportDocumentFrameCss(
-  theme: ReportPdfThemeTokens,
-  typography: ReportPdfTypography,
-  spacing: ReportPdfSpacing,
-  page: ReportPdfPage,
-): string {
+export function buildReportSectionChromeCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
+  return buildLockedSectionCss(theme, typography) + buildSectionLayoutCss(theme, typography);
+}
+
+function buildPageFrameCss(theme: ReportPdfThemeTokens, page: ReportPdfPage): string {
   return `    .cmm-page {
       min-height: calc(${page.minHeight} - 20mm);
       page-break-after: always;
@@ -105,7 +105,11 @@ export function buildReportDocumentFrameCss(
       padding: 18mm;
       background: ${theme.coverBackground};
     }
-    .cmm-kicker {
+`;
+}
+
+function buildPageTypographyCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
+  return `    .cmm-kicker {
       color: ${theme.gray};
       font-size: ${typography.caption};
       font-weight: 700;
@@ -125,7 +129,11 @@ export function buildReportDocumentFrameCss(
     .cmm-muted {
       color: ${theme.gray};
     }
-    .cmm-meta-grid,
+`;
+}
+
+function buildMetaCardCss(theme: ReportPdfThemeTokens, spacing: ReportPdfSpacing): string {
+  return `    .cmm-meta-grid,
     .cmm-stat-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -145,11 +153,16 @@ export function buildReportDocumentFrameCss(
 `;
 }
 
-export function buildReportSectionsAndCalloutsCss(
+export function buildReportDocumentFrameCss(
   theme: ReportPdfThemeTokens,
   typography: ReportPdfTypography,
   spacing: ReportPdfSpacing,
+  page: ReportPdfPage,
 ): string {
+  return buildPageFrameCss(theme, page) + buildPageTypographyCss(theme, typography) + buildMetaCardCss(theme, spacing);
+}
+
+function buildCardAndSectionCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography, spacing: ReportPdfSpacing): string {
   return `    .cmm-card-label {
       color: ${theme.gray};
       font-size: ${typography.caption};
@@ -179,7 +192,11 @@ export function buildReportSectionsAndCalloutsCss(
       font-weight: 700;
       margin: 0 0 3mm;
     }
-    .cmm-callout {
+`;
+}
+
+function buildCalloutCss(theme: ReportPdfThemeTokens): string {
+  return `    .cmm-callout {
       border-left: 2.5mm solid ${theme.blue};
       background: ${theme.noteLight};
       border-radius: ${theme.radius};
@@ -219,10 +236,15 @@ export function buildReportSectionsAndCalloutsCss(
 `;
 }
 
-export function buildReportTablesAndFooterCss(
+export function buildReportSectionsAndCalloutsCss(
   theme: ReportPdfThemeTokens,
   typography: ReportPdfTypography,
+  spacing: ReportPdfSpacing,
 ): string {
+  return buildCardAndSectionCss(theme, typography, spacing) + buildCalloutCss(theme);
+}
+
+function buildTableCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
   return `    .cmm-table-wrap {
       overflow: visible;
       border: 1px solid ${theme.rule};
@@ -256,7 +278,11 @@ export function buildReportTablesAndFooterCss(
       overflow-wrap: anywhere;
     }
     tr:nth-child(even) td { background: #F8FBFC; }
-    ul {
+`;
+}
+
+function buildListAndFooterCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
+  return `    ul {
       margin: 0 0 4mm 0;
       padding-left: 5mm;
     }
@@ -272,4 +298,8 @@ export function buildReportTablesAndFooterCss(
       margin-top: 8mm;
     }
 `;
+}
+
+export function buildReportTablesAndFooterCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
+  return buildTableCss(theme, typography) + buildListAndFooterCss(theme, typography);
 }

@@ -1,42 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import useSWR from "swr";
-import { toActionListItem, toActionMapItem, type ActionDataContract } from "@/lib/actions/data-contract";
-import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
-import { fetchCommunityEvents, type CommunityEventItem } from "@/lib/community/http";
+import { useMemo } from "react";
+import type { ActionDataContract } from "@/lib/actions/data-contract";
+import type { CommunityEventItem } from "@/lib/community/http";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
-import { swrRecentViewOptions } from "@/lib/swr-config";
-import { computeReportModel } from "@/lib/reports/report-model";
 import type {
   CommunityEventsAvailability,
   ReportDataAvailability,
 } from "@/lib/reports/data-availability";
+import type { ReportGenerationPeriodSelection } from "@/lib/reports/generation-period";
 import {
-  buildReportScopeOptions,
-  computeReportAccountScopeCoverage,
-  filterCommunityEventsByScope,
-  filterReportScopeItems,
-  formatReportScopeLabel,
-  normalizeReportScope,
-  type ReportScopeKind,
-} from "@/lib/reports/scope";
-import {
-  filterReportCommunityEventsByPeriod,
-  type ReportGenerationPeriodSelection,
-} from "@/lib/reports/generation-period";
-import {
-  filterActionContractsByAdvancedFilters,
   REPORT_ADVANCED_FILTER_DEFAULTS,
   type ReportAdvancedFilters,
 } from "@/lib/reports/report-advanced-filters";
-
-type WasteProfileCategory = {
-  key: "megotsKg" | "plastiqueKg" | "verreKg" | "metalKg" | "mixteKg";
-  label: string;
-  kg: number;
-  actions: number;
-};
+import { computeReportModel } from "@/lib/reports/report-model";
+import type { ReportScopeKind } from "@/lib/reports/scope";
+import {
+  buildReportExportRows,
+  buildWasteProfile,
+} from "./reports-web-document-model.helpers";
+import { useReportsWebDocumentData } from "./use-reports-web-document-data";
+import { useReportsWebDocumentScope } from "./use-reports-web-document-scope";
 
 type UseReportsWebDocumentModelOptions = {
   initialContracts?: ActionDataContract[];
@@ -67,298 +51,54 @@ export function useReportsWebDocumentModel({
   actionMediaReadyCountByActionId = {},
   actionMediaAvailability = "available",
 }: UseReportsWebDocumentModelOptions = {}) {
-  const [scopeKind, setScopeKind] = useState<ReportScopeKind>(initialScope?.kind ?? "global");
-  const [scopeValue, setScopeValue] = useState<string>(initialScope?.value ?? "");
-
-  const initialActionListItems = useMemo(
-    () => (initialScopeContracts ?? initialContracts ?? []).map((contract) => toActionListItem(contract)),
-    [initialContracts, initialScopeContracts],
-  );
-  const initialMapItems = useMemo(
-    () => (initialScopeContracts ?? initialContracts ?? []).map((contract) => toActionMapItem(contract)),
-    [initialContracts, initialScopeContracts],
-  );
-
-  const actionsAll = useSWR(
-    initialContracts ? null : ["report-web-actions-all"],
-    () =>
-      import("@/lib/actions/http").then(({ fetchActions }) =>
-        fetchActions({
-          status: "approved",
-          limit: 200,
-          days: 365,
-          types: "all",
-        }),
-      ),
-    swrRecentViewOptions,
-  );
-  const mapAll = useSWR(
-    initialContracts ? null : ["report-web-map-all"],
-    () =>
-      import("@/lib/actions/http").then(({ fetchMapActions }) =>
-        fetchMapActions({
-          status: "approved",
-          limit: 300,
-          days: 365,
-          types: "all",
-        }),
-      ),
-    swrRecentViewOptions,
-  );
-  const community = useSWR(
-    initialCommunityEvents ? null : ["report-web-community-events"],
-    () => fetchCommunityEvents({ limit: 120 }),
-    swrRecentViewOptions,
-  );
-  const actionsAllItems = useMemo(
-    () => (initialContracts ? initialActionListItems : actionsAll.data?.items ?? []),
-    [actionsAll.data?.items, initialActionListItems, initialContracts],
-  );
-  const actionsApprovedItems = useMemo(
-    () => (initialContracts ? initialActionListItems : actionsAll.data?.items ?? []),
-    [actionsAll.data?.items, initialActionListItems, initialContracts],
-  );
-  const mapItems = useMemo(
-    () => (initialContracts ? initialMapItems : mapAll.data?.items ?? []),
-    [initialContracts, initialMapItems, mapAll.data?.items],
-  );
-  const communityEvents = useMemo(
-    () => initialCommunityEvents ?? community.data?.items ?? [],
-    [community.data?.items, initialCommunityEvents],
-  );
-  const periodCommunityEvents = useMemo(
-    () => filterReportCommunityEventsByPeriod(
-      communityEvents,
-      initialPeriod,
-      initialNow ?? new Date(),
-    ),
-    [communityEvents, initialNow, initialPeriod],
-  );
-  const communityEventsAvailability =
-    initialCommunityEventsAvailability ??
-    (initialCommunityEvents !== undefined
-      ? "available"
-      : community.error
-        ? "unavailable"
-        : community.data
-          ? "available"
-          : undefined);
-  const isLoading =
-    actionsAll.isLoading ||
-    mapAll.isLoading ||
-    community.isLoading;
-  const hasError = Boolean(
-    actionsAll.error || mapAll.error || community.error,
-  );
-
-  const scopeOptions = useMemo(
-    () =>
-      buildReportScopeOptions([
-        ...actionsAllItems,
-        ...mapItems,
-      ]),
-    [actionsAllItems, mapItems],
-  );
-
-  const accountScopeCoverage = useMemo(
-    () => computeReportAccountScopeCoverage(actionsAllItems),
-    [actionsAllItems],
-  );
-
-  const scopeValueOptions =
-    scopeKind === "account"
-      ? scopeOptions.accounts
-      : scopeKind === "association"
-        ? scopeOptions.associations
-        : scopeKind === "arrondissement"
-          ? scopeOptions.arrondissements
-          : [];
-  const effectiveScopeValue =
-    scopeKind === "global"
-      ? ""
-      : scopeValueOptions.find((option) => option.value === scopeValue)?.value ??
-        "";
-
-  const scope = useMemo(
-    () => scopeKind === "global" || effectiveScopeValue
-      ? normalizeReportScope({ kind: scopeKind, value: effectiveScopeValue })
-      : { kind: "global" as const, value: null },
-    [effectiveScopeValue, scopeKind],
-  );
-
-  const scopedActionsAll = useMemo(
-    () => filterReportScopeItems(actionsAllItems, scope),
-    [actionsAllItems, scope],
-  );
-  const scopedActionsApproved = useMemo(
-    () => filterReportScopeItems(actionsApprovedItems, scope),
-    [actionsApprovedItems, scope],
-  );
-  const scopedMapAll = useMemo(
-    () => filterReportScopeItems(mapItems, scope),
-    [mapItems, scope],
-  );
-  const scopedCommunity = useMemo(
-    () => filterCommunityEventsByScope(periodCommunityEvents, scope),
-    [periodCommunityEvents, scope],
-  );
-  const advancedFilteredIds = useMemo(() => {
-    if (!initialContracts) return null;
-    const scopedIds = new Set(scopedActionsAll.map((item) => item.id));
-    const scopedContracts = initialContracts.filter((contract) => scopedIds.has(contract.id));
-    return new Set(
-      filterActionContractsByAdvancedFilters({
-        contracts: scopedContracts,
-        filters: advancedFilters,
-        now: initialNow ?? new Date(),
-        actionMediaReadyCountByActionId: new Map(Object.entries(actionMediaReadyCountByActionId)),
-        actionMediaAvailability,
-      }).map((contract) => contract.id),
-    );
-  }, [actionMediaAvailability, actionMediaReadyCountByActionId, advancedFilters, initialContracts, initialNow, scopedActionsAll]);
-  const filteredActionsAll = useMemo(
-    () => advancedFilteredIds === null
-      ? scopedActionsAll
-      : scopedActionsAll.filter((item) => advancedFilteredIds.has(item.id)),
-    [advancedFilteredIds, scopedActionsAll],
-  );
-  const filteredActionsApproved = useMemo(
-    () => advancedFilteredIds === null
-      ? scopedActionsApproved
-      : scopedActionsApproved.filter((item) => advancedFilteredIds.has(item.id)),
-    [advancedFilteredIds, scopedActionsApproved],
-  );
-  const filteredMapAll = useMemo(
-    () => advancedFilteredIds === null
-      ? scopedMapAll
-      : scopedMapAll.filter((item) => advancedFilteredIds.has(item.id)),
-    [advancedFilteredIds, scopedMapAll],
-  );
-  const filteredContracts = useMemo(
-    () => initialContracts?.filter((contract) => advancedFilteredIds?.has(contract.id)) ?? [],
-    [advancedFilteredIds, initialContracts],
-  );
-
-  const wasteProfile = useMemo(() => {
-    const totals: Record<WasteProfileCategory["key"], WasteProfileCategory> = {
-      megotsKg: { key: "megotsKg", label: "Mégots", kg: 0, actions: 0 },
-      plastiqueKg: { key: "plastiqueKg", label: "Plastique", kg: 0, actions: 0 },
-      verreKg: { key: "verreKg", label: "Verre", kg: 0, actions: 0 },
-      metalKg: { key: "metalKg", label: "Métal", kg: 0, actions: 0 },
-      mixteKg: { key: "mixteKg", label: "Déchets mixtes", kg: 0, actions: 0 },
-    };
-
-    let coveredActions = 0;
-    for (const item of filteredActionsApproved) {
-      const breakdown = item.contract?.metadata.wasteBreakdown ?? item.waste_breakdown ?? null;
-      if (!breakdown) continue;
-      coveredActions += 1;
-      for (const key of Object.keys(totals) as WasteProfileCategory["key"][]) {
-        const value = Number(breakdown[key] ?? 0);
-        if (value > 0) {
-          totals[key].kg += value;
-          totals[key].actions += 1;
-        }
-      }
-    }
-
-    const categories = Object.values(totals)
-      .filter((category) => category.kg > 0)
-      .sort((a, b) => b.kg - a.kg || b.actions - a.actions);
-    const dominant = categories[0] ?? null;
-
-    return {
-      categories,
-      coveragePercent:
-        filteredActionsApproved.length > 0
-          ? (coveredActions / filteredActionsApproved.length) * 100
-          : 0,
-      dominantLabel: dominant?.label ?? "Déchets non typés",
-      dominantKg: dominant?.kg ?? 0,
-    };
-  }, [filteredActionsApproved]);
+  const data = useReportsWebDocumentData({
+    initialContracts,
+    initialScopeContracts,
+    initialCommunityEvents,
+    initialCommunityEventsAvailability,
+    initialPeriod,
+    initialNow,
+  });
+  const scope = useReportsWebDocumentScope({
+    data,
+    initialContracts,
+    initialScope,
+    advancedFilters,
+    initialNow,
+    actionMediaReadyCountByActionId,
+    actionMediaAvailability,
+  });
+  const wasteProfile = useMemo(() => buildWasteProfile(scope.filteredActionsApproved), [scope.filteredActionsApproved]);
 
   const report = useMemo(
     () =>
       computeReportModel({
-        allItems: filteredActionsAll,
-        approvedItems: filteredActionsApproved,
-        mapItems: filteredMapAll,
-        events: scopedCommunity,
+        allItems: scope.filteredActionsAll,
+        approvedItems: scope.filteredActionsApproved,
+        mapItems: scope.filteredMapAll,
+        events: scope.scopedCommunity,
         moderationAvailability: "unavailable",
         now: initialNow,
       }),
-    [filteredActionsAll, filteredActionsApproved, filteredMapAll, initialNow, scopedCommunity],
+    [initialNow, scope.filteredActionsAll, scope.filteredActionsApproved, scope.filteredMapAll, scope.scopedCommunity],
   );
 
-  const exportRows = useMemo(
-    () =>
-      filteredActionsApproved.map((item) => {
-        const impact = computeActionImpactKpis(
-          item.contract ?? {
-            metadata: {
-              wasteKg: item.waste_kg,
-              cigaretteButts: item.cigarette_butts,
-              volunteersCount: item.volunteers_count,
-              wasteBreakdown: item.waste_breakdown,
-            },
-          },
-        );
-        return {
-          Date: item.action_date,
-          Lieu: item.location_label,
-          Compte: item.created_by_clerk_id ?? item.actor_name ?? "Inconnu",
-          Association: item.association_name ?? "Sans association",
-          Masse_Kg: item.waste_kg,
-          Masse_Kg_Declaree: item.waste_kg,
-          Masse_Kg_Impact: impact.wasteKnown ? impact.wasteKg : null,
-          Origine_Masse: impact.wasteKgSource,
-          Megots: impact.butts,
-          Bénévoles: impact.volunteers,
-          CO2e_Proxy_Kg: impact.wasteKnown ? impact.co2AvoidedKg : null,
-          Eau_Proxy_L: impact.waterSavedLiters,
-          Economie_Voirie_Proxy_Masse_EUR: impact.wasteKnown
-            ? impact.streetCleaningSavings.massEstimateEuros
-            : null,
-          Economie_Voirie_Proxy_Temps_EUR: impact.streetCleaningSavings.timeEstimateEuros,
-          Economie_Voirie_Proxy_Min_EUR: impact.wasteKnown
-            ? impact.streetCleaningSavings.lowerBoundEuros
-            : null,
-          Economie_Voirie_Proxy_Max_EUR: impact.wasteKnown
-            ? impact.streetCleaningSavings.upperBoundEuros
-            : null,
-          Economie_Voirie_Proxy_EUR: impact.wasteKnown ? impact.euroSaved : null,
-          Durée_Min: Number(item.duration_minutes ?? 0),
-          Type: item.record_type ?? item.contract?.type ?? "action",
-          Source: item.source ?? item.contract?.source ?? "web_form",
-        };
-      }),
-    [filteredActionsApproved],
-  );
-
-  const activeScopeLabel = formatReportScopeLabel(scope, scopeOptions);
+  const exportRows = useMemo(() => buildReportExportRows(scope.filteredActionsApproved), [scope.filteredActionsApproved]);
   const dataAvailability: ReportDataAvailability = {
     isTruncated: initialIsTruncated,
     sourceHealth: initialSourceHealth,
-    communityEventsAvailability,
+    communityEventsAvailability: data.communityEventsAvailability,
   };
 
   return {
-    scopeKind,
-    setScopeKind,
-    scopeValue: effectiveScopeValue,
-    setScopeValue,
-    scopeOptions,
     exportRows,
-    activeScopeLabel,
-    accountScopeCoverage,
     wasteProfile,
     report,
     isTruncated: initialIsTruncated,
     dataAvailability,
-    isLoading,
-    hasError,
-    filteredContracts,
-    admissibleActionCount: filteredContracts.length,
+    isLoading: data.isLoading,
+    hasError: data.hasError,
+    ...scope,
+    admissibleActionCount: scope.filteredContracts.length,
   };
 }

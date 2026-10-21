@@ -110,26 +110,33 @@ function resolveScope(record: ReportGenerationSnapshotRecord): ReportGenerationR
   return { kind, value, label };
 }
 
-export function buildReportGenerationResumeConfig(
-  record: ReportGenerationSnapshotRecord,
-): ReportGenerationResumeConfig {
+function resolveResumeMetadata(record: ReportGenerationSnapshotRecord) {
   const metadata = record.snapshot.snapshotMetadata;
-  const period = resolvePeriod(record);
-  const scope = resolveScope(record);
-  const detailLevel = isDetailLevel(metadata?.detailLevel)
-    ? metadata.detailLevel
-    : isDetailLevel(record.detailLevel)
-      ? record.detailLevel
-      : null;
-  const modules = isModuleState(metadata?.modules)
-    ? metadata.modules
-    : isModuleState(record.modules)
-      ? record.modules
-      : null;
-  const filters = metadata?.filters ?? null;
-  const theme = isTheme(record.theme) ? record.theme : null;
-  const unknownParameters: string[] = [];
+  return {
+    detailLevel: isDetailLevel(metadata?.detailLevel)
+      ? metadata.detailLevel
+      : isDetailLevel(record.detailLevel)
+        ? record.detailLevel
+        : null,
+    modules: isModuleState(metadata?.modules)
+      ? metadata.modules
+      : isModuleState(record.modules)
+        ? record.modules
+        : null,
+    filters: metadata?.filters ?? null,
+    theme: isTheme(record.theme) ? record.theme : null,
+  };
+}
 
+function buildResumeUnknownParameters(
+  period: ReportGenerationResumeConfig["period"],
+  scope: ReportGenerationResumeConfig["scope"],
+  detailLevel: DetailLevelId | null,
+  modules: ModuleState | null,
+  filters: ReportAdvancedFilters | null,
+  theme: ReportPdfTheme | null,
+): string[] {
+  const unknownParameters: string[] = [];
   if (!period.id) unknownParameters.push("La période d'origine est inconnue.");
   if (period.id === "custom_range" && (!period.from || !period.to)) {
     unknownParameters.push("Les bornes de la période personnalisée d'origine sont incomplètes.");
@@ -141,6 +148,15 @@ export function buildReportGenerationResumeConfig(
     unknownParameters.push("Les filtres avancés d'origine sont inconnus.");
   }
   if (!theme) unknownParameters.push("Le thème PDF d'origine n'est pas enregistré.");
+  return unknownParameters;
+}
+
+export function buildReportGenerationResumeConfig(
+  record: ReportGenerationSnapshotRecord,
+): ReportGenerationResumeConfig {
+  const period = resolvePeriod(record);
+  const scope = resolveScope(record);
+  const { detailLevel, modules, filters, theme } = resolveResumeMetadata(record);
 
   return {
     generationId: record.id,
@@ -151,6 +167,13 @@ export function buildReportGenerationResumeConfig(
     modules,
     filters,
     theme,
-    unknownParameters,
+    unknownParameters: buildResumeUnknownParameters(
+      period,
+      scope,
+      detailLevel,
+      modules,
+      filters,
+      theme,
+    ),
   };
 }

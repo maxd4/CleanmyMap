@@ -43,17 +43,18 @@ export function buildPageAndTypographyCss(
 `;
 }
 
-export function buildReportLayoutCss(
-  theme: ReportPdfThemeTokens,
-  typography: ReportPdfTypography,
-): string {
+function buildReportLayoutFrameCss(): string {
   return `    .cmm-web-layout {
       display: grid;
       grid-template-columns: 18rem minmax(0, 1fr);
       gap: 5mm;
       align-items: start;
     }
-    .cmm-web-aside {
+`;
+}
+
+function buildReportAsideCss(theme: ReportPdfThemeTokens): string {
+  return `    .cmm-web-aside {
       position: sticky;
       top: 0;
       align-self: start;
@@ -64,13 +65,21 @@ export function buildReportLayoutCss(
       break-inside: avoid;
       page-break-inside: avoid;
     }
-    .cmm-web-main {
+`;
+}
+
+function buildReportMainCss(): string {
+  return `    .cmm-web-main {
       display: flex;
       flex-direction: column;
       gap: 5mm;
       min-width: 0;
     }
-    .cmm-toc-item {
+`;
+}
+
+function buildReportTocItemCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
+  return `    .cmm-toc-item {
       border: 1px solid transparent;
       border-radius: 3mm;
       padding: 2.5mm 3mm;
@@ -90,7 +99,11 @@ export function buildReportLayoutCss(
       font-size: ${typography.caption};
       margin-top: 0.8mm;
     }
-    .cmm-toc-links {
+`;
+}
+
+function buildReportTocLinksCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
+  return `    .cmm-toc-links {
       margin-top: 2mm;
       padding-top: 2mm;
       border-top: 1px solid ${theme.rule};
@@ -113,4 +126,12 @@ export function buildReportLayoutCss(
       font-size: ${typography.small};
     }
 `;
+}
+
+export function buildReportLayoutCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
+  return buildReportLayoutFrameCss()
+    + buildReportAsideCss(theme)
+    + buildReportMainCss()
+    + buildReportTocItemCss(theme, typography)
+    + buildReportTocLinksCss(theme, typography);
 }

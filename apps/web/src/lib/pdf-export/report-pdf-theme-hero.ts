@@ -3,10 +3,7 @@ import type {
   ReportPdfTypography,
 } from "./report-pdf-theme.tokens";
 
-export function buildReportHeaderCss(
-  theme: ReportPdfThemeTokens,
-  typography: ReportPdfTypography,
-): string {
+function buildHeaderFrameCss(theme: ReportPdfThemeTokens): string {
   return `    .cmm-web-header {
       border: 1px solid ${theme.rule};
       border-radius: ${theme.radius};
@@ -22,7 +19,11 @@ export function buildReportHeaderCss(
       gap: 4mm;
       align-items: flex-start;
     }
-    .cmm-web-header__kicker {
+`;
+}
+
+function buildHeaderTextCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
+  return `    .cmm-web-header__kicker {
       color: ${theme.gray};
       font-size: ${typography.caption};
       font-weight: 700;
@@ -43,7 +44,11 @@ export function buildReportHeaderCss(
       color: ${theme.gray};
       max-width: 120mm;
     }
-    .cmm-web-header__meta {
+`;
+}
+
+function buildHeaderMetaCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
+  return `    .cmm-web-header__meta {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 3mm;
@@ -67,10 +72,11 @@ export function buildReportHeaderCss(
 `;
 }
 
-export function buildReportHeroCss(
-  theme: ReportPdfThemeTokens,
-  typography: ReportPdfTypography,
-): string {
+export function buildReportHeaderCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
+  return buildHeaderFrameCss(theme) + buildHeaderTextCss(theme, typography) + buildHeaderMetaCss(theme, typography);
+}
+
+export function buildReportHeroCss(theme: ReportPdfThemeTokens, typography: ReportPdfTypography): string {
   return `
     .cmm-web-hero,
     .cmm-web-section {
