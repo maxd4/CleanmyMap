@@ -649,6 +649,10 @@ npm run audit:quality -- duplication
 npm run audit:quality -- top-heavy
 npm run audit:quality -- complexity
 npm run audit:quality -- cycles
+npm run audit:quality -- maintainability
+npm run audit:quality -- type-safety
+npm run audit:quality -- hotspots
+npm run audit:quality -- testability
 npm run audit:quality -- all
 ```
 
@@ -690,8 +694,24 @@ mise à jour automatiquement. `attentionRequired: false` signifie qu’aucun
 delta top-heavy ni REVIEW non qualifié nécessitant une nouvelle analyse n’a
 été observé, pas que la dette historique de fichiers volumineux est absente.
 
-`audit:quality -- all` produit en plus, après les cinq triplets et le triplet
-agrégé, une projection non normative dans le même SHA :
+Les audits auxiliaires restent non bloquants et ne modifient pas les verdicts
+des cinq gates historiques. `maintainability` distingue la complexité
+cognitive, les défauts locaux et leurs relations avec la complexité
+cyclomatique et la longueur de fonction. `type-safety` sépare
+`TYPE_SAFETY` et `ASYNC_SAFETY`. `hotspots` mesure l'activité Git du SHA audité
+sur une fenêtre de 180 jours, les changements substantiels à partir de 20
+lignes et l'activité élevée à partir de 5 commits ; ces seuils sont
+descriptifs, sans ratchet ni score global opaque. Il corrèle activité, dette
+structurelle, métriques de taille/complexité et couplage architectural quand la
+preuve existe, tandis que la récurrence multi-run reste `NOT_MEASURED` sans
+série attribuable. `testability` réutilise uniquement les métriques de modules,
+couvertures et rapports de mutation attribuables au SHA exact ; l'absence,
+l'obsolescence ou la non-attribution d'une preuve reste `NOT_MEASURED` et aucun
+runner de test n'est relancé par l'audit.
+
+`audit:quality -- all` produit en plus, après les triplets des cinq gates et
+des auxiliaires présents, puis le triplet agrégé, une projection non normative
+dans le même SHA :
 `quality-index--<runId>--index.json` et
 `quality-index--<runId>--summary.md`, ainsi qu'un ZIP complet du run :
 `quality-index--<runId>--bundle.zip`. Cette projection est une vue par fichier,
@@ -747,8 +767,9 @@ npm run report:quality-index -- --offline --sha=<SHA> --run-id=<runId>
 npm run report:quality-index -- --offline --sha=<SHA> --run-id=<runId> --bundle
 ```
 
-Le mode `--offline` lit exclusivement les cinq rapports de gate, le rapport
-auxiliaire de maintenabilité, leurs manifestes et
+Le mode `--offline` lit exclusivement les cinq rapports de gate, les rapports
+auxiliaires présents (`maintainability`, `type-safety`, `hotspots`,
+`testability`), leurs manifestes et
 le rapport agrégé du couple exact `SHA/runId`. Il conserve la provenance
 `COMMITTED_SNAPSHOT`, `WORKTREE_LIVE` ou `MIXED` et les limites de reproductibilité
 du run ; il accepte donc un run informatif avec `origin/main` absent ou différent
@@ -756,7 +777,7 @@ et `reproducible: false`, sans le requalifier en preuve `COMMITTED_SNAPSHOT`.
 Il ne relit pas le HEAD courant, ne recalcule aucune métrique et ne ratifie
 aucune baseline. Il refuse uniquement les mélanges d'identité, de SHA, de
 runId, de verdicts ou les rapports incomplets. Le `--bundle` écrit un ZIP dans le même dossier avec
-les dix-huit fichiers originaux et les deux projections, chemins plats
+les trente fichiers originaux d'un run complet et les deux projections, chemins plats
 préservés, sans écraser un fichier existant. Les contrôles de rétention
 reconnaissent ces trois artefacts de projection sans les confondre avec les
 triplets des engines uniquement lorsqu'un manifeste `all` valide du même SHA

@@ -297,6 +297,12 @@ function validateReport(audit, report) {
   if (audit === "type-safety" && (!Array.isArray(report.findings) || !Array.isArray(report.diagnostics) || !Array.isArray(report.coverage) || !report.summary)) {
     throw new Error("Rapport type-safety incomplet.");
   }
+  if (audit === "hotspots" && (!Array.isArray(report.files) || !report.methodology || !report.summary || !Array.isArray(report.diagnostics))) {
+    throw new Error("Rapport hotspots incomplet.");
+  }
+  if (audit === "testability" && (!Array.isArray(report.domains) || !report.summary || !Array.isArray(report.diagnostics))) {
+    throw new Error("Rapport testability incomplet.");
+  }
   return report;
 }
 
@@ -929,6 +935,8 @@ const FUNCTIONAL_QUALITY_CATEGORIES = Object.freeze([
   "topHeavy",
   "complexity",
   "maintainability",
+  "typeSafety",
+  "hotspots",
   "deadCode",
   "duplication",
   "cycles",
@@ -1016,6 +1024,21 @@ function finalizeFiles(files, reports, architecture) {
     const typeSafetyFindingItems = [...file.typeSafety.findings.values()];
     const hotspotFindingItems = [...file.hotspots.findings.values()];
     const cognitiveMetrics = file.maintainability.cognitiveMetrics;
+    const hotspotMeasurement = file.hotspots.measurement
+      ? {
+        ...file.hotspots.measurement,
+        currentMetrics: {
+          cyclomaticComplexity: file.complexity.metrics.filter((metric) => metric.metric === "complexity"),
+          functionLength: file.complexity.metrics.filter((metric) => metric.metric === "functionLength"),
+          cognitiveComplexity: cognitiveMetrics,
+        },
+        debtAccumulation: {
+          categories: ["topHeavy", "complexity", "maintainability", "typeSafety", "deadCode", "duplication", "cycles", "documentation"]
+            .filter((category) => file[category]?.findings?.size > 0),
+          note: "catégories avec findings attribués ; les mêmes causes restent reliées par leur relation canonique et ne sont pas fusionnées implicitement",
+        },
+      }
+      : null;
     const category = (auditKey, findingItems, measured, detail) => {
       if (findingItems.length > 0) return state("PRESENT", `${findingItems.length} finding(s)`, findingItems);
       if (categoryAvailability[auditKey] === "NOT_MEASURED") return state("NOT_MEASURED", detail);
@@ -1031,7 +1054,7 @@ function finalizeFiles(files, reports, architecture) {
         complexity: file.complexity.metrics.length > 0 ? state("PRESENT", `${file.complexity.metrics.length} fonction(s) mesurée(s)`, file.complexity.metrics) : categoryAvailability.complexity === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport complexity en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
         cognitiveComplexity: cognitiveMetrics.length > 0 ? state("PRESENT", `${cognitiveMetrics.length} fonction(s) mesurée(s)`, cognitiveMetrics) : categoryAvailability.maintainability === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport maintainability en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
         typeSafety: categoryAvailability.typeSafety === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport type-safety en échec ou couverture typée indisponible") : state(typeSafetyFindingItems.length > 0 ? "PRESENT" : "NONE", `${typeSafetyFindingItems.length} finding(s) TYPE_SAFETY/ASYNC_SAFETY`, typeSafetyFindingItems),
-        hotspots: file.hotspots.measurement ? state("PRESENT", "activité et dette structurelle mesurées", [file.hotspots.measurement]) : categoryAvailability.hotspots === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport hotspots absent ou en échec") : state("NOT_APPLICABLE", "aucune observation hotspot pour ce fichier"),
+        hotspots: hotspotMeasurement ? state("PRESENT", "activité, dette structurelle et relations de maintenance mesurées", [hotspotMeasurement]) : categoryAvailability.hotspots === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport hotspots absent ou en échec") : state("NOT_APPLICABLE", "aucune observation hotspot pour ce fichier"),
         testability: categoryAvailability.testability === "NOT_MEASURED" ? state("NOT_MEASURED", "preuve de testabilité absente, périmée ou non attribuable") : state("NOT_MEASURED", "aucune correspondance fichier inventée depuis une mesure par domaine"),
         architecture: file.architecture
           ? { state: "PRESENT", detail: "graphe d'import architectural disponible", value: file.architecture.metrics }
@@ -1238,6 +1261,8 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       "Le couplage architectural est mesuré sur le SHA Git exact en mode all ; en projection offline sans source architecturale, il reste NOT_MEASURED.",
       "La maintenabilité documentaire est une dimension expérimentale non bloquante ; un run historique sans rapport documentaire reste NOT_MEASURED.",
       "La sûreté de typage et d'asynchronisme reste une dimension auxiliaire non bloquante ; une configuration TypeScript hors de la peer range est explicitement NOT_MEASURED, jamais traitée comme une couverture typée.",
+      "Les hotspots utilisent une fenêtre Git de 180 jours, des seuils descriptifs de 5 commits et 20 lignes modifiées par changement substantiel ; aucune activité seule ne devient un finding bloquant et la récurrence multi-run reste NOT_MEASURED sans série attribuable.",
+      "La testabilité réutilise uniquement les métriques de modules portant le SHA exact ; les couvertures absentes, périmées ou non attestées, la mutation non attribuable et les correspondances fichier-test non démontrées restent NOT_MEASURED.",
     ],
   };
 }
@@ -1262,7 +1287,7 @@ export function buildQualityFileIndexMarkdown(index) {
     `- Fichiers indexés : **${index.globalCounts.files}**`,
     `- Groupes candidats relationnels : **${index.globalCounts.candidateGroups}**`,
     "",
-    "La projection lit les cinq moteurs de gate, les audits auxiliaires de maintenabilité et de sûreté typée/asynchrone, ainsi que la dimension documentaire du run identifié lorsqu'ils existent. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines.",
+    "La projection lit les cinq moteurs de gate, les audits auxiliaires de maintenabilité, sûreté typée/asynchrone, hotspots et testabilité, ainsi que la dimension documentaire du run identifié lorsqu'ils existent. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines.",
     "",
     "## États et audits",
     "",
@@ -1275,7 +1300,6 @@ export function buildQualityFileIndexMarkdown(index) {
     lines.push(`| ${audit} | ${summary.state ?? "PRESENT"} | ${source?.status ?? "NOT_MEASURED"} | ${source?.readProvenance ?? "NOT_MEASURED"} |`);
   }
   lines.push(`| documentation-maintainability | ${index.audits.documentation.state} | ${index.source.documentation.status} | ${index.source.documentation.readProvenance} |`);
-  lines.push(`| type-safety | ${index.audits.typeSafety?.state ?? "NOT_MEASURED"} | ${index.source.sourceReports.find((entry) => entry.audit === "type-safety")?.status ?? "NOT_MEASURED"} | ${index.source.sourceReports.find((entry) => entry.audit === "type-safety")?.readProvenance ?? "NOT_MEASURED"} |`);
   lines.push("", "## Top-heavy : verdict initial et réévaluation dérivée", "", "| Vue | État | Statut | Violations ratchet REVIEW |", "| --- | --- | --- | ---: |");
   lines.push(`| Initiale | ${index.audits.topHeavy.initialVerdict.evaluation.state} | ${index.audits.topHeavy.initialVerdict.status} | ${index.audits.topHeavy.initialVerdict.evaluation.counts.reviewRatchetViolations ?? 0} |`);
   lines.push(`| Dérivée | ${index.audits.topHeavy.derivedReevaluation.state} | ${index.audits.topHeavy.derivedReevaluation.status ?? "NOT_MEASURED"} | ${index.audits.topHeavy.derivedReevaluation.counts?.reviewRatchetViolations ?? 0} |`);
@@ -1283,10 +1307,12 @@ export function buildQualityFileIndexMarkdown(index) {
   for (const [rank, document] of (index.audits.documentation.ranking ?? []).slice(0, 20).entries()) {
     lines.push(`| ${rank + 1} | \`${escapeMarkdown(document.path)}\` | ${document.level} | ${document.lines} | ${document.largestSection ? `L${document.largestSection.startLine}-${document.largestSection.endLine} (${document.largestSection.lines}) : ${escapeMarkdown(document.largestSection.title)}` : "—"} | ${document.internalLinks?.invalid?.length ?? 0} | ${document.lifecycle?.statuses?.join(" / ") || "NOT_STATED"} |`);
   }
+  lines.push("", "## HOTSPOTS", "", `- État : **${index.audits.hotspots.state}**`, `- Fichiers mesurés : **${index.audits.hotspots.measuredFiles ?? "NOT_MEASURED"}**`, `- Activité élevée : **${index.audits.hotspots.findingCounts?.highActivityFiles ?? "NOT_MEASURED"}**`, `- Candidats activité + dette : **${index.globalCounts.hotspotCandidates ?? "NOT_MEASURED"}**`, `- Récurrence des régressions : **${index.audits.hotspots.summary?.regressionRecurrence ?? "NOT_MEASURED"}**`, "", "L'activité Git est descriptive et n'est pas un défaut en soi. Les candidats combinent activité élevée et signaux de dette ; le couplage est joint depuis le graphe architectural exact lorsque disponible.");
+  lines.push("", "## TESTABILITY", "", `- État : **${index.audits.testability.state}**`, `- Domaines/modules mesurés : **${index.audits.testability.measuredDomains ?? "NOT_MEASURED"}**`, `- Domaines critiques sans preuve suffisante : **${index.audits.testability.criticalDomainsWithoutSufficientEvidence ?? "NOT_MEASURED"}**`, "", "Les preuves absentes, périmées ou non attribuables restent NOT_MEASURED. Aucune absence de fichier voisin et aucune correspondance fonction-test ne sont inventées.");
   lines.push("", "## Couplage architectural", "", `- État : **${index.architecture?.state ?? "NOT_MEASURED"}**`, `- Imports : **${index.architecture?.graphSummary?.imports ?? "NOT_MEASURED"}**`, `- Frontières bloquantes : **${index.architecture?.boundary?.blocking?.length ?? "NOT_MEASURED"}**`, `- Imports internes non résolus : **${index.architecture?.graphSummary?.unresolvedInternalImports ?? "NOT_MEASURED"}**`, "", "Les métriques de centralité sont informatives ; seuls les findings de frontière explicitement interdits sont bloquants.");
-  lines.push("", "## FILE INDEX", "", "| Fichier | Catégories d'audit | Domaines fonctionnels | Top-heavy | Complexité cyclomatique | Longueur de fonction | Complexité cognitive | Défaut local de maintenabilité | TYPE_SAFETY | ASYNC_SAFETY | Dead-code | Duplication | Cycles | Documentation | Architecture |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+  lines.push("", "## FILE INDEX", "", "| Fichier | Catégories d'audit | Domaines fonctionnels | Top-heavy | Complexité cyclomatique | Longueur de fonction | Complexité cognitive | Défaut local de maintenabilité | TYPE_SAFETY | ASYNC_SAFETY | Hotspots | Testabilité | Dead-code | Duplication | Cycles | Documentation | Architecture |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const file of index.files) {
-    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.auditCategories.join(", ") || "—")} | ${escapeMarkdown(file.functionalDomains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.cognitiveComplexity)} | ${stateLabel(file.findings.localMaintainability)} | ${stateLabel(file.findings.typeSafety)} | ${stateLabel(file.findings.asyncSafety)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} | ${stateLabel(file.findings.documentation)} | ${stateLabel(file.metrics.architecture)} |`);
+    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.auditCategories.join(", ") || "—")} | ${escapeMarkdown(file.functionalDomains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.cognitiveComplexity)} | ${stateLabel(file.findings.localMaintainability)} | ${stateLabel(file.findings.typeSafety)} | ${stateLabel(file.findings.asyncSafety)} | ${stateLabel(file.findings.hotspots)} | ${stateLabel(file.findings.testability)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} | ${stateLabel(file.findings.documentation)} | ${stateLabel(file.metrics.architecture)} |`);
   }
   lines.push("", "## AUDIT CATEGORY INDEX", "", "Les catégories décrivent les familles de contrôles ; elles ne constituent pas des domaines fonctionnels.", "");
   for (const domain of index.auditCategories) {

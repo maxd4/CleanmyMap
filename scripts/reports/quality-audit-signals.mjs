@@ -84,7 +84,7 @@ function sourceFilesFromResults(reports) {
   addItems("complexity", reports.complexity?.result?.failures);
   addItems("complexity", reports.complexity?.result?.reviews);
   addItems("function-length", (reports.complexity?.metrics ?? []).filter((item) => item.metric === "functionLength" && item.category && item.category !== "NONE"));
-  addItems("cognitive-complexity", reports.maintainability?.findings);
+  addItems("cognitive-complexity", (reports.maintainability?.findings ?? []).filter((item) => item.category === "cognitive-complexity"));
   addItems("local-maintainability", (reports.maintainability?.findings ?? []).filter((item) => item.category !== "cognitive-complexity"));
   addItems("type-safety", reports["type-safety"]?.findings);
   for (const key of ["hardOffenders", "newHardOffenders", "ratchetViolations", "reviewWarnings", "newReviewOffenders", "reviewRatchetViolations"]) addItems("top-heavy", reports["top-heavy"]?.evaluation?.[key]);
@@ -119,7 +119,7 @@ export function buildQualityHotspotsReport({ root = process.cwd(), auditedSha, r
       file: entry.file,
       position: null,
       activity: { commits: commitCount, substantiveChanges: entry.substantiveChanges, addedLines: entry.addedLines, deletedLines: entry.deletedLines, highActivity },
-      structuralDebt: { state: signals.length > 0 ? "PRESENT" : "NONE", signals },
+      structuralDebt: { state: signals.length > 0 ? "PRESENT" : "NONE", signals, signalCount: signals.length },
       hotspotCandidate: highActivity && signals.length > 0,
       severity: highActivity && signals.length > 0 ? "informational" : null,
       provenance: { history: "COMMITTED_SNAPSHOT", debt: signals.length > 0 ? "QUALITY_AUDIT_RESULTS" : "NONE" },
@@ -211,6 +211,7 @@ export function buildQualityTestabilityReport({ root = process.cwd(), auditedSha
         : metricOrNotMeasured(value.coverage?.status ?? "COVERAGE_NOT_MEASURED");
       domains.push({
         domain,
+        module: domain,
         runtimeFiles: value.runtimeFiles,
         testFiles: value.testFiles,
         testPresence: { state: "PRESENT", directlyAssociatedRuntimeFiles: value.runtimeFilesWithDirectTest, runtimeFilesWithoutDirectAssociation: value.runtimeFilesWithoutDirectTest, method: "DIRECT_ASSOCIATION_ONLY; absence is not a coverage claim" },

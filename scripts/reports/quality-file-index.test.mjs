@@ -337,6 +337,65 @@ test("projette séparément TYPE_SAFETY et ASYNC_SAFETY par fichier", () => {
   assert.match(buildQualityFileIndexMarkdown(index), /ASYNC_SAFETY/);
 });
 
+test("projette les hotspots par fichier et la testabilité par domaine sans inventer de correspondance", () => {
+  const run = buildRun();
+  run.reports.hotspots = {
+    status: "PASS",
+    kind: "quality-hotspots",
+    measurementStatus: "MEASURED",
+    methodology: { historyWindowDays: 180, substantiveChangeMinimumLines: 20, highActivityDescriptiveMinimumCommits: 5 },
+    summary: { filesMeasured: 1, highActivityFiles: 1, hotspotCandidates: 1, regressionRecurrence: "NOT_MEASURED" },
+    files: [{
+      file: fileA,
+      activity: { commits: 6, substantiveChanges: 2, addedLines: 100, deletedLines: 40, highActivity: true },
+      structuralDebt: { state: "PRESENT", signals: ["complexity"], signalCount: 1 },
+      hotspotCandidate: true,
+      severity: "informational",
+      regressionRecurrence: { state: "NOT_MEASURED" },
+      provenance: { history: "COMMITTED_SNAPSHOT", debt: "QUALITY_AUDIT_RESULTS" },
+    }],
+    diagnostics: [],
+  };
+  run.reports.testability = {
+    status: "PASS",
+    kind: "quality-testability",
+    measurementStatus: "MEASURED",
+    summary: { domainsMeasured: 1, criticalDomainsWithoutSufficientEvidence: 1 },
+    domains: [{
+      domain: "api",
+      module: "api",
+      runtimeFiles: 2,
+      testFiles: 1,
+      testPresence: { state: "PRESENT", runtimeFilesWithoutDirectAssociation: 1 },
+      coverage: { state: "NOT_MEASURED", reason: "COVERAGE_NOT_MEASURED" },
+      mutation: { state: "NOT_MEASURED", reason: "MUTATION_REPORT_MISSING" },
+      criticalEvidence: "NOT_MEASURED",
+    }],
+    diagnostics: [{ code: "MUTATION_REPORT_MISSING" }],
+  };
+  const architecture = {
+    state: "PRESENT",
+    files: [{ path: fileA, metrics: { fanIn: { runtime: 2 }, fanOut: { runtime: 3 } } }],
+    domains: [],
+    boundary: { state: "PRESENT", blocking: [], current: [] },
+  };
+  const index = buildQualityFileIndex({ run, architecture, mode: "ALL" });
+  const indexedA = index.files.find((file) => file.path === fileA);
+
+  assert.equal(indexedA.metrics.hotspots.state, "PRESENT");
+  assert.equal(indexedA.metrics.hotspots.items[0].currentMetrics.cyclomaticComplexity.length, 1);
+  assert.ok(indexedA.metrics.hotspots.items[0].debtAccumulation.categories.includes("complexity"));
+  assert.equal(indexedA.findings.hotspots.state, "PRESENT");
+  assert.equal(index.audits.testability.measuredDomains, 1);
+  assert.equal(index.audits.testability.criticalDomainsWithoutSufficientEvidence, 1);
+  assert.ok(index.auditCategories.some((category) => category.id === "hotspots"));
+  assert.ok(index.auditCategories.some((category) => category.id === "testability:api"));
+  const markdown = buildQualityFileIndexMarkdown(index);
+  assert.match(markdown, /## HOTSPOTS/);
+  assert.match(markdown, /## TESTABILITY/);
+  assert.match(markdown, /\| Hotspots \| Testabilité \|/);
+});
+
 test("projette la maintenabilité documentaire dans les fichiers et le domain index", () => {
   const run = buildRun();
   run.documentation = documentationReport();
@@ -486,6 +545,53 @@ test("le mode offline lit un run exact, crée le bundle sans réécrire les orig
       assert.equal(crypto.createHash("sha256").update(fs.readFileSync(path.join(shaRoot, name))).digest("hex"), digest);
     }
     await assert.rejects(() => generateQualityFileIndex({ root, auditedSha: sha, runId }), /refus d'écrasement/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("offline lit les auxiliaires hotspots et testability du même SHA/run et les conserve dans le ZIP", async () => {
+  const root = tempRoot();
+  try {
+    writeRun(root);
+    const optional = {
+      hotspots: {
+        status: "PASS",
+        kind: "quality-hotspots",
+        measurementStatus: "MEASURED",
+        methodology: { historyWindowDays: 180 },
+        summary: { filesMeasured: 0, highActivityFiles: 0, hotspotCandidates: 0, regressionRecurrence: "NOT_MEASURED" },
+        files: [],
+        diagnostics: [],
+      },
+      testability: {
+        status: "PASS",
+        kind: "quality-testability",
+        measurementStatus: "NOT_MEASURED",
+        summary: { domainsMeasured: 0, criticalDomainsWithoutSufficientEvidence: 0 },
+        domains: [],
+        diagnostics: [{ code: "MODULE_TEST_METRICS_STALE_OR_UNATTRIBUTABLE" }],
+      },
+    };
+    const shaRoot = path.join(root, "artifacts", "quality-audits", sha);
+    const aggregatePath = createAuditPaths({ root, auditedHead: sha, audit: "all", runId });
+    const aggregate = JSON.parse(fs.readFileSync(aggregatePath.report, "utf8"));
+    for (const [audit, report] of Object.entries(optional)) {
+      const paths = createAuditPaths({ root, auditedHead: sha, audit, runId });
+      const manifest = { schemaVersion: 1, audit, runId, auditedHead: sha, originMain: sha, baselineStable: true, worktreeClean: true, readProvenance: "MIXED", reproducible: false, resultClass: "INFORMATIVE", status: "PASS", attentionRequired: false, generatedAt: "2026-10-21T20:00:00.000Z" };
+      fs.writeFileSync(paths.manifest, `${JSON.stringify(manifest)}\n`);
+      fs.writeFileSync(paths.report, `${JSON.stringify(report)}\n`);
+      fs.writeFileSync(paths.summary, `# ${audit}\n`);
+      aggregate.audits.push({ audit, status: "PASS", attentionRequired: false, readProvenance: "MIXED", reproducible: false, resultClass: "INFORMATIVE" });
+    }
+    fs.writeFileSync(aggregatePath.report, `${JSON.stringify(aggregate)}\n`);
+    const generated = await generateQualityFileIndex({ root, auditedSha: sha, runId, mode: "OFFLINE", includeBundle: true, generatedAt: "2026-10-21T20:01:00.000Z" });
+    assert.equal(generated.run.reports.hotspots.kind, "quality-hotspots");
+    assert.equal(generated.run.reports.testability.kind, "quality-testability");
+    assert.ok(generated.bundle.entries.includes("hotspots--projection-run--report.json"));
+    assert.ok(generated.bundle.entries.includes("testability--projection-run--report.json"));
+    assert.equal(generated.bundle.entries.length, 26);
+    assert.equal(fs.existsSync(path.join(shaRoot, "hotspots--projection-run--report.json")), true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
