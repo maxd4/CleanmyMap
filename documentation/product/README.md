@@ -18,6 +18,19 @@ Repères transversaux à conserver dans toute la documentation produit :
 - l'inclusion sociale et les bénéfices liés à l'activité physique restent des
   objectifs, sans résultat social mesuré déclaré.
 
+## Routage vers les propriétaires pour Codex
+
+| Besoin | Document canonique | Invariant |
+|---|---|---|
+| Vision, bénéficiaires, promesses | `vision-et-objectifs.md` | Objectif ≠ mesure |
+| Ordre d'exécution | `roadmap-priorisee.md` (`PLAN`) | La roadmap longue reste `HISTORY` |
+| Décisions ouvertes | `decisions-en-attente.md` (`PLAN`) | Ne pas présenter comme CURRENT |
+| Comportement des pages | `../pages_site/INDEX.md`, puis fiche de page | Code, droits et protection `routes/` |
+| Interface transversale | `../design-system/README.md` et contrat spécialisé | Composant, CSS, check |
+| SEO, canonical, sitemap | `../seo/README.md` | `apps/web/src/lib/seo/indexability.ts` |
+| Carte, impact et méthode | `SCIENTIFIC_PROTOCOL.md`, `methodologie-carte-actions.md` | Observé ≠ estimé ≠ prédit |
+| Conception mobile-first | `coherence-mobile-first.md` | Critère UX, pas preuve de release mobile |
+
 ## Sources principales
 
 ### Vision et stratégie
@@ -27,13 +40,14 @@ Repères transversaux à conserver dans toute la documentation produit :
 - `roadmap-priorisee.md` — priorités produit ;
 - `roadmap-priorisee-long.md` — historique détaillé (`HISTORY`), conservé pour son contexte et ses critères, sans autorité sur l'ordre courant ;
 - `dimension-communautaire.md` — continuité d'engagement ;
-- `chantiers-q2-q3.md` — chantiers structurants.
+- `decisions-en-attente.md` — arbitrages produit ouverts (`PLAN`).
 
 ### Utilisateurs et parcours
 
 - `parcours-utilisateurs.md` ;
 - `coherence-mobile-first.md` ;
-- `matrice-rubriques.md`.
+- `matrice-rubriques.md` ;
+- `visual-first-priorites.md` — références de schémas utiles (`PLAN / REFERENCE`).
 
 ### Gamification
 

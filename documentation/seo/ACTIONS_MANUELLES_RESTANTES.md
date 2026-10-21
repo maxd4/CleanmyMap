@@ -63,3 +63,16 @@ déploiement.
 ## Point d'attention
 
 Ne pas simuler dans le code des actions qui dépendent d'un tiers, d'un accès DNS ou d'une validation humaine. Ces tâches doivent rester dans la gouvernance opérationnelle du site.
+
+## Cadences et gestion des alertes
+
+| Signal | Contrôle | Suite |
+|---|---|---|
+| Page stratégique absente, 5xx, canonical erronée | HTTP, Search Console, redirects et sitemap | Incident prioritaire si reproduit |
+| Baisse durable impressions, clics, positions | Périodes comparables, saisonnalité, contenu modifié | Chantier si cause établie |
+| 404, liens brisés, metadata manquante ou duplication | Source de la route, index maître, tests | Correctif ciblé |
+| Dégradation Core Web Vitals / UX mobile | Mesures comparables appareil/page | Aucune promesse de gain sans résultat |
+
+**Hebdomadaire facultatif :** test des pages stratégiques lors d'incidents. **Trimestriel :** backlinks, données structurées correspondant au contenu visible, mots-clés, redirects. **Annuel :** revue stratégie, metadata, robots, sitemap et qualité mobile. Une cadence n'est pas une preuve d'exécution.
+
+Outils externes : [Search Console](https://search.google.com/search-console), [Rich Results Test](https://search.google.com/test/rich-results), [Schema.org](https://schema.org). Lint, typecheck et build sont des validations Git et non des preuves d'indexation.

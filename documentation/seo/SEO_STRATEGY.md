@@ -87,50 +87,9 @@ hors du sitemap courant. `/en` est un alias vers `/` et ne correspond à aucune
 version anglaise `en-US` ;
 aucune page canonique `/learn` n'existe actuellement.
 
-## Maintenance SEO
+## Maintenance et preuve externe
 
-### SEARCH_CONSOLE_MONTHLY
-
-Google Search Console est **ACTIVE et validée** pour
-`https://cleanmymap.fr/`. La homepage est indexée et Google reconnaît la
-canonical `https://cleanmymap.fr/`. Cette information est un état externe
-observé ; le dépôt ne simule aucune action Search Console.
-
-- [ ] Ouvrir Google Search Console pour `https://cleanmymap.fr/`
-- [ ] Vérifier `Pages / Indexation`
-- [ ] Comparer les pages découvertes, indexées et exclues
-- [ ] Examiner les motifs d'exclusion nouveaux
-- [ ] Vérifier les erreurs d'exploration
-- [ ] Vérifier `Sitemaps`
-- [ ] Vérifier que `sitemap.xml` est lisible et sans erreur persistante
-- [ ] Inspecter les nouvelles pages stratégiques publiées durant le mois
-- [ ] Demander une indexation uniquement lorsqu'elle est utile, pas pour chaque commit
-- [ ] Vérifier `Performances`
-- [ ] Relever les principales requêtes Google
-- [ ] Surveiller `CleanMyMap`, les requêtes métier et les confusions éventuelles avec `CleanMyMac`
-- [ ] Relever impressions, clics, CTR et positions sans en faire des objectifs artificiels
-- [ ] Vérifier Core Web Vitals
-- [ ] Vérifier les liens externes significatifs
-- [ ] Consigner les anomalies nécessitant un chantier technique
-
-Google recrawl normalement les pages automatiquement. Les changements mineurs
-n'exigent pas une demande manuelle d'indexation et Search Console ne doit pas
-être « mise à jour » à chaque déploiement. La revue de routine est mensuelle ;
-une inspection ad hoc est pertinente après une nouvelle page stratégique, un
-changement de canonical, une migration, une correction d'indexabilité, une
-modification majeure de contenu ou un changement d'identité SEO.
-
-### Trimestriel
-- [ ] Audit backlinks
-- [ ] Analyse concurrentielle
-- [ ] Mise à jour FAQ
-- [ ] Ajout de nouveaux HowTo
-
-### Annuel
-- [ ] Révision complète metadata
-- [ ] Audit performance Core Web Vitals
-- [ ] Mise à jour mots-clés
-- [ ] Revoir `robots.ts` et les directives AI
+La cadence `SEARCH_CONSOLE_MONTHLY`, les interventions trimestrielles/annuelles, incidents et tâches tierces ont une seule source : [ACTIONS_MANUELLES_RESTANTES.md](./ACTIONS_MANUELLES_RESTANTES.md). Ne pas recopier cette procédure ici. Une CI ou un déploiement n'atteste jamais l'indexation.
 
 ## Pages avec metadata
 

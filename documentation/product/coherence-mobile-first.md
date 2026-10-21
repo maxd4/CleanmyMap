@@ -1,5 +1,7 @@
 # Coherence mobile first
 
+**Statut : critères produit CURRENT, sans prétention de mesure UX ni de release mobile.** Géométrie et breakpoints : [`../design-system/LAYOUT_SPACING.md`](../design-system/LAYOUT_SPACING.md) ; validation mobile : `apps/mobile/README.md`.
+
 La priorite est de garder les actions essentielles lisibles et rapides sur petit ecran.
 
 ## Hiérarchie par support
@@ -24,7 +26,7 @@ flowchart LR
 
 ## Ce qu'on attend d'une page bien coherente
 
-1. on comprend en moins de 10 secondes ce qu'on peut faire ;
+1. le geste principal est rapidement identifiable (objectif qualitatif, non mesuré en 10 secondes) ;
 2. on sait ou cliquer ;
 3. on ne perd pas le contexte en revenant en arriere ;
 4. la version desktop enrichit sans contredire la version mobile.

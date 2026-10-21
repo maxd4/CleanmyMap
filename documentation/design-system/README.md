@@ -3,6 +3,20 @@
 Ce dossier distingue les contrats applicables des références historiques ou
 expérimentales. Un README oriente ; il ne remplace pas un contrat spécialisé.
 
+## Routage Codex — source spécialisée par invariant
+
+| Invariant | Owner documentaire | Code à confronter |
+|---|---|---|
+| Couleurs par famille | `BLOC_COLOR_SYSTEM_PREMIUM.md` | Tokens CSS et configuration |
+| Modes d'affichage | `DISPLAY_MODES_CANONICAL.md` | `apps/web/src/lib/ui/preferences.ts`, `display-modes.css` |
+| Layout et densité | `LAYOUT_SPACING.md` | Shell et CSS layout |
+| Titres de page | `PAGE_HEADER.md` | Composant PageHeader |
+| Mouvement | `MOTION_TRANSITIONS.md` | `motion.css` et préférences |
+| Contraste | `theme-visibility-rules.md` | CSS et états réels |
+| Exceptions | `UI_EXCEPTION_PAGES.md` | Runtime et fiche route protégée |
+
+Les états `PLAN`, `COMPATIBILITY`, `HISTORY` et `EXPERIMENTATION` n'impliquent aucune fonctionnalité active. Ne pas copier les tokens ni les listes de routes dans cet index.
+
 ## Contrats `CURRENT`
 
 - [`Design-system.md`](./Design-system.md) — vue transversale `CURRENT` qui

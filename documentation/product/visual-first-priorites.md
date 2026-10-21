@@ -1,5 +1,7 @@
 # Visual-first priorites
 
+**Statut : `PLAN / REFERENCE`**, pas un audit runtime CURRENT. Les liens ci-dessous orientent vers les sources canoniques et ne constituent pas un second inventaire.
+
 Top des pages ou le visuel apporte le plus de clarté et réduit le temps de comprehension.
 
 ```mermaid
@@ -32,3 +34,9 @@ flowchart LR
 - si une page sert a executer, le visuel doit montrer les etapes ;
 - si une page sert a controler, le visuel doit montrer les points de vigilance ;
 - si une page sert a comparer, le visuel doit montrer la relation entre les blocs.
+
+## Critères de sélection et historique
+
+L'audit daté du 19 mai 2026 signalait alors une couverture hétérogène, sans constituer une mesure actuelle. Conserver ses critères durables : graphe pour un parcours ou une transition, matrice pour des responsabilités croisées, tableau pour les sources et décisions ; sinon Markdown structuré. Un schéma n'est utile que s'il clarifie comprendre, comparer, décider ou agir.
+
+Ne pas recopier les listes de routes, permissions ou métriques depuis leur owner. Ne pas inventer de fallback image. Avant suppression, corriger références et garde-fous légitimes. Le code et les tests prévalent sur les audits historiques.
