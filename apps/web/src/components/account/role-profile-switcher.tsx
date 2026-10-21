@@ -15,9 +15,9 @@ type RoleProfileSwitcherProps = {
 };
 
 const PROFILE_BUTTON_CLASS =
-  "rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.38)] px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-amber-50/70 transition-all hover:-translate-y-1 hover:bg-[rgba(69,26,3,0.54)] hover:text-white";
+  "rounded-2xl border border-amber-200/20 bg-[rgba(69,26,3,0.38)] px-8 py-4 cmm-text-small font-black uppercase tracking-[0.12em] text-amber-50/90 transition-all hover:-translate-y-1 hover:bg-[rgba(69,26,3,0.54)] hover:text-white";
 const ACTIVE_PROFILE_BUTTON_CLASS =
-  "rounded-2xl border border-amber-200/30 bg-amber-100/12 px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-2xl transition-all hover:-translate-y-1";
+  "rounded-2xl border border-amber-200/30 bg-amber-100/12 px-8 py-4 cmm-text-small font-black uppercase tracking-[0.12em] text-white shadow-2xl transition-all hover:-translate-y-1";
 
 export function RoleProfileSwitcher({
   locale,
@@ -62,7 +62,7 @@ export function RoleProfileSwitcher({
           })}
         </div>
         {profileError ? (
-          <p role="alert" className="mt-4 cmm-text-caption text-rose-200">
+          <p role="alert" className="mt-4 cmm-text-small text-rose-200">
             {profileError}
           </p>
         ) : null}

@@ -34,7 +34,7 @@ export function PilotageOverviewPage({
   const pageFamily = getPageFamilyById("accueil-pilotage");
 
   return (
-    <section className="w-full space-y-6 p-4 md:p-8">
+    <section className="cmm-pilotage-overview w-full space-y-6 p-4 md:p-8">
       <div className="space-y-8">
         <PageHeader
           family={pageFamily}

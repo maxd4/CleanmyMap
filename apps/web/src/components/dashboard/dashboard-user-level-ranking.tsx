@@ -45,11 +45,11 @@ export function DashboardUserLevelRanking({
                   <p className="break-words text-sm font-bold text-white">
                     #{row.rank} - {row.actorName}
                   </p>
-                  <p className="text-xs text-amber-100/80">
+                  <p className="text-sm text-amber-100/90">
                     {locale === "fr" ? "XP valides" : "Validated XP"}: {row.xpValidated}
                   </p>
                 </div>
-                <span className="rounded-lg border border-amber-200/25 bg-[rgba(69,26,3,0.65)] px-3 py-1 text-xs font-black uppercase tracking-[0.15em] text-amber-50">
+                <span className="rounded-lg border border-amber-200/25 bg-[rgba(69,26,3,0.65)] px-3 py-1 text-sm font-black uppercase tracking-[0.1em] text-amber-50">
                   {locale === "fr" ? "Niveau" : "Level"} {row.currentLevel}
                 </span>
               </div>
@@ -65,7 +65,7 @@ export function DashboardUserLevelRanking({
                 {locale === "fr" ? "Votre position" : "Your position"}:
                 #{userLevelRanking.currentUserRow.rank}
               </p>
-              <p className="text-xs text-amber-100/80">
+              <p className="text-sm text-amber-100/90">
                 {locale === "fr" ? "Niveau" : "Level"} {userLevelRanking.currentUserRow.currentLevel} · {locale === "fr" ? "XP valides" : "Validated XP"} {userLevelRanking.currentUserRow.xpValidated}
               </p>
             </div>

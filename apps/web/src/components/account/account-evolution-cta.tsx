@@ -19,11 +19,11 @@ export function AccountEvolutionCta({
         <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" aria-hidden="true" />
         <div>
           <h3 className="font-bold text-white">Faire évoluer mon compte</h3>
-          <p className="mt-1 text-sm text-amber-50/72">
+          <p className="mt-1 text-sm text-amber-50/90">
             Consultez votre niveau et votre demande depuis la page dédiée.
           </p>
           {currentRole ? (
-            <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-amber-100/70">
+            <p className="mt-2 cmm-text-small font-bold uppercase tracking-[0.12em] text-amber-100/90">
               Niveau actuel : {getProfileLabel(currentRole, "fr")}
             </p>
           ) : null}

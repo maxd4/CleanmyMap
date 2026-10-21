@@ -194,4 +194,25 @@ h1, h2, h3, h4 {
   white-space: nowrap;
 }
 
+  /* The pilotage cockpit uses a dark, translucent surface. Keep its
+     functional labels at the shared small-text minimum and use the light
+     amber counterpart instead of the light-theme amber-700 utility. */
+  .cmm-pilotage-overview .text-xs {
+    font-size: var(--text-small);
+    line-height: var(--leading-small);
+  }
+
+  .cmm-pilotage-overview .text-amber-700 {
+    color: #fed7aa;
+  }
+
+  #notifications .text-xs {
+    font-size: var(--text-small);
+    line-height: var(--leading-small);
+  }
+
+  #notifications .text-amber-100\/54 {
+    color: #fef3c7;
+  }
+
 }

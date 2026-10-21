@@ -78,19 +78,19 @@ const VARIANT_CARD_STYLES: Record<
 > = {
   pilotage: {
     card: "border-white/12 bg-white/8",
-    label: "text-orange-100/70",
+    label: "text-orange-100/90",
     value: "text-white",
     accent: "bg-amber-300",
     chip: "bg-white/10 text-amber-100",
-    secondary: "text-white/72",
+    secondary: "text-white",
   },
   sponsor: {
     card: "border-white/5 bg-white/5",
-    label: "text-white/40",
+    label: "text-white",
     value: "text-white",
     accent: "bg-amber-300",
     chip: "border-white/10 bg-white/10 text-white",
-    secondary: "text-white/72",
+    secondary: "text-white",
   },
   governance: {
     card: "border-white/12 bg-slate-950/35",
@@ -115,18 +115,18 @@ const VARIANT_INSIGHT_STYLES: Record<
 > = {
   pilotage: {
     card: "border-white/12 bg-[rgba(69,45,28,0.84)]",
-    eyebrow: "text-orange-100/70",
+    eyebrow: "text-orange-100/90",
     title: "text-white",
-    detail: "text-white/82",
+    detail: "text-white",
     primary:
       "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-[0_8px_24px_-8px_rgba(234,88,12,0.45)]",
     secondary: "border-white/12 bg-[rgba(44,28,15,0.60)] text-white hover:border-orange-300/50",
   },
   sponsor: {
     card: "border-white/5 bg-white/5",
-    eyebrow: "text-amber-100/70",
+    eyebrow: "text-amber-100/90",
     title: "text-white",
-    detail: "text-white/78",
+    detail: "text-white",
     primary:
       "bg-gradient-to-r from-amber-500 to-orange-400 text-black shadow-[0_10px_28px_-10px_rgba(249,115,22,0.35)]",
     secondary: "border-white/10 bg-white/5 text-white hover:bg-white/10",
@@ -178,7 +178,7 @@ export function PilotageMetricGrid({
             </div>
 
             <div className="flex items-start justify-between gap-3">
-              <p className={cn("text-[10px] font-black uppercase tracking-[0.2em]", theme.label, labelClassName)}>
+              <p className={cn("cmm-text-small font-black uppercase tracking-[0.12em]", theme.label, labelClassName)}>
                 {metric.label}
               </p>
               {metric.icon ? (
@@ -201,7 +201,7 @@ export function PilotageMetricGrid({
 
               <div className="flex flex-wrap items-center gap-2">
                 {metric.deltaAbsolute ? (
-                  <span className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em]", interpretationClass)}>
+                  <span className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1.5 cmm-text-small font-black uppercase tracking-[0.1em]", interpretationClass)}>
                     {metric.interpretation === "positive" ? (
                       <TrendingUp size={12} aria-hidden="true" />
                     ) : metric.interpretation === "negative" ? (
@@ -211,14 +211,14 @@ export function PilotageMetricGrid({
                   </span>
                 ) : null}
                 {metric.deltaPercent ? (
-                  <span className={cn("inline-flex rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em]", interpretationClass)}>
+                  <span className={cn("inline-flex rounded-full px-3 py-1.5 cmm-text-small font-black uppercase tracking-[0.1em]", interpretationClass)}>
                     {metric.deltaPercent}
                   </span>
                 ) : null}
               </div>
 
               {metric.note ? (
-                <p className={cn("text-xs leading-relaxed", theme.secondary)}>{metric.note}</p>
+                <p className={cn("text-sm leading-relaxed", theme.secondary)}>{metric.note}</p>
               ) : null}
             </div>
           </article>
@@ -243,7 +243,7 @@ export function PilotageInsightCard({
         className,
       )}
     >
-      <p className={cn("text-[11px] font-black uppercase tracking-[0.22em]", theme.eyebrow)}>
+      <p className={cn("cmm-text-small font-black uppercase tracking-[0.12em]", theme.eyebrow)}>
         {insight.eyebrow}
       </p>
       <h3 className={cn("mt-2 text-xl font-black tracking-tight", theme.title)}>
@@ -258,7 +258,7 @@ export function PilotageInsightCard({
           href={insight.actionHref}
           tone="primary"
           variant="pill"
-          className={cn("gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em]", theme.primary)}
+          className={cn("gap-2 px-4 py-3 cmm-text-small font-black uppercase tracking-[0.12em]", theme.primary)}
         >
           {insight.actionLabel}
           <ArrowRight size={14} aria-hidden="true" />
@@ -268,7 +268,7 @@ export function PilotageInsightCard({
             href={insight.secondaryActionHref}
             tone="secondary"
             variant="pill"
-            className={cn("px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em]", theme.secondary)}
+            className={cn("px-4 py-3 cmm-text-small font-black uppercase tracking-[0.12em]", theme.secondary)}
           >
             {insight.secondaryActionLabel}
           </CmmButton>
@@ -296,13 +296,13 @@ export function PilotageClusterLinks({
               "border-white/25 bg-white/[0.12] shadow-[0_18px_40px_-28px_rgba(255,255,255,0.18)]",
           )}
         >
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+          <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-white">
             {String(index + 1).padStart(2, "0")}
           </p>
           <h4 className="mt-2 text-lg font-black tracking-tight text-white">
             {link.label}
           </h4>
-          <p className="mt-2 text-sm leading-relaxed text-white/72">
+          <p className="mt-2 text-sm leading-relaxed text-white">
             {link.description}
           </p>
         </Link>

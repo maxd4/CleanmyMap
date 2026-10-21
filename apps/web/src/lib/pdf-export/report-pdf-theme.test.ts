@@ -16,4 +16,11 @@ describe("official report theme readability", () => {
       expect(css).toContain("@page { size: A4 portrait;");
     },
   );
+
+  it.each(["impact", "scientific"] as const)(
+    "matches the pre-modularization CSS contract for the %s theme",
+    (theme) => {
+      expect(JSON.stringify(buildOfficialReportCss(theme))).toMatchSnapshot();
+    },
+  );
 });

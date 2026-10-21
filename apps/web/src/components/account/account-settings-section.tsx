@@ -68,7 +68,7 @@ export function AccountSettingsSection({
       <div className="flex flex-col gap-3 rounded-2xl border border-amber-200/18 bg-[rgba(69,26,3,0.34)] p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-black text-white">{copy.compactTitle}</h2>
-          <p className="mt-1 text-sm text-amber-100/75">
+          <p className="mt-1 text-sm text-amber-100/90">
             {copy.compactDescription}
           </p>
         </div>
@@ -172,7 +172,7 @@ export function AccountSettingsSection({
 
         <NotificationPreferencesSetting locale={localeOverride ?? locale} />
 
-        <p className="text-xs text-slate-500 mt-5">
+        <p className="cmm-text-small text-slate-600 mt-5">
           {copy.dataQuestions}
         </p>
       </div>

@@ -43,7 +43,7 @@ export type ThirtySecondsSummaryProps = {
 function deltaStyles(v: SummaryKpi["interpretation"]) {
   if (v === "positive") return { color: "text-amber-400", bg: "bg-amber-500/10", icon: TrendingUp };
   if (v === "negative") return { color: "text-rose-400", bg: "bg-rose-500/10", icon: TrendingDown };
-  return { color: "text-slate-500", bg: "bg-white/5", icon: Minus };
+  return { color: "text-slate-300", bg: "bg-white/5", icon: Minus };
 }
 
 function alertStyles(severity: string) {
@@ -114,7 +114,7 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
               <div className="flex items-center gap-3">
                 <span
                   className={cn(
-                    "rounded-full px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl",
+                    "rounded-full px-4 py-1.5 cmm-text-caption font-black uppercase tracking-[0.12em] shadow-2xl",
                     alertStyle?.badge,
                   )}
                 >
@@ -125,7 +125,7 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
                       : "Attention"}
                 </span>
                 <div className="h-1 w-1 rounded-full bg-slate-700" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <span className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-300">
                   Protocole d&apos;Alerte Alpha
                 </span>
               </div>
@@ -136,10 +136,6 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
                 {alert.detail}
               </p>
             </div>
-            <button className="shrink-0 flex items-center gap-3 rounded-2xl bg-white px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-950 shadow-2xl transition-transform hover:translate-x-2">
-              Résoudre
-              <ArrowRight size={16} />
-            </button>
           </div>
         </motion.div>
       ) : null}
@@ -164,16 +160,17 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
                 <div className="relative z-10 space-y-8">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="rounded-lg border border-white/5 bg-white/5 p-2 text-slate-600">
+                      <div className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-300">
                         <Activity size={14} />
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                      <span className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-300">
                         {kpi.label}
                       </span>
                     </div>
                     <Link
                       href="/methodologie"
-                      className="rounded-lg bg-white/5 p-2 text-slate-600 transition-all hover:bg-white/10 hover:text-white"
+                      aria-label="Consulter la méthodologie"
+                      className="rounded-lg bg-white/5 p-2 text-slate-300 transition-all hover:bg-white/10 hover:text-white"
                     >
                       <Info size={14} />
                     </Link>
@@ -189,7 +186,7 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
                     <div className="flex items-center gap-3">
                       <div
                         className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black tracking-tight",
+                          "inline-flex items-center gap-1.5 rounded-full px-3 py-1 cmm-text-small font-black tracking-tight",
                           styles.bg,
                           styles.color,
                         )}
@@ -197,14 +194,14 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
                         <DeltaIcon size={12} />
                         {kpi.deltaPercent}
                       </div>
-                      <span className="text-[10px] font-bold italic text-slate-600">
+                      <span className="cmm-text-small font-bold italic text-slate-300">
                         vs last period
                       </span>
                     </div>
                   </div>
 
                   <div className="border-t border-white/5 pt-6">
-                    <p className="text-[10px] font-bold italic leading-relaxed text-slate-500">
+                    <p className="cmm-text-small font-bold italic leading-relaxed text-slate-300">
                       Previous baseline:{" "}
                       <span className="font-black text-slate-400">
                         {kpi.previousValue}
@@ -218,7 +215,7 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
         </div>
       ) : (
         <div className="rounded-[3rem] border border-white/5 bg-slate-900/40 p-10 text-center backdrop-blur-3xl">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+          <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-300">
             Synthèse indisponible
           </p>
           <h4 className="mt-3 text-2xl font-black tracking-tighter text-white">
@@ -233,7 +230,7 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
       {actionLabel && actionHref ? (
         <div className="flex flex-col gap-4 rounded-[3rem] border border-white/5 bg-white/5 p-6 backdrop-blur-3xl md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-300">
               Action recommandée
             </p>
             {actionReason ? (
@@ -244,7 +241,7 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
           </div>
           <Link
             href={actionHref}
-            className="inline-flex shrink-0 items-center gap-3 rounded-2xl bg-white px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-950 shadow-2xl transition-transform hover:translate-x-2"
+            className="inline-flex shrink-0 items-center gap-3 rounded-2xl bg-white px-6 py-4 cmm-text-small font-black uppercase tracking-[0.12em] text-slate-950 shadow-2xl transition-transform hover:translate-x-2"
           >
             {actionLabel}
             <ArrowRight size={16} />

@@ -27,15 +27,15 @@ const SECTION_THEME: Record<
 > = {
   pilotage: {
     section: "border-white/12 bg-white/[0.06]",
-    eyebrow: "text-orange-100/70",
+      eyebrow: "text-orange-100/90",
     title: "text-white",
-    description: "text-white/72",
+      description: "text-white",
   },
   sponsor: {
     section: "border-white/5 bg-white/5",
-    eyebrow: "text-amber-100/70",
+      eyebrow: "text-amber-100/90",
     title: "text-white",
-    description: "text-white/72",
+      description: "text-white",
   },
   governance: {
     section: "border-white/10 bg-slate-950/35",
@@ -66,7 +66,7 @@ export function DecisionReadingSection({
     >
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-3">
-          <p className={cn("text-[10px] font-black uppercase tracking-[0.3em]", theme.eyebrow)}>
+          <p className={cn("cmm-text-small font-black uppercase tracking-[0.14em]", theme.eyebrow)}>
             {eyebrow}
           </p>
           <h3 className={cn("text-2xl font-black tracking-tight", theme.title)}>

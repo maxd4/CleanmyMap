@@ -34,7 +34,7 @@ export default async function ParcoursProfilePage({
  <section className="space-y-4 rounded-3xl border border-amber-200/50 bg-amber-50/80 p-5 shadow-sm">
  <div className="grid gap-3 md:grid-cols-3">
  <article className="rounded-2xl border border-amber-200/60 bg-white p-4">
- <p className="cmm-text-caption uppercase tracking-wide text-amber-600">
+ <p className="cmm-text-small uppercase tracking-wide text-amber-800">
  Découvrir
  </p>
  <p className="mt-2 cmm-text-small text-slate-700">
@@ -42,7 +42,7 @@ export default async function ParcoursProfilePage({
  </p>
  </article>
  <article className="rounded-2xl border border-amber-200/60 bg-white p-4">
- <p className="cmm-text-caption uppercase tracking-wide text-amber-600">
+ <p className="cmm-text-small uppercase tracking-wide text-amber-800">
  Choisir
  </p>
  <p className="mt-2 cmm-text-small text-slate-700">
@@ -50,7 +50,7 @@ export default async function ParcoursProfilePage({
  </p>
  </article>
  <article className="rounded-2xl border border-amber-200/60 bg-white p-4">
- <p className="cmm-text-caption uppercase tracking-wide text-amber-600">
+ <p className="cmm-text-small uppercase tracking-wide text-amber-800">
  Agir
  </p>
  <p className="mt-2 cmm-text-small text-slate-700">

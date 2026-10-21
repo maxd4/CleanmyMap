@@ -118,11 +118,11 @@ export function AccountEvolutionPanel({
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-6 w-6 text-amber-400" aria-hidden="true" />
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-100/60">Niveau obtenu</p>
+              <p className="cmm-text-small font-bold uppercase tracking-[0.14em] text-amber-100/90">Niveau obtenu</p>
               <p className="mt-1 text-2xl font-black text-white">{getProfileLabel(currentRole, "fr")}</p>
             </div>
           </div>
-          <p className="mt-4 text-sm leading-relaxed text-amber-50/72">
+          <p className="mt-4 text-sm leading-relaxed text-amber-50/90">
             Ce niveau correspond au rôle accordé au compte. Il détermine les autorisations disponibles.
           </p>
         </FamilyRubriqueCard>
@@ -131,11 +131,11 @@ export function AccountEvolutionPanel({
           <div className="flex items-center gap-3">
             <FileClock className="h-6 w-6 text-orange-300" aria-hidden="true" />
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-100/60">Identité active</p>
+              <p className="cmm-text-small font-bold uppercase tracking-[0.14em] text-amber-100/90">Identité active</p>
               <p className="mt-1 text-2xl font-black text-white">{getProfileLabel(activeRole, "fr")}</p>
             </div>
           </div>
-          <p className="mt-4 text-sm leading-relaxed text-amber-50/72">
+          <p className="mt-4 text-sm leading-relaxed text-amber-50/90">
             Le rôle utilisé pour votre navigation peut être différent du niveau obtenu ; il ne donne aucun droit supplémentaire.
           </p>
         </FamilyRubriqueCard>
@@ -143,10 +143,10 @@ export function AccountEvolutionPanel({
 
       <FamilyRubriqueCard withTopBar={true} topBarContent="Faire évoluer mon compte" className="p-6 sm:p-8">
         <div className="space-y-3">
-          <p className="text-sm leading-relaxed text-amber-50/78">
+          <p className="text-sm leading-relaxed text-amber-50/90">
             Les personas ouverts sont Bénévole, Coordinateur, Scientifique et Entreprise. Les rôles obtenus sont Élu·e et Administrateur, après examen par IMU. IMU reste hors de ce parcours.
           </p>
-          <p className="text-sm leading-relaxed text-amber-50/60">
+          <p className="text-sm leading-relaxed text-amber-50/90">
             Une demande ne modifie jamais votre niveau obtenu. Seule l’acceptation par IMU déclenche la synchronisation du compte.
           </p>
         </div>
@@ -156,7 +156,7 @@ export function AccountEvolutionPanel({
             return (
               <div key={role} className="rounded-2xl border border-amber-200/16 bg-white/[0.05] p-4">
                 <p className="text-sm font-bold text-white">{getProfileLabel(role, "fr")}</p>
-                <p className="mt-1 text-sm leading-relaxed text-amber-50/65">
+                <p className="mt-1 text-sm leading-relaxed text-amber-50/90">
                   {role === "elu"
                     ? "Niveau obtenu après examen pour les besoins de gouvernance territoriale."
                     : "Niveau obtenu après examen pour les besoins de supervision et de modération."}
@@ -166,7 +166,7 @@ export function AccountEvolutionPanel({
                     href={ACCOUNT_EVOLUTION_ROUTE}
                     tone={role === "elu" ? "secondary" : "tertiary"}
                     variant="pill"
-                    className="mt-3 min-h-10 px-3 text-xs"
+                    className="mt-3 min-h-10 px-3 cmm-text-small"
                   >
                     Demander ce niveau
                   </CmmButton>
@@ -176,7 +176,7 @@ export function AccountEvolutionPanel({
           })}
         </div>
         {isRefreshing ? (
-          <p className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-amber-50/70" role="status">
+          <p className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-amber-50/90" role="status">
             Vérification de votre demande…
           </p>
         ) : !statusAvailable ? (
@@ -191,7 +191,7 @@ export function AccountEvolutionPanel({
             <StatusIcon status="pending_owner_review" />
             <div>
               <p className="font-bold">{statusCopy?.label}</p>
-              <p className="mt-1 text-sm opacity-80">{statusCopy?.description}</p>
+              <p className="mt-1 text-sm text-current/90">{statusCopy?.description}</p>
             </div>
           </div>
         ) : isAcceptedAwaitingSynchronization ? (
@@ -207,7 +207,7 @@ export function AccountEvolutionPanel({
             Le niveau affiché ci-dessus est la source d’autorité du compte après synchronisation.
           </div>
         ) : (
-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-amber-50/70">
+          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-amber-50/90">
             {canRequest
               ? "Le formulaire est momentanément indisponible."
               : "Votre niveau ne nécessite pas de demande de promotion supplémentaire."}
@@ -222,11 +222,11 @@ export function AccountEvolutionPanel({
             <div className="min-w-0 space-y-3">
               <p className="font-bold">{statusCopy?.label}</p>
               <dl className="grid gap-3 text-sm sm:grid-cols-3">
-                <div><dt className="opacity-70">Rôle demandé</dt><dd className="font-semibold">{getProfileLabel(latestRequest.requestedRole, "fr")}</dd></div>
-                <div><dt className="opacity-70">Demandée le</dt><dd className="font-semibold">{formatDate(latestRequest.createdAt)}</dd></div>
-                <div><dt className="opacity-70">État depuis</dt><dd className="font-semibold">{formatDate(latestRequest.reviewedAt ?? latestRequest.createdAt)}</dd></div>
+                <div><dt className="text-current/90">Rôle demandé</dt><dd className="font-semibold">{getProfileLabel(latestRequest.requestedRole, "fr")}</dd></div>
+                <div><dt className="text-current/90">Demandée le</dt><dd className="font-semibold">{formatDate(latestRequest.createdAt)}</dd></div>
+                <div><dt className="text-current/90">État depuis</dt><dd className="font-semibold">{formatDate(latestRequest.reviewedAt ?? latestRequest.createdAt)}</dd></div>
               </dl>
-              <p className="text-sm opacity-80">{statusCopy?.description}</p>
+              <p className="text-sm text-current/90">{statusCopy?.description}</p>
             </div>
           </div>
         </FamilyRubriqueCard>

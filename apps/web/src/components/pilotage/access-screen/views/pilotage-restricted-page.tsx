@@ -35,18 +35,18 @@ export function PilotageRestrictedPage({
           />
 
           <aside className="rounded-[1.75rem] border border-white/12 bg-[rgba(69,45,28,0.82)] p-5">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-100/70">
+            <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-orange-100/90">
               {locale === "fr" ? "Accès actuel" : "Current access"}
             </p>
             <div className="mt-3 grid gap-3">
               <div className="rounded-2xl border border-white/12 bg-black/10 p-4">
-                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-orange-100/70">
+                <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-orange-100/90">
                   {locale === "fr" ? "Profil" : "Profile"}
                 </p>
                 <p className="mt-2 text-lg font-bold text-white">{profileLabel}</p>
               </div>
               <div className="rounded-2xl border border-white/12 bg-black/10 p-4">
-                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-orange-100/70">
+                <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-orange-100/90">
                   {locale === "fr" ? "Lecture autorisée" : "Allowed reading"}
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-white">
@@ -64,7 +64,7 @@ export function PilotageRestrictedPage({
 
       <section className="grid gap-4 lg:grid-cols-2">
         <article className="rounded-[1.5rem] border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
+          <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-amber-800">
             {copy.accessEyebrow}
           </p>
           <h2 className="mt-2 text-2xl font-black tracking-tight cmm-text-primary">
@@ -95,7 +95,7 @@ export function PilotageRestrictedPage({
               },
             ].map((item) => (
               <div key={item.title} className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-700">
+                <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-amber-800">
                   {item.title}
                 </p>
                 <p className="mt-2 text-sm cmm-text-secondary">{item.text}</p>
@@ -105,7 +105,7 @@ export function PilotageRestrictedPage({
         </article>
 
         <article className="rounded-[1.5rem] border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
+          <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-amber-800">
             {locale === "fr" ? "Passerelles" : "Shortcuts"}
           </p>
           <h2 className="mt-2 text-2xl font-black tracking-tight cmm-text-primary">

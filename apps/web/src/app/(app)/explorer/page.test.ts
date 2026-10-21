@@ -29,7 +29,8 @@ describe("explorer summary presentation contract", () => {
     expect(source).toContain("grid-cols-1");
     expect(source).toContain("sm:grid-cols-2");
     expect(source).toContain("lg:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]");
-    expect(source).toContain("whitespace-nowrap");
+    expect(source).toContain("break-words leading-snug");
+    expect(source).not.toContain("whitespace-nowrap");
     expect(source).toContain("lg:p-4");
     expect(source).toContain("lg:items-stretch");
     expect(source).toContain("lg:h-full");

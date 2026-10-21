@@ -142,12 +142,12 @@ export default async function SponsorPortalPage() {
 
       {/* Detailed Insights */}
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="p-12 rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-2xl space-y-12">
+        <div className="rounded-[2.5rem] border border-white/10 bg-white/5 p-8 backdrop-blur-2xl space-y-8 sm:p-10">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-amber-400/10 flex items-center justify-center">
               <Activity size={18} className="text-amber-400" />
             </div>
-            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/40">Périmètre d&apos;analyse</h3>
+            <h3 className="cmm-text-small font-black uppercase tracking-[0.16em] text-white">Périmètre d&apos;analyse</h3>
           </div>
           
           <div className="space-y-6">
@@ -166,14 +166,14 @@ export default async function SponsorPortalPage() {
               { label: "Zones", val: overview?.zones.length ?? "n/a" },
             ].map((stat, i) => (
               <div key={i} className="space-y-1">
-                <p className="cmm-text-caption font-black uppercase tracking-widest text-white/60">{stat.label}</p>
+                <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-white">{stat.label}</p>
                 <p className="text-2xl font-black text-white">{stat.val}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-[3rem] p-12 border border-white/5 bg-white/5 backdrop-blur-2xl space-y-10 relative overflow-hidden">
+        <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/5 p-8 backdrop-blur-2xl space-y-8 sm:p-10">
           <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
 
           <PilotageInsightCard
@@ -194,22 +194,22 @@ export default async function SponsorPortalPage() {
               observedZones.map((zone) => (
                 <div key={zone.area} className="group p-6 rounded-[2rem] border border-white/5 bg-white/5 transition-all hover:bg-white/10">
                   <div className="flex justify-between items-center mb-4">
-                    <p className="cmm-text-caption font-black text-white uppercase tracking-widest">{zone.area}</p>
-                    <div className="cmm-text-caption font-black text-amber-400">
+                    <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-white">{zone.area}</p>
+                    <div className="cmm-text-small font-black text-amber-300">
                       SCORE {zone.normalizedScore.toFixed(1)}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    <p className="cmm-text-caption font-black text-white/65 uppercase tracking-widest">
+                    <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-white">
                       Priorité : <span className="text-amber-400">{zone.urgency}</span>
                     </p>
                   </div>
-                  <p className="text-xs font-semibold text-white/60 group-hover:text-white transition-colors">{zone.recommendedAction}</p>
+                  <p className="text-sm font-semibold text-white transition-colors group-hover:text-white">{zone.recommendedAction}</p>
                 </div>
               ))
             ) : (
-              <div className="p-12 text-center text-white/60 font-black uppercase tracking-widest cmm-text-caption">
+              <div className="p-8 text-center cmm-text-small font-black uppercase tracking-[0.12em] text-white">
                 Silence Radio • Aucune zone critique
               </div>
             )}
@@ -220,7 +220,7 @@ export default async function SponsorPortalPage() {
       <DecisionClusterSection locale="fr" surfaceId="sponsor" />
 
       {/* Protocol Transparency */}
-      <section className="relative group p-12 rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-2xl overflow-hidden transition-all hover:bg-white/[0.07]">
+      <section className="group relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/5 p-8 backdrop-blur-2xl transition-all hover:bg-white/[0.07] sm:p-10">
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-amber-400/5 rounded-full blur-[120px] pointer-events-none transition-all group-hover:bg-amber-400/10" />
         
         <div className="max-w-4xl space-y-10 relative z-10">
@@ -232,7 +232,7 @@ export default async function SponsorPortalPage() {
           </div>
           
           <div className="space-y-6">
-            <p className="text-2xl text-white/40 leading-tight font-medium tracking-tight">
+            <p className="text-xl leading-relaxed font-medium tracking-tight text-white sm:text-2xl">
               La valorisation de voirie est une estimation méthodologique à deux lectures : <strong className="text-white">{streetCleaningSavings === null ? "n/a" : `${streetCleaningSavings.massEstimateEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € par la masse et ${streetCleaningSavings.timeEstimateEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € par le temps`}</strong>. La fourchette affichée ne constitue ni une dépense comptable économisée euro pour euro ni une certification.
             </p>
             

@@ -42,7 +42,7 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     border:    "border-orange-200/18",
     glow:      "group-hover:shadow-orange-950/30",
     text:      "text-white",
-    mutedText: "text-white/82",
+    mutedText: "text-white",
     dot:       "bg-orange-300",
     itemHover: "hover:border-white/12 hover:bg-white/8 hover:text-white",
     divider:   "bg-orange-200/35",
@@ -56,7 +56,7 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     border:    "border-emerald-200/18",
     glow:      "group-hover:shadow-emerald-950/28",
     text:      "text-white",
-    mutedText: "text-white/82",
+    mutedText: "text-white",
     dot:       "bg-emerald-300",
     itemHover: "hover:border-white/12 hover:bg-white/8 hover:text-white",
     divider:   "bg-emerald-200/32",
@@ -70,7 +70,7 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     border:    "border-sky-200/18",
     glow:      "group-hover:shadow-sky-950/28",
     text:      "text-white",
-    mutedText: "text-white/82",
+    mutedText: "text-white",
     dot:       "bg-sky-300",
     itemHover: "hover:border-white/12 hover:bg-white/8 hover:text-white",
     divider:   "bg-sky-200/32",
@@ -84,7 +84,7 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     border:    "border-red-200/18",
     glow:      "group-hover:shadow-red-950/28",
     text:      "text-white",
-    mutedText: "text-white/82",
+    mutedText: "text-white",
     dot:       "bg-red-300",
     itemHover: "hover:border-white/12 hover:bg-white/8 hover:text-white",
     divider:   "bg-red-200/32",
@@ -98,7 +98,7 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     border:    "border-indigo-200/18",
     glow:      "group-hover:shadow-indigo-950/28",
     text:      "text-white",
-    mutedText: "text-white/82",
+    mutedText: "text-white",
     dot:       "bg-indigo-300",
     itemHover: "hover:border-white/12 hover:bg-white/8 hover:text-white",
     divider:   "bg-indigo-200/32",
@@ -112,7 +112,7 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     border:    "border-pink-200/18",
     glow:      "group-hover:shadow-pink-950/28",
     text:      "text-white",
-    mutedText: "text-white/82",
+    mutedText: "text-white",
     dot:       "bg-pink-300",
     itemHover: "hover:border-white/12 hover:bg-white/8 hover:text-white",
     divider:   "bg-pink-200/32",
@@ -126,7 +126,7 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     border:    "border-yellow-200/18",
     glow:      "group-hover:shadow-yellow-950/28",
     text:      "text-white",
-    mutedText: "text-white/82",
+    mutedText: "text-white",
     dot:       "bg-yellow-300",
     itemHover: "hover:border-white/12 hover:bg-white/8 hover:text-white",
     divider:   "bg-yellow-200/32",
@@ -213,7 +213,7 @@ export default async function ExplorerPage() {
                             className={`group/item flex min-h-9 items-center gap-2 rounded-xl border border-transparent px-2.5 py-1.5 text-[14px] font-semibold ${t.mutedText} transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus-visible:ring-2 focus-visible:ring-white/30 ${t.itemHover}`}
                           >
                             <span className={`h-1 w-1 shrink-0 rounded-full opacity-80 ${t.dot}`} />
-                            <span className="flex-1 whitespace-nowrap leading-snug">{item.label[locale]}</span>
+                            <span className="flex-1 break-words leading-snug">{item.label[locale]}</span>
                             <ChevronRight
                               size={11}
                               className={`shrink-0 opacity-0 transition-all group-hover/item:opacity-80 group-hover/item:translate-x-0.5 ${t.iconColor}`}
@@ -223,7 +223,7 @@ export default async function ExplorerPage() {
                       ))}
                     </ul>
                   ) : (
-                    <p className={`text-[12px] ${t.mutedText}`}>
+                    <p className={`cmm-text-small font-medium ${t.mutedText}`}>
                       {locale === "fr" ? "Aucune rubrique accessible." : "No pages available."}
                     </p>
                   )}

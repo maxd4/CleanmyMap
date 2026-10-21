@@ -447,6 +447,22 @@ describe("/reports page contract", () => {
     expect(mocks.fetchCachedUnifiedActionContracts).not.toHaveBeenCalled();
   });
 
+  it("rejects a malformed mono-action id before resolving or loading reports", async () => {
+    const markup = renderToStaticMarkup(
+      await ReportsPage({
+        searchParams: Promise.resolve({
+          tab: "generation",
+          actionId: "not-a-uuid",
+        }),
+      }),
+    );
+
+    expect(markup).toContain('data-testid="single-action-report-unavailable"');
+    expect(markup).toContain("Action non admissible");
+    expect(mocks.resolveSingleActionReportContract).not.toHaveBeenCalled();
+    expect(mocks.fetchCachedUnifiedActionContracts).not.toHaveBeenCalled();
+  });
+
   it("propagates a truncated generation dataset to the report document", async () => {
     mocks.getCurrentUserRoleLabel.mockResolvedValue("admin");
     mocks.toProfile.mockReturnValue("admin");
@@ -552,6 +568,25 @@ describe("/reports page contract", () => {
       "11111111-1111-4111-8111-111111111111",
       "user-1",
     );
+  });
+
+  it("keeps generation available with an explicit status when a resume is missing", async () => {
+    mocks.fetchCachedUnifiedActionContracts.mockResolvedValue({
+      items: [contract],
+      isTruncated: false,
+      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
+    });
+
+    const resumeId = "66666666-6666-4666-8666-666666666666";
+    const markup = renderToStaticMarkup(
+      await ReportsPage({
+        searchParams: Promise.resolve({ tab: "generation", resumeId }),
+      }),
+    );
+
+    expect(markup).toContain('data-testid="report-generation"');
+    expect(markup).toContain('data-resume-status="not_found"');
+    expect(mocks.getReportGenerationSnapshotById).toHaveBeenCalledWith(resumeId, "user-1");
   });
 
   it("reuses the public historical single-action contract without loading the global corpus", async () => {

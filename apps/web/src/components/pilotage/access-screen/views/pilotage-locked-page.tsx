@@ -76,7 +76,7 @@ export function PilotageLockedPage({
                   key={item.label}
                   className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm"
                 >
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-100/70">
+                  <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-orange-100/90">
                     {item.label}
                   </p>
                   <p className="mt-2 text-lg font-bold text-white">{item.value}</p>
@@ -89,7 +89,7 @@ export function PilotageLockedPage({
           <aside className="rounded-[1.75rem] border border-white/12 bg-[rgba(69,45,28,0.82)] p-5 shadow-[0_18px_40px_-28px_rgba(69,45,28,0.26)]">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-100/70">
+                <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-orange-100/90">
                   Permissions
                 </p>
                 <h2 className="mt-2 text-xl font-black tracking-tight text-white">
@@ -107,7 +107,7 @@ export function PilotageLockedPage({
 
             <div className="mt-5 space-y-3">
               <div className="rounded-2xl border border-white/12 bg-black/10 p-4">
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-100/70">
+                  <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-orange-100/90">
                   {locale === "fr" ? "Ce bloc sert à" : "This block is for"}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-white">
@@ -118,7 +118,7 @@ export function PilotageLockedPage({
               </div>
 
               <div className="rounded-2xl border border-white/12 bg-black/10 p-4">
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-100/70">
+                  <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-orange-100/90">
                   {locale === "fr" ? "Profil détecté" : "Detected profile"}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-white">
@@ -199,7 +199,7 @@ export function PilotageLockedPage({
                   <Icon size={18} aria-hidden="true" />
                 </span>
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
+                  <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-amber-800">
                     {item.title}
                   </p>
                   <p className="mt-1 text-sm cmm-text-secondary">{item.detail}</p>

@@ -29,11 +29,12 @@ export const GITNEXUS_INDEX_STATUSES = Object.freeze([
   "INDEX_UNAVAILABLE",
 ]);
 // These limits are per GitNexus phase, based on observed runs of this
-// repository: analyze reached ~171 s, status ~53 s, and cycle enumeration
-// ~2 s.  They leave bounded headroom for a healthy runner without treating
-// the previous 10 s ceiling as an environment failure.
+// repository: the previous full rebuild reached ~171 s, while the current
+// main rebuild exceeded 300 s before the bounded runner stopped it. Keep a
+// finite 10-minute ceiling so a slow native rebuild is not misclassified as
+// a malformed cycle report, while a genuinely hung host still fails closed.
 export const GITNEXUS_STEP_TIMEOUTS_MS = Object.freeze({
-  analyze: 300_000,
+  analyze: 600_000,
   status: 90_000,
   cycles: 30_000,
 });

@@ -68,7 +68,7 @@ export function PilotageOverviewSurfaceTabs({
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="max-w-2xl space-y-3">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-100/70">
+            <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-amber-100/90">
               {locale === "fr" ? "Onglet décideurs" : "Decision makers tab"}
             </p>
             <h2 className="text-2xl font-black tracking-tight text-white md:text-3xl">
