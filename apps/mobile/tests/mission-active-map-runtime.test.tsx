@@ -215,6 +215,9 @@ describe('MissionActiveMap runtime', () => {
     const renderer = await renderMap({ ...baseProps, errorMsg: 'Finalisation impossible' })
     expect(textValues(renderer).some((value) => value.endsWith('km'))).toBe(true)
     expect(textValues(renderer)).toContain('Finalisation impossible')
+    const stopButton = renderer.root.findByProps({ accessibilityLabel: 'Terminer la mission' })
+    expect(stopButton.props.accessibilityRole).toBe('button')
+    expect(stopButton.props.style.minHeight).toBe(54)
   })
 
   it('keeps local points when the server is offline and distinguishes an empty local fallback', async () => {

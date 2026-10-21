@@ -85,12 +85,12 @@ export function EmergencyCallActions({ compact = false }: { compact?: boolean })
       </View>
       {contactLoadError ? <Text style={styles.error}>{contactLoadError}</Text> : null}
       {contact ? (
-        <TouchableOpacity style={styles.contactButton} onPress={() => confirmCall('mon contact d’urgence', contact.phone)}>
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Appeler mon contact d’urgence" style={styles.contactButton} onPress={() => confirmCall('mon contact d’urgence', contact.phone)}>
           <Ionicons name="person-outline" size={20} color="#fef3c7" />
           <Text style={styles.contactButtonText}>APPELER MON CONTACT D’URGENCE</Text>
         </TouchableOpacity>
       ) : null}
-      <TouchableOpacity style={styles.emergencyButton} onPress={() => confirmCall('le 112', '112')}>
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Appeler le 112" style={styles.emergencyButton} onPress={() => confirmCall('le 112', '112')}>
         <Ionicons name="call" size={20} color="#ffffff" />
         <Text style={styles.emergencyButtonText}>APPELER LE 112</Text>
       </TouchableOpacity>
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   compactButtonText: { color: '#fef3c7', fontSize: 12, fontWeight: '900' },
   compactEmergencyButton: { backgroundColor: '#991b1b' },
   compactEmergencyText: { color: '#ffffff', fontSize: 13, fontWeight: '900' },
-  compactError: { color: '#fca5a5', fontSize: 11, lineHeight: 16, marginTop: 6 },
+  compactError: { color: '#fca5a5', fontSize: 13, lineHeight: 18, marginTop: 6 },
   header: { alignItems: 'flex-start', flexDirection: 'row', marginBottom: 14 },
   copy: { flex: 1, marginLeft: 10 },
   title: { color: '#f8fafc', fontSize: 14, fontWeight: '900', marginBottom: 4 },
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 12,
   },
-  contactButtonText: { color: '#fef3c7', fontSize: 11, fontWeight: '900', letterSpacing: 0.5, marginLeft: 8 },
+  contactButtonText: { color: '#fef3c7', fontSize: 13, fontWeight: '900', letterSpacing: 0.5, marginLeft: 8 },
   emergencyButton: {
     alignItems: 'center',
     backgroundColor: '#b91c1c',

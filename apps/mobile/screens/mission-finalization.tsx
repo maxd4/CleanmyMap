@@ -49,7 +49,7 @@ export function MissionCompletionScreen({
         <SummaryRow label="DISTANCE" value={formatServerDistance(mission.distance_m)} />
       </View>
 
-      <TouchableOpacity style={styles.homeButton} onPress={onReturnHome}>
+      <TouchableOpacity accessibilityLabel="Revenir à l’accueil" accessibilityRole="button" style={styles.homeButton} onPress={onReturnHome}>
         <Text style={styles.homeButtonText}>REVENIR À L’ACCUEIL</Text>
       </TouchableOpacity>
     </View>
@@ -119,9 +119,9 @@ const styles = StyleSheet.create({
   },
   stepDotActive: { backgroundColor: '#fbbf24' },
   stepDotComplete: { backgroundColor: '#10b981' },
-  stepText: { color: '#64748b', flex: 1, fontSize: 14, fontWeight: '700' },
+  stepText: { color: '#cbd5e1', flex: 1, fontSize: 14, fontWeight: '700' },
   stepTextActive: { color: '#f8fafc' },
-  stepStatus: { color: '#94a3b8', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  stepStatus: { color: '#cbd5e1', fontSize: 12, lineHeight: 16, fontWeight: '900', letterSpacing: 0.8 },
   summary: {
     alignSelf: 'stretch',
     backgroundColor: '#1e293b',
@@ -139,14 +139,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 58,
   },
-  summaryLabel: { color: '#94a3b8', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  summaryLabel: { color: '#cbd5e1', fontSize: 12, lineHeight: 16, fontWeight: '900', letterSpacing: 0.8 },
   summaryValue: { color: '#f8fafc', fontSize: 15, fontWeight: '800', marginLeft: 16, textAlign: 'right' },
   homeButton: {
     alignSelf: 'stretch',
     backgroundColor: '#10b981',
     borderRadius: 16,
+    minHeight: 48,
     marginTop: 28,
     paddingVertical: 20,
   },
-  homeButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '900', letterSpacing: 2, textAlign: 'center' },
+  homeButtonText: { color: '#022c22', fontSize: 14, fontWeight: '900', letterSpacing: 2, textAlign: 'center' },
 })

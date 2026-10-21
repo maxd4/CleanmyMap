@@ -227,7 +227,7 @@ function ContactField({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#64748b"
+        placeholderTextColor="#94a3b8"
         style={styles.input}
       />
     </View>
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   contactDetail: { color: '#a7f3d0', fontSize: 13, marginTop: 4 },
   contactPhone: { color: '#cbd5e1', fontSize: 15, fontWeight: '700', marginTop: 8 },
   field: { marginBottom: 14 },
-  fieldLabel: { color: '#cbd5e1', fontSize: 12, fontWeight: '800', marginBottom: 6 },
+  fieldLabel: { color: '#cbd5e1', fontSize: 13, fontWeight: '800', marginBottom: 6 },
   input: {
     backgroundColor: '#020617',
     borderColor: '#334155',
@@ -273,14 +273,14 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 16,
   },
-  primaryButtonLabel: { color: '#022c22', fontSize: 12, fontWeight: '900', letterSpacing: 1 },
+  primaryButtonLabel: { color: '#022c22', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
   secondaryButton: { alignItems: 'center', minHeight: 44, justifyContent: 'center', marginTop: 6 },
-  secondaryButtonLabel: { color: '#94a3b8', fontSize: 12, fontWeight: '800', letterSpacing: 1 },
+  secondaryButtonLabel: { color: '#94a3b8', fontSize: 13, fontWeight: '800', letterSpacing: 1 },
   actions: { flexDirection: 'row', gap: 10, marginTop: 14 },
   actionButton: {
-    alignItems: 'center', borderColor: '#334155', borderRadius: 10, borderWidth: 1, flex: 1, paddingVertical: 12,
+    alignItems: 'center', borderColor: '#334155', borderRadius: 10, borderWidth: 1, flex: 1, minHeight: 44, paddingVertical: 12,
   },
-  actionButtonLabel: { color: '#a7f3d0', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
-  deleteButton: { alignItems: 'center', borderColor: '#7f1d1d', borderRadius: 10, borderWidth: 1, flex: 1, paddingVertical: 12 },
-  deleteButtonLabel: { color: '#fca5a5', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
+  actionButtonLabel: { color: '#a7f3d0', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
+  deleteButton: { alignItems: 'center', borderColor: '#7f1d1d', borderRadius: 10, borderWidth: 1, flex: 1, minHeight: 44, paddingVertical: 12 },
+  deleteButtonLabel: { color: '#fca5a5', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
 })

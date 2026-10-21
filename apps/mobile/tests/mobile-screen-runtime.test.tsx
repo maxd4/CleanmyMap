@@ -213,6 +213,13 @@ describe('mobile native shell runtime', () => {
     expect([...new Set(primaryTabs.map((tab) => tab.props.accessibilityLabel))]).toEqual(['Agir', 'Carte', 'Compte'])
     expect([...new Set(primaryTabs.filter((tab) => tab.props.accessibilityState?.selected).map((tab) => tab.props.accessibilityLabel))]).toHaveLength(1)
     expect(renderer.root.findAllByProps({ accessibilityRole: 'tablist' })).not.toHaveLength(0)
+    for (const tab of primaryTabs) {
+      const tabStyle = Object.assign({}, ...(Array.isArray(tab.props.style) ? tab.props.style : [tab.props.style]))
+      const label = tab.findAllByType('Text' as unknown as React.ElementType).at(-1)
+      const labelStyle = Object.assign({}, ...(Array.isArray(label?.props.style) ? label.props.style : [label?.props.style]))
+      expect(tabStyle.minHeight).toBe(48)
+      expect(labelStyle.fontSize).toBe(13)
+    }
     expect(renderer.root.findAll((node) => textContent(node).includes('Votre compte'))).not.toHaveLength(0)
   })
 
@@ -279,10 +286,14 @@ describe('mobile native shell runtime', () => {
     const renderer = await renderApp('pk_test_mobile')
 
     const signIn = findTouchable(renderer, 'SE CONNECTER')
+    expect(signIn.props.accessibilityRole).toBe('button')
+    expect(signIn.props.accessibilityState).toEqual({ disabled: false })
     await act(async () => { await signIn.props.onPress() })
     expect(appState.startHostedAuth).toHaveBeenCalledWith({ mode: 'sign-in' })
 
     const signUp = findTouchable(renderer, 'CRÉER UN COMPTE')
+    expect(signUp.props.accessibilityRole).toBe('button')
+    expect(signUp.props.accessibilityState).toEqual({ disabled: false })
     await act(async () => { await signUp.props.onPress() })
     expect(appState.startHostedAuth).toHaveBeenCalledWith({ mode: 'sign-up' })
     expect(appState.startHostedAuth).toHaveBeenCalledTimes(2)

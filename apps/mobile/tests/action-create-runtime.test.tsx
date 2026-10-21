@@ -104,6 +104,7 @@ describe('mobile action creation runtime', () => {
 
     expect(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }).props.value).toBe('Brouillon repris')
     expect(renderer.root.findByProps({ accessibilityLabel: 'Lieu' }).props.value).toBe('Parc sauvegardé')
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }).props.placeholderTextColor).toBe('#94a3b8')
     expect(state.setItem).toHaveBeenCalled()
   })
 

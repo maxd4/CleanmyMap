@@ -140,13 +140,13 @@ function SignedOutScreen({ initialError }: { initialError?: string | null }) {
       </Text>
       {error ? (
         <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text>
         </View>
       ) : null}
-      <TouchableOpacity style={styles.hudBtnPrimary} onPress={handleSignIn} disabled={loading}>
+      <TouchableOpacity accessibilityLabel={loading ? 'Connexion en cours' : 'Se connecter'} accessibilityRole="button" accessibilityState={{ disabled: loading }} style={styles.hudBtnPrimary} onPress={handleSignIn} disabled={loading}>
         {loading ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.hudBtnText}>SE CONNECTER</Text>}
       </TouchableOpacity>
-      <TouchableOpacity style={styles.hudBtnSecondary} onPress={handleSignUp} disabled={loading}>
+      <TouchableOpacity accessibilityLabel="Créer un compte" accessibilityRole="button" accessibilityState={{ disabled: loading }} style={styles.hudBtnSecondary} onPress={handleSignUp} disabled={loading}>
         <Text style={styles.hudBtnSecondaryText}>CRÉER UN COMPTE</Text>
       </TouchableOpacity>
     </View>
@@ -190,10 +190,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#020617',
   },
   hudLabel: {
-    color: '#64748b',
-    fontSize: 10,
+    color: '#cbd5e1',
+    fontSize: 13,
     fontWeight: '900',
-    letterSpacing: 2,
+    letterSpacing: 1.2,
+    lineHeight: 18,
     marginBottom: 4,
   },
   hudTitle: {
@@ -224,6 +225,7 @@ const styles = StyleSheet.create({
   },
   hudBtnPrimary: {
     backgroundColor: '#10b981',
+    minHeight: 48,
     paddingVertical: 20,
     borderRadius: 16,
     alignItems: 'center',
@@ -232,13 +234,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#475569',
   },
   hudBtnSecondary: {
+    minHeight: 44,
     marginTop: 16,
     paddingVertical: 16,
     alignItems: 'center',
   },
   hudBtnSecondaryText: {
     color: '#94a3b8',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: 1,
   },
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   hudBtnText: {
-    color: '#ffffff',
+    color: '#022c22',
     fontSize: 14,
     fontWeight: '900',
     letterSpacing: 2,
@@ -264,7 +267,7 @@ const styles = StyleSheet.create({
   },
   warningTitle: {
     color: '#fbbf24',
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 2,
     marginBottom: 8,

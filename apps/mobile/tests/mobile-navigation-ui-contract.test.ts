@@ -11,6 +11,8 @@ describe('mobile native navigation UI contract', () => {
     expect(shellSource).toContain("from 'lucide-react-native'")
     expect(shellSource).toContain('accessibilityRole="tablist"')
     expect(shellSource).toContain('accessibilityState={{ selected }}')
+    expect(shellSource).toContain("color={selected ? '#34d399' : '#cbd5e1'}")
+    expect(shellSource).toContain('minHeight: 48')
     expect(shellSource).toContain('SafeAreaView')
     expect(shellSource).not.toContain('Ionicons')
     expect(appSource).toContain('MissionActiveScreen')

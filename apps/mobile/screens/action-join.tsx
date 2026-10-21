@@ -118,7 +118,7 @@ export function ActionJoinScreen({ onSessionExpired }: ActionJoinScreenProps) {
         value={query}
         onChangeText={setQuery}
         placeholder="Ville, lieu ou titre"
-        placeholderTextColor="#64748b"
+        placeholderTextColor="#94a3b8"
         style={styles.search}
         returnKeyType="search"
       />
@@ -169,7 +169,7 @@ function ActionCard({ item, busy, onDetails, onJoin, onCancel, onClaim, onReview
 }
 
 function SmallButton({ label, disabled, onPress, secondary = false }: { label: string; disabled: boolean; onPress: () => void; secondary?: boolean }) {
-  return <TouchableOpacity style={[styles.smallButton, secondary && styles.smallButtonSecondary]} disabled={disabled} onPress={onPress} accessibilityRole="button"><Text style={[styles.smallButtonLabel, secondary && styles.smallButtonLabelSecondary]}>{disabled ? '...' : label}</Text></TouchableOpacity>
+  return <TouchableOpacity accessibilityLabel={label} accessibilityRole="button" accessibilityState={{ disabled }} style={[styles.smallButton, secondary && styles.smallButtonSecondary]} disabled={disabled} onPress={onPress}><Text style={[styles.smallButtonLabel, secondary && styles.smallButtonLabelSecondary]}>{disabled ? '...' : label}</Text></TouchableOpacity>
 }
 
 function InvitationPanel({ invitations, onDecision }: { invitations: MobileInvitation[]; onDecision: (id: string, decision: 'accept' | 'reject') => void }) {
@@ -237,7 +237,7 @@ function DetailPanel({ item, onClose }: { item: MobileActionItem; onClose: () =>
     } finally { setRoleBusy(false) }
   }
 
-  return <View style={styles.detail}><View style={styles.cardHeader}><Text style={styles.sectionTitle}>Détail</Text><TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Fermer le détail"><Ionicons name="close" size={22} color="#94a3b8" /></TouchableOpacity></View><Text style={styles.bodyText}>{item.actionTitle ?? item.location_label}</Text><Text style={styles.cardMeta}>Rendez-vous : {item.location_label}</Text><Text style={styles.cardMeta}>Date : {item.action_date}</Text>{roles ? <View style={styles.rolesPanel}><Text style={styles.sectionTitle}>Responsabilités terrain</Text><Text style={styles.cardMeta}>Ces cartes concernent uniquement cette action et ne donnent aucun droit d’organisation.</Text>{roles.canManage && roles.confirmedParticipants.length > 1 ? <View style={styles.rolePeople}>{roles.confirmedParticipants.map((participant) => <TouchableOpacity key={participant.userId} onPress={() => setRoleUserId(participant.userId)} style={[styles.rolePerson, roleUserId === participant.userId && styles.rolePersonSelected]}><Text style={styles.rolePersonLabel}>{participant.displayName}</Text></TouchableOpacity>)}</View> : null}{roles.roleOptions.map((role) => { const selected = selectedRoles.includes(role.code); return <TouchableOpacity key={role.code} onPress={() => setSelectedRoles((current) => selected ? current.filter((code) => code !== role.code) : [...current, role.code])} style={[styles.roleCard, selected && styles.roleCardSelected]} accessibilityRole="checkbox" accessibilityState={{ checked: selected }}><Ionicons name={selected ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={selected ? '#34d399' : '#64748b'} /><View style={{ flex: 1 }}><Text style={styles.roleLabel}>{role.label}</Text><Text style={styles.cardMeta}>{role.description}</Text></View></TouchableOpacity> })}<SmallButton label={roleBusy ? '...' : 'Enregistrer mes responsabilités'} disabled={roleBusy || !roleUserId} onPress={() => void saveRoles()} />{roles.canProposeTransfer && roles.organizers.some((organizer) => !organizer.isPrimary) ? <View style={styles.transferPanel}><Text style={styles.cardMeta}>Transfert explicite du primaire</Text><View style={styles.cardActions}>{roles.organizers.filter((organizer) => !organizer.isPrimary).map((organizer) => <SmallButton key={organizer.userId} label={successorUserId === organizer.userId ? `Successeur : ${organizer.displayName}` : organizer.displayName} disabled={roleBusy} onPress={() => setSuccessorUserId(organizer.userId)} secondary={successorUserId !== organizer.userId} />)}</View><SmallButton label="Proposer le transfert" disabled={roleBusy || !successorUserId} onPress={() => void proposeTransfer()} /></View> : null}{roles.transferProposals.map((proposal) => <View key={proposal.id} style={styles.transferPanel}><Text style={styles.cardMeta}>Transfert vers {proposal.successor_user_id} — {proposal.status}</Text><View style={styles.cardActions}>{proposal.status === 'pending' && proposal.successor_user_id === roles.currentUserId ? <SmallButton label="Accepter" disabled={roleBusy} onPress={() => void respondTransfer(proposal, 'accept')} /> : null}{proposal.status === 'pending' && (roles.canRejectTransfer || proposal.successor_user_id === roles.currentUserId) ? <SmallButton label="Refuser" disabled={roleBusy} onPress={() => void respondTransfer(proposal, 'reject')} secondary /> : null}</View></View>)}{roleError ? <Text style={styles.error}>{roleError}</Text> : null}</View> : roleError ? <Text style={styles.error}>{roleError}</Text> : <ActivityIndicator color="#34d399" style={styles.loader} />}</View>
+  return <View style={styles.detail}><View style={styles.cardHeader}><Text style={styles.sectionTitle}>Détail</Text><TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Fermer le détail"><Ionicons name="close" size={22} color="#94a3b8" /></TouchableOpacity></View><Text style={styles.bodyText}>{item.actionTitle ?? item.location_label}</Text><Text style={styles.cardMeta}>Rendez-vous : {item.location_label}</Text><Text style={styles.cardMeta}>Date : {item.action_date}</Text>{roles ? <View style={styles.rolesPanel}><Text style={styles.sectionTitle}>Responsabilités terrain</Text><Text style={styles.cardMeta}>Ces cartes concernent uniquement cette action et ne donnent aucun droit d’organisation.</Text>{roles.canManage && roles.confirmedParticipants.length > 1 ? <View style={styles.rolePeople}>{roles.confirmedParticipants.map((participant) => <TouchableOpacity key={participant.userId} onPress={() => setRoleUserId(participant.userId)} accessibilityRole="radio" accessibilityState={{ checked: roleUserId === participant.userId }} style={[styles.rolePerson, roleUserId === participant.userId && styles.rolePersonSelected]}><Text style={styles.rolePersonLabel}>{participant.displayName}</Text></TouchableOpacity>)}</View> : null}{roles.roleOptions.map((role) => { const selected = selectedRoles.includes(role.code); return <TouchableOpacity key={role.code} onPress={() => setSelectedRoles((current) => selected ? current.filter((code) => code !== role.code) : [...current, role.code])} style={[styles.roleCard, selected && styles.roleCardSelected]} accessibilityRole="checkbox" accessibilityState={{ checked: selected }}><Ionicons name={selected ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={selected ? '#34d399' : '#64748b'} /><View style={{ flex: 1 }}><Text style={styles.roleLabel}>{role.label}</Text><Text style={styles.cardMeta}>{role.description}</Text></View></TouchableOpacity> })}<SmallButton label={roleBusy ? '...' : 'Enregistrer mes responsabilités'} disabled={roleBusy || !roleUserId} onPress={() => void saveRoles()} />{roles.canProposeTransfer && roles.organizers.some((organizer) => !organizer.isPrimary) ? <View style={styles.transferPanel}><Text style={styles.cardMeta}>Transfert explicite du primaire</Text><View style={styles.cardActions}>{roles.organizers.filter((organizer) => !organizer.isPrimary).map((organizer) => <SmallButton key={organizer.userId} label={successorUserId === organizer.userId ? `Successeur : ${organizer.displayName}` : organizer.displayName} disabled={roleBusy} onPress={() => setSuccessorUserId(organizer.userId)} secondary={successorUserId !== organizer.userId} />)}</View><SmallButton label="Proposer le transfert" disabled={roleBusy || !successorUserId} onPress={() => void proposeTransfer()} /></View> : null}{roles.transferProposals.map((proposal) => <View key={proposal.id} style={styles.transferPanel}><Text style={styles.cardMeta}>Transfert vers {proposal.successor_user_id} — {proposal.status}</Text><View style={styles.cardActions}>{proposal.status === 'pending' && proposal.successor_user_id === roles.currentUserId ? <SmallButton label="Accepter" disabled={roleBusy} onPress={() => void respondTransfer(proposal, 'accept')} /> : null}{proposal.status === 'pending' && (roles.canRejectTransfer || proposal.successor_user_id === roles.currentUserId) ? <SmallButton label="Refuser" disabled={roleBusy} onPress={() => void respondTransfer(proposal, 'reject')} secondary /> : null}</View></View>)}{roleError ? <Text style={styles.error}>{roleError}</Text> : null}</View> : roleError ? <Text style={styles.error}>{roleError}</Text> : <ActivityIndicator color="#34d399" style={styles.loader} />}</View>
 }
 
 function ReviewPanel({ review, busy, onClose, onDecision }: { review: { actionId: string; requests: MobileActionReviewItem[] }; busy: boolean; onClose: () => void; onDecision: (request: MobileActionReviewItem) => void }) {
@@ -249,9 +249,9 @@ const styles = StyleSheet.create({
   title: { color: '#f8fafc', fontSize: 30, fontWeight: '900', marginBottom: 12 },
   bodyText: { color: '#cbd5e1', fontSize: 15, lineHeight: 22, marginBottom: 16 },
   tabs: { flexDirection: 'row', backgroundColor: '#0f172a', borderRadius: 14, padding: 4, marginBottom: 12 },
-  tab: { flex: 1, alignItems: 'center', borderRadius: 10, paddingVertical: 11 },
+  tab: { flex: 1, alignItems: 'center', borderRadius: 10, minHeight: 44, paddingVertical: 11 },
   tabSelected: { backgroundColor: '#064e3b' },
-  tabLabel: { color: '#94a3b8', fontWeight: '800' },
+  tabLabel: { color: '#94a3b8', fontSize: 13, fontWeight: '800' },
   tabLabelSelected: { color: '#a7f3d0' },
   search: { backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 14, borderWidth: 1, color: '#f8fafc', padding: 14, marginBottom: 14 },
   loader: { marginVertical: 20 },
@@ -263,9 +263,9 @@ const styles = StyleSheet.create({
   cardMeta: { color: '#94a3b8', fontSize: 12, lineHeight: 18 },
   status: { color: '#a7f3d0', fontSize: 12, fontWeight: '800', marginTop: 10 },
   cardActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  smallButton: { backgroundColor: '#34d399', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 },
+  smallButton: { backgroundColor: '#34d399', borderRadius: 10, minHeight: 44, paddingHorizontal: 12, paddingVertical: 9 },
   smallButtonSecondary: { backgroundColor: 'transparent', borderColor: '#475569', borderWidth: 1 },
-  smallButtonLabel: { color: '#022c22', fontSize: 11, fontWeight: '900' },
+  smallButtonLabel: { color: '#022c22', fontSize: 13, fontWeight: '900' },
   smallButtonLabelSecondary: { color: '#a7f3d0' },
   invitation: { backgroundColor: '#11352f', borderColor: '#256e5b', borderRadius: 16, borderWidth: 1, padding: 14, marginBottom: 14 },
   invitationRow: { borderTopColor: '#1e293b', borderTopWidth: 1, paddingTop: 10, marginTop: 10 },
@@ -274,10 +274,10 @@ const styles = StyleSheet.create({
   rolesPanel: { borderTopColor: '#334155', borderTopWidth: 1, marginTop: 14, paddingTop: 14, gap: 8 },
   transferPanel: { borderTopColor: '#334155', borderTopWidth: 1, marginTop: 8, paddingTop: 8, gap: 8 },
   rolePeople: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 4 },
-  rolePerson: { borderColor: '#475569', borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8 },
+  rolePerson: { borderColor: '#475569', borderRadius: 10, borderWidth: 1, minHeight: 44, justifyContent: 'center', paddingHorizontal: 10, paddingVertical: 8 },
   rolePersonSelected: { backgroundColor: '#064e3b', borderColor: '#34d399' },
-  rolePersonLabel: { color: '#e2e8f0', fontSize: 12, fontWeight: '800' },
-  roleCard: { alignItems: 'center', backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 12, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 10 },
+  rolePersonLabel: { color: '#e2e8f0', fontSize: 13, fontWeight: '800' },
+  roleCard: { alignItems: 'center', backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 12, borderWidth: 1, flexDirection: 'row', gap: 10, minHeight: 44, padding: 10 },
   roleCardSelected: { backgroundColor: '#11352f', borderColor: '#34d399' },
   roleLabel: { color: '#f8fafc', fontSize: 13, fontWeight: '800' },
 })
