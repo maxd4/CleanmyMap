@@ -134,17 +134,27 @@ export function buildTerritorialBenchmark(
     };
   });
 
-  const maxActionsPerKm2 = Math.max(
-    1,
-    ...computed.map((row) => row.actionsPerKm2),
-  );
-  const maxKgPerKm2 = Math.max(1, ...computed.map((row) => row.kgPerKm2));
-  const maxVolunteersPer10k = Math.max(
-    1,
-    ...computed.map((row) => row.volunteersPer10k),
-  );
-  const maxDensity = Math.max(1, ...computed.map((row) => row.densityPerKm2));
+  return projectTerritorialBenchmarkRows(computed);
+}
 
+function projectTerritorialBenchmarkRows(computed: Array<{
+  area: string;
+  surfaceKm2: number;
+  densityPerKm2: number;
+  estimatedPopulation: number;
+  actionsCount: number;
+  totalKg: number;
+  totalVolunteers: number;
+  knownWasteActions: number;
+  wasteCoverageRate: number;
+  actionsPerKm2: number;
+  kgPerKm2: number;
+  volunteersPer10k: number;
+}>): TerritorialBenchmarkRow[] {
+  const maxActionsPerKm2 = Math.max(1, ...computed.map((row) => row.actionsPerKm2));
+  const maxKgPerKm2 = Math.max(1, ...computed.map((row) => row.kgPerKm2));
+  const maxVolunteersPer10k = Math.max(1, ...computed.map((row) => row.volunteersPer10k));
+  const maxDensity = Math.max(1, ...computed.map((row) => row.densityPerKm2));
   return computed
     .map((row) => {
       const actionsScore = normalized(row.actionsPerKm2, maxActionsPerKm2);

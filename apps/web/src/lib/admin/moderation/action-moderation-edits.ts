@@ -216,7 +216,7 @@ async function resolveDepartmentForModeration(params: {
 }
 
 
-function buildAdminActionPayload(params: {
+type AdminActionPayloadParams = {
   existing: ExistingActionRow;
   edits: NonNullable<z.infer<typeof actionEditsSchema>>;
   parsedMetadata: ReturnType<typeof extractActionMetadataFromNotes>;
@@ -225,25 +225,22 @@ function buildAdminActionPayload(params: {
   cigaretteButtsMeasurements: ReturnType<
     typeof resolveModeratedCigaretteButtsMeasurements
   >["measurements"];
-}): ModerationActionPayload {
-  const {
-    existing,
-    edits,
-    parsedMetadata,
-    manualDrawing,
-    hasCigaretteButtsMeasurementEdit,
-    cigaretteButtsMeasurements,
-  } = params;
+};
 
+function buildAdminActionPayload(params: AdminActionPayloadParams): ModerationActionPayload {
   return {
-    actorName:
-      edits.actorName !== undefined
-        ? cleanText(edits.actorName)
-        : cleanText(existing.actor_name),
-    associationName:
-      edits.associationName !== undefined
-        ? cleanText(edits.associationName)
-        : parsedMetadata.associationName ?? undefined,
+    ...buildAdminActionIdentity(params),
+    ...buildAdminActionMeasurements(params),
+    manualDrawing: params.manualDrawing ?? undefined,
+    photos: params.parsedMetadata.photos as CreateActionPayload["photos"] | undefined,
+    visionEstimate: params.parsedMetadata.visionEstimate ?? undefined,
+  };
+}
+
+function buildAdminActionIdentity(params: AdminActionPayloadParams) {
+  const { existing, edits } = params;
+  return {
+    ...buildAdminActionActorFields(params),
     actionDate: edits.actionDate ?? existing.action_date,
     locationLabel: edits.locationLabel ?? existing.location_label,
     departmentCode: preserveNullableTextEdit(
@@ -254,50 +251,76 @@ function buildAdminActionPayload(params: {
       edits.departmentName,
       existing.department_name ?? null,
     ),
-    departureLocationLabel:
-      edits.departureLocationLabel !== undefined
-        ? cleanText(edits.departureLocationLabel)
-        : parsedMetadata.departureLocationLabel ?? undefined,
-    arrivalLocationLabel:
-      edits.arrivalLocationLabel !== undefined
-        ? cleanText(edits.arrivalLocationLabel)
-        : parsedMetadata.arrivalLocationLabel ?? undefined,
-    routeStyle:
-      edits.routeStyle !== undefined
-        ? edits.routeStyle ?? undefined
-        : parsedMetadata.routeStyle ?? undefined,
-    routeAdjustmentMessage:
-      edits.routeAdjustmentMessage !== undefined
-        ? cleanText(edits.routeAdjustmentMessage)
-        : parsedMetadata.routeAdjustmentMessage ?? undefined,
+    ...buildAdminActionRouteFields(params),
     latitude: edits.latitude ?? existing.latitude ?? undefined,
     longitude: edits.longitude ?? existing.longitude ?? undefined,
-    wasteKg:
-      edits.wasteKg !== undefined
-        ? edits.wasteKg
-        : existing.waste_kg === null
-          ? null
-          : Number(existing.waste_kg),
-    cigaretteButts:
-      edits.cigaretteButts !== undefined
-        ? edits.cigaretteButts
-        : existing.cigarette_butts === null
-          ? null
-          : Number(existing.cigarette_butts),
+  };
+}
+
+function buildAdminActionActorFields(params: AdminActionPayloadParams) {
+  const { existing, edits, parsedMetadata } = params;
+  return {
+    actorName: edits.actorName !== undefined ? cleanText(edits.actorName) : cleanText(existing.actor_name),
+    associationName: edits.associationName !== undefined
+      ? cleanText(edits.associationName)
+      : parsedMetadata.associationName ?? undefined,
+  };
+}
+
+function buildAdminActionRouteFields(params: AdminActionPayloadParams) {
+  const { edits, parsedMetadata } = params;
+  return {
+    departureLocationLabel: edits.departureLocationLabel !== undefined
+      ? cleanText(edits.departureLocationLabel)
+      : parsedMetadata.departureLocationLabel ?? undefined,
+    arrivalLocationLabel: edits.arrivalLocationLabel !== undefined
+      ? cleanText(edits.arrivalLocationLabel)
+      : parsedMetadata.arrivalLocationLabel ?? undefined,
+    routeStyle: edits.routeStyle !== undefined ? edits.routeStyle ?? undefined : parsedMetadata.routeStyle ?? undefined,
+    routeAdjustmentMessage: edits.routeAdjustmentMessage !== undefined
+      ? cleanText(edits.routeAdjustmentMessage)
+      : parsedMetadata.routeAdjustmentMessage ?? undefined,
+  };
+}
+
+function buildAdminActionMeasurements(params: AdminActionPayloadParams) {
+  return {
+    ...buildAdminActionWasteFields(params),
+    ...buildAdminActionActivityFields(params),
+    ...buildAdminActionNotesFields(params),
+  };
+}
+
+function buildAdminActionWasteFields(params: AdminActionPayloadParams) {
+  const { existing, edits, parsedMetadata, hasCigaretteButtsMeasurementEdit, cigaretteButtsMeasurements } = params;
+  return {
+    wasteKg: edits.wasteKg !== undefined ? edits.wasteKg : existing.waste_kg === null ? null : Number(existing.waste_kg),
+    cigaretteButts: edits.cigaretteButts !== undefined ? edits.cigaretteButts : existing.cigarette_butts === null ? null : Number(existing.cigarette_butts),
     cigaretteButtsKg: hasCigaretteButtsMeasurementEdit
       ? cigaretteButtsMeasurements?.cigaretteButtsMassKg
       : preserveOptionalEdit(edits.cigaretteButtsKg, parsedMetadata.cigaretteButtsKg),
     cigaretteButtsMeasurements,
     cigaretteButtsMassKg: cigaretteButtsMeasurements?.cigaretteButtsMassKg,
-    cigaretteButtsVolumeLiters:
-      cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters,
+    cigaretteButtsVolumeLiters: cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters,
     cigaretteButtsCondition: cigaretteButtsMeasurements?.cigaretteButtsCondition,
+  };
+}
+
+function buildAdminActionActivityFields(params: AdminActionPayloadParams) {
+  const { existing, edits } = params;
+  return {
     volunteersCount:
       edits.volunteersCount ??
       (existing.volunteers_count === null
         ? null
         : Number(existing.volunteers_count)),
     durationMinutes: edits.durationMinutes ?? Number(existing.duration_minutes ?? 0),
+  };
+}
+
+function buildAdminActionNotesFields(params: AdminActionPayloadParams) {
+  const { edits, parsedMetadata } = params;
+  return {
     notes:
       edits.notes !== undefined
         ? cleanText(edits.notes)
@@ -318,9 +341,6 @@ function buildAdminActionPayload(params: {
       edits.wasteBreakdown !== undefined
         ? edits.wasteBreakdown ?? undefined
         : parsedMetadata.wasteBreakdown ?? undefined,
-    manualDrawing: manualDrawing ?? undefined,
-    photos: parsedMetadata.photos as CreateActionPayload["photos"] | undefined,
-    visionEstimate: parsedMetadata.visionEstimate ?? undefined,
   };
 }
 

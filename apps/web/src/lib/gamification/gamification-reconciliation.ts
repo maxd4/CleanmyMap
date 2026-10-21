@@ -117,15 +117,14 @@ function changedExpectedEvents(
   return expected.filter((event) => ids.has(event.logicalId));
 }
 
-async function applyReconciliationTransaction(
-  supabase: SupabaseClient,
+function buildReconciliationRpcInput(
   userId: string,
   persisted: readonly PersistedGamificationEvent[],
   plan: GamificationReconciliationPlan,
   receipt: GamificationReconciliationReceipt,
   profileBefore: GamificationReconciliationProfile | null,
   refreshProfile: boolean,
-): Promise<{ inserted: number; updated: number; removed: number }> {
+) {
   const expectedByLogicalId = new Map(plan.expected.events.map((event) => [event.logicalId, event]));
   const updates = plan.eventsToUpdate.flatMap((change) => {
     const event = expectedByLogicalId.get(change.logicalId);
@@ -143,7 +142,8 @@ async function applyReconciliationTransaction(
       metadata: event.metadata,
     }];
   });
-  const response = await supabase.rpc("apply_gamification_reconciliation", {
+
+  return {
     p_user_id: userId,
     p_expected_events: persistedEventSnapshot(persisted),
     p_events_to_add: eventPayload(changedExpectedEvents(plan.expected.events, plan.eventsToAdd)),
@@ -161,6 +161,27 @@ async function applyReconciliationTransaction(
           reconciliationId: receipt.reconciliationId,
         }
       : null,
+  };
+}
+
+async function applyReconciliationTransaction(
+  supabase: SupabaseClient,
+  userId: string,
+  persisted: readonly PersistedGamificationEvent[],
+  plan: GamificationReconciliationPlan,
+  receipt: GamificationReconciliationReceipt,
+  profileBefore: GamificationReconciliationProfile | null,
+  refreshProfile: boolean,
+): Promise<{ inserted: number; updated: number; removed: number }> {
+  const response = await supabase.rpc("apply_gamification_reconciliation", {
+    ...buildReconciliationRpcInput(
+      userId,
+      persisted,
+      plan,
+      receipt,
+      profileBefore,
+      refreshProfile,
+    ),
   });
   if (response.error) throw new Error(response.error.message);
   const result = response.data as { status?: string; inserted?: number; updated?: number; removed?: number } | null;
@@ -171,6 +192,58 @@ async function applyReconciliationTransaction(
     updated: Number(result.updated ?? 0),
     removed: Number(result.removed ?? 0),
   };
+}
+
+async function prepareReconciliationAttempt(
+  supabase: SupabaseClient,
+  userId: string,
+  rules: GamificationRulesV1,
+  facts: GamificationFacts | undefined,
+  refreshProfile: boolean,
+  reasonCategory: GamificationReconciliationReasonCategory | undefined,
+  reconciliationId: string | undefined,
+) {
+  const canonicalFacts = facts ?? await loadCurrentGamificationFacts(supabase, userId);
+  const expected = computeExpectedGamificationState(userId, canonicalFacts, rules);
+  const [persisted, profileBefore, stats] = await Promise.all([
+    loadPersistedGamificationEvents(supabase, userId),
+    refreshProfile ? loadReconciliationProfile(supabase, userId) : Promise.resolve(null),
+    refreshProfile ? loadUserProgressionStats(supabase, userId) : Promise.resolve(null),
+  ]);
+  const plan = buildGamificationReconciliationPlan({
+    userId,
+    rules,
+    expected,
+    persisted,
+    profile: profileBefore,
+    stats,
+  });
+  const receipt = buildGamificationReconciliationReceipt(plan, {
+    reasonCategory,
+    rules,
+    ...(reconciliationId ? { reconciliationId } : {}),
+  });
+  return { canonicalFacts, expected, persisted, profileBefore, plan, receipt };
+}
+
+async function announceLevelUpIfNeeded(
+  supabase: SupabaseClient,
+  userId: string,
+  plan: GamificationReconciliationPlan,
+  refreshProfile: boolean,
+): Promise<void> {
+  if (!refreshProfile || (plan.levelAfter ?? 1) <= (plan.levelBefore ?? 1)) return;
+  await broadcastGamificationAnnouncement(supabase, {
+    type: "level_up",
+    userId,
+    previousLevel: plan.levelBefore ?? 1,
+    newLevel: plan.levelAfter ?? 1,
+    title: "Niveau Supérieur ! 🏆",
+    message: `Félicitations ! Vous avez atteint le niveau ${plan.levelAfter}. Votre impact sur CleanMyMap grandit !`,
+    icon: "🏆",
+    source: "progression-tracking",
+    dedupeKey: `level_up:${userId}:${plan.levelAfter}`,
+  });
 }
 
 /** Rebuilds CURRENT derived events from canonical facts; LEGACY rows are untouched. */
@@ -190,26 +263,16 @@ export async function reconcileUserGamification(
   let stableReconciliationId: string | undefined;
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const facts = options.facts ?? await loadCurrentGamificationFacts(supabase, userId);
-    const expected = computeExpectedGamificationState(userId, facts, rules);
-    const [persisted, profileBefore, stats] = await Promise.all([
-      loadPersistedGamificationEvents(supabase, userId),
-      refreshProfile ? loadReconciliationProfile(supabase, userId) : Promise.resolve(null),
-      refreshProfile ? loadUserProgressionStats(supabase, userId) : Promise.resolve(null),
-    ]);
-    const plan = buildGamificationReconciliationPlan({
+    const prepared = await prepareReconciliationAttempt(
+      supabase,
       userId,
       rules,
-      expected,
-      persisted,
-      profile: profileBefore,
-      stats,
-    });
-    const receipt = buildGamificationReconciliationReceipt(plan, {
-      reasonCategory: options.reasonCategory,
-      rules,
-      ...(stableReconciliationId ? { reconciliationId: stableReconciliationId } : {}),
-    });
+      options.facts,
+      refreshProfile,
+      options.reasonCategory,
+      stableReconciliationId,
+    );
+    const { expected, persisted, profileBefore, plan, receipt } = prepared;
     stableReconciliationId ??= receipt.reconciliationId;
 
     try {
@@ -223,19 +286,7 @@ export async function reconcileUserGamification(
         refreshProfile,
       );
 
-      if (refreshProfile && (plan.levelAfter ?? 1) > (plan.levelBefore ?? 1)) {
-        await broadcastGamificationAnnouncement(supabase, {
-          type: "level_up",
-          userId,
-          previousLevel: plan.levelBefore ?? 1,
-          newLevel: plan.levelAfter ?? 1,
-          title: "Niveau Supérieur ! 🏆",
-          message: `Félicitations ! Vous avez atteint le niveau ${plan.levelAfter}. Votre impact sur CleanMyMap grandit !`,
-          icon: "🏆",
-          source: "progression-tracking",
-          dedupeKey: `level_up:${userId}:${plan.levelAfter}`,
-        });
-      }
+      await announceLevelUpIfNeeded(supabase, userId, plan, refreshProfile);
 
       return {
         ...applied,

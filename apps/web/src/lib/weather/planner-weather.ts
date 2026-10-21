@@ -385,21 +385,39 @@ export function isPlannerWeatherContextCompatible(
 ): context is PlannerWeatherContext {
   if (!context || context.status !== "available" || !request || !isPlannerWeatherContext(context)) return false;
   const window = normalizeWindow(request.scheduledStartAt, request.scheduledEndAt);
-  if (!window || !context.coveredWindow ||
-    context.coveredWindow.startAt !== window.startAt ||
-    context.coveredWindow.endAt !== window.endAt) return false;
-  if (Math.abs(context.location.latitude - request.latitude) > PLANNER_WEATHER_COORDINATE_TOLERANCE ||
-    Math.abs(context.location.longitude - request.longitude) > PLANNER_WEATHER_COORDINATE_TOLERANCE) return false;
+  if (!isCompatibleWeatherWindow(context, window) || !isCompatibleWeatherLocation(context, request)) return false;
   const now = request.now ?? new Date();
+  return isFreshWeatherContext(context, window, now);
+}
+
+function isCompatibleWeatherWindow(
+  context: PlannerWeatherContext,
+  window: PlannerWeatherWindow | null,
+): window is PlannerWeatherWindow {
+  return Boolean(window && context.coveredWindow &&
+    context.coveredWindow.startAt === window.startAt &&
+    context.coveredWindow.endAt === window.endAt);
+}
+
+function isCompatibleWeatherLocation(
+  context: PlannerWeatherContext,
+  request: PlannerWeatherContextRequest,
+): boolean {
+  return Math.abs(context.location.latitude - request.latitude) <= PLANNER_WEATHER_COORDINATE_TOLERANCE &&
+    Math.abs(context.location.longitude - request.longitude) <= PLANNER_WEATHER_COORDINATE_TOLERANCE;
+}
+
+function isFreshWeatherContext(
+  context: PlannerWeatherContext,
+  window: PlannerWeatherWindow,
+  now: Date,
+): boolean {
   const fetchedAt = Date.parse(context.fetchedAt);
   const nowAt = now.getTime();
   if (!Number.isFinite(fetchedAt) || fetchedAt > nowAt || nowAt - fetchedAt > PLANNER_WEATHER_CONTEXT_MAX_AGE_MS) return false;
   if (!isWithinForecastHorizon(window, now)) return false;
-  return context.hourly.length > 0 &&
-    hasCompleteHourlyCoverage(context.hourly, window) &&
-    context.hourly.every((point) =>
-      typeof point.time === "string" && point.time.length > 0,
-    );
+  return context.hourly.length > 0 && hasCompleteHourlyCoverage(context.hourly, window) &&
+    context.hourly.every((point) => typeof point.time === "string" && point.time.length > 0);
 }
 
 function isPlannerWeatherOperationalAssessment(

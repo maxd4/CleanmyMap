@@ -196,36 +196,25 @@ export function buildChatNotificationHref(payload: unknown): string | null {
     return "/sections/feedback";
   }
 
-  const params = new URLSearchParams();
-  params.set("channel", normalized.channelType);
-
-  if (normalized.messageId) {
-    params.set("messageId", normalized.messageId);
-  }
-
-  if (normalized.channelType === "action" && normalized.actionId) {
-    params.set("actionId", normalized.actionId);
-  } else if (normalized.channelType === "action") {
-    return null;
-  }
-
-  if (normalized.channelType === "dm") {
-    appendDmNotificationParams(params, normalized);
-  }
-
-  if (normalized.channelType === "territory") {
-    appendTerritoryNotificationParams(params, normalized);
-  }
-
-  if (
-    (normalized.channelType === "community" ||
-      normalized.channelType === "territory" ||
-      normalized.channelType === "admin_elu") &&
-    normalized.topicId
-  ) {
-    params.set("topicId", normalized.topicId);
-  }
-
+  const params = buildChatNotificationParams(normalized);
+  if (!params) return null;
   const query = params.toString();
   return query.length > 0 ? `/sections/messagerie?${query}` : "/sections/messagerie";
+}
+
+function buildChatNotificationParams(
+  normalized: NonNullable<ReturnType<typeof normalizeChatNotificationPayload>>,
+): URLSearchParams | null {
+  const params = new URLSearchParams([["channel", normalized.channelType!]]);
+  if (normalized.messageId) params.set("messageId", normalized.messageId);
+  if (normalized.channelType === "action") {
+    if (!normalized.actionId) return null;
+    params.set("actionId", normalized.actionId);
+  }
+  if (normalized.channelType === "dm") appendDmNotificationParams(params, normalized);
+  if (normalized.channelType === "territory") appendTerritoryNotificationParams(params, normalized);
+  if (normalized.channelType && ["community", "territory", "admin_elu"].includes(normalized.channelType) && normalized.topicId) {
+    params.set("topicId", normalized.topicId);
+  }
+  return params;
 }

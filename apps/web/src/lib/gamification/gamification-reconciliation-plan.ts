@@ -260,6 +260,45 @@ function levelsForPlan(
   return { levelBefore, levelAfter };
 }
 
+function diffCurrentAndExpectedEvents(
+  userId: string,
+  rules: GamificationRulesV1,
+  expected: ExpectedGamificationState,
+  persisted: readonly PersistedGamificationEvent[],
+) {
+  const currentPersisted = persisted.filter((event) => isCurrentOwnedEvent(event, rules));
+  const byIdentity = new Map<string, PersistedGamificationEvent>();
+  const eventsToRemove: GamificationEventChange[] = [];
+
+  for (const event of currentPersisted) {
+    const identity = eventIdentity(userId, event);
+    if (byIdentity.has(identity)) {
+      eventsToRemove.push(changeFromPersisted(userId, event));
+      continue;
+    }
+    byIdentity.set(identity, event);
+  }
+
+  const eventsToAdd: GamificationEventChange[] = [];
+  const eventsToUpdate: GamificationEventChange[] = [];
+  for (const expectedEvent of expected.events) {
+    const existing = byIdentity.get(expectedEvent.logicalId);
+    if (!existing) {
+      eventsToAdd.push(changeFromExpected(expectedEvent));
+    } else if (eventsDiffer(existing, expectedEvent)) {
+      eventsToUpdate.push({ ...changeFromExpected(expectedEvent), id: existing.id });
+    }
+  }
+
+  const expectedIds = new Set(expected.events.map((event) => event.logicalId));
+  for (const event of byIdentity.values()) {
+    const identity = eventIdentity(userId, event);
+    if (!expectedIds.has(identity)) eventsToRemove.push(changeFromPersisted(userId, event));
+  }
+
+  return { currentPersisted, eventsToAdd, eventsToUpdate, eventsToRemove };
+}
+
 /** Builds a deterministic, read-only diff. It never touches Supabase. */
 export function buildGamificationReconciliationPlan(params: {
   userId: string;
@@ -269,35 +308,17 @@ export function buildGamificationReconciliationPlan(params: {
   profile?: GamificationReconciliationProfile | null;
   stats?: UserProgressionStats | null;
 }): GamificationReconciliationPlan {
-  const currentPersisted = params.persisted.filter((event) => isCurrentOwnedEvent(event, params.rules));
-  const byIdentity = new Map<string, PersistedGamificationEvent>();
-  const eventsToRemove: GamificationEventChange[] = [];
-
-  for (const event of currentPersisted) {
-    const identity = eventIdentity(params.userId, event);
-    if (byIdentity.has(identity)) {
-      eventsToRemove.push(changeFromPersisted(params.userId, event));
-      continue;
-    }
-    byIdentity.set(identity, event);
-  }
-
-  const eventsToAdd: GamificationEventChange[] = [];
-  const eventsToUpdate: GamificationEventChange[] = [];
-  for (const expectedEvent of params.expected.events) {
-    const existing = byIdentity.get(expectedEvent.logicalId);
-    if (!existing) {
-      eventsToAdd.push(changeFromExpected(expectedEvent));
-    } else if (eventsDiffer(existing, expectedEvent)) {
-      eventsToUpdate.push({ ...changeFromExpected(expectedEvent), id: existing.id });
-    }
-  }
-
-  const expectedIds = new Set(params.expected.events.map((event) => event.logicalId));
-  for (const event of byIdentity.values()) {
-    const identity = eventIdentity(params.userId, event);
-    if (!expectedIds.has(identity)) eventsToRemove.push(changeFromPersisted(params.userId, event));
-  }
+  const {
+    currentPersisted,
+    eventsToAdd,
+    eventsToUpdate,
+    eventsToRemove,
+  } = diffCurrentAndExpectedEvents(
+    params.userId,
+    params.rules,
+    params.expected,
+    params.persisted,
+  );
 
   const legacy = params.persisted.filter((event) => !isCurrentOwnedEvent(event, params.rules));
   const xpBefore = sumEvents(params.persisted);

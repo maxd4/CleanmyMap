@@ -75,6 +75,17 @@ type ProductFeedbackRow = {
   report_type?: string | null;
 };
 
+type BadgeCountContext = {
+  eventsByUser: Map<string, LeaderboardEventRow[]>;
+  participantsByUser: Map<string, ParticipantRow[]>;
+  visitedByUser: Map<string, VisitedPlaceRow[]>;
+  quizByUser: Map<string, QuizLearningProgressRow[]>;
+  cleanPlacesByUser: Map<string, CleanPlaceRow[]>;
+  rowsByUser: Map<string, ActionRow[]>;
+  geometryContributionsByUser: Map<string, GeometryContributionRow[]>;
+  feedbackByUser: Map<string, ProductFeedbackRow[]>;
+};
+
 export type LeaderboardBatchData = {
   profiles: LeaderboardProfileRow[];
   progressions: Map<string, LeaderboardProgressionRow>;
@@ -311,55 +322,70 @@ function buildBadgeCounts(
   const result = new Map<string, CurrentLeaderboardBadgeCounts>();
 
   for (const userId of userIds) {
-    const rows = rowsByUser.get(userId) ?? [];
-    const currentValidated = new Set(rows.filter(isCurrentActionValidated).map((row) => row.id));
-    const completeActions = rows.filter((row) => isCompleteAction(row, eligibleActionIds));
-    const cleanPlaces = (cleanPlacesByUser.get(userId) ?? []).filter((row) => row.spot_type === "clean_place");
-    const cleanEvents = (eventsByUser.get(userId) ?? [])
-      .filter((event) => event.event_type === "clean_zone_task" && event.source_table && event.source_id)
-      .map((event) => ({ sourceTable: event.source_table!, sourceId: event.source_id! }));
-    const cleanSources = collectEligibleCleanZoneSources({ cleanPlaces, progressionEvents: cleanEvents });
-    const learning = buildQuizLearningProgressionSummary(quizByUser.get(userId) ?? []);
-    const regularity = computeMonthlyRegularitySummary(rows);
-    const balance = computeActionBalanceSummary(rows, currentValidated);
-    const cartographyCount = new Set(
-      (geometryContributionsByUser.get(userId) ?? [])
-        .filter((row) => row.validation_state === "accepted")
-        .map((row) => row.action_id)
-        .filter((actionId): actionId is string => Boolean(actionId)),
-    ).size;
-    const productFeedbackCount = buildProductFeedbackFacts(feedbackByUser.get(userId) ?? []).count;
-    const userActionIds = new Set(rows.map((row) => row.id));
-    let eligibleFormsCount = 0;
-    for (const actionId of userActionIds) {
-      eligibleFormsCount += eligibleFormsByAction.get(actionId) ?? 0;
-    }
-    const counters: CatalogProgressionInputs["counters"] = {
-      approvedActionsCount: rows.filter((row) => row.status === "approved").length,
-      completeActionsCount: completeActions.length,
-      visitedPlacesCount: visitedByUser.get(userId)?.length ?? 0,
-      eligibleFormsCount,
-      participationCount: new Set(
-        (participantsByUser.get(userId) ?? [])
-          .filter((row) => row.participation_status === "confirmed")
-          .map((row) => row.action_id)
-          .filter(Boolean),
-      ).size,
-    };
-    const events = asMilestoneEvents(eventsByUser.get(userId) ?? []);
-    const milestones = buildCurrentMilestones({ completeActionsCount: counters.completeActionsCount, events });
-    const applicableMilestoneIds = CURRENT_MILESTONES
-      .filter((milestone) => milestone.visibility !== "authorized_moderation" && milestone.visibility !== "not_exposed")
-      .map((milestone) => milestone.id);
-    const catalog = buildGamificationCatalog({
-      progressions: buildProgressionFacts({ counters, cleanZoneSources: cleanSources, learning, regularity, balance, cartographyCount, productFeedbackCount }),
-      milestones: milestoneFactsFromStates(milestones, { invitedUsersCount: 0 }),
-      applicableProgressionIds: ["participation", "organisation", "exploration", "clean_zones", "regularity", "versatility", "learning", "cartography", "product_feedback"],
-      applicableMilestoneIds,
-    });
-    result.set(userId, countCurrentLeaderboardBadges(catalog));
+    result.set(userId, buildUserBadgeCounts(userId, {
+      eventsByUser,
+      participantsByUser,
+      visitedByUser,
+      quizByUser,
+      cleanPlacesByUser,
+      rowsByUser,
+      geometryContributionsByUser,
+      feedbackByUser,
+    }, eligibleFormsByAction, eligibleActionIds));
   }
   return result;
+}
+
+function buildUserBadgeCounts(
+  userId: string,
+  context: BadgeCountContext,
+  eligibleFormsByAction: Map<string, number>,
+  eligibleActionIds: Set<string>,
+): CurrentLeaderboardBadgeCounts {
+  const rows = context.rowsByUser.get(userId) ?? [];
+  const currentValidated = new Set(rows.filter(isCurrentActionValidated).map((row) => row.id));
+  const completeActions = rows.filter((row) => isCompleteAction(row, eligibleActionIds));
+  const cleanPlaces = (context.cleanPlacesByUser.get(userId) ?? []).filter((row) => row.spot_type === "clean_place");
+  const cleanEvents = (context.eventsByUser.get(userId) ?? [])
+    .filter((event) => event.event_type === "clean_zone_task" && event.source_table && event.source_id)
+    .map((event) => ({ sourceTable: event.source_table!, sourceId: event.source_id! }));
+  const cleanSources = collectEligibleCleanZoneSources({ cleanPlaces, progressionEvents: cleanEvents });
+  const learning = buildQuizLearningProgressionSummary(context.quizByUser.get(userId) ?? []);
+  const regularity = computeMonthlyRegularitySummary(rows);
+  const balance = computeActionBalanceSummary(rows, currentValidated);
+  const cartographyCount = new Set(
+    (context.geometryContributionsByUser.get(userId) ?? [])
+      .filter((row) => row.validation_state === "accepted")
+      .map((row) => row.action_id)
+      .filter((actionId): actionId is string => Boolean(actionId)),
+  ).size;
+  const productFeedbackCount = buildProductFeedbackFacts(context.feedbackByUser.get(userId) ?? []).count;
+  const eligibleFormsCount = [...new Set(rows.map((row) => row.id))]
+    .reduce((sum, actionId) => sum + (eligibleFormsByAction.get(actionId) ?? 0), 0);
+  const counters: CatalogProgressionInputs["counters"] = {
+    approvedActionsCount: rows.filter((row) => row.status === "approved").length,
+    completeActionsCount: completeActions.length,
+    visitedPlacesCount: context.visitedByUser.get(userId)?.length ?? 0,
+    eligibleFormsCount,
+    participationCount: new Set(
+      (context.participantsByUser.get(userId) ?? [])
+        .filter((row) => row.participation_status === "confirmed")
+        .map((row) => row.action_id)
+        .filter(Boolean),
+    ).size,
+  };
+  const events = asMilestoneEvents(context.eventsByUser.get(userId) ?? []);
+  const milestones = buildCurrentMilestones({ completeActionsCount: counters.completeActionsCount, events });
+  const applicableMilestoneIds = CURRENT_MILESTONES
+    .filter((milestone) => milestone.visibility !== "authorized_moderation" && milestone.visibility !== "not_exposed")
+    .map((milestone) => milestone.id);
+  const catalog = buildGamificationCatalog({
+    progressions: buildProgressionFacts({ counters, cleanZoneSources: cleanSources, learning, regularity, balance, cartographyCount, productFeedbackCount }),
+    milestones: milestoneFactsFromStates(milestones, { invitedUsersCount: 0 }),
+    applicableProgressionIds: ["participation", "organisation", "exploration", "clean_zones", "regularity", "versatility", "learning", "cartography", "product_feedback"],
+    applicableMilestoneIds,
+  });
+  return countCurrentLeaderboardBadges(catalog);
 }
 
 export async function loadLeaderboardBatchData(supabase: SupabaseClient): Promise<LeaderboardBatchData> {

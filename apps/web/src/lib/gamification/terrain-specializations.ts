@@ -180,14 +180,28 @@ export function buildTerrainSpecializationFacts(
     bySpecialization.set(row.specializationId, rows);
   }
 
-  const candidates: Array<GamificationSourceFact & { specializationId: TerrainSpecializationId; actionId: string; xpCandidate: number }> = [];
+  const candidates = buildTerrainSpecializationCandidates(userId, bySpecialization);
+  creditTerrainSpecializationCandidates(candidates);
+  return candidates;
+}
+
+type TerrainSpecializationCandidate = GamificationSourceFact & {
+  specializationId: TerrainSpecializationId;
+  actionId: string;
+  xpCandidate: number;
+};
+
+function buildTerrainSpecializationCandidates(
+  userId: string,
+  bySpecialization: Map<TerrainSpecializationId, TerrainSpecializationEvidence[]>,
+): TerrainSpecializationCandidate[] {
+  const candidates: TerrainSpecializationCandidate[] = [];
   for (const definition of TERRAIN_SPECIALIZATIONS) {
     const rows = bySpecialization.get(definition.id) ?? [];
     rows.forEach((row, index) => {
       const count = index + 1;
       if (!thresholdsReachedByCount(count).includes(count)) return;
       const threshold = count;
-      const sourceId = `terrain-specialization:${definition.id}:${TERRAIN_SPECIALIZATION_RULES_VERSION}:tier-${threshold}:action-${row.actionId}`;
       candidates.push({
         specializationId: definition.id,
         actionId: row.actionId,
@@ -195,7 +209,7 @@ export function buildTerrainSpecializationFacts(
         mechanicId: `terrain_specialization:${definition.id}`,
         eventType: TERRAIN_SPECIALIZATION_EVENT_TYPE,
         sourceTable: "action_role_attestations",
-        sourceId,
+        sourceId: `terrain-specialization:${definition.id}:${TERRAIN_SPECIALIZATION_RULES_VERSION}:tier-${threshold}:action-${row.actionId}`,
         occurredOn: row.actionDate || row.actionCreatedAt.slice(0, 10),
         xpAwarded: definition.xpPerTier,
         threshold,
@@ -214,8 +228,11 @@ export function buildTerrainSpecializationFacts(
       });
     });
   }
+  return candidates;
+}
 
-  const candidatesByAction = new Map<string, typeof candidates>();
+function creditTerrainSpecializationCandidates(candidates: TerrainSpecializationCandidate[]): void {
+  const candidatesByAction = new Map<string, TerrainSpecializationCandidate[]>();
   for (const candidate of candidates) {
     const rows = candidatesByAction.get(candidate.actionId) ?? [];
     rows.push(candidate);
@@ -234,7 +251,6 @@ export function buildTerrainSpecializationFacts(
       };
     }
   }
-  return candidates;
 }
 
 export function buildTerrainSpecializationProgressions(

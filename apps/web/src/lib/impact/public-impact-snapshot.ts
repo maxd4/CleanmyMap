@@ -276,28 +276,12 @@ export async function generateAndPersistPublicImpactSnapshot(params: {
     };
   }
 
-  const aggregate = await loadIncrementalPublicLandingActionSummary();
-  const payload = buildPublicImpactSnapshotPayload({
-    aggregate,
+  const snapshot = await buildPublicImpactSnapshotToPersist({
+    snapshotDate: monthDate,
     generatedAt,
     floorDate,
     sourceMode: params.rebuild ? "rebuild" : "incremental",
   });
-  const snapshot: Omit<PublicImpactSnapshotRecord, "id"> = {
-    snapshotKey: PUBLIC_IMPACT_SNAPSHOT_KEY,
-    snapshotDate: monthDate,
-    generatedAt,
-    version: PUBLIC_IMPACT_SNAPSHOT_VERSION,
-    title: PUBLIC_IMPACT_SNAPSHOT_TITLE,
-    payload,
-    meta: {
-      periodFromDate: floorDate,
-      periodToDate: payload.period.toDate,
-      methodologyVersion: payload.methodologyVersion,
-      sourceRpc: payload.provenance.sourceRpc,
-      sourceMode: payload.provenance.sourceMode,
-    },
-  };
 
   const writeResult = await upsertPublicSurfaceSnapshot(snapshot);
   if (writeResult === "ignored_older") {
@@ -321,5 +305,35 @@ export async function generateAndPersistPublicImpactSnapshot(params: {
     persisted: true,
     reused: false,
     forced: Boolean(params.force),
+  };
+}
+
+async function buildPublicImpactSnapshotToPersist(params: {
+  snapshotDate: string;
+  generatedAt: string;
+  floorDate: string;
+  sourceMode: "rebuild" | "incremental";
+}): Promise<Omit<PublicImpactSnapshotRecord, "id">> {
+  const aggregate = await loadIncrementalPublicLandingActionSummary();
+  const payload = buildPublicImpactSnapshotPayload({
+    aggregate,
+    generatedAt: params.generatedAt,
+    floorDate: params.floorDate,
+    sourceMode: params.sourceMode,
+  });
+  return {
+    snapshotKey: PUBLIC_IMPACT_SNAPSHOT_KEY,
+    snapshotDate: params.snapshotDate,
+    generatedAt: params.generatedAt,
+    version: PUBLIC_IMPACT_SNAPSHOT_VERSION,
+    title: PUBLIC_IMPACT_SNAPSHOT_TITLE,
+    payload,
+    meta: {
+      periodFromDate: params.floorDate,
+      periodToDate: payload.period.toDate,
+      methodologyVersion: payload.methodologyVersion,
+      sourceRpc: payload.provenance.sourceRpc,
+      sourceMode: payload.provenance.sourceMode,
+    },
   };
 }

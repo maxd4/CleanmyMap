@@ -160,6 +160,33 @@ export function aggregatePublicActionMetrics(
   actions: readonly ActionAggregationAction[],
 ): PublicLandingActionAggregation {
   const eligibleActions = actions.filter(isPublicImpactActionInputEligible);
+  const stats = collectActionAggregationStats(eligibleActions);
+  const publicImpact = buildPublicImpactCalculationFromActions(
+    eligibleActions.map((action) => ({ metadata: action.metadata })),
+  );
+
+  return {
+    actionsCount: eligibleActions.length,
+    wasteKnownActions: publicImpact.impactTerrain.wasteKnownActions,
+    wasteCoverageRate: publicImpact.impactTerrain.wasteCoverageRate,
+    participantsTotal: stats.participantsTotal,
+    participantsKnownActions: stats.participantsKnownActions,
+    participantsUnknownActions: stats.participantsUnknownActions,
+    totalDurationMinutes: stats.totalDurationMinutes,
+    totalDurationHours: stats.totalDurationMinutes / 60,
+    actionDistribution: [...stats.distribution.values()]
+      .filter((entry) => entry.count > 0)
+      .sort(compareDistributionEntries),
+    classificationWarnings: [...stats.warnings.entries()]
+      .filter(([, count]) => count > 0)
+      .map(([code, count]) => ({ code, count }))
+      .sort((left, right) => left.code.localeCompare(right.code)),
+    streetCleaningSavings: publicImpact.streetCleaningSavings,
+    impactTerrain: publicImpact.impactTerrain,
+  };
+}
+
+function collectActionAggregationStats(eligibleActions: readonly ActionAggregationAction[]) {
   let participantsTotal = 0;
   let participantsKnownActions = 0;
   let participantsUnknownActions = 0;
@@ -198,28 +225,13 @@ export function aggregatePublicActionMetrics(
     }
   }
 
-  const publicImpact = buildPublicImpactCalculationFromActions(
-    eligibleActions.map((action) => ({ metadata: action.metadata })),
-  );
-
   return {
-    actionsCount: eligibleActions.length,
-    wasteKnownActions: publicImpact.impactTerrain.wasteKnownActions,
-    wasteCoverageRate: publicImpact.impactTerrain.wasteCoverageRate,
     participantsTotal,
     participantsKnownActions,
     participantsUnknownActions,
     totalDurationMinutes,
-    totalDurationHours: totalDurationMinutes / 60,
-    actionDistribution: [...distribution.values()]
-      .filter((entry) => entry.count > 0)
-      .sort(compareDistributionEntries),
-    classificationWarnings: [...warnings.entries()]
-      .filter(([, count]) => count > 0)
-      .map(([code, count]) => ({ code, count }))
-      .sort((left, right) => left.code.localeCompare(right.code)),
-    streetCleaningSavings: publicImpact.streetCleaningSavings,
-    impactTerrain: publicImpact.impactTerrain,
+    distribution,
+    warnings,
   };
 }
 
@@ -258,34 +270,8 @@ export function buildPublicLandingActionMetricsFromAggregate(
   const totalDurationMinutes = toFiniteNonNegativeNumber(
     row.total_duration_minutes,
   );
-  const actionDistribution = Array.isArray(row.action_distribution)
-    ? row.action_distribution
-        .filter(
-          (entry): entry is Record<string, unknown> =>
-            typeof entry === "object" && entry !== null,
-        )
-        .map((entry) => ({
-          key: typeof entry.key === "string" ? entry.key : "",
-          category:
-            typeof entry.category === "string" ? entry.category : "",
-          count: toFiniteNonNegativeNumber(entry.count),
-        }))
-        .filter((entry) => entry.key && entry.category && entry.count > 0)
-        .sort(compareDistributionEntries)
-    : [];
-  const classificationWarnings = Array.isArray(row.classification_warnings)
-    ? row.classification_warnings
-        .filter(
-          (entry): entry is Record<string, unknown> =>
-            typeof entry === "object" && entry !== null,
-        )
-        .map((entry) => ({
-          code: typeof entry.code === "string" ? entry.code : "",
-          count: toFiniteNonNegativeNumber(entry.count),
-        }))
-        .filter((entry) => entry.code && entry.count > 0)
-        .sort((left, right) => left.code.localeCompare(right.code))
-    : [];
+  const actionDistribution = parseActionDistribution(row.action_distribution);
+  const classificationWarnings = parseClassificationWarnings(row.classification_warnings);
 
   const publicImpact = buildPublicImpactCalculationFromAggregate({
     wasteKg: row.waste_kg,
@@ -316,4 +302,29 @@ export function buildPublicLandingActionMetricsFromAggregate(
     streetCleaningSavings: publicImpact.streetCleaningSavings,
     impactTerrain: publicImpact.impactTerrain,
   };
+}
+
+function parseActionDistribution(value: unknown): ActionDistributionEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((entry): entry is Record<string, unknown> => typeof entry === "object" && entry !== null)
+    .map((entry) => ({
+      key: typeof entry.key === "string" ? entry.key : "",
+      category: typeof entry.category === "string" ? entry.category : "",
+      count: toFiniteNonNegativeNumber(entry.count),
+    }))
+    .filter((entry) => entry.key && entry.category && entry.count > 0)
+    .sort(compareDistributionEntries);
+}
+
+function parseClassificationWarnings(value: unknown): ActionAggregationWarning[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((entry): entry is Record<string, unknown> => typeof entry === "object" && entry !== null)
+    .map((entry) => ({
+      code: typeof entry.code === "string" ? entry.code : "",
+      count: toFiniteNonNegativeNumber(entry.count),
+    }))
+    .filter((entry) => entry.code && entry.count > 0)
+    .sort((left, right) => left.code.localeCompare(right.code));
 }

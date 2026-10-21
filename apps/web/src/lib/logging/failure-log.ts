@@ -30,18 +30,28 @@ function sanitizeValue(
   depth: number,
 ): unknown {
   if (key && SENSITIVE_KEY_PATTERN.test(key)) return "[redacted]";
-  if (value === null || typeof value === "boolean" || typeof value === "number") return value;
-  if (typeof value === "string") return redactText(value);
-  if (typeof value === "bigint") return String(value);
-  if (typeof value === "undefined") return undefined;
-  if (typeof value === "function" || typeof value === "symbol") return "[omitted]";
+  const primitive = sanitizePrimitiveValue(value);
+  if (primitive.handled) return primitive.value;
   if (depth >= MAX_LOG_DEPTH) return "[truncated]";
+  const objectValue = value as object;
 
   if (value instanceof Error) return describeError(value, seen, depth + 1);
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? "[invalid-date]" : value.toISOString();
-  if (seen.has(value)) return "[circular]";
-  seen.add(value);
+  if (seen.has(objectValue)) return "[circular]";
+  seen.add(objectValue);
+  return sanitizeCollectionValue(objectValue, seen, depth);
+}
 
+function sanitizePrimitiveValue(value: unknown): { handled: boolean; value: unknown } {
+  if (value === null || typeof value === "boolean" || typeof value === "number") return { handled: true, value };
+  if (typeof value === "string") return { handled: true, value: redactText(value) };
+  if (typeof value === "bigint") return { handled: true, value: String(value) };
+  if (typeof value === "undefined") return { handled: true, value: undefined };
+  if (typeof value === "function" || typeof value === "symbol") return { handled: true, value: "[omitted]" };
+  return { handled: false, value: undefined };
+}
+
+function sanitizeCollectionValue(value: object, seen: WeakSet<object>, depth: number): unknown {
   if (Array.isArray(value)) {
     return value.slice(0, MAX_LOG_ITEMS).map((item) => sanitizeValue(item, undefined, seen, depth + 1));
   }

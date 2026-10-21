@@ -137,63 +137,7 @@ export async function upsertPublicSurfaceSnapshot<TPayload>(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient(true);
-      const row = {
-        snapshot_key: snapshot.snapshotKey,
-        snapshot_date: snapshot.snapshotDate,
-        generated_at: snapshot.generatedAt,
-        version: snapshot.version,
-        title: snapshot.title,
-        payload: snapshot.payload,
-        meta: snapshot.meta,
-      };
-
-      const updateIfOlder = async () =>
-        supabase
-          .from("public_surface_snapshots")
-          .update(row)
-          .eq("snapshot_key", snapshot.snapshotKey)
-          .eq("snapshot_date", snapshot.snapshotDate)
-          .lt("generated_at", snapshot.generatedAt)
-          .select("id")
-          .maybeSingle();
-
-      const updateResult = await updateIfOlder();
-
-      if (updateResult.error) {
-        throw new Error(updateResult.error.message);
-      }
-
-      if (updateResult.data) {
-        return "applied";
-      }
-
-      const insertResult = await supabase
-        .from("public_surface_snapshots")
-        .upsert(row, {
-          onConflict: "snapshot_key,snapshot_date",
-          ignoreDuplicates: true,
-        })
-        .select("id")
-        .maybeSingle();
-
-      if (insertResult.error) {
-        throw new Error(insertResult.error.message);
-      }
-
-      if (insertResult.data) {
-        return "applied";
-      }
-
-      // Another instance may have inserted an older generation between our
-      // first UPDATE and this INSERT. Re-run the same strict CAS once so the
-      // newer generation wins even when the table was initially empty.
-      const retryUpdateResult = await updateIfOlder();
-      if (retryUpdateResult.error) {
-        throw new Error(retryUpdateResult.error.message);
-      }
-
-      return retryUpdateResult.data ? "applied" : "ignored_older";
+      return await upsertSnapshotInSupabase(snapshot);
     } catch (error) {
       if (!allowLocalFileStoreFallback()) {
         throw error;
@@ -201,6 +145,48 @@ export async function upsertPublicSurfaceSnapshot<TPayload>(
     }
   }
 
+  return upsertSnapshotInLocalStore(snapshot);
+}
+
+async function upsertSnapshotInSupabase<TPayload>(
+  snapshot: Omit<PublicSurfaceSnapshotRecord<TPayload>, "id">,
+): Promise<PublicSurfaceSnapshotWriteResult> {
+  const supabase = getSupabaseServerClient(true);
+  const row = {
+    snapshot_key: snapshot.snapshotKey,
+    snapshot_date: snapshot.snapshotDate,
+    generated_at: snapshot.generatedAt,
+    version: snapshot.version,
+    title: snapshot.title,
+    payload: snapshot.payload,
+    meta: snapshot.meta,
+  };
+  const updateIfOlder = () => supabase
+    .from("public_surface_snapshots")
+    .update(row)
+    .eq("snapshot_key", snapshot.snapshotKey)
+    .eq("snapshot_date", snapshot.snapshotDate)
+    .lt("generated_at", snapshot.generatedAt)
+    .select("id")
+    .maybeSingle();
+  const updateResult = await updateIfOlder();
+  if (updateResult.error) throw new Error(updateResult.error.message);
+  if (updateResult.data) return "applied";
+  const insertResult = await supabase
+    .from("public_surface_snapshots")
+    .upsert(row, { onConflict: "snapshot_key,snapshot_date", ignoreDuplicates: true })
+    .select("id")
+    .maybeSingle();
+  if (insertResult.error) throw new Error(insertResult.error.message);
+  if (insertResult.data) return "applied";
+  const retryUpdateResult = await updateIfOlder();
+  if (retryUpdateResult.error) throw new Error(retryUpdateResult.error.message);
+  return retryUpdateResult.data ? "applied" : "ignored_older";
+}
+
+async function upsertSnapshotInLocalStore<TPayload>(
+  snapshot: Omit<PublicSurfaceSnapshotRecord<TPayload>, "id">,
+): Promise<PublicSurfaceSnapshotWriteResult> {
   const store = await readStore();
   const current = store.records.find(
     (entry) =>

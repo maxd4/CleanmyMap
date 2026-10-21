@@ -27,10 +27,10 @@ import { loadTerrainSpecializationEvidence } from "./terrain-specialization-evid
 
 export { buildGeometryContributionFacts } from "./gamification-geometry-facts";
 
-async function loadCurrentGamificationFacts(
+async function loadCurrentGamificationInputs(
   supabase: SupabaseClient,
   userId: string,
-): Promise<GamificationFacts> {
+) {
   const [actions, counters, visitedResult, quizResult, participantResult, geometryContributionFacts, productFeedback, terrainSpecializationEvidence] = await Promise.all([
     loadActionRowsForUser(supabase, userId),
     loadGamificationUserCounters(supabase, userId),
@@ -44,32 +44,44 @@ async function loadCurrentGamificationFacts(
   if (visitedResult.error) throw new Error(visitedResult.error.message);
   if (quizResult.error) throw new Error(quizResult.error.message);
   if (participantResult.error) throw new Error(participantResult.error.message);
-
-  const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, userId, {
-    actionRows: actions,
-  });
-  const actionState = await buildActionFacts(supabase, userId, actions, validatedActionIds);
-  const facts: GamificationSourceFact[] = [
-    ...actionState.facts,
-    ...geometryContributionFacts,
-    ...productFeedback.facts,
-    ...buildTerrainSpecializationFacts(userId, terrainSpecializationEvidence),
-  ];
-  const spogomiFirstReferee = await loadSpogomiFirstRefereeFact(supabase, userId);
-  if (spogomiFirstReferee) facts.push(spogomiFirstReferee);
-  const participantRows = (participantResult.data ?? []) as unknown[];
-  appendCounterFacts(
-    facts,
-    userId,
+  return {
+    actions,
     counters,
-    (visitedResult.data ?? []) as unknown[],
-    participantRows,
-  );
-  facts.push(...await loadCleanZoneFacts(supabase, userId));
-  const quizState = buildQuizFacts(quizResult.data);
-  facts.push(...quizState.facts);
-  facts.push(...await buildParticipationReferralFacts(supabase, userId, participantRows));
-  facts.push(...await loadModerationFacts(supabase, userId));
+    visitedResult,
+    quizResult,
+    participantResult,
+    geometryContributionFacts,
+    productFeedback,
+    terrainSpecializationEvidence,
+  };
+}
+
+async function loadCurrentGamificationFacts(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<GamificationFacts> {
+  const {
+    actions,
+    counters,
+    visitedResult,
+    quizResult,
+    participantResult,
+    geometryContributionFacts,
+    productFeedback,
+    terrainSpecializationEvidence,
+  } = await loadCurrentGamificationInputs(supabase, userId);
+
+  const { facts, actionState, quizState } =
+    await buildCurrentGamificationFactState(supabase, userId, {
+      actions,
+      counters,
+      visitedResult,
+      quizResult,
+      participantResult,
+      geometryContributionFacts,
+      productFeedback,
+      terrainSpecializationEvidence,
+    });
 
   const identity = await getCurrentUserIdentity({ userId }).catch(() => null);
   const moderationApplicable = canViewModerationProgression(identity, userId);
@@ -96,6 +108,43 @@ async function loadCurrentGamificationFacts(
     },
     applicableMechanicIds,
   };
+}
+
+async function buildCurrentGamificationFactState(
+  supabase: SupabaseClient,
+  userId: string,
+  inputs: Awaited<ReturnType<typeof loadCurrentGamificationInputs>>,
+) {
+  const {
+    actions,
+    counters,
+    visitedResult,
+    quizResult,
+    participantResult,
+    geometryContributionFacts,
+    productFeedback,
+    terrainSpecializationEvidence,
+  } = inputs;
+  const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, userId, {
+    actionRows: actions,
+  });
+  const actionState = await buildActionFacts(supabase, userId, actions, validatedActionIds);
+  const facts: GamificationSourceFact[] = [
+    ...actionState.facts,
+    ...geometryContributionFacts,
+    ...productFeedback.facts,
+    ...buildTerrainSpecializationFacts(userId, terrainSpecializationEvidence),
+  ];
+  const spogomiFirstReferee = await loadSpogomiFirstRefereeFact(supabase, userId);
+  if (spogomiFirstReferee) facts.push(spogomiFirstReferee);
+  const participantRows = (participantResult.data ?? []) as unknown[];
+  appendCounterFacts(facts, userId, counters, (visitedResult.data ?? []) as unknown[], participantRows);
+  facts.push(...await loadCleanZoneFacts(supabase, userId));
+  const quizState = buildQuizFacts(quizResult.data);
+  facts.push(...quizState.facts);
+  facts.push(...await buildParticipationReferralFacts(supabase, userId, participantRows));
+  facts.push(...await loadModerationFacts(supabase, userId));
+  return { facts, actionState, quizState };
 }
 
 export { loadCurrentGamificationFacts };

@@ -70,27 +70,13 @@ export async function loadPilotageCommunityOperations(
   const staffingPlan = computeEventStaffingPlan(upcomingEvents, now);
   const reminders = computeEventRelances(upcomingEvents, now);
 
-  const rows = events
-    .filter((event) => event.eventDate < now.toISOString().slice(0, 10))
-    .map((event) => {
-      const conversionRow = conversion.rows.find((row) => row.eventId === event.id);
-      const linkedActions = actions.filter(
-        (action) => extractEventRefFromAction(action) === event.id,
-      );
-      const row: PilotagePostEventLoopRow = {
-        event,
-        closed:
-          event.attendanceCount !== null &&
-          Boolean(event.postMortem?.trim()) &&
-          linkedActions.length > 0 &&
-          linkedActions.some(hasWasteCharacterization),
-        hasAttendance: event.attendanceCount !== null,
-        hasPostMortem: Boolean(event.postMortem?.trim()),
-        hasLinkedAction: (conversionRow?.linkedActions ?? 0) > 0 && linkedEventIds.has(event.id),
-        hasWasteCharacterization: linkedActions.some(hasWasteCharacterization),
-      };
-      return row;
-    });
+  const rows = buildPilotagePostEventLoopRows(
+    events,
+    actions,
+    conversion.rows,
+    linkedEventIds,
+    now.toISOString().slice(0, 10),
+  );
 
   const closedCount = rows.filter((row) => row.closed).length;
   return {
@@ -110,4 +96,29 @@ export async function loadPilotageCommunityOperations(
       missing: rows.filter((row) => !row.closed),
     },
   };
+}
+
+function buildPilotagePostEventLoopRows(
+  events: CommunityEventItem[],
+  actions: ReturnType<typeof toActionListItem>[],
+  conversionRows: ReturnType<typeof computeEventConversions>["rows"],
+  linkedEventIds: Set<string>,
+  today: string,
+): PilotagePostEventLoopRow[] {
+  return events
+    .filter((event) => event.eventDate < today)
+    .map((event) => {
+      const conversionRow = conversionRows.find((row) => row.eventId === event.id);
+      const linkedActions = actions.filter((action) => extractEventRefFromAction(action) === event.id);
+      const hasPostMortem = Boolean(event.postMortem?.trim());
+      const hasWaste = linkedActions.some(hasWasteCharacterization);
+      return {
+        event,
+        closed: event.attendanceCount !== null && hasPostMortem && linkedActions.length > 0 && hasWaste,
+        hasAttendance: event.attendanceCount !== null,
+        hasPostMortem,
+        hasLinkedAction: (conversionRow?.linkedActions ?? 0) > 0 && linkedEventIds.has(event.id),
+        hasWasteCharacterization: hasWaste,
+      };
+    });
 }

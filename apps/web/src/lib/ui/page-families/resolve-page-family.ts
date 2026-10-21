@@ -58,116 +58,39 @@ const RESEAU_DISCUSSIONS_SECTION_ROUTES = [
  * classées ici tant que leur famille produit canonique n'est pas arbitrée.
  */
 export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
-  if (!pathname || pathname === "/") {
-    return "homepage";
-  }
-
-  if (isRoute(pathname, "/spogomi")) {
-    return "agir";
-  }
-
+  if (!pathname || pathname === "/") return "homepage";
+  if (isRoute(pathname, "/spogomi")) return "agir";
   const base = pathname.split("/")[1] ?? "";
+  return resolveBaseEarlyFamily(pathname, base)
+    ?? resolveBaseSectionFamily(pathname, base)
+    ?? resolveBaseFallbackFamily(base);
+}
 
-  if (
-    base === "sign-in" ||
-    base === "sign-up" ||
-    isRoute(pathname, "/onboarding")
-  ) {
-    return "authentification";
-  }
+function resolveBaseEarlyFamily(pathname: string, base: string): PageFamilyId | null {
+  if (base === "sign-in" || base === "sign-up" || isRoute(pathname, "/onboarding")) return "authentification";
+  if (["contact", "conditions-generales-utilisation", "conditions-utilisation", "mentions-legales", "politique-confidentialite", "politique-cookies", "en"].includes(base)) return "juridique";
+  if (base === "reglages" || isRoute(pathname, "/preview/actions/new") || isRoute(pathname, "/error/429")) return "systeme";
+  if (base === "admin" || isRoute(pathname, ADMIN_ROUTE)) return "administration";
+  if (base === "prints" || isRoute(pathname, "/prints/report")) return "impression";
+  return null;
+}
 
-  if (
-    base === "contact" ||
-    base === "conditions-generales-utilisation" ||
-    base === "conditions-utilisation" ||
-    base === "mentions-legales" ||
-    base === "politique-confidentialite" ||
-    base === "politique-cookies" ||
-    base === "en"
-  ) {
-    return "juridique";
-  }
+function resolveBaseSectionFamily(pathname: string, base: string): PageFamilyId | null {
+  if (isAnyRoute(pathname, ACCUEIL_PILOTAGE_SECTION_ROUTES)) return "accueil-pilotage";
+  if (isAnyRoute(pathname, AGIR_SECTION_ROUTES)) return "agir";
+  if (isAnyRoute(pathname, CARTOGRAPHIE_IMPACT_SECTION_ROUTES)) return "cartographie-impact";
+  if (isAnyRoute(pathname, RESEAU_DISCUSSIONS_SECTION_ROUTES)) return "reseau-discussions";
+  if (["community", "messagerie", "open-data"].includes(base)) return "reseau-discussions";
+  if (base === "gamification" || isRoute(pathname, "/actions/map")) return "cartographie-impact";
+  return null;
+}
 
-  if (base === "reglages" || isRoute(pathname, "/preview/actions/new")) {
-    return "systeme";
-  }
-
-  if (isRoute(pathname, "/error/429")) {
-    return "systeme";
-  }
-
-  if (base === "admin" || isRoute(pathname, ADMIN_ROUTE)) {
-    return "administration";
-  }
-
-  if (base === "prints" || isRoute(pathname, "/prints/report")) {
-    return "impression";
-  }
-
-  if (isAnyRoute(pathname, ACCUEIL_PILOTAGE_SECTION_ROUTES)) {
-    return "accueil-pilotage";
-  }
-
-  if (isAnyRoute(pathname, AGIR_SECTION_ROUTES)) {
-    return "agir";
-  }
-
-  if (isAnyRoute(pathname, CARTOGRAPHIE_IMPACT_SECTION_ROUTES)) {
-    return "cartographie-impact";
-  }
-
-  if (isAnyRoute(pathname, RESEAU_DISCUSSIONS_SECTION_ROUTES)) {
-    return "reseau-discussions";
-  }
-
-  if (
-    base === "community" ||
-    base === "messagerie" ||
-    base === "open-data"
-  ) {
-    return "reseau-discussions";
-  }
-
-  if (
-    base === "gamification" ||
-    isRoute(pathname, "/actions/map")
-  ) {
-    return "cartographie-impact";
-  }
-
-  if (
-    base === "dashboard" ||
-    base === "compte" ||
-    base === "profil" ||
-    base === "parcours" ||
-    base === "pilotage" ||
-    base === "sponsor-portal" ||
-    base === "elus"
-  ) {
-    return "accueil-pilotage";
-  }
-
-  if (
-    base === "actions" ||
-    base === "declaration" ||
-    base === "signalement" ||
-    base === "missions"
-  ) {
-    return "agir";
-  }
-
-  if (base === "reports") {
-    return "cartographie-impact";
-  }
-
-  if (base === "learn") {
-    return "apprendre";
-  }
-
-  if (base === "partners") {
-    return "reseau-discussions";
-  }
-
+function resolveBaseFallbackFamily(base: string): PageFamilyId {
+  if (["dashboard", "compte", "profil", "parcours", "pilotage", "sponsor-portal", "elus"].includes(base)) return "accueil-pilotage";
+  if (["actions", "declaration", "signalement", "missions"].includes(base)) return "agir";
+  if (base === "reports") return "cartographie-impact";
+  if (base === "learn") return "apprendre";
+  if (base === "partners") return "reseau-discussions";
   return "secours";
 }
 

@@ -178,47 +178,13 @@ async function loadScopedReportCommunityEvents(
   const selectedRows: ReportCommunityEventRow[] = [];
   let partial = boundedEventIds.length < normalizedEventIds.length;
 
-  const organizerResult = await supabase
-    .from("community_events")
-    .select(
-      "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
-    )
-    .eq("organizer_clerk_id", normalizedUserId)
-    .order("event_date", { ascending: true })
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: true })
-    .range(0, scopedLimit);
-
-  if (organizerResult.error) {
-    throw new Error(organizerResult.error.message);
-  }
-  const organizedRows = (organizerResult.data ?? []) as ReportCommunityEventRow[];
+  const organizedRows = await loadScopedOrganizerEvents(supabase, normalizedUserId, scopedLimit);
   partial ||= organizedRows.length > scopedLimit;
   selectedRows.push(...organizedRows.slice(0, scopedLimit));
 
-  for (let index = 0; index < boundedEventIds.length; index += REPORT_COMMUNITY_EVENTS_SCOPED_ID_BATCH_SIZE) {
-    const batch = boundedEventIds.slice(
-      index,
-      index + REPORT_COMMUNITY_EVENTS_SCOPED_ID_BATCH_SIZE,
-    );
-    const linkedResult = await supabase
-      .from("community_events")
-      .select(
-        "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
-      )
-      .in("id", batch)
-      .order("event_date", { ascending: true })
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: true })
-      .range(0, scopedLimit);
-
-    if (linkedResult.error) {
-      throw new Error(linkedResult.error.message);
-    }
-    const linkedRows = (linkedResult.data ?? []) as ReportCommunityEventRow[];
-    partial ||= linkedRows.length > scopedLimit;
-    selectedRows.push(...linkedRows.slice(0, scopedLimit));
-  }
+  const linkedResult = await loadScopedLinkedEvents(supabase, boundedEventIds, scopedLimit);
+  partial ||= linkedResult.partial;
+  selectedRows.push(...linkedResult.rows.flatMap((rows) => rows.slice(0, scopedLimit)));
 
   const uniqueRows = new Map(selectedRows.map((event) => [event.id, event] as const));
   const events = [...uniqueRows.values()]
@@ -237,6 +203,47 @@ async function loadScopedReportCommunityEvents(
     ),
     availability: partial ? "partial" : "available",
   };
+}
+
+async function loadScopedOrganizerEvents(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  userId: string,
+  limit: number,
+): Promise<ReportCommunityEventRow[]> {
+  const result = await supabase
+    .from("community_events")
+    .select("id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description")
+    .eq("organizer_clerk_id", userId)
+    .order("event_date", { ascending: true })
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true })
+    .range(0, limit);
+  if (result.error) throw new Error(result.error.message);
+  return (result.data ?? []) as ReportCommunityEventRow[];
+}
+
+async function loadScopedLinkedEvents(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  eventIds: readonly string[],
+  limit: number,
+): Promise<{ rows: ReportCommunityEventRow[][]; partial: boolean }> {
+  const rows: ReportCommunityEventRow[][] = [];
+  let partial = false;
+  for (let index = 0; index < eventIds.length; index += REPORT_COMMUNITY_EVENTS_SCOPED_ID_BATCH_SIZE) {
+    const result = await supabase
+      .from("community_events")
+      .select("id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description")
+      .in("id", eventIds.slice(index, index + REPORT_COMMUNITY_EVENTS_SCOPED_ID_BATCH_SIZE))
+      .order("event_date", { ascending: true })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(0, limit);
+    if (result.error) throw new Error(result.error.message);
+    const batchRows = (result.data ?? []) as ReportCommunityEventRow[];
+    partial ||= batchRows.length > limit;
+    rows.push(batchRows);
+  }
+  return { rows, partial };
 }
 
 /**

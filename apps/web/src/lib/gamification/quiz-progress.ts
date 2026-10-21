@@ -67,79 +67,15 @@ export async function syncQuizQuestionTypeProgress(
   params: SyncQuizQuestionTypeProgressParams,
 ): Promise<QuizProgressSyncResult> {
   const client = supabase as unknown as QuizProgressTableClient;
-  const questionTypeLabel = getQuizPedagogicalTypeLabel(params.questionType);
-
-  const current = await client
-    .from("quiz_type_progress")
-    .select("user_id, question_type, correct_count")
-    .eq("user_id", params.userId)
-    .eq("question_type", params.questionType)
-    .maybeSingle();
-
-  if (current.error) {
-    throw current.error;
-  }
-
-  const previousCount = current.data?.correct_count ?? 0;
-  const correctCount = previousCount + 1;
-  const awards = computeQuizProgressAwards({
-    previousCount,
-    nextCount: correctCount,
-    questionType: params.questionType,
-  });
-
-  const persistedAwards: QuizProgressAward[] = [];
-  for (const award of awards) {
-    const inserted = await insertProgressionEvent(supabase, {
-      userId: params.userId,
-      eventType: "quiz_question_type_milestone",
-      sourceTable: "quiz_type_progress",
-      sourceId: award.sourceId,
-      statusPhase: "validated",
-      weight: 1,
-      xpBase: award.xp,
-      xpAwarded: award.xp,
-      occurredOn: new Date().toISOString().slice(0, 10),
-      metadata: {
-        questionType: params.questionType,
-        questionTypeLabel,
-        milestone: award.milestone,
-        step: award.step,
-        threshold: award.threshold,
-        badgeId: award.badgeId,
-        questionId: params.questionId,
-      },
-    });
-
-    if (inserted) {
-      persistedAwards.push(award);
-    }
-  }
-
-  if (persistedAwards.length > 0) {
-    await broadcastGamificationAnnouncement(supabase, {
-      type: "quiz_question_type_milestone",
-      source: "quiz",
-      userId: params.userId,
-      title: `+${persistedAwards.reduce((sum, award) => sum + award.xp, 0)} XP sur le quiz`,
-      message:
-        persistedAwards.length === 1
-          ? `${questionTypeLabel} : ${persistedAwards[0]?.milestone ?? 0} bonnes réponses atteintes.`
-          : `${questionTypeLabel} : ${persistedAwards.map((award) => award.milestone).join(" / ")} bonnes réponses atteintes.`,
-      icon: "🧠",
-      questionType: params.questionType,
-      milestones: persistedAwards.map((award) => award.milestone),
-      steps: persistedAwards.map((award) => award.step),
-      xp: persistedAwards.reduce((sum, award) => sum + award.xp, 0),
-      dedupeKey: `quiz_question_type_milestone:${params.userId}:${params.questionType}:${correctCount}`,
-    });
-  }
+  const state = await loadQuizProgressState(client, params);
+  const persistedAwards = await persistQuizProgressAwards(supabase, params, state);
+  await announceQuizProgressAwards(supabase, params, state, persistedAwards);
 
   const updated = await client.from("quiz_type_progress").upsert(
     {
       user_id: params.userId,
       question_type: params.questionType,
-      correct_count: correctCount,
+      correct_count: state.correctCount,
     },
     { onConflict: "user_id,question_type" },
   );
@@ -154,10 +90,87 @@ export async function syncQuizQuestionTypeProgress(
 
   return {
     questionType: params.questionType,
-    questionTypeLabel,
-    previousCount,
-    correctCount,
+    questionTypeLabel: state.questionTypeLabel,
+    previousCount: state.previousCount,
+    correctCount: state.correctCount,
     awards: persistedAwards,
     totalXpAwarded: persistedAwards.reduce((sum, award) => sum + award.xp, 0),
   };
+}
+
+async function loadQuizProgressState(
+  client: QuizProgressTableClient,
+  params: SyncQuizQuestionTypeProgressParams,
+) {
+  const current = await client
+    .from("quiz_type_progress")
+    .select("user_id, question_type, correct_count")
+    .eq("user_id", params.userId)
+    .eq("question_type", params.questionType)
+    .maybeSingle();
+  if (current.error) throw current.error;
+  const previousCount = current.data?.correct_count ?? 0;
+  const correctCount = previousCount + 1;
+  return {
+    questionTypeLabel: getQuizPedagogicalTypeLabel(params.questionType),
+    previousCount,
+    correctCount,
+    awards: computeQuizProgressAwards({ previousCount, nextCount: correctCount, questionType: params.questionType }),
+  };
+}
+
+async function persistQuizProgressAwards(
+  supabase: SupabaseClient,
+  params: SyncQuizQuestionTypeProgressParams,
+  state: Awaited<ReturnType<typeof loadQuizProgressState>>,
+): Promise<QuizProgressAward[]> {
+  const persistedAwards: QuizProgressAward[] = [];
+  for (const award of state.awards) {
+    const inserted = await insertProgressionEvent(supabase, {
+      userId: params.userId,
+      eventType: "quiz_question_type_milestone",
+      sourceTable: "quiz_type_progress",
+      sourceId: award.sourceId,
+      statusPhase: "validated",
+      weight: 1,
+      xpBase: award.xp,
+      xpAwarded: award.xp,
+      occurredOn: new Date().toISOString().slice(0, 10),
+      metadata: {
+        questionType: params.questionType,
+        questionTypeLabel: state.questionTypeLabel,
+        milestone: award.milestone,
+        step: award.step,
+        threshold: award.threshold,
+        badgeId: award.badgeId,
+        questionId: params.questionId,
+      },
+    });
+    if (inserted) persistedAwards.push(award);
+  }
+  return persistedAwards;
+}
+
+async function announceQuizProgressAwards(
+  supabase: SupabaseClient,
+  params: SyncQuizQuestionTypeProgressParams,
+  state: Awaited<ReturnType<typeof loadQuizProgressState>>,
+  persistedAwards: QuizProgressAward[],
+): Promise<void> {
+  if (persistedAwards.length === 0) return;
+  await broadcastGamificationAnnouncement(supabase, {
+    type: "quiz_question_type_milestone",
+    source: "quiz",
+    userId: params.userId,
+    title: `+${persistedAwards.reduce((sum, award) => sum + award.xp, 0)} XP sur le quiz`,
+    message: persistedAwards.length === 1
+      ? `${state.questionTypeLabel} : ${persistedAwards[0]?.milestone ?? 0} bonnes réponses atteintes.`
+      : `${state.questionTypeLabel} : ${persistedAwards.map((award) => award.milestone).join(" / ")} bonnes réponses atteintes.`,
+    icon: "🧠",
+    questionType: params.questionType,
+    milestones: persistedAwards.map((award) => award.milestone),
+    steps: persistedAwards.map((award) => award.step),
+    xp: persistedAwards.reduce((sum, award) => sum + award.xp, 0),
+    dedupeKey: `quiz_question_type_milestone:${params.userId}:${params.questionType}:${state.correctCount}`,
+  });
 }

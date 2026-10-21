@@ -280,16 +280,7 @@ function isVisible(receipt: Omit<GamificationReconciliationReceipt, "hasUserVisi
     receipt.catalogChanges.retiredMechanicIds.length > 0;
 }
 
-/** Builds the user-facing consequence of exactly one deterministic plan. */
-export function buildGamificationReconciliationReceipt(
-  plan: GamificationReconciliationPlan,
-  options: {
-    occurredAt?: string;
-    reasonCategory?: GamificationReconciliationReasonCategory;
-    reconciliationId?: string;
-    rules?: GamificationRulesV1;
-  } = {},
-): GamificationReconciliationReceipt {
+function buildReceiptEventViews(plan: GamificationReconciliationPlan) {
   const beforeEvents = currentEvents(plan);
   const afterEvents = plan.expected.events.map((event) => ({
     logicalId: event.logicalId,
@@ -300,20 +291,28 @@ export function buildGamificationReconciliationReceipt(
     rulesVersion: plan.rulesVersionAfter,
     metadata: event.metadata,
   }));
+  return { beforeEvents, afterEvents };
+}
+
+function buildReceiptProgressionViews(
+  beforeEvents: GamificationEventChange[],
+  afterEvents: GamificationEventChange[],
+) {
   const beforeProgressions = progressionState(beforeEvents);
   const afterProgressions = progressionState(afterEvents);
-  const progressionAdded = [...afterProgressions.keys()].filter((id) => !beforeProgressions.has(id)).sort(compareCanonicalStrings);
-  const progressionRemoved = [...beforeProgressions.keys()].filter((id) => !afterProgressions.has(id)).sort(compareCanonicalStrings);
-  const changed = progressionChanges(beforeProgressions, afterProgressions);
-  const gradeChanges = badgeGradeChanges(changed);
-  const receiptWithoutVisibility = {
-    reconciliationId: options.reconciliationId ?? receiptId(plan),
-    userId: plan.userId,
-    occurredAt: options.occurredAt ?? new Date().toISOString(),
-    previousRulesVersion: plan.rulesVersionBefore,
-    currentRulesVersion: plan.rulesVersionAfter,
-    previousRulesRevision: plan.rulesRevisionBefore,
-    currentRulesRevision: plan.rulesRevisionAfter,
+  return {
+    progressionAdded: [...afterProgressions.keys()]
+      .filter((id) => !beforeProgressions.has(id))
+      .sort(compareCanonicalStrings),
+    progressionRemoved: [...beforeProgressions.keys()]
+      .filter((id) => !afterProgressions.has(id))
+      .sort(compareCanonicalStrings),
+    changed: progressionChanges(beforeProgressions, afterProgressions),
+  };
+}
+
+function buildReceiptXpAndLevel(plan: GamificationReconciliationPlan) {
+  return {
     xp: {
       before: plan.xpBefore,
       after: plan.xpExpected,
@@ -331,17 +330,63 @@ export function buildGamificationReconciliationReceipt(
           ? "up" as const
           : "down" as const,
     },
-    progressions: {
-      added: progressionAdded.map((id) => ({ id })),
-      removed: progressionRemoved.map((id) => ({ id })),
-      changed,
-    },
-    badges: {
-      unlocked: plan.badgesAdded.map((id) => badgeRef(id, afterEvents)),
-      removed: plan.badgesRemoved.map((id) => badgeRef(id, beforeEvents)),
-      upgraded: gradeChanges.upgraded,
-      downgraded: gradeChanges.downgraded,
-    },
+  };
+}
+
+function buildReceiptProgressions(
+  progressionAdded: string[],
+  progressionRemoved: string[],
+  changed: GamificationProgressionReceiptChange[],
+) {
+  return {
+    added: progressionAdded.map((id) => ({ id })),
+    removed: progressionRemoved.map((id) => ({ id })),
+    changed,
+  };
+}
+
+function buildReceiptBadges(
+  plan: GamificationReconciliationPlan,
+  beforeEvents: GamificationEventChange[],
+  afterEvents: GamificationEventChange[],
+  changed: GamificationProgressionReceiptChange[],
+) {
+  const gradeChanges = badgeGradeChanges(changed);
+  return {
+    unlocked: plan.badgesAdded.map((id) => badgeRef(id, afterEvents)),
+    removed: plan.badgesRemoved.map((id) => badgeRef(id, beforeEvents)),
+    upgraded: gradeChanges.upgraded,
+    downgraded: gradeChanges.downgraded,
+  };
+}
+
+function buildReceiptWithVisibility(
+  plan: GamificationReconciliationPlan,
+  options: {
+    occurredAt?: string;
+    reasonCategory?: GamificationReconciliationReasonCategory;
+    reconciliationId?: string;
+    rules?: GamificationRulesV1;
+  },
+  beforeEvents: GamificationEventChange[],
+  afterEvents: GamificationEventChange[],
+  progressionAdded: string[],
+  progressionRemoved: string[],
+  changed: GamificationProgressionReceiptChange[],
+) {
+  const { xp, level } = buildReceiptXpAndLevel(plan);
+  const receiptWithoutVisibility = {
+    reconciliationId: options.reconciliationId ?? receiptId(plan),
+    userId: plan.userId,
+    occurredAt: options.occurredAt ?? new Date().toISOString(),
+    previousRulesVersion: plan.rulesVersionBefore,
+    currentRulesVersion: plan.rulesVersionAfter,
+    previousRulesRevision: plan.rulesRevisionBefore,
+    currentRulesRevision: plan.rulesRevisionAfter,
+    xp,
+    level,
+    progressions: buildReceiptProgressions(progressionAdded, progressionRemoved, changed),
+    badges: buildReceiptBadges(plan, beforeEvents, afterEvents, changed),
     milestones: {
       unlocked: plan.milestonesAdded.map((id) => ({ id })),
       removed: plan.milestonesRemoved.map((id) => ({ id })),
@@ -355,6 +400,30 @@ export function buildGamificationReconciliationReceipt(
     reasonCategory: options.reasonCategory ?? "account_rebuild",
   };
   return { ...receiptWithoutVisibility, hasUserVisibleChanges: isVisible(receiptWithoutVisibility) };
+}
+
+/** Builds the user-facing consequence of exactly one deterministic plan. */
+export function buildGamificationReconciliationReceipt(
+  plan: GamificationReconciliationPlan,
+  options: {
+    occurredAt?: string;
+    reasonCategory?: GamificationReconciliationReasonCategory;
+    reconciliationId?: string;
+    rules?: GamificationRulesV1;
+  } = {},
+): GamificationReconciliationReceipt {
+  const { beforeEvents, afterEvents } = buildReceiptEventViews(plan);
+  const { progressionAdded, progressionRemoved, changed } =
+    buildReceiptProgressionViews(beforeEvents, afterEvents);
+  return buildReceiptWithVisibility(
+    plan,
+    options,
+    beforeEvents,
+    afterEvents,
+    progressionAdded,
+    progressionRemoved,
+    changed,
+  );
 }
 
 export async function persistGamificationReconciliationReceipt(

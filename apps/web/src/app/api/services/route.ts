@@ -19,56 +19,23 @@ const SERVICE_STATUS_CACHE_HEADERS = {
  "Cache-Control": "private, no-store",
 };
 
+const SERVICE_STATE_RESOLVERS: Record<string, () => ServiceHealthState> = {
+ supabase: () => isConfigured(env.NEXT_PUBLIC_SUPABASE_URL) && isConfigured(env.NEXT_PUBLIC_SUPABASE_ANON_KEY) && isConfigured(env.SUPABASE_SERVICE_ROLE_KEY) ? "ready" : "missing",
+ vercel: () => isConfigured(process.env["VERCEL"]) || isConfigured(process.env["VERCEL_ENV"]) ? "ready" : "external",
+ clerk: () => isConfigured(env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) && isConfigured(env.CLERK_SECRET_KEY) ? "ready" : "missing",
+ cloudflare: () => isConfigured(env.CLOUDFLARE_API_TOKEN) ? "ready" : "external",
+ sentry: () => isConfigured(env.SENTRY_DSN) || isConfigured(env.NEXT_PUBLIC_SENTRY_DSN) ? "ready" : "missing",
+ resend: () => isConfigured(env.RESEND_API_KEY) && isConfigured(resolveEmailFrom()) && isConfigured(resolveContactEmail()) ? "ready" : "missing",
+ posthog: () => isPostHogConfigured() ? "ready" : "missing",
+ pinecone: () => isConfigured(env.PINECONE_API_KEY) ? "ready" : "defer",
+ stripe: () => isConfigured(env.STRIPE_SECRET_KEY) && isConfigured(env.STRIPE_WEBHOOK_SECRET) ? "ready" : "defer",
+ upstash: () => isConfigured(env.UPSTASH_REDIS_REST_URL) && isConfigured(env.UPSTASH_REDIS_REST_TOKEN) ? "ready" : "defer",
+ qstash: () => isConfigured(env.QSTASH_TOKEN) ? "ready" : "defer",
+ uptimerobot: () => isConfigured(env.UPTIMEROBOT_API_KEY) ? "ready" : "external",
+};
+
 function getServiceState(id: string): ServiceHealthState {
- switch (id) {
- case"supabase":
- return isConfigured(env.NEXT_PUBLIC_SUPABASE_URL) &&
- isConfigured(env.NEXT_PUBLIC_SUPABASE_ANON_KEY) &&
- isConfigured(env.SUPABASE_SERVICE_ROLE_KEY)
- ?"ready"
- :"missing";
- case"vercel":
- return isConfigured(process.env["VERCEL"]) || isConfigured(process.env["VERCEL_ENV"])
- ?"ready"
- :"external";
- case"clerk":
- return isConfigured(env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) &&
- isConfigured(env.CLERK_SECRET_KEY)
- ?"ready"
- :"missing";
- case"cloudflare":
- return isConfigured(env.CLOUDFLARE_API_TOKEN) ?"ready" :"external";
- case"sentry":
- return isConfigured(env.SENTRY_DSN) || isConfigured(env.NEXT_PUBLIC_SENTRY_DSN)
- ?"ready"
- :"missing";
- case"resend":
- return isConfigured(env.RESEND_API_KEY) &&
- isConfigured(resolveEmailFrom()) &&
- isConfigured(resolveContactEmail())
- ?"ready"
- :"missing";
- case"posthog":
- return isPostHogConfigured() ?"ready" :"missing";
- case"pinecone":
- return isConfigured(env.PINECONE_API_KEY) ?"ready" :"defer";
- case"stripe":
- return isConfigured(env.STRIPE_SECRET_KEY) &&
- isConfigured(env.STRIPE_WEBHOOK_SECRET)
- ?"ready"
- :"defer";
- case"upstash":
- return isConfigured(env.UPSTASH_REDIS_REST_URL) &&
- isConfigured(env.UPSTASH_REDIS_REST_TOKEN)
- ?"ready"
- :"defer";
- case"qstash":
- return isConfigured(env.QSTASH_TOKEN) ?"ready" :"defer";
- case"uptimerobot":
- return isConfigured(env.UPTIMEROBOT_API_KEY) ?"ready" :"external";
- default:
- return"defer";
- }
+ return SERVICE_STATE_RESOLVERS[id]?.() ?? "defer";
 }
 
 export async function GET() {

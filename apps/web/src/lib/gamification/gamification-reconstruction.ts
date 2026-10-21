@@ -110,6 +110,17 @@ function buildMetadata(
   };
 }
 
+function resolveApplicableMechanicIds(
+  facts: GamificationFacts,
+  rules: GamificationRulesV1,
+): string[] {
+  return [...new Set(
+    facts.applicableMechanicIds ?? rules.mechanics
+      .filter((rule) => rule.category !== "NON_GAMIFIED")
+      .map((rule) => rule.mechanicId),
+  )].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
+}
+
 /**
  * Pure reconstruction. It reads only the supplied canonical facts and never
  * consults or mutates progression_events.
@@ -128,11 +139,7 @@ export function computeExpectedGamificationState(
   const progressionCounters: Record<string, number> = {
     ...(facts.progressionCounters ?? {}),
   };
-  const applicableMechanicIds = [...new Set(
-    facts.applicableMechanicIds ?? rules.mechanics
-      .filter((rule) => rule.category !== "NON_GAMIFIED")
-      .map((rule) => rule.mechanicId),
-  )].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
+  const applicableMechanicIds = resolveApplicableMechanicIds(facts, rules);
 
   for (const rule of rules.mechanics) {
     if (rule.category === "NON_GAMIFIED") continue;
