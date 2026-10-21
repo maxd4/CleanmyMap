@@ -126,3 +126,30 @@ Avant de valider une page ou un composant :
 ## 10. Règles d'évolution
 
 Chaque nouvelle primitive doit d'abord justifier l'absence d'équivalent. Une expérimentation `PLAN` ou `REFERENCE` ne devient pas un contrat `CURRENT` par simple reproduction. Une dérogation UI doit rester locale, explicite et documentée dans la source appropriée ; aucune seconde charte générique ne doit être créée.
+
+## 11. Principes d'adaptation UX/UI inspirés des HIG
+
+Cette section transpose des principes généraux des Human Interface Guidelines
+au Web CleanMyMap. Elle ne constitue ni une charte Apple, ni un contrat de
+composants Apple pour le Web. Les conventions propres à iOS, iPadOS ou macOS
+(barre d'onglets native, SF Symbols, SF Pro, Liquid Glass, dimensions en points
+ou gestes exclusifs) ne sont pas des exigences CleanMyMap.
+
+La source communautaire `apple-design` est une référence de revue externe ;
+la source normative consultée pour ces principes reste la [documentation Apple
+Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/).
+Les critères Web mesurables restent ceux de WCAG et des contrats spécialisés
+ci-dessus. Les règles déjà portées par ces contrats ne sont pas recopiées ici.
+
+| Principe adapté | Objectif utilisateur et application Web | Exception nécessaire | Primitive/token canonique | Critère concret de vérification |
+| --- | --- | --- | --- | --- |
+| **Intention et hiérarchie** | Comprendre le rôle de la page, l'information principale et la prochaine action sans décoder la décoration. | Une surface scientifique, cartographique ou pédagogique peut présenter davantage de contexte si son ordre de lecture reste explicite. | `PageHeader`, `CmmPageLayout`, `CmmSectionGroup`, `LAYOUT_SPACING.md` | Le premier viewport identifie le sujet, l'état courant et l'action utile ; le contenu essentiel reste compréhensible en `minimaliste` et `sobre`. |
+| **Autonomie et récupération** | Explorer, revenir, corriger une erreur et reprendre sans perte de contexte ni succès simulé. | Une mutation irréversible peut exiger une confirmation ou une protection d'identité selon son contrat métier. | `CmmButton`, `CmmFeedback`, `SystemState`, `CmmDialog`, `STATES_FEEDBACK.md` | Les erreurs indiquent la correction ou la reprise possibles ; les actions de sortie et de retour ont un effet réel ; le succès n'est annoncé qu'après confirmation. |
+| **Familiarité et cohérence** | Réduire l'apprentissage en conservant les mêmes rôles, libellés, états et interactions d'une page à l'autre. | Une exception de famille ou de parcours est autorisée lorsqu'elle est documentée et nécessaire à la tâche. | Primitives `Cmm*`, tokens de famille, `PAGE_HEADER.md`, `ACTIONS_BUTTONS.md` | Une même responsabilité n'est pas rendue par une recette locale concurrente ; les libellés et états restent stables dans un même parcours. |
+| **Flexibilité et inclusion** | Supporter largeur, zoom, clavier, technologies d'assistance, préférences de mouvement et les trois modes sans perte de fonction. | Les cartes, tables et cartes géographiques peuvent conserver une contrainte d'interaction documentée, sans élargir la page entière. | Tokens de layout, `CmmField`, `CmmDialog`, `theme-visibility-rules.md`, `DISPLAY_MODES_CANONICAL.md` | Vérifier reflow, focus, nom accessible, contraste et états aux largeurs pertinentes ; ne jamais compenser le zoom par une réduction globale du texte. |
+| **Responsabilité et transparence** | Faire comprendre ce qui est demandé, ce qui est confirmé, ce qui est privé et ce qui est indisponible. | L'interface peut révéler moins de données lorsqu'une règle d'accès, de confidentialité ou de minimisation l'impose. | `SystemState`, feedback contextualisé, contrats AuthN/AuthZ et données | Une limite d'accès, une absence de données, une erreur réseau et un état vide sont distinguables ; aucune permission ni donnée n'est suggérée par une décoration. |
+| **Sobriété et caractère** | Donner à la marque CleanMyMap une identité reconnaissable sans que les effets, gradients ou animations concurrencent le contenu. | La palette et les variantes par bloc restent les marqueurs de marque documentés ; elles ne sont pas remplacées par un habillage Apple. | `BLOC_COLOR_SYSTEM_PREMIUM.md`, `BRAND.md`, modes d'affichage, `MOTION_TRANSITIONS.md` | La hiérarchie, le contraste et l'action restent identifiables sans glow, blur, motion ou transparence décorative ; `prefers-reduced-motion` est respecté. |
+
+Ces principes orientent les futurs changements ; ils ne prouvent pas que les
+surfaces existantes les satisfont déjà. Une correction de code doit rester dans
+un lot distinct, avec une preuve d'exécution adaptée à la surface concernée.

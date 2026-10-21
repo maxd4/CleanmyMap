@@ -58,6 +58,22 @@ Les paddings horizontaux sont respectivement de 12 / 16 / 20 px et le gap
 interne est de 8 px. Ces valeurs ne doivent pas être recopiées dans les
 consommateurs.
 
+## Libellé, priorité et cible d'interaction
+
+Une action doit être compréhensible avant son activation et rester identifiable
+pendant son exécution.
+
+| Règle | Application Web | Exception | Primitive/token | Vérification |
+| --- | --- | --- | --- | --- |
+| Le libellé décrit le résultat ou l'étape suivante | Employer un verbe explicite (`Enregistrer`, `Continuer`, `Publier`) et conserver ce vocabulaire jusqu'au feedback correspondant. | Un contrôle icon-only peut utiliser `ariaLabel` lorsqu'un libellé visible détruirait sa composition ; l'action doit alors rester compréhensible au lecteur d'écran. | `CmmButton`, `ariaLabel`, `STATES_FEEDBACK.md` | Le nom accessible indique l'effet réel ; il ne dépend ni d'un tooltip ni d'une icône seule. |
+| La priorité visuelle suit la priorité de tâche | Une seule action principale domine une surface ; les actions secondaires, de navigation et destructives restent distinguables. | Les workflows multi-étapes peuvent avoir une action principale différente selon l'étape. | `tone`, `variant`, `BLOC_COLOR_SYSTEM_PREMIUM.md` | L'action attendue est identifiable sans survol et sans connaître le code couleur de la rubrique. |
+| La cible reste utilisable au clavier et au pointeur | Conserver la hauteur canonique, l'espacement entre contrôles, `focus-visible`, `loading` et `disabled` fournis par la primitive. | Une fermeture spécialisée ou un contrôle cartographique peut rester hors `CmmButton` si son contrat propre fournit le même nom, focus et état. | `size`, `--focus-ring`, `theme-visibility-rules.md` | Tab/Shift+Tab suivent un ordre logique ; le focus n'est pas masqué ; le contrôle ne provoque pas de débordement au reflow. |
+
+Ces règles ne créent pas une nouvelle taille de bouton ni une nouvelle palette.
+La conformité des cibles, du focus et du contraste se vérifie avec
+`theme-visibility-rules.md`; le garde-fou structurel reste
+`npm run check:actions`.
+
 ## Modes et mouvement
 
 - `exhaustif` conserve les effets premium légers : gradient possible pour
