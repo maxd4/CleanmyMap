@@ -33,6 +33,9 @@ export function SpogomiPublicResults({ eventSlug, initial }: { eventSlug: string
     catch (reason) { setError(reason instanceof Error ? reason.message : "Résultats indisponibles."); }
     finally { setBusy(false); }
   }, [eventSlug]);
+  // Justification polling: public provisional results may change after arbitration;
+  // refresh every 60 seconds only while the tab is visible and results remain public;
+  // pause while hidden or inactive to avoid background traffic.
   useEffect(() => { if (document.visibilityState === "hidden" || results?.visibility === "hidden") return; const timer = window.setInterval(() => { if (document.visibilityState !== "hidden") void refresh(); }, 60_000); return () => window.clearInterval(timer); }, [refresh, results?.visibility]);
   if (!results || results.visibility === "hidden") return <CmmCard tone="slate" variant="glass" className="border-dashed p-5"><h2 className="font-black text-slate-900">Classements et résultats</h2><p className="mt-2 text-sm text-slate-700">Les résultats restent masqués jusqu’à publication par l’organisateur.</p></CmmCard>;
   const activeDivision = results.divisions?.find((division) => division.id === divisionId) ?? results.divisions?.[0] ?? null;
