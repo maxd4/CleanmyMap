@@ -14,7 +14,6 @@ export const DOCUMENTATION_THRESHOLDS = Object.freeze({
 });
 
 const LIFECYCLE_STATUSES = Object.freeze(["CURRENT", "PLAN", "AUDIT", "HISTORY", "SNAPSHOT", "ADR", "GENERATED"]);
-const LIFECYCLE_STATUS_SET = new Set(LIFECYCLE_STATUSES);
 const FENCE_PATTERN = /^\s{0,3}(`{3,}|~{3,})/;
 const ATX_HEADING_PATTERN = /^\s{0,3}(#{1,6})(?:\s+|$)(.*?)\s*$/;
 const SETEXT_HEADING_PATTERN = /^\s{0,3}(=+|-+)\s*$/;
@@ -60,14 +59,18 @@ function addHeading(headings, line, depth, title) {
 
 function readFence(line) {
   const match = line.match(FENCE_PATTERN);
-  return match ? { marker: match[1][0], length: match[1].length } : null;
+  return match ? { marker: match[1][0], length: match[1].length, suffix: line.slice(match[0].length) } : null;
 }
 
 function updateFence(fence, line) {
   const candidate = readFence(line);
   if (!candidate) return { fence, isFence: false };
   if (!fence) return { fence: candidate, isFence: true };
-  if (candidate.marker === fence.marker && candidate.length >= fence.length) return { fence: null, isFence: true };
+  if (
+    candidate.marker === fence.marker
+    && candidate.length >= fence.length
+    && /^[ \t]*$/.test(candidate.suffix)
+  ) return { fence: null, isFence: true };
   return { fence, isFence: true };
 }
 
@@ -82,26 +85,21 @@ function inlineCodeRanges(line) {
     while (index < line.length && line[index] === "`") index += 1;
     const length = index - start;
     let close = index;
+    let matched = false;
     while (close < line.length) {
       const candidate = line.indexOf("`", close);
-      if (candidate < 0) {
-        ranges.push([start, line.length]);
-        index = line.length;
-        break;
-      }
+      if (candidate < 0) break;
       let end = candidate;
       while (end < line.length && line[end] === "`") end += 1;
       if (end - candidate === length) {
         ranges.push([start, end]);
         index = end;
+        matched = true;
         break;
       }
       close = end;
     }
-    if (close >= line.length && index !== line.length && !ranges.some(([rangeStart]) => rangeStart === start)) {
-      ranges.push([start, line.length]);
-      index = line.length;
-    }
+    if (!matched) index = start + length;
   }
   return ranges;
 }

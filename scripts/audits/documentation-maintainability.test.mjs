@@ -89,6 +89,57 @@ test("respecte la longueur des fences, ignore le code inline et mesure le Setext
   assert.deepEqual(document.internalLinks.invalid, []);
 });
 
+test("ne ferme une fence qu'avec le même délimiteur sans texte résiduel", () => {
+  const report = run({
+    "docs/fences.md": "# Avant\n\n```md\n```js\n# faux\n[fausse](missing-in-code.md)\n```\n# Réel\n[Absent](missing.md)\n",
+  });
+  const document = report.documents[0];
+
+  assert.deepEqual(document.sections.map((section) => ({ title: section.title, startLine: section.startLine })), [
+    { title: "Avant", startLine: 1 },
+    { title: "Réel", startLine: 8 },
+  ]);
+  assert.deepEqual(document.internalLinks.items.map((link) => link.target), ["missing.md"]);
+  assert.equal(document.internalLinks.invalid[0].reason, "TARGET_NOT_FOUND");
+});
+
+test("applique les mêmes règles aux fences tilde et aux délimiteurs de types différents", () => {
+  const report = run({
+    "docs/fences.md": "~~~md\n# faux tilde\n~~~js\n[fausse](missing-tilde.md)\n~~~\n```\n# faux type\n[encore fausse](missing-type.md)\n~~~\n# encore dans le code\n```\n# Réel\n[Absent](missing.md)\n",
+  });
+  const document = report.documents[0];
+
+  assert.deepEqual(document.sections.map((section) => ({ title: section.title, startLine: section.startLine })), [
+    { title: "Réel", startLine: 12 },
+  ]);
+  assert.deepEqual(document.internalLinks.items.map((link) => link.target), ["missing.md"]);
+});
+
+test("traite un backtick inline non apparié comme du texte et conserve les liens actifs", () => {
+  const report = run({
+    "docs/inline.md": "Texte avec ` non apparié [Guide](missing.md)\n",
+  });
+  const document = report.documents[0];
+
+  assert.equal(document.internalLinks.count, 1);
+  assert.equal(document.internalLinks.invalid[0].target, "missing.md");
+  assert.equal(document.internalLinks.invalid[0].reason, "TARGET_NOT_FOUND");
+});
+
+test("ne crée des plages inline que pour des longueurs appariées", () => {
+  const report = run({
+    "docs/inline.md": "[Avant](missing-before.md) ``[Actif](missing-active.md)` [Après](missing-after.md)\n",
+  });
+  const document = report.documents[0];
+
+  assert.deepEqual(document.internalLinks.items.map((link) => link.target), [
+    "missing-before.md",
+    "missing-active.md",
+    "missing-after.md",
+  ]);
+  assert.equal(document.internalLinks.invalid.length, 3);
+});
+
 test("classe un document de 2 000 lignes en ARCHITECTURE_REVIEW", () => {
   const content = ["# Long document", ...Array.from({ length: 1_999 }, (_, index) => `line ${index + 1}`)].join("\n");
   const document = run({ "documentation/long.md": content }).documents[0];
