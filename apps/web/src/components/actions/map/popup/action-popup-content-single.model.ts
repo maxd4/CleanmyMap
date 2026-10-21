@@ -32,7 +32,7 @@ import { resolveActionMapGeometryViewModel } from "../layers/actions-map-geometr
 
 type GeometryConfidence = ReturnType<typeof resolveActionMapGeometryViewModel>["confidence"];
 
-export function buildSingleActionPopupMetrics(item: ActionMapItem) {
+function buildSingleActionPopupMetrics(item: ActionMapItem) {
   const wasteKg = mapItemWasteKg(item) ?? 0;
   const butts = mapItemCigaretteButts(item) ?? 0;
 
@@ -44,7 +44,7 @@ export function buildSingleActionPopupMetrics(item: ActionMapItem) {
     hasPollution: wasteKg > 0 || butts > 0,
   };
 }
-export function buildSingleActionPopupContext(item: ActionMapItem) {
+function buildSingleActionPopupContext(item: ActionMapItem) {
   const metadata = item.contract?.metadata;
 
   return {
@@ -56,7 +56,7 @@ export function buildSingleActionPopupContext(item: ActionMapItem) {
   };
 }
 
-export function buildSingleActionPopupIdentity(item: ActionMapItem) {
+function buildSingleActionPopupIdentity(item: ActionMapItem) {
   const contract = item.contract;
   const isAction = isActionMapItem(item);
 
@@ -71,7 +71,7 @@ export function buildSingleActionPopupIdentity(item: ActionMapItem) {
   };
 }
 
-export function buildSingleActionPopupGeometry(item: ActionMapItem) {
+function buildSingleActionPopupGeometry(item: ActionMapItem) {
   const geometry = getGeometryPresentation(item);
   const geometryView = resolveActionMapGeometryViewModel(item);
 
@@ -91,7 +91,7 @@ export function buildSingleActionPopupGeometry(item: ActionMapItem) {
   };
 }
 
-export function buildSingleActionPopupLinks(
+function buildSingleActionPopupLinks(
   item: ActionMapItem,
   coords: { latitude: number | null; longitude: number | null },
   hasPollution: boolean,

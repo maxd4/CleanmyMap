@@ -24,7 +24,6 @@ export {
 } from "./report-pdf-theme.tokens";
 export type {
   ReportPdfTheme,
-  ReportPdfThemeTokens,
 } from "./report-pdf-theme.tokens";
 
 export function buildOfficialReportCss(theme: ReportPdfTheme = DEFAULT_REPORT_PDF_THEME): string {

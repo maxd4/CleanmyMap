@@ -14,7 +14,7 @@ import {
   type SelectedPeriodId,
 } from "./reports-web-document.shared";
 
-export type ScopeChoice = { value: string; label: string };
+type ScopeChoice = { value: string; label: string };
 export type ScopeOptions = {
   accounts: ScopeChoice[];
   associations: ScopeChoice[];

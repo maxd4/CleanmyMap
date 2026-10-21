@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { summarizeCreatorInboxItem, type CreatorInboxItem, type CreatorInboxSource } from "@/lib/community/creator-inbox";
 import type { CommunityBugReportFollowUpMetrics, FeedbackTrackingStatus } from "@/lib/community/bug-reports-store";
-import { acceptPartnerRequest, acceptPromotionRequest, applyCreatorInboxAction, decideLegalContentReport, fetchCreatorInboxPage, rejectPartnerRequest, rejectPromotionRequest } from "./creator-inbox-service";
+import { acceptPartnerRequest, acceptPromotionRequest, applyCreatorInboxAction, decideLegalContentReport, rejectPartnerRequest, rejectPromotionRequest } from "./creator-inbox-service";
 import { refreshList } from "./inbox-constants";
 import { PARTNER_CONFIRM_PHRASE, type CreatorInboxCopy, type CreatorInboxLocale } from "./creator-inbox-copy";
 import { resolveInboxMessage } from "./use-creator-inbox.helpers";
@@ -16,50 +16,6 @@ type SharedActionDeps = {
   setSuccessMessage: Dispatch<SetStateAction<string | null>>;
   scheduleFeedbackTimer: (callback: () => void, delay: number) => void;
 };
-
-export function createRefreshInboxAction({
-  beginReplacement,
-  replacePage,
-  cancelReplacement,
-  copy,
-  setRefreshing,
-  setErrorMessage,
-  setSuccessMessage,
-  setCanQualify,
-  setFeedbackMetrics,
-  scheduleFeedbackTimer,
-}: {
-  beginReplacement: () => number;
-  replacePage: (page: Awaited<ReturnType<typeof fetchCreatorInboxPage>>, generation: number) => boolean;
-  cancelReplacement: (generation: number) => boolean;
-  copy: CreatorInboxCopy;
-  setRefreshing: Dispatch<SetStateAction<boolean>>;
-  setErrorMessage: Dispatch<SetStateAction<string | null>>;
-  setSuccessMessage: Dispatch<SetStateAction<string | null>>;
-  setCanQualify: Dispatch<SetStateAction<boolean>>;
-  setFeedbackMetrics: Dispatch<SetStateAction<CommunityBugReportFollowUpMetrics | undefined>>;
-  scheduleFeedbackTimer: (callback: () => void, delay: number) => void;
-}) {
-  return async function refreshInbox() {
-    const replacementGeneration = beginReplacement();
-    setRefreshing(true);
-    setErrorMessage(null);
-    try {
-      const page = await fetchCreatorInboxPage();
-      if (!replacePage(page, replacementGeneration)) return;
-      if (page.canQualify !== undefined) setCanQualify(page.canQualify);
-      if (page.feedbackMetrics) setFeedbackMetrics(page.feedbackMetrics);
-      setSuccessMessage(copy.messages.refreshSuccess);
-      scheduleFeedbackTimer(() => setSuccessMessage(null), 1800);
-    } catch (error) {
-      if (cancelReplacement(replacementGeneration)) {
-        setErrorMessage(resolveInboxMessage(error, copy.messages.refreshError));
-      }
-    } finally {
-      setRefreshing(false);
-    }
-  };
-}
 
 export function createFeedbackInboxActions({
   ...deps

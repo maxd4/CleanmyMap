@@ -6,7 +6,7 @@ import {
   type ReportAdvancedFilters,
 } from "@/lib/reports/report-advanced-filters";
 
-export type WasteProfileCategory = {
+type WasteProfileCategory = {
   key: "megotsKg" | "plastiqueKg" | "verreKg" | "metalKg" | "mixteKg";
   label: string;
   kg: number;

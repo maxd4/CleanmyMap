@@ -37,7 +37,7 @@ export type HistorySharingItem = {
   createdAt: string;
 };
 
-export function formatHistorySharingDate(value: string): string {
+function formatHistorySharingDate(value: string): string {
   const date = new Date(value);
   return Number.isFinite(date.getTime())
     ? new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(date)

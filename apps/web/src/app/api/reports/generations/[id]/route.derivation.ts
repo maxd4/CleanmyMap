@@ -33,7 +33,7 @@ export type DerivationResult =
   | { kind: "success"; item: Item; generation: Source & { id: string; filename: string; generatedAt: string; snapshot: Source["snapshot"] } }
   | { kind: "failure"; failure: DerivationFailure };
 
-export async function resolveDerivationSource(id: string, userId: string): Promise<{ source: Source } | { failure: DerivationFailure }> {
+async function resolveDerivationSource(id: string, userId: string): Promise<{ source: Source } | { failure: DerivationFailure }> {
   try {
     const source = await getReportGenerationSnapshotById(id, userId);
     return source ? { source } : { failure: { kind: "not_found" } };

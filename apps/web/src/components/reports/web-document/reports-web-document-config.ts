@@ -1,4 +1,3 @@
-import type { ReportDataAvailability } from "@/lib/reports/data-availability";
 import type { ReportGenerationResumeConfig } from "@/lib/reports/report-generation-resume";
 import {
   DEFAULT_REPORT_GENERATION_PERIOD,
@@ -25,7 +24,7 @@ export function resolveResumedPeriod(
     : DEFAULT_REPORT_GENERATION_PERIOD;
 }
 
-export function formatResumeDate(value: string | null): string | null {
+function formatResumeDate(value: string | null): string | null {
   if (!value) return null;
   const date = new Date(`${value}T00:00:00Z`);
   return Number.isNaN(date.getTime())
@@ -69,16 +68,4 @@ export function buildResumeNoticeLines(params: {
 
 export function getScopeOptionsKey(kind: string): "accounts" | "associations" | "arrondissements" {
   return kind === "account" ? "accounts" : kind === "association" ? "associations" : "arrondissements";
-}
-
-export function getDataStatusLabel(params: {
-  isLoading: boolean;
-  hasError: boolean;
-  dataAvailability: ReportDataAvailability;
-}): string {
-  if (params.isLoading) return "Chargement en cours";
-  if (params.hasError) return "Erreur de chargement";
-  return params.dataAvailability.isTruncated || params.dataAvailability.sourceHealth?.partial
-    ? "Données partielles"
-    : "Données disponibles";
 }

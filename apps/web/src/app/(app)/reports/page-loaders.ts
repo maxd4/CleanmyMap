@@ -20,7 +20,6 @@ import {
 
 export type ReportsGenerationData = Awaited<ReturnType<typeof loadReportsGenerationData>>;
 export type ReportsAnalysisData = Awaited<ReturnType<typeof loadReportsAnalysisData>>;
-export type ReportsPublicSummary = Awaited<ReturnType<typeof loadReportsPublicSummary>>;
 
 export async function loadReportsLibraryPage() {
   const emptyPage: ReportPublicLibraryPage = {

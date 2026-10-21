@@ -15,7 +15,7 @@ export type FeedbackHistoryState = {
   errorMessage: string | null;
 };
 
-export function createFeedbackHistoryState(
+function createFeedbackHistoryState(
   ownerId: string | null,
   state: FeedbackHistoryState["state"],
 ): FeedbackHistoryState {

@@ -9,7 +9,7 @@
       "path": "apps/web/src/app/(app)/actions/new/page.tsx",
       "line": 50,
       "category": "React/JSX",
-      "ceiling": 23,
+      "ceiling": 4,
       "status": "IMPROVED",
       "functionIdentity": "named:NewActionPage#1"
     },
@@ -18,8 +18,8 @@
       "path": "apps/web/src/app/(app)/admin/page.tsx",
       "line": 49,
       "category": "React/JSX",
-      "ceiling": 28,
-      "status": "LEGACY",
+      "ceiling": 10,
+      "status": "IMPROVED",
       "functionIdentity": "named:AdminPage#1"
     },
     {
@@ -27,8 +27,8 @@
       "path": "apps/web/src/app/(app)/dashboard/page.tsx",
       "line": 165,
       "category": "React/JSX",
-      "ceiling": 24,
-      "status": "LEGACY",
+      "ceiling": 7,
+      "status": "IMPROVED",
       "functionIdentity": "named:DashboardPage#1"
     },
     {
@@ -54,7 +54,7 @@
       "path": "apps/web/src/app/api/actions/[actionId]/group-join/route.review.ts",
       "line": 23,
       "category": "routes API",
-      "ceiling": 18,
+      "ceiling": 10,
       "status": "IMPROVED",
       "functionIdentity": "named:handleGroupJoinReview#1"
     },
@@ -99,7 +99,7 @@
       "path": "apps/web/src/app/api/admin/legal-content-reports/decision/route.ts",
       "line": 190,
       "category": "routes API",
-      "ceiling": 10,
+      "ceiling": 8,
       "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
@@ -117,7 +117,7 @@
       "path": "apps/web/src/app/api/chat/route.get.ts",
       "line": 38,
       "category": "routes API",
-      "ceiling": 20,
+      "ceiling": 6,
       "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
@@ -126,7 +126,7 @@
       "path": "apps/web/src/app/api/chat/route.post.ts",
       "line": 50,
       "category": "routes API",
-      "ceiling": 20,
+      "ceiling": 7,
       "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
@@ -135,7 +135,7 @@
       "path": "apps/web/src/app/api/chat/search/route.ts",
       "line": 327,
       "category": "routes API",
-      "ceiling": 8,
+      "ceiling": 5,
       "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
@@ -180,7 +180,7 @@
       "path": "apps/web/src/app/api/reports/elus-dossier/route.ts",
       "line": 11,
       "category": "routes API",
-      "ceiling": 4,
+      "ceiling": 3,
       "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
@@ -216,8 +216,8 @@
       "path": "apps/web/src/app/api/services/route.ts",
       "line": 19,
       "category": "routes API",
-      "ceiling": 33,
-      "status": "LEGACY",
+      "ceiling": 3,
+      "status": "IMPROVED",
       "functionIdentity": "named:getServiceState#1"
     },
     {
@@ -234,8 +234,8 @@
       "path": "apps/web/src/app/reglages/page.tsx",
       "line": 25,
       "category": "React/JSX",
-      "ceiling": 8,
-      "status": "LEGACY",
+      "ceiling": 2,
+      "status": "IMPROVED",
       "functionIdentity": "named:ReglagesPage#1"
     },
     {
@@ -252,8 +252,8 @@
       "path": "apps/web/src/components/account/use-account-setup-controller.ts",
       "line": 85,
       "category": "hooks",
-      "ceiling": 27,
-      "status": "LEGACY",
+      "ceiling": 19,
+      "status": "IMPROVED",
       "functionIdentity": "named:useAccountSetupController#1"
     },
     {
@@ -261,7 +261,7 @@
       "path": "apps/web/src/components/actions/action-declaration/before/form.tsx",
       "line": 30,
       "category": "React/JSX",
-      "ceiling": 18,
+      "ceiling": 10,
       "status": "IMPROVED",
       "functionIdentity": "named:ActionBeforeDeclarationForm#1"
     },
@@ -270,8 +270,8 @@
       "path": "apps/web/src/components/actions/action-declaration/draft-storage.ts",
       "line": 253,
       "category": "React/JSX",
-      "ceiling": 23,
-      "status": "LEGACY",
+      "ceiling": 3,
+      "status": "IMPROVED",
       "functionIdentity": "named:loadDraftSnapshot#1"
     },
     {
@@ -279,8 +279,8 @@
       "path": "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker.view.tsx",
       "line": 38,
       "category": "React/JSX",
-      "ceiling": 28,
-      "status": "LEGACY",
+      "ceiling": 4,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionDeclarationExportPickerView#1"
     },
     {
@@ -297,8 +297,8 @@
       "path": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.feedback.tsx",
       "line": 35,
       "category": "React/JSX",
-      "ceiling": 22,
-      "status": "LEGACY",
+      "ceiling": 15,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionDeclarationFormFeedback#1"
     },
     {
@@ -333,8 +333,8 @@
       "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepReview.tsx",
       "line": 103,
       "category": "React/JSX",
-      "ceiling": 26,
-      "status": "LEGACY",
+      "ceiling": 24,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionStepReview#1"
     },
     {
@@ -342,7 +342,7 @@
       "path": "apps/web/src/components/actions/action-formalities-workflow-panel.tsx",
       "line": 38,
       "category": "React/JSX",
-      "ceiling": 13,
+      "ceiling": 1,
       "status": "IMPROVED",
       "functionIdentity": "named:ActionFormalitiesWorkflowPanel#1"
     },
@@ -351,7 +351,7 @@
       "path": "apps/web/src/components/actions/actions-history-list-details.tsx",
       "line": 38,
       "category": "React/JSX",
-      "ceiling": 4,
+      "ceiling": 3,
       "status": "IMPROVED",
       "functionIdentity": "named:ActionsHistoryListDetails#1"
     },
@@ -387,8 +387,8 @@
       "path": "apps/web/src/components/actions/map-feed/_layouts/default-layout.tsx",
       "line": 53,
       "category": "React/JSX",
-      "ceiling": 21,
-      "status": "LEGACY",
+      "ceiling": 15,
+      "status": "IMPROVED",
       "functionIdentity": "named:DefaultLayout#1"
     },
     {
@@ -396,8 +396,8 @@
       "path": "apps/web/src/components/actions/map-feed/_layouts/immersive-layout.tsx",
       "line": 68,
       "category": "React/JSX",
-      "ceiling": 30,
-      "status": "LEGACY",
+      "ceiling": 8,
+      "status": "IMPROVED",
       "functionIdentity": "named:ImmersiveLayout#1"
     },
     {
@@ -405,8 +405,8 @@
       "path": "apps/web/src/components/actions/map-feed/actions-map-feed.tsx",
       "line": 63,
       "category": "React/JSX",
-      "ceiling": 38,
-      "status": "LEGACY",
+      "ceiling": 36,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionsMapFeedContent#1"
     },
     {
@@ -414,8 +414,8 @@
       "path": "apps/web/src/components/actions/map/popup/action-popup-content-body.tsx",
       "line": 41,
       "category": "React/JSX",
-      "ceiling": 43,
-      "status": "LEGACY",
+      "ceiling": 5,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionPopupContentBody#1"
     },
     {
@@ -435,15 +435,6 @@
       "ceiling": 1,
       "status": "IMPROVED",
       "functionIdentity": "named:CompactActionHeader#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/actions/map/popup/action-popup-content.tsx",
-      "line": 98,
-      "category": "React/JSX",
-      "ceiling": 60,
-      "status": "LEGACY",
-      "functionIdentity": "named:SingleActionPopupContent#1"
     },
     {
       "metric": "complexity",
@@ -477,8 +468,8 @@
       "path": "apps/web/src/components/actions/map/popup/corridor-popup-content.tsx",
       "line": 32,
       "category": "React/JSX",
-      "ceiling": 25,
-      "status": "LEGACY",
+      "ceiling": 7,
+      "status": "IMPROVED",
       "functionIdentity": "named:CorridorPopupContent#1"
     },
     {
@@ -513,8 +504,8 @@
       "path": "apps/web/src/components/actions/quick-signalement-form.tsx",
       "line": 37,
       "category": "React/JSX",
-      "ceiling": 34,
-      "status": "LEGACY",
+      "ceiling": 6,
+      "status": "IMPROVED",
       "functionIdentity": "named:TrashSpotterObservationForm#1"
     },
     {
@@ -522,8 +513,8 @@
       "path": "apps/web/src/components/admin/creator-inbox/inbox-item-card.tsx",
       "line": 47,
       "category": "React/JSX",
-      "ceiling": 52,
-      "status": "LEGACY",
+      "ceiling": 12,
+      "status": "IMPROVED",
       "functionIdentity": "named:InboxItemCard#1"
     },
     {
@@ -531,8 +522,8 @@
       "path": "apps/web/src/components/admin/environmental-impact-capture-panel.tsx",
       "line": 118,
       "category": "React/JSX",
-      "ceiling": 32,
-      "status": "LEGACY",
+      "ceiling": 7,
+      "status": "IMPROVED",
       "functionIdentity": "named:EnvironmentalImpactCapturePanel#1"
     },
     {
@@ -594,8 +585,8 @@
       "path": "apps/web/src/components/chat/chat-action-share-dialog.tsx",
       "line": 15,
       "category": "React/JSX",
-      "ceiling": 26,
-      "status": "LEGACY",
+      "ceiling": 10,
+      "status": "IMPROVED",
       "functionIdentity": "named:ChatActionShareDialog#1"
     },
     {
@@ -648,8 +639,8 @@
       "path": "apps/web/src/components/chat/dm-inbox.tsx",
       "line": 56,
       "category": "React/JSX",
-      "ceiling": 34,
-      "status": "LEGACY",
+      "ceiling": 20,
+      "status": "IMPROVED",
       "functionIdentity": "named:DmInbox#1"
     },
     {
@@ -720,7 +711,7 @@
       "path": "apps/web/src/components/learn/learn-rubric-shell.tsx",
       "line": 35,
       "category": "React/JSX",
-      "ceiling": 39,
+      "ceiling": 7,
       "status": "IMPROVED",
       "functionIdentity": "named:LearnRubricShell#1"
     },
@@ -756,8 +747,8 @@
       "path": "apps/web/src/components/learn/quiz/quiz-session-panel-summary.tsx",
       "line": 34,
       "category": "React/JSX",
-      "ceiling": 27,
-      "status": "LEGACY",
+      "ceiling": 6,
+      "status": "IMPROVED",
       "functionIdentity": "named:QuizSessionPanelSummary#1"
     },
     {
@@ -783,8 +774,8 @@
       "path": "apps/web/src/components/learn/quiz/school/quiz-school-workshop-session.tsx",
       "line": 57,
       "category": "React/JSX",
-      "ceiling": 51,
-      "status": "LEGACY",
+      "ceiling": 50,
+      "status": "IMPROVED",
       "functionIdentity": "named:QuizSchoolWorkshopSession#1"
     },
     {
@@ -792,8 +783,8 @@
       "path": "apps/web/src/components/notifications/notification-list-item.tsx",
       "line": 31,
       "category": "React/JSX",
-      "ceiling": 25,
-      "status": "LEGACY",
+      "ceiling": 18,
+      "status": "IMPROVED",
       "functionIdentity": "named:NotificationListItem#1"
     },
     {
@@ -801,8 +792,8 @@
       "path": "apps/web/src/components/pilotage/access-screen/views/pilotage-locked-page.tsx",
       "line": 12,
       "category": "React/JSX",
-      "ceiling": 35,
-      "status": "LEGACY",
+      "ceiling": 32,
+      "status": "IMPROVED",
       "functionIdentity": "named:PilotageLockedPage#1"
     },
     {
@@ -810,7 +801,7 @@
       "path": "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-content.tsx",
       "line": 28,
       "category": "React/JSX",
-      "ceiling": 8,
+      "ceiling": 2,
       "status": "IMPROVED",
       "functionIdentity": "named:PilotageOverviewContent#1"
     },
@@ -819,8 +810,8 @@
       "path": "apps/web/src/components/profil/impact-profile-page.tsx",
       "line": 51,
       "category": "React/JSX",
-      "ceiling": 34,
-      "status": "LEGACY",
+      "ceiling": 12,
+      "status": "IMPROVED",
       "functionIdentity": "named:ImpactProfilePage#1"
     },
     {
@@ -837,8 +828,8 @@
       "path": "apps/web/src/components/reports/admin-workflow/step-filter.tsx",
       "line": 11,
       "category": "React/JSX",
-      "ceiling": 27,
-      "status": "LEGACY",
+      "ceiling": 24,
+      "status": "IMPROVED",
       "functionIdentity": "named:StepFilter#1"
     },
     {
@@ -909,7 +900,7 @@
       "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
       "line": 122,
       "category": "React/JSX",
-      "ceiling": 12,
+      "ceiling": 10,
       "status": "IMPROVED",
       "functionIdentity": "named:ElusSection#1"
     },
@@ -954,7 +945,7 @@
       "path": "apps/web/src/components/sections/rubriques/funding-section.tsx",
       "line": 9,
       "category": "React/JSX",
-      "ceiling": 9,
+      "ceiling": 5,
       "status": "IMPROVED",
       "functionIdentity": "named:FundingSection#1"
     },
@@ -1035,8 +1026,8 @@
       "path": "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section-dialog.tsx",
       "line": 17,
       "category": "React/JSX",
-      "ceiling": 30,
-      "status": "LEGACY",
+      "ceiling": 29,
+      "status": "IMPROVED",
       "functionIdentity": "named:JoinFormConfirmationDialog#1"
     },
     {
@@ -1053,8 +1044,8 @@
       "path": "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.cards.tsx",
       "line": 109,
       "category": "React/JSX",
-      "ceiling": 48,
-      "status": "LEGACY",
+      "ceiling": 15,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionCard#1"
     },
     {
@@ -1071,8 +1062,8 @@
       "path": "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.explorer.tsx",
       "line": 33,
       "category": "React/JSX",
-      "ceiling": 69,
-      "status": "LEGACY",
+      "ceiling": 68,
+      "status": "IMPROVED",
       "functionIdentity": "named:JoinFormExplorer#1"
     },
     {
@@ -1080,8 +1071,8 @@
       "path": "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.future-actions.tsx",
       "line": 75,
       "category": "React/JSX",
-      "ceiling": 21,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "callback:items . map:0:#1"
     },
     {
@@ -1098,8 +1089,8 @@
       "path": "apps/web/src/components/sections/rubriques/route/components/route-constraints-form.tsx",
       "line": 17,
       "category": "React/JSX",
-      "ceiling": 30,
-      "status": "LEGACY",
+      "ceiling": 29,
+      "status": "IMPROVED",
       "functionIdentity": "named:RouteOptionsForm#1"
     },
     {
@@ -1152,8 +1143,8 @@
       "path": "apps/web/src/components/sections/rubriques/trash-spotter-section.tsx",
       "line": 44,
       "category": "React/JSX",
-      "ceiling": 38,
-      "status": "LEGACY",
+      "ceiling": 2,
+      "status": "IMPROVED",
       "functionIdentity": "named:TrashSpotterSection#1"
     },
     {
@@ -1170,8 +1161,8 @@
       "path": "apps/web/src/components/sections/rubriques/weather-section.helpers.ts",
       "line": 123,
       "category": "React/JSX",
-      "ceiling": 21,
-      "status": "LEGACY",
+      "ceiling": 2,
+      "status": "IMPROVED",
       "functionIdentity": "named:getForecastConditionLabel#1"
     },
     {
@@ -1215,8 +1206,8 @@
       "path": "apps/web/src/components/ui/site-tooltips.tsx",
       "line": 149,
       "category": "React/JSX",
-      "ceiling": 24,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "named:SiteTooltips#1"
     },
     {
@@ -1287,8 +1278,8 @@
       "path": "apps/web/src/lib/actions/geometry/gpx.ts",
       "line": 105,
       "category": "métier/domain pur",
-      "ceiling": 28,
-      "status": "LEGACY",
+      "ceiling": 10,
+      "status": "IMPROVED",
       "functionIdentity": "named:parseTrackSegments#1"
     },
     {
@@ -1341,8 +1332,8 @@
       "path": "apps/web/src/lib/actions/pollution/corridor-history.ts",
       "line": 450,
       "category": "métier/domain pur",
-      "ceiling": 20,
-      "status": "LEGACY",
+      "ceiling": 14,
+      "status": "IMPROVED",
       "functionIdentity": "named:summarizeCorridorHistory#1"
     },
     {
@@ -1413,7 +1404,7 @@
       "path": "apps/web/src/lib/actions/store-create-contract.ts",
       "line": 77,
       "category": "runtime/services/orchestration",
-      "ceiling": 40,
+      "ceiling": 1,
       "status": "IMPROVED",
       "functionIdentity": "named:buildActionInsertPayload#1"
     },
@@ -1431,7 +1422,7 @@
       "path": "apps/web/src/lib/actions/store-create.ts",
       "line": 157,
       "category": "runtime/services/orchestration",
-      "ceiling": 22,
+      "ceiling": 4,
       "status": "IMPROVED",
       "functionIdentity": "named:createAction#1"
     },
@@ -1440,8 +1431,8 @@
       "path": "apps/web/src/lib/actions/store-selects.ts",
       "line": 77,
       "category": "runtime/services/orchestration",
-      "ceiling": 24,
-      "status": "LEGACY",
+      "ceiling": 2,
+      "status": "IMPROVED",
       "functionIdentity": "named:isMissingActionColumnError#1"
     },
     {
@@ -1458,7 +1449,7 @@
       "path": "apps/web/src/lib/actions/unified-source/load.ts",
       "line": 59,
       "category": "métier/domain pur",
-      "ceiling": 27,
+      "ceiling": 11,
       "status": "IMPROVED",
       "functionIdentity": "named:loadUnifiedActionSourceData#1"
     },
@@ -1476,8 +1467,8 @@
       "path": "apps/web/src/lib/admin/moderation/action-moderation-edits.ts",
       "line": 251,
       "category": "métier/domain pur",
-      "ceiling": 47,
-      "status": "LEGACY",
+      "ceiling": 3,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildAdminActionPayload#1"
     },
     {
@@ -1512,8 +1503,8 @@
       "path": "apps/web/src/lib/analytics/compare-zones.ts",
       "line": 102,
       "category": "métier/domain pur",
-      "ceiling": 19,
-      "status": "LEGACY",
+      "ceiling": 2,
+      "status": "IMPROVED",
       "functionIdentity": "named:computeZoneCompare#1"
     },
     {
@@ -1539,8 +1530,8 @@
       "path": "apps/web/src/lib/chat/chat-notification-targets.ts",
       "line": 127,
       "category": "métier/domain pur",
-      "ceiling": 16,
-      "status": "LEGACY",
+      "ceiling": 8,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildChatNotificationHref#1"
     },
     {
@@ -1800,8 +1791,8 @@
       "path": "apps/web/src/lib/pdf-export/official-report-html.ts",
       "line": 312,
       "category": "métier/domain pur",
-      "ceiling": 25,
-      "status": "LEGACY",
+      "ceiling": 10,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildOfficialReportHtml#1"
     },
     {
@@ -1836,8 +1827,8 @@
       "path": "apps/web/src/lib/route/route-action-handoff.ts",
       "line": 25,
       "category": "métier/domain pur",
-      "ceiling": 25,
-      "status": "LEGACY",
+      "ceiling": 3,
+      "status": "IMPROVED",
       "functionIdentity": "named:consumePlannerActionHandoff#1"
     },
     {
@@ -2007,8 +1998,8 @@
       "path": "apps/web/src/lib/ui/page-families/resolve-page-family.ts",
       "line": 59,
       "category": "métier/domain pur",
-      "ceiling": 44,
-      "status": "LEGACY",
+      "ceiling": 7,
+      "status": "IMPROVED",
       "functionIdentity": "named:resolveBasePageFamilyId#1"
     },
     {
@@ -2061,7 +2052,7 @@
       "path": "apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts",
       "line": 21,
       "category": "hooks",
-      "ceiling": 5,
+      "ceiling": 1,
       "status": "IMPROVED",
       "functionIdentity": "named:useBeforeActionForm#1"
     },
@@ -2070,7 +2061,7 @@
       "path": "apps/web/src/lib/actions/action-editor-payload.ts",
       "line": 87,
       "category": "métier/domain pur",
-      "ceiling": 5,
+      "ceiling": 2,
       "status": "IMPROVED",
       "functionIdentity": "named:buildActionEditorPayload#1"
     },
@@ -2079,8 +2070,8 @@
       "path": "apps/web/src/lib/actions/organizer-directory-registry.ts",
       "line": 112,
       "category": "métier/domain pur",
-      "ceiling": 13,
-      "status": "LEGACY",
+      "ceiling": 11,
+      "status": "IMPROVED",
       "functionIdentity": "named:resolveActionOrganizer#1"
     },
     {
@@ -2097,8 +2088,8 @@
       "path": "apps/web/src/app/(app)/admin/page.tsx",
       "line": 49,
       "category": "React/JSX",
-      "ceiling": 184,
-      "status": "LEGACY",
+      "ceiling": 66,
+      "status": "IMPROVED",
       "functionIdentity": "named:AdminPage#1"
     },
     {
@@ -2115,8 +2106,8 @@
       "path": "apps/web/src/app/(app)/dashboard/page.tsx",
       "line": 165,
       "category": "React/JSX",
-      "ceiling": 289,
-      "status": "LEGACY",
+      "ceiling": 118,
+      "status": "IMPROVED",
       "functionIdentity": "named:DashboardPage#1"
     },
     {
@@ -2133,7 +2124,7 @@
       "path": "apps/web/src/app/(app)/profil/[profile]/page.tsx",
       "line": 134,
       "category": "React/JSX",
-      "ceiling": 115,
+      "ceiling": 46,
       "status": "IMPROVED",
       "functionIdentity": "named:ProfilPage#1"
     },
@@ -2178,7 +2169,7 @@
       "path": "apps/web/src/app/api/actions/[actionId]/group-join/route.review.ts",
       "line": 213,
       "category": "routes API",
-      "ceiling": 136,
+      "ceiling": 100,
       "status": "IMPROVED",
       "functionIdentity": "named:handleGroupJoinReview#1"
     },
@@ -2187,7 +2178,7 @@
       "path": "apps/web/src/app/api/actions/[actionId]/group-join/route.test.helpers.ts",
       "line": 268,
       "category": "tests",
-      "ceiling": 228,
+      "ceiling": 202,
       "status": "IMPROVED",
       "functionIdentity": "named:createParticipantsChain#1"
     },
@@ -2250,7 +2241,7 @@
       "path": "apps/web/src/app/api/actions/route.ts",
       "line": 337,
       "category": "routes API",
-      "ceiling": 89,
+      "ceiling": 45,
       "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
@@ -2259,7 +2250,7 @@
       "path": "apps/web/src/app/api/admin/creator-inbox/route.feedback.ts",
       "line": 19,
       "category": "routes API",
-      "ceiling": 69,
+      "ceiling": 50,
       "status": "IMPROVED",
       "functionIdentity": "named:handleCreatorInboxFeedback#1"
     },
@@ -2286,7 +2277,7 @@
       "path": "apps/web/src/app/api/admin/legal-content-reports/decision/route.ts",
       "line": 190,
       "category": "routes API",
-      "ceiling": 47,
+      "ceiling": 36,
       "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
@@ -2394,7 +2385,7 @@
       "path": "apps/web/src/app/api/admin/promotion-requests/route.ts",
       "line": 57,
       "category": "routes API",
-      "ceiling": 84,
+      "ceiling": 28,
       "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
@@ -2403,7 +2394,7 @@
       "path": "apps/web/src/app/api/admin/role-accounts/route.ts",
       "line": 65,
       "category": "routes API",
-      "ceiling": 37,
+      "ceiling": 29,
       "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
@@ -2412,7 +2403,7 @@
       "path": "apps/web/src/app/api/chat/route.get.ts",
       "line": 335,
       "category": "routes API",
-      "ceiling": 150,
+      "ceiling": 47,
       "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
@@ -2421,7 +2412,7 @@
       "path": "apps/web/src/app/api/chat/route.post.ts",
       "line": 38,
       "category": "routes API",
-      "ceiling": 87,
+      "ceiling": 26,
       "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
@@ -2430,7 +2421,7 @@
       "path": "apps/web/src/app/api/chat/route.test.helpers.ts",
       "line": 69,
       "category": "tests",
-      "ceiling": 179,
+      "ceiling": 20,
       "status": "IMPROVED",
       "functionIdentity": "named:buildSupabaseMock#1"
     },
@@ -2439,7 +2430,7 @@
       "path": "apps/web/src/app/api/chat/search/route.ts",
       "line": 327,
       "category": "routes API",
-      "ceiling": 37,
+      "ceiling": 20,
       "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
@@ -2502,7 +2493,7 @@
       "path": "apps/web/src/app/api/reports/elus-dossier/route.ts",
       "line": 11,
       "category": "routes API",
-      "ceiling": 23,
+      "ceiling": 15,
       "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
@@ -2511,7 +2502,7 @@
       "path": "apps/web/src/app/api/reports/generations/route.ts",
       "line": 191,
       "category": "routes API",
-      "ceiling": 35,
+      "ceiling": 16,
       "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
@@ -2592,7 +2583,7 @@
       "path": "apps/web/src/app/politique-confidentialite/page.tsx",
       "line": 178,
       "category": "React/JSX",
-      "ceiling": 149,
+      "ceiling": 27,
       "status": "IMPROVED",
       "functionIdentity": "named:PolitiqueConfidentialitePage#1"
     },
@@ -2601,8 +2592,8 @@
       "path": "apps/web/src/app/politique-cookies/page.tsx",
       "line": 49,
       "category": "React/JSX",
-      "ceiling": 152,
-      "status": "LEGACY",
+      "ceiling": 24,
+      "status": "IMPROVED",
       "functionIdentity": "named:PolitiqueCookiesPage#1"
     },
     {
@@ -2610,7 +2601,7 @@
       "path": "apps/web/src/app/reglages/page.tsx",
       "line": 84,
       "category": "React/JSX",
-      "ceiling": 179,
+      "ceiling": 13,
       "status": "IMPROVED",
       "functionIdentity": "named:ReglagesPage#1"
     },
@@ -2628,7 +2619,7 @@
       "path": "apps/web/src/components/account/account-identity-chip.tsx",
       "line": 31,
       "category": "React/JSX",
-      "ceiling": 125,
+      "ceiling": 84,
       "status": "IMPROVED",
       "functionIdentity": "named:AccountIdentityChip#1"
     },
@@ -2637,8 +2628,8 @@
       "path": "apps/web/src/components/account/use-account-setup-controller.ts",
       "line": 85,
       "category": "hooks",
-      "ceiling": 312,
-      "status": "LEGACY",
+      "ceiling": 91,
+      "status": "IMPROVED",
       "functionIdentity": "named:useAccountSetupController#1"
     },
     {
@@ -2646,7 +2637,7 @@
       "path": "apps/web/src/components/accueil/accueil-community-credibility.tsx",
       "line": 283,
       "category": "React/JSX",
-      "ceiling": 45,
+      "ceiling": 39,
       "status": "IMPROVED",
       "functionIdentity": "named:HomeCommunityCredibility#1"
     },
@@ -2655,7 +2646,7 @@
       "path": "apps/web/src/components/actions/action-creation-shell.tsx",
       "line": 138,
       "category": "React/JSX",
-      "ceiling": 60,
+      "ceiling": 25,
       "status": "IMPROVED",
       "functionIdentity": "named:ActionCreationShell#1"
     },
@@ -2664,7 +2655,7 @@
       "path": "apps/web/src/components/actions/action-declaration/before/form.tsx",
       "line": 30,
       "category": "React/JSX",
-      "ceiling": 78,
+      "ceiling": 67,
       "status": "IMPROVED",
       "functionIdentity": "named:ActionBeforeDeclarationForm#1"
     },
@@ -2673,7 +2664,7 @@
       "path": "apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts",
       "line": 21,
       "category": "hooks",
-      "ceiling": 39,
+      "ceiling": 3,
       "status": "IMPROVED",
       "functionIdentity": "named:useBeforeActionForm#1"
     },
@@ -2691,8 +2682,8 @@
       "path": "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker.view.tsx",
       "line": 38,
       "category": "React/JSX",
-      "ceiling": 420,
-      "status": "LEGACY",
+      "ceiling": 115,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionDeclarationExportPickerView#1"
     },
     {
@@ -2709,8 +2700,8 @@
       "path": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.feedback.tsx",
       "line": 35,
       "category": "React/JSX",
-      "ceiling": 315,
-      "status": "LEGACY",
+      "ceiling": 89,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionDeclarationFormFeedback#1"
     },
     {
@@ -2727,7 +2718,7 @@
       "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts",
       "line": 18,
       "category": "hooks",
-      "ceiling": 113,
+      "ceiling": 69,
       "status": "IMPROVED",
       "functionIdentity": "named:useActionDeclarationForm#1"
     },
@@ -2799,7 +2790,7 @@
       "path": "apps/web/src/components/actions/action-formalities-workflow-panel.tsx",
       "line": 38,
       "category": "React/JSX",
-      "ceiling": 131,
+      "ceiling": 3,
       "status": "IMPROVED",
       "functionIdentity": "named:ActionFormalitiesWorkflowPanel#1"
     },
@@ -2808,8 +2799,8 @@
       "path": "apps/web/src/components/actions/action-participant-picker.tsx",
       "line": 30,
       "category": "React/JSX",
-      "ceiling": 272,
-      "status": "LEGACY",
+      "ceiling": 26,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionParticipantPicker#1"
     },
     {
@@ -2862,8 +2853,8 @@
       "path": "apps/web/src/components/actions/map-feed/_layouts/map-empty-state.tsx",
       "line": 18,
       "category": "React/JSX",
-      "ceiling": 163,
-      "status": "LEGACY",
+      "ceiling": 105,
+      "status": "IMPROVED",
       "functionIdentity": "named:MapEmptyState#1"
     },
     {
@@ -2871,8 +2862,8 @@
       "path": "apps/web/src/components/actions/map-feed/actions-map-feed.tsx",
       "line": 63,
       "category": "React/JSX",
-      "ceiling": 203,
-      "status": "LEGACY",
+      "ceiling": 201,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionsMapFeedContent#1"
     },
     {
@@ -2889,8 +2880,8 @@
       "path": "apps/web/src/components/actions/map/popup/action-popup-content-body.tsx",
       "line": 41,
       "category": "React/JSX",
-      "ceiling": 250,
-      "status": "LEGACY",
+      "ceiling": 34,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionPopupContentBody#1"
     },
     {
@@ -2913,20 +2904,11 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/actions/map/popup/action-popup-content.tsx",
-      "line": 98,
-      "category": "React/JSX",
-      "ceiling": 184,
-      "status": "LEGACY",
-      "functionIdentity": "named:SingleActionPopupContent#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/actions/map/popup/corridor-popup-content.tsx",
       "line": 32,
       "category": "React/JSX",
-      "ceiling": 178,
-      "status": "LEGACY",
+      "ceiling": 103,
+      "status": "IMPROVED",
       "functionIdentity": "named:CorridorPopupContent#1"
     },
     {
@@ -2952,8 +2934,8 @@
       "path": "apps/web/src/components/actions/quick-signalement-form.tsx",
       "line": 37,
       "category": "React/JSX",
-      "ceiling": 390,
-      "status": "LEGACY",
+      "ceiling": 115,
+      "status": "IMPROVED",
       "functionIdentity": "named:TrashSpotterObservationForm#1"
     },
     {
@@ -2970,8 +2952,8 @@
       "path": "apps/web/src/components/admin/creator-inbox/inbox-item-card.tsx",
       "line": 47,
       "category": "React/JSX",
-      "ceiling": 421,
-      "status": "LEGACY",
+      "ceiling": 76,
+      "status": "IMPROVED",
       "functionIdentity": "named:InboxItemCard#1"
     },
     {
@@ -2979,8 +2961,8 @@
       "path": "apps/web/src/components/admin/creator-inbox/use-creator-inbox.ts",
       "line": 32,
       "category": "hooks",
-      "ceiling": 329,
-      "status": "LEGACY",
+      "ceiling": 106,
+      "status": "IMPROVED",
       "functionIdentity": "named:useCreatorInbox#1"
     },
     {
@@ -2988,8 +2970,8 @@
       "path": "apps/web/src/components/admin/environmental-impact-capture-panel.tsx",
       "line": 118,
       "category": "React/JSX",
-      "ceiling": 346,
-      "status": "LEGACY",
+      "ceiling": 82,
+      "status": "IMPROVED",
       "functionIdentity": "named:EnvironmentalImpactCapturePanel#1"
     },
     {
@@ -3087,8 +3069,8 @@
       "path": "apps/web/src/components/chat/chat-action-share-dialog.tsx",
       "line": 15,
       "category": "React/JSX",
-      "ceiling": 255,
-      "status": "LEGACY",
+      "ceiling": 120,
+      "status": "IMPROVED",
       "functionIdentity": "named:ChatActionShareDialog#1"
     },
     {
@@ -3132,8 +3114,8 @@
       "path": "apps/web/src/components/chat/dm-inbox.tsx",
       "line": 44,
       "category": "React/JSX",
-      "ceiling": 230,
-      "status": "LEGACY",
+      "ceiling": 120,
+      "status": "IMPROVED",
       "functionIdentity": "named:DmInbox#1"
     },
     {
@@ -3213,8 +3195,8 @@
       "path": "apps/web/src/components/dashboard/dashboard-notifications-section.tsx",
       "line": 29,
       "category": "React/JSX",
-      "ceiling": 223,
-      "status": "LEGACY",
+      "ceiling": 131,
+      "status": "IMPROVED",
       "functionIdentity": "named:DashboardNotificationsSession#1"
     },
     {
@@ -3267,8 +3249,8 @@
       "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-overview.tsx",
       "line": 37,
       "category": "React/JSX",
-      "ceiling": 434,
-      "status": "LEGACY",
+      "ceiling": 63,
+      "status": "IMPROVED",
       "functionIdentity": "named:EnvironmentalImpactEstimatorPanelOverview#1"
     },
     {
@@ -3357,7 +3339,7 @@
       "path": "apps/web/src/components/learn/learn-rubric-shell.tsx",
       "line": 91,
       "category": "React/JSX",
-      "ceiling": 271,
+      "ceiling": 75,
       "status": "IMPROVED",
       "functionIdentity": "named:LearnRubricShell#1"
     },
@@ -3411,8 +3393,8 @@
       "path": "apps/web/src/components/learn/quiz/quiz-session-panel-summary.tsx",
       "line": 34,
       "category": "React/JSX",
-      "ceiling": 428,
-      "status": "LEGACY",
+      "ceiling": 52,
+      "status": "IMPROVED",
       "functionIdentity": "named:QuizSessionPanelSummary#1"
     },
     {
@@ -3456,8 +3438,8 @@
       "path": "apps/web/src/components/navigation/app-navigation-ribbon-shell.tsx",
       "line": 43,
       "category": "React/JSX",
-      "ceiling": 165,
-      "status": "LEGACY",
+      "ceiling": 144,
+      "status": "IMPROVED",
       "functionIdentity": "named:AppNavigationRibbonFrame#1"
     },
     {
@@ -3474,8 +3456,8 @@
       "path": "apps/web/src/components/navigation/global-search.tsx",
       "line": 38,
       "category": "React/JSX",
-      "ceiling": 224,
-      "status": "LEGACY",
+      "ceiling": 49,
+      "status": "IMPROVED",
       "functionIdentity": "named:GlobalSearch#1"
     },
     {
@@ -3483,8 +3465,8 @@
       "path": "apps/web/src/components/navigation/notification-bell.tsx",
       "line": 39,
       "category": "React/JSX",
-      "ceiling": 265,
-      "status": "LEGACY",
+      "ceiling": 129,
+      "status": "IMPROVED",
       "functionIdentity": "named:NotificationBellSession#1"
     },
     {
@@ -3528,7 +3510,7 @@
       "path": "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-content.tsx",
       "line": 28,
       "category": "React/JSX",
-      "ceiling": 7,
+      "ceiling": 6,
       "status": "IMPROVED",
       "functionIdentity": "named:PilotageOverviewContent#1"
     },
@@ -3537,8 +3519,8 @@
       "path": "apps/web/src/components/pilotage/thirty-seconds-summary.tsx",
       "line": 78,
       "category": "React/JSX",
-      "ceiling": 170,
-      "status": "LEGACY",
+      "ceiling": 16,
+      "status": "IMPROVED",
       "functionIdentity": "named:ThirtySecondsSummary#1"
     },
     {
@@ -3546,8 +3528,8 @@
       "path": "apps/web/src/components/profil/impact-profile-page.tsx",
       "line": 51,
       "category": "React/JSX",
-      "ceiling": 300,
-      "status": "LEGACY",
+      "ceiling": 21,
+      "status": "IMPROVED",
       "functionIdentity": "named:ImpactProfilePage#1"
     },
     {
@@ -3591,8 +3573,8 @@
       "path": "apps/web/src/components/reports/web-document/report-cover.tsx",
       "line": 16,
       "category": "React/JSX",
-      "ceiling": 170,
-      "status": "LEGACY",
+      "ceiling": 6,
+      "status": "IMPROVED",
       "functionIdentity": "named:ReportCover#1"
     },
     {
@@ -3636,8 +3618,8 @@
       "path": "apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx",
       "line": 32,
       "category": "React/JSX",
-      "ceiling": 214,
-      "status": "LEGACY",
+      "ceiling": 99,
+      "status": "IMPROVED",
       "functionIdentity": "named:AnnuaireExplorationView#1"
     },
     {
@@ -3726,7 +3708,7 @@
       "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
       "line": 122,
       "category": "React/JSX",
-      "ceiling": 51,
+      "ceiling": 34,
       "status": "IMPROVED",
       "functionIdentity": "named:ElusSection#1"
     },
@@ -3744,8 +3726,8 @@
       "path": "apps/web/src/components/sections/rubriques/feedback-section-discussion.tsx",
       "line": 17,
       "category": "React/JSX",
-      "ceiling": 162,
-      "status": "LEGACY",
+      "ceiling": 133,
+      "status": "IMPROVED",
       "functionIdentity": "named:FeedbackDiscussionMode#1"
     },
     {
@@ -3753,8 +3735,8 @@
       "path": "apps/web/src/components/sections/rubriques/feedback/questionnaire-card.tsx",
       "line": 39,
       "category": "React/JSX",
-      "ceiling": 254,
-      "status": "LEGACY",
+      "ceiling": 140,
+      "status": "IMPROVED",
       "functionIdentity": "named:QuestionnaireCard#1"
     },
     {
@@ -3861,8 +3843,8 @@
       "path": "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.cards.tsx",
       "line": 109,
       "category": "React/JSX",
-      "ceiling": 196,
-      "status": "LEGACY",
+      "ceiling": 91,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionCard#1"
     },
     {
@@ -3915,8 +3897,8 @@
       "path": "apps/web/src/components/sections/rubriques/rgpd-request-form.tsx",
       "line": 15,
       "category": "React/JSX",
-      "ceiling": 317,
-      "status": "LEGACY",
+      "ceiling": 139,
+      "status": "IMPROVED",
       "functionIdentity": "named:RgpdRequestForm#1"
     },
     {
@@ -3960,8 +3942,8 @@
       "path": "apps/web/src/components/sections/rubriques/trash-spotter-section.tsx",
       "line": 44,
       "category": "React/JSX",
-      "ceiling": 280,
-      "status": "LEGACY",
+      "ceiling": 8,
+      "status": "IMPROVED",
       "functionIdentity": "named:TrashSpotterSection#1"
     },
     {
@@ -3978,7 +3960,7 @@
       "path": "apps/web/src/components/sections/rubriques/weather-section.conditions.tsx",
       "line": 37,
       "category": "React/JSX",
-      "ceiling": 48,
+      "ceiling": 9,
       "status": "IMPROVED",
       "functionIdentity": "named:ConditionsPanel#1"
     },
@@ -3996,8 +3978,8 @@
       "path": "apps/web/src/components/ui/site-tooltips.tsx",
       "line": 149,
       "category": "React/JSX",
-      "ceiling": 251,
-      "status": "LEGACY",
+      "ceiling": 103,
+      "status": "IMPROVED",
       "functionIdentity": "named:SiteTooltips#1"
     },
     {
@@ -4005,7 +3987,7 @@
       "path": "apps/web/src/lib/actions/action-editor-payload.ts",
       "line": 87,
       "category": "métier/domain pur",
-      "ceiling": 29,
+      "ceiling": 6,
       "status": "IMPROVED",
       "functionIdentity": "named:buildActionEditorPayload#1"
     },
@@ -4023,7 +4005,7 @@
       "path": "apps/web/src/lib/actions/action-update-post-processing.ts",
       "line": 24,
       "category": "métier/domain pur",
-      "ceiling": 77,
+      "ceiling": 50,
       "status": "IMPROVED",
       "functionIdentity": "named:runActionUpdatePostProcessing#1"
     },
@@ -4050,7 +4032,7 @@
       "path": "apps/web/src/lib/actions/create-submission.ts",
       "line": 67,
       "category": "métier/domain pur",
-      "ceiling": 22,
+      "ceiling": 10,
       "status": "IMPROVED",
       "functionIdentity": "named:createActionSubmission#1"
     },
@@ -4077,8 +4059,8 @@
       "path": "apps/web/src/lib/actions/geometry/gpx.ts",
       "line": 105,
       "category": "métier/domain pur",
-      "ceiling": 74,
-      "status": "LEGACY",
+      "ceiling": 23,
+      "status": "IMPROVED",
       "functionIdentity": "named:parseTrackSegments#1"
     },
     {
@@ -4095,8 +4077,8 @@
       "path": "apps/web/src/lib/actions/map/map-route.ts",
       "line": 224,
       "category": "métier/domain pur",
-      "ceiling": 72,
-      "status": "LEGACY",
+      "ceiling": 70,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildMapActionsRouteResult#1"
     },
     {
@@ -4113,7 +4095,7 @@
       "path": "apps/web/src/lib/actions/metadata.ts",
       "line": 424,
       "category": "métier/domain pur",
-      "ceiling": 38,
+      "ceiling": 11,
       "status": "IMPROVED",
       "functionIdentity": "named:extractActionMetadataFromNotes#1"
     },
@@ -4149,7 +4131,7 @@
       "path": "apps/web/src/lib/actions/participation/organizers.ts",
       "line": 373,
       "category": "métier/domain pur",
-      "ceiling": 56,
+      "ceiling": 24,
       "status": "IMPROVED",
       "functionIdentity": "named:syncActionManualParticipants#1"
     },
@@ -4158,7 +4140,7 @@
       "path": "apps/web/src/lib/actions/participation/post-action-claims.ts",
       "line": 65,
       "category": "métier/domain pur",
-      "ceiling": 32,
+      "ceiling": 22,
       "status": "IMPROVED",
       "functionIdentity": "named:claimFinishedActionParticipation#1"
     },
@@ -4167,8 +4149,8 @@
       "path": "apps/web/src/lib/actions/pollution/corridor-history.ts",
       "line": 450,
       "category": "métier/domain pur",
-      "ceiling": 106,
-      "status": "LEGACY",
+      "ceiling": 29,
+      "status": "IMPROVED",
       "functionIdentity": "named:summarizeCorridorHistory#1"
     },
     {
@@ -4203,8 +4185,8 @@
       "path": "apps/web/src/lib/actions/post-action-summary.ts",
       "line": 71,
       "category": "métier/domain pur",
-      "ceiling": 66,
-      "status": "LEGACY",
+      "ceiling": 47,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildPostActionSummary#1"
     },
     {
@@ -4230,7 +4212,7 @@
       "path": "apps/web/src/lib/actions/store-create-contract.ts",
       "line": 90,
       "category": "runtime/services/orchestration",
-      "ceiling": 142,
+      "ceiling": 4,
       "status": "IMPROVED",
       "functionIdentity": "named:buildActionInsertPayload#1"
     },
@@ -4239,7 +4221,7 @@
       "path": "apps/web/src/lib/actions/store-create.ts",
       "line": 159,
       "category": "runtime/services/orchestration",
-      "ceiling": 100,
+      "ceiling": 28,
       "status": "IMPROVED",
       "functionIdentity": "named:createAction#1"
     },
@@ -4248,8 +4230,8 @@
       "path": "apps/web/src/lib/actions/unified-source/contracts.ts",
       "line": 94,
       "category": "métier/domain pur",
-      "ceiling": 76,
-      "status": "LEGACY",
+      "ceiling": 22,
+      "status": "IMPROVED",
       "functionIdentity": "named:toActionContractFromRow#1"
     },
     {
@@ -4257,7 +4239,7 @@
       "path": "apps/web/src/lib/actions/unified-source/load.ts",
       "line": 74,
       "category": "métier/domain pur",
-      "ceiling": 75,
+      "ceiling": 27,
       "status": "IMPROVED",
       "functionIdentity": "named:loadUnifiedActionSourceData#1"
     },
@@ -4275,8 +4257,8 @@
       "path": "apps/web/src/lib/admin/moderation/action-moderation-edits.ts",
       "line": 251,
       "category": "métier/domain pur",
-      "ceiling": 102,
-      "status": "LEGACY",
+      "ceiling": 9,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildAdminActionPayload#1"
     },
     {
@@ -4302,8 +4284,8 @@
       "path": "apps/web/src/lib/analytics/climate-context.ts",
       "line": 133,
       "category": "métier/domain pur",
-      "ceiling": 62,
-      "status": "LEGACY",
+      "ceiling": 57,
+      "status": "IMPROVED",
       "functionIdentity": "named:aggregate#1"
     },
     {
@@ -4320,8 +4302,8 @@
       "path": "apps/web/src/lib/analytics/compare-zones.ts",
       "line": 102,
       "category": "métier/domain pur",
-      "ceiling": 225,
-      "status": "LEGACY",
+      "ceiling": 26,
+      "status": "IMPROVED",
       "functionIdentity": "named:computeZoneCompare#1"
     },
     {
@@ -4338,8 +4320,8 @@
       "path": "apps/web/src/lib/analytics/territorial-benchmark.ts",
       "line": 78,
       "category": "métier/domain pur",
-      "ceiling": 106,
-      "status": "LEGACY",
+      "ceiling": 59,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildTerritorialBenchmark#1"
     },
     {
@@ -4482,7 +4464,7 @@
       "path": "apps/web/src/lib/gamification/progression-tracking.ts",
       "line": 159,
       "category": "métier/domain pur",
-      "ceiling": 28,
+      "ceiling": 14,
       "status": "IMPROVED",
       "functionIdentity": "named:refreshProgressionProfile#1"
     },
@@ -4500,7 +4482,7 @@
       "path": "apps/web/src/lib/gamification/quiz-balance-progress.ts",
       "line": 75,
       "category": "métier/domain pur",
-      "ceiling": 81,
+      "ceiling": 17,
       "status": "IMPROVED",
       "functionIdentity": "named:syncQuizQuestionTypeBalanceProgress#1"
     },
@@ -4509,7 +4491,7 @@
       "path": "apps/web/src/lib/gamification/quiz-progress.ts",
       "line": 83,
       "category": "métier/domain pur",
-      "ceiling": 85,
+      "ceiling": 31,
       "status": "IMPROVED",
       "functionIdentity": "named:syncQuizQuestionTypeProgress#1"
     },
@@ -4662,8 +4644,8 @@
       "path": "apps/web/src/lib/impact/public-impact-snapshot.ts",
       "line": 206,
       "category": "métier/domain pur",
-      "ceiling": 61,
-      "status": "LEGACY",
+      "ceiling": 57,
+      "status": "IMPROVED",
       "functionIdentity": "named:generateAndPersistPublicImpactSnapshot#1"
     },
     {
@@ -4752,8 +4734,8 @@
       "path": "apps/web/src/lib/pdf-export/official-report-html.ts",
       "line": 312,
       "category": "métier/domain pur",
-      "ceiling": 205,
-      "status": "LEGACY",
+      "ceiling": 23,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildOfficialReportHtml#1"
     },
     {
@@ -4977,7 +4959,7 @@
       "path": "apps/web/src/lib/ui/page-families/resolve-page-family.ts",
       "line": 60,
       "category": "métier/domain pur",
-      "ceiling": 90,
+      "ceiling": 8,
       "status": "IMPROVED",
       "functionIdentity": "named:resolveBasePageFamilyId#1"
     },
@@ -5004,8 +4986,8 @@
       "path": "apps/web/src/lib/weather/planner-weather.ts",
       "line": 345,
       "category": "métier/domain pur",
-      "ceiling": 65,
-      "status": "LEGACY",
+      "ceiling": 61,
+      "status": "IMPROVED",
       "functionIdentity": "named:fetchPlannerWeatherContext#1"
     },
     {
@@ -5013,7 +4995,7 @@
       "path": "apps/mobile/App.tsx",
       "line": 45,
       "category": "React/JSX",
-      "ceiling": 137,
+      "ceiling": 51,
       "status": "IMPROVED",
       "functionIdentity": "named:CompanionApp#1"
     },
@@ -6291,8 +6273,8 @@
       "path": "apps/mobile/tests/tracking-service.test.ts",
       "line": 112,
       "category": "tests",
-      "ceiling": 4,
-      "status": "LEGACY",
+      "ceiling": 2,
+      "status": "IMPROVED",
       "functionIdentity": "named:missionClient#1"
     },
     {
@@ -6525,8 +6507,8 @@
       "path": "apps/mobile/tests/tracking-service.test.ts",
       "line": 286,
       "category": "tests",
-      "ceiling": 2,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "callback:vi . fn:0:#13"
     },
     {
@@ -6669,8 +6651,8 @@
       "path": "apps/mobile/tests/tracking-service.test.ts",
       "line": 42,
       "category": "tests",
-      "ceiling": 4,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "callback:vi . fn:0:#5"
     },
     {
@@ -6768,8 +6750,8 @@
       "path": "apps/mobile/tests/tracking-service.test.ts",
       "line": 112,
       "category": "tests",
-      "ceiling": 42,
-      "status": "LEGACY",
+      "ceiling": 28,
+      "status": "IMPROVED",
       "functionIdentity": "named:missionClient#1"
     },
     {
@@ -6939,8 +6921,8 @@
       "path": "apps/mobile/tests/tracking-service.test.ts",
       "line": 225,
       "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "callback:vi . fn:0:#9"
     },
     {
@@ -6993,8 +6975,8 @@
       "path": "apps/mobile/tests/tracking-service.test.ts",
       "line": 285,
       "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "callback:vi . fn:0:#12"
     },
     {
@@ -7002,8 +6984,8 @@
       "path": "apps/mobile/tests/tracking-service.test.ts",
       "line": 286,
       "category": "tests",
-      "ceiling": 30,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "callback:vi . fn:0:#13"
     },
     {
