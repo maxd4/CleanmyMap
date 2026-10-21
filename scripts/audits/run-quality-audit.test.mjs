@@ -166,7 +166,7 @@ test("all writes every gate and the aggregate as flat files for one run", async 
   try {
     const result = await runQualityAudit("all", { root, runId: "run-all", snapshot: () => stableSnapshot, engine: async (audit) => fixtureResult(audit) });
     const names = fs.readdirSync(path.join(root, "artifacts", "quality-audits", sha)).sort();
-    assert.equal(names.length, 20);
+    assert.equal(names.length, 21);
     for (const audit of [...qualityAudits, "all"]) {
       assert.ok(names.includes(`${audit}--run-all--manifest.json`));
       assert.ok(names.includes(`${audit}--run-all--report.json`));
@@ -174,6 +174,7 @@ test("all writes every gate and the aggregate as flat files for one run", async 
     }
     assert.ok(names.includes("quality-index--run-all--index.json"));
     assert.ok(names.includes("quality-index--run-all--summary.md"));
+    assert.ok(names.includes("quality-index--run-all--bundle.zip"));
     assert.deepEqual(result.projectionPaths, {
       index: path.join(root, "artifacts", "quality-audits", sha, "quality-index--run-all--index.json"),
       summary: path.join(root, "artifacts", "quality-audits", sha, "quality-index--run-all--summary.md"),
@@ -181,7 +182,33 @@ test("all writes every gate and the aggregate as flat files for one run", async 
       shaRoot: path.join(root, "artifacts", "quality-audits", sha),
       runId: "run-all",
     });
+    assert.equal(fs.statSync(result.projectionPaths.bundle).isFile(), true);
     assert.equal(result.allPaths.runRoot, result.allPaths.shaRoot);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("all produit index et ZIP même lorsqu'un contrôle échoue avec un diagnostic exploitable", async () => {
+  const root = tempRoot();
+  try {
+    const result = await runQualityAudit("all", {
+      root,
+      runId: "run-failing-control",
+      snapshot: () => stableSnapshot,
+      engine: async (audit) => audit === "complexity"
+        ? { status: "FAIL", error: { code: "FIXTURE_FAILED", message: "complexity indisponible" } }
+        : fixtureResult(audit),
+    });
+    assert.equal(result.status, "FAIL");
+    assert.equal(result.results.find((entry) => entry.audit === "complexity").status, "FAIL");
+    assert.ok(result.projectionPaths.index);
+    assert.ok(result.projectionPaths.summary);
+    assert.ok(result.projectionPaths.bundle);
+    assert.equal(fs.statSync(result.projectionPaths.bundle).isFile(), true);
+    const index = JSON.parse(fs.readFileSync(result.projectionPaths.index, "utf8"));
+    assert.equal(index.audits.complexity.state, "NOT_MEASURED");
+    assert.equal(index.source.initialStatus, "FAIL");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

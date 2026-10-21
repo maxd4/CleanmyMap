@@ -1159,7 +1159,8 @@ delta top-heavy ni REVIEW non qualifié nécessitant une nouvelle analyse n’a
 `audit:quality -- all` produit en plus, après les cinq triplets et le triplet
 agrégé, une projection non normative dans le même SHA :
 `quality-index--<runId>--index.json` et
-`quality-index--<runId>--summary.md`. Cette projection est une vue par fichier,
+`quality-index--<runId>--summary.md`, ainsi qu'un ZIP complet du run :
+`quality-index--<runId>--bundle.zip`. Cette projection est une vue par fichier,
 domaine et relation prouvée ; elle réutilise les résultats déjà calculés et la
 fonction de corrélation du radar. Elle distingue `PRESENT`, `NONE`,
 `NOT_MEASURED` et `NOT_APPLICABLE`, conserve les deux vues top-heavy (verdict

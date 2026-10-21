@@ -521,7 +521,7 @@ export async function runQualityAudit(mode, {
           runId,
           mode: "ALL",
           generatedAt,
-          includeBundle: false,
+          includeBundle: true,
           fsApi,
         });
         projectionPaths = projection.paths;
@@ -530,7 +530,12 @@ export async function runQualityAudit(mode, {
       }
     }
 
-    const retention = await retainQualityAuditArtifacts({ root, now, fsApi });
+    let retention;
+    try {
+      retention = await retainQualityAuditArtifacts({ root, now, fsApi });
+    } catch (error) {
+      retention = { status: "FAIL", diagnostics: [`${error?.code ?? "RETENTION_FAILED"}: ${error?.message ?? String(error)}`], retainedSha: [], removedSha: [], migrated: [] };
+    }
     return {
       mode,
       runId,

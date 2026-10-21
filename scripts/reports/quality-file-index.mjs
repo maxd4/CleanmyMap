@@ -76,6 +76,7 @@ function validateManifest(manifest, { audit, auditedSha, runId }) {
 
 function validateReport(audit, report) {
   if (!report || typeof report !== "object") throw new Error(`Rapport ${audit} absent.`);
+  if (report.error && typeof report.error === "object") return report;
   if (audit === "dead-code" && (!Array.isArray(report.currentFindings) || !report.comparison)) {
     throw new Error("Rapport dead-code incomplet.");
   }
@@ -218,6 +219,16 @@ function deriveTopHeavyEvaluation(report) {
 }
 
 function addTopHeavy(report, files, domains) {
+  if (report.error) {
+    return {
+      state: "NOT_MEASURED",
+      status: "FAIL",
+      error: report.error,
+      initialVerdict: { status: "FAIL", evaluation: { state: "NOT_MEASURED", detail: "rapport top-heavy en erreur", counts: {} } },
+      derivedReevaluation: { state: "NOT_MEASURED", detail: "rapport top-heavy en erreur" },
+      measuredFiles: 0,
+    };
+  }
   const evaluation = report.evaluation;
   const findingKeys = [
     "hardOffenders", "newHardOffenders", "ratchetViolations", "reviewWarnings",
@@ -259,6 +270,7 @@ function addTopHeavy(report, files, domains) {
 }
 
 function addComplexity(report, files, domains) {
+  if (report.error) return { state: "NOT_MEASURED", status: "FAIL", error: report.error, measuredFunctions: 0, measuredFiles: 0, findingCounts: {} };
   const measured = new Map();
   for (const metric of report.metrics ?? []) {
     const file = ensureFile(files, metric.path);
@@ -288,6 +300,7 @@ function deadCodeKey(finding) {
 }
 
 function addDeadCode(report, files, domains) {
+  if (report.error) return { state: "NOT_MEASURED", status: "FAIL", error: report.error, currentCount: null, findingCounts: {}, justifications: [] };
   const baselineByKey = new Map((report.baseline?.findings ?? []).map((finding) => [deadCodeKey(finding), finding]));
   const justificationsById = new Map((report.justifications?.justifications ?? []).map((entry) => [entry.id, entry]));
   for (const finding of report.currentFindings ?? []) {
@@ -322,6 +335,7 @@ function addDeadCode(report, files, domains) {
 }
 
 function addDuplication(report, files, domains, candidateGroups) {
+  if (report.error) return { state: "NOT_MEASURED", status: "FAIL", error: report.error, scopes: [], fingerprints: [], classificationCounts: {} };
   const global = [];
   for (const result of report.results ?? []) {
     const scope = result.scopeName;
