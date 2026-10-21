@@ -1,4 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
+
+const uploadFeedbackScreenshotMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@/lib/community/feedback-screenshot-client", () => ({
+  uploadFeedbackScreenshot: uploadFeedbackScreenshotMock,
+}));
 import { buildFeedbackCanonicalHref } from "../feedback-section.shared";
 import {
   buildSuggestedFeedbackTitle,
@@ -179,6 +185,39 @@ describe("feedback submission contract", () => {
       "/api/community/bug-reports",
       expect.objectContaining({ method: "POST" }),
     );
+
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps a saved questionnaire successful when the optional screenshot upload fails", async () => {
+    uploadFeedbackScreenshotMock.mockRejectedValueOnce(new Error("Stockage indisponible."));
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ requestId: "bug-42" }), { status: 201 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    const values = Object.fromEntries(
+      questionnaire.fields.map((field) => [field.key, `Valeur ${field.key}`]),
+    );
+
+    await expect(
+      submitFeedbackQuestionnaire({
+        questionnaire,
+        values,
+        pagePath: "/sections/feedback",
+        source: "feedback_section",
+        locale: "fr",
+        honeypot: "",
+        submittedAt: Date.now(),
+        screenshotFile: new File(["png"], "capture.png", { type: "image/png" }),
+      }),
+    ).resolves.toEqual({
+      requestId: "bug-42",
+      screenshot: "failed",
+      screenshotError: "Stockage indisponible.",
+    });
+    expect(uploadFeedbackScreenshotMock).toHaveBeenCalledWith("bug-42", expect.any(File));
+    expect(fetchMock).toHaveBeenCalledOnce();
 
     vi.unstubAllGlobals();
   });

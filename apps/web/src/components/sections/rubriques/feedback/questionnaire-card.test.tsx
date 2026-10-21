@@ -9,8 +9,13 @@ import {
 import { QUESTIONNAIRES } from "./questionnaire-config";
 
 const useUserMock = vi.hoisted(() => vi.fn());
+const uploadFeedbackScreenshotMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs", () => ({ useUser: useUserMock }));
+vi.mock("@/lib/community/feedback-screenshot-client", async (importOriginal) => ({
+  ...(await importOriginal()),
+  uploadFeedbackScreenshot: uploadFeedbackScreenshotMock,
+}));
 vi.mock("@/components/ui/site-preferences-provider", () => ({
   useSitePreferences: () => ({ locale: "fr" }),
 }));
@@ -51,6 +56,14 @@ function submitButton(renderer: ReactTestRenderer) {
   return renderer.root.findAllByType("button").find(
     (button) => button.props.type === "submit",
   );
+}
+
+function validBugValues() {
+  return {
+    context: "J'ouvrais la carte",
+    steps: "La carte ne s'affichait pas",
+    expected: "La carte devait s'afficher",
+  };
 }
 
 class CardSpeechRecognition {
@@ -297,6 +310,139 @@ describe("QuestionnaireCard serialized description validation", () => {
     expect(markup).toContain("Voir mes retours");
     expect(markup).toContain("feedback#mes-retours");
     expect(markup).not.toContain("+1 XP");
+  });
+
+  it("keeps the submission visibly pending, clears an old error, and resets after retry success", async () => {
+    let resolveRetry!: (response: Response) => void;
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: "Le service est indisponible." }), {
+          status: 503,
+          headers: { "content-type": "application/json" },
+        }),
+      )
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveRetry = resolve; }));
+    vi.stubGlobal("fetch", fetchMock);
+    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(
+        <QuestionnaireCard
+          questionnaire={bugQuestionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+          initialValues={validBugValues()}
+        />,
+      );
+    });
+
+    await act(async () => {
+      await renderer.root.findByType("form").props.onSubmit({ preventDefault: () => undefined });
+    });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Le service est indisponible.");
+
+    const retry = renderer.root.findByType("form").props.onSubmit({ preventDefault: () => undefined });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(submitButton(renderer)?.props.disabled).toBe(true);
+    expect(JSON.stringify(renderer.toJSON())).toContain("Envoi...");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Le service est indisponible.");
+
+    await act(async () => {
+      resolveRetry(new Response(JSON.stringify({ requestId: "retry-42" }), { status: 201 }));
+      await retry;
+    });
+
+    const markup = JSON.stringify(renderer.toJSON());
+    expect(markup).toContain("Référence");
+    expect(markup).toContain("retry-42");
+    expect(renderer.root.findAllByType("textarea").every((textarea) => textarea.props.value === "")).toBe(true);
+  });
+
+  it("allows only one request when submit is triggered twice before the first response", async () => {
+    let resolveFetch!: (response: Response) => void;
+    const fetchMock = vi.fn(() => new Promise<Response>((resolve) => { resolveFetch = resolve; }));
+    vi.stubGlobal("fetch", fetchMock);
+    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(
+        <QuestionnaireCard
+          questionnaire={bugQuestionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+          initialValues={validBugValues()}
+        />,
+      );
+    });
+
+    let firstSubmission!: Promise<void>;
+    let secondSubmission!: Promise<void>;
+    act(() => {
+      const form = renderer.root.findByType("form");
+      firstSubmission = form.props.onSubmit({ preventDefault: () => undefined });
+      secondSubmission = form.props.onSubmit({ preventDefault: () => undefined });
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+
+    await act(async () => {
+      resolveFetch(new Response(JSON.stringify({ requestId: "single-42" }), { status: 201 }));
+      await firstSubmission;
+      await secondSubmission;
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the pending state through the optional screenshot upload", async () => {
+    let resolveUpload!: () => void;
+    uploadFeedbackScreenshotMock.mockImplementationOnce(
+      () => new Promise<void>((resolve) => { resolveUpload = resolve; }),
+    );
+    vi.stubGlobal("URL", {
+      createObjectURL: vi.fn(() => "blob:capture"),
+      revokeObjectURL: vi.fn(),
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ requestId: "capture-42" }), { status: 201 }),
+    ));
+    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(
+        <QuestionnaireCard
+          questionnaire={bugQuestionnaire}
+          pagePath="/sections/feedback"
+          source="feedback_section"
+          initialValues={validBugValues()}
+        />,
+      );
+    });
+    act(() => {
+      renderer.root.findAllByType("input").find((input) => input.props.type === "file")?.props.onChange({
+        target: { files: [new File(["png"], "capture.png", { type: "image/png" })] },
+      });
+    });
+
+    const submission = renderer.root.findByType("form").props.onSubmit({ preventDefault: () => undefined });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(uploadFeedbackScreenshotMock).toHaveBeenCalledWith("capture-42", expect.any(File));
+    expect(submitButton(renderer)?.props.disabled).toBe(true);
+    expect(JSON.stringify(renderer.toJSON())).toContain("Envoi...");
+
+    await act(async () => {
+      resolveUpload();
+      await submission;
+    });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Référence");
   });
 
   it("keeps the four collaboration fields and adds an optional editable title", () => {

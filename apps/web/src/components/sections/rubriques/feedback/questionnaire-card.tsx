@@ -93,6 +93,7 @@ export function QuestionnaireCard({
   };
   const [honeypot, setHoneypot] = useState("");
   const formStartedAt = useRef<number | null>(null);
+  const submissionInFlightRef = useRef(false);
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
@@ -195,9 +196,16 @@ export function QuestionnaireCard({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!canSubmit) return;
+    if (!canSubmit || submissionInFlightRef.current) return;
+    submissionInFlightRef.current = true;
+    setSubmitState("submitting");
+    setErrorMessage(null);
     speech.cancel();
-    await submitQuestionnaireForm({ questionnaire, values, pagePath, source, locale, honeypot, submittedAt: formStartedAt.current ?? Date.now(), screenshotFile: questionnaire.id === "bug" ? screenshotFile : null, setSubmitState, setErrorMessage, setRequestId, setScreenshotError, setValues });
+    try {
+      await submitQuestionnaireForm({ questionnaire, values, pagePath, source, locale, honeypot, submittedAt: formStartedAt.current ?? Date.now(), screenshotFile: questionnaire.id === "bug" ? screenshotFile : null, setSubmitState, setErrorMessage, setRequestId, setScreenshotError, setValues });
+    } finally {
+      submissionInFlightRef.current = false;
+    }
   }
 
   function handleScreenshotChange(event: ChangeEvent<HTMLInputElement>) {
