@@ -1,12 +1,14 @@
 "use client";
 
 import { CalendarDays, MapPin, Route, Users2 } from "lucide-react";
+import Link from "next/link";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { AdministrativeRequirementsStatus } from "@/components/actions/administrative-requirements-status";
 import { extractEventRefFromNotes } from "@/lib/actions/event-link";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import type { ActionListItem } from "@/lib/actions/types";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
+import { buildCommunityEventHref } from "@/lib/community/event-links";
 
 function plannedParticipants(item: ActionListItem): number | null {
   const fromPreparation = item.contract?.metadata.preparationData?.volunteerParticipation?.participantsCount;
@@ -47,7 +49,7 @@ function FutureActionCard({ item, authenticated, fr, onShareAction }: { item: Ac
   const title = titleFor(item);
   const eventRef = eventRefFor(item);
   const timeWindow = timeWindowFor(item);
-  return <article className="rounded-[1.2rem] border border-sky-100 bg-white p-4 shadow-sm"><div className="space-y-3"><div><h3 className="text-lg font-black tracking-tight text-sky-950">{title}</h3><p className="mt-1 flex items-center gap-2 text-sm text-slate-600"><MapPin size={14} className="text-slate-400" />{item.location_label}</p></div><div className="grid gap-2 text-sm text-slate-600"><p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{formatDate(item.action_date, fr ? "fr" : "en")}</p>{timeWindow ? <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{timeWindow}</p> : null}<FutureActionParticipants item={item} fr={fr} /><p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{item.geometry_kind ? (fr ? "Itinéraire prévu disponible" : "Planned route available") : (fr ? "Lieu uniquement" : "Location only")}</p><p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "estimés" : "estimated"}</p></div><p className="text-xs text-slate-500">{fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}</p><AdministrativeRequirementsStatus actionId={item.id} surface="summary" />{eventRef ? <p className="text-xs font-semibold text-slate-500">{fr ? "Événement associé : " : "Linked event: "}{eventRef}</p> : null}<FutureActionRegistration item={item} authenticated={authenticated} fr={fr} onShareAction={onShareAction} /></div></article>;
+  return <article className="rounded-[1.2rem] border border-sky-100 bg-white p-4 shadow-sm"><div className="space-y-3"><div><h3 className="text-lg font-black tracking-tight text-sky-950">{title}</h3><p className="mt-1 flex items-center gap-2 text-sm text-slate-600"><MapPin size={14} className="text-slate-400" />{item.location_label}</p></div><div className="grid gap-2 text-sm text-slate-600"><p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{formatDate(item.action_date, fr ? "fr" : "en")}</p>{timeWindow ? <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{timeWindow}</p> : null}<FutureActionParticipants item={item} fr={fr} /><p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{item.geometry_kind ? (fr ? "Itinéraire prévu disponible" : "Planned route available") : (fr ? "Lieu uniquement" : "Location only")}</p><p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "estimés" : "estimated"}</p></div><p className="text-xs text-slate-500">{fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}</p><AdministrativeRequirementsStatus actionId={item.id} surface="summary" />{eventRef ? <p className="text-xs font-semibold text-slate-500">{fr ? "Événement associé : " : "Linked event: "}{eventRef} <Link href={buildCommunityEventHref(eventRef, "future")} className="ml-2 underline underline-offset-2">{fr ? "Voir l’événement" : "View event"}</Link></p> : null}<FutureActionRegistration item={item} authenticated={authenticated} fr={fr} onShareAction={onShareAction} /></div></article>;
 }
 
 export function FutureActionsPanel({

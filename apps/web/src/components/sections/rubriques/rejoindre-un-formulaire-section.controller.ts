@@ -17,6 +17,9 @@ import {
 import { fetchActions } from "@/lib/actions/http";
 import { usesRegistrationStore } from "@/lib/actions/participation/action-phase";
 import type { ActionListItem } from "@/lib/actions/types";
+import { extractEventRefFromNotes } from "@/lib/actions/event-link";
+import { useCommunityEvents } from "./community/use-community-events";
+import { useCommunityActions } from "./community/use-community-actions";
 import {
   isPastPublicAction,
   isCanonicalActionId,
@@ -56,7 +59,14 @@ export function useJoinFormSectionController() {
   const [pastError, setPastError] = useState<string | null>(null);
   const [queueReloadAction, setQueueReloadAction] = useState<{ actionId: string; version: number } | null>(null);
   const focusActionId = searchParams.get("actionId")?.trim() || null;
+  const requestedCommunityEventId = searchParams.get("communityEventId")?.trim() || null;
+  const focusCommunityEventId = isCanonicalActionId(requestedCommunityEventId)
+    ? requestedCommunityEventId
+    : null;
   const requestedTab: JoinActionTab = resolveJoinActionTab(searchParams.get("tab"));
+
+  const communityEvents = useCommunityEvents(true, focusCommunityEventId);
+  const communityActions = useCommunityActions(communityEvents.reloadEvents);
 
   const listUrl = useMemo(() => {
     const params = new URLSearchParams({ limit: "24", historyLimit: "200" });
@@ -96,13 +106,29 @@ export function useJoinFormSectionController() {
   const targetResolution: JoinActionTargetResolution = useMemo(
     () =>
       resolveJoinActionTarget({
-        actionId: focusActionId,
-        futureActionIds: actions.items.map((item) => item.id),
-        pastActionIds: pastItems.map((item) => item.id),
-        futureLoading: actions.loading,
-        pastLoading,
+        actionId: focusActionId ?? focusCommunityEventId,
+        futureActionIds: [
+          ...actions.items.map((item) => item.id),
+          ...communityEvents.upcomingEvents.map((event) => event.id),
+        ],
+        pastActionIds: [
+          ...pastItems.map((item) => item.id),
+          ...communityEvents.pastEvents.map((event) => event.id),
+        ],
+        futureLoading: actions.loading || communityEvents.eventsLoading,
+        pastLoading: pastLoading || communityEvents.eventsLoading,
       }),
-    [actions.items, actions.loading, focusActionId, pastItems, pastLoading],
+    [
+      actions.items,
+      actions.loading,
+      communityEvents.eventsLoading,
+      communityEvents.pastEvents,
+      communityEvents.upcomingEvents,
+      focusActionId,
+      focusCommunityEventId,
+      pastItems,
+      pastLoading,
+    ],
   );
   const activeTab: JoinActionTab = resolveJoinActionTab(requestedTab, targetResolution);
 
@@ -144,6 +170,22 @@ export function useJoinFormSectionController() {
     () => prioritizeAction(pastItems, focusActionId),
     [focusActionId, pastItems],
   );
+  const linkedFutureEventIds = useMemo(
+    () => new Set(actions.items.map((item) => item.eventRef).filter((id): id is string => Boolean(id))),
+    [actions.items],
+  );
+  const linkedPastEventIds = useMemo(
+    () => new Set(pastItems.map((item) => extractEventRefFromNotes(item.notes ?? item.contract?.metadata.notes)).filter((id): id is string => Boolean(id))),
+    [pastItems],
+  );
+  const visibleCommunityUpcomingEvents = useMemo(
+    () => communityEvents.upcomingEvents.filter((event) => !linkedFutureEventIds.has(event.id) || event.id === focusCommunityEventId),
+    [communityEvents.upcomingEvents, focusCommunityEventId, linkedFutureEventIds],
+  );
+  const visibleCommunityPastEvents = useMemo(
+    () => communityEvents.pastEvents.filter((event) => !linkedPastEventIds.has(event.id) || event.id === focusCommunityEventId),
+    [communityEvents.pastEvents, focusCommunityEventId, linkedPastEventIds],
+  );
   const activeParticipationItems = useMemo(
     () => actions.historyItems.filter((item) => item.joined && !usesRegistrationStore(item.actionPhase)),
     [actions.historyItems],
@@ -182,6 +224,7 @@ export function useJoinFormSectionController() {
     fr,
     navigationSearchParams: searchParams.toString(),
     focusActionId,
+    focusCommunityEventId,
     targetResolution,
     items: actions.items,
     activeTab,
@@ -242,5 +285,14 @@ export function useJoinFormSectionController() {
       setSort("soonest");
     },
     reloadActions: actions.reloadActions,
+    communityUpcomingEvents: visibleCommunityUpcomingEvents,
+    communityPastEvents: visibleCommunityPastEvents,
+    communityEventsLoading: communityEvents.eventsLoading,
+    communityEventsError: communityEvents.eventsLoadError,
+    communityEventsRetry: communityEvents.reloadEvents,
+    communityRsvpLoadingEventId: communityActions.rsvpLoadingEventId,
+    onCommunityRsvp: communityActions.onRsvp,
+    communityMutationError: communityActions.communityError,
+    communitySuccessMessage: communityActions.communitySuccessMessage,
   };
 }

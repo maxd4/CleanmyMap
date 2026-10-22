@@ -101,6 +101,8 @@ export async function runActionParticipationStep<T>(params: {
 
 export type JoinableActionItem = {
   id: string;
+  /** Public linkage marker only; private action notes are never projected. */
+  eventRef?: string | null;
   created_at: string;
   action_date: string;
   location_label: string;

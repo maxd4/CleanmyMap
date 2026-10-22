@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { CalendarDays, MapPin, Route, Users2 } from "lucide-react";
 import type { ActionListItem } from "@/lib/actions/types";
 import type { JoinableActionHistoryItem } from "@/lib/actions/participation/group-participation";
+import { extractEventRefFromNotes } from "@/lib/actions/event-link";
+import { buildCommunityEventHref } from "@/lib/community/event-links";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { SpogomiContextLink } from "@/components/spogomi/spogomi-context-link";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
+import { JoinCommunityEventsPanel } from "./rejoindre-une-action.community-events";
 
 function actionTitle(item: ActionListItem): string {
   return item.contract?.metadata.preparationData?.actionTitle?.trim() || item.location_label;
@@ -61,6 +65,7 @@ function PastActionCardSummary({
 }) {
   const participants = finalParticipants(item);
   const hasRoute = Boolean(item.geometry_kind || item.contract?.geometry.coordinates.length);
+  const eventRef = extractEventRefFromNotes(item.notes ?? item.contract?.metadata.notes);
   return (
     <>
       <div>
@@ -76,6 +81,7 @@ function PastActionCardSummary({
         <p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "finales" : "final"}</p>
       </div>
       <p className="text-xs text-slate-500">{fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}</p>
+      {eventRef ? <Link href={buildCommunityEventHref(eventRef, "past")} className="inline-flex text-xs font-semibold text-emerald-800 underline underline-offset-2">{fr ? "Voir l’événement communautaire" : "View community event"}</Link> : null}
       {onShareAction ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>{fr ? "Partager le résultat" : "Share the result"}</CmmButton> : null}
     </>
   );
@@ -216,6 +222,11 @@ export function PastActionsPanel({
   authenticated = false,
   historyItems = [],
   onShareAction,
+  communityPastEvents = [],
+  communityEventsLoading = false,
+  communityEventsError = null,
+  communityEventsRetry,
+  focusCommunityEventId = null,
 }: {
   items: ActionListItem[];
   loading: boolean;
@@ -225,6 +236,11 @@ export function PastActionsPanel({
   authenticated?: boolean;
   historyItems?: readonly JoinableActionHistoryItem[];
   onShareAction?: (actionId: string) => void;
+  communityPastEvents?: import("@/lib/community/http").CommunityEventItem[];
+  communityEventsLoading?: boolean;
+  communityEventsError?: import("@/lib/errors/app-errors").AppError | null;
+  communityEventsRetry?: () => Promise<unknown> | void;
+  focusCommunityEventId?: string | null;
 }) {
   const [claimOverrides, setClaimOverrides] = useState<Record<string, ClaimState>>({});
   const [claimingActionId, setClaimingActionId] = useState<string | null>(null);
@@ -286,6 +302,16 @@ export function PastActionsPanel({
     target.focus({ preventScroll: true });
   }, [focusedActionId, items.length, loading]);
 
+  useEffect(() => {
+    if (!focusCommunityEventId || communityEventsLoading) return;
+    const target = document.getElementById(`join-community-event-${focusCommunityEventId}`);
+    if (!(target instanceof HTMLElement)) return;
+    target.scrollIntoView({
+      block: "center",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }, [communityEventsLoading, communityPastEvents.length, focusCommunityEventId]);
+
   return (
     <section className="space-y-4 rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm md:p-5">
       <div className="space-y-1">
@@ -308,6 +334,16 @@ export function PastActionsPanel({
           return <PastActionCard key={item.id} item={item} fr={fr} focused={focusedActionId === item.id} authenticated={authenticated} claimState={claimState} claiming={claimingActionId === item.id} claimError={claimErrors[item.id]} onRequestClaim={(actionId) => void requestClaim(actionId)} onShareAction={onShareAction} />;
         })}
       </div>
+
+      <JoinCommunityEventsPanel
+        fr={fr}
+        events={communityPastEvents}
+        loading={communityEventsLoading}
+        error={communityEventsError}
+        focusedEventId={focusCommunityEventId}
+        onRetry={communityEventsRetry}
+        tab="past"
+      />
     </section>
   );
 }

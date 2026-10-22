@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { AppError } from "@/lib/errors/app-errors";
 import type { CommunityEventItem } from "@/lib/community/http";
-import { EventArticlePast, EventListStates } from "./community-events-components";
+import { EventArticlePast, EventArticleUpcoming, EventListStates } from "./community-events-components";
 
 function makeEvent(canEditOwnOps: boolean): CommunityEventItem {
   return {
@@ -60,5 +60,21 @@ describe("community event ownership rendering", () => {
 
     expect(markup).toContain("Les missions ne sont pas disponibles pour le moment.");
     expect(markup).not.toContain("nécessite une connexion");
+  });
+
+  it("exposes a real join-page link and preserves the personal RSVP label", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(EventArticleUpcoming, {
+        event: { ...makeEvent(false), eventDate: "2099-09-10", myRsvpStatus: "maybe" },
+        locale: "fr",
+        onRsvp: async () => undefined,
+        rsvpLoading: false,
+        onShare: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain('href="/sections/rejoindre-une-action?tab=future&amp;communityEventId=event-1"');
+    expect(markup).toContain("Voir l&#x27;événement");
+    expect(markup).toContain("Peut-être");
   });
 });

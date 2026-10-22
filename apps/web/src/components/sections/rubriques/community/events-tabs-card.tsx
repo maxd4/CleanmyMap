@@ -14,6 +14,7 @@ import {
 } from "./community-events-components";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { CommunityEventsTabsCardProps } from "./community-events-types";
+import { buildCommunityEventHref } from "@/lib/community/event-links";
 
 const CommunityEventsTabsCard = memo(function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
   const [shareEvent, setShareEvent] = useState<CommunityEventItem | null>(null);
@@ -134,7 +135,7 @@ const CommunityEventsTabsCard = memo(function CommunityEventsTabsCard(props: Com
       <QRCodeDialog
         isOpen={!!shareEvent}
         onClose={() => setShareEvent(null)}
-        value={shareEvent ? `${typeof window !== "undefined" ? window.location.origin : ""}/missions/${shareEvent.id}` : ""}
+        value={shareEvent ? `${typeof window !== "undefined" ? window.location.origin : ""}${buildCommunityEventHref(shareEvent.id, "future")}` : ""}
         title={shareEvent?.title || ""}
         description={locale === "fr" ? "Scannez pour rejoindre cette mission" : "Scan to join this mission"}
       />

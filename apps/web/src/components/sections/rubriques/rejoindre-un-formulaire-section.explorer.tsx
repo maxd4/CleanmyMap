@@ -12,6 +12,7 @@ import { formatCount } from "./rejoindre-un-formulaire-section.format";
 import { SpogomiFutureCard } from "@/components/spogomi/spogomi-future-card";
 import type { LocationFilter, PeriodFilter, StatusFilter } from "./rejoindre-un-formulaire-section.controller";
 import type { JoinableActionSort } from "./rejoindre-un-formulaire-section.utils";
+import { JoinCommunityEventsPanel } from "./rejoindre-une-action.community-events";
 
 type ControllerState = ReturnType<typeof useJoinFormSectionController>;
 
@@ -27,7 +28,11 @@ type ExplorerProps = Pick<ControllerState,
   | "queueSearchQuery" | "queueSearchResults" | "queueSearchLoading"
   | "queueSearchError" | "setQueueSearchQuery" | "reviewQueueRequest"
   | "addQueueParticipant"
-> & {
+> & Partial<Pick<ControllerState,
+  | "communityUpcomingEvents" | "communityEventsLoading" | "communityEventsError"
+  | "communityEventsRetry" | "focusCommunityEventId" | "communityRsvpLoadingEventId"
+  | "onCommunityRsvp" | "communityMutationError" | "communitySuccessMessage"
+>> & {
   onShareAction?: (actionId: string) => void;
 };
 
@@ -42,6 +47,9 @@ export function JoinFormExplorer(props: ExplorerProps) {
     reviewingQueueId, addingQueueParticipantId, queueSearchQuery,
     queueSearchResults, queueSearchLoading, queueSearchError, setQueueSearchQuery,
     reviewQueueRequest, addQueueParticipant,
+    communityUpcomingEvents = [], communityEventsLoading = false, communityEventsError = null,
+    communityEventsRetry, focusCommunityEventId = null, communityRsvpLoadingEventId = null,
+    onCommunityRsvp, communityMutationError = null, communitySuccessMessage = null,
     onShareAction,
   } = props;
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -59,6 +67,19 @@ export function JoinFormExplorer(props: ExplorerProps) {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [focusActionId, loading, preActionVisibleItems.length]);
+
+  useEffect(() => {
+    if (!focusCommunityEventId || communityEventsLoading) return;
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById(`join-community-event-${focusCommunityEventId}`);
+      if (!(target instanceof HTMLElement)) return;
+      target.scrollIntoView({
+        block: "center",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [communityEventsLoading, communityUpcomingEvents.length, focusCommunityEventId]);
 
   return (
   <div className="space-y-5">
@@ -310,6 +331,20 @@ export function JoinFormExplorer(props: ExplorerProps) {
           </p>
         </div>
       )}
+
+      <JoinCommunityEventsPanel
+        fr={fr}
+        events={communityUpcomingEvents}
+        loading={communityEventsLoading}
+        error={communityEventsError}
+        focusedEventId={focusCommunityEventId}
+        rsvpLoadingEventId={communityRsvpLoadingEventId}
+        onRsvp={onCommunityRsvp}
+        onRetry={communityEventsRetry}
+        mutationError={communityMutationError}
+        successMessage={communitySuccessMessage}
+        tab="future"
+      />
 
       {notice && (
         <div className="rounded-[1.25rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">

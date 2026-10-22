@@ -84,6 +84,8 @@ const event = {
 function configurePublicRead() {
   const eventsQuery = {
     eq: vi.fn().mockReturnThis(),
+    gte: vi.fn().mockReturnThis(),
+    lt: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockResolvedValue({ data: [event], error: null }),
   };
@@ -146,6 +148,7 @@ describe("GET /api/community/events", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
+    expect(body.items).toHaveLength(1);
     expect(body.items[0]).toMatchObject({
       id: "event-1",
       location: {
@@ -168,9 +171,45 @@ describe("GET /api/community/events", () => {
     expect(response.headers.get("vary")).toBe("Cookie");
     expect(unstableCacheMock).toHaveBeenCalledWith(
       expect.any(Function),
-      ["community-events", "limit:120"],
+      ["community-events", expect.stringMatching(/^limit:120:today:\d{4}-\d{2}-\d{2}$/)],
       expect.objectContaining({ tags: ["community-events"] }),
     );
+  });
+
+  it("prioritizes upcoming events before filling the limit with recent history", async () => {
+    const upcoming = { ...event, id: "event-future", event_date: "2099-09-10" };
+    const past = { ...event, id: "event-past", event_date: "2020-09-10" };
+    let range: "upcoming" | "past" | "direct" = "direct";
+    const eventsQuery = {
+      eq: vi.fn().mockImplementation(() => {
+        range = "direct";
+        return eventsQuery;
+      }),
+      gte: vi.fn().mockImplementation(() => {
+        range = "upcoming";
+        return eventsQuery;
+      }),
+      lt: vi.fn().mockImplementation(() => {
+        range = "past";
+        return eventsQuery;
+      }),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockImplementation(async () => ({
+        data: range === "upcoming" ? [upcoming] : range === "past" ? [past] : [],
+        error: null,
+      })),
+    };
+    getSupabaseServerClientMock.mockReturnValue({
+      from: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue(eventsQuery) }),
+    });
+
+    const response = await GET(new Request("http://localhost/api/community/events?limit=2"));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.items.map((item: { id: string }) => item.id)).toEqual(["event-future", "event-past"]);
+    expect(eventsQuery.gte).toHaveBeenCalledWith("event_date", expect.any(String));
+    expect(eventsQuery.lt).toHaveBeenCalledWith("event_date", expect.any(String));
   });
 
   it("keeps ownership false for another connected account", async () => {
@@ -189,7 +228,7 @@ describe("GET /api/community/events", () => {
     expect(response.headers.get("cache-control")).toContain("private");
     expect(unstableCacheMock).toHaveBeenCalledWith(
       expect.any(Function),
-      ["community-events", "limit:120"],
+      ["community-events", expect.stringMatching(/^limit:120:today:\d{4}-\d{2}-\d{2}$/)],
       expect.objectContaining({ tags: ["community-events"] }),
     );
   });

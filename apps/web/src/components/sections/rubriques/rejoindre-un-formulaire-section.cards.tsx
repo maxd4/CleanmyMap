@@ -9,6 +9,7 @@ import { ActionThumbnail } from "./rejoindre-un-formulaire-section.illustrations
 import { ActionCardActions } from "./rejoindre-un-formulaire-section.card-actions";
 import { ActionPracticalInformation } from "./rejoindre-un-formulaire-section.practical-info";
 import { getActionDisplayStatus, getCardDisplayStatus, getLifecycleLabel, getParticipationStatusLabel, getRegistrationStatusLabel, getStatusDotTone, type ActionCardStatus } from "./rejoindre-un-formulaire-section.status";
+import { buildCommunityEventHref } from "@/lib/community/event-links";
 
 export function PillBadge({
   tone,
@@ -267,7 +268,14 @@ export function ActionCard({
       <ActionPracticalInformation info={item.practicalInfo} fr={fr} />
 
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">
-        <span>{footerLabel}</span>
+        <span className="flex flex-wrap items-center gap-2">
+          {footerLabel}
+          {item.eventRef ? (
+            <Link href={buildCommunityEventHref(item.eventRef, "future")} className="font-semibold text-emerald-800 underline underline-offset-2">
+              {fr ? "Voir l’événement communautaire" : "View community event"}
+            </Link>
+          ) : null}
+        </span>
         <span className="inline-flex items-center gap-1.5">
           <ShieldCheck size={12} className="text-emerald-700" />
           {fr ? "Inscription sécurisée" : "Protected registration"}

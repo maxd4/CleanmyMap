@@ -14,6 +14,7 @@ import { ErrorMessage } from "@/components/ui/error-message";
 import { AppError } from "@/lib/errors/app-errors";
 import { redirectToCommunitySignIn } from "./mutation-auth";
 import type { CommunityTab, OpsDraft } from "./types";
+import { buildCommunityEventHref } from "@/lib/community/event-links";
 
 function cleanupNeedLabel(event: CommunityEventItem): string | null {
   if (!event.cleanupSupportLevel) {
@@ -221,6 +222,11 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
           {event.rsvpCounts.yes} {fr ? "inscrit(s)" : "registered"}
         </span>
       </div>
+      {event.myRsvpStatus ? (
+        <p className="mt-3 inline-flex rounded-full bg-pink-50 px-3 py-1 cmm-text-small font-semibold text-pink-800">
+          RSVP : {toRsvpLabel(event.myRsvpStatus)}
+        </p>
+      ) : null}
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <CmmDisclosure summary="Détails et actions" tone="rose" size="sm" className="order-2 sm:order-1">
@@ -250,6 +256,12 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
                 className="inline-flex min-h-10 items-center rounded-full border border-pink-200 px-3 py-2 text-sm font-semibold text-pink-700 hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
               >
                 {fr ? "Relayer" : "Share"}
+              </Link>
+              <Link
+                href={buildCommunityEventHref(event.id, "future")}
+                className="inline-flex min-h-10 items-center rounded-full border border-pink-200 px-3 py-2 text-sm font-semibold text-pink-700 hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
+              >
+                {fr ? "Voir l'événement" : "View event"}
               </Link>
               <Link
                 href={`/actions/new?mode=complete&fromEventId=${event.id}`}
@@ -338,14 +350,16 @@ export const EventArticlePast = memo(function EventArticlePast({
   getOpsDraft,
   updateOpsDraft,
   onSaveEventOps,
+  onShare,
 }: {
   event: CommunityEventItem;
   isUpdating: boolean;
-  getOpsDraft: (event: CommunityEventItem) => OpsDraft;
-  updateOpsDraft: (eventId: string, patch: Partial<OpsDraft>) => void;
-  onSaveEventOps: (event: CommunityEventItem) => Promise<void>;
+  getOpsDraft?: (event: CommunityEventItem) => OpsDraft;
+  updateOpsDraft?: (eventId: string, patch: Partial<OpsDraft>) => void;
+  onSaveEventOps?: (event: CommunityEventItem) => Promise<void>;
+  onShare?: (event: CommunityEventItem) => void;
 }) {
-  const opsDraft = getOpsDraft(event);
+  const opsDraft = getOpsDraft?.(event) ?? null;
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -365,7 +379,25 @@ export const EventArticlePast = memo(function EventArticlePast({
           {event.rsvpCounts.total} inscription(s)
         </span>
       </div>
-      {event.canEditOwnOps ? (
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link
+          href={buildCommunityEventHref(event.id, "past")}
+          className="inline-flex min-h-10 items-center rounded-full border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
+        >
+          Voir l&apos;événement
+        </Link>
+        {onShare ? (
+          <CmmButton type="button" onClick={() => onShare(event)} tone="tertiary" variant="pill" className="min-h-10">
+            QR Code
+          </CmmButton>
+        ) : null}
+        {event.myRsvpStatus ? (
+          <span className="inline-flex min-h-10 items-center rounded-full bg-pink-50 px-3 py-2 text-sm font-semibold text-pink-800">
+            RSVP : {toRsvpLabel(event.myRsvpStatus)}
+          </span>
+        ) : null}
+      </div>
+      {event.canEditOwnOps && onSaveEventOps && updateOpsDraft && opsDraft ? (
         <CmmDisclosure summary="Suivi de ma mission" tone="rose" size="sm" className="mt-4">
           <div className="grid gap-3 pt-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
             <label className="cmm-text-small font-semibold text-slate-700">

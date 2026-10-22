@@ -27,7 +27,7 @@ function renderEventsHook(enabled: boolean) {
   }
 
   renderToStaticMarkup(React.createElement(Harness));
-  return useSWRMock.mock.calls.at(-1) as [unknown, (() => Promise<unknown>) | undefined];
+  return useSWRMock.mock.calls[0] as [unknown, (() => Promise<unknown>) | undefined];
 }
 
 describe("useCommunityEvents inactive-tab contract", () => {
@@ -51,5 +51,23 @@ describe("useCommunityEvents inactive-tab contract", () => {
     expect(key).toEqual(["section-community-events"]);
     await fetcher?.();
     expect(fetchCommunityEventsMock).toHaveBeenCalledWith({ limit: 120 });
+  });
+
+  it("loads a deep-linked event separately so pagination cannot hide it", async () => {
+    useSWRMock.mockClear();
+    fetchCommunityEventsMock.mockResolvedValue({ items: [] });
+
+    function Harness() {
+      useCommunityEvents(true, "event-42");
+      return null;
+    }
+
+    renderToStaticMarkup(React.createElement(Harness));
+    const fetchers = useSWRMock.mock.calls
+      .map((call) => call[1])
+      .filter((fetcher): fetcher is () => Promise<unknown> => typeof fetcher === "function");
+    await Promise.all(fetchers.map((fetcher) => fetcher()));
+
+    expect(fetchCommunityEventsMock).toHaveBeenCalledWith({ limit: 1, eventId: "event-42" });
   });
 });

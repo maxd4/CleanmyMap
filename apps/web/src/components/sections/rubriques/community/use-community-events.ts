@@ -1,10 +1,10 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import useSWR from "swr";
 import { fetchCommunityEvents } from "@/lib/community/http";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { isAppError, toAppError } from "@/lib/errors/app-errors";
 
-export function useCommunityEvents(enabled = true) {
+export function useCommunityEvents(enabled = true, focusEventId: string | null = null) {
   const {
     data: eventsData,
     error: eventsError,
@@ -16,44 +16,69 @@ export function useCommunityEvents(enabled = true) {
     () => fetchCommunityEvents({ limit: 120 }),
     swrRecentViewOptions,
   );
+  const {
+    data: focusedEventData,
+    error: focusedEventError,
+    isLoading: focusedEventLoading,
+    isValidating: focusedEventValidating,
+    mutate: reloadFocusedEvent,
+  } = useSWR(
+    enabled && focusEventId ? ["section-community-event", focusEventId] : null,
+    () => fetchCommunityEvents({ limit: 1, eventId: focusEventId }),
+    swrRecentViewOptions,
+  );
 
   const allEvents = useMemo(() => eventsData?.items ?? [], [eventsData?.items]);
+  const mergedEvents = useMemo(() => {
+    const byId = new Map(allEvents.map((event) => [event.id, event]));
+    for (const event of focusedEventData?.items ?? []) {
+      byId.set(event.id, event);
+    }
+    return [...byId.values()];
+  }, [allEvents, focusedEventData?.items]);
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const upcomingEvents = useMemo(
     () =>
-      allEvents
+      mergedEvents
         .filter((event) => event.eventDate >= todayIso)
         .sort((a, b) => a.eventDate.localeCompare(b.eventDate)),
-    [allEvents, todayIso],
+    [mergedEvents, todayIso],
   );
   const pastEvents = useMemo(
     () =>
-      allEvents
+      mergedEvents
         .filter((event) => event.eventDate < todayIso)
         .sort((a, b) => b.eventDate.localeCompare(a.eventDate)),
-    [allEvents, todayIso],
+    [mergedEvents, todayIso],
   );
   const myEvents = useMemo(
-    () => allEvents.filter((event) => event.myRsvpStatus !== null),
-    [allEvents],
+    () => mergedEvents.filter((event) => event.myRsvpStatus !== null),
+    [mergedEvents],
   );
 
-  const eventsLoadError = isAppError(eventsError)
-    ? eventsError
-    : eventsError instanceof Error
-      ? toAppError(eventsError, {
+  const rawEventsError = eventsError ?? focusedEventError;
+  const eventsLoadError = isAppError(rawEventsError)
+    ? rawEventsError
+    : rawEventsError instanceof Error
+      ? toAppError(rawEventsError, {
           kind: "server",
           message: "Chargement agenda communautaire impossible.",
         })
       : null;
+  const reloadAllEvents = useCallback(async () => {
+    await Promise.all([
+      reloadEvents(),
+      reloadFocusedEvent(),
+    ]);
+  }, [reloadEvents, reloadFocusedEvent]);
 
   return {
-    eventsLoading,
-    eventsValidating,
+    eventsLoading: eventsLoading || focusedEventLoading,
+    eventsValidating: eventsValidating || focusedEventValidating,
     eventsLoadError,
-    reloadEvents,
-    allEvents,
+    reloadEvents: reloadAllEvents,
+    allEvents: mergedEvents,
     upcomingEvents,
     pastEvents,
     myEvents,

@@ -56,8 +56,9 @@ const COMMUNITY_EVENTS_USER_CACHE_HEADERS = {
 };
 function buildCommunityEventsCacheKey(
  limit: number,
+  todayIso: string,
 ): string {
- return `limit:${limit}`;
+ return `limit:${limit}:today:${todayIso}`;
 }
 
 type CachedCommunityEventItem = {
@@ -106,26 +107,57 @@ async function loadCachedCommunityEvents(
  limit: number,
  eventId: string | null,
 ): Promise<CommunityEventsSuccessPayload> {
+ const todayIso = new Date().toISOString().slice(0, 10);
  const load = async () => {
    const supabase = getSupabaseServerClient(true);
+   const selectFields =
+"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description";
+   let events: CommunityEventRow[];
 
-   let eventsQuery = supabase
-    .from("community_events")
-    .select(
-"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
-    )
-    .order("event_date", { ascending: true })
-    .order("created_at", { ascending: false });
    if (eventId) {
-    eventsQuery = eventsQuery.eq("id", eventId);
-   }
-   const eventsResult = await eventsQuery.limit(limit);
+    const eventsResult = await supabase
+      .from("community_events")
+      .select(selectFields)
+      .eq("id", eventId)
+      .limit(limit);
+    if (eventsResult.error) {
+      throw new Error(eventsResult.error.message);
+    }
+    events = (eventsResult.data ?? []) as CommunityEventRow[];
+   } else {
+    const upcomingResult = await supabase
+      .from("community_events")
+      .select(selectFields)
+      .gte("event_date", todayIso)
+      .order("event_date", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (upcomingResult.error) {
+      throw new Error(upcomingResult.error.message);
+    }
 
-   if (eventsResult.error) {
-    throw new Error(eventsResult.error.message);
+    const upcomingEvents = (upcomingResult.data ?? []) as CommunityEventRow[];
+    const remainingLimit = Math.max(0, limit - upcomingEvents.length);
+    const pastEvents = remainingLimit === 0
+      ? []
+      : await supabase
+          .from("community_events")
+          .select(selectFields)
+          .lt("event_date", todayIso)
+          .order("event_date", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(remainingLimit)
+          .then((result) => {
+            if (result.error) {
+              throw new Error(result.error.message);
+            }
+            return (result.data ?? []) as CommunityEventRow[];
+          });
+    events = Array.from(
+      new Map([...upcomingEvents, ...pastEvents].map((event) => [event.id, event])).values(),
+    );
    }
 
-   const events = (eventsResult.data ?? []) as CommunityEventRow[];
    if (events.length === 0) {
     return { items: [] } satisfies CachedCommunityEventsPayload;
    }
@@ -159,7 +191,7 @@ async function loadCachedCommunityEvents(
   ? load
   : unstable_cache(
     load,
-    ["community-events", buildCommunityEventsCacheKey(limit)],
+    ["community-events", buildCommunityEventsCacheKey(limit, todayIso)],
     {
      revalidate: COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS,
      tags: [COMMUNITY_EVENTS_CACHE_TAG],

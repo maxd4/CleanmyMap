@@ -4,6 +4,7 @@ import type { ActionParticipantSummary } from "./participant-summaries";
 import type { ActionPreparationData } from "@/lib/actions/types";
 import type { JoinableActionItem } from "./group-participation-contract";
 import { buildPublicActionPracticalInformation } from "./group-participation-public-projection";
+import { extractEventRefFromNotes } from "@/lib/actions/event-link";
 import { buildPlannerWeatherRequest } from "@/lib/weather/planner-weather";
 
 export const PENDING_PARTICIPATION_STATUS = "pending" as const;
@@ -145,6 +146,7 @@ export function getActionTitle(action: Pick<ActionPreviewRow, "preparation_data"
 export function buildPublicActionFields(action: ActionPreviewRow) {
   return {
     id: action.id,
+    eventRef: extractEventRefFromNotes(action.notes),
     created_at: action.created_at,
     action_date: action.action_date,
     location_label: action.location_label,

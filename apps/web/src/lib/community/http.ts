@@ -288,15 +288,18 @@ function parseCommunityRsvpPayload(payload: unknown): {
 }
 
 export function buildCommunityEventsQueryString(
-  params: { limit?: number } = {},
+  params: { limit?: number; eventId?: string | null } = {},
 ): string {
   const query = new URLSearchParams();
   query.set("limit", String(parsePositiveInteger(params.limit, 1, 300, 120)));
+  if (params.eventId?.trim()) {
+    query.set("eventId", params.eventId.trim());
+  }
   return query.toString();
 }
 
 export async function fetchCommunityEvents(
-  params: { limit?: number } = {},
+  params: { limit?: number; eventId?: string | null } = {},
 ): Promise<CommunityEventsResponse> {
   let response: Response;
   try {

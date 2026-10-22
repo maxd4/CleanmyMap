@@ -222,7 +222,7 @@ describe("group participation fallback handling", () => {
         volunteers_count: 12,
         duration_minutes: 45,
         status: "approved",
-        notes: null,
+        notes: "[EVENT_REF]event-42\nNote privée",
         action_phase: "pre_action",
         preparation_data: {
           actionTitle: "Nettoyage des berges",
@@ -249,6 +249,7 @@ describe("group participation fallback handling", () => {
 
     expect(item).toMatchObject({
       actionPhase: "pre_action",
+      eventRef: "event-42",
       actionTitle: "Nettoyage des berges",
       participantsCount: 4,
       joined: false,
