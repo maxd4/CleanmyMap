@@ -667,9 +667,12 @@ function addTypeSafety(report, files, domains) {
         const file = ensureFile(files, filePath);
         if (!file) continue;
         const typed = entry.effectiveCoverage === "TYPED" && measuredPaths.has(filePath);
+        const notMeasuredReason = entry.notMeasuredFileReasons?.[filePath]
+          ?? entry.reason
+          ?? "UNSUPPORTED_CONFIGURATION";
         file.typeSafety.coverage = typed
           ? { state: "TYPED", workspace: entry.workspace, effectiveCoverage: entry.effectiveCoverage, reason: null }
-          : { state: "NOT_MEASURED", workspace: entry.workspace, effectiveCoverage: entry.effectiveCoverage, reason: entry.reason ?? "UNSUPPORTED_CONFIGURATION" };
+          : { state: "NOT_MEASURED", workspace: entry.workspace, effectiveCoverage: entry.effectiveCoverage, reason: notMeasuredReason };
       }
     }
   }

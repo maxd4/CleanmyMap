@@ -314,7 +314,9 @@ des workspaces. Les familles sont séparées :
   diagnostic équivalent ;
 - `ASYNC_SAFETY` : `no-floating-promises` et `no-misused-promises` ; un
   `void Promise...` n'est accepté comme fire-and-forget que s'il porte une
-  justification locale explicite.
+  justification locale explicite et que l'opérateur `void` correspond à la
+  plage exacte du diagnostic ; une expression voisine sur la même ligne ne
+  peut pas le neutraliser.
 
 Les rapports conservent le chemin canonique, la règle, la position, le
 message, la sévérité, la fonction lorsque résolue, la provenance, la couverture
@@ -325,13 +327,16 @@ baseline permissive ni de ratchet bloquant. Une version TypeScript hors de la
 peer range déclarée par `typescript-eslint` est marquée
 `UNSUPPORTED_CONFIGURATION`/`NOT_MEASURED`, jamais considérée comme couverte.
 
-Chaque entrée `coverage` conserve aussi les chemins `scopedFilePaths` et
-`measuredFilePaths`. L'index par fichier peut ainsi distinguer un fichier
-Mobile analysé sans finding (`NONE`) d'un fichier Web resté
-`UNSUPPORTED_CONFIGURATION` (`NOT_MEASURED`), même lorsque le rapport global
-reste en `MEASUREMENT_FAILED`. Un rapport historique qui ne contient pas cet
-inventaire ne permet aucune déduction négative et reste `NOT_MEASURED` par
-fichier. Les compteurs globaux sont conservés séparément.
+Chaque entrée `coverage` conserve aussi les chemins `scopedFilePaths`,
+`measuredFilePaths`, `failedFilePaths` et `ignoredFilePaths`, ainsi que les
+raisons de non-mesure par fichier (`PARSER_FAILED`, `ESLINT_IGNORED`,
+`ESLINT_NOT_ANALYZED` ou `UNSUPPORTED_CONFIGURATION`). L'index par fichier peut ainsi distinguer un
+fichier Mobile analysé sans finding (`NONE`) d'un fichier Web resté
+`UNSUPPORTED_CONFIGURATION` (`NOT_MEASURED`) ou d'un fichier Mobile dont le
+parser a échoué (`PARSER_FAILED`, jamais `NONE`), même lorsque le rapport
+global reste en `MEASUREMENT_FAILED`. Un rapport historique qui ne contient
+pas cet inventaire ne permet aucune déduction négative et reste
+`NOT_MEASURED` par fichier. Les compteurs globaux sont conservés séparément.
 
 Le contrôle est non bloquant pour les cinq moteurs de gate historiques. Son
 rapport reste cependant en attention lorsqu'une dette ou un diagnostic de

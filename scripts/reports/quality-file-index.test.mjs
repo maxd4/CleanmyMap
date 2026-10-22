@@ -405,6 +405,33 @@ test("distingue les fichiers Mobile mesurés des fichiers Web incompatibles", ()
   assert.equal(index.audits.typeSafety.coverage[0].scopedFilePaths.length, 1);
 });
 
+test("conserve PARSER_FAILED par fichier sans déduire NONE", () => {
+  const run = buildRun();
+  const failedFile = "apps/mobile/src/parser-failed.ts";
+  run.reports["type-safety"] = {
+    status: "FAIL",
+    kind: "quality-type-safety",
+    measurementStatus: "MEASUREMENT_FAILED",
+    coverage: [{
+      workspace: "mobile",
+      effectiveCoverage: "TYPED",
+      scopedFilePaths: [failedFile],
+      measuredFilePaths: [],
+      failedFilePaths: [failedFile],
+      notMeasuredFileReasons: { [failedFile]: "PARSER_FAILED" },
+    }],
+    diagnostics: [{ code: "PARSER_FAILED", file: failedFile }],
+    findings: [],
+    summary: { filesInScope: 1, filesMeasured: 0, filesWithTypedCoverage: 0, filesFailed: 1, findingsByFamily: { TYPE_SAFETY: 0, ASYNC_SAFETY: 0 }, findingsByRule: {} },
+  };
+  const index = buildQualityFileIndex({ run, mode: "ALL" });
+  const indexed = index.files.find((file) => file.path === failedFile);
+  assert.equal(indexed.metrics.typeSafety.state, "NOT_MEASURED");
+  assert.equal(indexed.metrics.asyncSafety.state, "NOT_MEASURED");
+  assert.equal(indexed.findings.typeSafety.state, "NOT_MEASURED");
+  assert.match(indexed.findings.typeSafety.detail, /PARSER_FAILED/);
+});
+
 test("ne déduit aucune couverture par fichier pour un ancien rapport sans inventaire", () => {
   const run = buildRun();
   run.reports["type-safety"] = {

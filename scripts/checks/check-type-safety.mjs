@@ -260,37 +260,72 @@ function buildFinding(file, message, functions) {
   };
 }
 
-function hasExplicitVoidExpression(file, line) {
+function parseSourceAst(file) {
   try {
-    const ast = tseslint.parser.parseForESLint(file.source, {
+    return tseslint.parser.parseForESLint(file.source, {
       filePath: file.absolutePath ?? file.path,
       loc: true,
       range: true,
       comment: true,
       jsx: /\.tsx$/i.test(file.path),
     }).ast;
-    const visit = (node) => {
-      if (!node || typeof node !== "object") return false;
-      if (node.type === "ExpressionStatement"
-        && node.loc?.start?.line <= line
-        && node.loc?.end?.line >= line
-        && node.expression?.type === "UnaryExpression"
-        && node.expression.operator === "void") return true;
-      return Object.entries(node).some(([key, value]) => key !== "parent" && (Array.isArray(value) ? value.some(visit) : visit(value)));
-    };
-    return visit(ast);
   } catch {
-    return false;
+    return null;
   }
 }
 
-function documentedFireAndForget(file, line) {
-  const lines = file.source.split(/\r?\n/);
-  const local = [lines[(line ?? 1) - 1] ?? "", lines[(line ?? 1) - 2] ?? ""].join(" ");
-  return /fire[- ]and[- ]forget\s*(?:--|:)/i.test(local) && hasExplicitVoidExpression(file, line);
+function positionBeforeOrEqual(left, right) {
+  return left.line < right.line || (left.line === right.line && left.column <= right.column);
 }
 
-export async function analyzeTypeSafetySources({ root = process.cwd(), files, projects = projectDefinitions(root) } = {}) {
+function diagnosticPosition(message, end = false) {
+  const line = end ? (message.endLine ?? message.line) : message.line;
+  const column = end ? (message.endColumn ?? message.column) : message.column;
+  return { line: line ?? 1, column: Math.max(0, (column ?? 1) - 1) };
+}
+
+function expressionStatementForDiagnostic(ast, message) {
+  if (!ast) return null;
+  const start = diagnosticPosition(message);
+  const end = diagnosticPosition(message, true);
+  let matchingStatement = null;
+  const visit = (node) => {
+    if (!node || typeof node !== "object" || matchingStatement) return;
+    if (node.type === "ExpressionStatement"
+      && node.loc?.start
+      && node.loc?.end
+      && positionBeforeOrEqual(node.loc.start, start)
+      && positionBeforeOrEqual(end, node.loc.end)) {
+      matchingStatement = node;
+      return;
+    }
+    for (const [key, value] of Object.entries(node)) {
+      if (key === "parent") continue;
+      if (Array.isArray(value)) {
+        for (const child of value) visit(child);
+      } else {
+        visit(value);
+      }
+    }
+  };
+  visit(ast);
+  return matchingStatement;
+}
+
+function hasExplicitVoidExpression(ast, message) {
+  const statement = expressionStatementForDiagnostic(ast, message);
+  return statement?.expression?.type === "UnaryExpression"
+    && statement.expression.operator === "void";
+}
+
+function documentedFireAndForget(file, message, ast) {
+  const line = message.line ?? 1;
+  const lines = file.source.split(/\r?\n/);
+  const local = [lines[(line ?? 1) - 1] ?? "", lines[(line ?? 1) - 2] ?? ""].join(" ");
+  return /fire[- ]and[- ]forget\s*(?:--|:)/i.test(local) && hasExplicitVoidExpression(ast, message);
+}
+
+export async function analyzeTypeSafetySources({ root = process.cwd(), files, projects = projectDefinitions(root), eslintFactory = (options) => new ESLint(options) } = {}) {
   const startedAt = performance.now();
   const measuredFiles = files ?? sourceFileEntries(root, SOURCE_ROOTS);
   const findings = [];
@@ -317,6 +352,11 @@ export async function analyzeTypeSafetySources({ root = process.cwd(), files, pr
       scopedFilePaths: workspaceFiles.map((file) => file.path).sort(),
       filesMeasured: 0,
       measuredFilePaths: [],
+      filesFailed: 0,
+      failedFilePaths: [],
+      filesIgnored: 0,
+      ignoredFilePaths: [],
+      notMeasuredFileReasons: {},
       effectiveCoverage: compatibility.supported ? "TYPED" : "UNSUPPORTED_CONFIGURATION",
     };
     coverage.push(entry);
@@ -332,31 +372,51 @@ export async function analyzeTypeSafetySources({ root = process.cwd(), files, pr
       });
       continue;
     }
-    const eslint = new ESLint({
+    const eslint = eslintFactory({
       cwd: project.eslintCwd ?? root,
       overrideConfigFile: true,
-      overrideConfig: [{
-        files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
-        languageOptions: {
-          parser: tseslint.parser,
-          parserOptions: { project: [project.tsconfigPath], tsconfigRootDir: project.workspaceRoot },
+      overrideConfig: [
+        ...(project.ignorePatterns?.length ? [{ ignores: project.ignorePatterns }] : []),
+        {
+          files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+          languageOptions: {
+            parser: tseslint.parser,
+            parserOptions: { project: [project.tsconfigPath], tsconfigRootDir: project.workspaceRoot },
+          },
+          plugins: { "@typescript-eslint": tseslint.plugin },
+          rules: ruleConfiguration(project),
         },
-        plugins: { "@typescript-eslint": tseslint.plugin },
-        rules: ruleConfiguration(project),
-      }],
+      ],
     });
     for (const file of workspaceFiles) {
       const results = await eslint.lintText(file.source, { filePath: file.absolutePath ?? path.join(root, file.path) });
-      entry.filesMeasured += 1;
-      entry.measuredFilePaths.push(file.path);
+      const ignored = results.some((result) => result.ignored);
+      const notAnalyzed = results.length === 0;
+      const fatalMessages = results.flatMap((result) => result.messages ?? []).filter((message) => message.fatal);
+      if (ignored || notAnalyzed) {
+        const reason = ignored ? "ESLINT_IGNORED" : "ESLINT_NOT_ANALYZED";
+        entry.filesIgnored += 1;
+        entry.ignoredFilePaths.push(file.path);
+        entry.notMeasuredFileReasons[file.path] = reason;
+        diagnostics.push({ code: reason, file: file.path, line: null, column: null, message: `Le fichier ${file.path} n'a pas été analysé par ESLint.`, severity: "warning", provenance: "eslint" });
+      } else if (fatalMessages.length > 0) {
+        entry.filesFailed += 1;
+        entry.failedFilePaths.push(file.path);
+        entry.notMeasuredFileReasons[file.path] = "PARSER_FAILED";
+        for (const message of fatalMessages) {
+          diagnostics.push({ code: "PARSER_FAILED", file: file.path, line: message.line ?? null, column: message.column ?? null, message: message.message, severity: "error", provenance: "typescript-eslint-parser" });
+        }
+      } else {
+        entry.filesMeasured += 1;
+        entry.measuredFilePaths.push(file.path);
+      }
       const functions = listFunctionMetadata(file.path, file.source);
+      const ast = parseSourceAst(file);
       for (const result of results) {
         for (const message of result.messages ?? []) {
-          if (message.fatal) {
-            diagnostics.push({ file: file.path, line: message.line ?? null, column: message.column ?? null, message: message.message, severity: "error", provenance: "typescript-eslint-parser" });
-          } else if (RULES[message.ruleId]) {
+          if (!message.fatal && RULES[message.ruleId]) {
             const finding = buildFinding(file, message, functions);
-            if (message.ruleId === "@typescript-eslint/no-floating-promises" && documentedFireAndForget(file, message.line)) {
+            if (message.ruleId === "@typescript-eslint/no-floating-promises" && documentedFireAndForget(file, message, ast)) {
               exceptions.push({ ...finding, category: "documented-fire-and-forget", message: `Exception documentée: ${message.message}`, documentedException: true });
             } else {
               findings.push(finding);
@@ -397,6 +457,8 @@ export async function analyzeTypeSafetySources({ root = process.cwd(), files, pr
       filesInScope: measuredFiles.length,
       filesMeasured: coverage.reduce((sum, entry) => sum + entry.filesMeasured, 0),
       filesWithTypedCoverage: coverage.filter((entry) => entry.effectiveCoverage === "TYPED").reduce((sum, entry) => sum + entry.filesMeasured, 0),
+      filesFailed: coverage.reduce((sum, entry) => sum + entry.filesFailed, 0),
+      filesIgnored: coverage.reduce((sum, entry) => sum + entry.filesIgnored, 0),
       measuredFilePaths: coverage.flatMap((entry) => entry.measuredFilePaths ?? []).sort(),
       findings: findings.length,
       findingsByFamily: byFamily,

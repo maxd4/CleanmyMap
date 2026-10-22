@@ -168,6 +168,7 @@ test("préserve la couverture Mobile par fichier malgré une configuration Web i
   const cleanMobile = `async function mobileClean(): Promise<number> { return await Promise.resolve(1); }\n`;
   fs.writeFileSync(mobilePath, cleanMobile, "utf8");
   fs.writeFileSync(webPath, "function webClean(value: any): string { return value; }\n", "utf8");
+  fs.writeFileSync(path.join(project.root, "tsconfig.json"), JSON.stringify({ compilerOptions: { strict: true, target: "ES2022", module: "ESNext", moduleResolution: "Bundler", noEmit: true }, include: ["*.ts"] }), "utf8");
   const baseFile = (sourcePath, filePath, workspace, source) => ({
     path: filePath,
     absolutePath: sourcePath,
@@ -199,6 +200,87 @@ test("préserve la couverture Mobile par fichier malgré une configuration Web i
     assert.equal(report.summary.filesMeasured, 1);
     assert.equal(report.summary.filesWithTypedCoverage, 1);
     assert.ok(report.diagnostics.some((diagnostic) => diagnostic.code === "UNSUPPORTED_TYPESCRIPT_VERSION"));
+  } finally {
+    fs.rmSync(project.root, { recursive: true, force: true });
+  }
+});
+
+test("ne déclare pas TYPED un fichier dont le parser échoue", async () => {
+  const project = fixtureProject();
+  project.source = "function broken( {\n";
+  fs.writeFileSync(project.sourcePath, project.source, "utf8");
+  try {
+    const report = await analyzeTypeSafetySources({
+      root: project.root,
+      files: [fixtureFile(project)],
+      projects: [{ workspace: "mobile", workspaceRoot: process.cwd(), eslintCwd: project.root, tsconfigPath: path.join(project.root, "tsconfig.json"), ruleIds: ["@typescript-eslint/no-floating-promises"] }],
+    });
+    const coverage = report.coverage[0];
+    assert.equal(report.status, "FAIL");
+    assert.equal(report.measurementStatus, "MEASUREMENT_FAILED");
+    assert.equal(coverage.filesMeasured, 0);
+    assert.deepEqual(coverage.measuredFilePaths, []);
+    assert.deepEqual(coverage.failedFilePaths, ["fixture.ts"]);
+    assert.equal(coverage.notMeasuredFileReasons["fixture.ts"], "PARSER_FAILED");
+    assert.equal(report.summary.filesMeasured, 0);
+    assert.equal(report.summary.filesWithTypedCoverage, 0);
+    assert.ok(report.diagnostics.some((diagnostic) => diagnostic.code === "PARSER_FAILED"));
+  } finally {
+    fs.rmSync(project.root, { recursive: true, force: true });
+  }
+});
+
+test("rattache une exception void à l'expression exacte du finding", async () => {
+  const project = fixtureProject();
+  project.source = `
+function sameLine(): void {
+  // fire-and-forget -- telemetry intentionally detached
+  void Promise.resolve(); Promise.resolve();
+}
+
+function adjacentLines(): void {
+  // fire-and-forget -- telemetry intentionally detached
+  void Promise.resolve();
+  Promise.resolve();
+}
+`;
+  fs.writeFileSync(project.sourcePath, project.source, "utf8");
+  try {
+    const report = await analyzeTypeSafetySources({
+      root: project.root,
+      files: [fixtureFile(project)],
+      projects: [{ workspace: "mobile", workspaceRoot: process.cwd(), eslintCwd: project.root, tsconfigPath: path.join(project.root, "tsconfig.json"), ruleIds: ["@typescript-eslint/no-floating-promises"] }],
+    });
+    const floatingFindings = report.findings.filter((finding) => finding.ruleId === "@typescript-eslint/no-floating-promises");
+    assert.equal(report.diagnostics.length, 0);
+    assert.equal(report.exceptions.length, 2);
+    assert.equal(floatingFindings.length, 2);
+    assert.ok(floatingFindings.every((finding) => finding.line >= 1 && finding.column >= 1));
+    assert.equal(new Set(report.exceptions.map((exception) => exception.line)).size, 2);
+  } finally {
+    fs.rmSync(project.root, { recursive: true, force: true });
+  }
+});
+
+test("ne fabrique pas de couverture TYPED pour un fichier ignoré par ESLint", async () => {
+  const project = fixtureProject();
+  const ignoredPath = path.join(project.root, "ignored.ts");
+  fs.writeFileSync(ignoredPath, "Promise.resolve();\n", "utf8");
+  try {
+    const report = await analyzeTypeSafetySources({
+      root: project.root,
+      files: [{ path: "ignored.ts", absolutePath: ignoredPath, source: fs.readFileSync(ignoredPath, "utf8"), workspace: "mobile", tracked: true, gitStatus: "" }],
+      projects: [{ workspace: "mobile", workspaceRoot: process.cwd(), eslintCwd: project.root, tsconfigPath: path.join(project.root, "tsconfig.json"), ruleIds: ["@typescript-eslint/no-floating-promises"], ignorePatterns: ["**/ignored.ts"] }],
+      eslintFactory: () => ({ lintText: async () => [{ ignored: true, messages: [] }] }),
+    });
+    const coverage = report.coverage[0];
+    assert.equal(report.status, "FAIL");
+    assert.equal(coverage.filesMeasured, 0);
+    assert.deepEqual(coverage.measuredFilePaths, []);
+    assert.deepEqual(coverage.ignoredFilePaths, ["ignored.ts"]);
+    assert.equal(coverage.notMeasuredFileReasons["ignored.ts"], "ESLINT_IGNORED");
+    assert.equal(report.summary.filesWithTypedCoverage, 0);
+    assert.ok(report.diagnostics.some((diagnostic) => diagnostic.code === "ESLINT_IGNORED"));
   } finally {
     fs.rmSync(project.root, { recursive: true, force: true });
   }
