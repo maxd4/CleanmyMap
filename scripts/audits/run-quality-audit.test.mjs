@@ -491,6 +491,35 @@ test("executeAudit attend la promesse de cycles et conserve le gate et la compar
   }
 });
 
+test("executeAudit transmet le SHA audité aux projections hotspots et testability", async () => {
+  const root = tempRoot();
+  const auditedHead = "d".repeat(40);
+  try {
+    let hotspotSha = null;
+    let testabilitySha = null;
+    const hotspots = await executeAudit("hotspots", root, {
+      auditedHead,
+      hotspotsRunner: ({ auditedSha }) => {
+        hotspotSha = auditedSha;
+        return { kind: "quality-hotspots", status: "PASS", methodology: {}, summary: {}, files: [], diagnostics: [] };
+      },
+    });
+    const testability = await executeAudit("testability", root, {
+      auditedHead,
+      testabilityRunner: ({ auditedSha }) => {
+        testabilitySha = auditedSha;
+        return { kind: "quality-testability", status: "PASS", summary: {}, domains: [], diagnostics: [] };
+      },
+    });
+    assert.equal(hotspots.status, "PASS");
+    assert.equal(testability.status, "PASS");
+    assert.equal(hotspotSha, auditedHead);
+    assert.equal(testabilitySha, auditedHead);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("une promesse asynchrone rejetée produit un FAIL diagnostiqué et laisse les engines suivants s'exécuter", async () => {
   const root = tempRoot();
   let snapshotCount = 0;

@@ -458,13 +458,13 @@ export async function executeAudit(
       : preserveMalformedAsyncResult(audit, result);
   }
   if (audit === "hotspots") {
-    const result = hotspotsRunner({ root, auditedSha, reports: previousResults });
+    const result = hotspotsRunner({ root, auditedSha: auditedHead, reports: previousResults });
     return isHotspotsResult(result)
       ? { ...result, readProvenance: "COMMITTED_SNAPSHOT" }
       : preserveMalformedAsyncResult(audit, result);
   }
   if (audit === "testability") {
-    const result = testabilityRunner({ root, auditedSha });
+    const result = testabilityRunner({ root, auditedSha: auditedHead });
     return isTestabilityResult(result)
       ? { ...result, readProvenance: "MIXED" }
       : preserveMalformedAsyncResult(audit, result);
