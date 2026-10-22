@@ -227,9 +227,13 @@ signifie :
 PASS = cohérence route ↔ INDEX ↔ fiche
 ```
 
-Il ne signifie pas que le contenu d'une fiche est sémantiquement conforme au
-runtime. Le drift sémantique doit être corrigé lors du changement fonctionnel
-concerné ou d'un audit dédié.
+Le contrôle strict vérifie aussi les liens Markdown relatifs des fiches
+`*-README.md` et `*-presentation-detaillee.md` ; il ignore les URLs de
+navigation, liens externes et ancres. Les contenus `PLAN`, `HISTORY` et
+snapshots ne sont pas réécrits par ce garde-fou.
+
+Un `PASS` ne prouve pas que le contenu d'une fiche est sémantiquement conforme
+au runtime : cette vérification reste fonctionnelle et ciblée.
 
 ## Vérification UI
 

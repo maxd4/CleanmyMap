@@ -26,4 +26,4 @@ La page `Onboarding partenaire` sert à intégrer une structure dans le réseau.
 
 ## Référence canonique
 
-- [README de la page](./README.md)
+- [README de la page](./partners-onboarding-README.md)

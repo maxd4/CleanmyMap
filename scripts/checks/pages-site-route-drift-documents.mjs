@@ -37,6 +37,38 @@ export async function walkFiles(root, predicate) {
   return files.sort((a, b) => a.localeCompare(b, "fr"));
 }
 
+/** Contrôle non destructif des liens locaux des fiches CURRENT. */
+export async function findBrokenCanonicalMarkdownLinks({ repoRoot, routesRoot }) {
+  const docs = await walkFiles(
+    routesRoot,
+    (_file, name) => name.endsWith("-README.md") || name.endsWith("-presentation-detaillee.md"),
+  );
+  const broken = [];
+  for (const absolute of docs) {
+    const lines = (await fs.readFile(absolute, "utf8")).split(/\r?\n/u);
+    for (const [index, line] of lines.entries()) {
+      for (const match of line.matchAll(/!?\[[^\]]*\]\(([^)]+)\)/gu)) {
+        const raw = match[1].trim().split(/\s+(?=["'])/u, 1)[0];
+        const target = raw.replace(/^<|>$/gu, "").split(/[?#]/u, 1)[0];
+        if (!target || target.startsWith("/") || /^[a-z][a-z0-9+.-]*:/iu.test(target)) continue;
+        const resolved = path.resolve(path.dirname(absolute), target);
+        let exists = false;
+        if (isWithin(repoRoot, resolved)) {
+          try { await fs.stat(resolved); exists = true; } catch { /* missing */ }
+        }
+        if (!exists) {
+          broken.push({
+            file: normalizeRelativePath(path.relative(repoRoot, absolute)),
+            line: index + 1,
+            target,
+          });
+        }
+      }
+    }
+  }
+  return broken;
+}
+
 export function hasExactCurrentScopePlaceholder(content) {
   return String(content ?? "").split(/\r?\n/).some((line) => line.trim() === "- **Scope** : à corriger");
 }

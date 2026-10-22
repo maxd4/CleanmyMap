@@ -14,6 +14,7 @@ import {
   pageFileToRoute,
 } from "./pages-site-route-drift-routes.mjs";
 import {
+  findBrokenCanonicalMarkdownLinks,
   hasExactCurrentScopePlaceholder,
   loadCanonicalRouteDocs,
   loadPageFamilyContract,
@@ -114,6 +115,7 @@ export async function runPagesSiteRouteDriftAudit() {
       }),
     ]);
 
+  const brokenCanonicalMarkdownLinks = await findBrokenCanonicalMarkdownLinks({ repoRoot: REPO_ROOT, routesRoot: ROUTES_ROOT });
   const indexEntries = extractIndexEntries(indexContent);
   const docs = await loadCanonicalRouteDocs({
     indexEntries,
@@ -259,6 +261,7 @@ export async function runPagesSiteRouteDriftAudit() {
     indexRoutesMissingCanonicalDoc,
     incompleteNuclei: docs.incompleteNuclei,
     canonicalReadmesWithScopePlaceholder: docs.canonicalReadmesWithScopePlaceholder,
+    brokenCanonicalMarkdownLinks,
     indexReadmeTargetsMissing: docs.indexReadmeTargetsMissing,
     indexReadmeTargetsOutsideRoutes: docs.indexReadmeTargetsOutsideRoutes,
     pageFamilyContractErrors: pageFamilyContract.errors,

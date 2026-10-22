@@ -34,4 +34,4 @@ conserve l'accès au réseau, à l'annuaire et aux parcours de contact.
 
 ## Référence canonique
 
-- [README de la page](./README.md)
+- [README de la page](./community-README.md)

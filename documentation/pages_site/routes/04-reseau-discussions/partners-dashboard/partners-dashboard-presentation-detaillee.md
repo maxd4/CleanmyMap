@@ -26,4 +26,4 @@ La page `Annuaire partenaires` sert à consulter, filtrer et piloter les fiches 
 
 ## Référence canonique
 
-- [README de la page](./README.md)
+- [README de la page](./partners-dashboard-README.md)
