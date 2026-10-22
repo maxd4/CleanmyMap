@@ -113,7 +113,7 @@ export function AnnuaireSection() {
                   {fr ? "Naviguez dans l'écosystème" : "Navigate the ecosystem"}
                </h2>
                <p className="text-slate-400 font-bold leading-relaxed">
-                  {fr ? "Filtrez par thématique pour identifier les synergies et opportunités de collaboration locale." : "Filter by theme to identify synergies and local collaboration opportunities."}
+                  {fr ? "Filtrez par thématique pour explorer des similarités et des complémentarités déclarées." : "Filter by theme to explore declared similarities and complementarities."}
                </p>
             </div>
 

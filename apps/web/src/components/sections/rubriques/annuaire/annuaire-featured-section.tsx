@@ -1,7 +1,11 @@
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { Star, MapPin, ArrowRight, Quote } from "lucide-react";
-import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
+import {
+  formatAnnuaireCoverage,
+  hasPreciseAnnuaireCoordinates,
+  type EnrichedAnnuaireEntry,
+} from "./annuaire-helpers";
 import { motion } from "framer-motion";
 
 interface AnnuaireFeaturedSectionProps {
@@ -78,9 +82,9 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
                     <div className="rounded-xl bg-white/5 p-2.5 border border-white/5 text-slate-500 group-hover:text-white transition-colors">
                       <MapPin size={14} />
                     </div>
-                    <span className="text-[11px] font-black tracking-wide text-white uppercase">{entry.location}</span>
+                    <span className="text-xs font-black tracking-wide text-white uppercase">{formatAnnuaireCoverage(entry)}</span>
                   </div>
-                  {entry.distanceKm !== null && (
+                  {entry.distanceKm !== null && hasPreciseAnnuaireCoordinates(entry) && (
                     <div className="flex items-center gap-2 rounded-xl bg-violet-500/10 border border-violet-500/20 px-3 py-1.5 text-violet-300 shadow-lg">
                       <span className="h-1 w-1 rounded-full bg-violet-400 animate-pulse" />
                       <span className="text-[10px] font-black tracking-tighter">
@@ -95,11 +99,16 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
                 <CmmButton 
                   tone="primary"
                   variant="default"
-                  ariaLabel={fr ? `Voir ${entry.name} sur la carte` : `View ${entry.name} on the map`}
+                  ariaLabel={hasPreciseAnnuaireCoordinates(entry)
+                    ? (fr ? `Voir ${entry.name} sur la carte` : `View ${entry.name} on the map`)
+                    : (fr ? `Position indisponible pour ${entry.name}` : `Location unavailable for ${entry.name}`)}
+                  disabled={!hasPreciseAnnuaireCoordinates(entry)}
                   className="group/btn h-14 w-full rounded-2xl border-none bg-violet-600 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl hover:bg-violet-500"
                   onClick={() => onFocusMap(entry.id)}
                 >
-                  <span>{fr ? "Voir sur la carte" : "View on map"}</span>
+                  <span>{hasPreciseAnnuaireCoordinates(entry)
+                    ? (fr ? "Voir sur la carte" : "View on map")
+                    : (fr ? "Position indisponible" : "Location unavailable")}</span>
                   <ArrowRight size={16} className="ml-3 group-hover/btn:translate-x-2 transition-transform duration-500" />
                 </CmmButton>
               </div>

@@ -2,9 +2,6 @@ import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { useUser } from "@clerk/nextjs";
 import { extractUserLocationPreferenceFromMetadata } from "@/lib/user-location-preference";
-import { 
-  distanceToParisArrondissementKm
-} from "@/lib/geo/paris-arrondissements";
 import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
 import { 
   ACTOR_CARDS_PAGE_SIZE, 
@@ -14,13 +11,13 @@ import {
 } from "./annuaire-filters";
 import {
   compareAnnuaireEntries,
+  getAnnuaireDistanceKm,
   isNearbyEntry, 
+  isNationalAnnuaireEntry,
+  mergeAnnuaireEntries,
   type EnrichedAnnuaireEntry 
 } from "./annuaire-helpers";
-import type {
-  AnnuaireEntry,
-  PublishedAnnuaireEntry,
-} from "@/lib/partners/annuaire-types";
+import type { PublishedAnnuaireEntry } from "@/lib/partners/annuaire-types";
 
 type PublishedDirectoryResponse = {
   status: "ok";
@@ -58,33 +55,19 @@ export function useAnnuaireLogic() {
   const targetArrondissement = locationPreference?.arrondissement ?? null;
 
   const allEntries = useMemo(() => {
-    const seen = new Set<string>();
-    const output: AnnuaireEntry[] = [];
-    const raw = [...INITIAL_ANNUAIRE_ENTRIES, ...publishedEntries];
-    
-    for (const entry of raw) {
-      const key = `${entry.name.trim().toLowerCase()}::${entry.legalIdentity.trim().toLowerCase()}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      output.push(entry);
-    }
-    return output;
+    return mergeAnnuaireEntries(INITIAL_ANNUAIRE_ENTRIES, publishedEntries);
   }, [publishedEntries]);
 
   const featuredEntries = useMemo(() => 
     allEntries.filter(e => e.isFeatured).map(e => ({
       ...e,
-      distanceKm: targetArrondissement 
-        ? distanceToParisArrondissementKm(e.lat, e.lng, targetArrondissement)
-        : null
+      distanceKm: getAnnuaireDistanceKm(e, targetArrondissement),
     }))
   , [allEntries, targetArrondissement]);
 
   const sortedAndFilteredEntries = useMemo(() => {
     let result = allEntries.map((entry): EnrichedAnnuaireEntry => {
-      const distance = targetArrondissement 
-        ? distanceToParisArrondissementKm(entry.lat, entry.lng, targetArrondissement)
-        : null;
+      const distance = getAnnuaireDistanceKm(entry, targetArrondissement);
       return { ...entry, distanceKm: distance };
     });
 
@@ -116,7 +99,9 @@ export function useAnnuaireLogic() {
     if (zoneFilter === "nearby") {
       result = result.filter(e => isNearbyEntry(e, targetArrondissement, e.distanceKm));
     } else if (typeof zoneFilter === "number") {
-      result = result.filter(e => e.coveredArrondissements.includes(zoneFilter));
+      result = result.filter(
+        (entry) => !isNationalAnnuaireEntry(entry) && entry.coveredArrondissements.includes(zoneFilter),
+      );
     }
 
     return result.sort(compareAnnuaireEntries);

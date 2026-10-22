@@ -89,6 +89,8 @@ describe("published partner annuaire Supabase store", () => {
       sourceRequestId: row.source_request_id,
       publicationStatus: "accepted",
       internalAdminContact: row.private_admin_contact,
+      lat: null,
+      lng: null,
     });
   });
 

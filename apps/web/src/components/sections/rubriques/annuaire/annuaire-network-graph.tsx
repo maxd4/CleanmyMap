@@ -11,8 +11,9 @@ interface AnnuaireNetworkGraphProps {
 }
 
 /**
- * Renders a stylized organic network graph of associations.
- * Nodes are connected if they share common tags or same arrondissement.
+ * Renders a thematic similarity graph.
+ * A line means that two entries share an editorial tag; it is not evidence of
+ * a collaboration, partnership or operational relationship.
  */
 export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetworkGraphProps) {
   // Generate pseudo-random positions that stay somewhat stable
@@ -73,7 +74,13 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
       <div className="pointer-events-none absolute inset-0 opacity-[0.04]" 
            style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       
-      <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+      <svg
+        className="w-full h-full"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="xMidYMid slice"
+        role="group"
+        aria-label="Graphe de similarités thématiques fondé sur les tags déclarés"
+      >
         <defs>
           <linearGradient id="linkGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="rgba(196,181,253,0.06)" />
@@ -91,7 +98,7 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
         </defs>
 
         {/* Connections */}
-        <g className="links">
+        <g className="links" aria-label="Similarités thématiques, pas collaborations vérifiées">
           <AnimatePresence>
             {links.map((link) => (
               <motion.line
@@ -204,15 +211,18 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
       <div className="pointer-events-none absolute bottom-6 right-6 rounded-2xl border border-violet-300/14 bg-[rgba(24,17,54,0.92)] p-4 backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
-            <span className="text-[10px] font-black tracking-widest text-violet-100/42 uppercase">Maillage</span>
-            <span className="text-xl font-black text-white">{links.length} Liens</span>
+            <span className="text-xs font-black tracking-widest text-violet-100/42 uppercase">Similarités thématiques</span>
+            <span className="text-xl font-black text-white">{links.length} similarités</span>
           </div>
           <div className="h-8 w-px bg-white/10" />
           <div className="flex flex-col">
             <span className="text-[10px] font-black tracking-widest text-violet-100/42 uppercase">Densité</span>
-            <span className="text-xl font-black text-white">Organique</span>
+            <span className="text-xl font-black text-white">Tags communs</span>
           </div>
         </div>
+        <p className="mt-3 max-w-[15rem] text-xs leading-relaxed text-slate-300">
+          Un lien signale des thèmes communs, pas une collaboration vérifiée.
+        </p>
       </div>
     </div>
   );

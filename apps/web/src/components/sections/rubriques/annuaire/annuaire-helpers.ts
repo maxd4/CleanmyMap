@@ -1,5 +1,9 @@
 import type { ParisArrondissement } from"@/lib/geo/paris-arrondissements";
-import { getParisArrondissementLabel } from"@/lib/geo/paris-arrondissements";
+import {
+ distanceToParisArrondissementKm,
+ getParisArrondissementCenter,
+ getParisArrondissementLabel,
+} from"@/lib/geo/paris-arrondissements";
 import {
  buildPartnerWhyThisStructureMatters,
  getPartnerTrustState,
@@ -67,6 +71,23 @@ export function isPublishedPartnerAnnuaireEntry(
   return entry.provenance === "published_partner";
 }
 
+/**
+ * Merge the two sources only on the stable entry id. Similar names, labels
+ * and free-form legal identities are deliberately not identity evidence.
+ * When the same stable id exists in both sources, the published projection
+ * wins so an editorial seed cannot mask an administrative decision.
+ */
+export function mergeAnnuaireEntries(
+ editorialEntries: EditorialAnnuaireEntry[],
+ publishedEntries: PublishedAnnuaireEntry[],
+): AnnuaireEntry[] {
+ const publishedIds = new Set(publishedEntries.map((entry) => entry.id));
+ return [
+  ...editorialEntries.filter((entry) => !publishedIds.has(entry.id)),
+  ...publishedEntries,
+ ];
+}
+
 export function formatCoverage(
  coveredArrondissements: number[],
  fallback: string,
@@ -77,6 +98,75 @@ export function formatCoverage(
  return coveredArrondissements
  .map((value) => getParisArrondissementLabel(value as ParisArrondissement))
  .join(",");
+}
+
+export function isNationalAnnuaireEntry(entry: AnnuaireEntry): boolean {
+ const normalizedLocation = entry.location.trim().toLowerCase();
+ return (
+  entry.scope === "national" ||
+  entry.scope === "france" ||
+  normalizedLocation.startsWith("france") ||
+  entry.tags?.some((tag) => /^(france|national)$/i.test(tag.trim())) === true
+ );
+}
+
+export function formatAnnuaireCoverage(entry: AnnuaireEntry): string {
+ if (isNationalAnnuaireEntry(entry)) {
+  return `Portée nationale · ${entry.location}`;
+ }
+ if (entry.coveredArrondissements.length > 0) {
+  return `Couverture locale · ${formatCoverage(entry.coveredArrondissements, entry.location)}`;
+ }
+ return entry.location;
+}
+
+function coordinatesEqual(
+ left: { lat: number; lng: number },
+ right: { lat: number; lng: number },
+): boolean {
+ return Math.abs(left.lat - right.lat) < 0.000001 && Math.abs(left.lng - right.lng) < 0.000001;
+}
+
+function isDerivedParisCoverageCoordinate(entry: AnnuaireEntry): boolean {
+ if (entry.lat === null || entry.lng === null || entry.coveredArrondissements.length === 0) {
+  return false;
+ }
+ const centers = entry.coveredArrondissements.map((value) =>
+  getParisArrondissementCenter(value as ParisArrondissement),
+ );
+ const average = {
+  lat: centers.reduce((sum, center) => sum + center.lat, 0) / centers.length,
+  lng: centers.reduce((sum, center) => sum + center.lng, 0) / centers.length,
+ };
+ return coordinatesEqual({ lat: entry.lat, lng: entry.lng }, average);
+}
+
+export function hasPreciseAnnuaireCoordinates(entry: AnnuaireEntry): boolean {
+ if (
+  entry.lat === null ||
+  entry.lng === null ||
+  isNationalAnnuaireEntry(entry) ||
+  entry.coordinatesSource === "derived_coverage" ||
+  isDerivedParisCoverageCoordinate(entry)
+ ) {
+  return false;
+ }
+
+ // These are known map centroids, not organisation locations.
+ return !(
+  coordinatesEqual({ lat: entry.lat, lng: entry.lng }, { lat: 46.603354, lng: 1.888334 }) ||
+  coordinatesEqual({ lat: entry.lat, lng: entry.lng }, { lat: 48.8566, lng: 2.3522 })
+ );
+}
+
+export function getAnnuaireDistanceKm(
+ entry: AnnuaireEntry,
+ arrondissement: ParisArrondissement | null,
+): number | null {
+ if (!arrondissement || !hasPreciseAnnuaireCoordinates(entry)) {
+  return null;
+ }
+ return distanceToParisArrondissementKm(entry.lat!, entry.lng!, arrondissement);
 }
 
 export function diffInDays(dateValue: string): number | null {
@@ -112,7 +202,7 @@ export function isNearbyEntry(
  arrondissement: ParisArrondissement | null,
  distanceKm: number | null,
 ): boolean {
- if (!arrondissement) {
+ if (!arrondissement || isNationalAnnuaireEntry(entry)) {
  return false;
  }
  return (

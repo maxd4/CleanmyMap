@@ -14,7 +14,12 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { cn } from "@/lib/utils";
 import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
-import { getAssociationProfile, getAssociationStructureBadge, getEntryTrustState } from "./annuaire-helpers";
+import {
+  getAssociationProfile,
+  getAssociationStructureBadge,
+  getEntryTrustState,
+  hasPreciseAnnuaireCoordinates,
+} from "./annuaire-helpers";
 import { buildAnnuaireBubbleIconHtml } from "./annuaire-map-icon";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
@@ -72,7 +77,7 @@ export function AnnuaireMapCanvas({
   const center = useMemo<[number, number]>(() => {
     if (highlightedItemId) {
       const item = items.find(i => i.id === highlightedItemId);
-      if (item) return [item.lat, item.lng];
+      if (item && hasPreciseAnnuaireCoordinates(item)) return [item.lat!, item.lng!];
     }
     return PARIS_CENTER;
   }, [highlightedItemId, items]);
@@ -109,7 +114,7 @@ export function AnnuaireMapCanvas({
           </LayersControl.BaseLayer>
         </LayersControl>
 
-        {items.map((entry) => {
+        {items.filter(hasPreciseAnnuaireCoordinates).map((entry) => {
           const trustState = getEntryTrustState(entry);
           const associationProfile = getAssociationProfile(entry);
           const structureBadge = getAssociationStructureBadge(entry);
@@ -118,7 +123,7 @@ export function AnnuaireMapCanvas({
           return (
             <Marker
               key={entry.id}
-              position={[entry.lat, entry.lng]}
+              position={[entry.lat!, entry.lng!]}
               icon={createBubbleIcon(entry, isHighlighted)}
               title={entry.name}
               eventHandlers={{

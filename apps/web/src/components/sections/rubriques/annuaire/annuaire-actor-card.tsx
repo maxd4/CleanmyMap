@@ -11,8 +11,9 @@ import {
   getEntryTrustState,
   getAnnuairePublicDestination,
   getPartnerWhyThisStructureMatters,
-  formatCoverage,
+  formatAnnuaireCoverage,
   formatFreshness,
+  hasPreciseAnnuaireCoordinates,
   hasRecentPartnerUpdate,
   isPublishedPartnerAnnuaireEntry,
 } from "./annuaire-helpers";
@@ -41,6 +42,7 @@ export function AnnuaireActorCard({
   const associationProfile = getAssociationProfile(entry);
   const structureBadge = getAssociationStructureBadge(entry);
   const publicDestination = getAnnuairePublicDestination(entry);
+  const hasPreciseCoordinates = hasPreciseAnnuaireCoordinates(entry);
 
   const isFeatured = entry.isFeatured;
 
@@ -195,7 +197,7 @@ export function AnnuaireActorCard({
                       : "Declared scope"}
                 </span>
              </div>
-             <span className="font-bold text-white uppercase">{formatCoverage(entry.coveredArrondissements, entry.location)}</span>
+             <span className="font-bold text-white uppercase">{formatAnnuaireCoverage(entry)}</span>
           </div>
           {isPublishedPartner && (
             <div className="flex items-center justify-between text-[10px]">
@@ -269,12 +271,15 @@ export function AnnuaireActorCard({
         <CmmButton
           tone="secondary"
           variant="default"
+          disabled={!hasPreciseCoordinates}
           className="flex-1 h-12 rounded-xl bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 shadow-2xl"
-          ariaLabel={fr ? `Localiser ${entry.name}` : `Locate ${entry.name}`}
+          ariaLabel={hasPreciseCoordinates
+            ? (fr ? `Localiser ${entry.name}` : `Locate ${entry.name}`)
+            : (fr ? `Position indisponible pour ${entry.name}` : `Location unavailable for ${entry.name}`)}
           onClick={() => onFocusMap(entry.id)}
         >
           <MapPin size={14} className="mr-2 text-violet-400" />
-          {fr ? "Localiser" : "Locate"}
+          {hasPreciseCoordinates ? (fr ? "Localiser" : "Locate") : (fr ? "Position indisponible" : "Location unavailable")}
         </CmmButton>
         
         {publicDestination ? (

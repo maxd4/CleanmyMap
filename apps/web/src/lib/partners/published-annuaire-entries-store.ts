@@ -7,9 +7,7 @@ import {
   normalizePartnerAvailability,
   normalizePartnerCoverage,
   type PartnerOnboardingRequestInput,
-  type ParisArrondissement,
 } from "./onboarding-types";
-import { getParisArrondissementCenter } from "@/lib/geo/paris-arrondissements";
 import type {
   AnnuaireEntry,
   AssociationProfile,
@@ -115,6 +113,28 @@ function normalizePublicationStatus(
   return "accepted";
 }
 
+function normalizeCoordinates(record: Record<string, unknown>): {
+  lat: number | null;
+  lng: number | null;
+  coordinatesSource: "verified" | "derived_coverage" | "unknown";
+} {
+  const source =
+    record.coordinatesSource === "verified" || record.coordinatesSource === "derived_coverage"
+      ? record.coordinatesSource
+      : "unknown";
+  const lat = typeof record.lat === "number" ? record.lat : null;
+  const lng = typeof record.lng === "number" ? record.lng : null;
+
+  // A persisted coordinate without an explicit verification source is not a
+  // safe public marker. Older rows used France/Paris centroids and are
+  // intentionally hidden until an administrator provides precise evidence.
+  if (source !== "verified" || lat === null || lng === null) {
+    return { lat: null, lng: null, coordinatesSource: source };
+  }
+
+  return { lat, lng, coordinatesSource: source };
+}
+
 function normalizePublishedRecord(
   record: PublishedPartnerAnnuaireEntry | Record<string, unknown>,
 ): PublishedPartnerAnnuaireEntry {
@@ -133,8 +153,10 @@ function normalizePublishedRecord(
   const primaryChannelUrl = normalizePublicChannelUrl(
     (record as { primaryChannel?: { url?: unknown } | null }).primaryChannel?.url ?? null,
   );
+  const coordinates = normalizeCoordinates(record as Record<string, unknown>);
   return {
     ...record,
+    ...coordinates,
     provenance: "published_partner",
     websiteUrl: websiteUrl ?? undefined,
     instagramUrl: instagramUrl ?? undefined,
@@ -168,25 +190,6 @@ async function readStore(): Promise<StorePayload> {
 
 async function writeStore(store: StorePayload): Promise<void> {
   await writeLocalRecordStore(STORE_FILE, store.records);
-}
-
-function averageParisCoordinates(arrondissements: number[]): {
-  lat: number;
-  lng: number;
-} {
-  if (arrondissements.length === 0) {
-    return { lat: 48.8566, lng: 2.3522 };
-  }
-  const centers = arrondissements.map((item) =>
-    getParisArrondissementCenter(item as ParisArrondissement),
-  );
-  const lat = centers.reduce((acc, item) => acc + item.lat, 0) / centers.length;
-  const lng = centers.reduce((acc, item) => acc + item.lng, 0) / centers.length;
-  return { lat, lng };
-}
-
-function franceCenterCoordinates(): { lat: number; lng: number } {
-  return { lat: 46.603354, lng: 1.888334 };
 }
 
 function normalizeContactUrl(
@@ -360,10 +363,6 @@ export function buildPublishedPartnerAnnuaireEntry(params: {
   const availability = normalizePartnerAvailability(params.request.availability);
   const arrondissements =
     params.request.partnerScope === "local" ? coverage.arrondissements : [];
-  const coordinates =
-    params.request.partnerScope === "local" && arrondissements.length > 0
-      ? averageParisCoordinates(arrondissements)
-      : franceCenterCoordinates();
   const contactUrl = normalizeContactUrl(
     params.request.contactChannel,
     params.request.contactDetails,
@@ -430,8 +429,9 @@ export function buildPublishedPartnerAnnuaireEntry(params: {
       params.request.partnerScope === "local"
         ? formatCoverageSummary(coverage)
         : formatPartnerScopeLabel(params.request.partnerScope),
-    lat: coordinates.lat,
-    lng: coordinates.lng,
+    lat: null,
+    lng: null,
+    coordinatesSource: "derived_coverage",
     websiteUrl: websiteUrl ?? undefined,
     coveredArrondissements: arrondissements,
     contributionTypes: params.request.contributionTypes,

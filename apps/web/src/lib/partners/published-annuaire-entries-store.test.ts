@@ -53,8 +53,9 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
       },
     });
     expect(entry.id).toMatch(/^onboarded-/);
-    expect(entry.lat).toBeGreaterThan(48.8);
-    expect(entry.lng).toBeGreaterThan(2.3);
+    expect(entry.lat).toBeNull();
+    expect(entry.lng).toBeNull();
+    expect(entry.coordinatesSource).toBe("derived_coverage");
   });
 
   it("drops placeholder public channels", () => {
@@ -124,7 +125,8 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
 
     expect(entry.location).toBe("Association nationale");
     expect(entry.coveredArrondissements).toEqual([]);
-    expect(entry.lat).toBeCloseTo(46.603354, 6);
+    expect(entry.lat).toBeNull();
+    expect(entry.lng).toBeNull();
   });
 
   it("adds an association profile for association requests", () => {

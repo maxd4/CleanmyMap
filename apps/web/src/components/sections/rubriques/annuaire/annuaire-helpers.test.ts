@@ -3,10 +3,15 @@ import { describe, expect, it } from "vitest";
 import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
 import {
   formatAssociationImpactDate,
+  formatAnnuaireCoverage,
   getAssociationImpactSummary,
+  getAnnuaireDistanceKm,
   getAnnuairePublicDestination,
   getAssociationProfile,
   getAssociationStructureBadge,
+  hasPreciseAnnuaireCoordinates,
+  isNationalAnnuaireEntry,
+  mergeAnnuaireEntries,
 } from "./annuaire-helpers";
 
 describe("association profile provenance", () => {
@@ -111,5 +116,76 @@ describe("public directory destinations", () => {
         facebookUrl: undefined,
       }),
     ).toBeNull();
+  });
+});
+
+describe("annuaire provenance, identity and geography", () => {
+  it("lets a published entry replace only the exact stable id", () => {
+    const seed = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-shakirail");
+    if (!seed) throw new Error("Expected the editorial seed fixture to exist");
+
+    const published = {
+      ...seed,
+      id: "published-shakirail",
+      provenance: "published_partner" as const,
+      verificationStatus: "verifie" as const,
+      qualificationStatus: "partenaire_actif" as const,
+      availability: "Sur rendez-vous",
+      lastUpdatedAt: "2026-10-22T00:00:00.000Z",
+      recentActivityAt: "2026-10-22T00:00:00.000Z",
+    };
+    const sameIdPublished = { ...published, id: seed.id };
+
+    expect(mergeAnnuaireEntries([seed], [published])).toEqual([seed, published]);
+    expect(mergeAnnuaireEntries([seed], [sameIdPublished])).toEqual([sameIdPublished]);
+  });
+
+  it("does not treat similar names or legal identities as a merge key", () => {
+    const seed = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-shakirail");
+    if (!seed) throw new Error("Expected the editorial seed fixture to exist");
+
+    const published = {
+      ...seed,
+      id: "onboarded-similar-name",
+      name: seed.name,
+      legalIdentity: seed.legalIdentity,
+      provenance: "published_partner" as const,
+      verificationStatus: "verifie" as const,
+      qualificationStatus: "partenaire_actif" as const,
+      availability: "Sur rendez-vous",
+      lastUpdatedAt: "2026-10-22T00:00:00.000Z",
+      recentActivityAt: "2026-10-22T00:00:00.000Z",
+    };
+
+    expect(mergeAnnuaireEntries([seed], [published]).map((entry) => entry.id)).toEqual([
+      seed.id,
+      published.id,
+    ]);
+  });
+
+  it("keeps national scope in lists without inventing a marker or distance", () => {
+    const national = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-megots-alcome");
+    const franceCentre = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-gestes-propres");
+    if (!national || !franceCentre) throw new Error("Expected national seed fixtures to exist");
+
+    expect(isNationalAnnuaireEntry(national)).toBe(true);
+    expect(hasPreciseAnnuaireCoordinates(national)).toBe(false);
+    expect(getAnnuaireDistanceKm(national, 11)).toBeNull();
+    expect(formatAnnuaireCoverage(national)).toContain("Portée nationale");
+    expect(hasPreciseAnnuaireCoordinates(franceCentre)).toBe(false);
+  });
+
+  it("does not use missing or derived coordinates for distance", () => {
+    const local = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-shakirail");
+    if (!local) throw new Error("Expected a local seed fixture to exist");
+
+    expect(hasPreciseAnnuaireCoordinates({ ...local, lat: null, lng: null })).toBe(false);
+    expect(getAnnuaireDistanceKm({ ...local, lat: null, lng: null }, 11)).toBeNull();
+    expect(
+      hasPreciseAnnuaireCoordinates({
+        ...local,
+        coordinatesSource: "derived_coverage",
+      }),
+    ).toBe(false);
   });
 });

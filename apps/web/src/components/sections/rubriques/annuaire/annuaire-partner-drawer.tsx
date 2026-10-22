@@ -9,7 +9,7 @@ import {
   ENTITY_LABELS,
   CONTRIBUTION_LABELS,
   formatAssociationImpactDate,
-  formatCoverage,
+  formatAnnuaireCoverage,
   getAssociationImpactSummary,
   getAssociationProfile,
   getAssociationStructureBadge,
@@ -229,7 +229,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                             {associationProfile.impactHistory?.zonesCovered ?? entry.coveredArrondissements.length} zones
                           </p>
                           <p className="mt-2 text-sm text-slate-400">
-                            {formatCoverage(entry.coveredArrondissements, entry.location)}
+                            {formatAnnuaireCoverage(entry)}
                           </p>
                         </div>
                         <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
@@ -381,7 +381,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                       </div>
                       <div>
                         <h4 className="mb-1 text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">{fr ? "Ancrage Territorial" : "Territorial Base"}</h4>
-                        <p className="text-xl font-black tracking-tight">{entry.location}</p>
+                        <p className="text-xl font-black tracking-tight">{formatAnnuaireCoverage(entry)}</p>
                       </div>
                     </div>
 

@@ -35,6 +35,9 @@ describe("AnnuaireNetworkGraph interactions", () => {
     });
     const node = renderer!.root.findAllByProps({ role: "button" })[0];
     expect(node?.props["aria-label"]).toContain(entry.name);
+    const graph = renderer!.root.findByType("svg");
+    expect(graph.props["aria-label"]).toContain("similarités thématiques");
+    expect(renderer!.root.findByProps({ children: "Un lien signale des thèmes communs, pas une collaboration vérifiée." })).toBeDefined();
 
     act(() => {
       node?.props.onKeyDown({

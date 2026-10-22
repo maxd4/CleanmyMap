@@ -73,8 +73,14 @@ type AnnuaireEntryShared = {
   types: EngagementType[];
   description: string;
   location: string;
-  lat: number;
-  lng: number;
+  /**
+   * Coordinates are nullable because a coverage area is not an organisation
+   * address. Derived coverage coordinates are retained only as provenance
+   * metadata and are never eligible for a precise public marker.
+   */
+  lat: number | null;
+  lng: number | null;
+  coordinatesSource?: "verified" | "derived_coverage" | "unknown";
   websiteUrl?: string;
   instagramUrl?: string;
   facebookUrl?: string;
