@@ -9,8 +9,14 @@ Statut documentaire : `SNAPSHOT`
 Cette matrice est une photographie vérifiable de la configuration effective au
 SHA indiqué. Elle n'est pas une nouvelle source normative : les scripts,
 configurations, workflows et documents canoniques liés ci-dessous restent les
-sources de vérité. Une cellule `✓` décrit un périmètre configuré et vérifié ;
-elle ne signifie pas que le contrôle a été exécuté avec succès sur ce SHA.
+sources de vérité. Une cellule `✓` décrit une analyse directe configurée et
+applicable au périmètre ; elle ne signifie pas que le contrôle a été exécuté
+avec succès sur ce SHA.
+
+Légende des cellules : `✓` = analyse directe configurée et applicable ; `◐` =
+analyse conditionnelle, partielle ou dépendante d'une preuve/exécution ; `↗` =
+agrégation ou projection indirecte, sans nouveau scan ; `⊘` = configuration
+indisponible ou mesure non vérifiée ; `—` = non-applicable au périmètre.
 
 ## 1. Inventaire Git des types observés
 
@@ -55,15 +61,15 @@ documentation textuelle, `C` = manifestes/configuration, `CI` = YAML/PS1/hooks,
 | `quality:duplication` (jscpd) — runtime | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `quality:duplication` (jscpd) — tests | ◐ | ◐ | ✓ | — | — | — | ◐ | — | — | — | — | — | — | — | — |
 | `quality:duplication` (jscpd) — fixtures/data | ◐ | — | ◐ | — | — | — | — | — | — | — | — | — | — | — | — |
-| `quality:top-heavy` (Node.js / politique interne) | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ |
+| `quality:top-heavy` (Node.js / politique interne) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | `quality:complexity` (ESLint / politique interne) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | `quality:cycles` (GitNexus) | ◐ | ◐ | ◐ | — | ◐ | ◐ | ◐ | — | — | — | — | — | — | — | — |
 | `quality:maintainability` / SonarJS sélectionné | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — | — | — |
-| `quality:type-safety` (typescript-eslint typé) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `quality:type-safety` (typescript-eslint typé) | ⊘ | ✓ | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | `audit:quality` — hotspots | ◐ | ◐ | ◐ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `audit:quality` — testability | ◐ | ◐ | ◐ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `audit:quality` — coverage insights | ◐ | ◐ | ◐ | — | — | — | — | ◐ | — | — | — | — | — | — | — |
-| `audit:quality -- all` — projection et ZIP | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ |
+| `audit:quality -- all` — projection et ZIP | ↗ | ↗ | ↗ | ↗ | ↗ | ↗ | ↗ | ↗ | ↗ | ↗ | ↗ | ↗ | ↗ | ↗ | ↗ |
 | Graphe d'imports architecture TypeScript | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | `check:architecture-import-boundary` | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | ESLint Web (`apps/web/src`) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
@@ -74,11 +80,11 @@ documentation textuelle, `C` = manifestes/configuration, `CI` = YAML/PS1/hooks,
 | Vitest Web | ◐ | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | Vitest mobile | — | ◐ | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | `quality:coverage` Web | ◐ | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
-| `quality:mobile-coverage` | — | ◐ | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `quality:mobile-coverage` | — | ◐ | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | Couverture Node (`test:coverage:node`) | — | — | ◐ | — | ◐ | — | ◐ | — | — | — | — | — | — | — | — |
 | Couverture Python (`test:coverage:python`) | — | — | — | — | — | — | — | ◐ | — | — | — | — | — | — | — |
 | Mutation Stryker (`quality:mutation`) | ◐ | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
-| E2E Playwright | — | — | — | ◐ | — | — | ◐ | — | ◐ | — | ◐ | — | — | — | — |
+| E2E Playwright | — | — | — | ◐ | — | — | ◐ | — | — | — | ◐ | — | — | — | — |
 | `security:secrets` | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | — | — |
 | `security:dependencies` / dependency review | — | — | — | — | — | — | — | — | — | ◐ | ✓ | — | — | — | — |
 | Semgrep architectural et fixtures | ◐ | ◐ | — | — | — | — | — | — | — | — | — | — | — | — | — |
@@ -104,7 +110,7 @@ documentation textuelle, `C` = manifestes/configuration, `CI` = YAML/PS1/hooks,
 | `check:root-files` / `audit:repository-tree` | — | — | — | — | — | — | — | — | — | — | ◐ | ◐ | — | ◐ | — |
 | `check:doc-visuals` | — | — | — | — | — | — | — | — | ◐ | — | — | — | ◐ | ◐ | — |
 | Contrôles UI ciblés (`check:layout`, `check:forms`, `check:states`, etc.) | ✓ | — | — | — | — | — | — | — | — | — | — | — | ✓ | ◐ | — |
-| Audit surface Vercel (`audit:vercel:*`, `audit:vercel:ci`) | ◐ | — | — | — | ◐ | — | — | — | — | — | ◐ | — | — | — | |
+| Audit surface Vercel (`audit:vercel:*`, `audit:vercel:ci`) | ◐ | — | — | — | ◐ | — | — | — | — | — | ◐ | — | — | — | — |
 
 ### Lecture des cellules importantes
 
@@ -113,14 +119,32 @@ documentation textuelle, `C` = manifestes/configuration, `CI` = YAML/PS1/hooks,
   complexité cyclomatique et la longueur restent dans le premier contrôle ; la
   complexité cognitive et les défauts locaux sélectionnés restent dans le
   second.
+- `quality:top-heavy` applique son gate uniquement à `apps/web/src` et
+  `apps/mobile`, sur les fichiers `.ts` et `.tsx` après ses exclusions. La
+  fonction `collectArchitectureRows()` du même module appartient à un
+  inventaire architectural distinct ; elle n'étend pas la baseline ni le
+  ratchet de `quality:top-heavy` aux fichiers JavaScript ou aux autres formats.
+- `quality:type-safety` conserve le Web comme source éligible, mais sa mesure
+  typée est `UNSUPPORTED_CONFIGURATION` / `NOT_MEASURED` au SHA de référence
+  (`TypeScript 7.0.2` hors de la peer range de `typescript-eslint 8.71.2`). Le
+  Mobile reste mesuré par projet compatible ; cela ne se confond ni avec
+  l'ESLint Web général ni avec le typecheck Web.
 - `quality:duplication` ne couvre pas le dépôt sans distinction : ses trois
   scopes sont explicitement runtime, tests et `fixtures/data`, avec des
   patterns et exclusions différents.
 - `quality:coverage`, mutation et les rapports SonarQube ne couvrent que des
   fichiers instrumentés, mutés ou importés par un rapport valide. Une absence
   de rapport est `NOT_MEASURED`, pas une couverture nulle.
-- `audit:quality -- all` orchestre et projette des rapports existants ; il
-  n'est pas un scanner indépendant supplémentaire.
+- `audit:quality -- all` orchestre les cinq gates historiques et les cinq
+  auxiliaires, puis produit l'index et le ZIP du même SHA/runId. Le symbole `↗`
+  indique une agrégation/projection indirecte : cette ligne ne déclare aucune
+  nouvelle couverture directe des fichiers et ne transforme pas un rapport
+  importé en preuve de scan.
+- Une exécution E2E Playwright prouve l'exécution de scénarios dans les
+  chemins concernés ; elle peut toucher indirectement une base SQL, mais elle
+  n'analyse pas statiquement les fichiers `.sql` du dépôt. Fichier lu comme
+  entrée, source analysée, code instrumenté, comportement exécuté et rapport
+  importé restent des preuves distinctes.
 - Les cellules `◐` de secret audit indiquent un périmètre conditionnel : le
   scanner dépend du scope Git (`WORKTREE`, `STAGED`, `REF` ou
   `PUSH_CANDIDATE`), des extensions texte et des exclusions générées/tiers.
@@ -139,11 +163,11 @@ d'exécution pour le SHA de cette photographie.
 |---|---|---|---|---|
 | Gates Quality Audit | `npm run audit:quality -- <mode>` ; runner Node | [`run-quality-audit.mjs`](../../scripts/audits/run-quality-audit.mjs), policies `scripts/checks/*` ; cinq gates et cinq auxiliaires | artefacts liés au SHA ; baseline et justification restent propriétaires des gates ; `all` ne rescane pas indépendamment | manuel, `FULL`/audit ; rapport et manifeste du même SHA/runId |
 | Dead code | `npm run quality:dead-code` ; Knip | [`dead-code-policy.mjs`](../../scripts/checks/dead-code-policy.mjs), [`knip.json`](../../scripts/knip.json) ; entrées et exports du workspace configuré | ignorements Knip et qualifications `CURRENT` ; pas de SQL/Markdown comme code exécutable | gate Quality ; provenance du rapport Knip |
-| Duplication | `npm run quality:duplication` ; jscpd `5.3.0` | [`duplication-policy.mjs`](../../scripts/checks/duplication-policy.mjs) ; `apps/web/src`, `apps/mobile`, `scripts`, patterns TS/TSX/JS/JSX | vendor, generated, coverage, snapshots ; tests et data changent de scope | gate Quality ; baselines jscpd exactes |
-| Taille / top-heavy | `npm run quality:top-heavy` ; Node.js | [`check-top-heavy-files.mjs`](../../scripts/checks/check-top-heavy-files.mjs), [`top-heavy-policy.mjs`](../../scripts/checks/top-heavy-policy.mjs) ; fichiers mesurés par kind | seuils REVIEW/HARD et baseline existante ; `generated` seulement sur provenance démontrée | gate Quality ; rapport de politique |
+| Duplication | `npm run quality:duplication` ; jscpd | [`duplication-policy.mjs`](../../scripts/checks/duplication-policy.mjs), [`check-duplication.mjs`](../../scripts/checks/check-duplication.mjs) ; `package.json`/`package-lock.json` déclarent et résolvent `5.4.1`, tandis que `DUPLICATION_TOOL_VERSION` et le message d'absence de runner restent `5.3.0` | vendor, generated, coverage, snapshots ; tests et data changent de scope ; la version effectivement exécutée n'est pas prouvée dans cette photographie | gate Quality ; baselines/fingerprints associés à la politique `5.3.0` |
+| Taille / top-heavy | `npm run quality:top-heavy` ; Node.js | [`check-top-heavy-files.mjs`](../../scripts/checks/check-top-heavy-files.mjs), [`top-heavy-measurement.mjs`](../../scripts/checks/top-heavy-measurement.mjs), [`top-heavy-policy.mjs`](../../scripts/checks/top-heavy-policy.mjs) ; `apps/web/src` et `apps/mobile`, `.ts/.tsx` via `collectMeasuredRows()` | seuils REVIEW/HARD et baseline existante ; `generated` seulement sur provenance démontrée ; `collectArchitectureRows()` reste hors du gate | gate Quality ; rapport de politique |
 | Complexité cyclomatique / longueur | `npm run quality:complexity` ; ESLint + politique interne | [`check-complexity-policy.mjs`](../../scripts/checks/check-complexity-policy.mjs), [`complexity-baseline.json`](../../scripts/checks/complexity-baseline.json) ; Web/mobile TS/TSX | scripts, E2E et documentation hors roots par défaut ; seuils et baseline ne sont pas recalculés ici | gate Quality ; rapport de policy |
 | Complexité cognitive / maintenabilité locale | `npm run quality:maintainability` ; ESLint, `typescript-eslint`, `eslint-plugin-sonarjs` | [`check-maintainability.mjs`](../../scripts/checks/check-maintainability.mjs) ; `apps/web/src` et `apps/mobile`, `.ts/.tsx` ; règles SonarJS sélectionnées seulement | pas de `recommended` SonarJS complet ; mesure informative, sans ratchet historique bloquant | audit auxiliaire ; `WORKTREE_LIVE`, avec relation aux métriques complexity |
-| Sûreté TypeScript | `npm run quality:type-safety` ; ESLint typé via `typescript-eslint` | [`check-type-safety.mjs`](../../scripts/checks/check-type-safety.mjs), tsconfig Web/mobile | couverture effective limitée aux projets TypeScript chargés ; findings classés `TYPE_SAFETY`/`ASYNC_SAFETY` | audit auxiliaire ; rapport de couverture typée |
+| Sûreté TypeScript | `npm run quality:type-safety` ; ESLint typé via `typescript-eslint` | [`check-type-safety.mjs`](../../scripts/checks/check-type-safety.mjs), tsconfig Web/mobile | Web `UNSUPPORTED_CONFIGURATION` / `NOT_MEASURED` au SHA de référence ; Mobile compatible ; findings classés `TYPE_SAFETY`/`ASYNC_SAFETY` ; ESLint Web général et typecheck restent distincts | audit auxiliaire ; inventaires `scopedFilePaths`/`measuredFilePaths` du rapport typé |
 | Cycles et architecture | `npm run audit:gitnexus:cycles`, `npm run quality:cycles`, `npm run audit:architecture-import-graph`, `npm run check:architecture-import-boundary` | [`audit-gitnexus.mjs`](../../scripts/audits/audit-gitnexus.mjs), [`generate-architecture-import-graph.mjs`](../../scripts/reports/generate-architecture-import-graph.mjs), baseline de frontières | GitNexus est conditionnel à l'index/outillage ; graphe interne TypeScript n'est pas une preuve de test runtime | gate Quality / audit architecture ; provenance explicitée dans les rapports |
 | Hotspots / testabilité | `npm run audit:quality -- hotspots|testability` ; Node.js + Git historique / rapports existants | [`quality-audit-signals.mjs`](../../scripts/reports/quality-audit-signals.mjs), [`generate-module-test-metrics.mjs`](../../scripts/reports/generate-module-test-metrics.mjs) ; sources Web/mobile/scripts et domaines critiques | fenêtre hotspots de 180 jours ; aucune correspondance fichier/test inventée ; couverture/mutation absentes = `NOT_MEASURED` | audit auxiliaire ; SHA audité, historique réel ou preuve attribuable |
 | Couverture | `npm run quality:coverage`, `npm run quality:mobile-coverage`, `npm run test:coverage:node`, `npm run test:coverage:python` | [`coverage-policy.mjs`](../../scripts/checks/coverage-policy.mjs), [`coverage-evidence.mjs`](../../scripts/checks/coverage-evidence.mjs), configurations Vitest et Cobertura Python | seulement sources instrumentées et rapports valides ; stale/autre SHA = non mesuré ; ne relance pas un test dans l'index offline | CI, `FULL`, audit auxiliaire ; rapports LCOV/JSON/Cobertura attribués |
@@ -188,6 +212,11 @@ lues.
 - Les workflows GitHub, les actions épinglées et les commandes npm décrivent
   des possibilités d'exécution. La preuve d'exécution reste attachée au
   rapport, au manifeste, au SARIF ou à l'artefact du run correspondant.
+- Pour jscpd, `package.json` et `package-lock.json` au SHA de référence
+  déclarent/résolvent `5.4.1`, alors que la politique et son fingerprint restent
+  explicitement en `5.3.0`. Cette matrice ne lance pas jscpd et ne prétend donc
+  pas établir la version effectivement exécutée ; l'écart de politique est un
+  sujet séparé, sans modification de baseline dans ce lot.
 - Les fichiers non suivis, les artefacts générés et le dirty state du checkout
   ne font pas partie de cet inventaire du SHA publié.
 
