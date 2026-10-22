@@ -96,8 +96,3 @@ de fraîcheur et de périmètre. Les labels de confiance restent factuels
 preuve d'activité. L'ordre réel est : mise en avant éventuelle, fiches
 confirmées, proximité lorsqu'elle est disponible, puis ordre alphabétique.
 
-## Fichiers associés
-
-- [Présentation détaillée](./annuaire-presentation-detaillee.md)
-- [Liste des propositions à traiter](./annuaire-liste-propositions-a-traiter.md)
-- [Objectifs non pertinents](./annuaire-objectifs-non-pertinents.md)

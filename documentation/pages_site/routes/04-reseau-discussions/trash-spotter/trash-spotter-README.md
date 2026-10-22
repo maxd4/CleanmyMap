@@ -44,5 +44,3 @@
 ## Fichiers associés
 
 - [Présentation détaillée](./trash-spotter-presentation-detaillee.md)
-- [Liste des propositions à traiter](./trash-spotter-liste-propositions-a-traiter.md)
-- [Objectifs non pertinents](./trash-spotter-objectifs-non-pertinents.md)

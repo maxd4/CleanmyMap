@@ -43,8 +43,3 @@
 - Cette fiche est la source de vérité canonique pour la page.
 - Le rendu runtime est finalisé ; la qualité visuelle détaillée reste hors de cette fiche faute de snapshot de référence.
 
-## Fichiers associés
-
-- [Présentation détaillée](./actors-presentation-detaillee.md)
-- [Liste des propositions à traiter](./actors-liste-propositions-a-traiter.md)
-- [Objectifs non pertinents](./actors-objectifs-non-pertinents.md)
