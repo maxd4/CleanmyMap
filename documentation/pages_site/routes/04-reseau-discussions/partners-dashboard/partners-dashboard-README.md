@@ -102,6 +102,5 @@ après acceptation/vérification ; le rapprochement par nom est interdit.
 
 ## Fichiers associés
 
-- [Présentation détaillée](./partners-dashboard-presentation-detaillee.md)
 - [Liste des propositions à traiter](./partners-dashboard-liste-propositions-a-traiter.md)
 - [Objectifs non pertinents](./partners-dashboard-objectifs-non-pertinents.md)

@@ -62,4 +62,3 @@ Le lien OnParticipe est direct et uniquement activé par la configuration facult
 ## Fichiers associés
 
 - [Présentation détaillée](./funding-presentation-detaillee.md)
-- [Liste des propositions à traiter](./funding-liste-propositions-a-traiter.md)

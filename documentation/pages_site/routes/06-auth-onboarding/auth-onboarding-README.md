@@ -2,9 +2,8 @@
 
 Connexion, inscription et configuration initiale.
 
-## Connaissances distinctes (optionnelles, sans doublonner les fiches CURRENT)
+## Décisions écartées et sources
 
-- [Propositions documentées](./auth-onboarding-liste-propositions-a-traiter.md) — `PLAN`, non livrées par la seule présence de cette liste
 - [Refus documentés](./auth-onboarding-objectifs-non-pertinents.md) — `HISTORY`, reconsidération sur décision explicite
 
 ## Inventaire des pages

@@ -63,6 +63,4 @@
 
 ## Fichiers associés
 
-- [Présentation détaillée](./partners-onboarding-presentation-detaillee.md)
-- [Liste des propositions à traiter](./partners-onboarding-liste-propositions-a-traiter.md)
 - [Objectifs non pertinents](./partners-onboarding-objectifs-non-pertinents.md)
