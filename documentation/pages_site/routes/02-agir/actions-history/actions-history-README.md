@@ -82,7 +82,7 @@ Les actions terminées disposent d'une consultation séparée des photos de bila
 
 ## Références historiques
 
-- [historique.md](../../../../6-PAGES-STANDALONE/historique.md)
+- Référence legacy non versionnée dans le dépôt actuel ; consulter les documents canoniques de cette page et ne pas recréer l'ancien chemin.
 
 ## Notes d'audit
 

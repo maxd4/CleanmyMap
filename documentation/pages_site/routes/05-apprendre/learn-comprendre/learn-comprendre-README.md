@@ -42,7 +42,7 @@
 
 ## Références legacy
 
-- [comprendre_enjeu.md](../../../../5-BLOC-APPRENDRE/comprendre_enjeu.md)
+- Référence legacy non versionnée dans le dépôt actuel ; consulter les documents canoniques de cette page et ne pas recréer l'ancien chemin.
 
 ## Notes d'audit
 

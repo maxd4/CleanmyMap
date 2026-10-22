@@ -93,7 +93,7 @@ après acceptation/vérification ; le rapprochement par nom est interdit.
 
 ## Références legacy
 
-- [entraide_locale.md](../../../../4-BLOC-RESEAU&DISCUSSION/entraide_locale.md)
+- Référence legacy non versionnée dans le dépôt actuel ; consulter les documents canoniques de cette page et ne pas recréer l'ancien chemin.
 
 ## Notes d'audit
 

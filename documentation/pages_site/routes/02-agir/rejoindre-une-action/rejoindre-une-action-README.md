@@ -58,9 +58,10 @@ Permettre au créateur, organisateur ou coorganisateur autorisé de :
 Les profils dont le rôle actif dispose de la capability d'override d'action
 (`ACTIVE_ROLE ∈ {admin, max}`) peuvent traiter toute file selon les permissions
 centrales. `ACTIVE_ROLE=elu` ne dispose d'aucun override global d'action. Un
-compte dont `GRANTED_ROLE=elu` peut sélectionner explicitement
-`ACTIVE_ROLE=admin`, mais cette bascule n'est ni implicite ni une permission
-propre à `elu`.
+compte `GRANTED_ROLE=elu` ne peut jamais sélectionner `ACTIVE_ROLE=admin` :
+`getSwitchableProfiles(role)` autorise les rôles ouverts et `elu` seulement.
+`ACTIVE_ROLE=admin` nécessite un `GRANTED_ROLE=admin` ou `max` et une sélection
+explicite compatible ; l'identité `elu` seule ne confère pas cette capacité.
 
 ## Contrat de visibilité
 
