@@ -118,10 +118,6 @@ export function CommunitySection() {
             onSaveEventOps={model.onSaveEventOps}
             communitySuccessMessage={model.communitySuccessMessage}
             communityError={model.communityError}
-            createForm={model.createForm}
-            updateCreateForm={model.updateCreateForm}
-            onCreateEvent={model.onCreateEvent}
-            isCreatingEvent={model.isCreatingEvent}
           />
         )}
       </div>

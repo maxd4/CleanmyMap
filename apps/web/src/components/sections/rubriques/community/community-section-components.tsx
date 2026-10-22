@@ -3,9 +3,9 @@
 import { memo } from "react";
 import Link from "next/link";
 import { MessageCircle, Search } from "lucide-react";
-import { CommunityCreateEventCard } from "@/components/sections/rubriques/community/create-event-card";
 import { CommunityEventsTabsCard } from "@/components/sections/rubriques/community/events-tabs-card";
 import { ErrorMessage } from "@/components/ui/error-message";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { UseCommunitySectionModel } from "./use-community-section";
 
 export const CommunityMissionsView = memo(function CommunityMissionsView({
@@ -26,10 +26,6 @@ export const CommunityMissionsView = memo(function CommunityMissionsView({
   onSaveEventOps,
   communitySuccessMessage,
   communityError,
-  createForm,
-  updateCreateForm,
-  onCreateEvent,
-  isCreatingEvent,
 }: {
   fr: boolean;
 } & Pick<
@@ -50,10 +46,6 @@ export const CommunityMissionsView = memo(function CommunityMissionsView({
   | "onSaveEventOps"
   | "communitySuccessMessage"
   | "communityError"
-  | "createForm"
-  | "updateCreateForm"
-  | "onCreateEvent"
-  | "isCreatingEvent"
 >) {
   return (
     <div className="space-y-8">
@@ -62,12 +54,14 @@ export const CommunityMissionsView = memo(function CommunityMissionsView({
           <h2 id="community-missions-title" className="text-2xl font-bold tracking-tight text-slate-950">
             {fr ? "Missions à venir" : "Upcoming missions"}
           </h2>
-          <CommunityCreateEventCard
-            createForm={createForm}
-            updateCreateForm={updateCreateForm}
-            onCreateEvent={onCreateEvent}
-            isCreatingEvent={isCreatingEvent}
-          />
+          <CmmButton
+            href="/actions/new"
+            tone="primary"
+            variant="pill"
+            className="min-h-11 shrink-0"
+          >
+            {fr ? "Créer une action" : "Create an action"}
+          </CmmButton>
         </div>
 
         {communitySuccessMessage ? (

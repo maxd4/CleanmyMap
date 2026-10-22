@@ -1,23 +1,7 @@
 import type { AppError } from "@/lib/errors/app-errors";
 import type { CommunityEventItem } from "@/lib/community/http";
-import type { LegacyWasteCategory } from "@/lib/waste";
 
 export type CommunityTab = "upcoming" | "mine" | "past";
-
-export type CreateCommunityEventForm = {
-  title: string;
-  eventDate: string;
-  locationLabel: string;
-  latitude: string;
-  longitude: string;
-  description: string;
-  capacityTarget: string;
-  cleanupObjective: string;
-  cleanupZone: string;
-  cleanupLogisticsNeeds: string;
-  cleanupSupportLevel: "faible" | "moyen" | "fort";
-  cleanupWasteTypesExpected: Array<Exclude<LegacyWasteCategory, "encombrant">>;
-};
 
 export type OpsDraft = {
   attendanceCount: string;
@@ -47,13 +31,6 @@ import type { CommunityRsvpStatus } from "@/lib/community/http";
 export type UseCommunitySectionModel = {
   activeTab: CommunityTab;
   setActiveTab: (tab: CommunityTab) => void;
-  createForm: CreateCommunityEventForm;
-  updateCreateForm: <K extends keyof CreateCommunityEventForm>(
-    key: K,
-    value: CreateCommunityEventForm[K],
-  ) => void;
-  isCreatingEvent: boolean;
-  onCreateEvent: () => Promise<void>;
   rsvpLoadingEventId: string | null;
   communitySuccessMessage: string | null;
   communityError: AppError | null;

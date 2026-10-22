@@ -55,23 +55,6 @@ export type CommunityEventsResponse = {
   items: CommunityEventItem[];
 };
 
-export type CommunityCreateEventPayload = {
-  title: string;
-  eventDate: string;
-  locationLabel: string;
-  location?: CommunityEventLocationInput;
-  description?: string;
-  capacityTarget?: number;
-  cleanupObjective: string;
-  cleanupZone: string;
-  cleanupLogisticsNeeds?: string;
-  cleanupSupportLevel: "faible" | "moyen" | "fort";
-  cleanupWasteTypesExpected: Array<
-    "megots" | "plastique" | "verre" | "metal" | "mixte"
-  >;
-};
-
-
 type CommunityClientErrorCode =
   | "invalid_payload"
   | "permission_denied"
@@ -321,18 +304,6 @@ export async function fetchCommunityEvents(
   }
 
   return parseCommunityEventsPayload(body);
-}
-
-export async function createCommunityEvent(
-  payload: CommunityCreateEventPayload,
-): Promise<CommunityEventItem> {
-  return postCommunityMutation("/api/community/events", payload, {
-    expectedStatus: "created",
-    httpErrorMessage: "Creation d'evenement impossible.",
-    invalidResponseMessage: "Reponse creation evenement invalide.",
-    incompleteResponseMessage: "Reponse creation evenement incomplete.",
-    parseItem: (item) => item as CommunityEventItem,
-  });
 }
 
 export async function updateCommunityEventOps(payload: {

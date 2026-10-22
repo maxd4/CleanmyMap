@@ -1,17 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRateLimitModule, rateLimitMocks } from "@/app/api/test-helpers";
 
 const authMock = vi.hoisted(() => vi.fn());
 const getSafeAuthSessionMock = vi.hoisted(() => vi.fn());
-const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const loadCommunityEventRsvpSummariesMock = vi.hoisted(() => vi.fn());
 const getClerkServiceMock = vi.hoisted(() => vi.fn());
 const unstableCacheMock = vi.hoisted(() =>
   vi.fn((callback: () => unknown) => callback),
 );
-const reserveDiscussionMessageSlotMock = vi.hoisted(() => vi.fn());
-const revalidateCommunityEventCachesMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 
@@ -21,12 +17,6 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/lib/auth/safe-session", () => ({
   getSafeAuthSession: getSafeAuthSessionMock,
-}));
-
-vi.mock("@/lib/authz", () => ({
-  getCurrentUserIdentity: getCurrentUserIdentityMock,
-  getRoleBadge: (role: string) => ({ id: `role_${role}`, label: role, icon: role }),
-  getProfileBadge: (profile: string) => ({ id: `profile_${profile}`, label: profile, icon: profile }),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -43,27 +33,9 @@ vi.mock("@/lib/services/clerk", () => ({
   getClerkService: getClerkServiceMock,
 }));
 
-vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
-
-vi.mock("@/lib/community/discussion-rate-limit", () => ({
-  reserveDiscussionMessageSlot: reserveDiscussionMessageSlotMock,
-  toDiscussionRateLimitErrorPayload: vi.fn(),
-}));
-
-vi.mock("@/lib/community/event-notification-targets", () => ({
-  getCommunityEventNotificationTargets: vi.fn(),
-  loadCommunityEventNotificationProfiles: vi.fn(),
-  isProfileEligibleForCommunityEvent: vi.fn(),
-}));
-
-vi.mock("@/lib/community/creator-inbox-email", () => ({
-  sendCreatorInboxEmail: vi.fn(),
-}));
-
 vi.mock("@/lib/community/event-cache-invalidation", () => ({
   COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS: 900,
   COMMUNITY_EVENTS_CACHE_TAG: "community-events",
-  revalidateCommunityEventCaches: revalidateCommunityEventCachesMock,
 }));
 
 import { GET, POST } from "./route";
@@ -131,16 +103,12 @@ describe("GET /api/community/events", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: null });
-    getCurrentUserIdentityMock.mockResolvedValue(null);
     getSafeAuthSessionMock.mockResolvedValue({
       userId: null,
       clerkReachable: true,
       state: "anonymous",
     });
     configurePublicRead();
-    rateLimitMocks.verifyRateLimit.mockResolvedValue({ allowed: true, retryAfter: 0 });
-    rateLimitMocks.createServerRateLimitResponse.mockReturnValue(null);
-    reserveDiscussionMessageSlotMock.mockResolvedValue({ allowed: true });
   });
 
   it("returns the public event projection anonymously with no personal RSVP status", async () => {
@@ -266,93 +234,22 @@ describe("POST /api/community/events", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: null });
-    rateLimitMocks.verifyRateLimit.mockResolvedValue({ allowed: true, retryAfter: 0 });
-    rateLimitMocks.createServerRateLimitResponse.mockReturnValue(null);
-    reserveDiscussionMessageSlotMock.mockResolvedValue({ allowed: true });
   });
 
   it("remains authenticated even though GET is public", async () => {
-    const response = await POST(
-      new Request("http://localhost/api/community/events", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({}),
-      }),
-    );
+    const response = await POST();
 
     expect(response.status).toBe(401);
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 
-  it("resolves the organizer from Clerk instead of trusting the request payload", async () => {
-    authMock.mockResolvedValue({ userId: "organizer-1" });
-    getCurrentUserIdentityMock.mockResolvedValue({
-      displayName: "Organisateur",
-      email: "organizer [at] example.test",
-    });
-    const createdEvent = {
-      ...event,
-      location_source: "manual",
-    };
-    const single = vi.fn().mockResolvedValue({ data: createdEvent, error: null });
-    const insert = vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnValue({ single }),
-    });
-    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn().mockReturnValue({ insert }) });
-
-    const response = await POST(
-      new Request("http://localhost/api/community/events", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          organizer_clerk_id: "organizer-2",
-          title: "Collecte géolocalisée",
-          eventDate: "2026-09-10",
-          locationLabel: "Lieu sans arrondissement",
-          location: { latitude: 48.8566, longitude: 2.3522, source: "manual" },
-          cleanupObjective: "Nettoyer le quai",
-          cleanupZone: "Quai de Seine",
-          cleanupSupportLevel: "moyen",
-          cleanupWasteTypesExpected: ["plastique"],
-        }),
-      }),
-    );
-
-    expect(response.status).toBe(201);
-    expect(insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        organizer_clerk_id: "organizer-1",
-        location_label: "Lieu sans arrondissement",
-        latitude: 48.8566,
-        longitude: 2.3522,
-        location_source: "manual",
-      }),
-    );
-    expect(single).toHaveBeenCalled();
-    expect(revalidateCommunityEventCachesMock).toHaveBeenCalledOnce();
-  });
-
-  it("rejects coordinates outside the geographic bounds", async () => {
+  it("refuses direct creation and points authenticated creators to the canonical action flow", async () => {
     authMock.mockResolvedValue({ userId: "organizer-1" });
 
-    const response = await POST(
-      new Request("http://localhost/api/community/events", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          title: "Collecte invalide",
-          eventDate: "2026-09-10",
-          locationLabel: "Paris",
-          location: { latitude: 91, longitude: 2.3522, source: "manual" },
-          cleanupObjective: "Nettoyer le quai",
-          cleanupZone: "Quai de Seine",
-          cleanupSupportLevel: "moyen",
-          cleanupWasteTypesExpected: ["plastique"],
-        }),
-      }),
-    );
+    const response = await POST();
 
-    expect(response.status).toBe(422);
+    expect(response.status).toBe(410);
+    expect((await response.json()).error).toContain("/actions/new");
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 });

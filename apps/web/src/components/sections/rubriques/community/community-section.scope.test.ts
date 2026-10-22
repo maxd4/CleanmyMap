@@ -10,7 +10,6 @@ const sectionHookSource = readFileSync(join(communityRoot, "use-community-sectio
 const eventsHookSource = readFileSync(join(communityRoot, "use-community-events.ts"), "utf8");
 const eventsComponentSource = readFileSync(join(communityRoot, "community-events-components.tsx"), "utf8");
 const eventsTabsSource = readFileSync(join(communityRoot, "events-tabs-card.tsx"), "utf8");
-const createEventSource = readFileSync(join(communityRoot, "create-event-card.tsx"), "utf8");
 const actionsHookSource = readFileSync(join(communityRoot, "use-community-actions.ts"), "utf8");
 const legalSource = readFileSync(join(communityRoot, "../legal-section.tsx"), "utf8");
 const learnInsightsSource = readFileSync(
@@ -27,7 +26,8 @@ describe("CommunitySection scope", () => {
     }
 
     expect(viewSource).toContain("CommunityEventsTabsCard");
-    expect(viewSource).toContain("CommunityCreateEventCard");
+    expect(viewSource).toContain('href="/actions/new"');
+    expect(viewSource).not.toContain("CommunityCreateEventCard");
     expect(sectionSource).toContain("PageHeader");
     expect(viewSource).toContain("Missions à venir");
     expect(viewSource).toContain("Trouver des acteurs");
@@ -46,10 +46,8 @@ describe("CommunitySection scope", () => {
     expect(eventsComponentSource).not.toContain("flex -space-x");
     expect(eventsTabsSource).toContain("AnonymousRegistrationState");
     expect(eventsTabsSource).toContain('role="tabpanel"');
-    expect(createEventSource).toContain("handleToggle");
-    expect(createEventSource).toContain("redirectToCommunitySignIn");
-    expect(createEventSource).toContain("open={open}");
     expect(actionsHookSource).toContain("updateCommunityEventOps");
+    expect(actionsHookSource).not.toContain("createCommunityEvent");
   });
 
   it("resolves the surface tab before enabling the community event read", () => {
@@ -65,9 +63,7 @@ describe("CommunitySection scope", () => {
   });
 
   it("does not retain the unsourced operational promise removed from the journey", () => {
-    const createEventSource = readFileSync(join(communityRoot, "create-event-card.tsx"), "utf8");
-
-    expect(createEventSource).not.toMatch(/validé par l.?IA CleanMyMap|Cleanwalk\.org/);
+    expect(viewSource).not.toMatch(/validé par l.?IA CleanMyMap|Cleanwalk\.org/);
   });
 
   it("keeps former solution surfaces out of Community and points to canonical owners", () => {
