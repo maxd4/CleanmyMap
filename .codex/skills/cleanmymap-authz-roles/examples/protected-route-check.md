@@ -1,9 +1,12 @@
-# Example Protected Route Check
+# Exemples de test d'accès aux ressources
 
-When a route depends on a role:
+Pour une route sensible qui reçoit `resourceId` :
 
-1. Resolve the session role on the server.
-2. Call the existing authz helper.
-3. Return a closed error path when access is denied.
-4. Keep the UI in sync with the server rule.
-5. Add a test that covers the forbidden case.
+1. Résoudre l'identité Clerk depuis la session serveur, jamais depuis le payload.
+2. Vérifier le garde `CURRENT` adapté à la méthode HTTP.
+3. Charger ou muter la ressource avec un filtre canonique d'ownership/scope ; l'identifiant seul ne donne aucun droit.
+4. Refuser proprement un autre propriétaire, un rôle insuffisant, un scope invalide et une ressource non admissible, sans révéler son contenu.
+5. Renvoyer uniquement une projection autorisée et ne persister l'audit `success` qu'après l'effet vérifié.
+6. Tester un cas autorisé, un cas interdit et un payload malformé. Une page visible ne prouve pas l'AuthZ de son API.
+
+Les exceptions de lecture publique doivent être déclarées par route et testées séparément.
