@@ -15,6 +15,16 @@ const SOURCE_ROOTS = ["apps/web/src", "apps/mobile", "scripts"];
 const CRITICAL_DOMAINS = new Set(["auth-authz", "api", "actions", "account", "maps-location", "payments", "import-export", "mobile/security", "mobile/services"]);
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 
+const DEFAULT_STRUCTURAL_SCOPE_ROOTS = Object.freeze({
+  complexity: ["apps/web/src", "apps/mobile"],
+  maintainability: ["apps/web/src", "apps/mobile"],
+  "type-safety": ["apps/web/src", "apps/mobile"],
+  "top-heavy": ["apps/web/src", "apps/mobile"],
+  "dead-code": SOURCE_ROOTS,
+  duplication: SOURCE_ROOTS,
+  cycles: SOURCE_ROOTS,
+});
+
 function normalize(value) {
   return String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
 }
@@ -137,10 +147,131 @@ const STRUCTURAL_REPORT_VALIDATORS = Object.freeze({
     && Array.isArray(report?.comparison?.stale),
 });
 
+function normalizedPathSet(values) {
+  return new Set((Array.isArray(values) ? values : [])
+    .map((value) => normalize(typeof value === "string" ? value : value?.path ?? value?.file))
+    .filter(Boolean));
+}
+
+function reportFilePaths(report, keys) {
+  return new Set(keys.flatMap((key) => {
+    const values = key.split(".").reduce((current, segment) => current?.[segment], report);
+    return Array.isArray(values) ? values : [];
+  }).map((value) => normalize(typeof value === "string" ? value : value?.path ?? value?.file)).filter(Boolean));
+}
+
+function reportScopeRoots(name, report) {
+  const declared = Array.isArray(report?.sourceRoots)
+    ? report.sourceRoots
+    : Array.isArray(report?.scanRoots) ? report.scanRoots : null;
+  return (declared ?? DEFAULT_STRUCTURAL_SCOPE_ROOTS[name] ?? SOURCE_ROOTS).map(normalize).filter(Boolean);
+}
+
+function pathInRoots(file, roots) {
+  return roots.some((root) => file === root || file.startsWith(`${root}/`));
+}
+
+function typeSafetyCoverageState(report) {
+  const coverage = report?.coverage ?? [];
+  if (coverage.length === 0) return { state: "NOT_MEASURED", reasons: ["NO_COVERAGE_ENTRIES"] };
+  const reasons = [];
+  let measuredFiles = 0;
+  let scopedFiles = 0;
+  for (const entry of coverage) {
+    const scoped = normalizedPathSet(entry.scopedFilePaths);
+    const measured = normalizedPathSet(entry.measuredFilePaths);
+    scopedFiles += scoped.size;
+    measuredFiles += measured.size;
+    if (entry.effectiveCoverage !== "TYPED") reasons.push(`${entry.workspace ?? "unknown"}:${entry.effectiveCoverage ?? "UNSPECIFIED_COVERAGE"}`);
+    if (entry.failedFilePaths?.length || entry.ignoredFilePaths?.length) reasons.push(`${entry.workspace ?? "unknown"}:FILES_NOT_MEASURED`);
+    if (entry.effectiveCoverage === "TYPED" && measured.size < scoped.size) reasons.push(`${entry.workspace ?? "unknown"}:PARTIAL_FILE_COVERAGE`);
+  }
+  if (report.measurementStatus === "MEASUREMENT_FAILED") reasons.push(...(report.diagnostics ?? []).map((diagnostic) => diagnostic.code ?? "MEASUREMENT_FAILED"));
+  if (scopedFiles === 0 || measuredFiles === 0) return { state: "NOT_MEASURED", reasons: [...new Set(reasons.length > 0 ? reasons : ["NO_MEASURED_FILES"])], measuredFiles, scopedFiles };
+  return {
+    state: reasons.length === 0 && measuredFiles === scopedFiles ? "COMPLETE" : "PARTIAL",
+    reasons: [...new Set(reasons)],
+    measuredFiles,
+    scopedFiles,
+  };
+}
+
+function reportMeasurementState(name, report) {
+  if (name === "type-safety") return typeSafetyCoverageState(report);
+  const diagnostics = Array.isArray(report?.diagnostics) ? report.diagnostics : [];
+  if (report?.measurementStatus === "MEASUREMENT_FAILED") {
+    const positiveEvidence = name === "maintainability"
+      ? (report.findings?.length ?? 0) > 0 || (report.metrics?.length ?? 0) > 0
+      : false;
+    return { state: positiveEvidence ? "PARTIAL" : "NOT_MEASURED", reasons: diagnostics.map((diagnostic) => diagnostic.code ?? "MEASUREMENT_FAILED") };
+  }
+  if (diagnostics.length > 0) return { state: "PARTIAL", reasons: diagnostics.map((diagnostic) => diagnostic.code ?? "MEASUREMENT_DIAGNOSTIC") };
+  return { state: "COMPLETE", reasons: [] };
+}
+
+function structuralFileCoverage(name, report, file) {
+  const normalizedFile = normalize(file);
+  const roots = reportScopeRoots(name, report);
+  if (!pathInRoots(normalizedFile, roots)) return { state: "NOT_APPLICABLE", reason: "OUTSIDE_SCANNER_SCOPE" };
+
+  if (name === "type-safety") {
+    let scoped = false;
+    for (const entry of report.coverage ?? []) {
+      const scopedPaths = normalizedPathSet(entry.scopedFilePaths);
+      if (!scopedPaths.has(normalizedFile)) continue;
+      scoped = true;
+      const measuredPaths = normalizedPathSet(entry.measuredFilePaths);
+      if (entry.effectiveCoverage === "TYPED" && measuredPaths.has(normalizedFile)) return { state: "MEASURED", reason: null, workspace: entry.workspace };
+      return { state: "NOT_MEASURED", reason: entry.notMeasuredFileReasons?.[normalizedFile] ?? entry.effectiveCoverage ?? "NOT_MEASURED", workspace: entry.workspace };
+    }
+    return { state: scoped ? "NOT_MEASURED" : "NOT_MEASURED", reason: "NO_FILE_COVERAGE_PROOF" };
+  }
+
+  const measured = reportFilePaths(report, [
+    "measuredFilePaths",
+    "summary.measuredFilePaths",
+    "sourceFiles",
+    "rows",
+    "measuredFiles",
+  ]);
+  const scoped = reportFilePaths(report, ["scopedFilePaths", "summary.scopedFilePaths"]);
+  if (measured.has(normalizedFile)) return { state: "MEASURED", reason: null };
+  if (scoped.has(normalizedFile)) return { state: "NOT_MEASURED", reason: "FILE_NOT_MEASURED" };
+  if (measured.size > 0 || scoped.size > 0) return { state: "NOT_MEASURED", reason: "NO_FILE_COVERAGE_PROOF" };
+  return { state: "NOT_MEASURED", reason: "REPORT_HAS_NO_FILE_INVENTORY" };
+}
+
+function structuralDebtFileAvailability(file, reports, debtAvailability) {
+  const applicable = [];
+  const reasons = [];
+  const reportStates = {};
+  for (const name of Object.keys(STRUCTURAL_REPORT_VALIDATORS)) {
+    const report = reports?.[name];
+    if (!report || debtAvailability.invalidReports.includes(name) || debtAvailability.missingReports.includes(name)) {
+      reportStates[name] = "NOT_MEASURED";
+      reasons.push(`${name}:REPORT_UNAVAILABLE`);
+      continue;
+    }
+    const coverage = structuralFileCoverage(name, report, file);
+    reportStates[name] = coverage.state;
+    if (coverage.state === "NOT_APPLICABLE") continue;
+    applicable.push(name);
+    if (coverage.state !== "MEASURED") reasons.push(`${name}:${coverage.reason}`);
+  }
+  return {
+    state: applicable.length > 0 && reasons.length === 0 ? "COMPLETE" : "NOT_MEASURED",
+    applicableReports: applicable,
+    reportStates,
+    reasons: [...new Set(reasons)],
+  };
+}
+
 function structuralDebtAvailability(reports) {
   const availableReports = [];
   const missingReports = [];
   const invalidReports = [];
+  const partialReports = [];
+  const coverageReasons = {};
   for (const [name, validator] of Object.entries(STRUCTURAL_REPORT_VALIDATORS)) {
     const report = reports?.[name];
     if (!report) {
@@ -148,16 +279,21 @@ function structuralDebtAvailability(reports) {
     } else if (report.error || !validator(report)) {
       invalidReports.push(name);
     } else {
-      availableReports.push(name);
+      const measurement = reportMeasurementState(name, report);
+      coverageReasons[name] = measurement.reasons;
+      if (measurement.state === "COMPLETE") availableReports.push(name);
+      else partialReports.push({ name, state: measurement.state, reasons: measurement.reasons });
     }
   }
-  const state = availableReports.length === 0
-    ? "NOT_MEASURED"
-    : availableReports.length === Object.keys(STRUCTURAL_REPORT_VALIDATORS).length
-      && invalidReports.length === 0
-      ? "COMPLETE"
-      : "PARTIAL";
-  return { state, availableReports, missingReports, invalidReports };
+  const state = availableReports.length === Object.keys(STRUCTURAL_REPORT_VALIDATORS).length
+    && partialReports.length === 0
+    && missingReports.length === 0
+    && invalidReports.length === 0
+    ? "COMPLETE"
+    : availableReports.length > 0 || partialReports.length > 0
+      ? "PARTIAL"
+      : "NOT_MEASURED";
+  return { state, availableReports, partialReports, missingReports, invalidReports, coverageReasons };
 }
 
 export function buildQualityHotspotsReport({ root = process.cwd(), auditedSha, reports = {}, windowDays = HOTSPOT_HISTORY_WINDOW_DAYS, gitRunner = git } = {}) {
@@ -181,14 +317,15 @@ export function buildQualityHotspotsReport({ root = process.cwd(), auditedSha, r
     const commitCount = entry.commits.size;
     const signals = [...(debtSignals.get(entry.file) ?? [])].sort();
     const highActivity = commitCount >= HOTSPOT_HIGH_ACTIVITY_COMMIT_THRESHOLD;
+    const fileAvailability = structuralDebtFileAvailability(entry.file, reports, debtAvailability);
     const structuralDebtState = signals.length > 0
       ? "PRESENT"
-      : debtAvailability.state === "COMPLETE" ? "NONE" : "NOT_MEASURED";
+      : fileAvailability.state === "COMPLETE" ? "NONE" : "NOT_MEASURED";
     return {
       file: entry.file,
       position: null,
       activity: { commits: commitCount, substantiveChanges: entry.substantiveChanges, addedLines: entry.addedLines, deletedLines: entry.deletedLines, highActivity },
-      structuralDebt: { state: structuralDebtState, signals, signalCount: signals.length, availability: debtAvailability },
+      structuralDebt: { state: structuralDebtState, signals, signalCount: signals.length, availability: debtAvailability, fileCoverage: fileAvailability },
       hotspotCandidate: highActivity && signals.length > 0,
       severity: highActivity && signals.length > 0 ? "informational" : null,
       provenance: { history: "COMMITTED_SNAPSHOT", debt: signals.length > 0 ? "QUALITY_AUDIT_RESULTS" : structuralDebtState === "NONE" ? "QUALITY_AUDIT_RESULTS_NO_FINDINGS" : "NOT_MEASURED" },

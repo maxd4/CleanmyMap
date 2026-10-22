@@ -38,17 +38,22 @@ function hotspotReport(reports = {}) {
 }
 
 function completeCleanStructuralReports() {
+  const measuredFilePaths = ["apps/web/src/hot.ts", "apps/web/src/linear.ts"];
   return {
-    complexity: { metrics: [], result: { failures: [], reviews: [], improvements: [], stale: [] } },
-    maintainability: { metrics: [], findings: [], diagnostics: [] },
-    "type-safety": { findings: [], coverage: [], diagnostics: [] },
+    complexity: { sourceFiles: measuredFilePaths, metrics: [], result: { failures: [], reviews: [], improvements: [], stale: [] } },
+    maintainability: { measuredFilePaths, metrics: [], findings: [], diagnostics: [] },
+    "type-safety": {
+      findings: [],
+      coverage: [{ workspace: "web", effectiveCoverage: "TYPED", scopedFilePaths: measuredFilePaths, measuredFilePaths }],
+      diagnostics: [],
+    },
     "top-heavy": { evaluation: {
       hardOffenders: [], newHardOffenders: [], ratchetViolations: [], reviewWarnings: [],
       newReviewOffenders: [], reviewRatchetViolations: [], blockingFindings: [],
-    } },
-    "dead-code": { comparison: { newFindings: [], historicalActionableFindings: [] }, currentFindings: [] },
-    duplication: { results: [] },
-    cycles: { cycles: [], cycleObjects: [], comparison: { added: [], stale: [] } },
+    }, rows: measuredFilePaths.map((file) => ({ file })), scanRoots: ["apps/web/src", "apps/mobile"] },
+    "dead-code": { measuredFilePaths, comparison: { newFindings: [], historicalActionableFindings: [] }, currentFindings: [] },
+    duplication: { measuredFilePaths, results: [] },
+    cycles: { measuredFilePaths, cycles: [], cycleObjects: [], comparison: { added: [], stale: [] } },
   };
 }
 
@@ -141,6 +146,75 @@ test("hotspots distingue l'activité mesurée de la disponibilité de la dette s
   const positiveFile = positivePartial.files.find((entry) => entry.file === "apps/web/src/hot.ts");
   assert.equal(positiveFile.structuralDebt.state, "PRESENT");
   assert.equal(positivePartial.structuralDebtAvailability.state, "PARTIAL");
+});
+
+test("hotspots ne déclare pas COMPLETE quand TypeScript Web est incompatible, tout en conservant les signaux positifs", () => {
+  const reports = completeCleanStructuralReports();
+  const fixture = historyFixture();
+  const mobileFile = "apps/mobile/src/mobile.ts";
+  fixture.files.push(mobileFile);
+  fixture.commits += `commit\0${"8".repeat(40)}${String.fromCharCode(0)}2026-10-21T00:00:00+00:00\n1\t1\t${mobileFile}\n`;
+  reports["type-safety"] = {
+    measurementStatus: "MEASUREMENT_FAILED",
+    coverage: [
+      { workspace: "web", effectiveCoverage: "UNSUPPORTED_CONFIGURATION", scopedFilePaths: ["apps/web/src/hot.ts", "apps/web/src/linear.ts"], measuredFilePaths: [] },
+      { workspace: "mobile", effectiveCoverage: "TYPED", scopedFilePaths: [mobileFile], measuredFilePaths: [mobileFile] },
+    ],
+    findings: [],
+    diagnostics: [{ code: "UNSUPPORTED_TYPESCRIPT_VERSION" }],
+  };
+  const gitRunner = (args) => {
+    if (args[0] === "show") return "2026-10-21T00:00:00+00:00";
+    if (args[0] === "log") return fixture.commits;
+    if (args[0] === "ls-tree") return fixture.files.join("\n");
+    throw new Error(`commande inattendue: ${args.join(" ")}`);
+  };
+  const report = buildQualityHotspotsReport({ auditedSha, gitRunner, reports });
+  const webFile = report.files.find((entry) => entry.file === "apps/web/src/hot.ts");
+  const mobileEntry = report.files.find((entry) => entry.file === mobileFile);
+  assert.equal(report.structuralDebtAvailability.state, "PARTIAL");
+  assert.equal(webFile.structuralDebt.state, "NOT_MEASURED");
+  assert.equal(mobileEntry.structuralDebt.fileCoverage.reportStates["type-safety"], "MEASURED");
+  assert.ok(report.structuralDebtAvailability.partialReports.some((entry) => entry.name === "type-safety"));
+
+  reports.complexity.result.failures = [{ metric: "complexity", path: "apps/web/src/hot.ts" }];
+  const withPositiveFinding = hotspotReport(reports).files.find((entry) => entry.file === "apps/web/src/hot.ts");
+  assert.equal(withPositiveFinding.structuralDebt.state, "PRESENT");
+  assert.deepEqual(withPositiveFinding.structuralDebt.signals, ["complexity"]);
+});
+
+test("hotspots conserve une dette de maintenabilité mesurée malgré un diagnostic de mesure", () => {
+  const reports = completeCleanStructuralReports();
+  reports.maintainability = {
+    measurementStatus: "MEASUREMENT_FAILED",
+    measuredFilePaths: ["apps/web/src/hot.ts"],
+    metrics: [{ path: "apps/web/src/hot.ts", value: 18 }],
+    findings: [{ category: "local-maintainability", file: "apps/web/src/hot.ts" }],
+    diagnostics: [{ code: "PARSER_FAILED" }],
+  };
+  const report = hotspotReport(reports);
+  const hotFile = report.files.find((entry) => entry.file === "apps/web/src/hot.ts");
+  assert.equal(report.structuralDebtAvailability.state, "PARTIAL");
+  assert.equal(hotFile.structuralDebt.state, "PRESENT");
+  assert.deepEqual(report.structuralDebtAvailability.coverageReasons.maintainability, ["PARSER_FAILED"]);
+});
+
+test("hotspots ne transforme pas un fichier scripts hors périmètre TypeScript en NONE", () => {
+  const reports = completeCleanStructuralReports();
+  const scriptsFile = "scripts/audit-helper.mjs";
+  const fixture = historyFixture();
+  fixture.files.push(scriptsFile);
+  fixture.commits = `${fixture.commits}commit\0${"9".repeat(40)}${String.fromCharCode(0)}2026-10-21T00:00:00+00:00\n1\t1\t${scriptsFile}\n`;
+  const gitRunner = (args) => {
+    if (args[0] === "show") return "2026-10-21T00:00:00+00:00";
+    if (args[0] === "log") return fixture.commits;
+    if (args[0] === "ls-tree") return fixture.files.join("\n");
+    throw new Error(`commande inattendue: ${args.join(" ")}`);
+  };
+  const report = buildQualityHotspotsReport({ auditedSha, gitRunner, reports });
+  const scriptsEntry = report.files.find((entry) => entry.file === scriptsFile);
+  assert.equal(scriptsEntry.structuralDebt.state, "NOT_MEASURED");
+  assert.ok(scriptsEntry.structuralDebt.fileCoverage.reasons.length > 0);
 });
 
 test("hotspots publie des compteurs distincts et garde les fichiers sans activité hors du détail", () => {
