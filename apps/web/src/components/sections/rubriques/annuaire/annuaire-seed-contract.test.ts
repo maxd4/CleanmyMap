@@ -9,13 +9,19 @@ const seedFiles = [
 ];
 
 const forbiddenSeedKeys =
-  /\b(?:verificationStatus|qualificationStatus|recentActivityAt|impactHistory|structureStatus|availability|lastUpdatedAt)\s*:/;
+  /\b(?:verificationStatus|qualificationStatus|recentActivityAt|impactHistory|structureStatus|availability|lastUpdatedAt|internalAdminContact)\s*:/;
 
 describe("annuaire editorial seed contract", () => {
   it("keeps validation, activity and measured-impact keys out of seed sources", () => {
     for (const relativePath of seedFiles) {
       const source = readFileSync(new URL(relativePath, import.meta.url), "utf8");
       expect(source, relativePath).not.toMatch(forbiddenSeedKeys);
+    }
+  });
+
+  it("keeps administrative contacts out of the client editorial projection", () => {
+    for (const entry of INITIAL_ANNUAIRE_ENTRIES) {
+      expect(entry).not.toHaveProperty("internalAdminContact");
     }
   });
 
@@ -100,7 +106,13 @@ describe("annuaire editorial seed contract", () => {
     expect(alcome.coveredArrondissements).toEqual([]);
 
     expect(getEntry("asso-megots-cyclope").coveredArrondissements).toEqual([]);
-    expect(getEntry("asso-megots-tchaomegot").coveredArrondissements).toEqual([]);
+    const tchaoMegot = getEntry("asso-megots-tchaomegot");
+    expect(tchaoMegot.scope).toBe("national");
+    expect(tchaoMegot.coveredArrondissements).toEqual([]);
+
+    for (const id of ["asso-megots-ecomegot", "evt-j-agis-nature", "evt-je-veux-aider"]) {
+      expect(getEntry(id).scope, id).toBe("national");
+    }
 
     expect(
       INITIAL_ANNUAIRE_ENTRIES.some(

@@ -23,11 +23,6 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Compte Instagram",
       url: "https://www.instagram.com/pikpik_environnement/",
     },
-    internalAdminContact: {
-      referentName: "Kamera Vesic",
-      email: "contact@pikpik.org",
-      phone: "01 41 46 05 00",
-    },
   },
   {
     id: "asso-2",
@@ -49,11 +44,6 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Compte Instagram",
       url: "https://www.instagram.com/assolacloche/",
     },
-    internalAdminContact: {
-      referentName: "Valerie Fayard",
-      email: "valerie.fayard@lacloche.org",
-      phone: "Non publié",
-    },
   },
   {
     id: "asso-3",
@@ -74,11 +64,6 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
       platform: "site web",
       label: "Site officiel",
       url: "https://www.cartonplein.org/",
-    },
-    internalAdminContact: {
-      referentName: "Equipe Carton Plein",
-      email: "bonjour@cartonplein.org",
-      phone: "01 44 85 37 01",
     },
   },
   {

@@ -21,11 +21,6 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Compte Instagram",
       url: "https://www.instagram.com/latextilerieparis/",
     },
-    internalAdminContact: {
-      referentName: "Elsa Monsegur",
-      email: "contact@latextilerie.fr",
-      phone: "01 40 35 77 14",
-    },
   },
   {
     id: "asso-megots-alcome",
@@ -50,6 +45,7 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
     name: "Écomégot",
     legalIdentity: "Écomégot SAS (Économie circulaire)",
     kind: "entreprise",
+    scope: "national",
     types: ["environnemental"],
     description: "Service de collecte et recyclage de mégots spécialisé pour les événements et cleanups spécialisés. Orientation utile pour les collectes ciblées.",
     location: "France / Paris",
@@ -80,6 +76,7 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
     name: "TchaoMegot",
     legalIdentity: "Tchao Megot SAS (Économie Circulaire)",
     kind: "entreprise",
+    scope: "national",
     types: ["environnemental"],
     description: "Collecte, dépollution et recyclage de mégots, avec un procédé breveté sans eau ni solvant toxique.",
     location: "National / Paris",

@@ -95,11 +95,12 @@ type AnnuaireEntryShared = {
   isFeatured?: boolean;
   featuredReason?: string;
   tags?: string[];
-  internalAdminContact?: {
-    referentName: string;
-    email: string;
-    phone: string;
-  };
+};
+
+type InternalAdminContact = {
+  referentName: string;
+  email: string;
+  phone: string;
 };
 
 export type AnnuaireEntrySeedInput = Omit<AnnuaireEntryShared, "availability"> & {
@@ -123,6 +124,8 @@ export type PublishedAnnuaireEntry = AnnuaireEntryShared & {
   availability: string;
   lastUpdatedAt: string;
   recentActivityAt: string;
+  /** Server-side administrative data; never part of editorial seed projections. */
+  internalAdminContact?: InternalAdminContact;
   /**
    * Explicit bridge to the canonical action organizer registry.
    * Names are never used to infer this relationship.

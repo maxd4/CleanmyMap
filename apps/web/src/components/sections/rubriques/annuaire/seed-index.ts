@@ -35,8 +35,14 @@ validateUniqueIds(allEntries);
 function toEditorialAnnuaireEntry(
   entry: AnnuaireEntrySeedInput,
 ): EditorialAnnuaireEntry {
+  // Keep the browser projection public-safe even if a future seed source is
+  // widened with an administrative field by mistake.
+  const { internalAdminContact: _internalAdminContact, ...publicEntry } = entry as AnnuaireEntrySeedInput & {
+    internalAdminContact?: unknown;
+  };
+  void _internalAdminContact;
   return {
-    ...entry,
+    ...publicEntry,
     provenance: "editorial_seed",
     verificationStatus: "en_cours",
     qualificationStatus: "contact_non_qualifie",

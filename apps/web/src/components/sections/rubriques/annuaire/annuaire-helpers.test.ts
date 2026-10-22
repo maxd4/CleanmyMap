@@ -236,13 +236,19 @@ describe("annuaire provenance, identity and geography", () => {
   it("keeps national scope in lists without inventing a marker or distance", () => {
     const national = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-megots-alcome");
     const franceCentre = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-gestes-propres");
-    if (!national || !franceCentre) throw new Error("Expected national seed fixtures to exist");
+    const tchaoMegot = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-megots-tchaomegot");
+    if (!national || !franceCentre || !tchaoMegot) throw new Error("Expected national seed fixtures to exist");
 
     expect(isNationalAnnuaireEntry(national)).toBe(true);
     expect(hasPreciseAnnuaireCoordinates(national)).toBe(false);
     expect(getAnnuaireDistanceKm(national, 11)).toBeNull();
     expect(formatAnnuaireCoverage(national)).toContain("Portée nationale");
     expect(hasPreciseAnnuaireCoordinates(franceCentre)).toBe(false);
+
+    expect(INITIAL_ANNUAIRE_ENTRIES).toContain(tchaoMegot);
+    expect(isNationalAnnuaireEntry(tchaoMegot)).toBe(true);
+    expect(hasPreciseAnnuaireCoordinates(tchaoMegot)).toBe(false);
+    expect(getAnnuaireDistanceKm(tchaoMegot, 11)).toBeNull();
   });
 
   it("does not use missing or derived coordinates for distance", () => {
