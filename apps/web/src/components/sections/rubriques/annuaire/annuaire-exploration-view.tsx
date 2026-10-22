@@ -209,6 +209,9 @@ function AnnuaireSearchPanel({
           { id: "environnement", label: "ENVIRONNEMENT" },
           { id: "social", label: "SOCIAL" },
           { id: "humanitaire", label: "HUMANITAIRE" },
+          { id: "propreté", label: "PROPRETÉ" },
+          { id: "climat", label: "CLIMAT" },
+          { id: "sensibilisation", label: "SENSIBILISATION" },
         ].map((theme) => (
           <CmmButton
             key={theme.id}

@@ -3,9 +3,7 @@
 import { ArrowRight, Globe, Building2, Sparkles, Target } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { AnnuaireFeaturedSection } from "./annuaire-featured-section";
-import { AnnuaireThematicExploration } from "./annuaire-thematic-exploration";
 import { AnnuaireExplorationView } from "./annuaire-exploration-view";
-import { AcademieClimatWorkshopsPanel } from "./academie-climat-workshops-panel";
 import { useAnnuaireLogic } from "./use-annuaire-logic";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
@@ -34,9 +32,6 @@ export function AnnuaireSection() {
 
   const annuaireLogic = useAnnuaireLogic();
   const {
-    searchTerm,
-    setSearchTerm,
-    setActorCardsPage,
     featuredEntries,
     filterKey,
     resetFilters,
@@ -84,12 +79,7 @@ export function AnnuaireSection() {
         viewport={{ once: true, margin: "-100px" }}
       >
         <CmmSectionGroup>
-        {/* Workshops Panel - Premium Spotlight */}
-        <motion.div variants={itemVariants} className="relative z-10">
-          <AcademieClimatWorkshopsPanel />
-        </motion.div>
-
-        {/* Featured Actors - Elegant Presentation */}
+        {/* Curated actors - a concise entry point before the full search */}
         <motion.section variants={itemVariants} className="relative">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent" />
           <div>
@@ -100,11 +90,11 @@ export function AnnuaireSection() {
                   {fr ? "Sélection éditoriale" : "Editorial selection"}
                 </div>
                 <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter leading-[1.1]">
-                  {fr ? "Les acteurs à découvrir" : "Actors to discover"}
+                  {fr ? "Quelques acteurs à découvrir" : "A few actors to discover"}
                 </h2>
               </div>
               <p className="max-w-md text-xl text-slate-400 font-bold leading-relaxed opacity-80">
-                {fr ? "Découvrez des acteurs engagés, leurs ressources publiques et les fiches partenaires publiées." : "Discover engaged actors, their public resources and published partner profiles."}
+                {fr ? "Une sélection éditoriale avant la recherche complète de l'annuaire." : "An editorial selection before the directory's full search."}
               </p>
             </div>
             <div className="relative">
@@ -131,24 +121,15 @@ export function AnnuaireSection() {
             <div className="text-center space-y-6 max-w-3xl mx-auto">
                <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
                   <Globe size={12} />
-                  {fr ? "Exploration Thématique" : "Thematic Exploration"}
+                  {fr ? "Recherche et exploration" : "Search and exploration"}
                </div>
                <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">
-                  {fr ? "Naviguez dans l'écosystème" : "Navigate the ecosystem"}
+                  {fr ? "Trouvez la structure qui vous intéresse" : "Find the structure you need"}
                </h2>
                <p className="text-slate-400 font-bold leading-relaxed">
-                  {fr ? "Filtrez par thématique pour explorer des similarités et des complémentarités déclarées." : "Filter by theme to explore declared similarities and complementarities."}
+                  {fr ? "Recherchez, filtrez et comparez les ressources publiques déclarées." : "Search, filter and compare declared public resources."}
                </p>
             </div>
-
-            <AnnuaireThematicExploration
-              activeTag={searchTerm}
-              onSelectTag={(tag) => {
-                setActorCardsPage(1);
-                setSearchTerm(tag);
-              }}
-              fr={fr}
-            />
 
             <AnnuaireExplorationView
               logic={annuaireLogic}

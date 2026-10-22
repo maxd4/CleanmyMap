@@ -1,4 +1,5 @@
 import * as React from "react";
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -20,16 +21,8 @@ vi.mock("@/components/sections/rubriques/shared", () => ({
     React.createElement("section", { "data-gradient": gradient }, children),
 }));
 
-vi.mock("@/components/sections/rubriques/annuaire/academie-climat-workshops-panel", () => ({
-  AcademieClimatWorkshopsPanel: () => React.createElement("div"),
-}));
-
 vi.mock("@/components/sections/rubriques/annuaire/annuaire-featured-section", () => ({
   AnnuaireFeaturedSection: () => React.createElement("div"),
-}));
-
-vi.mock("@/components/sections/rubriques/annuaire/annuaire-thematic-exploration", () => ({
-  AnnuaireThematicExploration: () => React.createElement("div"),
 }));
 
 vi.mock("@/components/sections/rubriques/annuaire/annuaire-exploration-view", () => ({
@@ -86,5 +79,14 @@ describe("AnnuaireSection partner onboarding CTA", () => {
     );
     expect(markup).toContain("text-violet-400");
     expect(markup).not.toContain("text-indigo-");
+  });
+
+  it("does not compose the obsolete static workshops panel", () => {
+    const source = readFileSync(new URL("./annuaire-section.tsx", import.meta.url), "utf8");
+    const markup = renderToStaticMarkup(<AnnuaireSection />);
+
+    expect(source).not.toContain("AcademieClimatWorkshopsPanel");
+    expect(source).not.toContain("synchronisées avec les sources officielles");
+    expect(markup).not.toContain("Prochains ateliers");
   });
 });
