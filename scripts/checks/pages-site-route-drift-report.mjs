@@ -303,6 +303,7 @@ export function hasPagesSiteRouteDrift(report) {
     report.documentedAccessContradictions,
     report.runtimeAccessErrors,
     report.canonicalReadmesWithScopePlaceholder,
+    report.brokenCanonicalMarkdownLinks ?? [],
   ].some((items) => items.length > 0);
 }
 
@@ -425,6 +426,10 @@ ${toMarkdownJsonList(report.indexReadmeTargetsMissing)}
 ### Fiche hors de routes/
 
 ${toMarkdownJsonList(report.indexReadmeTargetsOutsideRoutes)}
+
+## Liens relatifs des fiches CURRENT invalides
+
+${toMarkdownJsonList(report.brokenCanonicalMarkdownLinks ?? [])}
 
 ## Noyaux documentaires incomplets
 

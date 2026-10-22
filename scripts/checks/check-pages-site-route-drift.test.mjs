@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { findBrokenCanonicalMarkdownLinks } from "./pages-site-route-drift-documents.mjs";
 
 import {
   extractIndexEntries,
@@ -259,4 +263,28 @@ test("les sections utilisent leur présentation anonyme explicite sans fallback 
   assert.equal(runtime.accessByRoute.get("/sections/gamification"), "auth-disabled-gate");
   assert.deepEqual(runtime.unclassifiedSectionRoutes, ["/sections/missing"]);
   assert.equal(runtime.accessByRoute.has("/sections/missing"), false);
+});
+
+test("les liens CURRENT sont contrôlés sans scanner PLAN ni les URLs de navigation", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmm-pages-links-"));
+  const routesRoot = path.join(root, "documentation", "pages_site", "routes");
+  const page = path.join(routesRoot, "02-agir", "demo");
+  try {
+    await mkdir(page, { recursive: true });
+    await writeFile(path.join(page, "demo-README.md"), [
+      "# Démo",
+      "[Présentation](./demo-presentation-detaillee.md)",
+      "[Navigation](/signalement)",
+      "[Externe](https://cleanmymap.fr)",
+      "[Supprimé](./ancien.md)",
+    ].join("\n"), "utf8");
+    await writeFile(path.join(page, "demo-presentation-detaillee.md"), "# Présentation\n", "utf8");
+    await writeFile(path.join(page, "demo-liste-propositions-a-traiter.md"), "[PLAN](./absent-plan.md)\n", "utf8");
+    assert.deepEqual(
+      await findBrokenCanonicalMarkdownLinks({ repoRoot: root, routesRoot }),
+      [{ file: "documentation/pages_site/routes/02-agir/demo/demo-README.md", line: 5, target: "./ancien.md" }],
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

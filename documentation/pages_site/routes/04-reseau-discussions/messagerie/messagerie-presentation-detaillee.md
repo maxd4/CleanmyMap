@@ -48,4 +48,4 @@ La page `Messagerie` sert aux échanges publics thématiques et directs entre me
 
 ## Référence canonique
 
-- [README de la page](./README.md)
+- [README de la page](./messagerie-README.md)

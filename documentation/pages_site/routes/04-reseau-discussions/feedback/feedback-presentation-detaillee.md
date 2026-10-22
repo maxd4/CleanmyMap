@@ -43,4 +43,4 @@ La rubrique `Feedback` centralise les retours d'usage, les idées d'amélioratio
 
 ## Référence canonique
 
-- [README de la page](./README.md)
+- [README de la page](./feedback-README.md)
