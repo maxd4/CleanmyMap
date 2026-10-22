@@ -20,7 +20,7 @@ services, coûts, incidents et diagnostics opérationnels.
 | Sessions agents | [agent-memory-governance.md](./agent-memory-governance.md), [session-standard-runbook.md](./session-standard-runbook.md) | Mémoire volatile ≠ vérité du code |
 | Partage de données / contenus | [DATA_PROTECTION_POLICY.md](./DATA_PROTECTION_POLICY.md), [CONTENT_VALIDATION_WORKFLOW.md](./CONTENT_VALIDATION_WORKFLOW.md) | Processus proposé ≠ preuve de revue |
 | CI/CD | [ci-cd-metrics-report.md](./ci-cd-metrics-report.md) | Commande disponible ≠ métrique observée |
-| DU et études | [../plans/README.md](../plans/README.md) | Plan ≠ réalisation |
+| DU et études | Index interne des plans | Plan ≠ réalisation |
 
 Un README route vers le contrat, sans dupliquer ses étapes. Les fichiers `CHANGELOG.md` et `audits/` conservent la provenance historique. Pour une source CURRENT, confronter au code/tests puis aux services réellement observés, avec SHA, période et incertitudes.
 

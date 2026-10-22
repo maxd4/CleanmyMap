@@ -1,6 +1,6 @@
 # Maintenance — commandes et frontières réelles
 
-**Statut : CURRENT pour l'orientation des outils.** Le runtime applicatif vit dans `apps/web/` et `apps/mobile/` ; les scripts Python historiques vivent dans `maintenance/python/`. La documentation et les dépendances Python sont propriétaires de [maintenance/python/README.md](../../maintenance/python/README.md) et de son [AGENTS.md](../../maintenance/python/AGENTS.md).
+**Statut : CURRENT pour l'orientation des outils.** Le runtime applicatif vit dans `apps/web/` et `apps/mobile/` ; les scripts Python historiques vivent dans `maintenance/python/`. La documentation et les dépendances Python sont propriétaires de [maintenance/python/README.md](../../maintenance/python/README.md).
 
 | Opération | Chemin réel |
 |---|---|
