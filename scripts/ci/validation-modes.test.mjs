@@ -5,6 +5,7 @@ import {
   classifyValidationFailure,
   createModeValidationPlan,
   getBudgetDecision,
+  isSecurityRelevantFile,
   VALIDATION_MODE_BUDGETS,
 } from "./validation-modes.mjs";
 import {
@@ -182,4 +183,24 @@ test("foreign failures require a verified pre-existing proof", () => {
     failureFiles: ["apps/mobile/src/parallel.ts"],
     preexistingProof: { verified: true, kind: "baseline", source: "baseline" },
   }), "PREEXISTING_PARALLEL_FAILURE");
+});
+
+test("sensitive Web boundaries select security proof without treating every source as sensitive", () => {
+  for (const file of [
+    "apps/web/src/app/api/actions/route.ts",
+    "apps/web/src/lib/auth/action-request-access.ts",
+    "apps/web/src/lib/supabase/server.ts",
+    "apps/web/src/lib/actions/action-update-status.ts",
+    "apps/web/src/lib/validation/action.ts",
+    "apps/web/src/components/actions/permissions-panel.tsx",
+    "apps/web/supabase/migrations/20261022000001_contract.sql",
+  ]) {
+    assert.equal(isSecurityRelevantFile(file), true, file);
+  }
+  assert.equal(isSecurityRelevantFile("apps/web/src/lib/formatters/date.ts"), false);
+  const actionPlan = createModeValidationPlan({
+    mode: "FAST",
+    changedFiles: ["apps/web/src/lib/actions/action-update-status.ts"],
+  });
+  assert.ok(ids(actionPlan).includes("test:security"));
 });

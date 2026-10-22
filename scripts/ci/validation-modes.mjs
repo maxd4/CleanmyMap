@@ -78,12 +78,15 @@ function isMigrationRelevantFile(file) {
   return normalizePath(file).startsWith("apps/web/supabase/migrations/");
 }
 
-function isSecurityRelevantFile(file) {
+export function isSecurityRelevantFile(file) {
   const normalized = normalizePath(file);
   return (
     normalized.startsWith("apps/web/src/app/api/") ||
     normalized.startsWith("apps/web/src/lib/auth") ||
     normalized.startsWith("apps/web/src/lib/security/") ||
+    normalized.startsWith("apps/web/src/lib/supabase/") ||
+    normalized.startsWith("apps/web/src/lib/actions/") ||
+    normalized.startsWith("apps/web/src/lib/validation/") ||
     normalized.includes("/permissions") ||
     normalized.startsWith("apps/web/supabase/") ||
     normalized.startsWith("scripts/checks/secret-")

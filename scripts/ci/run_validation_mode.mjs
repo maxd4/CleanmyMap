@@ -352,7 +352,7 @@ function printReport({
   log(`TOTAL_DURATION_SECONDS: ${elapsedSeconds.toFixed(1)}`);
   if (timedOut) log("TIME_BUDGET_EXCEEDED: yes");
   if (cleanupError) log(`CLEANUP_FAILED: ${cleanupError.message}`);
-  const verdict = timedOut || failed.length > 0 || blocked.length > 0 || cleanupError
+  const verdict = timedOut || failed.length > 0 || blocked.length > 0 || preexisting.length > 0 || cleanupError
     ? "FAIL"
     : notRun.length > 0
       ? "INCOMPLETE"

@@ -185,8 +185,10 @@ change sans rapprochement fiable, le résultat est `NON_COMPARABLE`.
 - Une commande échouée reste échouée dans le rapport, même si une autre
   commande passe dans un environnement différent.
 - Un échec provenant d'un chantier parallèle doit être distingué d'une
-  régression du candidat ; il ne doit ni être masqué ni provoquer une
-  modification hors périmètre.
+  régression du candidat ; la qualification `PREEXISTING_PARALLEL_FAILURE`
+  conserve la provenance mais ne transforme jamais l'exécution en `PASS`.
+  Elle doit rester visible et être résolue ou explicitement bloquante avant
+  une décision de livraison.
 - Préserver les modifications utilisateur hors périmètre avec un staging
   ciblé.
 - Suivre la politique Git canonique du dépôt pour le commit et le push ; ne pas

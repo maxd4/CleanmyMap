@@ -78,6 +78,29 @@ conserver `DB_SEMANTICS_NOT_EXECUTED` et traiter explicitement la limite de
 preuve dans la décision de clôture, sans déployer ni appliquer une migration
 distante implicitement.
 
+## Gouvernance des preuves pour les changements sensibles
+
+Avant toute modification substantielle ou sensible, le lot doit identifier
+les contrats métier et techniques effectivement touchés, distinguer les
+exigences issues des sources canoniques des comportements seulement déduits
+du code, puis prévoir des scénarios positifs, négatifs et de limite adaptés à
+ces contrats. Un test structurel, mocké ou textuel peut protéger une
+propriété de source ; il ne devient pas une preuve d'AuthZ, de RLS, de
+transaction, de concurrence ou de service externe exécuté.
+
+Le résultat doit séparer explicitement :
+
+- l'absence de preuve (`NOT_RUN`, `NOT_MEASURED` ou un `BLOCKED_*` explicite) ;
+- l'échec d'une preuve (`FAIL`) ;
+- le comportement effectivement validé (`PASS` avec sa provenance).
+
+Une preuve d'un autre SHA, une validation périmée ou une erreur qualifiée
+`PREEXISTING_PARALLEL_FAILURE` reste visible et ne peut jamais produire un
+`PASS` de livraison. Les exigences et tests canoniques ne doivent pas être
+réécrits pour ratifier implicitement l'implémentation candidate ; une
+évolution légitime du contrat doit être documentée et accompagnée de la
+preuve correspondante dans son owner canonique.
+
 ## Seuils et qualité des assertions
 
 Un test doit protéger un invariant identifiable et non reproduire la structure

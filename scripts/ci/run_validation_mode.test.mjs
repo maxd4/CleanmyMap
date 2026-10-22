@@ -357,7 +357,7 @@ test("FULL reuses FAST evidence only for the exact unchanged candidate", async (
   }
 });
 
-test("runner keeps unknown failures as FAIL and accepts only verified foreign proof", async () => {
+test("runner keeps unknown failures as FAIL and never turns verified foreign proof into PASS", async () => {
   const root = makeRepository();
   const options = {
     mode: "FAST",
@@ -384,7 +384,7 @@ test("runner keeps unknown failures as FAIL and accepts only verified foreign pr
         preexistingProof: { verified: true, kind: "reproduction", source: "reproduction" },
       }),
     });
-    assert.equal(provenResult, 0);
+    assert.equal(provenResult, 1);
 
     const blockedResult = await runValidationMode(options, {
       repositoryRoot: root,
