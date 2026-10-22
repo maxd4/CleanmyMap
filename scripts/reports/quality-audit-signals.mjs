@@ -8,6 +8,7 @@ export const HOTSPOT_HISTORY_WINDOW_DAYS = 180;
 export const HOTSPOT_SUBSTANTIVE_LINE_THRESHOLD = 20;
 export const HOTSPOT_HIGH_ACTIVITY_COMMIT_THRESHOLD = 5;
 export const QUALITY_TESTABILITY_SCHEMA_VERSION = 1;
+const GIT_HISTORY_MAX_BUFFER_BYTES = 32 * 1024 * 1024;
 
 const SOURCE_ROOTS = ["apps/web/src", "apps/mobile", "scripts"];
 const CRITICAL_DOMAINS = new Set(["auth-authz", "api", "actions", "account", "maps-location", "payments", "import-export", "mobile/security", "mobile/services"]);
@@ -18,7 +19,7 @@ function normalize(value) {
 }
 
 function git(root, args) {
-  return execFileSync(gitExecutable(), args, { cwd: root, encoding: "utf8" }).trim();
+  return execFileSync(gitExecutable(), args, { cwd: root, encoding: "utf8", maxBuffer: GIT_HISTORY_MAX_BUFFER_BYTES }).trim();
 }
 
 function readJson(root, relativePath) {
@@ -178,6 +179,7 @@ function parseHistory(output, auditedAt, windowStart) {
 }
 
 function listTrackedFilesWithRunner(root, auditedSha, gitRunner) {
+  if (gitRunner === git) return listTrackedFiles(root, auditedSha);
   return gitRunner(["ls-tree", "-r", "--name-only", auditedSha, "--", ...SOURCE_ROOTS]).split(/\r?\n/).map(normalize).filter(Boolean);
 }
 
