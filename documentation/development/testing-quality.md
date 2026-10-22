@@ -325,6 +325,14 @@ baseline permissive ni de ratchet bloquant. Une version TypeScript hors de la
 peer range déclarée par `typescript-eslint` est marquée
 `UNSUPPORTED_CONFIGURATION`/`NOT_MEASURED`, jamais considérée comme couverte.
 
+Chaque entrée `coverage` conserve aussi les chemins `scopedFilePaths` et
+`measuredFilePaths`. L'index par fichier peut ainsi distinguer un fichier
+Mobile analysé sans finding (`NONE`) d'un fichier Web resté
+`UNSUPPORTED_CONFIGURATION` (`NOT_MEASURED`), même lorsque le rapport global
+reste en `MEASUREMENT_FAILED`. Un rapport historique qui ne contient pas cet
+inventaire ne permet aucune déduction négative et reste `NOT_MEASURED` par
+fichier. Les compteurs globaux sont conservés séparément.
+
 Le contrôle est non bloquant pour les cinq moteurs de gate historiques. Son
 rapport reste cependant en attention lorsqu'une dette ou un diagnostic de
 mesure est observé. Il ne modifie ni les contrats runtime, ni les types
@@ -697,8 +705,13 @@ delta top-heavy ni REVIEW non qualifié nécessitant une nouvelle analyse n’a
 Les audits auxiliaires restent non bloquants et ne modifient pas les verdicts
 des cinq gates historiques. `maintainability` distingue la complexité
 cognitive, les défauts locaux et leurs relations avec la complexité
-cyclomatique et la longueur de fonction. `type-safety` sépare
-`TYPE_SAFETY` et `ASYNC_SAFETY`. `hotspots` mesure l'activité Git du SHA audité
+cyclomatique et la longueur de fonction. `type-safety` sépare strictement les
+findings `TYPE_SAFETY` et `ASYNC_SAFETY`, sans double comptage dans l'index.
+Une exception `fire-and-forget` exige à la fois une justification locale et
+une expression AST commençant par `void`; le commentaire seul ne neutralise
+pas une promesse flottante. Les suppressions ESLint justifiées sont reconnues
+uniquement après extraction de leur justification explicite. `hotspots` mesure
+l'activité Git du SHA audité
 sur une fenêtre de 180 jours, les changements substantiels à partir de 20
 lignes et l'activité élevée à partir de 5 commits ; ces seuils sont
 descriptifs, sans ratchet ni score global opaque. Il corrèle activité, dette

@@ -395,7 +395,7 @@ function ensureFile(files, filePath) {
       topHeavy: { measurements: null, findings: new Map(), exceptions: [] },
       complexity: { metrics: [], findings: new Map() },
       maintainability: { cognitiveMetrics: [], findings: new Map() },
-      typeSafety: { findings: new Map() },
+      typeSafety: { findings: new Map(), coverage: null },
       hotspots: { measurement: null, findings: new Map() },
       testability: { measurement: null, findings: new Map() },
       deadCode: { findings: new Map(), exceptions: [] },
@@ -654,6 +654,21 @@ function addMaintainability(report, files, domains, complexityReport) {
 
 function addTypeSafety(report, files, domains) {
   if (!report || report.error) return { state: "NOT_MEASURED", status: report?.error ? "FAIL" : "NOT_MEASURED", error: report?.error ?? null, measuredFiles: 0, findingCounts: {} };
+  const coverageEntries = Array.isArray(report.coverage) ? report.coverage : [];
+  const hasCoverageInventory = coverageEntries.some((entry) => Array.isArray(entry.scopedFilePaths) && Array.isArray(entry.measuredFilePaths));
+  if (hasCoverageInventory) {
+    for (const entry of coverageEntries) {
+      const measuredPaths = new Set(entry.measuredFilePaths);
+      for (const filePath of entry.scopedFilePaths) {
+        const file = ensureFile(files, filePath);
+        if (!file) continue;
+        const typed = entry.effectiveCoverage === "TYPED" && measuredPaths.has(filePath);
+        file.typeSafety.coverage = typed
+          ? { state: "TYPED", workspace: entry.workspace, effectiveCoverage: entry.effectiveCoverage, reason: null }
+          : { state: "NOT_MEASURED", workspace: entry.workspace, effectiveCoverage: entry.effectiveCoverage, reason: entry.reason ?? "UNSUPPORTED_CONFIGURATION" };
+      }
+    }
+  }
   for (const finding of report.findings ?? []) {
     const file = ensureFile(files, finding.file);
     const domain = finding.family === "ASYNC_SAFETY" ? "async-safety" : "type-safety";
@@ -1022,6 +1037,14 @@ function finalizeFiles(files, reports, architecture) {
     const complexityFindingItems = complexityItems.filter((item) => complexityFindingCategory(item) === "complexity");
     const maintainabilityFindingItems = [...file.maintainability.findings.values()];
     const typeSafetyFindingItems = [...file.typeSafety.findings.values()];
+    const typeSafetyItems = typeSafetyFindingItems.filter((finding) => finding.family === "TYPE_SAFETY");
+    const asyncSafetyItems = typeSafetyFindingItems.filter((finding) => finding.family === "ASYNC_SAFETY");
+    const typeSafetyCoverage = file.typeSafety.coverage;
+    const typeSafetyMeasured = typeSafetyCoverage?.state === "TYPED";
+    const typeSafetyNotMeasured = !typeSafetyMeasured;
+    const typeSafetyDetail = typeSafetyCoverage?.reason === "UNSUPPORTED_CONFIGURATION"
+      ? "configuration TypeScript incompatible : UNSUPPORTED_CONFIGURATION"
+      : typeSafetyCoverage?.reason ?? "inventaire des fichiers mesurés absent du rapport type-safety";
     const hotspotFindingItems = [...file.hotspots.findings.values()];
     const cognitiveMetrics = file.maintainability.cognitiveMetrics;
     const hotspotMeasurement = file.hotspots.measurement
@@ -1045,6 +1068,9 @@ function finalizeFiles(files, reports, architecture) {
       if (measured) return state("NONE", "aucun finding attribué", []);
       return state("NOT_MEASURED", "le rapport ne fournit pas une couverture négative par fichier", []);
     };
+    const typeSafetyCategory = (family, findingItems) => typeSafetyNotMeasured
+      ? state("NOT_MEASURED", typeSafetyDetail, findingItems)
+      : state(findingItems.length > 0 ? "PRESENT" : "NONE", `${findingItems.length} finding(s) ${family}`, findingItems);
     output.push({
       path: file.path,
       auditCategories: [...file.auditCategories].sort(),
@@ -1053,7 +1079,8 @@ function finalizeFiles(files, reports, architecture) {
         topHeavy: file.topHeavy.measurements ? state("PRESENT", "mesure de taille disponible", [file.topHeavy.measurements]) : categoryAvailability.topHeavy === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport top-heavy en échec") : state("NOT_APPLICABLE", "fichier hors roots top-heavy"),
         complexity: file.complexity.metrics.length > 0 ? state("PRESENT", `${file.complexity.metrics.length} fonction(s) mesurée(s)`, file.complexity.metrics) : categoryAvailability.complexity === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport complexity en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
         cognitiveComplexity: cognitiveMetrics.length > 0 ? state("PRESENT", `${cognitiveMetrics.length} fonction(s) mesurée(s)`, cognitiveMetrics) : categoryAvailability.maintainability === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport maintainability en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
-        typeSafety: categoryAvailability.typeSafety === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport type-safety en échec ou couverture typée indisponible") : state(typeSafetyFindingItems.length > 0 ? "PRESENT" : "NONE", `${typeSafetyFindingItems.length} finding(s) TYPE_SAFETY/ASYNC_SAFETY`, typeSafetyFindingItems),
+        typeSafety: typeSafetyNotMeasured ? state("NOT_MEASURED", typeSafetyDetail, typeSafetyItems) : state(typeSafetyItems.length > 0 ? "PRESENT" : "NONE", `${typeSafetyItems.length} finding(s) TYPE_SAFETY`, typeSafetyItems),
+        asyncSafety: typeSafetyNotMeasured ? state("NOT_MEASURED", typeSafetyDetail, asyncSafetyItems) : state(asyncSafetyItems.length > 0 ? "PRESENT" : "NONE", `${asyncSafetyItems.length} finding(s) ASYNC_SAFETY`, asyncSafetyItems),
         hotspots: hotspotMeasurement ? state("PRESENT", "activité, dette structurelle et relations de maintenance mesurées", [hotspotMeasurement]) : categoryAvailability.hotspots === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport hotspots absent ou en échec") : state("NOT_APPLICABLE", "aucune observation hotspot pour ce fichier"),
         testability: categoryAvailability.testability === "NOT_MEASURED" ? state("NOT_MEASURED", "preuve de testabilité absente, périmée ou non attribuable") : state("NOT_MEASURED", "aucune correspondance fichier inventée depuis une mesure par domaine"),
         architecture: file.architecture
@@ -1069,8 +1096,8 @@ function finalizeFiles(files, reports, architecture) {
         functionLength: category("complexity", functionLengthItems, file.complexity.metrics.some((metric) => metric.metric === "functionLength"), "rapport complexity en échec"),
         cognitiveComplexity: category("maintainability", maintainabilityFindingItems.filter((finding) => finding.category === "cognitive-complexity"), cognitiveMetrics.length > 0, "rapport maintainability en échec"),
         localMaintainability: category("maintainability", maintainabilityFindingItems.filter((finding) => finding.category !== "cognitive-complexity"), Boolean(file.maintainability.findings.size), "rapport maintainability en échec"),
-        typeSafety: category("typeSafety", typeSafetyFindingItems, Boolean(file.typeSafety.findings.size), "rapport type-safety en échec ou couverture typée indisponible"),
-        asyncSafety: category("typeSafety", typeSafetyFindingItems.filter((finding) => finding.family === "ASYNC_SAFETY"), typeSafetyFindingItems.some((finding) => finding.family === "ASYNC_SAFETY"), "rapport type-safety en échec ou couverture typée indisponible"),
+        typeSafety: typeSafetyCategory("TYPE_SAFETY", typeSafetyItems),
+        asyncSafety: typeSafetyCategory("ASYNC_SAFETY", asyncSafetyItems),
         hotspots: category("hotspots", hotspotFindingItems, Boolean(file.hotspots.measurement), "rapport hotspots absent ou sans fichier mesuré"),
         testability: category("testability", [...file.testability.findings.values()], Boolean(file.testability.measurement), "la source de testabilité ne fournit pas de correspondance fichier sans preuve"),
         deadCode: category("deadCode", [...file.deadCode.findings.values()], false, "rapport dead-code en échec"),

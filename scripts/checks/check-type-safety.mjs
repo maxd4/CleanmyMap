@@ -161,8 +161,18 @@ function findingStatus(file) {
 function suppressionReason(text) {
   const normalized = text.trim();
   if (!normalized) return null;
-  if (/^(?:--|:)/.test(normalized)) return normalized;
+  const marker = normalized.match(/(?:^|\s)(--|:)\s*(.+)$/);
+  if (marker) return `${marker[1]} ${marker[2].trim()}`;
   return null;
+}
+
+function suppressionFamily(kind, directive) {
+  if (kind !== "eslint-suppression") return "TYPE_SAFETY";
+  const asyncRules = [...SUPPRESSION_RULES].filter((ruleId) => RULES[ruleId]?.family === "ASYNC_SAFETY");
+  const typeRules = [...SUPPRESSION_RULES].filter((ruleId) => RULES[ruleId]?.family === "TYPE_SAFETY");
+  const hasAsyncRule = asyncRules.some((ruleId) => directive.includes(ruleId));
+  const hasTypeRule = typeRules.some((ruleId) => directive.includes(ruleId));
+  return hasAsyncRule && !hasTypeRule ? "ASYNC_SAFETY" : "TYPE_SAFETY";
 }
 
 function suppressionFindings(file) {
@@ -180,11 +190,12 @@ function suppressionFindings(file) {
       while ((match = regex.exec(line)) !== null) {
         const directive = match[0];
         if (kind === "eslint-suppression" && ![...SUPPRESSION_RULES].some((ruleId) => directive.includes(ruleId))) continue;
-        const reason = suppressionReason(match[2] ?? "");
+        const reasonText = kind === "typescript-suppression" ? match[2] : match[1];
+        const reason = suppressionReason(reasonText ?? "");
         const lineNumber = lineIndex + 1;
         const column = match.index + 1;
         const item = {
-          family: "TYPE_SAFETY",
+          family: suppressionFamily(kind, directive),
           category: "suppression",
           ruleId: kind === "typescript-suppression" ? `typescript/${directive.match(/@ts-([\w-]+)/)?.[1] ?? "unknown"}` : "eslint/suppression",
           file: file.path,
@@ -249,10 +260,34 @@ function buildFinding(file, message, functions) {
   };
 }
 
+function hasExplicitVoidExpression(file, line) {
+  try {
+    const ast = tseslint.parser.parseForESLint(file.source, {
+      filePath: file.absolutePath ?? file.path,
+      loc: true,
+      range: true,
+      comment: true,
+      jsx: /\.tsx$/i.test(file.path),
+    }).ast;
+    const visit = (node) => {
+      if (!node || typeof node !== "object") return false;
+      if (node.type === "ExpressionStatement"
+        && node.loc?.start?.line <= line
+        && node.loc?.end?.line >= line
+        && node.expression?.type === "UnaryExpression"
+        && node.expression.operator === "void") return true;
+      return Object.entries(node).some(([key, value]) => key !== "parent" && (Array.isArray(value) ? value.some(visit) : visit(value)));
+    };
+    return visit(ast);
+  } catch {
+    return false;
+  }
+}
+
 function documentedFireAndForget(file, line) {
   const lines = file.source.split(/\r?\n/);
   const local = [lines[(line ?? 1) - 1] ?? "", lines[(line ?? 1) - 2] ?? ""].join(" ");
-  return /fire[- ]and[- ]forget\s*(?:--|:)/i.test(local);
+  return /fire[- ]and[- ]forget\s*(?:--|:)/i.test(local) && hasExplicitVoidExpression(file, line);
 }
 
 export async function analyzeTypeSafetySources({ root = process.cwd(), files, projects = projectDefinitions(root) } = {}) {
@@ -276,7 +311,14 @@ export async function analyzeTypeSafetySources({ root = process.cwd(), files, pr
     const workspaceFiles = filesByWorkspace.get(project.workspace) ?? [];
     if (workspaceFiles.length === 0) continue;
     const compatibility = compatibilityFor(project);
-    const entry = { ...compatibility, filesInScope: workspaceFiles.length, filesMeasured: 0, effectiveCoverage: compatibility.supported ? "TYPED" : "UNSUPPORTED_CONFIGURATION" };
+    const entry = {
+      ...compatibility,
+      filesInScope: workspaceFiles.length,
+      scopedFilePaths: workspaceFiles.map((file) => file.path).sort(),
+      filesMeasured: 0,
+      measuredFilePaths: [],
+      effectiveCoverage: compatibility.supported ? "TYPED" : "UNSUPPORTED_CONFIGURATION",
+    };
     coverage.push(entry);
     if (!compatibility.supported) {
       diagnostics.push({
@@ -306,6 +348,7 @@ export async function analyzeTypeSafetySources({ root = process.cwd(), files, pr
     for (const file of workspaceFiles) {
       const results = await eslint.lintText(file.source, { filePath: file.absolutePath ?? path.join(root, file.path) });
       entry.filesMeasured += 1;
+      entry.measuredFilePaths.push(file.path);
       const functions = listFunctionMetadata(file.path, file.source);
       for (const result of results) {
         for (const message of result.messages ?? []) {
@@ -354,6 +397,7 @@ export async function analyzeTypeSafetySources({ root = process.cwd(), files, pr
       filesInScope: measuredFiles.length,
       filesMeasured: coverage.reduce((sum, entry) => sum + entry.filesMeasured, 0),
       filesWithTypedCoverage: coverage.filter((entry) => entry.effectiveCoverage === "TYPED").reduce((sum, entry) => sum + entry.filesMeasured, 0),
+      measuredFilePaths: coverage.flatMap((entry) => entry.measuredFilePaths ?? []).sort(),
       findings: findings.length,
       findingsByFamily: byFamily,
       findingsByRule,

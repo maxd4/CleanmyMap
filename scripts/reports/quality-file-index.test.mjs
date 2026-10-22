@@ -315,7 +315,7 @@ test("projette séparément TYPE_SAFETY et ASYNC_SAFETY par fichier", () => {
     status: "FAIL",
     kind: "quality-type-safety",
     measurementStatus: "MEASURED_NOT_RATCHETED",
-    coverage: [{ workspace: "mobile", effectiveCoverage: "TYPED", filesMeasured: 2 }],
+    coverage: [{ workspace: "mobile", effectiveCoverage: "TYPED", filesMeasured: 2, scopedFilePaths: [fileA, fileB], measuredFilePaths: [fileA, fileB] }],
     diagnostics: [],
     findings: [
       { family: "TYPE_SAFETY", ruleId: "@typescript-eslint/no-unsafe-call", file: fileA, line: 7, column: 3, message: "unsafe call", status: "HISTORICAL" },
@@ -329,12 +329,59 @@ test("projette séparément TYPE_SAFETY et ASYNC_SAFETY par fichier", () => {
   assert.equal(index.globalCounts.typeSafetyFindings, 1);
   assert.equal(index.globalCounts.asyncSafetyFindings, 1);
   assert.equal(indexedA.findings.typeSafety.state, "PRESENT");
-  assert.equal(indexedA.findings.asyncSafety.state, "NOT_MEASURED");
+  assert.equal(indexedA.findings.asyncSafety.state, "NONE");
   assert.equal(indexedB.findings.asyncSafety.state, "PRESENT");
   assert.ok(index.auditCategories.some((category) => category.id === "type-safety"));
   assert.ok(index.auditCategories.some((category) => category.id === "async-safety"));
   assert.match(buildQualityFileIndexMarkdown(index), /TYPE_SAFETY/);
   assert.match(buildQualityFileIndexMarkdown(index), /ASYNC_SAFETY/);
+});
+
+test("distingue les fichiers Mobile mesurés des fichiers Web incompatibles", () => {
+  const run = buildRun();
+  const mobileFile = "apps/mobile/src/clean.ts";
+  const webFile = "apps/web/src/unmeasured.ts";
+  run.reports["type-safety"] = {
+    status: "FAIL",
+    kind: "quality-type-safety",
+    measurementStatus: "MEASUREMENT_FAILED",
+    coverage: [
+      { workspace: "web", effectiveCoverage: "UNSUPPORTED_CONFIGURATION", scopedFilePaths: [webFile], measuredFilePaths: [] },
+      { workspace: "mobile", effectiveCoverage: "TYPED", scopedFilePaths: [mobileFile], measuredFilePaths: [mobileFile] },
+    ],
+    diagnostics: [{ code: "UNSUPPORTED_TYPESCRIPT_VERSION" }],
+    findings: [],
+    summary: { filesInScope: 2, filesMeasured: 1, filesWithTypedCoverage: 1, measuredFilePaths: [mobileFile], findingsByFamily: { TYPE_SAFETY: 0, ASYNC_SAFETY: 0 }, findingsByRule: {} },
+  };
+  const index = buildQualityFileIndex({ run, mode: "ALL" });
+  const indexedMobile = index.files.find((file) => file.path === mobileFile);
+  const indexedWeb = index.files.find((file) => file.path === webFile);
+  assert.equal(indexedMobile.metrics.typeSafety.state, "NONE");
+  assert.equal(indexedMobile.metrics.asyncSafety.state, "NONE");
+  assert.equal(indexedMobile.findings.typeSafety.state, "NONE");
+  assert.equal(indexedMobile.findings.asyncSafety.state, "NONE");
+  assert.equal(indexedWeb.metrics.typeSafety.state, "NOT_MEASURED");
+  assert.equal(indexedWeb.findings.typeSafety.state, "NOT_MEASURED");
+  assert.match(indexedWeb.findings.typeSafety.detail, /UNSUPPORTED_CONFIGURATION/);
+  assert.equal(index.audits.typeSafety.coverage[0].scopedFilePaths.length, 1);
+});
+
+test("ne déduit aucune couverture par fichier pour un ancien rapport sans inventaire", () => {
+  const run = buildRun();
+  run.reports["type-safety"] = {
+    status: "PASS",
+    kind: "quality-type-safety",
+    measurementStatus: "MEASURED_NOT_RATCHETED",
+    coverage: [{ workspace: "mobile", effectiveCoverage: "TYPED", filesMeasured: 1 }],
+    diagnostics: [],
+    findings: [{ family: "TYPE_SAFETY", ruleId: "@typescript-eslint/no-unsafe-call", file: fileA, line: 4, column: 2, message: "historical" }],
+    summary: { filesInScope: 1, filesMeasured: 1, filesWithTypedCoverage: 1, findingsByFamily: { TYPE_SAFETY: 1, ASYNC_SAFETY: 0 }, findingsByRule: { "@typescript-eslint/no-unsafe-call": 1 } },
+  };
+  const index = buildQualityFileIndex({ run, mode: "ALL" });
+  const indexed = index.files.find((file) => file.path === fileA);
+  assert.equal(indexed.metrics.typeSafety.state, "NOT_MEASURED");
+  assert.equal(indexed.findings.typeSafety.state, "NOT_MEASURED");
+  assert.match(indexed.findings.typeSafety.detail, /inventaire/);
 });
 
 test("projette les hotspots par fichier et la testabilité par domaine sans inventer de correspondance", () => {
