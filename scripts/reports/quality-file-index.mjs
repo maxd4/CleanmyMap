@@ -28,8 +28,8 @@ import { validateDocumentationReport } from "../audits/documentation-maintainabi
 import { buildArchitectureImportGraph } from "./generate-architecture-import-graph.mjs";
 import { createCorrelationSignalsFromAuditResults } from "./generate-modularity-radar.mjs";
 
-export const QUALITY_INDEX_SCHEMA_VERSION = 5;
-export const QUALITY_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability"]);
+export const QUALITY_INDEX_SCHEMA_VERSION = 6;
+export const QUALITY_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage"]);
 export const QUALITY_GATE_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
 export const QUALITY_INDEX_PREFIX = "quality-index";
 export const QUALITY_ARCHITECTURE_DOMAIN_PREFIX = "architecture:";
@@ -37,7 +37,7 @@ export const QUALITY_ARCHITECTURE_DOMAIN_PREFIX = "architecture:";
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 const RUN_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
-const QUALITY_STATUS_STATES = new Set(["PRESENT", "NONE", "NOT_MEASURED", "NOT_APPLICABLE"]);
+const QUALITY_STATUS_STATES = new Set(["PRESENT", "NONE", "NOT_MEASURED", "NOT_APPLICABLE", "OUT_OF_INSTRUMENTATION"]);
 
 function normalizePath(value) {
   return String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
@@ -303,6 +303,9 @@ function validateReport(audit, report) {
   if (audit === "testability" && (!Array.isArray(report.domains) || !report.summary || !Array.isArray(report.diagnostics))) {
     throw new Error("Rapport testability incomplet.");
   }
+  if (audit === "coverage" && (!Array.isArray(report.scopes) || !report.summary || !report.duplication || !Array.isArray(report.warnings) || !Array.isArray(report.diagnostics))) {
+    throw new Error("Rapport coverage incomplet.");
+  }
   return report;
 }
 
@@ -328,7 +331,7 @@ export function readOfflineQualityRun({ root = REPOSITORY_ROOT, auditedSha, runI
     sourceFiles.push(paths.manifest, paths.report, paths.summary);
   }
 
-  for (const audit of ["maintainability", "type-safety", "hotspots", "testability"]) {
+  for (const audit of ["maintainability", "type-safety", "hotspots", "testability", "coverage"]) {
     if (!manifestPathExists(root, auditedSha, runId, audit, fsApi)) continue;
     const paths = createAuditPaths({ root, auditedHead: auditedSha, audit, runId });
     const manifest = validateManifest(readJson(paths.manifest, fsApi), { audit, auditedSha, runId });
@@ -344,7 +347,7 @@ export function readOfflineQualityRun({ root = REPOSITORY_ROOT, auditedSha, runI
   const aggregateManifest = validateManifest(readJson(allPaths.manifest, fsApi), { audit: "all", auditedSha, runId });
   const aggregateReport = readJson(allPaths.report, fsApi);
   try { fsApi.readFileSync(allPaths.summary, "utf8"); } catch { throw new Error("Résumé all absent ou illisible."); }
-  const optionalAudits = ["maintainability", "type-safety", "hotspots", "testability"].filter((audit) => Boolean(manifestPathExists(root, auditedSha, runId, audit, fsApi)));
+  const optionalAudits = ["maintainability", "type-safety", "hotspots", "testability", "coverage"].filter((audit) => Boolean(manifestPathExists(root, auditedSha, runId, audit, fsApi)));
   if (!Array.isArray(aggregateReport?.audits) || aggregateReport.audits.length !== QUALITY_GATE_INDEX_AUDITS.length + optionalAudits.length) {
     throw new Error("Rapport all incomplet: les cinq audits de gate et les auxiliaires présents sont attendus.");
   }
@@ -398,6 +401,7 @@ function ensureFile(files, filePath) {
       typeSafety: { findings: new Map(), coverage: null },
       hotspots: { measurement: null, findings: new Map() },
       testability: { measurement: null, findings: new Map() },
+      coverage: { measurement: null, findings: new Map() },
       deadCode: { findings: new Map(), exceptions: [] },
       duplication: { findings: new Map() },
       cycles: { findings: new Map() },
@@ -753,6 +757,60 @@ function addTestability(report, domains) {
   };
 }
 
+function addCoverage(report, files, domains) {
+  if (!report || report.error) return { state: "NOT_MEASURED", status: report?.error ? "FAIL" : "NOT_MEASURED", error: report?.error ?? null, scopes: [], warnings: [], findingCounts: {} };
+  const coverageFiles = [];
+  for (const scope of report.scopes ?? []) {
+    for (const item of scope.files ?? []) {
+      const file = ensureFile(files, item.path);
+      if (!file) continue;
+      file.coverage.measurement = {
+        scope: item.scope,
+        state: scope.state,
+        metrics: item.metrics,
+        uncoveredBranches: item.uncoveredBranches,
+        uncoveredBranchLines: item.uncoveredBranchLines,
+        priority: item.priority,
+        provenance: item.provenance,
+      };
+      coverageFiles.push(item);
+      if (item.uncoveredBranches > 0) {
+        const finding = {
+          type: "uncovered-branches",
+          scope: item.scope,
+          file: item.path,
+          uncoveredBranches: item.uncoveredBranches,
+          uncoveredBranchLines: item.uncoveredBranchLines,
+          priority: item.priority,
+          severity: "informational",
+          relation: "branch ranking from canonical coverage report; no verdict or ratchet change",
+        };
+        const findingId = addFinding(file, "coverage", finding, "coverage", stableId("coverage:uncovered-branches", finding));
+        addDomain(domains, "coverage", "couverture détaillée et branches non couvertes", file, findingId);
+      }
+    }
+  }
+  for (const warning of report.warnings ?? []) {
+    const domain = warning.code === "DUPLICATION_ABOVE_TARGET" ? "duplication-warning" : "coverage-warning";
+    addDomain(domains, domain, warning.code === "DUPLICATION_ABOVE_TARGET" ? "alerte informative de duplication" : "alerte informative de couverture", null, stableId(`coverage:${warning.code}`, warning));
+  }
+  return {
+    state: report.measurementStatus === "NOT_MEASURED" ? "NOT_MEASURED" : "PRESENT",
+    status: report.status,
+    measurementStatus: report.measurementStatus,
+    thresholds: report.thresholds,
+    scopes: report.scopes ?? [],
+    duplication: report.duplication,
+    warnings: report.warnings ?? [],
+    diagnostics: report.diagnostics ?? [],
+    measuredFiles: coverageFiles.length,
+    findingCounts: {
+      uncoveredBranchFiles: coverageFiles.filter((item) => item.uncoveredBranches > 0).length,
+      warnings: report.warnings?.length ?? 0,
+    },
+  };
+}
+
 function deadCodeKey(finding) {
   return JSON.stringify({ type: finding.type, file: normalizePath(finding.file), name: finding.name ?? null, namespace: finding.namespace ?? null, kind: finding.kind ?? null, specifier: finding.specifier ?? null, symbols: finding.symbols ?? null });
 }
@@ -955,6 +1013,7 @@ const FUNCTIONAL_QUALITY_CATEGORIES = Object.freeze([
   "deadCode",
   "duplication",
   "cycles",
+  "coverage",
   "documentation",
 ]);
 
@@ -1024,6 +1083,7 @@ function finalizeFiles(files, reports, architecture) {
     typeSafety: !reports["type-safety"] || reports["type-safety"].error || reports["type-safety"].measurementStatus === "MEASUREMENT_FAILED" ? "NOT_MEASURED" : "PRESENT",
     hotspots: !reports.hotspots || reports.hotspots.error ? "NOT_MEASURED" : "PRESENT",
     testability: !reports.testability || reports.testability.error || reports.testability.measurementStatus === "NOT_MEASURED" ? "NOT_MEASURED" : "PRESENT",
+    coverage: !reports.coverage || reports.coverage.error || reports.coverage.measurementStatus === "NOT_MEASURED" ? "NOT_MEASURED" : "PRESENT",
     deadCode: reports["dead-code"]?.error ? "NOT_MEASURED" : "PRESENT",
     duplication: reports.duplication?.error ? "NOT_MEASURED" : "PRESENT",
     cycles: reports.cycles?.error ? "NOT_MEASURED" : "PRESENT",
@@ -1083,6 +1143,9 @@ function finalizeFiles(files, reports, architecture) {
         asyncSafety: typeSafetyNotMeasured ? state("NOT_MEASURED", typeSafetyDetail, asyncSafetyItems) : state(asyncSafetyItems.length > 0 ? "PRESENT" : "NONE", `${asyncSafetyItems.length} finding(s) ASYNC_SAFETY`, asyncSafetyItems),
         hotspots: hotspotMeasurement ? state("PRESENT", "activité, dette structurelle et relations de maintenance mesurées", [hotspotMeasurement]) : categoryAvailability.hotspots === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport hotspots absent ou en échec") : state("NOT_APPLICABLE", "aucune observation hotspot pour ce fichier"),
         testability: categoryAvailability.testability === "NOT_MEASURED" ? state("NOT_MEASURED", "preuve de testabilité absente, périmée ou non attribuable") : state("NOT_MEASURED", "aucune correspondance fichier inventée depuis une mesure par domaine"),
+        coverage: file.coverage.measurement
+          ? state(file.coverage.measurement.state === "MEASURED" ? (file.coverage.measurement.uncoveredBranches > 0 ? "PRESENT" : "NONE") : "NOT_MEASURED", file.coverage.measurement.state === "MEASURED" ? "mesure de couverture attribuée" : file.coverage.measurement.state, [file.coverage.measurement])
+          : state(categoryAvailability.coverage === "NOT_MEASURED" ? "NOT_MEASURED" : "OUT_OF_INSTRUMENTATION", categoryAvailability.coverage === "NOT_MEASURED" ? "preuve de couverture absente ou non vérifiable" : "fichier absent des sources instrumentées", []),
         architecture: file.architecture
           ? { state: "PRESENT", detail: "graphe d'import architectural disponible", value: file.architecture.metrics }
           : state(architecture?.state === "NOT_MEASURED" ? "NOT_MEASURED" : "NOT_APPLICABLE", architecture?.detail ?? "fichier absent du graphe architectural"),
@@ -1100,6 +1163,7 @@ function finalizeFiles(files, reports, architecture) {
         asyncSafety: typeSafetyCategory("ASYNC_SAFETY", asyncSafetyItems),
         hotspots: category("hotspots", hotspotFindingItems, Boolean(file.hotspots.measurement), "rapport hotspots absent ou sans fichier mesuré"),
         testability: category("testability", [...file.testability.findings.values()], Boolean(file.testability.measurement), "la source de testabilité ne fournit pas de correspondance fichier sans preuve"),
+        coverage: category("coverage", [...file.coverage.findings.values()], Boolean(file.coverage.measurement), "rapport coverage absent ou sans preuve attribuable"),
         deadCode: category("deadCode", [...file.deadCode.findings.values()], false, "rapport dead-code en échec"),
         duplication: category("duplication", [...file.duplication.findings.values()], false, "rapport duplication en échec"),
         cycles: category("cycles", [...file.cycles.findings.values()], false, "rapport cycles en échec"),
@@ -1123,6 +1187,7 @@ function finalizeFiles(files, reports, architecture) {
         cycles: reports.cycles?.readProvenance ?? null,
         hotspots: reports.hotspots?.readProvenance ?? null,
         testability: reports.testability?.readProvenance ?? null,
+        coverage: reports.coverage?.readProvenance ?? null,
         documentation: reports.documentation?.provenance ?? null,
       },
     });
@@ -1205,6 +1270,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
   const typeSafety = addTypeSafety(run.reports["type-safety"], files, auditCategories);
   const hotspots = addHotspots(run.reports.hotspots, files, auditCategories, architectureProjection);
   const testability = addTestability(run.reports.testability, auditCategories);
+  const coverage = addCoverage(run.reports.coverage, files, auditCategories);
   const deadCode = addDeadCode(run.reports["dead-code"], files, auditCategories);
   const duplication = addDuplication(run.reports.duplication, files, auditCategories, candidateGroups);
   const cycles = addCycles(run.reports.cycles, files, auditCategories, candidateGroups);
@@ -1223,6 +1289,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
     typeSafety,
     hotspots,
     testability,
+    coverage,
     deadCode,
     duplication,
     cycles,
@@ -1314,7 +1381,7 @@ export function buildQualityFileIndexMarkdown(index) {
     `- Fichiers indexés : **${index.globalCounts.files}**`,
     `- Groupes candidats relationnels : **${index.globalCounts.candidateGroups}**`,
     "",
-    "La projection lit les cinq moteurs de gate, les audits auxiliaires de maintenabilité, sûreté typée/asynchrone, hotspots et testabilité, ainsi que la dimension documentaire du run identifié lorsqu'ils existent. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines.",
+    "La projection lit les cinq moteurs de gate, les audits auxiliaires de maintenabilité, sûreté typée/asynchrone, couverture détaillée, hotspots et testabilité, ainsi que la dimension documentaire du run identifié lorsqu'ils existent. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines.",
     "",
     "## États et audits",
     "",
@@ -1337,9 +1404,16 @@ export function buildQualityFileIndexMarkdown(index) {
   lines.push("", "## HOTSPOTS", "", `- État : **${index.audits.hotspots.state}**`, `- Fichiers mesurés : **${index.audits.hotspots.measuredFiles ?? "NOT_MEASURED"}**`, `- Activité élevée : **${index.audits.hotspots.findingCounts?.highActivityFiles ?? "NOT_MEASURED"}**`, `- Candidats activité + dette : **${index.globalCounts.hotspotCandidates ?? "NOT_MEASURED"}**`, `- Récurrence des régressions : **${index.audits.hotspots.summary?.regressionRecurrence ?? "NOT_MEASURED"}**`, "", "L'activité Git est descriptive et n'est pas un défaut en soi. Les candidats combinent activité élevée et signaux de dette ; le couplage est joint depuis le graphe architectural exact lorsque disponible.");
   lines.push("", "## TESTABILITY", "", `- État : **${index.audits.testability.state}**`, `- Domaines/modules mesurés : **${index.audits.testability.measuredDomains ?? "NOT_MEASURED"}**`, `- Domaines critiques sans preuve suffisante : **${index.audits.testability.criticalDomainsWithoutSufficientEvidence ?? "NOT_MEASURED"}**`, "", "Les preuves absentes, périmées ou non attribuables restent NOT_MEASURED. Aucune absence de fichier voisin et aucune correspondance fonction-test ne sont inventées.");
   lines.push("", "## Couplage architectural", "", `- État : **${index.architecture?.state ?? "NOT_MEASURED"}**`, `- Imports : **${index.architecture?.graphSummary?.imports ?? "NOT_MEASURED"}**`, `- Frontières bloquantes : **${index.architecture?.boundary?.blocking?.length ?? "NOT_MEASURED"}**`, `- Imports internes non résolus : **${index.architecture?.graphSummary?.unresolvedInternalImports ?? "NOT_MEASURED"}**`, "", "Les métriques de centralité sont informatives ; seuls les findings de frontière explicitement interdits sont bloquants.");
-  lines.push("", "## FILE INDEX", "", "| Fichier | Catégories d'audit | Domaines fonctionnels | Top-heavy | Complexité cyclomatique | Longueur de fonction | Complexité cognitive | Défaut local de maintenabilité | TYPE_SAFETY | ASYNC_SAFETY | Hotspots | Testabilité | Dead-code | Duplication | Cycles | Documentation | Architecture |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+  lines.push("", "## COVERAGE", "", `- État : **${index.audits.coverage.state}**`, `- Seuil informatif couverture : **<${index.audits.coverage.thresholds?.coverageWarningPct ?? "NOT_MEASURED"}%**`, `- Seuil informatif duplication : **>${index.audits.coverage.thresholds?.duplicationWarningPct ?? "NOT_MEASURED"}%**`, `- Avertissements : **${index.audits.coverage.warnings?.length ?? "NOT_MEASURED"}**`, `- Fichiers avec branches non couvertes : **${index.audits.coverage.findingCounts?.uncoveredBranchFiles ?? "NOT_MEASURED"}**`, "", "Les quatre métriques (statements, branches, functions, lines) restent séparées. Les rapports absents, périmés ou non attestés restent NOT_MEASURED/EVIDENCE_UNVERIFIED ; aucun warning de seuil n'est fabriqué dans ce cas. Le classement complet des points de décision vient de LCOV BRDA ou des branches Cobertura réellement présentes.", "", "| Scope | État | Statements | Branches | Functions | Lines | Avertissements |", "| --- | --- | ---: | ---: | ---: | ---: | ---: |");
+  for (const scope of index.audits.coverage.scopes ?? []) {
+    const value = (name) => scope.metrics?.[name]?.state === "MEASURED" ? `${scope.metrics[name].pct}% (${scope.metrics[name].covered}/${scope.metrics[name].total})` : scope.metrics?.[name]?.state ?? "NOT_MEASURED";
+    lines.push(`| ${scope.scope} | ${scope.state} | ${value("statements")} | ${value("branches")} | ${value("functions")} | ${value("lines")} | ${scope.warnings?.length ?? 0} |`);
+  }
+  lines.push("", "### Top 20 fichiers par branches non couvertes", "", "| Rang | Scope | Fichier | Branches non couvertes | Lignes | Priorité |", "| ---: | --- | --- | ---: | --- | --- |");
+  for (const [rank, item] of (index.audits.coverage.scopes ?? []).flatMap((scope) => scope.files ?? []).filter((item) => item.uncoveredBranches > 0).slice(0, 20).entries()) lines.push(`| ${rank + 1} | ${item.scope} | \`${escapeMarkdown(item.path)}\` | ${item.uncoveredBranches} | ${item.uncoveredBranchLines.join(", ") || "—"} | ${item.priority} |`);
+  lines.push("", "## FILE INDEX", "", "| Fichier | Catégories d'audit | Domaines fonctionnels | Top-heavy | Complexité cyclomatique | Longueur de fonction | Complexité cognitive | Défaut local de maintenabilité | TYPE_SAFETY | ASYNC_SAFETY | Coverage | Hotspots | Testabilité | Dead-code | Duplication | Cycles | Documentation | Architecture |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const file of index.files) {
-    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.auditCategories.join(", ") || "—")} | ${escapeMarkdown(file.functionalDomains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.cognitiveComplexity)} | ${stateLabel(file.findings.localMaintainability)} | ${stateLabel(file.findings.typeSafety)} | ${stateLabel(file.findings.asyncSafety)} | ${stateLabel(file.findings.hotspots)} | ${stateLabel(file.findings.testability)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} | ${stateLabel(file.findings.documentation)} | ${stateLabel(file.metrics.architecture)} |`);
+    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.auditCategories.join(", ") || "—")} | ${escapeMarkdown(file.functionalDomains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.cognitiveComplexity)} | ${stateLabel(file.findings.localMaintainability)} | ${stateLabel(file.findings.typeSafety)} | ${stateLabel(file.findings.asyncSafety)} | ${stateLabel(file.findings.coverage)} | ${stateLabel(file.findings.hotspots)} | ${stateLabel(file.findings.testability)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} | ${stateLabel(file.findings.documentation)} | ${stateLabel(file.metrics.architecture)} |`);
   }
   lines.push("", "## AUDIT CATEGORY INDEX", "", "Les catégories décrivent les familles de contrôles ; elles ne constituent pas des domaines fonctionnels.", "");
   for (const domain of index.auditCategories) {

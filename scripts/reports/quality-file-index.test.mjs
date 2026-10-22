@@ -258,6 +258,45 @@ test("construit un index exhaustif sans confondre complexity et functionLength",
   assert.equal(index.documentationDomains.reason, "HISTORICAL_ABSENCE");
 });
 
+test("projette la couverture détaillée et ses branches sans la confondre avec les gates", () => {
+  const run = buildRun();
+  run.reports.coverage = {
+    schemaVersion: 1,
+    kind: "quality-coverage-insights",
+    status: "PASS",
+    blocking: false,
+    measurementStatus: "MEASURED",
+    thresholds: { coverageWarningPct: 80, duplicationWarningPct: 3 },
+    scopes: [{
+      scope: "web",
+      state: "MEASURED",
+      metrics: {
+        statements: { covered: 8, total: 10, uncovered: 2, pct: 80, state: "MEASURED", source: "summary" },
+        branches: { covered: 1, total: 2, uncovered: 1, pct: 50, state: "MEASURED", source: "summary" },
+        functions: { covered: 2, total: 2, uncovered: 0, pct: 100, state: "MEASURED", source: "summary" },
+        lines: { covered: 8, total: 10, uncovered: 2, pct: 80, state: "MEASURED", source: "summary" },
+      },
+      warnings: [{ code: "COVERAGE_BELOW_TARGET", metric: "branches", value: 50, threshold: 80, severity: "WARNING" }],
+      files: [{ scope: "web", path: fileA, metrics: { branches: { pct: 50, state: "MEASURED" } }, uncoveredBranches: 1, uncoveredBranchLines: [12], priority: "HIGH", provenance: { state: "MEASURED" } }],
+      diagnostics: [],
+      decisionPoints: [],
+    }],
+    duplication: { state: "NOT_MEASURED", scopes: [], warnings: [], diagnostics: [] },
+    warnings: [{ code: "COVERAGE_BELOW_TARGET", metric: "branches", value: 50, threshold: 80, severity: "WARNING" }],
+    diagnostics: [],
+    summary: { scopes: 1, scopesMeasured: 1, warnings: 1, diagnosticCount: 0, topUncoveredBranchFiles: [], elapsedMs: 1 },
+    attentionRequired: true,
+  };
+  run.manifests.coverage = { schemaVersion: 1, audit: "coverage", runId, auditedHead: sha, originMain: sha, baselineStable: true, worktreeClean: true, readProvenance: "MIXED", reproducible: false, resultClass: "INFORMATIVE", status: "PASS", attentionRequired: true, generatedAt: "2026-10-21T20:00:00.000Z" };
+  const index = buildQualityFileIndex({ run, mode: "OFFLINE" });
+  const indexed = index.files.find((file) => file.path === fileA);
+  assert.equal(index.audits.coverage.state, "PRESENT");
+  assert.equal(indexed.findings.coverage.state, "PRESENT");
+  assert.equal(indexed.findings.coverage.items[0].uncoveredBranches, 1);
+  assert.equal(indexed.metrics.coverage.items[0].metrics.branches.pct, 50);
+  assert.equal(index.source.sourceReports.some((entry) => entry.audit === "coverage"), true);
+});
+
 test("projette la complexité cognitive et les défauts locaux avec leurs relations", () => {
   const run = buildRun();
   run.reports.maintainability = {

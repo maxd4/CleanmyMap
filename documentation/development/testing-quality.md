@@ -661,6 +661,7 @@ npm run audit:quality -- maintainability
 npm run audit:quality -- type-safety
 npm run audit:quality -- hotspots
 npm run audit:quality -- testability
+npm run audit:quality -- coverage
 npm run audit:quality -- all
 ```
 
@@ -722,6 +723,23 @@ couvertures et rapports de mutation attribuables au SHA exact ; l'absence,
 l'obsolescence ou la non-attribution d'une preuve reste `NOT_MEASURED` et aucun
 runner de test n'est relancé par l'audit.
 
+`coverage` est une projection auxiliaire rapide et non bloquante : elle
+réutilise les rapports existants Web, mobile, Node et Python après validation
+en lecture seule, sans relancer Vitest, c8, pytest, Stryker ou les cinq
+scanners. Elle conserve séparément `statements`, `branches`, `functions` et
+`lines`, distingue `MEASURED`, `NOT_MEASURED`, `STALE_EVIDENCE`,
+`EVIDENCE_UNVERIFIED` et `MEASUREMENT_FAILED`, et classe les branches LCOV
+`BRDA` non couvertes par scope, fichier, ligne, bloc et branche. Cobertura est
+agrégé à partir des conditions de branche réellement présentes ; aucune nature
+de condition n'est inférée. Une alerte informative est émise strictement sous
+80 % pour une métrique vérifiée et strictement au-dessus de 3 % pour la
+duplication. Les valeurs exactes 80 % et 3 % restent propres ; aucun de ces
+seuils ne modifie les verdicts, baselines, ratchets ou règles de publication
+des cinq gates. Les rapports absents ou non attribuables produisent un
+diagnostic de disponibilité, jamais une couverture à 0 %. Le rapport de
+duplication est réutilisé quand il existe déjà dans le même run ; `jscpd` n'est
+pas relancé.
+
 `audit:quality -- all` produit en plus, après les triplets des cinq gates et
 des auxiliaires présents, puis le triplet agrégé, une projection non normative
 dans le même SHA :
@@ -730,7 +748,7 @@ dans le même SHA :
 `quality-index--<runId>--bundle.zip`. Cette projection est une vue par fichier,
 domaine et relation prouvée ; elle réutilise les résultats déjà calculés et la
 fonction de corrélation du radar. Elle distingue `PRESENT`, `NONE`,
-`NOT_MEASURED` et `NOT_APPLICABLE`, conserve les deux vues top-heavy (verdict
+`NOT_MEASURED`, `NOT_APPLICABLE` et `OUT_OF_INSTRUMENTATION`, conserve les deux vues top-heavy (verdict
 initial et réévaluation dérivée), et ne transforme pas une erreur de gate en
 mesure nulle. Une projection ne peut pas modifier les rapports, manifestes,
 baselines, justifications ou seuils. Si un run de développement est incomplet,

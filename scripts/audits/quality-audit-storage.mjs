@@ -4,7 +4,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 export const QUALITY_AUDIT_ROOT = "artifacts/quality-audits";
-export const QUALITY_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "all"]);
+export const QUALITY_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage", "all"]);
 export const QUALITY_AUDIT_RETENTION_LIMIT = 3;
 export const QUALITY_PROJECTION_PREFIX = "quality-index";
 

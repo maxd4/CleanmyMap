@@ -18,6 +18,7 @@ import { runCycleGate } from "../checks/check-cycles.mjs";
 import { runComplexityPolicy } from "../checks/check-complexity-policy.mjs";
 import { runMaintainabilityAudit } from "../checks/check-maintainability.mjs";
 import { runTypeSafetyAudit } from "../checks/check-type-safety.mjs";
+import { buildCoverageInsightsReport, formatCoverageInsightsReport } from "../checks/check-coverage-insights.mjs";
 import { runTopHeavyPolicy } from "../checks/check-top-heavy-files.mjs";
 import { createRepositoryView } from "../checks/repository-view.mjs";
 import {
@@ -40,7 +41,7 @@ import {
 } from "./quality-audit-storage.mjs";
 
 export const QUALITY_GATE_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
-export const AUXILIARY_AUDITS = Object.freeze(["maintainability", "type-safety", "hotspots", "testability"]);
+export const AUXILIARY_AUDITS = Object.freeze(["maintainability", "type-safety", "hotspots", "testability", "coverage"]);
 export const AUDIT_MODES = Object.freeze([...QUALITY_GATE_AUDITS, ...AUXILIARY_AUDITS, "all"]);
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const ACQUIRED_ARCHITECTURE_DECISIONS = new Set([
@@ -201,6 +202,18 @@ function isTestabilityResult(result) {
     && result.summary;
 }
 
+function isCoverageResult(result) {
+  return Boolean(result)
+    && result.kind === "quality-coverage-insights"
+    && result.status === "PASS"
+    && result.blocking === false
+    && Array.isArray(result.scopes)
+    && result.duplication
+    && Array.isArray(result.warnings)
+    && Array.isArray(result.diagnostics)
+    && result.summary;
+}
+
 function preserveMalformedAsyncResult(audit, result) {
   return {
     ...(result && typeof result === "object" ? result : {}),
@@ -266,6 +279,7 @@ export function attentionRequired(audit, result) {
       || (result.summary?.newCandidateFindings ?? 0) > 0;
   }
   if (audit === "hotspots" || audit === "testability") return false;
+  if (audit === "coverage") return Boolean(result.attentionRequired) || result.measurementStatus === "MEASUREMENT_FAILED";
   return false;
 }
 
@@ -403,6 +417,16 @@ function makeSummary({ audit, manifest, result, paths }) {
       "- Coverage, test presence and mutation are reported only when attributable; no test runner is launched by this audit.",
     );
   }
+  if (audit === "coverage" && result?.summary) {
+    lines.splice(6, 0,
+      `- Scopes measured: ${result.summary.scopesMeasured}/${result.summary.scopes}`,
+      `- Coverage warnings (<${result.thresholds?.coverageWarningPct ?? 80}%): ${(result.warnings ?? []).filter((warning) => warning.code === "COVERAGE_BELOW_TARGET").length}`,
+      `- Duplication warnings (>${result.thresholds?.duplicationWarningPct ?? 3}%): ${(result.warnings ?? []).filter((warning) => warning.code === "DUPLICATION_ABOVE_TARGET").length}`,
+      `- Uncovered branch files (top 30): ${result.summary.topUncoveredBranchFiles?.length ?? 0}`,
+      `- Diagnostics: ${result.diagnostics?.length ?? 0}`,
+      `- Elapsed: ${result.summary.elapsedMs ?? "NOT_MEASURED"} ms`,
+    );
+  }
   if (audit === "cycles" && result?.comparison) {
     lines.splice(6, 0, `- Current cycles: ${result.cycles.length}`, `- New cycles: ${result.comparison.added.length}`, `- Stale baseline entries: ${result.comparison.stale.length}`);
   }
@@ -421,6 +445,7 @@ export async function executeAudit(
     typeSafetyRunner = runTypeSafetyAudit,
     hotspotsRunner = buildQualityHotspotsReport,
     testabilityRunner = buildQualityTestabilityReport,
+    coverageRunner = buildCoverageInsightsReport,
     complexityResult = null,
     previousResults = {},
     topHeavyRunner = runTopHeavyPolicy,
@@ -467,6 +492,12 @@ export async function executeAudit(
     const result = testabilityRunner({ root, auditedSha: auditedHead });
     return isTestabilityResult(result)
       ? { ...result, readProvenance: "MIXED" }
+      : preserveMalformedAsyncResult(audit, result);
+  }
+  if (audit === "coverage") {
+    const result = coverageRunner({ root, auditedSha: auditedHead, duplicationReport: previousResults.duplication ?? null });
+    return isCoverageResult(result)
+      ? { ...result, formatted: formatCoverageInsightsReport(result), readProvenance: "MIXED" }
       : preserveMalformedAsyncResult(audit, result);
   }
   if (audit === "cycles") {
