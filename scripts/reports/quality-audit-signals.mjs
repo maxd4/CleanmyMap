@@ -4,6 +4,8 @@ import { execFileSync } from "node:child_process";
 
 import { gitExecutable } from "../ci/git-executable.mjs";
 import { getComplexityTarget } from "../checks/complexity-policy.mjs";
+import { SOURCE_ROOTS as TYPE_SAFETY_SOURCE_ROOTS } from "../checks/check-type-safety.mjs";
+import { HEAVY_FILE_EXTENSIONS } from "../checks/top-heavy-measurement.mjs";
 
 export const HOTSPOT_HISTORY_WINDOW_DAYS = 180;
 export const HOTSPOT_SUBSTANTIVE_LINE_THRESHOLD = 20;
@@ -14,15 +16,34 @@ const GIT_HISTORY_MAX_BUFFER_BYTES = 32 * 1024 * 1024;
 const SOURCE_ROOTS = ["apps/web/src", "apps/mobile", "scripts"];
 const CRITICAL_DOMAINS = new Set(["auth-authz", "api", "actions", "account", "maps-location", "payments", "import-export", "mobile/security", "mobile/services"]);
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
+const TYPED_SCOPE_ROOTS = Object.freeze([...TYPE_SAFETY_SOURCE_ROOTS]);
 
 const DEFAULT_STRUCTURAL_SCOPE_ROOTS = Object.freeze({
-  complexity: ["apps/web/src", "apps/mobile"],
-  maintainability: ["apps/web/src", "apps/mobile"],
-  "type-safety": ["apps/web/src", "apps/mobile"],
-  "top-heavy": ["apps/web/src", "apps/mobile"],
+  complexity: TYPED_SCOPE_ROOTS,
+  maintainability: TYPED_SCOPE_ROOTS,
+  "type-safety": TYPED_SCOPE_ROOTS,
+  "top-heavy": TYPED_SCOPE_ROOTS,
   "dead-code": SOURCE_ROOTS,
   duplication: SOURCE_ROOTS,
   cycles: SOURCE_ROOTS,
+});
+
+const TYPED_SOURCE_EXTENSIONS = new Set(HEAVY_FILE_EXTENSIONS);
+const TYPE_SAFETY_SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".mts", ".cts"]);
+const CODE_SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"]);
+const DUPLICATION_SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx"]);
+const TYPE_SAFETY_EXCLUDED_PATH = /(?:^|\/)(?:node_modules|vendor|\.next|\.expo|coverage|dist|build|out|\.turbo)(?:\/|$)/;
+const TOP_HEAVY_EXCLUDED_PATH = /(?:^|\/)(?:\.git|node_modules|\.next|dist|build|coverage|maintenance)(?:\/|$)/;
+const DUPLICATION_EXCLUDED_PATH = /(?:^|\/)(?:node_modules|\.next|generated|vendor|coverage|\.snap|__snapshots__)(?:\/|$)/;
+const ARCHITECTURE_EXCLUDED_PATH = /(?:^|\/)(?:\.git|node_modules|\.next|dist|build|coverage|maintenance|vendor|third[-_]?party)(?:\/|$)/i;
+const STRUCTURAL_SCOPE_DESCRIPTORS = Object.freeze({
+  complexity: Object.freeze({ extensions: TYPED_SOURCE_EXTENSIONS }),
+  maintainability: Object.freeze({ extensions: TYPED_SOURCE_EXTENSIONS }),
+  "type-safety": Object.freeze({ extensions: TYPE_SAFETY_SOURCE_EXTENSIONS, excludedPath: TYPE_SAFETY_EXCLUDED_PATH }),
+  "top-heavy": Object.freeze({ extensions: TYPED_SOURCE_EXTENSIONS, excludedPath: TOP_HEAVY_EXCLUDED_PATH }),
+  "dead-code": Object.freeze({ extensions: CODE_SOURCE_EXTENSIONS }),
+  duplication: Object.freeze({ extensions: DUPLICATION_SOURCE_EXTENSIONS, excludedPath: DUPLICATION_EXCLUDED_PATH }),
+  cycles: Object.freeze({ extensions: CODE_SOURCE_EXTENSIONS, excludedPath: ARCHITECTURE_EXCLUDED_PATH }),
 });
 
 function normalize(value) {
@@ -171,20 +192,20 @@ function pathInRoots(file, roots) {
   return roots.some((root) => file === root || file.startsWith(`${root}/`));
 }
 
-function typeSafetyCoverageState(report) {
+function typeSafetyCoverageState(report, coverageIndex = null) {
   const coverage = report?.coverage ?? [];
   if (coverage.length === 0) return { state: "NOT_MEASURED", reasons: ["NO_COVERAGE_ENTRIES"] };
-  const reasons = [];
-  let measuredFiles = 0;
-  let scopedFiles = 0;
-  for (const entry of coverage) {
-    const scoped = normalizedPathSet(entry.scopedFilePaths);
-    const measured = normalizedPathSet(entry.measuredFilePaths);
-    scopedFiles += scoped.size;
-    measuredFiles += measured.size;
-    if (entry.effectiveCoverage !== "TYPED") reasons.push(`${entry.workspace ?? "unknown"}:${entry.effectiveCoverage ?? "UNSPECIFIED_COVERAGE"}`);
-    if (entry.failedFilePaths?.length || entry.ignoredFilePaths?.length) reasons.push(`${entry.workspace ?? "unknown"}:FILES_NOT_MEASURED`);
-    if (entry.effectiveCoverage === "TYPED" && measured.size < scoped.size) reasons.push(`${entry.workspace ?? "unknown"}:PARTIAL_FILE_COVERAGE`);
+  const reasons = [...(coverageIndex?.coverageReasons ?? [])];
+  const scopedFiles = coverageIndex?.scopedPaths.size ?? 0;
+  const measuredFiles = coverageIndex?.measuredPaths.size ?? 0;
+  if (!coverageIndex) {
+    for (const entry of coverage) {
+      const scoped = normalizedPathSet(entry.scopedFilePaths);
+      const measured = normalizedPathSet(entry.measuredFilePaths);
+      if (entry.effectiveCoverage !== "TYPED") reasons.push(`${entry.workspace ?? "unknown"}:${entry.effectiveCoverage ?? "UNSPECIFIED_COVERAGE"}`);
+      if (entry.failedFilePaths?.length || entry.ignoredFilePaths?.length) reasons.push(`${entry.workspace ?? "unknown"}:FILES_NOT_MEASURED`);
+      if (entry.effectiveCoverage === "TYPED" && measured.size < scoped.size) reasons.push(`${entry.workspace ?? "unknown"}:PARTIAL_FILE_COVERAGE`);
+    }
   }
   if (report.measurementStatus === "MEASUREMENT_FAILED") reasons.push(...(report.diagnostics ?? []).map((diagnostic) => diagnostic.code ?? "MEASUREMENT_FAILED"));
   if (scopedFiles === 0 || measuredFiles === 0) return { state: "NOT_MEASURED", reasons: [...new Set(reasons.length > 0 ? reasons : ["NO_MEASURED_FILES"])], measuredFiles, scopedFiles };
@@ -196,8 +217,8 @@ function typeSafetyCoverageState(report) {
   };
 }
 
-function reportMeasurementState(name, report) {
-  if (name === "type-safety") return typeSafetyCoverageState(report);
+function reportMeasurementState(name, report, coverageIndex = null) {
+  if (name === "type-safety") return typeSafetyCoverageState(report, coverageIndex);
   const diagnostics = Array.isArray(report?.diagnostics) ? report.diagnostics : [];
   if (report?.measurementStatus === "MEASUREMENT_FAILED") {
     const positiveEvidence = name === "maintainability"
@@ -209,50 +230,103 @@ function reportMeasurementState(name, report) {
   return { state: "COMPLETE", reasons: [] };
 }
 
-function structuralFileCoverage(name, report, file) {
+function structuralFileApplicability(name, report, file) {
+  const descriptor = STRUCTURAL_SCOPE_DESCRIPTORS[name];
+  if (!descriptor) return { state: "UNKNOWN", reason: "SCANNER_SCOPE_UNDETERMINED" };
   const normalizedFile = normalize(file);
   const roots = reportScopeRoots(name, report);
+  if (!Array.isArray(roots) || roots.length === 0) return { state: "UNKNOWN", reason: "SCANNER_SCOPE_UNDETERMINED" };
   if (!pathInRoots(normalizedFile, roots)) return { state: "NOT_APPLICABLE", reason: "OUTSIDE_SCANNER_SCOPE" };
+  const extension = path.posix.extname(normalizedFile).toLowerCase();
+  if (descriptor.extensions && !descriptor.extensions.has(extension)) return { state: "NOT_APPLICABLE", reason: "OUTSIDE_SCANNER_EXTENSIONS" };
+  if (descriptor.excludedPath?.test(normalizedFile)) return { state: "NOT_APPLICABLE", reason: "EXCLUDED_BY_SCANNER_SCOPE" };
+  return { state: "APPLICABLE", reason: null };
+}
+
+function buildStructuralCoverageIndex(name, report) {
+  const measuredPaths = new Set();
+  const scopedPaths = new Set();
+  const notMeasuredReasons = new Map();
+  const coverageReasons = [];
+  const addReason = (file, reason) => {
+    const normalizedFile = normalize(file);
+    if (normalizedFile && reason) notMeasuredReasons.set(normalizedFile, reason);
+  };
 
   if (name === "type-safety") {
-    let scoped = false;
-    for (const entry of report.coverage ?? []) {
-      const scopedPaths = normalizedPathSet(entry.scopedFilePaths);
-      if (!scopedPaths.has(normalizedFile)) continue;
-      scoped = true;
-      const measuredPaths = normalizedPathSet(entry.measuredFilePaths);
-      if (entry.effectiveCoverage === "TYPED" && measuredPaths.has(normalizedFile)) return { state: "MEASURED", reason: null, workspace: entry.workspace };
-      return { state: "NOT_MEASURED", reason: entry.notMeasuredFileReasons?.[normalizedFile] ?? entry.effectiveCoverage ?? "NOT_MEASURED", workspace: entry.workspace };
+    for (const entry of report?.coverage ?? []) {
+      const scoped = normalizedPathSet(entry.scopedFilePaths);
+      const measured = normalizedPathSet(entry.measuredFilePaths);
+      for (const file of scoped) scopedPaths.add(file);
+      for (const file of measured) measuredPaths.add(file);
+      if (entry.effectiveCoverage !== "TYPED") coverageReasons.push(`${entry.workspace ?? "unknown"}:${entry.effectiveCoverage ?? "UNSPECIFIED_COVERAGE"}`);
+      if (entry.failedFilePaths?.length || entry.ignoredFilePaths?.length) coverageReasons.push(`${entry.workspace ?? "unknown"}:FILES_NOT_MEASURED`);
+      if (entry.effectiveCoverage === "TYPED" && measured.size < scoped.size) coverageReasons.push(`${entry.workspace ?? "unknown"}:PARTIAL_FILE_COVERAGE`);
+      for (const [file, reason] of Object.entries(entry.notMeasuredFileReasons ?? {})) addReason(file, reason);
     }
-    return { state: scoped ? "NOT_MEASURED" : "NOT_MEASURED", reason: "NO_FILE_COVERAGE_PROOF" };
+  } else if (report) {
+    for (const file of reportFilePaths(report, [
+      "measuredFilePaths",
+      "summary.measuredFilePaths",
+      "sourceFiles",
+      "rows",
+      "measuredFiles",
+    ])) measuredPaths.add(file);
+    for (const file of reportFilePaths(report, ["scopedFilePaths", "summary.scopedFilePaths"])) scopedPaths.add(file);
   }
 
-  const measured = reportFilePaths(report, [
-    "measuredFilePaths",
-    "summary.measuredFilePaths",
-    "sourceFiles",
-    "rows",
-    "measuredFiles",
-  ]);
-  const scoped = reportFilePaths(report, ["scopedFilePaths", "summary.scopedFilePaths"]);
-  if (measured.has(normalizedFile)) return { state: "MEASURED", reason: null };
-  if (scoped.has(normalizedFile)) return { state: "NOT_MEASURED", reason: "FILE_NOT_MEASURED" };
-  if (measured.size > 0 || scoped.size > 0) return { state: "NOT_MEASURED", reason: "NO_FILE_COVERAGE_PROOF" };
+  return {
+    name,
+    report,
+    measuredPaths,
+    scopedPaths,
+    notMeasuredReasons,
+    coverageReasons: [...new Set(coverageReasons)],
+  };
+}
+
+function buildStructuralCoverageIndexes(reports) {
+  return Object.fromEntries(Object.keys(STRUCTURAL_REPORT_VALIDATORS).map((name) => [
+    name,
+    buildStructuralCoverageIndex(name, reports?.[name]),
+  ]));
+}
+
+function structuralFileCoverage(name, index, file) {
+  const normalizedFile = normalize(file);
+  if (name === "type-safety") {
+    if (index.measuredPaths.has(normalizedFile)) return { state: "MEASURED", reason: null };
+    if (index.scopedPaths.has(normalizedFile)) return { state: "NOT_MEASURED", reason: index.notMeasuredReasons.get(normalizedFile) ?? "NOT_MEASURED" };
+    return { state: "NOT_MEASURED", reason: index.measuredPaths.size > 0 || index.scopedPaths.size > 0 ? "NO_FILE_COVERAGE_PROOF" : "REPORT_HAS_NO_FILE_INVENTORY" };
+  }
+  if (index.measuredPaths.has(normalizedFile)) return { state: "MEASURED", reason: null };
+  if (index.scopedPaths.has(normalizedFile)) return { state: "NOT_MEASURED", reason: "FILE_NOT_MEASURED" };
+  if (index.measuredPaths.size > 0 || index.scopedPaths.size > 0) return { state: "NOT_MEASURED", reason: "NO_FILE_COVERAGE_PROOF" };
   return { state: "NOT_MEASURED", reason: "REPORT_HAS_NO_FILE_INVENTORY" };
 }
 
-function structuralDebtFileAvailability(file, reports, debtAvailability) {
+function structuralDebtFileAvailability(file, reports, debtAvailability, coverageIndexes) {
   const applicable = [];
   const reasons = [];
   const reportStates = {};
   for (const name of Object.keys(STRUCTURAL_REPORT_VALIDATORS)) {
     const report = reports?.[name];
+    const applicability = structuralFileApplicability(name, report, file);
+    if (applicability.state === "NOT_APPLICABLE") {
+      reportStates[name] = "NOT_APPLICABLE";
+      continue;
+    }
+    if (applicability.state === "UNKNOWN") {
+      reportStates[name] = "NOT_MEASURED";
+      reasons.push(`${name}:${applicability.reason}`);
+      continue;
+    }
     if (!report || debtAvailability.invalidReports.includes(name) || debtAvailability.missingReports.includes(name)) {
       reportStates[name] = "NOT_MEASURED";
       reasons.push(`${name}:REPORT_UNAVAILABLE`);
       continue;
     }
-    const coverage = structuralFileCoverage(name, report, file);
+    const coverage = structuralFileCoverage(name, coverageIndexes[name], file);
     reportStates[name] = coverage.state;
     if (coverage.state === "NOT_APPLICABLE") continue;
     applicable.push(name);
@@ -266,7 +340,7 @@ function structuralDebtFileAvailability(file, reports, debtAvailability) {
   };
 }
 
-function structuralDebtAvailability(reports) {
+function structuralDebtAvailability(reports, coverageIndexes) {
   const availableReports = [];
   const missingReports = [];
   const invalidReports = [];
@@ -279,7 +353,7 @@ function structuralDebtAvailability(reports) {
     } else if (report.error || !validator(report)) {
       invalidReports.push(name);
     } else {
-      const measurement = reportMeasurementState(name, report);
+      const measurement = reportMeasurementState(name, report, coverageIndexes?.[name]);
       coverageReasons[name] = measurement.reasons;
       if (measurement.state === "COMPLETE") availableReports.push(name);
       else partialReports.push({ name, state: measurement.state, reasons: measurement.reasons });
@@ -312,12 +386,13 @@ export function buildQualityHotspotsReport({ root = process.cwd(), auditedSha, r
     }
   }
   const debtSignals = sourceFilesFromResults(reports);
-  const debtAvailability = structuralDebtAvailability(reports);
+  const coverageIndexes = buildStructuralCoverageIndexes(reports);
+  const debtAvailability = structuralDebtAvailability(reports, coverageIndexes);
   const files = [...byFile.values()].map((entry) => {
     const commitCount = entry.commits.size;
     const signals = [...(debtSignals.get(entry.file) ?? [])].sort();
     const highActivity = commitCount >= HOTSPOT_HIGH_ACTIVITY_COMMIT_THRESHOLD;
-    const fileAvailability = structuralDebtFileAvailability(entry.file, reports, debtAvailability);
+    const fileAvailability = structuralDebtFileAvailability(entry.file, reports, debtAvailability, coverageIndexes);
     const structuralDebtState = signals.length > 0
       ? "PRESENT"
       : fileAvailability.state === "COMPLETE" ? "NONE" : "NOT_MEASURED";

@@ -214,7 +214,91 @@ test("hotspots ne transforme pas un fichier scripts hors périmètre TypeScript 
   const report = buildQualityHotspotsReport({ auditedSha, gitRunner, reports });
   const scriptsEntry = report.files.find((entry) => entry.file === scriptsFile);
   assert.equal(scriptsEntry.structuralDebt.state, "NOT_MEASURED");
-  assert.ok(scriptsEntry.structuralDebt.fileCoverage.reasons.length > 0);
+  assert.equal(scriptsEntry.structuralDebt.fileCoverage.reportStates.complexity, "NOT_APPLICABLE");
+  assert.equal(scriptsEntry.structuralDebt.fileCoverage.reportStates.maintainability, "NOT_APPLICABLE");
+  assert.equal(scriptsEntry.structuralDebt.fileCoverage.reportStates["type-safety"], "NOT_APPLICABLE");
+  assert.equal(scriptsEntry.structuralDebt.fileCoverage.reportStates["top-heavy"], "NOT_APPLICABLE");
+  assert.equal(scriptsEntry.structuralDebt.fileCoverage.reasons.some((reason) => /^(complexity|maintainability|type-safety|top-heavy):REPORT_UNAVAILABLE$/.test(reason)), false);
+});
+
+test("hotspots réserve NONE aux contrôles applicables réellement mesurés", () => {
+  const reports = completeCleanStructuralReports();
+  const scriptsFile = "scripts/audit-helper.mjs";
+  const fixture = historyFixture();
+  fixture.files.push(scriptsFile);
+  fixture.commits = `${fixture.commits}commit\0${"9".repeat(40)}${String.fromCharCode(0)}2026-10-21T00:00:00+00:00\n1\t1\t${scriptsFile}\n`;
+  reports["dead-code"].measuredFilePaths = [scriptsFile];
+  reports.cycles.measuredFilePaths = [scriptsFile];
+  const gitRunner = (args) => {
+    if (args[0] === "show") return "2026-10-21T00:00:00+00:00";
+    if (args[0] === "log") return fixture.commits;
+    if (args[0] === "ls-tree") return fixture.files.join("\n");
+    throw new Error(`commande inattendue: ${args.join(" ")}`);
+  };
+  const report = buildQualityHotspotsReport({ auditedSha, gitRunner, reports });
+  const scriptsEntry = report.files.find((entry) => entry.file === scriptsFile);
+  assert.equal(scriptsEntry.structuralDebt.state, "NONE");
+  assert.equal(scriptsEntry.structuralDebt.fileCoverage.reportStates.complexity, "NOT_APPLICABLE");
+  assert.equal(scriptsEntry.structuralDebt.fileCoverage.reportStates["type-safety"], "NOT_APPLICABLE");
+  assert.equal(scriptsEntry.structuralDebt.fileCoverage.reportStates["top-heavy"], "NOT_APPLICABLE");
+  assert.equal(scriptsEntry.structuralDebt.fileCoverage.reportStates["dead-code"], "MEASURED");
+  assert.equal(scriptsEntry.structuralDebt.fileCoverage.reportStates.cycles, "MEASURED");
+  assert.equal(scriptsEntry.structuralDebt.fileCoverage.reasons.length, 0);
+});
+
+test("hotspots respecte les exclusions de périmètre sans fabriquer une couverture", () => {
+  const reports = completeCleanStructuralReports();
+  const excludedFiles = ["apps/mobile/vendor/excluded.ts", "apps/web/src/coverage/excluded.ts", "apps/web/src/generated/excluded.ts"];
+  const fixture = historyFixture();
+  fixture.files.push(...excludedFiles);
+  fixture.commits += excludedFiles.map((file, index) => `commit\0${String(index + 6).repeat(40)}${String.fromCharCode(0)}2026-10-21T00:00:00+00:00\n1\t1\t${file}\n`).join("");
+  const gitRunner = (args) => {
+    if (args[0] === "show") return "2026-10-21T00:00:00+00:00";
+    if (args[0] === "log") return fixture.commits;
+    if (args[0] === "ls-tree") return fixture.files.join("\n");
+    throw new Error(`commande inattendue: ${args.join(" ")}`);
+  };
+  const report = buildQualityHotspotsReport({ auditedSha, gitRunner, reports });
+  const vendorEntry = report.files.find((candidate) => candidate.file === excludedFiles[0]);
+  assert.equal(vendorEntry.structuralDebt.fileCoverage.reportStates["type-safety"], "NOT_APPLICABLE");
+  assert.equal(vendorEntry.structuralDebt.fileCoverage.reportStates.duplication, "NOT_APPLICABLE");
+  const coverageEntry = report.files.find((candidate) => candidate.file === excludedFiles[1]);
+  assert.equal(coverageEntry.structuralDebt.fileCoverage.reportStates["type-safety"], "NOT_APPLICABLE");
+  assert.equal(coverageEntry.structuralDebt.fileCoverage.reportStates["top-heavy"], "NOT_APPLICABLE");
+  assert.equal(coverageEntry.structuralDebt.fileCoverage.reportStates.duplication, "NOT_APPLICABLE");
+  const generatedEntry = report.files.find((candidate) => candidate.file === excludedFiles[2]);
+  assert.equal(generatedEntry.structuralDebt.fileCoverage.reportStates.duplication, "NOT_APPLICABLE");
+});
+
+test("hotspots indexe chaque inventaire une seule fois par rapport", () => {
+  const files = Array.from({ length: 2_000 }, (_, index) => `apps/web/src/generated/hot-${index}.ts`);
+  const commits = `commit\0${"f".repeat(40)}${String.fromCharCode(0)}2026-10-21T00:00:00+00:00\n${files.map((file) => `1\t1\t${file}`).join("\n")}\n`;
+  const gitRunner = (args) => {
+    if (args[0] === "show") return "2026-10-21T00:00:00+00:00";
+    if (args[0] === "log") return commits;
+    if (args[0] === "ls-tree") return files.join("\n");
+    throw new Error(`commande inattendue: ${args.join(" ")}`);
+  };
+  const reports = completeCleanStructuralReports();
+  const reads = new Map();
+  for (const [name, key] of [["complexity", "sourceFiles"], ["maintainability", "measuredFilePaths"], ["dead-code", "measuredFilePaths"], ["duplication", "measuredFilePaths"], ["cycles", "measuredFilePaths"]]) {
+    const report = reports[name];
+    reads.set(name, 0);
+    const value = files;
+    Object.defineProperty(report, key, {
+      configurable: true,
+      get() {
+        reads.set(name, reads.get(name) + 1);
+        return value;
+      },
+    });
+  }
+  reports["top-heavy"].rows = files.map((file) => ({ file }));
+  reports["top-heavy"].scanRoots = ["apps/web/src", "apps/mobile"];
+  reports["type-safety"].coverage = [{ workspace: "web", effectiveCoverage: "TYPED", scopedFilePaths: files, measuredFilePaths: files }];
+  const report = buildQualityHotspotsReport({ auditedSha, gitRunner, reports });
+  assert.equal(report.summary.filesReported, files.length);
+  for (const name of ["complexity", "maintainability", "dead-code", "duplication", "cycles"]) assert.equal(reads.get(name), 1, `${name} doit être indexé une seule fois`);
 });
 
 test("hotspots publie des compteurs distincts et garde les fichiers sans activité hors du détail", () => {
