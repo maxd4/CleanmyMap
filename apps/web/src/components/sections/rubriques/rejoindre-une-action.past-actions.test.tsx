@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { ActionListItem } from "@/lib/actions/types";
 import type { CommunityEventItem } from "@/lib/community/http";
+import { AppError } from "@/lib/errors/app-errors";
 import { PastActionsPanel } from "./rejoindre-une-action.past-actions";
 
 function communityEvent(canEditOwnOps: boolean): CommunityEventItem {
@@ -65,6 +66,31 @@ describe("PastActionsPanel", () => {
     );
     expect(nonOwnerMarkup).not.toContain("Suivi de ma mission");
     expect(nonOwnerMarkup).not.toContain("Enregistrer le suivi");
+  });
+
+  it("affiche les états de succès et d'erreur du suivi historique", () => {
+    const successMarkup = renderToStaticMarkup(
+      <PastActionsPanel
+        items={[]}
+        loading={false}
+        error={null}
+        fr
+        communitySuccessMessage="Suivi de la mission mis à jour."
+      />,
+    );
+    expect(successMarkup).toContain("Suivi de la mission mis à jour.");
+
+    const errorMarkup = renderToStaticMarkup(
+      <PastActionsPanel
+        items={[]}
+        loading={false}
+        error={null}
+        fr
+        communityMutationError={new AppError({ kind: "permission", status: 403, message: "Forbidden" })}
+      />,
+    );
+    expect(errorMarkup).toContain("Le suivi de la mission n’a pas été enregistré");
+    expect(errorMarkup).toContain("Forbidden");
   });
 
   it("affiche uniquement les résultats finaux disponibles", () => {

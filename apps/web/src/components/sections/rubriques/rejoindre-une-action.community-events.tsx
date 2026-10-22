@@ -85,7 +85,9 @@ export function JoinCommunityEventsPanel({
       {mutationError ? (
         <ErrorMessage
           kind={mutationError.kind}
-          title={fr ? "Le RSVP n’a pas été enregistré" : "The RSVP was not saved"}
+          title={isFuture
+            ? (fr ? "Le RSVP n’a pas été enregistré" : "The RSVP was not saved")
+            : (fr ? "Le suivi de la mission n’a pas été enregistré" : "The mission follow-up was not saved")}
           message={mutationError.message}
         />
       ) : null}

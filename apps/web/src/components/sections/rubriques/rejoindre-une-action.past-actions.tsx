@@ -228,6 +228,8 @@ export function PastActionsPanel({
   communityEventsError = null,
   communityEventsRetry,
   focusCommunityEventId = null,
+  communityMutationError = null,
+  communitySuccessMessage = null,
   isUpdatingEventOpsId = null,
   getOpsDraft,
   updateOpsDraft,
@@ -246,6 +248,8 @@ export function PastActionsPanel({
   communityEventsError?: import("@/lib/errors/app-errors").AppError | null;
   communityEventsRetry?: () => Promise<unknown> | void;
   focusCommunityEventId?: string | null;
+  communityMutationError?: import("@/lib/errors/app-errors").AppError | null;
+  communitySuccessMessage?: string | null;
   isUpdatingEventOpsId?: string | null;
   getOpsDraft?: (event: import("@/lib/community/http").CommunityEventItem) => OpsDraft;
   updateOpsDraft?: (eventId: string, patch: Partial<OpsDraft>) => void;
@@ -351,6 +355,8 @@ export function PastActionsPanel({
         error={communityEventsError}
         focusedEventId={focusCommunityEventId}
         onRetry={communityEventsRetry}
+        mutationError={communityMutationError}
+        successMessage={communitySuccessMessage}
         tab="past"
         isUpdatingEventOpsId={isUpdatingEventOpsId}
         getOpsDraft={getOpsDraft}
