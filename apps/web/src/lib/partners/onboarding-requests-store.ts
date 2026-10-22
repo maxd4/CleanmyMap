@@ -6,7 +6,6 @@ import {
   deleteAndPersistRecord,
   deleteSupabaseRecordById,
   findRecordInList,
-  isVercelRuntime,
   persistSupabaseRecord,
   readSupabaseRecord,
   readSupabaseRecords,
@@ -21,7 +20,11 @@ import {
   normalizePartnerCoverage,
   type PartnerOnboardingRequestInput,
 } from "./onboarding-types";
-import { appendPublishedPartnerAnnuaireEntry } from "./published-annuaire-entries-store";
+import {
+  appendPublishedPartnerAnnuaireEntry,
+  buildPublishedPartnerAnnuaireEntry,
+  serializePublishedPartnerAnnuaireEntry,
+} from "./published-annuaire-entries-store";
 import {
   getSupabaseServerClient,
 } from "@/lib/supabase/server";
@@ -37,13 +40,14 @@ const STORE_FILE = join(
   "partner_onboarding_requests.json",
 );
 const SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS =
-  "id, created_at, submitted_by_user_id, submitted_by_email, organization_name, organization_type, partner_scope, legal_identity, coverage, contribution_types, relay_actions, availability, contact_name, contact_channel, contact_details, motivation, status, creator_state";
+  "id, created_at, submitted_by_user_id, submitted_by_email, idempotency_key, organization_name, organization_type, partner_scope, legal_identity, coverage, contribution_types, relay_actions, availability, contact_name, contact_channel, contact_details, motivation, status, creator_state";
 
 export type PartnerOnboardingRequestRecord = PartnerOnboardingRequestInput & {
   id: string;
   createdAt: string;
   submittedByUserId: string;
   submittedByEmail: string | null;
+  idempotencyKey?: string;
   status: "pending_admin_review" | "accepted" | "rejected";
   creatorState: "new" | "pending" | "responded" | "treated" | "archived" | "accepted" | "rejected";
 };
@@ -113,6 +117,7 @@ export function normalizeStoredPartnerOnboardingRequest(
   const createdAt = readStringField(record, "createdAt");
   const submittedByUserId = readStringField(record, "submittedByUserId");
   const submittedByEmail = readOptionalStringField(record, "submittedByEmail");
+  const idempotencyKey = readOptionalStringField(record, "idempotencyKey") ?? undefined;
   const status =
     record["status"] === "accepted" || record["status"] === "rejected"
       ? record["status"]
@@ -147,6 +152,7 @@ export function normalizeStoredPartnerOnboardingRequest(
     createdAt,
     submittedByUserId,
     submittedByEmail,
+    idempotencyKey,
     status,
     organizationName,
     organizationType,
@@ -172,6 +178,7 @@ function fromSupabaseRow(
     createdAt: row.created_at,
     submittedByUserId: row.submitted_by_user_id,
     submittedByEmail: row.submitted_by_email,
+    idempotencyKey: row.idempotency_key,
     organizationName: row.organization_name,
     organizationType: row.organization_type,
     partnerScope: row.partner_scope,
@@ -197,75 +204,113 @@ async function writeStore(store: StorePayload): Promise<void> {
   await writeLocalRecordStore(STORE_FILE, store.records);
 }
 
-function toSupabaseRow(record: PartnerOnboardingRequestRecord): Record<string, unknown> {
-  return {
-    id: record.id,
-    created_at: record.createdAt,
-    submitted_by_user_id: record.submittedByUserId,
-    submitted_by_email: record.submittedByEmail,
-    organization_name: record.organizationName,
-    organization_type: record.organizationType,
-    partner_scope: record.partnerScope,
-    legal_identity: record.legalIdentity,
-    coverage: record.coverage,
-    contribution_types: record.contributionTypes,
-    relay_actions: record.relayActions,
-    availability: record.availability,
-    contact_name: record.contactName,
-    contact_channel: record.contactChannel,
-    contact_details: record.contactDetails,
-    motivation: record.motivation,
-    status: record.status,
-    creator_state: record.creatorState,
-  };
-}
-
 export async function appendPartnerOnboardingRequest(params: {
   submittedByUserId: string;
   submittedByEmail?: string | null;
   input: PartnerOnboardingRequestInput;
+  idempotencyKey?: string;
 }): Promise<PartnerOnboardingRequestRecord> {
   assertPersistenceAvailable("partner_onboarding_requests");
 
+  const idempotencyKey = params.idempotencyKey?.trim() || `${params.submittedByUserId}:${randomUUID()}`;
+  const requestId = randomUUID();
+  const entry = buildPublishedPartnerAnnuaireEntry({
+    request: params.input,
+    requestId,
+  });
   const record: PartnerOnboardingRequestRecord = {
-    id: randomUUID(),
+    id: requestId,
     createdAt: new Date().toISOString(),
     submittedByUserId: params.submittedByUserId,
     submittedByEmail: params.submittedByEmail ?? null,
+    idempotencyKey,
     status: "pending_admin_review",
     creatorState: "pending",
     ...params.input,
   };
 
-  let persistedRecord = record;
   if (canUseSupabaseServerPersistence()) {
-    persistedRecord = await persistSupabaseRecord(
+    const serializedEntry = serializePublishedPartnerAnnuaireEntry(entry);
+    const result = await getSupabaseServerClient(true).rpc(
+      "create_partner_onboarding_request_with_annuaire",
+      {
+        p_request_id: record.id,
+        p_entry_id: entry.id,
+        p_created_at: record.createdAt,
+        p_submitted_by_user_id: record.submittedByUserId,
+        p_submitted_by_email: record.submittedByEmail,
+        p_idempotency_key: record.idempotencyKey,
+        p_organization_name: record.organizationName,
+        p_organization_type: record.organizationType,
+        p_partner_scope: record.partnerScope,
+        p_legal_identity: record.legalIdentity,
+        p_coverage: record.coverage,
+        p_contribution_types: record.contributionTypes,
+        p_relay_actions: record.relayActions,
+        p_availability: record.availability,
+        p_contact_name: record.contactName,
+        p_contact_channel: record.contactChannel,
+        p_contact_details: record.contactDetails,
+        p_motivation: record.motivation,
+        p_public_data: serializedEntry.public_data,
+        p_private_admin_contact: serializedEntry.private_admin_contact,
+      },
+    );
+    if (result.error) throw new Error(result.error.message);
+    const rpcRow = Array.isArray(result.data) ? result.data[0] : result.data;
+    if (!rpcRow || typeof rpcRow.request_id !== "string") {
+      throw new Error("Supabase returned no partner onboarding request.");
+    }
+    return persistSupabaseRecord(
       getSupabaseServerClient(true)
         .from("partner_onboarding_requests")
-        .insert(toSupabaseRow(record))
         .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
+        .eq("id", rpcRow.request_id)
         .single(),
       fromSupabaseRow,
       "Supabase returned an invalid partner onboarding request.",
     );
   } else {
     const store = await readStore();
+    const existing = store.records.find(
+      (candidate) =>
+        candidate.submittedByUserId === record.submittedByUserId &&
+        candidate.idempotencyKey === record.idempotencyKey,
+    );
+    if (existing) {
+      await appendPublishedPartnerAnnuaireEntry({
+        requestId: existing.id,
+        request: existing,
+      });
+      return existing;
+    }
     const records = [record, ...store.records].slice(0, 2000);
     await writeStore({ updatedAt: new Date().toISOString(), records });
+    // The request is retained if this fails; a later reconciliation can retry
+    // the missing entry without changing its stable request id.
+    await appendPublishedPartnerAnnuaireEntry({
+      requestId: record.id,
+      request: record,
+    });
   }
 
-  if (!isVercelRuntime()) {
-    try {
-      await appendPublishedPartnerAnnuaireEntry({
-        requestId: persistedRecord.id,
-        request: params.input,
-      });
-    } catch (error) {
-      console.warn("Published partner annuaire entry creation failed", error);
-    }
-  }
+  return record;
+}
 
-  return persistedRecord;
+/**
+ * Rebuilds only the missing annuaire projection for an existing request.
+ * It never changes the request status or deletes either side of the link.
+ */
+export async function reconcilePartnerOnboardingRequestAnnuaire(
+  requestId: string,
+): Promise<PartnerOnboardingRequestRecord | null> {
+  const request = await getPartnerOnboardingRequestById(requestId);
+  if (!request) return null;
+  await appendPublishedPartnerAnnuaireEntry({
+    requestId: request.id,
+    request,
+  });
+  return request;
 }
 
 export async function listPartnerOnboardingRequests(
@@ -291,7 +336,7 @@ export async function listPartnerOnboardingRequests(
   }
 
   const store = await readStore();
-  return store.records
+  const records = store.records
     .filter(
       (record) =>
         !beforeCursor ||
@@ -299,6 +344,16 @@ export async function listPartnerOnboardingRequests(
     )
     .sort((left, right) => compareCreatorInboxRecordCursors(right, left))
     .slice(0, normalizedLimit);
+
+  // Local fallback data predates the Supabase projection. Reconcile only the
+  // missing projection, preserving every request id and decision.
+  for (const record of records) {
+    await appendPublishedPartnerAnnuaireEntry({
+      requestId: record.id,
+      request: record,
+    });
+  }
+  return records;
 }
 
 export async function getPartnerOnboardingRequestById(

@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { join } from "node:path";
 import {
   formatAvailabilitySummary,
   formatCoverageSummary,
@@ -18,18 +17,21 @@ import type {
   AssociationResource,
   PublishedAnnuaireEntry,
 } from "./annuaire-types";
-import { assertPersistenceAvailable } from "@/lib/persistence/runtime-store";
+import {
+  assertPersistenceAvailable,
+  canUseSupabaseServerPersistence,
+  readSupabaseRecord,
+  readSupabaseRecords,
+} from "@/lib/persistence/runtime-store";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   readLocalRecordStore,
   writeLocalRecordStore,
 } from "@/lib/persistence/local-record-store";
 
-const STORE_FILE = join(
-  process.cwd(),
-  "data",
-  "local-db",
-  "published_partner_annuaire_entries.json",
-);
+const STORE_FILE = `${process.cwd()}/data/local-db/published_partner_annuaire_entries.json`;
+const SUPABASE_PUBLISHED_PARTNER_COLUMNS =
+  "id, source_request_id, created_at, updated_at, published_at, publication_status, reviewed_at, reviewed_by_user_id, public_data, private_admin_contact";
 
 export type PublishedPartnerAnnuaireEntry = PublishedAnnuaireEntry & {
   sourceRequestId: string;
@@ -44,6 +46,62 @@ type StorePayload = {
   updatedAt: string;
   records: PublishedPartnerAnnuaireEntry[];
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function fromSupabaseRow(row: Record<string, unknown>): PublishedPartnerAnnuaireEntry | null {
+  if (!isRecord(row.public_data)) {
+    return null;
+  }
+
+  return normalizePublishedRecord({
+    ...row.public_data,
+    id: row.id,
+    sourceRequestId: row.source_request_id,
+    source: "partner_onboarding",
+    publishedAt: row.published_at,
+    publicationStatus: row.publication_status,
+    reviewedAt: row.reviewed_at,
+    reviewedByUserId: row.reviewed_by_user_id,
+    internalAdminContact: isRecord(row.private_admin_contact)
+      ? row.private_admin_contact
+      : undefined,
+  });
+}
+
+export function serializePublishedPartnerAnnuaireEntry(
+  record: PublishedPartnerAnnuaireEntry,
+): {
+  id: string;
+  published_at: string;
+  publication_status: PublishedPartnerAnnuaireEntry["publicationStatus"];
+  public_data: Record<string, unknown>;
+  private_admin_contact: Record<string, unknown>;
+} {
+  const {
+    sourceRequestId,
+    source,
+    publishedAt,
+    publicationStatus,
+    reviewedAt,
+    reviewedByUserId,
+    internalAdminContact,
+    ...publicData
+  } = record;
+  void sourceRequestId;
+  void source;
+  void reviewedAt;
+  void reviewedByUserId;
+  return {
+    id: record.id,
+    published_at: publishedAt,
+    publication_status: publicationStatus,
+    public_data: publicData,
+    private_admin_contact: internalAdminContact ?? {},
+  };
+}
 
 function normalizePublicationStatus(
   value: unknown,
@@ -421,7 +479,36 @@ export async function appendPublishedPartnerAnnuaireEntry(params: {
 }): Promise<PublishedPartnerAnnuaireEntry> {
   assertPersistenceAvailable("published_partner_annuaire_entries");
   const record = buildPublishedPartnerAnnuaireEntry(params);
+
+  if (canUseSupabaseServerPersistence()) {
+    const serialized = serializePublishedPartnerAnnuaireEntry(record);
+    const supabase = getSupabaseServerClient(true);
+    const inserted = await supabase
+      .from("partner_annuaire_entries")
+      .insert({ ...serialized, source_request_id: params.requestId })
+      .select(SUPABASE_PUBLISHED_PARTNER_COLUMNS)
+      .maybeSingle();
+    if (inserted.error && inserted.error.code !== "23505") {
+      throw new Error(inserted.error.message);
+    }
+
+    const persisted = inserted.data
+      ? fromSupabaseRow(inserted.data as Record<string, unknown>)
+      : await readSupabaseRecord(
+          supabase
+            .from("partner_annuaire_entries")
+            .select(SUPABASE_PUBLISHED_PARTNER_COLUMNS)
+            .eq("source_request_id", params.requestId)
+            .maybeSingle(),
+          fromSupabaseRow,
+        );
+    if (!persisted) throw new Error("Supabase returned no partner annuaire entry.");
+    return persisted;
+  }
+
   const store = await readStore();
+  const existing = store.records.find((candidate) => candidate.sourceRequestId === params.requestId);
+  if (existing) return existing;
   const records = [record, ...store.records].slice(0, 500);
   await writeStore({ updatedAt: new Date().toISOString(), records });
   return record;
@@ -431,6 +518,18 @@ export async function listPublishedPartnerAnnuaireEntries(): Promise<
   PublishedPartnerAnnuaireEntry[]
 > {
   assertPersistenceAvailable("published_partner_annuaire_entries");
+
+  if (canUseSupabaseServerPersistence()) {
+    return readSupabaseRecords(
+      getSupabaseServerClient(true)
+        .from("partner_annuaire_entries")
+        .select(SUPABASE_PUBLISHED_PARTNER_COLUMNS)
+        .order("published_at", { ascending: false })
+        .limit(500),
+      fromSupabaseRow,
+    );
+  }
+
   const store = await readStore();
   return store.records;
 }
@@ -439,6 +538,18 @@ export async function getPublishedPartnerAnnuaireEntryById(
   entryId: string,
 ): Promise<PublishedPartnerAnnuaireEntry | null> {
   assertPersistenceAvailable("published_partner_annuaire_entries");
+
+  if (canUseSupabaseServerPersistence()) {
+    return readSupabaseRecord(
+      getSupabaseServerClient(true)
+        .from("partner_annuaire_entries")
+        .select(SUPABASE_PUBLISHED_PARTNER_COLUMNS)
+        .eq("id", entryId)
+        .maybeSingle(),
+      fromSupabaseRow,
+    );
+  }
+
   const store = await readStore();
   return store.records.find((record) => record.id === entryId) ?? null;
 }
@@ -447,8 +558,27 @@ export async function updatePublishedPartnerAnnuaireEntryPublicationStatus(param
   entryId: string;
   publicationStatus: "accepted" | "rejected";
   reviewedByUserId: string;
+  operationId?: string;
+  reason?: string;
 }): Promise<PublishedPartnerAnnuaireEntry | null> {
   assertPersistenceAvailable("published_partner_annuaire_entries");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient(true).rpc(
+      "review_partner_publication",
+      {
+        p_entry_id: params.entryId,
+        p_publication_status: params.publicationStatus,
+        p_reviewed_by_user_id: params.reviewedByUserId,
+        p_operation_id: params.operationId ?? `partner-review-${params.entryId}`,
+        p_reason: params.reason ?? "Revue administrative partenaire",
+      },
+    );
+    if (result.error) throw new Error(result.error.message);
+    const row = Array.isArray(result.data) ? result.data[0] : result.data;
+    return row ? fromSupabaseRow(row as Record<string, unknown>) : null;
+  }
+
   const store = await readStore();
   const nowIso = new Date().toISOString();
   let updatedEntry: PublishedPartnerAnnuaireEntry | null = null;

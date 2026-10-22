@@ -24,9 +24,12 @@ export async function GET() {
  } catch (error) {
  console.warn("Published partner directory load failed", error);
  return NextResponse.json({
- status:"ok",
- count: 0,
- items: [],
+  status:"error",
+  code:"published_directory_unavailable",
+  message:"L'annuaire partenaire est temporairement indisponible.",
+ }, {
+  status: 503,
+  headers: { "Cache-Control": "no-store" },
  });
  }
 }

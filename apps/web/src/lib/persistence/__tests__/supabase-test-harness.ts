@@ -32,6 +32,13 @@ export function configureSupabaseTestClient(
   responses: Record<string, SupabaseTestResult[]>,
 ) {
   clientMock.mockReturnValue({
+    rpc: vi.fn((functionName: string) => {
+      const result = responses[`rpc:${functionName}`]?.shift();
+      if (!result) {
+        throw new Error(`Unexpected Supabase RPC access: ${functionName}`);
+      }
+      return Promise.resolve(result);
+    }),
     from: vi.fn((table: string) => {
       const result = responses[table]?.shift();
       if (!result) {

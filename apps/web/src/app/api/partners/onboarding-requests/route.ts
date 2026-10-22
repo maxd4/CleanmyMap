@@ -1,4 +1,5 @@
 import { auth } from"@clerk/nextjs/server";
+import { randomUUID } from"node:crypto";
 import { NextResponse } from"next/server";
 import { z } from"zod";
 import { requireCreatorAccess } from"@/lib/authz";
@@ -141,10 +142,25 @@ export async function POST(request: Request) {
  const abuseResponse = rejectPublicFormAbuse(parsed.data);
  if (abuseResponse) return abuseResponse;
 
+ const persistedInput = {
+  organizationName: parsed.data.organizationName,
+  organizationType: parsed.data.organizationType,
+  partnerScope: parsed.data.partnerScope,
+  legalIdentity: parsed.data.legalIdentity,
+  coverage: parsed.data.coverage,
+  contributionTypes: parsed.data.contributionTypes,
+  relayActions: parsed.data.relayActions,
+  availability: parsed.data.availability,
+  contactName: parsed.data.contactName,
+  contactChannel: parsed.data.contactChannel,
+  contactDetails: parsed.data.contactDetails,
+  motivation: parsed.data.motivation,
+ };
  const created = await appendPartnerOnboardingRequest({
   submittedByUserId: userId,
   submittedByEmail: identity?.email ?? null,
-  input: parsed.data,
+  input: persistedInput,
+  idempotencyKey: `${userId}:${parsed.data.submittedAt ?? randomUUID()}`,
  });
 
  try {

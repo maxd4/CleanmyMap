@@ -60,6 +60,14 @@
 - Le nombre « À valider » vient indépendamment de `countPartnerOnboardingRequests()` et ne dépend pas des fiches publiées.
 - En l’absence de fiche persistée, le dashboard affiche des compteurs à zéro et un état vide explicite. En cas d’échec de lecture persistée, les KPI concernés affichent `n/a` et une erreur visible.
 
+### Chaîne persistante de référencement
+
+- `partner_onboarding_requests` conserve la demande privée et son statut métier ; `partner_annuaire_entries` conserve la fiche liée par `source_request_id` unique.
+- La création utilise `create_partner_onboarding_request_with_annuaire` avec une clé d’idempotence par demandeur. La demande et sa projection annuaire sont créées dans la même transaction ; une reprise avec la même clé renvoie les identifiants existants.
+- `public_data` est la projection public-safe. Le contact administratif reste dans `private_admin_contact` et n'est jamais sélectionné par la route publique.
+- Une fiche est publiable uniquement après une décision administrative `accepted`. `review_partner_publication` met à jour la demande, la fiche et `admin_operations_audit` atomiquement ; une erreur ne produit pas de succès partiel.
+- Les demandes historiques sans fiche sont réconciliées de manière non destructive et restent `pending_admin_review`. Une indisponibilité Supabase de l'API publique produit une erreur HTTP explicite, jamais un annuaire vide fabriqué.
+
 ## Extension SPOGOMI — lot 9
 
 La même surface présente, lorsqu'elles existent, les éditions SPOGOMI

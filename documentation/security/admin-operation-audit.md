@@ -10,6 +10,11 @@ Il complète :
 
 Le journal d'audit n'accorde aucun droit. Il intervient **après** la décision AuthZ pour rendre une opération sensible traçable.
 
+Pour la revue des fiches partenaires, l'audit de la décision est porté par la
+RPC transactionnelle `review_partner_publication` avec la mise à jour de la
+fiche et de la demande source. Ainsi, un audit indisponible annule la
+transition et une nouvelle tentative avec le même `operationId` est idempotente.
+
 ## 1. Finalité
 
 Un audit admin doit permettre de répondre, sans exposer de données inutiles, aux questions suivantes :

@@ -153,6 +153,8 @@ describe("POST /api/admin/partners/published-directory", () => {
       entryId: "onboarded-1",
       publicationStatus: "accepted",
       reviewedByUserId: "admin-1",
+      operationId: expect.any(String),
+      reason: "Motif d'acceptation",
     });
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
     expect(auditCalls()[0]).toMatchObject({
@@ -250,7 +252,7 @@ describe("POST /api/admin/partners/published-directory", () => {
       details: {
         operation: "review_partner_publication",
         stage: "partner_update",
-        partialMutation: false,
+        partialMutation: true,
         previousValue: {
           publicationStatus: "pending_admin_review",
           verificationStatus: "en_cours",
@@ -277,7 +279,7 @@ describe("POST /api/admin/partners/published-directory", () => {
     );
 
     expect(response.status).toBe(500);
-    expect(updatePublishedPartnerAnnuaireEntryPublicationStatusMock).toHaveBeenCalledTimes(1);
+    expect(updatePublishedPartnerAnnuaireEntryPublicationStatusMock).not.toHaveBeenCalled();
     expect(updatePartnerOnboardingRequestStatusMock).toHaveBeenCalledWith({
       requestId: "request-1",
       status: "accepted",
@@ -292,7 +294,7 @@ describe("POST /api/admin/partners/published-directory", () => {
         reason: "Motif de synchronisation",
         sourceRequestId: "request-1",
         stage: "source_request_sync",
-        partialMutation: true,
+        partialMutation: false,
         previousValue: {
           publicationStatus: "pending_admin_review",
           verificationStatus: "en_cours",

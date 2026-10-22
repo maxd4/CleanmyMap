@@ -14,6 +14,8 @@
 - **Action principale attendue** : Renseigner les champs requis du formulaire partenaire et envoyer la demande.
 - **Palette attendue** : indigo
 - **Scope** : formulaire partenaire authentifié, champs obligatoires propres au parcours, contrôle serveur à l'envoi et soumission à validation ; la complétion générale du compte n'est pas un prérequis.
+- **Persistence** : la demande et la fiche annuaire associée sont créées par une transaction Supabase idempotente ; la fiche reste en `pending_admin_review` jusqu'à une revue administrative.
+- **Reprise** : une nouvelle tentative avec la même clé de soumission retrouve la demande existante. Les demandes historiques peuvent être réconciliées sans suppression ni changement de décision.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : indigo — canvas #e8e9fc, halo rgba(99, 102, 241, 0.22)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

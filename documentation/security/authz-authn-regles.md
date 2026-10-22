@@ -1175,6 +1175,23 @@ Une réponse positive de la mutation doit retourner le `role` résolu,
 `activeRole` et l'`activeProfile` appliqué afin que le client puisse se
 réaligner sans réinterpréter les métadonnées Clerk.
 
+## Annuaire partenaire : frontière de publication
+
+`POST /api/partners/onboarding-requests` exige une session Clerk et conserve
+la demande dans `partner_onboarding_requests`. La fiche liée est créée dans
+`partner_annuaire_entries` par une RPC server-only idempotente ; une création
+ne vaut jamais validation administrative.
+
+`POST /api/admin/partners/published-directory` exige `requireAdminAccess`, un
+motif et la confirmation explicite existante. La RPC de revue synchronise la
+demande source, la fiche et `admin_operations_audit` dans une transaction.
+Seule la décision `accepted` rend la fiche éligible à la projection publique ;
+`pending_admin_review` et `rejected` restent invisibles.
+
+La table annuaire est RLS server-only. La projection publique ne contient pas
+`private_admin_contact`, et une panne de cette lecture est une erreur de
+service, non une réponse `200` avec zéro fiche.
+
 ## Checklist avant modification sensible
 
 ```txt

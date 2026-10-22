@@ -15,6 +15,7 @@ import {
  updatePartnerOnboardingRequestStatus,
 } from"@/lib/partners/onboarding-requests-store";
 import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
+import { canUseSupabaseServerPersistence } from"@/lib/persistence/runtime-store";
 
 export const runtime ="nodejs";
 
@@ -129,6 +130,13 @@ type PartnerPublicationMutationResult =
   expectedAfter: PublicationSnapshot;
   previousValue: PublicationSnapshot;
   sourceRequestId?: string;
+  partialMutation: boolean;
+ }
+ | {
+  kind: "source_request_sync_failed_before_update";
+  expectedAfter: PublicationSnapshot;
+  previousValue: PublicationSnapshot;
+  sourceRequestId: string;
  }
  | {
   kind: "updated";
@@ -154,12 +162,31 @@ async function loadAndUpdatePartnerPublication(params: {
   publicationStatus: current.publicationStatus,
   verificationStatus: current.verificationStatus,
  };
+
+ if (!canUseSupabaseServerPersistence()) {
+  try {
+   await updatePartnerOnboardingRequestStatus({
+    requestId: current.sourceRequestId,
+    status: publicationStatus === "accepted" ? "accepted" : "rejected",
+   });
+  } catch {
+   return {
+    kind: "source_request_sync_failed_before_update",
+    expectedAfter,
+    previousValue,
+    sourceRequestId: current.sourceRequestId,
+   };
+  }
+ }
+
  let updated: PublishedPartnerUpdate;
  try {
   updated = await updatePublishedPartnerAnnuaireEntryPublicationStatus({
    entryId: context.targetId,
    publicationStatus,
    reviewedByUserId: context.actorUserId,
+   operationId: context.operationId,
+   reason: context.reason,
   });
   if (!updated) throw new Error("publication_not_found");
  } catch {
@@ -168,6 +195,7 @@ async function loadAndUpdatePartnerPublication(params: {
    expectedAfter,
    previousValue,
    sourceRequestId: current.sourceRequestId,
+   partialMutation: !canUseSupabaseServerPersistence(),
   };
  }
  return { kind: "updated", previousValue, updated };
@@ -177,6 +205,7 @@ type PartnerPublicationReviewResult =
  | { kind: "lookup_failed" }
  | { kind: "not_found" }
  | { kind: "partner_update_failed" }
+ | { kind: "source_request_sync_failed_before_update" }
  | { kind: "source_request_sync_failed"; updated: NonNullable<PublishedPartnerUpdate> }
  | { kind: "audit_unavailable"; updated: NonNullable<PublishedPartnerUpdate> }
  | { kind: "applied"; updated: NonNullable<PublishedPartnerUpdate> };
@@ -227,7 +256,10 @@ function partnerReviewFailureResponse(
    operationId,
   });
  }
- if (result.kind === "source_request_sync_failed") {
+ if (
+  result.kind === "source_request_sync_failed" ||
+  result.kind === "source_request_sync_failed_before_update"
+ ) {
   return adminErrorResponse({
    status: 500,
    code:"server_error",
@@ -283,9 +315,20 @@ async function processPartnerPublicationReview(params: {
    previousValue: mutation.previousValue,
    newValue: mutation.expectedAfter,
    stage:"partner_update",
-   partialMutation:false,
+   partialMutation: mutation.partialMutation,
   });
   return { kind: "partner_update_failed" };
+ }
+ if (mutation.kind === "source_request_sync_failed_before_update") {
+  await appendPartnerPublicationAudit(context, {
+   outcome:"error",
+   sourceRequestId: mutation.sourceRequestId,
+   previousValue: mutation.previousValue,
+   newValue: mutation.expectedAfter,
+   stage:"source_request_sync",
+   partialMutation:false,
+  });
+  return { kind: "source_request_sync_failed_before_update" };
  }
 
  const { previousValue, updated } = mutation;
@@ -294,7 +337,7 @@ async function processPartnerPublicationReview(params: {
   publicationStatus: updated.publicationStatus,
   verificationStatus: updated.verificationStatus,
  };
- if (updated.sourceRequestId) {
+ if (updated.sourceRequestId && canUseSupabaseServerPersistence()) {
   try {
    await updatePartnerOnboardingRequestStatus({
     requestId: updated.sourceRequestId,
@@ -311,6 +354,10 @@ async function processPartnerPublicationReview(params: {
    });
    return { kind: "source_request_sync_failed", updated };
   }
+ }
+
+ if (canUseSupabaseServerPersistence()) {
+  return { kind: "applied", updated };
  }
 
  try {

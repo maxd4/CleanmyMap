@@ -13,6 +13,8 @@ const writeFileMock = vi.hoisted(() => vi.fn());
 const mkdirMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const appendPublishedPartnerAnnuaireEntryMock = vi.hoisted(() => vi.fn());
+const buildPublishedPartnerAnnuaireEntryMock = vi.hoisted(() => vi.fn());
+const serializePublishedPartnerAnnuaireEntryMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/persistence/runtime-store", () => ({
   ...createRuntimeStoreModule(),
@@ -30,6 +32,8 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 vi.mock("@/lib/partners/published-annuaire-entries-store", () => ({
   appendPublishedPartnerAnnuaireEntry: appendPublishedPartnerAnnuaireEntryMock,
+  buildPublishedPartnerAnnuaireEntry: buildPublishedPartnerAnnuaireEntryMock,
+  serializePublishedPartnerAnnuaireEntry: serializePublishedPartnerAnnuaireEntryMock,
 }));
 
 const configureSupabase = (responses: Record<string, SupabaseTestResult[]>) =>
@@ -113,6 +117,11 @@ describe("runtime-backed request stores", () => {
     writeFileMock.mockResolvedValue(undefined);
     mkdirMock.mockResolvedValue(undefined);
     appendPublishedPartnerAnnuaireEntryMock.mockResolvedValue(undefined);
+    buildPublishedPartnerAnnuaireEntryMock.mockReturnValue({ id: "onboarded-partner-1" });
+    serializePublishedPartnerAnnuaireEntryMock.mockReturnValue({
+      public_data: { id: "onboarded-partner-1" },
+      private_admin_contact: {},
+    });
   });
 
   it("uses Supabase without accessing local files on Vercel", async () => {
@@ -121,6 +130,10 @@ describe("runtime-backed request stores", () => {
       community_bug_reports: [{ data: bugReportRow, error: null }],
       promotion_requests: [{ data: promotionRow, error: null }],
       partner_onboarding_requests: [{ data: partnerRow, error: null }],
+      "rpc:create_partner_onboarding_request_with_annuaire": [{
+        data: [{ request_id: partnerRow.id }],
+        error: null,
+      }],
     });
 
     const { appendContactRequest } = await import("@/lib/contact/contact-requests-store");

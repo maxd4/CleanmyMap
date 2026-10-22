@@ -85,4 +85,17 @@ describe("GET /api/partners/published-directory", () => {
     expect(payload.items[0]).not.toHaveProperty("sourceRequestId");
     expect(payload.items[0]).not.toHaveProperty("reviewedByUserId");
   });
+
+  it("returns a real service error instead of a false empty directory", async () => {
+    listPublishedPartnerAnnuaireEntriesMock.mockRejectedValue(new Error("Supabase unavailable"));
+
+    const { GET } = await import("./route");
+    const response = await GET();
+    const payload = (await response.json()) as { status: string; code: string; items?: unknown[] };
+
+    expect(response.status).toBe(503);
+    expect(payload).toMatchObject({ status: "error", code: "published_directory_unavailable" });
+    expect(payload).not.toHaveProperty("items");
+    expect(response.headers.get("cache-control")).toBe("no-store");
+  });
 });
