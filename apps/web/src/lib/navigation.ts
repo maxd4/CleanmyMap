@@ -131,7 +131,6 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<NavigableRouteId>([
   "dashboard",
   "feedback",
   "methodologie",
-  "community",
   "messagerie",
   "annuaire",
   "open-data",
@@ -152,7 +151,6 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<NavigableRouteId>([
   "dashboard",
   "feedback",
   "methodologie",
-  "community",
   "messagerie",
   "annuaire",
   "admin",
@@ -175,10 +173,17 @@ const COMMON_PROFILE_SPACE_PAGES: Omit<
   act: ACT_VISIBLE_ROUTE_IDS,
   visualize: ["map", "methodologie", "reports", "gamification"],
   impact: [],
-  network: ["community", "feedback", "messagerie", "open-data", "annuaire", "funding"],
+  network: ["messagerie", "annuaire", "open-data"],
   connect: [],
   learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
 };
+
+// Ces destinations restent disponibles dans le sommaire et les menus dédiés,
+// sans réintroduire des entrées dans le bloc Réseau & Discussions canonique.
+const CATEGORY_ONLY_ROUTE_IDS = new Set<NavigableRouteId>([
+  "feedback",
+  "funding",
+]);
 
 function buildProfileSpacePages(
   home: NavigableRouteId[],
@@ -265,6 +270,14 @@ export function getNavigationCategoriesForProfile(
       (item) => item.route,
     ),
   );
+  for (const rubrique of RUBRIQUE_REGISTRY) {
+    if (
+      rubrique.availability === "available" &&
+      CATEGORY_ONLY_ROUTE_IDS.has(rubrique.id as NavigableRouteId)
+    ) {
+      allowedRoutes.add(rubrique.route);
+    }
+  }
   return RUBRIQUE_CATEGORIES.map((category) => ({
     id: category.id,
     label: category.label,

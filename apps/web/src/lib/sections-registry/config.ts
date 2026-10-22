@@ -237,21 +237,6 @@ export const RUBRIQUE_REGISTRY = [
     implementation: "finalized",
   },
   {
-    id: "community",
-    categoryId: "community",
-    priority: 40,
-    kind: "section",
-    anonymousPresentation: "visible",
-    route: "/sections/community",
-    label: { fr: "Communauté", en: "Community" },
-    description: {
-      fr: "Échanger avec la communauté et trouver des partenaires",
-      en: "Community coordination and partner network access",
-    },
-    availability: "available",
-    implementation: "finalized",
-  },
-  {
     id: "feedback",
     categoryId: "community",
     priority: 41,

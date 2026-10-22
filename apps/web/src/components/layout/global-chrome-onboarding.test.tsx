@@ -61,10 +61,10 @@ describe("global chrome on onboarding", () => {
     expect(shouldLoadDeferredChrome("/sign-in", authIdleCompleted)).toBe(false);
 
     const cancelPreviousIdleCallback = vi.fn();
-    expect(shouldLoadDeferredChrome("/sections/community", authIdleCompleted)).toBe(true);
+    expect(shouldLoadDeferredChrome("/sections/rejoindre-une-action", authIdleCompleted)).toBe(true);
 
     cancelPreviousIdleCallback();
-    expect(shouldLoadDeferredChrome("/sections/community", authIdleCompleted)).toBe(true);
+    expect(shouldLoadDeferredChrome("/sections/rejoindre-une-action", authIdleCompleted)).toBe(true);
     expect(shouldLoadDeferredChrome("/sign-in", authIdleCompleted)).toBe(false);
 
     authIdleCompleted = true;

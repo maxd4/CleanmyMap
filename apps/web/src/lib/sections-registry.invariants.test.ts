@@ -83,7 +83,6 @@ describe("sections registry invariants", () => {
     }
 
     const byId = new Map(sections.map((section) => [section.id, section]));
-    expect(byId.get("community")?.anonymousPresentation).toBe("visible");
     expect(byId.get("annuaire")?.anonymousPresentation).toBe("visible");
     expect(byId.get("gamification")?.anonymousPresentation).toBe("disabled");
     expect(byId.get("elus")?.anonymousPresentation).toBe("disabled");

@@ -142,7 +142,7 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
       ["/methodologie", "/methodologie"],
       ["/sections/open-data", "/sections/open-data"],
       ["/sections/annuaire", "/sections/annuaire"],
-      ["/partners/network", "/sections/community?tab=partners"],
+      ["/partners/network", "/sections/annuaire"],
       ["/sections/rejoindre-un-formulaire", "/sections/rejoindre-une-action"],
       ["/actions/new", "/actions/new"],
       ["/signalement", "/signalement"],

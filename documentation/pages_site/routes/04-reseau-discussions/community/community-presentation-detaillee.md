@@ -1,37 +1,37 @@
-# Communauté - Présentation détaillée
+# Communauté — présentation historique
 
-## Résumé
+## Statut
 
-La page `Communauté` rassemble la consultation des missions communautaires et
-l'accès au réseau de partenaires dans une seule surface. Le premier onglet
-porte la participation et l'organisation compacte d'une mission ; le second
-conserve l'accès au réseau, à l'annuaire et aux parcours de contact.
+La composition décrite ici est obsolète : la page autonome, son sélecteur
+`Communauté` / `Partenaires` et son rendu dédié ont été retirés. Ce document
+reste une trace `HISTORY` liée à la note de compatibilité
+[`community-README.md`](./community-README.md).
 
-## Ce que la page montre
+## Répartition actuelle des responsabilités
 
-- un sélecteur d'onglets `Communauté` et `Partenaires`
-- une liste de missions communautaires à venir et passées
-- les onglets `À venir`, `Mes inscriptions` et `Passé`
-- les actions RSVP et un parcours replié pour organiser une mission
-- un accès réseau aux acteurs partenaires sans recréer une page autonome
+- `/sections/rejoindre-une-action` consulte les actions canoniques et les
+  événements historiques `community_events`, avec leurs liens profonds et les
+  RSVP existants.
+- `/sections/messagerie` porte les groupes de discussion et les messages.
+- `/sections/annuaire` porte la recherche, les filtres et les fiches publiques
+  des acteurs, ainsi que le référencement partenaire.
+- `/sections/open-data` porte les données publiques.
 
-## Ce que la page doit préserver
+Les API et composants métier nécessaires aux événements historiques sont
+conservés. Leur consultation ne transforme pas un RSVP en inscription ou en
+participation Action, et les données historiques ne deviennent pas des impacts
+certifiés sans preuve.
 
-- une lecture simple entre missions communautaires et réseau partenaire
-- une teinte dominante `pink` pour rester alignée avec le bloc 04
-- la navigation par onglets via le paramètre `tab`
-- la disparition du doublon `Carte des partenaires` dans le menu principal
-- la séparation entre RSVP communautaire, inscription à une action et
-  participation terrain finale
+## Compatibilité des liens
 
-## Points d'attention
+Les anciennes URL de la page sont des redirections permanentes. Un lien qui
+porte `eventId` conserve cet identifiant sous `communityEventId` ; `actionId`
+reste un identifiant d’action et n’est jamais converti en événement. Les alias
+partenaires aboutissent directement à l’Annuaire.
 
-- garder la liste de missions et le parcours de création lisibles sur desktop
-  et mobile
-- éviter de réintroduire les vues d'actions, KPI, relances, staffing, exports,
-  guides, solutions, newsletter ou chat dans cette surface
-- conserver l'onglet `Partenaires` comme accès fonctionnel, pas comme page séparée
+## Référence
 
-## Référence canonique
-
-- [README de la page](./community-README.md)
+Pour l’état courant, consulter le README du bloc
+[`Réseau & Discussions`](../reseau-discussions-README.md) et les fiches des
+surfaces canoniques. Aucune capacité décrite dans cette archive ne doit être
+présentée comme une page actuellement rendue.

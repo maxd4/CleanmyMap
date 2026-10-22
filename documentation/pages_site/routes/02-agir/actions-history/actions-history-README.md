@@ -10,7 +10,7 @@
 - **Navigation** : workflow secondaire protégé hors navigation primaire
 - **Statut** : protégé
 - **Disponibilité registry** : `hidden` — non exposé dans la navigation primaire, sans signifier legacy ou désactivé.
-- **Raccord Communauté** : Communauté renvoie vers cette route pour l'historique terrain ; elle reste la source canonique et n'est pas embarquée dans `/sections/community`.
+- **Raccord événements historiques** : `/sections/rejoindre-une-action` consulte les événements communautaires historiques et renvoie vers les parcours canoniques d'action ; cette route reste la source canonique de l'historique terrain et n'est pas une page publique.
 - **Accès runtime** : route protégée par le proxy Clerk ; l'authentification est requise avant l'accès à la page. `ClerkRequiredGate` reste une défense/fallback interne et ne constitue pas un aperçu public.
 - **Contexte nécessaire** : Compte Clerk connecté ; le rappel de complétion du compte reste non bloquant. Les fonctions de supervision et d'audit appliquent leurs autorisations propres.
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; l'historique reste soumis à l'authentification et à ses contrôles propres.

@@ -18,7 +18,6 @@ const legacyRoutePaths = [
 ];
 
 const complexEntrypoints = [
-  join(rubriquesRoot, "community", "index.tsx"),
   join(rubriquesRoot, "annuaire", "index.tsx"),
   join(rubriquesRoot, "climate", "index.tsx"),
   join(rubriquesRoot, "compost", "index.tsx"),
@@ -40,7 +39,7 @@ describe("rubrique entrypoints STATIC_CONTRACT", () => {
   it("routes the renderer through folder-level entrypoints", () => {
     const renderer = readFileSync(rendererPath, "utf8");
 
-    expect(renderer).toContain('import("./community")');
+    expect(renderer).not.toContain('import("./community")');
     expect(renderer).toContain('import("./annuaire")');
     expect(renderer).toContain('import("./climate")');
     expect(renderer).toContain('import("./compost")');

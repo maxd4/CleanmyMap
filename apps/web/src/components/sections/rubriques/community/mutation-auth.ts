@@ -1,4 +1,4 @@
-export const COMMUNITY_RETURN_PATH = "/sections/community";
+export const COMMUNITY_RETURN_PATH = "/sections/rejoindre-une-action";
 
 export function canOpenCommunityCreateForm(
   isLoaded: boolean,

@@ -1,29 +1,24 @@
-# Communauté - Liste des propositions à traiter
+# Communauté — propositions historiques
 
-## Navigation
+## Statut
 
-- Vérifier que le passage entre `Communauté` et `Partenaires` reste stable via l'URL
-- Garder le lien `/partners/network` comme alias technique uniquement
-- Supprimer toute réapparition du libellé `Carte des partenaires` dans les menus visibles
+Ce document est classé `HISTORY`. Il ne contient plus de backlog actif : la
+page autonome et son hub ont été remplacés par les surfaces canoniques
+Actions, Messagerie et Annuaire.
 
-## Contenu
+## Propositions non retenues
 
-- Clarifier les blocs du hub pour que les missions ne noient pas les autres actions
-- Réduire les répétitions entre les cartes de coordination, les événements et les solutions
-- Simplifier les appels à l'action pour que le premier écran reste scannable
+- Réintroduire une page hub regroupant événements et partenaires.
+- Ajouter un onglet partenaire à une page d’événements.
+- Dupliquer les cartes de coordination, les ressources ou les discussions.
+- Faire de `/community` ou `/partners/network` une destination visible du
+  menu.
 
-## Lisibilité
+Ces besoins sont couverts par les parcours actuels sans seconde persistance ni
+nouveau registre. Les événements historiques restent consultables via
+`/sections/rejoindre-une-action` et les acteurs via `/sections/annuaire`.
 
-- Tester la hiérarchie des titres sur mobile
-- Contrôler la densité des cartes en mode onglet `Partenaires`
-- Éviter les panneaux latéraux trop bavards dans la page principale
+## Référence
 
-## Alignement produit
-
-- Conserver la page comme point d'entrée du réseau
-- Ne pas réintroduire une page séparée pour le contenu partenaire
-- Maintenir une différence nette avec `Feedback`, `Messagerie` et `Données publiques`
-
-## Référence canonique
-
-- [README de la page](./README.md)
+Les redirections et la répartition des responsabilités sont décrites dans
+[`community-README.md`](./community-README.md).

@@ -119,7 +119,7 @@ describe("HomeCommunityCredibility action hierarchy", () => {
     const discussionIndex = markup.indexOf('href="/sections/messagerie"');
     const mapIndex = markup.indexOf('href="/actions/map"');
     const partnersIndex = markup.indexOf(
-      'href="/sections/community?tab=partners"',
+      'href="/sections/annuaire"',
     );
 
     expect(discussionIndex).toBeGreaterThan(-1);

@@ -146,8 +146,8 @@ test.describe("campaign 1 - public reading and late authentication", () => {
 
   test("public partner network renders anonymously", async ({ page }) => {
     await page.goto("/partners/network");
-    await expect(page).toHaveURL(/\/sections\/community\?tab=partners$/);
-    await expect(page.getByPlaceholder(/rechercher un partenaire/i)).toBeVisible();
+    await expect(page).toHaveURL(/\/sections\/annuaire$/);
+    await expect(page.getByPlaceholder("Rechercher une structure, un domaine...", { exact: true })).toBeVisible();
   });
 
   test("public group join form renders anonymously", async ({ page }) => {

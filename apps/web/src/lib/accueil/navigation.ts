@@ -25,14 +25,9 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
   },
   impact: {},
   network: {
-    community: 1,
-    feedback: 2,
-    messagerie: 3,
-    network: 4,
-    funding: 5,
-    actors: 6,
-    "open-data": 7,
-    annuaire: 8,
+    messagerie: 1,
+    annuaire: 2,
+    "open-data": 3,
   },
   connect: { messagerie: 1, dm: 2 },
   learn: {

@@ -29,12 +29,9 @@ const FORBIDDEN_ACT_ROUTE_IDS = [
   "history",
 ] as const;
 const EXPECTED_NETWORK_ROUTE_IDS = [
-  "community",
-  "feedback",
   "messagerie",
-  "open-data",
   "annuaire",
-  "funding",
+  "open-data",
 ] as const;
 
 function collectRouteIds(
@@ -98,7 +95,7 @@ describe("navigation display modes", () => {
 
     expect(minimaliste).toContain("dashboard");
     expect(minimaliste).toContain("map");
-    expect(minimaliste).toContain("community");
+    expect(minimaliste).toContain("rejoindre-une-action");
     expect(minimaliste).not.toContain("profile");
     expect(minimaliste).not.toContain("climate");
     expect(minimaliste).not.toContain("recycling");
@@ -230,7 +227,7 @@ describe("navigation display modes", () => {
     ]);
   });
 
-  it("places feedback in the network block", () => {
+  it("keeps the network block limited to its three canonical destinations", () => {
     const networkSpace = getNavigationSpacesForProfile(
       "max",
       "exhaustif",
@@ -249,12 +246,9 @@ describe("navigation display modes", () => {
         EXPECTED_NETWORK_ROUTE_IDS,
       );
     expect(networkSpace?.items.map((item) => item.href)).toEqual([
-        "/sections/community",
-        "/sections/feedback",
         "/sections/messagerie",
-        "/sections/open-data",
         "/sections/annuaire",
-        "/sections/funding",
+        "/sections/open-data",
       ]);
     }
   });

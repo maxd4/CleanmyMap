@@ -1,6 +1,7 @@
 import { buildChatNotificationHref } from "@/lib/chat/chat-notification-targets";
 import { buildGamificationReconciliationHref } from "@/lib/gamification/gamification-notification-targets";
 import { buildJoinActionHref } from "@/lib/sections/join-action-routes";
+import { buildCommunityEventHref, migrateLegacyCommunityEventHref } from "@/lib/community/event-links";
 
 function readString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
@@ -19,8 +20,8 @@ function isInternalNotificationHref(href: string): boolean {
         "/dashboard",
         "/sections/gamification",
         "/sections/messagerie",
-        "/sections/community",
         "/sections/feedback",
+        "/sections/annuaire",
         "/sections/rejoindre-une-action",
         "/sections/trash-spotter",
         "/signalement",
@@ -64,6 +65,19 @@ export function buildNotificationHref(payload: unknown, notificationId?: string)
   if (!payload || typeof payload !== "object") return null;
   const raw = payload as Record<string, unknown>;
   const explicitHref = readString(raw.href);
+  const legacyEventHref = explicitHref
+    ? migrateLegacyCommunityEventHref(explicitHref)
+    : null;
+  if (legacyEventHref) return legacyEventHref;
+  if (readString(raw.entityType) === "event") {
+    const eventId = readString(raw.eventId) ?? readString(raw.id);
+    if (eventId) {
+      return buildCommunityEventHref(
+        eventId,
+        readString(raw.tab) === "past" ? "past" : "future",
+      );
+    }
+  }
   if (explicitHref && isInternalNotificationHref(explicitHref)) return explicitHref;
 
   return buildModerationNotificationHref(raw) ?? buildActionEventHref(raw);

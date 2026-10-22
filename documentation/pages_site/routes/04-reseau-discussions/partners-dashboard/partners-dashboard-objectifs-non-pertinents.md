@@ -22,7 +22,7 @@
 ## Rappel de cadrage
 
 - La page doit rester un outil de consultation et de gestion du réseau
-- Elle n'a pas vocation à héberger le contenu de la page `Communauté`
+- Elle n'a pas vocation à héberger le contenu de l'ancienne page `Communauté`
 
 ## Référence canonique
 

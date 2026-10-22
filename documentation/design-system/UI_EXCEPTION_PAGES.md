@@ -126,16 +126,16 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 
 | Route | Canonique / alias | Bloc / famille | Exception UI ? | Note |
 |---|---|---|---:|---|
-| `/sections/community` | Canonique (section) | Réseau & Discussions | non | Famille réseau/discussion, palette rose |
 | `/sections/feedback` | Canonique (section) | Réseau & Discussions | non | Famille discussion, palette rose |
-| `/community` | Alias vers `/sections/community` | Réseau & Discussions | n/a | Redirection sans UI propre |
+| `/community` | Alias vers `/sections/rejoindre-une-action` | Réseau & Discussions | n/a | Redirection sans UI propre |
+| `/sections/community` | Alias vers `/sections/rejoindre-une-action` | Réseau & Discussions | n/a | Ancienne page autonome supprimée |
 | `/messagerie` | Alias vers `/sections/messagerie` | Réseau & Discussions | n/a | Redirection sans UI propre |
 | `/sections/messagerie` | Canonique (section) | Réseau & Discussions | non | Famille discussion, palette rose |
 | `/sections/dm` | Canonique (section) | Réseau & Discussions | non | Messages privés, même famille réseau rose |
 | `/sections/actors` | Canonique (section) | Réseau & Discussions | non | Réseau engagé, palette rose |
 | `/sections/annuaire` | Canonique (section) | Réseau & Discussions | non | Annuaire partenaire, palette rose |
 | `/sections/funding` | Canonique (section) | Réseau & Discussions | non | Soutien / parrainage, palette rose |
-| `/partners/network` | Alias vers `/sections/community?tab=partners` | Réseau & Discussions | n/a | Redirection sans UI propre |
+| `/partners/network` | Alias vers `/sections/annuaire` | Réseau & Discussions | n/a | Redirection sans UI propre |
 | `/partners/dashboard` | Canonique | Réseau & Discussions | non | Annuaire / pilotage du réseau, palette indigo |
 | `/partners/onboarding` | Canonique | Réseau & Discussions | non | Parcours partenaire, palette indigo |
 | `/open-data` | Alias vers `/sections/open-data` | Réseau & Discussions / utilitaire | n/a | Redirection sans UI propre |
@@ -215,7 +215,7 @@ servir de modèle pour une nouvelle page éditoriale.
 | `/reglages` | en-tête principal harmonisé sur le composant canonique | famille système, layout privé conservé |
 | `/sections/open-data` | en-tête principal harmonisé sur le composant canonique | surface analytique publique, section métier conservée |
 | `/partners/dashboard` | en-tête principal harmonisé sur le composant canonique | page réseau/pilotage, contenu métier conservé |
-| `/partners/network` | redirection vers la page Communauté | onglet Partenaires intégré à `/sections/community` |
+| `/partners/network` | redirection vers l’Annuaire des acteurs | alias partenaire conservé vers `/sections/annuaire` |
 | `/partners/onboarding` | en-tête principal harmonisé sur le composant canonique | parcours partenaire, gate de connexion conservé |
 | `/sections/route` | redirection vers le panneau itinéraire de `/actions/new` | moteur et CTA conservés dans `RouteSection` |
 | `/prints/report` | en-tête principal harmonisé sur le composant canonique | en-tête de document conservé, layout imprimable inchangé |

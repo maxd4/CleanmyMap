@@ -117,7 +117,7 @@ describe("notification decision state", () => {
         entityType: "event",
         id: "event-1",
         optional: true,
-        href: "/sections/community?eventId=event-1",
+        href: "/sections/rejoindre-une-action?tab=future&communityEventId=event-1",
       },
     }))).toBe(true);
   });

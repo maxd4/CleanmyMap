@@ -115,14 +115,40 @@ describe("proxy route context", () => {
       new NextRequest("http://localhost/sections/dm?tab=legacy&source=legacy"),
     );
 
+    expect(new URL(partners?.headers.get("location") ?? "http://invalid").pathname)
+      .toBe("/sections/annuaire");
     expect(new URL(partners?.headers.get("location") ?? "http://invalid").searchParams.getAll("tab"))
-      .toEqual(["partners"]);
+      .toEqual([]);
     expect(new URL(route?.headers.get("location") ?? "http://invalid").searchParams.getAll("panel"))
       .toEqual(["itineraire"]);
     expect(new URL(weather?.headers.get("location") ?? "http://invalid").searchParams.getAll("panel"))
       .toEqual(["meteo"]);
     expect(new URL(directMessage?.headers.get("location") ?? "http://invalid").searchParams.getAll("tab"))
       .toEqual(["dm"]);
+  });
+
+  it("migrates legacy community deep links without confusing events and actions", () => {
+    const event = getSeoHttpRedirectResponse(
+      new NextRequest("http://localhost/community?eventId=event-42&tab=partners"),
+    );
+    const action = getSeoHttpRedirectResponse(
+      new NextRequest("http://localhost/sections/community?actionId=action-7"),
+    );
+
+    const eventLocation = new URL(event?.headers.get("location") ?? "http://invalid");
+    const actionLocation = new URL(action?.headers.get("location") ?? "http://invalid");
+
+    expect(event?.status).toBe(308);
+    expect(eventLocation.pathname).toBe("/sections/rejoindre-une-action");
+    expect(eventLocation.searchParams.get("communityEventId")).toBe("event-42");
+    expect(eventLocation.searchParams.get("eventId")).toBeNull();
+    expect(eventLocation.searchParams.get("actionId")).toBeNull();
+    expect(eventLocation.searchParams.get("tab")).toBe("future");
+
+    expect(action?.status).toBe(308);
+    expect(actionLocation.pathname).toBe("/sections/rejoindre-une-action");
+    expect(actionLocation.searchParams.get("actionId")).toBe("action-7");
+    expect(actionLocation.searchParams.get("communityEventId")).toBeNull();
   });
 
   it("keeps context-only page semantics explicit", () => {
@@ -133,7 +159,6 @@ describe("proxy route context", () => {
       "/sections/annuaire",
       "/sections/rejoindre-une-action",
       "/sections/rejoindre-un-formulaire",
-      "/sections/community",
     ]) {
       expect(isClerkContextOnlyRoute(pathname)).toBe(true);
       expect(isProtectedAppPage(pathname)).toBe(false);

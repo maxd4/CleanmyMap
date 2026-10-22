@@ -27,7 +27,7 @@ export const PROFILE_CTA_CONFIG: Record<Parcours, ProfileCtaConfig> = {
       },
     },
     secondaryCTA: {
-      href: "/sections/community",
+      href: "/sections/rejoindre-une-action",
       label: { fr: "Rejoindre un cleanup", en: "Join a cleanup" },
       description: {
         fr: "Trouver un événement et aider le terrain",
@@ -55,7 +55,7 @@ export const PROFILE_CTA_CONFIG: Record<Parcours, ProfileCtaConfig> = {
   },
   coordinateur: {
     primaryCTA: {
-      href: "/sections/community",
+      href: "/actions/new",
       label: {
         fr: "Organiser un cleanup",
         en: "Organize a cleanup",
@@ -141,7 +141,7 @@ export const PROFILE_CTA_CONFIG: Record<Parcours, ProfileCtaConfig> = {
       },
     },
     secondaryCTA: {
-      href: "/sections/community?tab=partners",
+      href: "/sections/annuaire",
       label: { fr: "Voir les partenaires", en: "View partners" },
       description: {
         fr: "Identifier les acteurs et partenaires actifs",

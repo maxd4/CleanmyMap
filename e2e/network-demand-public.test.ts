@@ -66,36 +66,24 @@ test("localApiRequests matches the effective origin, method and exact pathname",
 });
 
 test.describe("optional network demand on public surfaces", () => {
-  test("partners deep-link does not load community events", async ({ page }) => {
-    const { response, requests } = await observeNavigation(page, "/sections/community?tab=partners");
+  test("partner aliases land on the directory without loading community events", async ({ page }) => {
+    const { response, requests } = await observeNavigation(page, "/partners/network?tab=partners");
 
     expect(response?.status()).toBe(200);
-    await expect(page.getByText("Rechercher dans le référentiel", { exact: true })).toBeVisible();
+    await expect(page.getByPlaceholder("Rechercher une structure, un domaine...", { exact: true })).toBeVisible();
     expect(localApiRequests(requests, page, "/api/community/events")).toHaveLength(0);
   });
 
-  test("community loads events once when arriving from partners", async ({ page }) => {
+  test("legacy community event deep-links land on the canonical join surface", async ({ page }) => {
     const requests: ObservedRequest[] = [];
     page.on("request", (request) =>
       requests.push({ method: request.method(), url: request.url() }),
     );
 
-    await page.goto("/sections/community?tab=partners", { waitUntil: "domcontentloaded" });
-    await page.waitForLoadState("load");
-    await page.waitForTimeout(REQUEST_OBSERVATION_WINDOW_MS);
-    await page.getByRole("link", { name: "Communauté", exact: true }).click();
-    await page.waitForURL("**/sections/community**");
-    await page.waitForLoadState("load");
-    await expect
-      .poll(() => localApiRequests(requests, page, "/api/community/events").length, {
-        timeout: 10_000,
-        message: "Expected a GET request for /api/community/events",
-      })
-      .toBeGreaterThan(0);
-    await page.waitForTimeout(REQUEST_OBSERVATION_WINDOW_MS);
-
-    await expect(page.getByRole("heading", { name: "Communauté", exact: true })).toBeVisible();
-    expect(localApiRequests(requests, page, "/api/community/events")).toHaveLength(1);
+    await page.goto("/community?eventId=event-42&tab=partners", { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(/\/sections\/rejoindre-une-action\?tab=future&communityEventId=event-42$/);
+    await expect(page.getByRole("heading", { name: "Rejoindre une action", exact: true })).toBeVisible();
+    expect(localApiRequests(requests, page, "/api/community/events").length).toBeLessThanOrEqual(1);
   });
 
   test("anonymous recycling and gamification do not request private leaderboard details", async ({ page }) => {

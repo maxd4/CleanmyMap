@@ -1,6 +1,6 @@
 # Réseau & Discussions
 
-Communautés, partenaires, données publiques, annuaire et discussions.
+Groupes de discussion, annuaire des acteurs et données publiques.
 
 ## Fiche de bloc
 
@@ -25,18 +25,22 @@ L’inventaire exhaustif des routes canoniques, alias et fiches est tenu dans
 ## Navigation primaire
 
 `apps/web/src/lib/navigation.ts` est la source canonique de la navigation par
-profil. Dans le bloc `network`, les entrées visibles suivent un ordre stable :
+profil. Dans le bloc `network`, les entrées visibles sont exactement les trois
+surfaces suivantes, dans cet ordre :
 
-1. Communauté (`/sections/community`)
-2. Idées et problèmes (`/sections/feedback`)
-3. Groupes de discussion (`/sections/messagerie`)
-4. Données publiques (`/sections/open-data`)
-5. Annuaire des acteurs (`/sections/annuaire`)
+1. Groupes de discussion (`/sections/messagerie`)
+2. Annuaire des acteurs (`/sections/annuaire`)
+3. Données publiques (`/sections/open-data`)
 
-L’alias technique `/partners/network` reste conservé dans la map pour les
-contrats existants, mais il est masqué par le registre et ne constitue pas une
-entrée visible supplémentaire. L’accueil et `/explorer` utilisent les mêmes
-priorités de preview exportées par `apps/web/src/lib/accueil/navigation.ts`.
+Feedback (`/sections/feedback`) et Soutenir CleanMyMap
+(`/sections/funding`) restent accessibles par leurs liens directs et leurs CTA,
+mais ne sont pas des entrées supplémentaires du bloc `network`. Les anciennes
+URL `/community` et `/sections/community` redirigent vers
+`/sections/rejoindre-une-action`. Les alias partenaires redirigent vers
+`/sections/annuaire`, sans conserver un onglet de l’ancienne page.
+
+L’accueil et `/explorer` utilisent les mêmes priorités de preview exportées par
+`apps/web/src/lib/accueil/navigation.ts`.
 
 Les sections `open-data` et `annuaire` partagent la famille visuelle violette
 existante, avec des surfaces blanches/lavande ; aucune palette locale

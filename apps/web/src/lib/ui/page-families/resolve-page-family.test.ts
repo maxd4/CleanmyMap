@@ -70,7 +70,6 @@ describe("page-families resolver", () => {
     );
 
     for (const route of [
-      "/sections/community",
       "/sections/feedback",
       "/sections/actors",
       "/sections/annuaire",

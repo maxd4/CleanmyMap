@@ -24,7 +24,7 @@ describe("notification targets", () => {
       entityType: "event",
       id: "event-1",
       href: "/sections/community?eventId=event-1",
-    })).toBe("/sections/community?eventId=event-1");
+    })).toBe("/sections/rejoindre-une-action?tab=future&communityEventId=event-1");
   });
 
   it("rejects external, protocol-relative and unknown destinations", () => {

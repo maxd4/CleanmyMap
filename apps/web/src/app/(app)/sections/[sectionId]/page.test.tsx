@@ -101,7 +101,7 @@ describe("section authentication gate", () => {
 
   it("renders visible sections without reading search params or Clerk session", async () => {
     mocks.getSectionRubriqueById.mockReturnValue({
-      id: "community",
+      id: "annuaire",
       anonymousPresentation: "visible",
     });
     const searchParams = {
@@ -112,12 +112,12 @@ describe("section authentication gate", () => {
 
     const markup = renderToStaticMarkup(
       await SectionPage({
-        params: Promise.resolve({ sectionId: "community" }),
+        params: Promise.resolve({ sectionId: "annuaire" }),
         searchParams,
       }),
     );
 
-    expect(markup).toContain('data-section-id="community"');
+    expect(markup).toContain('data-section-id="annuaire"');
     expect(mocks.getSafeAuthSession).not.toHaveBeenCalled();
     expect(searchParams.then).not.toHaveBeenCalled();
   });
@@ -168,20 +168,20 @@ describe("section authentication gate", () => {
 
   it("keeps public section metadata deterministic and French", async () => {
     mocks.getSectionRubriqueById.mockReturnValue({
-      id: "community",
-      label: { fr: "Communauté", en: "Community" },
-      description: { fr: "La vie collective", en: "Community life" },
+      id: "annuaire",
+      label: { fr: "Annuaire des acteurs", en: "Directory" },
+      description: { fr: "Les acteurs publiés", en: "Published organizations" },
     });
 
     const metadata = await generateMetadata({
-      params: Promise.resolve({ sectionId: "community" }),
+      params: Promise.resolve({ sectionId: "annuaire" }),
       searchParams: Promise.resolve({}),
     });
 
-    expect(metadata.title).toBe("Communauté");
-    expect(metadata.description).toBe("La vie collective");
+    expect(metadata.title).toBe("Annuaire des acteurs");
+    expect(metadata.description).toBe("Les acteurs publiés");
     expect(metadata.robots).toEqual({ index: true, follow: true });
-    expect(metadata.alternates).toEqual({ canonical: "/sections/community" });
+    expect(metadata.alternates).toEqual({ canonical: "/sections/annuaire" });
     expect(mocks.getServerLocale).not.toHaveBeenCalled();
   });
 });

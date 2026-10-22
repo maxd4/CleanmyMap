@@ -81,7 +81,15 @@ describe("indexability helpers", () => {
     expect(SEO_REDIRECT_TARGETS["/sections/route"]).toContain("/actions/new");
     expect(SEO_REDIRECT_TARGETS["/sections/weather"]).toContain("/actions/new");
     expect(buildSeoRedirectTarget("/partners/network", { tab: "dm", source: "legacy" }))
-      .toBe("/sections/community?tab=partners&source=legacy");
+      .toBe("/sections/annuaire?source=legacy");
+    expect(buildSeoRedirectTarget("/community", { tab: "partners" }))
+      .toBe("/sections/annuaire");
+    expect(buildSeoRedirectTarget("/sections/community", { eventId: "event-1" }))
+      .toBe("/sections/rejoindre-une-action?communityEventId=event-1&tab=future");
+    expect(buildSeoRedirectTarget("/sections/community", { actionId: "action-1" }))
+      .toBe("/sections/rejoindre-une-action?actionId=action-1");
+    expect(buildSeoRedirectTarget("/partners/network", { eventId: "event-2" }))
+      .toBe("/sections/rejoindre-une-action?communityEventId=event-2&tab=future");
     expect(
       buildSeoRedirectTarget(
         "/sections/route",
@@ -134,7 +142,6 @@ describe("indexability helpers", () => {
         "actors",
         "annuaire",
         "climate",
-        "community",
         "compost",
         "funding",
         "open-data",
@@ -155,7 +162,7 @@ describe("indexability helpers", () => {
 
     expect(publicVisibleRoutes).toEqual(expectedPublicRoutes);
     expect(privateRoutes).toEqual(expectedPrivateRoutes);
-    expect(publicVisibleRoutes).toContain("/sections/community");
+    expect(publicVisibleRoutes).not.toContain("/sections/community");
     expect(publicVisibleRoutes).toContain("/sections/annuaire");
     expect(privateRoutes).toContain("/sections/gamification");
     expect(privateRoutes).toContain("/sections/messagerie");

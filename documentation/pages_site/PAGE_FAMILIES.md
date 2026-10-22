@@ -83,7 +83,6 @@ workflow et aux deep-links ; il n'est jamais une rubrique primaire.
 ### Réseau & Discussions
 
 ```txt
-/sections/community
 /sections/feedback
 /sections/actors
 /sections/annuaire

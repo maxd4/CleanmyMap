@@ -20,9 +20,6 @@ type SectionRendererProps = {
   initialSearchParams?: FeedbackSectionProps["initialSearchParams"];
 };
 
-const CommunitySection = dynamic(() =>
-  import("./community").then((module) => module.CommunitySection),
-);
 const FeedbackSection = dynamic<FeedbackSectionProps>(() =>
   import("./feedback").then((module) => module.FeedbackSection),
 );
@@ -94,7 +91,6 @@ function OpenDataFundingLink() {
 }
 
 export const FINALIZED_SECTION_RENDERERS = {
-  community: () => <CommunitySection />,
   feedback: (_fundingOnParticipeUrl, _publicInitialData, initialSearchParams) => (
     <FeedbackSection
       key={JSON.stringify(initialSearchParams ?? {})}

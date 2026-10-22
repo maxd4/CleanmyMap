@@ -1,29 +1,27 @@
-# Communauté - Objectifs non pertinents
+# Communauté — objectifs hors périmètre
 
-## À ne pas viser
+## Statut
 
-- Transformer la page en tableau de bord d'administration complet
-- Dupliquer un annuaire autonome alors que l'onglet `Partenaires` suffit
-- Refaire une messagerie intégrée dans cette page
-- Réintroduire une page séparée `Carte des partenaires`
+Cette liste est conservée comme `HISTORY` pour empêcher le retour de la page
+autonome ou de fonctions qui brouilleraient les contrats actuels.
 
-## À ne pas mélanger
+## À ne pas réintroduire
 
-- Les retours de type bug ou idée doivent rester dans `Feedback`
-- Les données publiques doivent rester dans `Données publiques`
-- Les conversations longues doivent rester dans `Messagerie`
+- une page indépendante `/sections/community` ;
+- un tableau de bord d’administration, de staffing ou d’impact dans une page
+  publique ;
+- une seconde messagerie, un second annuaire ou une seconde persistance des
+  événements ;
+- une conversion implicite d’un RSVP historique en inscription, présence ou
+  impact certifié ;
+- une redirection de `/missions/[id]`, qui conserve son contrat de mission
+  GPS.
 
-## À éviter côté UX
+Les accès actuels sont `/sections/rejoindre-une-action`,
+`/sections/messagerie`, `/sections/annuaire` et `/sections/open-data`. Feedback
+et Soutenir CleanMyMap restent des destinations directes séparées.
 
-- Des CTA concurrents au-dessus du contenu principal
-- Des cartes décoratives sans rôle fonctionnel
-- Une hiérarchie visuelle qui ne distingue plus la coordination du réseau
+## Référence
 
-## Rappel de cadrage
-
-- La page doit rester le point d'entrée réseau du bloc 04
-- L'onglet `Partenaires` est un mode de lecture de la même page, pas une page autonome
-
-## Référence canonique
-
-- [README de la page](./README.md)
+Voir [`community-README.md`](./community-README.md) pour les redirections et
+la répartition actuelle des responsabilités.

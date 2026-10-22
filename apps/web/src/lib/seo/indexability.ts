@@ -57,7 +57,8 @@ const PUBLIC_NOINDEX_ROUTE_PREFIXES = [
 export const SEO_REDIRECT_TARGETS = {
   "/en": "/",
   "/conditions-utilisation": "/conditions-generales-utilisation",
-  "/community": "/sections/community",
+  "/community": "/sections/rejoindre-une-action",
+  "/sections/community": "/sections/rejoindre-une-action",
   "/open-data": "/sections/open-data",
   "/messagerie": "/sections/messagerie",
   "/gamification": "/sections/gamification",
@@ -66,8 +67,8 @@ export const SEO_REDIRECT_TARGETS = {
   "/sections/route": "/actions/new?panel=itineraire",
   "/sections/weather": "/actions/new?panel=meteo",
   "/sections/rejoindre-un-formulaire": "/sections/rejoindre-une-action",
-  "/partners/network": "/sections/community?tab=partners",
-  "/partners/network/pepite": "/sections/community?tab=partners",
+  "/partners/network": "/sections/annuaire",
+  "/partners/network/pepite": "/sections/annuaire",
   "/onboarding/localisation": "/onboarding",
 } as const;
 
@@ -76,7 +77,6 @@ export const PUBLIC_INDEXABLE_SECTION_IDS: ReadonlySet<string> = new Set([
   "annuaire",
   "climate",
   "compost",
-  "community",
   "funding",
   "open-data",
   "recycling",
@@ -130,10 +130,67 @@ function appendPreservedSearchParams(
   return serialized ? `${pathname}?${serialized}` : pathname;
 }
 
+function toSearchParams(searchParams: SeoRedirectSearchParams): URLSearchParams {
+  if (searchParams instanceof URLSearchParams) {
+    return new URLSearchParams(searchParams);
+  }
+
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (value === undefined) continue;
+    for (const item of Array.isArray(value) ? value : [value]) {
+      params.append(key, item);
+    }
+  }
+  return params;
+}
+
+function serializeRedirectTarget(pathname: string, params: URLSearchParams): string {
+  const query = params.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
+function buildLegacyCommunityRedirectTarget(
+  source: SeoRedirectSource,
+  searchParams: SeoRedirectSearchParams,
+): string {
+  const params = toSearchParams(searchParams);
+  const eventId = params.get("eventId")?.trim() || params.get("communityEventId")?.trim() || null;
+  const isPartnerAlias =
+    !eventId &&
+    ((source === "/partners/network" ||
+      source === "/partners/network/pepite") ||
+      ((source === "/community" || source === "/sections/community") &&
+        params.get("tab") === "partners"));
+
+  if (isPartnerAlias) {
+    params.delete("tab");
+    return serializeRedirectTarget("/sections/annuaire", params);
+  }
+
+  if (eventId) {
+    params.delete("eventId");
+    params.set("communityEventId", eventId);
+    if (!params.has("tab") || params.get("tab") === "partners") {
+      params.set("tab", "future");
+    }
+  }
+
+  return serializeRedirectTarget("/sections/rejoindre-une-action", params);
+}
+
 export function buildSeoRedirectTarget(
   source: SeoRedirectSource,
   searchParams: SeoRedirectSearchParams,
 ): string {
+  if (
+    source === "/community" ||
+    source === "/sections/community" ||
+    source === "/partners/network" ||
+    source === "/partners/network/pepite"
+  ) {
+    return buildLegacyCommunityRedirectTarget(source, searchParams);
+  }
   return appendPreservedSearchParams(SEO_REDIRECT_TARGETS[source], searchParams);
 }
 

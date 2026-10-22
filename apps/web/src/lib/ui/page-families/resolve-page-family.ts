@@ -38,7 +38,6 @@ const CARTOGRAPHIE_IMPACT_SECTION_ROUTES = [
 ] as const;
 
 const RESEAU_DISCUSSIONS_SECTION_ROUTES = [
-  "/sections/community",
   "/sections/feedback",
   "/sections/actors",
   "/sections/annuaire",

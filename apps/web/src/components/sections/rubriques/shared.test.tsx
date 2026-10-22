@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/sections/community",
+  usePathname: () => "/sections/rejoindre-une-action",
 }));
 
 vi.mock("@/components/ui/site-preferences-provider", () => ({
@@ -46,7 +46,7 @@ describe("SectionShell page composition", () => {
   it("uses the canonical page shell and section rhythm while preserving shell metadata", () => {
     const markup = renderToStaticMarkup(
       <SectionShell
-        id="community"
+        id="rejoindre-une-action"
         title="Communauté"
         subtitle="Le réseau local"
         summary={<p>Résumé métier</p>}
@@ -67,7 +67,7 @@ describe("SectionShell page composition", () => {
 
   it("keeps hideHeader available for consumers that own their page header", () => {
     const markup = renderToStaticMarkup(
-      <SectionShell id="community" hideHeader>
+      <SectionShell id="rejoindre-une-action" hideHeader>
         <header>Header enfant</header>
       </SectionShell>,
     );

@@ -40,7 +40,7 @@ const navigationPaths: NavigationPath[] = [
         label: "Rejoindre une action",
         href: "/sections/rejoindre-une-action",
       },
-      { label: "Partager l'action", href: "/sections/community" },
+      { label: "Partager l'action", href: "/sections/rejoindre-une-action" },
       { label: "Fédérer", href: "/sections/actors" },
     ],
   },

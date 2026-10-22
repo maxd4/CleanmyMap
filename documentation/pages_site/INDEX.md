@@ -90,7 +90,6 @@ tests runtime restent la preuve opérationnelle de cet alignement.
 | /sections/annuaire | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /sections/climate | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /sections/compost | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
-| /sections/community | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /sections/funding | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /sections/open-data | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /sections/recycling | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
@@ -188,7 +187,8 @@ Les fiches détaillées de ces compatibilités sont classées hors des packages
 | --- |---|---|---|---|---|
 | /en | `/` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /conditions-utilisation | `/conditions-generales-utilisation` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
-| /community | `/sections/community` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /community | `/sections/rejoindre-une-action` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /sections/community | `/sections/rejoindre-une-action` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /open-data | `/sections/open-data` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /messagerie | `/sections/messagerie` | `PRIVATE` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /gamification | `/sections/gamification` | `PRIVATE` | `NOINDEX` | `REDIRECT` | `TARGET` |
@@ -197,8 +197,8 @@ Les fiches détaillées de ces compatibilités sont classées hors des packages
 | /sections/route | `/actions/new?panel=itineraire` | `HYBRID` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /sections/weather | `/actions/new?panel=meteo` | `HYBRID` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /sections/rejoindre-un-formulaire | `/sections/rejoindre-une-action` | `HYBRID` | `NOINDEX` | `REDIRECT` | `TARGET` |
-| /partners/network | `/sections/community?tab=partners` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
-| /partners/network/pepite | `/sections/community?tab=partners` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /partners/network | `/sections/annuaire` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /partners/network/pepite | `/sections/annuaire` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /onboarding/localisation | `/onboarding` | `PRIVATE` | `NOINDEX` | `REDIRECT` | `TARGET` |
 
 `/en` n'est pas une version anglaise : aucune page anglaise autonome n'existe
@@ -305,14 +305,22 @@ primaire du bloc Agir.
 
 ## Réseau & Discussions
 
+Le bloc de navigation primaire contient exactement trois entrées, dans cet
+ordre. Feedback et Soutenir CleanMyMap restent des destinations directes du
+site, mais ne sont pas ajoutées à ce trio.
+
 | Route | Fiche | Accès | Palette runtime | Source |
 |---|---|---|---|---|
-| `/sections/community` | [Communauté](./routes/04-reseau-discussions/community/community-README.md) | `public-visible` ; consultation publique ; actions nécessitant une identité séparées | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/messagerie` | [Groupes de discussion](./routes/04-reseau-discussions/messagerie/messagerie-README.md) | `auth-blur-gate` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/annuaire` | [Annuaire des acteurs](./routes/04-reseau-discussions/annuaire/annuaire-README.md) | `public-visible` ; consultation publique ; référencement via un parcours séparé | violet | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/open-data` | [Données publiques](./routes/04-reseau-discussions/open-data/open-data-README.md) | `public-visible` | violet | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+
+### Destinations directes conservées hors du trio
+
+| Route | Fiche | Accès | Palette runtime | Source |
+|---|---|---|---|---|
 | `/sections/feedback` | [Idées et problèmes](./routes/04-reseau-discussions/feedback/feedback-README.md) | `public-visible` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/actors` | [Réseau engagé](./routes/04-reseau-discussions/actors/actors-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/sections/annuaire` | [Annuaire des acteurs](./routes/04-reseau-discussions/annuaire/annuaire-README.md) | `public-visible` ; consultation publique ; référencement via un parcours séparé | violet | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/sections/messagerie` | [Messagerie](./routes/04-reseau-discussions/messagerie/messagerie-README.md) | `auth-blur-gate` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/sections/open-data` | [Données publiques](./routes/04-reseau-discussions/open-data/open-data-README.md) | `public-visible` | violet | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/funding` | [Soutenir CleanMyMap](./routes/04-reseau-discussions/funding/funding-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/trash-spotter` | [Suivi Trash Spotter](./routes/04-reseau-discussions/trash-spotter/trash-spotter-README.md) | `auth-blur-gate` ; consultation/monitoring secondaire, sans formulaire de création | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/partners/dashboard` | [Annuaire partenaires](./routes/04-reseau-discussions/partners-dashboard/partners-dashboard-README.md) | `protected` | partenaires / réseau | `apps/web/src/app/(app)/partners/dashboard/page.tsx` |
@@ -322,11 +330,12 @@ primaire du bloc Agir.
 
 | Route | Cible | Statut |
 |---|---|---|
-| `/community` | `/sections/community` | `redirect` |
+| `/community` | `/sections/rejoindre-une-action` | `redirect` |
+| `/sections/community` | `/sections/rejoindre-une-action` | `redirect` |
 | `/messagerie` | `/sections/messagerie` | `redirect` |
 | `/open-data` | `/sections/open-data` | `redirect` |
-| `/partners/network` | `/sections/community?tab=partners` | `redirect` |
-| `/partners/network/pepite` | `/sections/community?tab=partners` | `redirect` |
+| `/partners/network` | `/sections/annuaire` | `redirect` |
+| `/partners/network/pepite` | `/sections/annuaire` | `redirect` |
 | `/sections/dm` | `/sections/messagerie?tab=dm` | `redirect` gérée dans la route dynamique |
 
 ## Apprendre

@@ -4,7 +4,7 @@
 
 - Transformer l'onboarding en page d'annuaire
 - Faire de la page un flux de discussion
-- Réintégrer le contenu partenaire dans `Communauté`
+- Réintégrer le contenu partenaire dans l’ancienne page `Communauté`
 - Faire une page marketing générale pour le projet
 
 ## À ne pas confondre
@@ -22,7 +22,7 @@
 ## Rappel de cadrage
 
 - La page doit rester un chemin d'entrée vers le réseau
-- Elle n'a pas vocation à dupliquer la page `Communauté` ou le dashboard partenaire
+- Elle n'a pas vocation à dupliquer l'ancien hub `Communauté` ou le dashboard partenaire
 
 ## Référence canonique
 

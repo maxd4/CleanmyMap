@@ -30,8 +30,8 @@ Cette matrice v1 couvre les parcours coeur les plus exposes dans le pilotage DU.
 - cartographie navigation / rubriques : `apps/web/src/lib/navigation.ts`, `apps/web/src/lib/sections-registry/config.ts`
 - cartographie donnees terrain : `apps/web/src/lib/actions/store.ts`
 - cartographie services externes : `apps/web/src/lib/services/registry.ts`
-- routes canoniques publiques : `/explorer`, `/reports`, `/sections/feedback`, `/sections/community`, `/sections/messagerie`, `/sections/open-data`, `/sections/sandbox`
-- alias legacy documentes : `/community` -> `/sections/community`, `/messagerie` -> `/sections/messagerie`, `/open-data` -> `/sections/open-data`, `/sandbox` -> `/sections/sandbox`
+- routes canoniques publiques : `/explorer`, `/reports`, `/sections/feedback`, `/sections/rejoindre-une-action`, `/sections/messagerie`, `/sections/open-data`, `/sections/annuaire`, `/sections/sandbox`
+- alias legacy documentes : `/community` et `/sections/community` -> `/sections/rejoindre-une-action`, `/partners/network` -> `/sections/annuaire`, `/messagerie` -> `/sections/messagerie`, `/open-data` -> `/sections/open-data`, `/sandbox` -> `/sections/sandbox`
 - pages wrapper alias dans le code : `apps/web/src/app/(app)/community/page.tsx`, `apps/web/src/app/(app)/messagerie/page.tsx`, `apps/web/src/app/(app)/open-data/page.tsx`, `apps/web/src/app/(app)/sandbox/page.tsx`
 
 ## Limites actuelles
