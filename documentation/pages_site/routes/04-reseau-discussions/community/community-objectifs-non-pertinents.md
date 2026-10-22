@@ -18,8 +18,16 @@ autonome ou de fonctions qui brouilleraient les contrats actuels.
   GPS.
 
 Les accès actuels sont `/sections/rejoindre-une-action`,
-`/sections/messagerie`, `/sections/annuaire` et `/sections/open-data`. Feedback
-et Soutenir CleanMyMap restent des destinations directes séparées.
+`/sections/messagerie`, `/sections/annuaire`, `/sections/open-data` et
+`/sections/funding`. Feedback
+et `/sections/funding` appartiennent à leurs contrats propres ; Feedback reste
+accessible depuis le menu dédié. Les événements historiques conservent leurs
+API, RSVP et opérations autorisées sans réintroduire la page autonome.
+
+Ne pas supprimer `community_events`, `event_rsvps`, les migrations, les exports,
+les lectures de rapports, les signaux de gamification, les notifications, les
+références de messagerie ou l’assistant d’itinéraire : ces consommateurs sont
+encore `CURRENT` ou `COMPATIBILITY`.
 
 ## Référence
 

@@ -41,6 +41,11 @@ La recherche, les filtres, la liste paginée, la carte et le graphe consomment l
 état d'exploration. Les limites géographiques et la provenance sont affichées sans
 transformer une couverture nationale ou une position dérivée en adresse réelle.
 
+L'Annuaire ne consomme pas `community_events` ni `event_rsvps` et ne transforme pas
+un événement historique en acteur, partenaire ou preuve d'activité. La disparition
+de la page Communauté ne modifie donc ni la provenance `editorial_seed` /
+`published_partner`, ni la publication administrative des fiches.
+
 ## Preuves et limites documentaires
 
 La présente fiche décrit le contrat du code versionné. Les tests locaux et les

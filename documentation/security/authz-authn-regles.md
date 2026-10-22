@@ -1058,9 +1058,10 @@ la fuite Data API et ne donne aucune capacité de mutation.
 
 `public.community_events` conserve une lecture publique de la projection prévue,
 mais aucune écriture directe pour `anon` ou `authenticated`. La création passe
-par `POST /api/community/events`, qui résout `organizer_clerk_id` depuis la
-session Clerk côté serveur ; ce champ ne vient jamais du payload client. Les
-opérations autorisées passent par `POST /api/community/events/ops`, après
+par `/actions/new` et les contrats Actions. `POST /api/community/events` reste
+une frontière de compatibilité qui répond `410` et ne crée plus de nouvelle
+ligne. Les opérations historiques autorisées passent par
+`POST /api/community/events/ops`, après
 vérification de l'organisateur ou d'une capacité admin. Une dérogation admin
 exige un motif, reste auditée et n'élargit pas les droits du Data API. Les
 privilèges DML de `service_role` sont réservés à ces frontières serveur et ne

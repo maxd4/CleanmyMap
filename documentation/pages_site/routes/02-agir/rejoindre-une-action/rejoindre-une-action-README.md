@@ -48,6 +48,13 @@ passée. Aucun nouveau modèle `past` ou état concurrent n'est introduit ; le
 claim rétroactif décrit plus bas est le flux existant de rattachement à une
 participation finale.
 
+La même surface consulte aussi les événements historiques `community_events`,
+distincts des actions canoniques, dans les deux onglets. Leur lecture passe par
+`GET /api/community/events` et conserve les liens profonds
+`communityEventId`/`eventId` sans les confondre avec `actionId`. Une lecture par
+identifiant peut retrouver un événement hors de la page courante afin qu’un
+ancien lien ne soit pas perdu.
+
 Permettre au créateur, organisateur ou coorganisateur autorisé de :
 
 1. voir les demandes de son action ;
@@ -128,6 +135,14 @@ claim rétroactif décrit ci-dessus, sans transformer une inscription antérieur
 en preuve de présence. L'historique personnel et le partage d'une référence
 d'action restent des capacités distinctes de ce parcours.
 
+Les événements communautaires affichés dans ces onglets restent une source de
+compatibilité historique : leurs RSVP `yes` / `maybe` / `no` restent dans
+`event_rsvps`, et leur suivi `attendanceCount` / `postMortem` passe par
+`POST /api/community/events/ops` avec les gardes d’ownership/AuthZ existantes.
+Un RSVP ne crée aucune ligne `action_registrations` ou `action_participants`.
+Les valeurs historiques de suivi ne deviennent pas automatiquement une
+présence confirmée, une mesure ou un impact certifié.
+
 Pour une participation confirmée à une action terminée, la carte « Votre part
 des résultats » affiche uniquement la projection canonique
 `personalImpactAttribution`. Chaque métrique indique sa provenance — « Mesure
@@ -142,6 +157,12 @@ historique peut afficher `Cette action a été annulée.` ; la relation de
 participation et les références de discussion ne sont pas supprimées. La
 discussion historique est consultable selon son contrat propre, mais aucun
 nouveau message ne peut être publié après l'annulation.
+
+Les nouvelles missions sont créées et suivies via `/actions/new` et les
+contrats Actions. `POST /api/community/events` est conservé comme endpoint de
+compatibilité qui répond `410` ; il ne crée plus d’événement. Le paramètre
+`fromEventId` conserve seulement la référence de l’événement historique à
+l’origine de la préparation d’action.
 
 ## Contrat de participation
 

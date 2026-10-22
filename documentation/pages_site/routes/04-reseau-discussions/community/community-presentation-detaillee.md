@@ -20,7 +20,16 @@ reste une trace `HISTORY` liée à la note de compatibilité
 Les API et composants métier nécessaires aux événements historiques sont
 conservés. Leur consultation ne transforme pas un RSVP en inscription ou en
 participation Action, et les données historiques ne deviennent pas des impacts
-certifiés sans preuve.
+certifiés sans preuve. `GET /api/community/events`, `POST
+/api/community/rsvps` et `POST /api/community/events/ops` restent les
+propriétaires des contrats historiques ; le `POST /api/community/events` de
+création est désormais une réponse de compatibilité `410`, car les nouvelles
+missions appartiennent à `/actions/new`.
+
+Les rapports, le pilotage, la gamification, les notifications, la messagerie et
+l’assistant d’itinéraire peuvent encore relire ces événements ou leurs RSVP.
+Ces consommateurs sont classés `CURRENT` ou `COMPATIBILITY` selon leur rôle ;
+ils ne constituent pas une justification pour recréer la page autonome.
 
 ## Compatibilité des liens
 

@@ -188,7 +188,6 @@ Les fiches détaillées de ces compatibilités sont classées hors des packages
 | /en | `/` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /conditions-utilisation | `/conditions-generales-utilisation` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /community | `/sections/rejoindre-une-action` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
-| /sections/community | `/sections/rejoindre-une-action` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /open-data | `/sections/open-data` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /messagerie | `/sections/messagerie` | `PRIVATE` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /gamification | `/sections/gamification` | `PRIVATE` | `NOINDEX` | `REDIRECT` | `TARGET` |

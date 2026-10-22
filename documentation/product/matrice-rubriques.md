@@ -113,6 +113,7 @@ et `/signalement` porte l'unique création d'observation.
 - Le bloc Réseau & Discussions expose exactement, dans cet ordre, `/sections/messagerie`, `/sections/annuaire`, `/sections/open-data` et `/sections/funding`.
 - `/sections/feedback` reste une page canonique accessible depuis le menu déroulant Feedback ; elle n'est pas une entrée du bloc Réseau & Discussions.
 - `/sections/community` ne constitue pas une entrée de navigation ; sa page, ses redirections et ses consommateurs restent gouvernés par le chantier Communauté dédié.
+- Les événements historiques restent une capacité `CURRENT` / `COMPATIBILITY` de Rejoindre une action, des rapports, du pilotage, de la gamification, des notifications, de la messagerie et de l’assistant de route ; cela ne recrée pas une rubrique Communauté.
 - `/community`, `/messagerie`, `/open-data`, `/partners/network` et `/partners/network/pepite` restent des alias legacy ou des redirections techniques.
 - `/actions/new?panel=itineraire` et `/actions/new?panel=meteo` sont les
   `CURRENT_SURFACE` des moteurs itinéraire et météo, rendus respectivement par

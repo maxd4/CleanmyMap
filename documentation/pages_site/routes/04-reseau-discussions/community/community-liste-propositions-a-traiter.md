@@ -18,6 +18,12 @@ Ces besoins sont couverts par les parcours actuels sans seconde persistance ni
 nouveau registre. Les événements historiques restent consultables via
 `/sections/rejoindre-une-action` et les acteurs via `/sections/annuaire`.
 
+Les seules évolutions éventuelles doivent respecter le classement existant :
+les lectures, RSVP, opérations historiques, rapports, notifications, chat,
+signaux de route et exports restent attachés à leurs owners actuels ; aucune
+proposition ne doit supprimer une table ou transformer rétroactivement une
+référence historique en participation Action.
+
 ## Référence
 
 Les redirections et la répartition des responsabilités sont décrites dans
