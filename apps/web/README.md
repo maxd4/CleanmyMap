@@ -1,5 +1,19 @@
 # CleanMyMap Web — Backend et exploitation
 
+## Où intervenir — routage Codex
+
+| Intervention | Owner local | Règles et preuve |
+|---|---|---|
+| Route/API et AuthZ | `src/app/api/`, `src/lib/auth/` | [API scoped](src/app/api/AGENTS.md), [AuthN/AuthZ CURRENT](../../documentation/security/authz-authn-regles.md), tests des handlers |
+| Actions, participation et calculs | `src/lib/actions/` | [Contrats Actions](src/lib/actions/README.md), sources et tests du domaine |
+| UI et navigation | `src/components/`, `src/app/` | [Design system](../../documentation/design-system/README.md), fiche route concernée |
+| Supabase, RLS, migrations | `supabase/`, `src/lib/supabase/` | [Gouvernance Supabase](supabase/AGENTS.md), contrats SQL et preuves distinctes |
+| Import/export et outils opératoires | `scripts/` | [Scripts web](scripts/README.md), mode dry-run versus mutation |
+| Quiz et apprentissage | `src/lib/learning/` | [Domaine Learning](src/lib/learning/README.md), banque de questions propriétaire |
+| Tests et publication | [TESTING.md](../../documentation/development/TESTING.md) | Validation proportionnée, Git publié ≠ déploiement Vercel |
+
+Ce README oriente les interventions mais ne crée ni nouvelle frontière AuthZ, ni permission de migration distante. Les règles de migration et leur autorisation effective sont celles du `supabase/AGENTS.md` courant ; `backend:bootstrap` n'est jamais un simple préflight.
+
 ## Pré-requis
 
 - Node.js 24.x ; utilisez `apps/web/.nvmrc` depuis la racine du monorepo ;

@@ -1,32 +1,21 @@
-# Local Data Backup Stores
+# Local DB — stores de compatibilité
 
-This directory keeps a durable local backup for map records.
+**Statut : COMPATIBILITY / LOCAL**, pas source de vérité publique de CleanMyMap ni preuve d'une sauvegarde complète et restaurable. La persistance métier et les projections effectives relèvent du runtime et de Supabase selon [data-governance.md](../../../../documentation/architecture/data-governance.md).
 
-- `test_records.json`: anonymized test/demo records only.
-- `real_records.json`: normalized real-world records imported from Google Sheet.
-- `validated_records.json`: records explicitly validated by admins (copied from database rows).
+## Fichiers versionnés observés dans ce dossier
 
-Schema (all files):
+| Fichier | Sens du nom, sans attestation sur son contenu |
+|---|---|
+| `real_records.json` | Store local historique de données externes ; provenance et statut de confidentialité à vérifier avant réutilisation |
+| `validated_records.json` | Projection locale de validation, pas autorité sur l'état Supabase |
 
-- `version`: store version.
-- `updatedAt`: ISO timestamp of last write.
-- `records[]`:
-  - `id`
-  - `recordType` (`action` | `clean_place` | `other`)
-  - `status` (`test` | `pending` | `validated` | `rejected`)
-  - `source`
-  - `title` (for actions: name of the organizing structure), `description`
-  - `location` (`label`, `city`, `latitude`, `longitude`)
-  - `eventDate`
-  - `metrics` (for actions)
-  - `map` (`displayable`, `lat`, `lon`)
-  - `trace` (`externalId`, `originTable`, `validatedBy`, `validatedAt`, `importedAt`, `notes`)
+`test_records.json` a existé dans l'ancien contrat mais n'est **pas présent dans l'arbre Git examiné**. Ne pas le recréer comme prérequis du runtime. Tout fichier local ou ignoré doit être inventorié avant utilisation ; ne jamais publier un dump réel ou des données personnelles par commodité.
 
-Operational scripts:
+Contrat historique des enregistrements, à vérifier sur le producteur actuel : `version`, `updatedAt`, `records[]` avec identité, type (`action`, `clean_place`, `other`), statut (`test`, `pending`, `validated`, `rejected`), provenance, localisation, métriques, drapeaux cartographiques et trace d'import.
 
-- `npm run data:test:build`
-- `npm run data:validated:sync`
+## Outils existants
 
-Historical note:
+- `npm run data:test:build -w apps/web` : générateur de store de test ; inspecter ses entrées et sorties avant exécution.
+- `npm run data:validated:sync -w apps/web` : synchronisation locale ; déterminer si elle écrit des données et vérifier la cible, le scope et les droits avant lancement.
 
-- The Google Sheet import and `data:real:sync` flow are retired and no longer used as source of truth.
+Les anciens flux Google Sheets `data:real:sync` n'appartiennent plus au contrat CURRENT. Aucune opération de restauration métier ou de migration Supabase n'est autorisée par ce README.

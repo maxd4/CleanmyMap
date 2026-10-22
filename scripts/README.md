@@ -32,31 +32,20 @@ scripts/
 - Les artefacts temporaires vont dans les emplacements prévus par l'outil,
   notamment `artifacts/`, et non à la racine par commodité.
 
-Les audits GitNexus utilisent exclusivement les scripts npm canoniques :
+## Propriétaires des contrôles et preuves
 
-```text
-npm run audit:gitnexus
-npm run audit:gitnexus:cycles
-npm run check:gitnexus-hygiene
-```
+| Besoin | Owner |
+|---|---|
+| Git, staging, guards, multi-writer | [AGENTS.md](./AGENTS.md), `ci/` |
+| Qualité, baselines, duplications | [checks/README.md](./checks/README.md), `checks/` |
+| Exécution et publication CI | [ci/README.md](./ci/README.md), workflows sous `.github/` |
+| Tests et niveaux de preuve | [TESTING.md](../documentation/development/TESTING.md) |
+| Rapports techniques | `reports/` et scripts de génération propriétaires |
+| GitNexus | `audits/audit-gitnexus.mjs`, `check:gitnexus-hygiene` |
 
-Les audits GitNexus affichent leur préflight et chaque étape sur `stderr`,
-conservent le JSON GitNexus sur `stdout`, et émettent un heartbeat toutes les
-10 secondes lorsqu'une étape ne produit rien. Les plafonds sont bornés par
-étape : `analyze` 300 secondes, `status` 90 secondes et `check --cycles`
-30 secondes. Ces valeurs sont fondées sur les mesures du dépôt (~171 secondes
-pour une analyse initiale, ~53 secondes pour `status`, ~2 secondes pour les
-cycles), avec une marge explicite ; une durée supérieure à 10 secondes n'est
-donc pas un échec d'environnement. Les statuts publics distinguent
-`RUNNER_MISSING`, `HOST_ENVIRONMENT`, `TIMEOUT`, `MALFORMED_REPORT`,
-`NEW_CYCLE` et `PASS`. La fraîcheur est classée `INDEX_CURRENT`,
-`INDEX_PARTIALLY_STALE`, `INDEX_STALE` ou `INDEX_UNAVAILABLE`. L'index
-`.gitnexus` et une preuve `analyze/status` ne sont réutilisés que lorsque leur
-commit, leur version, leurs métadonnées de configuration et le `HEAD` courant
-correspondent au même candidat ; une preuve d'un autre commit ne peut jamais
-produire un `PASS`. `analyze --index-only` reste une action explicite d'audit ou
-de préparation FULL, pas une étape automatique de DEVELOPMENT, de staging, de
-commit ou de push.
+Les entrées GitNexus restent `npm run audit:gitnexus`, `npm run audit:gitnexus:cycles` et `npm run check:gitnexus-hygiene`. Les timings, seuils, causes d'échec et mécanismes de reprise sont définis par les scripts et leurs tests : **ne pas figer dans ce README une mesure historique de durée comme performance garantie**. L'index local `.gitnexus` est dérivé et sa validité dépend du commit, de la version et de la configuration.
+
+Toute invocation doit distinguer read-only, génération d'artefacts et écriture distante. Un rapport `PASS` ne prouve que le périmètre couvert par le script réellement exécuté.
 
 Les tests Node des scripts se lancent avec :
 

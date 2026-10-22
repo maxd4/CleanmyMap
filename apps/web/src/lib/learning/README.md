@@ -10,6 +10,12 @@ Ce dossier contient les modules de domaine, contrats et règles partagées par l
 - `practice/themes.ts` contient le contrat neutre et l'ordre des thèmes de pratique.
 - Les autres fichiers à la racine portent les primitives Learning transverses, le progrès global, les ressources, le compost ou les ordres de grandeur lorsqu'ils ne forment pas une famille plus étroite.
 
+## Banque Quiz — une donnée canonique, deux niveaux de fichiers
+
+`apps/web/data/environmental-quiz-bank.ts` est **l'assembleur public** et le propriétaire de l'ordre déterministe des questions. Les sources thématiques éditables vivent dans `apps/web/data/environmental-quiz-bank/` ; les éditer à leur emplacement de responsabilité, pas en dupliquant leur contenu dans l'assembleur. Les types, sélection, validation, SRS et moteur restent sous `src/lib/learning/quiz/`. Les composants React ne sont pas un second moteur de Quiz.
+
+Pour une évolution de contenu, vérifier les IDs, la cohérence de l'assemblage, la source scientifique et les tests de banque/qualité pertinents. Ne pas inventer de quantité totale de questions à partir d'un ancien snapshot documentaire.
+
 ## Direction des dépendances
 
 Les composants de `apps/web/src/components/learn/` peuvent consommer les modules de ce dossier. L'inverse est interdit : aucun module sous `lib/learning/` ne doit importer `components/learn/`, par alias ou par chemin relatif.

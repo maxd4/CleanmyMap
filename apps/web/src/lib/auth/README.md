@@ -1,18 +1,21 @@
-# Authentification et normalisation des rôles
+# Authentification web — owner runtime des identités
 
-Ce dossier regroupe les frontières d'identité du web : résolution des rôles
-Clerk, bypass local, synchronisation de profil et compatibilités d'entrée.
+**Statut : CURRENT pour les modules listés.** L'identité provient de Clerk. Une valeur de formulaire, un alias ou un profil UX actif n'est jamais une autorisation.
 
-## Organisation
+| Module | Responsabilité |
+|---|---|
+| `role-resolution.ts` | Lit `publicMetadata.role` ; rôle canonique serveur et contrainte owner du rôle `max` |
+| `role-aliases.json` | Normalisation des libellés **entrants** de compatibilité ; ne confère aucun rôle |
+| `sync.ts` | Synchronisation ciblée des profils projetés vers Supabase |
+| `dev-auth.ts` | Bypass strictement local, jamais source de rôle en production |
 
-- `role-aliases.json` est l'unique table des alias de rôles entrants ; ses
-  valeurs sont toujours des rôles runtime canoniques.
-- `role-resolution.ts` expose la résolution commune des métadonnées Clerk.
-- `sync.ts` persiste les profils dans Supabase et doit conserver les valeurs
-  canoniques.
-- `dev-auth.ts` porte uniquement les valeurs de configuration du bypass local.
+## Contrats à distinguer
 
-Les alias legacy peuvent rester lisibles à cette frontière, mais les nouvelles
-écritures doivent utiliser les identifiants canoniques. Le contrat métier
-Role + Capability + Scope et le vocabulaire produit sont documentés dans
-`documentation/security/authorization-capabilities.md`.
+- [AuthN/AuthZ CURRENT](../../../../../documentation/security/authz-authn-regles.md) définit les contrôles effectivement applicables et les preuves nécessaires côté serveur.
+- [Modèle par capacités](../../../../../documentation/security/authorization-capabilities.md) est `PLAN / TARGET` : ne pas interpréter sa matrice comme des permissions déjà déployées.
+- `apps/web/src/lib/authz.ts` porte des gardes d'accès ; la décision sur une ressource doit aussi vérifier le scope, l'ownership, l'état métier et la projection autorisée.
+- `GRANTED_ROLE`, `ACTIVE_ROLE` et `activeProfile` ont des fonctions distinctes. Un changement de persona ne doit pas pouvoir accroître le rôle obtenu.
+
+**Interdits :** inférer `admin` ou `max` d'un email, de `privateMetadata`, d'un alias ou d'une valeur client ; réutiliser `service_role` comme permission utilisateur ; faire d'un contrôle d'UI ou du proxy la seule frontière.
+
+Pour une modification, conserver les cas négatifs anonymous/non-owner/role insuffisant et les consommateurs de la synchronisation ; utiliser les tests de la capacité et le typecheck adaptés.
