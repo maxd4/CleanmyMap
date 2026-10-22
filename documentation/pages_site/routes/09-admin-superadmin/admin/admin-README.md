@@ -181,7 +181,7 @@ modération.
 
 ## Références legacy
 
-- [admin.md](../../../../6-PAGES-STANDALONE/admin.md)
+- Référence legacy non versionnée dans le dépôt actuel ; consulter les documents canoniques de cette page et ne pas recréer l'ancien chemin.
 
 ## Notes d'audit
 

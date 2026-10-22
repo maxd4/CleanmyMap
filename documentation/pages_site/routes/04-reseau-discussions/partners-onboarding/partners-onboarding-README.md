@@ -54,7 +54,7 @@
 
 ## Références legacy
 
-- [rassemblements.md](../../../../4-BLOC-RESEAU&DISCUSSION/rassemblements.md)
+- Référence legacy non versionnée dans le dépôt actuel ; consulter les documents canoniques de cette page et ne pas recréer l'ancien chemin.
 
 ## Notes d'audit
 

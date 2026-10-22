@@ -54,7 +54,7 @@
 
 ## Références legacy
 
-- [que_faire_des_dechets.md](../../../../5-BLOC-APPRENDRE/que_faire_des_dechets.md)
+- Référence legacy non versionnée dans le dépôt actuel ; consulter les documents canoniques de cette page et ne pas recréer l'ancien chemin.
 
 ## Notes d'audit
 

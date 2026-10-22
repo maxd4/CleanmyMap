@@ -69,7 +69,7 @@ accessibles et ne confère aucune permission supplémentaire.
 
 ## Références legacy
 
-- [signalement_dechets.md](../../../../2-BLOC-AGIR/signalement_dechets.md)
+- Référence legacy non versionnée dans le dépôt actuel ; consulter les documents canoniques de cette page et ne pas recréer l'ancien chemin.
 
 ## Notes d'audit
 

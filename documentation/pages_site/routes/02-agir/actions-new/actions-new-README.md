@@ -187,7 +187,7 @@ ne doit être inventée et aucune invitation externe n'est envoyée.
 
 ## Références legacy
 
-- [declarer_action.md](../../../../2-BLOC-AGIR/declarer_action.md)
+- Référence legacy non versionnée dans le dépôt actuel ; consulter les documents canoniques de cette page et ne pas recréer l'ancien chemin.
 
 ## Notes d'audit
 
