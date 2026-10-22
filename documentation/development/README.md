@@ -12,6 +12,7 @@ Statut : `CURRENT` (routage). La gouvernance applicable est celle de la racine e
 | Qualité, audits de tests | [`testing-quality.md`](./testing-quality.md) | Contrats spécialisés |
 | Plateformes et intégration | [`testing-platforms.md`](./testing-platforms.md) | Contrats spécialisés |
 | Qualité du dépôt | [`repo-quality-rules.md`](./repo-quality-rules.md) | CURRENT |
+| Matrice de couverture des contrôles | [`quality-check-coverage-matrix.md`](./quality-check-coverage-matrix.md) | SNAPSHOT de l'inventaire effectif par SHA |
 | Modularisation | [`conventions-modularisation.md`](./conventions-modularisation.md) | Règles avant extraction |
 | Nommage | [`file-naming-conventions.md`](./file-naming-conventions.md) | Convention des nouveaux fichiers |
 | TypeScript | [`typescript-precision-policy.md`](./typescript-precision-policy.md) | Entrées non fiables, casts, frontières |
