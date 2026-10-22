@@ -129,9 +129,9 @@ Le statut d'un artefact est déterminé par son rôle et son nom canonique :
 | Artefact | Statut | Règle |
 |---|---|---|
 | `*-README.md` | `CURRENT` | source fonctionnelle canonique de la page |
-| `*-presentation-detaillee.md` | `CURRENT` pour l'implémenté | toute partie prospective doit être explicitement marquée `PLAN` |
-| `*-liste-propositions-a-traiter.md` | `PLAN` | propositions retenues mais non exécutées |
-| `*-objectifs-non-pertinents.md` | `HISTORY` | décisions et objectifs écartés |
+| `*-presentation-detaillee.md` | `CURRENT / PLAN`, **optionnel** | le conserver seulement pour un complément fonctionnel précis, tenu à jour, distinct du README ; annoter toute cible non livrée `PLAN` |
+| `*-liste-propositions-a-traiter.md` | `PLAN`, **optionnel** | conserver plusieurs propositions concrètes et non exécutées ; supprimer les listes vides ou les tâches génériques |
+| `*-objectifs-non-pertinents.md` | `HISTORY`, **optionnel** | conserver les refus réellement décidés avec leur portée ou motif ; supprimer les trames « aucune idée écartée » |
 | captures et screenshots | `SNAPSHOT` | photographie figée, jamais source de vérité |
 
 Une présentation détaillée peut donc contenir des parties `CURRENT` et `PLAN`,
@@ -140,20 +140,19 @@ mais une fonctionnalité non implémentée ne doit jamais être présentée comm
 prouve pas la conformité fonctionnelle et reste inférieur au runtime et aux
 fiches `CURRENT`.
 
-Le noyau documentaire d'une page repose principalement sur :
+Le **seul fichier obligatoire d'une route canonique** est `nom-de-page-README.md`.
+Les trois fichiers compagnons historiques ne sont ni obligatoires ni générés
+à vide. Un dossier peut ne conserver aucun compagnon lorsque le README suffit.
+Une présentation détaillée peut être pertinente pour des parcours riches :
+elle doit alors documenter les états, interactions et limites réellement
+livrés, avec les parties futures explicitement `PLAN`. Pour une information
+isolée, compléter plutôt le README propriétaire.
 
-```text
-nom-de-page-README.md
-nom-de-page-presentation-detaillee.md
-nom-de-page-liste-propositions-a-traiter.md
-nom-de-page-objectifs-non-pertinents.md
-```
-
-Des fichiers complémentaires peuvent exister lorsqu'une page possède un besoin
-réel : sources, protocole, étude, exception UI, backlog local ou document
-partenaire.
-
-Ne pas créer de fichier optionnel vide par anticipation.
+La suppression ou consolidation d'un compagnon requiert une vérification de
+sa connaissance distinctive et des liens consommateurs. Les captures et assets
+restent protégés. Le contrôle strict conserve l'exigence du README canonique,
+du registre de route et des liens Markdown effectivement publiés, sans imposer
+un nombre artificiel de compagnons.
 
 ## Familles de pages
 
@@ -174,15 +173,11 @@ résolution des familles.
 
 ## Propositions et idées écartées
 
-Dans le modèle route-first :
-
-- `liste-propositions-a-traiter` contient les propositions retenues mais non
-  exécutées ;
-- `objectifs-non-pertinents` conserve brièvement les idées explicitement
-  écartées et leur raison.
-
-Ces conventions n'imposent aucune réorganisation automatique des fichiers déjà
-présents sous `routes/`.
+Dans le modèle route-first, une liste `PLAN` ou une mémoire de rejet `HISTORY`
+ne reste comme document séparé que lorsqu'elle contient plusieurs décisions
+réelles et distinctes. Les idées vides, statuts « à compléter » et tâches
+génériques relèvent du README ou sont supprimés. Un refus daté et motivé ne
+doit pas disparaître au prétexte de réduire le nombre de fichiers.
 
 ## Captures
 

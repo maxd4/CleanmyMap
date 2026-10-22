@@ -3,7 +3,7 @@ import test from "node:test";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { findBrokenCanonicalMarkdownLinks } from "./pages-site-route-drift-documents.mjs";
+import { findBrokenCanonicalMarkdownLinks, loadCanonicalRouteDocs } from "./pages-site-route-drift-documents.mjs";
 
 import {
   extractIndexEntries,
@@ -284,6 +284,29 @@ test("les liens CURRENT sont contrôlés sans scanner PLAN ni les URLs de naviga
       await findBrokenCanonicalMarkdownLinks({ repoRoot: root, routesRoot }),
       [{ file: "documentation/pages_site/routes/02-agir/demo/demo-README.md", line: 5, target: "./ancien.md" }],
     );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+
+test("les fichiers compagnons d'une route sont facultatifs, les liens restent contrôlés", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmm-route-optional-"));
+  const routesRoot = path.join(root, "documentation", "pages_site", "routes");
+  const folder = path.join(routesRoot, "02-agir", "demo");
+  const indexPath = path.join(root, "documentation", "pages_site", "INDEX.md");
+  const indexEntries = [entry("/demo", "./routes/02-agir/demo/demo-README.md")];
+  try {
+    await mkdir(folder, { recursive: true });
+    await writeFile(path.join(folder, "demo-README.md"), "# Demo\n", "utf8");
+    const onlyReadme = await loadCanonicalRouteDocs({ indexEntries, indexPath, repoRoot: root, routesRoot });
+    assert.equal(onlyReadme.routeDocs.length, 1);
+    assert.deepEqual(onlyReadme.incompleteNuclei, []);
+
+    await writeFile(path.join(folder, "demo-presentation-detaillee.md"), "# Complement utile\n", "utf8");
+    const optionalPresentation = await loadCanonicalRouteDocs({ indexEntries, indexPath, repoRoot: root, routesRoot });
+    assert.deepEqual(optionalPresentation.incompleteNuclei, []);
+    assert.deepEqual(await findBrokenCanonicalMarkdownLinks({ repoRoot: root, routesRoot }), []);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

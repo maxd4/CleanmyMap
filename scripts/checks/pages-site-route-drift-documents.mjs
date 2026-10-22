@@ -159,37 +159,11 @@ export async function loadCanonicalRouteDocs({
       continue;
     }
 
-    const filename = path.basename(readmePath);
-    const prefix = filename.slice(0, -"-README.md".length);
-    const directory = path.dirname(readmePath);
-    const companionNames = [
-      `${prefix}-presentation-detaillee.md`,
-      `${prefix}-liste-propositions-a-traiter.md`,
-      `${prefix}-objectifs-non-pertinents.md`,
-    ];
+    // Optional route companions are intentional. The canonical README is required
+    // by the index/layout checks; any Markdown link to a retained companion is
+    // validated by findBrokenCanonicalMarkdownLinks(). Do not require the
+    // historical four-document template for each route package.
 
-    const companionPresence = await Promise.all(
-      companionNames.map((fileName) => fileExists(path.join(directory, fileName))),
-    );
-
-    if (!companionPresence.some(Boolean)) {
-      continue;
-    }
-
-    const missing = [];
-    for (const requiredName of [filename, ...companionNames]) {
-      if (!(await fileExists(path.join(directory, requiredName)))) {
-        missing.push(requiredName);
-      }
-    }
-
-    if (missing.length > 0) {
-      incompleteNuclei.push({
-        route: entry.route,
-        readme: relativeReadme,
-        missing,
-      });
-    }
   }
 
   return {
