@@ -1,115 +1,27 @@
-# Database — Guide de référence
+# Database — index de responsabilités
 
-Point d'entrée pour les requêtes, index, RLS, stockage et diagnostics Supabase.
+**État : `CURRENT` pour l'orientation**, pas pour un inventaire figé du schéma. Le SQL versionné, les migrations, les RPC, les règles de données et les tests propriétaires prévalent sur tout résumé de ce dossier. La présence d'une migration Git ne prouve pas son application sur une base distante.
 
-## Sources `CURRENT`
+## Lecture ciblée
 
-Lire d'abord :
-
-1. [Gouvernance des données](../architecture/data-governance.md) — sources de
-   vérité, stockage et contrats ;
-2. [Supabase — optimisation des tables et requêtes](./supabase-table-optimization-playbook.md) —
-   méthode de correction des lectures, index, RPC et agrégats ;
-3. [Autorisation par capacités](../security/authorization-capabilities.md) —
-   contrat d'accès cible et scopes.
-
-Ces documents portent les règles durables. Les audits servent à mesurer ou
-contextualiser un état ; ils ne créent pas une seconde doctrine.
-
-## Audits et preuves
-
-- [Supabase quota audit](./supabase-quota-audit.md) — audit de consommation et
-  de risques ;
-- [Supabase refresh strategy audit](../operations/audits/supabase-refresh-strategy-audit.md) —
-  photographie historique de stratégie de rafraîchissement ;
-- [Database query & index audit](./QUERY_INDEX_AUDIT.md) — audit requêtes/index ;
-- [Supabase linked advisories](../security/supabase-linked-advisories-2026-05-20.md) —
-  preuve liée aux advisors de sécurité.
-
-Toujours confronter un audit daté au code et au schéma actuels avant d'en tirer
-une décision.
-
-## Ce que couvre ce domaine
-
-- sources de vérité PostgreSQL ;
-- migrations ;
-- requêtes et index ;
-- RLS et relations de données ;
-- stockage Supabase ;
-- lectures bornées ;
-- vues, RPC et agrégats ;
-- diagnostics de quotas ;
-- compatibilités de schéma nécessaires au runtime.
-
-## Tables centrales
-
-Ces tables peuvent rester très sollicitées sans être des problèmes en soi. Le
-bon réflexe est de borner les lectures, pas de masquer leur usage.
-
-| Table | Usage principal | Garde-fou |
+| Question | Source canonique | Vérification |
 |---|---|---|
-| `profiles` | identité, rôles, préférences | identifiant ou recherche ciblée, jamais scan large |
-| `actions` | carte, création, import, modération, analytics | période, statut, zone ou type avant lecture large |
-| `progression_profiles` | progression persistante | utilisateur ou RPC dédié |
-| `progression_events` | journal de progression/audit | ne pas recalculer tout le système depuis ce journal |
-| `user_points` | COMPATIBILITY/LEGACY — ancien solde de points | aucune nouvelle lecture CURRENT |
-| `points_ledger` | COMPATIBILITY/LEGACY — ancien historique de points | aucune nouvelle écriture CURRENT |
-| `community_events` | événements | date, statut ou géographie |
-| `event_rsvps` | RSVP | événement ou utilisateur |
-| `action_participants` | participations | action, utilisateur ou période |
-| `app_notifications` | notifications | utilisateur courant, limite et tri |
-| `quiz_type_progress` | progression quiz | utilisateur et type |
-| `quiz_srs` | répétition espacée | utilisateur et questions ciblées |
-| `checklist_progress` | checklists | `(user_id, checklist_id)` |
-| `runbook_checks` | runbooks | profil ciblé |
-| `user_badge_totals` | agrégats badges | utilisateur, pas scan de classement brut |
+| Sources de vérité, familles de données et stockage | [`../architecture/data-governance.md`](../architecture/data-governance.md) (`CURRENT`) | Types, contrats, code, migrations `apps/web/supabase/migrations/` |
+| RLS et permissions réellement appliquées | [`../security/authz-authn-regles.md`](../security/authz-authn-regles.md) (`CURRENT`) et [`../security/supabase-review-checklist.md`](../security/supabase-review-checklist.md) | SQL, AuthZ serveur, clients `service_role`, tests d'accès négatifs |
+| Capacités et scopes proposés | [`../security/authorization-capabilities.md`](../security/authorization-capabilities.md) (`PLAN / TARGET`) | Aucune permission actuelle ne se déduit de cette cible |
+| Requêtes, index, RPC et agrégations | [`supabase-table-optimization-playbook.md`](./supabase-table-optimization-playbook.md) (`CURRENT`, méthode) | Plan `EXPLAIN`, requête cible, volumétrie et RLS du flux |
+| Quotas et coûts | [`supabase-quota-audit.md`](./supabase-quota-audit.md) (`AUDIT`) | Observations datées ; revalider le service et les accès |
+| Requêtes et index historiques | [`QUERY_INDEX_AUDIT.md`](./QUERY_INDEX_AUDIT.md) (`AUDIT`) | Ne pas reconduire une mesure historique sans exécution |
+| Transactions et opérations atomiques | [`ATOMIC_OPERATIONS_AUDIT.md`](./ATOMIC_OPERATIONS_AUDIT.md) (`AUDIT`) | Runtime, migrations et tests PostgreSQL lorsque disponibles |
+| Revue Supabase historique | [`../security/supabase-linked-advisories-2026-05-20.md`](../security/supabase-linked-advisories-2026-05-20.md) (`SNAPSHOT`) | Advisors réellement consultés et datés |
+| Actualisation des données | [`../operations/audits/supabase-refresh-strategy-audit.md`](../operations/audits/supabase-refresh-strategy-audit.md) (`AUDIT`) | Consommateurs et coûts d'actualisation actuels |
 
-Règle commune :
+## Invariants pour les changements
 
-- pas de `select("*")` par défaut sur un chemin croissant ;
-- pas de lecture complète pour un simple compteur ;
-- réutiliser une vue, RPC ou agrégat lorsqu'une synthèse existe ;
-- une table d'agrégat ne doit pas redevenir la matière première d'un recalcul
-  complet à chaque `GET`.
+1. Partir du chemin de lecture/écriture réel et de son propriétaire : API, client navigateur/mobile, import, RPC, fonction ou trigger. Ne jamais transformer une table d'audit, une projection ou un cache en source métier concurrente.
+2. Pour une requête croissante, borner le périmètre (utilisateur, action, période, territoire, statut), sélectionner les colonnes utiles et vérifier pagination, volume et index. Un compteur n'exige pas l'export complet de sa table.
+3. Préserver AuthN/AuthZ serveur, ownership, RLS, permissions des fonctions, restrictions de Storage et projection publique. `service_role` est une capacité technique serveur, **pas** une autorisation utilisateur.
+4. Les modifications persistantes passent par l'unique arbre canonique de migrations et impliquent consommateurs, types, tests et rétrocompatibilité justifiée. Ne jamais appliquer un correctif silencieux directement sur une base distante.
+5. Distinguer explicitement `STATIC_CONTRACT`, test exécuté et validation transactionnelle PostgreSQL. Si les contraintes, triggers ou règles RLS n'ont pas été exécutés, déclarer `DB_SEMANTICS_NOT_EXECUTED`.
 
-## Migrations
-
-Le schéma versionné canonique reste celui défini par la gouvernance du dépôt et
-[`../architecture/data-governance.md`](../architecture/data-governance.md).
-
-Toute évolution doit préserver :
-
-- migration versionnée ;
-- types ;
-- RLS ;
-- consommateurs runtime ;
-- tests ;
-- compatibilités nécessaires.
-
-Ne jamais corriger un quota en modifiant directement la base distante sans
-migration associée.
-
-## Choix du stockage
-
-Ne pas maintenir une seconde matrice ici.
-
-La décision canonique est dans
-[`../architecture/data-governance.md`](../architecture/data-governance.md) :
-
-```txt
-Git / statique
-navigateur
-Supabase
-cache / ISR
-Storage / fichier préparé
-```
-
-## Validation
-
-Pour une modification Supabase :
-
-1. qualifier le chemin réel ;
-2. appliquer le playbook ;
-3. préserver la sécurité et les contrats ;
-4. exécuter les tests et audits pertinents du dépôt actuel ;
-5. ne pas utiliser un ancien rapport comme preuve de l'état présent.
+Pour le classement des sources de stockage (Git, navigateur, Supabase, cache/ISR, Storage), voir **uniquement** `../architecture/data-governance.md` : aucun second tableau n'est maintenu ici. Les familles de tables sont inventoriées dans cette source et dans les migrations, pas dans cet index.

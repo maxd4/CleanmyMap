@@ -1,43 +1,23 @@
-# Contrôles sécurité avant merge — `CURRENT`
+# Prépublication sécurité — gate de lot (`CURRENT`)
 
-Cette checklist est consommée par les skills et reste limitée aux contrôles de
-sécurité. Les contrôles généraux de développement sont définis dans
-[`documentation/development/`](../development/).
+**Usage :** contrôle terminal d'un changement sensible, consommé par les skills et les agents. La checklist de **revue de code** appartient à [`CODE_REVIEW_CHECKLIST.md`](./CODE_REVIEW_CHECKLIST.md) ; les détails de chaque mesure restent chez leur propriétaire. Une validation de sécurité dépend du risque du lot, pas du nombre de cases cochées.
 
-## Routes et indexation
+## Gate par changement
 
-- [ ] Les pages sensibles sont protégées par `apps/web/src/proxy.ts` et les API par leur contrat AuthZ méthode par méthode.
-- [ ] Le handler vérifie ses capacités et son scope ; l'interface et le proxy ne sont pas considérés comme une autorisation.
-- [ ] Les pages privées sont hors indexation et sitemap public.
+| Surface touchée | Vérifier avant publication | Owner |
+|---|---|---|
+| API, HTTP ou mutation | Contrat par méthode, cas public et privé, garde avant effet ; tests d'accès autorisé / interdit ; cache et réponse sûrs | [`../development/api-standard.md`](../development/api-standard.md), [`authz-authn-regles.md`](./authz-authn-regles.md) |
+| Identité ou droits | Clerk / capability / rôle compatible / ownership / scope / état, sans confiance dans les paramètres utilisateur | [`authz-authn-regles.md`](./authz-authn-regles.md) |
+| Supabase / migration / Storage | RLS, GRANT/REVOKE, RPC, compte de service, projections, migrations et preuves SQL lorsqu'exécutables | [`supabase-review-checklist.md`](./supabase-review-checklist.md) |
+| Formulaire public, limitation, webhook | Validation stricte, honeypot/timestamp/BotID si justifiés, rate limit et réponse `429`, signature si requise | [`RATE_LIMITING.md`](./RATE_LIMITING.md), code de la route |
+| HTML, URL ou regex non fiable | Source/sink, sanitation contextuelle, URL parsée et domaine attendu, ReDoS et longues entrées | [`dom-xss-prevention.md`](./dom-xss-prevention.md), [`url-validation-security.md`](./url-validation-security.md), [`regex-security.md`](./regex-security.md) |
+| Mutation admin | Audit de succès **après** effet réel, refus et échec traités, absence de données sensibles | [`admin-operation-audit.md`](./admin-operation-audit.md) |
+| SEO d'une route sensible | Noindex/sitemap/canonical cohérents avec l'accès, mais robots/proxy ne remplacent jamais l'AuthZ | [`../seo/README.md`](../seo/README.md), contrat runtime |
 
-## Entrées et injections
+## Preuves et clôture
 
-- [ ] Les entrées externes sont bornées, validées et normalisées.
-- [ ] Les URLs utilisent `new URL()` ou `apps/web/src/lib/security/validation.ts`.
-- [ ] Les regex sensibles sont bornées et ne contiennent pas de quantificateurs imbriqués non justifiés.
-- [ ] Le contrat XSS est respecté pour texte, HTML, styles statiques et données sérialisées dans `<script>`.
-
-## AuthZ, données et secrets
-
-- [ ] Identité, capacité, rôle compatible, ownership/scope et état métier sont vérifiés côté serveur.
-- [ ] Les DTO sont minimisés et les cas négatifs de scope sont testés.
-- [ ] RLS est active, les RPC sensibles sont permissionnées et `service_role` reste serveur.
-- [ ] Une opération privilégiée utilise le contrat d'audit et n'enregistre `success` qu'après l'effet réel.
-- [ ] `npm run security:secrets` ne détecte aucun secret.
-
-## Anti-abus
-
-- [ ] Le rate limit est appliqué avec l'identité serveur et le chemin/méthode réels.
-- [ ] Les formulaires publics conservent les garde-fous pertinents (`honeypot`, `submittedAt`, BotID) et le contrat HTTP `429`.
-
-## Validation documentaire ciblée
-
-```bash
-npm run security:secrets
-npm run check:doc-governance
-npm run check:stack-doc-drift
-git diff --check
-```
-
-Pour le code, ajouter les checks de développement adaptés ; cette page ne les
-recopie pas.
+- Exécuter les contrôles de sécurité applicables (notamment `npm run security:secrets`) sur le périmètre Git réellement attribué ; un check ignoré n'est pas un PASS.
+- Ajouter ou adapter les tests de refus, borne, scope et projection **lorsque le code concerné change**. Un lot purement documentaire ne doit pas inventer une preuve runtime.
+- Vérifier les documents `CURRENT` touchés et les références ; la doctrine générale est [`SECURITY.md`](./SECURITY.md).
+- Distinguer défaut introduit, CI rouge préexistante, absence de preuve runtime et dette périphérique. Préserver les changements des autres writers.
+- Pour la procédure Git, l'attribution, les hooks, la convergence et le rapport final, appliquer la gouvernance du dépôt et [`../development/TESTING.md`](../development/TESTING.md) plutôt qu'une copie locale de ces règles.

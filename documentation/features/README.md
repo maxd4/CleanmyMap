@@ -1,132 +1,46 @@
-# Features — index documentaire
+# Features — routage des contrats métier
 
-`documentation/features/` est l’index des fonctionnalités et des contrats
-métier transverses de CleanMyMap. Les règles détaillées restent dans les fiches
-spécialisées, le runtime et leurs tests. Le code et les tests priment toujours
-sur une fiche `CURRENT` divergente.
+**État : `CURRENT` pour l'index.** Une fonctionnalité a un propriétaire code, un contrat spécialisé et une fiche route-first lorsque visible. La documentation ne peut ni créer des permissions ni rendre disponible un élément `PLAN`. Les fiches `documentation/pages_site/routes/` restent protégées contre les restructurations.
 
-## Actions et participation — `CURRENT`
+## Sélection du propriétaire
 
-- [`group-action.md`](./group-action.md) — participation à une action de
-  groupe, validation administrative, participants et historique.
-- [Méthodologie de création d’itinéraire](../architecture/methodologie-creation-itineraire.md)
-  — contraintes et trace du planner.
-- [Fiche fonctionnelle Où agir](../pages_site/routes/02-agir/agir-README.md)
-  — entrée produit du parcours cartographique.
-
-## Recyclage — `CURRENT`
-
-- [`recycling.md`](./recycling.md) — contrat de résumé public et de chargement
-  volontaire de la ventilation authentifiée.
-
-## Gamification — `CURRENT`
-
-- [`gamification/README.md`](./gamification/README.md) — index des contrats et
-  propriétaires de la progression.
-- [`gamification/GAMIFICATION_ENGINE.md`](./gamification/GAMIFICATION_ENGINE.md) —
-  point d’entrée technique, réconciliation et compatibilités.
-- [Spécification fonctionnelle canonique](../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md)
-  — règles fonctionnelles et comportements exposés.
-- [Gamification non compétitive](../product/gamification-non-competitive.md)
-  et [inventaire gamification](../product/gamification-inventory.md) —
-  orientation produit complémentaire.
-
-## Quiz et apprentissage
-
-### `CURRENT`
-
-- [`quiz/README.md`](./quiz/README.md) — entrée générale et cartographie des
-  documents du quiz.
-- [`quiz/quiz-authoring-guide.md`](./quiz/quiz-authoring-guide.md) — règles
-  éditoriales, formats et taxonomie pédagogique.
-- [`quiz/quiz-contributor-guide.md`](./quiz/quiz-contributor-guide.md) —
-  contribution, sourcing et procédure d’ajout.
-- [`quiz/quiz-quality-control.md`](./quiz/quiz-quality-control.md) — grille de
-  qualité et contrôle des sources.
-- [`quiz/quiz-bank-admin.md`](./quiz/quiz-bank-admin.md) — revue administrative
-  de la banque.
-- [`quiz/quiz-pedagogical-metrics.md`](./quiz/quiz-pedagogical-metrics.md) —
-  métriques pédagogiques agrégées.
-- [`quiz/quiz-srs.md`](./quiz/quiz-srs.md) — répétition espacée et progression
-  des révisions.
-
-Les propriétaires runtime sont la banque `apps/web/data/environmental-quiz-bank/`,
-les contrats et moteurs de `apps/web/src/lib/learning/quiz/`, le SRS de
-`apps/web/src/lib/gamification/quiz-srs.ts` et les composants/tests associés.
-
-### `AUDIT`
-
-- [`quiz/quiz-system-audit.md`](./quiz/quiz-system-audit.md) — constats
-  contextualisés et points restant à vérifier ; ses chiffres ne sont pas un
-  inventaire CURRENT.
-
-### `HISTORY / SNAPSHOT`
-
-- [`quiz/quiz_competences_map.md`](./quiz/quiz_competences_map.md) —
-  cartographie figée de 85 questions, conservée comme historique.
-
-Les URL publiques historiques `/docs/features/quiz-authoring-guide.md` et
-`/docs/features/quiz-quality-control.md` restent servies par le registre public;
-elles ne justifient pas une seconde copie physique des documents.
-
-## Rapports d’impact
-
-### `CURRENT`
-
-- [`reports/README.md`](./reports/README.md) — index, frontières des moteurs,
-  contrats de page et plans spécialisés.
-- [`reports/master-pack.md`](./reports/master-pack.md) — chapitres déclarés du
-  Master Pack et distinction d'avec le PDF réellement servi par `/reports`.
-
-### `PLAN`
-
-- [`reports/reports-generation-parameters.md`](./reports/reports-generation-parameters.md)
-  — paramètres et filtres, hors promesse de disponibilité non vérifiée.
-- [`reports/impact-goals-and-progression.md`](./reports/impact-goals-and-progression.md)
-  — futurs objectifs configurables, distincts du moteur de génération.
-- [`reports/report-pdf-themes-and-reuse.md`](./reports/report-pdf-themes-and-reuse.md)
-  — direction PLAN pour deux habillages PDF comparables et la réutilisation
-  scientifique du même snapshot.
-
-### `COMPATIBILITY`
-
-- [`reports/reports-parameters-and-objectives.md`](./reports/reports-parameters-and-objectives.md)
-  — ancien chemin, renvoyant aux deux plans spécialisés.
-
-Les formules et données restent dans `apps/web/src/lib/reports/` et ses tests.
-
-## SPOGOMI
-
-### `CURRENT`
-
-- [`spogomi.md`](./spogomi.md) — contrat métier canonique pour les événements,
-  inscriptions, équipes, mesures, classements indépendants, consolidation et
-  export actuellement livrés.
-
-### `REFERENCE / SNAPSHOT`
-
-- [`spogomi-references/README.md`](./spogomi-references/README.md) — kit de
-  références, fixtures synthétiques, schémas et modèles non runtime.
-
-Le kit SPOGOMI ne devient pas une source de vérité concurrente : le contrat
-durable reste `spogomi.md` et les règles de gamification restent dans le
-moteur canonique.
-
-## Routage par besoin
-
-| Besoin | Première source | Sources complémentaires |
+| Domaine / tâche Codex | Source spécialisée | Owners et validation |
 |---|---|---|
-| Rejoindre ou gérer une action de groupe | [`group-action.md`](./group-action.md) | routes/actions et tests concernés |
-| Modifier la gamification | [`gamification/GAMIFICATION_ENGINE.md`](./gamification/GAMIFICATION_ENGINE.md) | spec gamification, code et tests |
-| Créer ou relire une question | [`quiz/quiz-authoring-guide.md`](./quiz/quiz-authoring-guide.md) | guide de contribution et contrôle qualité |
-| Modifier le SRS | [`quiz/quiz-srs.md`](./quiz/quiz-srs.md) | `apps/web/src/lib/gamification/quiz-srs.ts` et tests |
-| Revoir la banque ou ses métriques | [`quiz/quiz-bank-admin.md`](./quiz/quiz-bank-admin.md) | métriques, code admin et tests |
-| Évaluer l’état du quiz | [`quiz/quiz-system-audit.md`](./quiz/quiz-system-audit.md) | runtime et audits, jamais le snapshot seul |
-| Modifier le Master Pack | [`reports/master-pack.md`](./reports/master-pack.md) | `apps/web/src/lib/reports/master-pack/`, modèle et tests |
-| Étudier les paramètres de génération | [`reports/reports-generation-parameters.md`](./reports/reports-generation-parameters.md) | code courant et contrat CURRENT d'accès |
-| Étudier les objectifs configurables | [`reports/impact-goals-and-progression.md`](./reports/impact-goals-and-progression.md) | métriques canoniques et décision produit requise |
-| Intégrer une référence SPOGOMI | [`spogomi-references/README.md`](./spogomi-references/README.md) | contrat [`spogomi.md`](./spogomi.md), code et tests |
+| Actions de groupe, participant, historique | [`group-action.md`](./group-action.md) (`CURRENT`) | `apps/web/src/lib/actions/`, handlers API et tests ; lire la [fiche carte](../pages_site/routes/02-agir/agir-README.md) si UI concernée |
+| Itinéraire | [`../architecture/methodologie-creation-itineraire.md`](../architecture/methodologie-creation-itineraire.md) | Planner, géométrie et tests ; ne pas recréer une source produit |
+| Recyclage | [`recycling.md`](./recycling.md) (`CURRENT`) | Projection publique et lecture privée bornées |
+| Gamification / XP | [`gamification/README.md`](./gamification/README.md), [`gamification/GAMIFICATION_ENGINE.md`](./gamification/GAMIFICATION_ENGINE.md) (`CURRENT`) | `apps/web/src/lib/gamification/`, ledger et tests ; spec fonctionnelle [gamification](../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md) |
+| Quiz / SRS / banque | [`quiz/README.md`](./quiz/README.md) (`CURRENT` pour routage) | `apps/web/data/environmental-quiz-bank/`, `apps/web/src/lib/learning/quiz/`, SRS et tests |
+| Rapports existants | [`reports/README.md`](./reports/README.md) (`CURRENT`) | `apps/web/src/lib/reports/`, modèles, générations, APIs et tests |
+| SPOGOMI | [`spogomi.md`](./spogomi.md) (`CURRENT`) | Code et tests SPOGOMI ; kit [références](./spogomi-references/README.md) non runtime |
 
-Les règles générales de documentation sont définies par
-[`development/DOCUMENTATION_POLICY.md`](../development/DOCUMENTATION_POLICY.md)
-et la gouvernance du dépôt, pas par cet index.
+## Quiz : contrat / historique
+
+- [`quiz/quiz-authoring-guide.md`](./quiz/quiz-authoring-guide.md) : règles de contenu et taxonomie `CURRENT`.
+- [`quiz/quiz-contributor-guide.md`](./quiz/quiz-contributor-guide.md), [`quiz/quiz-quality-control.md`](./quiz/quiz-quality-control.md) : contribution, sources et contrôle qualité `CURRENT`.
+- [`quiz/quiz-bank-admin.md`](./quiz/quiz-bank-admin.md), [`quiz/quiz-pedagogical-metrics.md`](./quiz/quiz-pedagogical-metrics.md), [`quiz/quiz-srs.md`](./quiz/quiz-srs.md) : revue, agrégats et SRS `CURRENT`.
+- [`quiz/quiz-system-audit.md`](./quiz/quiz-system-audit.md) : `AUDIT`, données datées. [`quiz/quiz_competences_map.md`](./quiz/quiz_competences_map.md) : `HISTORY / SNAPSHOT`, ancienne banque de 85 questions, pas inventaire actuel.
+- Les URLs publiques historiques `/docs/features/quiz-authoring-guide.md` et `/docs/features/quiz-quality-control.md` passent par le registre public ; ne pas créer de doubles fichiers pour ces aliases.
+
+## Reports : séparer l'existant des extensions
+
+| Contrat | Source | État |
+|---|---|---|
+| Générateur, snapshots, historique, partage et publications | [`reports/README.md`](./reports/README.md) et [fiche `/reports`](../pages_site/routes/03-cartographie-impact/reports/reports-README.md) | `CURRENT` selon code et tests |
+| Master Pack / chapitres réellement livrés | [`reports/master-pack.md`](./reports/master-pack.md) | `CURRENT` borné au contenu vérifié ; pas synonyme du PDF `/reports` |
+| Paramètres de génération et filtres avancés livrés | [`reports/reports-generation-parameters.md`](./reports/reports-generation-parameters.md) | `CURRENT` pour les paramètres acceptés, `PLAN` pour les extensions explicitement marquées |
+| Thèmes PDF Impact / Scientifique, réemploi et exports historiques | [`reports/report-pdf-themes-and-reuse.md`](./reports/report-pdf-themes-and-reuse.md) | `CURRENT` pour les fonctions livrées, `PLAN` pour accessibilité Tagged PDF et conformité non validées |
+| Objectifs mesurables / campagnes collectives | [`reports/impact-goals-and-progression.md`](./reports/impact-goals-and-progression.md) | `PLAN` ; pas de nouvelle table implicite |
+| Ancienne entrée commune | [`reports/reports-parameters-and-objectives.md`](./reports/reports-parameters-and-objectives.md) | `COMPATIBILITY`, conserver le lien, pas une deuxième source |
+
+Les KPI, formules, unités, disponibilités et données ne sont pas recopiés ici. Les sources code (`report-model/`, `master-pack/`, API et renderer) restent propriétaires. Un PDF déjà généré, son snapshot métier et un export re-rendu ne sont pas des objets interchangeables.
+
+## Gamification et SPOGOMI
+
+La décision produit [gamification non compétitive](../product/gamification-non-competitive.md) et son [inventaire](../product/gamification-inventory.md) n'ajoutent pas de règles runtime au registre `GAMIFICATION_REGISTRY`. Le kit [`spogomi-references/`](./spogomi-references/README.md) contient fixtures et formats de référence, pas de résultats réels ni de nouvelles tables. Les mesures environnementales, résultats sportifs et XP conservent leurs owners distincts.
+
+## Règle de changement
+
+Pour tout changement : `owner runtime` → `contrat CURRENT` → `consommateurs / fiches de pages concernées` → `tests de comportement` → `documents PLAN ou AUDIT uniquement si nécessaires`. Confronter l'état du repo au document : ne pas transformer un objectif, une preuve datée, une compatibilité ou un prototype en comportement livré.
+
+Politique documentaire transversale : [`../development/DOCUMENTATION_POLICY.md`](../development/DOCUMENTATION_POLICY.md).
