@@ -26,14 +26,10 @@ flowchart LR
   B3 --> BADGES["/sections/gamification"]
   B3 --> IMPACT["/profil/impact — carte personnelle secondaire"]
 
-  B4 --> COMM["/sections/community"]
   B4 --> MSG["/sections/messagerie"]
-  B4 --> FEEDBACK["/sections/feedback"]
-  B4 --> OPENDATA["/sections/open-data"]
-  B4 --> ACTORS["/sections/actors"]
   B4 --> ANNUAIRE["/sections/annuaire"]
-  B4 --> PARTNERS["/partners/dashboard"]
-  B4 --> PARTNERS_ALIAS["/partners/network"]
+  B4 --> OPENDATA["/sections/open-data"]
+  B4 --> FUNDING["/sections/funding"]
 
   B5 --> COMPRENDRE["/learn/comprendre"]
   B5 --> QUIZ["/learn/sentrainer"]
@@ -61,7 +57,7 @@ principal et ne se confond pas avec `/reports`, qui reste collectif.
 | Accueil & Pilotage | `amber` / `brun` | Entrée personnelle + gouvernance | reprendre, piloter, administrer |
 | Agir | `emerald` | Passage à l'action terrain | rejoindre une action, créer une action, signaler un déchet |
 | Cartographie & Impact | `sky` / `red` | Lecture territoriale + preuve | carte, rapports, méthodologie, badges |
-| Réseau & Discussions | `indigo` | Mise en relation | partenaires, messagerie, open data, communauté |
+| Réseau & Discussions | `indigo` | Mise en relation | groupes de discussion, annuaire, données publiques, soutien |
 | Apprendre | `yellow` | Montée en compétence | point de départ, quiz, guides, école |
 
 ## Blocs fusionnés (ancienne structure)
@@ -114,7 +110,9 @@ surface secondaire de consultation et de monitoring dans Réseau & Discussions,
 et `/signalement` porte l'unique création d'observation.
 
 - `/explorer` et `/reports` sont les routes canoniques des pages Sommaire et Rapports.
-- `/sections/feedback`, `/sections/community`, `/sections/messagerie`, `/sections/open-data` et `/sections/actors` sont les routes canoniques des sections publiques correspondantes.
+- Le bloc Réseau & Discussions expose exactement, dans cet ordre, `/sections/messagerie`, `/sections/annuaire`, `/sections/open-data` et `/sections/funding`.
+- `/sections/feedback` reste une page canonique accessible depuis le menu déroulant Feedback ; elle n'est pas une entrée du bloc Réseau & Discussions.
+- `/sections/community` ne constitue pas une entrée de navigation ; sa page, ses redirections et ses consommateurs restent gouvernés par le chantier Communauté dédié.
 - `/community`, `/messagerie`, `/open-data`, `/partners/network` et `/partners/network/pepite` restent des alias legacy ou des redirections techniques.
 - `/actions/new?panel=itineraire` et `/actions/new?panel=meteo` sont les
   `CURRENT_SURFACE` des moteurs itinéraire et météo, rendus respectivement par

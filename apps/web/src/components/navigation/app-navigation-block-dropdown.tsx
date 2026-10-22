@@ -68,8 +68,8 @@ export function AppNavigationBlockDropdown({
   const isActiveSpace = space.id === activeSpaceId;
 
   function handleTrackNavigation(href: string, label: string, spaceId: string | null) {
-    onOpenChange(space.id, false);
     onTrackNavigation(href, label, spaceId);
+    window.setTimeout(() => onOpenChange(space.id, false), 0);
   }
 
   return (

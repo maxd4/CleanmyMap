@@ -153,6 +153,8 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<NavigableRouteId>([
   "methodologie",
   "messagerie",
   "annuaire",
+  "open-data",
+  "funding",
   "admin",
   "pilotage",
   "learn-comprendre",
@@ -173,16 +175,15 @@ const COMMON_PROFILE_SPACE_PAGES: Omit<
   act: ACT_VISIBLE_ROUTE_IDS,
   visualize: ["map", "methodologie", "reports", "gamification"],
   impact: [],
-  network: ["messagerie", "annuaire", "open-data"],
+  network: ["messagerie", "annuaire", "open-data", "funding"],
   connect: [],
   learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
 };
 
-// Ces destinations restent disponibles dans le sommaire et les menus dédiés,
-// sans réintroduire des entrées dans le bloc Réseau & Discussions canonique.
+// Feedback reste disponible dans le sommaire et le menu Feedback sans devenir
+// une entrée du bloc Réseau & Discussions canonique.
 const CATEGORY_ONLY_ROUTE_IDS = new Set<NavigableRouteId>([
   "feedback",
-  "funding",
 ]);
 
 function buildProfileSpacePages(

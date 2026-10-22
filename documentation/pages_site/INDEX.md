@@ -305,23 +305,23 @@ primaire du bloc Agir.
 
 ## Réseau & Discussions
 
-Le bloc de navigation primaire contient exactement trois entrées, dans cet
-ordre. Feedback et Soutenir CleanMyMap restent des destinations directes du
-site, mais ne sont pas ajoutées à ce trio.
+Le bloc de navigation primaire contient exactement quatre entrées, dans cet
+ordre. Feedback reste une destination directe du site et du menu déroulant
+Feedback, mais ne fait pas partie de ce bloc.
 
 | Route | Fiche | Accès | Palette runtime | Source |
 |---|---|---|---|---|
 | `/sections/messagerie` | [Groupes de discussion](./routes/04-reseau-discussions/messagerie/messagerie-README.md) | `auth-blur-gate` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/annuaire` | [Annuaire des acteurs](./routes/04-reseau-discussions/annuaire/annuaire-README.md) | `public-visible` ; consultation publique ; référencement via un parcours séparé | violet | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/open-data` | [Données publiques](./routes/04-reseau-discussions/open-data/open-data-README.md) | `public-visible` | violet | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/funding` | [Soutenir CleanMyMap](./routes/04-reseau-discussions/funding/funding-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 
-### Destinations directes conservées hors du trio
+### Destinations directes conservées hors du bloc
 
 | Route | Fiche | Accès | Palette runtime | Source |
 |---|---|---|---|---|
 | `/sections/feedback` | [Idées et problèmes](./routes/04-reseau-discussions/feedback/feedback-README.md) | `public-visible` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/actors` | [Réseau engagé](./routes/04-reseau-discussions/actors/actors-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/sections/funding` | [Soutenir CleanMyMap](./routes/04-reseau-discussions/funding/funding-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/trash-spotter` | [Suivi Trash Spotter](./routes/04-reseau-discussions/trash-spotter/trash-spotter-README.md) | `auth-blur-gate` ; consultation/monitoring secondaire, sans formulaire de création | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/partners/dashboard` | [Annuaire partenaires](./routes/04-reseau-discussions/partners-dashboard/partners-dashboard-README.md) | `protected` | partenaires / réseau | `apps/web/src/app/(app)/partners/dashboard/page.tsx` |
 | `/partners/onboarding` | [Onboarding partenaire](./routes/04-reseau-discussions/partners-onboarding/partners-onboarding-README.md) | `protected` | partenaires / réseau | `apps/web/src/app/(app)/partners/onboarding/page.tsx` |

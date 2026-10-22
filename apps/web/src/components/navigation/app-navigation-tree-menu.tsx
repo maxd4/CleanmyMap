@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, List, Menu } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { NavigationSpace, NavigationItem } from "@/lib/navigation";
 import { getLocalizedText } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
@@ -51,6 +52,7 @@ export function AppNavigationTreeMenu({
   pathname,
   spaces,
 }: AppNavigationTreeMenuProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [openSpaceId, setOpenSpaceId] = useState<NavigationSpace["id"] | null>(null);
   const panelStyle = getNavigationDropdownPanelStyle(activeSpaceId ?? spaces[0]?.id ?? null);
@@ -191,9 +193,11 @@ export function AppNavigationTreeMenu({
                                         href={item.href}
                                         prefetch={false}
                                         aria-current={isActiveItem ? "page" : undefined}
-                                        onClick={() => {
+                                        onClick={(event) => {
+                                          event.preventDefault();
                                           onTrackNavigation(item.href, getLocalizedText(item.label, locale, item.href), space.id);
-                                          setIsOpen(false);
+                                          router.push(item.href);
+                                          window.setTimeout(() => setIsOpen(false), 0);
                                         }}
                                         className={cn(
                                           NAVIGATION_DROPDOWN_TREE_ITEM_CARD_CLASS_NAME,

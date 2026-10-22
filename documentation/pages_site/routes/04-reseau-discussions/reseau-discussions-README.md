@@ -25,16 +25,17 @@ L’inventaire exhaustif des routes canoniques, alias et fiches est tenu dans
 ## Navigation primaire
 
 `apps/web/src/lib/navigation.ts` est la source canonique de la navigation par
-profil. Dans le bloc `network`, les entrées visibles sont exactement les trois
+profil. Dans le bloc `network`, les entrées visibles sont exactement les quatre
 surfaces suivantes, dans cet ordre :
 
 1. Groupes de discussion (`/sections/messagerie`)
 2. Annuaire des acteurs (`/sections/annuaire`)
 3. Données publiques (`/sections/open-data`)
+4. Soutenir CleanMyMap (`/sections/funding`)
 
-Feedback (`/sections/feedback`) et Soutenir CleanMyMap
-(`/sections/funding`) restent accessibles par leurs liens directs et leurs CTA,
-mais ne sont pas des entrées supplémentaires du bloc `network`. Les anciennes
+Feedback (`/sections/feedback`) reste accessible par ses liens directs, ses CTA
+et le menu déroulant Feedback, mais n’est pas une entrée supplémentaire du bloc
+`network`. Les anciennes
 URL `/community` et `/sections/community` redirigent vers
 `/sections/rejoindre-une-action`. Les alias partenaires redirigent vers
 `/sections/annuaire`, sans conserver un onglet de l’ancienne page.

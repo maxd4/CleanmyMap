@@ -2,6 +2,7 @@
 
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useId } from "react";
 import type { NavigationBlockId, NavigationItem } from "@/lib/navigation";
 import { getLocalizedText } from "@/lib/navigation";
@@ -47,6 +48,7 @@ export function NavigationDropdownItemCard({
   cardBorderTokens,
 }: NavigationDropdownItemCardProps) {
   const descriptionId = useId();
+  const router = useRouter();
   const isActiveItem = isActivePath(pathname, item.href);
   const itemTone = getNavigationDropdownItemTone(spaceId, item.routeId);
   const itemLabel = getLocalizedText(item.label, locale, item.href);
@@ -59,7 +61,11 @@ export function NavigationDropdownItemCard({
         prefetch={false}
         aria-current={isActiveItem ? "page" : undefined}
         aria-describedby={descriptionId}
-        onClick={() => onTrackNavigation(item.href, itemLabel, spaceId)}
+        onClick={(event) => {
+          event.preventDefault();
+          onTrackNavigation(item.href, itemLabel, spaceId);
+          router.push(item.href);
+        }}
         style={isActiveItem ? cardBorderTokens.activeStyle : cardBorderTokens.inactiveStyle}
         className={cn(
           "group/item block w-full focus-visible:outline-none",

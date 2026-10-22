@@ -32,6 +32,7 @@ const EXPECTED_NETWORK_ROUTE_IDS = [
   "messagerie",
   "annuaire",
   "open-data",
+  "funding",
 ] as const;
 
 function collectRouteIds(
@@ -227,7 +228,7 @@ describe("navigation display modes", () => {
     ]);
   });
 
-  it("keeps the network block limited to its three canonical destinations", () => {
+  it("keeps the network block limited to its four canonical destinations", () => {
     const networkSpace = getNavigationSpacesForProfile(
       "max",
       "exhaustif",
@@ -236,20 +237,26 @@ describe("navigation display modes", () => {
     expect(networkSpace?.items.map((item) => item.routeId)).toEqual(EXPECTED_NETWORK_ROUTE_IDS);
   });
 
-  it("exposes the annuaire in the deterministic network order for every profile", () => {
+  it("exposes the four network destinations in deterministic order for every profile and mode", () => {
     for (const profile of PROFILES) {
-      const networkSpace = getNavigationSpacesForProfile(profile, "exhaustif").find(
-        (space) => space.id === "network",
-      );
+      for (const displayMode of DISPLAY_MODES) {
+        const networkSpace = getNavigationSpacesForProfile(profile, displayMode).find(
+          (space) => space.id === "network",
+        );
 
-      expect(networkSpace?.items.map((item) => item.routeId)).toEqual(
-        EXPECTED_NETWORK_ROUTE_IDS,
-      );
-    expect(networkSpace?.items.map((item) => item.href)).toEqual([
-        "/sections/messagerie",
-        "/sections/annuaire",
-        "/sections/open-data",
-      ]);
+        expect(networkSpace?.items.map((item) => item.routeId)).toEqual(
+          EXPECTED_NETWORK_ROUTE_IDS,
+        );
+        expect(networkSpace?.items.map((item) => item.href)).toEqual([
+          "/sections/messagerie",
+          "/sections/annuaire",
+          "/sections/open-data",
+          "/sections/funding",
+        ]);
+        expect(networkSpace?.items.map((item) => item.routeId)).not.toEqual(
+          expect.arrayContaining(["community", "feedback"]),
+        );
+      }
     }
   });
 

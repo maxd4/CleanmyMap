@@ -28,6 +28,7 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
     messagerie: 1,
     annuaire: 2,
     "open-data": 3,
+    funding: 4,
   },
   connect: { messagerie: 1, dm: 2 },
   learn: {
