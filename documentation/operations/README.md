@@ -6,6 +6,24 @@ Les règles transversales de Git, de publication et de validation restent
 canoniques dans la gouvernance racine. Ce dossier contient les procédures,
 services, coûts, incidents et diagnostics opérationnels.
 
+## Routage des responsabilités et statuts
+
+| Sujet | Source propriétaire | Ne pas confondre |
+|---|---|---|
+| Publication Vercel | [runbook-deploiement.md](./runbook-deploiement.md), [checklist-push-deploy.md](./checklist-push-deploy.md) | Git publié ≠ Vercel déployé |
+| Coûts / quotas / cache | [platform-cost-governance.md](./platform-cost-governance.md) | Audit daté ≠ mesure actuelle |
+| Configuration fournisseur | [services-stack.md](./services-stack.md), [environment-configuration.md](./environment-configuration.md) | Variable présente ≠ service actif |
+| Incidents | [incidents-frequents-et-reprise.md](./incidents-frequents-et-reprise.md) | [INCIDENT_RUNBOOK_SHORT.md](./INCIDENT_RUNBOOK_SHORT.md) est HISTORY |
+| Maintenance | [MAINTENANCE.md](./MAINTENANCE.md), [maintenance/python](../../maintenance/python/README.md) | Python legacy ≠ runtime Supabase |
+| Monitoring | [runbook-monitoring-logs.md](./runbook-monitoring-logs.md) | Fenêtre de logs vide ≠ absence de trafic |
+| Audit et preuves | [audits/README.md](./audits/README.md) | Un audit est `AUDIT/SNAPSHOT`, jamais contrat CURRENT |
+| Sessions agents | [agent-memory-governance.md](./agent-memory-governance.md), [session-standard-runbook.md](./session-standard-runbook.md) | Mémoire volatile ≠ vérité du code |
+| Partage de données / contenus | [DATA_PROTECTION_POLICY.md](./DATA_PROTECTION_POLICY.md), [CONTENT_VALIDATION_WORKFLOW.md](./CONTENT_VALIDATION_WORKFLOW.md) | Processus proposé ≠ preuve de revue |
+| CI/CD | [ci-cd-metrics-report.md](./ci-cd-metrics-report.md) | Commande disponible ≠ métrique observée |
+| DU et études | [../plans/README.md](../plans/README.md) | Plan ≠ réalisation |
+
+Un README route vers le contrat, sans dupliquer ses étapes. Les fichiers `CHANGELOG.md` et `audits/` conservent la provenance historique. Pour une source CURRENT, confronter au code/tests puis aux services réellement observés, avec SHA, période et incertitudes.
+
 ## Plateforme et coûts
 
 - [Gouvernance des coûts plateforme](./platform-cost-governance.md) — source

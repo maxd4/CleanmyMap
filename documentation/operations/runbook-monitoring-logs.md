@@ -1,3 +1,4 @@
+> **CURRENT pour la méthode, pas pour l'état des fournisseurs.** La liste des services et leurs configurations restent dans [services-stack.md](./services-stack.md) et [environment-configuration.md](./environment-configuration.md). Un log absent dans une fenêtre ne prouve ni une route inutilisée ni l'absence de trafic.
 # Runbook monitoring logs
 
 ## Flowchart detection -> qualification -> escalade
@@ -17,11 +18,6 @@ flowchart TD
   I --> J[Cloture avec verification post-correctif]
   H --> J
 ```
-Fallback statique:
-```md
-![Monitoring logs flow fallback](../archive/fallback-monitoring-logs-flow.png)
-```
-
 ## Signaux de supervision
 - `GET /api/health`
 - `GET /api/uptime`
@@ -41,15 +37,6 @@ Fallback statique:
 ## Escalade
 - Si incident critique: appliquer le runbook `incidents-frequents-et-reprise.md`.
 
-## Services web non utilises pour l'instant
-- Stripe (paiements en ligne / dons): la route webhook existe déjà, mais elle reste inerte tant que `STRIPE_SECRET_KEY` et `STRIPE_WEBHOOK_SECRET` ne sont pas configurés.
-- Pinecone (vecteurs image): a activer quand on lance la recherche IA pour retrouver facilement des cleanwalks dans la base.
-- Upstash (Redis serverless, rate limiting, QStash, Workflow): ne pas ajouter tant qu'il n'y a pas un besoin explicite.
-- Ajouter Upstash uniquement le jour ou l'on dit:
-  - "je dois limiter les abus sur mes API"
-  - "j'ai besoin de cache/queues maintenant"
+## Qualification des services tiers
 
-## Services a passer en revue
-- Clerk: verifier `GET /api/uptime` quand les sessions sont instables; `clerk_keys: warning` signifie souvent une prod encore branchee sur des clés test.
-- Resend: verifier les routes `/api/send` et `/api/email/test` pour distinguer une vraie panne (`502/503`) d'une simple absence de configuration.
-- Stripe: verifier `POST /api/stripe/webhook` et les logs `[Stripe Webhook]` pour distinguer un webhook absent d'une signature invalide.
+La présence d'une route, d'un SDK ou d'une clé déclarée ne démontre pas la configuration active de Stripe, Resend, Pinecone, Upstash, Clerk ou d'un autre service. Vérifier la route, le statut HTTP, l'environnement, le fournisseur et la fenêtre de logs, sans afficher les secrets ni envoyer de requêtes mutantes. Pour le coût et les limites de rate limiting, suivre [platform-cost-governance.md](./platform-cost-governance.md). Pour auth/admin/export, suivre [incidents-frequents-et-reprise.md](./incidents-frequents-et-reprise.md).

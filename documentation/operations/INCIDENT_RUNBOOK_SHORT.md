@@ -1,3 +1,4 @@
+> **HISTORY / SNAPSHOT — 2026-04-09 :** cette note conserve le diagnostic de l'époque, notamment des URLs, rôles et recettes de redéploiement qui ne sont pas attestés aujourd'hui. **Ne pas exécuter ses mutations Clerk ou déploiements sur la seule base de ce fichier.** Utiliser [le runbook CURRENT](./incidents-frequents-et-reprise.md), [l'AuthZ CURRENT](../security/authz-authn-regles.md) et [le runbook de déploiement](./runbook-deploiement.md).
 # Incident Runbook (Auth / Admin / Export)
 
 Last update: 2026-04-09

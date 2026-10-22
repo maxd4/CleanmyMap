@@ -1,111 +1,36 @@
-# Maintenance Commands and Project Diagnostic
+# Maintenance — commandes et frontières réelles
 
-## Scope
+**Statut : CURRENT pour l'orientation des outils.** Le runtime applicatif vit dans `apps/web/` et `apps/mobile/` ; les scripts Python historiques vivent dans `maintenance/python/`. La documentation et les dépendances Python sont propriétaires de [maintenance/python/README.md](../../maintenance/python/README.md) et de son [AGENTS.md](../../maintenance/python/AGENTS.md).
 
-This page documents the active maintenance workflow:
-- repository hygiene checks,
-- UTF-8 normalization policy,
-- runtime SQLite safeguards,
-- CI integration.
+| Opération | Chemin réel |
+|---|---|
+| Audit de nettoyage | `maintenance/python/scripts/ci_cleanup.py` |
+| Moteur de l'audit | `maintenance/python/src/maintenance/cleanup_audit.py` |
+| Contrôle UTF-8 | `maintenance/python/scripts/normalize_utf8.py` |
+| Garde Git/SQLite | `maintenance/python/scripts/check_runtime_db_tracking.py` |
+| Seed SQLite legacy | `maintenance/python/scripts/init_runtime_db.py` |
+| Résolution DB SQLite legacy | `maintenance/python/src/database.py` |
 
-## Shared cleanup audit engine
+Vérifications read-only depuis la racine du checkout :
 
-Single source of truth for cleanup verification:
-- module: `src/maintenance/cleanup_audit.py`
-- entrypoint: `run_cleanup_audit(root_path: Path) -> CleanupAuditReport`
-
-Current rule families:
-- runtime artifacts protection (gitignore/runtime hygiene),
-- UTF-8 BOM detection on text files,
-- required README/wiki wiring checks.
-
-## Command surface (cross-platform)
-
-Primary command:
-- `python scripts/ci_cleanup.py --root .`
-
-Strict check mode (non-zero on error rules):
-- `python scripts/ci_cleanup.py --root . --check`
-
-UTF-8 normalization helper:
-- `python scripts/normalize_utf8.py --root . --check`
-- `python scripts/normalize_utf8.py --root . --write`
-
-Standard exit codes for `ci_cleanup.py`:
-- `0`: success / no blocking error rules
-- `1`: check mode failed on blocking rules
-
-## Historical action geometry remediation
-
-The geometry backfill is a read-first remediation tool:
-
-```text
-npm run data:geometry:backfill -w apps/web
-npm run data:geometry:backfill -w apps/web -- --apply
+```bash
+python maintenance/python/scripts/ci_cleanup.py --root . --check
+python maintenance/python/scripts/normalize_utf8.py --root . --check
+python maintenance/python/scripts/check_runtime_db_tracking.py --root .
 ```
 
-The first command is a dry-run. It reports the inspected total, current
-provenance, bounded samples and the `PRESERVE` / `SAFE_UPDATE` / `AMBIGUOUS` /
-`INVALID` split. `--apply` is intentionally narrower: it applies only
-`SAFE_UPDATE` decisions and leaves every `AMBIGUOUS` row untouched. A second
-run after application must therefore be idempotent.
+`ci_cleanup.py` retourne une erreur en mode `--check` seulement si une règle bloquante échoue. Ne pas utiliser les anciens chemins `src/` ou `scripts/ci_cleanup.py` à la racine. Les commandes Python mutantes (`--write`, `--seed`, `--reset-seeded-tables`) exigent un périmètre de données identifié et l'autorisation explicite adaptée.
 
-The classifier uses persisted evidence rather than `geometry_confidence`:
-confidence is not provenance. Valid `gps_tracking`, `gpx_import` and `manual`
-geometries are preserved; route network/fallback and legacy ellipse
-reclassification require deterministic persisted metadata. The current route
-reconstruction engine is never used to rewrite historical rows. The archive
-table `spots` is never a target, and `trash_spotter_spots` remains a separate
-point-oriented audit surface.
+Les anciens outils SQLite ne sont pas la source métier PostgreSQL/Supabase du web. `CLEANMYMAP_DB_PATH` et les chemins d'état hors dépôt ne doivent pas être interprétés comme une configuration Supabase. Ne pas déplacer les scripts Python legacy dans l'application.
 
-## Recommended workflow
+## Opérations web et validations
 
-- Local quick gate:
-  - `powershell -ExecutionPolicy Bypass -File scripts/ci/run_checks.ps1 -Scope changed -SkipE2E -SkipEncodingAutofix`
-- Full Python suite when touching `src/*` or `tests/*`:
-  - `pytest -q`
-- Web gates when touching `apps/web/*`:
-  - `npm --prefix apps/web run lint`
-  - `npm --prefix apps/web run test`
-  - `npm --prefix apps/web run build`
+Pour les changements web, suivre [TESTING.md](../development/TESTING.md) et le `package.json` réel : tests ciblés, lint, typecheck ou build proportionnés au lot. Le script `scripts/ci/run_checks.ps1` existe pour les contrôles Windows ; `scripts/dev/unblock_repo_access.ps1` modifie des ACL/attributs et ne doit pas être exécuté sans incident d'accès démontré.
 
-## Repo access unblock (Windows)
+## Géométries historiques — mutation distincte du diagnostic
 
-When local tooling reports `Access denied` or files appear locked:
-- Run:
-  - `powershell -ExecutionPolicy Bypass -File scripts/dev/unblock_repo_access.ps1 -Root .`
-- The script performs:
-  - optional stop of repo-scoped `python/node` processes,
-  - read-only attribute cleanup outside `.git`,
-  - ACL FullControl grant for current user on repo tree,
-  - git hardening (`core.longpaths=true`, `safe.directory`),
-  - read/write probes on key tracked files.
+`npm run data:geometry:backfill -w apps/web` est l'entrée de diagnostic à blanc prévue pour la qualification `PRESERVE / SAFE_UPDATE / AMBIGUOUS / INVALID`. `--apply` est une mutation séparée, réservée aux mises à jour sûres et autorisées après revue de la provenance persistée. `geometry_confidence` ne prouve pas la provenance ; ne jamais réécrire les lignes ambiguës par défaut.
 
-## CI integration
+## Preuves
 
-Main CI workflow hard checks include:
-- `python scripts/ci_cleanup.py --root . --check`
-- `python scripts/normalize_utf8.py --root . --check`
-- `python scripts/check_runtime_db_tracking.py --root .`
-
-## Runtime SQLite separation
-
-### Official runtime DB contract
-- Env variable: `CLEANMYMAP_DB_PATH`
-- Resolution order in `src/database.py`:
-  1. `CLEANMYMAP_DB_PATH`
-  2. OS state path outside repository:
-     - Windows: `%LOCALAPPDATA%/CleanMyMap/runtime/cleanmymap.db`
-     - Linux/macOS: `${XDG_STATE_HOME:-~/.local/state}/cleanmymap/runtime/cleanmymap.db`
-
-### Runtime DB initialization and anonymized seed
-- Script: `scripts/init_runtime_db.py`
-- Commands:
-  - `python scripts/init_runtime_db.py`
-  - `python scripts/init_runtime_db.py --seed data/seed/runtime_seed_anonymized.json`
-  - `python scripts/init_runtime_db.py --db-path <path> --seed data/seed/runtime_seed_anonymized.json`
-  - `python scripts/init_runtime_db.py --db-path <path> --seed data/seed/runtime_seed_anonymized.json --reset-seeded-tables`
-
-### CI guardrail
-- Script: `scripts/check_runtime_db_tracking.py`
-- Fails if runtime SQLite files are tracked in git.
+Chemin existant ≠ commande exécutée ≠ DB modifiée ≠ production validée. Inscrire la commande, le périmètre, l'environnement et les résultats réellement observés ; utiliser les runbooks et les propriétaires spécialisés pour les incidents.

@@ -1,8 +1,9 @@
+> **PLAN / HISTORY — propositions des ateliers DU.** Ce backlog date d'un contexte précédent : ses affirmations « en production », ses priorités et ses messages ne sont pas des preuves CURRENT. Requalifier les besoins contre la [roadmap produit](../product/roadmap-priorisee.md), `main` et les tests avant de lancer un lot.
 ATELIERS_DU - BACKLOG OPERATIONNEL CLEANMYMAP
 
 NOTE D'USAGE
 
-Ce document sert de backlog actif unique des messages et lots encore actionnables.
+Ce document conserve le backlog préparé lors des ateliers ; un message ne redevient actionnable qu'après requalification contre les contrats actuels.
 Le cadre d'analyse DU, les apprentissages et les justifications IA ont ete migres vers :
 
 - `documentation/plans/rapport_impact/impact_IA.md` pour la gouvernance IA, la sobriete et les arbitrages ;

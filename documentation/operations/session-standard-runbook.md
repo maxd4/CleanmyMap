@@ -1,3 +1,4 @@
+> **Portée :** chemin complet de vérification applicative, non recette obligatoire pour chaque lot documentaire. Les gates sont proportionnés au changement selon [TESTING.md](../development/TESTING.md) et le `package.json` réel. N'affirmer aucun résultat de test ou de build non exécuté.
 # Session Standard Runbook (Codex)
 
 ## Objectif

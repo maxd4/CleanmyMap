@@ -73,3 +73,16 @@ Chaque entrée relie le prompt, la décision, le SHA, les validations locales,
 les workflows distants et les limites de preuve. Ce registre est un audit
 contextualisé : il ne remplace pas la PR, le code courant, les règles de
 gouvernance ou une preuve de production.
+
+## Index des preuves historiques
+
+| Famille | Dossiers/fichiers représentatifs | Contrat CURRENT à consulter |
+|---|---|---|
+| SonarQube/SonarCloud | `CleanMyMap_SonarQube_*.md`, `CleanMyMap_SonarCloud_*.md` | [Règles qualité](../../development/repo-quality-rules.md), config et CI |
+| Incidents de sécurité/concurrence | `audit-securite-zero-day-*.md`, `audit-race-conditions-*.md` | [Sécurité](../../security/README.md) et tests des frontières concernées |
+| Vercel, invocations et quotas | `vercel-*.md` | [Coûts](../platform-cost-governance.md), [déploiement](../runbook-deploiement.md) |
+| Supabase | `supabase-refresh-strategy-audit.md` | [Données](../../architecture/data-governance.md), [DB](../../database/README.md) |
+| Agents et performance locale | `codex-execution-latency-*.md`, `local-workspace-performance-*.md` | Gouvernance racine et [tests](../../development/TESTING.md) |
+| Parcours et interactions | `validation-transverse-interactions-2026-08-29.md` | Code, tests et fiche route CURRENT concernés |
+
+Toute récupération de preuve doit identifier sa date, son SHA, sa méthode et ses limites avant d'en tirer une recommandation. Ne jamais agréger des chiffres issus de périodes incompatibles en inventaire CURRENT ni réécrire un audit historique uniquement pour moderniser ses chemins.

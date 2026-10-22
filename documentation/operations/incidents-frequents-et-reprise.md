@@ -1,3 +1,4 @@
+> **CURRENT — méthode de triage uniquement.** Le code de route, les tests, les rôles et scopes [AuthZ](../security/authz-authn-regles.md) restent prioritaires. Ne jamais modifier un rôle Clerk, une variable de production ou déclencher un déploiement avant d'avoir identifié l'acteur, l'ownership, la cause et le déploiement courant. L'ancien [mémo court](./INCIDENT_RUNBOOK_SHORT.md) est un SNAPSHOT.
 # Runbook incidents (auth/admin/export) - decision-first
 
 ## Arbre de diagnostic global
@@ -11,11 +12,6 @@ flowchart TD
   D --> Z
   E --> Z
 ```
-Fallback statique:
-```md
-![Incident global fallback](../archive/fallback-incident-global-tree.png)
-```
-
 ## Branche Auth (login loop, OAuth, deconnexion)
 ```mermaid
 flowchart TD
@@ -27,25 +23,15 @@ flowchart TD
   D -- Non --> D1[Corriger domaines + callback OAuth]
   D -- Oui --> E[Retester en session privee]
 ```
-Fallback statique:
-```md
-![Incident auth fallback](../archive/fallback-incident-auth-tree.png)
-```
-
 ## Branche Admin (acces /admin ou moderation)
 ```mermaid
 flowchart TD
   A[Symptome admin] --> B{Role admin present ?}
-  B -- Non --> B1[Corriger publicMetadata.role dans Clerk Production]
+  B -- Non --> B1[Confirmer identité et rôle, corriger uniquement après autorisation]
   B -- Oui --> C{Route /api/admin/* retourne JSON ?}
   C -- Non --> C1[Verifier middleware/proxy protection]
   C -- Oui --> D[Retester action moderation]
 ```
-Fallback statique:
-```md
-![Incident admin fallback](../archive/fallback-incident-admin-tree.png)
-```
-
 ## Branche Export (CSV/JSON)
 ```mermaid
 flowchart TD
@@ -57,11 +43,6 @@ flowchart TD
   D -- Non --> D1[Verifier /api/actions et le RPC actions_map_feed]
   D -- Oui --> E[Verifier UI export]
 ```
-Fallback statique:
-```md
-![Incident export fallback](../archive/fallback-incident-export-tree.png)
-```
-
 ## Checklist visuelle de reprise
 ```mermaid
 flowchart LR
@@ -71,11 +52,6 @@ flowchart LR
   C4 --> C5[5. Verifier uptime]
   C5 --> C6[6. Logger post-mortem]
 ```
-Fallback statique:
-```md
-![Incident checklist fallback](../archive/fallback-incident-checklist.png)
-```
-
 ## Sequence de remediation (incident -> retour stable)
 ```mermaid
 sequenceDiagram
@@ -96,11 +72,6 @@ sequenceDiagram
   User-->>Ops: Validation fonctionnelle
   Ops->>Ops: Clore incident + post-mortem
 ```
-Fallback statique:
-```md
-![Incident remediation sequence fallback](../archive/fallback-incident-remediation-sequence.png)
-```
-
 ## Commandes minimales post-correctif
 ```bash
 npm --prefix apps/web run lint

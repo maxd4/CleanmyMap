@@ -1,3 +1,4 @@
+> **CURRENT — procédure de collecte, pas mesure actuelle.** `npm run metrics:cicd` appartient au `package.json` et exécute `scripts/reports/cicd-metrics-report.mjs`. La présence de ce script ne prouve aucune métrique GitHub/Vercel sans nouvelle exécution authentifiée. Ne pas publier les tokens.
 # CI/CD Metrics Report
 
 ## Collecte
