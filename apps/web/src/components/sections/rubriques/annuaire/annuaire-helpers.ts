@@ -7,6 +7,7 @@ import {
  hasRecentUpdate,
  isCompletePartnerEntry,
  isPlaceholderUrl,
+ normalizePublicChannelUrl,
  type PartnerTrustState,
 } from"@/lib/partners/onboarding-types";
 import type {
@@ -142,6 +143,37 @@ export function buildDashboardStats(entries: AnnuaireEntry[], pendingCount: numb
 
 export function hasValidPublicChannel(entry: AnnuaireEntry): boolean {
  return hasPublicChannel(entry);
+}
+
+export type AnnuairePublicDestination = {
+ url: string;
+ label: string;
+};
+
+export function getAnnuairePublicDestination(
+ entry: Pick<
+  AnnuaireEntry,
+  "primaryChannel" | "websiteUrl" | "instagramUrl" | "facebookUrl"
+ >,
+): AnnuairePublicDestination | null {
+ const candidates = [
+  {
+   url: entry.primaryChannel?.url,
+   label: entry.primaryChannel?.label || "Canal public",
+  },
+  { url: entry.websiteUrl, label: "Consulter le site" },
+  { url: entry.instagramUrl, label: "Consulter Instagram" },
+  { url: entry.facebookUrl, label: "Consulter Facebook" },
+ ];
+
+ for (const candidate of candidates) {
+  const url = normalizePublicChannelUrl(candidate.url);
+  if (url) {
+   return { url, label: candidate.label };
+  }
+ }
+
+ return null;
 }
 
 export function hasRecentPartnerUpdate(entry: AnnuaireEntry): boolean {

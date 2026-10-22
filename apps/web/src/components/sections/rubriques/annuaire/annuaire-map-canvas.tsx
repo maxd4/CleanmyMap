@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   MapContainer,
   TileLayer,
   Marker,
   Popup,
   LayersControl,
+  useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -19,6 +20,28 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 
 const PARIS_CENTER: [number, number] = [48.8566, 2.3522];
+
+function AnnuaireMapViewport({
+  center,
+  highlightedItemId,
+}: {
+  center: [number, number];
+  highlightedItemId?: string | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!highlightedItemId) {
+      return;
+    }
+    map.flyTo(center, map.getZoom(), {
+      animate: true,
+      duration: 0.5,
+    });
+  }, [center, highlightedItemId, map]);
+
+  return null;
+}
 
 // Custom icons based on engagement type and style
 const createBubbleIcon = (
@@ -67,6 +90,10 @@ export function AnnuaireMapCanvas({
         scrollWheelZoom
         className="relative z-0 h-full w-full bg-[rgba(20,14,48,0.96)]"
       >
+        <AnnuaireMapViewport
+          center={center}
+          highlightedItemId={highlightedItemId}
+        />
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Mode Épuré">
             <TileLayer
@@ -93,6 +120,7 @@ export function AnnuaireMapCanvas({
               key={entry.id}
               position={[entry.lat, entry.lng]}
               icon={createBubbleIcon(entry, isHighlighted)}
+              title={entry.name}
               eventHandlers={{
                 click: () => onItemClick?.(entry.id),
               }}

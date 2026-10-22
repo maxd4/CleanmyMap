@@ -4,6 +4,7 @@ import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
 import {
   formatAssociationImpactDate,
   getAssociationImpactSummary,
+  getAnnuairePublicDestination,
   getAssociationProfile,
   getAssociationStructureBadge,
 } from "./annuaire-helpers";
@@ -67,5 +68,48 @@ describe("association profile provenance", () => {
     expect(formatAssociationImpactDate(profile?.impactHistory?.lastActionAt)).toContain(
       "Dernière action",
     );
+  });
+});
+
+describe("public directory destinations", () => {
+  it("prefers the declared public channel and falls back to the public website", () => {
+    expect(
+      getAnnuairePublicDestination({
+        primaryChannel: {
+          platform: "site web",
+          label: "Canal public",
+          url: "https://contact.cleanmymap.fr/partner",
+        },
+        websiteUrl: "https://cleanmymap.fr/partner",
+      }),
+    ).toEqual({
+      label: "Canal public",
+      url: "https://contact.cleanmymap.fr/partner",
+    });
+
+    expect(
+      getAnnuairePublicDestination({
+        primaryChannel: undefined,
+        websiteUrl: "https://cleanmymap.fr/partner",
+      }),
+    ).toEqual({
+      label: "Consulter le site",
+      url: "https://cleanmymap.fr/partner",
+    });
+  });
+
+  it("rejects absent and unsafe destinations without exposing private contacts", () => {
+    expect(
+      getAnnuairePublicDestination({
+        primaryChannel: {
+          platform: "site web",
+          label: "Contact interne",
+          url: "javascript:alert(1)",
+        },
+        websiteUrl: "#",
+        instagramUrl: undefined,
+        facebookUrl: undefined,
+      }),
+    ).toBeNull();
   });
 });

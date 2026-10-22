@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useId, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Globe, Target, Quote, Heart, Zap, ArrowRight, Building2, Sparkles, MessageSquare } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -12,8 +13,10 @@ import {
   getAssociationImpactSummary,
   getAssociationProfile,
   getAssociationStructureBadge,
+  getAnnuairePublicDestination,
   isEditorialAnnuaireEntry,
 } from "./annuaire-helpers";
+import { normalizePublicChannelUrl } from "@/lib/partners/onboarding-types";
 import { cn } from "@/lib/utils";
 
 interface AnnuairePartnerDrawerProps {
@@ -24,10 +27,66 @@ interface AnnuairePartnerDrawerProps {
 }
 
 export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePartnerDrawerProps) {
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  const drawerTitleId = useId();
+  const entryId = entry?.id;
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen || !entryId) return;
+
+    restoreFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable?.length) {
+        event.preventDefault();
+        drawerRef.current?.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      restoreFocusRef.current?.focus();
+      restoreFocusRef.current = null;
+    };
+  }, [entryId, isOpen]);
+
   if (!entry) return null;
   const associationProfile = getAssociationProfile(entry);
   const structureBadge = getAssociationStructureBadge(entry);
   const isEditorial = isEditorialAnnuaireEntry(entry);
+  const publicDestination = getAnnuairePublicDestination(entry);
 
   return (
     <AnimatePresence>
@@ -45,11 +104,16 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
 
           {/* Slide-over Panel - Premium Glass Architecture */}
           <motion.div
+            ref={drawerRef}
             data-motion-role="overlay"
             initial={{ x: "110%", opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "110%", opacity: 0 }}
             transition={{ type: "spring", damping: 30, stiffness: 200 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={drawerTitleId}
+            tabIndex={-1}
             className="fixed top-4 bottom-4 right-4 z-[110] flex w-full max-w-[550px] flex-col overflow-hidden rounded-[3.5rem] border border-white/10 bg-slate-900/60 backdrop-blur-3xl shadow-[0_0_100px_rgba(0,0,0,0.5)]"
           >
             {/* Header with Visual Branding */}
@@ -59,7 +123,9 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
               
               <div className="absolute top-8 right-8 z-20">
                 <CmmButton
+                  ref={closeButtonRef}
                   onClick={onClose}
+                  ariaLabel={fr ? "Fermer la fiche partenaire" : "Close partner profile"}
                   tone="tertiary"
                   variant="pill"
                   className="rounded-2xl p-4 text-white/60 backdrop-blur-xl hover:text-white shadow-2xl"
@@ -85,7 +151,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                       ? "Ressource éditoriale"
                       : "Fiche partenaire publiée"}
                   </div>
-                  <h2 className="text-4xl font-black leading-tight tracking-tighter text-white">{entry.name}</h2>
+                  <h2 id={drawerTitleId} className="text-4xl font-black leading-tight tracking-tighter text-white">{entry.name}</h2>
                   {structureBadge && (
                     <div className={cn(
                       "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-[0.3em]",
@@ -210,23 +276,43 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                         </p>
                         <div className="mt-4 space-y-3">
                           {associationProfile.usefulResources.length > 0 ? (
-                            associationProfile.usefulResources.map((resource) => (
-                              <a
-                                key={resource.label}
-                                href={resource.url || "#"}
-                                target={resource.url ? "_blank" : undefined}
-                                rel={resource.url ? "noopener noreferrer" : undefined}
-                                className={cn(
-                                  "block rounded-2xl border border-white/5 bg-slate-950/40 p-4 transition-colors",
-                                  resource.url ? "hover:border-violet-500/30 hover:bg-slate-950/60" : "opacity-80",
-                                )}
-                              >
-                                <p className="text-sm font-black text-white">{resource.label}</p>
-                                {resource.description && (
-                                  <p className="mt-1 text-xs leading-relaxed text-slate-400">{resource.description}</p>
-                                )}
-                              </a>
-                            ))
+                            associationProfile.usefulResources.map((resource) => {
+                              const resourceUrl = normalizePublicChannelUrl(resource.url);
+                              const resourceContent = (
+                                <>
+                                  <p className="text-sm font-black text-white">{resource.label}</p>
+                                  {resource.description && (
+                                    <p className="mt-1 text-sm leading-relaxed text-slate-300">{resource.description}</p>
+                                  )}
+                                  {!resourceUrl && (
+                                    <p className="cmm-text-caption mt-2 text-xs font-black uppercase tracking-widest text-slate-500">
+                                      Ressource indisponible
+                                    </p>
+                                  )}
+                                </>
+                              );
+
+                              return resourceUrl ? (
+                                <a
+                                  key={resource.label}
+                                  href={resourceUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-label={`${resource.label} — ${entry.name}`}
+                                  className="block rounded-2xl border border-white/5 bg-slate-950/40 p-4 transition-colors hover:border-violet-500/30 hover:bg-slate-950/60"
+                                >
+                                  {resourceContent}
+                                </a>
+                              ) : (
+                                <div
+                                  key={resource.label}
+                                  aria-disabled="true"
+                                  className="block rounded-2xl border border-white/5 bg-slate-950/40 p-4 opacity-80"
+                                >
+                                  {resourceContent}
+                                </div>
+                              );
+                            })
                           ) : (
                             <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/30 p-4 text-xs text-slate-400">
                               Ressources publiques à compléter
@@ -307,12 +393,34 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                       ))}
                     </div>
 
-                    <CmmButton asChild tone="secondary" width="wide" className="h-16 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl">
-                      <a href={entry.websiteUrl || "#"} target="_blank" rel="noopener noreferrer">
-                        <Globe size={18} />
-                        <span>{fr ? "Consulter le site" : "Visit website"}</span>
-                      </a>
-                    </CmmButton>
+                    {(() => {
+                      const websiteUrl = normalizePublicChannelUrl(entry.websiteUrl);
+                      return websiteUrl ? (
+                        <CmmButton
+                          asChild
+                          tone="secondary"
+                          width="wide"
+                          ariaLabel={`${fr ? "Consulter le site" : "Visit website"} — ${entry.name}`}
+                          className="h-16 rounded-2xl text-sm font-black uppercase tracking-[0.2em] shadow-2xl"
+                        >
+                          <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
+                            <Globe size={18} />
+                            <span>{fr ? "Consulter le site" : "Visit website"}</span>
+                          </a>
+                        </CmmButton>
+                      ) : (
+                        <CmmButton
+                          disabled
+                          tone="secondary"
+                          width="wide"
+                          ariaLabel={fr ? "Site indisponible" : "Website unavailable"}
+                          className="h-16 rounded-2xl text-sm font-black uppercase tracking-[0.2em] shadow-2xl"
+                        >
+                          <Globe size={18} />
+                          <span>{fr ? "Site indisponible" : "Website unavailable"}</span>
+                        </CmmButton>
+                      );
+                    })()}
                   </div>
                 </div>
               </section>
@@ -328,14 +436,31 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
               >
                 {fr ? "Fermer" : "Close"}
               </CmmButton>
-              <CmmButton 
-                tone="primary"
-                variant="default"
-                className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-[11px] font-black uppercase tracking-[0.2em] text-white shadow-[0_10px_30px_rgba(139,92,246,0.3)] hover:bg-violet-500"
-              >
-                <span>{isEditorial ? (fr ? "Consulter la ressource" : "View resource") : (fr ? "Engager le contact" : "Get in touch")}</span>
-                <MessageSquare size={18} className="ml-3 group-hover/cta:scale-110 transition-transform" />
-              </CmmButton>
+              {publicDestination ? (
+                <CmmButton
+                  asChild
+                  tone="primary"
+                  variant="default"
+                  ariaLabel={`${isEditorial ? (fr ? "Consulter la ressource" : "View resource") : (fr ? "Engager le contact" : "Get in touch")} — ${entry.name}`}
+                  className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-sm font-black uppercase tracking-[0.2em] text-white shadow-[0_10px_30px_rgba(139,92,246,0.3)] hover:bg-violet-500"
+                >
+                  <a href={publicDestination.url} target="_blank" rel="noopener noreferrer">
+                    <span>{isEditorial ? (fr ? "Consulter la ressource" : "View resource") : (fr ? "Engager le contact" : "Get in touch")}</span>
+                    <MessageSquare size={18} className="ml-3 group-hover/cta:scale-110 transition-transform" />
+                  </a>
+                </CmmButton>
+              ) : (
+                <CmmButton
+                  disabled
+                  tone="primary"
+                  variant="default"
+                  ariaLabel={fr ? "Canal public indisponible" : "Public channel unavailable"}
+                  className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-sm font-black uppercase tracking-[0.2em] text-white shadow-[0_10px_30px_rgba(139,92,246,0.3)]"
+                >
+                  <span>{isEditorial ? (fr ? "Ressource indisponible" : "Resource unavailable") : (fr ? "Contact indisponible" : "Contact unavailable")}</span>
+                  <MessageSquare size={18} className="ml-3" />
+                </CmmButton>
+              )}
             </div>
           </motion.div>
         </>

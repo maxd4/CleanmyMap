@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-import { useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import {
   Search,
   Filter,
@@ -34,6 +34,8 @@ type AnnuaireExplorationViewProps = {
   searchTerm?: string;
   setSearchTerm?: (value: string) => void;
   fr?: boolean;
+  selectedActorId?: string | null;
+  onSelectedActorIdChange?: (id: string | null) => void;
 };
 
 function AnnuaireMapPanel({
@@ -265,10 +267,16 @@ export function AnnuaireExplorationView({
   searchTerm: externalSearchTerm,
   setSearchTerm: externalSetSearchTerm,
   fr: externalFr,
+  selectedActorId: externalSelectedActorId,
+  onSelectedActorIdChange,
 }: AnnuaireExplorationViewProps) {
-  const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+  const [internalSelection, setInternalSelection] = useState<{
+    id: string | null;
+    filterKey: string;
+  }>({ id: null, filterKey: "" });
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "network">("map");
+  const isSelectionControlled = onSelectedActorIdChange !== undefined;
 
   const {
     searchTerm: internalSearchTerm,
@@ -291,8 +299,22 @@ export function AnnuaireExplorationView({
   const fr = externalFr ?? locale === "fr";
   const searchTerm = externalSearchTerm ?? internalSearchTerm;
   const setSearchTerm = externalSetSearchTerm ?? internalSetSearchTerm;
+  const filterKey = `${searchTerm}|${filterKind}|${filterContribution}|${zoneFilter}`;
+  const selectedActorId = isSelectionControlled
+    ? externalSelectedActorId ?? null
+    : internalSelection.filterKey === filterKey
+      ? internalSelection.id
+      : null;
+  const setSelectedActorId = (id: string | null) => {
+    if (onSelectedActorIdChange) {
+      onSelectedActorIdChange(id);
+      return;
+    }
+    setInternalSelection({ id, filterKey });
+  };
   const selectedActor =
     sortedAndFilteredEntries.find((e) => e.id === selectedActorId) || null;
+  const previousFilterKey = useRef(filterKey);
   const { ref: mapShellRef, isInView: isMapVisible } =
     useInViewOnce<HTMLElement>({
       rootMargin: "280px 0px",
@@ -303,6 +325,14 @@ export function AnnuaireExplorationView({
     const canvasAnchor = document.getElementById("exploration-canvas-anchor");
     canvasAnchor?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  useEffect(() => {
+    if (previousFilterKey.current === filterKey) {
+      return;
+    }
+    previousFilterKey.current = filterKey;
+    onSelectedActorIdChange?.(null);
+  }, [filterKey, onSelectedActorIdChange]);
 
   return (
     <div className="flex min-w-0 w-full flex-col items-start gap-12 overflow-x-clip lg:flex-row">

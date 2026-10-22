@@ -95,6 +95,7 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
                 <CmmButton 
                   tone="primary"
                   variant="default"
+                  ariaLabel={fr ? `Voir ${entry.name} sur la carte` : `View ${entry.name} on the map`}
                   className="group/btn h-14 w-full rounded-2xl border-none bg-violet-600 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl hover:bg-violet-500"
                   onClick={() => onFocusMap(entry.id)}
                 >

@@ -135,7 +135,16 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
                   exit={{ scale: 0, opacity: 0 }}
                   transition={{ type: "spring", stiffness: 100, damping: 15 }}
                   className="cursor-pointer group"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Ouvrir la fiche de ${nodeName}`}
                   onClick={() => onSelectPartner(node)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelectPartner(node);
+                    }
+                  }}
                 >
                   {/* Outer Glow Halo */}
                   <circle

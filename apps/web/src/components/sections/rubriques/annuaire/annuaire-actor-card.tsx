@@ -9,6 +9,7 @@ import {
   getAssociationProfile,
   getAssociationStructureBadge,
   getEntryTrustState,
+  getAnnuairePublicDestination,
   getPartnerWhyThisStructureMatters,
   formatCoverage,
   formatFreshness,
@@ -39,6 +40,7 @@ export function AnnuaireActorCard({
   const isPublishedPartner = isPublishedPartnerAnnuaireEntry(entry);
   const associationProfile = getAssociationProfile(entry);
   const structureBadge = getAssociationStructureBadge(entry);
+  const publicDestination = getAnnuairePublicDestination(entry);
 
   const isFeatured = entry.isFeatured;
 
@@ -268,20 +270,21 @@ export function AnnuaireActorCard({
           tone="secondary"
           variant="default"
           className="flex-1 h-12 rounded-xl bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 shadow-2xl"
+          ariaLabel={fr ? `Localiser ${entry.name}` : `Locate ${entry.name}`}
           onClick={() => onFocusMap(entry.id)}
         >
           <MapPin size={14} className="mr-2 text-violet-400" />
           {fr ? "Localiser" : "Locate"}
         </CmmButton>
         
-        {entry.primaryChannel ? (
+        {publicDestination ? (
           <CmmButton
             tone="primary"
             variant="default"
             className="flex-1 h-12 rounded-xl bg-violet-600 border-none text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-violet-500 shadow-[0_10px_30px_rgba(139,92,246,0.2)] group/btn"
             asChild
           >
-            <a href={entry.primaryChannel.url} target="_blank" rel="noopener noreferrer">
+            <a href={publicDestination.url} target="_blank" rel="noopener noreferrer" aria-label={`${publicDestination.label} — ${entry.name}`}>
               <MessageSquare size={14} className="mr-2 group-hover/btn:scale-110 transition-transform" />
               {isEditorial
                 ? fr

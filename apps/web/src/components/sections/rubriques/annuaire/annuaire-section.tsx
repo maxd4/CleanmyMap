@@ -12,6 +12,7 @@ import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { motion } from "framer-motion";
+import { useState } from "react";
 
 const containerVariants = {
   hidden: { opacity: 1 },
@@ -29,6 +30,7 @@ const itemVariants = {
 export function AnnuaireSection() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
+  const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
 
   const {
     searchTerm,
@@ -37,7 +39,8 @@ export function AnnuaireSection() {
     featuredEntries,
   } = useAnnuaireLogic();
 
-  const handleFocusMap = () => {
+  const handleFocusMap = (id: string) => {
+    setSelectedActorId(id);
     const canvasAnchor = document.getElementById("exploration-canvas-anchor");
     canvasAnchor?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -127,6 +130,8 @@ export function AnnuaireSection() {
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
               fr={fr}
+              selectedActorId={selectedActorId}
+              onSelectedActorIdChange={setSelectedActorId}
             />
           </CmmSectionGroup>
         </motion.section>
