@@ -718,7 +718,14 @@ lignes et l'activité élevée à partir de 5 commits ; ces seuils sont
 descriptifs, sans ratchet ni score global opaque. Il corrèle activité, dette
 structurelle, métriques de taille/complexité et couplage architectural quand la
 preuve existe, tandis que la récurrence multi-run reste `NOT_MEASURED` sans
-série attribuable. `testability` réutilise uniquement les métriques de modules,
+série attribuable. Le rapport sépare `trackedFilesExamined` (fichiers suivis
+examinés), `filesReported` (lignes détaillées effectivement publiées),
+`highActivityFiles`, `hotspotCandidates` et `structuralDebtFiles`. Une métrique
+`functionLength` ne devient un signal de dette que si elle dépasse la cible
+applicable de la politique de complexité ou si un finding `functionLength`
+existe déjà. Sans rapports structurels exploitables, l'activité reste mesurée
+mais la dette est `NOT_MEASURED`; `NONE` est réservé à une absence prouvée par
+un ensemble complet de rapports exploitables. `testability` réutilise uniquement les métriques de modules,
 couvertures et rapports de mutation attribuables au SHA exact ; l'absence,
 l'obsolescence ou la non-attribution d'une preuve reste `NOT_MEASURED` et aucun
 runner de test n'est relancé par l'audit.

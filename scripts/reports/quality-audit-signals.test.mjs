@@ -26,6 +26,32 @@ function historyFixture() {
   return { files, commits };
 }
 
+function hotspotReport(reports = {}) {
+  const fixture = historyFixture();
+  const gitRunner = (args) => {
+    if (args[0] === "show") return "2026-10-21T00:00:00+00:00";
+    if (args[0] === "log") return fixture.commits;
+    if (args[0] === "ls-tree") return fixture.files.join("\n");
+    throw new Error(`commande inattendue: ${args.join(" ")}`);
+  };
+  return buildQualityHotspotsReport({ auditedSha, gitRunner, reports });
+}
+
+function completeCleanStructuralReports() {
+  return {
+    complexity: { metrics: [], result: { failures: [], reviews: [], improvements: [], stale: [] } },
+    maintainability: { metrics: [], findings: [], diagnostics: [] },
+    "type-safety": { findings: [], coverage: [], diagnostics: [] },
+    "top-heavy": { evaluation: {
+      hardOffenders: [], newHardOffenders: [], ratchetViolations: [], reviewWarnings: [],
+      newReviewOffenders: [], reviewRatchetViolations: [], blockingFindings: [],
+    } },
+    "dead-code": { comparison: { newFindings: [], historicalActionableFindings: [] }, currentFindings: [] },
+    duplication: { results: [] },
+    cycles: { cycles: [], cycleObjects: [], comparison: { added: [], stale: [] } },
+  };
+}
+
 test("hotspots mesure l'activité Git et ne transforme pas l'activité seule en dette", () => {
   const fixture = historyFixture();
   const calls = [];
@@ -55,6 +81,77 @@ test("hotspots mesure l'activité Git et ne transforme pas l'activité seule en 
   assert.deepEqual(hot.structuralDebt.signals, ["complexity", "local-maintainability"]);
   assert.equal(hot.structuralDebt.signalCount, 2);
   assert.equal(calls.some((args) => args[0] === "log" && args.includes("--since=2026-04-24T00:00:00.000Z")), true);
+});
+
+test("hotspots ne qualifie la longueur de fonction que sur dépassement de cible ou finding", () => {
+  const file = "apps/web/src/hot.ts";
+  const base = (metrics, result = {}) => hotspotReport({ complexity: {
+    metrics,
+    result: { failures: [], reviews: [], improvements: [], stale: [], ...result },
+  } }).files.find((entry) => entry.file === file);
+
+  const belowTarget = base([{ metric: "functionLength", path: file, value: 99, category: "runtime/services/orchestration" }]);
+  assert.deepEqual(belowTarget.structuralDebt.signals, []);
+
+  const exceedingTarget = base([{ metric: "functionLength", path: file, value: 101, category: "runtime/services/orchestration" }]);
+  assert.deepEqual(exceedingTarget.structuralDebt.signals, ["function-length"]);
+
+  const noApplicableTarget = base([{ metric: "functionLength", path: file, value: 999, category: "category-not-covered-by-policy" }]);
+  assert.deepEqual(noApplicableTarget.structuralDebt.signals, []);
+
+  const finding = base(
+    [{ metric: "functionLength", path: file, value: 1, category: "category-not-covered-by-policy" }],
+    { reviews: [{ metric: "functionLength", path: file, value: 1 }] },
+  );
+  assert.deepEqual(finding.structuralDebt.signals, ["function-length"]);
+
+  const multipleFunctions = base([
+    { metric: "functionLength", path: file, value: 101, category: "runtime/services/orchestration" },
+    { metric: "functionLength", path: file, value: 102, category: "runtime/services/orchestration" },
+  ], { failures: [{ metric: "complexity", path: file, value: 26 }] });
+  assert.deepEqual(multipleFunctions.structuralDebt.signals, ["complexity", "function-length"]);
+  assert.equal(multipleFunctions.structuralDebt.signalCount, 2);
+});
+
+test("hotspots distingue l'activité mesurée de la disponibilité de la dette structurelle", () => {
+  const withoutReports = hotspotReport();
+  const withoutDebtEvidence = withoutReports.files.find((entry) => entry.file === "apps/web/src/hot.ts");
+  assert.equal(withoutDebtEvidence.structuralDebt.state, "NOT_MEASURED");
+  assert.equal(withoutDebtEvidence.hotspotCandidate, false);
+  assert.equal(withoutReports.structuralDebtAvailability.state, "NOT_MEASURED");
+
+  const clean = hotspotReport(completeCleanStructuralReports());
+  const cleanFile = clean.files.find((entry) => entry.file === "apps/web/src/hot.ts");
+  assert.equal(cleanFile.structuralDebt.state, "NONE");
+  assert.equal(clean.structuralDebtAvailability.state, "COMPLETE");
+
+  const partial = hotspotReport({ complexity: { metrics: [], result: { failures: [], reviews: [], improvements: [], stale: [] } } });
+  const partialFile = partial.files.find((entry) => entry.file === "apps/web/src/hot.ts");
+  assert.equal(partialFile.structuralDebt.state, "NOT_MEASURED");
+  assert.equal(partial.structuralDebtAvailability.state, "PARTIAL");
+
+  const gateError = hotspotReport({ complexity: { error: { message: "gate unavailable" } } });
+  const errorFile = gateError.files.find((entry) => entry.file === "apps/web/src/hot.ts");
+  assert.equal(errorFile.structuralDebt.state, "NOT_MEASURED");
+  assert.deepEqual(gateError.structuralDebtAvailability.invalidReports, ["complexity"]);
+
+  const positivePartial = hotspotReport({
+    complexity: { metrics: [], result: { failures: [{ metric: "complexity", path: "apps/web/src/hot.ts" }], reviews: [], improvements: [], stale: [] } },
+  });
+  const positiveFile = positivePartial.files.find((entry) => entry.file === "apps/web/src/hot.ts");
+  assert.equal(positiveFile.structuralDebt.state, "PRESENT");
+  assert.equal(positivePartial.structuralDebtAvailability.state, "PARTIAL");
+});
+
+test("hotspots publie des compteurs distincts et garde les fichiers sans activité hors du détail", () => {
+  const report = hotspotReport(completeCleanStructuralReports());
+  assert.equal(report.summary.trackedFilesExamined, 2);
+  assert.equal(report.summary.filesReported, 1);
+  assert.equal(report.summary.filesMeasured, 1);
+  assert.equal(report.summary.highActivityFiles, 1);
+  assert.equal(report.summary.hotspotCandidates, 0);
+  assert.equal(new Set(report.files.map((entry) => entry.file)).size, report.files.length);
+  assert.deepEqual(report.files.map((entry) => entry.file), ["apps/web/src/hot.ts"]);
 });
 
 test("testability refuse les preuves absentes, périmées ou non attribuables", () => {

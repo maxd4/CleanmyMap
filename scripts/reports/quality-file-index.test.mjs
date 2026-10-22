@@ -430,7 +430,8 @@ test("projette les hotspots par fichier et la testabilité par domaine sans inve
     kind: "quality-hotspots",
     measurementStatus: "MEASURED",
     methodology: { historyWindowDays: 180, substantiveChangeMinimumLines: 20, highActivityDescriptiveMinimumCommits: 5 },
-    summary: { filesMeasured: 1, highActivityFiles: 1, hotspotCandidates: 1, regressionRecurrence: "NOT_MEASURED" },
+    summary: { trackedFilesExamined: 3, filesReported: 1, filesMeasured: 1, highActivityFiles: 1, hotspotCandidates: 1, structuralDebtFiles: 1, regressionRecurrence: "NOT_MEASURED" },
+    structuralDebtAvailability: { state: "COMPLETE", availableReports: ["complexity"], missingReports: [], invalidReports: [] },
     files: [{
       file: fileA,
       activity: { commits: 6, substantiveChanges: 2, addedLines: 100, deletedLines: 40, highActivity: true },
@@ -474,12 +475,17 @@ test("projette les hotspots par fichier et la testabilité par domaine sans inve
   assert.equal(indexedA.findings.hotspots.state, "PRESENT");
   assert.equal(index.audits.testability.measuredDomains, 1);
   assert.equal(index.audits.testability.criticalDomainsWithoutSufficientEvidence, 1);
+  assert.equal(index.audits.hotspots.trackedFilesExamined, 3);
+  assert.equal(index.audits.hotspots.filesReported, 1);
+  assert.equal(index.audits.hotspots.findingCounts.structuralDebtFiles, 1);
+  assert.equal(index.audits.hotspots.structuralDebtAvailability.state, "COMPLETE");
   assert.ok(index.auditCategories.some((category) => category.id === "hotspots"));
   assert.ok(index.auditCategories.some((category) => category.id === "testability:api"));
   const markdown = buildQualityFileIndexMarkdown(index);
   assert.match(markdown, /## HOTSPOTS/);
   assert.match(markdown, /## TESTABILITY/);
   assert.match(markdown, /\| Hotspots \| Testabilité \|/);
+  assert.match(markdown, /Fichiers suivis examinés/);
 });
 
 test("projette la maintenabilité documentaire dans les fichiers et le domain index", () => {

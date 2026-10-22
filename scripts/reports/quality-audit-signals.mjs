@@ -3,6 +3,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 
 import { gitExecutable } from "../ci/git-executable.mjs";
+import { getComplexityTarget } from "../checks/complexity-policy.mjs";
 
 export const HOTSPOT_HISTORY_WINDOW_DAYS = 180;
 export const HOTSPOT_SUBSTANTIVE_LINE_THRESHOLD = 20;
@@ -82,9 +83,23 @@ function sourceFilesFromResults(reports) {
   const addItems = (category, items = []) => {
     for (const item of items) add(item?.path ?? item?.file, category);
   };
-  addItems("complexity", reports.complexity?.result?.failures);
-  addItems("complexity", reports.complexity?.result?.reviews);
-  addItems("function-length", (reports.complexity?.metrics ?? []).filter((item) => item.metric === "functionLength" && item.category && item.category !== "NONE"));
+  const complexityFindings = [
+    ...(reports.complexity?.result?.failures ?? []),
+    ...(reports.complexity?.result?.reviews ?? []),
+  ].filter((item) => !item.metric || item.metric === "complexity");
+  addItems("complexity", complexityFindings);
+  const functionLengthFindings = [
+    ...(reports.complexity?.result?.failures ?? []),
+    ...(reports.complexity?.result?.reviews ?? []),
+  ].filter((item) => item.metric === "functionLength");
+  const functionLengthFindingFiles = new Set(functionLengthFindings.map((item) => normalize(item.path ?? item.file)).filter(Boolean));
+  addItems("function-length", functionLengthFindings);
+  addItems("function-length", (reports.complexity?.metrics ?? []).filter((item) => {
+    if (item.metric !== "functionLength") return false;
+    const target = getComplexityTarget("functionLength", item.category);
+    const exceedsTarget = target !== null && Number.isFinite(item.value) && item.value > target;
+    return exceedsTarget || functionLengthFindingFiles.has(normalize(item.path ?? item.file));
+  }));
   addItems("cognitive-complexity", (reports.maintainability?.findings ?? []).filter((item) => item.category === "cognitive-complexity"));
   addItems("local-maintainability", (reports.maintainability?.findings ?? []).filter((item) => item.category !== "cognitive-complexity"));
   addItems("type-safety", reports["type-safety"]?.findings);
@@ -94,6 +109,55 @@ function sourceFilesFromResults(reports) {
   for (const entry of reports.duplication?.results ?? []) addItems("duplication", entry.occurrences?.flatMap((occurrence) => [occurrence.occurrenceA, occurrence.occurrenceB]));
   for (const cycle of reports.cycles?.cycleObjects ?? []) for (const file of cycle.files ?? cycle.paths ?? []) add(file, "cycles");
   return signals;
+}
+
+const STRUCTURAL_REPORT_VALIDATORS = Object.freeze({
+  complexity: (report) => Array.isArray(report?.metrics)
+    && Array.isArray(report?.result?.failures)
+    && Array.isArray(report?.result?.reviews)
+    && Array.isArray(report?.result?.improvements)
+    && Array.isArray(report?.result?.stale),
+  maintainability: (report) => Array.isArray(report?.metrics)
+    && Array.isArray(report?.findings)
+    && Array.isArray(report?.diagnostics),
+  "type-safety": (report) => Array.isArray(report?.findings)
+    && Array.isArray(report?.coverage)
+    && Array.isArray(report?.diagnostics),
+  "top-heavy": (report) => [
+    "hardOffenders", "newHardOffenders", "ratchetViolations", "reviewWarnings",
+    "newReviewOffenders", "reviewRatchetViolations", "blockingFindings",
+  ].every((key) => Array.isArray(report?.evaluation?.[key])),
+  "dead-code": (report) => Array.isArray(report?.currentFindings)
+    && Array.isArray(report?.comparison?.newFindings)
+    && Array.isArray(report?.comparison?.historicalActionableFindings),
+  duplication: (report) => Array.isArray(report?.results),
+  cycles: (report) => Array.isArray(report?.cycles)
+    && Array.isArray(report?.cycleObjects)
+    && Array.isArray(report?.comparison?.added)
+    && Array.isArray(report?.comparison?.stale),
+});
+
+function structuralDebtAvailability(reports) {
+  const availableReports = [];
+  const missingReports = [];
+  const invalidReports = [];
+  for (const [name, validator] of Object.entries(STRUCTURAL_REPORT_VALIDATORS)) {
+    const report = reports?.[name];
+    if (!report) {
+      missingReports.push(name);
+    } else if (report.error || !validator(report)) {
+      invalidReports.push(name);
+    } else {
+      availableReports.push(name);
+    }
+  }
+  const state = availableReports.length === 0
+    ? "NOT_MEASURED"
+    : availableReports.length === Object.keys(STRUCTURAL_REPORT_VALIDATORS).length
+      && invalidReports.length === 0
+      ? "COMPLETE"
+      : "PARTIAL";
+  return { state, availableReports, missingReports, invalidReports };
 }
 
 export function buildQualityHotspotsReport({ root = process.cwd(), auditedSha, reports = {}, windowDays = HOTSPOT_HISTORY_WINDOW_DAYS, gitRunner = git } = {}) {
@@ -112,18 +176,22 @@ export function buildQualityHotspotsReport({ root = process.cwd(), auditedSha, r
     }
   }
   const debtSignals = sourceFilesFromResults(reports);
+  const debtAvailability = structuralDebtAvailability(reports);
   const files = [...byFile.values()].map((entry) => {
     const commitCount = entry.commits.size;
     const signals = [...(debtSignals.get(entry.file) ?? [])].sort();
     const highActivity = commitCount >= HOTSPOT_HIGH_ACTIVITY_COMMIT_THRESHOLD;
+    const structuralDebtState = signals.length > 0
+      ? "PRESENT"
+      : debtAvailability.state === "COMPLETE" ? "NONE" : "NOT_MEASURED";
     return {
       file: entry.file,
       position: null,
       activity: { commits: commitCount, substantiveChanges: entry.substantiveChanges, addedLines: entry.addedLines, deletedLines: entry.deletedLines, highActivity },
-      structuralDebt: { state: signals.length > 0 ? "PRESENT" : "NONE", signals, signalCount: signals.length },
+      structuralDebt: { state: structuralDebtState, signals, signalCount: signals.length, availability: debtAvailability },
       hotspotCandidate: highActivity && signals.length > 0,
       severity: highActivity && signals.length > 0 ? "informational" : null,
-      provenance: { history: "COMMITTED_SNAPSHOT", debt: signals.length > 0 ? "QUALITY_AUDIT_RESULTS" : "NONE" },
+      provenance: { history: "COMMITTED_SNAPSHOT", debt: signals.length > 0 ? "QUALITY_AUDIT_RESULTS" : structuralDebtState === "NONE" ? "QUALITY_AUDIT_RESULTS_NO_FINDINGS" : "NOT_MEASURED" },
       regressionRecurrence: { state: "NOT_MEASURED", reason: "NO_MULTI_RUN_REGRESSION_SERIES" },
     };
   }).filter((entry) => entry.activity.commits > 0 || entry.structuralDebt.signals.length > 0)
@@ -145,11 +213,14 @@ export function buildQualityHotspotsReport({ root = process.cwd(), auditedSha, r
     },
     summary: {
       filesMeasured: files.length,
+      trackedFilesExamined: tracked.size,
+      filesReported: files.length,
       highActivityFiles: files.filter((entry) => entry.activity.highActivity).length,
       hotspotCandidates: files.filter((entry) => entry.hotspotCandidate).length,
       structuralDebtFiles: files.filter((entry) => entry.structuralDebt.signals.length > 0).length,
       regressionRecurrence: "NOT_MEASURED",
     },
+    structuralDebtAvailability: debtAvailability,
     files,
     diagnostics: [],
   };
