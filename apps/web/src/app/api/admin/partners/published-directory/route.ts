@@ -206,7 +206,6 @@ type PartnerPublicationReviewResult =
  | { kind: "not_found" }
  | { kind: "partner_update_failed" }
  | { kind: "source_request_sync_failed_before_update" }
- | { kind: "source_request_sync_failed"; updated: NonNullable<PublishedPartnerUpdate> }
  | { kind: "audit_unavailable"; updated: NonNullable<PublishedPartnerUpdate> }
  | { kind: "applied"; updated: NonNullable<PublishedPartnerUpdate> };
 
@@ -256,10 +255,7 @@ function partnerReviewFailureResponse(
    operationId,
   });
  }
- if (
-  result.kind === "source_request_sync_failed" ||
-  result.kind === "source_request_sync_failed_before_update"
- ) {
+  if (result.kind === "source_request_sync_failed_before_update") {
   return adminErrorResponse({
    status: 500,
    code:"server_error",
@@ -337,25 +333,6 @@ async function processPartnerPublicationReview(params: {
   publicationStatus: updated.publicationStatus,
   verificationStatus: updated.verificationStatus,
  };
- if (updated.sourceRequestId && canUseSupabaseServerPersistence()) {
-  try {
-   await updatePartnerOnboardingRequestStatus({
-    requestId: updated.sourceRequestId,
-    status: publicationStatus === "accepted" ? "accepted" : "rejected",
-   });
-  } catch {
-   await appendPartnerPublicationAudit(context, {
-    outcome:"error",
-    sourceRequestId: updated.sourceRequestId,
-    previousValue,
-    newValue: updatedValue,
-    stage:"source_request_sync",
-    partialMutation:true,
-   });
-   return { kind: "source_request_sync_failed", updated };
-  }
- }
-
  if (canUseSupabaseServerPersistence()) {
   return { kind: "applied", updated };
  }

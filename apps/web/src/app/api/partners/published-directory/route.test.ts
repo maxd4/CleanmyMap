@@ -98,4 +98,15 @@ describe("GET /api/partners/published-directory", () => {
     expect(payload).not.toHaveProperty("items");
     expect(response.headers.get("cache-control")).toBe("no-store");
   });
+
+  it("requests accepted rows from the canonical store before its limit", async () => {
+    listPublishedPartnerAnnuaireEntriesMock.mockResolvedValue([]);
+
+    const { GET } = await import("./route");
+    await GET();
+
+    expect(listPublishedPartnerAnnuaireEntriesMock).toHaveBeenCalledWith({
+      publicationStatus: "accepted",
+    });
+  });
 });

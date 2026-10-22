@@ -46,11 +46,8 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
       qualificationStatus: "contact_non_qualifie",
       coveredArrondissements: [10, 11, 18],
       availability: "Mardi 10:00-18:00 · Sur rendez-vous",
-      primaryChannel: {
-        platform: "site web",
-        label: "Email",
-        url: "mailto:contact@basbelleville.fr",
-      },
+      primaryChannel: undefined,
+      websiteUrl: undefined,
     });
     expect(entry.id).toMatch(/^onboarded-/);
     expect(entry.lat).toBeNull();
@@ -183,6 +180,31 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
         }),
       ]),
     );
-    expect(entry.associationProfile?.usefulResources.length).toBeGreaterThan(0);
+    expect(entry.associationProfile?.usefulResources).toEqual([]);
+  });
+
+  it("never projects an administrative phone number as a public channel or resource", () => {
+    const entry = buildPublishedPartnerAnnuaireEntry({
+      requestId: "req-private-phone",
+      request: {
+        organizationName: "Structure de test",
+        organizationType: "association",
+        partnerScope: "local",
+        legalIdentity: "Structure de test",
+        coverage: { arrondissements: [11], quartiers: [] },
+        contributionTypes: ["accueil"],
+        relayActions: "",
+        availability: { slots: [{ day: "mon", start: "09:00", end: "12:00" }] },
+        contactName: "Contact administratif",
+        contactChannel: "Téléphone",
+        contactDetails: "+33123456789",
+        motivation: "Proposer un relais de proximité vérifiable.",
+      },
+    });
+
+    expect(entry.primaryChannel).toBeUndefined();
+    expect(entry.websiteUrl).toBeUndefined();
+    expect(entry.associationProfile?.usefulResources).toEqual([]);
+    expect(entry.internalAdminContact?.phone).toBe("+33123456789");
   });
 });

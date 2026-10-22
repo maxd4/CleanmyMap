@@ -8,6 +8,7 @@ const updatePublishedPartnerAnnuaireEntryPublicationStatusMock = vi.hoisted(
 );
 const updatePartnerOnboardingRequestStatusMock = vi.hoisted(() => vi.fn());
 const sendCreatorInboxEmailMock = vi.hoisted(() => vi.fn());
+const canUseSupabaseServerPersistenceMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAdminAccess: requireAdminAccessMock,
@@ -29,6 +30,10 @@ vi.mock("@/lib/partners/onboarding-requests-store", () => ({
 
 vi.mock("@/lib/community/creator-inbox-email", () => ({
   sendCreatorInboxEmail: sendCreatorInboxEmailMock,
+}));
+
+vi.mock("@/lib/persistence/runtime-store", () => ({
+  canUseSupabaseServerPersistence: canUseSupabaseServerPersistenceMock,
 }));
 
 const publishedEntry = {
@@ -65,6 +70,7 @@ describe("POST /api/admin/partners/published-directory", () => {
       }),
     );
     updatePartnerOnboardingRequestStatusMock.mockResolvedValue(undefined);
+    canUseSupabaseServerPersistenceMock.mockReturnValue(false);
     sendCreatorInboxEmailMock.mockResolvedValue(undefined);
   });
 
@@ -228,6 +234,24 @@ describe("POST /api/admin/partners/published-directory", () => {
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
   });
 
+  it("lets the Supabase RPC own request, entry and audit persistence", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      request({
+        id: "onboarded-1",
+        publicationStatus: "accepted",
+        confirmPhrase: "CONFIRMER PARTENAIRE",
+        reason: "Décision atomique",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(updatePartnerOnboardingRequestStatusMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+  });
+
   it("writes an error audit when publication persistence fails", async () => {
     updatePublishedPartnerAnnuaireEntryPublicationStatusMock.mockRejectedValue(
       new Error("storage failure"),
@@ -264,6 +288,7 @@ describe("POST /api/admin/partners/published-directory", () => {
 
   it("audits a source request sync failure as a partial mutation", async () => {
     const sourceSyncError = "source sync provider detail";
+    canUseSupabaseServerPersistenceMock.mockReturnValue(false);
     updatePartnerOnboardingRequestStatusMock.mockRejectedValue(
       new Error(sourceSyncError),
     );

@@ -199,6 +199,7 @@ export function usePartnerOnboarding() {
     setIsSubmitting(true);
 
     try {
+      const submittedAt = formStartedAt.current ?? Date.now();
       const response = await fetch("/api/partners/onboarding-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -219,7 +220,7 @@ export function usePartnerOnboarding() {
           contactDetails,
           motivation,
           honeypot,
-          submittedAt: formStartedAt.current ?? Date.now(),
+          submittedAt,
         }),
       });
 
@@ -238,6 +239,10 @@ export function usePartnerOnboarding() {
         return;
       }
 
+      // Keep the current key for transport retries, but start the next
+      // confirmed submission with a distinct idempotency identity. The +1
+      // also protects against two successes observed in the same millisecond.
+      formStartedAt.current = Math.max(Date.now(), submittedAt + 1);
       setMessage(`Demande envoyée à l'administration (ID ${payload.requestId ?? "n/a"}). Délai cible: 72h ouvrées.`);
     } catch (error) {
       setErrorMessage(

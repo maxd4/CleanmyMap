@@ -141,17 +141,20 @@ function normalizePublishedRecord(
   const publicationStatus = normalizePublicationStatus(
     (record as { publicationStatus?: unknown }).publicationStatus,
   );
-  const websiteUrl = normalizePublicChannelUrl(
+  const websiteUrl = normalizePublicWebUrl(
     (record as { websiteUrl?: unknown }).websiteUrl,
   );
-  const instagramUrl = normalizePublicChannelUrl(
+  const instagramUrl = normalizePublicWebUrl(
     (record as { instagramUrl?: unknown }).instagramUrl,
   );
-  const facebookUrl = normalizePublicChannelUrl(
+  const facebookUrl = normalizePublicWebUrl(
     (record as { facebookUrl?: unknown }).facebookUrl,
   );
-  const primaryChannelUrl = normalizePublicChannelUrl(
+  const primaryChannelUrl = normalizePublicWebUrl(
     (record as { primaryChannel?: { url?: unknown } | null }).primaryChannel?.url ?? null,
+  );
+  const associationProfile = normalizeAssociationProfile(
+    (record as { associationProfile?: unknown }).associationProfile,
   );
   const coordinates = normalizeCoordinates(record as Record<string, unknown>);
   return {
@@ -161,6 +164,7 @@ function normalizePublishedRecord(
     websiteUrl: websiteUrl ?? undefined,
     instagramUrl: instagramUrl ?? undefined,
     facebookUrl: facebookUrl ?? undefined,
+    associationProfile,
     primaryChannel: primaryChannelUrl
       ? {
           platform: "site web",
@@ -184,40 +188,33 @@ function normalizePublishedRecord(
   } as PublishedPartnerAnnuaireEntry;
 }
 
+function normalizePublicWebUrl(value: unknown): string | null {
+  const normalized = normalizePublicChannelUrl(value);
+  return normalized && /^https?:\/\//i.test(normalized) ? normalized : null;
+}
+
+function normalizeAssociationProfile(value: unknown): AssociationProfile | undefined {
+  if (!isRecord(value)) return undefined;
+  const resources = Array.isArray(value.usefulResources)
+    ? value.usefulResources.filter((resource) => {
+        if (!isRecord(resource)) return false;
+        const label = typeof resource.label === "string" ? resource.label : "";
+        const url = typeof resource.url === "string" ? resource.url : "";
+        return !/^contact direct$/i.test(label.trim()) && !/^(mailto:|tel:)/i.test(url.trim());
+      })
+    : value.usefulResources;
+  return {
+    ...value,
+    ...(Array.isArray(resources) ? { usefulResources: resources } : {}),
+  } as AssociationProfile;
+}
+
 async function readStore(): Promise<StorePayload> {
   return readLocalRecordStore(STORE_FILE, normalizePublishedRecord);
 }
 
 async function writeStore(store: StorePayload): Promise<void> {
   await writeLocalRecordStore(STORE_FILE, store.records);
-}
-
-function normalizeContactUrl(
-  contactChannel: string,
-  contactDetails: string,
-): string | null {
-  const trimmedDetails = contactDetails.trim();
-  if (/^https?:\/\//i.test(trimmedDetails)) {
-    const normalized = normalizePublicChannelUrl(trimmedDetails);
-    if (normalized) {
-      return normalized;
-    }
-    return null;
-  }
-  if (/^mailto:/i.test(trimmedDetails) || /^tel:/i.test(trimmedDetails)) {
-    return trimmedDetails;
-  }
-  if (
-    /email|mail|courriel/i.test(contactChannel) ||
-    trimmedDetails.includes("@")
-  ) {
-    return `mailto:${trimmedDetails}`;
-  }
-  if (/t[ée]l|phone|mobile/i.test(contactChannel) || (/^[+\d]/.test(trimmedDetails) && /^[\d\s().+-]+$/.test(trimmedDetails) && trimmedDetails.length <= 30)) {
-    const digits = trimmedDetails.replace(/[^\d+]/g, "");
-    return `tel:${digits}`;
-  }
-  return null;
 }
 
 function organizationTypesToEngagementTypes(
@@ -306,8 +303,6 @@ function buildAssociationRecurringNeeds(
 }
 
 function buildAssociationResources(params: {
-  contactChannel: string;
-  contactDetails: string;
   websiteUrl?: string | null;
   primaryChannelUrl?: string | null;
   primaryChannelLabel?: string;
@@ -326,7 +321,7 @@ function buildAssociationResources(params: {
   if (params.primaryChannelUrl && params.primaryChannelUrl !== params.websiteUrl) {
     resources.push({
       label: params.primaryChannelLabel?.trim() || "Canal de contact",
-      description: `Contact via ${params.contactChannel.trim() || "canal direct"}.`,
+      description: "Lien public fourni indépendamment du contact administratif.",
       url: params.primaryChannelUrl,
     });
   }
@@ -344,14 +339,6 @@ function buildAssociationResources(params: {
       url: params.facebookUrl,
     });
   }
-  if (params.contactDetails.trim() && !params.contactDetails.includes("@")) {
-    resources.push({
-      label: "Contact direct",
-      description: "Point de contact déclaré pour les échanges opérationnels.",
-      url: undefined,
-    });
-  }
-
   return resources;
 }
 
@@ -363,12 +350,11 @@ export function buildPublishedPartnerAnnuaireEntry(params: {
   const availability = normalizePartnerAvailability(params.request.availability);
   const arrondissements =
     params.request.partnerScope === "local" ? coverage.arrondissements : [];
-  const contactUrl = normalizeContactUrl(
-    params.request.contactChannel,
-    params.request.contactDetails,
-  );
-  const publicChannelUrl = contactUrl ? normalizePublicChannelUrl(contactUrl) : null;
-  const websiteUrl = normalizePublicChannelUrl(params.request.contactDetails.trim());
+  // contactDetails is an administrative field. It can contain a personal
+  // email or phone number and is never a public channel without a separate,
+  // explicit public-link field and consent contract.
+  const publicChannelUrl = null;
+  const websiteUrl = null;
   const nowIso = new Date().toISOString();
   const associationProfile: AssociationProfile | undefined =
     params.request.organizationType === "association"
@@ -384,8 +370,6 @@ export function buildPublishedPartnerAnnuaireEntry(params: {
           recurringNeeds: buildAssociationRecurringNeeds(params.request.contributionTypes),
           pastActions: [],
           usefulResources: buildAssociationResources({
-            contactChannel: params.request.contactChannel,
-            contactDetails: params.request.contactDetails,
             websiteUrl,
             primaryChannelUrl: publicChannelUrl,
             primaryChannelLabel: params.request.contactChannel,
@@ -509,29 +493,37 @@ export async function appendPublishedPartnerAnnuaireEntry(params: {
   const store = await readStore();
   const existing = store.records.find((candidate) => candidate.sourceRequestId === params.requestId);
   if (existing) return existing;
-  const records = [record, ...store.records].slice(0, 500);
+  const records = [record, ...store.records];
   await writeStore({ updatedAt: new Date().toISOString(), records });
   return record;
 }
 
-export async function listPublishedPartnerAnnuaireEntries(): Promise<
+export async function listPublishedPartnerAnnuaireEntries(params: {
+  publicationStatus?: PublishedPartnerAnnuaireEntry["publicationStatus"];
+} = {}): Promise<
   PublishedPartnerAnnuaireEntry[]
 > {
   assertPersistenceAvailable("published_partner_annuaire_entries");
 
   if (canUseSupabaseServerPersistence()) {
-    return readSupabaseRecords(
-      getSupabaseServerClient(true)
+    let query = getSupabaseServerClient(true)
         .from("partner_annuaire_entries")
         .select(SUPABASE_PUBLISHED_PARTNER_COLUMNS)
-        .order("published_at", { ascending: false })
-        .limit(500),
+        .order("published_at", { ascending: false });
+    if (params.publicationStatus) {
+      query = query.eq("publication_status", params.publicationStatus);
+    }
+    return readSupabaseRecords(
+      query.limit(500),
       fromSupabaseRow,
     );
   }
 
   const store = await readStore();
-  return store.records;
+  const records = params.publicationStatus
+    ? store.records.filter((record) => record.publicationStatus === params.publicationStatus)
+    : store.records;
+  return records.slice(0, 500);
 }
 
 export async function getPublishedPartnerAnnuaireEntryById(

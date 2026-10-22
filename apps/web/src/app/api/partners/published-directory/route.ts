@@ -8,9 +8,11 @@ export const runtime ="nodejs";
 
 export async function GET() {
  try {
- const items = await listPublishedPartnerAnnuaireEntries();
- const visibleItems = items
- .filter((item) => item.publicationStatus ==="accepted")
+  const items = await listPublishedPartnerAnnuaireEntries({
+   publicationStatus: "accepted",
+  });
+  const visibleItems = items
+  .filter((item) => item.publicationStatus === "accepted")
  .map((item) => stripPublicationMetadata(item));
  return NextResponse.json({
  status:"ok",

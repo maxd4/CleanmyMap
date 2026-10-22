@@ -142,14 +142,22 @@ describe("usePartnerOnboarding", () => {
       }),
     });
     expect(hook.result.message).toContain("req-42");
+    const firstSubmittedAt = JSON.parse(fetchMock.mock.calls[0][1]!.body as string).submittedAt;
 
     fetchMock.mockRejectedValueOnce(new Error("réseau"));
     await act(async () => { await hook.result.handleSubmit(event()); });
     expect(hook.result.errorMessage).toBe("réseau");
+    const secondSubmittedAt = JSON.parse(fetchMock.mock.calls[1][1]!.body as string).submittedAt;
+    expect(secondSubmittedAt).toBe(firstSubmittedAt + 1);
     fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ requestId: "req-43" }) } as Response);
     await act(async () => { await hook.result.handleSubmit(event()); });
     expect(hook.result.message).toContain("req-43");
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(JSON.parse(fetchMock.mock.calls[2][1]!.body as string).submittedAt).toBe(secondSubmittedAt);
+
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ requestId: "req-44" }) } as Response);
+    await act(async () => { await hook.result.handleSubmit(event()); });
+    expect(JSON.parse(fetchMock.mock.calls[3][1]!.body as string).submittedAt).toBe(secondSubmittedAt + 1);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
     hook.unmount();
   });
 

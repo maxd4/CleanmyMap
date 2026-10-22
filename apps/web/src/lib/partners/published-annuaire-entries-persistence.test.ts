@@ -57,6 +57,21 @@ const row = {
   },
 };
 
+const legacyPrivateProjectionRow = {
+  ...row,
+  public_data: {
+    ...row.public_data,
+    primaryChannel: { platform: "site web", label: "Email", url: "mailto:private.example.test" },
+    websiteUrl: "https://public.example.test",
+    associationProfile: {
+      usefulResources: [
+        { label: "Contact direct", description: "legacy", url: "tel:+33123456789" },
+        { label: "Site officiel", description: "public", url: "https://public.example.test" },
+      ],
+    },
+  },
+};
+
 function query(result: { data: unknown; error: { message: string } | null }) {
   const chain: Record<string, unknown> & { then: PromiseLike<unknown>["then"] } = {
     select: () => chain,
@@ -92,6 +107,44 @@ describe("published partner annuaire Supabase store", () => {
       lat: null,
       lng: null,
     });
+  });
+
+  it("filters accepted rows before applying the Supabase limit", async () => {
+    const calls: string[] = [];
+    const chain = query({ data: [row], error: null });
+    chain.eq = vi.fn(() => {
+      calls.push("eq");
+      return chain;
+    });
+    chain.limit = vi.fn(() => {
+      calls.push("limit");
+      return chain;
+    });
+    getSupabaseServerClientMock.mockReturnValueOnce({
+      from: vi.fn(() => chain),
+      rpc: vi.fn(async () => ({ data: [row], error: null })),
+    });
+    const { listPublishedPartnerAnnuaireEntries } = await import("./published-annuaire-entries-store");
+
+    await listPublishedPartnerAnnuaireEntries({ publicationStatus: "accepted" });
+
+    expect(calls).toEqual(["eq", "limit"]);
+  });
+
+  it("drops legacy private channels while preserving independent public links", async () => {
+    getSupabaseServerClientMock.mockReturnValueOnce({
+      from: vi.fn(() => query({ data: [legacyPrivateProjectionRow], error: null })),
+      rpc: vi.fn(async () => ({ data: [row], error: null })),
+    });
+    const { listPublishedPartnerAnnuaireEntries } = await import("./published-annuaire-entries-store");
+
+    const [entry] = await listPublishedPartnerAnnuaireEntries();
+
+    expect(entry.primaryChannel).toBeUndefined();
+    expect(entry.websiteUrl).toBe("https://public.example.test");
+    expect(entry.associationProfile?.usefulResources).toEqual([
+      { label: "Site officiel", description: "public", url: "https://public.example.test" },
+    ]);
   });
 
   it("delegates review to the atomic RPC rather than updating the table directly", async () => {
