@@ -116,6 +116,33 @@ describe("public directory destinations", () => {
         facebookUrl: undefined,
       }),
     ).toBeNull();
+
+    expect(
+      getAnnuairePublicDestination({
+        primaryChannel: {
+          platform: "site web",
+          label: "Contact administratif",
+          url: "mailto:administratif",
+        },
+        websiteUrl: "https://cleanmymap.fr/partner",
+      }),
+    ).toEqual({
+      label: "Consulter le site",
+      url: "https://cleanmymap.fr/partner",
+    });
+
+    expect(
+      getAnnuairePublicDestination({
+        primaryChannel: {
+          platform: "site web",
+          label: "Téléphone administratif",
+          url: "tel:+33102030405",
+        },
+        websiteUrl: undefined,
+        instagramUrl: undefined,
+        facebookUrl: undefined,
+      }),
+    ).toBeNull();
   });
 });
 

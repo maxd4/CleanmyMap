@@ -27,6 +27,7 @@ vi.mock("framer-motion", async () => {
   return {
     AnimatePresence: ({ children }: { children?: React.ReactNode }) => children,
     motion: { div: MotionDiv },
+    useReducedMotion: () => false,
   };
 });
 
@@ -127,7 +128,7 @@ function mount(element: React.ReactElement) {
 
 describe("AnnuairePartnerDrawer interactions", () => {
   it("exposes only the public CTA destination and never a placeholder or private contact", () => {
-    const container = mount(
+    mount(
       <AnnuairePartnerDrawer
         entry={publishedEntry}
         isOpen
@@ -135,14 +136,14 @@ describe("AnnuairePartnerDrawer interactions", () => {
         fr
       />,
     );
-    const dialog = container.querySelector('[role="dialog"]');
+    const dialog = document.body.querySelector('[role="dialog"]');
     expect(dialog?.getAttribute("aria-labelledby")).toBeTruthy();
     expect(dialog?.querySelector('h2')?.textContent).toBe(publishedEntry.name);
-    expect(container.querySelector('a[href="#"]')).toBeNull();
-    expect(container.textContent).not.toContain(publishedEntry.internalAdminContact?.email);
-    expect(container.textContent).not.toContain(publishedEntry.internalAdminContact?.phone);
+    expect(document.body.querySelector('a[href="#"]')).toBeNull();
+    expect(document.body.textContent).not.toContain(publishedEntry.internalAdminContact?.email);
+    expect(document.body.textContent).not.toContain(publishedEntry.internalAdminContact?.phone);
 
-    const cta = Array.from(container.querySelectorAll("a")).find((link) =>
+    const cta = Array.from(document.body.querySelectorAll("a")).find((link) =>
       link.textContent?.includes("Engager le contact"),
     );
     expect(cta?.getAttribute("href")).toBe(
@@ -176,12 +177,12 @@ describe("AnnuairePartnerDrawer interactions", () => {
       trigger?.click();
     });
 
-    expect(container.querySelector('[role="dialog"]')).toBeTruthy();
+    expect(document.body.querySelector('[role="dialog"]')).toBeTruthy();
     expect(document.activeElement?.getAttribute("aria-label")).toBe(
       "Fermer la fiche partenaire",
     );
 
-    const dialog = container.querySelector<HTMLElement>('[role="dialog"]');
+    const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]');
     const focusable = dialog?.querySelectorAll<HTMLElement>(
       'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
     );
@@ -199,7 +200,7 @@ describe("AnnuairePartnerDrawer interactions", () => {
       document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     });
 
-    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
     expect(document.activeElement).toBe(trigger);
   });
 
@@ -211,7 +212,7 @@ describe("AnnuairePartnerDrawer interactions", () => {
       facebookUrl: undefined,
       primaryChannel: undefined,
     };
-    const container = mount(
+    mount(
       <AnnuairePartnerDrawer
         entry={unavailable}
         isOpen
@@ -219,10 +220,51 @@ describe("AnnuairePartnerDrawer interactions", () => {
         fr
       />,
     );
-    const unavailableButton = Array.from(container.querySelectorAll("button")).find((button) =>
+    const unavailableButton = Array.from(document.body.querySelectorAll("button")).find((button) =>
       button.textContent?.includes("Contact indisponible"),
     );
     expect(unavailableButton).toBeTruthy();
     expect(unavailableButton?.disabled).toBe(true);
+  });
+
+  it("does not restore focus to a trigger that disappeared while the drawer was open", () => {
+    function Harness() {
+      const [isOpen, setIsOpen] = React.useState(false);
+      const [showTrigger, setShowTrigger] = React.useState(true);
+      return (
+        <>
+          {showTrigger ? (
+            <button id="open-drawer" onClick={() => setIsOpen(true)}>
+              Ouvrir
+            </button>
+          ) : null}
+          <button id="remove-trigger" onClick={() => setShowTrigger(false)}>
+            Retirer le déclencheur
+          </button>
+          <AnnuairePartnerDrawer
+            entry={publishedEntry}
+            isOpen={isOpen}
+            onClose={() => setIsOpen(false)}
+            fr
+          />
+        </>
+      );
+    }
+
+    const container = mount(<Harness />);
+    const trigger = container.querySelector<HTMLButtonElement>("#open-drawer");
+    const removeTrigger = container.querySelector<HTMLButtonElement>("#remove-trigger");
+    act(() => {
+      trigger?.focus();
+      trigger?.click();
+      removeTrigger?.click();
+    });
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).not.toBe(trigger);
   });
 });

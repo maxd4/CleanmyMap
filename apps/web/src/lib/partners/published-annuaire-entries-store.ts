@@ -3,7 +3,7 @@ import {
   formatAvailabilitySummary,
   formatCoverageSummary,
   formatPartnerScopeLabel,
-  normalizePublicChannelUrl,
+  normalizePublicWebUrl,
   normalizePartnerAvailability,
   normalizePartnerCoverage,
   type PartnerOnboardingRequestInput,
@@ -186,11 +186,6 @@ function normalizePublishedRecord(
         ? (record as { reviewedByUserId?: string }).reviewedByUserId
         : undefined,
   } as PublishedPartnerAnnuaireEntry;
-}
-
-function normalizePublicWebUrl(value: unknown): string | null {
-  const normalized = normalizePublicChannelUrl(value);
-  return normalized && /^https?:\/\//i.test(normalized) ? normalized : null;
 }
 
 function normalizeAssociationProfile(value: unknown): AssociationProfile | undefined {

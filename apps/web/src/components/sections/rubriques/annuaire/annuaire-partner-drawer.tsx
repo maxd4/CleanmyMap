@@ -1,7 +1,9 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useEffect, useId, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { X, MapPin, Globe, Target, Quote, Heart, Zap, ArrowRight, Building2, Sparkles, MessageSquare } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
@@ -16,7 +18,7 @@ import {
   getAnnuairePublicDestination,
   isEditorialAnnuaireEntry,
 } from "./annuaire-helpers";
-import { normalizePublicChannelUrl } from "@/lib/partners/onboarding-types";
+import { normalizePublicWebUrl } from "@/lib/partners/onboarding-types";
 import { cn } from "@/lib/utils";
 
 interface AnnuairePartnerDrawerProps {
@@ -33,6 +35,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
   const onCloseRef = useRef(onClose);
   const drawerTitleId = useId();
   const entryId = entry?.id;
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -77,7 +80,9 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      restoreFocusRef.current?.focus();
+      if (restoreFocusRef.current?.isConnected) {
+        restoreFocusRef.current.focus();
+      }
       restoreFocusRef.current = null;
     };
   }, [entryId, isOpen]);
@@ -88,7 +93,9 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
   const isEditorial = isEditorialAnnuaireEntry(entry);
   const publicDestination = getAnnuairePublicDestination(entry);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -109,12 +116,16 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
             initial={{ x: "110%", opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "110%", opacity: 0 }}
-            transition={{ type: "spring", damping: 30, stiffness: 200 }}
+            transition={
+              shouldReduceMotion
+                ? { duration: 0 }
+                : { type: "spring", damping: 30, stiffness: 200 }
+            }
             role="dialog"
             aria-modal="true"
             aria-labelledby={drawerTitleId}
             tabIndex={-1}
-            className="fixed top-4 bottom-4 right-4 z-[110] flex w-full max-w-[550px] flex-col overflow-hidden rounded-[3.5rem] border border-white/10 bg-slate-900/60 backdrop-blur-3xl shadow-[0_0_100px_rgba(0,0,0,0.5)]"
+      className="fixed top-4 bottom-4 right-4 z-[110] flex w-[calc(100%-2rem)] max-w-[550px] flex-col overflow-hidden rounded-[3.5rem] border border-white/10 bg-slate-900/60 backdrop-blur-3xl shadow-[0_0_100px_rgba(0,0,0,0.5)]"
           >
             {/* Header with Visual Branding */}
             <div className="relative h-72 flex-shrink-0 overflow-hidden">
@@ -277,7 +288,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                         <div className="mt-4 space-y-3">
                           {associationProfile.usefulResources.length > 0 ? (
                             associationProfile.usefulResources.map((resource) => {
-                              const resourceUrl = normalizePublicChannelUrl(resource.url);
+                              const resourceUrl = normalizePublicWebUrl(resource.url);
                               const resourceContent = (
                                 <>
                                   <p className="text-sm font-black text-white">{resource.label}</p>
@@ -394,7 +405,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                     </div>
 
                     {(() => {
-                      const websiteUrl = normalizePublicChannelUrl(entry.websiteUrl);
+                      const websiteUrl = normalizePublicWebUrl(entry.websiteUrl);
                       return websiteUrl ? (
                         <CmmButton
                           asChild
@@ -465,6 +476,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

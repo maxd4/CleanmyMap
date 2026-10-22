@@ -12,7 +12,7 @@ import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const containerVariants = {
   hidden: { opacity: 1 },
@@ -32,14 +32,38 @@ export function AnnuaireSection() {
   const fr = locale === "fr";
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
 
+  const annuaireLogic = useAnnuaireLogic();
   const {
     searchTerm,
     setSearchTerm,
     setActorCardsPage,
     featuredEntries,
-  } = useAnnuaireLogic();
+    filterKey,
+    resetFilters,
+  } = annuaireLogic;
+  const selectionIntentFilterKeyRef = useRef<string | null>(null);
+  const previousFilterKeyRef = useRef(filterKey);
+
+  useEffect(() => {
+    if (previousFilterKeyRef.current === filterKey) {
+      return;
+    }
+    previousFilterKeyRef.current = filterKey;
+    if (selectionIntentFilterKeyRef.current === filterKey) {
+      selectionIntentFilterKeyRef.current = null;
+      return;
+    }
+    setSelectedActorId(null);
+  }, [filterKey]);
 
   const handleFocusMap = (id: string) => {
+    const entryIsVisible = annuaireLogic.sortedAndFilteredEntries.some(
+      (entry) => entry.id === id,
+    );
+    if (!entryIsVisible) {
+      selectionIntentFilterKeyRef.current = "|all|all|all";
+      resetFilters();
+    }
     setSelectedActorId(id);
     const canvasAnchor = document.getElementById("exploration-canvas-anchor");
     canvasAnchor?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -127,8 +151,7 @@ export function AnnuaireSection() {
             />
 
             <AnnuaireExplorationView
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
+              logic={annuaireLogic}
               fr={fr}
               selectedActorId={selectedActorId}
               onSelectedActorIdChange={setSelectedActorId}

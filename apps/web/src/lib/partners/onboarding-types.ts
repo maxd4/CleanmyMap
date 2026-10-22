@@ -145,6 +145,16 @@ export function normalizePublicChannelUrl(value: unknown): string | null {
   return normalizePublicChannelUrlHelper(value);
 }
 
+/**
+ * Public partner destinations must be independently publishable web links.
+ * Administrative contact channels are valid onboarding inputs but are never
+ * public destinations merely because their syntax is valid.
+ */
+export function normalizePublicWebUrl(value: unknown): string | null {
+  const normalized = normalizePublicChannelUrl(value);
+  return normalized && /^https?:\/\//i.test(normalized) ? normalized : null;
+}
+
 export function normalizePartnerCoverage(value: unknown): PartnerCoverage {
   if (typeof value === "string") {
     return {
@@ -298,10 +308,10 @@ export function hasPublicChannel(entry: {
   facebookUrl?: string | null;
 }): boolean {
   return Boolean(
-    normalizePublicChannelUrl(entry.primaryChannel?.url ?? null) ||
-      normalizePublicChannelUrl(entry.websiteUrl ?? null) ||
-      normalizePublicChannelUrl(entry.instagramUrl ?? null) ||
-      normalizePublicChannelUrl(entry.facebookUrl ?? null),
+    normalizePublicWebUrl(entry.primaryChannel?.url ?? null) ||
+      normalizePublicWebUrl(entry.websiteUrl ?? null) ||
+      normalizePublicWebUrl(entry.instagramUrl ?? null) ||
+      normalizePublicWebUrl(entry.facebookUrl ?? null),
   );
 }
 

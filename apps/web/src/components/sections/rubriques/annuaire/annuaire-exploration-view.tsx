@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useState, type RefObject } from "react";
 import {
   Search,
   Filter,
@@ -10,7 +10,7 @@ import {
 import { AnnuaireNetworkGraph } from "./annuaire-network-graph";
 import { AnnuairePartnerDrawer } from "./annuaire-partner-drawer";
 import { AnnuaireFiltersCard } from "./annuaire-filters-card";
-import { useAnnuaireLogic } from "./use-annuaire-logic";
+import type { AnnuaireLogic } from "./use-annuaire-logic";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,11 +31,10 @@ const AnnuaireMapCanvas = dynamic(
 );
 
 type AnnuaireExplorationViewProps = {
-  searchTerm?: string;
-  setSearchTerm?: (value: string) => void;
+  logic: AnnuaireLogic;
   fr?: boolean;
-  selectedActorId?: string | null;
-  onSelectedActorIdChange?: (id: string | null) => void;
+  selectedActorId: string | null;
+  onSelectedActorIdChange: (id: string | null) => void;
 };
 
 function AnnuaireMapPanel({
@@ -54,12 +53,10 @@ function AnnuaireMapPanel({
   viewMode: "map" | "network";
   setViewMode: (mode: "map" | "network") => void;
   isMapVisible: boolean;
-  sortedAndFilteredEntries: ReturnType<
-    typeof useAnnuaireLogic
-  >["sortedAndFilteredEntries"];
+  sortedAndFilteredEntries: AnnuaireLogic["sortedAndFilteredEntries"];
   selectedActorId: string | null;
   selectedActor:
-    | ReturnType<typeof useAnnuaireLogic>["sortedAndFilteredEntries"][number]
+    | AnnuaireLogic["sortedAndFilteredEntries"][number]
     | null;
   handleActorClick: (id: string) => void;
   mapShellRef: RefObject<HTMLElement | null>;
@@ -134,8 +131,6 @@ function AnnuaireMapPanel({
     </aside>
   );
 }
-
-type AnnuaireLogic = ReturnType<typeof useAnnuaireLogic>;
 
 function AnnuaireSearchPanel({
   fr,
@@ -264,23 +259,17 @@ function AnnuaireSearchPanel({
 }
 
 export function AnnuaireExplorationView({
-  searchTerm: externalSearchTerm,
-  setSearchTerm: externalSetSearchTerm,
+  logic,
   fr: externalFr,
-  selectedActorId: externalSelectedActorId,
+  selectedActorId,
   onSelectedActorIdChange,
 }: AnnuaireExplorationViewProps) {
-  const [internalSelection, setInternalSelection] = useState<{
-    id: string | null;
-    filterKey: string;
-  }>({ id: null, filterKey: "" });
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "network">("map");
-  const isSelectionControlled = onSelectedActorIdChange !== undefined;
 
   const {
-    searchTerm: internalSearchTerm,
-    setSearchTerm: internalSetSearchTerm,
+    searchTerm,
+    setSearchTerm,
     filterKind,
     setFilterKind,
     filterContribution,
@@ -290,31 +279,17 @@ export function AnnuaireExplorationView({
     actorCardsPage,
     setActorCardsPage,
     targetArrondissement,
+    enrichedEntries,
     sortedAndFilteredEntries,
     totalPages,
     paginatedEntries,
     locale,
-  } = useAnnuaireLogic();
+  } = logic;
 
   const fr = externalFr ?? locale === "fr";
-  const searchTerm = externalSearchTerm ?? internalSearchTerm;
-  const setSearchTerm = externalSetSearchTerm ?? internalSetSearchTerm;
-  const filterKey = `${searchTerm}|${filterKind}|${filterContribution}|${zoneFilter}`;
-  const selectedActorId = isSelectionControlled
-    ? externalSelectedActorId ?? null
-    : internalSelection.filterKey === filterKey
-      ? internalSelection.id
-      : null;
-  const setSelectedActorId = (id: string | null) => {
-    if (onSelectedActorIdChange) {
-      onSelectedActorIdChange(id);
-      return;
-    }
-    setInternalSelection({ id, filterKey });
-  };
+  const setSelectedActorId = onSelectedActorIdChange;
   const selectedActor =
-    sortedAndFilteredEntries.find((e) => e.id === selectedActorId) || null;
-  const previousFilterKey = useRef(filterKey);
+    enrichedEntries.find((e) => e.id === selectedActorId) || null;
   const { ref: mapShellRef, isInView: isMapVisible } =
     useInViewOnce<HTMLElement>({
       rootMargin: "280px 0px",
@@ -325,14 +300,6 @@ export function AnnuaireExplorationView({
     const canvasAnchor = document.getElementById("exploration-canvas-anchor");
     canvasAnchor?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-
-  useEffect(() => {
-    if (previousFilterKey.current === filterKey) {
-      return;
-    }
-    previousFilterKey.current = filterKey;
-    onSelectedActorIdChange?.(null);
-  }, [filterKey, onSelectedActorIdChange]);
 
   return (
     <div className="flex min-w-0 w-full flex-col items-start gap-12 overflow-x-clip lg:flex-row">

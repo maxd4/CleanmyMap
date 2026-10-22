@@ -11,7 +11,7 @@ import {
  hasRecentUpdate,
  isCompletePartnerEntry,
  isPlaceholderUrl,
- normalizePublicChannelUrl,
+ normalizePublicWebUrl,
  type PartnerTrustState,
 } from"@/lib/partners/onboarding-types";
 import type {
@@ -257,7 +257,7 @@ export function getAnnuairePublicDestination(
  ];
 
  for (const candidate of candidates) {
-  const url = normalizePublicChannelUrl(candidate.url);
+  const url = normalizePublicWebUrl(candidate.url);
   if (url) {
    return { url, label: candidate.label };
   }

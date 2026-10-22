@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import useSWR from "swr";
 import { useUser } from "@clerk/nextjs";
 import { extractUserLocationPreferenceFromMetadata } from "@/lib/user-location-preference";
@@ -58,18 +58,24 @@ export function useAnnuaireLogic() {
     return mergeAnnuaireEntries(INITIAL_ANNUAIRE_ENTRIES, publishedEntries);
   }, [publishedEntries]);
 
-  const featuredEntries = useMemo(() => 
-    allEntries.filter(e => e.isFeatured).map(e => ({
-      ...e,
-      distanceKm: getAnnuaireDistanceKm(e, targetArrondissement),
-    }))
-  , [allEntries, targetArrondissement]);
+  const enrichedEntries = useMemo(
+    () =>
+      allEntries.map(
+        (entry): EnrichedAnnuaireEntry => ({
+          ...entry,
+          distanceKm: getAnnuaireDistanceKm(entry, targetArrondissement),
+        }),
+      ),
+    [allEntries, targetArrondissement],
+  );
+
+  const featuredEntries = useMemo(
+    () => enrichedEntries.filter((entry) => entry.isFeatured),
+    [enrichedEntries],
+  );
 
   const sortedAndFilteredEntries = useMemo(() => {
-    let result = allEntries.map((entry): EnrichedAnnuaireEntry => {
-      const distance = getAnnuaireDistanceKm(entry, targetArrondissement);
-      return { ...entry, distanceKm: distance };
-    });
+    let result = [...enrichedEntries];
 
     if (searchTerm) {
       const low = searchTerm.toLowerCase();
@@ -105,7 +111,7 @@ export function useAnnuaireLogic() {
     }
 
     return result.sort(compareAnnuaireEntries);
-  }, [allEntries, searchTerm, filterKind, filterContribution, zoneFilter, targetArrondissement]);
+  }, [enrichedEntries, searchTerm, filterKind, filterContribution, zoneFilter, targetArrondissement]);
 
   const actorCardsTotalPages = Math.ceil(sortedAndFilteredEntries.length / ACTOR_CARDS_PAGE_SIZE);
   const safeActorCardsPage = Math.min(actorCardsPage, Math.max(1, actorCardsTotalPages));
@@ -114,6 +120,15 @@ export function useAnnuaireLogic() {
     const start = (safeActorCardsPage - 1) * ACTOR_CARDS_PAGE_SIZE;
     return sortedAndFilteredEntries.slice(start, start + ACTOR_CARDS_PAGE_SIZE);
   }, [sortedAndFilteredEntries, safeActorCardsPage]);
+
+  const filterKey = `${searchTerm}|${filterKind}|${filterContribution}|${zoneFilter}`;
+  const resetFilters = useCallback(() => {
+    setSearchTerm("");
+    setFilterKind("all");
+    setFilterContribution("all");
+    setZoneFilter("all");
+    setActorCardsPage(1);
+  }, []);
 
   return {
     searchTerm, setSearchTerm,
@@ -125,12 +140,17 @@ export function useAnnuaireLogic() {
     locationPreference,
     targetArrondissement,
     allEntries,
+    enrichedEntries,
     featuredEntries,
     sortedAndFilteredEntries,
     paginatedEntries: paginatedActorCards,
     totalPages: actorCardsTotalPages,
     safeActorCardsPage,
+    filterKey,
+    resetFilters,
     locale: "fr",
     isLoading: publishedEntriesQuery.isLoading
   };
 }
+
+export type AnnuaireLogic = ReturnType<typeof useAnnuaireLogic>;
