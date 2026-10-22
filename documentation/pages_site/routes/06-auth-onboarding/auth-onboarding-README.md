@@ -2,11 +2,10 @@
 
 Connexion, inscription et configuration initiale.
 
-## Fichiers de bloc
+## Connaissances distinctes (optionnelles, sans doublonner les fiches CURRENT)
 
-- [Auth & Onboarding - Présentation détaillée](./auth-onboarding-presentation-detaillee.md)
-- [Auth & Onboarding - Liste des propositions à traiter](./auth-onboarding-liste-propositions-a-traiter.md)
-- [Auth & Onboarding - Objectifs non pertinents](./auth-onboarding-objectifs-non-pertinents.md)
+- [Propositions documentées](./auth-onboarding-liste-propositions-a-traiter.md) — `PLAN`, non livrées par la seule présence de cette liste
+- [Refus documentés](./auth-onboarding-objectifs-non-pertinents.md) — `HISTORY`, reconsidération sur décision explicite
 
 ## Inventaire des pages
 
