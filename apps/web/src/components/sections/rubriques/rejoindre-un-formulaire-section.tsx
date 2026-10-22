@@ -99,6 +99,10 @@ export function JoinActionSection() {
             communityEventsError={controller.communityEventsError}
             communityEventsRetry={controller.communityEventsRetry}
             focusCommunityEventId={controller.focusCommunityEventId}
+            isUpdatingEventOpsId={controller.isUpdatingEventOpsId}
+            getOpsDraft={controller.getOpsDraft}
+            updateOpsDraft={controller.updateOpsDraft}
+            onSaveEventOps={controller.onSaveEventOps}
             authenticated={controller.authenticated}
             historyItems={controller.historyItems}
             onShareAction={setShareActionId}

@@ -1,9 +1,72 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { ActionListItem } from "@/lib/actions/types";
+import type { CommunityEventItem } from "@/lib/community/http";
 import { PastActionsPanel } from "./rejoindre-une-action.past-actions";
 
+function communityEvent(canEditOwnOps: boolean): CommunityEventItem {
+  return {
+    id: "community-event-1",
+    createdAt: "2026-08-01T10:00:00.000Z",
+    organizerClerkId: null,
+    canEditOwnOps,
+    title: "Événement historique",
+    eventDate: "2026-08-01",
+    locationLabel: "Paris",
+    location: { label: "Paris", latitude: null, longitude: null, source: null },
+    description: null,
+    capacityTarget: null,
+    attendanceCount: null,
+    postMortem: null,
+    cleanupObjective: null,
+    cleanupZone: null,
+    cleanupLogisticsNeeds: null,
+    cleanupSupportLevel: null,
+    cleanupWasteTypesExpected: [],
+    rsvpCounts: { yes: 0, maybe: 0, no: 0, total: 0 },
+    myRsvpStatus: null,
+  };
+}
+
 describe("PastActionsPanel", () => {
+  it("transmet le suivi historique au propriétaire et le masque aux autres utilisateurs", () => {
+    const getOpsDraft = () => ({ attendanceCount: "4", postMortem: "Retour" });
+    const updateOpsDraft = () => undefined;
+    const onSaveEventOps = async () => undefined;
+
+    const ownerMarkup = renderToStaticMarkup(
+      <PastActionsPanel
+        items={[]}
+        loading={false}
+        error={null}
+        fr
+        communityPastEvents={[communityEvent(true)]}
+        isUpdatingEventOpsId="community-event-1"
+        getOpsDraft={getOpsDraft}
+        updateOpsDraft={updateOpsDraft}
+        onSaveEventOps={onSaveEventOps}
+      />,
+    );
+    expect(ownerMarkup).toContain("Suivi de ma mission");
+    expect(ownerMarkup).toContain("Enregistrement…");
+
+    const nonOwnerMarkup = renderToStaticMarkup(
+      <PastActionsPanel
+        items={[]}
+        loading={false}
+        error={null}
+        fr
+        communityPastEvents={[communityEvent(false)]}
+        isUpdatingEventOpsId="community-event-1"
+        getOpsDraft={getOpsDraft}
+        updateOpsDraft={updateOpsDraft}
+        onSaveEventOps={onSaveEventOps}
+      />,
+    );
+    expect(nonOwnerMarkup).not.toContain("Suivi de ma mission");
+    expect(nonOwnerMarkup).not.toContain("Enregistrer le suivi");
+  });
+
   it("affiche uniquement les résultats finaux disponibles", () => {
     const item = {
       id: "past-action",

@@ -14,6 +14,7 @@ import type {
   CommunityRsvpStatus,
 } from "@/lib/community/http";
 import { buildCommunityEventHref } from "@/lib/community/event-links";
+import type { OpsDraft } from "./community/types";
 
 type JoinCommunityEventsPanelProps = {
   fr: boolean;
@@ -26,6 +27,10 @@ type JoinCommunityEventsPanelProps = {
   onRetry?: () => Promise<unknown> | void;
   mutationError?: AppError | null;
   successMessage?: string | null;
+  isUpdatingEventOpsId?: string | null;
+  getOpsDraft?: (event: CommunityEventItem) => OpsDraft;
+  updateOpsDraft?: (eventId: string, patch: Partial<OpsDraft>) => void;
+  onSaveEventOps?: (event: CommunityEventItem) => Promise<void>;
   tab: "future" | "past";
 };
 
@@ -40,6 +45,10 @@ export function JoinCommunityEventsPanel({
   onRetry,
   mutationError = null,
   successMessage = null,
+  isUpdatingEventOpsId = null,
+  getOpsDraft,
+  updateOpsDraft,
+  onSaveEventOps,
   tab,
 }: JoinCommunityEventsPanelProps) {
   const [shareEvent, setShareEvent] = useState<CommunityEventItem | null>(null);
@@ -110,7 +119,10 @@ export function JoinCommunityEventsPanel({
             ) : (
               <EventArticlePast
                 event={event}
-                isUpdating={false}
+                isUpdating={isUpdatingEventOpsId === event.id}
+                getOpsDraft={getOpsDraft}
+                updateOpsDraft={updateOpsDraft}
+                onSaveEventOps={onSaveEventOps}
                 onShare={setShareEvent}
               />
             )}

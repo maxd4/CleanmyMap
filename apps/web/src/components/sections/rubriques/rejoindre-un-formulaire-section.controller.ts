@@ -294,5 +294,9 @@ export function useJoinFormSectionController() {
     onCommunityRsvp: communityActions.onRsvp,
     communityMutationError: communityActions.communityError,
     communitySuccessMessage: communityActions.communitySuccessMessage,
+    isUpdatingEventOpsId: communityActions.isUpdatingEventOpsId,
+    getOpsDraft: communityActions.getOpsDraft,
+    updateOpsDraft: communityActions.updateOpsDraft,
+    onSaveEventOps: communityActions.onSaveEventOps,
   };
 }

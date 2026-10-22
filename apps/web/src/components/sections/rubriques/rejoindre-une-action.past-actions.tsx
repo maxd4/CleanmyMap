@@ -13,6 +13,7 @@ import { SpogomiContextLink } from "@/components/spogomi/spogomi-context-link";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 import { JoinCommunityEventsPanel } from "./rejoindre-une-action.community-events";
+import type { OpsDraft } from "./community/types";
 
 function actionTitle(item: ActionListItem): string {
   return item.contract?.metadata.preparationData?.actionTitle?.trim() || item.location_label;
@@ -227,6 +228,10 @@ export function PastActionsPanel({
   communityEventsError = null,
   communityEventsRetry,
   focusCommunityEventId = null,
+  isUpdatingEventOpsId = null,
+  getOpsDraft,
+  updateOpsDraft,
+  onSaveEventOps,
 }: {
   items: ActionListItem[];
   loading: boolean;
@@ -241,6 +246,10 @@ export function PastActionsPanel({
   communityEventsError?: import("@/lib/errors/app-errors").AppError | null;
   communityEventsRetry?: () => Promise<unknown> | void;
   focusCommunityEventId?: string | null;
+  isUpdatingEventOpsId?: string | null;
+  getOpsDraft?: (event: import("@/lib/community/http").CommunityEventItem) => OpsDraft;
+  updateOpsDraft?: (eventId: string, patch: Partial<OpsDraft>) => void;
+  onSaveEventOps?: (event: import("@/lib/community/http").CommunityEventItem) => Promise<void>;
 }) {
   const [claimOverrides, setClaimOverrides] = useState<Record<string, ClaimState>>({});
   const [claimingActionId, setClaimingActionId] = useState<string | null>(null);
@@ -343,6 +352,10 @@ export function PastActionsPanel({
         focusedEventId={focusCommunityEventId}
         onRetry={communityEventsRetry}
         tab="past"
+        isUpdatingEventOpsId={isUpdatingEventOpsId}
+        getOpsDraft={getOpsDraft}
+        updateOpsDraft={updateOpsDraft}
+        onSaveEventOps={onSaveEventOps}
       />
     </section>
   );

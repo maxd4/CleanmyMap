@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { buildCommunityEventsQueryString } from "./http";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { buildCommunityEventsQueryString, updateCommunityEventOps } from "./http";
 
 describe("buildCommunityEventsQueryString", () => {
   it("uses defaults when params are missing", () => {
@@ -15,5 +15,44 @@ describe("buildCommunityEventsQueryString", () => {
     expect(buildCommunityEventsQueryString({ limit: 1, eventId: "event-42" })).toBe(
       "limit=1&eventId=event-42",
     );
+  });
+});
+
+describe("updateCommunityEventOps", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("envoie exactement la mutation historique et retourne la fiche rechargée", async () => {
+    const responseItem = { id: "event-1", attendanceCount: 12, postMortem: "Retour" };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ status: "ok", item: responseItem }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(updateCommunityEventOps({
+      eventId: "event-1",
+      attendanceCount: 12,
+      postMortem: "Retour",
+    })).resolves.toEqual(responseItem);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith("/api/community/events/ops", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId: "event-1", attendanceCount: 12, postMortem: "Retour" }),
+    });
+  });
+
+  it("propage un refus d'authentification sans faux succès", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }),
+    ));
+
+    await expect(updateCommunityEventOps({ eventId: "event-1", attendanceCount: null, postMortem: null }))
+      .rejects.toMatchObject({ status: 401, kind: "permission" });
   });
 });

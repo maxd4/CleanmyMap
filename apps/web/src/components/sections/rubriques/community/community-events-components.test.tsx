@@ -46,6 +46,21 @@ describe("community event ownership rendering", () => {
     expect(markup).toContain("Suivi de ma mission");
   });
 
+  it("does not expose the organizer follow-up to a non-owner", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(EventArticlePast, {
+        event: makeEvent(false),
+        isUpdating: false,
+        getOpsDraft: () => opsDraft,
+        updateOpsDraft: () => undefined,
+        onSaveEventOps: async () => undefined,
+      }),
+    );
+
+    expect(markup).not.toContain("Suivi de ma mission");
+    expect(markup).not.toContain("Enregistrer le suivi");
+  });
+
   it("keeps the public error message independent of authentication", () => {
     const markup = renderToStaticMarkup(
       React.createElement(EventListStates, {
