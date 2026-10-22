@@ -11,8 +11,6 @@ Famille autonome de la homepage canonique.
 ## Fichiers associés
 
 - [Homepage - Présentation détaillée](./homepage-presentation-detaillee.md)
-- [Homepage - Liste des propositions à traiter](./homepage-liste-propositions-a-traiter.md)
-- [Homepage - Objectifs non pertinents](./homepage-objectifs-non-pertinents.md)
 
 
 ## Notes

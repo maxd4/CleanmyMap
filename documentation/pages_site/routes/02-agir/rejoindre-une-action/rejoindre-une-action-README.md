@@ -347,5 +347,3 @@ Rester en maintenance pour les futures commandes produit non encore modélisées
 ## Références
 
 - [Présentation détaillée](./rejoindre-une-action-presentation-detaillee.md)
-- [Propositions à traiter](./rejoindre-une-action-liste-propositions-a-traiter.md)
-- [Objectifs non pertinents](./rejoindre-une-action-objectifs-non-pertinents.md)

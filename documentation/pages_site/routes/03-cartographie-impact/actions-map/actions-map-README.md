@@ -428,5 +428,4 @@ Un état `access refused` n'est pas un état normal de cette route publique.
 
 - [Présentation détaillée](./actions-map-presentation-detaillee.md)
 - [Méthodologie produit de la projection](../../../../product/methodologie-carte-actions.md)
-- [Propositions à traiter](./actions-map-liste-propositions-a-traiter.md)
 - [Objectifs non pertinents](./actions-map-objectifs-non-pertinents.md)

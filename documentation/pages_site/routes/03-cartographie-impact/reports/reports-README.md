@@ -34,7 +34,6 @@ Ce dossier sépare les contrats observables (`CURRENT`), les évolutions encore 
 ## `PLAN`
 
 - [Objectifs et progression](../../../../features/reports/impact-goals-and-progression.md) : **autre responsabilité métier**, objectifs persistants, progression collective et surface UX restant à arbitrer.
-- [Propositions propres à `/reports`](./reports-liste-propositions-a-traiter.md) : suivi des propositions restantes ; le versionnement et les générations dérivées livrés y sont distingués de l'ancien périmètre `single_action`.
 - [Roadmap priorisée](../../../../product/roadmap-priorisee.md) : ordre et conditions de clôture des chantiers.
 
 ## `COMPATIBILITY`

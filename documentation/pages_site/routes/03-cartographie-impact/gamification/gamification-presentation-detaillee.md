@@ -11,8 +11,8 @@
 - **Objectif utilisateur principal** : Lire sa progression, ses badges, les formes de reconnaissance et les repères de méthode associés.
 - **Action principale attendue** : Explorer sa progression, ses collections et les informations de fonctionnement de la gamification.
 - **Palette attendue** : red
-- **Scope** : à corriger
-- **Terminée** : non
+- **Scope** : progression personnelle owner-scoped pour le compte connecté ; classement public distinct, opt-in, projeté sans données privées.
+- **Statut** : contrat CURRENT décrit dans la fiche de page ; revue visuelle non exécutée.
 - **Couleurs actuellement détectées** : blanc / rose / rouge — interface claire avec accents d'impact rouges et roses.
 - **Incohérences de couleurs** : Aucune incohérence majeure avec l'identité rouge attendue n'est établie par le composant actuel.
 - **Risque de conflit avec les couleurs existantes** : moyen : attention au chevauchement entre sky cartographique et rouge impact / alerte.
@@ -115,5 +115,4 @@ conservés uniquement en compatibilité historique.
 ## Liens de travail
 
 - [Spécification canonique](./gamification-SPEC_CANONIQUE.md)
-- [Liste des propositions à traiter](./gamification-liste-propositions-a-traiter.md)
 - [Objectifs non pertinents](./gamification-objectifs-non-pertinents.md)

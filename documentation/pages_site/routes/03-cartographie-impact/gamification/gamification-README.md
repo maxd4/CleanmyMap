@@ -7,7 +7,6 @@ Point d entrée de la rubrique gamification, désormais canonique sur `/sections
 - [Présentation détaillée](./gamification-presentation-detaillee.md)
 - [Spécification canonique](./gamification-SPEC_CANONIQUE.md)
 - [Notes de scopes et d interface](./gamification-scope-ui-notes.md)
-- [Liste des propositions à traiter](./gamification-liste-propositions-a-traiter.md)
 - [Objectifs non pertinents](./gamification-objectifs-non-pertinents.md)
 
 La présentation détaillée décrit la section `/sections/gamification`. L URL `/gamification` reste un alias de compatibilité. La spec canonique centralise les règles métier des badges, des paliers, des XP et des garde-fous.
@@ -78,25 +77,6 @@ résumé distinct, sans modifier `badgeTotal`.
 `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Le soft-gate décrit la
 présentation anonyme ; il ne rend pas la progression personnelle indexable.
 
-## Arborescence canonique
+## Documents complémentaires propriétaires
 
-La rubrique suit la convention globale de `pages_site`.
-
-- `gamification-README.md`
-- `gamification-presentation-detaillee.md`
-- `gamification-liste-propositions-a-traiter.md`
-- `gamification-objectifs-non-pertinents.md`
-- un dossier `screenshots/desktop/` ou `screenshots/mobile/` propre à cette
-  page, lorsqu'un snapshot existe
-
-Les captures de référence sont en `.webp` et sont nommées avec la route, le nom lisible de la page et la date.
-
-## Mémoire de rubrique
-
-Cette rubrique conserve localement quatre documents de travail:
-
-- une présentation détaillée;
-- une liste de propositions à traiter;
-- une mémoire des objectifs non pertinents.
-
-Ces trois fichiers doivent rester synchronisés avec la spec canonique.
+La [présentation détaillée](./gamification-presentation-detaillee.md) explique les parcours et états. Le [registre des refus](./gamification-objectifs-non-pertinents.md) conserve les décisions distinctes et motivées. Les règles métier restent dans [la spécification canonique](./gamification-SPEC_CANONIQUE.md) et leurs notes de scopes. Aucun backlog vide n'est créé ni exigé.

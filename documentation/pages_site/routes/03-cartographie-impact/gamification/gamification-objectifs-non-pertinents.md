@@ -57,7 +57,6 @@ Les formes de gamification suivantes ont été proposées puis non retenues à c
 ## Liens utiles
 
 - [Présentation détaillée](./gamification-presentation-detaillee.md)
-- [Liste des propositions à traiter](./gamification-liste-propositions-a-traiter.md)
 - [Spécification canonique](./gamification-SPEC_CANONIQUE.md)
 - [Gamification non competitive](../../../../product/gamification-non-competitive.md)
 - [Inventaire des surfaces gamifiables](../../../../product/gamification-inventory.md)

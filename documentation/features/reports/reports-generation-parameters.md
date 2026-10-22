@@ -57,7 +57,7 @@ Le résumé, l'aperçu, le calcul serveur et le snapshot utilisent le même ense
 
 ## Ordre de déploiement proposé
 
-1. **P0 livré : rapport d'une action validée** avec périmètre exact résolu côté serveur et historique réutilisable. Voir la [roadmap produit](../../product/roadmap-priorisee.md) et la [proposition mono-action](../../pages_site/routes/03-cartographie-impact/reports/reports-liste-propositions-a-traiter.md).
+1. **P0 livré : rapport d'une action validée** avec périmètre exact résolu côté serveur et historique réutilisable. Voir la [roadmap produit](../../product/roadmap-priorisee.md) et la [contrat mono-action livré](../../pages_site/routes/03-cartographie-impact/reports/reports-README.md).
 2. **CURRENT livré :** paramètres multi-actions avec période, scope et sous-ensemble avancé de qualité, provenance, résultats structurés, géométrie et preuve photo décrit ci-dessus.
 3. **Évolutions conditionnelles :** nouveaux liens métier (GPS, signalements, campagnes, organisations) après inspection de leurs sources et permissions canoniques.
 
