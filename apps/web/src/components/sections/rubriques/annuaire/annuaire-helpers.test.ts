@@ -74,6 +74,49 @@ describe("association profile provenance", () => {
       "Dernière action",
     );
   });
+
+  it("does not retain administrative channels in public resources", () => {
+    const seed = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-shakirail");
+    if (!seed) {
+      throw new Error("Expected the editorial seed fixture to exist");
+    }
+
+    const published = {
+      ...seed,
+      provenance: "published_partner" as const,
+      verificationStatus: "verifie" as const,
+      qualificationStatus: "partenaire_actif" as const,
+      availability: "Sur rendez-vous",
+      lastUpdatedAt: "2026-08-26T10:00:00.000Z",
+      recentActivityAt: "2026-08-26T10:00:00.000Z",
+      primaryChannel: {
+        platform: "site web" as const,
+        label: "Contact administratif",
+        url: "mailto:administratif",
+      },
+      associationProfile: {
+        ...seed.associationProfile!,
+        usefulResources: [
+          {
+            label: "Contact administratif",
+            description: "Ne doit pas devenir une ressource publique.",
+            url: "mailto:administratif",
+          },
+          {
+            label: "Site officiel",
+            url: "https://cleanmymap.fr/public",
+          },
+        ],
+      },
+    };
+
+    expect(getAssociationProfile(published)?.usefulResources).toEqual([
+      {
+        label: "Site officiel",
+        url: "https://cleanmymap.fr/public",
+      },
+    ]);
+  });
 });
 
 describe("public directory destinations", () => {

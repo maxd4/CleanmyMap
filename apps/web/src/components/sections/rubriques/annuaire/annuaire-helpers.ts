@@ -420,34 +420,44 @@ function buildAssociationPublicCalls(entry: AnnuaireEntry): AssociationPublicCal
 
 function buildAssociationResources(entry: AnnuaireEntry): AssociationResource[] {
  if (entry.associationProfile?.usefulResources?.length) {
- return entry.associationProfile.usefulResources;
+    return entry.associationProfile.usefulResources.flatMap((resource) => {
+      const url = normalizePublicWebUrl(resource.url);
+      return url ? [{ ...resource, url }] : [];
+    });
  }
 
  const resources: AssociationResource[] = [];
 
- if (entry.websiteUrl) {
- resources.push({
+  const addResource = (resource: AssociationResource) => {
+    const url = normalizePublicWebUrl(resource.url);
+    if (url) {
+      resources.push({ ...resource, url });
+    }
+  };
+
+  if (entry.websiteUrl) {
+    addResource({
  label: "Site officiel",
  description: "Informations publiques, agenda et ressources pratiques.",
  url: entry.websiteUrl,
  });
  }
  if (entry.primaryChannel?.url && entry.primaryChannel.url !== entry.websiteUrl) {
- resources.push({
+    addResource({
  label: entry.primaryChannel.label || "Canal de contact",
  description: `Contact via ${entry.primaryChannel.platform}.`,
  url: entry.primaryChannel.url,
  });
  }
  if (entry.instagramUrl) {
- resources.push({
+    addResource({
  label: "Instagram",
  description: "Relais visuel et actualités de terrain.",
  url: entry.instagramUrl,
  });
  }
  if (entry.facebookUrl) {
- resources.push({
+    addResource({
  label: "Facebook",
  description: "Annonces, événements et relais locaux.",
  url: entry.facebookUrl,
