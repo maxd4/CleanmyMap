@@ -57,7 +57,7 @@ export function CreatorInboxPanel({
           onPartnerConfirmChange={inbox.setPartnerConfirm}
           refreshing={inbox.refreshing}
           filteredCount={inbox.filteredItems.length}
-          onRefresh={() => void inbox.refreshInbox()}
+          onRefresh={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.refreshInbox(); }}
         />
 
         {inbox.errorMessage && (
@@ -107,25 +107,25 @@ export function CreatorInboxPanel({
                   }))
                 }
                 actionBusy={inbox.actionBusy}
-                onCopySummary={(nextItem) => void inbox.copySummary(nextItem)}
-                onAcceptPromotion={(nextItem) => void inbox.acceptPromotion(nextItem)}
-                onRejectPromotion={(nextItem) => void inbox.rejectPromotion(nextItem)}
-                onAcceptPartner={(nextItem) => void inbox.acceptPartner(nextItem)}
-                onRejectPartner={(nextItem) => void inbox.rejectPartner(nextItem)}
+                onCopySummary={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.copySummary(nextItem); }}
+                onAcceptPromotion={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.acceptPromotion(nextItem); }}
+                onRejectPromotion={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.rejectPromotion(nextItem); }}
+                onAcceptPartner={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.acceptPartner(nextItem); }}
+                onRejectPartner={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.rejectPartner(nextItem); }}
                 onApplyInboxAction={(params) =>
-                  void inbox.applyInboxAction({
+                  void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.applyInboxAction({
                     ...params,
                     reason: inbox.actionReasons[item.sourceRecordId] ?? "",
                   })
                 }
-                onLegalDecision={(params) => void inbox.decideLegalReport(params)}
+                onLegalDecision={(params) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.decideLegalReport(params); }}
                 canQualify={inbox.canQualify}
                 feedbackOptions={inbox.items.filter((option) => option.source === "feedback")}
                 onQualifyFeedback={(params) =>
-                  void inbox.qualifyFeedback({ item, ...params })
+                  { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.qualifyFeedback({ item, ...params }); }
                 }
                 onUpdateFeedbackTracking={(params) =>
-                  void inbox.updateFeedbackTracking({ item, ...params })
+                  { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.updateFeedbackTracking({ item, ...params }); }
                 }
               />
             ))
@@ -143,7 +143,7 @@ export function CreatorInboxPanel({
         {inbox.hasMore ? (
           <button
             type="button"
-            onClick={() => void inbox.loadNextPage()}
+            onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.loadNextPage(); }}
             disabled={inbox.loadingNextPage}
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 cmm-text-small font-semibold cmm-text-secondary hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
           >

@@ -233,7 +233,7 @@ export function OrganizerCombobox({
       onOpenAddForm={openAddForm}
       onSelectSuggestion={selectSuggestion}
       onNewOrganizerNameChange={setNewOrganizerName}
-      onSubmitNewOrganizer={() => void submitNewOrganizer()}
+      onSubmitNewOrganizer={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submitNewOrganizer(); }}
       onCancelAddForm={cancelAddForm}
     />
   );

@@ -29,7 +29,7 @@ function request() {
 
 function Harness({ weatherRequest = request() }: { weatherRequest?: ReturnType<typeof request> }) {
   const weather = useActionPreparationWeather({ request: weatherRequest });
-  return <button type="button" data-state={weather.weatherState} onClick={() => void weather.requestWeather()} />;
+  return <button type="button" data-state={weather.weatherState} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ weather.requestWeather(); }} />;
 }
 
 describe("useActionPreparationWeather", () => {

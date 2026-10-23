@@ -131,7 +131,10 @@ describe("NotificationBell behavior", () => {
     expect(loadNotificationsMock).toHaveBeenCalledWith("user-1", authState.getToken);
 
     const trigger = renderer.root.findByProps({ "aria-label": "Notifications (0 à traiter)" });
-    act(() => trigger.props.onClick());
+    await act(async () => {
+      trigger.props.onClick();
+      await flush();
+    });
     const itemButton = renderer.root.findByProps({ "data-notification-id": "private-1" });
     await act(async () => { itemButton.props.onClick(); await Promise.resolve(); });
     expect(markReadMock).toHaveBeenCalledWith("user-1", "private-1", authState.getToken);
@@ -168,7 +171,7 @@ describe("NotificationBell behavior", () => {
   it("ignores a response from a previous Clerk identity", async () => {
     let resolveOld!: (items: AppNotification[]) => void;
     const oldResponse = new Promise<AppNotification[]>((resolve) => { resolveOld = resolve; });
-    loadNotificationsMock.mockReturnValueOnce(oldResponse).mockResolvedValueOnce([notification("new")]);
+    loadNotificationsMock.mockReturnValueOnce(oldResponse).mockResolvedValue([notification("new")]);
     const renderer = renderBell();
     authState.userId = "user-2";
     act(() => { renderer.update(<NotificationBell />); });
@@ -176,7 +179,10 @@ describe("NotificationBell behavior", () => {
     resolveOld([notification("old")]);
     await flush();
     const trigger = renderer.root.findByProps({ "aria-label": "Notifications (0 à traiter)" });
-    act(() => trigger.props.onClick());
+    await act(async () => {
+      trigger.props.onClick();
+      await flush();
+    });
     expect(renderer.root.findAllByProps({ "data-notification-id": "old" })).toHaveLength(0);
     expect(renderer.root.findAllByProps({ "data-notification-id": "new" })).toHaveLength(1);
     renderer.unmount();
@@ -187,7 +193,7 @@ describe("NotificationBell behavior", () => {
     const renderer = renderBell();
     await flush();
     const trigger = renderer.root.findByProps({ "aria-label": "Notifications (0 à traiter)" });
-    act(() => trigger.props.onClick());
+    await act(() => trigger.props.onClick());
     expect(renderer.root.findAllByProps({ "data-notification-id": "private-1" })).toHaveLength(0);
     renderer.unmount();
   });

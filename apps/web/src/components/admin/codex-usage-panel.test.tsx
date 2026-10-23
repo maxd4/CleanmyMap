@@ -22,7 +22,7 @@ describe("CodexUsagePanel", () => {
     expect(markup).not.toContain("Aucun journal Codex");
   });
 
-  it("reads once after consultation and keeps the result mounted across reopen", () => {
+  it("reads once after consultation and keeps the result mounted across reopen", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ snapshots: [] }), { status: 200 }),
     );
@@ -37,7 +37,7 @@ describe("CodexUsagePanel", () => {
     const openButton = renderer.root
       .findAllByType("button")
       .find((button) => String(button.props.children).includes("Consulter"));
-    act(() => openButton?.props.onClick());
+    await act(() => openButton?.props.onClick());
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/codex-usage?historyLimit=12",
@@ -47,11 +47,11 @@ describe("CodexUsagePanel", () => {
     const hideButton = renderer.root
       .findAllByType("button")
       .find((button) => String(button.props.children).includes("Masquer"));
-    act(() => hideButton?.props.onClick());
+    await act(() => hideButton?.props.onClick());
     const reopenButton = renderer.root
       .findAllByType("button")
       .find((button) => String(button.props.children).includes("Consulter"));
-    act(() => reopenButton?.props.onClick());
+    await act(() => reopenButton?.props.onClick());
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

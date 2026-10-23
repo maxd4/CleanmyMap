@@ -83,19 +83,19 @@ describe("ChatHeader behavior", () => {
     expect(JSON.stringify(renderer.toJSON())).toContain("Conversation avec");
 
     const graph = renderer.root.findByProps({ "aria-label": "Afficher le graphe" });
-    act(() => graph.props.onClick());
+    await act(() => graph.props.onClick());
     expect(onViewModeChange).toHaveBeenCalledWith("graph");
 
     const handleButton = renderer.root.findByProps({ "aria-label": "Modifier le pseudo" });
-    act(() => handleButton.props.onClick());
+    await act(() => handleButton.props.onClick());
     expect(onToggleHandleEditor).toHaveBeenCalledTimes(1);
 
     const metadataButton = renderer.root.findByProps({ "aria-label": "Afficher les métadonnées" });
-    act(() => metadataButton.props.onClick());
+    await act(() => metadataButton.props.onClick());
     expect(renderer.root.findByProps({ children: "Zone" })).toBeTruthy();
 
     const backButton = renderer.root.findByProps({ "aria-label": "Retour aux conversations" });
-    act(() => backButton.props.onClick());
+    await act(() => backButton.props.onClick());
     expect(onBack).toHaveBeenCalledTimes(1);
 
     act(() => renderer.update(<ChatHeader
@@ -115,7 +115,7 @@ describe("ChatHeader behavior", () => {
       onConfirmHandle={onConfirmHandle}
     />));
     const input = renderer.root.findByProps({ "aria-label": "Votre pseudo unique" });
-    act(() => input.props.onChange({ target: { value: "nouveau-2" } }));
+    await act(() => input.props.onChange({ target: { value: "nouveau-2" } }));
     expect(onHandleChange).toHaveBeenCalledWith("nouveau-2");
     await act(async () => { await renderer.root.findByProps({ children: "Confirmer" }).props.onClick(); });
     expect(onConfirmHandle).toHaveBeenCalledTimes(1);
@@ -153,7 +153,7 @@ describe("ChatHeader behavior", () => {
     renderer.unmount();
   });
 
-  it("wires search controls only when the complete search contract is present", () => {
+  it("wires search controls only when the complete search contract is present", async () => {
     const callbacks = {
       onToggleSearch: vi.fn(),
       onSearchQueryChange: vi.fn(),
@@ -168,13 +168,13 @@ describe("ChatHeader behavior", () => {
       searchResults: [searchResult],
       ...callbacks,
     });
-    act(() => renderer.root.findByProps({ "aria-label": "Fermer la recherche" }).props.onClick());
+    await act(() => renderer.root.findByProps({ "aria-label": "Fermer la recherche" }).props.onClick());
     expect(callbacks.onToggleSearch).toHaveBeenCalledTimes(1);
-    act(() => renderer.root.findByProps({ "aria-label": "recherche de messages" }).props.onChange({ target: { value: "maps" } }));
+    await act(() => renderer.root.findByProps({ "aria-label": "recherche de messages" }).props.onChange({ target: { value: "maps" } }));
     expect(callbacks.onSearchQueryChange).toHaveBeenCalledWith("maps");
-    act(() => renderer.root.findByProps({ children: "Sélectionner résultat" }).props.onClick());
+    await act(() => renderer.root.findByProps({ children: "Sélectionner résultat" }).props.onClick());
     expect(callbacks.onSelectSearchResult).toHaveBeenCalledWith(searchResult);
-    act(() => renderer.root.findByProps({ children: "Charger recherche" }).props.onClick());
+    await act(() => renderer.root.findByProps({ children: "Charger recherche" }).props.onClick());
     expect(callbacks.onLoadMoreSearch).toHaveBeenCalledTimes(1);
     renderer.unmount();
   });

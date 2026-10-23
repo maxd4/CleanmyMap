@@ -19,8 +19,8 @@ export function ActionMediaProofs({ actionId }: { actionId: string }) {
   return (
     <ActionMediaProofsView
       snapshot={controller.getSnapshot()}
-      onLoad={() => void controller.load()}
-      onRetry={() => void controller.retry()}
+      onLoad={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ controller.load(); }}
+      onRetry={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ controller.retry(); }}
     />
   );
 }

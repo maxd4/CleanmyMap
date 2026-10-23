@@ -104,16 +104,16 @@ function NotificationBellSession({
     const startPolling = () => {
       clearPolling();
       if (!mounted || document.visibilityState !== "visible") return;
-      intervalId = window.setInterval(() => void fetchNotifications(), pollIntervalMs);
+      intervalId = window.setInterval(() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ fetchNotifications(); }, pollIntervalMs);
     };
     const handleVisibilityChange = () => {
       if (!mounted) return;
       if (document.visibilityState === "visible") {
-        void fetchNotifications();
+        void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ fetchNotifications();
         startPolling();
       } else clearPolling();
     };
-    void Promise.resolve().then(() => fetchNotifications());
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ Promise.resolve().then(() => fetchNotifications());
     startPolling();
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
@@ -181,7 +181,7 @@ function NotificationBellSession({
     previewNotifications={previewNotifications}
     decisionState={decisionState}
     stateFor={stateFor}
-    onNotificationClick={(notification) => void handleNotificationClick(notification)}
+    onNotificationClick={(notification) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleNotificationClick(notification); }}
   />;
 }
 
@@ -242,7 +242,7 @@ function NotificationBellPanel({
           previewNotifications.map((notification) => {
             const displayState = stateFor(notification);
             const notificationDecision = getNotificationDecisionDescriptor(notification.payload);
-            return <NotificationListItem key={notification.id} notification={notification} locale={locale} compact displayState={displayState} decision={notificationDecision ? { kind: notificationDecision.kind, state: displayState === "decision_pending" || displayState === "treated" || displayState === "unavailable" ? displayState : "unavailable", busy: decisionState.busyDecisionIds.has(notification.id), error: decisionState.decisionErrors[notification.id], onDecision: (choice) => void decisionState.handleDecision(notification, choice) } : undefined} onClick={onNotificationClick} />;
+            return <NotificationListItem key={notification.id} notification={notification} locale={locale} compact displayState={displayState} decision={notificationDecision ? { kind: notificationDecision.kind, state: displayState === "decision_pending" || displayState === "treated" || displayState === "unavailable" ? displayState : "unavailable", busy: decisionState.busyDecisionIds.has(notification.id), error: decisionState.decisionErrors[notification.id], onDecision: (choice) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ decisionState.handleDecision(notification, choice); } } : undefined} onClick={onNotificationClick} />;
           })
         )}
       </div>

@@ -62,7 +62,7 @@ export function ReportsWebDocumentHistorySharing({
 
   function openPanel(): void {
     setOpen(true);
-    void loadPreview();
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadPreview();
   }
 
   async function createShare(): Promise<void> {
@@ -137,9 +137,9 @@ export function ReportsWebDocumentHistorySharing({
           message={message}
           onClose={() => setOpen(false)}
           onExpiryChange={setExpiresInSeconds}
-          onCreateShare={() => void createShare()}
-          onCopyShareUrl={() => void copyShareUrl()}
-          onRevokeShare={(shareId) => void revokeShare(shareId)}
+          onCreateShare={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ createShare(); }}
+          onCopyShareUrl={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ copyShareUrl(); }}
+          onRevokeShare={(shareId) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ revokeShare(shareId); }}
         />
       ) : null}
     </div>

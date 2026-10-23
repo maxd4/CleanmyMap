@@ -322,7 +322,7 @@ function AccountProfileMenuItem({
             onClose();
             return;
           }
-          void onSelect(profile);
+          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onSelect(profile);
         }}
         className={cn(
           "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-wait disabled:opacity-50",

@@ -82,7 +82,7 @@ export function ActionBeforeVerificationSection({
     draftFacts={draftFacts}
     publicInformation={publicInformation}
     weatherChecklist={weatherChecklist}
-    requestWeather={() => void weather.requestWeather()}
+    requestWeather={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ weather.requestWeather(); }}
     corrections={corrections}
     checks={checks}
     suggestions={suggestions}

@@ -41,7 +41,7 @@ export function ActionDeclarationExportPickerSharing({
               size="sm"
               variant="ghost"
               className="min-h-0 flex-1 rounded-2xl border border-slate-200 bg-white px-2 py-2 text-[11px] font-semibold leading-tight text-slate-700"
-              onClick={() => void handleNativeShare()}
+              onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleNativeShare(); }}
             >
               <span className="inline-flex items-center gap-1.5">
                 <Share2 size={14} />
@@ -54,7 +54,7 @@ export function ActionDeclarationExportPickerSharing({
               size="sm"
               variant="ghost"
               className="min-h-0 flex-1 rounded-2xl border border-slate-200 bg-white px-2 py-2 text-[11px] font-semibold leading-tight text-slate-700"
-              onClick={() => void handleCopyLink()}
+              onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleCopyLink(); }}
             >
               <span className="inline-flex items-center gap-1.5">
                 <Link2 size={14} />
@@ -67,7 +67,7 @@ export function ActionDeclarationExportPickerSharing({
               size="sm"
               variant="ghost"
               className="min-h-0 flex-1 rounded-2xl border border-slate-200 bg-white px-2 py-2 text-[11px] font-semibold leading-tight text-slate-700"
-              onClick={() => void handleShareText()}
+              onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleShareText(); }}
             >
               <span className="inline-flex items-center gap-1.5">
                 <Copy size={14} />
@@ -84,13 +84,13 @@ export function ActionDeclarationExportPickerSharing({
             />
 
             <div className="mt-3 flex flex-wrap gap-2">
-              <CmmButton type="button" tone="secondary" size="sm" onClick={() => void handleNativeShare()}>
+              <CmmButton type="button" tone="secondary" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleNativeShare(); }}>
                 Partager natif
               </CmmButton>
-              <CmmButton type="button" tone="secondary" size="sm" onClick={() => void handleCopyLink()}>
+              <CmmButton type="button" tone="secondary" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleCopyLink(); }}>
                 Copier le lien
               </CmmButton>
-              <CmmButton type="button" tone="secondary" size="sm" onClick={() => void handleShareText()}>
+              <CmmButton type="button" tone="secondary" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleShareText(); }}>
                 Copier le texte
               </CmmButton>
             </div>

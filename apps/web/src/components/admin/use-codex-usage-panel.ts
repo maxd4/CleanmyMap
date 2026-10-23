@@ -31,7 +31,7 @@ export function useCodexUsagePanel() {
   useEffect(() => {
     let isMounted = true;
 
-    void (async () => {
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ (async () => {
       try {
         const response = await fetch(ENDPOINT, {
           headers: { Accept: "application/json" },

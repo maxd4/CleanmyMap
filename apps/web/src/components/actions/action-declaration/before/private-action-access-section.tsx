@@ -100,11 +100,11 @@ export function PrivateActionAccessSection({
             {!actionId ? <p className="mt-3 text-xs text-amber-900/75">Enregistrez d’abord la préparation pour générer le lien.</p> : (
               <div className="mt-3 space-y-2">
                 <div className="flex flex-wrap gap-2">
-                  <CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={() => void generateLink()} disabled={busy}>
+                  <CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ generateLink(); }} disabled={busy}>
                     {busy ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}{link?.active ? "Renouveler le lien" : "Générer le lien"}
                   </CmmButton>
-                  {link?.active && link.url ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => void copyLink()}><>{copied ? <Check size={14} /> : <Copy size={14} />}{copied ? "Copié" : "Copier"}</></CmmButton> : null}
-                  {link?.active ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => void revokeLink()} disabled={busy}><X size={14} />Révoquer</CmmButton> : null}
+                  {link?.active && link.url ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ copyLink(); }}><>{copied ? <Check size={14} /> : <Copy size={14} />}{copied ? "Copié" : "Copier"}</></CmmButton> : null}
+                  {link?.active ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ revokeLink(); }} disabled={busy}><X size={14} />Révoquer</CmmButton> : null}
                 </div>
                 {link?.active && link.url ? <p className="break-all rounded-xl bg-white/70 px-3 py-2 text-xs text-amber-950">{link.url}</p> : null}
                 {link?.active && link.expiresAt ? <p className="text-xs text-amber-900/75">Valable jusqu’au {new Date(link.expiresAt).toLocaleDateString("fr-FR")}.</p> : null}

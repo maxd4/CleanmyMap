@@ -174,7 +174,7 @@ export function ProjectPageviewTracker() {
     if (!shouldTrackPageview(pathname)) {
       return;
     }
-    void trackFunnel(
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ trackFunnel(
       "page_view",
       "complete",
       buildRouteMeta(pathname, searchParamsRef.current),

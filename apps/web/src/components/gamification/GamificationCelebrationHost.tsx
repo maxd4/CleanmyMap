@@ -110,7 +110,7 @@ function fireConfetti(tone: GamificationCelebrationTone) {
   });
 
   for (const animation of [firstAnimation, secondAnimation]) {
-    void animation?.catch((error: unknown) => {
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ animation?.catch((error: unknown) => {
       console.warn("Animation de célébration indisponible.", {
         errorName: error instanceof Error ? error.name : "UnknownError",
       });

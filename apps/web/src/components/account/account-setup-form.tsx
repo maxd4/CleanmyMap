@@ -60,7 +60,7 @@ export function AccountSetupForm(props: AccountSetupFormProps) {
   const isLastStep = controller.currentStep === "location";
 
   return (
-    <form onSubmit={(event) => void controller.handleSubmit(event)} className="cmm-account-setup-form flex min-h-0 flex-col text-white">
+    <form onSubmit={(event) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ controller.handleSubmit(event); }} className="cmm-account-setup-form flex min-h-0 flex-col text-white">
       <header className="cmm-account-setup-header flex items-start gap-4">
         <span className="cmm-account-setup-header-icon flex shrink-0 items-center justify-center rounded-2xl border border-slate-300/40 bg-slate-700/25 text-slate-100">
           <UserRound className="cmm-account-setup-header-glyph" aria-hidden="true" />
@@ -154,7 +154,7 @@ export function AccountSetupForm(props: AccountSetupFormProps) {
         ) : null}
       </div>
 
-      {controller.error ? <div className="mt-4"><ErrorMessage kind={controller.error.kind} title="Les réglages n’ont pas pu être enregistrés" message={controller.error.message} actions={<CmmButton type="button" tone="secondary" size="sm" onClick={() => void controller.handleSubmit()}>Réessayer</CmmButton>} /></div> : null}
+      {controller.error ? <div className="mt-4"><ErrorMessage kind={controller.error.kind} title="Les réglages n’ont pas pu être enregistrés" message={controller.error.message} actions={<CmmButton type="button" tone="secondary" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ controller.handleSubmit(); }}>Réessayer</CmmButton>} /></div> : null}
       <footer className="cmm-account-setup-actions flex flex-col rounded-2xl border border-slate-300/30 bg-slate-900/90 shadow-none sm:flex-row sm:items-center sm:justify-between">
         <div className="max-w-xl space-y-2">
           <h2 className="text-lg font-bold text-white">{isLastStep ? "Finaliser la configuration" : "Poursuivre la configuration"}</h2>
@@ -162,7 +162,7 @@ export function AccountSetupForm(props: AccountSetupFormProps) {
           <Link href="/compte/evolution" prefetch={false} className="inline-flex min-h-11 items-center text-sm font-bold text-slate-200 underline decoration-slate-300/70 underline-offset-4 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200">Vous exercez un mandat public&nbsp;?</Link>
         </div>
         <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <CmmButton type="button" tone="secondary" size="lg" disabled={controller.isSaving} onClick={() => void controller.handleDefer()}>{controller.getDeferralLabel()}</CmmButton>
+          <CmmButton type="button" tone="secondary" size="lg" disabled={controller.isSaving} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ controller.handleDefer(); }}>{controller.getDeferralLabel()}</CmmButton>
           {currentStepIndex > 0 ? <CmmButton type="button" tone="secondary" size="lg" disabled={controller.isSaving} onClick={controller.handlePrevious}><ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />Précédent</CmmButton> : null}
           <CmmButton type="submit" tone="primary" size="lg" disabled={controller.isSaving} loading={controller.isSaving}>{controller.isSaving ? "Enregistrement…" : isLastStep ? "Enregistrer et continuer" : <><span>Suivant</span><ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" /></>}</CmmButton>
         </div>

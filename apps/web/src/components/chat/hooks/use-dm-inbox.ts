@@ -63,7 +63,7 @@ export function useDmInbox({ enabled, currentUserId, supabase }: DmInboxParams) 
             message.channel_type === "dm" &&
             (message.sender_id === currentUserId || message.recipient_id === currentUserId)
           ) {
-            void refreshInbox();
+            void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refreshInbox();
           }
         },
       )

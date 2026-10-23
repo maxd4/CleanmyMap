@@ -51,8 +51,8 @@ export function FreePlanServicesPanel() {
     serviceHealth,
   });
   const refresh = () => {
-    void freePlan.mutate();
-    void servicesHealth.mutate();
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ freePlan.mutate();
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ servicesHealth.mutate();
   };
 
   return (

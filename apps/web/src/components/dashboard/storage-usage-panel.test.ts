@@ -120,7 +120,7 @@ describe("StorageUsagePanel", () => {
     expect(markup).toContain("Aucune comparaison mensuelle encore disponible.");
   });
 
-  it("performs one initial read and delegates refresh to SWR mutate", () => {
+  it("performs one initial read and delegates refresh to SWR mutate", async () => {
     const mutate = vi.fn();
     mocks.useSWR.mockReturnValue({
       data: { status: "ok", current, history: [], warnings: [], cron: null },
@@ -138,7 +138,7 @@ describe("StorageUsagePanel", () => {
     expect(mocks.useSWR).toHaveBeenCalledTimes(1);
     expect(mocks.useSWR.mock.calls[0]?.[0]).toEqual(["/api/admin/storage-usage"]);
     const refreshButton = renderer!.root.findByType(AsyncPanelRefreshButton);
-    act(() => refreshButton.props.onRefresh());
+    await act(() => refreshButton.props.onRefresh());
     expect(mutate).toHaveBeenCalledTimes(1);
   });
 
@@ -153,7 +153,7 @@ describe("StorageUsagePanel", () => {
     expect(markup).not.toContain("Stockage utilisé");
   });
 
-  it("mounts the deferred panel only after the consultation button is clicked", () => {
+  it("mounts the deferred panel only after the consultation button is clicked", async () => {
     let renderer: ReturnType<typeof create>;
 
     act(() => {
@@ -175,13 +175,13 @@ describe("StorageUsagePanel", () => {
     const hideButton = renderer!.root
       .findAllByType("button")
       .find((button) => button.children.join("").includes("Masquer"));
-    act(() => hideButton?.props.onClick());
+    await act(() => hideButton?.props.onClick());
     expect(renderer!.root.findAllByProps({ "data-storage-panel-mounted": "true" })).toHaveLength(1);
 
     const reopenButton = renderer!.root
       .findAllByType("button")
       .find((button) => button.children.join("").includes("Consulter"));
-    act(() => reopenButton?.props.onClick());
+    await act(() => reopenButton?.props.onClick());
     expect(renderer!.root.findAllByProps({ "data-storage-panel-mounted": "true" })).toHaveLength(1);
   });
 });

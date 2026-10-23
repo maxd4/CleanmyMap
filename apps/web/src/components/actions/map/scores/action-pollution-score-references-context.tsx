@@ -65,7 +65,7 @@ export function ActionPollutionScoreReferencesProvider({
     : null;
 
   const reload = useCallback(() => {
-    void mutate();
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ mutate();
   }, [mutate]);
 
   useEffect(() => {

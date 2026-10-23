@@ -150,7 +150,7 @@ export function ActionCancellationControl({
             <CmmButton
               type="button"
               tone="destructive"
-              onClick={() => void cancel()}
+              onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ cancel(); }}
               loading={state === "pending"}
               disabled={confirmationText.trim().toUpperCase() !== ACTION_CANCELLATION_CONFIRMATION}
             >

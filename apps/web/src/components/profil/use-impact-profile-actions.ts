@@ -27,7 +27,7 @@ export function useImpactProfileActions(displayName: string) {
       origin: { y: 0.6 },
       colors: ["#ef4444", "#f87171", "#ffffff"],
     });
-    void animation?.catch((error: unknown) => {
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ animation?.catch((error: unknown) => {
       logWarning("ImpactProfile", "Animation de célébration indisponible.", {
         errorName: error instanceof Error ? error.name : "UnknownError",
       });

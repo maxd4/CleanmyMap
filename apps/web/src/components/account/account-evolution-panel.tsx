@@ -95,7 +95,7 @@ export function AccountEvolutionPanel({
 
   useEffect(() => {
     if (!initialStatusAvailable) {
-      void Promise.resolve().then(() => refreshStatus());
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ Promise.resolve().then(() => refreshStatus());
     }
   }, [initialStatusAvailable, refreshStatus]);
 
@@ -182,7 +182,7 @@ export function AccountEvolutionPanel({
         ) : !statusAvailable ? (
           <div className="mt-6 rounded-2xl border border-rose-300/25 bg-rose-300/10 p-5 text-sm text-rose-50">
             <p>Le statut de votre demande est indisponible. Le formulaire reste fermé par sécurité.</p>
-            <CmmButton type="button" tone="secondary" variant="pill" className="mt-4" onClick={() => void refreshStatus()}>
+            <CmmButton type="button" tone="secondary" variant="pill" className="mt-4" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refreshStatus(); }}>
               Réessayer
             </CmmButton>
           </div>

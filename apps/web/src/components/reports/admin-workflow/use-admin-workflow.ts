@@ -232,7 +232,7 @@ export function useAdminWorkflow(
 }
 
  function reloadPreview() {
- void preview.mutate();
+ void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ preview.mutate();
  }
 
  const {

@@ -170,7 +170,7 @@ export function ActionsMapExportButton({
               key={action.id}
               type="button"
               role="menuitem"
-              onClick={() => void handleExport(action.id)}
+              onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleExport(action.id); }}
               disabled={!canExport || Boolean(isExporting)}
               className="flex w-full items-start justify-between gap-4 rounded-2xl px-3 py-3 text-left transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50"
             >

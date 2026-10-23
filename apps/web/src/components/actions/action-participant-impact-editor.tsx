@@ -302,8 +302,8 @@ function ActionParticipantImpactEditorRow({
         error={error}
         saving={saving}
         setDraft={setDraft}
-        save={() => void save()}
-        switchToAutomatic={() => void switchToAutomatic()}
+        save={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ save(); }}
+        switchToAutomatic={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ switchToAutomatic(); }}
       />
     </div>
   );

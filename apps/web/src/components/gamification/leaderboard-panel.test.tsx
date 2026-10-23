@@ -28,7 +28,7 @@ type MockSwrState = {
 };
 
 describe("LeaderboardPanel", () => {
-  it("loads each selected view through the recent-view cache contract", () => {
+  it("loads each selected view through the recent-view cache contract", async () => {
     swrCalls.length = 0;
     swrState.current = { data: undefined, error: undefined, isLoading: true };
 
@@ -39,8 +39,8 @@ describe("LeaderboardPanel", () => {
 
     const structureButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).includes("Structures"));
     const userButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).includes("Utilisateurs"));
-    act(() => structureButton?.props.onClick());
-    act(() => userButton?.props.onClick());
+    await act(() => structureButton?.props.onClick());
+    await act(() => userButton?.props.onClick());
 
     expect(swrCalls.map(({ key }) => key)).toEqual([
       "/api/gamification/leaderboard/public?scope=user&metric=level",

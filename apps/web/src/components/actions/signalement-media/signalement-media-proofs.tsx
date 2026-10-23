@@ -49,8 +49,8 @@ export function SignalementMediaProofs({
     <SignalementMediaProofsView
       snapshot={controller.getSnapshot()}
       variant={variant}
-      onLoad={() => controller.load()}
-      onRetry={() => controller.retry()}
+      onLoad={() => { void /* fire-and-forget -- the media view owns loading state and errors. */ controller.load(); }}
+      onRetry={() => { void /* fire-and-forget -- the media view owns retry state and errors. */ controller.retry(); }}
     />
   );
 }

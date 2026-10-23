@@ -68,7 +68,7 @@ export function CodexUsagePanel() {
       headerAction={
         <button
           type="button"
-          onClick={() => void save()}
+          onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ save(); }}
           disabled={isSaving}
           className={cn(
             "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60",

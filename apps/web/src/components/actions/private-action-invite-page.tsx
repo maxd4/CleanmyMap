@@ -92,7 +92,7 @@ export function PrivateActionInvitePage({ token }: { token: string }) {
       if (action.participationStatus === "cancelled") {
         return <p className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-950">Cette demande a été refusée ou annulée.</p>;
       }
-      return <CmmButton className="mt-5" type="button" tone="primary" variant="pill" size="md" onClick={() => void requestRegistration()} disabled={busy}>{busy ? "Envoi…" : "Demander à être ajouté aux participants"}</CmmButton>;
+      return <CmmButton className="mt-5" type="button" tone="primary" variant="pill" size="md" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ requestRegistration(); }} disabled={busy}>{busy ? "Envoi…" : "Demander à être ajouté aux participants"}</CmmButton>;
     }
     if (action.registrationStatus === "confirmed") {
       return <p className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">Votre inscription est confirmée. Cette confirmation ne vaut pas présence sur le terrain.</p>;
@@ -100,7 +100,7 @@ export function PrivateActionInvitePage({ token }: { token: string }) {
     if (action.registrationStatus === "cancelled") {
       return <p className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-950">Cette inscription a été refusée ou annulée.</p>;
     }
-    return <CmmButton className="mt-5" type="button" tone="primary" variant="pill" size="md" onClick={() => void requestRegistration()} disabled={busy}>{busy ? "Envoi…" : "Rejoindre l’action"}</CmmButton>;
+    return <CmmButton className="mt-5" type="button" tone="primary" variant="pill" size="md" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ requestRegistration(); }} disabled={busy}>{busy ? "Envoi…" : "Rejoindre l’action"}</CmmButton>;
   }
 
   return (

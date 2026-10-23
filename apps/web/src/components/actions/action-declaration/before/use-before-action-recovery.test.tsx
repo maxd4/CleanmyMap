@@ -183,7 +183,7 @@ describe("before-action draft recovery", () => {
         setPublishedAction: vi.fn(),
         setPublishedAt: vi.fn(),
       });
-      useEffect(() => { void submit(); }, [submit]);
+      useEffect(() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submit(); }, [submit]);
       return null;
     }
 

@@ -308,7 +308,7 @@ export function useActionDeclarationSubmission({
   function trackFormStart() {
     if (!hasTrackedStartRef.current) {
       hasTrackedStartRef.current = true;
-      void trackFunnel("start_form", declarationMode, {
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ trackFunnel("start_form", declarationMode, {
         source: "action_declaration_form",
         declarationMode,
         recordType: form.recordType,

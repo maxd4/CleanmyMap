@@ -49,7 +49,7 @@ export function ActionsHistoryListControls({
           </p>
         </div>
         <button
-          onClick={() => void reload()}
+          onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ reload(); }}
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100"
         >
           {isValidating ? "Actualisation..." : "Rafraichir"}

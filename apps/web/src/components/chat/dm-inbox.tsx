@@ -471,7 +471,7 @@ export const DmInbox = memo(function DmInbox({
           requests={contactRequests}
           respondingRequestId={respondingRequestId}
           onRespond={(request, decision) =>
-            void respondToRequest(request, decision)
+            { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ respondToRequest(request, decision); }
           }
         />
         <ConversationState

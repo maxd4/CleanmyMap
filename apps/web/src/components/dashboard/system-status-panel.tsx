@@ -286,8 +286,8 @@ export function SystemStatusPanel() {
   const serviceSummary = services.data?.summary ?? null;
   const serviceTimeline = services.data?.timeline ?? [];
   const refresh = () => {
-    void uptime.mutate();
-    void services.mutate();
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ uptime.mutate();
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ services.mutate();
   };
 
   return (

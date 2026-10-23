@@ -83,13 +83,13 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       syncAnalyticsConsentCookie(consentDecision);
     }
     if (!optionalAnalyticsAllowed) {
-      void disablePostHogClient();
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ disablePostHogClient();
       return;
     }
 
-    void initPostHogClient(true).then((posthog) => {
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ initPostHogClient(true).then((posthog) => {
       if (posthog && !hasAnalyticsConsent()) {
-        void disablePostHogClient();
+        void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ disablePostHogClient();
       }
     });
   }, [consentDecision, optionalAnalyticsAllowed]);

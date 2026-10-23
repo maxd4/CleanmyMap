@@ -1,5 +1,5 @@
 import * as React from "react";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -14,6 +14,29 @@ import { REPORT_ADVANCED_FILTER_DEFAULTS } from "./reports-web-document.shared";
 import { collectDomElements } from "./__tests__/reports-web-document.test-support";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+
+type SelectProps = { value?: string; disabled?: boolean; onChange: (event: { target: { value: string } }) => void };
+type CheckboxProps = { type?: string; onChange: () => void };
+type ButtonProps = { [key: string]: unknown; onClick: () => void };
+type PdfExportData = {
+  title?: string;
+  summary?: string;
+  chapters: Array<{ lines: string }>;
+  [key: string]: unknown;
+};
+type PdfExportOptions = {
+  data: PdfExportData;
+  onGenerate: (payload: unknown, ...rest: unknown[]) => unknown;
+  [key: string]: unknown;
+};
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
+
+function latestExportOptions(): PdfExportOptions {
+  return mocks.usePdfExport.mock.calls[0]?.[0] as unknown as PdfExportOptions;
+}
 
 const mocks = vi.hoisted(() => ({
   useReportsWebDocumentModel: vi.fn(),
@@ -134,7 +157,7 @@ describe("ReportsWebDocumentPreparation", () => {
     vi.clearAllMocks();
   });
 
-  it("executes real configuration events and opens the advanced filter panel", () => {
+  it("executes real configuration events and opens the advanced filter panel", async () => {
     const props = {
       ...preparationProps,
       onPeriodChange: vi.fn(),
@@ -154,12 +177,12 @@ describe("ReportsWebDocumentPreparation", () => {
       });
 
       act(() => {
-        renderer.root.findByProps({ id: "reports-web-document-period" }).props.onChange({ target: { value: "custom_range" } });
-        renderer.root.findByProps({ id: "reports-web-document-detail-level" }).props.onChange({ target: { value: "exhaustif" } });
-        renderer.root.findByProps({ id: "reports-web-document-theme" }).props.onChange({ target: { value: "scientific" } });
-        renderer.root.findByProps({ id: "reports-web-document-scope" }).props.onChange({ target: { value: "association:association-1" } });
-        renderer.root.findAllByType("input").filter((input) => input.props.type === "checkbox")[0]?.props.onChange();
-        renderer.root.findAllByType("button").find((button) => button.props["aria-controls"] === "reports-advanced-filters")?.props.onClick();
+        propsOf<SelectProps>(renderer.root.findByProps({ id: "reports-web-document-period" })).onChange({ target: { value: "custom_range" } });
+        propsOf<SelectProps>(renderer.root.findByProps({ id: "reports-web-document-detail-level" })).onChange({ target: { value: "exhaustif" } });
+        propsOf<SelectProps>(renderer.root.findByProps({ id: "reports-web-document-theme" })).onChange({ target: { value: "scientific" } });
+        propsOf<SelectProps>(renderer.root.findByProps({ id: "reports-web-document-scope" })).onChange({ target: { value: "association:association-1" } });
+        renderer.root.findAllByType("input").map((input) => propsOf<CheckboxProps>(input)).find((input) => input.type === "checkbox")?.onChange();
+        renderer.root.findAllByType("button").map((button) => propsOf<ButtonProps>(button)).find((button) => button["aria-controls"] === "reports-advanced-filters")?.onClick();
       });
 
       expect(props.onPeriodChange).toHaveBeenCalledWith("custom_range");
@@ -172,8 +195,8 @@ describe("ReportsWebDocumentPreparation", () => {
       act(() => {
         renderer.update(React.createElement(ReportsWebDocumentPreparation, { ...props, advancedFiltersOpen: true, period: "custom_range" }));
       });
-      const advancedSelect = renderer.root.findAllByType("select").find((select) => select.props.value === "all");
-      act(() => advancedSelect?.props.onChange({ target: { value: "without_blocking_anomaly" } }));
+      const advancedSelect = renderer.root.findAllByType("select").map((select) => propsOf<SelectProps>(select)).find((select) => select.value === "all");
+      await act(() => advancedSelect?.onChange({ target: { value: "without_blocking_anomaly" } }));
       expect(props.onAdvancedFiltersChange).toHaveBeenCalledWith({ ...REPORT_ADVANCED_FILTER_DEFAULTS, dataQuality: "without_blocking_anomaly" });
       expect(renderer.root.findAllByType("select").some((select) => select.props.disabled === true)).toBe(true);
     } finally {
@@ -254,7 +277,7 @@ describe("ReportsWebDocumentPreparation", () => {
         initialScope: { kind: "association", value: "association-1" },
       }),
     );
-    const exportOptions = mocks.usePdfExport.mock.calls[0]?.[0];
+    const exportOptions = latestExportOptions();
     expect(exportOptions).toEqual(expect.objectContaining({ periode: "six_months" }));
     expect(exportOptions.data.summary).toContain(
       "Modules optionnels inclus: Données & cartographie, Données brutes.",
@@ -411,7 +434,7 @@ describe("ReportsWebDocumentPreparation", () => {
         initialCommunityEvents: [],
       }),
     );
-    const exportOptions = mocks.usePdfExport.mock.calls[0]?.[0];
+    const exportOptions = latestExportOptions();
     expect(exportOptions).toEqual(
       expect.objectContaining({
         rubrique: "reporting",
@@ -535,7 +558,7 @@ describe("ReportsWebDocumentPreparation", () => {
       } as unknown as ReportsWebDocumentProps),
     );
 
-    const exportOptions = mocks.usePdfExport.mock.calls[0]?.[0];
+    const exportOptions = latestExportOptions();
     const serverPayload = {
       title: "Rapport d'impact - Action canonique - Par défaut",
       rubrique: "reporting",
@@ -627,7 +650,7 @@ describe("ReportsWebDocumentPreparation", () => {
         communityEvents: [],
       } as ReportsWebDocumentProps),
     );
-    const exportOptions = mocks.usePdfExport.mock.calls[0]?.[0];
+    const exportOptions = latestExportOptions();
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: "unavailable" }) }),
@@ -663,7 +686,7 @@ describe("ReportsWebDocumentPreparation", () => {
         communityEvents: [],
       } as ReportsWebDocumentProps),
     );
-    const exportOptions = mocks.usePdfExport.mock.calls[0]?.[0];
+    const exportOptions = latestExportOptions();
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({

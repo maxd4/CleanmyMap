@@ -228,7 +228,7 @@ export function PromotionRequestsPanel({ initialItems }: PromotionRequestsPanelP
                 ) : null}
                 <button
                   type="button"
-                  onClick={() => void copySummary(item)}
+                  onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ copySummary(item); }}
                   className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100"
                 >
                   {copiedId === item.id
@@ -282,7 +282,7 @@ export function PromotionRequestsPanel({ initialItems }: PromotionRequestsPanelP
                       (reasons[item.id] ?? "").trim().length < 5
                     }
                     onClick={() =>
-                      void reviewRequest(item.id, "accept", reasons[item.id] ?? "")
+                      { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ reviewRequest(item.id, "accept", reasons[item.id] ?? ""); }
                     }
                     className="rounded-lg bg-emerald-600 px-3 py-2 cmm-text-caption font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -301,7 +301,7 @@ export function PromotionRequestsPanel({ initialItems }: PromotionRequestsPanelP
                       (reasons[item.id] ?? "").trim().length < 5
                     }
                     onClick={() =>
-                      void reviewRequest(item.id, "reject", reasons[item.id] ?? "")
+                      { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ reviewRequest(item.id, "reject", reasons[item.id] ?? ""); }
                     }
                     className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >

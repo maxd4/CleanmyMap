@@ -134,7 +134,7 @@ export function RoleManagementPanel({ initialAccounts, currentUserId }: RoleMana
       reason={controller.reason}
       reasonError={controller.reasonError}
       actionState={controller.actionState}
-      onSearch={controller.handleSearch}
+      onSearch={(event) => { void /* fire-and-forget -- the search form owns loading state and error presentation. */ controller.handleSearch(event); }}
       onSearchQueryChange={controller.setSearchQuery}
       onClearSearch={() => {
         controller.setSearchQuery("");
@@ -147,7 +147,7 @@ export function RoleManagementPanel({ initialAccounts, currentUserId }: RoleMana
         if (controller.reasonError) controller.setReasonError(null);
       }}
       onRoleChange={(userId, action, role) => {
-        void controller.updateRole(userId, action, role);
+        void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ controller.updateRole(userId, action, role);
       }}
     />
   );

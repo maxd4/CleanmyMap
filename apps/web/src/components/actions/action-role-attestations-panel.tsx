@@ -78,7 +78,7 @@ export function ActionRoleAttestationsPanel({ actionId }: { actionId: string }) 
   }, [actionId]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => { void load(); }, 0);
+    const timer = window.setTimeout(() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ load(); }, 0);
     return () => window.clearTimeout(timer);
   }, [load]);
 
@@ -167,8 +167,8 @@ export function ActionRoleAttestationsPanel({ actionId }: { actionId: string }) 
                       </label>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <CmmButton tone="primary" variant="pill" size="sm" loading={busyKey === `${participant.userId}:${selectedRole}:confirm`} onClick={() => void review(participant.userId, selectedRole, "confirm")}>Confirmer</CmmButton>
-                      <CmmButton tone="destructive" variant="ghost" size="sm" loading={busyKey === `${participant.userId}:${selectedRole}:reject`} onClick={() => void review(participant.userId, selectedRole, "reject")}>Rejeter</CmmButton>
+                      <CmmButton tone="primary" variant="pill" size="sm" loading={busyKey === `${participant.userId}:${selectedRole}:confirm`} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ review(participant.userId, selectedRole, "confirm"); }}>Confirmer</CmmButton>
+                      <CmmButton tone="destructive" variant="ghost" size="sm" loading={busyKey === `${participant.userId}:${selectedRole}:reject`} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ review(participant.userId, selectedRole, "reject"); }}>Rejeter</CmmButton>
                     </div>
                     {!plannedCodes.has(selectedRole) ? <p className="mt-2 text-xs text-amber-800">Cette mission n’était pas prévue : la justification sera conservée dans la provenance auditée.</p> : null}
                   </div>
@@ -184,7 +184,7 @@ export function ActionRoleAttestationsPanel({ actionId }: { actionId: string }) 
               variant="ghost"
               size="sm"
               loading={loadingMore}
-              onClick={() => void load({ offset: state.pagination.nextOffset ?? state.participants.length, append: true })}
+              onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ load({ offset: state.pagination.nextOffset ?? state.participants.length, append: true }); }}
             >
               Charger les participants suivants
             </CmmButton>

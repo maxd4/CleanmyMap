@@ -347,24 +347,24 @@ export function AccountSettingsEditor({ locale, initialData }: { locale: Locale;
     setFirstName={setFirstName}
     setLastName={setLastName}
     identityState={identityState}
-    onSaveIdentity={() => void saveIdentity()}
+    onSaveIdentity={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ saveIdentity(); }}
     handle={handle}
     setHandle={setHandle}
     displayNameMode={displayNameMode}
     modeState={modeState}
-    onSaveMode={(mode) => void saveMode(mode)}
+    onSaveMode={(mode) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ saveMode(mode); }}
     handleState={handleState}
     handleError={handleError}
-    onSaveHandle={() => void saveHandle()}
+    onSaveHandle={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ saveHandle(); }}
     locations={locations}
     setLocations={setLocations}
     locationState={locationState}
-    onSaveLocation={(kind) => void saveLocation(kind)}
+    onSaveLocation={(kind) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ saveLocation(kind); }}
     activityStatus={activityStatus}
     activityState={activityState}
-    onSaveActivity={(status) => void saveActivity(status)}
+    onSaveActivity={(status) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ saveActivity(status); }}
     ageBand={ageBand}
     ageBandState={ageBandState}
-    onSaveAgeBand={(value) => void saveAgeBand(value)}
+    onSaveAgeBand={(value) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ saveAgeBand(value); }}
   />;
 }

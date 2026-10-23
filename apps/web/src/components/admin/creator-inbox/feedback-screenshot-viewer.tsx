@@ -73,7 +73,7 @@ export function FeedbackScreenshotViewer({ feedbackId }: { feedbackId: string })
     <div className="mt-3">
       <button
         type="button"
-        onClick={() => void loadScreenshot()}
+        onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadScreenshot(); }}
         disabled={state === "loading"}
         className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-wait disabled:opacity-60"
       >

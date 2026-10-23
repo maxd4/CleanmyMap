@@ -46,7 +46,7 @@ export function ActionDeclarationExportPickerFooter({
           type="button"
           tone="secondary"
           size="sm"
-          onClick={() => void handleShareText()}
+          onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleShareText(); }}
         >
           Copier la légende
         </CmmButton>
@@ -56,7 +56,7 @@ export function ActionDeclarationExportPickerFooter({
             tone="secondary"
             size="sm"
             disabled={status !== "idle"}
-            onClick={() => void handleDownloadBundle()}
+            onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleDownloadBundle(); }}
           >
             {status === "exporting-bundle"
               ? "Téléchargement en cours..."
@@ -70,7 +70,7 @@ export function ActionDeclarationExportPickerFooter({
           disabled={status !== "idle" || !selectedTarget}
           onClick={() => {
             if (selectedTarget) {
-              void handleExport(selectedTarget);
+              void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleExport(selectedTarget);
             }
           }}
           className="shrink-0"

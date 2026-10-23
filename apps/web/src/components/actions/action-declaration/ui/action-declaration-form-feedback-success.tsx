@@ -101,7 +101,7 @@ function GroupInviteFeedback({
         </Link>
         <button
           type="button"
-          onClick={() => void handleGroupInviteShare()}
+          onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleGroupInviteShare(); }}
           className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-semibold text-sky-900 hover:bg-sky-50 transition"
         >
           <ClipboardCopy size={13} />
@@ -261,7 +261,7 @@ export function ActionDeclarationFormFeedbackSuccess({
       <SuccessFeedbackActions
         createdId={createdId}
         retentionLoop={retentionLoop}
-        onShare={() => void handleShare()}
+        onShare={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleShare(); }}
         onReset={onReset}
       />
     </div>

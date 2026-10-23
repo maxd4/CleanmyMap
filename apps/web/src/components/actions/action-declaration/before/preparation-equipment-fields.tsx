@@ -250,7 +250,7 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
         recommendedLines={recommendedLines}
         volunteerChecklist={volunteerChecklist}
         weatherState={weather.weatherState}
-        requestWeather={() => void weather.requestWeather()}
+        requestWeather={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ weather.requestWeather(); }}
       />
     </div>
   );

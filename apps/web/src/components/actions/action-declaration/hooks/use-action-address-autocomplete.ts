@@ -28,7 +28,7 @@ export function useActionAddressAutocomplete({ value, onChange }: UseActionAddre
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
-    const timer = window.setTimeout(async () => {
+    const loadSuggestions = async () => {
       setIsLoading(true);
       const localSuggestions = getLocalGeoAddressSuggestions(trimmedValue, 6);
       setSuggestions(localSuggestions);
@@ -39,6 +39,9 @@ export function useActionAddressAutocomplete({ value, onChange }: UseActionAddre
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
       }
+    };
+    const timer = window.setTimeout(() => {
+      void /* fire-and-forget -- the debounce callback owns its loading state and abort handling. */ loadSuggestions();
     }, 220);
     return () => {
       clearTimeout(timer);

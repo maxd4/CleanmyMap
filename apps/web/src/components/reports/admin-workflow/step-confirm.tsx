@@ -52,7 +52,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
 
     <div className="mt-3 flex flex-wrap items-center gap-3">
     <CmmButton
-      onClick={() => void workflow.onDownloadCsv()}
+      onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ workflow.onDownloadCsv(); }}
       tone="primary"
       loading={workflow.csvState === "pending"}
     >
@@ -61,7 +61,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
     : (fr ? "Confirmer export CSV" : "Confirm CSV export")}
     </CmmButton>
     <CmmButton
-      onClick={() => void workflow.onDownloadJson()}
+      onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ workflow.onDownloadJson(); }}
       tone="secondary"
       loading={workflow.jsonState === "pending"}
     >
@@ -89,7 +89,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  </CmmField>
  <div className="mt-3 flex flex-wrap items-center gap-3">
  <CmmButton
-  onClick={() => void workflow.onImportDryRun()}
+  onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ workflow.onImportDryRun(); }}
   tone="secondary"
   loading={workflow.importDryRunState === "pending"}
  >
@@ -98,7 +98,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  :"Previsualiser (dry-run)"}
  </CmmButton>
  <CmmButton
- onClick={() => void workflow.onImportPastActions()}
+ onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ workflow.onImportPastActions(); }}
  disabled={!workflow.canConfirmImport}
  loading={workflow.importState === "pending"}
  tone="primary"
@@ -207,7 +207,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  )}
  <div className="flex items-end">
  <CmmButton
- onClick={() => void workflow.onModerateEntity()}
+ onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ workflow.onModerateEntity(); }}
  disabled={
  !workflow.moderationConfirmed ||
  workflow.moderationConfirmationText.trim().toUpperCase() !==

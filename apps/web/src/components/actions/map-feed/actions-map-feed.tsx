@@ -190,7 +190,7 @@ export function ActionsMapFeedContent({
     onSelectAction: onOpenAction ?? (() => {}),
     onClearSelection,
     frameSelectedActionId,
-    onReload: () => void feedData.reload(),
+    onReload: () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ feedData.reload(); },
     onResetFilters: onResetFilters ?? (() => {}),
     showIntro,
     fullViewport,

@@ -187,7 +187,7 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
               type="button"
               tone="primary"
               variant="pill"
-              onClick={() => void handleCreateInvite()}
+              onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleCreateInvite(); }}
               disabled={isCreating}
               className="min-w-[220px]"
             >
@@ -199,7 +199,7 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
                 type="button"
                 tone="primary"
                 variant="pill"
-                onClick={() => void handleCopy()}
+                onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleCopy(); }}
                 className="min-w-[180px]"
               >
                 <Copy size={14} />
@@ -209,7 +209,7 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
                 type="button"
                 tone="secondary"
                 variant="pill"
-                onClick={() => void handleShare()}
+                onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleShare(); }}
                 className="min-w-[170px]"
               >
                 <Share2 size={14} />

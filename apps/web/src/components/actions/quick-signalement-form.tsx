@@ -102,12 +102,12 @@ function QuickSignalementSuccessState({ submittedRecordType, onReset }: { submit
   </div>;
 }
 
-function QuickSignalementPartialState({ retryPhotoUploads, isPreparingPhotos, error }: { retryPhotoUploads: () => void; isPreparingPhotos: boolean; error: string | null }) {
+function QuickSignalementPartialState({ retryPhotoUploads, isPreparingPhotos, error }: { retryPhotoUploads: () => Promise<void>; isPreparingPhotos: boolean; error: string | null }) {
   return <div className="text-center py-16 space-y-10 animate-in zoom-in duration-700">
     <div className="w-24 h-24 bg-amber-400/20 text-amber-300 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-amber-400/20 border border-amber-400/30"><AlertTriangle size={48} /></div>
     <div className="space-y-3"><h2 className="text-4xl font-black text-white tracking-tighter uppercase">Signalement créé</h2><p className="text-xl text-white/50 font-medium">Le signalement est conservé, mais une ou plusieurs preuves photo restent à transmettre.</p></div>
     <div className="pt-6 flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-      <button onClick={retryPhotoUploads} disabled={isPreparingPhotos} className="flex-1 py-6 rounded-[2rem] bg-amber-300 text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-amber-200 transition-all disabled:opacity-50">{isPreparingPhotos ? "Nouvel essai..." : "Réessayer les photos"}</button>
+      <button onClick={() => { void /* fire-and-forget -- the partial-success state owns upload retry state and errors. */ retryPhotoUploads(); }} disabled={isPreparingPhotos} className="flex-1 py-6 rounded-[2rem] bg-amber-300 text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-amber-200 transition-all disabled:opacity-50">{isPreparingPhotos ? "Nouvel essai..." : "Réessayer les photos"}</button>
       <Link href={DASHBOARD_ROUTE} className="flex-1 py-6 rounded-[2rem] bg-white/5 border border-white/5 text-white/60 font-black text-xs uppercase tracking-[0.2em] hover:bg-white/10 transition-all text-center flex items-center justify-center">Continuer</Link>
     </div>
     <Link href="#mes-observations" className="mx-auto inline-flex min-h-10 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-emerald-100 transition hover:bg-emerald-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200">Voir mes observations</Link>
@@ -268,7 +268,7 @@ export function TrashSpotterObservationForm({
   useQuickSignalementLocation({ initialLocation, setRecordType, setSelectedCategories, setLocation, setLocStatus });
 
   const handleSubmit = () => {
-    void executeQuickSignalementSubmission({
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ executeQuickSignalementSubmission({
       isCleanPlace,
       selectedCategories,
       location,

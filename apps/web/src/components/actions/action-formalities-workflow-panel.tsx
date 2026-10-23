@@ -297,14 +297,14 @@ function ActionFormalitiesWorkflowContent({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        {actionId ? <CmmButton tone="primary" variant="pill" size="sm" onClick={() => void saveFacts()} disabled={isSaving}>
+        {actionId ? <CmmButton tone="primary" variant="pill" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ saveFacts(); }} disabled={isSaving}>
           {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           Enregistrer les faits
         </CmmButton> : <span className="text-xs font-semibold text-sky-800">Qualification indicative · non persistée avant la création de l&apos;action</span>}
         {hasUnknown ? <span className="text-xs text-amber-800">Certaines données doivent encore être confirmées.</span> : null}
       </div>
       {error ? <p className="text-sm text-rose-700" role="alert">{error}</p> : null}
-      <ActionFormalitiesQualificationView qualification={visibleData.qualification} workflow={visibleData.workflow} isSaving={isSaving} readOnly={!actionId} onTransition={(formalityId, kind) => void applyTransition(formalityId, kind)} />
+      <ActionFormalitiesQualificationView qualification={visibleData.qualification} workflow={visibleData.workflow} isSaving={isSaving} readOnly={!actionId} onTransition={(formalityId, kind) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyTransition(formalityId, kind); }} />
     </div>
   );
 }

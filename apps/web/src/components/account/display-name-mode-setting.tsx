@@ -75,7 +75,7 @@ export function DisplayNameModeSetting({
 
     setMessage(null);
     startTransition(() => {
-      void (async () => {
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ (async () => {
         try {
           const response = await fetch("/api/users/profile/display-name-mode", {
             method: "PATCH",

@@ -56,7 +56,7 @@ export function ActionDeclarationExportPickerHistory({
                   tone="secondary"
                   size="sm"
                   className="shrink-0"
-                  onClick={() => void handleReplayHistoryEntry(entry)}
+                  onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleReplayHistoryEntry(entry); }}
                 >
                   Retélécharger
                 </CmmButton>

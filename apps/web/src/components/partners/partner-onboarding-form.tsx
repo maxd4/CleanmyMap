@@ -50,7 +50,7 @@ export function PartnerOnboardingForm() {
   } = usePartnerOnboarding();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={(event) => { void /* fire-and-forget -- the onboarding form owns submission state and errors. */ handleSubmit(event); }} className="space-y-4">
       <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden opacity-0" aria-hidden="true">
         <label htmlFor="partner-onboarding-website">Website</label>
         <input

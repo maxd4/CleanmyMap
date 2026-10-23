@@ -124,7 +124,7 @@ describe("DashboardNotificationsSection behavior", () => {
     const renderer = renderSection();
     await flush();
     const tabs = renderer.root.findAllByProps({ role: "tab" });
-    act(() => tabs[1]?.props.onClick());
+    await act(() => tabs[1]?.props.onClick());
     expect(renderer.root.findAllByProps({ "data-notification-id": "one" })).toHaveLength(1);
     const loadMore = renderer.root.findByProps({ children: "Afficher plus" });
     await act(async () => { loadMore.props.onClick(); await flush(); });
@@ -139,7 +139,7 @@ describe("DashboardNotificationsSection behavior", () => {
     loadPageMock.mockResolvedValue(page([item]));
     const renderer = renderSection();
     await flush();
-    act(() => renderer.root.findAllByProps({ role: "tab" })[1]?.props.onClick());
+    await act(() => renderer.root.findAllByProps({ role: "tab" })[1]?.props.onClick());
     await act(async () => { renderer.root.findByProps({ "data-notification-id": "open-me" }).props.onClick(); await Promise.resolve(); });
     expect(markReadMock).toHaveBeenCalledWith("user-1", "open-me", authState.getToken);
     expect(router.push).toHaveBeenCalledWith("/notifications/open-me");
@@ -164,7 +164,7 @@ describe("DashboardNotificationsSection behavior", () => {
     await flush();
     resolveOld(page([notification("old")]));
     await flush();
-    act(() => renderer.root.findAllByProps({ role: "tab" })[1]?.props.onClick());
+    await act(() => renderer.root.findAllByProps({ role: "tab" })[1]?.props.onClick());
     expect(renderer.root.findAllByProps({ "data-notification-id": "old" })).toHaveLength(0);
     expect(renderer.root.findAllByProps({ "data-notification-id": "new" })).toHaveLength(1);
     renderer.unmount();

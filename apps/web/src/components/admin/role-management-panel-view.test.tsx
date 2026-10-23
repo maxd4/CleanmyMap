@@ -59,7 +59,7 @@ describe("RoleManagementPanelView", () => {
     expect(buttons(renderer).filter((button) => button.props.children === "Révoquer").length).toBe(2);
   });
 
-  it("renders empty state, search result state, pending buttons and English labels", () => {
+  it("renders empty state, search result state, pending buttons and English labels", async () => {
     const pending: RoleActionState = { userId: "elected", action: "revoke" };
     const { renderer, callbacks } = renderView({
       fr: false,
@@ -80,11 +80,11 @@ describe("RoleManagementPanelView", () => {
     expect(search?.props.disabled).toBe(true);
     const clear = buttons(renderer).find((button) => button.props.children === "Clear");
     expect(clear).toBeDefined();
-    act(() => clear?.props.onClick());
+    await act(() => clear?.props.onClick());
     expect(callbacks.onClearSearch).toHaveBeenCalledOnce();
   });
 
-  it("passes exact assign/revoke payloads and reason edits to callbacks", () => {
+  it("passes exact assign/revoke payloads and reason edits to callbacks", async () => {
     const { renderer, callbacks } = renderView({
       accounts: [account("other", "benevole", "Other")],
       reason: "Valid reason",
@@ -94,11 +94,11 @@ describe("RoleManagementPanelView", () => {
     const assignElected = buttons(renderer).find((button) => button.props.children === "Attribuer élu");
     expect(assignAdmin).toBeDefined();
     expect(assignElected).toBeDefined();
-    act(() => assignAdmin?.props.onClick());
-    act(() => assignElected?.props.onClick());
+    await act(() => assignAdmin?.props.onClick());
+    await act(() => assignElected?.props.onClick());
     expect(callbacks.onRoleChange).toHaveBeenNthCalledWith(1, "other", "assign", "admin");
     expect(callbacks.onRoleChange).toHaveBeenNthCalledWith(2, "other", "assign", "elu");
-    act(() => renderer.root.findByType("textarea").props.onChange({ target: { value: "Updated reason" } }));
+    await act(() => renderer.root.findByType("textarea").props.onChange({ target: { value: "Updated reason" } }));
     expect(callbacks.onReasonChange).toHaveBeenCalledWith("Updated reason");
   });
 });

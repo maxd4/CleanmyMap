@@ -124,7 +124,7 @@ describe("useCreatorInboxPagination", () => {
     const hook = renderPagination(initialParams());
 
     act(() => {
-      void hook.result.loadNextPage();
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ hook.result.loadNextPage();
     });
     const replacementGeneration = hook.result.beginReplacement();
     act(() => {
@@ -152,9 +152,9 @@ describe("useCreatorInboxPagination", () => {
     const hook = renderPagination(initialParams());
 
     act(() => {
-      void hook.result.loadNextPage();
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ hook.result.loadNextPage();
       hook.result.beginReplacement();
-      void hook.result.loadNextPage();
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ hook.result.loadNextPage();
     });
 
     expect(fetchCreatorInboxPageMock).toHaveBeenCalledTimes(1);
@@ -182,8 +182,8 @@ describe("useCreatorInboxPagination", () => {
     const hook = renderPagination(initialParams());
 
     act(() => {
-      void hook.result.loadNextPage();
-      void hook.result.loadNextPage();
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ hook.result.loadNextPage();
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ hook.result.loadNextPage();
     });
     expect(fetchCreatorInboxPageMock).toHaveBeenCalledTimes(1);
 
@@ -199,7 +199,7 @@ describe("useCreatorInboxPagination", () => {
     const hook = renderPagination(initialParams());
 
     act(() => {
-      void hook.result.loadNextPage();
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ hook.result.loadNextPage();
     });
     hook.update(
       initialParams({

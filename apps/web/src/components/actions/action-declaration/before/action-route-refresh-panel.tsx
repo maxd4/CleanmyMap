@@ -267,7 +267,7 @@ export function ActionRouteRefreshPanel({
           tone="secondary"
           variant="pill"
           size="md"
-          onClick={() => void refresh()}
+          onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refresh(); }}
           disabled={state === "loading" || state === "applying"}
         >
           {state === "loading" ? "Actualisation…" : "Actualiser l'itinéraire"}
@@ -307,7 +307,7 @@ export function ActionRouteRefreshPanel({
               <CmmButton tone="tertiary" variant="pill" size="sm" onClick={() => { setProposal(null); setState("kept"); setMessage("L'itinéraire actuel est conservé."); }}>
                 Conserver l&apos;itinéraire actuel
               </CmmButton>
-              <CmmButton tone="primary" variant="pill" size="sm" onClick={() => void applyProposal()} disabled={state === "applying"}>
+              <CmmButton tone="primary" variant="pill" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyProposal(); }} disabled={state === "applying"}>
                 {state === "applying" ? "Application…" : "Utiliser le nouvel itinéraire"}
               </CmmButton>
             </div>

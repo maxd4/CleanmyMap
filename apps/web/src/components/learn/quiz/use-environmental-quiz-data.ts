@@ -79,7 +79,7 @@ export function useEnvironmentalQuizData({
       }
     };
 
-    void init();
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ init();
     return () => { cancelled = true; };
   }, [getToken, selectedAccessType, userId]);
 

@@ -159,7 +159,7 @@ export function EnvironmentalQuiz({
       onResetQuiz={resetMode}
       onStartMiniChallenge={startMiniChallenge}
       onReplayRecommendedMode={replayRecommendedMode}
-      onHandleSRSUpdate={data.handleSRSUpdate}
+      onHandleSRSUpdate={(...args) => { void /* fire-and-forget -- the quiz view owns SRS update state and errors. */ data.handleSRSUpdate(...args); }}
       onSelectTrapLevel={handleSelectTrapLevel}
       onSelectAccessType={handleSelectAccessType}
       onStartDemoMode={() => mode.startDemoSession(resetSessionState)}

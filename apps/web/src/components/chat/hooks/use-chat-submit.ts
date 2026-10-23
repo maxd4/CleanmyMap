@@ -207,7 +207,7 @@ export function useChatSubmit({
   const submitChatMessageRef = useRef<(() => Promise<void>) | null>(null);
   const feedbackOperationIdRef = useRef<string | null>(null);
   const retrySubmitChatMessage = useCallback(() => {
-    void submitChatMessageRef.current?.();
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submitChatMessageRef.current?.();
   }, []);
 
   const submitChatMessage = useCallback(async () => {
@@ -373,7 +373,7 @@ export function useChatSubmit({
 
   const handleSend = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    void submitChatMessage();
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submitChatMessage();
   }, [submitChatMessage]);
 
   return useMemo(() => ({ submitChatMessage, handleSend }), [submitChatMessage, handleSend]);

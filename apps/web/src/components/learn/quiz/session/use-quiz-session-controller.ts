@@ -82,7 +82,7 @@ export function useQuizSessionController({
     const errorCount = (sessionErrorCounts[errorType] ?? 0) + 1;
     setSessionErrorCounts((prev) => ({ ...prev, [errorType]: errorCount }));
     onIncorrectAnswer?.({ question, questionIndex: currentQuestionIdx, errorType, errorCount });
-    void onSRSUpdate(0, question);
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onSRSUpdate(0, question);
   };
 
   const revealAnswer = () => {

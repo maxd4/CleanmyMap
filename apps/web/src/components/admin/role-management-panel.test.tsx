@@ -42,7 +42,7 @@ describe("RoleManagementPanel controller", () => {
     const renderer = renderPanel();
     const input = renderer.root.findByType("input");
     const form = renderer.root.findByType("form");
-    act(() => input.props.onChange({ target: { value: "x" } }));
+    await act(() => input.props.onChange({ target: { value: "x" } }));
     await act(async () => form.props.onSubmit({ preventDefault: vi.fn() }));
     expect(textContent(renderer)).toContain("Tape au moins 2 caractères");
     const assign = button(renderer, "Attribuer admin");
@@ -56,14 +56,14 @@ describe("RoleManagementPanel controller", () => {
     const form = renderer.root.findByType("form");
     const response = { ok: true, json: async () => ({ accounts: [account("found", "elu")] }) };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(response));
-    act(() => input.props.onChange({ target: { value: "found" } }));
+    await act(() => input.props.onChange({ target: { value: "found" } }));
     await act(async () => form.props.onSubmit({ preventDefault: vi.fn() }));
     expect(textContent(renderer)).toContain("1 résultat(s)");
     vi.mocked(fetch).mockResolvedValueOnce({ ok: false, json: async () => ({ error: "Recherche refusée" }) } as Response);
     await act(async () => form.props.onSubmit({ preventDefault: vi.fn() }));
     expect(textContent(renderer)).toContain("Recherche refusée");
     const clear = button(renderer, "Effacer");
-    act(() => clear?.props.onClick());
+    await act(() => clear?.props.onClick());
     expect(renderer.root.findAllByType("table").length).toBe(1);
   });
 
@@ -71,17 +71,17 @@ describe("RoleManagementPanel controller", () => {
     const pending = deferred<Response>();
     const renderer = renderPanel("en");
     const reason = renderer.root.findByType("textarea");
-    act(() => reason.props.onChange({ target: { value: "Valid role change reason" } }));
+    await act(() => reason.props.onChange({ target: { value: "Valid role change reason" } }));
     vi.stubGlobal("fetch", vi.fn().mockReturnValueOnce(pending.promise));
     const assign = button(renderer, "Assign admin");
-    act(() => assign?.props.onClick());
+    await act(() => assign?.props.onClick());
     expect(assign?.props.disabled).toBe(true);
     pending.resolve({ ok: true, json: async () => ({ account: account("other", "admin") }) } as Response);
     await act(async () => { await pending.promise; });
     expect(textContent(renderer)).toContain("Administrator");
 
     vi.mocked(fetch).mockRejectedValueOnce("network failure");
-    act(() => renderer.root.findByType("textarea").props.onChange({ target: { value: "Another valid reason" } }));
+    await act(() => renderer.root.findByType("textarea").props.onChange({ target: { value: "Another valid reason" } }));
     const revoke = button(renderer, "Revoke");
     await act(async () => { revoke?.props.onClick(); await Promise.resolve(); });
     expect(textContent(renderer)).toContain("An unexpected error occurred.");

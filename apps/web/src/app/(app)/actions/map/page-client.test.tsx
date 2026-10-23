@@ -125,6 +125,25 @@ const FALLBACK_VIEWPORT = {
   bounds: { south: 48.8, west: 2.2, north: 48.9, east: 2.4 },
 };
 
+type FeedRequest = {
+  enabled: boolean;
+  viewport: typeof FALLBACK_VIEWPORT | null;
+  scoreScope: "global";
+  displayMode: "projected_today";
+};
+type FeedContentProps = {
+  initialViewportError: Error | null;
+  onRetryInitialViewport: () => unknown;
+  scoreScope: "global";
+  displayMode: "projected_today";
+  initialViewport: typeof FALLBACK_VIEWPORT | null;
+  onViewportInteraction: () => unknown;
+  selectedActionId?: string | null;
+  frameSelectedActionId?: string | null;
+  feedData: { items: unknown[]; allItems: unknown[] };
+  onOpenAction: (actionId: string) => unknown;
+};
+
 function configurePageState({
   viewport = null,
   initialViewportError = null,
@@ -211,8 +230,8 @@ describe("ActionsMapPageClient initial viewport contract", () => {
     });
 
     const markup = renderPage();
-    const feedRequest = mocks.useMapFeedData.mock.calls[0]?.[0];
-    const feedContentProps = mocks.feedContentProps.mock.calls[0]?.[0];
+    const feedRequest = mocks.useMapFeedData.mock.calls[0]?.[0] as unknown as FeedRequest;
+    const feedContentProps = mocks.feedContentProps.mock.calls[0]?.[0] as unknown as FeedContentProps;
 
     expect(markup).toContain("Carte indisponible");
     expect(markup).toContain("Réessayer");
@@ -235,7 +254,7 @@ describe("ActionsMapPageClient initial viewport contract", () => {
     configurePageState({ viewport: FALLBACK_VIEWPORT, hasInitialPublicActions: true });
 
     const markup = renderPage();
-    const feedRequest = mocks.useMapFeedData.mock.calls[0]?.[0];
+    const feedRequest = mocks.useMapFeedData.mock.calls[0]?.[0] as unknown as FeedRequest;
 
     expect(feedRequest).toEqual(expect.objectContaining({
       enabled: true,
@@ -243,6 +262,7 @@ describe("ActionsMapPageClient initial viewport contract", () => {
       scoreScope: "global",
       displayMode: "projected_today",
     }));
+    if (!feedRequest.viewport) throw new Error("Expected the map feed viewport to be resolved");
     expect(feedRequest.viewport.center).not.toEqual([0, 0]);
     expect(markup).toContain('data-testid="immersive-layout"');
     expect(markup).not.toContain("Carte indisponible");
@@ -272,10 +292,11 @@ describe("ActionsMapPageClient initial viewport contract", () => {
     });
 
     renderPage();
-    const feedRequest = mocks.useMapFeedData.mock.calls[0]?.[0];
-    const feedContentProps = mocks.feedContentProps.mock.calls[0]?.[0];
+    const feedRequest = mocks.useMapFeedData.mock.calls[0]?.[0] as unknown as FeedRequest;
+    const feedContentProps = mocks.feedContentProps.mock.calls[0]?.[0] as unknown as FeedContentProps;
 
     expect(feedRequest.viewport).toBe(manualViewport);
+    if (!feedRequest.viewport) throw new Error("Expected the manual map viewport to be forwarded");
     expect(feedRequest.viewport.center).not.toEqual([0, 0]);
     expect(feedContentProps.initialViewport).toBe(manualViewport);
     expect(feedContentProps.onViewportInteraction).toEqual(expect.any(Function));
@@ -295,7 +316,7 @@ describe("ActionsMapPageClient initial viewport contract", () => {
     });
 
     renderPage();
-    const feedContentProps = mocks.feedContentProps.mock.calls[0]?.[0];
+    const feedContentProps = mocks.feedContentProps.mock.calls[0]?.[0] as unknown as FeedContentProps;
 
     expect(feedContentProps.selectedActionId).toBe("outside-viewport");
     expect(feedContentProps.frameSelectedActionId).toBe("outside-viewport");
@@ -306,7 +327,7 @@ describe("ActionsMapPageClient initial viewport contract", () => {
   it("writes selection and deselection as browser-history navigations", () => {
     configurePageState();
     renderPage();
-    const feedContentProps = mocks.feedContentProps.mock.calls[0]?.[0];
+    const feedContentProps = mocks.feedContentProps.mock.calls[0]?.[0] as unknown as FeedContentProps;
 
     feedContentProps.onOpenAction("action-1");
     expect(mocks.routerPush).toHaveBeenCalledWith(
@@ -318,7 +339,7 @@ describe("ActionsMapPageClient initial viewport contract", () => {
     mocks.searchParams = new URLSearchParams("actionId=action-1");
     configurePageState();
     renderPage();
-    const selectedFeedContentProps = mocks.feedContentProps.mock.calls.at(-1)?.[0];
+    const selectedFeedContentProps = mocks.feedContentProps.mock.calls.at(-1)?.[0] as unknown as FeedContentProps;
     selectedFeedContentProps.onOpenAction("action-1");
     expect(mocks.routerPush).toHaveBeenCalledWith("/actions/map", { scroll: false });
   });

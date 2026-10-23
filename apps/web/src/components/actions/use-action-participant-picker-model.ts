@@ -29,7 +29,7 @@ function useHydrateSelectedUsers(
     let active = true;
     const missingIds = selectedIds.filter((userId) => !knownUsers[userId]);
     if (missingIds.length === 0) return () => { active = false; };
-    void Promise.all(missingIds.slice(0, 6).map(async (userId) => {
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ Promise.all(missingIds.slice(0, 6).map(async (userId) => {
       const page = await fetchParticipantPage(endpoint, userId, 0, undefined, includeCurrentUser).catch(() => null);
       return page?.items.find((candidate) => candidate.id === userId) ?? null;
     })).then((resolved) => {
@@ -120,18 +120,18 @@ export function useParticipantPickerModel({
 
   function submitSearch() {
     setMenuOpen(true);
-    void loadAccounts(query.trim().slice(0, 120), 0, false);
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadAccounts(query.trim().slice(0, 120), 0, false);
   }
 
   function openMenu() {
     setMenuOpen(true);
-    if (!initialized && !loading) void loadAccounts("", 0, false);
+    if (!initialized && !loading) void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadAccounts("", 0, false);
   }
 
   function loadMore() {
     if (loading || !hasMore || nextOffset === null) return;
     setMenuOpen(true);
-    void loadAccounts(submittedQuery, nextOffset, true);
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadAccounts(submittedQuery, nextOffset, true);
   }
 
   function addUser(user: ChatUserOption) {

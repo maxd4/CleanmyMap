@@ -181,7 +181,7 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !userId) return;
-    void Promise.resolve().then(() => fetchNotifications());
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ Promise.resolve().then(() => fetchNotifications());
   }, [fetchNotifications, isLoaded, isSignedIn, userId]);
 
   const stateFor = useCallback((notification: AppNotification): NotificationDisplayState => {
@@ -217,7 +217,7 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
 
   const markAsRead = (notification: AppNotification) => {
     if (!userId) return;
-    void markDashboardNotificationAsRead({
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ markDashboardNotificationAsRead({
       notification, userId, getToken, router, markReadInFlightRef, getRequest,
       isCurrentRequest, setAllNotifications,
     });
@@ -232,7 +232,7 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
     }
   };
 
-  return <DashboardNotificationsView isLoaded={isLoaded} locale={locale === "fr" ? "fr" : "en"} view={view} setView={setView} loading={loading} error={error} loadingMore={loadingMore} visibleNotifications={visibleNotifications} pendingCount={pendingCount} missingPendingCount={decisionState.missingPendingRequestIds.length} hasMore={hasMore} decisionState={decisionState} stateFor={stateFor} onOpen={markAsRead} onMuteAction={muteActionInformation} onLoadMore={loadMoreNotifications} />;
+  return <DashboardNotificationsView isLoaded={isLoaded} locale={locale === "fr" ? "fr" : "en"} view={view} setView={setView} loading={loading} error={error} loadingMore={loadingMore} visibleNotifications={visibleNotifications} pendingCount={pendingCount} missingPendingCount={decisionState.missingPendingRequestIds.length} hasMore={hasMore} decisionState={decisionState} stateFor={stateFor} onOpen={markAsRead} onMuteAction={(actionId) => { void /* fire-and-forget -- the notification view owns preference state and errors. */ muteActionInformation(actionId); }} onLoadMore={loadMoreNotifications} />;
 }
 
 function DashboardNotificationsView({
@@ -364,7 +364,7 @@ function DashboardNotificationsLoading({ locale }: { locale: "fr" | "en" }) {
 }
 
 function DashboardLoadMoreButton({ loadingMore, onLoadMore }: { loadingMore: boolean; onLoadMore: () => Promise<void> }) {
-  return <button type="button" onClick={() => void onLoadMore()} disabled={loadingMore} aria-busy={loadingMore} className="mt-5 w-full rounded-2xl border border-amber-200/24 bg-amber-100/[0.08] px-4 py-3 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80 disabled:cursor-wait disabled:opacity-70">{loadingMore ? "Chargement…" : "Afficher plus"}</button>;
+  return <button type="button" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onLoadMore(); }} disabled={loadingMore} aria-busy={loadingMore} className="mt-5 w-full rounded-2xl border border-amber-200/24 bg-amber-100/[0.08] px-4 py-3 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80 disabled:cursor-wait disabled:opacity-70">{loadingMore ? "Chargement…" : "Afficher plus"}</button>;
 }
 
 function CheckMark() {
@@ -407,7 +407,7 @@ function DashboardNotificationList({
               state: displayState === "decision_pending" || displayState === "treated" || displayState === "unavailable" ? displayState : "unavailable",
               busy: decisionState.busyDecisionIds.has(notification.id),
               error: decisionState.decisionErrors[notification.id],
-              onDecision: (choice) => void decisionState.handleDecision(notification, choice),
+              onDecision: (choice) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ decisionState.handleDecision(notification, choice); },
             } : undefined}
             onClick={onOpen}
             onMuteAction={onMuteAction}

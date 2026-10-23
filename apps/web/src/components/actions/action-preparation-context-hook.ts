@@ -91,7 +91,7 @@ export function useActionPreparationContext({
       setPreparationPersistenceStatus(draftSnapshot ? "draft" : "saved");
       setLoadedActionId(actionId);
     };
-    void loadContext();
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadContext();
     return () => { active = false; };
   }, [actionId, defaultActorName]);
 

@@ -42,7 +42,7 @@ export function StorageUsagePanel() {
         ? "Vigilance"
         : "Stable";
   const refresh = () => {
-    void usage.mutate();
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ usage.mutate();
   };
 
   return (

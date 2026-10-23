@@ -72,7 +72,7 @@ export function useReportsWebDocumentExport(config: ReportConfig) {
   });
   function handleGenerate(): void {
     config.setHistoryWarning(null);
-    void pdfExport.exportRubriquePdf();
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ pdfExport.exportRubriquePdf();
   }
   const resolvedExportStatus = resolveReportExportStatus({
     state: pdfExport.state,

@@ -122,7 +122,7 @@ export function useActionDeclarationFormViewModel(
       userMetadata: props.userMetadata,
       showConfirmation: state.showConfirmation,
       onModify: () => state.setShowConfirmation(false),
-      onConfirm: state.handleConfirmSubmit,
+      onConfirm: () => { void /* fire-and-forget -- the confirmation overlay owns submission state and errors. */ state.handleConfirmSubmit(); },
       isSubmitting: submissionState === "pending",
       isExportPickerOpen,
       onCloseExport: () => setIsExportPickerOpen(false),
@@ -160,7 +160,7 @@ export function useActionDeclarationFormViewModel(
           ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(state.createdId)}`
           : null,
         actionMediaUpload: state.actionMediaUpload,
-        onRetryActionMedia: state.retryActionMediaUploads,
+        onRetryActionMedia: () => { void /* fire-and-forget -- the feedback control owns upload retry state and errors. */ state.retryActionMediaUploads(); },
       },
       onReset: () => {
         state.setForm(createInitialFormState(state.resolvedDefaultActorName, props.initialRecordType ?? "action"));

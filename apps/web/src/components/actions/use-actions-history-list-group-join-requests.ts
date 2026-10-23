@@ -83,7 +83,7 @@ export function useActionsHistoryListGroupJoinRequests({
     }
 
     const controller = new AbortController();
-    void (async () => {
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ (async () => {
       await loadPendingGroupJoinRequests(selectedActionId, controller.signal);
     })();
     return () => controller.abort();

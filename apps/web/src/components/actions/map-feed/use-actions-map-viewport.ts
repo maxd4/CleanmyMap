@@ -223,7 +223,7 @@ export function useActionsMapViewport(
 
   const queueFallbackViewport = useCallback(() => {
     queueMicrotask(() => {
-      void (async () => {
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ (async () => {
         const payload = await loadFallbackViewport();
         if (
           !isMountedRef.current ||
@@ -287,7 +287,7 @@ export function useActionsMapViewport(
         if (useRemoteFallback) {
           queueFallbackViewport();
         } else {
-          void applyAutomaticViewport(null, fallbackViewport);
+          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyAutomaticViewport(null, fallbackViewport);
         }
       }
     };
@@ -309,7 +309,7 @@ export function useActionsMapViewport(
         };
         const reference = selectMapReferencePoint(gpsReference, null);
         if (reference) {
-          void applyAutomaticViewport(
+          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyAutomaticViewport(
             reference,
             createActionsMapViewport([reference.latitude, reference.longitude], 12),
           );

@@ -73,7 +73,7 @@ export function ActionBeforeFormView({
       <div className="cmm-page-width relative space-y-6">
         <ActionBeforePersistenceStatus status={persistenceStatus} onRetry={onRetryDraftLoad} />
         {sectioned ? null : <CmmCard tone="emerald" variant="glass" size="lg"><div className="space-y-3"><h2 className="text-3xl font-black tracking-tight text-emerald-950">Préparer une action future</h2><p className="cmm-text-body cmm-text-primary max-w-3xl">Renseignez les informations utiles avant le terrain. Les champs de récolte, de bilan final et de validation restent réservés au formulaire complet.</p></div></CmmCard>}
-        <form onSubmit={(event) => { void handleSubmit(event); }} className="space-y-6">
+        <form onSubmit={(event) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleSubmit(event); }} className="space-y-6">
           {sectioned ? (
             <ActionBeforeSectionedContent
               activeSection={activeSection}

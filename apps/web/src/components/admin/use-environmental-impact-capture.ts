@@ -10,7 +10,7 @@ export function useEnvironmentalImpactCapture() {
     setIsPending(true);
     setError(null);
 
-    void (async () => {
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ (async () => {
       try {
         const response = await fetch("/api/admin/environmental-impact?historyLimit=12", {
           method: "POST",

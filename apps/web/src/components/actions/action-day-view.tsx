@@ -141,10 +141,10 @@ export function ActionDayView({ actionId }: { actionId: string }) {
   };
   return (
     <div data-testid="action-day-view" className="space-y-4">
-      <ActionDayHero action={action} briefing={briefing} href={href} calendarHref={calendarHref} copyState={copyState} onCopy={() => void copyBriefing()} />
+      <ActionDayHero action={action} briefing={briefing} href={href} calendarHref={calendarHref} copyState={copyState} onCopy={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ copyBriefing(); }} />
       <ActionFieldRolesPanel actionId={actionId} />
       <ActionDayGuidanceCards action={action} />
-      {checklist ? <ActionDayChecklistCard checklist={checklist} onRequestWeather={() => void weather.requestWeather()} /> : null}
+      {checklist ? <ActionDayChecklistCard checklist={checklist} onRequestWeather={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ weather.requestWeather(); }} /> : null}
     </div>
   );
 }

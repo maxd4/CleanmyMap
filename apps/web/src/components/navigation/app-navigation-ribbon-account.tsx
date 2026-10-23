@@ -167,7 +167,7 @@ export function RibbonAccountActions({
                     activityStatus={activityStatus}
                     isUpdatingActivityStatus={isUpdatingActivityStatus}
                     activityStatusError={activityStatusError}
-                    onActivityStatusChange={handleActivityStatusToggle}
+                    onActivityStatusChange={() => { void /* fire-and-forget -- the account bubble owns activity update state and errors. */ handleActivityStatusToggle(); }}
                   />
                 ) : null}
               </div>

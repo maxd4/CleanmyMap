@@ -249,7 +249,7 @@ export const ChatHeader = memo(function ChatHeader({
           </div>
           <button
             type="button"
-            onClick={() => void onConfirmHandle()}
+            onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onConfirmHandle(); }}
             className={`mt-6 rounded-xl px-6 py-2 cmm-text-caption font-semibold text-white shadow-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-pink-600 shadow-pink-500/20"}`}
           >
             Confirmer

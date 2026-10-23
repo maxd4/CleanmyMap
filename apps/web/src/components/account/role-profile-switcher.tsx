@@ -48,7 +48,7 @@ export function RoleProfileSwitcher({
                 variant="pill"
                 disabled={isUpdatingProfile}
                 loading={isUpdatingProfile && !isActive}
-                onClick={() => void handleActiveRoleMutation(profile)}
+                onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleActiveRoleMutation(profile); }}
                 className={isActive ? ACTIVE_PROFILE_BUTTON_CLASS : PROFILE_BUTTON_CLASS}
                 ariaLabel={
                   locale === "fr"

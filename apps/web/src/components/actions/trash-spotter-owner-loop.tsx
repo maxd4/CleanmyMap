@@ -25,10 +25,10 @@ export function TrashSpotterOwnerLoop({
         signInHref={signInHref}
         signUpHref={signUpHref}
         onSignalementCreated={() => {
-          void refresh();
+          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refresh();
         }}
       />
-      <MyObservationsSection snapshot={snapshot} onRetry={() => void refresh()} />
+      <MyObservationsSection snapshot={snapshot} onRetry={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refresh(); }} />
     </>
   );
 }

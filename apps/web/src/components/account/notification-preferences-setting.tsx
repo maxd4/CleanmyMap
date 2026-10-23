@@ -81,7 +81,7 @@ export function NotificationPreferencesSetting({ locale }: { locale: Locale }) {
           label={copy.informational}
           description={copy.informationalDescription}
           saving={saving === "informational" ? copy.saving : null}
-          onChange={() => void toggle("informationalEnabled")}
+          onChange={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ toggle("informationalEnabled"); }}
         />
         <PreferenceToggle
           id="notification-preference-reminders"
@@ -90,7 +90,7 @@ export function NotificationPreferencesSetting({ locale }: { locale: Locale }) {
           label={copy.reminders}
           description={copy.remindersDescription}
           saving={saving === "reminders" ? copy.saving : null}
-          onChange={() => void toggle("actionRemindersEnabled")}
+          onChange={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ toggle("actionRemindersEnabled"); }}
         />
       </div>
     </section>

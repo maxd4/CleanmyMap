@@ -95,11 +95,11 @@ export function ActionsHistoryListView({
           fr={fr}
           onRefreshPending={() => {
             if (selectedItem.id) {
-              void loadPendingGroupJoinRequests(selectedItem.id);
+              void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadPendingGroupJoinRequests(selectedItem.id);
             }
           }}
           onReviewGroupJoin={(request: ActionParticipationReviewItem, decision) =>
-            void handleReviewGroupJoin(request, decision)
+            { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleReviewGroupJoin(request, decision); }
           }
         />
       ) : null}
@@ -116,7 +116,7 @@ export function ActionsHistoryListView({
         groupJoinActionId={groupJoinActionId}
         onSelectItem={setSelectedId}
         onLoadMore={() => setLimit((previous) => previous + 25)}
-        onToggleGroupJoin={(item, nextEnabled) => void handleToggleGroupJoin(item, nextEnabled)}
+        onToggleGroupJoin={(item, nextEnabled) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleToggleGroupJoin(item, nextEnabled); }}
       />
     </section>
   );

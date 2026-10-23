@@ -33,7 +33,7 @@ export function ActionParticipantImpactManager({
       actionId={actionId}
       participants={data.confirmedParticipants ?? []}
       fr={fr}
-      onSaved={() => void mutate()}
+      onSaved={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ mutate(); }}
     />
   );
 }

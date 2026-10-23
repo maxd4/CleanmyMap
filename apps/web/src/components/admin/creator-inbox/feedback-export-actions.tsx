@@ -34,7 +34,7 @@ export function FeedbackExportActions({ item, locale }: FeedbackExportActionsPro
     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
       <button
         type="button"
-        onClick={() => void copy("feedback")}
+        onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ copy("feedback"); }}
         className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100"
       >
         {copied === "feedback"
@@ -47,7 +47,7 @@ export function FeedbackExportActions({ item, locale }: FeedbackExportActionsPro
       </button>
       <button
         type="button"
-        onClick={() => void copy("ai")}
+        onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ copy("ai"); }}
         className="rounded-lg border border-amber-300/70 bg-amber-50 px-3 py-2 cmm-text-caption font-semibold text-amber-900 hover:bg-amber-100"
       >
         {copied === "ai"

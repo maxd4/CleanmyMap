@@ -122,7 +122,7 @@ describe("ReportsWebDocumentDelivery", () => {
     expect(onGenerate).toHaveBeenCalledTimes(1);
   });
 
-  it("executes the export click and disables the control during a pending quota-bound run", () => {
+  it("executes the export click and disables the control during a pending quota-bound run", async () => {
     const onGenerate = vi.fn();
     let renderer!: ReactTestRenderer;
 
@@ -140,7 +140,7 @@ describe("ReportsWebDocumentDelivery", () => {
         }));
       });
       const button = renderer.root.findByType("button");
-      act(() => button.props.onClick());
+    await act(() => button.props.onClick());
       expect(onGenerate).toHaveBeenCalledTimes(1);
 
       act(() => {
