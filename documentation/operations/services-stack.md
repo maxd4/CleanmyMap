@@ -1,32 +1,52 @@
 # Services Web Stack
 
-Ce document explique les services externes réellement utilisés par `apps/web`, comment ils s'activent, et où lire les diagnostics.
+Ce document décrit les intégrations externes prévues ou implémentées
+dans `apps/web`, leurs conditions de configuration et leurs diagnostics.
+Un service référencé dans le registre ou déclaré « ready » par une sonde
+de variables d'environnement n'est pas nécessairement appelé par le
+runtime ni disponible en production.
 
 ## Vue d'ensemble
 
-Les services sont pilotés par la configuration d'environnement et par quelques garde-fous applicatifs:
+Les services sont activés selon les contrats et configurations des
+consommateurs réellement raccordés :
 
-- Supabase gère la base de données, l'auth côté serveur et le stockage.
-- Clerk gère l'identité utilisateur et les sessions front-end.
-- PostHog gère l'analytics produit avec consentement.
-- Sentry gère la remontée d'erreurs techniques.
-- Resend gère les emails transactionnels.
-- Stripe gère les paiements et webhooks.
-- Upstash gère Redis et QStash.
-- Pinecone sert la recherche sémantique / IA.
-- Vercel héberge l'application, les cron jobs et les previews.
-- Cloudflare et Uptime Robot sont des dépendances externes de supervision/routage.
+- Supabase porte PostgreSQL, les règles RLS et Storage ; Clerk demeure
+  l'identité canonique des utilisateurs.
+- PostHog, Sentry et Resend disposent d'intégrations applicatives,
+  respectivement pour l'analytics sous consentement, l'observabilité et
+  l'envoi de messages. Leur disponibilité dépend de la configuration.
+- Stripe dispose d'un backend Checkout et de webhooks, conservés mais
+  non exposés comme parcours de paiement dans Funding.
+- Upstash expose des intégrations Redis et QStash distinctes,
+  conditionnées à leurs variables d'environnement.
+- Pinecone est un service optionnel déclaré dans le registre et dans
+  `/api/services`, sans client de recherche raccordé au runtime.
+- Vercel assure l'hébergement et les fonctions associées. Cloudflare
+  et Uptime Robot relèvent de services externes à vérifier séparément.
 
-## Statut réel observé
+Pour l'état observable, distinguer `CONFIGURED`, `RUNTIME_USED`,
+`EXTERNAL_OBSERVED` et `UNKNOWN` dans le compte rendu de vérification ;
+ce vocabulaire sert à qualifier les preuves et n'ajoute aucun statut
+runtime à `/api/services`.
 
-Les vérifications lancées pendant cette passe ont confirmé:
+## Observations de diagnostic antérieures (`SNAPSHOT`)
+
+Les constats ci-dessous proviennent d'une vérification antérieure.
+Aucun SHA, environnement et horodatage homogènes ne permettent de
+les présenter comme une observation actuelle de production. Ils sont
+conservés pour la traçabilité, sans attester l'état des services le
+23 octobre 2026. Cette réserve s'applique aussi aux autres mentions
+« Statut observé au moment de cette passe » du présent document.
+
+La passe antérieure rapportait :
 
 - `npm run backend:doctor` retourne `vercelLinked=true`, `supabaseLinked=true`, `localEnvHasRequired=true`, `pulledVercelEnvHasRequired=true`.
 - `npm run test -w apps/web` sur la suite ciblée `services`, `sentry`, `posthog` passe.
 - Les logs Supabase accessibles montrent des appels répétés et réussis vers `actions` et `spots`.
 - Les logs PostgreSQL Supabase montrent des connexions autorisées par PostgREST en TLS.
 
-## Références de logs récupérées
+## Références de logs historiques (`SNAPSHOT`)
 
 - Supabase API: requêtes `HEAD /rest/v1/actions?select=id&limit=1` et `GET /rest/v1/actions`, `GET /rest/v1/spots` avec statuts `206` et `200`.
 - Supabase PostgreSQL: connexions `connection authorized` et `connection authenticated` via `postgrest`, utilisateur `authenticator`, TLS actif.
@@ -348,20 +368,22 @@ pour tenter de fermer ce point.
 
 Rôle:
 
-- index sémantique pour les fonctions IA.
+- service optionnel inventorié, sans indexation ni requête
+  sémantique raccordée au runtime actuel.
 
-Activation:
+Configuration détectable :
 
-- `PINECONE_API_KEY`
+- `PINECONE_API_KEY` ; sa présence seule peut faire afficher `ready`
+  par `/api/services`, sans prouver qu'une recherche fonctionne.
 
 Code clé:
 
-- [apps/web/src/lib/services/registry.ts](../../apps/web/src/lib/services/registry.ts) — état de configuration uniquement ; aucun client Pinecone runtime CURRENT n’est raccordé.
+- [apps/web/src/lib/services/registry.ts](../../apps/web/src/lib/services/registry.ts)
+  et [apps/web/src/app/api/services/route.ts](../../apps/web/src/app/api/services/route.ts)
+  (registre et sonde de configuration uniquement).
 
-Logs:
-
-- dashboard Pinecone
-- console serveur
+Les logs ou le tableau de bord du fournisseur ne constituent pas
+une preuve de consommation par CleanMyMap sans appel réel tracé.
 
 ### Vercel
 

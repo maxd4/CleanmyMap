@@ -7,9 +7,10 @@ refonte. Les contrats détaillés restent documentés dans leur source canonique
 ## Applications et runtime
 
 - Le dépôt est un monorepo npm avec workspaces `apps/web` et `apps/mobile`.
-- L'application web utilise Next.js 16.4.1, React 19.2.8, TypeScript `^7` et
-  l'App Router. Les manifestes et le lockfile racine font foi pour les
-  versions exactes.
+- L'application web utilise Next.js (App Router), React et TypeScript.
+  Les manifestes et le lockfile font foi pour les versions effectives ;
+  la [matrice des runtimes](../development/runtime-version-matrix.md)
+  documente leurs différences entre web et mobile.
 - L'application web est structurée autour de `apps/web/src/app` pour les
   pages, layouts, metadata et routes API, `apps/web/src/components` pour les
   composants réutilisables, `apps/web/src/lib` pour la logique métier et les
@@ -45,8 +46,12 @@ refonte. Les contrats détaillés restent documentés dans leur source canonique
 - Resend gère les emails transactionnels via
   `apps/web/src/lib/services/resend.ts` et la couche unifiée
   `apps/web/src/lib/services/email.ts`.
-- Stripe, Pinecone et Upstash sont intégrés derrière les services et routes
-  correspondants de `apps/web/src/lib/services/` et `apps/web/src/app/api/`.
+- Stripe dispose de routes backend et d'un webhook, sans parcours de
+  paiement exposé dans l'interface Funding actuelle.
+- Upstash fournit les intégrations Redis et QStash selon leur configuration.
+- Pinecone est référencé comme service optionnel dans le registre et
+  la sonde de configuration `/api/services` ; aucun client de recherche
+  sémantique n'est raccordé au runtime actuel.
 
 ## Organisation du dépôt
 

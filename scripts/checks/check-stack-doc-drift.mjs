@@ -221,10 +221,18 @@ function expectedTypescriptMajorForReference(relativePath, line, manifest) {
     : manifest.typescriptMajor;
 }
 
+const CURRENT_WEB_REACT_DOCS = new Set([
+  "documentation/architecture/technical-inventory.md",
+  "documentation/architecture/methodologie-fonctionnement-site.md",
+  "documentation/architecture/adr/ADR-005-next-canary-policy.md",
+]);
+
 function expectedReactVersion(relativePath, line, manifest) {
-  if (relativePath !== RUNTIME_VERSION_MATRIX) return null;
-  const surface = matrixSurface(line);
-  return surface === "mobile" ? manifest.mobileReactVersion : surface === "web" ? manifest.reactVersion : null;
+  if (relativePath === RUNTIME_VERSION_MATRIX) {
+    const surface = matrixSurface(line);
+    return surface === "mobile" ? manifest.mobileReactVersion : surface === "web" ? manifest.reactVersion : null;
+  }
+  return CURRENT_WEB_REACT_DOCS.has(relativePath) ? manifest.reactVersion : null;
 }
 
 function validateActiveFiles(view, findings, activeDocs) {

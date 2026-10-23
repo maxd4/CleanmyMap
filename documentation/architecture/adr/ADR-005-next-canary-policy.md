@@ -68,13 +68,11 @@ La politique acceptée pour CleanMyMap est :
 - Mise à jour majeure : migration dédiée.
 - Version canary : uniquement sur exception documentée dans cet ADR.
 
-Le runtime web actuel suit cette politique :
-
-```txt
-next: 16.4.1
-react: 19.2.8
-typescript: ^7
-```
+Le manifeste `apps/web/package.json` et le lockfile font foi pour les
+versions actuellement utilisées. Consulter la
+[matrice des runtimes](../../development/runtime-version-matrix.md) pour
+leur lecture par surface. Cet ADR conserve la décision de stabilité de
+Next.js, sans figer séparément les versions de React ou TypeScript.
 
 Cette décision ne modifie pas rétroactivement le contexte canary décrit plus haut.
 

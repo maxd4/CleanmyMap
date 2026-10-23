@@ -16,6 +16,8 @@ const FOCUSED_ACTIVE_DOCS = [
   "documentation/architecture/README.md",
   "documentation/architecture/data-governance.md",
   "documentation/architecture/adr/ADR-005-next-canary-policy.md",
+  "documentation/architecture/technical-inventory.md",
+  "documentation/architecture/methodologie-fonctionnement-site.md",
   "documentation/operations/data-import/README.md",
   "documentation/operations/data-import/pipeline-import.md",
   "documentation/development/api-standard.md",
@@ -78,6 +80,8 @@ export const OTHER_FAMILY = {};
     "documentation/architecture/README.md": "Policy stable by default; historical canary context only.",
     "documentation/architecture/data-governance.md": dataContractContent,
     "documentation/architecture/adr/ADR-005-next-canary-policy.md": "Historical context: next: 16.3.0-canary.79. Stable by default is accepted.",
+    "documentation/architecture/technical-inventory.md": "Current web stack uses React and Next.js.\n",
+    "documentation/architecture/methodologie-fonctionnement-site.md": "Current web architecture uses React and Next.js.\n",
     "documentation/operations/data-import/README.md": dataContractContent,
     "documentation/operations/data-import/pipeline-import.md": dataContractContent,
     "documentation/development/api-standard.md": "API contracts by route.",
@@ -256,6 +260,35 @@ describe("stack and documentation drift governance", () => {
       assert.deepEqual(findingsFor(fixture).filter((finding) => finding.file === "apps/web/AGENTS.md"), []);
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts matching React pins in current architectural documents", () => {
+    const fixture = createFixture();
+    writeFile(fixture, "documentation/architecture/technical-inventory.md", "Current web: React 19.2.3.\n");
+    try {
+      assert.deepEqual(findingsFor(fixture), []);
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects stale React pins in current architectural documents", () => {
+    for (const path of [
+      "documentation/architecture/technical-inventory.md",
+      "documentation/architecture/methodologie-fonctionnement-site.md",
+      "documentation/architecture/adr/ADR-005-next-canary-policy.md",
+    ]) {
+      const fixture = createFixture();
+      writeFile(fixture, path, "Current web runtime: React 19.2.8.\n");
+      try {
+        assert.ok(
+          findingsFor(fixture).some((finding) => finding.file === path && finding.message.includes("incompatible React version 19.2.8")),
+          `${path} must remain tied to the web React manifest`,
+        );
+      } finally {
+        fs.rmSync(fixture, { recursive: true, force: true });
+      }
     }
   });
 

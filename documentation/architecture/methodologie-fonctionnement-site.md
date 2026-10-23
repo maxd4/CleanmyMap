@@ -4,7 +4,9 @@ Ce document décrit comment CleanMyMap fonctionne d'un point de vue technique et
 
 ## Périmètre
 
-Le runtime web repose sur `Next.js 16.4.1` stable avec App Router, `React 19.2.8`, `TypeScript ^7` et `Tailwind CSS 4`.
+Le runtime web utilise Next.js stable avec App Router, React, TypeScript et Tailwind CSS 4.
+Les versions effectives sont déclarées dans les manifestes et documentées
+par surface dans la [matrice des runtimes](../development/runtime-version-matrix.md).
 
 Le dépôt est organisé comme un monorepo centré sur `apps/web`, avec :
 
@@ -25,7 +27,7 @@ La séparation attendue est simple :
 ```mermaid
 flowchart TD
   U[Utilisateur] --> N[Navigation web]
-  N --> W[Next.js 16.4.1 / App Router]
+  N --> W[Next.js / App Router]
   W --> C[Composants UI]
   W --> A[API Routes]
 
