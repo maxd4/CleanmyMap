@@ -1,6 +1,7 @@
 import React from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { callTestHandler } from './test-renderer-helpers'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -83,13 +84,13 @@ describe('mobile signalement runtime', () => {
   it('keeps invalid observations local and exposes the explicit location permission error', async () => {
     const { renderer } = await renderScreen()
     const submit = findButton(renderer, 'Transmettre le signalement')
-    await act(async () => { await submit?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(submit, 'onPress'); await settle() })
     expect(state.createMobileSignalement).not.toHaveBeenCalled()
     expect(renderer.root.findAll((node) => textContent(node).includes('Indiquez un lieu et une position valide'))).not.toHaveLength(0)
 
     state.permission = 'denied'
     const locate = findButton(renderer, 'Utiliser ma position actuelle')
-    await act(async () => { await locate?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(locate, 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('La permission de localisation est nécessaire'))).not.toHaveLength(0)
   })
 
@@ -101,15 +102,15 @@ describe('mobile signalement runtime', () => {
     const latitude = renderer.root.findByProps({ accessibilityLabel: 'Latitude' })
     const longitude = renderer.root.findByProps({ accessibilityLabel: 'Longitude' })
     await act(async () => {
-      label.props.onChangeText('Parc central')
-      latitude.props.onChangeText('48.8566')
-      longitude.props.onChangeText('2.3522')
+      callTestHandler(label, 'onChangeText', 'Parc central')
+      callTestHandler(latitude, 'onChangeText', '48.8566')
+      callTestHandler(longitude, 'onChangeText', '2.3522')
     })
-    await act(async () => { await findButton(renderer, 'Plastique')?.props.onPress() })
-    await act(async () => { await findButton(renderer, 'Ajouter des preuves photo')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Plastique'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Ajouter des preuves photo'), 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('1 photo(s) sélectionnée(s)'))).not.toHaveLength(0)
 
-    await act(async () => { await findButton(renderer, 'Transmettre le signalement')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Transmettre le signalement'), 'onPress'); await settle() })
     expect(state.createMobileSignalement).toHaveBeenCalledWith({ type: 'spot', label: 'Parc central', latitude: 48.8566, longitude: 2.3522, notes: undefined, wasteCategories: ['plastic'] })
     expect(state.uploadSignalementPhotos).toHaveBeenCalledWith('spot-1', expect.any(Array))
     expect(renderer.root.findAll((node) => textContent(node).includes('1 photo(s) transmise(s), 1 à reprendre'))).not.toHaveLength(0)
@@ -117,10 +118,10 @@ describe('mobile signalement runtime', () => {
 
   it('submits a clean-place observation without spot categories and accepts GPS coordinates', async () => {
     const { renderer } = await renderScreen()
-    await act(async () => { await findButton(renderer, 'Lieu propre')?.props.onPress() })
-    await act(async () => { await findButton(renderer, 'Utiliser ma position actuelle')?.props.onPress(); await settle() })
-    await act(async () => { renderer.root.findByProps({ accessibilityLabel: 'Lieu ou repère' }).props.onChangeText('Quai nettoyé') })
-    await act(async () => { await findButton(renderer, 'Transmettre le signalement')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Lieu propre'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Utiliser ma position actuelle'), 'onPress'); await settle() })
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Lieu ou repère' }), 'onChangeText', 'Quai nettoyé') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Transmettre le signalement'), 'onPress'); await settle() })
     expect(state.createMobileSignalement).toHaveBeenCalledWith({ type: 'clean_place', label: 'Quai nettoyé', latitude: 48.8566, longitude: 2.3522, notes: undefined, wasteCategories: undefined })
   })
 
@@ -130,12 +131,12 @@ describe('mobile signalement runtime', () => {
     state.loadSignalementMedia.mockResolvedValue([{ id: 'media-1', originalName: 'preuve.jpg', signedUrl: 'https://signed.test/photo.jpg' }])
     const { renderer } = await renderScreen()
     const photos = findButton(renderer, 'Ajouter des preuves photo')
-    await act(async () => { await photos?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(photos, 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('galerie indisponible'))).not.toHaveLength(0)
-    await act(async () => { await findButton(renderer, 'Ajouter des preuves photo')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Ajouter des preuves photo'), 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('1 photo(s) sélectionnée(s)'))).not.toHaveLength(0)
 
-    await act(async () => { await findButton(renderer, 'Voir les preuves photo')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Voir les preuves photo'), 'onPress'); await settle() })
     expect(state.loadSignalementMedia).toHaveBeenCalledWith('spot-2')
     expect(renderer.root.findByProps({ accessibilityLabel: 'Preuve photo preuve.jpg' })).toBeDefined()
 

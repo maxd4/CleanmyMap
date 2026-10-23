@@ -1,15 +1,14 @@
 import * as ImagePicker from 'expo-image-picker'
 import { getAuthenticatedSupabaseClient, getClerkSupabaseAccessToken } from './supabase'
+import { getMobileApiBaseUrl } from './mobile-environment'
 
 export type MobilePickedPhoto = ImagePicker.ImagePickerAsset
 export type MobileMediaItem = { id: string; originalName: string; signedUrl: string; uploadState: string }
 
-const baseUrl = () => process.env.EXPO_PUBLIC_WEB_APP_URL?.trim().replace(/\/$/, '')
-
 async function authorizedFetch(path: string, init: RequestInit = {}) {
   const token = await getClerkSupabaseAccessToken()
   if (!token) { const error = new Error('Session Clerk expirée ou indisponible.'); (error as Error & { status?: number }).status = 401; throw error }
-  const origin = baseUrl()
+  const origin = getMobileApiBaseUrl()
   if (!origin) throw new Error('URL du site web absente.')
   const response = await fetch(`${origin}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(init.headers ?? {}) } })
   const body = await response.json().catch(() => null) as { error?: string; items?: MobileMediaItem[]; intent?: { mediaId: string; bucket: string; path: string; token: string; uploadState: 'pending' | 'ready' } } | null

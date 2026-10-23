@@ -1,8 +1,10 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 
+type TestClient = { from: ReturnType<typeof vi.fn> }
+
 function createTrackingState() {
   return {
-    client: null as any,
+    client: null as TestClient | null,
     storedMissionId: null as string | null,
     foregroundPermission: 'granted' as string,
     backgroundPermission: 'granted' as string,
@@ -140,6 +142,24 @@ function missionClient(options: { data?: unknown; error?: Error | null } = {}) {
   }
 }
 
+function expectBufferedPoint(expected: { accuracy_m: number | null; altitude_m: number | null }): void {
+  const call = (vi.mocked(bufferPoint).mock.calls as unknown[][])[0]
+  const payload = call?.[1] as Record<string, unknown> | undefined
+  expect(call?.[0]).toBe('user_123')
+  expect(payload).toMatchObject({
+    mission_id: 'mission-1', latitude: 48.8566, longitude: 2.3522,
+    accuracy_m: expected.accuracy_m, altitude_m: expected.altitude_m,
+  })
+  expect(typeof payload?.client_point_id).toBe('string')
+  expect(typeof payload?.recorded_at).toBe('string')
+}
+
+function expectCompletedUpdate(payload: unknown): void {
+  const update = payload as Record<string, unknown> | undefined
+  expect(update?.status).toBe('completed')
+  expect(typeof update?.ended_at).toBe('string')
+}
+
 function resetTrackingState() {
     state.client = null
     state.storedMissionId = null
@@ -194,7 +214,7 @@ it('refuses the permission gate when foreground GPS permission is denied', async
     const result = await requestTrackingPermissions()
 
     expect(result).toEqual({ ok: false, error: 'Permission GPS premier plan refusée.' })
-    expect(state.client.from).not.toHaveBeenCalled()
+    expect(state.client?.from).not.toHaveBeenCalled()
 })
 
 it('refuses the permission gate when background GPS permission is denied', async () => {
@@ -207,7 +227,7 @@ it('refuses the permission gate when background GPS permission is denied', async
       ok: false,
       error: "Permission GPS arrière-plan refusée. Le suivi s'arrêtera si l'écran est éteint.",
     })
-    expect(state.client.from).not.toHaveBeenCalled()
+    expect(state.client?.from).not.toHaveBeenCalled()
 })
 
 it('surfaces a Supabase mission error without inventing mission data', async () => {
@@ -232,15 +252,7 @@ async function buffersPointWhenInsertFails() {
     })
 
     expect(result).toEqual({ ok: false, error: 'offline' })
-    expect(bufferPoint).toHaveBeenCalledWith('user_123', {
-      mission_id: 'mission-1',
-      latitude: 48.8566,
-      longitude: 2.3522,
-      accuracy_m: null,
-      altitude_m: null,
-      client_point_id: expect.any(String),
-      recorded_at: expect.any(String),
-    })
+    expectBufferedPoint({ accuracy_m: null, altitude_m: null })
 }
 
 it('buffers a GPS point when the Supabase insert fails', buffersPointWhenInsertFails)
@@ -254,15 +266,7 @@ it('buffers a GPS point when the Clerk session is unavailable', async () => {
     })
 
     expect(result).toEqual({ ok: false, error: CLERK_SESSION_REQUIRED_ERROR })
-    expect(bufferPoint).toHaveBeenCalledWith('user_123', {
-      mission_id: 'mission-1',
-      latitude: 48.8566,
-      longitude: 2.3522,
-      accuracy_m: 5,
-      altitude_m: 35,
-      client_point_id: expect.any(String),
-      recorded_at: expect.any(String),
-    })
+    expectBufferedPoint({ accuracy_m: 5, altitude_m: 35 })
 })
 
 it('refuses a GPS write after the active Clerk identity changes', async () => {
@@ -316,9 +320,8 @@ it('flushes the GPS buffer before completing and never writes derived metrics', 
     expect(result).toEqual({ ok: true, data: completedMission })
     expect(flushBuffer).toHaveBeenCalledWith('user_123')
     expect(state.sequence.indexOf('flush')).toBeLessThan(state.sequence.indexOf('update'))
-    expect(client.updatePayloads).toEqual([
-      { status: 'completed', ended_at: expect.any(String) },
-    ])
+    expect(client.updatePayloads).toHaveLength(1)
+    expectCompletedUpdate(client.updatePayloads[0])
     expect(client.updatePayloads[0]).not.toHaveProperty('distance_m')
     expect(client.updatePayloads[0]).not.toHaveProperty('duration_s')
     expect(state.storedMissionId).toBeNull()

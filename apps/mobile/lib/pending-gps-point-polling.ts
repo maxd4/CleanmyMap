@@ -49,8 +49,8 @@ export function createPendingGpsPointPoller({
     if (disposed || running) return
 
     running = true
-    void refresh()
-    interval = setInterval(() => void refresh(), intervalMs)
+    void refresh().catch(() => undefined)
+    interval = setInterval(() => void refresh().catch(() => undefined), intervalMs)
   }
 
   function stop() {

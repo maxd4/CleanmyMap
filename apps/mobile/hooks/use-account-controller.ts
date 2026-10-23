@@ -59,7 +59,7 @@ export function useAccountController({ onSessionExpired }: AccountControllerProp
     }
   }, [hydrate, onSessionExpired])
 
-  useEffect(() => { void refresh() }, [refresh])
+  useEffect(() => { void refresh().catch(() => undefined) }, [refresh])
 
   async function runMutation<T>(operation: () => Promise<T>, onSuccess: (result: T) => void, fallback: string) {
     setSaving(true)

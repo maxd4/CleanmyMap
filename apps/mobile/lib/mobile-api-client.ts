@@ -1,9 +1,8 @@
 import { getClerkSupabaseAccessToken } from './supabase'
-
-const baseUrl = () => process.env.EXPO_PUBLIC_WEB_APP_URL?.trim().replace(/\/$/, '')
+import { getMobileApiBaseUrl } from './mobile-environment'
 
 export async function mobileRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const origin = baseUrl()
+  const origin = getMobileApiBaseUrl()
   if (!origin) throw new Error('URL du site web absente.')
   const token = await getClerkSupabaseAccessToken()
   if (!token) {

@@ -32,9 +32,20 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
     account, firstName, lastName, residence, work, loading, saving, error, message,
     section, deletionConfirmation, deletionRequestId, deletionNotificationStatus,
     setFirstName, setLastName, setResidence, setWork, setSection, setDeletionConfirmation,
-    refresh, saveProfile, changeActiveRole, changeDisplayNameMode, changeActivityStatus,
-    changeNotification, sendDeletionRequest,
+    refresh: refreshAsync, saveProfile: saveProfileAsync, changeActiveRole: changeActiveRoleAsync,
+    changeDisplayNameMode: changeDisplayNameModeAsync, changeActivityStatus: changeActivityStatusAsync,
+    changeNotification: changeNotificationAsync, sendDeletionRequest: sendDeletionRequestAsync,
   } = useAccountController({ onSessionExpired })
+
+  const refresh = () => { void refreshAsync().catch(() => undefined) }
+  const saveProfile = (completeOnboarding = false) => { void saveProfileAsync(completeOnboarding).catch(() => undefined) }
+  const changeActiveRole = (role: string) => { void changeActiveRoleAsync(role).catch(() => undefined) }
+  const changeDisplayNameMode = (mode: 'full_name' | 'pseudo') => { void changeDisplayNameModeAsync(mode).catch(() => undefined) }
+  const changeActivityStatus = (status: 'active' | 'inactive') => { void changeActivityStatusAsync(status).catch(() => undefined) }
+  const changeNotification = (field: 'informationalEnabled' | 'actionRemindersEnabled', value: boolean) => {
+    void changeNotificationAsync(field, value).catch(() => undefined)
+  }
+  const sendDeletionRequest = () => { void sendDeletionRequestAsync().catch(() => undefined) }
 
   function submitDeletionRequest() {
     if (deletionConfirmation !== 'SUPPRIMER MON COMPTE' || saving) return

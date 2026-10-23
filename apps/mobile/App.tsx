@@ -15,9 +15,10 @@ import { useCompanionMissionController } from './hooks/use-companion-mission-con
 import { MobileShell } from './screens/mobile-shell'
 import { MissionActiveMap } from './screens/mission-active-map'
 import { MissionCompletionScreen, MissionFinalizationScreen } from './screens/mission-finalization'
+import { getMobilePublicEnv } from './lib/mobile-environment'
 import type { Mission } from './types/mission'
 
-const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''
+const clerkPublishableKey = getMobilePublicEnv('EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY') ?? ''
 
 function CompanionApp() {
   const {
@@ -71,8 +72,8 @@ function CompanionApp() {
 
   return (
     <MobileShell
-      onSignOut={() => void signOut()}
-      onSessionExpired={() => void handleSessionExpired()}
+      onSignOut={() => void signOut().catch(() => undefined)}
+      onSessionExpired={() => void handleSessionExpired().catch(() => undefined)}
       onStartActivity={handleStartMobileMission}
     />
   )
@@ -147,10 +148,10 @@ function SignedOutScreen({ initialError }: { initialError?: string | null }) {
           <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text>
         </View>
       ) : null}
-      <TouchableOpacity accessibilityLabel={loading ? 'Connexion en cours' : 'Se connecter'} accessibilityRole="button" accessibilityState={{ disabled: loading }} style={styles.hudBtnPrimary} onPress={handleSignIn} disabled={loading}>
+      <TouchableOpacity accessibilityLabel={loading ? 'Connexion en cours' : 'Se connecter'} accessibilityRole="button" accessibilityState={{ disabled: loading }} style={styles.hudBtnPrimary} onPress={() => void handleSignIn().catch(() => undefined)} disabled={loading}>
         {loading ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.hudBtnText}>SE CONNECTER</Text>}
       </TouchableOpacity>
-      <TouchableOpacity accessibilityLabel="Créer un compte" accessibilityRole="button" accessibilityState={{ disabled: loading }} style={styles.hudBtnSecondary} onPress={handleSignUp} disabled={loading}>
+      <TouchableOpacity accessibilityLabel="Créer un compte" accessibilityRole="button" accessibilityState={{ disabled: loading }} style={styles.hudBtnSecondary} onPress={() => void handleSignUp().catch(() => undefined)} disabled={loading}>
         <Text style={styles.hudBtnSecondaryText}>CRÉER UN COMPTE</Text>
       </TouchableOpacity>
     </SafeAreaView>

@@ -3,6 +3,9 @@ import TestRenderer, { act } from 'react-test-renderer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { useCompanionMissionController } from '../hooks/use-companion-mission-controller'
 import type { Mission } from '../types/mission'
+import { callTestHandler, testProp } from './test-renderer-helpers'
+import { commonNativeComponents, nativeComponent } from './support/native-component'
+import { mobileAccount } from './support/mobile-account-fixture'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -20,14 +23,8 @@ const appState = vi.hoisted(() => ({
   startHostedAuth: vi.fn(),
 }))
 
-function nativeComponent(name: string) {
-  return function NativeComponent({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) {
-    return React.createElement(name, props, children)
-  }
-}
-
 vi.mock('react-native', () => ({
-  ActivityIndicator: nativeComponent('ActivityIndicator'),
+  ...commonNativeComponents(),
   Alert: { alert: state.alert },
   AppState: { addEventListener: vi.fn(() => ({ remove: vi.fn() })) },
   BackHandler: { addEventListener: vi.fn((_event: string, handler: () => boolean) => { state.backPress = handler; return { remove: vi.fn() } }) },
@@ -37,11 +34,6 @@ vi.mock('react-native', () => ({
   Platform: { OS: 'ios' },
   SafeAreaView: nativeComponent('SafeAreaView'),
   ScrollView: nativeComponent('ScrollView'),
-  StyleSheet: { create: (styles: unknown) => styles },
-  Text: nativeComponent('Text'),
-  TextInput: nativeComponent('TextInput'),
-  TouchableOpacity: nativeComponent('TouchableOpacity'),
-  View: nativeComponent('View'),
 }))
 
 vi.mock('expo-status-bar', () => ({ StatusBar: nativeComponent('StatusBar') }))
@@ -87,15 +79,7 @@ vi.mock('expo-location', () => ({
   getCurrentPositionAsync: vi.fn(async () => ({ coords: { latitude: 48.8566, longitude: 2.3522 } })),
 }))
 
-const account = {
-  identity: { userId: 'user-a', displayName: 'Ada Lovelace', displayNameMode: 'full_name' as const, handle: 'ada', firstName: 'Ada', lastName: 'Lovelace', username: 'ada', email: null, grantedRole: 'benevole', activeRole: 'benevole', availableActiveRoles: ['benevole', 'scientifique'], currentLevel: 2 },
-  onboarding: { completed: false, version: null, currentVersion: 1 },
-  locationPreferences: { residence: null, work: null },
-  activityStatus: 'active' as const,
-  notifications: { informationalEnabled: true, actionRemindersEnabled: true, mutedInformationActionIds: [] },
-  history: [], invitations: [], missions: [], createdActions: [], progression: null,
-  counts: { registrations: 0, confirmedParticipations: 0, missions: 0, createdActions: 0 },
-}
+const account = mobileAccount
 
 vi.mock('../lib/mobile-account-service', () => ({
   loadMobileAccount: vi.fn(async () => account),
@@ -131,6 +115,15 @@ import { MobileShell } from '../screens/mobile-shell'
 
 function textContent(node: TestRenderer.ReactTestInstance): string {
   return node.children.map((child) => typeof child === 'string' ? child : textContent(child)).join('')
+}
+
+function styleRecord(value: unknown): Record<string, unknown> {
+  const values: unknown[] = Array.isArray(value) ? [...value as unknown[]] : [value]
+  const result: Record<string, unknown> = {}
+  for (const item of values) {
+    if (typeof item === 'object' && item !== null) Object.assign(result, item)
+  }
+  return result
 }
 
 function mission(overrides: Partial<Mission> = {}): Mission {
@@ -226,17 +219,19 @@ describe('mobile native shell runtime', () => {
   it('renders the three accessible primary destinations and account sections', async () => {
     const renderer = await renderShell()
     const tabs = renderer.root.findAllByProps({ accessibilityRole: 'tab' })
-    const primaryTabs = tabs.filter((tab) => ['Agir', 'Carte', 'Compte'].includes(tab.props.accessibilityLabel as string))
-    expect([...new Set(primaryTabs.map((tab) => tab.props.accessibilityLabel))]).toEqual(['Agir', 'Carte', 'Compte'])
-    expect([...new Set(primaryTabs.filter((tab) => tab.props.accessibilityState?.selected).map((tab) => tab.props.accessibilityLabel))]).toHaveLength(1)
+    const primaryTabs = tabs.filter((tab) => ['Agir', 'Carte', 'Compte'].includes(testProp<string>(tab, 'accessibilityLabel') ?? ''))
+    expect([...new Set(primaryTabs.map((tab) => testProp<string>(tab, 'accessibilityLabel')))]).toEqual(['Agir', 'Carte', 'Compte'])
+    expect([...new Set(primaryTabs.filter((tab) => testProp<{ selected?: boolean }>(tab, 'accessibilityState')?.selected).map((tab) => testProp<string>(tab, 'accessibilityLabel')))]).toHaveLength(1)
     expect(renderer.root.findAllByProps({ accessibilityRole: 'tablist' })).not.toHaveLength(0)
     const safeRoot = renderer.root.findByType('SafeAreaView' as unknown as React.ElementType)
-    expect(safeRoot.props.edges).toEqual(['top', 'bottom'])
-    expect(renderer.root.findByType('KeyboardAvoidingView' as unknown as React.ElementType).props.behavior).toBe('padding')
+    expect(testProp<string[]>(safeRoot, 'edges')).toEqual(['top', 'bottom'])
+    expect(testProp<string>(renderer.root.findByType('KeyboardAvoidingView' as unknown as React.ElementType), 'behavior')).toBe('padding')
     for (const tab of primaryTabs) {
-      const tabStyle = Object.assign({}, ...(Array.isArray(tab.props.style) ? tab.props.style : [tab.props.style]))
+      const tabStyleValue = testProp<unknown>(tab, 'style')
+      const tabStyle = styleRecord(tabStyleValue)
       const label = tab.findAllByType('Text' as unknown as React.ElementType).at(-1)
-      const labelStyle = Object.assign({}, ...(Array.isArray(label?.props.style) ? label.props.style : [label?.props.style]))
+      const labelStyleValue = testProp<unknown>(label, 'style')
+      const labelStyle = styleRecord(labelStyleValue)
       expect(tabStyle.minHeight).toBe(48)
       expect(labelStyle.fontSize).toBe(13)
     }
@@ -262,15 +257,15 @@ describe('mobile native shell runtime', () => {
     const renderer = await renderShell()
     const map = renderer.root.findByProps({ accessibilityLabel: 'Carte' })
 
-    await act(async () => { map.props.onPress(); await Promise.resolve() })
-    expect(renderer.root.findByProps({ accessibilityLabel: 'Carte' }).props.accessibilityState).toEqual({ selected: true })
-    expect(renderer.root.findByProps({ accessibilityLabel: 'Agir' }).props.accessibilityState).toEqual({ selected: false })
+    await act(async () => { callTestHandler(map, 'onPress'); await Promise.resolve() })
+    expect(testProp<unknown>(renderer.root.findByProps({ accessibilityLabel: 'Carte' }), 'accessibilityState')).toEqual({ selected: true })
+    expect(testProp<unknown>(renderer.root.findByProps({ accessibilityLabel: 'Agir' }), 'accessibilityState')).toEqual({ selected: false })
     expect(state.surfaceWrites.at(-1)).toEqual({ key: 'cleanmymap.mobile.shell.surface.v2', value: 'map' })
 
     await act(async () => { expect(state.backPress?.()).toBe(true); await Promise.resolve() })
-    expect(renderer.root.findByProps({ accessibilityLabel: 'Agir' }).props.accessibilityState).toEqual({ selected: true })
+    expect(testProp<unknown>(renderer.root.findByProps({ accessibilityLabel: 'Agir' }), 'accessibilityState')).toEqual({ selected: true })
 
-    await act(async () => { findTouchable(renderer, 'Rejoindre une action').props.onPress(); await Promise.resolve() })
+    await act(async () => { callTestHandler(findTouchable(renderer, 'Rejoindre une action'), 'onPress'); await Promise.resolve() })
     expect(renderer.root.findAll((node) => textContent(node).includes('Retour à Agir'))).not.toHaveLength(0)
     await act(async () => { expect(state.backPress?.()).toBe(true); await Promise.resolve() })
     expect(renderer.root.findAll((node) => textContent(node).includes('Agir sur le terrain.'))).not.toHaveLength(0)
@@ -279,14 +274,16 @@ describe('mobile native shell runtime', () => {
   it('keeps account deletion explicit, confirmation-gated and server-owned', async () => {
     const renderer = await renderShell()
     const aboutTab = renderer.root.findAllByProps({ accessibilityRole: 'tab' }).find((tab) => textContent(tab).includes('À propos'))
-    await act(async () => aboutTab?.props.onPress())
+    await act(async () => { await callTestHandler(aboutTab, 'onPress') })
     const confirmation = renderer.root.findByProps({ accessibilityLabel: 'Confirmation de suppression du compte' })
-    await act(async () => confirmation.props.onChangeText('SUPPRIMER MON COMPTE'))
+    await act(async () => { callTestHandler(confirmation, 'onChangeText', 'SUPPRIMER MON COMPTE') })
     const button = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity').find((item) => textContent(item).includes('Demander la suppression'))
-    expect(button?.props.accessibilityState.disabled).toBe(false)
+    expect(testProp<{ disabled?: boolean }>(button, 'accessibilityState')?.disabled).toBe(false)
 
-    await act(async () => button?.props.onPress())
-    const send = state.alert.mock.calls[0]?.[2]?.[1]?.onPress as (() => Promise<void>) | undefined
+    await act(async () => { await callTestHandler(button, 'onPress') })
+    const alertCall = (state.alert.mock.calls as unknown[][])[0]
+    const alertActions = Array.isArray(alertCall?.[2]) ? alertCall[2] as unknown[] : []
+    const send = (alertActions[1] as { onPress?: () => Promise<void> } | undefined)?.onPress
     expect(send).toBeTypeOf('function')
     await act(async () => { await send?.() })
     expect(state.accountDeletion).toHaveBeenCalledWith('SUPPRIMER MON COMPTE')
@@ -296,7 +293,7 @@ describe('mobile native shell runtime', () => {
   it('preserves the action subviews and exposes the web bridge only as a bridge', async () => {
     const renderer = await renderShell()
     const join = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity').find((item) => textContent(item).includes('Rejoindre une action'))
-    await act(async () => join?.props.onPress())
+    await act(async () => { await callTestHandler(join, 'onPress') })
     expect(renderer.root.findAll((node) => textContent(node).includes('Retour à Agir'))).not.toHaveLength(0)
     const webLinks = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity').filter((item) => textContent(item).includes('Ouvrir'))
     expect(webLinks.length).toBeGreaterThan(0)
@@ -324,15 +321,15 @@ describe('mobile native shell runtime', () => {
     const renderer = await renderApp('pk_test_mobile')
 
     const signIn = findTouchable(renderer, 'SE CONNECTER')
-    expect(signIn.props.accessibilityRole).toBe('button')
-    expect(signIn.props.accessibilityState).toEqual({ disabled: false })
-    await act(async () => { await signIn.props.onPress() })
+    expect(testProp<string>(signIn, 'accessibilityRole')).toBe('button')
+    expect(testProp<unknown>(signIn, 'accessibilityState')).toEqual({ disabled: false })
+    await act(async () => { await callTestHandler(signIn, 'onPress') })
     expect(appState.startHostedAuth).toHaveBeenCalledWith({ mode: 'sign-in' })
 
     const signUp = findTouchable(renderer, 'CRÉER UN COMPTE')
-    expect(signUp.props.accessibilityRole).toBe('button')
-    expect(signUp.props.accessibilityState).toEqual({ disabled: false })
-    await act(async () => { await signUp.props.onPress() })
+    expect(testProp<string>(signUp, 'accessibilityRole')).toBe('button')
+    expect(testProp<unknown>(signUp, 'accessibilityState')).toEqual({ disabled: false })
+    await act(async () => { await callTestHandler(signUp, 'onPress') })
     expect(appState.startHostedAuth).toHaveBeenCalledWith({ mode: 'sign-up' })
     expect(appState.startHostedAuth).toHaveBeenCalledTimes(2)
   })
@@ -345,7 +342,7 @@ describe('mobile native shell runtime', () => {
     appState.startHostedAuth.mockRejectedValueOnce(failure)
     const renderer = await renderApp('pk_test_mobile')
 
-    await act(async () => { await findTouchable(renderer, label).props.onPress() })
+    await act(async () => { await callTestHandler(findTouchable(renderer, label), 'onPress') })
 
     expect(appState.startHostedAuth).toHaveBeenCalledWith({ mode })
     expect(textContent(renderer.root)).toContain(expected)
@@ -360,14 +357,14 @@ describe('mobile native shell runtime', () => {
     const signUp = findTouchable(renderer, 'CRÉER UN COMPTE')
 
     await act(async () => {
-      void signIn.props.onPress()
+      void callTestHandler(signIn, 'onPress')
       await Promise.resolve()
     })
 
-    expect(signIn.props.disabled).toBe(true)
-    expect(signUp.props.disabled).toBe(true)
+    expect(testProp<boolean>(signIn, 'disabled')).toBe(true)
+    expect(testProp<boolean>(signUp, 'disabled')).toBe(true)
     await act(async () => { resolveAuth(); await Promise.resolve() })
-    expect(findTouchable(renderer, 'SE CONNECTER').props.disabled).toBe(false)
+    expect(testProp<boolean>(findTouchable(renderer, 'SE CONNECTER'), 'disabled')).toBe(false)
   })
 
   it('renders requesting and forwards the real start callback without double authentication', async () => {
@@ -416,7 +413,7 @@ describe('mobile native shell runtime', () => {
     const completed = await renderApp('pk_test_mobile')
     const summary = completed.root.findByType('MissionCompletionScreen' as unknown as React.ElementType)
     expect(summary.props.mission).toMatchObject({ id: 'mission-1', status: 'completed', distance_m: 120, duration_s: 1800 })
-    await act(async () => summary.props.onReturnHome())
+    await act(async () => { await callTestHandler(summary, 'onReturnHome') })
     expect(handleReturnHome).toHaveBeenCalledOnce()
     act(() => completed.unmount())
 
@@ -433,8 +430,8 @@ describe('mobile native shell runtime', () => {
     const renderer = await renderApp('pk_test_mobile')
     const shell = findAppShell(renderer)
 
-    await act(async () => { await shell.props.onSessionExpired() })
-    await act(async () => { await shell.props.onSignOut() })
+    await act(async () => { await callTestHandler(shell, 'onSessionExpired') })
+    await act(async () => { await callTestHandler(shell, 'onSignOut') })
 
     expect(handleSessionExpired).toHaveBeenCalledOnce()
     expect(signOut).toHaveBeenCalledOnce()

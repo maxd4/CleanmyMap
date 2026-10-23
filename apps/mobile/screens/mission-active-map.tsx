@@ -122,7 +122,7 @@ function useMissionForegroundTrack(ownerId: string, missionId: string, mapRef: R
       localTrackRef.current = mergeTrackPoints(localTrackRef.current, [point])
       setCurrentPosition(coordinate)
       setTrack((previousTrack) => mergeTrackPoints(previousTrack, [point]))
-      void saveStoredForegroundTrack(ownerId, missionId, localTrackRef.current)
+      void saveStoredForegroundTrack(ownerId, missionId, localTrackRef.current).catch(() => undefined)
       mapRef.current?.animateToRegion(
         {
           ...coordinate,
@@ -178,7 +178,7 @@ function useMissionForegroundTrack(ownerId: string, missionId: string, mapRef: R
 
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
-        void restoreAndResume()
+        void restoreAndResume().catch(() => undefined)
       } else if (nextState === 'background' || nextState === 'inactive') {
         ++runIdRef.current
         stopForegroundSubscription()
@@ -190,12 +190,12 @@ function useMissionForegroundTrack(ownerId: string, missionId: string, mapRef: R
       if (active) {
         reduceMotionRef.current = enabled
       }
-    })
+    }).catch(() => undefined)
     const reduceMotionSubscription = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
       reduceMotionRef.current = enabled
     })
 
-    void restoreAndResume()
+    void restoreAndResume().catch(() => undefined)
 
     return () => {
       active = false

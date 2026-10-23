@@ -1,6 +1,7 @@
 import React from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { callTestHandler, testProp } from './test-renderer-helpers'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -106,15 +107,15 @@ describe('mobile action join runtime', () => {
     expect(renderer.root.findAll((node) => textContent(node).includes('Nettoyage du parc'))).not.toHaveLength(0)
 
     const search = renderer.root.findByProps({ accessibilityLabel: 'Rechercher une action' })
-    await act(async () => { search.props.onChangeText('parc'); await settle() })
+    await act(async () => { callTestHandler(search, 'onChangeText', 'parc'); await settle() })
     expect(state.loadMobileActions).toHaveBeenLastCalledWith({ view: 'all', query: 'parc' })
 
     const pastTab = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity' && textContent(node) === 'Passées')[0]
-    await act(async () => { pastTab.props.onPress(); await settle() })
+    await act(async () => { callTestHandler(pastTab, 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('Plage propre'))).not.toHaveLength(0)
 
     const details = renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Plage propre' })
-    await act(async () => { await details?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(details, 'onPress'); await settle() })
     expect(state.loadMobileActionDetail).toHaveBeenCalledWith('past-1')
     expect(renderer.root.findAll((node) => textContent(node).includes('Détail'))).not.toHaveLength(0)
   })
@@ -126,15 +127,15 @@ describe('mobile action join runtime', () => {
     state.requestFutureAction.mockReturnValue(new Promise((resolve) => { resolveJoin = resolve }))
     const { renderer } = await renderScreen()
     const join = findButton(renderer, 'Demander')
-    await act(async () => { void join?.props.onPress(); await settle() })
+    await act(async () => { void callTestHandler(join, 'onPress'); await settle() })
     expect(state.requestFutureAction).toHaveBeenCalledTimes(1)
-    expect(findButton(renderer, '...')?.props.disabled).toBe(true)
+    expect(testProp<boolean>(findButton(renderer, '...'), 'disabled')).toBe(true)
     resolveJoin({ participationStatus: 'pending', joinedAt: '2026-10-20T10:00:00.000Z', participantsCount: 4 })
     await act(async () => { await settle() })
     expect(state.alert).toHaveBeenCalledWith('Action mise à jour', 'Votre demande d’inscription a été envoyée.')
 
     const cancel = findButton(renderer, 'Annuler')
-    await act(async () => { await cancel?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(cancel, 'onPress'); await settle() })
     expect(state.cancelFutureAction).toHaveBeenCalledWith('future-1')
     expect(state.alert).toHaveBeenCalledWith('Action mise à jour', 'Votre inscription a été annulée.')
   })
@@ -145,21 +146,21 @@ describe('mobile action join runtime', () => {
     const { renderer } = await renderScreen()
 
     const invitation = findButton(renderer, 'Accepter')
-    await act(async () => { await invitation?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(invitation, 'onPress'); await settle() })
     expect(state.respondToInvitation).toHaveBeenCalledWith('invite-1', 'accept')
 
     const review = findButton(renderer, 'Demandes organisateur')
-    await act(async () => { await review?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(review, 'onPress'); await settle() })
     expect(state.loadActionReview).toHaveBeenCalledWith('future-1')
     expect(renderer.root.findAll((node) => textContent(node).includes('Sam'))).not.toHaveLength(0)
     const approve = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity').filter((node) => textContent(node).includes('Accepter')).at(-1)
-    await act(async () => { await approve?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(approve, 'onPress'); await settle() })
     expect(state.reviewActionRequest).toHaveBeenCalledWith('future-1', 'request-1', 'accept')
 
     const pastTab = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity' && textContent(node) === 'Passées')[0]
-    await act(async () => { pastTab.props.onPress() })
+    await act(async () => { callTestHandler(pastTab, 'onPress') })
     const claim = findButton(renderer, 'Demander le rattachement')
-    await act(async () => { await claim?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(claim, 'onPress'); await settle() })
     expect(state.claimPastAction).toHaveBeenCalledWith('past-1')
   })
 
@@ -190,23 +191,23 @@ describe('mobile action join runtime', () => {
     state.updateMobileActionFieldRoles.mockResolvedValue(roles)
     const { renderer } = await renderScreen()
 
-    await act(async () => { await renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }).props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }), 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('Responsabilités terrain'))).not.toHaveLength(0)
     expect(renderer.root.findAll((node) => textContent(node).includes('Bob'))).not.toHaveLength(0)
 
     const role = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity').find((node) => textContent(node).includes('Sécurité'))
-    await act(async () => { await role?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(role, 'onPress'); await settle() })
     const save = findButton(renderer, 'Enregistrer mes responsabilités')
-    await act(async () => { await save?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(save, 'onPress'); await settle() })
     expect(state.updateMobileActionFieldRoles).toHaveBeenCalledWith('future-1', 'user-a', [])
 
     const bob = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity' && textContent(node).includes('Bob')).at(-1)
-    await act(async () => { await bob?.props.onPress(); await settle() })
-    await act(async () => { await findButton(renderer, 'Proposer le transfert')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(bob, 'onPress'); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Proposer le transfert'), 'onPress'); await settle() })
     expect(state.proposeMobileActionFieldRoleTransfer).toHaveBeenCalledWith('future-1', 'user-b')
-    await act(async () => { await findButton(renderer, 'Accepter')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Accepter'), 'onPress'); await settle() })
     expect(state.respondMobileActionFieldRoleTransfer).toHaveBeenCalledWith('future-1', 'transfer-1', 'accept')
-    await act(async () => { await findButton(renderer, 'Refuser')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Refuser'), 'onPress'); await settle() })
     expect(state.respondMobileActionFieldRoleTransfer).toHaveBeenCalledWith('future-1', 'transfer-1', 'reject')
   })
 
@@ -218,29 +219,29 @@ describe('mobile action join runtime', () => {
     state.loadMobileActions.mockResolvedValue({ future: [futureAction], past: [], history: [], invitations: [] })
     const { renderer } = await renderScreen(onSessionExpired)
 
-    await act(async () => { await renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }).props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }), 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('détail indisponible'))).not.toHaveLength(0)
-    await act(async () => { await findButton(renderer, 'Demandes organisateur')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Demandes organisateur'), 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('réservée aux organisateurs'))).not.toHaveLength(0)
-    await act(async () => { await findButton(renderer, 'Demander')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Demander'), 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('demande refusée'))).not.toHaveLength(0)
 
     state.requestFutureAction.mockRejectedValueOnce('mutation inconnue')
-    await act(async () => { await findButton(renderer, 'Demander')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Demander'), 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('La demande n’a pas abouti.'))).not.toHaveLength(0)
     state.requestFutureAction.mockRejectedValueOnce({ status: 401 })
-    await act(async () => { await findButton(renderer, 'Demander')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Demander'), 'onPress'); await settle() })
     expect(onSessionExpired).toHaveBeenCalled()
 
     state.loadMobileActionDetail.mockRejectedValueOnce('detail inconnu')
-    await act(async () => { await renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }).props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }), 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('Le détail est indisponible.'))).not.toHaveLength(0)
     state.loadActionReview.mockRejectedValueOnce('review inconnue')
-    await act(async () => { await findButton(renderer, 'Demandes organisateur')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Demandes organisateur'), 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('La file de demandes est indisponible.'))).not.toHaveLength(0)
 
     state.loadMobileActionDetail.mockRejectedValueOnce({ status: 401 })
-    await act(async () => { await renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }).props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }), 'onPress'); await settle() })
     expect(onSessionExpired).toHaveBeenCalled()
   })
 
@@ -253,19 +254,19 @@ describe('mobile action join runtime', () => {
     state.loadMobileActionFieldRoles.mockResolvedValue(roles)
     state.updateMobileActionFieldRoles.mockRejectedValueOnce('save failed')
     const { renderer } = await renderScreen()
-    await act(async () => { await renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }).props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }), 'onPress'); await settle() })
     const role = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity' && textContent(node).includes('Accueil'))[0]
-    await act(async () => { await role?.props.onPress(); await settle() })
-    expect(renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity' && node.props.disabled === true && textContent(node).includes('...'))).not.toHaveLength(0)
+    await act(async () => { await callTestHandler(role, 'onPress'); await settle() })
+    expect(renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity' && testProp<boolean>(node, 'disabled') === true && textContent(node).includes('...'))).not.toHaveLength(0)
     const errorRoles = { ...roles, confirmedParticipants: [{ userId: 'user-a', displayName: 'Ada' }], canManage: true, canProposeTransfer: false }
     state.loadMobileActionDetail.mockResolvedValue({ action: futureAction, participation: null, canJoin: true, canClaim: false })
     state.loadMobileActionFieldRoles.mockResolvedValue(errorRoles)
     state.updateMobileActionFieldRoles.mockRejectedValueOnce('save failed')
     const second = await renderScreen()
-    await act(async () => { await second.renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }).props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(second.renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }), 'onPress'); await settle() })
     const selectable = second.renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity' && textContent(node).includes('Accueil'))[0]
-    await act(async () => { await selectable?.props.onPress(); await settle() })
-    await act(async () => { await findButton(second.renderer, 'Enregistrer mes responsabilités')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(selectable, 'onPress'); await settle() })
+    await act(async () => { await callTestHandler(findButton(second.renderer, 'Enregistrer mes responsabilités'), 'onPress'); await settle() })
     expect(second.renderer.root.findAll((node) => textContent(node).includes('Les responsabilités n’ont pas été enregistrées.'))).not.toHaveLength(0)
   })
 })

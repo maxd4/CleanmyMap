@@ -126,3 +126,5 @@ export function createMissionClient({
     }),
   }
 }
+
+export type MissionClient = ReturnType<typeof createMissionClient>

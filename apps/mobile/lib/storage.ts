@@ -319,7 +319,7 @@ function withOwnerMutation<T>(ownerId: string, operation: () => Promise<T>): Pro
   ownerMutationsInFlight.set(ownerId, settled);
   void settled.then(() => {
     if (ownerMutationsInFlight.get(ownerId) === settled) ownerMutationsInFlight.delete(ownerId);
-  });
+  }).catch(() => undefined);
   return mutation;
 }
 
@@ -330,7 +330,7 @@ function withGpsBufferMutation<T>(ownerId: string, operation: () => Promise<T>):
   gpsBufferMutationsInFlight.set(ownerId, settled);
   void settled.then(() => {
     if (gpsBufferMutationsInFlight.get(ownerId) === settled) gpsBufferMutationsInFlight.delete(ownerId);
-  });
+  }).catch(() => undefined);
   return mutation;
 }
 
@@ -388,6 +388,25 @@ async function removeGpsBufferRecords(ownerId: string, indexKey: string, keys: S
   });
 }
 
+async function recoverGpsUpsertFailure(
+  client: SupabaseClient,
+  ownerId: string,
+  indexKey: string,
+  keys: string[],
+  buffer: MissionLocationInsert[],
+  error: Error,
+): Promise<ServiceResult> {
+  const confirmedKeys = await findPersistedGpsPointKeys(client, keys, buffer)
+  const identityStable = await getClerkUserId() === ownerId
+  if (confirmedKeys.size > 0 && identityStable) {
+    await removeGpsBufferRecords(ownerId, indexKey, confirmedKeys)
+  }
+  if (confirmedKeys.size === keys.length && identityStable) {
+    return { ok: true, data: undefined }
+  }
+  return { ok: false, error: `Synchronisation GPS impossible : ${error.message}` }
+}
+
 async function flushBufferOnce(ownerId: string): Promise<ServiceResult> {
   const indexKey = ownerScopedKey(GPS_BUFFER_INDEX_KEY_PREFIX, ownerId);
   if (!indexKey) return { ok: false, error: 'Connexion Clerk requise pour synchroniser les données.' };
@@ -427,15 +446,7 @@ async function flushBufferOnce(ownerId: string): Promise<ServiceResult> {
         ignoreDuplicates: true,
       });
       if (error) {
-        const confirmedKeys = await findPersistedGpsPointKeys(client, keys, buffer);
-        const identityStable = await getClerkUserId() === ownerId;
-        if (confirmedKeys.size > 0 && identityStable) {
-          await removeGpsBufferRecords(ownerId, indexKey, confirmedKeys);
-        }
-        if (confirmedKeys.size === keys.length && identityStable) {
-          return { ok: true, data: undefined };
-        }
-        return { ok: false, error: `Synchronisation GPS impossible : ${error.message}` };
+        return recoverGpsUpsertFailure(client, ownerId, indexKey, keys, buffer, error);
       }
 
       await removeGpsBufferRecords(ownerId, indexKey, new Set(keys));

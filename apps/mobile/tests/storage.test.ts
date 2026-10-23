@@ -338,7 +338,7 @@ it('ignores an absent, corrupt, or partially valid GPS index without losing vali
 
 it('assigns an identity to a valid point with a missing client id and preserves it on retry', async () => {
     const pointWithoutId = { ...point, client_point_id: undefined } as unknown as typeof point
-    const upsert = vi.fn()
+    const upsert = vi.fn<(points: unknown[], options: unknown) => Promise<{ error: Error | null }>>()
       .mockResolvedValueOnce({ error: new Error('temporary failure') })
       .mockResolvedValueOnce({ error: null })
     state.client = { from: vi.fn(() => ({ upsert })) }
@@ -347,9 +347,12 @@ it('assigns an identity to a valid point with a missing client id and preserves 
     await flushBuffer(ownerId)
     await flushBuffer(ownerId)
 
-    const firstId = upsert.mock.calls[0][0][0].client_point_id
+    const firstPayload = upsert.mock.calls[0]?.[0]
+    const secondPayload = upsert.mock.calls[1]?.[0]
+    if (!Array.isArray(firstPayload) || !Array.isArray(secondPayload)) throw new Error('GPS replay payloads were not recorded')
+    const firstId = (firstPayload[0] as { client_point_id?: string } | undefined)?.client_point_id
     expect(firstId).toEqual(expect.any(String))
-    expect(upsert.mock.calls[1][0][0].client_point_id).toBe(firstId)
+    expect((secondPayload[0] as { client_point_id?: string } | undefined)?.client_point_id).toBe(firstId)
     expect(await getPendingGpsPointCount(ownerId)).toBe(0)
 })
 

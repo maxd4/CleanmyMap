@@ -125,7 +125,7 @@ function useActionCreatePersistence({
         if (active && readSucceeded) setDraftHydrated(true)
       }
     }
-    void restoreDraft()
+    void restoreDraft().catch(() => undefined)
     return () => { active = false }
   }, [draftReadAttempt, setActionId, setClientRequestId, setDraft, setPublished, setSection])
 
@@ -285,7 +285,7 @@ export function useActionCreateController({ onSessionExpired }: ActionCreateCont
 
   useEffect(() => {
     if (!actionId) return
-    void loadMobileActionEditor(actionId).catch((value) => {
+    loadMobileActionEditor(actionId).catch((value) => {
       if (isUnauthorized(value)) onSessionExpired()
     })
   }, [actionId, onSessionExpired])

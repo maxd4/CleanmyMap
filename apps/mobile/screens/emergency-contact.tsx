@@ -85,7 +85,7 @@ export function EmergencyContactPanel() {
       'Ce contact privé sera supprimé de cet appareil.',
       [
         { text: 'Annuler', style: 'cancel' },
-        { text: 'Supprimer', style: 'destructive', onPress: () => void deleteContact() },
+        { text: 'Supprimer', style: 'destructive', onPress: () => void deleteContact().catch(() => undefined) },
       ],
     )
   }
@@ -151,7 +151,7 @@ function EmergencyContactEditor({
       <ContactField label="Relation" value={draft.relation} onChangeText={(relation) => onChange((current) => ({ ...current, relation }))} placeholder="Ex. sœur, ami, parent" />
       <ContactField label="Numéro de téléphone" value={draft.phone} onChangeText={(phone) => onChange((current) => ({ ...current, phone }))} placeholder="Ex. 06 12 34 56 78" keyboardType="phone-pad" autoComplete="tel" />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TouchableOpacity style={styles.primaryButton} onPress={() => void onSave()} disabled={saving}>
+      <TouchableOpacity style={styles.primaryButton} onPress={() => void Promise.resolve(onSave()).catch(() => undefined)} disabled={saving}>
         {saving ? <ActivityIndicator color="#022c22" /> : <Text style={styles.primaryButtonLabel}>ENREGISTRER</Text>}
       </TouchableOpacity>
       <TouchableOpacity style={styles.secondaryButton} onPress={onCancel} disabled={saving}>

@@ -27,22 +27,31 @@ export function SignalementScreen({ onSessionExpired }: SignalementProps) {
   const [photos, setPhotos] = useState<MobilePickedPhoto[]>([])
   const [evidence, setEvidence] = useState<Record<string, MobileMediaItem[]>>({})
 
-  const refresh = useCallback(async () => {
+  const refreshAsync = useCallback(async () => {
     setLoading(true); setError(null)
     try { setItems((await loadMyMobileSignalements()).items) }
     catch (value) { if ((value as { status?: number }).status === 401) onSessionExpired(); else setError(value instanceof Error ? value.message : 'Mes observations sont indisponibles.') }
     finally { setLoading(false) }
   }, [onSessionExpired])
-  useEffect(() => { void refresh() }, [refresh])
+  const refresh = useCallback((): void => {
+    void refreshAsync().catch(() => undefined)
+  }, [refreshAsync])
+  useEffect(() => { refresh() }, [refresh])
 
-  async function getCurrentPosition() {
+  async function getCurrentPositionAsync() {
     const permission = await Location.requestForegroundPermissionsAsync()
     if (permission.status !== 'granted') { setError('La permission de localisation est nécessaire pour ce signalement.'); return }
     const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
     setLatitude(position.coords.latitude.toFixed(6)); setLongitude(position.coords.longitude.toFixed(6)); setMessage('Position actuelle ajoutée.')
   }
 
-  async function submit() {
+  function getCurrentPosition(): void {
+    void getCurrentPositionAsync().catch((value: unknown) => {
+      setError(value instanceof Error ? value.message : 'La position actuelle est indisponible.')
+    })
+  }
+
+  async function submitAsync() {
     setBusy(true); setError(null); setMessage(null)
     const parsedLatitude = Number(latitude); const parsedLongitude = Number(longitude)
     if (!label.trim() || !Number.isFinite(parsedLatitude) || !Number.isFinite(parsedLongitude)) { setError('Indiquez un lieu et une position valide, ou utilisez la position actuelle.'); setBusy(false); return }
@@ -56,21 +65,39 @@ export function SignalementScreen({ onSessionExpired }: SignalementProps) {
           : ` ${upload.uploadedCount} preuve(s) photo confirmée(s).`
       }
       setMessage(confirmation)
-      setLabel(''); setNotes(''); setCategories([]); setPhotos([]); await refresh()
+      setLabel(''); setNotes(''); setCategories([]); setPhotos([]); await refreshAsync()
     } catch (value) { if ((value as { status?: number }).status === 401) onSessionExpired(); else setError(value instanceof Error ? value.message : 'Le signalement n’a pas abouti.') }
     finally { setBusy(false) }
   }
 
+  function submit(): void {
+    void submitAsync().catch((value: unknown) => {
+      setError(value instanceof Error ? value.message : 'Le signalement n’a pas abouti.')
+    })
+  }
+
   function toggleCategory(value: string) { setCategories((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]) }
 
-  async function choosePhotos() {
+  async function choosePhotosAsync() {
     try { setPhotos(await pickSignalementPhotos()); setError(null) }
     catch (value) { setError(value instanceof Error ? value.message : 'Les photos ne peuvent pas être sélectionnées.') }
   }
 
-  async function showEvidence(signalementId: string) {
+  function choosePhotos(): void {
+    void choosePhotosAsync().catch((value: unknown) => {
+      setError(value instanceof Error ? value.message : 'Les photos ne peuvent pas être sélectionnées.')
+    })
+  }
+
+  async function showEvidenceAsync(signalementId: string) {
     try { const media = await loadSignalementMedia(signalementId); setEvidence((current) => ({ ...current, [signalementId]: media })) }
     catch (value) { if ((value as { status?: number }).status === 401) onSessionExpired(); else setError(value instanceof Error ? value.message : 'Les preuves photo sont indisponibles.') }
+  }
+
+  function showEvidence(signalementId: string): void {
+    void showEvidenceAsync(signalementId).catch((value: unknown) => {
+      setError(value instanceof Error ? value.message : 'Les preuves photo sont indisponibles.')
+    })
   }
 
   return <View style={styles.root}>

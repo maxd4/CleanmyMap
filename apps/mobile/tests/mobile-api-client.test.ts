@@ -23,15 +23,12 @@ describe('mobile HTTP boundary client', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(mobileRequest<{ status: string }>('/api/mobile/account')).resolves.toEqual({ status: 'ok' })
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://cleanmymap.test/api/mobile/account',
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          Authorization: 'Bearer clerk-session-token',
-          'Content-Type': 'application/json',
-        }),
-      }),
-    )
+    const request = fetchMock.mock.calls[0] as unknown as [string, RequestInit] | undefined
+    expect(request?.[0]).toBe('https://cleanmymap.test/api/mobile/account')
+    expect(request?.[1].headers).toEqual({
+      Authorization: 'Bearer clerk-session-token',
+      'Content-Type': 'application/json',
+    })
   })
 
   it('fails closed when the web origin is not configured', async () => {

@@ -1,6 +1,8 @@
 import React from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { callTestHandler, testProp } from './test-renderer-helpers'
+import { commonNativeComponents, nativeComponent } from './support/native-component'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -17,19 +19,8 @@ const state = vi.hoisted(() => ({
   createLinkedMission: vi.fn(),
 }))
 
-function nativeComponent(name: string) {
-  return function NativeComponent({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) {
-    return React.createElement(name, props, children)
-  }
-}
-
 vi.mock('react-native', () => ({
-  ActivityIndicator: nativeComponent('ActivityIndicator'),
-  StyleSheet: { create: (styles: unknown) => styles },
-  Text: nativeComponent('Text'),
-  TextInput: nativeComponent('TextInput'),
-  TouchableOpacity: nativeComponent('TouchableOpacity'),
-  View: nativeComponent('View'),
+  ...commonNativeComponents(),
 }))
 vi.mock('@expo/vector-icons', () => ({ Ionicons: nativeComponent('Ionicons') }))
 vi.mock('expo-location', () => ({
@@ -102,9 +93,9 @@ describe('mobile action creation runtime', () => {
       await Promise.resolve()
     })
 
-    expect(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }).props.value).toBe('Brouillon repris')
-    expect(renderer.root.findByProps({ accessibilityLabel: 'Lieu' }).props.value).toBe('Parc sauvegardé')
-    expect(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }).props.placeholderTextColor).toBe('#94a3b8')
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('Brouillon repris')
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Lieu' }), 'value')).toBe('Parc sauvegardé')
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'placeholderTextColor')).toBe('#94a3b8')
     expect(state.setItem).toHaveBeenCalled()
   })
 
@@ -129,7 +120,7 @@ describe('mobile action creation runtime', () => {
     state.getItem.mockResolvedValueOnce('{malformed')
     const malformed = await renderScreen()
     await act(async () => { await Promise.resolve(); await Promise.resolve() })
-    expect(malformed.root.findByProps({ accessibilityLabel: 'Titre de l’action' }).props.value).toBe('')
+    expect(testProp<string>(malformed.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('')
   })
 
   it('does not POST while local draft recovery is blocked', async () => {
@@ -138,7 +129,7 @@ describe('mobile action creation runtime', () => {
     await act(async () => { await Promise.resolve(); await Promise.resolve() })
 
     const save = findButton(renderer, 'Enregistrer le brouillon')
-    await act(async () => { await save?.props.onPress() })
+    await act(async () => { await callTestHandler(save, 'onPress') })
 
     expect(state.createMobileAction).not.toHaveBeenCalled()
     expect(state.updateMobileAction).not.toHaveBeenCalled()
@@ -153,10 +144,10 @@ describe('mobile action creation runtime', () => {
     expect(state.setItem).not.toHaveBeenCalled()
 
     const retry = findButton(renderer, 'Réessayer la récupération locale')
-    await act(async () => { await retry?.props.onPress(); await Promise.resolve(); await Promise.resolve() })
+    await act(async () => { await callTestHandler(retry, 'onPress'); await Promise.resolve(); await Promise.resolve() })
 
-    expect(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }).props.value).toBe('Récupération après erreur')
-    expect(renderer.root.findByProps({ accessibilityLabel: 'Lieu' }).props.value).toBe('Parc repris')
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('Récupération après erreur')
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Lieu' }), 'value')).toBe('Parc repris')
     expect(state.setItem).toHaveBeenCalled()
   })
 
@@ -169,7 +160,7 @@ describe('mobile action creation runtime', () => {
     const renderer = await renderScreen()
 
     const save = findButton(renderer, 'Enregistrer le brouillon')
-    await act(async () => { await save?.props.onPress() })
+    await act(async () => { await callTestHandler(save, 'onPress') })
 
     expect(state.createMobileAction).not.toHaveBeenCalled()
     expect(state.updateMobileAction).toHaveBeenCalledWith(
@@ -209,18 +200,18 @@ describe('mobile action creation runtime', () => {
     const renderer = await renderScreen()
     const title = renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' })
 
-    await act(async () => { title.props.onChangeText('Action à reprendre') })
+    await act(async () => { callTestHandler(title, 'onChangeText', 'Action à reprendre') })
     const save = findButton(renderer, 'Enregistrer le brouillon')
-    await act(async () => { await save?.props.onPress() })
+    await act(async () => { await callTestHandler(save, 'onPress') })
     expect(renderer.root.findAll((node) => textContent(node).includes('réseau indisponible'))).not.toHaveLength(0)
-    expect(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }).props.value).toBe('Action à reprendre')
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('Action à reprendre')
 
-    await act(async () => { await save?.props.onPress() })
+    await act(async () => { await callTestHandler(save, 'onPress') })
     expect(state.createMobileAction).toHaveBeenCalledTimes(2)
     expect(state.updateMobileAction).not.toHaveBeenCalled()
 
     const saveAgain = findButton(renderer, 'Enregistrer le brouillon')
-    await act(async () => { await saveAgain?.props.onPress() })
+    await act(async () => { await callTestHandler(saveAgain, 'onPress') })
     expect(state.updateMobileAction).toHaveBeenCalledTimes(1)
     expect(state.createMobileAction).toHaveBeenCalledTimes(2)
   })
@@ -231,15 +222,15 @@ describe('mobile action creation runtime', () => {
     const renderer = await renderScreen()
     const locate = findButton(renderer, 'Utiliser ma position actuelle')
 
-    await act(async () => { await locate?.props.onPress(); await Promise.resolve() })
+    await act(async () => { await callTestHandler(locate, 'onPress'); await Promise.resolve() })
     expect(state.createMobileAction).not.toHaveBeenCalled()
     expect(renderer.root.findAll((node) => textContent(node).includes('La permission de localisation est nécessaire'))).not.toHaveLength(0)
 
     state.foregroundPermission = 'granted'
-    await act(async () => { await locate?.props.onPress(); await Promise.resolve() })
-    await act(async () => { await findButton(renderer, 'Continuer')?.props.onPress() })
-    expect(renderer.root.findByProps({ accessibilityLabel: 'Latitude' }).props.value).toBe('48.856600')
-    expect(renderer.root.findByProps({ accessibilityLabel: 'Longitude' }).props.value).toBe('2.352200')
+    await act(async () => { await callTestHandler(locate, 'onPress'); await Promise.resolve() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Latitude' }), 'value')).toBe('48.856600')
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Longitude' }), 'value')).toBe('2.352200')
     expect(renderer.root.findAll((node) => textContent(node).includes('Position actuelle ajoutée'))).not.toHaveLength(0)
   })
 
@@ -247,22 +238,22 @@ describe('mobile action creation runtime', () => {
     state.getItem.mockResolvedValue(null)
     const renderer = await renderScreen()
     const title = renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' })
-    await act(async () => { title.props.onChangeText('Action publiée') })
+    await act(async () => { callTestHandler(title, 'onChangeText', 'Action publiée') })
 
     for (let index = 0; index < 3; index += 1) {
       const next = findButton(renderer, 'Continuer')
-      await act(async () => { await next?.props.onPress() })
+      await act(async () => { await callTestHandler(next, 'onPress') })
     }
 
     const publish = findButton(renderer, 'Publier')
-    await act(async () => { await publish?.props.onPress() })
+    await act(async () => { await callTestHandler(publish, 'onPress') })
     expect(state.createMobileAction).toHaveBeenCalledTimes(1)
     expect(state.publishMobileAction).toHaveBeenCalledWith('action-1')
     expect(renderer.root.findAll((node) => textContent(node).includes('Publication confirmée par le serveur'))).not.toHaveLength(0)
-    expect(findButton(renderer, 'Publiée')?.props.disabled).toBe(true)
+    expect(testProp<boolean>(findButton(renderer, 'Publiée'), 'disabled')).toBe(true)
 
     const publishedButton = findButton(renderer, 'Publiée')
-    await act(async () => { await publishedButton?.props.onPress() })
+    await act(async () => { await callTestHandler(publishedButton, 'onPress') })
     expect(state.createMobileAction).toHaveBeenCalledTimes(1)
     expect(state.publishMobileAction).toHaveBeenCalledTimes(1)
   })
@@ -273,15 +264,18 @@ describe('mobile action creation runtime', () => {
     const renderer = await renderScreen()
     const publish = findButton(renderer, 'Publier')
 
-    await act(async () => { await publish?.props.onPress() })
-    expect(state.updateMobileAction).toHaveBeenCalledWith('action-existing', expect.objectContaining({ clientRequestId: expect.any(String) }))
+    await act(async () => { await callTestHandler(publish, 'onPress') })
+    const updateCall = state.updateMobileAction.mock.calls[0] as unknown[] | undefined
+    const updatePayload = updateCall?.[1] as { clientRequestId?: unknown } | undefined
+    expect(updateCall?.[0]).toBe('action-existing')
+    expect(typeof updatePayload?.clientRequestId).toBe('string')
     expect(state.publishMobileAction).toHaveBeenCalledTimes(1)
     expect(renderer.root.findAll((node) => textContent(node).includes('publication indisponible'))).not.toHaveLength(0)
 
-    await act(async () => { await findButton(renderer, 'Publier')?.props.onPress() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
     expect(state.updateMobileAction).toHaveBeenCalledTimes(2)
     expect(state.publishMobileAction).toHaveBeenCalledTimes(2)
-    expect(findButton(renderer, 'Publiée')?.props.disabled).toBe(true)
+    expect(testProp<boolean>(findButton(renderer, 'Publiée'), 'disabled')).toBe(true)
   })
 
   it('forwards a session 401 during save and does not claim a local success', async () => {
@@ -289,7 +283,7 @@ describe('mobile action creation runtime', () => {
     state.createMobileAction.mockRejectedValueOnce({ status: 401 })
     const onSessionExpired = vi.fn()
     const renderer = await renderScreen(onSessionExpired)
-    await act(async () => { await findButton(renderer, 'Enregistrer le brouillon')?.props.onPress() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Enregistrer le brouillon'), 'onPress') })
 
     expect(onSessionExpired).toHaveBeenCalledOnce()
     expect(renderer.root.findAll((node) => textContent(node).includes('Brouillon enregistré sur le serveur'))).toHaveLength(0)
@@ -313,40 +307,41 @@ describe('mobile action creation runtime', () => {
     state.loadMobileActionDay.mockRejectedValueOnce(new Error('briefing indisponible'))
     const renderer = await renderScreen()
 
-    await act(async () => { await findButton(renderer, 'Relier une activité GPS')?.props.onPress() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Relier une activité GPS'), 'onPress') })
     expect(renderer.root.findAll((node) => textContent(node).includes('liaison refusée'))).not.toHaveLength(0)
-    await act(async () => { await findButton(renderer, 'Ouvrir Préparer / Jour J')?.props.onPress() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Ouvrir Préparer / Jour J'), 'onPress') })
     expect(renderer.root.findAll((node) => textContent(node).includes('briefing indisponible'))).not.toHaveLength(0)
   })
 
   it('builds manual point-to-point coordinates with deduplicated participants and a truncated checklist', async () => {
     state.getItem.mockResolvedValue(null)
     const renderer = await renderScreen()
-    const input = (label: string, value: string) => renderer.root.findByProps({ accessibilityLabel: label }).props.onChangeText(value)
+    const input = (label: string, value: string) => callTestHandler(renderer.root.findByProps({ accessibilityLabel: label }), 'onChangeText', value)
 
     await act(async () => {
       input('Titre de l’action', 'Action manuelle')
       input('Date (AAAA-MM-JJ)', '2026-11-01')
       input('Lieu', 'Lieu manuel')
     })
-    await act(async () => { await findButton(renderer, 'Terrain')?.props.onPress() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Terrain'), 'onPress') })
     await act(async () => {
       input('Latitude', '48.123456')
       input('Longitude', '2.654321')
-      await findButton(renderer, 'Point à point')?.props.onPress()
+      await callTestHandler(findButton(renderer, 'Point à point'), 'onPress')
       input('Départ', 'Départ manuel')
     })
     await act(async () => { input('Arrivée', 'Arrivée manuelle') })
-    await act(async () => { await findButton(renderer, 'Équipe et logistique')?.props.onPress() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Équipe et logistique'), 'onPress') })
     await act(async () => {
       input('Coorganisateurs (identifiants séparés par des virgules)', 'orga-1, orga-1, orga-2')
       input('Invitations (identifiants séparés par des virgules)', 'invite-1, invite-1, invite-2')
       input('Logistique et checklist (une ligne par item)', Array.from({ length: 14 }, (_, index) => `item-${index + 1}`).join('\n'))
     })
-    await act(async () => { await findButton(renderer, 'Vérifier et publier')?.props.onPress() })
-    await act(async () => { await findButton(renderer, 'Publier')?.props.onPress() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Vérifier et publier'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
 
-    const payload = state.createMobileAction.mock.calls[0][0]
+    const payload = state.createMobileAction.mock.calls[0]?.[0] as Record<string, unknown> | undefined
+    if (!payload) throw new Error('Action creation payload was not recorded')
     expect(payload).toMatchObject({
       locationLabel: 'Lieu manuel',
       latitude: 48.123456,
@@ -357,7 +352,8 @@ describe('mobile action creation runtime', () => {
       organizerAccounts: ['orga-1', 'orga-2'],
       participantAccounts: ['invite-1', 'invite-2'],
     })
-    expect(payload.preparationData.preparationChecklist).toHaveLength(12)
+    const preparationData = payload.preparationData as { preparationChecklist?: unknown[] } | undefined
+    expect(preparationData?.preparationChecklist).toHaveLength(12)
   })
 
   it('links GPS only after a server draft exists and keeps the server result explicit', async () => {
@@ -367,14 +363,14 @@ describe('mobile action creation runtime', () => {
     expect(linkBeforeSave).toBeUndefined()
 
     const save = findButton(renderer, 'Enregistrer le brouillon')
-    await act(async () => { await save?.props.onPress() })
+    await act(async () => { await callTestHandler(save, 'onPress') })
     for (let index = 0; index < 3; index += 1) {
       const next = findButton(renderer, 'Continuer')
-      await act(async () => { await next?.props.onPress() })
+      await act(async () => { await callTestHandler(next, 'onPress') })
     }
 
     const link = findButton(renderer, 'Relier une activité GPS')
-    await act(async () => { await link?.props.onPress() })
+    await act(async () => { await callTestHandler(link, 'onPress') })
     expect(state.createLinkedMission).toHaveBeenCalledWith('Action mobile', 'action-1')
     expect(renderer.root.findAll((node) => textContent(node).includes('Suivi GPS lié'))).not.toHaveLength(0)
   })

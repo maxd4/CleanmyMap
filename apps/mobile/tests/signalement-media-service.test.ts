@@ -1,10 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+type StorageClient = {
+  storage: {
+    from: (bucket: string) => {
+      uploadToSignedUrl: (path: string, token: string, file: Blob, options: { upsert: boolean; contentType: string }) => Promise<{ error: Error | null }>
+    }
+  }
+}
+
+type PickerAsset = {
+  uri: string
+  fileName?: string | null
+  mimeType?: string | null
+  fileSize?: number
+  width?: number
+  height?: number
+}
+
 const state = vi.hoisted(() => ({
   token: 'clerk-session-token' as string | null,
-  storage: null as any,
+  storage: null as StorageClient | null,
   permissionGranted: true,
-  pickerResult: { canceled: false, assets: [] as any[] },
+  pickerResult: { canceled: false, assets: [] as PickerAsset[] },
 }))
 
 vi.mock('expo-image-picker', () => ({
@@ -14,7 +31,7 @@ vi.mock('expo-image-picker', () => ({
 }))
 vi.mock('../lib/supabase', () => ({
   getClerkSupabaseAccessToken: vi.fn(async () => state.token),
-  getAuthenticatedSupabaseClient: vi.fn(async () => state.storage),
+  getAuthenticatedSupabaseClient: vi.fn(async (): Promise<StorageClient | null> => state.storage),
 }))
 
 import { pickSignalementPhotos, loadSignalementMedia, uploadSignalementPhotos, type MobilePickedPhoto } from '../lib/signalement-media-service'
@@ -46,7 +63,7 @@ describe('signalement media transport', () => {
 
   it('finalizes a pending upload with the Clerk bearer and signed storage upload', async () => {
     const uploadToSignedUrl = vi.fn(async () => ({ error: null }))
-    state.storage = { storage: { from: vi.fn(() => ({ uploadToSignedUrl })) } }
+    state.storage = { storage: { from: () => ({ uploadToSignedUrl }) } }
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response('photo-bytes'))
       .mockResolvedValueOnce(new Response(JSON.stringify({ intent: { mediaId: 'media-1', bucket: 'signalements', path: 'path', token: 'signed', uploadState: 'pending' } }), { status: 201 }))
@@ -55,12 +72,19 @@ describe('signalement media transport', () => {
 
     await expect(uploadSignalementPhotos('signalement/1', [photo])).resolves.toMatchObject({ uploadedCount: 1, failed: [] })
     expect(uploadToSignedUrl).toHaveBeenCalledWith('path', 'signed', expect.any(Blob), { upsert: true, contentType: 'image/jpeg' })
-    expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://cleanmymap.test/api/signalements/signalement%2F1/media/intents', expect.objectContaining({ method: 'POST', headers: expect.objectContaining({ Authorization: 'Bearer clerk-session-token' }) }))
+    const intentRequest = fetchMock.mock.calls[1] as unknown as [string, RequestInit] | undefined
+    expect(intentRequest?.[0]).toBe('https://cleanmymap.test/api/signalements/signalement%2F1/media/intents')
+    expect(intentRequest?.[1].method).toBe('POST')
+    const intentHeaders = intentRequest?.[1].headers
+    const authorization = intentHeaders instanceof Headers
+      ? intentHeaders.get('Authorization')
+      : (intentHeaders as Record<string, string> | undefined)?.Authorization
+    expect(authorization).toBe('Bearer clerk-session-token')
   })
 
   it('accepts an already-ready intent without a second storage upload', async () => {
     const uploadToSignedUrl = vi.fn()
-    state.storage = { storage: { from: vi.fn(() => ({ uploadToSignedUrl })) } }
+    state.storage = { storage: { from: () => ({ uploadToSignedUrl }) } }
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce(new Response('photo-bytes'))
       .mockResolvedValueOnce(new Response(JSON.stringify({ intent: { mediaId: 'media-1', bucket: 'signalements', path: 'path', token: 'signed', uploadState: 'ready' } }), { status: 200 })))

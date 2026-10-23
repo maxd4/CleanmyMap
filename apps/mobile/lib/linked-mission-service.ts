@@ -4,6 +4,7 @@ import {
   removePendingLinkedMissionReconciliation,
 } from './storage';
 import type { Mission, ServiceResult } from '../types/mission';
+import { getMobileApiBaseUrl } from './mobile-environment';
 
 const CLERK_SESSION_REQUIRED_ERROR =
   "Connexion Clerk requise pour accéder à cette mission.";
@@ -16,7 +17,7 @@ export async function createLinkedMission(
   label: string,
   actionId: string,
 ): Promise<ServiceResult<Mission>> {
-  const baseUrl = process.env.EXPO_PUBLIC_WEB_APP_URL?.trim().replace(/\/$/, '');
+  const baseUrl = getMobileApiBaseUrl();
   if (!baseUrl) {
     return { ok: false, error: 'URL du site web absente pour créer une mission liée.' };
   }
@@ -64,7 +65,7 @@ export async function reconcileLinkedMission(
   if (!expectedOwnerId || currentUserId !== expectedOwnerId) {
     return { ok: false, error: 'Identité Clerk obsolète : réconciliation interrompue.', terminal: false };
   }
-  const baseUrl = process.env.EXPO_PUBLIC_WEB_APP_URL?.trim().replace(/\/$/, '');
+  const baseUrl = getMobileApiBaseUrl();
   if (!baseUrl) return { ok: false, error: 'URL du site web absente pour réconcilier la mission liée.', terminal: false };
   const token = await getClerkSupabaseAccessToken();
   if (!token) return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR, terminal: false };

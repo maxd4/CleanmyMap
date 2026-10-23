@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 import { getClerkInstance } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { getMobilePublicEnv } from './mobile-environment';
 
 /**
  * Variables d'environnement Supabase.
@@ -17,9 +18,9 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
  * et visibles côté client — utiliser uniquement la clé anon, jamais une clé
  * serveur privée.
  */
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
-const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
+const supabaseUrl = getMobilePublicEnv('EXPO_PUBLIC_SUPABASE_URL') ?? '';
+const supabaseAnonKey = getMobilePublicEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY') ?? '';
+const clerkPublishableKey = getMobilePublicEnv('EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY') ?? '';
 let clerkLoadPromise: Promise<void> | null = null;
 
 function getConfiguredClerkInstance() {

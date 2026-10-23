@@ -10,10 +10,11 @@ import { AccountScreen } from './account'
 import { ActionJoinScreen } from './action-join'
 import { ActionCreateScreen } from './action-create'
 import { SignalementScreen } from './signalement'
+import { getMobileWebBaseUrl } from '../lib/mobile-environment'
 
 type MobileShellProps = { onSignOut: () => void; onSessionExpired: () => void; onStartActivity: () => void | Promise<void> }
 type ActSubview = 'home' | 'join' | 'create' | 'report'
-const webBaseUrl = (process.env.EXPO_PUBLIC_WEB_URL ?? 'https://cleanmymap.fr').replace(/\/$/, '')
+const webBaseUrl = getMobileWebBaseUrl()
 
 const NAV_ICONS: Record<string, LucideIcon> = {
   'hand-helping': HandHelping,
@@ -24,15 +25,29 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   'graduation-cap': GraduationCap,
 }
 
-async function openWebPath(path: string) {
-  try { await Linking.openURL(`${webBaseUrl}${path}`) } catch { Alert.alert('Ouverture impossible', 'La surface web CleanMyMap ne peut pas être ouverte pour le moment.') }
+function openWebPath(path: string): void {
+  void Linking.openURL(`${webBaseUrl}${path}`).catch(() => {
+    Alert.alert('Ouverture impossible', 'La surface web CleanMyMap ne peut pas être ouverte pour le moment.')
+  })
 }
 
 export function MobileShell({ onSignOut, onSessionExpired, onStartActivity }: MobileShellProps) {
   const [surface, setSurface] = useState<MobileDestinationId>('act')
   const [actSubview, setActSubview] = useState<ActSubview>('home')
-  useEffect(() => { void AsyncStorage.getItem(MOBILE_SHELL_SURFACE_STORAGE_KEY).then((stored) => { if (MOBILE_DESTINATIONS.some((item) => item.id === stored)) setSurface(stored as MobileDestinationId) }) }, [])
-  function navigate(nextSurface: MobileDestinationId) { setSurface(nextSurface); void AsyncStorage.setItem(MOBILE_SHELL_SURFACE_STORAGE_KEY, nextSurface) }
+  useEffect(() => {
+    void AsyncStorage.getItem(MOBILE_SHELL_SURFACE_STORAGE_KEY)
+      .then((stored) => {
+        if (MOBILE_DESTINATIONS.some((item) => item.id === stored)) setSurface(stored as MobileDestinationId)
+      })
+      .catch(() => undefined)
+  }, [])
+  function navigate(nextSurface: MobileDestinationId) {
+    setSurface(nextSurface)
+    void AsyncStorage.setItem(MOBILE_SHELL_SURFACE_STORAGE_KEY, nextSurface).catch(() => undefined)
+  }
+  function startActivity(): void {
+    void Promise.resolve(onStartActivity()).catch(() => undefined)
+  }
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -53,7 +68,7 @@ export function MobileShell({ onSignOut, onSessionExpired, onStartActivity }: Mo
     <StatusBar style="light" />
     <KeyboardAvoidingView style={styles.keyboardAvoider} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={surface === 'act' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'act' ? 'auto' : 'none'}><ActScreen actSubview={actSubview} onActSubview={setActSubview} onStart={onStartActivity} onSessionExpired={onSessionExpired} /></View>
+        <View style={surface === 'act' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'act' ? 'auto' : 'none'}><ActScreen actSubview={actSubview} onActSubview={setActSubview} onStart={startActivity} onSessionExpired={onSessionExpired} /></View>
         <View style={surface === 'map' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'map' ? 'auto' : 'none'}><MapScreen /></View>
         <View style={surface === 'account' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'account' ? 'auto' : 'none'}><AccountScreen onSignOut={onSignOut} onSessionExpired={onSessionExpired} onOpenWeb={(path) => void openWebPath(path)} /></View>
       </ScrollView>

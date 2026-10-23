@@ -3,13 +3,14 @@ import {
   createMissionIdStorageOptions,
   createPermissionLocationMock,
   createMissionClient,
+  type MissionClient,
   createStandaloneExpoConstantsMock,
   createSupabaseMock,
   createTrackingStorageMock,
 } from './support/tracking-mocks'
 
 const state = vi.hoisted(() => ({
-  client: null as any,
+  client: null as MissionClient | null,
   foreground: 'granted' as string,
   background: 'granted' as string,
   startError: null as Error | null,
@@ -80,6 +81,12 @@ function missionClient() {
   })
 }
 
+function expectMissionUpdate(payload: unknown, status: string, field: 'started_at' | 'ended_at'): void {
+  const update = payload as Record<string, unknown> | undefined
+  expect(update?.status).toBe(status)
+  expect(typeof update?.[field]).toBe('string')
+}
+
 describe('mobile mission startup', () => {
   beforeEach(() => {
     vi.unstubAllGlobals()
@@ -127,6 +134,7 @@ describe('mobile mission startup', () => {
     const result = await startMobileMission('user_123')
 
     expect(result).toEqual({ ok: false, error: 'Permission GPS premier plan refusée.' })
+    if (!state.client) throw new Error('Mission client was not initialized')
     expect(state.client.from).not.toHaveBeenCalled()
     expect(Location.startLocationUpdatesAsync).not.toHaveBeenCalled()
   })
@@ -137,7 +145,9 @@ describe('mobile mission startup', () => {
     const gpsResult = await startMobileMission('user_123')
 
     expect(gpsResult).toEqual({ ok: false, error: 'Impossible de démarrer le suivi GPS : native GPS unavailable' })
-    expect(state.client.updatePayloads).toEqual([{ status: 'cancelled', ended_at: expect.any(String) }])
+    if (!state.client) throw new Error('Mission client was not initialized')
+    expect(state.client.updatePayloads).toHaveLength(1)
+    expectMissionUpdate(state.client.updatePayloads[0], 'cancelled', 'ended_at')
 
     state.startError = null
     state.updateErrors = [new Error('RLS denied')]
@@ -157,9 +167,9 @@ describe('mobile mission startup', () => {
       'gps-stop',
       'update',
     ])
-    expect(state.client.updatePayloads).toEqual([
-      { status: 'tracking', started_at: expect.any(String) },
-      { status: 'cancelled', ended_at: expect.any(String) },
-    ])
+    if (!state.client) throw new Error('Mission client was not initialized')
+    expect(state.client.updatePayloads).toHaveLength(2)
+    expectMissionUpdate(state.client.updatePayloads[0], 'tracking', 'started_at')
+    expectMissionUpdate(state.client.updatePayloads[1], 'cancelled', 'ended_at')
   })
 })

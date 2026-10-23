@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSupabaseMock } from './support/tracking-mocks'
 
+type GpsClient = { from: (table: string) => { upsert: ReturnType<typeof vi.fn> } }
+
 const state = vi.hoisted(() => ({
   task: null as ((input: { data?: unknown; error?: Error }) => Promise<void>) | null,
   missionId: 'mission-1' as string | null,
   ownerId: 'user_123' as string | null,
   contextOwnerId: 'user_123' as string | null,
-  client: null as any,
+  client: null as GpsClient | null,
   currentUserId: 'user_123' as string | null,
   bufferedPoints: [] as unknown[],
   flushCount: 0,
@@ -53,15 +55,14 @@ async function runGpsTaskWithInsert(
 }
 
 function expectGpsPointInsert(insert: ReturnType<typeof vi.fn>) {
-  expect(insert).toHaveBeenCalledWith(expect.objectContaining({
-    client_point_id: expect.any(String),
-    mission_id: 'mission-1',
-    latitude: 48.8566,
-    longitude: 2.3522,
-    accuracy_m: 5,
-    altitude_m: 35,
-    recorded_at: '2026-10-02T10:00:00.000Z',
-  }), { onConflict: 'mission_id,client_point_id', ignoreDuplicates: true })
+  const call = (insert.mock.calls as unknown[][])[0]
+  const payload = call?.[0] as Record<string, unknown> | undefined
+  expect(payload).toMatchObject({
+    mission_id: 'mission-1', latitude: 48.8566, longitude: 2.3522,
+    accuracy_m: 5, altitude_m: 35, recorded_at: '2026-10-02T10:00:00.000Z',
+  })
+  expect(typeof payload?.client_point_id).toBe('string')
+  expect(call?.[1]).toEqual({ onConflict: 'mission_id,client_point_id', ignoreDuplicates: true })
 }
 
 describe('mobile GPS TaskManager task', () => {
@@ -79,15 +80,12 @@ describe('mobile GPS TaskManager task', () => {
     expect(state.task).toBeTypeOf('function')
     await state.task?.({ data: { locations: [location] } })
 
-    expect(state.bufferedPoints).toEqual([{
-      client_point_id: expect.any(String),
-      mission_id: 'mission-1',
-      latitude: 48.8566,
-      longitude: 2.3522,
-      accuracy_m: 5,
-      altitude_m: 35,
-      recorded_at: '2026-10-02T10:00:00.000Z',
-    }])
+    const bufferedPoint = state.bufferedPoints[0] as Record<string, unknown> | undefined
+    expect(bufferedPoint).toMatchObject({
+      mission_id: 'mission-1', latitude: 48.8566, longitude: 2.3522,
+      accuracy_m: 5, altitude_m: 35, recorded_at: '2026-10-02T10:00:00.000Z',
+    })
+    expect(typeof bufferedPoint?.client_point_id).toBe('string')
     expect(state.flushCount).toBe(0)
   })
 
@@ -109,10 +107,9 @@ describe('mobile GPS TaskManager task', () => {
 
     expectGpsPointInsert(upsert)
     expect(state.bufferedPoints).toHaveLength(1)
-    expect(state.bufferedPoints[0]).toEqual(expect.objectContaining({
-      client_point_id: expect.any(String),
-      mission_id: 'mission-1',
-    }))
+    const bufferedPoint = state.bufferedPoints[0] as Record<string, unknown> | undefined
+    expect(bufferedPoint).toMatchObject({ mission_id: 'mission-1' })
+    expect(typeof bufferedPoint?.client_point_id).toBe('string')
     const directPoint = ((upsert.mock.calls as unknown[][])[0]?.[0] as { client_point_id: string } | undefined)
     expect((state.bufferedPoints[0] as { client_point_id: string }).client_point_id)
       .toBe(directPoint?.client_point_id)

@@ -30,7 +30,7 @@ export function EmergencyCallActions({ compact = false }: { compact?: boolean })
       `Ouvrir l’application Téléphone pour appeler ${label} ?`,
       [
         { text: 'Annuler', style: 'cancel' },
-        { text: 'Appeler', onPress: () => void openPhone(phone) },
+        { text: 'Appeler', onPress: () => void openPhone(phone).catch(() => undefined) },
       ],
     )
   }

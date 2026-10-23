@@ -8,7 +8,12 @@ type ActionCreateProps = { onSessionExpired: () => void }
 
 export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
   const controller = useActionCreateController({ onSessionExpired })
-  const { section, setSection, draft, update, actionId, published, sectionIndex, getCurrentPosition, draftReadError, draftWriteError, error, message, mutationsBlocked, busy, retryDraftRead, saveDraft, publish, linkGps, loadDayBriefing } = controller
+  const { section, setSection, draft, update, actionId, published, sectionIndex, getCurrentPosition: getCurrentPositionAsync, draftReadError, draftWriteError, error, message, mutationsBlocked, busy, retryDraftRead, saveDraft: saveDraftAsync, publish: publishAsync, linkGps: linkGpsAsync, loadDayBriefing: loadDayBriefingAsync } = controller
+  const getCurrentPosition = () => { void getCurrentPositionAsync().catch(() => undefined) }
+  const saveDraft = () => { void saveDraftAsync().catch(() => undefined) }
+  const publish = () => { void publishAsync().catch(() => undefined) }
+  const linkGps = () => { void linkGpsAsync().catch(() => undefined) }
+  const loadDayBriefing = () => { void loadDayBriefingAsync().catch(() => undefined) }
 
   return <View style={styles.root}>
     <Text style={styles.eyebrow}>ORGANISER</Text>

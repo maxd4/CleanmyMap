@@ -1,6 +1,8 @@
 import React from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { callTestHandler, testProp } from './test-renderer-helpers'
+import { nativeComponent } from './support/native-component'
 import type { AccountData } from '../hooks/use-account-controller'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -15,12 +17,6 @@ const state = vi.hoisted(() => ({
   requestMobileAccountDeletion: vi.fn(),
   alert: vi.fn(),
 }))
-
-function nativeComponent(name: string) {
-  return function NativeComponent({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) {
-    return React.createElement(name, props, children)
-  }
-}
 
 vi.mock('react-native', () => ({
   ActivityIndicator: nativeComponent('ActivityIndicator'),
@@ -115,7 +111,7 @@ describe('mobile account screen runtime', () => {
     await act(async () => { renderer = TestRenderer.create(<AccountScreen onSignOut={vi.fn()} onSessionExpired={vi.fn()} onOpenWeb={vi.fn()} />); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('compte indisponible'))).not.toHaveLength(0)
     state.loadMobileAccount.mockResolvedValueOnce(account)
-    await act(async () => { await findButton(renderer, 'Réessayer')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Réessayer'), 'onPress'); await settle() })
     expect(state.loadMobileAccount).toHaveBeenCalledTimes(3)
   })
 
@@ -125,52 +121,52 @@ describe('mobile account screen runtime', () => {
     expect(renderer.root.findAll((node) => textContent(node).includes('Scientifique'))).not.toHaveLength(0)
     expect(renderer.root.findAll((node) => textContent(node).includes('SUPPRIMER MON COMPTE'))).toHaveLength(0)
 
-    await act(async () => { await findButton(renderer, 'Scientifique')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Scientifique'), 'onPress'); await settle() })
     expect(state.updateMobileActiveRole).toHaveBeenCalledWith('scientifique')
     expect(state.updateMobileActiveRole).not.toHaveBeenCalledWith('admin')
 
-    await act(async () => { await findButton(renderer, 'Activité et notifications')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Activité et notifications'), 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('Parc Nord'))).not.toHaveLength(0)
     expect(renderer.root.findAll((node) => textContent(node).includes('Trace GPS'))).not.toHaveLength(0)
     expect(renderer.root.findAll((node) => textContent(node).includes('Inconnu'))).not.toHaveLength(0)
-    const informationalSwitch = renderer.root.findAll((node) => node.props.accessibilityRole === 'switch')[0]
-    await act(async () => { await informationalSwitch?.props.onPress(); await settle() })
+    const informationalSwitch = renderer.root.findAll((node) => testProp<string>(node, 'accessibilityRole') === 'switch')[0]
+    await act(async () => { await callTestHandler(informationalSwitch, 'onPress'); await settle() })
     expect(state.updateMobileNotificationPreferences).toHaveBeenCalledWith({ informationalEnabled: false })
-    const activitySwitch = renderer.root.findAll((node) => node.props.accessibilityRole === 'switch').at(-1)
-    await act(async () => { await activitySwitch?.props.onPress(); await settle() })
+    const activitySwitch = renderer.root.findAll((node) => testProp<string>(node, 'accessibilityRole') === 'switch').at(-1)
+    await act(async () => { await callTestHandler(activitySwitch, 'onPress'); await settle() })
     expect(state.updateMobileActivityStatus).toHaveBeenCalledWith('inactive')
 
-    await act(async () => { await findButton(renderer, 'Préférences')?.props.onPress(); await settle() })
-    await act(async () => { await findButton(renderer, 'Pseudo')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Préférences'), 'onPress'); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Pseudo'), 'onPress'); await settle() })
     expect(state.updateMobileDisplayNameMode).toHaveBeenCalledWith('pseudo')
-    await act(async () => { await findButton(renderer, 'Ouvrir les réglages web')?.props.onPress() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Ouvrir les réglages web'), 'onPress') })
     expect(onOpenWeb).toHaveBeenCalledWith('/reglages')
 
-    await act(async () => { await findButton(renderer, 'Rechercher')?.props.onPress(); await settle() })
-    await act(async () => { await findButton(renderer, 'Ouvrir la recherche CleanMyMap')?.props.onPress() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Rechercher'), 'onPress'); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Ouvrir la recherche CleanMyMap'), 'onPress') })
     expect(onOpenWeb).toHaveBeenCalledWith('/explorer')
-    await act(async () => { await findButton(renderer, 'Aide et feedback')?.props.onPress(); await settle() })
-    await act(async () => { await findButton(renderer, 'Aide et contact')?.props.onPress() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Aide et feedback'), 'onPress'); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Aide et contact'), 'onPress') })
     expect(onOpenWeb).toHaveBeenCalledWith('/contact')
   })
 
   it('requires exact deletion confirmation, confirms natively and supports sign-out cancellation', async () => {
     const onSignOut = vi.fn()
     const { renderer } = await renderScreen(vi.fn(), onSignOut)
-    await act(async () => { await findButton(renderer, 'À propos et informations légales')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'À propos et informations légales'), 'onPress'); await settle() })
     const deletion = renderer.root.findByProps({ accessibilityLabel: 'Confirmation de suppression du compte' })
     const request = findButton(renderer, 'Demander la suppression')
-    expect(request?.props.disabled).toBe(true)
-    await act(async () => { deletion.props.onChangeText('SUPPRIMER MON COMPTE'); await settle() })
-    expect(findButton(renderer, 'Demander la suppression')?.props.disabled).toBe(false)
-    await act(async () => { await findButton(renderer, 'Demander la suppression')?.props.onPress() })
+    expect(testProp<boolean>(request, 'disabled')).toBe(true)
+    await act(async () => { callTestHandler(deletion, 'onChangeText', 'SUPPRIMER MON COMPTE'); await settle() })
+    expect(testProp<boolean>(findButton(renderer, 'Demander la suppression'), 'disabled')).toBe(false)
+    await act(async () => { await callTestHandler(findButton(renderer, 'Demander la suppression'), 'onPress') })
     const deletionButtons = state.alert.mock.calls.at(-1)?.[2] as Array<{ text: string; onPress?: () => void }>
     expect(state.alert).toHaveBeenCalledWith('Confirmer la demande', expect.any(String), expect.any(Array))
     await act(async () => { await deletionButtons.find((button) => button.text === 'Envoyer la demande')?.onPress?.(); await settle() })
     expect(state.requestMobileAccountDeletion).toHaveBeenCalledWith('SUPPRIMER MON COMPTE')
     expect(renderer.root.findAll((node) => textContent(node).includes('Demande enregistrée : deletion-1'))).not.toHaveLength(0)
 
-    await act(async () => { await findButton(renderer, 'SE DÉCONNECTER')?.props.onPress() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'SE DÉCONNECTER'), 'onPress') })
     const signOutButtons = state.alert.mock.calls.at(-1)?.[2] as Array<{ text: string; onPress?: () => void }>
     await act(async () => { await signOutButtons.find((button) => button.text === 'Annuler')?.onPress?.() })
     expect(onSignOut).not.toHaveBeenCalled()
@@ -185,16 +181,16 @@ describe('mobile account screen runtime', () => {
     })
     const { renderer, onOpenWeb } = await renderScreen()
     expect(renderer.root.findAll((node) => textContent(node).includes('Rôle attribué : role-personnalise'))).not.toHaveLength(0)
-    await act(async () => { await findButton(renderer, 'Activité et notifications')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Activité et notifications'), 'onPress'); await settle() })
     for (const empty of ['Aucune inscription ou participation enregistrée.', 'Aucune mission GPS dans ce compte.', 'Aucune action organisée depuis ce compte.', 'Aucune invitation en attente.']) {
       expect(renderer.root.findAll((node) => textContent(node).includes(empty))).not.toHaveLength(0)
     }
-    await act(async () => { await findButton(renderer, 'Aide et feedback')?.props.onPress(); await settle() })
-    await act(async () => { await findButton(renderer, 'Envoyer un feedback')?.props.onPress() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Aide et feedback'), 'onPress'); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Envoyer un feedback'), 'onPress') })
     expect(onOpenWeb).toHaveBeenCalledWith('/sections/feedback')
-    await act(async () => { await findButton(renderer, 'À propos et informations légales')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'À propos et informations légales'), 'onPress'); await settle() })
     for (const [label, path] of [['Politique de confidentialité', '/politique-confidentialite'], ['Mentions légales', '/mentions-legales'], ['Réseau CleanMyMap', '/sections/annuaire'], ['Communauté CleanMyMap', '/sections/community'], ['Demander après désinstallation via le site', '/contact']] as const) {
-      await act(async () => { await findButton(renderer, label)?.props.onPress() })
+      await act(async () => { await callTestHandler(findButton(renderer, label), 'onPress') })
       expect(onOpenWeb).toHaveBeenCalledWith(path)
     }
   })
@@ -203,16 +199,16 @@ describe('mobile account screen runtime', () => {
     let resolveRole!: (value: unknown) => void
     state.updateMobileActiveRole.mockReturnValueOnce(new Promise((resolve) => { resolveRole = resolve }))
     const { renderer } = await renderScreen()
-    await act(async () => { void findButton(renderer, 'Scientifique')?.props.onPress(); await settle() })
-    expect(renderer.root.findAll((node) => node.props.accessibilityRole === 'radio').some((node) => node.props.disabled)).toBe(true)
+    await act(async () => { void callTestHandler(findButton(renderer, 'Scientifique'), 'onPress'); await settle() })
+    expect(renderer.root.findAll((node) => testProp<string>(node, 'accessibilityRole') === 'radio').some((node) => testProp<boolean>(node, 'disabled') === true)).toBe(true)
     resolveRole({ role: 'benevole', activeRole: 'scientifique', activeProfile: 'scientifique' })
     await act(async () => { await settle() })
 
-    await act(async () => { await findButton(renderer, 'À propos et informations légales')?.props.onPress(); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'À propos et informations légales'), 'onPress'); await settle() })
     state.requestMobileAccountDeletion.mockResolvedValueOnce({ status: 'queued', requestId: 'deletion-2', notificationStatus: 'failed', deletionProcessed: false, message: 'Traitement manuel requis.' })
     const confirmation = renderer.root.findByProps({ accessibilityLabel: 'Confirmation de suppression du compte' })
-    await act(async () => { confirmation.props.onChangeText('SUPPRIMER MON COMPTE'); await settle() })
-    await act(async () => { await findButton(renderer, 'Demander la suppression')?.props.onPress() })
+    await act(async () => { callTestHandler(confirmation, 'onChangeText', 'SUPPRIMER MON COMPTE'); await settle() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Demander la suppression'), 'onPress') })
     const buttons = state.alert.mock.calls.at(-1)?.[2] as Array<{ text: string; onPress?: () => void }>
     await act(async () => { await buttons.find((button) => button.text === 'Envoyer la demande')?.onPress?.(); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('en échec, traitement manuel requis'))).not.toHaveLength(0)

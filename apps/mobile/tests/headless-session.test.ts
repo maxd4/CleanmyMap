@@ -1,9 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+type ClerkInstance = {
+  loaded: boolean
+  load: () => Promise<void>
+  session: {
+    getToken: () => Promise<string | null>
+    user?: { id: string }
+  }
+  user: { id: string } | null
+}
+
 const state = vi.hoisted(() => {
   process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY = 'pk_test_headless'
   return {
-    instance: null as any,
+    instance: null as ClerkInstance | null,
     getClerkInstance: vi.fn(),
     tokenCache: { getToken: vi.fn() },
   }
@@ -41,12 +51,17 @@ describe('mobile headless Clerk session', () => {
     const result = await getClerkSupabaseAccessToken()
 
     expect(result).toBe('headless-clerk-jwt')
-    expect(state.getClerkInstance).toHaveBeenCalledWith({
-      publishableKey: expect.any(String),
-      tokenCache: state.tokenCache,
+    const call = (state.getClerkInstance.mock.calls as unknown[][]).find((candidate) => {
+      const options = candidate[0]
+      return typeof options === 'object' && options !== null && 'publishableKey' in options
     })
-    expect(state.instance.load).toHaveBeenCalledOnce()
-    expect(state.instance.session.getToken).toHaveBeenCalledOnce()
+    const options = call?.[0] as { publishableKey?: unknown; tokenCache?: unknown } | undefined
+    expect(typeof options?.publishableKey).toBe('string')
+    expect(options?.tokenCache).toBe(state.tokenCache)
+    const instance = state.instance
+    if (!instance) throw new Error('Clerk instance was not initialized')
+    expect(instance.load).toHaveBeenCalledOnce()
+    expect(instance.session.getToken).toHaveBeenCalledOnce()
   })
 
   it('returns no token without inventing an anonymous or Supabase session', async () => {
@@ -82,7 +97,7 @@ describe('mobile headless Clerk session', () => {
   })
 })
 
-function createClerkInstance(token: string | null = 'headless-clerk-jwt', userId: string | null = null, sessionUserId: string | null = null) {
+function createClerkInstance(token: string | null = 'headless-clerk-jwt', userId: string | null = null, sessionUserId: string | null = null): ClerkInstance {
   return {
     loaded: false,
     load: vi.fn(async function load(this: { loaded: boolean }) {

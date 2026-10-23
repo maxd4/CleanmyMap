@@ -58,45 +58,43 @@ export function ActionJoinScreen({ onSessionExpired }: ActionJoinScreenProps) {
   }, [onSessionExpired, query])
 
   useEffect(() => {
-    void refresh()
+    void refresh().catch(() => undefined)
   }, [refresh])
 
   const items = useMemo(() => (tab === 'future' ? future : past), [future, past, tab])
 
-  async function runMutation(actionId: string, operation: () => Promise<unknown>, successMessage: string) {
+  function runMutation(actionId: string, operation: () => Promise<unknown>, successMessage: string): void {
     setBusyId(actionId)
     setError(null)
-    try {
-      await operation()
-      Alert.alert('Action mise à jour', successMessage)
-      await refresh()
-    } catch (mutationError) {
-      if ((mutationError as { status?: number }).status === 401) onSessionExpired()
-      else setError(mutationError instanceof Error ? mutationError.message : 'La demande n’a pas abouti.')
-    } finally {
-      setBusyId(null)
-    }
+    void operation()
+      .then(async () => {
+        Alert.alert('Action mise à jour', successMessage)
+        await refresh()
+      })
+      .catch((mutationError: unknown) => {
+        if ((mutationError as { status?: number }).status === 401) onSessionExpired()
+        else setError(mutationError instanceof Error ? mutationError.message : 'La demande n’a pas abouti.')
+      })
+      .finally(() => setBusyId(null))
   }
 
-  async function openDetails(item: MobileActionItem) {
-    try {
-      const details = await loadMobileActionDetail(item.id)
-      setSelected(details.action)
-    } catch (detailError) {
+  function openDetails(item: MobileActionItem): void {
+    void loadMobileActionDetail(item.id)
+      .then((details) => setSelected(details.action))
+      .catch((detailError: unknown) => {
       if ((detailError as { status?: number }).status === 401) onSessionExpired()
       else setError(detailError instanceof Error ? detailError.message : 'Le détail est indisponible.')
-    }
+      })
   }
 
-  async function openReview(actionId: string) {
-    try {
-      const result = await loadActionReview(actionId)
-      setReview({ actionId, requests: result.pendingRequests })
-    } catch (reviewError) {
+  function openReview(actionId: string): void {
+    void loadActionReview(actionId)
+      .then((result) => setReview({ actionId, requests: result.pendingRequests }))
+      .catch((reviewError: unknown) => {
       if ((reviewError as { status?: number }).status === 401) onSessionExpired()
       else if ((reviewError as { status?: number }).status === 403) setError('La gestion des demandes est réservée aux organisateurs autorisés.')
       else setError(reviewError instanceof Error ? reviewError.message : 'La file de demandes est indisponible.')
-    }
+      })
   }
 
   return (
@@ -201,40 +199,44 @@ function DetailPanel({ item, onClose }: { item: MobileActionItem; onClose: () =>
     setSelectedRoles(roles.assignments.filter((assignment) => assignment.user_id === roleUserId && assignment.assignment_status === 'active').map((assignment) => assignment.role_code))
   }, [roleUserId, roles])
 
-  async function saveRoles() {
+  function saveRoles(): void {
     if (!roles || !roleUserId) return
     setRoleBusy(true)
     setRoleError(null)
-    try {
-      const updated = await updateMobileActionFieldRoles(item.id, roleUserId, selectedRoles)
-      setRoles(updated)
-    } catch (reason) {
-      setRoleError(reason instanceof Error ? reason.message : 'Les responsabilités n’ont pas été enregistrées.')
-    } finally { setRoleBusy(false) }
+    void updateMobileActionFieldRoles(item.id, roleUserId, selectedRoles)
+      .then(setRoles)
+      .catch((reason: unknown) => {
+        setRoleError(reason instanceof Error ? reason.message : 'Les responsabilités n’ont pas été enregistrées.')
+      })
+      .finally(() => setRoleBusy(false))
   }
 
-  async function proposeTransfer() {
+  function proposeTransfer(): void {
     if (!successorUserId) return
     setRoleBusy(true)
     setRoleError(null)
-    try {
-      await proposeMobileActionFieldRoleTransfer(item.id, successorUserId)
-      setRoles(await loadMobileActionFieldRoles(item.id))
-      setSuccessorUserId('')
-    } catch (reason) {
-      setRoleError(reason instanceof Error ? reason.message : 'La demande de transfert n’a pas été créée.')
-    } finally { setRoleBusy(false) }
+    void proposeMobileActionFieldRoleTransfer(item.id, successorUserId)
+      .then(() => loadMobileActionFieldRoles(item.id))
+      .then((nextRoles) => {
+        setRoles(nextRoles)
+        setSuccessorUserId('')
+      })
+      .catch((reason: unknown) => {
+        setRoleError(reason instanceof Error ? reason.message : 'La demande de transfert n’a pas été créée.')
+      })
+      .finally(() => setRoleBusy(false))
   }
 
-  async function respondTransfer(proposal: NonNullable<MobileFieldRoleState['transferProposals']>[number], decision: 'accept' | 'reject') {
+  function respondTransfer(proposal: NonNullable<MobileFieldRoleState['transferProposals']>[number], decision: 'accept' | 'reject'): void {
     setRoleBusy(true)
     setRoleError(null)
-    try {
-      await respondMobileActionFieldRoleTransfer(item.id, proposal.id, decision)
-      setRoles(await loadMobileActionFieldRoles(item.id))
-    } catch (reason) {
-      setRoleError(reason instanceof Error ? reason.message : 'La décision de transfert n’a pas été enregistrée.')
-    } finally { setRoleBusy(false) }
+    void respondMobileActionFieldRoleTransfer(item.id, proposal.id, decision)
+      .then(() => loadMobileActionFieldRoles(item.id))
+      .then(setRoles)
+      .catch((reason: unknown) => {
+        setRoleError(reason instanceof Error ? reason.message : 'La décision de transfert n’a pas été enregistrée.')
+      })
+      .finally(() => setRoleBusy(false))
   }
 
   return <View style={styles.detail}><View style={styles.cardHeader}><Text style={styles.sectionTitle}>Détail</Text><TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Fermer le détail"><Ionicons name="close" size={22} color="#94a3b8" /></TouchableOpacity></View><Text style={styles.bodyText}>{item.actionTitle ?? item.location_label}</Text><Text style={styles.cardMeta}>Rendez-vous : {item.location_label}</Text><Text style={styles.cardMeta}>Date : {item.action_date}</Text>{roles ? <View style={styles.rolesPanel}><Text style={styles.sectionTitle}>Responsabilités terrain</Text><Text style={styles.cardMeta}>Ces cartes concernent uniquement cette action et ne donnent aucun droit d’organisation.</Text>{roles.canManage && roles.confirmedParticipants.length > 1 ? <View style={styles.rolePeople}>{roles.confirmedParticipants.map((participant) => <TouchableOpacity key={participant.userId} onPress={() => setRoleUserId(participant.userId)} accessibilityRole="radio" accessibilityState={{ checked: roleUserId === participant.userId }} style={[styles.rolePerson, roleUserId === participant.userId && styles.rolePersonSelected]}><Text style={styles.rolePersonLabel}>{participant.displayName}</Text></TouchableOpacity>)}</View> : null}{roles.roleOptions.map((role) => { const selected = selectedRoles.includes(role.code); return <TouchableOpacity key={role.code} onPress={() => setSelectedRoles((current) => selected ? current.filter((code) => code !== role.code) : [...current, role.code])} style={[styles.roleCard, selected && styles.roleCardSelected]} accessibilityRole="checkbox" accessibilityState={{ checked: selected }}><Ionicons name={selected ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={selected ? '#34d399' : '#64748b'} /><View style={{ flex: 1 }}><Text style={styles.roleLabel}>{role.label}</Text><Text style={styles.cardMeta}>{role.description}</Text></View></TouchableOpacity> })}<SmallButton label={roleBusy ? '...' : 'Enregistrer mes responsabilités'} disabled={roleBusy || !roleUserId} onPress={() => void saveRoles()} />{roles.canProposeTransfer && roles.organizers.some((organizer) => !organizer.isPrimary) ? <View style={styles.transferPanel}><Text style={styles.cardMeta}>Transfert explicite du primaire</Text><View style={styles.cardActions}>{roles.organizers.filter((organizer) => !organizer.isPrimary).map((organizer) => <SmallButton key={organizer.userId} label={successorUserId === organizer.userId ? `Successeur : ${organizer.displayName}` : organizer.displayName} disabled={roleBusy} onPress={() => setSuccessorUserId(organizer.userId)} secondary={successorUserId !== organizer.userId} />)}</View><SmallButton label="Proposer le transfert" disabled={roleBusy || !successorUserId} onPress={() => void proposeTransfer()} /></View> : null}{roles.transferProposals.map((proposal) => <View key={proposal.id} style={styles.transferPanel}><Text style={styles.cardMeta}>Transfert vers {proposal.successor_user_id} — {proposal.status}</Text><View style={styles.cardActions}>{proposal.status === 'pending' && proposal.successor_user_id === roles.currentUserId ? <SmallButton label="Accepter" disabled={roleBusy} onPress={() => void respondTransfer(proposal, 'accept')} /> : null}{proposal.status === 'pending' && (roles.canRejectTransfer || proposal.successor_user_id === roles.currentUserId) ? <SmallButton label="Refuser" disabled={roleBusy} onPress={() => void respondTransfer(proposal, 'reject')} secondary /> : null}</View></View>)}{roleError ? <Text style={styles.error}>{roleError}</Text> : null}</View> : roleError ? <Text style={styles.error}>{roleError}</Text> : <ActivityIndicator color="#34d399" style={styles.loader} />}</View>

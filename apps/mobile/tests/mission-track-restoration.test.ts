@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSupabaseMock, createTrackingStorageMock } from './support/tracking-mocks'
 
+type TrackClient = ReturnType<typeof missionTrackClient>
+
 const state = vi.hoisted(() => ({
-  client: null as any,
+  client: null as TrackClient | null,
 }))
 
 vi.mock('expo-constants', () => ({

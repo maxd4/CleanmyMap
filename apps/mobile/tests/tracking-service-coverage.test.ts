@@ -14,9 +14,12 @@ import {
 } from '../lib/tracking-service'
 import * as Location from 'expo-location'
 
+type LinkedResult = { ok: true; data: unknown } | { ok: false; error: string; terminal?: boolean }
+type MobileClient = { from: ReturnType<typeof vi.fn> }
+
 const state = vi.hoisted(() => ({
   constants: { appOwnership: 'standalone', executionEnvironment: 'standalone' },
-  client: null as any,
+  client: null as MobileClient | null,
   clientPromise: null as Promise<unknown> | null,
   currentUserId: 'user_123' as string | null,
   storedOwnerId: 'user_123' as string | null,
@@ -34,8 +37,8 @@ const state = vi.hoisted(() => ({
   setStoredError: null as unknown,
   clearStoredError: null as unknown,
   flushResult: { ok: true, data: undefined } as { ok: true; data: undefined } | { ok: false; error: string },
-  linkedResult: { ok: true, data: undefined } as any,
-  reconcileResult: { ok: true, data: undefined } as any,
+  linkedResult: { ok: true, data: undefined } as LinkedResult,
+  reconcileResult: { ok: true, data: undefined } as LinkedResult,
 }))
 
 const rationale = vi.hoisted(() => vi.fn())
@@ -439,7 +442,10 @@ describe('tracking-service coverage edges', () => {
     state.currentUserId = 'user_123'
     state.taskRegistered = true
     state.stopError = new Error('stop failed')
-    await expect(stopTracking('mission-1')).resolves.toMatchObject({ ok: false, error: expect.stringContaining('stop failed') })
+    const stopError = await stopTracking('mission-1')
+    expect(stopError.ok).toBe(false)
+    if (stopError.ok) throw new Error('Expected stopTracking to fail')
+    expect(stopError.error).toContain('stop failed')
 
     state.stopError = null
     state.flushResult = { ok: false, error: 'flush failed' }
@@ -479,19 +485,19 @@ describe('tracking-service coverage edges', () => {
     await expect(stopTracking('mission-1')).resolves.toMatchObject({ ok: true })
 
     state.taskError = 'task lookup failed'
-    await expect(stopTracking('mission-1')).resolves.toMatchObject({
-      ok: false,
-      error: expect.stringContaining('erreur inconnue.'),
-    })
+    const taskErrorResult = await stopTracking('mission-1')
+    expect(taskErrorResult.ok).toBe(false)
+    if (taskErrorResult.ok) throw new Error('Expected task lookup to fail')
+    expect(taskErrorResult.error).toContain('erreur inconnue.')
 
     state.taskError = null
     state.taskRegistered = true
     state.stopError = new Error('stop failed')
     state.constants.appOwnership = 'expo'
-    await expect(stopTracking('mission-1')).resolves.toMatchObject({
-      ok: false,
-      error: expect.stringContaining(EXPO_GO_TRACKING_WARNING),
-    })
+    const expoGoResult = await stopTracking('mission-1')
+    expect(expoGoResult.ok).toBe(false)
+    if (expoGoResult.ok) throw new Error('Expected Expo Go tracking to fail')
+    expect(expoGoResult.error).toContain(EXPO_GO_TRACKING_WARNING)
 
     state.constants.appOwnership = 'standalone'
     state.stopError = null

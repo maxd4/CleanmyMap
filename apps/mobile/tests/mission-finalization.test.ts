@@ -3,13 +3,14 @@ import {
   createBalancedLocationMock,
   createMissionIdStorageOptions,
   createMissionClient,
+  type MissionClient,
   createStandaloneExpoConstantsMock,
   createSupabaseMock,
   createTrackingStorageMock,
 } from './support/tracking-mocks'
 
 const state = vi.hoisted(() => ({
-  client: null as any,
+  client: null as MissionClient | null,
   taskRegistered: true,
   flushResult: { ok: true, data: undefined } as { ok: true; data: undefined } | { ok: false; error: string },
   missionError: null as Error | null,
@@ -83,6 +84,12 @@ function missionClient() {
   })
 }
 
+function expectCompletedUpdate(updatePayload: unknown): void {
+  const payload = updatePayload as Record<string, unknown> | undefined
+  expect(payload?.status).toBe('completed')
+  expect(typeof payload?.ended_at).toBe('string')
+}
+
 describe('mobile mission finalization', () => {
   beforeEach(() => {
     state.client = missionClient()
@@ -100,12 +107,14 @@ describe('mobile mission finalization', () => {
   it('reports ordered stages and returns server metrics without writing them', async () => {
     const stages: string[] = []
     const client = state.client
+    if (!client) throw new Error('Mission client was not initialized')
 
     const result = await stopTracking('mission-1', (stage) => stages.push(stage))
 
     expect(result).toEqual({ ok: true, data: completedMission })
     expect(stages).toEqual(['synchronizing', 'finalizing'])
-    expect(client.updatePayloads).toEqual([{ status: 'completed', ended_at: expect.any(String) }])
+    expect(client.updatePayloads).toHaveLength(1)
+    expectCompletedUpdate(client.updatePayloads[0])
     expect(client.updatePayloads[0]).not.toHaveProperty('distance_m')
     expect(client.updatePayloads[0]).not.toHaveProperty('duration_s')
     expect(state.storedMissionId).toBeNull()
@@ -115,6 +124,7 @@ describe('mobile mission finalization', () => {
   it('keeps the active mission and resumes tracking when GPS flush fails', async () => {
     state.flushResult = { ok: false, error: 'Synchronisation GPS impossible : offline' }
     const client = state.client
+    if (!client) throw new Error('Mission client was not initialized')
 
     const result = await stopTracking('mission-1')
 
@@ -127,11 +137,13 @@ describe('mobile mission finalization', () => {
   it('keeps the active mission and resumes tracking when server finalization fails', async () => {
     state.missionError = new Error('offline')
     const client = state.client
+    if (!client) throw new Error('Mission client was not initialized')
 
     const result = await stopTracking('mission-1')
 
     expect(result).toEqual({ ok: false, error: 'Erreur lors de la finalisation : offline.' })
-    expect(client.updatePayloads).toEqual([{ status: 'completed', ended_at: expect.any(String) }])
+    expect(client.updatePayloads).toHaveLength(1)
+    expectCompletedUpdate(client.updatePayloads[0])
     expect(state.storedMissionId).toBe('mission-1')
     expect(state.sequence).toEqual(['stop', 'restart'])
   })

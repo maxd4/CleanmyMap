@@ -50,7 +50,7 @@ function useRestoreActiveMission({
     let cancelled = false
     async function restoreMission() {
       if (!userId) return
-      void reconcilePendingLinkedMissions(userId)
+      void reconcilePendingLinkedMissions(userId).catch(() => undefined)
       const flushPromise = flushBuffer(userId).catch(() => null)
       const id = await restoreActiveTracking(userId)
       if (!id || cancelled) return
@@ -65,9 +65,9 @@ function useRestoreActiveMission({
       }
     }
 
-    void restoreMission()
+    void restoreMission().catch(() => undefined)
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') void restoreMission()
+      if (nextState === 'active') void restoreMission().catch(() => undefined)
     })
 
     return () => {
@@ -184,7 +184,7 @@ export function useCompanionMissionController() {
       'Les points GPS seront synchronisés avant la finalisation serveur.',
       [
         { text: 'Annuler', style: 'cancel' },
-        { text: 'Terminer', style: 'destructive', onPress: () => void finalizeMission(mission) },
+        { text: 'Terminer', style: 'destructive', onPress: () => void finalizeMission(mission).catch(() => undefined) },
       ],
     )
   }, [finalizeMission, mission])

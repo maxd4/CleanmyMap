@@ -2,8 +2,12 @@ import React from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MissionLocation } from '../types/mission'
+import { testProp } from './test-renderer-helpers'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
+type ServerResult = { ok: true; data: MissionLocation[] } | { ok: false; error: string }
+type NativeLocation = { coords: { latitude: number; longitude: number }; timestamp: number }
 
 const state = vi.hoisted(() => ({
   foregroundPermission: 'granted',
@@ -12,10 +16,10 @@ const state = vi.hoisted(() => ({
     timestamp: Date.parse('2026-10-20T10:00:00.000Z'),
   },
   localTrack: [] as Array<{ latitude: number; longitude: number; recordedAt: string }>,
-  serverResult: { ok: true, data: [] as MissionLocation[] } as any,
+  serverResult: { ok: true, data: [] as MissionLocation[] } as ServerResult,
   appStateListener: undefined as ((nextState: string) => void) | undefined,
   appStateRemove: vi.fn(),
-  watchCallback: undefined as ((location: any) => void) | undefined,
+  watchCallback: undefined as ((location: NativeLocation) => void) | undefined,
   watchRemove: vi.fn(),
   getCurrentPosition: vi.fn(),
   watchPosition: vi.fn(),
@@ -112,8 +116,11 @@ function location(timestamp = '2026-10-20T10:02:00.000Z', latitude = 48.858, lon
 
 function textValues(renderer: TestRenderer.ReactTestRenderer): string[] {
   return renderer.root
-    .findAllByType('Text' as any)
-    .flatMap((node) => Array.isArray(node.props.children) ? node.props.children : [node.props.children])
+    .findAllByType('Text' as unknown as React.ElementType)
+    .flatMap((node) => {
+      const children = testProp<unknown>(node, 'children')
+      return Array.isArray(children) ? children as unknown[] : [children]
+    })
     .filter((value): value is string => typeof value === 'string')
 }
 
@@ -162,8 +169,8 @@ describe('MissionActiveMap runtime', () => {
 
     expect(textValues(renderer)).toContain('GPS — LIVE')
     expect(textValues(renderer)).toContain('2 point(s) à synchroniser')
-    expect(renderer.root.findAllByType('Marker' as any)).toHaveLength(1)
-    expect(renderer.root.findAllByType('Polyline' as any)).toHaveLength(1)
+    expect(renderer.root.findAllByType('Marker' as unknown as React.ElementType)).toHaveLength(1)
+    expect(renderer.root.findAllByType('Polyline' as unknown as React.ElementType)).toHaveLength(1)
     expect(state.getStoredTrack).toHaveBeenCalledWith('user_123', 'mission-1')
     expect(state.getMissionTrack).toHaveBeenCalledWith('mission-1')
     expect(state.saveStoredTrack).toHaveBeenCalled()
@@ -224,9 +231,17 @@ describe('MissionActiveMap runtime', () => {
     expect(textValues(renderer).some((value) => value.endsWith('km'))).toBe(true)
     expect(textValues(renderer)).toContain('Finalisation impossible')
     const stopButton = renderer.root.findByProps({ accessibilityLabel: 'Terminer la mission' })
-    expect(stopButton.props.accessibilityRole).toBe('button')
-    expect(stopButton.props.style.minHeight).toBe(54)
-    const safeInsetStyle = renderer.root.findAllByType('View' as any).map((node) => node.props.style).find((style) => Array.isArray(style) && style[1]?.top === 36)
+    expect(testProp<string>(stopButton, 'accessibilityRole')).toBe('button')
+    expect(testProp<Record<string, unknown>>(stopButton, 'style')?.minHeight).toBe(54)
+    const safeInsetStyle = renderer.root.findAllByType('View' as unknown as React.ElementType)
+      .map((node) => testProp<unknown>(node, 'style'))
+      .find((style) => {
+        if (!Array.isArray(style)) return false
+        const styleValues = style as unknown[]
+        const inset: unknown = styleValues[1]
+        if (typeof inset !== 'object' || inset === null || !('top' in inset)) return false
+        return (inset as Record<string, unknown>).top === 36
+      })
     expect(safeInsetStyle).toBeDefined()
   })
 
@@ -299,7 +314,7 @@ describe('MissionActiveMap runtime', () => {
       })
       await settle()
     })
-    expect(renderer.root.findAllByType('Polyline' as any)).toHaveLength(0)
+    expect(renderer.root.findAllByType('Polyline' as unknown as React.ElementType)).toHaveLength(0)
     expect(state.saveStoredTrack).toHaveBeenCalledTimes(1)
     expect(textValues(renderer)).toContain('Position GPS invalide.')
   })
