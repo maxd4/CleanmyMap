@@ -10,7 +10,7 @@ import { HEAVY_FILE_EXTENSIONS } from "../checks/top-heavy-measurement.mjs";
 export const HOTSPOT_HISTORY_WINDOW_DAYS = 180;
 export const HOTSPOT_SUBSTANTIVE_LINE_THRESHOLD = 20;
 export const HOTSPOT_HIGH_ACTIVITY_COMMIT_THRESHOLD = 5;
-export const QUALITY_TESTABILITY_SCHEMA_VERSION = 1;
+const QUALITY_TESTABILITY_SCHEMA_VERSION = 1;
 const GIT_HISTORY_MAX_BUFFER_BYTES = 32 * 1024 * 1024;
 
 const SOURCE_ROOTS = ["apps/web/src", "apps/mobile", "scripts"];

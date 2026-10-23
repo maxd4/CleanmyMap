@@ -9,16 +9,9 @@ import { validateCoverageEvidence } from "./coverage-evidence.mjs";
 import { COVERAGE_METRICS } from "./coverage-policy.mjs";
 import { REPORT_DEFINITIONS, validateSonarCoverageReports } from "./prepare-sonarqube-coverage.mjs";
 
-export const COVERAGE_INSIGHTS_SCHEMA_VERSION = 1;
+const COVERAGE_INSIGHTS_SCHEMA_VERSION = 1;
 export const COVERAGE_WARNING_THRESHOLD = 80;
 export const DUPLICATION_WARNING_THRESHOLD = 3;
-export const COVERAGE_INSIGHT_STATES = Object.freeze([
-  "MEASURED",
-  "NOT_MEASURED",
-  "STALE_EVIDENCE",
-  "EVIDENCE_UNVERIFIED",
-  "MEASUREMENT_FAILED",
-]);
 
 const DUPLICATION_SCOPES = Object.freeze(["runtime", "tests", "fixtures/data"]);
 

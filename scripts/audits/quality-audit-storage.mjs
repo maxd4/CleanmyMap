@@ -4,9 +4,9 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 export const QUALITY_AUDIT_ROOT = "artifacts/quality-audits";
-export const QUALITY_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage", "all"]);
-export const QUALITY_AUDIT_RETENTION_LIMIT = 3;
-export const QUALITY_PROJECTION_PREFIX = "quality-index";
+const QUALITY_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage", "all"]);
+const QUALITY_AUDIT_RETENTION_LIMIT = 3;
+const QUALITY_PROJECTION_PREFIX = "quality-index";
 
 const RUN_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
@@ -33,7 +33,7 @@ function assertAudit(audit) {
   if (!QUALITY_AUDITS.includes(audit)) throw new Error(`Audit qualité inconnu: ${audit}`);
 }
 
-export function artifactFileName({ audit, runId, kind }) {
+function artifactFileName({ audit, runId, kind }) {
   assertAudit(audit);
   assertRunId(runId);
   const suffix = ARTIFACT_SUFFIXES[kind];

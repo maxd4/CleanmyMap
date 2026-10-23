@@ -5,8 +5,8 @@ import path from "node:path";
 import { createRepositoryView } from "../checks/repository-view.mjs";
 import { measureContent } from "../checks/top-heavy-measurement.mjs";
 
-export const DOCUMENTATION_MAINTAINABILITY_SCHEMA_VERSION = 1;
-export const DOCUMENTATION_EXTENSIONS = Object.freeze([".md", ".mdx"]);
+const DOCUMENTATION_MAINTAINABILITY_SCHEMA_VERSION = 1;
+const DOCUMENTATION_EXTENSIONS = Object.freeze([".md", ".mdx"]);
 export const DOCUMENTATION_THRESHOLDS = Object.freeze({
   surveillance: 601,
   reviewRequired: 1_001,
