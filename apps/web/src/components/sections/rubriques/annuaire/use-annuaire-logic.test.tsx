@@ -4,7 +4,7 @@ import * as React from "react";
 import { readFileSync } from "node:fs";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -12,11 +12,10 @@ vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({ user: null }),
 }));
 
+const useSWRMock = vi.hoisted(() => vi.fn());
+
 vi.mock("swr", () => ({
-  default: () => ({
-    data: { status: "ok", items: [] },
-    isLoading: false,
-  }),
+  default: useSWRMock,
 }));
 
 import { useAnnuaireLogic } from "./use-annuaire-logic";
@@ -55,6 +54,16 @@ function renderHook() {
 }
 
 describe("useAnnuaireLogic canonical results", () => {
+  beforeEach(() => {
+    useSWRMock.mockReturnValue({
+      data: { status: "ok", items: [] },
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+  });
+
   it("keeps the hook invocation in the section owner", () => {
     const explorationSource = readFileSync(
       "src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx",
@@ -108,5 +117,61 @@ describe("useAnnuaireLogic canonical results", () => {
     expect(hook.current.filterKey).toBe("|all|all|all");
     expect(hook.current.sortedAndFilteredEntries.some((entry) => entry.id === target.id)).toBe(true);
     expect(hook.current.safeActorCardsPage).toBe(1);
+  });
+
+  it("distinguishes initial loading, an unavailable source, and stale data", () => {
+    const retry = vi.fn();
+    const sourceError = new Error("published_directory_unavailable");
+    useSWRMock.mockReturnValue({
+      data: { status: "ok", items: [] },
+      error: sourceError,
+      isLoading: false,
+      isValidating: false,
+      mutate: retry,
+    });
+
+    const hook = renderHook();
+
+    expect(hook.current.isLoading).toBe(false);
+    expect(hook.current.isPublishedDirectoryUnavailable).toBe(true);
+    expect(hook.current.isPublishedDirectoryStale).toBe(true);
+    expect(hook.current.publishedDirectoryError).toBe(sourceError);
+    expect(hook.current.allEntries.length).toBeGreaterThan(0);
+
+    act(() => hook.current.retryPublishedDirectory());
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps loading distinct from an error while editorial entries remain visible", () => {
+    useSWRMock.mockReturnValue({
+      data: undefined,
+      error: undefined,
+      isLoading: true,
+      isValidating: true,
+      mutate: vi.fn(),
+    });
+
+    const hook = renderHook();
+
+    expect(hook.current.isLoading).toBe(true);
+    expect(hook.current.isPublishedDirectoryUnavailable).toBe(false);
+    expect(hook.current.isPublishedDirectoryStale).toBe(false);
+    expect(hook.current.allEntries.length).toBeGreaterThan(0);
+  });
+
+  it("keeps editorial entries available while the first partner request is loading or fails without data", () => {
+    useSWRMock.mockReturnValue({
+      data: undefined,
+      error: new Error("published_directory_unavailable"),
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+
+    const hook = renderHook();
+
+    expect(hook.current.isPublishedDirectoryUnavailable).toBe(true);
+    expect(hook.current.isPublishedDirectoryStale).toBe(false);
+    expect(hook.current.allEntries.length).toBeGreaterThan(0);
   });
 });

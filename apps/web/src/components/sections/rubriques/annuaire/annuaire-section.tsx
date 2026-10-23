@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowRight, Globe, Building2, Sparkles, Target } from "lucide-react";
+import { ArrowRight, Globe, Building2, Sparkles, Target, RefreshCw } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { AnnuaireFeaturedSection } from "./annuaire-featured-section";
 import { AnnuaireExplorationView } from "./annuaire-exploration-view";
 import { useAnnuaireLogic } from "./use-annuaire-logic";
@@ -79,6 +80,55 @@ export function AnnuaireSection() {
         viewport={{ once: true, margin: "-100px" }}
       >
         <CmmSectionGroup>
+        {annuaireLogic.isLoading ? (
+          <CmmFeedback tone="info" title={fr ? "Chargement des fiches partenaires" : "Loading partner profiles"}>
+            {fr
+              ? "Les ressources éditoriales restent visibles pendant le chargement des fiches partenaires publiées."
+              : "Editorial resources remain visible while published partner profiles load."}
+          </CmmFeedback>
+        ) : annuaireLogic.isPublishedDirectoryUnavailable ? (
+          <CmmFeedback
+            tone={annuaireLogic.isPublishedDirectoryStale ? "warning" : "error"}
+            title={
+              annuaireLogic.isPublishedDirectoryStale
+                ? fr
+                  ? "Fiches partenaires potentiellement périmées"
+                  : "Partner profiles may be stale"
+                : fr
+                  ? "Fiches partenaires temporairement indisponibles"
+                  : "Published partner profiles temporarily unavailable"
+            }
+            action={
+              <CmmButton
+                type="button"
+                tone="secondary"
+                variant="ghost"
+                size="sm"
+                loading={annuaireLogic.isValidating}
+                onClick={annuaireLogic.retryPublishedDirectory}
+                ariaLabel={fr ? "Réessayer de charger les fiches partenaires" : "Retry loading partner profiles"}
+                className="inline-flex items-center gap-2"
+              >
+                <RefreshCw size={14} aria-hidden="true" />
+                {annuaireLogic.isValidating
+                  ? fr
+                    ? "Actualisation..."
+                    : "Refreshing..."
+                  : fr
+                    ? "Réessayer"
+                    : "Retry"}
+              </CmmButton>
+            }
+          >
+            {annuaireLogic.isPublishedDirectoryStale
+              ? fr
+                ? "La source des fiches partenaires n'a pas pu être actualisée. Les données affichées peuvent être périmées ; le compteur et les résultats visibles peuvent être partiels."
+                : "The partner profile source could not be refreshed. Displayed data may be stale; the count and visible results may be partial."
+              : fr
+                ? "La source des fiches partenaires n'est pas disponible pour le moment. Les ressources éditoriales restent accessibles, mais le compteur et les résultats visibles peuvent être partiels."
+                : "The partner profile source is temporarily unavailable. Editorial resources remain available, but the count and visible results may be partial."}
+          </CmmFeedback>
+        ) : null}
         {/* Curated actors - a concise entry point before the full search */}
         <motion.section variants={itemVariants} className="relative">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent" />

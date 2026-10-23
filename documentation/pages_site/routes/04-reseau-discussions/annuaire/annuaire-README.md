@@ -36,7 +36,11 @@ est `accepted`. Les données administratives, notamment le contact de la demande
 restent privées ; seul un site web HTTP(S) explicitement autorisé par la structure
 peut apparaître dans une fiche publique. Une fiche sans URL autorisée conserve l'état
 « Contact indisponible ». Une indisponibilité de la source publique est signalée comme
-une erreur, et non comme un annuaire vide.
+une erreur, et non comme un annuaire vide. Pendant cette indisponibilité, les ressources
+`editorial_seed` restent accessibles mais l'interface indique que les fiches partenaires,
+le compteur et les résultats visibles peuvent être partiels, avec une action de réessai.
+Si des fiches précédemment chargées sont conservées par SWR après un échec, elles sont
+signalées comme potentiellement périmées et ne sont pas présentées comme fraîches.
 
 La recherche, les filtres, la liste paginée, la carte et le graphe consomment le même
 état d'exploration. Les limites géographiques et la provenance sont affichées sans

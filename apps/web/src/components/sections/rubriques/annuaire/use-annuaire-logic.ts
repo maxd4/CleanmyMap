@@ -33,7 +33,13 @@ export function useAnnuaireLogic() {
   const [highlightedActorId, setHighlightedActorId] = useState<string | null>(null);
   const [actorCardsPage, setActorCardsPage] = useState(1);
 
-  const publishedEntriesQuery = useSWR<PublishedDirectoryResponse>(
+  const {
+    data: publishedDirectoryData,
+    error: publishedDirectoryError,
+    isLoading: publishedDirectoryIsLoading,
+    isValidating: publishedDirectoryIsValidating,
+    mutate: mutatePublishedDirectory,
+  } = useSWR<PublishedDirectoryResponse>(
     "/api/partners/published-directory",
     async (url: string) => {
       const response = await fetch(url, { method: "GET" });
@@ -42,9 +48,13 @@ export function useAnnuaireLogic() {
     }
   );
 
+  const retryPublishedDirectory = useCallback(() => {
+    void mutatePublishedDirectory();
+  }, [mutatePublishedDirectory]);
+
   const publishedEntries = useMemo(
-    () => publishedEntriesQuery.data?.items ?? [],
-    [publishedEntriesQuery.data?.items],
+    () => publishedDirectoryData?.items ?? [],
+    [publishedDirectoryData?.items],
   );
 
   const locationPreference = useMemo(() => 
@@ -149,7 +159,14 @@ export function useAnnuaireLogic() {
     filterKey,
     resetFilters,
     locale: "fr",
-    isLoading: publishedEntriesQuery.isLoading
+    isLoading: publishedDirectoryIsLoading,
+    isValidating: publishedDirectoryIsValidating,
+    publishedDirectoryError: publishedDirectoryError ?? null,
+    isPublishedDirectoryUnavailable: Boolean(publishedDirectoryError),
+    isPublishedDirectoryStale: Boolean(
+      publishedDirectoryError && publishedDirectoryData,
+    ),
+    retryPublishedDirectory,
   };
 }
 
