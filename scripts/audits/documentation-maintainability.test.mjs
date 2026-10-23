@@ -126,6 +126,14 @@ test("traite un backtick inline non apparié comme du texte et conserve les lien
   assert.equal(document.internalLinks.invalid[0].reason, "TARGET_NOT_FOUND");
 });
 
+test("retire les balises HTML des titres sans laisser leur syntaxe dans le rapport", () => {
+  const report = run({
+    "docs/markup.md": "# <span>Rapport</span> <script>alert(1)</script>\n",
+  });
+
+  assert.equal(report.documents[0].sections[0].title, "Rapport alert(1)");
+});
+
 test("ne crée des plages inline que pour des longueurs appariées", () => {
   const report = run({
     "docs/inline.md": "[Avant](missing-before.md) ``[Actif](missing-active.md)` [Après](missing-after.md)\n",

@@ -76,11 +76,16 @@ test("GitNexus lock tokens are cryptographic and cleanup is owner-conditional", 
 
   fs.writeFileSync(first.lockPath, JSON.stringify({ token: "another-owner" }));
   releaseAuditLock(first);
-  assert.equal(fs.existsSync(first.lockPath), true);
+  assert.equal(fs.readFileSync(first.lockPath, "utf8"), JSON.stringify({ token: "another-owner" }));
 
-  fs.writeFileSync(first.lockPath, JSON.stringify({ token: first.token }));
+  const replacement = fs.openSync(first.lockPath, "w");
+  try {
+    fs.writeSync(replacement, JSON.stringify({ token: first.token }));
+  } finally {
+    fs.closeSync(replacement);
+  }
   releaseAuditLock(first);
-  assert.equal(fs.existsSync(first.lockPath), false);
+  assert.throws(() => fs.readFileSync(first.lockPath, "utf8"), { code: "ENOENT" });
 });
 
 test("GitNexus preflight fails immediately when the local runner is missing", async (t) => {

@@ -5,6 +5,15 @@ import { expect, test } from "@playwright/test";
 let browserReportBundle: string;
 let exportFormBundle: string;
 let printTemplateBundle: string;
+const LOCAL_FONT_HOSTS = new Set(["fonts.googleapis.com", "fonts.gstatic.com"]);
+
+function isLocalGoogleFontRequest(value: string): boolean {
+  try {
+    return LOCAL_FONT_HOSTS.has(new URL(value).hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
 
 async function buildBrowserBundle(entry: string, name: string): Promise<string> {
   const result = await build({
@@ -32,6 +41,13 @@ test.beforeAll(async () => {
     buildBrowserBundle("apps/web/src/lib/actions/exports/export-form-pdf.ts", "CmmFormPdfExport"),
     buildBrowserBundle("apps/web/src/lib/pdf-export/generate-pdf-html.templates.ts", "CmmPrintTemplates"),
   ]);
+});
+
+test("accepts only exact Google font hosts", () => {
+  expect(isLocalGoogleFontRequest("https://fonts.googleapis.com/css2?family=Inter")).toBe(true);
+  expect(isLocalGoogleFontRequest("https://fonts.gstatic.com/s/inter.woff2")).toBe(true);
+  expect(isLocalGoogleFontRequest("https://fonts.googleapis.com.evil.example/track")).toBe(false);
+  expect(isLocalGoogleFontRequest("not a URL")).toBe(false);
 });
 
 test("prints only after the navigated Blob document has completed loading", async ({ page }) => {
@@ -82,7 +98,7 @@ test("prints only after the navigated Blob document has completed loading", asyn
 test("keeps the form and report print outputs local and A4", async ({ page }) => {
   const googleFontRequests: string[] = [];
   page.context().on("request", (request) => {
-    if (/fonts\.(?:googleapis|gstatic)\.com/i.test(request.url())) {
+    if (isLocalGoogleFontRequest(request.url())) {
       googleFontRequests.push(request.url());
     }
   });
@@ -161,10 +177,13 @@ test("keeps the form and report print outputs local and A4", async ({ page }) =>
     styles: Array.from(document.querySelectorAll("style"), (style) => style.textContent ?? "").join("\n"),
     bodyFontFamily: getComputedStyle(document.body).fontFamily,
     bodyText: document.body.textContent ?? "",
-    html: document.documentElement.outerHTML,
+    html: (() => {
+      document.querySelectorAll("script").forEach((script) => script.remove());
+      return document.documentElement.outerHTML;
+    })(),
   }));
   const renderPage = await page.context().newPage();
-  await renderPage.setContent(printableState.html.replace(/<script[\s\S]*?<\/script>/gi, ""), { waitUntil: "load" });
+  await renderPage.setContent(printableState.html, { waitUntil: "load" });
   const pdf = await renderPage.pdf({ format: "A4", printBackground: true });
 
   expect(reportStyles.styles).toContain("@page { size: A4; margin: 0; }");

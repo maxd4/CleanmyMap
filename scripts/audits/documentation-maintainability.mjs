@@ -34,12 +34,23 @@ function normalizeText(content) {
   return Buffer.isBuffer(content) ? content.toString("utf8").replaceAll("\r\n", "\n") : String(content).replaceAll("\r\n", "\n");
 }
 
+function removeInlineHtmlTags(title) {
+  let result = "";
+  let cursor = 0;
+  while (cursor < title.length) {
+    const open = title.indexOf("<", cursor);
+    if (open === -1) return result + title.slice(cursor);
+    const close = title.indexOf(">", open + 1);
+    if (close === -1) return result + title.slice(cursor);
+    result += title.slice(cursor, open);
+    cursor = close + 1;
+  }
+  return result;
+}
+
 function stripHeadingMarkup(title) {
-  return title
-    .replace(/\s+#+\s*$/, "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/[`*_~]/g, "")
-    .trim();
+  const withoutClosingHashes = title.replace(/\s+#+\s*$/, "");
+  return removeInlineHtmlTags(withoutClosingHashes).replace(/[`*_~]/g, "").trim();
 }
 
 function slugifyHeading(title) {
