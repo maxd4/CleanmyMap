@@ -730,6 +730,14 @@ test("offline refuse un run incomplet ou un rapport cycles en erreur est conserv
   }
 });
 
+test("projection conserve un rapport dead-code absent en NOT_MEASURED sans planter", () => {
+  const run = buildRun();
+  run.reports["dead-code"] = null;
+  const index = buildQualityFileIndex({ run, mode: "OFFLINE" });
+  assert.equal(index.audits.deadCode.state, "NOT_MEASURED");
+  assert.equal(index.audits.deadCode.error.code, "DEAD_CODE_REPORT_ABSENT");
+});
+
 test("offline accepte un run informatif sans confondre reproductibilité et identité SHA/run", async () => {
   const root = tempRoot();
   try {

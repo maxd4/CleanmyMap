@@ -879,24 +879,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/components/sections/rubriques/community/create-event-card.tsx",
-      "line": 38,
-      "category": "React/JSX",
-      "ceiling": 26,
-      "status": "LEGACY",
-      "functionIdentity": "named:CommunityCreateEventCard#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/sections/rubriques/community/use-community-actions.ts",
-      "line": 69,
-      "category": "hooks",
-      "ceiling": 27,
-      "status": "LEGACY",
-      "functionIdentity": "named:onCreateEvent#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
       "line": 122,
       "category": "React/JSX",
@@ -984,15 +966,6 @@
       "ceiling": 12,
       "status": "IMPROVED",
       "functionIdentity": "named:LegacyMethodologieContent#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/sections/rubriques/partners-network-section.tsx",
-      "line": 100,
-      "category": "React/JSX",
-      "ceiling": 11,
-      "status": "IMPROVED",
-      "functionIdentity": "named:PartnersNetworkSection#1"
     },
     {
       "metric": "complexity",
@@ -1905,15 +1878,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/route/route-multi-route.ts",
-      "line": 161,
-      "category": "métier/domain pur",
-      "ceiling": 16,
-      "status": "LEGACY",
-      "functionIdentity": "named:routeGroupWithinBudget#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/lib/route/route-operational-budget-contract.ts",
       "line": 19,
       "category": "métier/domain pur",
@@ -2019,15 +1983,6 @@
       "ceiling": 23,
       "status": "LEGACY",
       "functionIdentity": "named:normalizeResponse#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/lib/weather/planner-weather.ts",
-      "line": 245,
-      "category": "métier/domain pur",
-      "ceiling": 18,
-      "status": "LEGACY",
-      "functionIdentity": "named:hourlyPoint#1"
     },
     {
       "metric": "complexity",
@@ -3660,15 +3615,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/community/create-event-card.tsx",
-      "line": 38,
-      "category": "React/JSX",
-      "ceiling": 157,
-      "status": "LEGACY",
-      "functionIdentity": "named:CommunityCreateEventCard#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/community/use-community-actions.ts",
       "line": 35,
       "category": "hooks",
@@ -3792,15 +3738,6 @@
       "ceiling": 290,
       "status": "IMPROVED",
       "functionIdentity": "named:MonthlyImpactHistoryChart#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/partners-network-section.tsx",
-      "line": 100,
-      "category": "React/JSX",
-      "ceiling": 69,
-      "status": "IMPROVED",
-      "functionIdentity": "named:PartnersNetworkSection#1"
     },
     {
       "metric": "functionLength",
@@ -4713,15 +4650,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/partners/published-annuaire-entries-store.ts",
-      "line": 332,
-      "category": "runtime/services/orchestration",
-      "ceiling": 119,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildPublishedPartnerAnnuaireEntry#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/lib/pdf-export/generate-pdf-html.chapters.ts",
       "line": 14,
       "category": "métier/domain pur",
@@ -4872,15 +4800,6 @@
       "ceiling": 153,
       "status": "LEGACY",
       "functionIdentity": "named:partitionRouteCandidates#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/route/route-multi-route.ts",
-      "line": 161,
-      "category": "métier/domain pur",
-      "ceiling": 123,
-      "status": "LEGACY",
-      "functionIdentity": "named:routeGroupWithinBudget#1"
     },
     {
       "metric": "functionLength",

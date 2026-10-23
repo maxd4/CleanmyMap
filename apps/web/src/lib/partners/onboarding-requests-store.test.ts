@@ -47,6 +47,6 @@ describe("partner onboarding request store", () => {
     expect(published.source).toBe("partner_onboarding");
     expect(published.publicationStatus).toBe("pending_admin_review");
     expect(published.coveredArrondissements).toEqual([11, 19, 20]);
-    expect(published.primaryChannel).toBeDefined();
+    expect(published.primaryChannel).toBeUndefined();
   });
 });

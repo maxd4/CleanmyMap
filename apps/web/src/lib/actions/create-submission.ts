@@ -1,8 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  buildPostActionRetentionLoop,
-  trackActionCreated,
-} from "@/lib/gamification/progression";
+import { trackActionCreated } from "@/lib/gamification/progression";
 import { trackNewPlaceVisited } from "@/lib/gamification/progression-tracking";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import {
@@ -11,29 +8,23 @@ import {
   resolveDefaultActionOrganizerIds,
 } from "@/lib/actions/participation/organizers";
 import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
-import { createAction, loadActionById } from "@/lib/actions/store";
+import { createAction } from "@/lib/actions/store";
 import { ActionRouteReconstructionError } from "@/lib/actions/geometry/route-reconstruction-error";
 import {
   createSignalement,
   SignalementCreationValidationError,
   type CreatedSignalement,
 } from "@/lib/actions/signalement/create-signalement";
-import { invalidatePublicSurfaceSnapshotsByRoute } from "@/lib/public-surface-snapshots";
 import { logFailure } from "@/lib/logging/failure-log";
 import {
   PlannerSnapshotTrustError,
   promoteVerifiedPlannerContext,
 } from "@/lib/route/route-planner-trust";
-import { resolveActionTerritory } from "@/lib/geo/action-territory-resolver";
 import {
-  actionFormalitiesFactsSchema,
-  deriveActionFormalitiesFacts,
-} from "@/lib/actions/formalities-facts";
-import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
-import {
-  buildFormalitiesWorkflowState,
-} from "@/lib/actions/formalities-workflow";
-import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-rules";
+  buildActionRetentionLoop,
+  invalidateActionSnapshots,
+  persistInitialFormalities,
+} from "@/lib/actions/create-submission-effects";
 
 export class ActionCreationValidationError extends Error {
   constructor(public readonly fieldErrors: Record<string, string[]>) {
@@ -72,7 +63,7 @@ export type CreateActionSubmissionResult =
       kind: "action";
       id: string;
       source: "actions";
-      retentionLoop: Awaited<ReturnType<typeof buildPostActionRetentionLoop>>;
+      retentionLoop: Awaited<ReturnType<typeof buildActionRetentionLoop>>;
     };
 
 function validationError(field: string, message: string): ActionCreationValidationError {
@@ -344,106 +335,6 @@ async function createPersistedAction(params: {
     }
     throw error;
   }
-}
-
-function buildInitialFormalitiesState(payload: CreateActionPayload) {
-  return resolveActionTerritory({
-    latitude: payload.latitude,
-    longitude: payload.longitude,
-    geometry: null,
-    departmentCode: payload.departmentCode,
-    departmentName: payload.departmentName,
-  }).then((resolvedTerritory) => {
-    const fallbackFacts = deriveActionFormalitiesFacts({
-      departmentCode: payload.departmentCode,
-      departmentName: payload.departmentName,
-      resolvedTerritory,
-      placeType: payload.placeType,
-      plannedObjective: payload.preparationData?.plannedObjective,
-    });
-    const providedFacts = actionFormalitiesFactsSchema.safeParse(
-      payload.preparationData?.formalitiesContext,
-    );
-    const facts = providedFacts.success
-      ? {
-          ...providedFacts.data,
-          territory:
-            resolvedTerritory || fallbackFacts.territory.code !== "FR-unknown"
-              ? fallbackFacts.territory
-              : providedFacts.data.territory,
-        }
-      : fallbackFacts;
-    const qualification = qualifyActionFormalities(facts);
-    const workflow = buildFormalitiesWorkflowState({
-      facts,
-      qualification,
-      actionDependencies: {
-        locationLabel: payload.locationLabel,
-        actionDate: payload.actionDate,
-        territoryFingerprint: buildFormalitiesTerritoryFingerprint(facts.territory),
-      },
-    });
-    return { facts, workflow };
-  });
-}
-
-async function persistInitialFormalities(params: {
-  supabase: SupabaseClient;
-  actionId: string;
-  payload: CreateActionPayload;
-}): Promise<void> {
-  try {
-    const { facts, workflow } = await buildInitialFormalitiesState(params.payload);
-    if (typeof (params.supabase as unknown as { from?: unknown }).from !== "function") return;
-    const current = await loadActionById(params.supabase, params.actionId);
-    const result = await params.supabase
-      .from("actions")
-      .update({
-        preparation_data: {
-          ...(current?.preparation_data ?? params.payload.preparationData ?? {}),
-          formalitiesContext: facts,
-          formalitiesWorkflow: workflow,
-        },
-      })
-      .eq("id", params.actionId);
-    if (result.error) throw result.error;
-  } catch (error) {
-    logFailure(
-      "Actions/Create",
-      "Initial formalities qualification persistence failed",
-      error,
-      { actionId: params.actionId },
-    );
-  }
-}
-
-async function invalidateActionSnapshots(actionId: string): Promise<void> {
-  try {
-    await invalidatePublicSurfaceSnapshotsByRoute(["api/actions", "api/actions/map"]);
-  } catch (error) {
-    logFailure(
-      "Actions/Create",
-      "Public action map snapshot invalidation failed",
-      error,
-      { actionId },
-    );
-  }
-}
-
-async function buildActionRetentionLoop(
-  supabase: SupabaseClient,
-  userId: string,
-  actionId: string,
-) {
-  return buildPostActionRetentionLoop(supabase, { userId, actionId }).catch((error) => {
-    logFailure(
-      "Actions/Create",
-      "Post-action retention loop failed",
-      error,
-      { actionId, userId },
-    );
-    return null;
-  });
 }
 
 function validateSubmissionAccessMode(payload: CreateActionPayload): void {

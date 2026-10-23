@@ -243,14 +243,6 @@
       "maxBytes": 7805
     },
     {
-      "path": "apps/web/src/components/sections/rubriques/partners-network-section.tsx",
-      "kind": "runtime",
-      "status": "IMPROVED",
-      "reviewedRef": "506d22869a32639e978282be0da6cbca01c8e3d2",
-      "maxLines": 83,
-      "maxBytes": 3634
-    },
-    {
       "path": "apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts",
       "kind": "runtime",
       "status": "REVIEW",

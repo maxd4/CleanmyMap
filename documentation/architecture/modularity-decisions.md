@@ -5,7 +5,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 <!-- RADAR:HUMAN_DECISIONS:BEGIN -->
 | PATH | ARCHITECTURE_DECISION | PRIORITY | DEPENDENCY_OR_BLOCKER | NEXT_TRIGGER |
 | --- | --- | --- | --- | --- |
-| `apps/web/src/components/sections/rubriques/partners-network-section.tsx` | ALREADY_MODULARIZED | NONE | préserver le contrat de section | nouvelle responsabilité autonome réintroduite dans la façade |
+| `apps/web/src/components/sections/rubriques/partners-network-directory.tsx` | ALREADY_MODULARIZED | NONE | préserver le contrat de l'annuaire, les filtres et les résultats | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/chat/chat-shell.tsx` | ALREADY_MODULARIZED | NONE | aucun ; les frontières client restent séparées et les effets existants sont préservés | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 | `apps/web/src/components/sections/rubriques/elus-section.tsx` | ALREADY_MODULARIZED | NONE | conserver l'orchestration overview/navigation/panels | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/account/greater-paris-select.tsx` | ALREADY_MODULARIZED | NONE | préserver les façades et owners suggestions/controls/shell | nouveau contrat géographique autonome |
@@ -57,7 +57,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 
 ### Décisions établies — grille détaillée
 
-#### `apps/web/src/components/sections/rubriques/partners-network-section.tsx`
+#### `apps/web/src/components/sections/rubriques/partners-network-directory.tsx`
 
 | Champ | Valeur |
 | --- | --- |

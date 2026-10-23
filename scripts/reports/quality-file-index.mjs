@@ -826,7 +826,7 @@ function deadCodeKey(finding) {
 }
 
 function addDeadCode(report, files, domains) {
-  if (report.error) return { state: "NOT_MEASURED", status: "FAIL", error: report.error, currentCount: null, findingCounts: {}, justifications: [] };
+  if (!report || report.error) return { state: "NOT_MEASURED", status: "FAIL", error: report?.error ?? { code: "DEAD_CODE_REPORT_ABSENT", message: "Rapport dead-code absent." }, currentCount: null, findingCounts: {}, justifications: [] };
   const baselineByKey = new Map((report.baseline?.findings ?? []).map((finding) => [deadCodeKey(finding), finding]));
   const justificationsById = new Map((report.justifications?.justifications ?? []).map((entry) => [entry.id, entry]));
   for (const finding of report.currentFindings ?? []) {
@@ -847,7 +847,7 @@ function addDeadCode(report, files, domains) {
     for (const finding of entries ?? []) {
       const file = ensureFile(files, finding.file);
       const findingId = addFinding(file, "deadCode", { type: key, ...finding }, "dead-code", stableId(`dead-code:${key}`, finding));
-      if (finding.classification === "KEEP_JUSTIFIED" || key === "keepJustified") file.deadCode.exceptions.push({ ...finding });
+      if (file && (finding.classification === "KEEP_JUSTIFIED" || key === "keepJustified")) file.deadCode.exceptions.push({ ...finding });
       addDomain(domains, "dead-code", "exports, fichiers et symboles non consommés", file, findingId);
     }
   }

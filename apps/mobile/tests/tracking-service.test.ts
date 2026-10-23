@@ -92,6 +92,13 @@ import {
 } from '../lib/tracking-service'
 import { bufferPoint, flushBuffer } from '../lib/storage'
 
+async function expectPermissionDenied(error: string) {
+    const result = await requestTrackingPermissions()
+
+    expect(result).toEqual({ ok: false, error })
+    expect(state.client?.from).not.toHaveBeenCalled()
+}
+
 const activeMission = {
   id: 'mission-1',
   volunteer_id: 'user_123',
@@ -207,27 +214,20 @@ it('surfaces a mission creation error without inventing a mission', async () => 
     })
 })
 
-it('refuses the permission gate when foreground GPS permission is denied', async () => {
+it('refuses the permission gate when foreground GPS permission is denied', () => {
     state.client = missionClient()
     state.foregroundPermission = 'denied'
 
-    const result = await requestTrackingPermissions()
-
-    expect(result).toEqual({ ok: false, error: 'Permission GPS premier plan refusée.' })
-    expect(state.client?.from).not.toHaveBeenCalled()
+    return expectPermissionDenied('Permission GPS premier plan refusée.')
 })
 
-it('refuses the permission gate when background GPS permission is denied', async () => {
+it('refuses the permission gate when background GPS permission is denied', () => {
     state.client = missionClient()
     state.backgroundPermission = 'denied'
 
-    const result = await requestTrackingPermissions()
-
-    expect(result).toEqual({
-      ok: false,
-      error: "Permission GPS arrière-plan refusée. Le suivi s'arrêtera si l'écran est éteint.",
-    })
-    expect(state.client?.from).not.toHaveBeenCalled()
+    return expectPermissionDenied(
+      "Permission GPS arrière-plan refusée. Le suivi s'arrêtera si l'écran est éteint.",
+    )
 })
 
 it('surfaces a Supabase mission error without inventing mission data', async () => {
