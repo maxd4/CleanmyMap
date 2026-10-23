@@ -32,17 +32,25 @@ function mode(valuesToCount: Array<number | null>): number | null {
   )[0]?.[0] ?? null;
 }
 
+function hourlyNumber(valuesToRead: Array<number | null> | undefined, index: number): number | null {
+  return valuesToRead?.[index] ?? null;
+}
+
+function hourlyText(valuesToRead: string[] | undefined, index: number): string {
+  return valuesToRead?.[index] ?? "";
+}
+
 function hourlyPoint(forecast: OpenMeteoForecastResponse, index: number): PlannerWeatherHourlyPoint {
   const hourly = forecast.hourly ?? {};
   return {
-    time: hourly.time?.[index] ?? "",
-    temperatureC: hourly.temperature_2m?.[index] ?? null,
-    apparentTemperatureC: hourly.apparent_temperature?.[index] ?? null,
-    precipitationMm: hourly.precipitation?.[index] ?? null,
-    precipitationProbabilityPct: hourly.precipitation_probability?.[index] ?? null,
-    windKmh: hourly.wind_speed_10m?.[index] ?? null,
-    gustKmh: hourly.wind_gusts_10m?.[index] ?? null,
-    weatherCode: hourly.weather_code?.[index] ?? null,
+    time: hourlyText(hourly.time, index),
+    temperatureC: hourlyNumber(hourly.temperature_2m, index),
+    apparentTemperatureC: hourlyNumber(hourly.apparent_temperature, index),
+    precipitationMm: hourlyNumber(hourly.precipitation, index),
+    precipitationProbabilityPct: hourlyNumber(hourly.precipitation_probability, index),
+    windKmh: hourlyNumber(hourly.wind_speed_10m, index),
+    gustKmh: hourlyNumber(hourly.wind_gusts_10m, index),
+    weatherCode: hourlyNumber(hourly.weather_code, index),
   };
 }
 

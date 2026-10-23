@@ -71,7 +71,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | le shell conserve le contrat public tandis que l'interaction de recherche, les résultats et l'aside éditorial ont des owners explicites |
 | PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver le contrat de section |
+| DEPENDENCY_OR_BLOCKER | préserver le contrat de l'annuaire, les filtres et les résultats |
 | NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/components/chat/chat-shell.tsx`
