@@ -38,7 +38,7 @@ L'Indice d'utilité réelle sert ici d'outil d'arbitrage, pas de preuve absolue.
 
 ### Nécessité d'un suivi dans le temps
 
-La définition principale de l'**Indice d'utilité réelle (IUR)** figure en [Partie VII — Sobriété fonctionnelle et Indice d'utilité réelle](#partie-vii-sobriete-fonctionnelle-et-indice-dutilite-reelle). Dans cette conclusion, l'IUR ne garde de valeur que s'il est suivi dans le temps et révisé à partir des usages réels, des coûts mesurés et des retours de terrain.
+La définition principale de l'**Indice d'utilité réelle (IUR)** figure en [Partie VII — Sobriété fonctionnelle et Indice d'utilité réelle](./07-sobriete-fonctionnelle-iur.md). Dans cette conclusion, l'IUR ne garde de valeur que s'il est suivi dans le temps et révisé à partir des usages réels, des coûts mesurés et des retours de terrain.
 
 ### Seuils de vigilance et critères de révision
 

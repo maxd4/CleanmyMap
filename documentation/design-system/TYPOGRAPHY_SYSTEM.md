@@ -343,7 +343,7 @@ const inter = Inter({
 
 ## Références
 
-- [TYPOGRAPHY_AUDIT.md](./TYPOGRAPHY_AUDIT.md) - Audit complet et analyse
-- [globals.css](../../../apps/web/src/app/globals.css) - Implémentation tokens
-- [layout.tsx](../../../apps/web/src/app/layout.tsx) - Configuration polices
+- Audit typographique historique complémentaire : `TYPOGRAPHY_AUDIT.md` n'est pas présent dans le checkout courant et ne doit pas être restauré sans source versionnée.
+- [globals.css](../../apps/web/src/app/globals.css) - Implémentation tokens
+- [layout.tsx](../../apps/web/src/app/layout.tsx) - Configuration polices
 

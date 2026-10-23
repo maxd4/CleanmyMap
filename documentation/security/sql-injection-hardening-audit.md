@@ -59,17 +59,17 @@ Ce document resume le gros travail de durcissement realise sur les routes API, l
 
 ## Fichiers modifies
 
-- [apps/web/src/app/api/chat/users/route.ts](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/chat/users/route.ts)
-- [apps/web/src/app/api/community/rsvps/route.ts](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/community/rsvps/route.ts)
-- [apps/web/src/app/api/admin/moderation/route.ts](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/admin/moderation/route.ts)
-- [apps/web/src/app/api/send/route.ts](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/send/route.ts)
-- [apps/web/src/app/api/health/route.ts](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/health/route.ts)
-- [apps/web/src/app/api/stripe/webhook/route.ts](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/stripe/webhook/route.ts)
-- [apps/web/src/app/api/reports/actions.csv/route.ts](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/reports/actions.csv/route.ts)
-- [apps/web/src/app/api/reports/actions.json/route.ts](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/reports/actions.json/route.ts)
-- [apps/web/src/app/api/reports/elus-dossier/route.ts](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/reports/elus-dossier/route.ts)
-- [apps/web/src/lib/http/api-errors.ts](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/http/api-errors.ts)
-- [apps/web/src/lib/supabase/server.ts](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/supabase/server.ts)
+- [apps/web/src/app/api/chat/users/route.ts](../../apps/web/src/app/api/chat/users/route.ts)
+- [apps/web/src/app/api/community/rsvps/route.ts](../../apps/web/src/app/api/community/rsvps/route.ts)
+- [apps/web/src/app/api/admin/moderation/route.ts](../../apps/web/src/app/api/admin/moderation/route.ts)
+- [apps/web/src/app/api/send/route.ts](../../apps/web/src/app/api/send/route.ts)
+- [apps/web/src/app/api/health/route.ts](../../apps/web/src/app/api/health/route.ts)
+- [apps/web/src/app/api/stripe/webhook/route.ts](../../apps/web/src/app/api/stripe/webhook/route.ts)
+- [apps/web/src/app/api/reports/actions.csv/route.ts](../../apps/web/src/app/api/reports/actions.csv/route.ts)
+- [apps/web/src/app/api/reports/actions.json/route.ts](../../apps/web/src/app/api/reports/actions.json/route.ts)
+- [apps/web/src/app/api/reports/elus-dossier/route.ts](../../apps/web/src/app/api/reports/elus-dossier/route.ts)
+- [apps/web/src/lib/http/api-errors.ts](../../apps/web/src/lib/http/api-errors.ts)
+- [apps/web/src/lib/supabase/server.ts](../../apps/web/src/lib/supabase/server.ts)
 
 ## Tests et verification
 

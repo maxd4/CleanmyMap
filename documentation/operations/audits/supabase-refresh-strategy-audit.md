@@ -2,6 +2,11 @@
 
 Date de référence: 2026-06-27
 
+> **Statut documentaire — `AUDIT` historique** : ce document décrit l'état observé au 2026-06-27. Ses constats et ses
+> références de code ne constituent pas un inventaire `CURRENT` du runtime. Les chemins supprimés ou déplacés ci-dessous
+> sont conservés comme provenance de l'audit, sans attribuer leur ancien contenu au runtime actuel. Les routes `(app)`
+> conservées restent des fichiers runtime et ne sont pas qualifiées comme manquants par cette mise à jour.
+
 Ce document résume les données qui sont rafraîchies trop souvent dans le dépôt CleanMyMap, puis propose une stratégie de cache, de snapshot ou de refresh planifié.
 
 Objectif:
@@ -148,7 +153,7 @@ Fichiers concernés:
 - [`apps/web/src/app/api/community/events/route.ts`](../../../apps/web/src/app/api/community/events/route.ts)
 - [`apps/web/src/app/api/community/funnel.csv/route.ts`](../../../apps/web/src/app/api/community/funnel.csv/route.ts)
 - [`apps/web/src/components/sections/rubriques/community/use-community-events.ts`](../../../apps/web/src/components/sections/rubriques/community/use-community-events.ts)
-- [`apps/web/src/components/sections/rubriques/community/use-community-highlights.ts`](../../../apps/web/src/components/sections/rubriques/community/use-community-highlights.ts)
+- `apps/web/src/components/sections/rubriques/community/use-community-highlights.ts` — référence historique supprimée par `500f4ebfd` ; elle ne décrit pas le runtime actuel.
 
 Problèmes observés:
 
@@ -169,9 +174,9 @@ Fréquence recommandée:
 
 Fichiers concernés:
 
-- [`apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx`](../../../apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx)
+- `apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx` — référence historique supprimée par `775db7ef7` ; elle ne décrit pas le runtime actuel.
 - [`apps/web/src/components/sections/rubriques/actors-section.tsx`](../../../apps/web/src/components/sections/rubriques/actors-section.tsx)
-- [`apps/web/src/components/dashboard/business-alerts-panel.tsx`](../../../apps/web/src/components/dashboard/business-alerts-panel.tsx)
+- `apps/web/src/components/dashboard/business-alerts-panel.tsx` — référence historique supprimée par `e79db2cb2` ; elle ne décrit pas le runtime actuel.
 - [`apps/web/src/components/sections/rubriques/recycling-section.tsx`](../../../apps/web/src/components/sections/rubriques/recycling-section.tsx)
 - [`apps/web/src/components/sections/rubriques/use-trash-spotter.ts`](../../../apps/web/src/components/sections/rubriques/use-trash-spotter.ts)
 - [`apps/web/src/components/actions/map-feed/use-map-feed-data.ts`](../../../apps/web/src/components/actions/map-feed/use-map-feed-data.ts)
@@ -285,15 +290,15 @@ Priorité de revue:
 - [`apps/web/src/components/chat/hooks/use-chat-data.ts`](../../../apps/web/src/components/chat/hooks/use-chat-data.ts)
 - [`apps/web/src/components/actions/map-feed/use-map-feed-data.ts`](../../../apps/web/src/components/actions/map-feed/use-map-feed-data.ts)
 - [`apps/web/src/components/sections/rubriques/community/use-community-events.ts`](../../../apps/web/src/components/sections/rubriques/community/use-community-events.ts)
-- [`apps/web/src/components/sections/rubriques/community/use-community-highlights.ts`](../../../apps/web/src/components/sections/rubriques/community/use-community-highlights.ts)
+- `apps/web/src/components/sections/rubriques/community/use-community-highlights.ts` — référence historique supprimée par `500f4ebfd` ; elle ne décrit pas le runtime actuel.
 - [`apps/web/src/components/sections/rubriques/recycling-section.tsx`](../../../apps/web/src/components/sections/rubriques/recycling-section.tsx)
-- [`apps/web/src/components/dashboard/business-alerts-panel.tsx`](../../../apps/web/src/components/dashboard/business-alerts-panel.tsx)
+- `apps/web/src/components/dashboard/business-alerts-panel.tsx` — référence historique supprimée par `e79db2cb2` ; elle ne décrit pas le runtime actuel.
 - [`apps/web/src/components/sections/rubriques/elus-section.tsx`](../../../apps/web/src/components/sections/rubriques/elus-section.tsx)
-- [`apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx`](../../../apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx)
+- `apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx` — référence historique supprimée par `775db7ef7` ; elle ne décrit pas le runtime actuel.
 - [`apps/web/src/components/sections/rubriques/actors-section.tsx`](../../../apps/web/src/components/sections/rubriques/actors-section.tsx)
 - [`apps/web/src/components/sections/rubriques/use-trash-spotter.ts`](../../../apps/web/src/components/sections/rubriques/use-trash-spotter.ts)
-- [`apps/web/src/components/sections/rubriques/use-kit-data.ts`](../../../apps/web/src/components/sections/rubriques/use-kit-data.ts)
-- [`apps/web/src/components/sections/rubriques/guide-section.tsx`](../../../apps/web/src/components/sections/rubriques/guide-section.tsx)
+- `apps/web/src/components/sections/rubriques/use-kit-data.ts` — référence historique supprimée par `be1a8ed45` ; elle ne décrit pas le runtime actuel.
+- `apps/web/src/components/sections/rubriques/guide-section.tsx` — référence historique supprimée par `be1a8ed45` ; elle ne décrit pas le runtime actuel.
 
 Patterns à surveiller:
 

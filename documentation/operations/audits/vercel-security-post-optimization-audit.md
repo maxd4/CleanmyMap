@@ -2,6 +2,10 @@
 
 Dernière vérification: 2026-06-16
 
+> **Statut documentaire — `AUDIT` historique** : cette vérification porte sur les surfaces relues au 2026-06-16 et ne
+> constitue pas une preuve de sécurité du runtime actuel. Les chemins déplacés sont conservés comme provenance ; leur
+> ancien contenu ne doit pas être attribué au code courant.
+
 Périmètre contrôlé:
 - appels Supabase côté client
 - exposition de `service_role`
@@ -29,7 +33,7 @@ Sur les surfaces modifiées par la réduction Vercel, je n'ai pas identifié de 
 
 - [apps/web/src/proxy.ts](../../../apps/web/src/proxy.ts)
 - [apps/web/src/app/layout.tsx](../../../apps/web/src/app/layout.tsx)
-- [apps/web/src/components/actions/map/action-pollution-score-references-context.tsx](../../../apps/web/src/components/actions/map/action-pollution-score-references-context.tsx)
+- Référence historique déplacée par `62aa68bda` : `apps/web/src/components/actions/map/action-pollution-score-references-context.tsx` ; la cible actuelle est [apps/web/src/components/actions/map/scores/action-pollution-score-references-context.tsx](../../../apps/web/src/components/actions/map/scores/action-pollution-score-references-context.tsx) et doit être vérifiée séparément.
 - [apps/web/src/lib/actions/pollution/pollution-score-references.ts](../../../apps/web/src/lib/actions/pollution/pollution-score-references.ts)
 - [apps/web/src/lib/supabase/client.ts](../../../apps/web/src/lib/supabase/client.ts)
 - [apps/web/src/lib/gamification/api.ts](../../../apps/web/src/lib/gamification/api.ts)
