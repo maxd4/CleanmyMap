@@ -164,6 +164,15 @@ describe("signalement media contract", () => {
         clientUploadId: "client-3",
       }),
     ).toThrowError(SignalementMediaError);
+    expect(() =>
+      validateSignalementMediaInput({
+        originalName: "preuve.jpg",
+        mimeType: "image/jpeg",
+        sizeBytes: 1_000,
+        width: 10_001,
+        clientUploadId: "client-4",
+      }),
+    ).toThrowError(SignalementMediaError);
   });
 
   it("derives the path from server identifiers, never from the client upload id", () => {

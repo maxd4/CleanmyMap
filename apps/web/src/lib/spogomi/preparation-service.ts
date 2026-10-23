@@ -78,22 +78,49 @@ type CompositionTeamRow = {
   composition_state: string;
 };
 
+type CompositionParticipantRecord = Record<string, unknown> & {
+  id: string;
+  group_preference?: string | null;
+  source_row_number?: number | null;
+  team_id?: string | null;
+  registration_status: string;
+  source_system?: string | null;
+  ticket_status?: string | null;
+  ticket_deleted?: boolean | null;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function isOptionalString(value: unknown): value is string | null | undefined {
+  return value === null || value === undefined || typeof value === "string";
+}
+
+function isOptionalNumber(value: unknown): value is number | null | undefined {
+  return value === null || value === undefined || typeof value === "number";
+}
+
+function isOptionalBoolean(value: unknown): value is boolean | null | undefined {
+  return value === null || value === undefined || typeof value === "boolean";
+}
+
+function isCompositionParticipantRecord(
+  value: Record<string, unknown>,
+): value is CompositionParticipantRecord {
+  return typeof value.id === "string" &&
+    isOptionalString(value.group_preference) &&
+    isOptionalNumber(value.source_row_number) &&
+    isOptionalString(value.team_id) &&
+    typeof value.registration_status === "string" &&
+    isOptionalString(value.source_system) &&
+    isOptionalString(value.ticket_status) &&
+    isOptionalBoolean(value.ticket_deleted);
+}
+
 function parseCompositionParticipantRow(value: unknown): CompositionParticipantRow | null {
   if (!isRecord(value)) return null;
-  if (
-    typeof value.id !== "string" ||
-    (value.group_preference !== null && value.group_preference !== undefined && typeof value.group_preference !== "string") ||
-    (value.source_row_number !== null && value.source_row_number !== undefined && typeof value.source_row_number !== "number") ||
-    (value.team_id !== null && value.team_id !== undefined && typeof value.team_id !== "string") ||
-    typeof value.registration_status !== "string" ||
-    (value.source_system !== null && value.source_system !== undefined && typeof value.source_system !== "string") ||
-    (value.ticket_status !== null && value.ticket_status !== undefined && typeof value.ticket_status !== "string") ||
-    (value.ticket_deleted !== null && value.ticket_deleted !== undefined && typeof value.ticket_deleted !== "boolean")
-  ) return null;
+  if (!isCompositionParticipantRecord(value)) return null;
   return {
     id: value.id,
     group_preference: value.group_preference === undefined ? null : value.group_preference,

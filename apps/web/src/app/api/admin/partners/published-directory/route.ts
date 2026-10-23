@@ -363,6 +363,29 @@ function isValidReviewConfirmationPhrase(
  return (value ??"").trim().toUpperCase() === REVIEW_CONFIRM_PHRASE;
 }
 
+async function respondToAppliedPartnerReview(params: {
+ operationId: string;
+ actorUserId: string;
+ targetId: string;
+ publicationStatus: "accepted" | "rejected";
+ updated: NonNullable<PublishedPartnerUpdate>;
+}) {
+ invalidatePublishedPartnerDirectory();
+ await sendPartnerPublicationReviewNotification({
+  actorUserId: params.actorUserId,
+  updated: params.updated,
+ });
+ return adminSuccessResponse({
+ operationId: params.operationId,
+ payload: {
+  status:"ok",
+  entityType:"partner_publication",
+  id: params.targetId,
+  publicationStatus: params.publicationStatus,
+ },
+ });
+}
+
 export async function POST(request: Request) {
  const operationId = newOperationId();
  const access = await requireAdminAccess();
@@ -436,20 +459,11 @@ export async function POST(request: Request) {
  });
   if (result.kind !== "applied") return partnerReviewFailureResponse(result, operationId);
  const updated = result.updated;
- invalidatePublishedPartnerDirectory();
-
-  await sendPartnerPublicationReviewNotification({
+  return respondToAppliedPartnerReview({
+   operationId,
    actorUserId: access.userId,
+   targetId: parsed.data.id,
+   publicationStatus: parsed.data.publicationStatus,
    updated,
-  });
-
- return adminSuccessResponse({
- operationId,
- payload: {
- status:"ok",
- entityType:"partner_publication",
- id: parsed.data.id,
- publicationStatus: parsed.data.publicationStatus,
- },
  });
 }

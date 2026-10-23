@@ -4,6 +4,7 @@ import {
   extractActionMetadataFromNotes,
   setActionGroupJoinEnabledInNotes,
 } from "./metadata";
+import { buildMetadataPayload, hasActionMetadata } from "./metadata-payload";
 import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 
 describe("action metadata notes", () => {
@@ -160,5 +161,27 @@ describe("action metadata notes", () => {
       effectiveVolunteerUnits: 6,
     });
     expect(extractActionMetadataFromNotes("Legacy action").volunteerParticipation).toBeNull();
+  });
+
+  it("keeps explicit zero and false metadata while ignoring an empty waste breakdown", () => {
+    const metadata = {
+      cigaretteButtsKg: 0,
+      groupJoinEnabled: false,
+      routeStyle: "direct" as const,
+      wasteBreakdown: {
+        recyclablesKg: null,
+        glassKg: null,
+        householdWasteKg: null,
+        otherWasteKg: null,
+      },
+    };
+
+    expect(hasActionMetadata(metadata)).toBe(true);
+    expect(buildMetadataPayload(metadata)).toEqual({
+      cigaretteButtsKg: 0,
+      groupJoinEnabled: false,
+      routeStyle: "souple",
+    });
+    expect(hasActionMetadata({ wasteBreakdown: metadata.wasteBreakdown })).toBe(false);
   });
 });

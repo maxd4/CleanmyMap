@@ -254,6 +254,17 @@ describe("SPOGOMI preparation service previews", () => {
     await expect(previewSpogomiTeams(supabase, spogomiPreparationEvent({ composition_revision: 3 }))).rejects.toThrow(/annulée ou supprimée/i);
   });
 
+  it("refuses malformed participant rows before applying eligibility rules", async () => {
+    const supabase = readOnlySupabase({
+      spogomi_participants: {
+        data: [{ id: "participant-1", source_row_number: "not-a-number", registration_status: "registered" }],
+        error: null,
+      },
+    });
+
+    await expect(previewSpogomiTeams(supabase, spogomiPreparationEvent({ composition_revision: 3 }))).rejects.toThrow(/participant invalide/i);
+  });
+
   it("refuses a locked event and a previously locked team", async () => {
     await expect(previewSpogomiTeams(readOnlySupabase({}), spogomiPreparationEvent({ state: "composition_locked", composition_revision: 3 }))).rejects.toThrow(/déjà verrouillée/i);
 

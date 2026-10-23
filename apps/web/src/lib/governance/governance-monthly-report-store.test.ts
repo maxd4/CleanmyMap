@@ -28,6 +28,7 @@ import {
   loadGovernanceMonthlyReport,
   upsertGovernanceMonthlyReport,
 } from "./governance-monthly-report-store";
+import { normalizeStoragePayload } from "./governance-monthly-report-storage-normalizer";
 
 function makeQueryBuilder(data: unknown[]) {
   const queryBuilder = {
@@ -141,5 +142,54 @@ describe("governance monthly report store", () => {
       }),
       { onConflict: "report_key,report_month" },
     );
+  });
+
+  it("normalizes missing storage sections without collapsing zero or unavailable values", () => {
+    expect(normalizeStoragePayload(null)).toMatchObject({
+      quotaBytes: 0,
+      deltaPercent: null,
+      businessContributions: { items: [] },
+    });
+
+    const normalized = normalizeStoragePayload({
+      quotaBytes: 0,
+      totalBytes: 12,
+      deltaPercent: null,
+      businessContributions: {
+        previousSnapshotMonth: null,
+        historyMonths: [],
+        alerts: [],
+        items: [{
+          id: "pieces_jointes_photo",
+          label: "Photos",
+          description: "Photos",
+          currentBytes: 0,
+          currentCount: 0,
+          currentSharePercent: 0,
+          currentAverageBytes: 0,
+          previousBytes: 0,
+          previousCount: 0,
+          deltaBytes: 0,
+          deltaPercent: null,
+          deltaCount: 0,
+          cumulative3MonthBytes: 0,
+          cumulative3MonthPercent: null,
+          accelerationBytes: 0,
+          accelerationPercent: null,
+          history: [],
+          topFiles: [],
+          mimeSubtypes: [],
+          alerts: [],
+        }],
+      },
+    } as never);
+
+    expect(normalized.totalBytes).toBe(12);
+    expect(normalized.deltaPercent).toBeNull();
+    expect(normalized.businessContributions.items[0]).toMatchObject({
+      currentBytes: 0,
+      currentSharePercent: 0,
+      deltaPercent: null,
+    });
   });
 });

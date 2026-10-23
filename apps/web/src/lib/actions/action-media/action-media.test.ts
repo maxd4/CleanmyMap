@@ -194,6 +194,10 @@ describe("action media contract", () => {
     expect(() => validateActionMediaInput({ originalName: "bilan.jpg", mimeType: "image/jpeg", sizeBytes: 1000, clientUploadId: "client-1" })).not.toThrow();
     expect(() => validateActionMediaInput({ originalName: "bilan.svg", mimeType: "image/svg+xml", sizeBytes: 1000, clientUploadId: "client-2" })).toThrow(ActionMediaError);
     expect(() => validateActionMediaInput({ originalName: "bilan.jpg", mimeType: "image/jpeg", sizeBytes: 5 * 1024 * 1024 + 1, clientUploadId: "client-3" })).toThrow(ActionMediaError);
+    expect(() => validateActionMediaInput({ originalName: "bilan.jpg", mimeType: "image/jpeg", sizeBytes: 1000, width: 0, clientUploadId: "client-4" })).toThrow(ActionMediaError);
+    expect(() => validateActionMediaInput({ originalName: "bilan.jpg", mimeType: "image/jpeg", sizeBytes: 1000, sortOrder: 3, clientUploadId: "client-5" })).toThrow(ActionMediaError);
+    expect(() => validateActionMediaInput({ originalName: " ", mimeType: "image/jpeg", sizeBytes: 1000, clientUploadId: "client-6" })).toThrow(ActionMediaError);
+    expect(() => validateActionMediaInput({ originalName: "bilan.jpg", mimeType: "image/jpeg", sizeBytes: 1000, width: 1, height: 10000, sortOrder: 2, clientUploadId: "client-7" })).not.toThrow();
   });
 
   it("derives a private path from server identifiers", () => {

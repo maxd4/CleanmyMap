@@ -1644,15 +1644,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/governance/governance-monthly-report-store.ts",
-      "line": 210,
-      "category": "runtime/services/orchestration",
-      "ceiling": 37,
-      "status": "LEGACY",
-      "functionIdentity": "named:normalizeStoragePayload#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/lib/governance/governance-monthly-report.model.ts",
       "line": 184,
       "category": "métier/domain pur",
@@ -4539,15 +4530,6 @@
       "ceiling": 72,
       "status": "LEGACY",
       "functionIdentity": "named:calculateVolunteerAdditionality#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/governance/governance-monthly-report-store.ts",
-      "line": 210,
-      "category": "runtime/services/orchestration",
-      "ceiling": 103,
-      "status": "LEGACY",
-      "functionIdentity": "named:normalizeStoragePayload#1"
     },
     {
       "metric": "functionLength",
