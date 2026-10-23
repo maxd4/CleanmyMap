@@ -1,7 +1,6 @@
 import type {
   ActionGeometrySource,
   ActionImpactLevel,
-  ActionMapItem,
   ActionMapResponse,
   ActionSourceName,
   ActionStatus,
@@ -24,7 +23,6 @@ import type { PollutionScoreReferences } from "../pollution/pollution-score";
 import type { ActionDataContract, ActionEntityType } from "../contracts/contract-model";
 import { buildActionDataContract } from "../contracts/contract-model";
 import { parseWasteCategoriesFromNotes } from "@/lib/waste";
-import { mapItemCoordinates } from "../contracts/contract-mappers";
 import { buildPublicMapItems } from "./public-map-items";
 import { parsePublicObservedPreparationData } from "./public-observed-coverage";
 import {
@@ -35,6 +33,7 @@ import {
   serializeTypes,
   setScopeQueryParams,
   toFiniteNumber,
+  filterMapItemsByViewport,
   type ActionTypeFilter,
 } from "./map-http-utils";
 export type FetchMapActionsParams = {
@@ -279,26 +278,6 @@ function buildMapContracts(
       types,
     ),
   ).sort(compareMapContracts);
-}
-function filterMapItemsByViewport(
-  items: ActionMapItem[],
-  viewport: MapViewportState | null | undefined,
-): ActionMapItem[] {
-  if (!viewport) {
-    return items;
-  }
-  return items.filter((item) => {
-    const { latitude, longitude } = mapItemCoordinates(item);
-    if (latitude === null || longitude === null) {
-      return false;
-    }
-    return (
-      latitude >= viewport.bounds.south &&
-      latitude <= viewport.bounds.north &&
-      longitude >= viewport.bounds.west &&
-      longitude <= viewport.bounds.east
-    );
-  });
 }
 function buildMapSourceHealth() {
   return {

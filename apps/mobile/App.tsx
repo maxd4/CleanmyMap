@@ -216,28 +216,12 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
     marginBottom: 40,
   },
-  hudInputWrapper: {
-    marginBottom: 24,
-  },
-  hudInput: {
-    backgroundColor: '#1e293b',
-    borderRadius: 16,
-    padding: 16,
-    color: '#f8fafc',
-    fontSize: 16,
-    fontWeight: '700',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
   hudBtnPrimary: {
     backgroundColor: '#10b981',
     minHeight: 48,
     paddingVertical: 20,
     borderRadius: 16,
     alignItems: 'center',
-  },
-  hudBtnPrimaryDisabled: {
-    backgroundColor: '#475569',
   },
   hudBtnSecondary: {
     minHeight: 44,
@@ -251,38 +235,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1,
   },
-  hudBtnDanger: {
-    backgroundColor: '#ef4444',
-    paddingVertical: 20,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
   hudBtnText: {
     color: '#022c22',
     fontSize: 14,
     fontWeight: '900',
     letterSpacing: 2,
-  },
-  warningBanner: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#f59e0b55',
-    backgroundColor: '#f59e0b14',
-    padding: 16,
-    marginBottom: 24,
-  },
-  warningTitle: {
-    color: '#fbbf24',
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 2,
-    marginBottom: 8,
-  },
-  warningText: {
-    color: '#fde68a',
-    fontSize: 13,
-    lineHeight: 19,
-    fontWeight: '600',
   },
   errorBanner: {
     borderRadius: 16,

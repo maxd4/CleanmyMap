@@ -1,4 +1,4 @@
-import { PROJECT_SIGNAL_ROW_LIMIT } from "./project-signals.constants";
+export { PROJECT_SIGNAL_VOLUME_NOTE } from "./project-signals.constants";
 import { countProjectUnreadNotifications } from "./project-signals-helpers";
 import {
   buildTopPageViewRouteCounts,
@@ -156,9 +156,6 @@ export type ProjectSignalRows = {
   eventRsvps: EventRsvpRow[];
   appNotifications: AppNotificationRow[];
 };
-
-export const PROJECT_SIGNAL_VOLUME_NOTE =
-  `Volumes plafonnés à ${new Intl.NumberFormat("fr-FR").format(PROJECT_SIGNAL_ROW_LIMIT)} lignes par table; au-delà, la lecture reste indicative.`;
 
 // Keep the cap inline in callers so the static quota audit can see each bounded query.
 export async function orderProjectSignalRows<T>(

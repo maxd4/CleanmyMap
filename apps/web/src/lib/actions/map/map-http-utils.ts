@@ -1,4 +1,6 @@
-import type { ActionRecordType, ActionStatus } from "@/lib/actions/types";
+import type { ActionMapItem, ActionRecordType, ActionStatus } from "@/lib/actions/types";
+import type { MapViewportState } from "@/lib/geo/map-viewport";
+import { mapItemCoordinates } from "../contracts/contract-mappers";
 
 export type ActionTypeFilter = ActionRecordType | "all" | ActionRecordType[];
 
@@ -84,4 +86,17 @@ export function resolveMapQueryStatus(
 ): ActionStatus {
   void status;
   return "approved";
+}
+
+export function filterMapItemsByViewport(
+  items: ActionMapItem[],
+  viewport: MapViewportState | null | undefined,
+): ActionMapItem[] {
+  if (!viewport) return items;
+  return items.filter((item) => {
+    const { latitude, longitude } = mapItemCoordinates(item);
+    return latitude !== null && longitude !== null &&
+      latitude >= viewport.bounds.south && latitude <= viewport.bounds.north &&
+      longitude >= viewport.bounds.west && longitude <= viewport.bounds.east;
+  });
 }

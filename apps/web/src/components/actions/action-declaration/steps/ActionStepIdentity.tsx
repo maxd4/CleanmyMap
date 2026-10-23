@@ -1,36 +1,11 @@
 "use client";
 
-import type { FormState } from "../model";
-import type { ActiveRole } from "@/lib/domain-language";
+import type { ActionStepIdentityProps } from "./action-step-identity.types";
 import { ActionCollectionSection } from "./action-step-identity.collection";
 import { ActionOrganizerSection } from "./action-step-identity.organizer";
 import { ActionParticipantSection } from "./action-step-identity.participants";
 import { ActionTimeSection } from "./action-step-identity.time";
 import { SectionTitle } from "./action-step-identity.ui";
-
-interface Props {
-  form: FormState;
-  updateField: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
-  updateFields: (updates: Partial<FormState>) => void;
-  userMetadata: {
-    userId: string;
-    activeRole?: ActiveRole;
-    handle?: string;
-    displayName?: string;
-    username?: string;
-  };
-  recordType: FormState["recordType"];
-  hasAttemptedSubmit?: boolean;
-  mode?:
-    | "all"
-    | "action"
-    | "participants"
-    | "duration"
-    | "time"
-    | "organization"
-    | "collection"
-    | "details";
-}
 
 export function ActionStepIdentity({
   form,
@@ -40,7 +15,7 @@ export function ActionStepIdentity({
   recordType,
   hasAttemptedSubmit,
   mode = "all",
-}: Props) {
+}: ActionStepIdentityProps) {
   const isActionMode = recordType === "action";
 
   if (mode === "all") {

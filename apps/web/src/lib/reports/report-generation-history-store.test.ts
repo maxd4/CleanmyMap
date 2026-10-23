@@ -72,6 +72,17 @@ const historicalRow = {
   generated_at: payload.data.generatedAt,
 };
 
+function mockSnapshotRead(response: unknown) {
+  const maybeSingle = vi.fn().mockResolvedValue(response);
+  const ownerEq = vi.fn(() => ({ maybeSingle }));
+  const idEq = vi.fn(() => ({ eq: ownerEq }));
+  const select = vi.fn(() => ({ eq: idEq }));
+  getSupabaseAdminClientMock.mockReturnValue({
+    from: vi.fn(() => ({ select })),
+  });
+  return { maybeSingle, ownerEq, idEq, select };
+}
+
 describe("report generation history store", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -230,13 +241,7 @@ describe("report generation history store", () => {
   });
 
   it("loads only the requested snapshot by validated UUID", async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({ data: historicalRow, error: null });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({
-      from: vi.fn(() => ({ select })),
-    });
+    const { maybeSingle, ownerEq, idEq, select } = mockSnapshotRead({ data: historicalRow, error: null });
 
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).resolves.toMatchObject({
       id: historicalId,
@@ -255,14 +260,10 @@ describe("report generation history store", () => {
   });
 
   it("reads a current snapshot when PostgREST returns the equivalent UTC offset", async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({
+    mockSnapshotRead({
       data: { ...historicalRow, generated_at: "2026-08-27T10:30:00.000+00:00" },
       error: null,
     });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
 
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).resolves.toMatchObject({
       generatedAt: "2026-08-27T10:30:00.000+00:00",
@@ -273,7 +274,7 @@ describe("report generation history store", () => {
   it("resolves an uncertain derived persistence by its immutable id and lineage", async () => {
     const targetId = "22222222-2222-4222-8222-222222222222";
     const generatedAt = "2026-10-17T12:05:00.000Z";
-    const maybeSingle = vi.fn().mockResolvedValue({
+    const { ownerEq } = mockSnapshotRead({
       data: {
         ...historicalRow,
         id: targetId,
@@ -291,12 +292,6 @@ describe("report generation history store", () => {
       },
       error: null,
     });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({
-      from: vi.fn(() => ({ select })),
-    });
 
     await expect(resolveDerivedReportGenerationPersistence({
       createdByClerkId: "user-admin",
@@ -310,13 +305,7 @@ describe("report generation history store", () => {
   });
 
   it("distinguishes an absent row from an unreadable persistence result", async () => {
-    const maybeSingle = vi.fn().mockResolvedValueOnce({ data: null, error: null });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({
-      from: vi.fn(() => ({ select })),
-    });
+    const { maybeSingle } = mockSnapshotRead({ data: null, error: null });
 
     await expect(resolveDerivedReportGenerationPersistence({
       createdByClerkId: "user-admin",
@@ -333,13 +322,7 @@ describe("report generation history store", () => {
   });
 
   it("reconciles a direct persistence only for the owner and a null source lineage", async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({ data: historicalRow, error: null });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({
-      from: vi.fn(() => ({ select })),
-    });
+    const { maybeSingle, ownerEq } = mockSnapshotRead({ data: historicalRow, error: null });
 
     await expect(resolveDirectReportGenerationPersistence({
       createdByClerkId: "user-admin",
@@ -376,7 +359,7 @@ describe("report generation history store", () => {
       snapshotMetadata: { ...payload.snapshotMetadata, generatedAt },
       data: { ...payload.data, generatedAt },
     };
-    const maybeSingle = vi.fn().mockResolvedValue({
+    mockSnapshotRead({
       data: {
         ...historicalRow,
         generated_at: "2026-08-27T11:30:00.123456+01:00",
@@ -384,10 +367,6 @@ describe("report generation history store", () => {
       },
       error: null,
     });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
 
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).resolves.toMatchObject({
       snapshot: fractionalPayload,
@@ -401,7 +380,7 @@ describe("report generation history store", () => {
       snapshotMetadata: { ...payload.snapshotMetadata, generatedAt },
       data: { ...payload.data, generatedAt },
     };
-    const maybeSingle = vi.fn().mockResolvedValue({
+    mockSnapshotRead({
       data: {
         ...historicalRow,
         generated_at: "2026-08-27T10:30:00.123457+00:00",
@@ -409,10 +388,6 @@ describe("report generation history store", () => {
       },
       error: null,
     });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
 
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow(
       "invalid or incompatible",
@@ -420,14 +395,10 @@ describe("report generation history store", () => {
   });
 
   it("rejects a stored snapshot with an invalid generated_at format", async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({
+    mockSnapshotRead({
       data: { ...historicalRow, generated_at: "not-an-instant" },
       error: null,
     });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
 
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow(
       "invalid or incompatible",
@@ -442,15 +413,9 @@ describe("report generation history store", () => {
   });
 
   it("rejects a stored snapshot whose generatedAt does not match its metadata", async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({
+    mockSnapshotRead({
       data: { ...historicalRow, generated_at: "2026-08-27T11:30:00.000Z" },
       error: null,
-    });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({
-      from: vi.fn(() => ({ select })),
     });
 
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow(
@@ -466,14 +431,10 @@ describe("report generation history store", () => {
       organizationType: "Global",
       data: { generatedAt: "2026-08-27T10:30:00.000Z", summary: ["Legacy"] },
     };
-    const maybeSingle = vi.fn().mockResolvedValue({
+    mockSnapshotRead({
       data: { ...historicalRow, snapshot: legacySnapshot },
       error: null,
     });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
 
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).resolves.toMatchObject({
       snapshot: legacySnapshot,
@@ -504,14 +465,10 @@ describe("report generation history store", () => {
   });
 
   it("rejects a current snapshot whose stored ownership metadata was altered", async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({
+    mockSnapshotRead({
       data: { ...historicalRow, scope_label: "Autre périmètre" },
       error: null,
     });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
 
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow(
       "invalid or incompatible",
@@ -605,11 +562,7 @@ describe("report generation history persistence failures", () => {
   });
 
   it("maps a snapshot read error to the caller instead of inventing a missing row", async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: new Error("read failed") });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
+    mockSnapshotRead({ data: null, error: new Error("read failed") });
 
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow("read failed");
   });
@@ -667,7 +620,8 @@ describe("report generation history store response boundaries", () => {
   });
 
   it("distinguishes an absent snapshot from an incompatible stored payload and normalizes invalid modules", async () => {
-    const maybeSingle = vi.fn()
+    const { maybeSingle } = mockSnapshotRead(null);
+    maybeSingle
       .mockResolvedValueOnce({ data: null, error: null })
       .mockResolvedValueOnce({ data: { ...historicalRow, snapshot: { title: "not a current payload" } }, error: null })
       .mockResolvedValueOnce({
@@ -685,18 +639,14 @@ describe("report generation history store response boundaries", () => {
         },
         error: null,
       });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
-
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).resolves.toBeNull();
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow("invalid or incompatible");
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).resolves.toMatchObject({ modules: null, theme: null });
   });
 
   it("rejects impossible instants and a forged generation lineage", async () => {
-    const maybeSingle = vi.fn()
+    const { maybeSingle } = mockSnapshotRead(null);
+    maybeSingle
       .mockResolvedValueOnce({ data: { ...historicalRow, generated_at: "2026-08-27T25:30:00Z" }, error: null })
       .mockResolvedValueOnce({ data: { ...historicalRow, generated_at: "2026-02-29T10:30:00Z" }, error: null })
       .mockResolvedValueOnce({
@@ -706,11 +656,6 @@ describe("report generation history store response boundaries", () => {
         },
         error: null,
       });
-    const ownerEq = vi.fn(() => ({ maybeSingle }));
-    const idEq = vi.fn(() => ({ eq: ownerEq }));
-    const select = vi.fn(() => ({ eq: idEq }));
-    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
-
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow("invalid or incompatible");
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow("invalid or incompatible");
     await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow("invalid or incompatible");

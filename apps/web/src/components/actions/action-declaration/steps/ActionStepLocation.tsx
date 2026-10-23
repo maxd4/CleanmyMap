@@ -4,8 +4,6 @@ import { ActionLocationGeometryPanel } from "../action-location-geometry-panel";
 import { ActionLocationInputs } from "../action-location-inputs";
 import type { ActionStepLocationProps } from "../action-location.types";
 
-export type { ActionStepLocationProps } from "../action-location.types";
-
 export function ActionStepLocation({
   mode = "all",
   ...props

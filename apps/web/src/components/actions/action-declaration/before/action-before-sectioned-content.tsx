@@ -1,7 +1,7 @@
 import { ActionBeforeVerificationSection } from "./action-before-verification-section";
 import { EssentialActionSection } from "./essential-action-section";
 import { TerrainActionSection } from "./terrain-action-section";
-import { TeamLogisticsSection } from "./sections";
+import { TeamLogisticsSection } from "./team-logistics-section";
 import type { ActionCreationSectionId } from "@/lib/actions/action-creation-sections";
 import type { FormState } from "../model";
 import type { ActiveRole } from "@/lib/domain-language";

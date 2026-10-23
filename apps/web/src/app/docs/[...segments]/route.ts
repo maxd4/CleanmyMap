@@ -1,20 +1,10 @@
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { findPublicDocumentationByDocsPath } from "@/lib/documentation/public-documentation-registry";
 import { markDocumentationNoindex } from "./route-seo";
 import { buildResponseForFile } from "./route-document";
+import { DOCUMENTATION_ROOT, resolveDocumentationPath } from "./route-path";
 
 export const runtime = "nodejs";
-const DOCUMENTATION_ROOT = path.resolve(process.cwd(), "..", "..", "documentation");
-
-function resolveDocumentationPath(canonicalPath: string) {
-  const resolved = path.resolve(DOCUMENTATION_ROOT, canonicalPath);
-  const relative = path.relative(DOCUMENTATION_ROOT, resolved);
-  if (relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
-    return null;
-  }
-  return resolved;
-}
 
 export async function GET(
   _request: Request,

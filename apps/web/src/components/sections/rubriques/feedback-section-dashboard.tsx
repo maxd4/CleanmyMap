@@ -3,28 +3,11 @@
 import { FeedbackSectionDashboardForm } from "./feedback-section-dashboard-form";
 import { FeedbackSectionDashboardGuidance } from "./feedback-section-dashboard-guidance";
 import { FeedbackHistory } from "./feedback/feedback-history";
-import type {
-  FeedbackSectionProps,
-  FeedbackSectionContext,
-  Locale,
-} from "./feedback-section.shared";
-import type { FeedbackType } from "./feedback/questionnaire-config";
+import type { FeedbackSectionDashboardProps } from "./feedback-section-dashboard.types";
 
-export type FeedbackSectionDashboardProps = Pick<
-  FeedbackSectionContext,
-  "pagePath" | "supportPrefill"
-> & {
-  source: NonNullable<FeedbackSectionProps["source"]>;
-  locale: Locale;
-  selectedType: FeedbackType;
-  onSelectType: (type: FeedbackType) => void;
-};
+export type { FeedbackSectionDashboardProps } from "./feedback-section-dashboard.types";
 
 export function FeedbackSectionDashboard(props: FeedbackSectionDashboardProps) {
-  return <FeedbackDashboardMode {...props} />;
-}
-
-function FeedbackDashboardMode(props: FeedbackSectionDashboardProps) {
   return (
     <div className="space-y-10 pb-20 pt-2 text-slate-950">
       <FeedbackSectionDashboardForm

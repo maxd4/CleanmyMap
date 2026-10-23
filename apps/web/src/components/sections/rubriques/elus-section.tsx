@@ -1,49 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { useUser } from "@clerk/nextjs";
 import { ShieldCheck } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { isPromotionEligibleEluAccessDenied } from "./elus-section-access";
-import { ElusSectionMethodsPanel } from "./elus-section-methods-panel";
-import { ElusSectionNavigation, type ElusSectionTab } from "./elus-section-navigation";
-import { ElusSectionOverviewPanel } from "./elus-section-overview-panel";
+import { ElusSectionContent } from "./elus-section-content";
+import type { ElusSectionTab } from "./elus-section-navigation";
 import { useElusOverview } from "./elus-section-overview";
-import { ElusSectionSecurityFooter } from "./elus-section-security-footer";
-import { ElusSectionErrorState, ElusSectionLoadingState } from "./elus-section-states";
-import { ElusSectionZonesPanel } from "./elus-section-zones-panel";
-
-function ElusSectionContent({
-  fr,
-  locale,
-  activeTab,
-  onTabChange,
-  isLoading,
-  data,
-}: {
-  fr: boolean;
-  locale: "fr" | "en";
-  activeTab: ElusSectionTab;
-  onTabChange: (tab: ElusSectionTab) => void;
-  isLoading: boolean;
-  data: Parameters<typeof ElusSectionOverviewPanel>[0]["data"] | null | undefined;
-}) {
-  return (
-    <div className="space-y-16 pt-8">
-      <ElusSectionNavigation fr={fr} activeTab={activeTab} onTabChange={onTabChange} />
-      <AnimatePresence mode="wait">
-        {isLoading ? <ElusSectionLoadingState /> : data ? <motion.div key={activeTab} initial={{ opacity: 1, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} className="space-y-20">
-          {activeTab === "overview" ? <ElusSectionOverviewPanel data={data} locale={locale} /> : null}
-          {activeTab === "zones" ? <ElusSectionZonesPanel data={data} fr={fr} /> : null}
-          {activeTab === "methods" ? <ElusSectionMethodsPanel data={data} /> : null}
-        </motion.div> : null}
-      </AnimatePresence>
-      <ElusSectionSecurityFooter fr={fr} />
-    </div>
-  );
-}
+import { ElusSectionErrorState } from "./elus-section-states";
 
 export function ElusSection() {
   const { locale } = useSitePreferences();

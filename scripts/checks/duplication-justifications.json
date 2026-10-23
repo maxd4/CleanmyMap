@@ -75,26 +75,10 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "a54fde3f5fd3a3d0",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les champs Zod anti-spam sont volontairement proches mais restent attachés aux primitives anti-abus et aux contrats métier propres aux signalements légaux et aux demandes partenaires ; aucune centralisation sûre n'est démontrée.",
-      "evidence": "apps/web/src/app/api/legal-content-reports/route.ts:35-40 et apps/web/src/app/api/partners/onboarding-requests/route.ts:72-76 ; les deux schémas protègent des parcours et propriétaires métier distincts.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "31957f807349c194",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les lectures Supabase et fallbacks ressemblent à un patron commun, mais les snapshots Codex hebdomadaires et les snapshots d'impact environnemental ont des tables, identifiants, projections et politiques de rétention distincts.",
       "evidence": "apps/web/src/lib/environmental-impact-estimator/codex-usage-store.ts:329-345 et apps/web/src/lib/environmental-impact-estimator/snapshot-store.ts:161-177 ; les contrats de données et owners de persistance diffèrent.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "257e17297beafede",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La répétition est limitée à la forme de types de lignes de signaux dans deux contrats distincts ; extraire ces propriétés ne créerait pas un owner métier et mélangerait les entrées brutes avec le modèle calculé.",
-      "evidence": "apps/web/src/lib/environmental-impact-estimator/project-signals-scope.ts:33-44 et apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts:149-160 ; pair CURRENT relu ; la description de séparation existante est conservée.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
@@ -923,14 +907,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "e58f9be3649b1f28",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT components/admin/promotion-requests-panel.tsx:277-285 ; symboles: className, flex, wrap, button et components/admin/promotion-requests-panel.tsx:296-304 ; symboles: button, type, disabled, actionState restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "apps/web/src/components/admin/promotion-requests-panel.tsx:277-285 et apps/web/src/components/admin/promotion-requests-panel.tsx:296-304 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "9d2b7f11d7aa4f16",
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre components/learn/learn-behavior-awareness-section.tsx:3-15 ; symboles: ArrowRight, Megaphone, ShieldCheck, Users et components/learn/learn-tri-context-section.tsx:4-16 ; symboles: ArrowRight, Compass, Droplets, MapPinned reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
@@ -971,14 +947,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "a58acbbce4fc0df2",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT components/partners/published-annuaire-review-panel.tsx:207-215 ; symboles: className, flex, wrap, button et components/partners/published-annuaire-review-panel.tsx:219-227 ; symboles: button, type, disabled, submittingId restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "apps/web/src/components/partners/published-annuaire-review-panel.tsx:207-215 et apps/web/src/components/partners/published-annuaire-review-panel.tsx:219-227 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "1059696c55b72902",
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre components/reports/admin-workflow/actions.ts:268-273 ; symboles: onDownloadCsv, void, onDownloadJson, onImportDryRun et components/reports/admin-workflow/types.ts:177-182 ; symboles: onDownloadCsv, void, onDownloadJson, onImportDryRun reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
@@ -1007,14 +975,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre components/sections/rubriques/route/components/route-event-selector.model.ts:26-33 ; symboles: export, routeEventStatusLabel, RouteEventTemporalStatus, past et components/sections/rubriques/route/components/route-explanation.model.ts:45-52 ; symboles: export, routeEventStatusLabel, RouteEventTemporalStatus, past reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
       "evidence": "apps/web/src/components/sections/rubriques/route/components/route-event-selector.model.ts:26-33 et apps/web/src/components/sections/rubriques/route/components/route-explanation.model.ts:45-52 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "727478c614d71631",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT components/sections/rubriques/use-weather-data.ts:299-309 ; symboles: void, resolveWeatherLocationFromLabel, storedLocation, label et components/sections/rubriques/use-weather-data.ts:343-352 ; symboles: void, resolveWeatherLocationFromPreference, preference, then restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "apps/web/src/components/sections/rubriques/use-weather-data.ts:299-309 et apps/web/src/components/sections/rubriques/use-weather-data.ts:343-352 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {

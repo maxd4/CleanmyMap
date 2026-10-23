@@ -68,7 +68,6 @@ export function ChatShell({
   navigationState = null,
   onNavigationChange,
 }: ChatShellProps) {
-  const isLight = tone === "light";
   const { locale } = useSitePreferences();
   const pathname = usePathname();
   const [activeFeedbackId, setActiveFeedbackId] = useState(initialFeedbackId);
@@ -137,7 +136,7 @@ export function ChatShell({
     pollVoting={controller.pollVoting}
     pathname={pathname}
     locale={locale}
-    isLight={isLight}
+    isLight={tone === "light"}
     fullHeight={fullHeight}
     messagerieMode={messagerieMode}
     initialRecipient={initialRecipient}

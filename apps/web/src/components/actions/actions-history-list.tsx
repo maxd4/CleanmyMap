@@ -43,10 +43,9 @@ export function ActionsHistoryList() {
     ? isAdminLikeProfile(currentProfileRole)
     : false;
   const selectedActionId = query.selectedItem?.id ?? null;
-  const selectedCanViewActionAudit = Boolean(
-    query.selectedItem &&
-      (isAdminLikeUser || query.selectedItem.created_by_clerk_id === currentUserId),
-  );
+  const selectedCanViewActionAudit = Boolean(query.selectedItem && (
+    isAdminLikeUser || query.selectedItem.created_by_clerk_id === currentUserId
+  ));
   const participation = useActionsHistoryListParticipation({
     fr,
     currentUserId,

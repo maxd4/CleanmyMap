@@ -12,6 +12,7 @@ import {
   type ActionMediaReadItem,
 } from "./action-media-contract";
 import { verifyActionMediaStorageObject } from "./action-media-storage";
+import { validateMediaUploadInput } from "../media/media-upload-validation";
 import {
   markActionMediaFailedIfCurrent,
   markActionMediaReady,
@@ -57,10 +58,6 @@ export class ActionMediaError extends Error {
   }
 }
 
-function isActionMediaMimeType(value: string): value is ActionMediaMimeType {
-  return (ACTION_MEDIA_ALLOWED_MIME_TYPES as readonly string[]).includes(value);
-}
-
 export function validateActionMediaInput(input: {
   originalName: string;
   mimeType: string;
@@ -78,43 +75,11 @@ export function validateActionMediaInput(input: {
   sortOrder?: number;
   clientUploadId: string;
 } {
-  validateActionMediaIdentity(input);
-  validateActionMediaMimeType(input.mimeType);
-  validateActionMediaSize(input.sizeBytes);
-  validateActionMediaDimensions(input.width, input.height);
-  validateActionMediaSortOrder(input.sortOrder);
-}
-
-function validateActionMediaIdentity(input: { originalName: string; clientUploadId: string }): void {
-  if (input.originalName.trim().length < 1 || input.originalName.trim().length > 255 || input.clientUploadId.trim().length < 1 || input.clientUploadId.trim().length > 128) {
-    throw new ActionMediaError("Les métadonnées photo sont invalides.", "validation");
-  }
-}
-
-function validateActionMediaMimeType(mimeType: string): asserts mimeType is ActionMediaMimeType {
-  if (!isActionMediaMimeType(mimeType)) {
-    throw new ActionMediaError("Le format de photo n'est pas accepté.", "validation");
-  }
-}
-
-function validateActionMediaSize(sizeBytes: number): void {
-  if (!Number.isInteger(sizeBytes) || sizeBytes <= 0 || sizeBytes > ACTION_MEDIA_MAX_SIZE_BYTES) {
-    throw new ActionMediaError("La photo dépasse la taille autorisée.", "validation");
-  }
-}
-
-function validateActionMediaDimensions(width?: number | null, height?: number | null): void {
-  for (const dimension of [width, height]) {
-    if (dimension !== undefined && dimension !== null && (!Number.isInteger(dimension) || dimension < 1 || dimension > 10000)) {
-      throw new ActionMediaError("Les dimensions photo sont invalides.", "validation");
-    }
-  }
-}
-
-function validateActionMediaSortOrder(sortOrder?: number): void {
-  if (sortOrder !== undefined && (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 2)) {
-    throw new ActionMediaError("L'ordre des photos est invalide.", "validation");
-  }
+  validateMediaUploadInput(input, {
+    allowedMimeTypes: ACTION_MEDIA_ALLOWED_MIME_TYPES,
+    maxSizeBytes: ACTION_MEDIA_MAX_SIZE_BYTES,
+    createError: (message) => new ActionMediaError(message, "validation"),
+  });
 }
 
 function extensionForMimeType(mimeType: ActionMediaMimeType): string {

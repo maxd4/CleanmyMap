@@ -4,9 +4,7 @@ export type {
   RouteRiskFocus,
   RouteTargetEvidence,
 } from "./route-target-contract";
-export type {
-  RoutePredictionSummary,
-} from "./route-predicted-targets-types";
+export type { RoutePredictionSummary } from "./route-predicted-targets-types";
 export {
   applyRoutePredictionPoolAudit,
   buildRoutePlannerCandidatePool,

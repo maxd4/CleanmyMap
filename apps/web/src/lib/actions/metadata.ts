@@ -1,50 +1,26 @@
 import type {
   ActionSubmissionMode,
   ActionWasteBreakdown,
-  ActionPhotoAsset,
   ActionVisionEstimate,
   ActionWasteMeasurementMethod,
 } from "@/lib/actions/types";
 import {
-  hasCigaretteButtsMeasurement,
   normalizeCigaretteButtsMeasurements,
   type ActionCigaretteButtsMeasurements,
 } from "@/lib/waste/cigarette-butts";
 import {
-  hasVolunteerCategoryData,
   normalizeVolunteerParticipation,
   type ActionVolunteerParticipation,
 } from "@/lib/actions/volunteer-participation";
+import {
+  buildMetadataPayload,
+  hasActionMetadata,
+  type ActionInputMetadata,
+  type ActionNotesMeta,
+} from "./metadata-payload";
 
 const META_PREFIX = "[cmm-meta]";
 const INGESTION_SYNC_MARKER = "[google-sheet-sync]";
-
-type ActionNotesMeta = {
-  submissionMode?: ActionSubmissionMode;
-  wasteBreakdown?: ActionWasteBreakdown;
-  wasteMeasurementMethod?: ActionWasteMeasurementMethod;
-  cigaretteButtsKg?: number | null;
-  cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements;
-  volunteerParticipation?: ActionVolunteerParticipation;
-  associationName?: string;
-  groupJoinEnabled?: boolean;
-  placeType?: string;
-  departureLocationLabel?: string;
-  arrivalLocationLabel?: string;
-  routeStyle?: "direct" | "souple";
-  routeAdjustmentMessage?: string;
-  photos?: Pick<ActionPhotoAsset, "id" | "name" | "mimeType" | "size" | "width" | "height">[];
-  visionEstimate?: ActionVisionEstimate;
-};
-
-type ActionInputMetadata = Omit<
-  ActionNotesMeta,
-  "cigaretteButtsMeasurements" | "volunteerParticipation" | "visionEstimate"
-> & {
-  cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
-  volunteerParticipation?: ActionVolunteerParticipation | null;
-  visionEstimate?: ActionVisionEstimate | null;
-};
 
 function safeParseMeta(raw: string): ActionNotesMeta | null {
   try {
@@ -80,119 +56,6 @@ type ActionNotesExtractionState = {
 type ActionNotesExtractionResult = Omit<ActionNotesExtractionState, "cleanLines"> & {
   cleanNotes: string | null;
 };
-
-function hasNonEmptyText(value: string | null | undefined): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function hasStructuredActionMetadata(metadata: ActionInputMetadata): boolean {
-  const associationName = metadata.associationName?.trim();
-  const hasWasteBreakdown =
-    metadata.wasteBreakdown &&
-    Object.values(metadata.wasteBreakdown).some(
-      (value) => value !== undefined && value !== null,
-    );
-  return Boolean(
-    hasWasteBreakdown ||
-      metadata.wasteMeasurementMethod ||
-      metadata.cigaretteButtsKg !== undefined ||
-      hasCigaretteButtsMeasurement(metadata.cigaretteButtsMeasurements) ||
-      hasVolunteerCategoryData(metadata.volunteerParticipation) ||
-      associationName ||
-      typeof metadata.groupJoinEnabled === "boolean" ||
-      metadata.placeType ||
-      metadata.departureLocationLabel ||
-      metadata.arrivalLocationLabel,
-  );
-}
-
-function hasContentActionMetadata(metadata: ActionInputMetadata): boolean {
-  return Boolean(
-    metadata.submissionMode ||
-      metadata.routeStyle ||
-      hasNonEmptyText(metadata.routeAdjustmentMessage) ||
-      metadata.photos?.length ||
-      metadata.visionEstimate,
-  );
-}
-
-function hasActionMetadata(metadata: ActionInputMetadata): boolean {
-  return (
-    hasStructuredActionMetadata(metadata) || hasContentActionMetadata(metadata)
-  );
-}
-
-function buildStructuredMetadataPayload(
-  metadata: ActionInputMetadata,
-): ActionNotesMeta {
-  const metaPayload: ActionNotesMeta = {};
-  if (metadata.submissionMode) {
-    metaPayload.submissionMode = metadata.submissionMode;
-  }
-  if (
-    metadata.wasteBreakdown &&
-    Object.values(metadata.wasteBreakdown).some(
-      (value) => value !== undefined && value !== null,
-    )
-  ) {
-    metaPayload.wasteBreakdown = metadata.wasteBreakdown;
-  }
-  if (metadata.wasteMeasurementMethod) {
-    metaPayload.wasteMeasurementMethod = metadata.wasteMeasurementMethod;
-  }
-  if (metadata.cigaretteButtsKg !== undefined) {
-    metaPayload.cigaretteButtsKg = metadata.cigaretteButtsKg;
-  }
-  if (hasCigaretteButtsMeasurement(metadata.cigaretteButtsMeasurements)) {
-    metaPayload.cigaretteButtsMeasurements = metadata.cigaretteButtsMeasurements!;
-  }
-  if (hasVolunteerCategoryData(metadata.volunteerParticipation)) {
-    metaPayload.volunteerParticipation = normalizeVolunteerParticipation(
-      metadata.volunteerParticipation,
-    );
-  }
-  if (metadata.associationName?.trim()) {
-    metaPayload.associationName = metadata.associationName.trim();
-  }
-  if (typeof metadata.groupJoinEnabled === "boolean") {
-    metaPayload.groupJoinEnabled = metadata.groupJoinEnabled;
-  }
-  if (metadata.placeType) {
-    metaPayload.placeType = metadata.placeType;
-  }
-  if (metadata.departureLocationLabel) {
-    metaPayload.departureLocationLabel = metadata.departureLocationLabel;
-  }
-  if (metadata.arrivalLocationLabel) {
-    metaPayload.arrivalLocationLabel = metadata.arrivalLocationLabel;
-  }
-  return metaPayload;
-}
-
-function buildContentMetadataPayload(
-  metadata: ActionInputMetadata,
-): Pick<
-  ActionNotesMeta,
-  "routeStyle" | "routeAdjustmentMessage" | "photos" | "visionEstimate"
-> {
-  const metaPayload: Pick<
-    ActionNotesMeta,
-    "routeStyle" | "routeAdjustmentMessage" | "photos" | "visionEstimate"
-  > = {};
-  if (metadata.routeStyle) {
-    metaPayload.routeStyle = "souple";
-  }
-  if (hasNonEmptyText(metadata.routeAdjustmentMessage)) {
-    metaPayload.routeAdjustmentMessage = metadata.routeAdjustmentMessage.trim();
-  }
-  if (metadata.photos?.length) {
-    metaPayload.photos = metadata.photos;
-  }
-  if (metadata.visionEstimate) {
-    metaPayload.visionEstimate = metadata.visionEstimate;
-  }
-  return metaPayload;
-}
 
 function appendMetadataLine(
   lines: string[],
@@ -383,8 +246,7 @@ export function appendActionMetadataToNotes(
   }
 
   const metaPayload = {
-    ...buildStructuredMetadataPayload(metadata),
-    ...buildContentMetadataPayload(metadata),
+    ...buildMetadataPayload(metadata),
   };
   const encoded = `${META_PREFIX}${JSON.stringify(metaPayload)}`;
   return trimmedBase ? `${trimmedBase}\n${encoded}` : encoded;

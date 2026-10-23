@@ -41,9 +41,7 @@ export function StorageUsagePanel() {
       : current && current.usagePercent >= 80
         ? "Vigilance"
         : "Stable";
-  const refresh = () => {
-    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ usage.mutate();
-  };
+  const refresh = () => void usage.mutate();
 
   return (
     <AdminPanelShell

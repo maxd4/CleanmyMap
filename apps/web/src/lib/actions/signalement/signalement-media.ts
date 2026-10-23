@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireAdminAccess } from "@/lib/authz";
+import { validateMediaUploadInput } from "../media/media-upload-validation";
 import {
   SIGNALEMENT_EVIDENCE_ALLOWED_MIME_TYPES,
   SIGNALEMENT_EVIDENCE_BUCKET,
@@ -70,14 +71,6 @@ export class SignalementMediaError extends Error {
   }
 }
 
-function isSignalementEvidenceMimeType(
-  value: string,
-): value is SignalementEvidenceMimeType {
-  return (SIGNALEMENT_EVIDENCE_ALLOWED_MIME_TYPES as readonly string[]).includes(
-    value,
-  );
-}
-
 export function validateSignalementMediaInput(input: {
   originalName: string;
   mimeType: string;
@@ -95,39 +88,11 @@ export function validateSignalementMediaInput(input: {
   sortOrder?: number;
   clientUploadId: string;
 } {
-  if (
-    input.originalName.trim().length < 1 ||
-    input.originalName.trim().length > 255 ||
-    input.clientUploadId.trim().length < 1 ||
-    input.clientUploadId.trim().length > 128
-  ) {
-    throw new SignalementMediaError("Les métadonnées photo sont invalides.", "validation");
-  }
-  if (!isSignalementEvidenceMimeType(input.mimeType)) {
-    throw new SignalementMediaError("Le format de photo n'est pas accepté.", "validation");
-  }
-  if (
-    !Number.isInteger(input.sizeBytes) ||
-    input.sizeBytes <= 0 ||
-    input.sizeBytes > SIGNALEMENT_EVIDENCE_MAX_SIZE_BYTES
-  ) {
-    throw new SignalementMediaError("La photo dépasse la taille autorisée.", "validation");
-  }
-  for (const dimension of [input.width, input.height]) {
-    if (
-      dimension !== undefined &&
-      dimension !== null &&
-      (!Number.isInteger(dimension) || dimension < 1 || dimension > 10000)
-    ) {
-      throw new SignalementMediaError("Les dimensions photo sont invalides.", "validation");
-    }
-  }
-  if (
-    input.sortOrder !== undefined &&
-    (!Number.isInteger(input.sortOrder) || input.sortOrder < 0 || input.sortOrder > 2)
-  ) {
-    throw new SignalementMediaError("L'ordre des photos est invalide.", "validation");
-  }
+  validateMediaUploadInput(input, {
+    allowedMimeTypes: SIGNALEMENT_EVIDENCE_ALLOWED_MIME_TYPES,
+    maxSizeBytes: SIGNALEMENT_EVIDENCE_MAX_SIZE_BYTES,
+    createError: (message) => new SignalementMediaError(message, "validation"),
+  });
 }
 
 function extensionForMimeType(mimeType: SignalementEvidenceMimeType): string {

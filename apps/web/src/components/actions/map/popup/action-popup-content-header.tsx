@@ -1,55 +1,11 @@
-import {
-  getGeometryTone,
-  type ScoreReading,
-} from "./action-popup-content.helpers";
-import type { ActionPollutionProjectionPresentation } from "@/lib/actions/pollution/revisit-priority";
-import type {
-  CurrentPlaceState,
-  CurrentPlaceStateMode,
-} from "@/lib/actions/pollution/current-place-state";
-import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
-import type { ScopedActionPollutionScore } from "../scores/pollution-score-scope";
+import { getGeometryTone } from "./action-popup-content.helpers";
 import { ActionPopupContentActionHeader } from "./action-popup-content-action-header";
 import { CompactActionHeader } from "./action-popup-content-compact-header";
 import { ActionPopupContentSignalHeader } from "./action-popup-content-signal-header";
 import { resolveActionPopupContentHeaderModel } from "./action-popup-content-header-model";
+import type { ActionPopupContentHeaderProps } from "./action-popup-content-header.types";
 
-export type ActionPopupContentHeaderProps = {
-  recordTypeLabel: string;
-  locationLabel: string;
-  actionTitle: string;
-  isAction: boolean;
-  color: string;
-  score: number;
-  scoreLoading: boolean;
-  scoreReading: ScoreReading;
-  scoreSourceLabel: string;
-  wasteScore: number;
-  buttsScore: number;
-  statusLabel: string;
-  placeType: string | null;
-  quality: string | null;
-  geometryLabel: string;
-  geometryModeLabel: string;
-  geometryKind: "polyline" | "polygon" | "point" | "multiline" | null;
-  geometryPointLabel: string;
-  geometryConfidenceLabel: string | null;
-  geometryMetricLabel: string | null;
-  geometryReality: string | null;
-  observedAt: string;
-  wasteKg: number;
-  butts: number;
-  actionProjection: ActionPollutionProjectionPresentation | null;
-  displayMode?: CurrentPlaceStateMode;
-  currentPlaceState?: CurrentPlaceState | null;
-  scoreScope?: PollutionScoreScope;
-  scoreUnavailable?: boolean;
-  globalScore?: ScopedActionPollutionScore | null;
-  departmentScore?: ScopedActionPollutionScore | null;
-  departmentName?: string | null;
-  hasQuantifiedPollutionScore?: boolean;
-  compact?: boolean;
-};
+export type { ActionPopupContentHeaderProps } from "./action-popup-content-header.types";
 export function ActionPopupContentHeader({
   recordTypeLabel,
   locationLabel,

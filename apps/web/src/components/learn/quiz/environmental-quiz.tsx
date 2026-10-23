@@ -12,6 +12,7 @@ import { useEnvironmentalQuizProgress } from "@/components/learn/quiz/use-enviro
 import { getQuizStateFromStats, summarizeQuizStates, formatCognitiveDate } from "@/lib/learning/cognitive-principles";
 import type { QuizAccessTypeId } from "@/lib/learning/quiz/quiz-access-types";
 import type { QuizSchoolFormat, QuizSchoolLevel } from "@/lib/learning/quiz/school/quiz-school-types";
+import type { EnvironmentalQuizProps } from "./environmental-quiz.types";
 import { readQuizPersonalProgress, type QuizPersonalProgressState } from "@/lib/learning/quiz/quiz-personal-progress";
 import { QUIZ_QUESTIONS } from "@/lib/learning/quiz/quiz-question-bank";
 import type { QuizQuestion } from "@/lib/learning/quiz/quiz-question-contract";
@@ -26,15 +27,7 @@ export type {
   QuizThemeSummary,
 } from "@/lib/learning/quiz/quiz-session-types";
 
-export type EnvironmentalQuizProps = {
-  initialAccessType?: QuizAccessTypeId | null;
-  initialDemoMode?: boolean;
-  initialSchoolLevel?: QuizSchoolLevel | null;
-  initialSchoolFormat?: QuizSchoolFormat | null;
-  /** @deprecated Kept so old callers remain type-compatible. */
-  initialSchoolTrack?: string | null;
-  initialCollectiveMode?: boolean;
-};
+export type { EnvironmentalQuizProps } from "./environmental-quiz.types";
 
 export function EnvironmentalQuiz({
   initialAccessType = null,
