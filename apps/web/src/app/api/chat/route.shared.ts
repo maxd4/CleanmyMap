@@ -216,7 +216,7 @@ export type ChatQueryResult<T> = PromiseLike<{
 }>;
 
 export const messageSelect =
-  "*, sender:profiles!sender_id(display_name, handle, avatar_url), related_event:community_events!related_event_id(id, title, event_date, location_label), poll_options:chat_poll_options(id, position, label)";
+  "*, sender:profiles!sender_id(display_name, handle, avatar_url), poll_options:chat_poll_options(id, position, label)";
 
 export function normalizeChatMessageRow(row: ChatMessageRow): ChatMessageRow {
   const pollOptions = Array.isArray(row.poll_options)

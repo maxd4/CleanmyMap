@@ -293,7 +293,7 @@ export async function resolveChatPostDestination({
   const { data } = validated;
   let relatedEvent: ChatRelatedEvent | null = null;
   if (data.relatedEventId) {
-    relatedEvent = await loadRelatedCommunityEvent(supabase, data.relatedEventId);
+    relatedEvent = await loadRelatedCommunityEvent(serviceSupabase, data.relatedEventId);
     if (!relatedEvent) {
       return NextResponse.json(
         {

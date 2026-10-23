@@ -39,7 +39,7 @@ CleanMyMap. Feedback reste accessible par son menu dédié et ses liens directs.
 
 | Capacité | Owner actuel | Classement | Contrat conservé |
 |---|---|---|---|
-| Lecture des événements historiques | `GET /api/community/events`, Rejoindre une action, liens `communityEventId` | `CURRENT` | Lecture publique bornée ; un `eventId` demandé hors page est relu directement. |
+| Lecture des événements historiques | `GET /api/community/events`, Rejoindre une action, liens `communityEventId` | `CURRENT` | Projection HTTP publique bornée ; `community_events` n'est plus lisible directement par `anon` ou `authenticated`, et un `eventId` demandé hors page est relu côté serveur. |
 | RSVP `yes` / `maybe` / `no` | `POST /api/community/rsvps`, `event_rsvps` | `CURRENT` | RSVP personnel persistant ; jamais converti en `action_registrations` ou `action_participants`. |
 | Suivi historique `attendanceCount` / `postMortem` | `POST /api/community/events/ops` | `CURRENT` | Organisateur ou admin autorisé ; audit admin conservé ; aucune certification automatique de présence ou d’impact. |
 | Création via l’ancien endpoint | `POST /api/community/events` | `COMPATIBILITY` | Répond `410` et renvoie vers `/actions/new` ; aucune nouvelle écriture `community_events`. |

@@ -51,6 +51,7 @@ const event = {
   longitude: 2.3522,
   location_source: "manual",
   description: null,
+  private_note: "internal-only",
 };
 
 function configurePublicRead() {
@@ -131,6 +132,8 @@ describe("GET /api/community/events", () => {
     });
     expect(body.items[0].organizerClerkId).toBeNull();
     expect(body.items[0].organizer.userId).toBeNull();
+    expect(body.items[0]).not.toHaveProperty("private_note");
+    expect(getSupabaseServerClientMock).toHaveBeenCalledWith(true);
     expect(loadCommunityEventRsvpSummariesMock).toHaveBeenCalledWith(
       expect.anything(),
       { eventIds: ["event-1"], userId: null },
@@ -210,6 +213,16 @@ describe("GET /api/community/events", () => {
 
     expect(response.status).toBe(200);
     expect((await response.json()).items).toHaveLength(1);
+    expect(unstableCacheMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid eventId before any privileged read", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/community/events?eventId=not-a-uuid"),
+    );
+
+    expect(response.status).toBe(400);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
     expect(unstableCacheMock).not.toHaveBeenCalled();
   });
 

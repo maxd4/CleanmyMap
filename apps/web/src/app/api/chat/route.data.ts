@@ -79,12 +79,16 @@ export async function enrichPollVoteSummaries(
     serviceSupabase,
     rows.map(normalizeChatMessageRow),
   );
-  const pollIds = normalizedRows
+  const rowsWithRelatedEvents = await enrichRelatedCommunityEvents(
+    serviceSupabase,
+    normalizedRows,
+  );
+  const pollIds = rowsWithRelatedEvents
     .filter((row) => row.message_kind === "poll")
     .map((row) => row.id);
 
   if (pollIds.length === 0) {
-    return normalizedRows;
+    return rowsWithRelatedEvents;
   }
 
   const visiblePollIds = await loadVisiblePollIds(supabase, pollIds);
@@ -105,7 +109,7 @@ export async function enrichPollVoteSummaries(
     summaries.map((summary) => [summary.messageId, summary]),
   );
 
-  return normalizedRows.map((row) => {
+  return rowsWithRelatedEvents.map((row) => {
     const summary = summaryByMessageId.get(row.id);
     if (row.message_kind !== "poll" || !summary) {
       return row;
@@ -121,6 +125,37 @@ export async function enrichPollVoteSummaries(
       totalVotes: summary.totalVotes,
       selectedOptionId: summary.selectedOptionId,
     };
+  });
+}
+
+const COMMUNITY_EVENT_CHAT_SELECT = "id, title, event_date, location_label";
+
+async function enrichRelatedCommunityEvents(
+  serviceSupabase: ReturnType<typeof getSupabaseServerClient>,
+  rows: ChatMessageRow[],
+): Promise<ChatMessageRow[]> {
+  const eventIds = Array.from(
+    new Set(
+      rows
+        .map((row) => row.related_event_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  );
+  if (eventIds.length === 0) return rows;
+
+  const { data, error } = await serviceSupabase
+    .from("community_events")
+    .select(COMMUNITY_EVENT_CHAT_SELECT)
+    .in("id", eventIds);
+  if (error) throw error;
+
+  const eventsById = new Map(
+    ((data ?? []) as ChatRelatedEvent[]).map((event) => [event.id, event]),
+  );
+  return rows.map((row) => {
+    const eventId = row.related_event_id;
+    if (typeof eventId !== "string" || eventId.length === 0) return row;
+    return { ...row, related_event: eventsById.get(eventId) ?? null };
   });
 }
 
@@ -155,12 +190,12 @@ export async function loadChatAccessContext(
 }
 
 export async function loadRelatedCommunityEvent(
-  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  serviceSupabase: ReturnType<typeof getSupabaseServerClient>,
   eventId: string,
 ): Promise<ChatRelatedEvent | null> {
-  const { data, error } = await supabase
+  const { data, error } = await serviceSupabase
     .from("community_events")
-    .select("id, title, event_date, location_label")
+    .select(COMMUNITY_EVENT_CHAT_SELECT)
     .eq("id", eventId)
     .maybeSingle();
 

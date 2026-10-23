@@ -1067,11 +1067,16 @@ la fuite Data API et ne donne aucune capacité de mutation.
 
 ### Événements communautaires
 
-`public.community_events` conserve une lecture publique de la projection prévue,
-mais aucune écriture directe pour `anon` ou `authenticated`. La création passe
-par `/actions/new` et les contrats Actions. `POST /api/community/events` reste
-une frontière de compatibilité qui répond `410` et ne crée plus de nouvelle
-ligne. Les opérations historiques autorisées passent par
+`public.community_events` est server-only pour les lectures directes : les
+privilèges `SELECT` et la policy globale de lecture sont retirés pour `anon` et
+`authenticated`. La consultation publique passe exclusivement par
+`GET /api/community/events`, qui utilise une lecture serveur et construit une
+projection bornée sans `organizer_clerk_id` ni notes internes ; son `eventId`
+explicite reste ciblé côté serveur. Les lectures serveur historiques qui ne
+retournent que des champs publics utilisent également le client privilégié
+sans l'exposer au client. La création passe par `/actions/new` et les contrats
+Actions. `POST /api/community/events` reste une frontière de compatibilité qui
+répond `410` et ne crée plus de nouvelle ligne. Les opérations historiques autorisées passent par
 `POST /api/community/events/ops`, après
 vérification de l'organisateur ou d'une capacité admin. Une dérogation admin
 exige un motif, reste auditée et n'élargit pas les droits du Data API. Les

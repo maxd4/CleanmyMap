@@ -71,7 +71,7 @@ projection Supabase relue.
 | Géométrie contributive | `action_geometry_contributions` | Provenance d'une trace GPS/GPX et qualification géométrique | Frontière de validation et lecture bornée |
 | GPS mobile | `missions`, `gps_points` | Missions terrain et points de localisation | Propriétaire Clerk, RLS, finalisation serveur |
 | Progression | `progression_profiles`, `progression_events`, `user_badge_totals` | Progression persistée, journal et agrégats | Profil concerné / projection leaderboard autorisée |
-| Communauté historique | `community_events`, `event_rsvps`, `app_notifications` | Événements historiques, RSVP, notifications et projections de compatibilité | Lecture publique bornée ; RSVP propriétaire ; mutations serveur/AuthZ |
+| Communauté historique | `community_events`, `event_rsvps`, `app_notifications` | Événements historiques, RSVP, notifications et projections de compatibilité | `community_events` server-only en lecture directe ; projection HTTP publique bornée ; RSVP propriétaire ; mutations serveur/AuthZ |
 | Apprentissage | `quiz_type_progress`, `quiz_srs`, `checklist_progress` | Progressions et checklists | Utilisateur et objet ciblés |
 | Restitution | `public_surface_snapshots`, `report_generations`, `report_generation_pdf_artifacts`, `report_generation_pdf_shares`, `report_generation_publications`, Storage `reports` | Snapshots calculés, artefacts PDF historiques, liens expirables et publications communautaires révocables | Accès propriétaire aux mutations ; bibliothèque limitée aux projections publiées |
 
@@ -177,7 +177,7 @@ supprimée par le retrait de la page autonome.
 
 | Capacité | Owner | Classement | Invariant |
 |---|---|---|---|
-| Lecture des événements | `GET /api/community/events`, Rejoindre une action | `CURRENT` | Projection bornée ; `eventId` explicite peut relire une ligne hors pagination. |
+| Lecture des événements | `GET /api/community/events`, Rejoindre une action | `CURRENT` | Projection HTTP bornée ; aucun `SELECT` direct pour `anon` ou `authenticated` ; `eventId` explicite peut relire une ligne hors pagination côté serveur. |
 | RSVP personnel | `POST /api/community/rsvps`, `event_rsvps` | `CURRENT` | `yes` / `maybe` / `no` restent distincts d’une inscription ou d’une présence Action. |
 | Suivi historique | `POST /api/community/events/ops` | `CURRENT` | Ownership/AuthZ et audit admin ; `attendanceCount` / `postMortem` ne certifient pas un impact. |
 | Création historique | `POST /api/community/events` | `COMPATIBILITY` | Retour `410` ; les nouvelles missions utilisent `/actions/new` et les contrats Actions. |

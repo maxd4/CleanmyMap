@@ -56,7 +56,15 @@ type SupabaseMockOptions = {
 
 function createStaticQueries(options: SupabaseMockOptions) {
   const profileQuery = { select: vi.fn(() => profileQuery), eq: vi.fn(() => profileQuery), maybeSingle: vi.fn().mockResolvedValue({ data: options.profile, error: null }) };
-  const relatedEventQuery = { select: vi.fn(() => relatedEventQuery), eq: vi.fn(() => relatedEventQuery), maybeSingle: vi.fn().mockResolvedValue({ data: options.relatedEvent ?? null, error: null }) };
+  const relatedEventQuery = {
+    select: vi.fn(() => relatedEventQuery),
+    eq: vi.fn(() => relatedEventQuery),
+    in: vi.fn().mockResolvedValue({
+      data: options.relatedEvent ? [options.relatedEvent] : [],
+      error: null,
+    }),
+    maybeSingle: vi.fn().mockResolvedValue({ data: options.relatedEvent ?? null, error: null }),
+  };
   const actionConversationQuery = { select: vi.fn(() => actionConversationQuery), eq: vi.fn(() => actionConversationQuery), maybeSingle: vi.fn().mockResolvedValue({ data: options.actionConversation ?? null, error: null }) };
   return { profileQuery, relatedEventQuery, actionConversationQuery };
 }
