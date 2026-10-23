@@ -11,10 +11,6 @@ flowchart LR
   QC --> REPORT[Rapports / exports]
   QC --> PILOT[Pilotage admin]
 ```
-Fallback statique:
-```md
-![Sources to usage fallback](../archive/fallback-data-sources-flow.png)
-```
 
 ## Sources internes
 - Actions declarees (citoyens/collectifs)

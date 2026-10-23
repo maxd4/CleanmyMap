@@ -13,10 +13,6 @@ flowchart LR
   EVENT --> PROG
   SPOT --> PROG
 ```
-Fallback statique:
-```md
-![Schema normalisation fallback](../archive/fallback-data-schema-normalisation.png)
-```
 
 ## Entites principales
 - Action

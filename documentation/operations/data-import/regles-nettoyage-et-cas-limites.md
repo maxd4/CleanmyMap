@@ -16,10 +16,6 @@ flowchart TD
   C --> F
   D1 --> F
 ```
-Fallback statique:
-```md
-![Regles nettoyage fallback](../archive/fallback-data-cleaning-decision.png)
-```
 
 ## Nettoyage
 - Validation format date/coordonnees

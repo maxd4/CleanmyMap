@@ -12,11 +12,6 @@ flowchart LR
   N1 --> E2[Erreurs d'acces Sheet/CSV]
   ST1 --> E3[Erreurs DB/env]
 ```
-Fallback statique:
-```md
-![Pipeline import fallback](../archive/fallback-data-pipeline-import.png)
-```
-
 ## Etapes avec entree/sortie/erreurs connues
 | Etape | Entree | Sortie | Erreurs connues |
 |---|---|---|---|
@@ -54,10 +49,6 @@ sequenceDiagram
   Ops->>API: verifier /api/actions et le RPC actions_map_feed
   Note over DB: public.spots reste une archive legacy read-only, hors de la séquence d'import runtime
 ```
-Fallback statique:
-```md
-![Pipeline sequence fallback](../archive/fallback-data-pipeline-sequence.png)
-```
 
 ## Flowchart build -> import -> sync
 ```mermaid
@@ -71,10 +62,6 @@ flowchart TD
   E --> F{Restitution cohérente ?}
   F -- Non --> F1[Corriger contrat et rejouer sync]
   F -- Oui --> G[Pipeline OK]
-```
-Fallback statique:
-```md
-![Pipeline build import sync fallback](../archive/fallback-data-pipeline-build-import-sync.png)
 ```
 
 ## Commandes
@@ -100,8 +87,4 @@ flowchart TD
   C -- Non --> D{Erreur stockage ?}
   D -- Oui --> D1[Verifier env Supabase + droits]
   D -- Non --> E[Verifier contrat API restitution]
-```
-Fallback statique:
-```md
-![Pipeline troubleshooting fallback](../archive/fallback-data-pipeline-decision.png)
 ```

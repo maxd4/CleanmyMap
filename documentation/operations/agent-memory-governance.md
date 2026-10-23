@@ -10,10 +10,6 @@ flowchart LR
   E --> F[Session close update]
   F --> D
 ```
-Fallback statique:
-```md
-![Agent memory governance fallback](../../archive/fallback-agent-memory-governance.png)
-```
 
 ## Purpose
 Keep agent context stable across sessions while minimizing token waste.

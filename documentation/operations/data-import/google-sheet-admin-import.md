@@ -16,10 +16,6 @@ sequenceDiagram
   Import-->>Ops: resultat sync
   Ops->>API: verifier /api/actions et le RPC actions_map_feed
 ```
-Fallback statique:
-```md
-![Google sheet import sequence fallback](../../../archive/fallback-google-sheet-import-sequence.png)
-```
 
 ## Decision tree de depannage
 ```mermaid
@@ -36,10 +32,6 @@ flowchart TD
   D1 --> F
   E --> F
 ```
-Fallback statique:
-```md
-![Google sheet import decision fallback](../../../archive/fallback-google-sheet-import-decision.png)
-```
 
 ## Flowchart build -> import -> sync
 ```mermaid
@@ -51,10 +43,6 @@ flowchart TD
   D -- Non --> D1[Verifier env/droits/contrat]
   D -- Oui --> E[Sync OK]
   E --> F[Verification API map/reports]
-```
-Fallback statique:
-```md
-![Google sheet import flow fallback](../../../archive/fallback-google-sheet-import-flow.png)
 ```
 
 ## Objectif

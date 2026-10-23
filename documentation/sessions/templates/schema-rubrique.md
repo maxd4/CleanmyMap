@@ -11,10 +11,6 @@ flowchart TD
   C --> D[Impact/Sortie]
 ```
 
-Fallback statique:
-```md
-![Schema rubrique fallback](../archive/fallback-schema-rubrique.png)
-```
 
 ## Sequence API
 ```mermaid
@@ -28,10 +24,6 @@ sequenceDiagram
   UI-->>U: Feedback visible
 ```
 
-Fallback statique:
-```md
-![Sequence rubrique fallback](../archive/fallback-sequence-rubrique.png)
-```
 
 ## Points d'attention
 - [Risque 1]

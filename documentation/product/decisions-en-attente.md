@@ -17,10 +17,6 @@ flowchart TD
   E1 --> F
   F --> G
 ```
-Fallback statique:
-```md
-![Decisions en attente fallback](../archive/fallback-produit-decisions-attente.png)
-```
 
 ## A arbitrer
 - Niveau de priorisation des recommandations proactives Itineraire IA.

@@ -22,10 +22,6 @@ flowchart TD
   D -- Oui --> E[Ecrire champ produit]
   E --> F[Payload normalise]
 ```
-Fallback statique:
-```md
-![Mapping colonnes fallback](../archive/fallback-data-mapping-colonnes.png)
-```
 
 ## Import admin (Google Sheet)
 Voir le mapping de reference dans [pipeline-import.md](./pipeline-import.md).
