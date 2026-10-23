@@ -1,0 +1,359 @@
+"use client";
+
+import { Mail, Send, CheckCircle, AlertCircle, Shield, Info, ArrowUpRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmFeedback } from "@/components/ui/cmm-feedback";
+import { CmmField, CmmInput, CmmSelect, CmmTextarea } from "@/components/ui/cmm-field";
+import type { RequestFieldErrors, RequestMode, RequestType } from "./rgpd-request-form";
+
+function RgpdStatusCard({
+  mode,
+  onReset,
+}: {
+  mode: "success" | "draft";
+  onReset: () => void;
+}) {
+  const success = mode === "success";
+  return (
+    <motion.div
+      initial={{ opacity: 1, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="relative overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white/88 p-8 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.35)] backdrop-blur-2xl"
+    >
+      <div className="pointer-events-none absolute right-0 top-0 p-8 opacity-10">
+        {success ? (
+          <CheckCircle size={80} className="text-sky-400" />
+        ) : (
+          <Mail size={80} className="text-sky-400" />
+        )}
+      </div>
+      <div className="flex items-center gap-4 mb-6 relative z-10">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
+          {success ? <CheckCircle size={24} /> : <Mail size={24} />}
+        </div>
+        <p className="text-xl font-black text-slate-950 tracking-tight">
+          {success ? "Demande transmise" : "Brouillon ouvert"}
+        </p>
+      </div>
+      <p className="relative z-10 mb-6 cmm-text-small font-bold leading-relaxed text-slate-600">
+        {success ? (
+          <>
+            Votre demande a été transmise depuis le site et enregistrée dans la
+            file de suivi.
+            <span className="text-slate-950">
+              {" "}
+              Une réponse vous sera envoyée par email.
+            </span>
+          </>
+        ) : (
+          <>
+            Votre boîte mail s&apos;est ouverte avec un brouillon prérempli.
+            Vous pouvez relire, ajuster le texte puis envoyer le message
+            manuellement.
+          </>
+        )}
+      </p>
+      <CmmButton
+        onClick={onReset}
+        tone="tertiary"
+        variant="pill"
+        className="flex items-center gap-2 cmm-text-caption font-black uppercase tracking-widest text-sky-700 transition-colors hover:text-sky-900"
+      >
+        {success ? "Envoyer une autre demande" : "Revenir au formulaire"}{" "}
+        <ArrowUpRight size={14} />
+      </CmmButton>
+    </motion.div>
+  );
+}
+function RgpdFormIntro() {
+  return (
+    <div className="space-y-4 relative z-10">
+      <div className="flex items-center gap-3">
+        <div className="rounded-xl border border-slate-200 bg-slate-100 p-2.5 text-sky-700">
+          <Shield size={18} />
+        </div>
+        <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-slate-500">
+          Protection des Données
+        </p>
+      </div>
+      <h2 className="text-2xl font-black tracking-tight text-slate-950">
+        Exercice de vos droits (RGPD)
+      </h2>
+        <p className="max-w-md cmm-text-caption font-bold leading-relaxed text-slate-600">
+        Utilisez ce formulaire pour toute demande concernant vos données
+        personnelles. Vous pouvez envoyer la demande directement depuis le site
+        ou ouvrir votre boîte mail pour ajuster le texte avant envoi.
+      </p>
+    </div>
+  );
+}
+
+function RgpdDeliveryMode({
+  deliveryMode,
+  setDeliveryMode,
+}: {
+  deliveryMode: RequestMode;
+  setDeliveryMode: (mode: RequestMode) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
+        Mode d&apos;envoi *
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => setDeliveryMode("automatic")}
+          className={`rounded-2xl border px-4 py-4 text-left transition-all ${
+            deliveryMode === "automatic"
+              ? "border-sky-300 bg-sky-50 text-sky-950 shadow-[0_10px_24px_-18px_rgba(14,165,233,0.55)]"
+              : "border-slate-200 bg-white text-slate-700 hover:border-sky-200 hover:bg-slate-50"
+          }`}
+        >
+          <span className="block text-sm font-black">Envoi automatique</span>
+          <span className="mt-1 block cmm-text-caption font-semibold leading-relaxed text-slate-500">
+            Envoie la demande depuis le site et la suit dans CleanMyMap.
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setDeliveryMode("manual")}
+          className={`rounded-2xl border px-4 py-4 text-left transition-all ${
+            deliveryMode === "manual"
+              ? "border-sky-300 bg-sky-50 text-sky-950 shadow-[0_10px_24px_-18px_rgba(14,165,233,0.55)]"
+              : "border-slate-200 bg-white text-slate-700 hover:border-sky-200 hover:bg-slate-50"
+          }`}
+        >
+          <span className="block text-sm font-black">
+            Ouvrir ma boîte mail
+          </span>
+          <span className="mt-1 block cmm-text-caption font-semibold leading-relaxed text-slate-500">
+            Ouvre un brouillon pour modifier le texte avant l&apos;envoi.
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function RgpdRequestFields({
+  deliveryMode,
+  requestType,
+  requestTypeLabels,
+  email,
+  message,
+  honeypot,
+  fieldErrors,
+  setDeliveryMode,
+  setRequestType,
+  setEmail,
+  setMessage,
+  setHoneypot,
+  setFieldErrors,
+}: {
+  deliveryMode: RequestMode;
+  requestType: RequestType;
+  requestTypeLabels: Record<RequestType, { fr: string; en: string }>;
+  email: string;
+  message: string;
+  honeypot: string;
+  fieldErrors: RequestFieldErrors;
+  setDeliveryMode: (mode: RequestMode) => void;
+  setRequestType: (type: RequestType) => void;
+  setEmail: (value: string) => void;
+  setMessage: (value: string) => void;
+  setHoneypot: (value: string) => void;
+  setFieldErrors: React.Dispatch<React.SetStateAction<RequestFieldErrors>>;
+}) {
+  return (
+    <div className="space-y-6 relative z-10">
+      <RgpdDeliveryMode
+        deliveryMode={deliveryMode}
+        setDeliveryMode={setDeliveryMode}
+      />
+
+      <CmmField
+        id="rgpd-request-type"
+        required
+        label={
+          <span className="flex items-center gap-2">
+            <Info size={12} className="text-sky-500" />
+            Type de demande
+          </span>
+        }
+      >
+        <CmmSelect
+          value={requestType}
+          onChange={(e) => setRequestType(e.target.value as RequestType)}
+          required
+        >
+          {Object.entries(requestTypeLabels).map(([key, label]) => (
+            <option key={key} value={key}>
+              {label.fr}
+            </option>
+          ))}
+        </CmmSelect>
+      </CmmField>
+
+      <CmmField
+        id="rgpd-request-email"
+        required
+        error={fieldErrors.email}
+        label={
+          <span className="flex items-center gap-2">
+            <Mail size={12} className="text-sky-500" />
+            Votre email de contact
+          </span>
+        }
+      >
+        <CmmInput
+          type="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (fieldErrors.email)
+              setFieldErrors((current) => ({ ...current, email: undefined }));
+          }}
+          placeholder="votre adresse email"
+          required
+        />
+      </CmmField>
+
+      <div className="sr-only" aria-hidden="true">
+        <label>
+          Ne pas remplir
+          <CmmInput
+            id="rgpd-request-honeypot"
+            type="text"
+            value={honeypot}
+            onChange={(event) => setHoneypot(event.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
+          />
+        </label>
+      </div>
+
+      <CmmField
+        id="rgpd-request-message"
+        required
+        error={fieldErrors.message}
+        label={
+          <span className="flex items-center gap-2">
+            <Send size={12} className="text-sky-500" />
+            Détails de votre demande
+          </span>
+        }
+      >
+        <CmmTextarea
+          value={message}
+          onChange={(e) => {
+            setMessage(e.target.value);
+            if (fieldErrors.message)
+              setFieldErrors((current) => ({ ...current, message: undefined }));
+          }}
+          placeholder="Précisez votre demande ici..."
+          rows={4}
+          required
+        />
+      </CmmField>
+    </div>
+  );
+}
+
+export function RgpdRequestFooter({
+  fr,
+  sending,
+  deliveryMode,
+}: {
+  fr: boolean;
+  sending: boolean;
+  deliveryMode: RequestMode;
+}) {
+  return (
+    <div className="space-y-6 pt-4 relative z-10">
+      <CmmButton
+        type="submit"
+        disabled={sending}
+        className="w-full justify-center px-8 py-4"
+      >
+        {sending ? (
+          <>
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
+            <span>Traitement...</span>
+          </>
+        ) : (
+          <>
+            <Send
+              size={16}
+              className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            />
+            <span>
+              {deliveryMode === "automatic"
+                ? "Envoyer la demande"
+                : "Ouvrir ma boîte mail"}
+            </span>
+          </>
+        )}
+      </CmmButton>
+      <div className="flex items-center justify-center gap-4 cmm-text-caption font-black uppercase tracking-widest text-slate-500">
+        <div className="flex items-center gap-1.5">
+          <Shield size={12} /> {fr ? "Conformité RGPD" : "GDPR Compliant"}
+        </div>
+        <div className="h-1 w-1 rounded-full bg-slate-300" />
+        <span>
+          {fr
+            ? "Réponse : 1 mois, prolongeable de 2 mois si nécessaire"
+            : "Response: 1 month, extendable by 2 months when necessary"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function RgpdErrorFeedback({ errorMessage }: { errorMessage: string }) {
+  if (!errorMessage) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 1, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <CmmFeedback tone="error" title="Envoi impossible">
+          <span className="flex items-center gap-2 text-xs font-bold">
+            <AlertCircle size={16} aria-hidden="true" />
+            {errorMessage}
+          </span>
+        </CmmFeedback>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+type RgpdFormBodyProps = Parameters<typeof RgpdRequestFields>[0] & {
+  errorMessage: string;
+};
+
+export function RgpdFormBody({ errorMessage, ...fields }: RgpdFormBodyProps) {
+  return (
+    <>
+      <div className="pointer-events-none absolute right-0 top-0 p-10 opacity-10 transition-transform duration-1000 group-hover:scale-110">
+        <Shield size={120} className="text-sky-400" />
+      </div>
+      <RgpdFormIntro />
+      <RgpdRequestFields {...fields} />
+      <RgpdErrorFeedback errorMessage={errorMessage} />
+    </>
+  );
+}
+
+export function RgpdSubmissionStatus({
+  mode,
+  onReset,
+}: {
+  mode: "success" | "draft";
+  onReset: () => void;
+}) {
+  return <RgpdStatusCard mode={mode} onReset={onReset} />;
+}

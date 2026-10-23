@@ -11,10 +11,6 @@ export function formatCount(value: number): string {
   return value.toLocaleString("fr-FR");
 }
 
-export function localize(locale: Locale, value: { fr: string; en: string }): string {
-  return value[locale];
-}
-
 function normalizeText(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }

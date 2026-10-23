@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const source = readFileSync(new URL("./account-settings-editor.tsx", import.meta.url), "utf8");
+const source = [
+  readFileSync(new URL("./account-settings-editor.tsx", import.meta.url), "utf8"),
+  readFileSync(new URL("./account-settings-editor.view.tsx", import.meta.url), "utf8"),
+].join("\n");
 
 describe("canonical account settings editor", () => {
   it("keeps the five account sections and targeted persistence owners", () => {

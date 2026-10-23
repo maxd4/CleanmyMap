@@ -252,6 +252,14 @@ function useAccountSetupNavigation({
   return { navigateAfterSetup, handleNext, handlePrevious };
 }
 
+function useResolvedInitialLocations(initialArrondissement: AccountSetupFormProps["initialArrondissement"], initialLocationType: AccountSetupFormProps["initialLocationType"], initialResidence: TerritoryLocationSelection | null | undefined, initialWork: TerritoryLocationSelection | null | undefined) {
+  const legacySelection = useMemo(() => createTerritoryLocationSelectionFromLegacyArrondissement(initialArrondissement), [initialArrondissement]);
+  return {
+    resolvedInitialResidence: initialResidence ?? (initialLocationType !== "work" ? legacySelection : null),
+    resolvedInitialWork: initialWork ?? (initialLocationType === "work" ? legacySelection : null),
+  };
+}
+
 export function useAccountSetupController({
   nextPath,
   initialProfile,
@@ -269,14 +277,7 @@ export function useAccountSetupController({
   const router = useRouter();
   const { user, isLoaded } = useUser();
   const { locale, displayMode, setDisplayMode } = useSitePreferences();
-  const legacySelection = useMemo(
-    () => createTerritoryLocationSelectionFromLegacyArrondissement(initialArrondissement),
-    [initialArrondissement],
-  );
-  const resolvedInitialResidence = initialResidence ??
-    (initialLocationType !== "work" ? legacySelection : null);
-  const resolvedInitialWork = initialWork ??
-    (initialLocationType === "work" ? legacySelection : null);
+  const { resolvedInitialResidence, resolvedInitialWork } = useResolvedInitialLocations(initialArrondissement, initialLocationType, initialResidence, initialWork);
 
   const profileOptions = useMemo(
     () => getAccountSetupProfileOptions(initialRole),

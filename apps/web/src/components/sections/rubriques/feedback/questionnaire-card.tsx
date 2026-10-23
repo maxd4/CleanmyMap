@@ -63,6 +63,18 @@ const ACCENT_CLASSES = {
   },
 } as const;
 
+function buildQuestionnaireReturnPath(pagePath: string, questionnaireId: string) {
+  if (typeof window === "undefined") return `${pagePath}#${questionnaireId}`;
+  const url = new URL(window.location.href);
+  url.searchParams.set("type", questionnaireId);
+  url.hash = questionnaireId;
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function canSubmitQuestionnaire(questionnaire: QuestionnaireConfig, values: Record<string, string>, descriptionTooLong: boolean, submitState: SubmitState) {
+  return questionnaire.fields.every((field) => (values[field.key]?.trim() ?? "").length >= (field.minLength ?? 1)) && !descriptionTooLong && submitState !== "submitting";
+}
+
 export function QuestionnaireCard({
   questionnaire,
   pagePath,
@@ -161,10 +173,7 @@ export function QuestionnaireCard({
     setScreenshotFile(nextPreview ? file : null);
   }
 
-  const canSubmit = questionnaire.fields.every((field) => {
-    const value = values[field.key]?.trim() ?? "";
-    return value.length >= (field.minLength ?? 1);
-  }) && !descriptionTooLong && submitState !== "submitting";
+  const canSubmit = canSubmitQuestionnaire(questionnaire, values, descriptionTooLong, submitState);
 
   function updateField(fieldKey: string, value: string) {
     if (submitState !== "idle") {
@@ -213,13 +222,7 @@ export function QuestionnaireCard({
   }
 
   const Icon = questionnaire.icon;
-  const returnPath = (() => {
-    if (typeof window === "undefined") return `${pagePath}#${questionnaire.id}`;
-    const url = new URL(window.location.href);
-    url.searchParams.set("type", questionnaire.id);
-    url.hash = questionnaire.id;
-    return `${url.pathname}${url.search}${url.hash}`;
-  })();
+  const returnPath = buildQuestionnaireReturnPath(pagePath, questionnaire.id);
   const accentClasses = ACCENT_CLASSES[questionnaire.accent];
 
   return <QuestionnaireCardView questionnaire={questionnaire} locale={locale} accentClasses={accentClasses} Icon={Icon} isLoaded={isLoaded} isSignedIn={isSignedIn} returnPath={returnPath} honeypot={honeypot} setHoneypot={setHoneypot} values={values} submitState={submitState} speech={speech} similarFeedback={similarFeedback} screenshotFile={screenshotFile} screenshotPreview={screenshotPreview} screenshotError={screenshotError} serializedDescription={serializedDescription} descriptionTooLong={descriptionTooLong} requestId={requestId} errorMessage={errorMessage} handleSubmit={handleSubmit} updateField={updateField} handleScreenshotChange={handleScreenshotChange} removeScreenshot={() => { replaceScreenshotFile(null); setScreenshotError(null); }} />;

@@ -116,20 +116,21 @@ function ReglagesPageContent({
   );
 }
 
-export default async function ReglagesPage() {
-  const { userId } = await getSafeAuthSession();
-
-  if (!userId) {
-    redirect("/sign-in");
-  }
-
+async function loadReglagesPageContent(userId: string) {
   const [identity, locale, user, consentEligibility] = await Promise.all([
     getCurrentUserIdentity(),
     getServerLocale(),
     clerkClient().then((client) => client.users.getUser(userId)),
     getUserOptionalConsentEligibility(userId),
   ]);
+  return { copy: REGLAGES_COPY[locale], locale, identity, user, consentEligibility };
+}
 
-  const copy = REGLAGES_COPY[locale];
-  return <ReglagesPageContent copy={copy} locale={locale} identity={identity} user={user} consentEligibility={consentEligibility} />;
+export default async function ReglagesPage() {
+  const { userId } = await getSafeAuthSession();
+  if (!userId) {
+    redirect("/sign-in");
+  }
+  const data = await loadReglagesPageContent(userId);
+  return <ReglagesPageContent {...data} />;
 }

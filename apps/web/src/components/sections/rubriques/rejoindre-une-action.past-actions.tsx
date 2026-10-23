@@ -55,6 +55,14 @@ function claimStatusLabel(state: ClaimState, fr: boolean): string {
   return fr ? "Demande refusée" : "Request refused";
 }
 
+function PastActionCardFacts({ item, fr, participants, hasRoute }: { item: ActionListItem; fr: boolean; participants: number | null; hasRoute: boolean }) {
+  return <div className="grid gap-2 text-sm text-slate-600"><p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{formatDate(item.action_date, fr ? "fr" : "en")}</p>{participants !== null ? <p className="flex items-center gap-2"><Users2 size={14} className="text-slate-400" />{formatCount(participants)} {fr ? "participants déclarés" : "reported participants"}</p> : null}{item.waste_kg !== null ? <p>{formatCount(item.waste_kg)} kg {fr ? "collectés" : "collected"}</p> : null}{item.cigarette_butts !== null ? <p>{formatCount(item.cigarette_butts)} {fr ? "mégots collectés" : "cigarette butts collected"}</p> : null}<p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{hasRoute ? (fr ? "Parcours final/opérationnel disponible" : "Final/operational route available") : (fr ? "Localisation seule" : "Location only")}</p><p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "finales" : "final"}</p></div>;
+}
+
+function PastActionCardLinks({ item, fr, eventRef, onShareAction }: { item: ActionListItem; fr: boolean; eventRef: string | null; onShareAction?: (actionId: string) => void }) {
+  return <>{eventRef ? <Link href={buildCommunityEventHref(eventRef, "past")} className="inline-flex text-xs font-semibold text-emerald-800 underline underline-offset-2">{fr ? "Voir l’événement communautaire" : "View community event"}</Link> : null}{onShareAction ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>{fr ? "Partager le résultat" : "Share the result"}</CmmButton> : null}</>;
+}
+
 function PastActionCardSummary({
   item,
   fr,
@@ -73,17 +81,9 @@ function PastActionCardSummary({
         <h3 className="text-lg font-black tracking-tight text-slate-950">{actionTitle(item)}</h3>
         <p className="mt-1 flex items-center gap-2 text-sm text-slate-600"><MapPin size={14} className="text-slate-400" />{item.location_label}</p>
       </div>
-      <div className="grid gap-2 text-sm text-slate-600">
-        <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{formatDate(item.action_date, fr ? "fr" : "en")}</p>
-        {participants !== null ? <p className="flex items-center gap-2"><Users2 size={14} className="text-slate-400" />{formatCount(participants)} {fr ? "participants déclarés" : "reported participants"}</p> : null}
-        {item.waste_kg !== null ? <p>{formatCount(item.waste_kg)} kg {fr ? "collectés" : "collected"}</p> : null}
-        {item.cigarette_butts !== null ? <p>{formatCount(item.cigarette_butts)} {fr ? "mégots collectés" : "cigarette butts collected"}</p> : null}
-        <p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{hasRoute ? (fr ? "Parcours final/opérationnel disponible" : "Final/operational route available") : (fr ? "Localisation seule" : "Location only")}</p>
-        <p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "finales" : "final"}</p>
-      </div>
+      <PastActionCardFacts item={item} fr={fr} participants={participants} hasRoute={hasRoute} />
       <p className="text-xs text-slate-500">{fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}</p>
-      {eventRef ? <Link href={buildCommunityEventHref(eventRef, "past")} className="inline-flex text-xs font-semibold text-emerald-800 underline underline-offset-2">{fr ? "Voir l’événement communautaire" : "View community event"}</Link> : null}
-      {onShareAction ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>{fr ? "Partager le résultat" : "Share the result"}</CmmButton> : null}
+      <PastActionCardLinks item={item} fr={fr} eventRef={eventRef} onShareAction={onShareAction} />
     </>
   );
 }
@@ -214,6 +214,55 @@ function PastActionCard({
   );
 }
 
+function usePastActionClaims(historyItems: readonly JoinableActionHistoryItem[], fr: boolean) {
+  const [claimOverrides, setClaimOverrides] = useState<Record<string, ClaimState>>({});
+  const [claimingActionId, setClaimingActionId] = useState<string | null>(null);
+  const [claimErrors, setClaimErrors] = useState<Record<string, string>>({});
+  const historyByActionId = useMemo(() => new Map(historyItems.map((item) => [item.id, {
+    participationStatus: item.participationStatus,
+    participationSource: item.participationSource,
+    personalImpactAttribution: item.personalImpactAttribution,
+  }] as const)), [historyItems]);
+
+  async function requestClaim(actionId: string) {
+    if (claimingActionId) return;
+    setClaimingActionId(actionId);
+    setClaimErrors((previous) => ({ ...previous, [actionId]: "" }));
+    try {
+      const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/participation-claim`, { method: "POST" });
+      const payload = await response.json() as { participationStatus?: ClaimState["participationStatus"]; participationSource?: ClaimState["participationSource"]; error?: string };
+      if (!response.ok || !payload.participationStatus || !payload.participationSource) {
+        setClaimErrors((previous) => ({ ...previous, [actionId]: payload.error || (fr ? "La demande n’a pas pu être envoyée." : "The request could not be sent.") }));
+        return;
+      }
+      setClaimOverrides((previous) => ({ ...previous, [actionId]: { participationStatus: payload.participationStatus!, participationSource: payload.participationSource! } }));
+    } catch {
+      setClaimErrors((previous) => ({ ...previous, [actionId]: fr ? "La demande n’a pas pu être envoyée." : "The request could not be sent." }));
+    } finally {
+      setClaimingActionId(null);
+    }
+  }
+
+  return { claimOverrides, claimingActionId, claimErrors, historyByActionId, requestClaim };
+}
+
+function usePastActionFocus(focusedActionId: string | null | undefined, loading: boolean, itemCount: number, focusCommunityEventId: string | null, communityEventsLoading: boolean, communityEventCount: number) {
+  useEffect(() => {
+    if (!focusedActionId || loading) return;
+    const target = document.getElementById(`join-action-${focusedActionId}`);
+    if (!(target instanceof HTMLElement)) return;
+    target.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    target.focus({ preventScroll: true });
+  }, [focusedActionId, itemCount, loading]);
+
+  useEffect(() => {
+    if (!focusCommunityEventId || communityEventsLoading) return;
+    const target = document.getElementById(`join-community-event-${focusCommunityEventId}`);
+    if (!(target instanceof HTMLElement)) return;
+    target.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }, [communityEventsLoading, communityEventCount, focusCommunityEventId]);
+}
+
 export function PastActionsPanel({
   items,
   loading,
@@ -255,75 +304,8 @@ export function PastActionsPanel({
   updateOpsDraft?: (event: import("@/lib/community/http").CommunityEventItem, patch: Partial<OpsDraft>) => void;
   onSaveEventOps?: (event: import("@/lib/community/http").CommunityEventItem) => Promise<void>;
 }) {
-  const [claimOverrides, setClaimOverrides] = useState<Record<string, ClaimState>>({});
-  const [claimingActionId, setClaimingActionId] = useState<string | null>(null);
-  const [claimErrors, setClaimErrors] = useState<Record<string, string>>({});
-  const historyByActionId = useMemo(
-    () => new Map(historyItems.map((item) => [item.id, {
-      participationStatus: item.participationStatus,
-      participationSource: item.participationSource,
-      personalImpactAttribution: item.personalImpactAttribution,
-    }] as const)),
-    [historyItems],
-  );
-
-  async function requestClaim(actionId: string) {
-    if (claimingActionId) return;
-    setClaimingActionId(actionId);
-    setClaimErrors((previous) => ({ ...previous, [actionId]: "" }));
-    try {
-      const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/participation-claim`, {
-        method: "POST",
-      });
-      const payload = (await response.json()) as {
-        participationStatus?: ClaimState["participationStatus"];
-        participationSource?: ClaimState["participationSource"];
-        error?: string;
-      };
-      if (!response.ok || !payload.participationStatus || !payload.participationSource) {
-        setClaimErrors((previous) => ({
-          ...previous,
-          [actionId]: payload.error || (fr ? "La demande n’a pas pu être envoyée." : "The request could not be sent."),
-        }));
-        return;
-      }
-      setClaimOverrides((previous) => ({
-        ...previous,
-        [actionId]: {
-          participationStatus: payload.participationStatus!,
-          participationSource: payload.participationSource!,
-        },
-      }));
-    } catch {
-      setClaimErrors((previous) => ({
-        ...previous,
-        [actionId]: fr ? "La demande n’a pas pu être envoyée." : "The request could not be sent.",
-      }));
-    } finally {
-      setClaimingActionId(null);
-    }
-  }
-
-  useEffect(() => {
-    if (!focusedActionId || loading) return;
-    const target = document.getElementById(`join-action-${focusedActionId}`);
-    if (!(target instanceof HTMLElement)) return;
-    target.scrollIntoView({
-      block: "center",
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-    });
-    target.focus({ preventScroll: true });
-  }, [focusedActionId, items.length, loading]);
-
-  useEffect(() => {
-    if (!focusCommunityEventId || communityEventsLoading) return;
-    const target = document.getElementById(`join-community-event-${focusCommunityEventId}`);
-    if (!(target instanceof HTMLElement)) return;
-    target.scrollIntoView({
-      block: "center",
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-    });
-  }, [communityEventsLoading, communityPastEvents.length, focusCommunityEventId]);
+  const { claimOverrides, claimingActionId, claimErrors, historyByActionId, requestClaim } = usePastActionClaims(historyItems, fr);
+  usePastActionFocus(focusedActionId, loading, items.length, focusCommunityEventId, communityEventsLoading, communityPastEvents.length);
 
   return (
     <section className="space-y-4 rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm md:p-5">

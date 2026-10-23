@@ -181,6 +181,25 @@ function ActionCardDetails({
   );
 }
 
+function getActionCardViewModel(item: JoinableActionItem, fr: boolean) {
+  const status = getActionDisplayStatus(item);
+  const usesRegistration = usesRegistrationStore(item.actionPhase);
+  const isPreAction = item.actionPhase === "pre_action";
+  const cardStatus = getCardDisplayStatus(item);
+  const isPendingInvitation = item.participationStatus === "pending" && item.participationSource === "manual_add";
+  return {
+    status,
+    usesRegistration,
+    isPreAction,
+    cardStatus,
+    isPendingInvitation,
+    statusLabel: usesRegistration ? getRegistrationStatusLabel(cardStatus, fr, item.participationSource ?? undefined) : getParticipationStatusLabel(cardStatus, fr),
+    lifecycleLabel: getLifecycleLabel(item.actionPhase, fr),
+    footerLabel: isPreAction ? fr ? "Action future visible" : "Visible future action" : fr ? "Déclaration complète" : "Complete declaration",
+    requestCountLabel: `${formatCount(item.pendingRequestsCount)} ${fr ? "demandes" : "requests"}`,
+  };
+}
+
 export function ActionCard({
   item,
   index,
@@ -204,24 +223,7 @@ export function ActionCard({
   onRequestLeave: (actionId: string) => void;
   onShareAction?: (actionId: string) => void;
 }) {
-  const status = getActionDisplayStatus(item);
-  const usesRegistration = usesRegistrationStore(item.actionPhase);
-  const isPreAction = item.actionPhase === "pre_action";
-  const cardStatus = getCardDisplayStatus(item);
-  const isPendingInvitation =
-    item.participationStatus === "pending" && item.participationSource === "manual_add";
-  const statusLabel = usesRegistration
-    ? getRegistrationStatusLabel(cardStatus, fr, item.participationSource ?? undefined)
-    : getParticipationStatusLabel(cardStatus, fr);
-  const lifecycleLabel = getLifecycleLabel(item.actionPhase, fr);
-  const footerLabel = isPreAction
-    ? fr
-      ? "Action future visible"
-      : "Visible future action"
-    : fr
-      ? "Déclaration complète"
-      : "Complete declaration";
-  const requestCountLabel = `${formatCount(item.pendingRequestsCount)} ${fr ? "demandes" : "requests"}`;
+  const { status, usesRegistration, isPreAction, cardStatus, isPendingInvitation, statusLabel, lifecycleLabel, footerLabel, requestCountLabel } = getActionCardViewModel(item, fr);
 
   return (
     <article

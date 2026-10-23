@@ -1,22 +1,13 @@
-
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { ArrowUpDown, CalendarDays, ChevronDown, ExternalLink, Filter, Loader2, MapPin, Search, ShieldCheck } from "lucide-react";
-import { CmmButton } from "@/components/ui/cmm-button";
+import { useEffect } from "react";
 import type { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.controller";
-import { ActionCard, FilterField } from "./rejoindre-un-formulaire-section.shared";
-import { JoinFormPublicQueue } from "./rejoindre-un-formulaire-section-public-queue";
-import { formatCount } from "./rejoindre-un-formulaire-section.format";
-import { SpogomiFutureCard } from "@/components/spogomi/spogomi-future-card";
-import type { LocationFilter, PeriodFilter, StatusFilter } from "./rejoindre-un-formulaire-section.controller";
-import type { JoinableActionSort } from "./rejoindre-un-formulaire-section.utils";
-import { JoinCommunityEventsPanel } from "./rejoindre-une-action.community-events";
+import { JoinFormExplorerFilters } from "./rejoindre-un-formulaire-section.explorer-filters";
+import { JoinFormExplorerContent } from "./rejoindre-un-formulaire-section.explorer.content";
 
 type ControllerState = ReturnType<typeof useJoinFormSectionController>;
 
-type ExplorerProps = Pick<ControllerState,
+export type ExplorerProps = Pick<ControllerState,
   | "fr" | "focusActionId" | "search" | "setSearch" | "locationFilter" | "setLocationFilter"
   | "periodFilter" | "setPeriodFilter" | "statusFilter" | "setStatusFilter"
   | "sort" | "setSort" | "preActionVisibleItems" | "resetFilters"
@@ -36,357 +27,30 @@ type ExplorerProps = Pick<ControllerState,
   onShareAction?: (actionId: string) => void;
 };
 
-export function JoinFormExplorer(props: ExplorerProps) {
-  const {
-    fr, focusActionId, search, setSearch, locationFilter, setLocationFilter, periodFilter,
-    setPeriodFilter, statusFilter, setStatusFilter, sort, setSort,
-    preActionVisibleItems, resetFilters, loading, error, reloadActions, hasItems,
-    hasVisibleItems, authenticated, joiningId, leavingId,
-    requestJoin, requestLeave, noResultsMessage, notice, queueRequests,
-    queueConfirmedParticipants, queueLoading, queueError, queueCanReview,
-    reviewingQueueId, addingQueueParticipantId, queueSearchQuery,
-    queueSearchResults, queueSearchLoading, queueSearchError, setQueueSearchQuery,
-    reviewQueueRequest, addQueueParticipant,
-    communityUpcomingEvents = [], communityEventsLoading = false, communityEventsError = null,
-    communityEventsRetry, focusCommunityEventId = null, communityRsvpLoadingEventId = null,
-    onCommunityRsvp, communityMutationError = null, communitySuccessMessage = null,
-    onShareAction,
-  } = props;
-  const [filtersOpen, setFiltersOpen] = useState(false);
-
+function useJoinFormExplorerFocus(focusActionId: string | null, loading: boolean, actionCount: number, focusCommunityEventId: string | null, communityEventsLoading: boolean, communityEventCount: number) {
   useEffect(() => {
     if (!focusActionId || loading) return;
     const frame = window.requestAnimationFrame(() => {
       const target = document.getElementById(`join-action-${focusActionId}`);
       if (!(target instanceof HTMLElement)) return;
-      target.scrollIntoView({
-        block: "center",
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-      });
+      target.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
       target.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [focusActionId, loading, preActionVisibleItems.length]);
+  }, [focusActionId, loading, actionCount]);
 
   useEffect(() => {
     if (!focusCommunityEventId || communityEventsLoading) return;
-    const frame = window.requestAnimationFrame(() => {
-      const target = document.getElementById(`join-community-event-${focusCommunityEventId}`);
-      if (!(target instanceof HTMLElement)) return;
-      target.scrollIntoView({
-        block: "center",
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-      });
-    });
+    const frame = window.requestAnimationFrame(() => document.getElementById(`join-community-event-${focusCommunityEventId}`)?.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
     return () => window.cancelAnimationFrame(frame);
-  }, [communityEventsLoading, communityUpcomingEvents.length, focusCommunityEventId]);
+  }, [communityEventsLoading, communityEventCount, focusCommunityEventId]);
+}
 
-  return (
-  <div className="space-y-5">
-    {hasItems ? (
-      <>
-        <div className="grid gap-2.5 md:grid-cols-[minmax(0,1fr)_auto_minmax(220px,auto)]">
-          <FilterField label={fr ? "Recherche" : "Search"} icon={<Search size={13} />}>
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={fr ? "Action ou lieu..." : "Action or location..."}
-              className="w-full border-0 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
-            />
-          </FilterField>
-
-          <button
-            type="button"
-            aria-expanded={filtersOpen}
-            aria-controls="join-action-filter-panel"
-            onClick={() => setFiltersOpen((open) => !open)}
-            className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[1rem] border border-slate-200 bg-white px-4 text-sm font-bold text-emerald-900 shadow-[0_12px_22px_-20px_rgba(15,23,42,0.18)] transition-colors motion-reduce:transition-none hover:border-emerald-300 hover:bg-emerald-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
-          >
-            <Filter size={14} />
-            {fr ? "Filtres" : "Filters"}
-            <ChevronDown size={15} className={`transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
-          </button>
-
-          <FilterField label={fr ? "Trier" : "Sort"} icon={<ArrowUpDown size={13} />}>
-            <div className="relative">
-              <select
-                value={sort}
-                onChange={(event) => setSort(event.target.value as JoinableActionSort)}
-                className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
-              >
-                <option value="soonest">{fr ? "Date (la plus proche)" : "Date (soonest)"}</option>
-                <option value="latest">{fr ? "Date (plus lointaine)" : "Date (latest)"}</option>
-                <option value="participants-desc">{fr ? "Plus de bénévoles" : "Most volunteers"}</option>
-                <option value="participants-asc">{fr ? "Moins de bénévoles" : "Fewest volunteers"}</option>
-                <option value="location-asc">{fr ? "Lieu A → Z" : "Location A → Z"}</option>
-              </select>
-              <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
-            </div>
-          </FilterField>
-        </div>
-
-        {filtersOpen ? (
-          <div
-            id="join-action-filter-panel"
-            role="region"
-            aria-label={fr ? "Filtres des actions" : "Action filters"}
-            className="grid gap-2.5 rounded-[1.1rem] border border-emerald-100 bg-emerald-50/45 p-3 md:grid-cols-3"
-          >
-            <FilterField label={fr ? "Localisation" : "Location"} icon={<MapPin size={13} />}>
-              <div className="relative">
-                <select
-                  value={locationFilter}
-                  onChange={(event) => setLocationFilter(event.target.value as LocationFilter)}
-                  className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
-                >
-                  <option value="all">{fr ? "Toutes" : "All"}</option>
-                  <option value="ile-de-france">Île-de-France</option>
-                  <option value="autres">{fr ? "Autres régions" : "Other regions"}</option>
-                </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
-            </FilterField>
-
-            <FilterField label={fr ? "Période" : "Period"} icon={<CalendarDays size={13} />}>
-              <div className="relative">
-                <select
-                  value={periodFilter}
-                  onChange={(event) => setPeriodFilter(event.target.value as PeriodFilter)}
-                  className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
-                >
-                  <option value="all">{fr ? "Toutes" : "All"}</option>
-                  <option value="seven-days">{fr ? "7 prochains jours" : "Next 7 days"}</option>
-                  <option value="thirty-days">{fr ? "30 prochains jours" : "Next 30 days"}</option>
-                  <option value="ninety-days">{fr ? "90 prochains jours" : "Next 90 days"}</option>
-                </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
-            </FilterField>
-
-            <FilterField label={fr ? "Statut" : "Status"} icon={<Filter size={13} />}>
-              <div className="relative">
-                <select
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-                  className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
-                >
-                  <option value="all">{fr ? "Tous" : "All"}</option>
-                  <option value="open">{fr ? "Ouverte" : "Open"}</option>
-                  <option value="pending">{fr ? "En attente" : "Pending"}</option>
-                  <option value="closed">{fr ? "Fermée" : "Closed"}</option>
-                </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
-            </FilterField>
-          </div>
-        ) : null}
-      </>
-    ) : null}
-
-    <div className="flex items-end justify-between gap-3">
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-[2rem] font-black text-emerald-950 md:text-[2.15rem]">
-            {fr ? "Actions futures" : "Future actions"}
-          </h2>
-          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
-            {`${formatCount(preActionVisibleItems.length)} actions`}
-          </span>
-        </div>
-        <p className="text-sm text-slate-500">
-          {fr
-            ? "Les actions futures sont publiées et ouvertes aux inscriptions. Les résultats restent réservés à l'onglet des actions passées."
-            : "Published future actions are open for registration. Results stay in the past actions tab."}
-        </p>
-      </div>
-      {(search || statusFilter !== "all" || locationFilter !== "all" || periodFilter !== "all" || sort !== "soonest") && (
-        <CmmButton
-          tone="secondary"
-          variant="pill"
-          size="sm"
-          onClick={resetFilters}
-        >
-          {fr ? "Réinitialiser" : "Reset"}
-        </CmmButton>
-      )}
-    </div>
-
-    <div className="space-y-4"><SpogomiFutureCard />
-
-      {loading && (
-        <div className="rounded-[1.1rem] border border-emerald-100 bg-white px-4 py-3 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.18)]">
-          <div className="flex items-center gap-3 text-emerald-800">
-            <Loader2 size={16} className="animate-spin" />
-            <p className="text-sm font-semibold">
-              {fr ? "Chargement des actions futures..." : "Loading future actions..."}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {!loading && error && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1rem] border border-amber-100 bg-white px-4 py-3 text-slate-800 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.16)]">
-          <p className="text-sm font-semibold text-slate-700">{error}</p>
-          <CmmButton
-            onClick={reloadActions}
-            tone="secondary"
-            size="sm"
-          >
-            {fr ? "Réessayer" : "Retry"}
-          </CmmButton>
-        </div>
-      )}
-
-      {!loading && !error && !hasItems && (
-        <div className="rounded-[1.1rem] border border-dashed border-emerald-200 bg-white px-4 py-4 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.18)]">
-          <p className="text-sm font-bold text-slate-900">
-            {fr
-              ? "Aucune action future rejoignable n'est disponible pour le moment."
-              : "No joinable future action is available right now."}
-          </p>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-            {fr
-              ? "Créez une pré-déclaration pour préparer une action de groupe avant le départ."
-              : "Create a pre-declaration to prepare a group action before departure."}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <CmmButton href="/actions/new" tone="primary" variant="pill">
-              {fr ? "Créer une action" : "Create an action"}
-            </CmmButton>
-          </div>
-        </div>
-      )}
-
-      {!loading && hasItems && hasVisibleItems && (
-        <div className="space-y-6">
-          <section className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-emerald-900">
-                  {fr ? "Actions futures ouvertes" : "Open future actions"}
-                </h3>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  {fr
-                    ? "Ils sont visibles avant la déclaration finale et restent séparés des actions terminées."
-                    : "They are visible before the final declaration and stay separate from completed actions."}
-                </p>
-              </div>
-              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
-                {formatCount(preActionVisibleItems.length)}
-              </span>
-            </div>
-
-            {preActionVisibleItems.length > 0 ? (
-              <div className="space-y-4">
-                {preActionVisibleItems.map((item, index) => (
-                  <ActionCard
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    fr={fr}
-                    authenticated={authenticated}
-                    isFocused={focusActionId === item.id}
-                    joining={joiningId === item.id}
-                    leaving={leavingId === item.id}
-                    onRequestJoin={requestJoin}
-                    onRequestLeave={requestLeave}
-                    onShareAction={onShareAction}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-[1.1rem] border border-dashed border-emerald-200 bg-white px-4 py-4 text-sm leading-relaxed text-slate-600 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.18)]">
-                {fr
-                  ? "Aucune action future n'est ouverte pour le moment."
-                  : "No future action is open right now."}
-              </div>
-            )}
-          </section>
-
-          {(search || statusFilter !== "all" || locationFilter !== "all" || periodFilter !== "all" || sort !== "soonest") && (
-            <div className="rounded-[1.1rem] border border-slate-200 bg-white/90 px-4 py-3 text-center shadow-[0_16px_32px_-26px_rgba(15,23,42,0.22)]">
-              <CmmButton
-                tone="secondary"
-                variant="pill"
-                size="sm"
-                onClick={resetFilters}
-              >
-                <span className="inline-flex items-center gap-2">
-                  {fr ? "Réinitialiser les filtres" : "Reset filters"}
-                  <ChevronDown size={16} />
-                </span>
-              </CmmButton>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!loading && hasItems && !hasVisibleItems && (
-        <div className="rounded-[1.1rem] border border-dashed border-emerald-200 bg-white px-4 py-4 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.18)]">
-          <p className="text-sm font-semibold text-slate-900">{noResultsMessage}</p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            {fr
-              ? "Essayez un autre mot-clé, changez la période ou réinitialisez les filtres."
-              : "Try another keyword, change the period, or reset the filters."}
-          </p>
-        </div>
-      )}
-
-      <JoinCommunityEventsPanel
-        fr={fr}
-        events={communityUpcomingEvents}
-        loading={communityEventsLoading}
-        error={communityEventsError}
-        focusedEventId={focusCommunityEventId}
-        rsvpLoadingEventId={communityRsvpLoadingEventId}
-        onRsvp={onCommunityRsvp}
-        onRetry={communityEventsRetry}
-        mutationError={communityMutationError}
-        successMessage={communitySuccessMessage}
-        tab="future"
-      />
-
-      {notice && (
-        <div className="rounded-[1.25rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
-          {notice}
-        </div>
-      )}
-
-      {focusActionId && queueCanReview ? (
-        <JoinFormPublicQueue
-          fr={fr}
-          queueRequests={queueRequests}
-          queueConfirmedParticipants={queueConfirmedParticipants}
-          queueLoading={queueLoading}
-          queueError={queueError}
-          queueCanReview={queueCanReview}
-          reviewingQueueId={reviewingQueueId}
-          addingQueueParticipantId={addingQueueParticipantId}
-          queueSearchQuery={queueSearchQuery}
-          queueSearchResults={queueSearchResults}
-          queueSearchLoading={queueSearchLoading}
-          queueSearchError={queueSearchError}
-          setQueueSearchQuery={setQueueSearchQuery}
-          onReviewQueueRequest={reviewQueueRequest}
-          onAddQueueParticipant={addQueueParticipant}
-        />
-      ) : null}
-
-      <div className="rounded-[1rem] border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm leading-relaxed text-slate-700 shadow-[0_16px_32px_-26px_rgba(15,23,42,0.22)]">
-        <div className="flex items-start gap-3">
-          <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-700" />
-          <p>
-            {fr
-              ? "En participant, vous vous engagez à respecter la charte des bénévoles et les consignes de sécurité."
-              : "By participating, you agree to follow the volunteer charter and safety instructions."}
-          </p>
-          <Link href="/docs/legal/charte-benevole.md" className="ml-auto inline-flex shrink-0 items-center gap-2 font-semibold text-emerald-800">
-            {fr ? "Voir la charte" : "View charter"}
-            <ExternalLink size={14} />
-          </Link>
-        </div>
-      </div>
-    </div>
-  </div>
-  );
+export function JoinFormExplorer(props: ExplorerProps) {
+  const { fr, focusActionId, loading, preActionVisibleItems, focusCommunityEventId = null, communityEventsLoading = false, communityUpcomingEvents = [] } = props;
+  useJoinFormExplorerFocus(focusActionId, loading, preActionVisibleItems.length, focusCommunityEventId, communityEventsLoading, communityUpcomingEvents.length);
+  return <div className="space-y-5">
+    <JoinFormExplorerFilters fr={fr} hasItems={props.hasItems} search={props.search} setSearch={props.setSearch} locationFilter={props.locationFilter} setLocationFilter={props.setLocationFilter} periodFilter={props.periodFilter} setPeriodFilter={props.setPeriodFilter} statusFilter={props.statusFilter} setStatusFilter={props.setStatusFilter} sort={props.sort} setSort={props.setSort} />
+    <JoinFormExplorerContent {...props} />
+  </div>;
 }

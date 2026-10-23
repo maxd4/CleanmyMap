@@ -4,10 +4,58 @@ import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
+import {
+  annuaireGraphColorClass,
+  buildAnnuaireGraphLinks,
+  buildAnnuaireGraphNodes,
+  type AnnuaireGraphLink,
+  type AnnuaireGraphNode,
+} from "./annuaire-network-graph.model";
 
 interface AnnuaireNetworkGraphProps {
   entries: AnnuaireEntry[];
   onSelectPartner: (entry: AnnuaireEntry) => void;
+}
+
+function AnnuaireNetworkNode({ node, onSelectPartner }: { node: AnnuaireGraphNode; onSelectPartner: (entry: AnnuaireEntry) => void }) {
+  const primaryType = node.types?.[0] ?? "autre";
+  const nodeName = typeof node.name === "string" && node.name.trim().length > 0 ? node.name : "Association";
+  const nodeLocation = typeof node.location === "string" && node.location.trim().length > 0 ? node.location : "";
+  const colorClass = annuaireGraphColorClass(primaryType);
+
+  return <motion.g
+    key={node.id}
+    data-motion-role="decorative"
+    layout
+    initial={{ scale: 0, opacity: 0 }}
+    animate={{ scale: 1, opacity: 1 }}
+    exit={{ scale: 0, opacity: 0 }}
+    transition={{ type: "spring", stiffness: 100, damping: 15 }}
+    className="cursor-pointer group"
+    role="button"
+    tabIndex={0}
+    aria-label={`Ouvrir la fiche de ${nodeName}`}
+    onClick={() => onSelectPartner(node)}
+    onKeyDown={(event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      onSelectPartner(node);
+    }}
+  >
+    <circle cx={node.x} cy={node.y} r="1.8" className={cn("opacity-0 group-hover:opacity-40 transition-opacity duration-500", colorClass)} filter="url(#glow)" />
+    <circle cx={node.x} cy={node.y} r="1.2" className={cn("transition-all duration-500 stroke-[0.2]", colorClass)} />
+    <circle cx={node.x} cy={node.y} r="0.4" fill="white" className="opacity-50 group-hover:opacity-100 transition-opacity" />
+    <foreignObject x={node.x + 1.8} y={node.y - 1.5} width="20" height="10" className="pointer-events-none overflow-visible">
+      <div className="flex flex-col">
+        <span className="whitespace-nowrap text-xs font-black uppercase tracking-widest text-white drop-shadow-md">{nodeName}</span>
+        <span className={cn("text-xs font-bold opacity-0 group-hover:opacity-70 transition-opacity uppercase tracking-tighter", primaryType === "humanitaire" ? "text-fuchsia-300" : "text-violet-300")}>{nodeLocation}</span>
+      </div>
+    </foreignObject>
+  </motion.g>;
+}
+
+function AnnuaireGraphLinks({ links }: { links: AnnuaireGraphLink[] }) {
+  return <g className="links" aria-label="Similarités thématiques, pas collaborations vérifiées"><AnimatePresence>{links.map((link) => <motion.line key={link.id} data-motion-role="decorative" initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.5, ease: "easeInOut" }} x1={link.x1} y1={link.y1} x2={link.x2} y2={link.y2} stroke="url(#linkGradient)" strokeWidth="0.15" strokeDasharray="0.5 0.5" />)}</AnimatePresence></g>;
 }
 
 /**
@@ -16,57 +64,8 @@ interface AnnuaireNetworkGraphProps {
  * a collaboration, partnership or operational relationship.
  */
 export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetworkGraphProps) {
-  // Generate pseudo-random positions that stay somewhat stable
-  const nodes = useMemo(() => {
-    return entries.slice(0, 40).map((entry, i) => {
-      // Use index and name hash for deterministic positions
-      const hash = entry.name.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-      return {
-        ...entry,
-        x: 15 + (hash % 70) + (Math.sin(i) * 5), // 15% to 85% range
-        y: 15 + ((hash * 7) % 70) + (Math.cos(i) * 5),
-        size: 40 + (hash % 40)
-      };
-    });
-  }, [entries]);
-
-  // Generate links between associations sharing tags
-  const links = useMemo(() => {
-    const l: { id: string; x1: number; y1: number; x2: number; y2: number }[] = [];
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const n1 = nodes[i];
-        const n2 = nodes[j];
-        if (!n1 || !n2) {
-          continue;
-        }
-        
-        // Share a tag?
-        const sharedTags = n1.tags?.filter((t: string) => n2.tags?.includes(t)) || [];
-        
-        if (sharedTags.length > 0) {
-          l.push({
-            id: `${n1.id}-${n2.id}`,
-            x1: n1.x,
-            y1: n1.y,
-            x2: n2.x,
-            y2: n2.y
-        });
-      }
-    }
-    }
-    // Limit links to keep it clean
-    return l.slice(0, 60);
-  }, [nodes]);
-
-  const getColorClass = (type: string) => {
-    switch (type) {
-      case 'environnemental': return 'fill-violet-500 stroke-violet-300';
-      case 'social': return 'fill-violet-500 stroke-violet-300';
-      case 'humanitaire': return 'fill-fuchsia-500 stroke-fuchsia-300';
-      default: return 'fill-violet-500 stroke-violet-400';
-    }
-  };
+  const nodes = useMemo(() => buildAnnuaireGraphNodes(entries), [entries]);
+  const links = useMemo(() => buildAnnuaireGraphLinks(nodes), [nodes]);
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-[2rem] border border-violet-300/14 bg-[rgba(20,14,48,0.96)] backdrop-blur-3xl">
@@ -99,110 +98,13 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
 
         {/* Connections */}
         <g className="links" aria-label="Similarités thématiques, pas collaborations vérifiées">
-          <AnimatePresence>
-            {links.map((link) => (
-              <motion.line
-                key={link.id}
-                data-motion-role="decorative"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.5, ease: "easeInOut" }}
-                x1={link.x1}
-                y1={link.y1}
-                x2={link.x2}
-                y2={link.y2}
-                stroke="url(#linkGradient)"
-                strokeWidth="0.15"
-                strokeDasharray="0.5 0.5"
-              />
-            ))}
-          </AnimatePresence>
+          <AnnuaireGraphLinks links={links} />
         </g>
 
         {/* Nodes */}
         <g className="nodes">
           <AnimatePresence>
-        {nodes.map((node) => {
-          const primaryType = node.types?.[0] ?? "autre";
-          const nodeName = typeof node.name === "string" && node.name.trim().length > 0
-            ? node.name
-            : "Association";
-          const nodeLocation = typeof node.location === "string" && node.location.trim().length > 0
-            ? node.location
-            : "";
-
-          return (
-                <motion.g
-                  key={node.id}
-                  data-motion-role="decorative"
-                  layout
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 100, damping: 15 }}
-                  className="cursor-pointer group"
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Ouvrir la fiche de ${nodeName}`}
-                  onClick={() => onSelectPartner(node)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      onSelectPartner(node);
-                    }
-                  }}
-                >
-                  {/* Outer Glow Halo */}
-                  <circle
-                    cx={node.x}
-                    cy={node.y}
-                    r="1.8"
-                    className={cn("opacity-0 group-hover:opacity-40 transition-opacity duration-500", getColorClass(primaryType))}
-                    filter="url(#glow)"
-                  />
-                  
-                  {/* Main Node Circle */}
-                  <circle
-                    cx={node.x}
-                    cy={node.y}
-                    r="1.2"
-                    className={cn("transition-all duration-500 stroke-[0.2]", getColorClass(primaryType))}
-                  />
-
-                  {/* Internal Dot */}
-                  <circle
-                    cx={node.x}
-                    cy={node.y}
-                    r="0.4"
-                    fill="white"
-                    className="opacity-50 group-hover:opacity-100 transition-opacity"
-                  />
-
-                  {/* Label */}
-                  <foreignObject
-                    x={node.x + 1.8}
-                    y={node.y - 1.5}
-                    width="20"
-                    height="10"
-                    className="pointer-events-none overflow-visible"
-                  >
-                    <div className="flex flex-col">
-                  <span className="whitespace-nowrap text-[1.8px] font-black uppercase tracking-widest text-white drop-shadow-md">
-                        {nodeName}
-                      </span>
-                      <span className={cn("text-[1.2px] font-bold opacity-0 group-hover:opacity-70 transition-opacity uppercase tracking-tighter", 
-                        primaryType === "environnemental" ? "text-violet-300" :
-                        primaryType === "social" ? "text-violet-300" :
-                        primaryType === "humanitaire" ? "text-fuchsia-300" : "text-violet-300"
-                      )}>
-                        {nodeLocation}
-                      </span>
-                    </div>
-                  </foreignObject>
-                </motion.g>
-              );
-            })}
+            {nodes.map((node) => <AnnuaireNetworkNode key={node.id} node={node} onSelectPartner={onSelectPartner} />)}
           </AnimatePresence>
         </g>
       </svg>

@@ -4,45 +4,48 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { useJoinFormSectionActions } from "./rejoindre-un-formulaire-section.controller.actions";
-import { useJoinFormSectionQueue } from "./rejoindre-un-formulaire-section.controller.queue";
-import { getActionDisplayStatus } from "./rejoindre-un-formulaire-section.status";
-import {
-  filterAndSortJoinableActions,
-  getLocationFilterBucket,
-  isWithinPeriod,
-  type JoinableActionSort,
-  type LocationFilter,
-  type PeriodFilter,
-} from "./rejoindre-un-formulaire-section.utils";
+import { type JoinableActionSort, type LocationFilter, type PeriodFilter } from "./rejoindre-un-formulaire-section.utils";
 import { fetchActions } from "@/lib/actions/http";
-import { usesRegistrationStore } from "@/lib/actions/participation/action-phase";
 import type { ActionListItem } from "@/lib/actions/types";
-import { extractEventRefFromNotes } from "@/lib/actions/event-link";
 import { useCommunityEvents } from "./community/use-community-events";
 import { useCommunityActions } from "./community/use-community-actions";
+import { useJoinFormControllerDerivedState } from "./rejoindre-un-formulaire-section.derived";
 import {
   isPastPublicAction,
   isCanonicalActionId,
-  prioritizeAction,
   resolveJoinActionTab,
-  resolveJoinActionTarget,
   sortPastActions,
   type JoinActionTab,
-  type JoinActionTargetResolution,
 } from "./rejoindre-une-action.model";
+export { resolveJoinFormQueueActionId } from "./rejoindre-un-formulaire-section.derived";
 
 export type { LocationFilter, PeriodFilter } from "./rejoindre-un-formulaire-section.utils";
 export { getLocationFilterBucket, isWithinPeriod, sortItemsByStatusRank } from "./rejoindre-un-formulaire-section.utils";
 export type StatusFilter = "all" | "open" | "pending" | "closed";
 
-export function resolveJoinFormQueueActionId({
-  activeTab,
-  focusActionId,
-}: {
-  activeTab: JoinActionTab;
-  focusActionId: string | null;
-}): string | null {
-  return activeTab === "future" ? focusActionId : null;
+function usePastActions(fr: boolean) {
+  const [pastItems, setPastItems] = useState<ActionListItem[]>([]);
+  const [pastLoading, setPastLoading] = useState(true);
+  const [pastError, setPastError] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    void fetchActions({ status: "approved", types: "action", limit: 200 })
+      .then((result) => {
+        if (!active) return;
+        setPastItems(sortPastActions(result.items.filter((item) => isPastPublicAction(item))));
+        setPastError(null);
+      })
+      .catch(() => {
+        if (active) setPastError(fr ? "Les actions passées sont temporairement indisponibles." : "Past actions are temporarily unavailable.");
+      })
+      .finally(() => {
+        if (active) setPastLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [fr]);
+  return { pastItems, pastLoading, pastError };
 }
 
 export function useJoinFormSectionController() {
@@ -54,9 +57,6 @@ export function useJoinFormSectionController() {
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
   const [sort, setSort] = useState<JoinableActionSort>("soonest");
   const [search, setSearch] = useState("");
-  const [pastItems, setPastItems] = useState<ActionListItem[]>([]);
-  const [pastLoading, setPastLoading] = useState(true);
-  const [pastError, setPastError] = useState<string | null>(null);
   const [queueReloadAction, setQueueReloadAction] = useState<{ actionId: string; version: number } | null>(null);
   const focusActionId = searchParams.get("actionId")?.trim() || null;
   const requestedCommunityEventId = searchParams.get("communityEventId")?.trim() || null;
@@ -84,152 +84,35 @@ export function useJoinFormSectionController() {
       })),
   });
 
-  useEffect(() => {
-    let active = true;
-    void fetchActions({ status: "approved", types: "action", limit: 200 })
-      .then((result) => {
-        if (!active) return;
-        setPastItems(sortPastActions(result.items.filter((item) => isPastPublicAction(item))));
-        setPastError(null);
-      })
-      .catch(() => {
-        if (active) setPastError(fr ? "Les actions passées sont temporairement indisponibles." : "Past actions are temporarily unavailable.");
-      })
-      .finally(() => {
-        if (active) setPastLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [fr]);
+  const { pastItems, pastLoading, pastError } = usePastActions(fr);
 
-  const targetResolution: JoinActionTargetResolution = useMemo(
-    () =>
-      resolveJoinActionTarget({
-        actionId: focusActionId ?? focusCommunityEventId,
-        futureActionIds: [
-          ...actions.items.map((item) => item.id),
-          ...communityEvents.upcomingEvents.map((event) => event.id),
-        ],
-        pastActionIds: [
-          ...pastItems.map((item) => item.id),
-          ...communityEvents.pastEvents.map((event) => event.id),
-        ],
-        futureLoading: actions.loading || communityEvents.eventsLoading,
-        pastLoading: pastLoading || communityEvents.eventsLoading,
-      }),
-    [
-      actions.items,
-      actions.loading,
-      communityEvents.eventsLoading,
-      communityEvents.pastEvents,
-      communityEvents.upcomingEvents,
-      focusActionId,
-      focusCommunityEventId,
-      pastItems,
-      pastLoading,
-    ],
-  );
-  const activeTab: JoinActionTab = resolveJoinActionTab(requestedTab, targetResolution);
-
-  const orderedItems = useMemo(
-    () =>
-      filterAndSortJoinableActions(actions.items, {
-        search,
-        joinFilter: "all",
-        sort,
-        focusActionId,
-        locale: fr ? "fr" : "en",
-      }),
-    [actions.items, focusActionId, fr, search, sort],
-  );
-
-  const visibleItems = useMemo(() => {
-    const filtered = orderedItems.filter((item) => {
-      const displayStatus = getActionDisplayStatus(item);
-      if (statusFilter !== "all" && displayStatus !== statusFilter) return false;
-      if (locationFilter !== "all" && getLocationFilterBucket(item.location_label) !== locationFilter) return false;
-      if (!isWithinPeriod(item.action_date, periodFilter)) return false;
-      return true;
-    });
-
-    if (!focusActionId) return filtered;
-    const focusIndex = filtered.findIndex((item) => item.id === focusActionId);
-    if (focusIndex <= 0) return filtered;
-    const focusItem = filtered[focusIndex];
-    return [focusItem, ...filtered.filter((item) => item.id !== focusActionId)];
-  }, [focusActionId, locationFilter, orderedItems, periodFilter, statusFilter]);
-
-  const hasItems = actions.items.length > 0;
-  const hasVisibleItems = visibleItems.length > 0;
-  const preActionVisibleItems = useMemo(
-    () => visibleItems.filter((item) => item.actionPhase === "pre_action"),
-    [visibleItems],
-  );
-  const visiblePastItems = useMemo(
-    () => prioritizeAction(pastItems, focusActionId),
-    [focusActionId, pastItems],
-  );
-  const linkedFutureEventIds = useMemo(
-    () => new Set(actions.items.map((item) => item.eventRef).filter((id): id is string => Boolean(id))),
-    [actions.items],
-  );
-  const linkedPastEventIds = useMemo(
-    () => new Set(pastItems.map((item) => extractEventRefFromNotes(item.notes ?? item.contract?.metadata.notes)).filter((id): id is string => Boolean(id))),
-    [pastItems],
-  );
-  const visibleCommunityUpcomingEvents = useMemo(
-    () => communityEvents.upcomingEvents.filter((event) => !linkedFutureEventIds.has(event.id) || event.id === focusCommunityEventId),
-    [communityEvents.upcomingEvents, focusCommunityEventId, linkedFutureEventIds],
-  );
-  const visibleCommunityPastEvents = useMemo(
-    () => communityEvents.pastEvents.filter((event) => !linkedPastEventIds.has(event.id) || event.id === focusCommunityEventId),
-    [communityEvents.pastEvents, focusCommunityEventId, linkedPastEventIds],
-  );
-  const activeParticipationItems = useMemo(
-    () => actions.historyItems.filter((item) => item.joined && !usesRegistrationStore(item.actionPhase)),
-    [actions.historyItems],
-  );
-  const activeRegistrationItems = useMemo(
-    () => actions.historyItems.filter((item) => item.joined && usesRegistrationStore(item.actionPhase)),
-    [actions.historyItems],
-  );
-  const sortedHistoryItems = useMemo(
-    () =>
-      [...actions.historyItems].sort((left, right) => {
-        const leftDate = new Date(left.participationUpdatedAt ?? left.joinedAt ?? left.created_at).getTime();
-        const rightDate = new Date(right.participationUpdatedAt ?? right.joinedAt ?? right.created_at).getTime();
-        return rightDate - leftDate;
-      }),
-    [actions.historyItems],
-  );
-  const queueActionId = useMemo(
-    () => resolveJoinFormQueueActionId({ activeTab, focusActionId }),
-    [activeTab, focusActionId],
-  );
-
-  const queue = useJoinFormSectionQueue({
+  const derived = useJoinFormControllerDerivedState({
     fr,
-    queueActionId,
-    reloadAction: queueReloadAction,
-    onActionCountsChanged: actions.updateActionCounts,
-    onNotice: actions.setNotice,
+    focusActionId,
+    focusCommunityEventId,
+    requestedTab,
+    search,
+    sort,
+    statusFilter,
+    locationFilter,
+    periodFilter,
+    actions,
+    communityEvents,
+    pastItems,
+    pastLoading,
+    queueReloadAction,
   });
-
-  const noResultsMessage = fr
-    ? "Aucune action future ne correspond à vos filtres."
-    : "No future action matches your filters.";
 
   return {
     fr,
     navigationSearchParams: searchParams.toString(),
     focusActionId,
     focusCommunityEventId,
-    targetResolution,
+    targetResolution: derived.targetResolution,
     items: actions.items,
-    activeTab,
+    activeTab: derived.activeTab,
     pastItems,
-    visiblePastItems,
+    visiblePastItems: derived.visiblePastItems,
     pastLoading,
     pastError,
     loading: actions.loading,
@@ -239,17 +122,17 @@ export function useJoinFormSectionController() {
     notice: actions.notice,
     authenticated: actions.authenticated,
     historyItems: actions.historyItems,
-    queueRequests: queue.queueRequests,
-    queueConfirmedParticipants: queue.queueConfirmedParticipants,
-    queueLoading: queue.queueLoading,
-    queueError: queue.queueError,
-    queueCanReview: queue.queueCanReview,
-    reviewingQueueId: queue.reviewingQueueId,
-    addingQueueParticipantId: queue.addingQueueParticipantId,
-    queueSearchQuery: queue.queueSearchQuery,
-    queueSearchResults: queue.queueSearchResults,
-    queueSearchLoading: queue.queueSearchLoading,
-    queueSearchError: queue.queueSearchError,
+    queueRequests: derived.queue.queueRequests,
+    queueConfirmedParticipants: derived.queue.queueConfirmedParticipants,
+    queueLoading: derived.queue.queueLoading,
+    queueError: derived.queue.queueError,
+    queueCanReview: derived.queue.queueCanReview,
+    reviewingQueueId: derived.queue.reviewingQueueId,
+    addingQueueParticipantId: derived.queue.addingQueueParticipantId,
+    queueSearchQuery: derived.queue.queueSearchQuery,
+    queueSearchResults: derived.queue.queueSearchResults,
+    queueSearchLoading: derived.queue.queueSearchLoading,
+    queueSearchError: derived.queue.queueSearchError,
     search,
     statusFilter,
     locationFilter,
@@ -257,26 +140,26 @@ export function useJoinFormSectionController() {
     sort,
     pendingJoinActionId: actions.pendingJoinActionId,
     pendingLeaveActionId: actions.pendingLeaveActionId,
-    hasItems,
-    hasVisibleItems,
-    preActionVisibleItems,
-    activeParticipationItems,
-    activeRegistrationItems,
-    sortedHistoryItems,
-    noResultsMessage,
+    hasItems: derived.hasItems,
+    hasVisibleItems: derived.hasVisibleItems,
+    preActionVisibleItems: derived.preActionVisibleItems,
+    activeParticipationItems: derived.activeParticipationItems,
+    activeRegistrationItems: derived.activeRegistrationItems,
+    sortedHistoryItems: derived.sortedHistoryItems,
+    noResultsMessage: derived.noResultsMessage,
     setSearch,
     setStatusFilter,
     setLocationFilter,
     setPeriodFilter,
     setSort,
-    setQueueSearchQuery: queue.setQueueSearchQuery,
+    setQueueSearchQuery: derived.queue.setQueueSearchQuery,
     requestJoin: actions.requestJoin,
     requestLeave: actions.requestLeave,
     closePendingActions: actions.closePendingActions,
     confirmPendingJoin: actions.confirmPendingJoin,
     confirmPendingLeave: actions.confirmPendingLeave,
-    reviewQueueRequest: queue.reviewQueueRequest,
-    addQueueParticipant: queue.addQueueParticipant,
+    reviewQueueRequest: derived.queue.reviewQueueRequest,
+    addQueueParticipant: derived.queue.addQueueParticipant,
     resetFilters: () => {
       setSearch("");
       setStatusFilter("all");
@@ -285,8 +168,8 @@ export function useJoinFormSectionController() {
       setSort("soonest");
     },
     reloadActions: actions.reloadActions,
-    communityUpcomingEvents: visibleCommunityUpcomingEvents,
-    communityPastEvents: visibleCommunityPastEvents,
+    communityUpcomingEvents: derived.visibleCommunityUpcomingEvents,
+    communityPastEvents: derived.visibleCommunityPastEvents,
     communityEventsLoading: communityEvents.eventsLoading,
     communityEventsError: communityEvents.eventsLoadError,
     communityEventsRetry: communityEvents.reloadEvents,
