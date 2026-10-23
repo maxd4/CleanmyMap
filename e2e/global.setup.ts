@@ -7,6 +7,7 @@ import path from "node:path";
 import {
   assertClerkDevelopmentEnvironment,
   buildTemporaryEmail,
+  buildTemporaryRunId,
   CLERK_LIFECYCLE,
   createTemporaryMetadata,
   isOwnedTemporaryUser,
@@ -80,7 +81,7 @@ setup("global setup", async () => {
 
   const configuredEmail = process.env.E2E_CLERK_USER_EMAIL?.trim();
   const lifecycle = resolveClerkLifecycle({ configuredEmail });
-  const runId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  const runId = buildTemporaryRunId();
   const email = configuredEmail || buildTemporaryEmail(runId);
   let userId: string;
 

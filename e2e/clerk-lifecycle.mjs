@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 export const CLERK_LIFECYCLE = Object.freeze({
   TEMPORARY: "TEMPORARY",
   PERSISTENT_DEVELOPMENT: "PERSISTENT_DEVELOPMENT",
@@ -25,6 +27,10 @@ export function resolveClerkLifecycle({ configuredEmail, requestedLifecycle } = 
 
 export function buildTemporaryEmail(runId = Date.now().toString(36)) {
   return `cmm-e2e-${runId}+clerk_test@example.com`;
+}
+
+export function buildTemporaryRunId({ now = Date.now(), entropy = randomUUID() } = {}) {
+  return `${now.toString(36)}-${entropy}`;
 }
 
 export function createTemporaryMetadata({ userId, runId }) {
