@@ -34,16 +34,18 @@ function updateCleanPlaceDraft<K extends keyof CleanPlaceModerationEditDraft>(
   workflow.setCleanPlaceEditDraft((draft) => (draft ? { ...draft, [key]: value } : draft));
 }
 
-function ImportConfirmationPanel({ workflow }: StepConfirmProps) {
+function ImportConfirmationPanel({ workflow, fr }: StepConfirmProps & { fr: boolean }) {
   return (
     <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
       <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
-        Import : dry-run obligatoire
+        {fr ? "Import : dry-run obligatoire" : "Import: dry-run required"}
       </p>
       <p className="mt-1 cmm-text-small cmm-text-secondary">
-        1) Prévisualiser (dry-run) 2) Vérifier le résumé 3) Confirmer l&apos;import.
+        {fr
+          ? "1) Prévisualiser (dry-run) 2) Vérifier le résumé 3) Confirmer l'import."
+          : "1) Preview (dry-run) 2) Verify summary 3) Confirm import."}
       </p>
-      <CmmField className="mt-3" label="Données à importer">
+      <CmmField className="mt-3" label={fr ? "Données à importer" : "Import data"}>
         <CmmTextarea
           value={workflow.importPayload}
           onChange={(event) => workflow.setImportPayload(event.target.value)}
@@ -222,7 +224,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
         <CmmButton onClick={() => { void workflow.onDownloadCsv(); }} tone="primary" loading={workflow.csvState === "pending"}>{workflow.csvState === "pending" ? fr ? "Préparation CSV..." : "Preparing CSV..." : fr ? "Confirmer export CSV" : "Confirm CSV export"}</CmmButton>
         <CmmButton onClick={() => { void workflow.onDownloadJson(); }} tone="secondary" loading={workflow.jsonState === "pending"}>{workflow.jsonState === "pending" ? fr ? "Préparation JSON..." : "Preparing JSON..." : fr ? "Confirmer export JSON" : "Confirm JSON export"}</CmmButton>
       </div>
-      <ImportConfirmationPanel workflow={workflow} />
+      <ImportConfirmationPanel workflow={workflow} fr={fr} />
       <ModerationConfirmationPanel workflow={workflow} />
     </div>
   );

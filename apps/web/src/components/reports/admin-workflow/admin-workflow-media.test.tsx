@@ -5,8 +5,10 @@ import type { AdminWorkflowController } from "./types";
 import { StepConfirm } from "./step-confirm";
 import { StepFilter } from "./step-filter";
 
+const preferences = vi.hoisted(() => ({ locale: "fr" as "fr" | "en" }));
+
 vi.mock("@/components/ui/site-preferences-provider", () => ({
-  useSitePreferences: () => ({ locale: "fr" }),
+  useSitePreferences: () => ({ locale: preferences.locale }),
 }));
 
 function buildWorkflow(
@@ -95,6 +97,55 @@ function buildWorkflow(
 }
 
 describe("admin workflow signalement media", () => {
+  it.each([
+    {
+      locale: "fr" as const,
+      title: "Import : dry-run obligatoire",
+      instructions: "1) Prévisualiser (dry-run) 2) Vérifier le résumé 3) Confirmer l&#x27;import.",
+      field: "Données à importer",
+    },
+    {
+      locale: "en" as const,
+      title: "Import: dry-run required",
+      instructions: "1) Preview (dry-run) 2) Verify summary 3) Confirm import.",
+      field: "Import data",
+    },
+  ])("keeps the import panel labels localized in $locale", ({ locale, title, instructions, field }) => {
+    preferences.locale = locale;
+
+    const markup = renderToStaticMarkup(
+      React.createElement(StepConfirm, { workflow: buildWorkflow("action") }),
+    );
+
+    expect(markup).toContain(title);
+    expect(markup).toContain(instructions);
+    expect(markup).toContain(field);
+    expect(markup).toContain(locale === "fr" ? "Confirmer export CSV" : "Confirm CSV export");
+    expect(markup).toContain(locale === "fr" ? "Confirmer export JSON" : "Confirm JSON export");
+    expect(markup).toContain("Previsualiser (dry-run)");
+    expect(markup).toContain("Confirmer import");
+
+    if (locale === "en") {
+      expect(markup).not.toContain("Import : dry-run obligatoire");
+      expect(markup).not.toContain("1) Prévisualiser (dry-run) 2) Vérifier le résumé 3) Confirmer l'import.");
+      expect(markup).not.toContain("Données à importer");
+    }
+  });
+
+  it.each(["action", "clean_place"] as const)(
+    "keeps the moderation subview accessible for %s",
+    (selectedRecordType) => {
+      preferences.locale = "fr";
+
+      const markup = renderToStaticMarkup(
+        React.createElement(StepConfirm, { workflow: buildWorkflow(selectedRecordType) }),
+      );
+
+      expect(markup).toContain("Moderation: confirmation");
+      expect(markup).toContain(selectedRecordType === "action" ? "Compte auteur" : "Signalement Trash Spotter");
+    },
+  );
+
   it("offers the complete canonical record type filter", () => {
     const markup = renderToStaticMarkup(
       React.createElement(StepFilter, { workflow: buildWorkflow("action") }),
