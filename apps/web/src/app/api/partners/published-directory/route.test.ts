@@ -66,6 +66,25 @@ describe("GET /api/partners/published-directory", () => {
         lastUpdatedAt: "2026-10-19T11:00:00.000Z",
         recentActivityAt: "2026-10-19T11:00:00.000Z",
       },
+      {
+        id: "partner-rejected",
+        sourceRequestId: "request-3",
+        publicationStatus: "rejected",
+        source: "partner_onboarding",
+        name: "Ne doit pas sortir non plus",
+        legalIdentity: "Ancienne fiche",
+        kind: "association",
+        types: ["social"],
+        description: "Révoquée",
+        location: "France",
+        lat: 48.8566,
+        lng: 2.3522,
+        coveredArrondissements: [],
+        contributionTypes: ["accueil"],
+        verificationStatus: "en_cours",
+        qualificationStatus: "contact_non_qualifie",
+        provenance: "published_partner",
+      },
     ]);
 
     const { GET } = await import("./route");
@@ -76,9 +95,7 @@ describe("GET /api/partners/published-directory", () => {
     };
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("cache-control")).toBe(
-      "public, max-age=60, stale-while-revalidate=300",
-    );
+    expect(response.headers.get("cache-control")).toBe("no-store");
     expect(payload.count).toBe(1);
     expect(payload.items[0]).toMatchObject({ id: "partner-1", name: "Structure publique" });
     expect(payload.items[0]).not.toHaveProperty("internalAdminContact");
@@ -109,5 +126,34 @@ describe("GET /api/partners/published-directory", () => {
     expect(listPublishedPartnerAnnuaireEntriesMock).toHaveBeenCalledWith({
       publicationStatus: "accepted",
     });
+  });
+
+  it("reflects accepted, rejected, then re-accepted state across fresh reads", async () => {
+    const acceptedEntry = {
+      id: "partner-transition",
+      publicationStatus: "accepted" as const,
+      name: "Structure réversible",
+    };
+    const rejectedEntry = { ...acceptedEntry, publicationStatus: "rejected" as const };
+
+    listPublishedPartnerAnnuaireEntriesMock
+      .mockResolvedValueOnce([acceptedEntry])
+      .mockResolvedValueOnce([rejectedEntry])
+      .mockResolvedValueOnce([acceptedEntry]);
+
+    const { GET } = await import("./route");
+
+    const acceptedResponse = await GET();
+    expect((await acceptedResponse.json()).items).toEqual([
+      expect.objectContaining({ id: "partner-transition" }),
+    ]);
+
+    const rejectedResponse = await GET();
+    expect((await rejectedResponse.json()).items).toEqual([]);
+
+    const reacceptedResponse = await GET();
+    expect((await reacceptedResponse.json()).items).toEqual([
+      expect.objectContaining({ id: "partner-transition" }),
+    ]);
   });
 });

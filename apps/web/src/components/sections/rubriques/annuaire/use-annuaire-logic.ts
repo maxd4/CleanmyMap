@@ -42,7 +42,7 @@ export function useAnnuaireLogic() {
   } = useSWR<PublishedDirectoryResponse>(
     "/api/partners/published-directory",
     async (url: string) => {
-      const response = await fetch(url, { method: "GET" });
+      const response = await fetch(url, { method: "GET", cache: "no-store" });
       if (!response.ok) throw new Error("published_directory_unavailable");
       return (await response.json()) as PublishedDirectoryResponse;
     }

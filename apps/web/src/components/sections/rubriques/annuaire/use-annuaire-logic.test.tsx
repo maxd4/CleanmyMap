@@ -28,6 +28,7 @@ afterEach(() => {
   host?.remove();
   root = null;
   host = null;
+  vi.unstubAllGlobals();
 });
 
 function renderHook() {
@@ -55,12 +56,35 @@ function renderHook() {
 
 describe("useAnnuaireLogic canonical results", () => {
   beforeEach(() => {
+    useSWRMock.mockClear();
     useSWRMock.mockReturnValue({
       data: { status: "ok", items: [] },
       error: undefined,
       isLoading: false,
       isValidating: false,
       mutate: vi.fn(),
+    });
+  });
+
+  it("uses a no-store browser fetch for the revocable partner projection", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ status: "ok", items: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderHook();
+    const fetcher = useSWRMock.mock.calls.at(-1)?.[1] as (
+      url: string,
+    ) => Promise<unknown>;
+
+    await fetcher("/api/partners/published-directory");
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/partners/published-directory", {
+      method: "GET",
+      cache: "no-store",
     });
   });
 
