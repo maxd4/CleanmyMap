@@ -3,8 +3,11 @@
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import type { ReportGenerationHistoryRow } from "@/lib/reports/report-generation-history-contract";
+import { ReportsWebDocumentHistorySharing } from "../reports-web-document-history-sharing";
+import type {
+  ReportGenerationHistoryActionState,
+} from "./reports-history-contract";
 import type { ReportPdfTheme } from "./reports-web-document.shared";
-import type { ReportGenerationHistoryActionState } from "./reports-web-document-delivery";
 
 export type HistoryActionButtonsProps = {
   row: ReportGenerationHistoryRow;
@@ -155,6 +158,81 @@ export function HistoryActionPrimaryButtons({
           : "Publier dans « Tous les fichiers »"}
       </CmmButton>
     </>
+  );
+}
+
+export function HistoryActionButtons({
+  row,
+  theme,
+  rowId,
+  actionState,
+  onView,
+  onReexport,
+  onPrint,
+  onDerive = () => undefined,
+  onCopyReference = () => undefined,
+  onExportJson = () => undefined,
+  onExportCsv = () => undefined,
+  onResume = () => undefined,
+  publicationPreview,
+  onPublish = () => undefined,
+  onConfirmPublication = () => undefined,
+  onCancelPublication = () => undefined,
+  onRevokePublication = () => undefined,
+}: HistoryActionButtonsProps) {
+  const isPending = actionState?.state === "pending";
+  const resolvedTheme = row.theme ?? theme;
+  return (
+    <div className="flex flex-wrap gap-2">
+      <HistoryActionPrimaryButtons
+        row={row}
+        theme={theme}
+        rowId={rowId}
+        actionState={actionState}
+        onView={onView}
+        onReexport={onReexport}
+        onPrint={onPrint}
+        onDerive={onDerive}
+        onCopyReference={onCopyReference}
+        onExportJson={onExportJson}
+        onExportCsv={onExportCsv}
+        onResume={onResume}
+        onPublish={onPublish}
+        onConfirmPublication={onConfirmPublication}
+        onCancelPublication={onCancelPublication}
+        onRevokePublication={onRevokePublication}
+      />
+      <HistoryPublicationFeedback
+        rowId={rowId}
+        isPending={isPending}
+        publicationPreview={publicationPreview}
+        onConfirmPublication={onConfirmPublication}
+        onCancelPublication={onCancelPublication}
+      />
+      <ReportsWebDocumentHistorySharing row={row} theme={resolvedTheme} />
+    </div>
+  );
+}
+
+export function HistoryActionFeedback({
+  actionState,
+}: {
+  actionState?: ReportGenerationHistoryActionState;
+}) {
+  if (!actionState) return null;
+  return (
+    <CmmFeedback
+      tone={
+        actionState.state === "error"
+          ? "error"
+          : actionState.state === "pending"
+            ? "info"
+            : "success"
+      }
+      className="mt-2"
+    >
+      {actionState.message}
+    </CmmFeedback>
   );
 }
 

@@ -4,8 +4,8 @@ import { FileText } from "lucide-react";
 import {
   HistoryActionButtons,
   HistoryActionFeedback,
-  type ReportsWebDocumentDeliveryHistoryProps,
-} from "./reports-web-document-delivery";
+} from "./reports-history-action-controls";
+import type { ReportsWebDocumentDeliveryHistoryProps } from "./reports-history-contract";
 
 type HistoryRow = ReportsWebDocumentDeliveryHistoryProps["recentRows"][number];
 type HistoryActionProps = Parameters<typeof HistoryActionButtons>[0];

@@ -9,14 +9,14 @@ import {
 } from "@/components/ui/system-state";
 import type { ReportGenerationHistoryRow } from "@/lib/reports/report-generation-history-contract";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
-import { ReportsWebDocumentHistorySharing } from "../reports-web-document-history-sharing";
-import {
-  HistoryActionPrimaryButtons,
-  HistoryPublicationFeedback,
-  type HistoryActionButtonsProps,
-} from "./reports-history-action-controls";
+import type { ReportsWebDocumentDeliveryHistoryProps } from "./reports-history-contract";
 import { ReportsHistoryRows } from "./reports-history-rows";
-import type { ReportPdfTheme } from "./reports-web-document.shared";
+
+export type {
+  ReportGenerationHistoryActionState,
+  ReportsWebDocumentDeliveryHistoryProps,
+} from "./reports-history-contract";
+export { HistoryActionButtons, HistoryActionFeedback } from "./reports-history-action-controls";
 
 export type ReportsWebDocumentExportStatus = {
   icon: LucideIcon;
@@ -38,119 +38,6 @@ export type ReportsWebDocumentDeliveryProps = {
   dailyExportAvailability: ReportExportAvailability;
   onGenerate: () => void;
 };
-
-export type ReportsWebDocumentDeliveryHistoryProps = {
-  recentRows: ReportGenerationHistoryRow[];
-  theme?: ReportPdfTheme;
-  historyAvailability?: "available" | "unavailable";
-  actionStateById?: Record<string, ReportGenerationHistoryActionState>;
-  onView: (id: string) => void;
-  onReexport: (id: string) => void;
-  onPrint?: (id: string) => void;
-  onDerive?: (id: string) => void;
-  onCopyReference?: (id: string) => void;
-  onExportJson?: (id: string) => void;
-  onExportCsv?: (id: string) => void;
-  onResume?: (id: string) => void;
-  publicationPreviewById?: Record<
-    string,
-    {
-      title: string;
-      period: string;
-      scope: string;
-      theme: ReportPdfTheme;
-      artifactReady: boolean;
-      documentUrl: string;
-      communicatedContent: string;
-    }
-  >;
-  onPublish?: (id: string) => void;
-  onConfirmPublication?: (id: string) => void;
-  onCancelPublication?: (id: string) => void;
-  onRevokePublication?: (id: string) => void;
-};
-
-export type ReportGenerationHistoryActionState = {
-  action:
-    "view" | "reexport" | "print" | "derive" | "reference" | "json" | "csv";
-  state: "pending" | "success" | "error";
-  message: string;
-};
-
-export function HistoryActionButtons({
-  row,
-  theme,
-  rowId,
-  actionState,
-  onView,
-  onReexport,
-  onPrint,
-  onDerive = () => undefined,
-  onCopyReference = () => undefined,
-  onExportJson = () => undefined,
-  onExportCsv = () => undefined,
-  onResume = () => undefined,
-  publicationPreview,
-  onPublish = () => undefined,
-  onConfirmPublication = () => undefined,
-  onCancelPublication = () => undefined,
-  onRevokePublication = () => undefined,
-}: HistoryActionButtonsProps) {
-  const isPending = actionState?.state === "pending";
-  const resolvedTheme = row.theme ?? theme;
-  return (
-    <div className="flex flex-wrap gap-2">
-      <HistoryActionPrimaryButtons
-        row={row}
-        theme={theme}
-        rowId={rowId}
-        actionState={actionState}
-        onView={onView}
-        onReexport={onReexport}
-        onPrint={onPrint}
-        onDerive={onDerive}
-        onCopyReference={onCopyReference}
-        onExportJson={onExportJson}
-        onExportCsv={onExportCsv}
-        onResume={onResume}
-        onPublish={onPublish}
-        onConfirmPublication={onConfirmPublication}
-        onCancelPublication={onCancelPublication}
-        onRevokePublication={onRevokePublication}
-      />
-      <HistoryPublicationFeedback
-        rowId={rowId}
-        isPending={isPending}
-        publicationPreview={publicationPreview}
-        onConfirmPublication={onConfirmPublication}
-        onCancelPublication={onCancelPublication}
-      />
-      <ReportsWebDocumentHistorySharing row={row} theme={resolvedTheme} />
-    </div>
-  );
-}
-
-export function HistoryActionFeedback({
-  actionState,
-}: {
-  actionState?: ReportGenerationHistoryActionState;
-}) {
-  if (!actionState) return null;
-  return (
-    <CmmFeedback
-      tone={
-        actionState.state === "error"
-          ? "error"
-          : actionState.state === "pending"
-            ? "info"
-            : "success"
-      }
-      className="mt-2"
-    >
-      {actionState.message}
-    </CmmFeedback>
-  );
-}
 
 export function ReportsWebDocumentDelivery({
   state,

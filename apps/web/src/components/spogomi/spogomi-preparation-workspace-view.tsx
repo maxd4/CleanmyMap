@@ -17,7 +17,11 @@ import { SpogomiTeamJoinRequestsPanel } from "./spogomi-team-join-requests-panel
 import { SpogomiAdmissionRequestsPanel } from "./spogomi-admission-requests-panel";
 import { SpogomiAttendancePanel } from "./spogomi-attendance-panel";
 import { SpogomiDayReadinessChecklist } from "./spogomi-day-readiness-checklist";
-import { ROSTER_MAPPING_FIELDS, type SpogomiPreparationWorkspaceSection, type WorkspaceData } from "./spogomi-preparation-workspace";
+import {
+  ROSTER_MAPPING_FIELDS,
+  type SpogomiPreparationWorkspaceSection,
+  type WorkspaceData,
+} from "./spogomi-preparation-workspace-contract";
 
 const OfficialRouteMap = dynamic(() => import("./spogomi-official-route-map").then((module) => module.SpogomiOfficialRouteMap), { ssr: false });
 
