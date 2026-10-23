@@ -38,6 +38,13 @@ const pendingEntry = {
   recentActivityAt: "2026-08-26T10:00:00.000Z",
 };
 
+const acceptedEntry = {
+  ...pendingEntry,
+  id: "published-1",
+  publicationStatus: "accepted" as const,
+  verificationStatus: "verifie" as const,
+};
+
 describe("PublishedAnnuaireReviewPanel", () => {
   it("trims and transmits the decision reason in the review payload", () => {
     expect(
@@ -65,5 +72,15 @@ describe("PublishedAnnuaireReviewPanel", () => {
     expect(markup).toContain('maxLength="500"');
     expect(markup).toContain('placeholder="CONFIRMER PARTENAIRE"');
     expect((markup.match(/disabled=""/g) ?? []).length).toBe(2);
+  });
+
+  it("offers an explicit withdrawal decision for an accepted fiche", () => {
+    const markup = renderToStaticMarkup(
+      <PublishedAnnuaireReviewPanel items={[acceptedEntry]} />,
+    );
+
+    expect(markup).toContain("Retirer de l’annuaire");
+    expect(markup).not.toContain(">Accepter<");
+    expect((markup.match(/disabled=""/g) ?? []).length).toBe(1);
   });
 });

@@ -9,6 +9,7 @@ const updatePublishedPartnerAnnuaireEntryPublicationStatusMock = vi.hoisted(
 const updatePartnerOnboardingRequestStatusMock = vi.hoisted(() => vi.fn());
 const sendCreatorInboxEmailMock = vi.hoisted(() => vi.fn());
 const canUseSupabaseServerPersistenceMock = vi.hoisted(() => vi.fn());
+const revalidatePathMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAdminAccess: requireAdminAccessMock,
@@ -34,6 +35,10 @@ vi.mock("@/lib/community/creator-inbox-email", () => ({
 
 vi.mock("@/lib/persistence/runtime-store", () => ({
   canUseSupabaseServerPersistence: canUseSupabaseServerPersistenceMock,
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: revalidatePathMock,
 }));
 
 const publishedEntry = {
@@ -213,6 +218,80 @@ describe("POST /api/admin/partners/published-directory", () => {
           verificationStatus: "en_cours",
         },
         newValue: { publicationStatus: "rejected", verificationStatus: "a_revalider" },
+      },
+    });
+  });
+
+  it("withdraws an accepted fiche and invalidates the public directory paths", async () => {
+    getPublishedPartnerAnnuaireEntryByIdMock.mockResolvedValueOnce({
+      ...publishedEntry,
+      publicationStatus: "accepted",
+      verificationStatus: "verifie",
+    });
+    updatePublishedPartnerAnnuaireEntryPublicationStatusMock.mockImplementationOnce(
+      async ({ publicationStatus }: { publicationStatus: "accepted" | "rejected" }) => ({
+        ...publishedEntry,
+        publicationStatus,
+        verificationStatus: publicationStatus === "accepted" ? "verifie" : "a_revalider",
+      }),
+    );
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      request({
+        id: "onboarded-1",
+        publicationStatus: "rejected",
+        confirmPhrase: "CONFIRMER PARTENAIRE",
+        reason: "Retrait justifié",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(updatePublishedPartnerAnnuaireEntryPublicationStatusMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryId: "onboarded-1",
+        publicationStatus: "rejected",
+      }),
+    );
+    expect(auditCalls()[0]).toMatchObject({
+      details: {
+        previousValue: { publicationStatus: "accepted", verificationStatus: "verifie" },
+        newValue: { publicationStatus: "rejected", verificationStatus: "a_revalider" },
+      },
+    });
+    expect(revalidatePathMock).toHaveBeenCalledWith("/api/partners/published-directory");
+    expect(revalidatePathMock).toHaveBeenCalledWith("/sections/annuaire");
+  });
+
+  it("allows the existing rejected-to-accepted review cycle", async () => {
+    getPublishedPartnerAnnuaireEntryByIdMock.mockResolvedValueOnce({
+      ...publishedEntry,
+      publicationStatus: "rejected",
+      verificationStatus: "a_revalider",
+    });
+    updatePublishedPartnerAnnuaireEntryPublicationStatusMock.mockImplementationOnce(
+      async ({ publicationStatus }: { publicationStatus: "accepted" | "rejected" }) => ({
+        ...publishedEntry,
+        publicationStatus,
+        verificationStatus: publicationStatus === "accepted" ? "verifie" : "a_revalider",
+      }),
+    );
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      request({
+        id: "onboarded-1",
+        publicationStatus: "accepted",
+        confirmPhrase: "CONFIRMER PARTENAIRE",
+        reason: "Nouvelle vérification",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(auditCalls()[0]).toMatchObject({
+      details: {
+        previousValue: { publicationStatus: "rejected", verificationStatus: "a_revalider" },
+        newValue: { publicationStatus: "accepted", verificationStatus: "verifie" },
       },
     });
   });

@@ -136,8 +136,8 @@ export function PublishedAnnuaireReviewPanel({
  </h2>
  <p className="mt-1 cmm-text-caption cmm-text-secondary">
  {fr
- ?"Les fiches d&apos;onboarding restent en attente tant qu&apos;elles ne sont pas acceptées."
- :"Onboarding records stay pending until they are accepted."}
+ ?"Les fiches peuvent être acceptées, rejetées ou retirées de l’annuaire après une décision motivée."
+ :"Records can be accepted, rejected, or withdrawn from the directory after a reasoned decision."}
  </p>
  </div>
  <label className="space-y-1 cmm-text-caption font-semibold cmm-text-secondary">
@@ -205,6 +205,7 @@ export function PublishedAnnuaireReviewPanel({
  </label>
 
  <div className="mt-3 flex flex-wrap gap-2">
+ {entry.publicationStatus !== "accepted" ? (
  <button
  type="button"
  disabled={
@@ -217,6 +218,7 @@ export function PublishedAnnuaireReviewPanel({
  >
  {fr ?"Accepter" :"Accept"}
  </button>
+ ) : null}
  <button
  type="button"
  disabled={
@@ -227,7 +229,9 @@ export function PublishedAnnuaireReviewPanel({
  onClick={() => reviewEntry(entry.id,"rejected")}
  className="rounded-lg border border-rose-200 bg-white px-3 py-2 cmm-text-caption font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
  >
- {fr ?"Rejeter" :"Reject"}
+ {entry.publicationStatus === "accepted"
+ ? fr ?"Retirer de l’annuaire" :"Withdraw from directory"
+ : fr ?"Rejeter" :"Reject"}
  </button>
  </div>
  </article>

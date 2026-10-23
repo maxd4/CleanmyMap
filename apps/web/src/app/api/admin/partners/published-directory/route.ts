@@ -1,4 +1,5 @@
 import { z } from"zod";
+import { revalidatePath } from "next/cache";
 import { requireAdminAccess } from"@/lib/authz";
 import { appendAdminOperationAudit } from"@/lib/admin/audit/operation-audit";
 import {
@@ -29,6 +30,11 @@ const reviewPayloadSchema = z.object({
 });
 
 const AUDIT_OPERATION = "review_partner_publication";
+
+function invalidatePublishedPartnerDirectory() {
+ revalidatePath("/api/partners/published-directory");
+ revalidatePath("/sections/annuaire");
+}
 
 type PublicationSnapshot = {
  publicationStatus: string;
@@ -430,6 +436,7 @@ export async function POST(request: Request) {
  });
   if (result.kind !== "applied") return partnerReviewFailureResponse(result, operationId);
  const updated = result.updated;
+ invalidatePublishedPartnerDirectory();
 
   await sendPartnerPublicationReviewNotification({
    actorUserId: access.userId,

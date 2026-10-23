@@ -11,10 +11,10 @@
 - **Type fonctionnel** : page de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : protégé
-- **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
+- **Contexte nécessaire** : Compte connecté avec la capacité effective `ACTIVE_ROLE=admin` ou `ACTIVE_ROLE=max`
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; les droits de gouvernance des fiches restent contrôlés séparément.
 - **Objectif utilisateur principal** : Piloter la revue des demandes et des fiches partenaires à partir de données réellement persistées.
-- **Action principale attendue** : Examiner les états de publication/modération et la couverture déclarée des fiches persistées.
+- **Action principale attendue** : Examiner les états de publication/modération, retirer une fiche publiée par une décision `rejected` motivée et contrôler la couverture déclarée des fiches persistées.
 - **Palette attendue** : indigo
 - **Scope** : Gouvernance des fiches partenaires et des demandes onboarding persistées ; hors Annuaire public statique.
 - **Terminée** : non
@@ -58,6 +58,7 @@
 - « Partenaires actifs » combine uniquement les états persistés `qualificationStatus`, `verificationStatus` et `recentActivityAt` des fiches acceptées.
 - « Fiches à revoir » reflète les fiches persistées dont l’état de publication n’est pas `accepted`.
 - Le nombre « À valider » vient indépendamment de `countPartnerOnboardingRequests()` et ne dépend pas des fiches publiées.
+- `requireAdminAccess()` est appelé avant toute lecture privilégiée des demandes, contacts, impacts ou fiches de gouvernance. Un visiteur ou un rôle actif non administratif reçoit un état d’accès sans données privées ; le rendu ne déduit jamais cette capacité d’un libellé de rôle UI.
 - En l’absence de fiche persistée, le dashboard affiche des compteurs à zéro et un état vide explicite. En cas d’échec de lecture persistée, les KPI concernés affichent `n/a` et une erreur visible.
 
 ### Chaîne persistante de référencement
@@ -65,7 +66,8 @@
 - `partner_onboarding_requests` conserve la demande privée et son statut métier ; `partner_annuaire_entries` conserve la fiche liée par `source_request_id` unique.
 - La création utilise `create_partner_onboarding_request_with_annuaire` avec une clé d’idempotence par demandeur. La demande et sa projection annuaire sont créées dans la même transaction ; une reprise avec la même clé renvoie les identifiants existants.
 - `public_data` est la projection public-safe. Le contact administratif reste dans `private_admin_contact` et n'est jamais sélectionné par la route publique.
-- Une fiche est publiable uniquement après une décision administrative `accepted`. `review_partner_publication` met à jour la demande, la fiche et `admin_operations_audit` atomiquement ; une erreur ne produit pas de succès partiel.
+- Une fiche est publiable uniquement après une décision administrative `accepted`. Le panneau de revue présente les fiches persistées concernées, y compris les fiches déjà acceptées afin de permettre leur retrait explicite par `rejected`, puis leur éventuelle nouvelle acceptation selon le même cycle. `review_partner_publication` met à jour la demande, la fiche et `admin_operations_audit` atomiquement ; une erreur ne produit pas de succès partiel.
+- Après une décision de revue réussie, les chemins de lecture de l’Annuaire sont invalidés/rafraîchis ; seules les fiches `accepted` restent dans `GET /api/partners/published-directory` et dans les résultats publics.
 - Les demandes historiques sans fiche sont réconciliées de manière non destructive et restent `pending_admin_review`. Une indisponibilité Supabase de l'API publique produit une erreur HTTP explicite, jamais un annuaire vide fabriqué.
 
 ## Extension SPOGOMI — lot 9

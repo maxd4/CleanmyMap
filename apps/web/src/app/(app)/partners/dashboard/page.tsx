@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { PublishedAnnuaireReviewPanel } from "@/components/partners/published-annuaire-review-panel";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { requireAdminAccess } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { countPartnerOnboardingRequests } from "@/lib/partners/onboarding-requests-store";
@@ -26,7 +26,6 @@ type PartnerDashboardContentProps = {
   onboardingLoadError: string | null;
   spogomiPartnerImpacts: Awaited<ReturnType<typeof listPublishedSpogomiPartnerImpacts>>;
   spogomiImpactLoadError: string | null;
-  currentRole: string | null;
 };
 
 function PartnerDashboardContent({
@@ -38,7 +37,6 @@ function PartnerDashboardContent({
   onboardingLoadError,
   spogomiPartnerImpacts,
   spogomiImpactLoadError,
-  currentRole,
 }: PartnerDashboardContentProps) {
   const acceptedPublishedEntries = publishedEntries.filter(
     (entry) => entry.publicationStatus === "accepted",
@@ -46,6 +44,7 @@ function PartnerDashboardContent({
   const reviewPublishedEntries = publishedEntries.filter(
     (entry) => entry.publicationStatus !== "accepted",
   );
+  const reviewablePublishedEntries = publishedEntries;
   const totalEntries = acceptedPublishedEntries.length;
   const activeEntries = acceptedPublishedEntries.filter(
     (entry) =>
@@ -165,7 +164,9 @@ function PartnerDashboardContent({
               <h3 className="text-xl font-black text-white tracking-tight relative z-10 flex items-center gap-3"><ShieldCheck size={20} className="text-slate-400" />Vérification</h3>
               <p className="cmm-text-body cmm-text-inverse font-medium relative z-10">{staleEntries.length} fiches nécessitent une confirmation de données ou une vérification d&apos;activité récente.</p>
             </div>
-            {currentRole === "admin" && reviewPublishedEntries.length > 0 && <PublishedAnnuaireReviewPanel items={reviewPublishedEntries} />}
+            {reviewablePublishedEntries.length > 0 && (
+              <PublishedAnnuaireReviewPanel items={reviewablePublishedEntries} />
+            )}
           </aside>
         </div>
       </CmmSectionGroup>
@@ -173,8 +174,54 @@ function PartnerDashboardContent({
   );
 }
 
+function PartnerDashboardAccessState({
+  isAuthenticated,
+}: {
+  isAuthenticated: boolean;
+}) {
+  return (
+    <section
+      className="rounded-[2rem] border border-amber-400/20 bg-amber-400/5 p-6 text-amber-100"
+      data-partners-dashboard-access="denied"
+    >
+      <h1 className="text-xl font-black">
+        {isAuthenticated ? "Accès de gouvernance refusé" : "Connexion requise"}
+      </h1>
+      <p className="mt-2 text-sm text-amber-100/70">
+        {isAuthenticated
+          ? "Cette surface est réservée aux capacités administratives actives admin ou max."
+          : "Connectez-vous avec un compte autorisé pour consulter la gouvernance des partenariats."}
+      </p>
+    </section>
+  );
+}
+
 export default async function PartnersDashboardPage() {
   const { userId, clerkReachable } = await getSafeAuthSession();
+  if (!clerkReachable) {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        authUnavailable
+        mode="disabled"
+      >
+        <PartnerDashboardAccessState isAuthenticated={false} />
+      </ClerkRequiredGate>
+    );
+  }
+
+  const access = await requireAdminAccess();
+  if (!access.ok) {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={Boolean(userId)}
+        mode="disabled"
+      >
+        <PartnerDashboardAccessState isAuthenticated={Boolean(userId)} />
+      </ClerkRequiredGate>
+    );
+  }
+
   const classes = getBlockClasses("network");
   const pageFamily = resolvePageFamily("/partners/dashboard");
   const accountCompletion = userId
@@ -188,9 +235,6 @@ export default async function PartnersDashboardPage() {
     console.error("Published partner annuaire load failed", error);
     publishedLoadError = "Fiches partenaires indisponibles (configuration persistance).";
   }
-  const currentRole = userId ? await getCurrentUserRoleLabel().catch(() => null) : null;
-
-
   let onboardingRequestCount: number | null = null;
   let onboardingLoadError: string | null = null;
   if (!canUseSupabaseServerPersistence()) {
@@ -222,7 +266,6 @@ export default async function PartnersDashboardPage() {
       onboardingLoadError={onboardingLoadError}
       spogomiPartnerImpacts={spogomiPartnerImpacts}
       spogomiImpactLoadError={spogomiImpactLoadError}
-      currentRole={currentRole}
     />
   );
 

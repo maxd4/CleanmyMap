@@ -1194,6 +1194,12 @@ réaligner sans réinterpréter les métadonnées Clerk.
 
 ## Annuaire partenaire : frontière de publication
 
+`/partners/dashboard` est une surface de gouvernance admin-only : sa page appelle
+`requireAdminAccess()` avant toute lecture des demandes, fiches ou contacts
+persistés. La capacité est calculée depuis `ACTIVE_ROLE` ; `admin` et `max` sont
+acceptés, tandis qu’un rôle attribué mais actif `benevole`, `elu` ou autre ne
+reçoit ni les données privées ni le panneau de revue.
+
 `POST /api/partners/onboarding-requests` exige une session Clerk et conserve
 la demande dans `partner_onboarding_requests`. La fiche liée est créée dans
 `partner_annuaire_entries` par une RPC server-only idempotente ; une création

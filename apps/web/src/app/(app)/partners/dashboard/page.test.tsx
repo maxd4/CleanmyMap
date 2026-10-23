@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getSafeAuthSession: vi.fn(),
+  requireAdminAccess: vi.fn(),
   loadAccountCompletionGateState: vi.fn(),
-  getCurrentUserRoleLabel: vi.fn(),
   countPartnerOnboardingRequests: vi.fn(),
   listPublishedPartnerAnnuaireEntries: vi.fn(),
   canUseSupabaseServerPersistence: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock("@/lib/auth/account-completion-gate", () => ({
 }));
 
 vi.mock("@/lib/authz", () => ({
-  getCurrentUserRoleLabel: mocks.getCurrentUserRoleLabel,
+  requireAdminAccess: mocks.requireAdminAccess,
 }));
 
 vi.mock("@/lib/partners/onboarding-requests-store", () => ({
@@ -100,8 +100,8 @@ describe("/partners/dashboard persisted governance contract", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getSafeAuthSession.mockResolvedValue({ userId: "admin-1", clerkReachable: true });
+    mocks.requireAdminAccess.mockResolvedValue({ ok: true, userId: "admin-1" });
     mocks.loadAccountCompletionGateState.mockResolvedValue({ requirement: { requiresSetup: false } });
-    mocks.getCurrentUserRoleLabel.mockResolvedValue("admin");
     mocks.canUseSupabaseServerPersistence.mockReturnValue(true);
     mocks.countPartnerOnboardingRequests.mockResolvedValue(7);
     mocks.listPublishedSpogomiPartnerImpacts.mockResolvedValue([]);
@@ -117,6 +117,8 @@ describe("/partners/dashboard persisted governance contract", () => {
     expect(markup).toMatch(/<p[^>]*>2<\/p>[\s\S]*Zones couvertes/);
     expect(markup).toMatch(/<p[^>]*>0<\/p>[\s\S]*Fiches à revoir/);
     expect(markup).toContain("7");
+    expect(markup).toContain('data-testid="review-panel"');
+    expect(markup).toContain("Structure persistée");
   });
 
   it("keeps onboarding count independent and renders a real empty state", async () => {
@@ -139,5 +141,41 @@ describe("/partners/dashboard persisted governance contract", () => {
 
     expect(markup).toContain("Fiches partenaires indisponibles");
     expect(markup).toMatch(/<p[^>]*>n\/a<\/p>[\s\S]*Fiches publiées/);
+  });
+
+  it("refuses before any privileged governance read and renders no private data", async () => {
+    mocks.getSafeAuthSession.mockResolvedValue({ userId: "benevole-1", clerkReachable: true });
+    mocks.requireAdminAccess.mockResolvedValue({ ok: false, status: 403, error: "Forbidden" });
+
+    const markup = renderToStaticMarkup(await PartnersDashboardPage());
+
+    expect(markup).toContain("Accès de gouvernance refusé");
+    expect(markup).not.toContain("Gouvernance des partenariats");
+    expect(mocks.loadAccountCompletionGateState).not.toHaveBeenCalled();
+    expect(mocks.listPublishedPartnerAnnuaireEntries).not.toHaveBeenCalled();
+    expect(mocks.countPartnerOnboardingRequests).not.toHaveBeenCalled();
+    expect(mocks.listPublishedSpogomiPartnerImpacts).not.toHaveBeenCalled();
+  });
+
+  it("keeps visitors in a connection state without reading governance data", async () => {
+    mocks.getSafeAuthSession.mockResolvedValue({ userId: null, clerkReachable: true });
+    mocks.requireAdminAccess.mockResolvedValue({ ok: false, status: 401, error: "Unauthorized" });
+
+    const markup = renderToStaticMarkup(await PartnersDashboardPage());
+
+    expect(markup).toContain("Connexion requise");
+    expect(mocks.listPublishedPartnerAnnuaireEntries).not.toHaveBeenCalled();
+    expect(mocks.countPartnerOnboardingRequests).not.toHaveBeenCalled();
+  });
+
+  it("uses the effective admin guard rather than a role label from the UI", async () => {
+    mocks.getSafeAuthSession.mockResolvedValue({ userId: "max-1", clerkReachable: true });
+    mocks.requireAdminAccess.mockResolvedValue({ ok: true, userId: "max-1" });
+    mocks.listPublishedPartnerAnnuaireEntries.mockResolvedValue([ACCEPTED_ENTRY]);
+
+    await PartnersDashboardPage();
+
+    expect(mocks.requireAdminAccess).toHaveBeenCalledTimes(1);
+    expect(mocks.listPublishedPartnerAnnuaireEntries).toHaveBeenCalledTimes(1);
   });
 });
