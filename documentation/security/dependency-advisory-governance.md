@@ -11,7 +11,7 @@ package, de niveau de sévérité ou de scanner.
 | [GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) | CVE-2025-71330 | `apps/mobile/vendor/image-size` `2.0.3` | `@expo/metro` → `metro` → `image-size` | Rejet des entrées ICNS trop courtes, hors limites ou non progressives |
 | [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) | CVE-2025-71329 | `apps/mobile/vendor/image-size` `2.0.3` | `react-native` → `@react-native/community-cli-plugin` → `metro` → `image-size` | Conservation de la garde de progression des boîtes JXL/HEIF de taille nulle |
 | [GHSA-528h-pc64-c93x](https://github.com/advisories/GHSA-528h-pc64-c93x) | CVE-2026-71429 | `apps/mobile/vendor/stream-json` `1.9.1` | `@clerk/expo` → `@clerk/clerk-js` → `@solana/wallet-adapter-base` → `@solana/web3.js@1.99.0` → `jayson@4.3.0` → `stream-json` | Backport CommonJS borné à `StreamValues` et `Verifier`, sans surface de filtres JSON |
-| [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) | CVE-2026-85393 | `apps/mobile/vendor/node-forge` `1.4.0` | `expo@57.0.22` → `@expo/cli@57.0.24` → `node-forge`, et `@expo/code-signing-certificates@0.0.6` → `node-forge` | Backport du contrôle du nombre d'enfants de `DigestAlgorithm` depuis `forge#1152` (`ceba344...`) |
+| [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) | CVE-2026-85393 | `apps/mobile/vendor/node-forge` `1.4.0` | `expo@57.0.27` → `@expo/cli@57.0.28` → `node-forge`, et `@expo/code-signing-certificates@0.0.6` → `node-forge` | Backport du contrôle du nombre d'enfants de `DigestAlgorithm` depuis `forge#1152` (`ceba344...`) |
 | [GHSA-VFJ7-8CJW-P6XM](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | CVE-2026-93687 | `apps/mobile/vendor/braces` `3.0.4` | `micromatch@4.0.8` → `braces` dans Metro et l'outillage ESLint | Backport borné de profondeur de parsing ; voir `apps/mobile/vendor/braces/SECURITY-PATCH.md` |
 
 ## Mitigation effectivement versionnée
@@ -167,6 +167,32 @@ APIs PEM d'Expo sont présentes pour le tooling, mais CleanMyMap n'active ni
 à un projet Expo réel n'a pas été effectué. Cette absence de consumer ne sert
 pas de justification de conservation de l'alerte : le correctif local est
 versionné et testé.
+
+## Compatibilité `zod` de l'Expo CLI
+
+Le graphe actuel atteint `zod` par `expo@57.0.27` → `@expo/cli@57.0.28`.
+L'advisory `GHSA-MRHX-C7XC-M3W5` exige `zod >=4.6.6`, mais les releases
+`@expo/cli` `57.0.28` à `57.0.32` déclarent encore `zod: ^3.25.76`. Aucun
+correctif upstream compatible avec la ligne Expo 57 n'est donc disponible dans
+le graphe vérifié le 2026-10-23.
+
+Le `package.json` applique un override strictement limité à
+`@expo/cli` : `zod: npm:zod@4.6.6`. Le lockfile résout le chemin imbriqué
+`node_modules/@expo/cli/node_modules/zod` vers `4.6.6`, sans ajouter de
+dépendance runtime directe à l'application. Les schémas actuellement utilisés
+par l'Expo CLI (`object`, `enum`, `number`, `boolean`, `string`, `union`,
+`literal`, `min`, `optional`, `url` et `array`) sont vérifiés positivement et
+négativement par `apps/mobile/security/expo-zod-compatibility.test.mjs`, qui
+charge précisément le package imbriqué de l'Expo CLI.
+
+Cette adaptation n'est pas une exception du gate : elle corrige la chaîne
+Zod vers la version publiée corrigée, tandis que les backports vendorisés
+`node-forge`, `image-size`, `stream-json` et `braces` restent inchangés. Une
+sortie `npm ls` signalant une version `invalid` sur ce chemin exprime la plage
+déclarée obsolète par `@expo/cli`, pas une résolution runtime différente ; le
+test ciblé et `npm run security:dependencies` restent les preuves de la
+compatibilité effective. L'override devra être retiré dès qu'une release Expo
+déclarera une plage Zod corrigée.
 
 ## Compatibilité `jayson` et CVE-2026-71429
 

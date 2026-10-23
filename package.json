@@ -201,7 +201,7 @@
     "stream-json": "file:apps/mobile/vendor/stream-json",
     "supabase": "^2.116.0",
     "typescript-eslint": "8.71.2",
-    "vite": "8.1.3"
+    "vite": "8.1.6"
   },
   "optionalDependencies": {
     "@rolldown/binding-linux-x64-gnu": "1.2.14",
@@ -222,7 +222,7 @@
       "image-size": "file:apps/mobile/vendor/image-size"
     },
     "@babel/core": "7.29.7",
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "fast-uri": "3.1.8",
     "ajv": {
       "fast-uri": "3.1.8"
@@ -237,7 +237,7 @@
     },
     "moment": "2.31.0",
     "js-cookie": "3.0.8",
-    "vite": "8.1.3",
+    "vite": "8.1.6",
     "vitest": "4.1.11",
     "ws": "8.21.0",
     "uuid": "11.1.1",
@@ -256,7 +256,8 @@
     "@expo/cli": {
       "tar": "7.5.22",
       "undici": "6.27.0",
-      "node-forge": "file:apps/mobile/vendor/node-forge"
+      "node-forge": "file:apps/mobile/vendor/node-forge",
+      "zod": "npm:zod@4.6.6"
     },
     "@expo/code-signing-certificates@0.0.6": {
       "node-forge": "file:apps/mobile/vendor/node-forge"
