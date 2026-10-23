@@ -159,6 +159,21 @@ test("the migrated registry preserves every human decision and manual field", ()
   }
 });
 
+test("a compact registry preserves all twelve resolved decision fields", () => {
+  const expanded = canonicalRegistry();
+  const compact = expanded.replace(/^\| (?:ARCHITECTURE_DECISION|PRIORITY|DEPENDENCY_OR_BLOCKER|NEXT_TRIGGER) \|[^\n]*\n/gm, "");
+  assert.deepEqual(parseHumanDecisions(extractHumanDecisions(compact)), parseHumanDecisions(extractHumanDecisions(expanded)));
+  const view = {
+    isFile: (file) => file === "documentation/architecture/modularity-decisions.md",
+    readText: () => compact,
+  };
+  assert.deepEqual(readHumanDecisionsFromView(view, { requireRegistry: true }).decisions, parseHumanDecisions(extractHumanDecisions(expanded)));
+  const invalid = compact.replace("| RATIONALE | décision justifiée |", "");
+  assert.throws(() => readHumanDecisionsFromView({ ...view, readText: () => invalid }, { requireRegistry: true }), /Registre canonique des décisions illisible/);
+  const duplicate = compact.replace("| RESPONSIBILITIES | responsabilité |", "| RESPONSIBILITIES | responsabilité |\n| RESPONSIBILITIES | responsabilité |");
+  assert.throws(() => readHumanDecisionsFromView({ ...view, readText: () => duplicate }, { requireRegistry: true }), /Registre canonique des décisions illisible/);
+});
+
 test("the current registry validates its markers and structure without a fixed decision count", () => {
   const registry = canonicalRegistry({ file: "src/current.ts" });
   const view = {

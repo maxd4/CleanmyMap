@@ -56,6 +56,11 @@ const HUMAN_FIELDS = Object.freeze([
   "DEPENDENCY_OR_BLOCKER",
   "NEXT_TRIGGER",
 ]);
+// Canonical single-owner fields live in the summary table. The detailed sheets
+// must retain all other fields; legacy duplicated fields remain validated.
+const SUMMARY_OWNED_FIELDS = new Set([
+  "ARCHITECTURE_DECISION", "PRIORITY", "DEPENDENCY_OR_BLOCKER", "NEXT_TRIGGER",
+]);
 
 function git(args, root = REPOSITORY_ROOT) {
   return execFileSync(gitExecutable(), args, { cwd: root, encoding: "utf8" }).trim();
@@ -378,10 +383,14 @@ function parseCanonicalDetails(humanBlock) {
       fields.set(cells[0], cells[1]);
     }
     for (const field of HUMAN_FIELDS) {
-      if (!fields.has(field)) throw canonicalRegistryError("champ détaillé manquant pour " + file + ": " + field);
+      if (!SUMMARY_OWNED_FIELDS.has(field) && !fields.has(field)) {
+        throw canonicalRegistryError("champ détaillé manquant pour " + file + ": " + field);
+      }
     }
-    if (!fields.get("ARCHITECTURE_DECISION") || !fields.get("PRIORITY")) {
-      throw canonicalRegistryError("décision ou priorité vide pour " + file);
+    for (const field of SUMMARY_OWNED_FIELDS) {
+      if (fields.has(field) && !fields.get(field)) {
+        throw canonicalRegistryError("champ décisionnel détaillé vide pour " + file + ": " + field);
+      }
     }
     details.set(file, fields);
   }
@@ -408,7 +417,7 @@ function parseCanonicalRegistry(markdown) {
       ["NEXT_TRIGGER", summary.nextTrigger],
     ];
     for (const [field, expected] of comparisons) {
-      if (fields.get(field) !== expected) {
+      if (fields.has(field) && fields.get(field) !== expected) {
         throw canonicalRegistryError("incohérence résumé/détail pour " + summary.file + ": " + field);
       }
     }
@@ -452,6 +461,9 @@ export function readHumanDecisionsFromView(view, { requireRegistry = false } = {
 }
 
 export function parseDecisionSummary(humanBlock) {
+  const canonicalHeader = ["PATH", "ARCHITECTURE_DECISION", "PRIORITY", "DEPENDENCY_OR_BLOCKER", "NEXT_TRIGGER"];
+  const isCanonicalSummary = humanBlock.split(/\r?\n/)
+    .some((line) => JSON.stringify(splitTableRow(line)) === JSON.stringify(canonicalHeader));
   const entries = [];
   for (const line of humanBlock.split(/\r?\n/)) {
     const cells = splitTableRow(line);
@@ -459,7 +471,7 @@ export function parseDecisionSummary(humanBlock) {
     const [file, decision, priority, fourth, fifth] = cells;
     if (!file || !decision || !priority || file.startsWith("_") || file.startsWith("###")) continue;
     if (decision === "DECISION" || decision === "ARCHITECTURE_DECISION") continue;
-    const isCanonical = cells[3] === "DEPENDENCY_OR_BLOCKER";
+    const isCanonical = isCanonicalSummary || cells[3] === "DEPENDENCY_OR_BLOCKER";
     entries.push({
       file: file.replaceAll("`", ""),
       decision,

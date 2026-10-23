@@ -2,6 +2,8 @@
 
 Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` est généré séparément à partir des mesures du dépôt et de ce registre. Les décisions acquises sont conservées même après modularisation afin de préserver les invariants, contrats et déclencheurs de revue.
 
+Les quatre champs décisionnels (`ARCHITECTURE_DECISION`, `PRIORITY`, `DEPENDENCY_OR_BLOCKER`, `NEXT_TRIGGER`) sont portés **uniquement** par le tableau récapitulatif ; chaque fiche détaillée conserve les huit champs complémentaires. Cette représentation ne modifie aucune décision.
+
 <!-- RADAR:HUMAN_DECISIONS:BEGIN -->
 | PATH | ARCHITECTURE_DECISION | PRIORITY | DEPENDENCY_OR_BLOCKER | NEXT_TRIGGER |
 | --- | --- | --- | --- | --- |
@@ -68,11 +70,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | composants de rubrique et helpers de recherche |
 | COUPLING | données de partenaires + présentation + interaction |
 | NATURAL_EXTRACTION_BOUNDARY | directory/query, filtres, résultats, aside éditorial et shell |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | le shell conserve le contrat public tandis que l'interaction de recherche, les résultats et l'aside éditorial ont des owners explicites |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver le contrat de l'annuaire, les filtres et les résultats |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/components/chat/chat-shell.tsx`
 
@@ -85,11 +83,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | hooks chat, actions de message, rendu des modes |
 | COUPLING | élevé entre mode, canal actif, destinataire et affichage mobile |
 | NATURAL_EXTRACTION_BOUNDARY | contrôleur de contexte, sélection/navigation, thread/composer |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | contexte/données, navigation, sélection/vue et thread/composer ont des owners explicites ; la façade conserve l'API publique et orchestre le layout |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | aucun ; les frontières client restent séparées et les effets existants sont préservés |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 
 #### `apps/web/src/components/sections/rubriques/elus-section.tsx`
 
@@ -102,11 +96,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | fetch/error states et composants d'accès |
 | COUPLING | provider de données, AuthZ d'affichage et présentation |
 | NATURAL_EXTRACTION_BOUNDARY | hook/loader overview puis présentation et CTA |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | le hook/loader overview, la navigation, les panels et les états sont déjà des owners explicites composés par une façade cohésive |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | conserver l'orchestration overview/navigation/panels |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/components/account/greater-paris-select.tsx`
 
@@ -119,11 +109,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | composant Account et module pur `lib/geo/greater-paris-location.ts` |
 | COUPLING | types géographiques, recherche d'adresse et UX de sélection |
 | NATURAL_EXTRACTION_BOUNDARY | normalisations territoriales dans `lib/geo/greater-paris-location.ts` ; interaction dans ce composant |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | les suggestions, contrôles, shell et transformations territoriales ont déjà des owners explicites ; la façade publique reste stable |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver les façades et owners suggestions/controls/shell |
-| NEXT_TRIGGER | nouveau contrat géographique autonome |
 
 #### `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx`
 
@@ -136,11 +122,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | tracker, validation du message et mutation de feedback |
 | COUPLING | état local, préremplissage métier et feedback asynchrone |
 | NATURAL_EXTRACTION_BOUNDARY | formulaire contrôlé, tracker et shell de mode |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | le contrôleur porte le cycle de vie réseau/soumission et les sous-vues portent formulaire, suivi, guidance et états sans déplacer le contrat public |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver le contrôleur, les états de soumission et les sous-vues |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/lib/community/bug-report-screenshot.ts`
 
@@ -153,11 +135,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `bug-report-screenshot.test.ts`, routes API de capture et contrats de stockage |
 | COUPLING | séquences d'état pending/ready/failed, vérification MIME/taille et autorisation owner/admin |
 | NATURAL_EXTRACTION_BOUNDARY | validation/paths purs, primitives Storage/row mapping et façade d'orchestration lifecycle |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | la validation et les primitives de stockage sont désormais des owners cohésifs ; la façade conserve les séquences d'autorisation, de claim, de vérification et de nettoyage sans déplacer intacte une orchestration |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver la vérification du contenu, l'ownership, les états d'upload et la suppression sans fuite de chemin privé |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/lib/community/bug-reports-store.ts`
 
@@ -170,11 +148,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `bug-reports-store.test.ts`, routes feedback/admin et loader creator inbox |
 | COUPLING | mapping snake_case/camelCase, pagination owner-scoped, transitions de statut et RPC de décision |
 | NATURAL_EXTRACTION_BOUNDARY | contrats/pagination, normalisation/mapping, adaptateur de persistance, métriques et façade des workflows |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | les contrats, la normalisation, la persistance et les métriques ont des owners séparés ; la façade conserve les mutations publiques et l'ordre des effets sans seconde source de vérité |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver les filtres owner, les curseurs, l'échec fermé des RPC et l'absence de nettoyage de captures hors contrat |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/components/sections/rubriques/feedback/questionnaire-card.tsx`
 
@@ -187,11 +161,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `questionnaire-card.test.tsx`, tests navigation, soumission et sécurité capture |
 | COUPLING | état contrôlé du formulaire, reconnaissance vocale, suggestion de doublon, capture facultative et états success/error |
 | NATURAL_EXTRACTION_BOUNDARY | champs/voix, notice de reconnaissance, contrôle capture et état de soumission, composés par la façade |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | les responsabilités de rendu autonomes sont extraites en sous-composants ; la façade garde l'état partagé, les callbacks et l'ordre de soumission pour conserver le parcours UI |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver les textes, le honeypot, les validations, le comportement Clerk et la révocation des prévisualisations |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/app/learn/ressources/learn-ressources-client.data.ts`
 
@@ -204,11 +174,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | tests de données/localisation au niveau du catalogue |
 | COUPLING | cohésion forte autour du même catalogue |
 | NATURAL_EXTRACTION_BOUNDARY | aucune frontière démontrée ; des sous-fichiers ajouteraient du couplage |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
 | RATIONALE | fichier data/config cohésif ; la taille reste un signal de lisibilité, pas une raison de disperser le catalogue |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | aucun |
-| NEXT_TRIGGER | ajout d'une famille de données indépendante ou changement du contrat de catalogue |
 
 #### `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx`
 
@@ -221,11 +187,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | rendu de page et contrat de compatibilité |
 | COUPLING | données méthodologiques et présentation volontairement liées |
 | NATURAL_EXTRACTION_BOUNDARY | pas de frontière indépendante démontrée actuellement |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
 | RATIONALE | cohésion de page et façades historiques justifient le fichier unique tant qu'aucun nouveau sous-flux n'est ajouté |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver les deux exports publics |
-| NEXT_TRIGGER | ajout d'une nouvelle famille de méthodologie ou rupture du contrat legacy |
 
 #### `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx`
 
@@ -238,11 +200,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | sous-composants/formatters d'impact existants |
 | COUPLING | contrat visuel déjà réparti autour de la façade |
 | NATURAL_EXTRACTION_BOUNDARY | extraction déjà matérialisée par les modules consommés |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | la taille résiduelle ne correspond plus à un monolithe architectural ; ne pas refactorer mécaniquement |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | aucun |
-| NEXT_TRIGGER | nouvelle responsabilité métier ajoutée à la façade |
 
 #### `apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts`
 
@@ -255,11 +213,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | validation pure, résolution de géométrie et orchestration du hook |
 | COUPLING | élevé entre état du formulaire, carte, route preview et payload serveur |
 | NATURAL_EXTRACTION_BOUNDARY | owners séparés pour lifecycle/draft, géométrie, média, updates et execution ; la façade conserve l'API publique |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | l'orchestration est désormais cohésive et les responsabilités autonomes ont des owners dédiés ; ne pas recréer de hooks artificiels |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver l'API publique du hook et les contrats draft, géométrie, validation, payload et submit |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 
 #### `apps/web/src/app/docs/[...segments]/route.ts`
 
@@ -272,11 +226,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `route.test.ts`, tests du registre documentaire et routes documentation consommatrices |
 | COUPLING | couplage interne entre parsing Markdown, rendu HTML et transport de fichiers ; couplage externe limité au registre et SEO |
 | NATURAL_EXTRACTION_BOUNDARY | moteur Markdown, viewer HTML/CSS, adaptateur lecture/réponse fichier |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | façade HTTP courte ; Markdown appartient à route-markdown.ts, viewer HTML/CSS à route-viewer.ts et lecture/adaptation documentaire à route-document.ts ; GET, registre public, anti-path-traversal, MIME/cache/noindex et orchestration HTTP restent dans route.ts |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver résolution anti-path-traversal, MIME, headers et contrat SEO |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade ou croissance substantielle d'un des owners extraits |
 
 #### `apps/web/src/lib/validation/action.ts`
 
@@ -289,11 +239,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `action.test.ts`, tests routes actions, formalités, calibration et modération |
 | COUPLING | couplage très fort avec les contrats action, route, déchets, géométrie et formalités |
 | NATURAL_EXTRACTION_BOUNDARY | schémas géométrie/route, mesures déchets, identité/organisateur, formalités et composition create/update |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | façade de composition des schémas create/update ; géométrie/route, mesures déchets, identité/organisateur, formalités et préparation sont distribuées vers leurs owners spécialisés |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver l'owner unique des schémas create/update et l'ordre des validations |
-| NEXT_TRIGGER | nouvelle responsabilité indépendante réintroduite dans la façade ou couplage anormal entre sous-modules |
 
 #### `apps/web/src/lib/pdf-export/simple-pdf.ts`
 
@@ -306,11 +252,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `simple-pdf.test.ts`, tests de génération de rapports et exports consommateurs |
 | COUPLING | le payload de rapport est partagé ; la sérialisation de contenu et le moteur PDF sont techniquement séparables |
 | NATURAL_EXTRACTION_BOUNDARY | constructeur de lignes de rapport, primitives PDF/graphiques et sérialisation binaire |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | façade publique minimale ; responsabilités contenu, primitives et sérialisation distribuées vers des owners spécialisés |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver octets PDF, format des lignes et PdfReportPayload |
-| NEXT_TRIGGER | nouvelle responsabilité substantielle réintroduite dans la façade ou couplage anormal entre sous-modules |
 
 #### `apps/web/src/lib/actions/pollution/current-place-state.ts`
 
@@ -323,11 +265,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `current-place-state.test.ts`, tests carte/feed/popups et projections pollution |
 | COUPLING | couplage fort avec `local-repollution-calibration`, contrats action, historique et projections pollution |
 | NATURAL_EXTRACTION_BOUNDARY | construction des buckets, état observé, projection `projected_today` et adaptation des vues |
-| ARCHITECTURE_DECISION | DEFERRED_SPLIT |
 | RATIONALE | le module reste l'owner CURRENT de la résolution d'état d'un lieu : `observed` et `projected_today` partagent les mêmes buckets, identités, historiques et sélection des observations ; aucune évolution indépendante n'est démontrée dans ce lot |
-| PRIORITY | LATER |
-| DEPENDENCY_OR_BLOCKER | préserver le bucket de lieu et la distinction observation/projection ; ne pas créer une source de vérité commune ni séparer les étapes privées sans contrat indépendant |
-| NEXT_TRIGGER | évolution indépendante des modèles observed/projected_today ou du modèle de repollution |
 
 #### `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts`
 
@@ -340,11 +278,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `local-repollution-calibration.test.ts`, `current-place-state.test.ts` et tests pollution |
 | COUPLING | la façade coordonne des owners purs sans dupliquer les règles de fusion, complétude ou confiance |
 | NATURAL_EXTRACTION_BOUNDARY | `local-repollution-matching`, `local-repollution-history`, `local-repollution-calibration-core` et `local-repollution-projection` |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | matching, dérivation historique, calibration et projection ont des contrats autonomes ; la façade conserve les imports historiques et la détermination des owners |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver matching spatial, complétude, confiance et projections |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/lib/route/route-predicted-targets.ts`
 
@@ -357,11 +291,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `route-predicted-targets.test.ts`, `route-predicted-targets.preference.test.ts`, tests `route.response` et planning |
 | COUPLING | la façade coordonne les contrats planning sans dupliquer les règles de budget ou de géométrie |
 | NATURAL_EXTRACTION_BOUNDARY | `route-predicted-targets-pool`, `route-predicted-targets-budget`, `route-predicted-targets-geometry`, `route-predicted-targets-candidate` et `route-predicted-targets-selection` |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | pool, audits, géométrie et sélection ont des frontières fonctionnelles démontrées ; la façade conserve les imports historiques et les mocks existants |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver budgets planner, audits et contrats API route |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/components/sections/rubriques/route/route-section.tsx`
 
@@ -374,11 +304,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `route-section.test.tsx`, `route-section.map.test.tsx`, tests d'entrypoints et action creation shell |
 | COUPLING | couplage UI avec les modèles route, météo, carte, actions et responsive |
 | NATURAL_EXTRACTION_BOUNDARY | contrôles origine/déclenchement, dérivations d'état et rendu des résultats (résumé, groupes, carte, liste, export) |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | les contrôles, la dérivation pure du view-model et le rendu des résultats ont des responsabilités autonomes ; RouteSection conserve l'orchestration, l'Auth state et le handoff planner |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver les textes, états async, origine carte, deep-links et CTA planner |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans RouteSection ou couplage anormal entre owners |
 
 #### `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx`
 
@@ -391,11 +317,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `reports-web-document.shared.test.ts`, tests de rendu et d'historique de génération |
 | COUPLING | contrat partagé par plusieurs écrans et la persistance ; risque de cycle si les types sont déplacés sans séparation |
 | NATURAL_EXTRACTION_BOUNDARY | contrat/types, labels/périodes et construction payload PDF |
-| ARCHITECTURE_DECISION | EXTRACTED_PURE_CONTRACT |
 | RATIONALE | `report-pdf-data.ts` porte les fonctions pures et peut être consommé par le serveur sans importer un module client ; le fichier `.tsx` conserve les états et helpers UI |
-| PRIORITY | CURRENT |
-| DEPENDENCY_OR_BLOCKER | préserver l'usage du renderer PDF commun et la compatibilité des snapshots historiques |
-| NEXT_TRIGGER | évolution indépendante des modules ou du contrat PDF |
 
 #### `apps/web/src/app/(app)/reports/page.tsx`
 
@@ -408,11 +330,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `page.test.ts`, tests des loaders/orchestrateurs et tests génération/reprise/export des rapports |
 | COUPLING | paramètres URL, session Clerk côté serveur, AuthZ, complétion de compte, locale et composition des onglets |
 | NATURAL_EXTRACTION_BOUNDARY | page shell ; orchestration serveur dans `page-orchestration.tsx` ; chargement dans `page-loaders.ts` et `page-generation-context.ts` ; contenu dans `page-content.tsx` |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | la page est une façade App Router mince ; chargement, génération, reprise, droits et présentation ont des owners distincts, tandis que les contrôles AuthN/AuthZ restent exécutés côté serveur |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver la frontière App Router serveur, les contrôles AuthN/AuthZ et les contrats de reprise/génération |
-| NEXT_TRIGGER | nouvelle responsabilité serveur autonome réintroduite dans la page ou déplacement d'un contrôle d'accès vers le client |
 
 #### `apps/web/src/lib/pdf-export/report-pdf-theme.ts`
 
@@ -425,11 +343,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `report-pdf-theme.test.ts`, snapshot CSS, tests browser-report et rendu PDF réel |
 | COUPLING | tokens de thème, ordre d'assemblage CSS, familles page/hero/contenu/print et compatibilité des snapshots |
 | NATURAL_EXTRACTION_BOUNDARY | tokens dans `report-pdf-theme.tokens.ts` ; règles hero, contenu, page et print dans leurs modules spécialisés ; façade d'assemblage dans ce fichier |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | les tokens et familles CSS ont des owners cohésifs ; la façade conserve uniquement l'ordre et le contrat public, ce qui permet de préserver les sorties PDF sans dupliquer la génération |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver `buildOfficialReportCss`, l'ordre exact des familles CSS et les sorties PDF existantes |
-| NEXT_TRIGGER | nouvelle famille de règles CSS indépendante ou logique de tokens réintroduite dans la façade |
 
 #### `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts`
 
@@ -442,11 +356,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `assistant-utils.test.ts`, tests de rendu du composant assistant |
 | COUPLING | faible couplage externe ; forte cohésion interne autour du moteur de décision |
 | NATURAL_EXTRACTION_BOUNDARY | aucune frontière obligatoire ; les tables lexicales et la logique restent un même contrat de réponse |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
 | RATIONALE | la taille vient principalement des contenus localisés et des branches de décision d'un moteur unique ; un split par bloc de texte réduirait la lisibilité |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | conserver réponses FR/EN et projection canonique Waste alignées |
-| NEXT_TRIGGER | famille de règles indépendante ou catalogue de contenu autonome démontré |
 
 #### `apps/web/src/lib/route/route-trace.ts`
 
@@ -459,11 +369,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `route-trace.test.ts`, tests planning, route response et composants d'explication |
 | COUPLING | couplage fort avec les résultats planner, géométrie, météo, événements et contrats d'interface |
 | NATURAL_EXTRACTION_BOUNDARY | segments, sélection/exclusion, contexte événementiel et réconciliation finale |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
 | RATIONALE | les helpers servent un même contrat de trace explicable ; un seul owner du contrat RouteRecommendationTrace doit être conservé |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | un seul owner du contrat RouteRecommendationTrace et de sa construction |
-| NEXT_TRIGGER | nouveau sous-contrat de trace consommé indépendamment du builder principal |
 
 #### `apps/web/src/components/accueil/accueil-community-credibility.tsx`
 
@@ -476,11 +382,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `accueil-community-credibility.test.tsx`, tests endpoint homepage/activity et rendu accueil |
 | COUPLING | mélange fetch/validation et composition UI ; dépend de CmmButton, SWR et cartes de preuve |
 | NATURAL_EXTRACTION_BOUNDARY | client d'activité, cartes d'activité, placeholder/états et section principale |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | le client/validateur activity, les panneaux d'activité et de crédibilité, les visuels et la façade de composition ont des owners explicites |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver fallback, contrat activity, accessibilité et façades exportées |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/lib/ui/button-theme.ts`
 
@@ -493,11 +395,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `button-theme.test.ts`, tests de consommateurs UI |
 | COUPLING | faible ; la majorité de la taille provient des données de tokens statiques |
 | NATURAL_EXTRACTION_BOUNDARY | aucune frontière fonctionnelle nécessaire ; un fichier owner unique est cohérent |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
 | RATIONALE | il s'agit d'un owner canonique unique de configuration UI, sans mélange d'effets ou de contrats indépendants |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | owner canonique unique BackdropToneKey -> tokens CSS |
-| NEXT_TRIGGER | second système de thème ou familles de tokens réellement indépendantes |
 
 #### `apps/web/src/lib/supabase/storage-usage.ts`
 
@@ -510,11 +408,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `storage-usage.test.ts`, `storage-usage-cron.test.ts`, tests quota/dashboard/rapports |
 | COUPLING | couplage significatif entre calculs purs, classification métier et adaptateur de pagination |
 | NATURAL_EXTRACTION_BOUNDARY | classification/agrégation pure, adaptateur de lecture paginée et snapshots/comparaisons/historique |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | les owners calculs purs, pagination Supabase et historique sont séparés avec des contrats explicites ; la façade conserve uniquement la compatibilité publique |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver pagination exhaustive, snapshots et classification canonique |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/components/actions/actions-history-list.tsx`
 
@@ -527,11 +421,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `actions-history-list.helpers.test.ts`, `actions-history-list.import.test.ts`, tests details et contrats API actions |
 | COUPLING | mélange de plusieurs workflows utilisateur et admin, avec état local conséquent |
 | NATURAL_EXTRACTION_BOUNDARY | hook/query/filter model, sélection/details, participation review, export PDF et composition de rendu |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | query/filter, sélection/details, review participation, export et composition UI ont des owners dédiés ; la façade orchestre les contrats |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver AuthZ admin, review participation et états asynchrones |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 
 #### `apps/web/src/components/actions/action-declaration/payload.ts`
 
@@ -544,11 +434,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `payload.test.ts`, tests de déclaration, géométrie, validation action et soumission |
 | COUPLING | couplage très fort avec `FormState`, contrats action, géométrie, route et mesures |
 | NATURAL_EXTRACTION_BOUNDARY | état/préparation, résolution route/géométrie, mesures, identité/organisateur, assemblage payload et smart assist |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | façade publique minimale ; préparation/hydratation, résolution géométrie/route, mesures, identité/organisateur et assemblage final sont isolés sans dupliquer FormState, smart assist ou valeurs dérivées |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver FormState, géométrie finale, smart assist et payload create |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade ou divergence entre owners |
 
 #### `apps/web/src/lib/route/route-group-partition.ts`
 
@@ -561,11 +447,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `route-group-partition.test.ts`, tests planning et route recommendation |
 | COUPLING | helpers internes fortement cohésifs autour d'un seul algorithme ; dépendance aux contrats planner |
 | NATURAL_EXTRACTION_BOUNDARY | aucune extraction obligatoire ; les audits et métriques peuvent rester dans l'algorithme owner |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
 | RATIONALE | pipeline unique de partitionnement et métriques ; une extraction par helper augmenterait le couplage |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | pipeline unique de partitionnement et métriques |
-| NEXT_TRIGGER | nouvelle stratégie de partition autonome ou nouveau contrat planner |
 
 #### `apps/web/src/lib/learning/quiz/quiz-quality-audit.ts`
 
@@ -578,11 +460,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `quiz-quality-audit.test.ts`, tests de banque et metadata quiz |
 | COUPLING | configuration de règles et calculs forment un seul moteur de qualité |
 | NATURAL_EXTRACTION_BOUNDARY | aucune frontière nécessaire ; les patterns sont les données du même audit |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
 | RATIONALE | moteur unique de critères et rapport d'audit ; le découpage des patterns disperserait le contrat |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | moteur unique de critères et rapport d'audit |
-| NEXT_TRIGGER | nouveau domaine de qualité indépendant |
 
 #### `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts`
 
@@ -595,11 +473,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | tests de l'estimateur infrastructure via les tests consommateurs de `services/core` et de l'estimator |
 | COUPLING | couplage interne entre métriques, estimations primaires/secondaires, mode et courbe |
 | NATURAL_EXTRACTION_BOUNDARY | métriques/services, second-order estimate, courbe, synthèse/mode |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
 | RATIONALE | owner unique de l'estimation infrastructure ; les calculs restent internes au même modèle |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | owner unique de l'estimation infrastructure ; calculs internes au même modèle |
-| NEXT_TRIGGER | nouvelle famille de service réellement autonome ou API publique indépendante |
 
 #### `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts`
 
@@ -612,11 +486,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `actions-map-geometry.utils.test.ts`, `map-layers.test.ts`, `action-popup-content.test.ts`, tests de sélection et consommateurs de géométrie |
 | COUPLING | couplage avec `ActionMapItem`, `geometry-presentation`, `geometry-metrics` et les owners render ; le view-model consomme leurs contrats sans porter la normalisation métier ni la validation du formulaire |
 | NATURAL_EXTRACTION_BOUNDARY | aucune extraction supplémentaire obligatoire ; normalisation, validation, rendu et view-model sont déjà portés par leurs owners spécialisés |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | les responsabilités autonomes de normalisation, validation du formulaire et rendu/styles/marqueurs ont été extraites ; ce fichier reste l'owner du view-model cartographique et de l'ancrage infrastructure |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver les conventions de coordonnées, la provenance géométrique, les contrats render/presentation et l'absence de logique de normalisation/validation dupliquée |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans le view-model ou dégradation démontrée des frontières entre domaine, validation, rendu et view-model |
 
 #### `apps/web/src/components/actions/action-declaration/before/sections.tsx`
 
@@ -629,11 +499,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | tests du formulaire préalable, workflow before et composants de déclaration |
 | COUPLING | props communes mais sections métier largement indépendantes |
 | NATURAL_EXTRACTION_BOUNDARY | un owner React par section exportée et un contrat partagé pour BaseSectionProps, validation et champs communs |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | les trois sections exportées disposent désormais de owners naturels ; la façade ne conserve que le contrat d'import historique |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver la façade d'exports, BaseSectionProps, validation, focus et updateField |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 
 #### `apps/web/src/app/api/route/recommend/route.response.ts`
 
@@ -646,11 +512,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `route.response.test.ts`, tests API route recommendation et route trace |
 | COUPLING | couplage obligatoire avec le contrat API, `route-trace` et résultats planner |
 | NATURAL_EXTRACTION_BOUNDARY | contexte/budgets opérationnels, multi-route, preuves, payload commun, cas vide et cas avec résultats |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | la façade reste l'owner du DTO public tandis que les étapes de composition sont des builders internes purs et testables ; aucun contrat API n'est déplacé |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver DTO, planner proof/snapshot, calibration et la façade `buildRouteRecommendationResponse` |
-| NEXT_TRIGGER | nouveau mode de réponse ou sous-contrat consommé indépendamment |
 
 #### `apps/web/src/lib/actions/participation/group-participation-review.ts`
 
@@ -663,11 +525,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | tests routes `group-join`, participation, persistence et contrats d'audit |
 | COUPLING | mélange de lecture/recherche, décision de review et mutation admin ; frontière sécurité importante |
 | NATURAL_EXTRACTION_BOUNDARY | read/search, décision de review, mutation admin et helpers d'idempotence/audit |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | lecture/recherche, review et mutation admin ont des owners dédiés ; la façade conserve les exports de compatibilité |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver AuthZ, ownership, idempotence, audit et ordre des mutations |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade ou divergence de contrat |
 
 #### `apps/web/src/lib/actions/pollution/corridor-history.ts`
 
@@ -680,11 +538,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `corridor-history.test.ts`, tests map layers et popups |
 | COUPLING | façade métier dépendant d'un module géométrique pur à sens unique ; aucun cycle ni duplication de seuils |
 | NATURAL_EXTRACTION_BOUNDARY | `corridor-history-geometry.ts` porte projection, échantillonnage, plus proche point et couverture ; la façade conserve conversion métier, matching, groupement, historique et scores |
-| ARCHITECTURE_DECISION | EXTRACTED_PURE_CONTRACT |
 | RATIONALE | la lecture des consommateurs confirme que la géométrie est un noyau pur testable indépendamment des actions et de l'historique ; la façade conserve le contrat corridor public et l'ordre matching → historique → score, tandis que les seuils restent définis dans l'owner métier et sont passés explicitement à la couverture |
-| PRIORITY | CURRENT |
-| DEPENDENCY_OR_BLOCKER | préserver les constantes géographiques, `CorridorPolyline`/`CorridorHistory`, les unités et l'ordre matching → historique → score ; ne pas créer de second owner du domaine Pollution |
-| NEXT_TRIGGER | nouveau mode de corridor, sous-modèle historique indépendant ou consommateur géométrique autonome |
 
 #### `apps/web/src/lib/actions/http.ts`
 
@@ -697,11 +551,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `http.test.ts`, tests routes actions, déclaration, formalités et stores |
 | COUPLING | un seul client partage plusieurs sous-contrats API distincts et de nombreux consommateurs |
 | NATURAL_EXTRACTION_BOUNDARY | read/list, create/update, formalités/admin, publication et parsers de réponse |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | collection, éditeur et formalités sont des familles HTTP séparées ; la façade conserve les exports publics |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver URL, méthode, payload et erreurs de chaque famille endpoint |
-| NEXT_TRIGGER | nouvelle famille de contrat réintroduite dans la façade ou divergence URL/méthode/payload |
 
 #### `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts`
 
@@ -714,11 +564,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `municipal-cleaning-serviceability.test.ts`, `municipal-cleaning-serviceability-loader.test.ts` |
 | COUPLING | forte cohésion autour du modèle de preuve et de confiance ; la matérialisation est une sortie du même modèle |
 | NATURAL_EXTRACTION_BOUNDARY | aucune séparation nécessaire hors éventuel adaptateur de matérialisation |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
 | RATIONALE | owner unique du modèle de preuve/confiance/serviceabilité |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | owner unique du modèle de preuve/confiance/serviceabilité |
-| NEXT_TRIGGER | nouveau type de preuve autonome ou changement indépendant de matérialisation |
 
 #### `apps/web/src/app/api/chat/route.post.ts`
 
@@ -731,11 +577,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | tests route chat, feedback-reply, topics/admin chat, recherche et contexte territoire |
 | COUPLING | frontière API sensible mêlant validation, contexte métier, orchestration et réponse |
 | NATURAL_EXTRACTION_BOUNDARY | parsing/validation, résolution contexte, appel modèle et mapping réponse/erreur |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | validation, contexte/destination, persistance/notifications et mapping sont des owners dédiés ; AuthN/AuthZ, rate limit et l'ordre observable restent explicites dans la route |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | aucun ; la frontière serveur reste séparée du client et les contrats POST sont préservés |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la route ou opacification d'une décision AuthN/AuthZ |
 
 #### `apps/web/src/lib/impact/impact-terrain-2026.ts`
 
@@ -748,11 +590,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `impact-terrain-2026.test.ts`, `impact-terrain-2026-results.test.ts`, tests participation/KPI |
 | COUPLING | tous les exports partagent la même méthodologie et les mêmes facteurs versionnés |
 | NATURAL_EXTRACTION_BOUNDARY | aucune extraction obligatoire ; séparer les conversions casserait facilement la cohérence des facteurs |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
 | RATIONALE | owner canonique de la méthodologie scientifique versionnée |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | owner canonique de la méthodologie scientifique versionnée |
-| NEXT_TRIGGER | nouvelle version méthodologique ou famille de calculs réellement indépendante |
 
 #### `apps/web/src/components/chat/discussion-guidance.ts`
 
@@ -765,11 +603,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | tests chat UI, topic presentation et consommateurs de guidance |
 | COUPLING | faible couplage externe ; forte cohésion entre données localisées et sélecteurs |
 | NATURAL_EXTRACTION_BOUNDARY | aucune frontière nécessaire tant que le catalogue reste le même owner |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
 | RATIONALE | catalogue bilingue unique topics/canaux/guidance ; le découpage disperserait un contrat statique cohésif |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | catalogue bilingue unique topics/canaux/guidance |
-| NEXT_TRIGGER | source de contenu externe ou catalogues par canal réellement autonomes |
 
 #### `apps/web/src/lib/actions/exports/export-form-media.ts`
 
@@ -782,11 +616,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | tests des contrôleurs export, bundle/history et déclaration |
 | COUPLING | mélange de formatage pur, rendu SVG et effet navigateur ; les types sont partagés par plusieurs modules |
 | NATURAL_EXTRACTION_BOUNDARY | presets/contrats, narrative/labels/filename, SVG pur, conversion SVG → PNG navigateur et téléchargement Blob/browser |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | façade publique minimale ; responsabilités presets/contrats, narrative, SVG pur et effets navigateur distribuées vers des owners spécialisés |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver IDs presets/bundles, textes, noms de fichiers, dimensions/formats et API publique |
-| NEXT_TRIGGER | nouvelle responsabilité substantielle réintroduite dans la façade ou couplage anormal entre sous-modules |
 
 #### `apps/web/src/app/api/reports/elus-dossier/route.ts`
 
@@ -799,11 +629,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `route.test.ts`, tests scope, reports HTTP, unified source, storage et AuthZ |
 | COUPLING | route fortement transverse entre sécurité, données, analytics, reporting et persistance |
 | NATURAL_EXTRACTION_BOUNDARY | parsing/scope, agrégation pure, construction payload, cache PDF et mapping format/réponse |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | route réduite à l'orchestration explicite AuthN → parsing → service/cache → réponse ; scope, agrégation, cache et mapping de réponse ont leurs owners |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver AuthN/AuthZ, scope, cache, storage, headers et formats |
-| NEXT_TRIGGER | nouvelle responsabilité métier/stockage ajoutée directement au handler |
 
 #### `apps/web/src/components/sections/rubriques/weather-section.conditions.tsx`
 
@@ -816,11 +642,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | tests section météo, hook météo et composants de sélection |
 | COUPLING | plusieurs sous-vues partagent le même état météo et les mêmes contraintes de sécurité |
 | NATURAL_EXTRACTION_BOUNDARY | checklist/équipement, sélection forecast, grille horaire et fenêtre recommandée |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
 | RATIONALE | un seul ConditionsPanel porte un état météo fortement partagé ; le découpage immédiat produirait du prop drilling |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | un seul ConditionsPanel et état météo fortement partagé ; éviter prop drilling |
-| NEXT_TRIGGER | nouvelle famille de conditions avec état/cycle de vie autonome |
 
 #### `apps/web/src/lib/pdf-export/official-report-html.ts`
 
@@ -833,11 +655,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | tests browser report, PDF officiel et contrats Markdown/rapport |
 | COUPLING | parser Markdown et compositeur de rapport partagent le payload, mais sont techniquement distincts |
 | NATURAL_EXTRACTION_BOUNDARY | parser Markdown, rendu primitives stats/rows/chapter et composition document |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | parsing Markdown et sections/rendu isolés ; fichier restant = compositeur HTML cohérent |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver échappement HTML, Markdown, tableaux, callouts et PdfReportPayload |
-| NEXT_TRIGGER | nouvelle responsabilité indépendante ajoutée au compositeur |
 
 #### `apps/web/src/lib/auth/sync.ts`
 
@@ -850,11 +668,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `sync.test.ts`, tests AuthN/AuthZ, profil actif, handle et routes account/admin |
 | COUPLING | mélange extraction/normalisation pure, résolution de handle, persistance et fallback privilégié ; frontière sécurité sensible |
 | NATURAL_EXTRACTION_BOUNDARY | metadata/territoire, label affiché, handle unique et adaptateur client/persistance |
-| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
 | RATIONALE | metadata/territoire, label, handle et adaptateur de persistance ont des owners séparés ; la façade conserve l'ordre de synchronisation et les décisions server-only auditable |
-| PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | préserver scope utilisateur, service-role server-only, idempotence et ordre d'upsert |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade ou opacification AuthN/AuthZ |
 
 #### `apps/web/src/components/actions/action-creation-shell.tsx`
 
@@ -867,11 +681,7 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `action-creation-shell.test.tsx`, tests de préparation, reprise et navigation du parcours action |
 | COUPLING | identité d'action, état de navigation, préparation, formalités et rendu des sous-parcours partagent le même contexte de création |
 | NATURAL_EXTRACTION_BOUNDARY | navigation/sections, état workflow et orchestration de persistance, après stabilisation de leur identité de ressource |
-| ARCHITECTURE_DECISION | DEFERRED_SPLIT |
 | RATIONALE | le signal de taille est renforcé par une fonction de façade au-dessus des plafonds de complexité ; les changements récents d'identité, de reprise et de navigation doivent d'abord être stabilisés pour éviter une seconde source d'état |
-| PRIORITY | AFTER_ACTIVE_CHANGES |
-| DEPENDENCY_OR_BLOCKER | préserver l'isolation par `actionId`, les transitions d'état et l'URL reprenable |
-| NEXT_TRIGGER | frontière indépendante et testée entre navigation/sections, état workflow et orchestration de persistance |
 
 #### `apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts`
 
@@ -884,9 +694,5 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 | TEST_BOUNDARY | `use-before-action-workflow.test.ts`, `use-before-action-recovery.test.tsx`, tests du formulaire avant déclaration et tests de reprise/hydratation |
 | COUPLING | le workflow conserve l'identité de mutation et le contrat de reprise ; l'owner de conversions n'a que des dépendances de modèle, préparation, topologie et draft initial |
 | NATURAL_EXTRACTION_BOUNDARY | `before-action-form-conversions.ts` porte les valeurs initiales et les conversions action → `FormState` ; le workflow porte les hooks, effets et publication sans second moteur de formulaire |
-| ARCHITECTURE_DECISION | EXTRACTED_PURE_CONTRACT |
 | RATIONALE | les conversions étaient pures, cohésives et séparables sans déplacer les hooks ni la séquence d'effets ; l'extraction ramène le workflow à 399 lignes et conserve les preuves de reprise, de persistance et de publication explicite |
-| PRIORITY | CURRENT |
-| DEPENDENCY_OR_BLOCKER | préserver les modifications utilisateur, le premier identifiant persistant et la publication toujours explicite |
-| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans le workflow ou couplage qui compromet la reprise et la publication explicite |
 <!-- RADAR:HUMAN_DECISIONS:END -->
