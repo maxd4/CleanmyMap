@@ -671,5 +671,5 @@ Références détaillées : [modèle de risque parisien](paris-pressure-risk-mod
 ## Références de navigation
 
 - [Créer un itinéraire](/sections/route)
-- [Méthodologie de la carte d’actions](/docs/product/methodologie-carte-actions.md)
+- [Méthodologie de la carte d’actions](../product/methodologie-carte-actions.md)
 - [Retour à la section de méthodologie](/methodologie#methodologie-itineraire)
