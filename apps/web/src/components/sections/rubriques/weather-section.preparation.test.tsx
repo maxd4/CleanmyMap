@@ -104,7 +104,8 @@ function mount(element: React.ReactElement): HTMLDivElement {
 function clickButton(label: string): void {
   const button = [...document.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes(label));
   expect(button, `button containing ${label}`).toBeTruthy();
-  act(() => button?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  // fire-and-forget -- the synchronous DOM event is fully handled inside React act.
+  void act(() => button?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
 }
 
 function panel(overrides: Partial<React.ComponentProps<typeof PreparationPanel>> = {}) {

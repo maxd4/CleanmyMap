@@ -70,7 +70,7 @@ export function SpogomiIdentityAssistanceInvitation({ eventId, token, signInHref
               className="space-y-3"
               onSubmit={(event) => {
                 event.preventDefault();
-                void submit();
+                void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submit();
               }}
             >
               <label

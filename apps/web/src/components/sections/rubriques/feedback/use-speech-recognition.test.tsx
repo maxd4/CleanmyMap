@@ -1,8 +1,14 @@
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useSpeechRecognition } from "./use-speech-recognition";
 
 type FakeResult = { isFinal: boolean; transcript: string };
+type ButtonNode = ReactTestInstance & { props: { onClick: () => unknown } };
+
+function clickButton(renderer: ReactTestRenderer, children: string): void {
+  const button = renderer.root.findByProps({ children }) as ButtonNode;
+  button.props.onClick();
+}
 
 class FakeSpeechRecognition {
   static instances: FakeSpeechRecognition[] = [];
@@ -127,7 +133,7 @@ describe("useSpeechRecognition", () => {
     });
 
     act(() => {
-      renderer.root.findByProps({ children: "start" }).props.onClick();
+      clickButton(renderer, "start");
     });
     const recognition = FakeSpeechRecognition.instances[0];
     expect(recognition.lang).toBe("fr-FR");
@@ -149,7 +155,7 @@ describe("useSpeechRecognition", () => {
     expect(output(renderer, "interim")).toBe("");
 
     act(() => {
-      renderer.root.findByProps({ children: "stop" }).props.onClick();
+      clickButton(renderer, "stop");
     });
     expect(recognition.stopped).toBe(true);
     expect(output(renderer, "listening")).toBe("false");
@@ -172,11 +178,11 @@ describe("useSpeechRecognition", () => {
     });
 
     act(() => {
-      renderer.root.findByProps({ children: "start" }).props.onClick();
+      clickButton(renderer, "start");
       FakeSpeechRecognition.instances[0].emitResult([
         { isFinal: false, transcript: "Dernier fragment" },
       ]);
-      renderer.root.findByProps({ children: "stop" }).props.onClick();
+      clickButton(renderer, "stop");
     });
     expect(output(renderer, "stopping")).toBe("true");
 
@@ -198,7 +204,7 @@ describe("useSpeechRecognition", () => {
       renderer = create(<SpeechHarness locale="en" onFinalTranscript={() => undefined} />);
     });
     act(() => {
-      renderer.root.findByProps({ children: "start" }).props.onClick();
+      clickButton(renderer, "start");
     });
     const recognition = FakeSpeechRecognition.instances[0];
     expect(recognition.lang).toBe("en-US");
@@ -218,7 +224,7 @@ describe("useSpeechRecognition", () => {
       renderer = create(<SpeechHarness locale="fr" onFinalTranscript={() => undefined} />);
     });
     act(() => {
-      renderer.root.findByProps({ children: "start" }).props.onClick();
+      clickButton(renderer, "start");
     });
     const recognition = FakeSpeechRecognition.instances[0];
 
@@ -235,12 +241,12 @@ describe("useSpeechRecognition", () => {
       renderer = create(<SpeechHarness locale="fr" onFinalTranscript={() => undefined} />);
     });
     act(() => {
-      renderer.root.findByProps({ children: "start" }).props.onClick();
+      clickButton(renderer, "start");
     });
     const recognition = FakeSpeechRecognition.instances[0];
 
     act(() => {
-      renderer.root.findByProps({ children: "change-field" }).props.onClick();
+      clickButton(renderer, "change-field");
       recognition.emitResult([{ isFinal: true, transcript: "late" }]);
     });
     expect(recognition.stopped).toBe(true);
@@ -260,7 +266,7 @@ describe("useSpeechRecognition", () => {
       );
     });
     act(() => {
-      renderer.root.findByProps({ children: "start" }).props.onClick();
+      clickButton(renderer, "start");
     });
     const recognition = FakeSpeechRecognition.instances[0];
 
@@ -286,11 +292,11 @@ describe("useSpeechRecognition", () => {
     });
 
     act(() => {
-      renderer.root.findByProps({ children: "start" }).props.onClick();
+      clickButton(renderer, "start");
     });
     const firstRecognition = FakeSpeechRecognition.instances[0];
     act(() => {
-      renderer.root.findByProps({ children: "start" }).props.onClick();
+      clickButton(renderer, "start");
     });
     const secondRecognition = FakeSpeechRecognition.instances[1];
 
@@ -310,15 +316,15 @@ describe("useSpeechRecognition", () => {
       renderer = create(<SpeechHarness locale="fr" onFinalTranscript={() => undefined} />);
     });
     act(() => {
-      renderer.root.findByProps({ children: "start" }).props.onClick();
-      renderer.root.findByProps({ children: "stop" }).props.onClick();
-      renderer.root.findByProps({ children: "start" }).props.onClick();
+      clickButton(renderer, "start");
+      clickButton(renderer, "stop");
+      clickButton(renderer, "start");
     });
     expect(FakeSpeechRecognition.instances).toHaveLength(1);
 
     act(() => {
       FakeSpeechRecognition.instances[0].emitEnd();
-      renderer.root.findByProps({ children: "start" }).props.onClick();
+      clickButton(renderer, "start");
     });
     expect(FakeSpeechRecognition.instances).toHaveLength(2);
   });
@@ -336,7 +342,7 @@ describe("useSpeechRecognition", () => {
       );
     });
     act(() => {
-      renderer.root.findByProps({ children: "start" }).props.onClick();
+      clickButton(renderer, "start");
       FakeSpeechRecognition.instances[0].emitResult([
         { isFinal: true, transcript: "même texte" },
       ], 0);
@@ -360,11 +366,11 @@ describe("useSpeechRecognition", () => {
     });
     const startButtons = renderer.root.findAllByProps({ children: "start" });
     act(() => {
-      startButtons[0].props.onClick();
+      (startButtons[0] as ButtonNode).props.onClick();
     });
     const firstRecognition = FakeSpeechRecognition.instances[0];
     act(() => {
-      startButtons[1].props.onClick();
+      (startButtons[1] as ButtonNode).props.onClick();
     });
 
     expect(firstRecognition.stopped).toBe(true);

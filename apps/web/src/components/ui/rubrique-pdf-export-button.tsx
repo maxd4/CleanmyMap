@@ -75,7 +75,7 @@ export function RubriquePdfExportButton({
             tone="primary"
             size="sm"
             disabled={isDisabled}
-            onClick={() => void exportRubriquePdf()}
+            onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ exportRubriquePdf(); }}
             ariaLabel={`Exporter le rapport PDF ${defaultTitle}`}
             className="shrink-0"
           >

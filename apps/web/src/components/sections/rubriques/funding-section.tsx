@@ -295,7 +295,7 @@ export function FundingSection({
       .then((payload: { confirmed?: boolean } | null) => {
         if (!cancelled && payload?.confirmed) {
           setConfirmation("confirmed");
-          void loadAggregates();
+          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadAggregates();
         }
       })
       .catch(() => undefined);
@@ -365,7 +365,7 @@ export function FundingSection({
                 aggregate={aggregates?.categories?.[category]}
                 aggregateState={aggregateState}
                 onParticipe={onParticipe}
-                onRetry={() => void loadAggregates()}
+                onRetry={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadAggregates(); }}
               />
             ),
           )}

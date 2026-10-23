@@ -69,7 +69,7 @@ export function JoinCommunityEventsPanel({
   return (
     <section className="space-y-4 rounded-[1.25rem] border border-pink-100 bg-pink-50/35 p-4 md:p-5">
       <CommunityEventsHeader fr={fr} isFuture={isFuture} />
-      <EventListStates eventsLoading={loading} eventsLoadError={error} onRetry={onRetry ? () => void onRetry() : undefined} />
+      <EventListStates eventsLoading={loading} eventsLoadError={error} onRetry={onRetry ? () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onRetry(); } : undefined} />
       <CommunityEventsFeedback fr={fr} isFuture={isFuture} mutationError={mutationError} successMessage={successMessage} />
       <CommunityEventsList events={events} fr={fr} isFuture={isFuture} loading={loading} error={error} focusedEventId={focusedEventId} onRsvp={onRsvp} rsvpLoadingEventId={rsvpLoadingEventId} setShareEvent={(event) => setShareEvent(event)} isUpdatingEventOpsId={isUpdatingEventOpsId} getOpsDraft={getOpsDraft} updateOpsDraft={updateOpsDraft} onSaveEventOps={onSaveEventOps} />
 

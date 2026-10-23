@@ -28,7 +28,7 @@ const [isVisible, setIsVisible] = useState(false);
  // Some surfaces resolve location only after an explicit user action.
  if (shouldRequestWeatherGeolocation(autoGeolocation)) {
  navigator.geolocation.getCurrentPosition(
- async (position) => {
+ (position) => { void /* fire-and-forget -- the weather warning owns mounted-state and error handling. */ (async () => {
  try {
  const weather = await fetchCurrentWeather(
  position.coords.latitude,
@@ -42,7 +42,7 @@ const [isVisible, setIsVisible] = useState(false);
  } catch (err) {
  console.error("Météo fetch error:", err);
  }
- },
+ })(); },
  () => {
  // User denied GPS or error, silent
  },

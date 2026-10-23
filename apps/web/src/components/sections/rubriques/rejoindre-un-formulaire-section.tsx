@@ -122,10 +122,10 @@ export function JoinActionSection() {
         onClose={closePendingActions}
         onConfirm={() => {
           if (pendingJoinActionId) {
-            void confirmPendingJoin();
+            void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ confirmPendingJoin();
             return;
           }
-          void confirmPendingLeave();
+          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ confirmPendingLeave();
         }}
       />
     </SectionShell>

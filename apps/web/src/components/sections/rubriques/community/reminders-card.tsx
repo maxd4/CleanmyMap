@@ -64,7 +64,7 @@ function CommunityRemindersCard(props: CommunityRemindersCardProps) {
                 </div>
                 
                 <CmmButton
-                  onClick={() => void copyReminderMessage(reminder.message)}
+                  onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ copyReminderMessage(reminder.message); }}
                   tone="secondary"
                   variant="pill"
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-100 transition-all shadow-lg shadow-indigo-600/20 opacity-0 group-hover/item:opacity-100"

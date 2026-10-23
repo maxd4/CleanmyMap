@@ -105,13 +105,13 @@ export function QRCodeDialog({ isOpen, onClose, value, title, description }: QRC
 
                   <div className="grid w-full grid-cols-2 gap-3">
                     <button
-                      onClick={handleCopy}
+                      onClick={() => { void /* fire-and-forget -- the QR dialog owns copy state and errors. */ handleCopy(); }}
                       className={`flex items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-bold transition-all ${copied ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}
                     >
                       {copied ? "✓ Copié" : "Copier le lien"}
                     </button>
                     <button
-                      onClick={handleDownload}
+                      onClick={() => { void /* fire-and-forget -- the QR dialog owns download state and errors. */ handleDownload(); }}
                       className="flex items-center justify-center gap-2 rounded-2xl bg-slate-900 py-3 text-sm font-bold text-white transition-all hover:bg-slate-800"
                     >
                       <Download size={16} />

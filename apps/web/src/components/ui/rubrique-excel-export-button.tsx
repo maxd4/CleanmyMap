@@ -114,7 +114,7 @@ export function RubriqueExcelExportButton({
   return (
     <>
       <button
-        onClick={handleExport}
+        onClick={() => { void /* fire-and-forget -- the export button owns export state and errors. */ handleExport(); }}
         disabled={isExporting || (Boolean(serverEndpoint) && dailyExportAvailability !== "available")}
         title={filename}
         className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 bg-emerald-50 px-4 py-2 cmm-text-small font-bold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"

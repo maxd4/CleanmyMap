@@ -43,6 +43,10 @@ export function JoinFormPublicQueue({
   onReviewQueueRequest,
   onAddQueueParticipant,
 }: JoinFormPublicQueueProps) {
+  const handleReviewQueueRequest = (requestId: string, decision: "accept" | "reject") => {
+    void /* fire-and-forget -- the queue row owns review mutation state and errors. */ onReviewQueueRequest(requestId, decision);
+  };
+
   return (
     <div id="file-publique" className="rounded-[1.1rem] border border-slate-200 bg-white shadow-[0_16px_36px_-30px_rgba(15,23,42,0.16)]">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
@@ -140,7 +144,7 @@ export function JoinFormPublicQueue({
                         variant="pill"
                         size="sm"
                         disabled={addingQueueParticipantId === candidate.userId}
-                        onClick={() => void onAddQueueParticipant(candidate.userId)}
+                        onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onAddQueueParticipant(candidate.userId); }}
                       >
                         {addingQueueParticipantId === candidate.userId ? (
                           <>
@@ -190,7 +194,7 @@ export function JoinFormPublicQueue({
                   fr={fr}
                   queueCanReview={queueCanReview}
                   reviewingQueueId={reviewingQueueId}
-                  onReviewQueueRequest={onReviewQueueRequest}
+                  onReviewQueueRequest={handleReviewQueueRequest}
                   displayMode="pending"
                 />
               ))}
@@ -223,7 +227,7 @@ export function JoinFormPublicQueue({
                     fr={fr}
                     queueCanReview={queueCanReview}
                     reviewingQueueId={reviewingQueueId}
-                    onReviewQueueRequest={onReviewQueueRequest}
+                    onReviewQueueRequest={handleReviewQueueRequest}
                     displayMode="confirmed"
                   />
                 ))}

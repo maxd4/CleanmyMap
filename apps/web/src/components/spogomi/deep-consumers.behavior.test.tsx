@@ -1,6 +1,6 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authState = vi.hoisted(() => ({ isLoaded: true, isSignedIn: false }));
@@ -41,6 +41,28 @@ const dashboard = {
   operations: [], returns: [], incidents: [], measurements: [],
 };
 
+type ButtonProps = { children?: React.ReactNode; disabled?: boolean; onClick: () => unknown };
+type TextareaProps = { value?: string };
+type LinkProps = { href?: string };
+type StatusProps = { children?: React.ReactNode };
+type FetchCall = [RequestInfo | URL, RequestInit?];
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
+
+function buttonProps(node: ReactTestInstance): ButtonProps {
+  return propsOf<ButtonProps>(node);
+}
+
+function fetchCalls(): FetchCall[] {
+  return fetchMock.mock.calls as unknown as FetchCall[];
+}
+
+function jsonBody(call: FetchCall | undefined): Record<string, unknown> {
+  return JSON.parse(String(call?.[1]?.body ?? "")) as Record<string, unknown>;
+}
+
 describe("SPOGOMI deep consumer states", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -59,14 +81,14 @@ describe("SPOGOMI deep consumer states", () => {
     let renderer!: ReturnType<typeof create>;
     act(() => { renderer = create(<SpogomiFieldOperationsPanel eventId="event-1" capabilities={["timing", "arrival", "measurement_entry", "arbitration"]} />); });
     await settle();
-    expect(renderer.root.findByType("h2").props.children).toContain("Terrain");
-    expect(renderer.root.findAllByType("h3").map((node) => node.props.children)).toContain("Phase officielle");
-    const phaseButton = renderer.root.findAllByType("button").find((button) => button.props.children === "collection");
+    expect(propsOf<StatusProps>(renderer.root.findByType("h2")).children).toContain("Terrain");
+    expect(renderer.root.findAllByType("h3").map((node) => propsOf<StatusProps>(node).children)).toContain("Phase officielle");
+    const phaseButton = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "collection");
     expect(phaseButton).toBeTruthy();
-    await act(async () => { phaseButton?.props.onClick(); });
+    await act(async () => { phaseButton?.onClick(); });
     expect(fetchMock).toHaveBeenCalledWith("/api/spogomi/events/event-1/field-operations", expect.objectContaining({ method: "POST" }));
-    const mutationCall = [...fetchMock.mock.calls].reverse().find((call) => call[1]?.method === "POST");
-    const payload = JSON.parse(mutationCall?.[1]?.body as string) as Record<string, unknown>;
+    const mutationCall = fetchCalls().reverse().find((call) => call[1]?.method === "POST");
+    const payload = jsonBody(mutationCall);
     expect(payload).toEqual(expect.objectContaining({ action: "phase", divisionId: "division-1", phase: "collection" }));
     renderer.unmount();
   });
@@ -80,14 +102,14 @@ describe("SPOGOMI deep consumer states", () => {
     let renderer!: ReturnType<typeof create>;
     act(() => { renderer = create(<SpogomiFieldOperationsPanel eventId="event-1" capabilities={["timing"]} />); });
     await settle();
-    const phaseButton = renderer.root.findAllByType("button").find((button) => button.props.children === "collection");
-    expect(phaseButton?.props.disabled).toBe(false);
-    await act(async () => { phaseButton?.props.onClick(); await Promise.resolve(); });
-    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "collection")?.props.disabled).toBe(true);
+    const phaseButton = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "collection");
+    expect(phaseButton?.disabled).toBe(false);
+    await act(async () => { phaseButton?.onClick(); await Promise.resolve(); });
+    expect(renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "collection")?.disabled).toBe(true);
     resolvePost(response({}));
     await settle();
-    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "collection")?.props.disabled).toBe(false);
-    expect(renderer.root.findByProps({ role: "status" }).props.children).toBe("Décision enregistrée avec sa provenance.");
+    expect(renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "collection")?.disabled).toBe(false);
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "status" })).children).toBe("Décision enregistrée avec sa provenance.");
     renderer.unmount();
   });
 
@@ -99,11 +121,11 @@ describe("SPOGOMI deep consumer states", () => {
     let renderer!: ReturnType<typeof create>;
     act(() => { renderer = create(<SpogomiFieldOperationsPanel eventId="event-1" capabilities={["timing"]} />); });
     await settle();
-    const phaseButton = renderer.root.findAllByType("button").find((button) => button.props.children === "collection");
-    await act(async () => { phaseButton?.props.onClick(); await Promise.resolve(); });
+    const phaseButton = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "collection");
+    await act(async () => { phaseButton?.onClick(); await Promise.resolve(); });
     await settle();
-    expect(renderer.root.findByProps({ role: "status" }).props.children).toBe("Échec réseau synthétique");
-    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "collection")?.props.disabled).toBe(false);
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "status" })).children).toBe("Échec réseau synthétique");
+    expect(renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "collection")?.disabled).toBe(false);
     renderer.unmount();
   });
 
@@ -112,13 +134,13 @@ describe("SPOGOMI deep consumer states", () => {
     let renderer!: ReturnType<typeof create>;
     act(() => { renderer = create(<SpogomiAttendancePanel eventId="event-1" divisionId="division-1" />); });
     await settle();
-    expect(renderer.root.findByType("h2").props.children).toBe("Accueil et présences");
-    const statusButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).includes("Présent"));
+    expect(propsOf<StatusProps>(renderer.root.findByType("h2")).children).toBe("Accueil et présences");
+    const statusButton = renderer.root.findAllByType("button").map(buttonProps).find((button) => String(button.children).includes("Présent"));
     expect(statusButton).toBeTruthy();
     fetchMock.mockResolvedValueOnce(response({ attendanceStatus: "present" }));
-    await act(async () => { statusButton?.props.onClick(); });
-    const mutationCall = [...fetchMock.mock.calls].reverse().find((call) => call[1]?.method === "POST");
-    const payload = JSON.parse(mutationCall?.[1]?.body as string) as Record<string, unknown>;
+    await act(async () => { statusButton?.onClick(); });
+    const mutationCall = fetchCalls().reverse().find((call) => call[1]?.method === "POST");
+    const payload = jsonBody(mutationCall);
     expect(payload).toEqual(expect.objectContaining({ participantId: "participant-1", expectedUpdatedAt: "revision-1", divisionId: "division-1" }));
     renderer.unmount();
   });
@@ -139,13 +161,13 @@ describe("SPOGOMI deep consumer states", () => {
     let renderer!: ReturnType<typeof create>;
     act(() => { renderer = create(<SpogomiResultReviewPanel eventId="event-1" divisionId="division-1" />); });
     await settle();
-    const certify = renderer.root.findAllByType("button").find((button) => button.props.children === "Certifier");
+    const certify = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "Certifier");
     expect(certify).toBeTruthy();
     fetchMock.mockResolvedValueOnce(response({}));
     fetchMock.mockResolvedValueOnce(response({ results: [] }));
-    await act(async () => { certify?.props.onClick(); });
+    await act(async () => { certify?.onClick(); });
     expect(fetchMock).toHaveBeenCalledWith("/api/spogomi/events/event-1/results", expect.objectContaining({ method: "POST" }));
-    expect(JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string)).toEqual(expect.objectContaining({ divisionId: "division-1", decision: "certified" }));
+    expect(jsonBody(fetchCalls()[1])).toEqual(expect.objectContaining({ divisionId: "division-1", decision: "certified" }));
     renderer.unmount();
   });
 
@@ -158,15 +180,16 @@ describe("SPOGOMI deep consumer states", () => {
     let renderer!: ReturnType<typeof create>;
     act(() => { renderer = create(<SpogomiTeamAccessLinks eventId="event-1" teams={[{ id: "team-1", team_number: 1, public_name: "Alpha" }]} />); });
 
-    const generate = renderer.root.findAllByType("button").find((button) => button.props.children === "Générer");
-    await act(async () => { generate?.props.onClick(); await Promise.resolve(); });
+    const generate = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "Générer");
+    await act(async () => { generate?.onClick(); await Promise.resolve(); });
     const generatedLink = renderer.root.findAllByType("textarea")[0];
-    expect(generatedLink.props.value).toBe("/spogomi/paris/equipe?access=opaque-ref");
-    expect(renderer.root.findAllByType("a").some((link) => link.props.href === generatedLink.props.value)).toBe(true);
+    const generatedLinkProps = propsOf<TextareaProps>(generatedLink);
+    expect(generatedLinkProps.value).toBe("/spogomi/paris/equipe?access=opaque-ref");
+    expect(renderer.root.findAllByType("a").some((link) => propsOf<LinkProps>(link).href === generatedLinkProps.value)).toBe(true);
     expect(fetchMock).toHaveBeenCalledWith("/api/spogomi/events/event-1/teams/team-1/access", expect.objectContaining({ method: "POST" }));
 
-    const revoke = renderer.root.findAllByType("button").find((button) => button.props.children === "Révoquer");
-    await act(async () => { revoke?.props.onClick(); await Promise.resolve(); });
+    const revoke = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "Révoquer");
+    await act(async () => { revoke?.onClick(); await Promise.resolve(); });
     expect(fetchMock).toHaveBeenCalledWith("/api/spogomi/events/event-1/teams/team-1/access", expect.objectContaining({ method: "DELETE" }));
     expect(renderer.root.findAllByType("textarea")).toHaveLength(0);
     renderer.unmount();
@@ -190,12 +213,12 @@ describe("SPOGOMI deep consumer states", () => {
     act(() => { renderer = create(<SpogomiConsolidationPanel eventId="event-1" />); });
     await settle();
 
-    const publish = renderer.root.findAllByType("button").find((button) => button.props.children === "Publier le bilan");
-    await act(async () => { publish?.props.onClick(); await Promise.resolve(); });
-    const publishCall = [...fetchMock.mock.calls].find((call) => call[1]?.method === "POST");
+    const publish = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "Publier le bilan");
+    await act(async () => { publish?.onClick(); await Promise.resolve(); });
+    const publishCall = fetchCalls().find((call) => call[1]?.method === "POST");
     expect(publishCall?.[0]).toBe("/api/spogomi/events/event-1/consolidation");
-    expect(JSON.parse(publishCall?.[1]?.body as string)).toEqual({ action: "publish", sourceHash: "hash-a" });
-    expect(renderer.root.findByProps({ role: "status" }).props.children).toBe("Bilan consolidé publié dans l’action CleanMyMap cible.");
+    expect(jsonBody(publishCall)).toEqual({ action: "publish", sourceHash: "hash-a" });
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "status" })).children).toBe("Bilan consolidé publié dans l’action CleanMyMap cible.");
     expect(JSON.stringify(renderer.toJSON())).toContain("Projection courante");
     renderer.unmount();
   });
@@ -210,9 +233,9 @@ describe("SPOGOMI deep consumer states", () => {
     let renderer!: ReturnType<typeof create>;
     act(() => { renderer = create(<SpogomiConsolidationPanel eventId="event-1" />); });
     await settle();
-    const publish = renderer.root.findAllByType("button").find((button) => button.props.children === "Publier le bilan");
-    await act(async () => { publish?.props.onClick(); await Promise.resolve(); });
-    expect(renderer.root.findByProps({ role: "alert" }).props.children).toBe("La source a changé.");
+    const publish = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "Publier le bilan");
+    await act(async () => { publish?.onClick(); await Promise.resolve(); });
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "alert" })).children).toBe("La source a changé.");
     expect(renderer.root.findAllByProps({ role: "status" })).toHaveLength(0);
     renderer.unmount();
   });
@@ -222,9 +245,9 @@ describe("SPOGOMI deep consumer states", () => {
     let resultForm!: ReturnType<typeof create>;
     act(() => { resultForm = create(<SpogomiTeamResultForm form={form as never} />); });
     fetchMock.mockResolvedValueOnce(response({ submission: { id: "submission-1" } }));
-    await act(async () => { resultForm.root.findAllByType("button").find((button) => String(button.props.children).includes("Soumettre"))?.props.onClick(); });
+    await act(async () => { resultForm.root.findAllByType("button").map(buttonProps).find((button) => String(button.children).includes("Soumettre"))?.onClick(); });
     expect(fetchMock).toHaveBeenCalledWith("/api/spogomi/team-form", expect.objectContaining({ method: "POST" }));
-    expect(JSON.parse(fetchMock.mock.calls.at(-1)?.[1]?.body as string)).toEqual(expect.objectContaining({ status: "submitted", items: expect.any(Array) }));
+    expect(jsonBody(fetchCalls().at(-1))).toEqual(expect.objectContaining({ status: "submitted", items: expect.any(Array) }));
     resultForm.unmount();
   });
 });

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QuestionnaireCard } from "./questionnaire-card";
 import {
@@ -10,6 +10,12 @@ import { QUESTIONNAIRES } from "./questionnaire-config";
 
 const useUserMock = vi.hoisted(() => vi.fn());
 const uploadFeedbackScreenshotMock = vi.hoisted(() => vi.fn());
+
+type TestNode<Props> = ReactTestInstance & { props: Props };
+type ButtonProps = { type?: string; ariaLabel?: string; disabled?: boolean; onClick: () => unknown };
+type InputProps = { type?: string; id?: string; value?: string; onChange: (event: { target: { files?: File[]; value?: string } }) => unknown };
+type TextareaProps = { id?: string; value?: string; onChange: (event: { target: { value: string } }) => unknown };
+type FormProps = { onSubmit: (event: { preventDefault: () => void }) => Promise<void> };
 
 vi.mock("@clerk/nextjs", () => ({ useUser: useUserMock }));
 vi.mock("@/lib/community/feedback-screenshot-client", async (importOriginal) => ({
@@ -52,10 +58,18 @@ function valuesForDescriptionLength(targetLength: number) {
   return { questionnaire, values };
 }
 
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
+
+function formProps(renderer: ReactTestRenderer): FormProps {
+  return propsOf<FormProps>(renderer.root.findByType("form"));
+}
+
 function submitButton(renderer: ReactTestRenderer) {
   return renderer.root.findAllByType("button").find(
-    (button) => button.props.type === "submit",
-  );
+    (button) => propsOf<ButtonProps>(button).type === "submit",
+  ) as TestNode<ButtonProps> | undefined;
 }
 
 function validBugValues() {
@@ -156,20 +170,20 @@ describe("QuestionnaireCard serialized description validation", () => {
       );
     });
 
-    const fileInput = renderer.root.findAllByType("input").find(
-      (input) => input.props.type === "file",
+    const fileInput = renderer.root.findAllByType("input").map((input) => propsOf<InputProps>(input)).find(
+      (input) => input.type === "file",
     );
     expect(fileInput).toBeDefined();
     const first = new File(["png"], "first.png", { type: "image/png" });
     const second = new File(["png"], "second.png", { type: "image/png" });
 
     act(() => {
-      fileInput!.props.onChange({ target: { files: [first] } });
+      fileInput!.onChange({ target: { files: [first] } });
     });
     expect(createObjectURL).toHaveBeenCalledWith(first);
 
     act(() => {
-      fileInput!.props.onChange({ target: { files: [second] } });
+      fileInput!.onChange({ target: { files: [second] } });
     });
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:first.png");
     expect(revokeObjectURL).toHaveBeenCalledTimes(1);
@@ -238,9 +252,9 @@ describe("QuestionnaireCard serialized description validation", () => {
       "image/jpeg,image/png,image/webp",
     );
     expect(JSON.stringify(ideaRenderer.toJSON())).not.toContain("Capture d'écran (facultatif)");
-    expect(bugRenderer.root.findAllByType("button").filter((button) => button.props.ariaLabel === "Dicter")).toHaveLength(2);
-    expect(ideaRenderer.root.findAllByType("button").filter((button) => button.props.ariaLabel === "Dicter")).toHaveLength(2);
-    expect(collaborationRenderer.root.findAllByType("button").filter((button) => button.props.ariaLabel === "Dicter")).toHaveLength(0);
+    expect(bugRenderer.root.findAllByType("button").map((button) => propsOf<ButtonProps>(button)).filter((button) => button.ariaLabel === "Dicter")).toHaveLength(2);
+    expect(ideaRenderer.root.findAllByType("button").map((button) => propsOf<ButtonProps>(button)).filter((button) => button.ariaLabel === "Dicter")).toHaveLength(2);
+    expect(collaborationRenderer.root.findAllByType("button").map((button) => propsOf<ButtonProps>(button)).filter((button) => button.ariaLabel === "Dicter")).toHaveLength(0);
   });
 
   it("explains product-feedback recognition only on eligible questionnaires", () => {
@@ -301,8 +315,7 @@ describe("QuestionnaireCard serialized description validation", () => {
     });
 
     await act(async () => {
-      renderer.root.findByType("form").props.onSubmit({ preventDefault: () => undefined });
-      await Promise.resolve();
+      await formProps(renderer).onSubmit({ preventDefault: () => undefined });
     });
 
     const markup = JSON.stringify(renderer.toJSON());
@@ -338,11 +351,11 @@ describe("QuestionnaireCard serialized description validation", () => {
     });
 
     await act(async () => {
-      await renderer.root.findByType("form").props.onSubmit({ preventDefault: () => undefined });
+      await formProps(renderer).onSubmit({ preventDefault: () => undefined });
     });
     expect(JSON.stringify(renderer.toJSON())).toContain("Le service est indisponible.");
 
-    const retry = renderer.root.findByType("form").props.onSubmit({ preventDefault: () => undefined });
+    const retry = formProps(renderer).onSubmit({ preventDefault: () => undefined });
     await act(async () => {
       await Promise.resolve();
     });
@@ -360,7 +373,7 @@ describe("QuestionnaireCard serialized description validation", () => {
     const markup = JSON.stringify(renderer.toJSON());
     expect(markup).toContain("Référence");
     expect(markup).toContain("retry-42");
-    expect(renderer.root.findAllByType("textarea").every((textarea) => textarea.props.value === "")).toBe(true);
+    expect(renderer.root.findAllByType("textarea").map((textarea) => propsOf<TextareaProps>(textarea)).every((textarea) => textarea.value === "")).toBe(true);
   });
 
   it("allows only one request when submit is triggered twice before the first response", async () => {
@@ -384,9 +397,9 @@ describe("QuestionnaireCard serialized description validation", () => {
     let firstSubmission!: Promise<void>;
     let secondSubmission!: Promise<void>;
     act(() => {
-      const form = renderer.root.findByType("form");
-      firstSubmission = form.props.onSubmit({ preventDefault: () => undefined });
-      secondSubmission = form.props.onSubmit({ preventDefault: () => undefined });
+      const form = formProps(renderer);
+      firstSubmission = form.onSubmit({ preventDefault: () => undefined });
+      secondSubmission = form.onSubmit({ preventDefault: () => undefined });
     });
     expect(fetchMock).toHaveBeenCalledOnce();
 
@@ -424,12 +437,12 @@ describe("QuestionnaireCard serialized description validation", () => {
       );
     });
     act(() => {
-      renderer.root.findAllByType("input").find((input) => input.props.type === "file")?.props.onChange({
+      renderer.root.findAllByType("input").map((input) => propsOf<InputProps>(input)).find((input) => input.type === "file")?.onChange({
         target: { files: [new File(["png"], "capture.png", { type: "image/png" })] },
       });
     });
 
-    const submission = renderer.root.findByType("form").props.onSubmit({ preventDefault: () => undefined });
+    const submission = formProps(renderer).onSubmit({ preventDefault: () => undefined });
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
@@ -487,18 +500,19 @@ describe("QuestionnaireCard serialized description validation", () => {
       );
     });
 
-    const dictateButton = renderer.root.findAllByType("button").find(
-      (button) => button.props.ariaLabel === "Dicter",
+    const dictateButton = renderer.root.findAllByType("button").map((button) => propsOf<ButtonProps>(button)).find(
+      (button) => button.ariaLabel === "Dicter",
     );
     expect(dictateButton).toBeDefined();
     act(() => {
-      dictateButton?.props.onClick();
+      dictateButton?.onClick();
     });
     const recognition = CardSpeechRecognition.instances[0];
     expect(recognition.lang).toBe("fr-FR");
 
-    const textareas = renderer.root.findAllByType("textarea");
-    const stepsTextarea = textareas.find((textarea) => textarea.props.id === "feedback-bug-steps");
+    const stepsTextarea = renderer.root.findAllByType("textarea").find(
+      (textarea) => propsOf<TextareaProps>(textarea).id === "feedback-bug-steps",
+    ) as TestNode<TextareaProps> | undefined;
     expect(stepsTextarea?.props.value).toBe("Texte déjà saisi");
 
     act(() => {
@@ -548,25 +562,23 @@ describe("QuestionnaireCard serialized description validation", () => {
     });
 
     act(() => {
-      renderer.root.findAllByType("button").find(
-        (button) => button.props.ariaLabel === "Dicter",
-      )?.props.onClick();
+      renderer.root.findAllByType("button").map((button) => propsOf<ButtonProps>(button)).find(
+        (button) => button.ariaLabel === "Dicter",
+      )?.onClick();
     });
     const recognition = CardSpeechRecognition.instances[0];
-    const form = renderer.root.findByType("form");
-
     await act(async () => {
-      void form.props.onSubmit({ preventDefault: () => undefined });
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ formProps(renderer).onSubmit({ preventDefault: () => undefined });
       await Promise.resolve();
     });
     act(() => {
       recognition.emitFinal("résultat tardif");
     });
 
-    const stepsTextarea = renderer.root.findAllByType("textarea").find(
-      (textarea) => textarea.props.id === "feedback-bug-steps",
+    const stepsTextarea = renderer.root.findAllByType("textarea").map((textarea) => propsOf<TextareaProps>(textarea)).find(
+      (textarea) => textarea.id === "feedback-bug-steps",
     );
-    expect(stepsTextarea?.props.value).toBe("Texte déjà saisi");
+    expect(stepsTextarea?.value).toBe("Texte déjà saisi");
 
     await act(async () => {
       resolveFetch({ ok: true, json: async () => ({ requestId: "req-1" }) });

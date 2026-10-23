@@ -60,7 +60,7 @@ export function GamificationRulesMigrationNotice({
           variant="pill"
           size="md"
           loading={isSubmitting}
-          onClick={acknowledge}
+          onClick={() => { void /* fire-and-forget -- the migration notice owns acknowledgement state and errors. */ acknowledge(); }}
         >
           {fr ? "J’ai vu les nouveautés" : "I’ve seen the updates"}
         </CmmButton>

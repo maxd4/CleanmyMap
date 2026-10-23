@@ -64,7 +64,7 @@ export function LeaderboardOptInSetting({ fr }: { fr: boolean }) {
         className="mt-1 h-4 w-4 accent-[#c51f1f]"
         checked={enabled}
         disabled={!loaded || saving || !eligible}
-        onChange={(event) => void updatePreference(event.target.checked)}
+        onChange={(event) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ updatePreference(event.target.checked); }}
       />
       <span>
         {fr

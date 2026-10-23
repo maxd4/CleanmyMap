@@ -118,7 +118,7 @@ export function SpogomiOrganizerDashboard({
             <p className="cmm-text-body mt-1 text-slate-900">La date vient de votre saisie. Toute nouvelle compétition reste privée jusqu’à sa publication explicite.</p>
           </div>
         </div>
-        <form className="grid gap-4 md:grid-cols-2" onSubmit={(event) => void createEvent(event)}>
+        <form className="grid gap-4 md:grid-cols-2" onSubmit={(event) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ createEvent(event); }}>
           <label className="space-y-1 text-sm font-bold text-slate-800">Nom<input className={inputClassName()} name="name" required maxLength={160} /></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Lieu<input className={inputClassName()} name="locationLabel" required maxLength={200} /></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Mode<select className={inputClassName()} name="mode" defaultValue="casual"><option value="casual">Casual</option><option value="world_cup">World Cup</option></select></label>

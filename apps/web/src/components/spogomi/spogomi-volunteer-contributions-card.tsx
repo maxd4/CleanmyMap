@@ -50,7 +50,7 @@ export function SpogomiVolunteerContributionsCard({ eventId, signInHref }: { eve
   }, [eventId, isLoaded, isSignedIn]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => { void load(); }, 0);
+    const timer = window.setTimeout(() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ load(); }, 0);
     return () => window.clearTimeout(timer);
   }, [load]);
 
@@ -78,7 +78,7 @@ export function SpogomiVolunteerContributionsCard({ eventId, signInHref }: { eve
     {!isLoaded ? <p className="text-sm text-slate-600">Vérification de la session…</p> : !isSignedIn ? <><p className="text-sm text-slate-700">Connectez-vous pour consulter vos missions certifiées.</p><CmmButton href={signInHref} tone="primary">Se connecter</CmmButton></> : !payload ? <p className="text-sm text-slate-600">Chargement de vos contributions…</p> : <>
       <p className="cmm-text-small inline-flex rounded-full border border-emerald-200 bg-white/75 px-3 py-1 font-black uppercase tracking-[0.12em] text-emerald-800">{labels[payload.status]}</p>
       {payload.event?.missions?.length ? <ul className="space-y-2">{payload.event.missions.map((mission) => <li key={mission.id} className="rounded-xl border border-emerald-100 bg-white/75 px-3 py-2 text-sm font-bold text-slate-900">{missionLabels[mission.kind]}<span className="cmm-text-small ml-2 font-normal text-slate-600">certification {mission.certificationVersion}</span></li>)}</ul> : null}
-      {payload.status === "certificate_available" || payload.status === "certificate_reissue_available" || payload.status === "certificate_current" ? <CmmButton type="button" tone="primary" disabled={busy} loading={busy} onClick={() => void generateCertificate()}><Download size={16} />{busy ? "Génération…" : payload.status === "certificate_reissue_available" ? "Générer une nouvelle attestation" : "Télécharger mon attestation"}</CmmButton> : null}
+      {payload.status === "certificate_available" || payload.status === "certificate_reissue_available" || payload.status === "certificate_current" ? <CmmButton type="button" tone="primary" disabled={busy} loading={busy} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ generateCertificate(); }}><Download size={16} />{busy ? "Génération…" : payload.status === "certificate_reissue_available" ? "Générer une nouvelle attestation" : "Télécharger mon attestation"}</CmmButton> : null}
       {payload.status === "certificate_reissue_available" ? <p className="text-sm font-semibold text-emerald-800">La version précédente reste invalide. Cette nouvelle émission utilisera uniquement l’état certifié actuel.</p> : null}
       {payload.status === "certificate_revoked" ? <p className="text-sm font-semibold text-rose-700">Une correction ou révocation a invalidé la version précédente. Une nouvelle version ne sera proposée qu’après une nouvelle certification.</p> : null}
       {payload.status === "validation_pending" ? <p className="text-sm text-slate-700">La déclaration ou la présence seule ne suffit pas : l’organisateur doit encore certifier la mission.</p> : null}

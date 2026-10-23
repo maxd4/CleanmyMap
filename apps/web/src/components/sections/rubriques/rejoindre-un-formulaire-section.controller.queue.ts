@@ -93,7 +93,7 @@ export function useJoinFormSectionQueue({
     }
 
     const controller = new AbortController();
-    void (async () => {
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ (async () => {
       await loadQueue(queueActionId, controller.signal);
     })();
     return () => controller.abort();
@@ -101,7 +101,7 @@ export function useJoinFormSectionQueue({
 
   useEffect(() => {
     if (reloadAction?.actionId === queueActionId && queueActionId) {
-      void (async () => {
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ (async () => {
         await loadQueue(queueActionId);
       })();
     }

@@ -19,7 +19,7 @@ export function ClimatePeriodPicker({ fr, periodDays, setPeriodDays }: { fr: boo
 }
 
 export function ClimateLoadError({ fr, mutate }: { fr: boolean; mutate: () => void | Promise<unknown> }) {
-  return <div className="flex flex-col items-center py-20 text-center"><div className="mb-6 rounded-full bg-rose-500/10 p-4 text-rose-500"><Info size={40} /></div><p className="font-bold uppercase tracking-widest text-rose-400">{fr ? "Erreur de chargement" : "Loading error"}</p><CmmButton onClick={() => void mutate()} tone="secondary" variant="pill" className="mt-8 flex items-center gap-2 rounded-xl bg-white/5 px-6 py-3 font-black text-white transition-all hover:bg-white/10"><RefreshCw size={18} />{fr ? "Réessayer" : "Retry"}</CmmButton></div>;
+  return <div className="flex flex-col items-center py-20 text-center"><div className="mb-6 rounded-full bg-rose-500/10 p-4 text-rose-500"><Info size={40} /></div><p className="font-bold uppercase tracking-widest text-rose-400">{fr ? "Erreur de chargement" : "Loading error"}</p><CmmButton onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ mutate(); }} tone="secondary" variant="pill" className="mt-8 flex items-center gap-2 rounded-xl bg-white/5 px-6 py-3 font-black text-white transition-all hover:bg-white/10"><RefreshCw size={18} />{fr ? "Réessayer" : "Retry"}</CmmButton></div>;
 }
 
 export function ClimateResults({ fr, context }: { fr: boolean; context: ClimateContext }) {

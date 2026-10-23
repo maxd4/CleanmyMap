@@ -40,12 +40,14 @@ function firePointer(
   const event = new Event(type, { bubbles: true, cancelable: true });
   setEventProperty(event, "pointerType", options.pointerType ?? "mouse");
   setEventProperty(event, "relatedTarget", options.relatedTarget ?? null);
-  act(() => target.dispatchEvent(event));
+  // fire-and-forget -- the synchronous DOM event is fully handled inside React act.
+  void act(() => target.dispatchEvent(event));
 }
 
 function fireFocus(target: EventTarget, type: "focusin" | "focusout", relatedTarget: EventTarget | null = null) {
   const event = new FocusEvent(type, { bubbles: true, relatedTarget });
-  act(() => target.dispatchEvent(event));
+  // fire-and-forget -- the synchronous DOM event is fully handled inside React act.
+  void act(() => target.dispatchEvent(event));
 }
 
 function tooltip() {
@@ -232,7 +234,7 @@ describe("SiteTooltips DOM behavior", () => {
 
     firePointer(trigger, "pointerover");
     await advance();
-    act(() => document.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Escape" })));
+    await act(() => document.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Escape" })));
     expect(tooltip()).toBeNull();
   });
 

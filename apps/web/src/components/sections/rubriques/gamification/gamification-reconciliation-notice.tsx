@@ -189,7 +189,7 @@ export function GamificationReconciliationNotice({
         ))}
       </ul>
 
-      <ReconciliationActions copy={copy} fr={fr} isSubmitting={isSubmitting} onAcknowledge={acknowledge} onOpenDetails={() => setIsDetailOpen(true)} />
+      <ReconciliationActions copy={copy} fr={fr} isSubmitting={isSubmitting} onAcknowledge={() => { void /* fire-and-forget -- the reconciliation notice owns acknowledgement state and errors. */ acknowledge(); }} onOpenDetails={() => setIsDetailOpen(true)} />
       <GamificationReconciliationDetail
         open={isDetailOpen}
         copy={detailCopy}

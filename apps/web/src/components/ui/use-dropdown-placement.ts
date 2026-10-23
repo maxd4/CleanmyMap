@@ -81,7 +81,7 @@ export function useDropdownPlacement({
 
     updatePlacement();
     let active = true;
-    void document.fonts?.ready.then(() => {
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ document.fonts?.ready.then(() => {
       if (active) {
         updatePlacement();
       }

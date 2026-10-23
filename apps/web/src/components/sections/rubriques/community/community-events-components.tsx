@@ -154,7 +154,7 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
             <MissionDetails event={event} fr={fr} />
             <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
               <CmmButton
-                onClick={() => void onRsvp(event.id, "maybe")}
+                onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onRsvp(event.id, "maybe"); }}
                 disabled={rsvpLoading}
                 tone="secondary"
                 variant="pill"
@@ -163,7 +163,7 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
                 {fr ? "Je peux aider" : "I can help"}
               </CmmButton>
               <CmmButton
-                onClick={() => void onRsvp(event.id, "no")}
+                onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onRsvp(event.id, "no"); }}
                 disabled={rsvpLoading}
                 tone="tertiary"
                 variant="pill"
@@ -196,7 +196,7 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
           </div>
         </CmmDisclosure>
         <CmmButton
-          onClick={() => void onRsvp(event.id, "yes")}
+          onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onRsvp(event.id, "yes"); }}
           disabled={rsvpLoading}
           loading={rsvpLoading}
           tone="primary"
@@ -296,7 +296,7 @@ export const EventArticlePast = memo(function EventArticlePast({
             variant="pill"
             disabled={isUpdating}
             loading={isUpdating}
-            onClick={() => void onSaveEventOps(event)}
+            onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onSaveEventOps(event); }}
           >
             {isUpdating ? "Enregistrement…" : "Enregistrer le suivi"}
           </CmmButton>

@@ -69,14 +69,14 @@ function QueueProbe({
       <button
         type="button"
         disabled={queue.reviewingQueueId === "request-1"}
-        onClick={() => void queue.reviewQueueRequest("request-1", "accept")}
+        onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ queue.reviewQueueRequest("request-1", "accept"); }}
       >
         accept
       </button>
       <button
         type="button"
         disabled={queue.addingQueueParticipantId === "user-2"}
-        onClick={() => void queue.addQueueParticipant("user-2")}
+        onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ queue.addQueueParticipant("user-2"); }}
       >
         add
       </button>

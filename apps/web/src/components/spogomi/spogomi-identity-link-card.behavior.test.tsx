@@ -1,5 +1,5 @@
 import * as React from "react";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authState = vi.hoisted(() => ({ isLoaded: true, isSignedIn: true }));
@@ -30,6 +30,12 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 const eventId = "event-1";
 const identityUrl = `/api/spogomi/events/${eventId}/identity-link`;
 
+type TestNode<Props> = ReactTestInstance & { props: Props };
+type ButtonProps = { children?: React.ReactNode; disabled?: boolean; onClick: () => void };
+type InputProps = { id?: string; onChange: (event: { target: { value: string } }) => void };
+type FormProps = { onSubmit: (event: { preventDefault: () => void }) => Promise<void> };
+type TextNodeProps = { children?: React.ReactNode };
+
 type Deferred<T> = {
   promise: Promise<T>;
   resolve: (value: T) => void;
@@ -51,22 +57,22 @@ function jsonResponse(payload: unknown, status = 200): Response {
 }
 
 function findButton(renderer: ReactTestRenderer, text: string) {
-  const button = renderer.root.findAllByType("button").find((node) => String(node.props.children).includes(text));
+  const button = renderer.root.findAllByType("button").find((node) => String((node as TestNode<ButtonProps>).props.children).includes(text));
   if (!button) throw new Error(`Button not found: ${text}`);
-  return button;
+  return button as TestNode<ButtonProps>;
 }
 
-function findForm(renderer: ReactTestRenderer) {
-  return renderer.root.findByType("form");
+function findForm(renderer: ReactTestRenderer): TestNode<FormProps> {
+  return renderer.root.findByType("form") as TestNode<FormProps>;
 }
 
-function findInput(renderer: ReactTestRenderer, id: string) {
-  return renderer.root.findByProps({ id });
+function findInput(renderer: ReactTestRenderer, id: string): TestNode<InputProps> {
+  return renderer.root.findByProps({ id }) as TestNode<InputProps>;
 }
 
 function findText(renderer: ReactTestRenderer, text: string) {
   const node = renderer.root.findAll((candidate) => {
-    const children = candidate.props.children;
+    const children = (candidate as TestNode<TextNodeProps>).props.children;
     const value = Array.isArray(children) ? children.join("") : children;
     return typeof value === "string" && value.includes(text);
   })[0];
@@ -173,10 +179,10 @@ describe("SpogomiIdentityLinkCard behavior", () => {
 
     const codeInput = findInput(renderer, "spogomi-identity-code");
     expect(findButton(renderer, "Relier le compte").props.disabled).toBe(true);
-    act(() => codeInput.props.onChange({ target: { value: "SPOGOMI-1234567" } }));
+    await act(() => codeInput.props.onChange({ target: { value: "SPOGOMI-1234567" } }));
     expect(findButton(renderer, "Relier le compte").props.disabled).toBe(true);
 
-    act(() => codeInput.props.onChange({ target: { value: "SPOGOMI-1234567890123456" } }));
+    await act(() => codeInput.props.onChange({ target: { value: "SPOGOMI-1234567890123456" } }));
     fetchMock.mockResolvedValueOnce(jsonResponse({ state: "identity_verified", recognition: null, team: null }));
     await act(async () => {
       findForm(renderer).props.onSubmit({ preventDefault: vi.fn() });
@@ -198,7 +204,7 @@ describe("SpogomiIdentityLinkCard behavior", () => {
     await settleTimers();
     expect(renderer.root.findByProps({ role: "alert" }).props.children).toBe("Lecture refusée");
 
-    act(() => findInput(renderer, "spogomi-identity-code").props.onChange({ target: { value: "SPOGOMI-1234567890123456" } }));
+    await act(() => findInput(renderer, "spogomi-identity-code").props.onChange({ target: { value: "SPOGOMI-1234567890123456" } }));
     fetchMock.mockResolvedValueOnce(jsonResponse({ error: "Code invalide" }, 400));
     await act(async () => {
       findForm(renderer).props.onSubmit({ preventDefault: vi.fn() });
@@ -284,7 +290,7 @@ describe("SpogomiIdentityLinkCard behavior", () => {
     activeRenderers.push(renderer);
     await settleTimers();
 
-    act(() => findInput(renderer, "spogomi-identity-code").props.onChange({ target: { value: "SPOGOMI-1234567890123456" } }));
+    await act(() => findInput(renderer, "spogomi-identity-code").props.onChange({ target: { value: "SPOGOMI-1234567890123456" } }));
     fetchMock.mockResolvedValueOnce(jsonResponse({
       state: "identity_verified",
       team: richTeam,
@@ -429,7 +435,7 @@ describe("SpogomiIdentityLinkCard behavior", () => {
     expect(findText(renderer, "Équipe Alpha · Équipe 7")).toBeTruthy();
     expect(findButton(renderer, "Vérifier à nouveau")).toBeTruthy();
 
-    act(() => findButton(renderer, "Vérifier à nouveau").props.onClick());
+    await act(() => findButton(renderer, "Vérifier à nouveau").props.onClick());
     await flushPromises();
     expect(findText(renderer, "Équipe Alpha · Équipe 7")).toBeTruthy();
     expect(findButton(renderer, "Vérifier à nouveau")).toBeTruthy();
@@ -456,7 +462,7 @@ describe("SpogomiIdentityLinkCard behavior", () => {
       await flushPromises();
     });
     const context = findInput(renderer, "spogomi-identity-assistance-context");
-    act(() => context.props.onChange({ target: { value: "Présence confirmée par l’équipe terrain." } }));
+    await act(() => context.props.onChange({ target: { value: "Présence confirmée par l’équipe terrain." } }));
     await act(async () => {
       findForm(renderer).props.onSubmit({ preventDefault: vi.fn() });
       await flushPromises();
@@ -489,8 +495,8 @@ describe("SpogomiIdentityLinkCard behavior", () => {
       findButton(renderer, "Je n’ai pas de code").props.onClick();
       await flushPromises();
     });
-    act(() => findInput(renderer, "spogomi-identity-assistance-context").props.onChange({ target: { value: "Contexte" } }));
-    act(() => findForm(renderer).props.onSubmit({ preventDefault: vi.fn() }));
+    await act(() => findInput(renderer, "spogomi-identity-assistance-context").props.onChange({ target: { value: "Contexte" } }));
+    await act(() => findForm(renderer).props.onSubmit({ preventDefault: vi.fn() }));
     await act(async () => {
       await flushPromises();
     });
@@ -529,7 +535,7 @@ describe("SpogomiIdentityLinkCard behavior", () => {
 
     const late = deferred<Response>();
     fetchMock.mockReturnValueOnce(late.promise);
-    act(() => findButton(renderer, "Vérifier à nouveau").props.onClick());
+    await act(() => findButton(renderer, "Vérifier à nouveau").props.onClick());
     await flushPromises();
     expect(fetchMock).toHaveBeenCalledTimes(3);
     act(() => renderer.unmount());

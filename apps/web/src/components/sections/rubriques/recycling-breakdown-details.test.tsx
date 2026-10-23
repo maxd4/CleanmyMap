@@ -58,7 +58,7 @@ describe("RecyclingBreakdownDetails", () => {
     expect(markup).not.toContain("Répartition détaillée disponible depuis le snapshot réel");
   });
 
-  it("activates one cached SWR view only after an authorized click", () => {
+  it("activates one cached SWR view only after an authorized click", async () => {
     authState.isSignedIn = true;
     authState.userId = "user-a";
     swrState.data = snapshot;
@@ -74,7 +74,7 @@ describe("RecyclingBreakdownDetails", () => {
     );
     expect(trigger).toBeDefined();
 
-    act(() => trigger?.props.onClick());
+    await act(() => trigger?.props.onClick());
 
     expect(lastCall()?.key).toEqual(["section-recycling-breakdown", "user-a"]);
     expect(lastCall()?.options).toMatchObject({
@@ -87,7 +87,7 @@ describe("RecyclingBreakdownDetails", () => {
     expect(renderer.root.findByProps({ "data-breakdown-state": "success" })).toBeDefined();
   });
 
-  it("keeps an unavailable result distinct from zero", () => {
+  it("keeps an unavailable result distinct from zero", async () => {
     authState.isSignedIn = true;
     authState.userId = "user-a";
     let renderer!: ReactTestRenderer;
@@ -98,13 +98,13 @@ describe("RecyclingBreakdownDetails", () => {
     const trigger = renderer.root.findAllByType("button").find((button) =>
       String(button.props.children).includes("Voir la répartition détaillée"),
     );
-    act(() => trigger?.props.onClick());
+    await act(() => trigger?.props.onClick());
 
     expect(renderer.root.findAllByType("button").some((button) => String(button.props.children).includes("Réessayer"))).toBe(true);
     expect(renderer.root.findAllByType("p").some((paragraph) => String(paragraph.props.children).includes("aucune valeur inconnue n’est présentée comme zéro"))).toBe(true);
   });
 
-  it("drops the request, cache view and callback when the Clerk identity changes", () => {
+  it("drops the request, cache view and callback when the Clerk identity changes", async () => {
     authState.isSignedIn = true;
     authState.userId = "user-a";
     swrState.data = snapshot;
@@ -117,7 +117,7 @@ describe("RecyclingBreakdownDetails", () => {
     const trigger = renderer.root.findAllByType("button").find((button) =>
       String(button.props.children).includes("Voir la répartition détaillée"),
     );
-    act(() => trigger?.props.onClick());
+    await act(() => trigger?.props.onClick());
     expect(onLoaded).toHaveBeenCalledWith(snapshot, "user-a");
 
     authState.userId = "user-b";

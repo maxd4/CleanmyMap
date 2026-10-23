@@ -86,7 +86,7 @@ export function useJoinFormSectionActions({
 
   useEffect(() => {
     const controller = new AbortController();
-    void (async () => {
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ (async () => {
       await loadActions(controller.signal);
     })();
     return () => controller.abort();
@@ -336,6 +336,6 @@ export function useJoinFormSectionActions({
     closePendingActions,
     confirmPendingJoin,
     confirmPendingLeave,
-    reloadActions: () => void loadActions(),
+    reloadActions: () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadActions(); },
   };
 }

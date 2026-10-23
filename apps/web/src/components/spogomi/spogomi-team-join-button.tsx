@@ -74,7 +74,7 @@ export function SpogomiTeamJoinButton({
     return (
       <div className="space-y-1" aria-live="polite">
         <p className="cmm-text-small font-semibold text-amber-900">En attente de validation administrative</p>
-        <CmmButton type="button" size="sm" tone="secondary" disabled={busy} onClick={() => void cancelRequest()}>
+        <CmmButton type="button" size="sm" tone="secondary" disabled={busy} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ cancelRequest(); }}>
           Annuler la demande
         </CmmButton>
       </div>
@@ -82,11 +82,11 @@ export function SpogomiTeamJoinButton({
   }
   if (request?.status === "approved") return <p className="cmm-text-small font-bold text-emerald-800" role="status">Rattachement accepté</p>;
   if (request?.status === "rejected") return <p className="cmm-text-small font-semibold text-slate-700" role="status">Demande refusée</p>;
-  if (request?.status === "cancelled") return <CmmButton type="button" size="sm" tone="secondary" disabled={busy} onClick={() => void sendRequest()}>Rejoindre cette équipe</CmmButton>;
+  if (request?.status === "cancelled") return <CmmButton type="button" size="sm" tone="secondary" disabled={busy} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ sendRequest(); }}>Rejoindre cette équipe</CmmButton>;
 
   return (
     <div className="space-y-1">
-      <CmmButton type="button" size="sm" tone="secondary" disabled={busy} loading={busy} onClick={() => void sendRequest()}>
+      <CmmButton type="button" size="sm" tone="secondary" disabled={busy} loading={busy} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ sendRequest(); }}>
         {busy ? "Envoi…" : "Rejoindre cette équipe"}
       </CmmButton>
       {error ? <p role="alert" className="cmm-text-small max-w-56 font-semibold text-rose-700">{error}</p> : null}

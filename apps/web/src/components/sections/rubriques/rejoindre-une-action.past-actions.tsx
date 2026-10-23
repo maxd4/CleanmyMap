@@ -326,7 +326,7 @@ export function PastActionsPanel({
       <div className="grid gap-3 md:grid-cols-2">
         {items.map((item) => {
           const claimState = claimOverrides[item.id] ?? historyByActionId.get(item.id) ?? null;
-          return <PastActionCard key={item.id} item={item} fr={fr} focused={focusedActionId === item.id} authenticated={authenticated} claimState={claimState} claiming={claimingActionId === item.id} claimError={claimErrors[item.id]} onRequestClaim={(actionId) => void requestClaim(actionId)} onShareAction={onShareAction} />;
+          return <PastActionCard key={item.id} item={item} fr={fr} focused={focusedActionId === item.id} authenticated={authenticated} claimState={claimState} claiming={claimingActionId === item.id} claimError={claimErrors[item.id]} onRequestClaim={(actionId) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ requestClaim(actionId); }} onShareAction={onShareAction} />;
         })}
       </div>
 

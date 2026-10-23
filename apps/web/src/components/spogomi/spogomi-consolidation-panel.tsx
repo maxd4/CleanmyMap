@@ -73,8 +73,8 @@ export function SpogomiConsolidationPanel({ eventId }: { eventId: string }) {
         <p className="cmm-text-small">Une seule action CleanMyMap · cible {projection.actionId} · version {projection.projectionVersion}</p>
       </div>
       <div className="flex gap-2">
-        <CmmButton type="button" tone="secondary" disabled={busy} onClick={() => void load().catch((reason) => setError(reason instanceof Error ? reason.message : "Aperçu du bilan impossible."))}>Actualiser</CmmButton>
-        <CmmButton type="button" tone="primary" disabled={busy || !projection.readyForPublication} onClick={() => void publish()}>Publier le bilan</CmmButton>
+        <CmmButton type="button" tone="secondary" disabled={busy} onClick={() => { void load().catch((reason) => setError(reason instanceof Error ? reason.message : "Aperçu du bilan impossible.")); }}>Actualiser</CmmButton>
+        <CmmButton type="button" tone="primary" disabled={busy || !projection.readyForPublication} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ publish(); }}>Publier le bilan</CmmButton>
       </div>
     </div>
     {message ? <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">{message}</p> : null}

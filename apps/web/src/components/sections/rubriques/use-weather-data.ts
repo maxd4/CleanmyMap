@@ -345,7 +345,7 @@ export function useWeatherData(
 
     draftLocationRef.current = draftLocationLabel;
     let isCancelled = false;
-    void resolveWeatherLocationFromLabel(draftLocationLabel, "Lieu du pré-formulaire").then((location) => {
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ resolveWeatherLocationFromLabel(draftLocationLabel, "Lieu du pré-formulaire").then((location) => {
       if (isCancelled || hasManualLocationRef.current) {
         return;
       }
@@ -381,7 +381,7 @@ export function useWeatherData(
 
     let isCancelled = false;
 
-    void resolveWeatherLocationFromLabel(storedLocation.label, storedLocation.subtitle).then(
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ resolveWeatherLocationFromLabel(storedLocation.label, storedLocation.subtitle).then(
       (location) => {
         if (isCancelled || hasResolvedInitialLocationRef.current || hasManualLocationRef.current) {
           return;
@@ -428,7 +428,7 @@ export function useWeatherData(
 
     let isCancelled = false;
 
-    void resolveWeatherLocationFromPreference(preference).then((location) => {
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ resolveWeatherLocationFromPreference(preference).then((location) => {
       if (isCancelled || hasResolvedInitialLocationRef.current || hasManualLocationRef.current) {
         return;
       }
@@ -467,38 +467,40 @@ export function useWeatherData(
     let isCancelled = false;
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        if (isCancelled || hasManualLocationRef.current) {
-          return;
-        }
-
-        try {
-          const reverseUrl = new URL("/api/geo/reverse-location", window.location.origin);
-          reverseUrl.searchParams.set("lat", String(position.coords.latitude));
-          reverseUrl.searchParams.set("lon", String(position.coords.longitude));
-
-          const response = await fetch(reverseUrl.toString(), {
-            method: "GET",
-            headers: { Accept: "application/json" },
-            cache: "no-store",
-          });
-
-          if (!response.ok) {
+      (position) => {
+        void /* fire-and-forget -- the geolocation effect owns cancellation and silent fallback. */ (async () => {
+          if (isCancelled || hasManualLocationRef.current) {
             return;
           }
 
-          const body = (await response.json()) as ReverseLocationResponse;
-          if (isCancelled || hasManualLocationRef.current || !body.location) {
-            return;
-          }
+          try {
+            const reverseUrl = new URL("/api/geo/reverse-location", window.location.origin);
+            reverseUrl.searchParams.set("lat", String(position.coords.latitude));
+            reverseUrl.searchParams.set("lon", String(position.coords.longitude));
 
-          hasResolvedInitialLocationRef.current = true;
-          setSelectedLocation(body.location);
-          setLocationQuery(body.location.label);
-          setSelectedForecastDayIndex(0);
-        } catch {
-          // Silent fallback: the default/manual location remains available.
-        }
+            const response = await fetch(reverseUrl.toString(), {
+              method: "GET",
+              headers: { Accept: "application/json" },
+              cache: "no-store",
+            });
+
+            if (!response.ok) {
+              return;
+            }
+
+            const body = (await response.json()) as ReverseLocationResponse;
+            if (isCancelled || hasManualLocationRef.current || !body.location) {
+              return;
+            }
+
+            hasResolvedInitialLocationRef.current = true;
+            setSelectedLocation(body.location);
+            setLocationQuery(body.location.label);
+            setSelectedForecastDayIndex(0);
+          } catch {
+            // Silent fallback: the default/manual location remains available.
+          }
+        })();
       },
       () => {
         // Silent fallback: the default/manual location remains available.

@@ -123,7 +123,7 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
       if (appError.kind === "network") {
         notifyNetworkToast({
           message: appError.message || defaultMessageForKind("network"),
-          onRetry: () => void submitRequest(),
+          onRetry: () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submitRequest(); },
           onRefresh: () => window.location.reload(),
         });
         setSubmitState("idle");
@@ -223,7 +223,7 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={(event) => { void /* fire-and-forget -- the promotion form owns submission state and errors. */ handleSubmit(event); }} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
@@ -362,7 +362,7 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
                     actions={
                       <CmmButton
                         type="button"
-                        onClick={() => void submitRequest()}
+                        onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submitRequest(); }}
                         tone="primary"
                         variant="pill"
                         className="rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-amber-400"

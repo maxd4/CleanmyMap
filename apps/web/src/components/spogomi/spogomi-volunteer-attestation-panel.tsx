@@ -44,7 +44,7 @@ export function SpogomiVolunteerAttestationPanel({ eventId, divisionId, particip
       <label className="text-sm font-bold text-slate-800">Référence de preuve<input value={evidenceReference} onChange={(event) => setEvidenceReference(event.target.value)} maxLength={500} placeholder="feuille de présence, décision, registre…" className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-3" /></label>
     </div>
     {status === "revoked" ? <label className="block text-sm font-bold text-slate-800">Motif de révocation<input value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1000} className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-white px-3" /></label> : null}
-    <CmmButton type="button" tone="primary" disabled={busy || !participantId || evidenceReference.trim().length < 1 || (status === "revoked" && reason.trim().length < 1)} loading={busy} onClick={() => void submit()}>{busy ? "Enregistrement…" : "Enregistrer la décision"}</CmmButton>
+    <CmmButton type="button" tone="primary" disabled={busy || !participantId || evidenceReference.trim().length < 1 || (status === "revoked" && reason.trim().length < 1)} loading={busy} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submit(); }}>{busy ? "Enregistrement…" : "Enregistrer la décision"}</CmmButton>
     {message ? <p role="status" className="text-sm font-semibold text-emerald-700">{message}</p> : null}{error ? <p role="alert" className="text-sm font-semibold text-rose-700">{error}</p> : null}
   </section>;
 }

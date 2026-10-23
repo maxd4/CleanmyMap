@@ -12,5 +12,5 @@ export function SpogomiVolunteerShareButton({ eventName, eventDate, mission, eve
       else { await navigator.clipboard.writeText(`${text}\n${eventHref}`); setMessage("Résumé copié, sans nom ni PDF."); }
     } catch { setMessage("Partage annulé."); }
   }
-  return <span className="inline-flex flex-wrap items-center gap-2"><CmmButton type="button" size="sm" tone="secondary" onClick={() => void share()}>Partager un résumé</CmmButton>{message ? <span role="status" className="text-xs text-emerald-100/75">{message}</span> : null}</span>;
+  return <span className="inline-flex flex-wrap items-center gap-2"><CmmButton type="button" size="sm" tone="secondary" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ share(); }}>Partager un résumé</CmmButton>{message ? <span role="status" className="text-xs text-emerald-100/75">{message}</span> : null}</span>;
 }

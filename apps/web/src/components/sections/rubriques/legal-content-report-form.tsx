@@ -85,7 +85,7 @@ export function LegalContentReportForm() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <form onSubmit={(event) => { void /* fire-and-forget -- the legal report form owns submission state and errors. */ submit(event); }} className="space-y-5">
       <p className="text-sm leading-6 text-slate-600">
         Décrivez les faits concrètement : vous n&apos;avez pas à qualifier juridiquement l&apos;infraction.
         Les champs marqués d&apos;un astérisque sont obligatoires, sauf identité et email lorsque

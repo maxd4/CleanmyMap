@@ -163,7 +163,7 @@ export function RgpdRequestForm() {
     <motion.form
       initial={{ opacity: 1, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      onSubmit={handleSubmit}
+      onSubmit={(event) => { void /* fire-and-forget -- the RGPD request form owns submission state and errors. */ handleSubmit(event); }}
       className="group relative space-y-6 rounded-[3rem] border border-slate-200/70 bg-white/88 p-10 shadow-[0_24px_80px_-55px_rgba(15,23,42,0.38)] backdrop-blur-2xl"
     >
       <RgpdFormBody

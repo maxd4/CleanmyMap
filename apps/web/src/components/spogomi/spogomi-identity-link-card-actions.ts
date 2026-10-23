@@ -37,7 +37,7 @@ export function useSpogomiIdentityLinkActions({ eventId, isLoaded, isSignedIn }:
   }, [eventId, isLoaded, isSignedIn, updateEventState]);
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
-    const timer = window.setTimeout(() => { void loadState(); }, 0);
+    const timer = window.setTimeout(() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadState(); }, 0);
     return () => { window.clearTimeout(timer); stateRequestId.current += 1; };
   }, [isLoaded, isSignedIn, loadState]);
   const submitRequest = useCallback(async (body: Record<string, unknown>, fallback: string, update: (payload: LinkResponse) => Partial<Omit<EventScopedState, "eventId">>) => {
