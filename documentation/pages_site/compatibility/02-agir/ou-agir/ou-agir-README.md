@@ -58,10 +58,30 @@ arrêts retenus, budget, exclusions, statut observé/prédit, sources, routage e
 éventuels fallbacks. Le frontend affiche cette décision et ne recalcule pas le
 moteur.
 
+## Précisions de la fiche historique consolidée
+
+- Un candidat de source **observée** est une preuve terrain disponible et
+  éligible ; une zone de risque **prédite** conserve modèle, millésime,
+  provenance et confiance. Son centroïde ne devient pas un spot observé.
+- Les exclusions de sécurité, budget, corridor et éligibilité traduisent une
+  décision du planner, **pas** l'état mesuré d'un lieu.
+- La sélection de candidats et la géométrie du fournisseur de routage restent
+  distinctes : `network` n'a pas la précision d'une géométrie `fallback`.
+- `ok`, `empty` et `degraded` distinguent calcul nominal, absence démontrée et
+  résultats incomplets. L'absence de données n'est jamais un zéro inventé.
+- Les coordonnées précises de l'origine ne sont enregistrées ni dans le draft
+  de route, ni dans l'URL, le hash ou un cookie de route. Un refus de
+  géolocalisation n'active aucune recommandation implicite ; sans origine
+  utilisable, le serveur peut répondre par une erreur explicite.
+
+## Propriétaires et points de vérification
+
+- Redirection : `apps/web/src/app/(app)/sections/route/page.tsx`.
+- Composition : `apps/web/src/components/actions/action-creation-shell.tsx`.
+- Surface : `apps/web/src/components/sections/rubriques/route/`.
+- API : `apps/web/src/app/api/route/recommend/` ; domaine : `apps/web/src/lib/route/`.
+
 ## Références
 
-- [Présentation détaillée](./ou-agir-presentation-detaillee.md)
-- [Méthodologie de création d'itinéraire](../../../../architecture/methodologie-creation-itineraire.md)
-- [Créer une action — panneau itinéraire](/actions/new?panel=itineraire)
-- [Propositions à traiter](./ou-agir-liste-propositions-a-traiter.md)
-- [Objectifs non pertinents](./ou-agir-objectifs-non-pertinents.md)
+- [Méthodologie de création d'itinéraire](../../../../architecture/methodologie-creation-itineraire.md).
+- [Créer une action — panneau itinéraire](/actions/new?panel=itineraire).
