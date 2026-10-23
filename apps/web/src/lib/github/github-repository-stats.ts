@@ -91,6 +91,23 @@ async function fetchJson<T>(
   return (await response.json()) as T;
 }
 
+function findNextPageUrl(linkHeader: string | null): string | null {
+  if (!linkHeader) return null;
+  let cursor = 0;
+  while (cursor < linkHeader.length) {
+    const start = linkHeader.indexOf("<", cursor);
+    if (start < 0) break;
+    const end = linkHeader.indexOf(">", start + 1);
+    if (end < 0) break;
+    const relation = linkHeader.slice(end + 1).split(",", 1)[0] ?? "";
+    if (/^;\s*rel="next"\s*$/.test(relation)) {
+      return linkHeader.slice(start + 1, end);
+    }
+    cursor = end + 1;
+  }
+  return null;
+}
+
 async function fetchPaginatedArray<T>(
   path: string,
   token: string | null,
@@ -116,23 +133,7 @@ async function fetchPaginatedArray<T>(
     const chunk = (await response.json()) as T[];
     items.push(...chunk);
 
-    const linkHeader = response.headers.get("link");
-    nextUrl = null;
-    if (linkHeader) {
-      let cursor = 0;
-      while (cursor < linkHeader.length) {
-        const start = linkHeader.indexOf("<", cursor);
-        if (start < 0) break;
-        const end = linkHeader.indexOf(">", start + 1);
-        if (end < 0) break;
-        const relation = linkHeader.slice(end + 1).split(",", 1)[0] ?? "";
-        if (/^;\s*rel="next"\s*$/.test(relation)) {
-          nextUrl = linkHeader.slice(start + 1, end);
-          break;
-        }
-        cursor = end + 1;
-      }
-    }
+    nextUrl = findNextPageUrl(response.headers.get("link"));
     guard += 1;
   }
 

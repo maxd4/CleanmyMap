@@ -78,6 +78,85 @@ function toCachedCommunityEventItem(
  } satisfies CachedCommunityEventItem;
 }
 
+async function loadCommunityEventRows(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  todayIso: string,
+  limit: number,
+  eventId: string | null,
+): Promise<CommunityEventRow[]> {
+  const selectFields =
+    "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description";
+  if (eventId) {
+    const result = await supabase
+      .from("community_events")
+      .select(selectFields)
+      .eq("id", eventId)
+      .limit(limit);
+    if (result.error) throw new Error(result.error.message);
+    return (result.data ?? []) as CommunityEventRow[];
+  }
+
+  const upcomingResult = await supabase
+    .from("community_events")
+    .select(selectFields)
+    .gte("event_date", todayIso)
+    .order("event_date", { ascending: true })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (upcomingResult.error) throw new Error(upcomingResult.error.message);
+  const upcomingEvents = (upcomingResult.data ?? []) as CommunityEventRow[];
+  const remainingLimit = Math.max(0, limit - upcomingEvents.length);
+  if (remainingLimit === 0) return upcomingEvents;
+
+  const pastResult = await supabase
+    .from("community_events")
+    .select(selectFields)
+    .lt("event_date", todayIso)
+    .order("event_date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(remainingLimit);
+  if (pastResult.error) throw new Error(pastResult.error.message);
+  const pastEvents = (pastResult.data ?? []) as CommunityEventRow[];
+  return Array.from(
+    new Map(
+      [...upcomingEvents, ...pastEvents].map((event) => [event.id, event]),
+    ).values(),
+  );
+}
+
+async function buildCachedCommunityEventsPayload(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  todayIso: string,
+  limit: number,
+  eventId: string | null,
+): Promise<CachedCommunityEventsPayload> {
+  const events = await loadCommunityEventRows(supabase, todayIso, limit, eventId);
+  if (events.length === 0) return { items: [] };
+
+  const summaries = await loadCommunityEventRsvpSummaries(supabase, {
+    eventIds: events.map((event) => event.id),
+    userId: null,
+  });
+  const summaryByEventId = indexCommunityEventRsvpSummaries(summaries);
+  const organizerIds = Array.from(
+    new Set(
+      events
+        .map((event) => event.organizer_clerk_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  );
+  const organizerById = await (await getClerkService()).resolveUsers(organizerIds);
+  return {
+    items: events.map((event) =>
+      toCachedCommunityEventItem(
+        event,
+        summaryByEventId.get(event.id),
+        organizerById.get(event.organizer_clerk_id),
+      ),
+    ),
+  };
+}
+
 async function loadCachedCommunityEvents(
  userId: string | null,
  limit: number,
@@ -85,83 +164,12 @@ async function loadCachedCommunityEvents(
 ): Promise<CommunityEventsSuccessPayload> {
  const todayIso = new Date().toISOString().slice(0, 10);
  const load = async () => {
-   const supabase = getSupabaseServerClient(true);
-   const selectFields =
-"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description";
-   let events: CommunityEventRow[];
-
-   if (eventId) {
-    const eventsResult = await supabase
-      .from("community_events")
-      .select(selectFields)
-      .eq("id", eventId)
-      .limit(limit);
-    if (eventsResult.error) {
-      throw new Error(eventsResult.error.message);
-    }
-    events = (eventsResult.data ?? []) as CommunityEventRow[];
-   } else {
-    const upcomingResult = await supabase
-      .from("community_events")
-      .select(selectFields)
-      .gte("event_date", todayIso)
-      .order("event_date", { ascending: true })
-      .order("created_at", { ascending: false })
-      .limit(limit);
-    if (upcomingResult.error) {
-      throw new Error(upcomingResult.error.message);
-    }
-
-    const upcomingEvents = (upcomingResult.data ?? []) as CommunityEventRow[];
-    const remainingLimit = Math.max(0, limit - upcomingEvents.length);
-    const pastEvents = remainingLimit === 0
-      ? []
-      : await supabase
-          .from("community_events")
-          .select(selectFields)
-          .lt("event_date", todayIso)
-          .order("event_date", { ascending: false })
-          .order("created_at", { ascending: false })
-          .limit(remainingLimit)
-          .then((result) => {
-            if (result.error) {
-              throw new Error(result.error.message);
-            }
-            return (result.data ?? []) as CommunityEventRow[];
-          });
-    events = Array.from(
-      new Map([...upcomingEvents, ...pastEvents].map((event) => [event.id, event])).values(),
-    );
-   }
-
-   if (events.length === 0) {
-    return { items: [] } satisfies CachedCommunityEventsPayload;
-   }
-
-   const summaries = await loadCommunityEventRsvpSummaries(supabase, {
-    eventIds: events.map((event) => event.id),
-    userId: null,
-   });
-   const summaryByEventId = indexCommunityEventRsvpSummaries(summaries);
-
-   const organizerIds = Array.from(
-    new Set(
-     events
-      .map((event) => event.organizer_clerk_id)
-      .filter((id): id is string => typeof id ==="string" && id.length > 0),
-    ),
+   return buildCachedCommunityEventsPayload(
+     getSupabaseServerClient(true),
+     todayIso,
+     limit,
+     eventId,
    );
-   const clerk = await getClerkService();
-   const organizerById = await clerk.resolveUsers(organizerIds);
-
-   const items = events.map((event) =>
-    toCachedCommunityEventItem(
-     event,
-     summaryByEventId.get(event.id),
-     organizerById.get(event.organizer_clerk_id),
-    ),
-   );
-   return { items } satisfies CachedCommunityEventsPayload;
  };
  const cached = eventId
   ? load

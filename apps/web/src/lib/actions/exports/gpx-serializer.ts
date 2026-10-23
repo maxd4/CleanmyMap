@@ -73,6 +73,22 @@ function isAsciiLetter(character: string): boolean {
   return (character >= "a" && character <= "z") || (character >= "A" && character <= "Z");
 }
 
+function hasEmailDomainSuffix(
+  value: string,
+  atIndex: number,
+  domainEnd: number,
+): boolean {
+  for (let dotIndex = atIndex + 1; dotIndex < domainEnd; dotIndex += 1) {
+    if (value[dotIndex] !== "." || dotIndex === atIndex + 1) continue;
+    let suffixEnd = dotIndex + 1;
+    while (suffixEnd < domainEnd && isAsciiLetter(value[suffixEnd]!)) {
+      suffixEnd += 1;
+    }
+    if (suffixEnd - dotIndex - 1 >= 2) return true;
+  }
+  return false;
+}
+
 function containsEmailLikeValue(value: string): boolean {
   let atIndex = value.indexOf("@");
   while (atIndex >= 0) {
@@ -87,15 +103,12 @@ function containsEmailLikeValue(value: string): boolean {
     }
 
     const localPart = value.slice(localStart, atIndex);
-    if (localPart.length > 0 && domainEnd > atIndex + 1) {
-      for (let dotIndex = atIndex + 1; dotIndex < domainEnd; dotIndex += 1) {
-        if (value[dotIndex] !== "." || dotIndex === atIndex + 1) continue;
-        let suffixEnd = dotIndex + 1;
-        while (suffixEnd < domainEnd && isAsciiLetter(value[suffixEnd]!)) {
-          suffixEnd += 1;
-        }
-        if (suffixEnd - dotIndex - 1 >= 2) return true;
-      }
+    if (
+      localPart.length > 0 &&
+      domainEnd > atIndex + 1 &&
+      hasEmailDomainSuffix(value, atIndex, domainEnd)
+    ) {
+      return true;
     }
 
     atIndex = value.indexOf("@", atIndex + 1);

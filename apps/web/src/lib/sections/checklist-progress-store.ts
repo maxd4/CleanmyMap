@@ -59,10 +59,7 @@ export async function getChecklistProgress(
         .eq("checklist_id", checklistId)
         .maybeSingle();
 
-      if (!result.error) {
-        if (!result.data) {
-          return null;
-        }
+      if (!result.error && result.data) {
         return {
           userId: result.data.user_id,
           checklistId: result.data.checklist_id,
@@ -72,7 +69,7 @@ export async function getChecklistProgress(
       }
 
       if (!allowLocalFileStoreFallback()) {
-        throw new Error(result.error.message);
+        throw new Error(result.error?.message ?? "Checklist progress could not be loaded.");
       }
     } catch (error) {
       if (!allowLocalFileStoreFallback()) {

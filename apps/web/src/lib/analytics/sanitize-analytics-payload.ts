@@ -166,6 +166,22 @@ function isSensitiveKey(key: string): boolean {
   );
 }
 
+function knownRouteChildren(root: string, segments: string[]): string[] {
+  const children = ANALYTICS_ROUTE_CHILDREN.get(root);
+  const child = segments[1]?.toLowerCase();
+  return child && children?.has(child) ? [child] : [];
+}
+
+function normalizeKnownRouteSegments(root: string, segments: string[]): string[] {
+  if (root === "profil" || root === "parcours" || root === "spogomi") {
+    return [root];
+  }
+  if (root === "sections" || root === "docs" || root === "missions") {
+    return [root, ...knownRouteChildren(root, segments)];
+  }
+  return [root, ...knownRouteChildren(root, segments)];
+}
+
 function normalizeRouteSegments(value: string): string[] {
   const rawPath = value.split(/[?#]/u, 1)[0] ?? "/";
   const segments = rawPath
@@ -186,26 +202,7 @@ function normalizeRouteSegments(value: string): string[] {
   ) {
     return ["other"];
   }
-  if (root === "profil" || root === "parcours" || root === "spogomi") {
-    return [root];
-  }
-  if (root === "sections" || root === "docs" || root === "missions") {
-    return [
-      root,
-      ...(root === "sections" &&
-      ANALYTICS_ROUTE_CHILDREN.get(root)?.has(segments[1]?.toLowerCase() ?? "")
-        ? [segments[1]!.toLowerCase()]
-        : []),
-    ];
-  }
-
-  const knownChildren = ANALYTICS_ROUTE_CHILDREN.get(root);
-  if (knownChildren) {
-    const child = segments[1]?.toLowerCase();
-    return [root, ...(child && knownChildren.has(child) ? [child] : [])];
-  }
-
-  return [root];
+  return normalizeKnownRouteSegments(root, segments);
 }
 
 function routeKindForRoot(root: string): string {

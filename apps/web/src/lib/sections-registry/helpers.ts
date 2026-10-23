@@ -19,7 +19,7 @@ function hasValidRoute(rubrique: RubriqueDefinition): boolean {
   return true;
 }
 
-export function isRubriqueVisible(rubrique: RubriqueDefinition): boolean {
+function isRubriqueVisible(rubrique: RubriqueDefinition): boolean {
   return rubrique.availability === "available" && hasValidRoute(rubrique);
 }
 
@@ -41,7 +41,7 @@ export function getVisibleRubriquesByCategory(
   );
 }
 
-export function normalizeSectionId(sectionId: string): string {
+function normalizeSectionId(sectionId: string): string {
   return sectionId.trim().toLowerCase();
 }
 
@@ -67,14 +67,4 @@ export function getSectionRouteParams(): Array<{ sectionId: SectionId }> {
     (rubrique): rubrique is SectionRubrique =>
       rubrique.kind === "section" && isRubriqueVisible(rubrique),
   ).map((rubrique) => ({ sectionId: rubrique.id }));
-}
-
-export function getPendingSectionRubriques(): SectionRubriqueDefinition[] {
-  const registry = RUBRIQUE_REGISTRY as readonly RubriqueDefinition[];
-  return registry.filter(
-    (rubrique): rubrique is SectionRubriqueDefinition =>
-      rubrique.kind === "section" &&
-      rubrique.implementation === "pending" &&
-      isRubriqueVisible(rubrique as Rubrique),
-  );
 }

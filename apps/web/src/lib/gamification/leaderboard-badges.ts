@@ -43,19 +43,25 @@ export function countCurrentLeaderboardBadges(
   const gradeIds = new Set<string>();
   const oneShotIds = new Set<string>();
 
+  const addProgressionBadges = (
+    item: GamificationCatalogItem,
+  ) => {
+    if (!item.progression) return;
+    for (const tier of [
+      ...item.progression.previousTiers,
+      item.progression.currentTier,
+    ]) {
+      if (tier.threshold > 0 && tier.achieved) {
+        gradeIds.add(`${item.id}:${tier.id}`);
+      }
+    }
+  };
+
   for (const item of catalog) {
     if (!isPublicCurrentDefinition(item)) continue;
 
     if (item.kind === "progression" && item.progression) {
-      const tiers = [
-        ...item.progression.previousTiers,
-        item.progression.currentTier,
-      ];
-
-      for (const tier of tiers) {
-        if (tier.threshold <= 0 || !tier.achieved) continue;
-        gradeIds.add(`${item.id}:${tier.id}`);
-      }
+      addProgressionBadges(item);
       continue;
     }
 

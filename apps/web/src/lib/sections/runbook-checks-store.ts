@@ -92,6 +92,44 @@ async function writeStore(store: RunbookStore): Promise<void> {
   await writeFile(STORE_FILE, JSON.stringify(store, null, 2), "utf-8");
 }
 
+function buildRunbookStoreFromRows(
+  rows: readonly {
+    profile: string;
+    status: string;
+    duration_seconds: number;
+    last_run_at: string | null;
+    notes: unknown;
+  }[],
+): RunbookStore {
+  const byProfile = new Map<string, RunbookCheckResult>();
+  for (const row of rows) {
+    byProfile.set(row.profile, {
+      profile: row.profile as RunbookCheckResult["profile"],
+      status: row.status as RunbookCheckResult["status"],
+      durationSeconds: row.duration_seconds,
+      lastRunAt: row.last_run_at ?? "",
+      notes: Array.isArray(row.notes)
+        ? row.notes.filter((item): item is string => typeof item === "string")
+        : [],
+    });
+  }
+  return {
+    version: RUNBOOK_VERSION,
+    checks: DEFAULT_CHECKS.map((seed) => byProfile.get(seed.profile) ?? seed),
+  };
+}
+
+async function loadRunbookAfterWrite(): Promise<RunbookStore> {
+  try {
+    return await listRunbookChecks({ allowFallback: false });
+  } catch {
+    throw new RunbookCheckPersistenceError({
+      stage: "post_write",
+      partialMutation: true,
+    });
+  }
+}
+
 export async function listRunbookChecks(options?: {
   allowFallback?: boolean;
 }): Promise<RunbookStore> {
@@ -107,25 +145,7 @@ export async function listRunbookChecks(options?: {
         .order("profile", { ascending: true });
 
       if (!result.error) {
-        const byProfile = new Map<string, RunbookCheckResult>();
-        for (const row of result.data ?? []) {
-          byProfile.set(row.profile, {
-            profile: row.profile,
-            status: row.status,
-            durationSeconds: row.duration_seconds,
-            lastRunAt: row.last_run_at ?? "",
-            notes: Array.isArray(row.notes)
-              ? row.notes.filter(
-                  (item): item is string => typeof item === "string",
-                )
-              : [],
-          });
-        }
-
-        const checks = DEFAULT_CHECKS.map(
-          (seed) => byProfile.get(seed.profile) ?? seed,
-        );
-        return { version: RUNBOOK_VERSION, checks };
+        return buildRunbookStoreFromRows(result.data ?? []);
       }
 
       if (!fallbackAllowed) {
@@ -176,14 +196,7 @@ export async function upsertRunbookCheck(input: {
         .single();
 
       if (!result.error) {
-        try {
-          return await listRunbookChecks({ allowFallback: false });
-        } catch {
-          throw new RunbookCheckPersistenceError({
-            stage: "post_write",
-            partialMutation: true,
-          });
-        }
+        return loadRunbookAfterWrite();
       }
 
       if (!allowLocalFileStoreFallback()) {

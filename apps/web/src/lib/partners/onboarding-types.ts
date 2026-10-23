@@ -141,7 +141,7 @@ export function isPlaceholderUrl(url: string): boolean {
   return isPlaceholderUrlHelper(url);
 }
 
-export function normalizePublicChannelUrl(value: unknown): string | null {
+function normalizePublicChannelUrl(value: unknown): string | null {
   return normalizePublicChannelUrlHelper(value);
 }
 

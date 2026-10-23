@@ -297,22 +297,6 @@ export async function appendPartnerOnboardingRequest(params: {
   return record;
 }
 
-/**
- * Rebuilds only the missing annuaire projection for an existing request.
- * It never changes the request status or deletes either side of the link.
- */
-export async function reconcilePartnerOnboardingRequestAnnuaire(
-  requestId: string,
-): Promise<PartnerOnboardingRequestRecord | null> {
-  const request = await getPartnerOnboardingRequestById(requestId);
-  if (!request) return null;
-  await appendPublishedPartnerAnnuaireEntry({
-    requestId: request.id,
-    request,
-  });
-  return request;
-}
-
 export async function listPartnerOnboardingRequests(
   limit = 100,
   beforeCursor?: CreatorInboxRecordCursor | null,

@@ -93,6 +93,14 @@ function collectHumanStrings(raw: string): string[] {
   return strings;
 }
 
+function findUnaccentedFrenchForms(text: string): string[] {
+  const offenders: string[] = [];
+  for (const pattern of BANNED_UNACCENTED_FORMS) {
+    if (pattern.test(text)) offenders.push(text);
+  }
+  return offenders;
+}
+
 describe("french copy accent regression guard", () => {
   it("keeps every controlled copy file present", () => {
     const missing = COPY_FILES.filter((relativePath) => !existsSync(resolve(process.cwd(), relativePath)));
@@ -116,12 +124,8 @@ describe("french copy accent regression guard", () => {
       const strings = collectHumanStrings(raw);
 
       for (const text of strings) {
-        for (const pattern of BANNED_UNACCENTED_FORMS) {
-          if (!pattern.test(text)) {
-            continue;
-          }
+        if (findUnaccentedFrenchForms(text).length > 0) {
           offenders.push(`${relativePath}: "${text}"`);
-          break;
         }
       }
     }

@@ -156,7 +156,7 @@ export function getRecentTimeWindow(periodDays: number): {
   return { nowMs, floor, floorIso: new Date(floor).toISOString() };
 }
 
-export function isVercelRuntime(): boolean {
+function isVercelRuntime(): boolean {
   return process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV?.trim());
 }
 

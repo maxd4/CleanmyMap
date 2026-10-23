@@ -50,6 +50,36 @@ function getBackpressureConfig(operationType: string): BackpressureConfig {
   return configs[operationType] || configs["default"];
 }
 
+function handleFullBackpressureQueue(
+  queue: QueueItem[],
+  config: BackpressureConfig,
+): BackpressureResult | null {
+  switch (config.dropPolicy) {
+    case "drop-newest":
+      return {
+        allowed: false,
+        reason: `System busy. ${config.queueSize} operations already queued. Try again later.`,
+        retryAfter: 30,
+      };
+    case "drop-oldest": {
+      const dropped = queue.shift();
+      if (dropped) {
+        console.warn(`[Backpressure] Dropping oldest operation: ${dropped.id}`);
+      }
+      return null;
+    }
+    case "delay":
+    default: {
+      const waitTime = Math.ceil((queue.length + 1) / config.maxConcurrent) * 5;
+      return {
+        allowed: false,
+        reason: `System busy. Estimated wait: ${waitTime} seconds.`,
+        retryAfter: waitTime,
+      };
+    }
+  }
+}
+
 export function acquireBackpressure(
   operationType: string,
   operationId: string
@@ -61,28 +91,8 @@ export function acquireBackpressure(
     const queue = queues.get(operationType) || [];
     
     if (queue.length >= config.queueSize) {
-      switch (config.dropPolicy) {
-        case "drop-newest":
-          return {
-            allowed: false,
-            reason: `System busy. ${config.queueSize} operations already queued. Try again later.`,
-            retryAfter: 30,
-          };
-        case "drop-oldest":
-          const dropped = queue.shift();
-          if (dropped) {
-            console.warn(`[Backpressure] Dropping oldest operation: ${dropped.id}`);
-          }
-          break;
-        case "delay":
-        default:
-          const waitTime = Math.ceil((queue.length + 1) / config.maxConcurrent) * 5;
-          return {
-            allowed: false,
-            reason: `System busy. Estimated wait: ${waitTime} seconds.`,
-            retryAfter: waitTime,
-          };
-      }
+      const fullQueueResult = handleFullBackpressureQueue(queue, config);
+      if (fullQueueResult) return fullQueueResult;
     }
     
     const queueItem: QueueItem = {

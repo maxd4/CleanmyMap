@@ -337,6 +337,49 @@ function buildAssociationResources(params: {
   return resources;
 }
 
+function buildPublishedAssociationProfile(
+  request: PartnerOnboardingRequestInput,
+  availability: ReturnType<typeof normalizePartnerAvailability>,
+  coveredArrondissements: readonly number[],
+  nowIso: string,
+): AssociationProfile | undefined {
+  if (request.organizationType !== "association") return undefined;
+  const relay = request.relayActions.trim();
+  return {
+    mission: [request.motivation.trim(), relay ? `Relais déclaré: ${relay}` : null]
+      .filter(Boolean)
+      .join(" · "),
+    recurringNeeds: buildAssociationRecurringNeeds(request.contributionTypes),
+    pastActions: [],
+    usefulResources: buildAssociationResources({
+      websiteUrl: null,
+      primaryChannelUrl: null,
+      primaryChannelLabel: request.contactChannel,
+      instagramUrl: null,
+      facebookUrl: null,
+    }),
+    publicCalls: buildAssociationPublicCalls(
+      request.contributionTypes,
+      request.relayActions,
+    ),
+    impactHistory: {
+      zonesCovered: coveredArrondissements.length,
+      recurrence: formatAvailabilitySummary(availability),
+      lastActionAt: nowIso,
+      note: "Historique d'impact à compléter après validation.",
+    },
+    structureStatus: "pending",
+  };
+}
+
+function contributionTag(type: PartnerOnboardingRequestInput["contributionTypes"][number]): string {
+  if (type === "materiel") return "Matériel";
+  if (type === "logistique") return "Logistique";
+  if (type === "accueil") return "Accueil";
+  if (type === "financement") return "Financement";
+  return "Communication";
+}
+
 export function buildPublishedPartnerAnnuaireEntry(params: {
   request: PartnerOnboardingRequestInput;
   requestId: string;
@@ -351,39 +394,12 @@ export function buildPublishedPartnerAnnuaireEntry(params: {
   const publicChannelUrl = null;
   const websiteUrl = null;
   const nowIso = new Date().toISOString();
-  const associationProfile: AssociationProfile | undefined =
-    params.request.organizationType === "association"
-      ? {
-          mission: [
-            params.request.motivation.trim(),
-            params.request.relayActions.trim()
-              ? `Relais déclaré: ${params.request.relayActions.trim()}`
-              : null,
-          ]
-            .filter(Boolean)
-            .join(" · "),
-          recurringNeeds: buildAssociationRecurringNeeds(params.request.contributionTypes),
-          pastActions: [],
-          usefulResources: buildAssociationResources({
-            websiteUrl,
-            primaryChannelUrl: publicChannelUrl,
-            primaryChannelLabel: params.request.contactChannel,
-            instagramUrl: null,
-            facebookUrl: null,
-          }),
-          publicCalls: buildAssociationPublicCalls(
-            params.request.contributionTypes,
-            params.request.relayActions,
-          ),
-          impactHistory: {
-            zonesCovered: arrondissements.length,
-            recurrence: formatAvailabilitySummary(availability),
-            lastActionAt: nowIso,
-            note: "Historique d'impact à compléter après validation.",
-          },
-          structureStatus: "pending",
-        }
-      : undefined;
+  const associationProfile = buildPublishedAssociationProfile(
+    params.request,
+    availability,
+    arrondissements,
+    nowIso,
+  );
 
   return {
     id: `onboarded-${randomUUID()}`,
@@ -419,13 +435,7 @@ export function buildPublishedPartnerAnnuaireEntry(params: {
       params.request.partnerScope === "local"
         ? "Réseau local"
         : formatPartnerScopeLabel(params.request.partnerScope),
-      ...params.request.contributionTypes.map((type) => {
-        if (type === "materiel") return "Matériel";
-        if (type === "logistique") return "Logistique";
-        if (type === "accueil") return "Accueil";
-        if (type === "financement") return "Financement";
-        return "Communication";
-      }),
+      ...params.request.contributionTypes.map(contributionTag),
     ],
     primaryChannel: publicChannelUrl
       ? {

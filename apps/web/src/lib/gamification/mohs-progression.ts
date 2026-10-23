@@ -115,15 +115,22 @@ export function buildMohsThresholdAwards(
   const totals: Record<MohsImpactFamily, number> = { waste: 0, butts: 0 };
   const awarded = new Map<string, MohsThresholdAward>();
 
+  const recordThresholdAwards = (
+    family: MohsImpactFamily,
+    total: number,
+    record: MohsImpactRecord,
+  ) => {
+    for (const threshold of getMohsThresholds(family, total)) {
+      if (awarded.has(threshold.sourceId)) continue;
+      awarded.set(threshold.sourceId, { ...threshold, occurredOn: record.occurredOn });
+    }
+  };
+
   for (const record of ordered) {
     for (const family of MOHS_IMPACT_FAMILIES) {
       const value = family === "waste" ? record.wasteValue : record.buttsValue;
       totals[family] += Number.isFinite(value) && value !== null ? Math.max(0, value) : 0;
-      for (const threshold of getMohsThresholds(family, totals[family])) {
-        if (!awarded.has(threshold.sourceId)) {
-          awarded.set(threshold.sourceId, { ...threshold, occurredOn: record.occurredOn });
-        }
-      }
+      recordThresholdAwards(family, totals[family], record);
     }
   }
 

@@ -10,18 +10,7 @@ import { loadUnifiedActionSourceData } from "./load";
 import { buildUnifiedActionContracts, filterContractsByViewport } from "./merge";
 
 export type {
-  UnifiedActionContractsParams,
   UnifiedSourceHealth,
-  TrashSpotterSpotRow,
-  UnifiedActionSourceLoadResult,
-  UnifiedContractOrigin,
-  UnifiedContractCandidate,
-} from "./contracts";
-export {
-  normalizeExternalActionImport,
-  mapActionStatusToSpotStatuses,
-  toActionContract,
-  toCanonicalSpotContract,
 } from "./contracts";
 
 export { parseEntityTypesParam } from "./query";
@@ -74,5 +63,3 @@ export async function fetchUnifiedActionContracts(
     sourceHealth: buildUnifiedSourceHealth(failedSources, availableSources),
   };
 }
-
-export { buildUnifiedActionContracts, filterContractsByViewport } from "./merge";

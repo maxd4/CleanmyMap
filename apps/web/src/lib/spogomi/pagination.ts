@@ -29,8 +29,9 @@ export async function readAllSpogomiPages<T>(
   for (let from = 0; ; from += SPOGOMI_QUERY_PAGE_SIZE) {
     const result = await loadPage(from, from + SPOGOMI_QUERY_PAGE_SIZE - 1);
     if (result.error) throw new Error(`SPOGOMI ${label} read failed: ${result.error.message}`);
-    if (options.requireExactCount) expectedCount = assertExactCount(label, result, expectedCount);
-    else if (result.count != null) expectedCount = assertExactCount(label, result, expectedCount);
+    if (options.requireExactCount || result.count != null) {
+      expectedCount = assertExactCount(label, result, expectedCount);
+    }
     const page = result.data ?? [];
     rows.push(...page);
     if (expectedCount !== null) {

@@ -40,6 +40,38 @@ type NetworkReconciliation = {
   reconciled: boolean;
 };
 
+async function tryReconcileRetainedStops(
+  origin: RoutePlannerOrigin,
+  retainedStops: RoutePlannerResult["stops"],
+  travelBudgetMinutes: number,
+): Promise<{ geometry: RouteGeometry; degraded: boolean; warning: string | null } | null> {
+  const retainedCoordinates: [number, number][] = [
+    [origin.latitude, origin.longitude],
+    ...retainedStops.map(
+      ({ candidate }) => [candidate.latitude, candidate.longitude] as [number, number],
+    ),
+    [origin.latitude, origin.longitude],
+  ];
+  try {
+    const geometry = await routePolylineThroughFossgisFoot(retainedCoordinates, {});
+    if (geometry.durationMinutes > travelBudgetMinutes) return null;
+    return {
+      geometry,
+      degraded: geometry.mode === "fallback",
+      warning:
+        geometry.mode === "fallback"
+          ? "Le réseau n'a pas pu être recalculé dans le budget ; un fallback local fermé est utilisé."
+          : null,
+    };
+  } catch {
+    return {
+      geometry: fallbackGeometryForPrefix(origin, retainedStops.map(({ candidate }) => candidate)),
+      degraded: true,
+      warning: "La mesure réseau de la boucle réduite a échoué ; un fallback local fermé est utilisé.",
+    };
+  }
+}
+
 async function reconcileNetworkRoute(
   origin: RoutePlannerOrigin,
   travelBudgetMinutes: number,
@@ -57,37 +89,24 @@ async function reconcileNetworkRoute(
   while (retainedStops.length > 0) {
     retainedStops = retainedStops.slice(0, -1);
     if (retainedStops.length === 0) break;
-    const retainedCoordinates: [number, number][] = [
-      [origin.latitude, origin.longitude],
-      ...retainedStops.map(
-        ({ candidate }) =>
-          [candidate.latitude, candidate.longitude] as [number, number],
-      ),
-      [origin.latitude, origin.longitude],
-    ];
-    try {
-      providerCalls += 1;
-      const reconciledGeometry = await routePolylineThroughFossgisFoot(
-        retainedCoordinates,
-        {},
-      );
-      if (reconciledGeometry.durationMinutes <= travelBudgetMinutes) {
-        plannedStops = retainedStops;
-        routeGeometry = reconciledGeometry;
-        reconciled = true;
-        if (reconciledGeometry.mode === "fallback") {
-          finalRoutingDegraded = true;
-          finalRoutingWarning =
-            "Le réseau n'a pas pu être recalculé dans le budget ; un fallback local fermé est utilisé.";
-        }
-        break;
-      }
-    } catch {
+    providerCalls += 1;
+    const attempt = await tryReconcileRetainedStops(
+      origin,
+      retainedStops,
+      travelBudgetMinutes,
+    );
+    if (attempt?.warning?.startsWith("La mesure réseau")) {
       finalRoutingDegraded = true;
-      finalRoutingWarning =
-        "La mesure réseau de la boucle réduite a échoué ; un fallback local fermé est utilisé.";
+      finalRoutingWarning = attempt.warning;
       break;
     }
+    if (!attempt) continue;
+    plannedStops = retainedStops;
+    routeGeometry = attempt.geometry;
+    reconciled = true;
+    finalRoutingDegraded ||= attempt.degraded;
+    finalRoutingWarning = attempt.warning;
+    break;
   }
 
   return {

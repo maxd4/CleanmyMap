@@ -1,4 +1,4 @@
-export const AGE_BANDS = ["under_15", "15_or_over", "unknown"] as const;
+const AGE_BANDS = ["under_15", "15_or_over", "unknown"] as const;
 
 export type AgeBand = (typeof AGE_BANDS)[number];
 

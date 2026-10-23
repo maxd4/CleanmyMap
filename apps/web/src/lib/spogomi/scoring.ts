@@ -82,8 +82,12 @@ export function calculateSpogomiCompetitionResult(input: SpogomiCompetitionInput
     return unavailableResult(physicalTotals, appliedPenalties, comparableForButtsPerParticipant, buttsPerParticipant, itemValidation.reason);
   }
 
-  if (input.submissionStatus === "certified" && regulation.eligibility?.requiresAllCategories) {
-    if (!hasAllRequiredCategories(input)) return unavailableResult(physicalTotals, appliedPenalties, comparableForButtsPerParticipant, buttsPerParticipant, "all_categories_required");
+  if (
+    input.submissionStatus === "certified" &&
+    regulation.eligibility?.requiresAllCategories &&
+    !hasAllRequiredCategories(input)
+  ) {
+    return unavailableResult(physicalTotals, appliedPenalties, comparableForButtsPerParticipant, buttsPerParticipant, "all_categories_required");
   }
 
   const minimumPresent = regulation.eligibility?.minimumPresentParticipants ?? null;

@@ -8,7 +8,6 @@ export {
   LEGACY_WASTE_CATEGORY_TO_SLUG,
   getCanonicalWasteQuantities,
 } from "./legacy";
-export type { LegacyWasteCategory } from "./legacy";
 export type {
   WasteCategorySlug,
 } from "./types";

@@ -297,6 +297,23 @@ function snapshotKeyMatchesRoute(snapshotKey: string, routes: readonly string[])
   }
 }
 
+async function invalidateSupabaseSnapshots(routes: readonly string[]): Promise<void> {
+  const supabase = getSupabaseServerClient(true);
+  const invalidatedAt = new Date().toISOString();
+  for (const route of routes) {
+    const result = await supabase
+      .from("public_surface_snapshots")
+      .update({
+        generated_at: invalidatedAt,
+        version: INVALIDATED_PUBLIC_SURFACE_SNAPSHOT_VERSION,
+      })
+      .like("snapshot_key", `%"route":"${route}"%`);
+    if (result.error && !allowLocalFileStoreFallback()) {
+      throw new Error(result.error.message);
+    }
+  }
+}
+
 /**
  * Keep an invalidation watermark in the existing row so an in-flight older
  * reconstruction cannot resurrect the invalidated snapshot after deletion.
@@ -320,21 +337,7 @@ export async function invalidatePublicSurfaceSnapshotsByRoute(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient(true);
-      const invalidatedAt = new Date().toISOString();
-      for (const route of normalizedRoutes) {
-        const result = await supabase
-          .from("public_surface_snapshots")
-          .update({
-            generated_at: invalidatedAt,
-            version: INVALIDATED_PUBLIC_SURFACE_SNAPSHOT_VERSION,
-          })
-          .like("snapshot_key", `%"route":"${route}"%`);
-
-        if (result.error && !allowLocalFileStoreFallback()) {
-          throw new Error(result.error.message);
-        }
-      }
+      await invalidateSupabaseSnapshots(normalizedRoutes);
       if (!allowLocalFileStoreFallback()) {
         return;
       }

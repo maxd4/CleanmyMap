@@ -158,6 +158,245 @@ function routeStopsFromPlanned(plannedStops: PlannedRouteStop[], geometry: Route
   return applyOriginRouteGeometryLegs(baseStops, geometry);
 }
 
+type NetworkReduction = {
+  candidates: RoutePlannerCandidate[];
+  geometry: RouteGeometry;
+  providerCalls: number;
+  failed: boolean;
+};
+
+async function requestReducedNetworkGeometry(
+  origin: RoutePlannerOrigin,
+  candidates: readonly RoutePlannerCandidate[],
+): Promise<{ geometry: RouteGeometry | null; failed: boolean }> {
+  try {
+    return {
+      geometry: await routePolylineThroughFossgisFoot(closedCoordinates(origin, candidates), {}),
+      failed: false,
+    };
+  } catch {
+    return { geometry: null, failed: true };
+  }
+}
+
+async function reduceNetworkCandidates(params: {
+  origin: RoutePlannerOrigin;
+  candidates: RoutePlannerCandidate[];
+  geometry: RouteGeometry;
+  fitsBudget: (candidates: readonly RoutePlannerCandidate[], geometry: RouteGeometry) => boolean;
+}): Promise<NetworkReduction> {
+  let candidates = [...params.candidates];
+  let geometry = params.geometry;
+  let providerCalls = 0;
+  let failed = false;
+  while (candidates.length > 0) {
+    candidates = candidates.slice(0, -1);
+    if (candidates.length === 0) break;
+    providerCalls += 1;
+    const attempt = await requestReducedNetworkGeometry(params.origin, candidates);
+    if (attempt.failed) {
+      failed = true;
+      break;
+    }
+    if (attempt.geometry && params.fitsBudget(candidates, attempt.geometry)) {
+      geometry = attempt.geometry;
+      break;
+    }
+  }
+  return { candidates, geometry, providerCalls, failed };
+}
+
+function findFallbackBudgetPrefix(params: {
+  origin: RoutePlannerOrigin;
+  candidates: readonly RoutePlannerCandidate[];
+  fitsBudget: (candidates: readonly RoutePlannerCandidate[], geometry: RouteGeometry) => boolean;
+}): { candidates: RoutePlannerCandidate[]; geometry: RouteGeometry } {
+  for (let count = params.candidates.length; count > 0; count -= 1) {
+    const candidates = params.candidates.slice(0, count);
+    const geometry = fallbackGeometry(params.origin, candidates);
+    if (params.fitsBudget(candidates, geometry)) return { candidates, geometry };
+  }
+  return { candidates: [], geometry: fallbackGeometry(params.origin, []) };
+}
+
+function routeGroupFitsBudget(params: {
+  candidates: readonly RoutePlannerCandidate[];
+  geometry: RouteGeometry;
+  travelBudgetMinutes: number;
+  operationalBudget?: RouteOperationalBudgetDependency;
+  weatherContext?: PlannerWeatherContext;
+  volunteersExpected: number;
+  groupCount: number;
+}): boolean {
+  if (params.geometry.durationMinutes > params.travelBudgetMinutes) return false;
+  if (!params.operationalBudget) return true;
+  const context = buildRouteCalibrationContext({
+    generatedAt: params.operationalBudget.generatedAt ?? new Date().toISOString(),
+    routeEngineVersion: "route-planner-v2",
+    volunteersExpected: params.volunteersExpected,
+    groupCount: params.groupCount,
+    candidates: params.candidates.map((candidate) => ({
+      candidateId: candidate.id,
+      family: candidate.family,
+      cleanupWorkload: buildCleanupWorkload(candidate),
+    })),
+  });
+  const budget = buildRouteOperationalBudget({
+    travelMinutes: params.geometry.durationMinutes,
+    budgetMinutes: params.travelBudgetMinutes,
+    calibrationContext: context,
+    durationDependency: params.operationalBudget,
+    weatherContext: params.weatherContext,
+  });
+  return budget.totalMinutes === null || budget.withinBudget === true;
+}
+
+function buildRouteGroupRoutingResult(params: {
+  group: RouteGroupAssignment;
+  candidates: readonly RoutePlannerCandidate[];
+  geometry: RouteGeometry;
+  providerCalls: number;
+  firstProviderMode: RouteGeometry["mode"] | null;
+  degraded: boolean;
+  warning: string | null;
+  budgetPrefixApplied: boolean;
+}): RouteGroupRoutingResult {
+  return {
+    group: params.group,
+    finalCandidateIds: params.candidates.map(({ id }) => id),
+    routeGeometry: params.geometry,
+    plannedStops: plannedStopsFromGeometry(
+      params.group.origin,
+      params.candidates,
+      params.geometry,
+    ),
+    providerCalls: params.providerCalls,
+    firstProviderMode: params.firstProviderMode,
+    degraded: params.degraded,
+    warning: params.warning,
+    budgetPrefixApplied: params.budgetPrefixApplied,
+  };
+}
+
+function emptyRouteGroupResult(
+  origin: RoutePlannerOrigin,
+  group: RouteGroupAssignment,
+): RouteGroupRoutingResult {
+  return buildRouteGroupRoutingResult({
+    group,
+    candidates: [],
+    geometry: fallbackGeometry(origin, []),
+    providerCalls: 0,
+    firstProviderMode: null,
+    degraded: false,
+    warning: null,
+    budgetPrefixApplied: false,
+  });
+}
+
+async function adjustRouteToBudget(params: {
+  origin: RoutePlannerOrigin;
+  initialCandidates: RoutePlannerCandidate[];
+  candidates: RoutePlannerCandidate[];
+  geometry: RouteGeometry;
+  providerCalls: number;
+  degraded: boolean;
+  warning: string | null;
+  fitsBudget: (candidates: readonly RoutePlannerCandidate[], geometry: RouteGeometry) => boolean;
+}): Promise<{
+  candidates: RoutePlannerCandidate[];
+  geometry: RouteGeometry;
+  providerCalls: number;
+  degraded: boolean;
+  warning: string | null;
+  budgetPrefixApplied: boolean;
+}> {
+  if (params.fitsBudget(params.candidates, params.geometry)) {
+    return { ...params, budgetPrefixApplied: false };
+  }
+  let candidates = params.candidates;
+  let geometry = params.geometry;
+  let providerCalls = params.providerCalls;
+  let degraded = params.degraded;
+  let warning = params.warning;
+  if (geometry.mode === "network") {
+    const reduction = await reduceNetworkCandidates({
+      origin: params.origin,
+      candidates,
+      geometry,
+      fitsBudget: params.fitsBudget,
+    });
+    candidates = reduction.candidates;
+    geometry = reduction.geometry;
+    providerCalls += reduction.providerCalls;
+    if (reduction.failed) {
+      degraded = true;
+      warning = "La boucle réseau réduite d'un groupe a échoué ; un fallback local fermé est utilisé.";
+    }
+  }
+  if (!params.fitsBudget(candidates, geometry) || candidates.length === 0) {
+    degraded = true;
+    warning = warning ?? "Le réseau ne permet pas de respecter le budget de ce groupe ; un fallback local fermé est utilisé.";
+    ({ candidates, geometry } = findFallbackBudgetPrefix({
+      origin: params.origin,
+      candidates: params.initialCandidates,
+      fitsBudget: params.fitsBudget,
+    }));
+  }
+  return { candidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied: true };
+}
+
+async function loadInitialRouteGeometry(
+  origin: RoutePlannerOrigin,
+  candidates: readonly RoutePlannerCandidate[],
+): Promise<{
+  geometry: RouteGeometry;
+  providerCalls: number;
+  firstProviderMode: RouteGeometry["mode"];
+  degraded: boolean;
+  warning: string | null;
+}> {
+  try {
+    const geometry = await routePolylineThroughFossgisFoot(closedCoordinates(origin, candidates), {});
+    return { geometry, providerCalls: 1, firstProviderMode: geometry.mode, degraded: false, warning: null };
+  } catch {
+    return {
+      geometry: fallbackGeometry(origin, candidates),
+      providerCalls: 1,
+      firstProviderMode: "fallback",
+      degraded: true,
+      warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé.",
+    };
+  }
+}
+
+function buildRouteBudgetPredicate(params: {
+  travelBudgetMinutes: number;
+  operationalBudget?: RouteOperationalBudgetDependency;
+  weatherContext?: PlannerWeatherContext;
+  volunteersExpected: number;
+  groupCount: number;
+}): (candidates: readonly RoutePlannerCandidate[], geometry: RouteGeometry) => boolean {
+  return (candidates, geometry) => routeGroupFitsBudget({
+    candidates,
+    geometry,
+    travelBudgetMinutes: params.travelBudgetMinutes,
+    operationalBudget: params.operationalBudget,
+    weatherContext: params.weatherContext,
+    volunteersExpected: params.volunteersExpected,
+    groupCount: params.groupCount,
+  });
+}
+
+function resolveGroupCandidates(
+  group: RouteGroupAssignment,
+  candidatesById: Map<string, RoutePlannerCandidate>,
+): RoutePlannerCandidate[] {
+  return group.candidateIds
+    .map((id) => candidatesById.get(id))
+    .filter((candidate): candidate is RoutePlannerCandidate => candidate !== undefined);
+}
+
 async function routeGroupWithinBudget(
   origin: RoutePlannerOrigin,
   group: RouteGroupAssignment,
@@ -168,128 +407,92 @@ async function routeGroupWithinBudget(
   volunteersExpected = 1,
   groupCount = 1,
 ): Promise<RouteGroupRoutingResult> {
-  const initialCandidates = group.candidateIds
-    .map((id) => candidatesById.get(id))
-    .filter((candidate): candidate is RoutePlannerCandidate => candidate !== undefined);
+  const initialCandidates = resolveGroupCandidates(group, candidatesById);
   let providerCalls = 0;
   let firstProviderMode: RouteGeometry["mode"] | null = null;
   let degraded = false;
   let warning: string | null = null;
   let budgetPrefixApplied = false;
 
-  const fitsBudget = (
-    candidateList: readonly RoutePlannerCandidate[],
-    candidateGeometry: RouteGeometry,
-  ): boolean => {
-    if (candidateGeometry.durationMinutes > travelBudgetMinutes) return false;
-    if (!operationalBudget) return true;
-    const context = buildRouteCalibrationContext({
-      generatedAt: operationalBudget.generatedAt ?? new Date().toISOString(),
-      routeEngineVersion: "route-planner-v2",
-      volunteersExpected,
-      groupCount,
-      candidates: candidateList.map((candidate) => ({
-        candidateId: candidate.id,
-        family: candidate.family,
-        cleanupWorkload: buildCleanupWorkload(candidate),
-      })),
-    });
-    const budget = buildRouteOperationalBudget({
-      travelMinutes: candidateGeometry.durationMinutes,
-      budgetMinutes: travelBudgetMinutes,
-      calibrationContext: context,
-      durationDependency: operationalBudget,
-      weatherContext,
-    });
-    return budget.totalMinutes === null ? true : budget.withinBudget === true;
-  };
+  const fitsBudget = buildRouteBudgetPredicate({
+    travelBudgetMinutes,
+    operationalBudget,
+    weatherContext,
+    volunteersExpected,
+    groupCount,
+  });
 
-  if (initialCandidates.length === 0) {
-    const geometry = fallbackGeometry(origin, []);
-    return {
-      group,
-      finalCandidateIds: [],
-      routeGeometry: geometry,
-      plannedStops: [],
-      providerCalls: 0,
-      firstProviderMode: null,
-      degraded: false,
-      warning: null,
-      budgetPrefixApplied: false,
-    };
-  }
+  if (initialCandidates.length === 0) return emptyRouteGroupResult(origin, group);
 
   let retainedCandidates = [...initialCandidates];
-  let geometry: RouteGeometry;
-  try {
-    geometry = await routePolylineThroughFossgisFoot(closedCoordinates(origin, retainedCandidates), {});
-    providerCalls += 1;
-    firstProviderMode = geometry.mode;
-  } catch {
-    geometry = fallbackGeometry(origin, retainedCandidates);
-    providerCalls += 1;
-    firstProviderMode = "fallback";
-    degraded = true;
-    warning = "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé.";
-  }
+  const initialRoute = await loadInitialRouteGeometry(origin, retainedCandidates);
+  let geometry = initialRoute.geometry;
+  providerCalls += initialRoute.providerCalls;
+  firstProviderMode = initialRoute.firstProviderMode;
+  degraded = initialRoute.degraded;
+  warning = initialRoute.warning;
 
-  if (!fitsBudget(retainedCandidates, geometry)) {
-    budgetPrefixApplied = true;
-    if (geometry.mode === "network") {
-      while (retainedCandidates.length > 0) {
-        retainedCandidates = retainedCandidates.slice(0, -1);
-        if (retainedCandidates.length === 0) break;
-        try {
-          const candidateGeometry = await routePolylineThroughFossgisFoot(
-            closedCoordinates(origin, retainedCandidates),
-            {},
-          );
-          providerCalls += 1;
-            if (fitsBudget(retainedCandidates, candidateGeometry)) {
-            geometry = candidateGeometry;
-            break;
-          }
-        } catch {
-          degraded = true;
-          warning = "La boucle réseau réduite d'un groupe a échoué ; un fallback local fermé est utilisé.";
-          break;
-        }
-      }
-    }
+  ({
+    candidates: retainedCandidates,
+    geometry,
+    providerCalls,
+    degraded,
+    warning,
+    budgetPrefixApplied,
+  } = await adjustRouteToBudget({
+    origin,
+    initialCandidates,
+    candidates: retainedCandidates,
+    geometry,
+    providerCalls,
+    degraded,
+    warning,
+    fitsBudget,
+  }));
 
-    if (!fitsBudget(retainedCandidates, geometry) || retainedCandidates.length === 0) {
-      degraded = true;
-      warning = warning ?? "Le réseau ne permet pas de respecter le budget de ce groupe ; un fallback local fermé est utilisé.";
-      retainedCandidates = [];
-      geometry = fallbackGeometry(origin, []);
-      for (let count = initialCandidates.length; count > 0; count -= 1) {
-        const prefix = initialCandidates.slice(0, count);
-        const candidateGeometry = fallbackGeometry(origin, prefix);
-        if (fitsBudget(prefix, candidateGeometry)) {
-          retainedCandidates = prefix;
-          geometry = candidateGeometry;
-          break;
-        }
-      }
-    }
-  }
-
-  const plannedStops = plannedStopsFromGeometry(origin, retainedCandidates, geometry);
-  return {
+  return buildRouteGroupRoutingResult({
     group,
-    finalCandidateIds: retainedCandidates.map(({ id }) => id),
-    routeGeometry: geometry,
-    plannedStops,
+    candidates: retainedCandidates,
+    geometry,
     providerCalls,
     firstProviderMode,
     degraded,
     warning,
     budgetPrefixApplied,
-  };
+  });
 }
 
 function segmentMidpoint(left: Coordinate, right: Coordinate): Coordinate {
   return [(left[0] + right[0]) / 2, (left[1] + right[1]) / 2];
+}
+
+function sharedDistanceForPair(
+  leftCoordinates: readonly Coordinate[],
+  rightCoordinates: readonly Coordinate[],
+): number {
+  let sharedDistanceKm = 0;
+  for (let leftSegment = 0; leftSegment < leftCoordinates.length - 1; leftSegment += 1) {
+    const leftMidpoint = segmentMidpoint(leftCoordinates[leftSegment]!, leftCoordinates[leftSegment + 1]!);
+    const leftDistanceKm = routeDistanceKm(
+      { latitude: leftCoordinates[leftSegment]![0], longitude: leftCoordinates[leftSegment]![1] },
+      { latitude: leftCoordinates[leftSegment + 1]![0], longitude: leftCoordinates[leftSegment + 1]![1] },
+    );
+    if (leftDistanceKm === 0) continue;
+    for (let rightSegment = 0; rightSegment < rightCoordinates.length - 1; rightSegment += 1) {
+      const rightMidpoint = segmentMidpoint(rightCoordinates[rightSegment]!, rightCoordinates[rightSegment + 1]!);
+      if (routeDistanceKm(
+        { latitude: leftMidpoint[0], longitude: leftMidpoint[1] },
+        { latitude: rightMidpoint[0], longitude: rightMidpoint[1] },
+      ) <= NETWORK_CORRIDOR_RADIUS_KM) {
+        sharedDistanceKm += Math.min(leftDistanceKm, routeDistanceKm(
+          { latitude: rightCoordinates[rightSegment]![0], longitude: rightCoordinates[rightSegment]![1] },
+          { latitude: rightCoordinates[rightSegment + 1]![0], longitude: rightCoordinates[rightSegment + 1]![1] },
+        ));
+        break;
+      }
+    }
+  }
+  return sharedDistanceKm;
 }
 
 function measuredSharedDistanceKm(routes: readonly RouteGroupRoutingResult[]): number | null {
@@ -301,27 +504,7 @@ function measuredSharedDistanceKm(routes: readonly RouteGroupRoutingResult[]): n
     const leftCoordinates = routes[leftIndex]!.routeGeometry.coordinates;
     for (let rightIndex = leftIndex + 1; rightIndex < routes.length; rightIndex += 1) {
       const rightCoordinates = routes[rightIndex]!.routeGeometry.coordinates;
-      for (let leftSegment = 0; leftSegment < leftCoordinates.length - 1; leftSegment += 1) {
-        const leftMidpoint = segmentMidpoint(leftCoordinates[leftSegment]!, leftCoordinates[leftSegment + 1]!);
-        const leftDistanceKm = routeDistanceKm(
-          { latitude: leftCoordinates[leftSegment]![0], longitude: leftCoordinates[leftSegment]![1] },
-          { latitude: leftCoordinates[leftSegment + 1]![0], longitude: leftCoordinates[leftSegment + 1]![1] },
-        );
-        if (leftDistanceKm === 0) continue;
-        for (let rightSegment = 0; rightSegment < rightCoordinates.length - 1; rightSegment += 1) {
-          const rightMidpoint = segmentMidpoint(rightCoordinates[rightSegment]!, rightCoordinates[rightSegment + 1]!);
-          if (routeDistanceKm(
-            { latitude: leftMidpoint[0], longitude: leftMidpoint[1] },
-            { latitude: rightMidpoint[0], longitude: rightMidpoint[1] },
-          ) <= NETWORK_CORRIDOR_RADIUS_KM) {
-            sharedDistanceKm += Math.min(leftDistanceKm, routeDistanceKm(
-              { latitude: rightCoordinates[rightSegment]![0], longitude: rightCoordinates[rightSegment]![1] },
-              { latitude: rightCoordinates[rightSegment + 1]![0], longitude: rightCoordinates[rightSegment + 1]![1] },
-            ));
-            break;
-          }
-        }
-      }
+      sharedDistanceKm += sharedDistanceForPair(leftCoordinates, rightCoordinates);
     }
   }
   return round(sharedDistanceKm, 2);

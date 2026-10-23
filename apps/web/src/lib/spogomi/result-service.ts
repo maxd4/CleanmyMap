@@ -142,9 +142,12 @@ export async function loadSpogomiTeamResultForm(params: {
   ]);
   for (const result of [eventResult, divisionResult, teamResult, submissionResult, attendanceResult]) if (result.error) throw result.error;
   if (!eventResult.data || !divisionResult.data || !teamResult.data) return null;
-  const event = { ...eventResult.data, mode: divisionResult.data.division_type, division_id: session.divisionId, regulation_version: divisionResult.data.regulation_version, regulation_status: divisionResult.data.regulation_status, regulation_source_reference: divisionResult.data.regulation_source_reference, regulation_config: divisionResult.data.regulation_config, team_size_config: divisionResult.data.team_size_config } as EventRegulationRow;
+  const eventData = eventResult.data as unknown as Record<string, unknown>;
+  const divisionData = divisionResult.data as unknown as Record<string, unknown>;
+  const event = { ...eventData, mode: divisionData.division_type, division_id: session.divisionId, regulation_version: divisionData.regulation_version, regulation_status: divisionData.regulation_status, regulation_source_reference: divisionData.regulation_source_reference, regulation_config: divisionData.regulation_config, team_size_config: divisionData.team_size_config } as EventRegulationRow;
   const categoryRows = categories as unknown as CategoryRow[];
-  const submission = submissionResult.data as { id: string; version: number; status: string; correction_reason: string | null } | null;
+  const submission = submissionResult.data as unknown as { id: string; version: number; status: string; correction_reason: string | null } | null;
+  const teamData = teamResult.data as unknown as Record<string, unknown>;
   let items: SpogomiTeamResultItem[] = [];
   if (submission) {
     items = await readAllSpogomiPages("team result items", (from, to) => params.supabase.from("spogomi_result_items").select("id, division_id, category_rule_id, measurement_kind, unit, quantity, mass_grams, object_count, measurement_method, provenance, arbitration_comment, source_reference").eq("submission_id", submission.id).eq("division_id", session.divisionId).order("created_at", { ascending: true }).order("id", { ascending: true }).range(from, to)) as typeof items;
@@ -152,7 +155,7 @@ export async function loadSpogomiTeamResultForm(params: {
   const regulation = buildSpogomiRegulation(event, categoryRows);
   return {
     event,
-    team: { id: String(teamResult.data.id), teamNumber: Number(teamResult.data.team_number), publicName: String(teamResult.data.public_name) },
+    team: { id: String(teamData.id), teamNumber: Number(teamData.team_number), publicName: String(teamData.public_name) },
     divisionId: session.divisionId,
     categories: categoryRows.map((category) => ({ id: category.id, code: category.code, label: category.label, measurementKind: category.measurement_kind, unit: category.unit, isComplete: Boolean(category.is_complete) && category.regulation_version === event.regulation_version })),
     latestSubmission: submission ? { id: submission.id, version: Number(submission.version), status: submission.status, correctionReason: submission.correction_reason, items } : null,
@@ -212,9 +215,11 @@ export async function saveSpogomiTeamSubmission(params: {
   const categoryRows = categories as unknown as CategoryRow[];
   const division = await params.supabase.from("spogomi_divisions").select("division_type, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config").eq("id", session.divisionId).eq("event_id", session.eventId).single();
   if (division.error) throw division.error;
-  const regulationEvent = { ...eventResult.data, mode: division.data.division_type, division_id: session.divisionId, regulation_version: division.data.regulation_version, regulation_status: division.data.regulation_status, regulation_source_reference: division.data.regulation_source_reference, regulation_config: division.data.regulation_config, team_size_config: division.data.team_size_config } as EventRegulationRow;
+  const eventData = eventResult.data as unknown as Record<string, unknown>;
+  const divisionData = division.data as unknown as Record<string, unknown>;
+  const regulationEvent = { ...eventData, mode: divisionData.division_type, division_id: session.divisionId, regulation_version: divisionData.regulation_version, regulation_status: divisionData.regulation_status, regulation_source_reference: divisionData.regulation_source_reference, regulation_config: divisionData.regulation_config, team_size_config: divisionData.team_size_config } as EventRegulationRow;
   const regulation = buildSpogomiRegulation(regulationEvent, categoryRows);
-  const latest = latestResult.data as { id: string; status: string; version: number } | null;
+  const latest = latestResult.data as unknown as { id: string; status: string; version: number } | null;
   const replacesSubmissionId = validateSubmissionForSave(params.input, categoryRows, regulation, latest);
   const rpc = await params.supabase.rpc("spogomi_save_team_submission_for_division", {
     p_event_id: session.eventId,
@@ -267,14 +272,17 @@ export async function loadSpogomiEventResultReviews(params: {
     readAllSpogomiPages("review participants", (from, to) => { let q = params.supabase.from("spogomi_participants").select("id, division_id, team_id, attendance_status, registration_status").eq("event_id", params.eventId); if (divisionId) q = q.eq("division_id", divisionId); return q.order("id", { ascending: true }).range(from, to); }),
   ]);
   if (eventResult.error) throw eventResult.error;
-  const eventRow = (divisionResult.data ? { ...eventResult.data, mode: divisionResult.data.division_type, division_id: divisionResult.data.id, regulation_version: divisionResult.data.regulation_version, regulation_status: divisionResult.data.regulation_status, regulation_source_reference: divisionResult.data.regulation_source_reference, regulation_config: divisionResult.data.regulation_config, team_size_config: divisionResult.data.team_size_config } : eventResult.data) as EventRegulationRow;
+  const divisionData = divisionResult.data as unknown as Record<string, unknown> | null;
+  const eventData = eventResult.data as unknown as Record<string, unknown>;
+  const eventRow = (divisionData ? { ...divisionData, mode: divisionData.division_type, division_id: divisionData.id, regulation_version: divisionData.regulation_version, regulation_status: divisionData.regulation_status, regulation_source_reference: divisionData.regulation_source_reference, regulation_config: divisionData.regulation_config, team_size_config: divisionData.team_size_config } : eventData) as EventRegulationRow;
   const categoryRows = categories as unknown as CategoryRow[];
   const regulation = buildSpogomiRegulation(eventRow, categoryRows);
   const itemRows = items as Array<Record<string, unknown>>;
   const submissionRows = submissions as Array<{ id: string; team_id: string; version: number; status: string; submitted_at: string | null }>;
   const categoryCodes = new Map(categoryRows.map((category) => [category.id, category.code]));
   const participantRows = participants as Array<{ team_id: string | null; attendance_status: string; registration_status: string }>;
-  return (teams ?? []).map((team) => {
+  const teamRows = teams as unknown as Array<Record<string, unknown>>;
+  return (teamRows ?? []).map((team) => {
     const teamId = String(team.id);
     const latest = submissionRows.filter((submission) => submission.team_id === teamId).sort((left, right) => right.version - left.version || left.id.localeCompare(right.id))[0];
     const teamItems = latest ? itemRows.filter((item) => item.submission_id === latest.id) : [];
@@ -313,7 +321,11 @@ export async function reviewSpogomiTeamSubmission(params: {
     .maybeSingle();
   if (teamMember.error) throw teamMember.error;
   if (teamMember.data) throw new Error("SPOGOMI self-certification is forbidden.");
-  const teamDivision = params.divisionId ?? (await params.supabase.from("spogomi_teams").select("division_id").eq("id", params.teamId).eq("event_id", params.eventId).single()).data?.division_id;
+  const teamDivisionResult = params.divisionId
+    ? null
+    : await params.supabase.from("spogomi_teams").select("division_id").eq("id", params.teamId).eq("event_id", params.eventId).single();
+  if (teamDivisionResult?.error) throw teamDivisionResult.error;
+  const teamDivision = params.divisionId ?? (teamDivisionResult?.data as unknown as { division_id?: string | null } | null)?.division_id;
   if (!teamDivision) throw new Error("SPOGOMI division not found.");
   const rpc = await params.supabase.rpc("spogomi_review_team_submission_for_division", {
     p_event_id: params.eventId,

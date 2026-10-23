@@ -104,6 +104,16 @@ function throwIfFunnelPersistenceCannotFallback(error: unknown): void {
   }
 }
 
+function isFunnelEventInWindow(
+  entry: { at: string; session_id: string },
+  floor: number,
+  nowMs: number,
+): boolean {
+  if (!isSafeAnalyticsSessionId(entry.session_id)) return false;
+  const ms = new Date(entry.at).getTime();
+  return Number.isFinite(ms) && ms >= floor && ms <= nowMs;
+}
+
 export async function appendFunnelEvent(event: FunnelEvent): Promise<void> {
   if (!isSafeAnalyticsSessionId(event.sessionId)) {
     throw new Error("Invalid analytics session id");
@@ -157,13 +167,7 @@ export async function listFunnelEvents(
 
       if (!result.error) {
         return (result.data ?? [])
-          .filter((entry) => {
-            if (!isSafeAnalyticsSessionId(entry.session_id)) {
-              return false;
-            }
-            const ms = new Date(entry.at).getTime();
-            return Number.isFinite(ms) && ms >= floor && ms <= nowMs;
-          })
+          .filter((entry) => isFunnelEventInWindow(entry, floor, nowMs))
           .map((entry) => ({
             at: entry.at,
             sessionId: entry.session_id,

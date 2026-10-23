@@ -38,6 +38,22 @@ const PENDING_NOTIFICATION_REQUEST_BATCH_SIZE = 50;
 const PENDING_NOTIFICATION_PAGE_SIZE = 50;
 const PENDING_NOTIFICATION_MAX_PAGES = 20;
 
+function collectPendingDecisionNotification(
+  notification: AppNotification,
+  requestKeys: ReadonlySet<string>,
+  notificationsById: Map<string, AppNotification>,
+  latestNotificationByRequestKey: Map<string, AppNotification>,
+): void {
+  const request = readPendingDecisionRequest(notification.payload);
+  if (!request) return;
+  const requestKey = getPendingDecisionRequestKey(request.kind, request.requestId);
+  if (!requestKeys.has(requestKey)) return;
+  notificationsById.set(notification.id, notification);
+  if (!latestNotificationByRequestKey.has(requestKey)) {
+    latestNotificationByRequestKey.set(requestKey, notification);
+  }
+}
+
 export type NotificationPageCursor = {
   createdAt: string;
   id: string;
@@ -307,14 +323,12 @@ export async function loadPendingDecisionNotificationsForCurrentUser(
 
       const pageNotifications = (data ?? []) as AppNotification[];
       for (const notification of pageNotifications) {
-        const request = readPendingDecisionRequest(notification.payload);
-        if (!request) continue;
-        const requestKey = getPendingDecisionRequestKey(request.kind, request.requestId);
-        if (!requestKeys.has(requestKey)) continue;
-        notificationsById.set(notification.id, notification);
-        if (!latestNotificationByRequestKey.has(requestKey)) {
-          latestNotificationByRequestKey.set(requestKey, notification);
-        }
+        collectPendingDecisionNotification(
+          notification,
+          requestKeys,
+          notificationsById,
+          latestNotificationByRequestKey,
+        );
       }
 
       const allRequestsObserved = requestBatch.every((request) =>

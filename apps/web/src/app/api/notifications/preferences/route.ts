@@ -28,6 +28,25 @@ async function preferenceRateLimitResponse(request: Request, options: { limit: n
   return createServerRateLimitResponse(rateLimit.allowed, rateLimit.retryAfter, rateLimit);
 }
 
+async function persistActionMutePreference(
+  userId: string,
+  actionId: string,
+  muted: boolean,
+): Promise<void> {
+  const supabase = getSupabaseServerClient(true);
+  const result = muted
+    ? await supabase.from("notification_information_mutes").upsert(
+        { user_id: userId, action_id: actionId },
+        { onConflict: "user_id,action_id" },
+      )
+    : await supabase
+        .from("notification_information_mutes")
+        .delete()
+        .eq("user_id", userId)
+        .eq("action_id", actionId);
+  if (result.error) throw result.error;
+}
+
 export async function GET(request: Request) {
   const rateLimitResponse = await preferenceRateLimitResponse(request, { limit: 30, window: 60 });
   if (rateLimitResponse) return rateLimitResponse;
@@ -79,19 +98,11 @@ export async function PATCH(request: Request) {
       if (error) throw error;
     }
     if (parsed.data.actionId && parsed.data.muted !== undefined) {
-      if (parsed.data.muted) {
-        const { error } = await supabase.from("notification_information_mutes").upsert({
-          user_id: userId,
-          action_id: parsed.data.actionId,
-        }, { onConflict: "user_id,action_id" });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("notification_information_mutes")
-          .delete()
-          .eq("user_id", userId)
-          .eq("action_id", parsed.data.actionId);
-        if (error) throw error;
-      }
+      await persistActionMutePreference(
+        userId,
+        parsed.data.actionId,
+        parsed.data.muted,
+      );
     }
     // Cache justification: preference mutations must never be cached or shared.
     return NextResponse.json(await loadNotificationPreferences(userId), {

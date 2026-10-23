@@ -13,6 +13,7 @@ import { listPartnerOnboardingRequests } from "@/lib/partners/onboarding-request
 import { listLegalContentReports } from "@/lib/legal-content-report/legal-content-report-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getClerkService } from "@/lib/services/clerk";
+import type { CommunityEventRow } from "@/types/database";
 import {
   isCreatorInboxRecordCursor,
   type CreatorInboxRecordCursor,
@@ -207,18 +208,19 @@ async function loadCreatorInboxEvents(
   if (!eventsResult.data || eventsResult.data.length === 0) {
     return [];
   }
+  const eventRows = eventsResult.data as unknown as CommunityEventRow[];
 
   const clerk = await getClerkService();
   const organizerIds = Array.from(
     new Set(
-      eventsResult.data
+      eventRows
         .map((event) => event.organizer_clerk_id)
         .filter((id): id is string => typeof id === "string" && id.length > 0),
     ),
   );
   const organizerMap = await clerk.resolveUsers(organizerIds);
 
-  return eventsResult.data.map((event) => {
+  return eventRows.map((event) => {
     const organizer =
       organizerMap.get(event.organizer_clerk_id) ?? {
         userId: null,

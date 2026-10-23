@@ -189,10 +189,12 @@ export function summarizeQuizStates(
     const state = getQuizStateFromStats(stats, now);
     counts[state] += 1;
 
-    if (stats) {
-      if (!nextReviewAt || new Date(stats.next_review_at).getTime() < new Date(nextReviewAt).getTime()) {
-        nextReviewAt = stats.next_review_at;
-      }
+    if (
+      stats &&
+      (!nextReviewAt ||
+        new Date(stats.next_review_at).getTime() < new Date(nextReviewAt).getTime())
+    ) {
+      nextReviewAt = stats.next_review_at;
     }
   });
 

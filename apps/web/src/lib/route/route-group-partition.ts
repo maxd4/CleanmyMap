@@ -434,6 +434,13 @@ function assignCandidate(
   });
 }
 
+function deactivateUnavailableRoundGroups(
+  activeGroups: Set<number>,
+  roundGroups: ReadonlySet<number>,
+): void {
+  for (const groupIndex of roundGroups) activeGroups.delete(groupIndex);
+}
+
 export function partitionRouteCandidates(
   input: RouteGroupPartitionInput,
 ): RouteGroupPartitionResult {
@@ -496,7 +503,7 @@ export function partitionRouteCandidates(
         });
       });
       if (options.length === 0) {
-        for (const groupIndex of roundGroups) activeGroups.delete(groupIndex);
+        deactivateUnavailableRoundGroups(activeGroups, roundGroups);
         break;
       }
       options.sort((left, right) =>

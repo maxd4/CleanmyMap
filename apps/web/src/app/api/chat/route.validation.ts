@@ -58,14 +58,16 @@ function validateAttachmentContract(data: SendMessageData, context: z.Refinement
   if (hasSize && data.attachmentSize! > CHAT_ATTACHMENT_MAX_SIZE_BYTES) {
     addIssue(context, ["attachmentSize"], "La pièce jointe dépasse la limite de 8 Mio (8 MiB).");
   }
-  if (data.attachmentType && !isSupportedChatAttachmentMimeType(data.attachmentType)) {
-    if (!isUnsupportedChatVideoMimeType(data.attachmentType)) {
-      addIssue(
-        context,
-        ["attachmentType"],
-        "Ce format de pièce jointe n'est pas autorisé. Utilisez une image, un PDF ou un document courant.",
-      );
-    }
+  if (
+    data.attachmentType &&
+    !isSupportedChatAttachmentMimeType(data.attachmentType) &&
+    !isUnsupportedChatVideoMimeType(data.attachmentType)
+  ) {
+    addIssue(
+      context,
+      ["attachmentType"],
+      "Ce format de pièce jointe n'est pas autorisé. Utilisez une image, un PDF ou un document courant.",
+    );
   }
 }
 

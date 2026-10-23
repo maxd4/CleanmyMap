@@ -18,6 +18,7 @@ import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
 import { loadNotificationPreferences } from "@/lib/notifications/notification-preferences-server";
 import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 import { buildClerkMetadataPatch } from "@/lib/auth/clerk-metadata-patch";
+import type { ActionPreparationData } from "@/lib/actions/types";
 
 export const runtime = "nodejs";
 // Justification Vercel: the authenticated mobile account projection is private,
@@ -49,6 +50,28 @@ type MissionRow = {
   duration_s: number | null;
 };
 
+type CreatedActionRow = {
+  id: string;
+  action_date: string | null;
+  location_label: string | null;
+  status: string;
+  action_phase: string | null;
+  published_at: string | null;
+  created_at: string;
+  preparation_data: unknown;
+};
+
+type CreatedActionProjection = {
+  id: string;
+  title: string | null;
+  actionDate: string | null;
+  locationLabel: string | null;
+  status: string;
+  actionPhase: string | null;
+  publishedAt: string | null;
+  createdAt: string;
+};
+
 function selectionFromLabel(label: string | null): TerritoryLocationSelection | null {
   const normalized = label?.trim() ?? "";
   if (!normalized) return null;
@@ -78,7 +101,7 @@ async function loadAccountMissions(userId: string): Promise<MissionRow[]> {
   return (result.data ?? []) as MissionRow[];
 }
 
-async function loadCreatedActions(userId: string) {
+async function loadCreatedActions(userId: string): Promise<CreatedActionProjection[]> {
   const result = await getSupabaseServerClient(true)
     .from("actions")
     .select("id, action_date, location_label, status, action_phase, published_at, created_at, preparation_data")
@@ -86,9 +109,12 @@ async function loadCreatedActions(userId: string) {
     .order("created_at", { ascending: false })
     .limit(30);
   if (result.error) throw result.error;
-  return (result.data ?? []).map((row) => ({
+  const rows = (result.data ?? []) as unknown as CreatedActionRow[];
+  return rows.map((row) => ({
     id: row.id,
-    title: getActionTitle({ preparation_data: row.preparation_data }),
+    title: getActionTitle({
+      preparation_data: row.preparation_data as ActionPreparationData | undefined,
+    }),
     actionDate: row.action_date,
     locationLabel: row.location_label,
     status: row.status,
@@ -111,7 +137,7 @@ async function loadAccountProjection(userId: string) {
     supabase.rpc("list_pending_action_invitations_for_recipient", { p_recipient_id: userId })
       .then((result) => {
         if (result.error) throw result.error;
-        return result.data ?? [];
+        return (result.data ?? []) as unknown[];
       }),
     loadAccountMissions(userId),
     loadCreatedActions(userId),

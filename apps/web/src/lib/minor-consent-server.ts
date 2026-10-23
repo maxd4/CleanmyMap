@@ -1,4 +1,4 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 
 import {
   CLERK_AGE_BAND_METADATA_KEY,
@@ -33,17 +33,6 @@ export async function getUserOptionalConsentEligibility(
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
     return readEligibility(user.privateMetadata as Record<string, unknown>);
-  } catch {
-    return UNKNOWN_ELIGIBILITY;
-  }
-}
-
-export async function getCurrentUserOptionalConsentEligibility(): Promise<OptionalConsentEligibility> {
-  try {
-    const { userId } = await auth();
-    return userId
-      ? getUserOptionalConsentEligibility(userId)
-      : UNKNOWN_ELIGIBILITY;
   } catch {
     return UNKNOWN_ELIGIBILITY;
   }
