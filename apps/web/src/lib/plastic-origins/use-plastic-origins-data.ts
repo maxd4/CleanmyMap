@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import useSWR from "swr";
+import useSWRImmutable from "swr/immutable";
 import {
   isPlasticOriginsDataset,
   PLASTIC_ORIGINS_DATA_URL,
@@ -15,20 +15,33 @@ export type PlasticOriginsDataState = {
   reload: () => void;
 };
 
+let staticDatasetRequest: Promise<PlasticOriginsDataset> | null = null;
+
+function fetchStaticDataset(url: string): Promise<PlasticOriginsDataset> {
+  if (!staticDatasetRequest) {
+    staticDatasetRequest = fetch(url, { cache: "force-cache" })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Plastic Origins: HTTP ${response.status}`);
+        }
+        const payload: unknown = await response.json();
+        if (!isPlasticOriginsDataset(payload)) {
+          throw new Error("Plastic Origins: export statique invalide.");
+        }
+        return payload;
+      })
+      .catch((error: unknown) => {
+        staticDatasetRequest = null;
+        throw error;
+      });
+  }
+  return staticDatasetRequest;
+}
+
 export function usePlasticOriginsData(enabled: boolean): PlasticOriginsDataState {
-  const { data, error, isLoading, mutate } = useSWR<PlasticOriginsDataset>(
+  const { data, error, isLoading, mutate } = useSWRImmutable<PlasticOriginsDataset>(
     enabled ? PLASTIC_ORIGINS_DATA_URL : null,
-    async (url: string) => {
-      const response = await fetch(url, { cache: "force-cache" });
-      if (!response.ok) {
-        throw new Error(`Plastic Origins: HTTP ${response.status}`);
-      }
-      const payload: unknown = await response.json();
-      if (!isPlasticOriginsDataset(payload)) {
-        throw new Error("Plastic Origins: export statique invalide.");
-      }
-      return payload;
-    },
+    fetchStaticDataset,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,

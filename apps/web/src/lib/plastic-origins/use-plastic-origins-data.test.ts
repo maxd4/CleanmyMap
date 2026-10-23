@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useSWRMock = vi.hoisted(() => vi.fn());
-vi.mock("swr", () => ({ default: useSWRMock }));
+vi.mock("swr/immutable", () => ({ default: useSWRMock }));
 
 import { PLASTIC_ORIGINS_DATA_URL } from "./contract";
 import { usePlasticOriginsData } from "./use-plastic-origins-data";
@@ -35,7 +35,25 @@ describe("Plastic Origins static layer loading", () => {
 
     expect(key).toBe(PLASTIC_ORIGINS_DATA_URL);
     expect(options.revalidateOnFocus).toBe(false);
+    expect(options.revalidateOnReconnect).toBe(false);
     expect(options.shouldRetryOnError).toBe(false);
     expect(fetcher).toEqual(expect.any(Function));
+  });
+
+  it("shares one browser request for the immutable export", async () => {
+    const payload = { schemaVersion: 1, observations: [] };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => payload,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderToStaticMarkup(React.createElement(Probe, { enabled: true }));
+    const [, fetcher] = useSWRMock.mock.calls[0] as [string, (url: string) => Promise<unknown>];
+
+    await Promise.all([fetcher(PLASTIC_ORIGINS_DATA_URL), fetcher(PLASTIC_ORIGINS_DATA_URL)]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(PLASTIC_ORIGINS_DATA_URL, { cache: "force-cache" });
+    vi.unstubAllGlobals();
   });
 });

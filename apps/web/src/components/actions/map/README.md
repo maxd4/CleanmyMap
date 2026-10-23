@@ -51,9 +51,11 @@ Ce calque est une source historique indépendante : ses points ne rejoignent pas
 le contrat `ActionMapItem`, les KPI, les scores, les filtres Actions, les
 exports CleanMyMap ou le générateur d'itinéraires. Les popups conservent la
 campagne, la date, la catégorie et la méthode source ainsi que les données
-disponibles. Les doublons exacts sont regroupés dans l'export sans suppression
-des lignes sources ; leurs numéros de lignes restent consultables dans la
-provenance.
+disponibles. Le chargement utilise un cache immutable côté client, une requête
+partagée par module et un cache HTTP du fichier statique ; il ne sollicite donc
+aucune API métier ni quota Supabase. Les doublons exacts sont regroupés dans
+l'export sans suppression des lignes sources ; leurs numéros de lignes restent
+consultables dans la provenance.
 
 La fiche data.gouv.fr actuelle publie le jeu sous ODbL par Plastic Origins /
 Surfrider Foundation Europe. Le PDF de documentation téléchargé affiche encore
