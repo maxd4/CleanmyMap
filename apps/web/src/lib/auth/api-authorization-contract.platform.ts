@@ -273,14 +273,14 @@ export const platformAuthorizationContract = {
     GET: {
       expected: "Authenticated bounded global spot read",
       dimensions: ["authentication"],
-      actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports; public table projection remains globally scoped",
-      evidence: ["requireActionRequestAccess", "loadCachedSpots"],
+      actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports; loadPublicSpots enforces validated/cleaned and returns a public DTO",
+      evidence: ["requireActionRequestAccess", "loadPublicSpots"],
     },
     POST: {
       expected: "Authenticated signalement creation owned by current user",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess + userId passed to createSignalement",
-      evidence: ["requireAuthenticatedAccess", "createSignalement", "userId"],
+      actual: "requireActionRequestAccess + userId passed to createSignalement",
+      evidence: ["requireActionRequestAccess", "createSignalement", "userId"],
     },
   },
   "users/checklist-progress": {

@@ -1,15 +1,17 @@
-import { unstable_cache } from "next/cache";
 import { NextResponse } from"next/server";
 import { z } from"zod";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import {
  getCurrentUserIdentity,
  pickTraceableActorName,
- requireAuthenticatedAccess,
 } from"@/lib/authz";
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
-import { handleApiError, parseJsonBodyWithValidation } from"@/lib/http/api-errors";
+import {
+ handleApiError,
+ parseJsonBodyWithValidation,
+ validationErrorResponse,
+} from"@/lib/http/api-errors";
 import { createSignalement } from "@/lib/actions/signalement/create-signalement";
 import { parsePositiveInteger } from "@/lib/http/query-params";
 import { enforceServerRateLimit } from "@/lib/rate-limit/server";
@@ -17,13 +19,17 @@ import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { wasteCategorySlugSchema } from "@/lib/validation/action-measurements";
 
 export const runtime ="nodejs";
-const SPOTS_CACHE_HEADERS = {
- "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
-};
-const SPOTS_CACHE_REVALIDATE_SECONDS = 60;
+const PUBLIC_SPOT_STATUSES = ["validated", "cleaned"] as const;
+type PublicSpotStatus = (typeof PUBLIC_SPOT_STATUSES)[number];
 
-const spotStatuses = ["new","validated","cleaned"] as const;
-type SpotStatus = (typeof spotStatuses)[number];
+type PublicSpotRow = {
+ created_at: string;
+ label: string;
+ spot_type: string | null;
+ latitude: number | null;
+ longitude: number | null;
+ status: string | null;
+};
 
 const createSpotSchema = z.object({
   type: z.enum(["clean_place","spot"]).default("spot"),
@@ -34,48 +40,66 @@ const createSpotSchema = z.object({
  wasteCategories: z.array(wasteCategorySlugSchema).max(20).optional(),
 });
 
-function parseStatusParam(raw: string | null): SpotStatus | null {
- if (!raw) {
- return null;
+function parseStatusParam(rawValues: string[]):
+ | { status: PublicSpotStatus | null }
+ | { error: string } {
+ if (rawValues.length === 0) {
+  return { status: null };
  }
- return spotStatuses.includes(raw as SpotStatus) ? (raw as SpotStatus) : null;
+ if (rawValues.length !== 1) {
+  return { error: "Un seul statut de signalement peut être demandé." };
+ }
+
+ const raw = rawValues[0];
+ if (PUBLIC_SPOT_STATUSES.includes(raw as PublicSpotStatus)) {
+  return { status: raw as PublicSpotStatus };
+ }
+ if (raw === "new") {
+  return { error: "Le statut new est réservé au suivi propriétaire." };
+ }
+ return { error: "Le statut de signalement demandé est invalide." };
 }
 
-function buildSpotsCacheKey(limit: number, status: SpotStatus | null): string {
- return [`limit:${limit}`, `status:${status ?? "all"}`].join("|");
+function isPublicSpotRow(
+ row: PublicSpotRow,
+): row is PublicSpotRow & { status: PublicSpotStatus } {
+ return typeof row.status === "string" && PUBLIC_SPOT_STATUSES.includes(row.status as PublicSpotStatus);
 }
 
-async function loadCachedSpots(limit: number, status: SpotStatus | null) {
- const cached = unstable_cache(
-  async () => {
-   const supabase = getSupabaseServerClient(true);
-   let query = supabase
-   .from("trash_spotter_spots")
-   .select(
-"id, created_at, created_by_clerk_id, label, spot_type, latitude, longitude, status, notes",
-   )
-   .order("created_at", { ascending: false })
-   .limit(limit);
+function toPublicSpotDto(row: PublicSpotRow & { status: PublicSpotStatus }) {
+ return {
+  created_at: row.created_at,
+  label: row.label,
+  spot_type: row.spot_type,
+  latitude: row.latitude,
+  longitude: row.longitude,
+  status: row.status,
+ };
+}
 
-   if (status) {
-    query = query.eq("status", status);
-   }
+async function loadPublicSpots(limit: number, status: PublicSpotStatus | null) {
+ const supabase = getSupabaseServerClient(true);
+ let query = supabase
+  .from("trash_spotter_spots")
+  .select("created_at, label, spot_type, latitude, longitude, status")
+  .order("created_at", { ascending: false })
+  .limit(limit);
 
-   const result = await query;
-   if (result.error) {
-    throw result.error;
-   }
+ if (status) {
+  query = query.eq("status", status);
+ } else {
+  query = query.in("status", [...PUBLIC_SPOT_STATUSES]);
+ }
 
-   return result.data ?? [];
-  },
-  ["spots", buildSpotsCacheKey(limit, status)],
-  {
-   revalidate: SPOTS_CACHE_REVALIDATE_SECONDS,
-   tags: ["spots-map"],
-  },
- );
+ const result = await query;
+ if (result.error) {
+  throw result.error;
+ }
 
- return cached();
+ return ((result.data ?? []) as PublicSpotRow[])
+  .filter(isPublicSpotRow)
+  .filter((row) => status === null || row.status === status)
+  .map(toPublicSpotDto);
 }
 
 export async function GET(request: Request) {
@@ -91,15 +115,18 @@ export async function GET(request: Request) {
  300,
  120,
  );
-  const status = parseStatusParam(url.searchParams.get("status"));
+  const parsedStatus = parseStatusParam(url.searchParams.getAll("status"));
+  if ("error" in parsedStatus) {
+   return validationErrorResponse({ status: [parsedStatus.error] });
+  }
 
   try {
- const items = await loadCachedSpots(limit, status);
+ const items = await loadPublicSpots(limit, parsedStatus.status);
  return NextResponse.json({
  status:"ok",
  count: items.length,
  items,
- }, { headers: SPOTS_CACHE_HEADERS });
+ }, { headers: { "Cache-Control": "private, no-store" } });
  } catch (error) {
  return handleApiError(error,"api/spots");
  }
@@ -111,7 +138,7 @@ export async function POST(request: Request) {
   return rateLimitResponse;
  }
 
- const access = await requireAuthenticatedAccess();
+ const access = await requireActionRequestAccess(request);
  if (!access.ok) {
  return unauthorizedJsonResponse();
  }

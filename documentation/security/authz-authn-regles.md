@@ -672,6 +672,17 @@ contrats internes conservent ces identités pour l'ownership, la modération et
 les traitements serveur ; la frontière DTO publique les retire avant la réponse
 HTTP.
 
+La lecture authentifiée `GET /api/spots` suit la même frontière public-safe pour
+les observations Trash Spotter : sans filtre, elle impose côté serveur
+`status IN ('validated', 'cleaned')`. Un filtre explicite peut demander l'un de
+ces deux statuts uniquement ; `new`, les statuts inconnus et les paramètres de
+statut ambigus sont refusés avant toute lecture privilégiée. La réponse ne
+contient que la date, le libellé, le type, les coordonnées et le statut : aucun
+identifiant interne de ligne ou de compte, aucune note privée, et aucune
+réutilisation de cache ou snapshot d'une projection antérieure. La lecture
+propriétaire `GET /api/signalements/me` reste l'unique surface permettant au
+compte courant de retrouver ses observations `new`.
+
 La vue publique `GET /api/actions?view=future` réutilise la même projection
 Actions et ne renvoie que les pré-actions publiées dont le début est futur.
 Les champs `volunteers_count`, `duration_minutes`, l'itinéraire et les objectifs
