@@ -156,7 +156,7 @@ export function AnnuaireSection() {
               {fr ? "Vous agissez sur le terrain ?" : "Are you acting on the field?"}
             </h3>
             <p className="text-slate-300 font-bold opacity-80 leading-relaxed">
-              {fr ? "Rejoignez l'annuaire pour gagner en visibilité, partager vos rapports d'impact et coordonner vos prochaines actions." : "Join the directory to gain visibility, share your impact reports and coordinate your next actions."}
+              {fr ? "Rejoignez l'annuaire pour présenter votre structure, partager vos besoins et rendre vos canaux publics visibles." : "Join the directory to present your structure, share your needs and make your public channels visible."}
             </p>
           </div>
           <div className="relative z-10">

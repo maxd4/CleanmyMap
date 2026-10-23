@@ -1,4 +1,3 @@
-import { hasRecentActivity } from "@/components/sections/rubriques/annuaire/annuaire-helpers";
 import Link from "next/link";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
@@ -49,12 +48,10 @@ function PartnerDashboardContent({
   const activeEntries = acceptedPublishedEntries.filter(
     (entry) =>
       entry.qualificationStatus === "partenaire_actif" &&
-      entry.verificationStatus === "verifie" &&
-      hasRecentActivity(entry.recentActivityAt),
+      entry.verificationStatus === "verifie",
   );
   const staleEntries = publishedEntries.filter(
-    (entry) =>
-      entry.verificationStatus !== "verifie" || !hasRecentActivity(entry.recentActivityAt),
+    (entry) => entry.verificationStatus !== "verifie",
   );
   const coveredZones = new Set(
     acceptedPublishedEntries.flatMap((entry) => entry.coveredArrondissements),
@@ -162,7 +159,7 @@ function PartnerDashboardContent({
             <div className="bg-white/5 rounded-[3rem] p-10 space-y-6 border border-white/5 shadow-inner relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-slate-400/5 rounded-full blur-[80px]" />
               <h3 className="text-xl font-black text-white tracking-tight relative z-10 flex items-center gap-3"><ShieldCheck size={20} className="text-slate-400" />Vérification</h3>
-              <p className="cmm-text-body cmm-text-inverse font-medium relative z-10">{staleEntries.length} fiches nécessitent une confirmation de données ou une vérification d&apos;activité récente.</p>
+              <p className="cmm-text-body cmm-text-inverse font-medium relative z-10">{staleEntries.length} fiches nécessitent une confirmation de données ou une vérification administrative.</p>
             </div>
             {reviewablePublishedEntries.length > 0 && (
               <PublishedAnnuaireReviewPanel items={reviewablePublishedEntries} />

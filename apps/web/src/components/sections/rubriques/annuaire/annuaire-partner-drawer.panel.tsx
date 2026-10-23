@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { X, MapPin, Globe, Target, Quote, Heart, Zap, ArrowRight, Building2, Sparkles, MessageSquare } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
-import { ENTITY_LABELS, CONTRIBUTION_LABELS, formatAssociationImpactDate, formatAnnuaireCoverage, getAssociationImpactSummary, getAnnuairePublicDestination, isEditorialAnnuaireEntry } from "./annuaire-helpers";
+import { ENTITY_LABELS, CONTRIBUTION_LABELS, formatAssociationImpactDate, formatAnnuaireCoverage, getAssociationImpactSummary, getAnnuairePublicDestination, hasTraceableImpactHistory, hasTraceablePastActions, isEditorialAnnuaireEntry } from "./annuaire-helpers";
 import type { AssociationProfile } from "@/lib/partners/annuaire-types";
 import { getAssociationProfile, getAssociationStructureBadge } from "./annuaire-association-profile";
 import { normalizePublicWebUrl } from "@/lib/partners/onboarding-types";
@@ -84,7 +84,7 @@ function AnnuaireDrawerMission({ entry, fr, isEditorial }: DrawerCommonProps & {
                     <Target size={18} />
                   </div>
                   <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
-                    {isEditorial ? (fr ? "Présentation" : "Overview") : "Mission & Impact"}
+                    {isEditorial ? (fr ? "Présentation" : "Overview") : "Mission"}
                   </h3>
                 </div>
                 <p className="text-lg font-bold leading-relaxed text-slate-300 opacity-90">
@@ -137,10 +137,10 @@ function AnnuaireDrawerAssociation({ entry, fr, associationProfile }: DrawerComm
                         </div>
                         <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
                           <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
-                            Zones couvertes
+                            Périmètre déclaré
                           </p>
                           <p className="mt-3 text-base font-black text-white">
-                            {associationProfile.impactHistory?.zonesCovered ?? entry.coveredArrondissements.length} zones
+                            {entry.coveredArrondissements.length} zones
                           </p>
                           <p className="mt-2 text-sm text-slate-300">
                             {formatAnnuaireCoverage(entry)}
@@ -148,14 +148,15 @@ function AnnuaireDrawerAssociation({ entry, fr, associationProfile }: DrawerComm
                         </div>
                         <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
                           <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
-                            Impact local
+                            Impact mesuré
                           </p>
                           <p className="mt-3 text-base font-black text-white">
-                            {getAssociationImpactSummary(entry)}
+                            {hasTraceableImpactHistory(entry) ? getAssociationImpactSummary(entry) : "Non renseigné"}
                           </p>
                           <p className="mt-2 text-sm text-slate-300">
-                            {formatAssociationImpactDate(associationProfile.impactHistory?.lastActionAt)}
+                            {hasTraceableImpactHistory(entry) ? formatAssociationImpactDate(associationProfile.impactHistory?.lastActionAt) : "Date non renseignée"}
                           </p>
+                          {hasTraceableImpactHistory(entry) && <p className="mt-2 text-xs text-slate-400">Source : {associationProfile.impactHistory?.provenance?.source}</p>}
                         </div>
                       </div>
                     </div>
@@ -245,12 +246,13 @@ function AnnuaireDrawerAssociation({ entry, fr, associationProfile }: DrawerComm
                       <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">{fr ? "Actions passées" : "Past actions"}</h3>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
-                      {associationProfile.pastActions.map((action) => (
+                      {hasTraceablePastActions(entry) ? associationProfile.pastActions.map((action) => (
                         <div key={action} className="rounded-[1.75rem] border border-white/10 bg-slate-950/35 p-5 text-sm font-semibold leading-relaxed text-slate-200">
                           {action}
                         </div>
-                      ))}
+                      )) : <div className="rounded-[1.75rem] border border-dashed border-white/10 bg-slate-950/30 p-5 text-sm font-semibold text-slate-300">Non renseigné</div>}
                     </div>
+                    {hasTraceablePastActions(entry) && <p className="text-xs font-medium text-slate-400">Source : {associationProfile.pastActionsProvenance?.source}</p>}
                   </section>
                 </>
               )}

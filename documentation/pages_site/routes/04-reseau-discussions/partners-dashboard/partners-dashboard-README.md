@@ -53,9 +53,9 @@
 
 ## Contrat de données
 
-- Les KPI « Fiches publiées », « Partenaires actifs », « Zones couvertes » et « Fiches à revoir » sont calculés exclusivement depuis `listPublishedPartnerAnnuaireEntries()` et les champs persistés de publication, vérification, qualification, activité récente et couverture.
+- Les KPI « Fiches publiées », « Partenaires actifs », « Zones couvertes » et « Fiches à revoir » sont calculés exclusivement depuis `listPublishedPartnerAnnuaireEntries()` et les champs persistés de publication, vérification, qualification et couverture. Une mise à jour administrative ne constitue pas une preuve d'activité.
 - « Fiches publiées » et « Zones couvertes » utilisent uniquement les fiches dont `publicationStatus` est `accepted`.
-- « Partenaires actifs » combine uniquement les états persistés `qualificationStatus`, `verificationStatus` et `recentActivityAt` des fiches acceptées.
+- « Partenaires actifs » combine uniquement les états persistés `qualificationStatus` et `verificationStatus` des fiches acceptées. L'ancien champ `recentActivityAt`, lorsqu'il existe dans une projection historique, n'est pas utilisé comme preuve.
 - « Fiches à revoir » reflète les fiches persistées dont l’état de publication n’est pas `accepted`.
 - Le nombre « À valider » vient indépendamment de `countPartnerOnboardingRequests()` et ne dépend pas des fiches publiées.
 - `requireAdminAccess()` est appelé avant toute lecture privilégiée des demandes, contacts, impacts ou fiches de gouvernance. Un visiteur ou un rôle actif non administratif reçoit un état d’accès sans données privées ; le rendu ne déduit jamais cette capacité d’un libellé de rôle UI.
@@ -88,7 +88,7 @@ après acceptation/vérification ; le rapprochement par nom est interdit.
 ## Séparation avec l’Annuaire public
 
 - `INITIAL_ANNUAIRE_ENTRIES` constitue une source statique/curatée de l’Annuaire public et ne participe pas au pilotage de gouvernance.
-- Une entrée statique ne peut modifier les totaux, actifs, zones, fiches à revoir, activité récente, décisions ou priorités du dashboard.
+- Une entrée statique ne peut modifier les totaux, actifs, zones, fiches à revoir, activité mesurée, décisions ou priorités du dashboard.
 - La « Checklist de gouvernance » est une aide générique de revue ; elle ne constitue pas une liste de priorités calculées et ne fabrique aucune décision opérationnelle.
 
 ## Références legacy

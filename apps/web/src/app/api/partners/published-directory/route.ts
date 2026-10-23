@@ -45,6 +45,7 @@ function stripPublicationMetadata(entry: PublishedPartnerAnnuaireEntry) {
     reviewedAt,
     reviewedByUserId,
     internalAdminContact,
+    recentActivityAt,
     ...rest
   } = entry;
  void sourceRequestId;
@@ -54,5 +55,6 @@ function stripPublicationMetadata(entry: PublishedPartnerAnnuaireEntry) {
  void reviewedAt;
  void reviewedByUserId;
   void internalAdminContact;
+  void recentActivityAt;
  return rest;
 }

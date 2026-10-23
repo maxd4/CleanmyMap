@@ -25,10 +25,6 @@ function isPublishedPartner(entry: AnnuaireEntry): entry is PublishedAnnuaireEnt
   return entry.provenance === "published_partner";
 }
 
-function hasRecentPartnerUpdate(entry: AnnuaireEntry): boolean {
-  return isPublishedPartner(entry) && (diffInDays(entry.lastUpdatedAt) ?? Infinity) <= 90;
-}
-
 function buildAssociationMission(entry: AnnuaireEntry): string {
   if (entry.associationProfile?.mission) return cleanText(entry.associationProfile.mission);
   if (entry.featuredReason) return cleanText(entry.featuredReason);
@@ -37,25 +33,7 @@ function buildAssociationMission(entry: AnnuaireEntry): string {
 }
 
 function buildAssociationPastActions(entry: AnnuaireEntry): string[] {
-  if (entry.associationProfile?.pastActions?.length) {
-    return uniqueLabels(entry.associationProfile.pastActions);
-  }
-
-  const source = `${entry.description} ${entry.featuredReason ?? ""}`.toLowerCase();
-  const highlights: string[] = [];
-  if (/atelier|formation|sensibil/i.test(source)) {
-    highlights.push("Ateliers, sensibilisation ou formations");
-  }
-  if (/collecte|ramassage|nettoyage|déchet|recycl/i.test(source)) {
-    highlights.push("Opérations terrain de collecte et de réemploi");
-  }
-  if (/distribution|aide|accueil|accompagnement/i.test(source)) {
-    highlights.push("Accueil, accompagnement ou aide directe");
-  }
-  if (/plaidoyer|réseau|relais|diffusion|communication/i.test(source)) {
-    highlights.push("Relais de mobilisation et diffusion locale");
-  }
-  return highlights.length > 0 ? uniqueLabels(highlights) : ["Historique d'impact à compléter"];
+  return uniqueLabels(entry.associationProfile?.pastActions ?? []);
 }
 
 function buildAssociationPublicCalls(entry: AnnuaireEntry): AssociationPublicCall[] {
@@ -100,20 +78,8 @@ function buildAssociationResources(entry: AnnuaireEntry): AssociationResource[] 
   return resources;
 }
 
-function buildAssociationImpactHistory(entry: PublishedAnnuaireEntry): AssociationImpactHistory {
-  if (entry.associationProfile?.impactHistory) return entry.associationProfile.impactHistory;
-  const availability = entry.availability.toLowerCase();
-  const recurrence = availability.includes("hebdo") || availability.includes("réguli")
-    ? "Actions récurrentes"
-    : availability.includes("ponct")
-      ? "Actions ponctuelles"
-      : "Cadence à confirmer";
-  return {
-    zonesCovered: entry.coveredArrondissements.length,
-    recurrence,
-    lastActionAt: entry.recentActivityAt,
-    note: "Historique local à enrichir avec les actions déclarées.",
-  };
+function buildAssociationImpactHistory(entry: PublishedAnnuaireEntry): AssociationImpactHistory | undefined {
+  return entry.associationProfile?.impactHistory;
 }
 
 function recurringNeeds(entry: AnnuaireEntry): string[] {
@@ -137,18 +103,13 @@ export function getAssociationProfile(entry: AnnuaireEntry): AssociationProfile 
     mission: buildAssociationMission(entry),
     recurringNeeds: recurringNeeds(entry),
     pastActions: buildAssociationPastActions(entry),
+    pastActionsProvenance: entry.associationProfile?.pastActionsProvenance,
     usefulResources: buildAssociationResources(entry),
     publicCalls: buildAssociationPublicCalls(entry),
     impactHistory: buildAssociationImpactHistory(entry),
     structureStatus:
       entry.associationProfile?.structureStatus ??
-      (entry.verificationStatus === "verifie" && hasRecentPartnerUpdate(entry)
-        ? "active_validated"
-        : entry.verificationStatus === "verifie"
-          ? "validated"
-          : hasRecentPartnerUpdate(entry)
-            ? "active"
-            : "pending"),
+      (entry.verificationStatus === "verifie" ? "validated" : "pending"),
   };
 }
 
@@ -168,16 +129,26 @@ export function getAssociationStructureBadge(entry: AnnuaireEntry): {
 
 export function getAssociationImpactSummary(entry: AnnuaireEntry): string {
   const impact = getAssociationProfile(entry)?.impactHistory;
-  if (!impact) return "Impact associatif non disponible";
-  const actionCount = typeof impact.actionCount === "number" ? `${impact.actionCount}` : "à compléter";
-  const zones = typeof impact.zonesCovered === "number" ? `${impact.zonesCovered}` : "à compléter";
-  return `${actionCount} actions référencées · ${zones} zones · ${cleanText(impact.recurrence) || "cadence à confirmer"}`;
+  if (!impact?.provenance?.source?.trim()) return "Impact mesuré non renseigné";
+  const actionCount = typeof impact.actionCount === "number" ? `${impact.actionCount} action${impact.actionCount === 1 ? "" : "s"} mesurée${impact.actionCount === 1 ? "" : "s"}` : "Mesure disponible";
+  const zones = typeof impact.zonesCovered === "number" ? `${impact.zonesCovered} zone${impact.zonesCovered === 1 ? "" : "s"}` : null;
+  const recurrence = cleanText(impact.recurrence);
+  return [actionCount, zones, recurrence || null].filter(Boolean).join(" · ");
 }
 
 export function formatAssociationImpactDate(dateValue?: string): string {
-  if (!dateValue) return "Dernière action à préciser";
+  if (!dateValue) return "Date de dernière action non renseignée";
   const days = diffInDays(dateValue);
-  if (days === null) return "Date d'impact invalide";
-  if (days <= 30) return `Dernière action ${days <= 7 ? `il y a ${days}j` : `récente (${days}j)`}`;
-  return `Dernière action il y a ${days}j`;
+  if (days === null) return "Date d’activité non valide";
+  if (days <= 30) return `${days <= 7 ? `Il y a ${days}j` : `Récente (${days}j)`}`;
+  return `Il y a ${days}j`;
+}
+
+export function hasTraceableImpactHistory(entry: AnnuaireEntry): boolean {
+  return Boolean(getAssociationProfile(entry)?.impactHistory?.provenance?.source?.trim());
+}
+
+export function hasTraceablePastActions(entry: AnnuaireEntry): boolean {
+  const profile = getAssociationProfile(entry);
+  return Boolean(profile?.pastActions.length && profile.pastActionsProvenance?.source?.trim());
 }

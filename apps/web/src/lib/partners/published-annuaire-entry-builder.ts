@@ -54,7 +54,7 @@ function buildAssociationResources(params: { websiteUrl?: string | null; primary
   return resources;
 }
 
-function buildPublishedAssociationProfile(request: PartnerOnboardingRequestInput, availability: ReturnType<typeof normalizePartnerAvailability>, coveredArrondissements: readonly number[], nowIso: string): AssociationProfile | undefined {
+function buildPublishedAssociationProfile(request: PartnerOnboardingRequestInput): AssociationProfile | undefined {
   if (request.organizationType !== "association") return undefined;
   const relay = request.relayActions.trim();
   return {
@@ -63,7 +63,6 @@ function buildPublishedAssociationProfile(request: PartnerOnboardingRequestInput
     pastActions: [],
     usefulResources: buildAssociationResources({ websiteUrl: null, primaryChannelUrl: null, primaryChannelLabel: request.contactChannel, instagramUrl: null, facebookUrl: null }),
     publicCalls: buildAssociationPublicCalls(request.contributionTypes, request.relayActions),
-    impactHistory: { zonesCovered: coveredArrondissements.length, recurrence: formatAvailabilitySummary(availability), lastActionAt: nowIso, note: "Historique d'impact à compléter après validation." },
     structureStatus: "pending",
   };
 }
@@ -83,7 +82,7 @@ export function buildPublishedPartnerAnnuaireEntry(params: { request: PartnerOnb
   const publicChannelUrl = null;
   const websiteUrl = null;
   const nowIso = new Date().toISOString();
-  const associationProfile = buildPublishedAssociationProfile(params.request, availability, arrondissements, nowIso);
+  const associationProfile = buildPublishedAssociationProfile(params.request);
   return {
     id: `onboarded-${randomUUID()}`,
     sourceRequestId: params.requestId,
@@ -110,7 +109,6 @@ export function buildPublishedPartnerAnnuaireEntry(params: { request: PartnerOnb
     qualificationStatus: "contact_non_qualifie",
     provenance: "published_partner",
     lastUpdatedAt: nowIso,
-    recentActivityAt: nowIso,
     associationProfile,
     internalAdminContact: {
       referentName: params.request.contactName,

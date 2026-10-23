@@ -38,12 +38,18 @@ export type AssociationResource = {
   url?: string;
 };
 
+type AssociationEvidence = {
+  source: string;
+  reference?: string;
+};
+
 export type AssociationImpactHistory = {
   actionCount?: number;
   zonesCovered?: number;
-  recurrence: string;
+  recurrence?: string;
   lastActionAt?: string;
   note?: string;
+  provenance?: AssociationEvidence;
 };
 
 export type AssociationProfile = {
@@ -53,6 +59,7 @@ export type AssociationProfile = {
   usefulResources: AssociationResource[];
   publicCalls: AssociationPublicCall[];
   impactHistory?: AssociationImpactHistory;
+  pastActionsProvenance?: AssociationEvidence;
   structureStatus?: "active" | "validated" | "active_validated" | "pending";
 };
 
@@ -123,7 +130,8 @@ export type PublishedAnnuaireEntry = AnnuaireEntryShared & {
   qualificationStatus: QualificationStatus;
   availability: string;
   lastUpdatedAt: string;
-  recentActivityAt: string;
+  /** Optional legacy field; it is never treated as activity evidence. */
+  recentActivityAt?: string;
   /** Server-side administrative data; never part of editorial seed projections. */
   internalAdminContact?: InternalAdminContact;
   /**

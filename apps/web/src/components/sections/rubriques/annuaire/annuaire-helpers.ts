@@ -25,6 +25,8 @@ export {
   getAssociationImpactSummary,
   getAssociationProfile,
   getAssociationStructureBadge,
+  hasTraceableImpactHistory,
+  hasTraceablePastActions,
 } from "./annuaire-association-profile";
 
 export type EnrichedAnnuaireEntry = AnnuaireEntry & { distanceKm: number | null };

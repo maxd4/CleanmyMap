@@ -9,6 +9,8 @@ import {
   getAnnuairePublicDestination,
   getAssociationProfile,
   getAssociationStructureBadge,
+  hasTraceableImpactHistory,
+  hasTraceablePastActions,
   hasPreciseAnnuaireCoordinates,
   isNationalAnnuaireEntry,
   mergeAnnuaireEntries,
@@ -27,7 +29,7 @@ describe("association profile provenance", () => {
     expect(entry).toBeDefined();
     expect(getAssociationProfile(entry!)).toBeNull();
     expect(getAssociationStructureBadge(entry!)).toBeNull();
-    expect(getAssociationImpactSummary(entry!)).toBe("Impact associatif non disponible");
+    expect(getAssociationImpactSummary(entry!)).toBe("Impact mesuré non renseigné");
   });
 
   it("preserves the existing profile behavior for a published partner entry", () => {
@@ -52,7 +54,9 @@ describe("association profile provenance", () => {
           zonesCovered: 1,
           recurrence: "Actions récurrentes",
           lastActionAt: "2026-08-26T10:00:00.000Z",
+          provenance: { source: "Rapport d'activité vérifié" },
         },
+        pastActionsProvenance: { source: "Rapport d'activité vérifié" },
       },
     };
 
@@ -69,10 +73,62 @@ describe("association profile provenance", () => {
       label: "Structure active / validée",
       tone: "success",
     });
-    expect(getAssociationImpactSummary(published)).toContain("12 actions référencées");
+    expect(getAssociationImpactSummary(published)).toContain("12 actions mesurées");
+    expect(hasTraceableImpactHistory(published)).toBe(true);
+    expect(hasTraceablePastActions(published)).toBe(false);
     expect(formatAssociationImpactDate(profile?.impactHistory?.lastActionAt)).toContain(
-      "Dernière action",
+      "Il y a",
     );
+  });
+
+  it("does not infer actions, recurrence or active status from description and updates", () => {
+    const seed = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-shakirail");
+    if (!seed) throw new Error("Expected the editorial seed fixture to exist");
+
+    const published = {
+      ...seed,
+      provenance: "published_partner" as const,
+      verificationStatus: "en_cours" as const,
+      qualificationStatus: "contact_non_qualifie" as const,
+      availability: "Chaque semaine",
+      lastUpdatedAt: new Date().toISOString(),
+      description: "Une structure qui mentionne une collecte dans sa présentation.",
+      associationProfile: undefined,
+    };
+    const profile = getAssociationProfile(published);
+
+    expect(profile?.pastActions).toEqual([]);
+    expect(profile?.impactHistory).toBeUndefined();
+    expect(profile?.structureStatus).toBe("pending");
+    expect(getAssociationImpactSummary(published)).toBe("Impact mesuré non renseigné");
+    expect(hasTraceableImpactHistory(published)).toBe(false);
+  });
+
+  it("keeps explicitly sourced historical activity available", () => {
+    const seed = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-shakirail");
+    if (!seed) throw new Error("Expected the editorial seed fixture to exist");
+    const published = {
+      ...seed,
+      provenance: "published_partner" as const,
+      verificationStatus: "verifie" as const,
+      qualificationStatus: "partenaire_actif" as const,
+      availability: "Chaque semaine",
+      lastUpdatedAt: "2026-08-26T10:00:00.000Z",
+      associationProfile: {
+        ...seed.associationProfile!,
+        pastActions: ["Collecte attestée"],
+        pastActionsProvenance: { source: "Journal d'action 2026-08" },
+        impactHistory: {
+          actionCount: 0,
+          recurrence: "Aucune récurrence mesurée",
+          provenance: { source: "Mesure de référence" },
+        },
+      },
+    };
+
+    expect(getAssociationProfile(published)?.pastActions).toEqual(["Collecte attestée"]);
+    expect(hasTraceablePastActions(published)).toBe(true);
+    expect(getAssociationImpactSummary(published)).toContain("0 actions mesurées");
   });
 
   it("does not retain administrative channels in public resources", () => {

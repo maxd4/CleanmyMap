@@ -84,6 +84,7 @@ describe("GET /api/partners/published-directory", () => {
     expect(payload.items[0]).not.toHaveProperty("internalAdminContact");
     expect(payload.items[0]).not.toHaveProperty("sourceRequestId");
     expect(payload.items[0]).not.toHaveProperty("reviewedByUserId");
+    expect(payload.items[0]).not.toHaveProperty("recentActivityAt");
   });
 
   it("returns a real service error instead of a false empty directory", async () => {

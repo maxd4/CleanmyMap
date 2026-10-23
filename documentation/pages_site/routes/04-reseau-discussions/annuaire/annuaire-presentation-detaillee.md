@@ -10,7 +10,7 @@ de production doit être recherchée séparément.
 
 La page est une surface publique de découverte. Elle présente des ressources
 éditoriales et des fiches de structures partenaires acceptées ; elle ne délivre pas de
-certification, ne mesure pas l'impact des acteurs et ne constitue pas un registre
+certification, ne mesure pas automatiquement l'impact des acteurs et ne constitue pas un registre
 exhaustif des organisations.
 
 Le parcours visible est le suivant :
@@ -138,3 +138,8 @@ public et l'indisponibilité de la source sont des états distincts. Le drawer e
 hors des conteneurs de la carte, avec rôle de dialogue, nom accessible, fermeture par
 Escape et backdrop, gestion du focus et restitution du focus au déclencheur lorsque
 c'est possible.
+Les fiches partenaires distinguent la disponibilité et les contributions déclarées,
+la mise à jour administrative et les preuves d'activité. Une disponibilité hebdomadaire
+ne crée pas une récurrence d'actions ; une date de mise à jour ne crée pas une dernière
+action. Les actions passées et l'impact mesuré restent absents ou affichés comme non
+renseignés tant qu'une source traçable et sa provenance ne sont pas disponibles.

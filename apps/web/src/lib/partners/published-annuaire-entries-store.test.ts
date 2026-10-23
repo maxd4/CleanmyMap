@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPublishedPartnerAnnuaireEntry } from "./published-annuaire-entries-store";
+import { buildPublishedPartnerAnnuaireEntry, normalizePublishedRecord } from "./published-annuaire-entries-store";
 import { isPlaceholderUrl } from "./onboarding-types";
 
 describe("buildPublishedPartnerAnnuaireEntry", () => {
@@ -163,11 +163,10 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
         "Relais de communication",
         "Bénévoles logistiques",
       ],
-      impactHistory: {
-        zonesCovered: 2,
-        recurrence: "Jeudi 09:00-17:00",
-      },
     });
+    expect(entry.associationProfile?.pastActions).toEqual([]);
+    expect(entry.associationProfile?.impactHistory).toBeUndefined();
+    expect(entry.recentActivityAt).toBeUndefined();
     expect(entry.associationProfile?.publicCalls).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -181,6 +180,72 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
       ]),
     );
     expect(entry.associationProfile?.usefulResources).toEqual([]);
+  });
+
+  it("does not turn a new request into activity evidence", () => {
+    const entry = buildPublishedPartnerAnnuaireEntry({
+      requestId: "req-no-activity",
+      request: {
+        organizationName: "Collectif sans historique",
+        organizationType: "association",
+        partnerScope: "local",
+        legalIdentity: "Collectif sans historique",
+        coverage: { arrondissements: [11], quartiers: [] },
+        contributionTypes: ["communication"],
+        relayActions: "",
+        availability: { slots: [{ day: "mon", start: "09:00", end: "12:00" }] },
+        contactName: "Contact",
+        contactChannel: "Email",
+        contactDetails: "coordination-non-communique",
+        motivation: "Une demande de référencement sans action attestée.",
+      },
+    });
+
+    expect(entry.lastUpdatedAt).toBeDefined();
+    expect(entry.recentActivityAt).toBeUndefined();
+    expect(entry.associationProfile?.impactHistory).toBeUndefined();
+  });
+
+  it("removes only the legacy generated activity projection when its marker is explicit", () => {
+    const normalized = normalizePublishedRecord({
+      id: "legacy-entry",
+      sourceRequestId: "req-legacy",
+      source: "partner_onboarding",
+      publishedAt: "2026-10-22T00:00:00.000Z",
+      publicationStatus: "accepted",
+      name: "Legacy association",
+      legalIdentity: "Legacy association",
+      kind: "association",
+      types: ["social"],
+      description: "Description",
+      location: "Paris",
+      lat: null,
+      lng: null,
+      coveredArrondissements: [],
+      contributionTypes: ["communication"],
+      availability: "Chaque semaine",
+      verificationStatus: "verifie",
+      qualificationStatus: "partenaire_actif",
+      lastUpdatedAt: "2026-10-22T00:00:00.000Z",
+      recentActivityAt: "2026-10-22T00:00:00.000Z",
+      associationProfile: {
+        mission: "Mission",
+        recurringNeeds: [],
+        pastActions: [],
+        usefulResources: [],
+        publicCalls: [],
+        impactHistory: {
+          zonesCovered: 0,
+          recurrence: "Chaque semaine",
+          lastActionAt: "2026-10-22T00:00:00.000Z",
+          note: "Historique d'impact à compléter après validation.",
+        },
+      },
+    });
+
+    expect(normalized.recentActivityAt).toBeUndefined();
+    expect(normalized.associationProfile?.impactHistory).toBeUndefined();
+    expect(normalized.lastUpdatedAt).toBe("2026-10-22T00:00:00.000Z");
   });
 
   it("never projects an administrative phone number as a public channel or resource", () => {

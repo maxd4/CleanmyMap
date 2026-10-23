@@ -5,10 +5,11 @@ import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
 import {
   CONTRIBUTION_LABELS,
   formatAnnuaireCoverage,
-  formatAssociationImpactDate,
   formatFreshness,
   getAssociationImpactSummary,
   getPartnerWhyThisStructureMatters,
+  hasTraceableImpactHistory,
+  hasTraceablePastActions,
 } from "./annuaire-helpers";
 import { Info, MapPin, MessageSquare, ShieldCheck, Clock, Star, Zap, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,11 +45,14 @@ export function AnnuaireActorBadges(props: {
 }
 
 export function AnnuaireActorAssociationSummary({ entry, profile }: { entry: EnrichedAnnuaireEntry; profile: AssociationProfile }): ReactElement {
+  const hasImpactEvidence = hasTraceableImpactHistory(entry);
+  const hasPastActionEvidence = hasTraceablePastActions(entry);
   return (
     <div className="space-y-4 rounded-[1.75rem] border border-white/8 bg-white/[0.03] p-5">
       <div className="flex items-start justify-between gap-4"><div className="space-y-1"><p className="text-xs font-black uppercase tracking-widest text-slate-500">Mission associative</p><p className="text-sm font-semibold leading-relaxed text-white">{profile.mission}</p></div><div className="rounded-2xl border border-violet-500/15 bg-violet-500/10 px-3 py-2 text-xs font-black uppercase tracking-widest text-violet-300">{profile.structureStatus === "active_validated" ? "Active / validée" : profile.structureStatus === "validated" ? "Validée" : profile.structureStatus === "active" ? "Active" : "À confirmer"}</div></div>
       <div className="flex flex-wrap gap-2">{profile.recurringNeeds.slice(0, 4).map((need) => <span key={need} className="rounded-full border border-white/8 bg-slate-950/40 px-3 py-1 text-xs font-black uppercase tracking-widest text-slate-300">{need}</span>)}</div>
-      <div className="grid grid-cols-2 gap-3"><div className="rounded-2xl border border-white/5 bg-slate-950/35 p-3"><p className="text-xs font-black uppercase tracking-widest text-slate-500">Impact local</p><p className="mt-1 text-xs font-bold text-white">{getAssociationImpactSummary(entry)}</p></div><div className="rounded-2xl border border-white/5 bg-slate-950/35 p-3"><p className="text-xs font-black uppercase tracking-widest text-slate-500">Dernière action</p><p className="mt-1 text-xs font-bold text-white">{formatAssociationImpactDate(profile.impactHistory?.lastActionAt)}</p></div></div>
+      <div className="grid grid-cols-2 gap-3"><div className="rounded-2xl border border-white/5 bg-slate-950/35 p-3"><p className="text-xs font-black uppercase tracking-widest text-slate-500">Impact mesuré</p><p className="mt-1 text-xs font-bold text-white">{hasImpactEvidence ? getAssociationImpactSummary(entry) : "Non renseigné"}</p></div><div className="rounded-2xl border border-white/5 bg-slate-950/35 p-3"><p className="text-xs font-black uppercase tracking-widest text-slate-500">Activité terrain</p><p className="mt-1 text-xs font-bold text-white">{hasPastActionEvidence ? `${profile.pastActions.length} action${profile.pastActions.length === 1 ? "" : "s"} documentée${profile.pastActions.length === 1 ? "" : "s"}` : "Non renseignée"}</p></div></div>
+      {hasImpactEvidence && <p className="text-xs font-medium text-slate-400">Source de l’impact : {profile.impactHistory?.provenance?.source}</p>}
     </div>
   );
 }

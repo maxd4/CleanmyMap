@@ -128,7 +128,7 @@ function normalizeCoordinates(record: Record<string, unknown>): {
   return { lat, lng, coordinatesSource: source };
 }
 
-function normalizePublishedRecord(
+export function normalizePublishedRecord(
   record: PublishedPartnerAnnuaireEntry | Record<string, unknown>,
 ): PublishedPartnerAnnuaireEntry {
   const publicationStatus = normalizePublicationStatus(
@@ -146,12 +146,14 @@ function normalizePublishedRecord(
   const primaryChannelUrl = normalizePublicWebUrl(
     (record as { primaryChannel?: { url?: unknown } | null }).primaryChannel?.url ?? null,
   );
-  const associationProfile = normalizeAssociationProfile(
+  const initialAssociationProfile = normalizeAssociationProfile(
     (record as { associationProfile?: unknown }).associationProfile,
   );
+  const normalizedRecord = removeDemonstrablySyntheticActivity(record, initialAssociationProfile);
+  const associationProfile = normalizeAssociationProfile(normalizedRecord.associationProfile);
   const coordinates = normalizeCoordinates(record as Record<string, unknown>);
   return {
-    ...record,
+    ...normalizedRecord,
     ...coordinates,
     provenance: "published_partner",
     websiteUrl: websiteUrl ?? undefined,
@@ -179,6 +181,59 @@ function normalizePublishedRecord(
         ? (record as { reviewedByUserId?: string }).reviewedByUserId
         : undefined,
   } as PublishedPartnerAnnuaireEntry;
+}
+
+const SYNTHETIC_IMPACT_NOTE = "Historique d'impact à compléter après validation.";
+
+function removeDemonstrablySyntheticActivity(
+  record: PublishedPartnerAnnuaireEntry | Record<string, unknown>,
+  associationProfile: AssociationProfile | undefined,
+): Record<string, unknown> {
+  const normalizedRecord = { ...record } as Record<string, unknown>;
+  const publishedAt = typeof normalizedRecord.publishedAt === "string"
+    ? normalizedRecord.publishedAt
+    : undefined;
+  const recentActivityAt = typeof normalizedRecord.recentActivityAt === "string"
+    ? normalizedRecord.recentActivityAt
+    : undefined;
+
+  // The old builder copied publishedAt into recentActivityAt. Equality is
+  // sufficient evidence that this legacy value was generated, not observed.
+  if (publishedAt && recentActivityAt === publishedAt) {
+    delete normalizedRecord.recentActivityAt;
+  }
+
+  if (!associationProfile) return normalizedRecord;
+  const impactHistory = associationProfile.impactHistory;
+  if (!impactHistory || impactHistory.provenance?.source?.trim()) return normalizedRecord;
+
+  const normalizedProfile = { ...associationProfile } as Record<string, unknown>;
+  const impactNote = typeof impactHistory.note === "string" ? impactHistory.note.trim() : "";
+  const impactWasGenerated = impactNote === SYNTHETIC_IMPACT_NOTE;
+  const lastActionWasGenerated = Boolean(
+    publishedAt && impactHistory.lastActionAt === publishedAt,
+  );
+
+  if (impactWasGenerated) {
+    // Preserve an explicitly measured numeric count, including zero. The
+    // surrounding generated projection is not evidence and is dropped only
+    // when its artificial origin is explicit in the persisted note.
+    if (typeof impactHistory.actionCount === "number") {
+      normalizedProfile.impactHistory = {
+        actionCount: impactHistory.actionCount,
+        note: impactHistory.note,
+      };
+    } else {
+      delete normalizedProfile.impactHistory;
+    }
+  } else if (lastActionWasGenerated) {
+    const normalizedImpact = { ...impactHistory };
+    delete normalizedImpact.lastActionAt;
+    normalizedProfile.impactHistory = normalizedImpact;
+  }
+
+  normalizedRecord.associationProfile = normalizedProfile;
+  return normalizedRecord;
 }
 
 function normalizeAssociationProfile(value: unknown): AssociationProfile | undefined {

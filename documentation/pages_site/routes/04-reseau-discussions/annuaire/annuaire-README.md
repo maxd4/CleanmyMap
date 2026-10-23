@@ -41,6 +41,14 @@ La recherche, les filtres, la liste paginée, la carte et le graphe consomment l
 état d'exploration. Les limites géographiques et la provenance sont affichées sans
 transformer une couverture nationale ou une position dérivée en adresse réelle.
 
+Une fiche partenaire sépare les données déclarées et administratives des preuves
+d'activité. `availability`, les contributions et le périmètre décrivent ce que la
+structure déclare ; `lastUpdatedAt` indique une mise à jour administrative. Les
+actions passées, dates de dernière action et impacts mesurés ne sont affichés que
+lorsqu'une donnée traçable porte sa provenance ; sinon l'interface affiche une
+valeur non renseignée. Une relation avec les actions canoniques exige l'identifiant
+persisté et vérifié `organizerDirectoryId`, jamais une ressemblance de nom.
+
 L'Annuaire ne consomme pas `community_events` ni `event_rsvps` et ne transforme pas
 un événement historique en acteur, partenaire ou preuve d'activité. La disparition
 de la page Communauté ne modifie donc ni la provenance `editorial_seed` /

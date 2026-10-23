@@ -98,7 +98,10 @@ const publishedEntry = {
       actionCount: 2,
       zonesCovered: 1,
       recurrence: "Actions récurrentes",
+      provenance: { source: "Bilan terrain vérifié" },
     },
+    pastActions: ["Collectes documentées"],
+    pastActionsProvenance: { source: "Bilan terrain vérifié" },
   },
   internalAdminContact: {
     referentName: "Coordination privée",
@@ -149,6 +152,7 @@ describe("AnnuairePartnerDrawer interactions", () => {
     expect(cta?.getAttribute("href")).toBe(
       "https://www.instagram.com/pikpik_environnement/",
     );
+    expect(document.body.textContent).toContain("Bilan terrain vérifié");
   });
 
   it("closes on Escape and restores focus to the opening control", () => {
