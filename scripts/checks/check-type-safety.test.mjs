@@ -75,6 +75,14 @@ function fixtureFile(project, workspace = "mobile") {
   };
 }
 
+function fixtureWorkspaceRoot(project, typescriptVersion) {
+  const workspaceRoot = path.join(project.root, `workspace-${typescriptVersion}`);
+  const typescriptPackageRoot = path.join(workspaceRoot, "node_modules", "typescript");
+  fs.mkdirSync(typescriptPackageRoot, { recursive: true });
+  fs.writeFileSync(path.join(typescriptPackageRoot, "package.json"), JSON.stringify({ version: typescriptVersion }), "utf8");
+  return workspaceRoot;
+}
+
 test("détecte TYPE_SAFETY et ASYNC_SAFETY sans confondre une promesse attendue", async () => {
   const project = fixtureProject();
   try {
@@ -146,10 +154,11 @@ async function clean(): Promise<number> {
 test("refuse une couverture Web lorsque TypeScript est hors peer range", async () => {
   const project = fixtureProject();
   try {
+    const unsupportedWorkspaceRoot = fixtureWorkspaceRoot(project, "7.0.2");
     const report = await analyzeTypeSafetySources({
       root: project.root,
       files: [fixtureFile(project, "web")],
-      projects: [{ workspace: "web", workspaceRoot: path.join(process.cwd(), "apps/web"), eslintCwd: project.root, tsconfigPath: path.join(project.root, "tsconfig.json"), ruleIds: ["@typescript-eslint/no-unsafe-assignment"] }],
+      projects: [{ workspace: "web", workspaceRoot: unsupportedWorkspaceRoot, eslintCwd: project.root, tsconfigPath: path.join(project.root, "tsconfig.json"), ruleIds: ["@typescript-eslint/no-unsafe-assignment"] }],
     });
     assert.equal(report.status, "FAIL");
     assert.equal(report.measurementStatus, "MEASUREMENT_FAILED");
@@ -186,7 +195,7 @@ test("préserve la couverture Mobile par fichier malgré une configuration Web i
         baseFile(mobilePath, "apps/mobile/mobile.ts", "mobile", cleanMobile),
       ],
       projects: [
-        { workspace: "web", workspaceRoot: path.join(process.cwd(), "apps/web"), eslintCwd: project.root, tsconfigPath: path.join(project.root, "tsconfig.json"), ruleIds: ["@typescript-eslint/no-unsafe-assignment"] },
+        { workspace: "web", workspaceRoot: fixtureWorkspaceRoot(project, "7.0.2"), eslintCwd: project.root, tsconfigPath: path.join(project.root, "tsconfig.json"), ruleIds: ["@typescript-eslint/no-unsafe-assignment"] },
         { workspace: "mobile", workspaceRoot: process.cwd(), eslintCwd: project.root, tsconfigPath: path.join(project.root, "tsconfig.json"), ruleIds: ["@typescript-eslint/no-floating-promises", "@typescript-eslint/no-misused-promises"] },
       ],
     });
