@@ -114,12 +114,15 @@ export function SpogomiAttendancePanel({ eventId, divisionId }: { eventId: strin
     setBusyId(row.id); setError(null); setMessage(null);
     try {
       const response = await fetch(`/api/spogomi/events/${eventId}/attendance`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ divisionId: row.divisionId, participantId: row.id, status, reason, provenance, expectedUpdatedAt: row.updatedAt }) });
-      await readAttendanceMutationResponse(response);
-      setMessage("Présence enregistrée avec sa provenance.");
+      const mutation = await readAttendanceMutationResponse(response);
+      if (mutation.eventId !== eventId || mutation.divisionId !== row.divisionId || mutation.participantId !== row.id || mutation.attendanceStatus !== status) {
+        throw new Error("La confirmation du pointage ne correspond pas à la décision demandée.");
+      }
+      setMessage(mutation.changed ? "Présence enregistrée avec sa provenance." : "Statut déjà à jour. Aucune nouvelle modification enregistrée.");
       try {
         await load();
       } catch {
-        setError("Présence enregistrée, mais l’affichage n’a pas pu être actualisé.");
+        setError(mutation.changed ? "Présence enregistrée, mais l’affichage n’a pas pu être actualisé." : "Statut déjà à jour, mais l’affichage n’a pas pu être actualisé.");
       }
     } catch (cause) { setError(cause instanceof Error ? cause.message : "La décision de présence a été refusée."); }
     finally { setBusyId(null); }

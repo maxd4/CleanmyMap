@@ -34,7 +34,7 @@ import { SpogomiConsolidationPanel } from "./spogomi-consolidation-panel";
 const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 const settle = async () => { await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); }); };
 const attendanceRow = (attendanceStatus: "unknown" | "present" | "absent", updatedAt = "revision-1") => ({ id: "participant-1", divisionId: "division-1", displayName: "Participant synthétique", externalReference: "P-1", place: 1, team: null, attendanceStatus, registrationStatus: "registered", updatedAt });
-const attendanceMutation = (status: "unknown" | "present" | "absent", previousStatus = "unknown") => ({ attendance: { changed: status !== previousStatus, eventId: "event-1", divisionId: "division-1", participantId: "participant-1", previousStatus, attendanceStatus: status, updatedAt: "revision-2" } });
+const attendanceMutation = (status: "unknown" | "present" | "absent", previousStatus = "unknown", updatedAt = status === previousStatus ? "revision-1" : "revision-2") => ({ attendance: { changed: status !== previousStatus, eventId: "event-1", divisionId: "division-1", participantId: "participant-1", previousStatus, attendanceStatus: status, updatedAt } });
 
 const dashboard = {
   divisions: [{ id: "division-1", division_type: "casual", regulation_version: "rules-v1" }],
@@ -142,9 +142,13 @@ describe("SPOGOMI deep consumer states", () => {
     renderer.unmount();
   });
 
-  it.each(["present", "absent", "unknown"] as const)("confirms a successful %s attendance mutation and refreshes the projection", async (status) => {
-    fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow("unknown")], total: 1 }));
-    fetchMock.mockResolvedValueOnce(response(attendanceMutation(status)));
+  it.each([
+    ["unknown", "present"],
+    ["present", "absent"],
+    ["absent", "unknown"],
+  ] as const)("confirms a successful %s -> %s attendance mutation and refreshes the projection", async (previousStatus, status) => {
+    fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow(previousStatus)], total: 1 }));
+    fetchMock.mockResolvedValueOnce(response(attendanceMutation(status, previousStatus)));
     fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow(status, "revision-2")], total: 1 }));
     let renderer!: ReturnType<typeof create>;
     act(() => { renderer = create(<SpogomiAttendancePanel eventId="event-1" divisionId="division-1" />); });
@@ -161,6 +165,25 @@ describe("SPOGOMI deep consumer states", () => {
     expect(renderer.root.findAllByProps({ role: "alert" })).toHaveLength(0);
     expect(renderer.root.findAllByType("span").map((node) => propsOf<StatusProps>(node).children)).toContain(status);
     expect(renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === label)?.disabled).toBe(false);
+    renderer.unmount();
+  });
+
+  it.each(["present", "absent", "unknown"] as const)("confirms an idempotent %s attendance mutation without claiming a new audit event", async (status) => {
+    fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow(status)], total: 1 }));
+    fetchMock.mockResolvedValueOnce(response(attendanceMutation(status, status)));
+    fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow(status)], total: 1 }));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiAttendancePanel eventId="event-1" divisionId="division-1" />); });
+    await settle();
+    const label = status === "present" ? "Présent" : status === "absent" ? "Absent" : "Non vérifiée";
+    const statusButton = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === label);
+    await act(async () => { statusButton?.onClick(); await Promise.resolve(); });
+    await settle();
+    expect(fetchCalls().filter((call) => call[1]?.method !== "POST")).toHaveLength(2);
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "status" })).children).toBe("Statut déjà à jour. Aucune nouvelle modification enregistrée.");
+    expect(renderer.root.findAllByProps({ role: "alert" })).toHaveLength(0);
+    expect(renderer.root.findAllByType("span").map((node) => propsOf<StatusProps>(node).children)).toContain(status);
+    expect(statusButton?.disabled).toBe(false);
     renderer.unmount();
   });
 
@@ -193,6 +216,38 @@ describe("SPOGOMI deep consumer states", () => {
     expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "status" })).children).toBe("Présence enregistrée avec sa provenance.");
     expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "alert" })).children).toBe("Présence enregistrée, mais l’affichage n’a pas pu être actualisé.");
     expect(renderer.root.findAllByProps({ role: "alert" }).map((node) => propsOf<StatusProps>(node).children)).not.toContain("Roster indisponible");
+    expect(statusButton?.disabled).toBe(false);
+    renderer.unmount();
+  });
+
+  it("keeps an idempotent confirmation when the refresh GET is unavailable", async () => {
+    fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow("present")], total: 1 }));
+    fetchMock.mockResolvedValueOnce(response(attendanceMutation("present", "present")));
+    fetchMock.mockResolvedValueOnce(response({ error: "Roster indisponible" }, 503));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiAttendancePanel eventId="event-1" divisionId="division-1" />); });
+    await settle();
+    const statusButton = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "Présent");
+    await act(async () => { statusButton?.onClick(); await Promise.resolve(); });
+    await settle();
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "status" })).children).toBe("Statut déjà à jour. Aucune nouvelle modification enregistrée.");
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "alert" })).children).toBe("Statut déjà à jour, mais l’affichage n’a pas pu être actualisé.");
+    expect(statusButton?.disabled).toBe(false);
+    renderer.unmount();
+  });
+
+  it("rejects a mutation confirmation that does not match the requested operation", async () => {
+    fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow("unknown")], total: 1 }));
+    fetchMock.mockResolvedValueOnce(response(attendanceMutation("absent")));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiAttendancePanel eventId="event-1" divisionId="division-1" />); });
+    await settle();
+    const statusButton = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "Présent");
+    await act(async () => { statusButton?.onClick(); await Promise.resolve(); });
+    await settle();
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "alert" })).children).toBe("La confirmation du pointage ne correspond pas à la décision demandée.");
+    expect(renderer.root.findAllByProps({ role: "status" })).toHaveLength(0);
+    expect(fetchCalls().filter((call) => call[1]?.method !== "POST")).toHaveLength(1);
     expect(statusButton?.disabled).toBe(false);
     renderer.unmount();
   });
