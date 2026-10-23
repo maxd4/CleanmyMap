@@ -250,4 +250,73 @@ describe("public form security guardrails", () => {
     expect(html).toContain("&lt;script&gt;alert(&quot;relay&quot;)&lt;/script&gt;");
     expect(html).not.toContain('<img src=x onerror="alert(1)">');
   });
+
+  it("requires explicit consent for a public website and persists only the normalized public field", async () => {
+    authMock.mockResolvedValue({ userId: "user-website" });
+    appendPartnerOnboardingRequestMock.mockClear();
+    const onboarding = await import("./partners/onboarding-requests/route");
+    const basePayload = {
+      organizationName: "Structure publique test",
+      organizationType: "association",
+      partnerScope: "national",
+      legalIdentity: "Structure Publique Test Association",
+      coverage: { arrondissements: [], quartiers: [] },
+      contributionTypes: ["communication"],
+      relayActions: "Relais publics.",
+      availability: { slots: [{ day: "tue", start: "10:00", end: "18:00" }] },
+      contactName: "Référent privé",
+      contactChannel: "Email privé",
+      contactDetails: "private@example.org",
+      motivation: "Une motivation suffisamment longue pour ce test.",
+    };
+
+    const withoutConsent = await onboarding.POST(
+      new Request("http://localhost/api/partners/onboarding-requests", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...basePayload,
+          publicWebsiteUrl: "https://structure.example.test",
+          publicWebsiteConsent: false,
+        }),
+      }),
+    );
+    expect(withoutConsent.status).toBe(400);
+    expect(appendPartnerOnboardingRequestMock).not.toHaveBeenCalled();
+
+    const invalidUrl = await onboarding.POST(
+      new Request("http://localhost/api/partners/onboarding-requests", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...basePayload,
+          publicWebsiteUrl: "mailto:private@example.org",
+          publicWebsiteConsent: true,
+        }),
+      }),
+    );
+    expect(invalidUrl.status).toBe(400);
+    expect(appendPartnerOnboardingRequestMock).not.toHaveBeenCalled();
+
+    const accepted = await onboarding.POST(
+      new Request("http://localhost/api/partners/onboarding-requests", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...basePayload,
+          publicWebsiteUrl: "  https://structure.example.test  ",
+          publicWebsiteConsent: true,
+        }),
+      }),
+    );
+    expect(accepted.status).toBe(201);
+    expect(appendPartnerOnboardingRequestMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({
+          publicWebsiteUrl: "https://structure.example.test",
+          publicWebsiteConsent: true,
+        }),
+      }),
+    );
+  });
 });

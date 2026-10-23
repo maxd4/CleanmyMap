@@ -1,13 +1,13 @@
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { useSubmissionLock } from "@/hooks/use-submission-lock";
-import type {
-  ContributionType,
-  OrganizationType,
-  PartnerAvailabilitySlot,
-  PartnerCoverage,
-  PartnerScope,
+import {
+  normalizePublicWebUrl,
+  type ContributionType,
+  type OrganizationType,
+  type PartnerAvailabilitySlot,
+  type PartnerCoverage,
+  type PartnerScope,
 } from "@/lib/partners/onboarding-types";
-
 type SubmissionProps = {
   organizationName: string;
   organizationType: OrganizationType;
@@ -22,6 +22,8 @@ type SubmissionProps = {
   contactChannel: string;
   contactDetails: string;
   motivation: string;
+  publicWebsiteUrl: string;
+  publicWebsiteConsent: boolean;
   honeypot: string;
   getFormStartedAt: () => number | null;
   markSubmissionSucceeded: (submittedAt: number) => void;
@@ -45,6 +47,8 @@ export function usePartnerOnboardingSubmit({
   contactChannel,
   contactDetails,
   motivation,
+  publicWebsiteUrl,
+  publicWebsiteConsent,
   honeypot,
   getFormStartedAt,
   markSubmissionSucceeded,
@@ -84,6 +88,22 @@ export function usePartnerOnboardingSubmit({
       release();
       return;
     }
+    const normalizedPublicWebsiteUrl = publicWebsiteUrl.trim();
+    if (normalizedPublicWebsiteUrl && !publicWebsiteConsent) {
+      setErrorMessage("Autorisez la publication du site web public pour continuer.");
+      release();
+      return;
+    }
+    if (!normalizedPublicWebsiteUrl && publicWebsiteConsent) {
+      setErrorMessage("Renseignez un site web public avant d'autoriser sa publication.");
+      release();
+      return;
+    }
+    if (normalizedPublicWebsiteUrl && !normalizePublicWebUrl(normalizedPublicWebsiteUrl)) {
+      setErrorMessage("Le site web doit être une URL HTTP(S) publique valide.");
+      release();
+      return;
+    }
 
     setContributionError(null);
     setIsSubmitting(true);
@@ -109,6 +129,8 @@ export function usePartnerOnboardingSubmit({
           contactChannel,
           contactDetails,
           motivation,
+          publicWebsiteUrl: normalizedPublicWebsiteUrl || undefined,
+          publicWebsiteConsent,
           honeypot,
           submittedAt,
         }),
@@ -126,5 +148,5 @@ export function usePartnerOnboardingSubmit({
       setIsSubmitting(false);
       release();
     }
-  }, [acquire, availabilityNote, availabilitySlots, contactChannel, contactDetails, contactName, contributionTypes, coverage, getFormStartedAt, honeypot, legalIdentity, markSubmissionSucceeded, motivation, organizationName, organizationType, partnerScope, relayActions, release, setContributionError, setErrorMessage, setIsSubmitting, setMessage]);
+  }, [acquire, availabilityNote, availabilitySlots, contactChannel, contactDetails, contactName, contributionTypes, coverage, getFormStartedAt, honeypot, legalIdentity, markSubmissionSucceeded, motivation, organizationName, organizationType, partnerScope, publicWebsiteConsent, publicWebsiteUrl, relayActions, release, setContributionError, setErrorMessage, setIsSubmitting, setMessage]);
 }

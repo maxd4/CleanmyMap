@@ -9,6 +9,7 @@ import {
  formatAvailabilitySummary,
  formatCoverageSummary,
  formatPartnerScopeLabel,
+ normalizePublicWebUrl,
  ORGANIZATION_TYPES,
  PARTNER_SCOPES,
  WEEKDAY_OPTIONS,
@@ -71,6 +72,8 @@ const onboardingSchema = z.object({
  contactChannel: z.string().trim().min(2).max(120),
  contactDetails: z.string().trim().min(3).max(240),
  motivation: z.string().trim().min(10).max(1200),
+ publicWebsiteUrl: z.string().trim().max(2048).optional().default(""),
+ publicWebsiteConsent: z.boolean().optional().default(false),
  honeypot: z.string().optional().default(""),
  submittedAt: z.number().int().positive().optional(),
 }).superRefine((data, context) => {
@@ -80,6 +83,28 @@ const onboardingSchema = z.object({
  message: "Sélectionne au moins un arrondissement pour un partenaire local.",
  path: ["coverage", "arrondissements"],
  });
+ }
+ const publicWebsiteUrl = data.publicWebsiteUrl.trim();
+ if (publicWebsiteUrl && !data.publicWebsiteConsent) {
+  context.addIssue({
+   code: z.ZodIssueCode.custom,
+   message: "Autorisez la publication du site web public pour continuer.",
+   path: ["publicWebsiteConsent"],
+  });
+ }
+ if (!publicWebsiteUrl && data.publicWebsiteConsent) {
+  context.addIssue({
+   code: z.ZodIssueCode.custom,
+   message: "Renseignez un site web public avant d'autoriser sa publication.",
+   path: ["publicWebsiteUrl"],
+  });
+ }
+ if (publicWebsiteUrl && !normalizePublicWebUrl(publicWebsiteUrl)) {
+  context.addIssue({
+   code: z.ZodIssueCode.custom,
+   message: "Le site web doit être une URL HTTP(S) publique valide.",
+   path: ["publicWebsiteUrl"],
+  });
  }
 });
 
@@ -98,6 +123,8 @@ const html = `
  <p><strong>Actions de relais:</strong> ${escapeHtml(payload.relayActions)}</p>
 <p><strong>Disponibilité :</strong> ${escapeHtml(formatAvailabilitySummary(payload.availability))}</p>
 <p><strong>Contact:</strong> ${escapeHtml(`${payload.contactName} - ${payload.contactChannel} (${payload.contactDetails})`)}</p>
+<p><strong>Site web public proposé:</strong> ${escapeHtml(payload.publicWebsiteUrl || "Aucun")}</p>
+<p><strong>Autorisation de publication:</strong> ${payload.publicWebsiteConsent ? "Oui" : "Non"}</p>
 <p><strong>Motivation:</strong> ${escapeHtml(payload.motivation)}</p>
  `;
 
@@ -155,6 +182,8 @@ export async function POST(request: Request) {
   contactChannel: parsed.data.contactChannel,
   contactDetails: parsed.data.contactDetails,
   motivation: parsed.data.motivation,
+  publicWebsiteUrl: normalizePublicWebUrl(parsed.data.publicWebsiteUrl) ?? undefined,
+  publicWebsiteConsent: parsed.data.publicWebsiteConsent,
  };
  const created = await appendPartnerOnboardingRequest({
   submittedByUserId: userId,

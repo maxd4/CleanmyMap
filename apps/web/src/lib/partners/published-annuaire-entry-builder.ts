@@ -5,6 +5,7 @@ import {
   formatPartnerScopeLabel,
   normalizePartnerAvailability,
   normalizePartnerCoverage,
+  normalizePublicWebUrl,
   type PartnerOnboardingRequestInput,
 } from "./onboarding-types";
 import type { AnnuaireEntry, AssociationProfile, AssociationPublicCall, AssociationResource } from "./annuaire-types";
@@ -54,14 +55,17 @@ function buildAssociationResources(params: { websiteUrl?: string | null; primary
   return resources;
 }
 
-function buildPublishedAssociationProfile(request: PartnerOnboardingRequestInput): AssociationProfile | undefined {
+function buildPublishedAssociationProfile(
+  request: PartnerOnboardingRequestInput,
+  websiteUrl: string | null,
+): AssociationProfile | undefined {
   if (request.organizationType !== "association") return undefined;
   const relay = request.relayActions.trim();
   return {
     mission: [request.motivation.trim(), relay ? `Relais déclaré: ${relay}` : null].filter(Boolean).join(" · "),
     recurringNeeds: buildAssociationRecurringNeeds(request.contributionTypes),
     pastActions: [],
-    usefulResources: buildAssociationResources({ websiteUrl: null, primaryChannelUrl: null, primaryChannelLabel: request.contactChannel, instagramUrl: null, facebookUrl: null }),
+    usefulResources: buildAssociationResources({ websiteUrl, primaryChannelUrl: null, instagramUrl: null, facebookUrl: null }),
     publicCalls: buildAssociationPublicCalls(request.contributionTypes, request.relayActions),
     structureStatus: "pending",
   };
@@ -79,10 +83,12 @@ export function buildPublishedPartnerAnnuaireEntry(params: { request: PartnerOnb
   const coverage = normalizePartnerCoverage(params.request.coverage);
   const availability = normalizePartnerAvailability(params.request.availability);
   const arrondissements = params.request.partnerScope === "local" ? coverage.arrondissements : [];
-  const publicChannelUrl = null;
-  const websiteUrl = null;
+  const websiteUrl = params.request.publicWebsiteConsent === true
+    ? normalizePublicWebUrl(params.request.publicWebsiteUrl)
+    : null;
+  const publicChannelUrl = websiteUrl;
   const nowIso = new Date().toISOString();
-  const associationProfile = buildPublishedAssociationProfile(params.request);
+  const associationProfile = buildPublishedAssociationProfile(params.request, websiteUrl);
   return {
     id: `onboarded-${randomUUID()}`,
     sourceRequestId: params.requestId,
@@ -104,7 +110,7 @@ export function buildPublishedPartnerAnnuaireEntry(params: { request: PartnerOnb
     contributionTypes: params.request.contributionTypes,
     availability: formatAvailabilitySummary(availability),
     tags: [params.request.partnerScope === "local" ? "Réseau local" : formatPartnerScopeLabel(params.request.partnerScope), ...params.request.contributionTypes.map(contributionTag)],
-    primaryChannel: publicChannelUrl ? { platform: "site web", label: params.request.contactChannel.trim() || "Contact direct", url: publicChannelUrl } : undefined,
+    primaryChannel: publicChannelUrl ? { platform: "site web", label: "Site web public", url: publicChannelUrl } : undefined,
     verificationStatus: "en_cours",
     qualificationStatus: "contact_non_qualifie",
     provenance: "published_partner",

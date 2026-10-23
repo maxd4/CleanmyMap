@@ -13,9 +13,10 @@
 - **Objectif utilisateur principal** : Créer ou compléter une fiche partenaire puis la soumettre à validation.
 - **Action principale attendue** : Renseigner les champs requis du formulaire partenaire et envoyer la demande.
 - **Palette attendue** : indigo
-- **Scope** : formulaire partenaire authentifié, champs obligatoires propres au parcours, contrôle serveur à l'envoi et soumission à validation ; la complétion générale du compte n'est pas un prérequis.
+- **Scope** : formulaire partenaire authentifié, champs obligatoires propres au parcours, contrôle serveur à l'envoi et soumission à validation ; la complétion générale du compte n'est pas un prérequis. Le formulaire peut recevoir un site web public facultatif, publié uniquement avec une autorisation explicite ; les coordonnées administratives restent privées.
 - **Persistence** : la demande et la fiche annuaire associée sont créées par une transaction Supabase idempotente ; la fiche reste en `pending_admin_review` jusqu'à une revue administrative.
 - **Reprise** : une nouvelle tentative avec la même clé de soumission retrouve la demande existante. Les demandes historiques peuvent être réconciliées sans suppression ni changement de décision.
+- **Publication web** : une URL HTTP(S) publique syntaxiquement valide peut être conservée dans la demande privée avec la preuve du consentement. Elle n'entre dans la projection publique qu'après `publicationStatus=accepted`; sans URL autorisée, le contact public reste indisponible.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : indigo — canvas #e8e9fc, halo rgba(99, 102, 241, 0.22)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

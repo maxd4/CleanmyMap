@@ -28,6 +28,8 @@ export function PartnerOnboardingForm() {
     contactName, setContactName, setContactNameTouched,
     contactChannel, setContactChannel,
     contactDetails, setContactDetails, setContactDetailsTouched,
+    publicWebsiteUrl, setPublicWebsiteUrl,
+    publicWebsiteConsent, setPublicWebsiteConsent,
     motivation, setMotivation,
     relayActions, setRelayActions,
     contributionTypes,
@@ -145,6 +147,10 @@ export function PartnerOnboardingForm() {
         contactDetails={contactDetails}
         setContactDetails={setContactDetails}
         setContactDetailsTouched={setContactDetailsTouched}
+        publicWebsiteUrl={publicWebsiteUrl}
+        setPublicWebsiteUrl={setPublicWebsiteUrl}
+        publicWebsiteConsent={publicWebsiteConsent}
+        setPublicWebsiteConsent={setPublicWebsiteConsent}
       />
 
       <label className="block space-y-1">

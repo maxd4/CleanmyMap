@@ -137,6 +137,7 @@ describe("usePartnerOnboarding", () => {
         contactChannel: "Email",
         contactDetails: "contact.example.test",
         motivation: "Aider",
+        publicWebsiteConsent: false,
         honeypot: "",
         submittedAt: 1_700_000_000_000,
       }),

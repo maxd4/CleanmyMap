@@ -49,4 +49,39 @@ describe("partner onboarding request store", () => {
     expect(published.coveredArrondissements).toEqual([11, 19, 20]);
     expect(published.primaryChannel).toBeUndefined();
   });
+
+  it("publishes only an explicitly authorized public website", () => {
+    const published = buildPublishedPartnerAnnuaireEntry({
+      requestId: "req-public-site",
+      request: {
+        organizationName: "Structure test",
+        organizationType: "association",
+        partnerScope: "national",
+        legalIdentity: "Structure Test Association",
+        coverage: { arrondissements: [], quartiers: [] },
+        contributionTypes: ["communication"],
+        relayActions: "Relais locaux.",
+        availability: { slots: [] },
+        contactName: "Contact privé",
+        contactChannel: "Email privé",
+        contactDetails: "private@example.org",
+        motivation: "Une motivation suffisamment longue pour le test.",
+        publicWebsiteUrl: "https://structure.example.test/",
+        publicWebsiteConsent: true,
+      },
+    });
+
+    expect(published.websiteUrl).toBe("https://structure.example.test/");
+    expect(published.primaryChannel).toEqual({
+      platform: "site web",
+      label: "Site web public",
+      url: "https://structure.example.test/",
+    });
+    expect(published.associationProfile?.usefulResources).toContainEqual({
+      label: "Site officiel",
+      description: "Agenda public et informations utiles.",
+      url: "https://structure.example.test/",
+    });
+    expect(published.primaryChannel?.url).not.toContain("private@example.org");
+  });
 });

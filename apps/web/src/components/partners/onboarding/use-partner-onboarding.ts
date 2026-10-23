@@ -91,6 +91,8 @@ export function usePartnerOnboarding() {
   const [contactNameOverride, setContactNameOverride] = useState("");
   const [contactChannel, setContactChannel] = useState("Email");
   const [contactDetailsOverride, setContactDetailsOverride] = useState("");
+  const [publicWebsiteUrl, setPublicWebsiteUrl] = useState("");
+  const [publicWebsiteConsent, setPublicWebsiteConsent] = useState(false);
   
   const [contactNameTouched, setContactNameTouched] = useState(false);
   const [contactDetailsTouched, setContactDetailsTouched] = useState(false);
@@ -132,7 +134,7 @@ export function usePartnerOnboarding() {
 
   const fieldHandlers = usePartnerOnboardingFieldHandlers({ coverageQuartierInput, setCoverageQuartierInput, setCoverageQuartiers, setContributionTypes, setContributionError, setCoverageArrondissements, setAvailabilitySlots });
 
-  const handleSubmit = usePartnerOnboardingSubmit({ organizationName, organizationType, partnerScope, legalIdentity, coverage, contributionTypes, relayActions, availabilitySlots, availabilityNote, contactName, contactChannel, contactDetails, motivation, honeypot, getFormStartedAt: () => formStartedAt.current, markSubmissionSucceeded: (submittedAt) => { formStartedAt.current = Math.max(Date.now(), submittedAt + 1); }, setIsSubmitting, setMessage, setErrorMessage, setContributionError });
+  const handleSubmit = usePartnerOnboardingSubmit({ organizationName, organizationType, partnerScope, legalIdentity, coverage, contributionTypes, relayActions, availabilitySlots, availabilityNote, contactName, contactChannel, contactDetails, motivation, publicWebsiteUrl, publicWebsiteConsent, honeypot, getFormStartedAt: () => formStartedAt.current, markSubmissionSucceeded: (submittedAt) => { formStartedAt.current = Math.max(Date.now(), submittedAt + 1); }, setIsSubmitting, setMessage, setErrorMessage, setContributionError });
 
   return {
     organizationName, setOrganizationName,
@@ -147,6 +149,8 @@ export function usePartnerOnboarding() {
     contactName, setContactName: setContactNameOverride, setContactNameTouched,
     contactChannel, setContactChannel,
     contactDetails, setContactDetails: setContactDetailsOverride, setContactDetailsTouched,
+    publicWebsiteUrl, setPublicWebsiteUrl,
+    publicWebsiteConsent, setPublicWebsiteConsent,
     motivation, setMotivation,
     relayActions, setRelayActions,
     contributionTypes,

@@ -33,9 +33,10 @@ partenaire confirmée ni une preuve d'activité, d'impact ou de collaboration.
 
 La lecture publique ne reçoit que les fiches partenaires dont le statut de publication
 est `accepted`. Les données administratives, notamment le contact de la demande,
-restent privées ; seuls des canaux web explicitement publiables peuvent apparaître dans
-une fiche publique. Une indisponibilité de la source publique est signalée comme une
-erreur, et non comme un annuaire vide.
+restent privées ; seul un site web HTTP(S) explicitement autorisé par la structure
+peut apparaître dans une fiche publique. Une fiche sans URL autorisée conserve l'état
+« Contact indisponible ». Une indisponibilité de la source publique est signalée comme
+une erreur, et non comme un annuaire vide.
 
 La recherche, les filtres, la liste paginée, la carte et le graphe consomment le même
 état d'exploration. Les limites géographiques et la provenance sont affichées sans

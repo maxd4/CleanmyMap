@@ -8,6 +8,13 @@ const migration = readFileSync(
   ),
   "utf8",
 ).replace(/\s+/g, " ").trim().toLowerCase();
+const publicWebsiteMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261023000002_partner_public_website_consent.sql",
+    import.meta.url,
+  ),
+  "utf8",
+).replace(/\s+/g, " ").trim().toLowerCase();
 
 describe("partner annuaire persistence migration", () => {
   it("defines a server-only public projection with private contact data", () => {
@@ -40,5 +47,16 @@ describe("partner annuaire persistence migration", () => {
     expect(migration).toContain("publication_status = 'pending_admin_review'");
     expect(migration).toContain("reviewed_at is not null");
     expect(migration).toContain("nullif(btrim(reviewed_by_user_id), '') is not null");
+  });
+
+  it("keeps public website consent private and preserves the RPC signature", () => {
+    expect(publicWebsiteMigration).toContain("add column if not exists public_website_url text");
+    expect(publicWebsiteMigration).toContain("add column if not exists public_website_consent boolean not null default false");
+    expect(publicWebsiteMigration).toContain("public_website_consent = false");
+    expect(publicWebsiteMigration).toContain("p_private_admin_contact->>'publicwebsiteconsent'");
+    expect(publicWebsiteMigration).toContain("get diagnostics v_inserted_count = row_count");
+    expect(publicWebsiteMigration).toContain("if v_inserted_count = 0 then");
+    expect(publicWebsiteMigration).not.toContain("drop function public.create_partner_onboarding_request_with_annuaire");
+    expect(publicWebsiteMigration).not.toContain("publicwebsiteconsent'::jsonb");
   });
 });

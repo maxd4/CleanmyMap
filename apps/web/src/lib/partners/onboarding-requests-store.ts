@@ -18,6 +18,7 @@ import {
 import {
   normalizePartnerAvailability,
   normalizePartnerCoverage,
+  normalizePublicWebUrl,
   type PartnerOnboardingRequestInput,
 } from "./onboarding-types";
 import {
@@ -40,14 +41,15 @@ const STORE_FILE = join(
   "partner_onboarding_requests.json",
 );
 const SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS =
-  "id, created_at, submitted_by_user_id, submitted_by_email, idempotency_key, organization_name, organization_type, partner_scope, legal_identity, coverage, contribution_types, relay_actions, availability, contact_name, contact_channel, contact_details, motivation, status, creator_state";
+  "id, created_at, submitted_by_user_id, submitted_by_email, idempotency_key, organization_name, organization_type, partner_scope, legal_identity, coverage, contribution_types, relay_actions, availability, contact_name, contact_channel, contact_details, motivation, public_website_url, public_website_consent, status, creator_state";
 
-export type PartnerOnboardingRequestRecord = PartnerOnboardingRequestInput & {
+export type PartnerOnboardingRequestRecord = Omit<PartnerOnboardingRequestInput, "publicWebsiteConsent"> & {
   id: string;
   createdAt: string;
   submittedByUserId: string;
   submittedByEmail: string | null;
   idempotencyKey?: string;
+  publicWebsiteConsent: boolean;
   status: "pending_admin_review" | "accepted" | "rejected";
   creatorState: "new" | "pending" | "responded" | "treated" | "archived" | "accepted" | "rejected";
 };
@@ -166,6 +168,8 @@ export function normalizeStoredPartnerOnboardingRequest(
     contactChannel: readStringField(record, "contactChannel"),
     contactDetails: readStringField(record, "contactDetails"),
     motivation: readStringField(record, "motivation"),
+    publicWebsiteUrl: normalizePublicWebUrl(record["publicWebsiteUrl"]) ?? undefined,
+    publicWebsiteConsent: record["publicWebsiteConsent"] === true,
     creatorState,
   };
 }
@@ -191,6 +195,8 @@ function fromSupabaseRow(
     contactChannel: row.contact_channel,
     contactDetails: row.contact_details,
     motivation: row.motivation,
+    publicWebsiteUrl: row.public_website_url,
+    publicWebsiteConsent: row.public_website_consent === true,
     status: row.status,
     creatorState: row.creator_state,
   });
@@ -227,6 +233,7 @@ export async function appendPartnerOnboardingRequest(params: {
     status: "pending_admin_review",
     creatorState: "pending",
     ...params.input,
+    publicWebsiteConsent: params.input.publicWebsiteConsent === true,
   };
 
   if (canUseSupabaseServerPersistence()) {
@@ -253,7 +260,12 @@ export async function appendPartnerOnboardingRequest(params: {
         p_contact_details: record.contactDetails,
         p_motivation: record.motivation,
         p_public_data: serializedEntry.public_data,
-        p_private_admin_contact: serializedEntry.private_admin_contact,
+        p_private_admin_contact: {
+          ...serializedEntry.private_admin_contact,
+          // This proof remains in the server-only transport object. The RPC
+          // persists it on the private source request, never in public_data.
+          publicWebsiteConsent: record.publicWebsiteConsent,
+        },
       },
     );
     if (result.error) throw new Error(result.error.message);

@@ -97,6 +97,9 @@ export type PartnerOnboardingRequestInput = {
   contactChannel: string;
   contactDetails: string;
   motivation: string;
+  /** Optional public destination; it is publishable only with explicit consent. */
+  publicWebsiteUrl?: string;
+  publicWebsiteConsent?: boolean;
 };
 
 export type PartnerTrustState = "trusted" | "pending" | "incomplete" | "editorial";
