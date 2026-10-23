@@ -7,7 +7,10 @@ import {
 
 const source = readFileSync(new URL("./app-navigation-block-dropdown.tsx", import.meta.url), "utf8");
 const shellSource = readFileSync(new URL("./app-navigation-ribbon-shell.tsx", import.meta.url), "utf8");
-const treeSource = readFileSync(new URL("./app-navigation-tree-menu.tsx", import.meta.url), "utf8");
+const treeSource = readFileSync(
+  new URL("./app-navigation-tree-menu.content.tsx", import.meta.url),
+  "utf8",
+);
 const displayModes = readFileSync(
   new URL("../../styles/display-modes.css", import.meta.url),
   "utf8",
@@ -98,7 +101,7 @@ describe("app navigation block dropdown contract", () => {
     expect(shellSource).toContain("openSpaceId");
     expect(shellSource).toContain("open={openSpaceId === space.id}");
     expect(shellSource).toContain("resolveOpenNavigationSpaceId");
-    expect(treeSource).toContain("window.setTimeout(() => setIsOpen(false), 0);");
+    expect(treeSource).toContain("window.setTimeout(onClose, 0);");
     expect(source).not.toMatch(/\[data-navigation-block-trigger\][^\n]*~/u);
     expect(source).not.toContain(".group:hover [data-navigation-block-trigger]");
     expect(displayModes).not.toContain(
