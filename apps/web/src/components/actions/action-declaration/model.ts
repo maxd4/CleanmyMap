@@ -189,6 +189,21 @@ export const initialState: FormState = {
  routeCalibrationContext: null,
 };
 
+export function createInitialFormState(
+ actorName: string,
+ recordType: FormState["recordType"] = "action",
+): FormState {
+ return {
+  ...initialState,
+  actorName,
+  recordType,
+  suggestedMaterials: [...initialState.suggestedMaterials],
+  equipmentInventory: { ...initialState.equipmentInventory },
+  refreshmentsProvided: { ...initialState.refreshmentsProvided },
+  preparationChecklist: initialState.preparationChecklist.map((item) => ({ ...item })),
+ };
+}
+
 export type SubmissionState ="idle" |"pending" |"success" |"error";
 
 export type PostActionRetentionLoop = {

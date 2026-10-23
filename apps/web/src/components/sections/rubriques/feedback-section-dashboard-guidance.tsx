@@ -9,11 +9,11 @@ import { FeedbackSectionDashboardSupport } from "./feedback-section-dashboard-su
 
 export function FeedbackSectionDashboardGuidance({
   locale,
-  fr,
 }: {
   locale: Locale;
-  fr: boolean;
 }) {
+  const fr = locale === "fr";
+
   return (
     <>
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">

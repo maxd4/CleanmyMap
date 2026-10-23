@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createSignalementMediaUploadIntent,
@@ -8,20 +7,11 @@ import {
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse, forbiddenJsonResponse } from "@/lib/http/auth-responses";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
+import { mediaUploadIntentSchema } from "@/lib/actions/media/media-upload-intent-schema";
 
 export const runtime = "nodejs";
 // Justification Vercel: l'intention varie selon la session Clerk et le quota média du signalement.
 export const dynamic = "force-dynamic";
-
-const intentSchema = z.object({
-  originalName: z.string().trim().min(1).max(255),
-  mimeType: z.string().trim().min(1).max(100),
-  sizeBytes: z.number().int().positive(),
-  width: z.number().int().positive().max(10000).nullable().optional(),
-  height: z.number().int().positive().max(10000).nullable().optional(),
-  sortOrder: z.number().int().min(0).max(2).optional(),
-  clientUploadId: z.string().trim().min(1).max(128),
-});
 
 function errorResponse(error: unknown) {
   if (error instanceof SignalementMediaError) {
@@ -57,7 +47,7 @@ export async function POST(
   } catch {
     return validationErrorResponse({ body: ["Le contenu de la requête est invalide."] });
   }
-  const parsed = intentSchema.safeParse(body);
+  const parsed = mediaUploadIntentSchema.safeParse(body);
   if (!parsed.success) {
     return validationErrorResponse({ media: ["Les métadonnées photo sont invalides."] });
   }

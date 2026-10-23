@@ -10,16 +10,9 @@ export type { FeedbackSectionDashboardProps } from "./feedback-section-dashboard
 export function FeedbackSectionDashboard(props: FeedbackSectionDashboardProps) {
   return (
     <div className="space-y-10 pb-20 pt-2 text-slate-950">
-      <FeedbackSectionDashboardForm
-        pagePath={props.pagePath}
-        locale={props.locale}
-        source={props.source}
-        supportPrefill={props.supportPrefill}
-        selectedType={props.selectedType}
-        onSelectType={props.onSelectType}
-      />
+      <FeedbackSectionDashboardForm {...props} />
       <FeedbackHistory locale={props.locale} />
-      <FeedbackSectionDashboardGuidance locale={props.locale} fr={props.locale === "fr"} />
+      <FeedbackSectionDashboardGuidance locale={props.locale} />
     </div>
   );
 }
