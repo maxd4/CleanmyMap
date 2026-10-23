@@ -62,6 +62,7 @@ describe("SPOGOMI attendance route", () => {
     expect(await read.json()).toEqual(expect.objectContaining({ eventId: "event-1", total: 1 }));
     const write = await route.POST(new Request("http://localhost", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ divisionId: "11111111-1111-4111-8111-111111111111", participantId: "22222222-2222-4222-8222-222222222222", status: "present", reason: "Accueil", provenance: "onsite_identity_check" }) }), context);
     expect(write.status).toBe(200);
+    expect(await write.json()).toEqual({ attendance: { changed: true, attendanceStatus: "present" } });
     expect(mocks.setStatus).toHaveBeenCalledWith(expect.objectContaining({ actorClerkId: "checkin-1", status: "present", reason: "Accueil" }));
   });
 

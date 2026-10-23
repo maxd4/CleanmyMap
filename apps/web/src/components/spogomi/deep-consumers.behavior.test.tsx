@@ -33,6 +33,8 @@ import { SpogomiConsolidationPanel } from "./spogomi-consolidation-panel";
 
 const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 const settle = async () => { await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); }); };
+const attendanceRow = (attendanceStatus: "unknown" | "present" | "absent", updatedAt = "revision-1") => ({ id: "participant-1", divisionId: "division-1", displayName: "Participant synthétique", externalReference: "P-1", place: 1, team: null, attendanceStatus, registrationStatus: "registered", updatedAt });
+const attendanceMutation = (status: "unknown" | "present" | "absent", previousStatus = "unknown") => ({ attendance: { changed: status !== previousStatus, eventId: "event-1", divisionId: "division-1", participantId: "participant-1", previousStatus, attendanceStatus: status, updatedAt: "revision-2" } });
 
 const dashboard = {
   divisions: [{ id: "division-1", division_type: "casual", regulation_version: "rules-v1" }],
@@ -129,19 +131,84 @@ describe("SPOGOMI deep consumer states", () => {
     renderer.unmount();
   });
 
-  it("loads attendance and sends revision-aware status mutations", async () => {
-    fetchMock.mockResolvedValueOnce(response({ participants: [{ id: "participant-1", divisionId: "division-1", displayName: "Participant synthétique", externalReference: "P-1", place: 1, team: null, attendanceStatus: "unknown", registrationStatus: "registered", updatedAt: "revision-1" }], total: 1 }));
+  it("loads the paginated attendance projection and displays its total", async () => {
+    fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow("unknown")], total: 1 }));
     let renderer!: ReturnType<typeof create>;
     act(() => { renderer = create(<SpogomiAttendancePanel eventId="event-1" divisionId="division-1" />); });
     await settle();
     expect(propsOf<StatusProps>(renderer.root.findByType("h2")).children).toBe("Accueil et présences");
-    const statusButton = renderer.root.findAllByType("button").map(buttonProps).find((button) => String(button.children).includes("Présent"));
+    expect(renderer.root.findAllByType("span").map((node) => propsOf<StatusProps>(node).children)).toContainEqual([1, " participant(s)"]);
+    expect(renderer.root.findAllByType("span").map((node) => propsOf<StatusProps>(node).children)).toContain("unknown");
+    renderer.unmount();
+  });
+
+  it.each(["present", "absent", "unknown"] as const)("confirms a successful %s attendance mutation and refreshes the projection", async (status) => {
+    fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow("unknown")], total: 1 }));
+    fetchMock.mockResolvedValueOnce(response(attendanceMutation(status)));
+    fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow(status, "revision-2")], total: 1 }));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiAttendancePanel eventId="event-1" divisionId="division-1" />); });
+    await settle();
+    const label = status === "present" ? "Présent" : status === "absent" ? "Absent" : "Non vérifiée";
+    const statusButton = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === label);
     expect(statusButton).toBeTruthy();
-    fetchMock.mockResolvedValueOnce(response({ attendanceStatus: "present" }));
-    await act(async () => { statusButton?.onClick(); });
-    const mutationCall = fetchCalls().reverse().find((call) => call[1]?.method === "POST");
-    const payload = jsonBody(mutationCall);
-    expect(payload).toEqual(expect.objectContaining({ participantId: "participant-1", expectedUpdatedAt: "revision-1", divisionId: "division-1" }));
+    await act(async () => { statusButton?.onClick(); await Promise.resolve(); });
+    await settle();
+    const mutationCall = fetchCalls().find((call) => call[1]?.method === "POST");
+    expect(jsonBody(mutationCall)).toEqual(expect.objectContaining({ participantId: "participant-1", status, expectedUpdatedAt: "revision-1", divisionId: "division-1" }));
+    expect(fetchCalls().filter((call) => call[1]?.method !== "POST")).toHaveLength(2);
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "status" })).children).toBe("Présence enregistrée avec sa provenance.");
+    expect(renderer.root.findAllByProps({ role: "alert" })).toHaveLength(0);
+    expect(renderer.root.findAllByType("span").map((node) => propsOf<StatusProps>(node).children)).toContain(status);
+    expect(renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === label)?.disabled).toBe(false);
+    renderer.unmount();
+  });
+
+  it("surfaces a refused attendance mutation without claiming success or refreshing", async () => {
+    fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow("unknown")], total: 1 }));
+    fetchMock.mockResolvedValueOnce(response({ error: "Décision concurrente refusée" }, 409));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiAttendancePanel eventId="event-1" divisionId="division-1" />); });
+    await settle();
+    const statusButton = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "Présent");
+    await act(async () => { statusButton?.onClick(); await Promise.resolve(); });
+    await settle();
+    expect(fetchCalls().filter((call) => call[1]?.method !== "POST")).toHaveLength(1);
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "alert" })).children).toBe("Décision concurrente refusée");
+    expect(renderer.root.findAllByProps({ role: "status" })).toHaveLength(0);
+    expect(statusButton?.disabled).toBe(false);
+    renderer.unmount();
+  });
+
+  it("keeps the mutation confirmation when the refresh GET is unavailable", async () => {
+    fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow("unknown")], total: 1 }));
+    fetchMock.mockResolvedValueOnce(response(attendanceMutation("present")));
+    fetchMock.mockResolvedValueOnce(response({ error: "Roster indisponible" }, 503));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiAttendancePanel eventId="event-1" divisionId="division-1" />); });
+    await settle();
+    const statusButton = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "Présent");
+    await act(async () => { statusButton?.onClick(); await Promise.resolve(); });
+    await settle();
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "status" })).children).toBe("Présence enregistrée avec sa provenance.");
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "alert" })).children).toBe("Présence enregistrée, mais l’affichage n’a pas pu être actualisé.");
+    expect(renderer.root.findAllByProps({ role: "alert" }).map((node) => propsOf<StatusProps>(node).children)).not.toContain("Roster indisponible");
+    expect(statusButton?.disabled).toBe(false);
+    renderer.unmount();
+  });
+
+  it("rejects a malformed attendance mutation response and releases the busy state", async () => {
+    fetchMock.mockResolvedValueOnce(response({ participants: [attendanceRow("unknown")], total: 1 }));
+    fetchMock.mockResolvedValueOnce(response({ attendance: { attendanceStatus: "present" } }));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiAttendancePanel eventId="event-1" divisionId="division-1" />); });
+    await settle();
+    const statusButton = renderer.root.findAllByType("button").map(buttonProps).find((button) => button.children === "Présent");
+    await act(async () => { statusButton?.onClick(); await Promise.resolve(); });
+    await settle();
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "alert" })).children).toBe("La confirmation du pointage a renvoyé des données incomplètes.");
+    expect(fetchCalls().filter((call) => call[1]?.method !== "POST")).toHaveLength(1);
+    expect(statusButton?.disabled).toBe(false);
     renderer.unmount();
   });
 

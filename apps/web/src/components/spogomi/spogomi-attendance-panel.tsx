@@ -7,6 +7,7 @@ import { CmmCard } from "@/components/ui/cmm-card";
 type AttendanceRow = { id: string; divisionId: string; displayName: string | null; externalReference: string | null; place: number | null; team: { number: number; publicName: string } | null; attendanceStatus: "unknown" | "present" | "absent"; registrationStatus: string; updatedAt: string };
 
 type AttendanceResponse = { participants: AttendanceRow[]; total: number; error?: string };
+type AttendanceMutationResponse = { changed: boolean; eventId: string; divisionId: string; participantId: string; previousStatus: AttendanceRow["attendanceStatus"]; attendanceStatus: AttendanceRow["attendanceStatus"]; updatedAt: string };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -53,6 +54,30 @@ async function readAttendanceResponse(response: Response): Promise<AttendanceRes
   return { participants: participants as AttendanceRow[], total: raw.total };
 }
 
+async function readAttendanceMutationResponse(response: Response): Promise<AttendanceMutationResponse> {
+  let raw: unknown;
+  try {
+    raw = await response.json();
+  } catch {
+    throw new Error("La confirmation du pointage a renvoyé une réponse illisible.");
+  }
+  if (!isRecord(raw)) throw new Error("La confirmation du pointage a renvoyé une réponse invalide.");
+  if (!response.ok) throw new Error(typeof raw.error === "string" ? raw.error : "La décision de présence a été refusée.");
+  const attendance = raw.attendance;
+  if (!isRecord(attendance) || typeof attendance.changed !== "boolean" || typeof attendance.eventId !== "string" || typeof attendance.divisionId !== "string" || typeof attendance.participantId !== "string" || !["unknown", "present", "absent"].includes(String(attendance.previousStatus)) || !["unknown", "present", "absent"].includes(String(attendance.attendanceStatus)) || typeof attendance.updatedAt !== "string") {
+    throw new Error("La confirmation du pointage a renvoyé des données incomplètes.");
+  }
+  return {
+    changed: attendance.changed,
+    eventId: attendance.eventId,
+    divisionId: attendance.divisionId,
+    participantId: attendance.participantId,
+    previousStatus: attendance.previousStatus as AttendanceMutationResponse["previousStatus"],
+    attendanceStatus: attendance.attendanceStatus as AttendanceMutationResponse["attendanceStatus"],
+    updatedAt: attendance.updatedAt,
+  };
+}
+
 export function SpogomiAttendancePanel({ eventId, divisionId }: { eventId: string; divisionId?: string | null }) {
   const [rows, setRows] = useState<AttendanceRow[]>([]);
   const [search, setSearch] = useState("");
@@ -89,8 +114,13 @@ export function SpogomiAttendancePanel({ eventId, divisionId }: { eventId: strin
     setBusyId(row.id); setError(null); setMessage(null);
     try {
       const response = await fetch(`/api/spogomi/events/${eventId}/attendance`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ divisionId: row.divisionId, participantId: row.id, status, reason, provenance, expectedUpdatedAt: row.updatedAt }) });
-      await readAttendanceResponse(response);
-      setMessage("Présence enregistrée avec sa provenance."); await load();
+      await readAttendanceMutationResponse(response);
+      setMessage("Présence enregistrée avec sa provenance.");
+      try {
+        await load();
+      } catch {
+        setError("Présence enregistrée, mais l’affichage n’a pas pu être actualisé.");
+      }
     } catch (cause) { setError(cause instanceof Error ? cause.message : "La décision de présence a été refusée."); }
     finally { setBusyId(null); }
   }
