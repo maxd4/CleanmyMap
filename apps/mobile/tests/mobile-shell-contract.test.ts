@@ -11,7 +11,7 @@ function assertWebBridgeContract() {
     search: '/explorer',
     feedback: '/sections/feedback',
     network: '/sections/annuaire',
-    community: '/sections/community',
+    community: '/sections/messagerie',
   })
   expect(MOBILE_SHELL_SURFACE_STORAGE_KEY).toContain('mobile.shell.surface')
 }

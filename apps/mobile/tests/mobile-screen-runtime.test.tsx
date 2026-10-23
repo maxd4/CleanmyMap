@@ -299,6 +299,26 @@ describe('mobile native shell runtime', () => {
     expect(webLinks.length).toBeGreaterThan(0)
   })
 
+  it('opens the canonical discussion bridge for a signed-in native user without transferring a Clerk token', async () => {
+    const renderer = await renderShell()
+    const aboutTab = renderer.root.findAllByProps({ accessibilityRole: 'tab' }).find((tab) => textContent(tab).includes('À propos'))
+
+    await act(async () => { await callTestHandler(aboutTab, 'onPress') })
+    await act(async () => { await callTestHandler(findTouchable(renderer, 'Groupes de discussion'), 'onPress') })
+
+    expect(state.openedUrls.at(-1)).toBe('https://cleanmymap.fr/sections/messagerie')
+    expect(state.openedUrls.at(-1)).not.toContain('token')
+  })
+
+  it('does not expose the web bridge before the native Clerk session is available', async () => {
+    appState.controller = controller({ isSignedIn: false })
+    const renderer = await renderApp('pk_test_mobile')
+
+    expect(textContent(renderer.root)).toContain('SE CONNECTER')
+    expect(textContent(renderer.root)).not.toContain('Groupes de discussion')
+    expect(state.openedUrls).toEqual([])
+  })
+
   it('renders the required configuration state when the Clerk key is absent', async () => {
     const renderer = await renderApp(undefined)
 

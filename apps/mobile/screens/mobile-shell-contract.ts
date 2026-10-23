@@ -24,7 +24,7 @@ export const MOBILE_WEB_BRIDGE_PATHS = {
   search: '/explorer',
   feedback: '/sections/feedback',
   network: '/sections/annuaire',
-  community: '/sections/community',
+  community: '/sections/messagerie',
 } as const
 
 export const MOBILE_SHELL_SURFACE_STORAGE_KEY = 'cleanmymap.mobile.shell.surface.v2'

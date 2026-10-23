@@ -142,7 +142,7 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
       <LinkButton label="Politique de confidentialité" onPress={() => onOpenWeb('/politique-confidentialite')} />
       <LinkButton label="Mentions légales" onPress={() => onOpenWeb('/mentions-legales')} />
       <LinkButton label="Réseau CleanMyMap" onPress={() => onOpenWeb('/sections/annuaire')} />
-      <LinkButton label="Communauté CleanMyMap" onPress={() => onOpenWeb('/sections/community')} />
+      <LinkButton label="Groupes de discussion" onPress={() => onOpenWeb('/sections/messagerie')} />
       <Text style={styles.helper}>La demande d’effacement passe par le workflow RGPD du site ; cette action ne supprime pas immédiatement le compte.</Text>
       <View style={styles.deletionPanel}>
         <Text style={styles.label}>Demander la suppression complète</Text>

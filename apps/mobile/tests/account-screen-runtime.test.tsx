@@ -189,7 +189,7 @@ describe('mobile account screen runtime', () => {
     await act(async () => { await callTestHandler(findButton(renderer, 'Envoyer un feedback'), 'onPress') })
     expect(onOpenWeb).toHaveBeenCalledWith('/sections/feedback')
     await act(async () => { await callTestHandler(findButton(renderer, 'À propos et informations légales'), 'onPress'); await settle() })
-    for (const [label, path] of [['Politique de confidentialité', '/politique-confidentialite'], ['Mentions légales', '/mentions-legales'], ['Réseau CleanMyMap', '/sections/annuaire'], ['Communauté CleanMyMap', '/sections/community'], ['Demander après désinstallation via le site', '/contact']] as const) {
+    for (const [label, path] of [['Politique de confidentialité', '/politique-confidentialite'], ['Mentions légales', '/mentions-legales'], ['Réseau CleanMyMap', '/sections/annuaire'], ['Groupes de discussion', '/sections/messagerie'], ['Demander après désinstallation via le site', '/contact']] as const) {
       await act(async () => { await callTestHandler(findButton(renderer, label), 'onPress') })
       expect(onOpenWeb).toHaveBeenCalledWith(path)
     }

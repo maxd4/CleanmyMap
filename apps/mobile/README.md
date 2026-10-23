@@ -120,6 +120,11 @@ mutations de profil, parcours actif, nom affiché, activité et notifications
 réutilisent les contrats web canoniques avec le Bearer Clerk. Les pages web
 `/politique-confidentialite`, `/mentions-legales` et `/contact` restent les
 surfaces canoniques pour les droits, le contact et la demande d'effacement.
+Les raccourcis web du compte pointent vers les surfaces canoniques : `Réseau
+CleanMyMap` ouvre `/sections/annuaire` et `Groupes de discussion` ouvre
+`/sections/messagerie`. Le pont ouvre une URL web externe et ne transfère pas
+automatiquement la session Clerk native vers une session de navigateur ; une
+connexion web distincte peut donc être requise par la surface cible.
 Le compte permet aussi d'enregistrer un unique contact d'urgence dans le
 SecureStore local.
 Avant toute boîte de permission système, le mobile affiche une explication
