@@ -50,82 +50,56 @@ function statusTone(
  return"bg-amber-100 text-amber-800 border-amber-200";
 }
 
-export function PublishedAnnuaireReviewPanel({
- items,
-}: PublishedAnnuaireReviewPanelProps) {
+function usePublishedAnnuaireReview(fr: boolean) {
  const router = useRouter();
- const { locale } = useSitePreferences();
- const fr = locale ==="fr";
  const [confirmPhrase, setConfirmPhrase] = useState("");
  const [reasons, setReasons] = useState<Record<string, string>>({});
  const [error, setError] = useState<string | null>(null);
  const [submittingId, setSubmittingId] = useState<string | null>(null);
 
- const reviewEntry = (
- entryId: string,
- publicationStatus: "accepted" | "rejected",
- ) => {
- if (confirmPhrase.trim().toUpperCase() !== REVIEW_CONFIRM_PHRASE) {
- setError(
- fr
-  ? `Renseignez exactement "${REVIEW_CONFIRM_PHRASE}" pour valider la revue.`
- : `Type exactly"${REVIEW_CONFIRM_PHRASE}" to confirm the review.`,
- );
- return;
- }
-
- const reason = (reasons[entryId] ?? "").trim();
- if (reason.length < 5) {
- setError(
- fr
- ? "Renseignez un motif d'au moins 5 caractères."
- : "Enter a reason of at least 5 characters.",
- );
- return;
- }
-
- setError(null);
- setSubmittingId(entryId);
- void (async () => {
- try {
- const response = await fetch("/api/admin/partners/published-directory", {
- method:"POST",
- headers: {"Content-Type":"application/json" },
- body: JSON.stringify(
- buildPublishedAnnuaireReviewPayload({
- id: entryId,
- publicationStatus,
- confirmPhrase,
- reason,
- }),
- ),
- });
-
- if (!response.ok) {
- const body = (await response.json().catch(() => null)) as
- | { hint?: string; message?: string }
- | null;
- throw new Error(
- body?.hint || body?.message || (fr ?"Revue impossible." :"Review failed."),
- );
- }
-
- setConfirmPhrase("");
- setReasons((current) => ({ ...current, [entryId]: "" }));
- router.refresh();
- } catch (mutationError) {
- setError(
- mutationError instanceof Error
- ? mutationError.message
- : fr
- ?"Revue impossible."
- :"Review failed.",
- );
- } finally {
- setSubmittingId(null);
- }
- })();
+ const reviewEntry = (entryId: string, publicationStatus: "accepted" | "rejected") => {
+  const reason = (reasons[entryId] ?? "").trim();
+  if (confirmPhrase.trim().toUpperCase() !== REVIEW_CONFIRM_PHRASE) {
+   setError(fr ? `Renseignez exactement "${REVIEW_CONFIRM_PHRASE}" pour valider la revue.` : `Type exactly "${REVIEW_CONFIRM_PHRASE}" to confirm the review.`);
+   return;
+  }
+  if (reason.length < 5) {
+   setError(fr ? "Renseignez un motif d'au moins 5 caractères." : "Enter a reason of at least 5 characters.");
+   return;
+  }
+  setError(null);
+  setSubmittingId(entryId);
+  void (async () => {
+   try {
+    const response = await fetch("/api/admin/partners/published-directory", {
+     method: "POST",
+     headers: { "Content-Type": "application/json" },
+     body: JSON.stringify(buildPublishedAnnuaireReviewPayload({ id: entryId, publicationStatus, confirmPhrase, reason })),
+    });
+    if (!response.ok) {
+     const body = (await response.json().catch(() => null)) as { hint?: string; message?: string } | null;
+     throw new Error(body?.hint || body?.message || (fr ? "Revue impossible." : "Review failed."));
+    }
+    setConfirmPhrase("");
+    setReasons((current) => ({ ...current, [entryId]: "" }));
+    router.refresh();
+   } catch (mutationError) {
+    setError(mutationError instanceof Error ? mutationError.message : fr ? "Revue impossible." : "Review failed.");
+   } finally {
+    setSubmittingId(null);
+   }
+  })();
  };
+
+ return { confirmPhrase, setConfirmPhrase, reasons, setReasons, error, submittingId, reviewEntry };
+}
+
+export function PublishedAnnuaireReviewPanel({
+ items,
+}: PublishedAnnuaireReviewPanelProps) {
+ const { locale } = useSitePreferences();
+ const fr = locale ==="fr";
+ const { confirmPhrase, setConfirmPhrase, reasons, setReasons, error, submittingId, reviewEntry } = usePublishedAnnuaireReview(fr);
 
  return (
  <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

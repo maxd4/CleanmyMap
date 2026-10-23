@@ -33,6 +33,39 @@ type SubmissionProps = {
   setContributionError: Dispatch<SetStateAction<string | null>>;
 };
 
+function validatePartnerOnboardingSubmission({
+  partnerScope,
+  coverage,
+  availabilitySlots,
+  contributionTypes,
+  publicWebsiteUrl,
+  publicWebsiteConsent,
+}: Pick<SubmissionProps, "partnerScope" | "coverage" | "availabilitySlots" | "contributionTypes" | "publicWebsiteUrl" | "publicWebsiteConsent">) {
+  const normalizedPublicWebsiteUrl = publicWebsiteUrl.trim();
+  if (partnerScope === "local" && coverage.arrondissements.length === 0) {
+    return { normalizedPublicWebsiteUrl, errorMessage: "Sélectionne au moins un arrondissement.", contributionError: null };
+  }
+  if (availabilitySlots.length === 0) {
+    return { normalizedPublicWebsiteUrl, errorMessage: "Ajoute au moins un créneau de disponibilité.", contributionError: null };
+  }
+  if (availabilitySlots.some((slot) => slot.start >= slot.end)) {
+    return { normalizedPublicWebsiteUrl, errorMessage: "Chaque créneau doit avoir une heure de début avant l'heure de fin.", contributionError: null };
+  }
+  if (contributionTypes.length === 0) {
+    return { normalizedPublicWebsiteUrl, errorMessage: null, contributionError: "Sélectionnez au moins un type de contribution." };
+  }
+  if (normalizedPublicWebsiteUrl && !publicWebsiteConsent) {
+    return { normalizedPublicWebsiteUrl, errorMessage: "Autorisez la publication du site web public pour continuer.", contributionError: null };
+  }
+  if (!normalizedPublicWebsiteUrl && publicWebsiteConsent) {
+    return { normalizedPublicWebsiteUrl, errorMessage: "Renseignez un site web public avant d'autoriser sa publication.", contributionError: null };
+  }
+  if (normalizedPublicWebsiteUrl && !normalizePublicWebUrl(normalizedPublicWebsiteUrl)) {
+    return { normalizedPublicWebsiteUrl, errorMessage: "Le site web doit être une URL HTTP(S) publique valide.", contributionError: null };
+  }
+  return { normalizedPublicWebsiteUrl, errorMessage: null, contributionError: null };
+}
+
 export function usePartnerOnboardingSubmit({
   organizationName,
   organizationType,
@@ -68,42 +101,21 @@ export function usePartnerOnboardingSubmit({
       return;
     }
 
-    if (partnerScope === "local" && coverage.arrondissements.length === 0) {
-      setErrorMessage("Sélectionne au moins un arrondissement.");
+    const validation = validatePartnerOnboardingSubmission({
+      partnerScope,
+      coverage,
+      availabilitySlots,
+      contributionTypes,
+      publicWebsiteUrl,
+      publicWebsiteConsent,
+    });
+    if (validation.errorMessage || validation.contributionError) {
+      if (validation.errorMessage) setErrorMessage(validation.errorMessage);
+      if (validation.contributionError) setContributionError(validation.contributionError);
       release();
       return;
     }
-    if (availabilitySlots.length === 0) {
-      setErrorMessage("Ajoute au moins un créneau de disponibilité.");
-      release();
-      return;
-    }
-    if (availabilitySlots.some((slot) => slot.start >= slot.end)) {
-      setErrorMessage("Chaque créneau doit avoir une heure de début avant l'heure de fin.");
-      release();
-      return;
-    }
-    if (contributionTypes.length === 0) {
-      setContributionError("Sélectionnez au moins un type de contribution.");
-      release();
-      return;
-    }
-    const normalizedPublicWebsiteUrl = publicWebsiteUrl.trim();
-    if (normalizedPublicWebsiteUrl && !publicWebsiteConsent) {
-      setErrorMessage("Autorisez la publication du site web public pour continuer.");
-      release();
-      return;
-    }
-    if (!normalizedPublicWebsiteUrl && publicWebsiteConsent) {
-      setErrorMessage("Renseignez un site web public avant d'autoriser sa publication.");
-      release();
-      return;
-    }
-    if (normalizedPublicWebsiteUrl && !normalizePublicWebUrl(normalizedPublicWebsiteUrl)) {
-      setErrorMessage("Le site web doit être une URL HTTP(S) publique valide.");
-      release();
-      return;
-    }
+    const { normalizedPublicWebsiteUrl } = validation;
 
     setContributionError(null);
     setIsSubmitting(true);

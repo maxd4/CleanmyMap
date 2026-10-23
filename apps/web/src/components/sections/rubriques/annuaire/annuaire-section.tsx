@@ -26,6 +26,36 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 }
 };
 
+function AnnuaireDirectoryFeedback({ fr, logic }: { fr: boolean; logic: ReturnType<typeof useAnnuaireLogic> }) {
+  if (logic.isLoading) {
+    return <CmmFeedback tone="info" title={fr ? "Chargement des fiches partenaires" : "Loading partner profiles"}>{fr ? "Les ressources éditoriales restent visibles pendant le chargement des fiches partenaires publiées." : "Editorial resources remain visible while published partner profiles load."}</CmmFeedback>;
+  }
+  if (!logic.isPublishedDirectoryUnavailable) return null;
+  const stale = logic.isPublishedDirectoryStale;
+  return (
+    <CmmFeedback
+      tone={stale ? "warning" : "error"}
+      title={stale ? fr ? "Fiches partenaires potentiellement périmées" : "Partner profiles may be stale" : fr ? "Fiches partenaires temporairement indisponibles" : "Published partner profiles temporarily unavailable"}
+      action={<CmmButton type="button" tone="secondary" variant="ghost" size="sm" loading={logic.isValidating} onClick={logic.retryPublishedDirectory} ariaLabel={fr ? "Réessayer de charger les fiches partenaires" : "Retry loading partner profiles"} className="inline-flex items-center gap-2"><RefreshCw size={14} aria-hidden="true" />{logic.isValidating ? fr ? "Actualisation..." : "Refreshing..." : fr ? "Réessayer" : "Retry"}</CmmButton>}
+    >
+      {stale ? fr ? "La source des fiches partenaires n'a pas pu être actualisée. Les données affichées peuvent être périmées ; le compteur et les résultats visibles peuvent être partiels." : "The partner profile source could not be refreshed. Displayed data may be stale; the count and visible results may be partial." : fr ? "La source des fiches partenaires n'est pas disponible pour le moment. Les ressources éditoriales restent accessibles, mais le compteur et les résultats visibles peuvent être partiels." : "The partner profile source is temporarily unavailable. Editorial resources remain available, but the count and visible results may be partial."}
+    </CmmFeedback>
+  );
+}
+
+function AnnuaireJoinCta({ fr }: { fr: boolean }) {
+  return (
+    <RubriqueCard variants={itemVariants} themeColor="violet" withTopBar={false} withHover={false} className="relative flex flex-col items-center justify-between gap-8 overflow-hidden md:flex-row">
+      <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000"><Building2 size={160} className="text-violet-400" /></div>
+      <div className="space-y-4 max-w-xl text-center md:text-left relative z-10">
+        <h3 className="text-3xl font-black text-white tracking-tight">{fr ? "Vous agissez sur le terrain ?" : "Are you acting on the field?"}</h3>
+        <p className="text-slate-300 font-bold opacity-80 leading-relaxed">{fr ? "Rejoignez l'annuaire pour présenter votre structure, partager vos besoins et rendre vos canaux publics visibles." : "Join the directory to present your structure, share your needs and make your public channels visible."}</p>
+      </div>
+      <CmmButton href="/partners/onboarding" tone="primary" variant="default" ariaLabel={fr ? "Référencer ma structure — ouvrir le parcours partenaire" : "Register my structure — open the partner onboarding"} className="relative z-10 flex items-center gap-3 bg-white font-black uppercase tracking-[0.2em] text-slate-950 shadow-2xl">{fr ? "Référencer ma structure" : "Register my structure"}<ArrowRight size={20} /></CmmButton>
+    </RubriqueCard>
+  );
+}
+
 export function AnnuaireSection() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
@@ -80,55 +110,7 @@ export function AnnuaireSection() {
         viewport={{ once: true, margin: "-100px" }}
       >
         <CmmSectionGroup>
-        {annuaireLogic.isLoading ? (
-          <CmmFeedback tone="info" title={fr ? "Chargement des fiches partenaires" : "Loading partner profiles"}>
-            {fr
-              ? "Les ressources éditoriales restent visibles pendant le chargement des fiches partenaires publiées."
-              : "Editorial resources remain visible while published partner profiles load."}
-          </CmmFeedback>
-        ) : annuaireLogic.isPublishedDirectoryUnavailable ? (
-          <CmmFeedback
-            tone={annuaireLogic.isPublishedDirectoryStale ? "warning" : "error"}
-            title={
-              annuaireLogic.isPublishedDirectoryStale
-                ? fr
-                  ? "Fiches partenaires potentiellement périmées"
-                  : "Partner profiles may be stale"
-                : fr
-                  ? "Fiches partenaires temporairement indisponibles"
-                  : "Published partner profiles temporarily unavailable"
-            }
-            action={
-              <CmmButton
-                type="button"
-                tone="secondary"
-                variant="ghost"
-                size="sm"
-                loading={annuaireLogic.isValidating}
-                onClick={annuaireLogic.retryPublishedDirectory}
-                ariaLabel={fr ? "Réessayer de charger les fiches partenaires" : "Retry loading partner profiles"}
-                className="inline-flex items-center gap-2"
-              >
-                <RefreshCw size={14} aria-hidden="true" />
-                {annuaireLogic.isValidating
-                  ? fr
-                    ? "Actualisation..."
-                    : "Refreshing..."
-                  : fr
-                    ? "Réessayer"
-                    : "Retry"}
-              </CmmButton>
-            }
-          >
-            {annuaireLogic.isPublishedDirectoryStale
-              ? fr
-                ? "La source des fiches partenaires n'a pas pu être actualisée. Les données affichées peuvent être périmées ; le compteur et les résultats visibles peuvent être partiels."
-                : "The partner profile source could not be refreshed. Displayed data may be stale; the count and visible results may be partial."
-              : fr
-                ? "La source des fiches partenaires n'est pas disponible pour le moment. Les ressources éditoriales restent accessibles, mais le compteur et les résultats visibles peuvent être partiels."
-                : "The partner profile source is temporarily unavailable. Editorial resources remain available, but the count and visible results may be partial."}
-          </CmmFeedback>
-        ) : null}
+        <AnnuaireDirectoryFeedback fr={fr} logic={annuaireLogic} />
         {/* Curated actors - a concise entry point before the full search */}
         <motion.section variants={itemVariants} className="relative">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent" />
@@ -191,37 +173,7 @@ export function AnnuaireSection() {
         </motion.section>
 
         {/* Final CTA - Institutional Premium */}
-        <RubriqueCard
-          variants={itemVariants}
-          themeColor="violet"
-          withTopBar={false}
-          withHover={false}
-          className="relative flex flex-col items-center justify-between gap-8 overflow-hidden md:flex-row"
-        >
-          <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-             <Building2 size={160} className="text-violet-400" />
-          </div>
-          <div className="space-y-4 max-w-xl text-center md:text-left relative z-10">
-            <h3 className="text-3xl font-black text-white tracking-tight">
-              {fr ? "Vous agissez sur le terrain ?" : "Are you acting on the field?"}
-            </h3>
-            <p className="text-slate-300 font-bold opacity-80 leading-relaxed">
-              {fr ? "Rejoignez l'annuaire pour présenter votre structure, partager vos besoins et rendre vos canaux publics visibles." : "Join the directory to present your structure, share your needs and make your public channels visible."}
-            </p>
-          </div>
-          <div className="relative z-10">
-            <CmmButton 
-              href="/partners/onboarding"
-              tone="primary"
-              variant="default"
-              ariaLabel={fr ? "Référencer ma structure — ouvrir le parcours partenaire" : "Register my structure — open the partner onboarding"}
-              className="flex items-center gap-3 bg-white font-black uppercase tracking-[0.2em] text-slate-950 shadow-2xl"
-            >
-              {fr ? "Référencer ma structure" : "Register my structure"}
-              <ArrowRight size={20} />
-            </CmmButton>
-          </div>
-        </RubriqueCard>
+        <AnnuaireJoinCta fr={fr} />
         </CmmSectionGroup>
       </motion.div>
     </SectionShell>

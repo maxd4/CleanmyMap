@@ -147,11 +147,7 @@ function RouteRefreshGroupChoice({
   );
 }
 
-export function ActionRouteRefreshPanel({
-  action,
-}: {
-  action: ActionEditorRecord;
-}) {
+function useActionRouteRefreshPanel(action: ActionEditorRecord) {
   const [activeAction, setActiveAction] = useState(action);
   const [signals, setSignals] = useState<RouteRefreshSignals | null>(null);
   const [signalsState, setSignalsState] = useState<"loading" | "ready" | "error">("loading");
@@ -179,9 +175,8 @@ export function ActionRouteRefreshPanel({
 
   async function refresh() {
     const activeParameters = activeAction.preparationData?.routeVersioning?.active.calculation.parameters;
-    const confirmedParticipants = signals?.participants.confirmed ?? null;
     const submission = buildRouteRefreshSubmission(activeAction, {
-      volunteers: confirmedParticipants ?? activeParameters?.volunteers,
+      volunteers: signals?.participants.confirmed ?? activeParameters?.volunteers,
       groupCount: selectedGroupCount,
     });
     if (!submission) {
@@ -194,9 +189,7 @@ export function ActionRouteRefreshPanel({
     try {
       const response = await fetchRouteRecommendation(submission);
       const nextProposal = buildRouteRefreshProposal(response);
-      if (!nextProposal) {
-        throw new Error("Le moteur n'a pas fourni de snapshot vérifiable pour cette proposition.");
-      }
+      if (!nextProposal) throw new Error("Le moteur n'a pas fourni de snapshot vérifiable pour cette proposition.");
       setProposal(nextProposal);
       setState("idle");
     } catch (error: unknown) {
@@ -228,16 +221,79 @@ export function ActionRouteRefreshPanel({
         })
         .catch(() => setSignalsState("error"));
       setState(result.status === "unchanged" ? "kept" : "applied");
-      setMessage(
-        result.status === "unchanged"
-          ? "La proposition est identique à l'itinéraire actif. Aucune version supplémentaire n'a été créée."
-          : "Le nouvel itinéraire est maintenant actif. L'ancienne version reste conservée dans l'historique.",
-      );
+      setMessage(result.status === "unchanged"
+        ? "La proposition est identique à l'itinéraire actif. Aucune version supplémentaire n'a été créée."
+        : "Le nouvel itinéraire est maintenant actif. L'ancienne version reste conservée dans l'historique.");
     } catch (error: unknown) {
       setState("error");
       setMessage(error instanceof Error ? error.message : "Impossible d'appliquer l'itinéraire.");
     }
   }
+
+  return { activeAction, signals, signalsState, selectedGroupCount, setSelectedGroupCount, proposal, setProposal, state, setState, message, setMessage, refresh, applyProposal };
+}
+
+function RouteRefreshProposalDetails({
+  proposal,
+  details,
+  state,
+  setProposal,
+  setState,
+  setMessage,
+  applyProposal,
+}: {
+  proposal: RouteRefreshProposal;
+  details: NonNullable<ReturnType<typeof metricRows>>;
+  state: "idle" | "loading" | "applying" | "error" | "kept" | "applied";
+  setProposal: (proposal: RouteRefreshProposal | null) => void;
+  setState: (state: "idle" | "loading" | "applying" | "error" | "kept" | "applied") => void;
+  setMessage: (message: string) => void;
+  applyProposal: () => Promise<void>;
+}) {
+  return (
+    <div className="space-y-4 rounded-2xl border border-emerald-200/70 bg-white/85 p-4">
+      <div className="grid gap-4 md:grid-cols-2">
+        <RouteRefreshMetricList title="Itinéraire actuel" rows={details.rows.map(([label, current]) => [label, current])} />
+        <RouteRefreshMetricList title="Nouvelle proposition" rows={details.rows.map(([label, , next]) => [label, next])} />
+      </div>
+      {details.comparison.identical ? <p className="text-sm font-semibold text-emerald-800">Cette proposition est identique à la version active.</p> : null}
+      <div className="grid gap-3 text-sm text-emerald-900/75 sm:grid-cols-3">
+        <p><strong className="text-emerald-950">Stops conservés :</strong> {details.comparison.keptStopIds.length}</p>
+        <p><strong className="text-emerald-950">Stops ajoutés :</strong> {details.comparison.addedStopIds.length}</p>
+        <p><strong className="text-emerald-950">Stops retirés :</strong> {details.comparison.removedStopIds.length}</p>
+      </div>
+      {details.comparison.priorityChanges.length > 0 ? <p className="text-sm text-emerald-900/75"><strong className="text-emerald-950">Évolution des priorités :</strong> {details.comparison.priorityChanges.length} stop(s) avec une justification différente.</p> : null}
+      {proposal.calculation.explanation ? <p className="text-sm leading-6 text-emerald-950"><strong className="text-emerald-950">Explication du moteur :</strong> {proposal.calculation.explanation}</p> : null}
+      <div className="flex flex-wrap gap-2">
+        <CmmButton tone="tertiary" variant="pill" size="sm" onClick={() => { setProposal(null); setState("kept"); setMessage("L'itinéraire actuel est conservé."); }}>
+          Conserver l&apos;itinéraire actuel
+        </CmmButton>
+        <CmmButton tone="primary" variant="pill" size="sm" onClick={() => { void applyProposal(); }} disabled={state === "applying"}>
+          {state === "applying" ? "Application…" : "Utiliser le nouvel itinéraire"}
+        </CmmButton>
+      </div>
+    </div>
+  );
+}
+
+function RouteRefreshMetricList({ title, rows }: { title: string; rows: Array<[string, string]> }) {
+  return (
+    <div>
+      <h4 className="font-black text-emerald-950">{title}</h4>
+      <dl className="mt-2 space-y-1 text-sm text-emerald-900/75">
+        {rows.map(([label, value]) => <div key={label} className="flex justify-between gap-3"><dt>{label}</dt><dd className="font-semibold text-emerald-950">{value}</dd></div>)}
+      </dl>
+    </div>
+  );
+}
+
+export function ActionRouteRefreshPanel({
+  action,
+}: {
+  action: ActionEditorRecord;
+}) {
+  const panel = useActionRouteRefreshPanel(action);
+  const { activeAction, signals, signalsState, selectedGroupCount, setSelectedGroupCount, proposal, setProposal, state, setState, message, setMessage, refresh, applyProposal } = panel;
 
   const details = proposal ? metricRows(proposal, activeAction) : null;
   const displaySignals = signals && selectedGroupCount !== signals.groupCount
@@ -277,42 +333,17 @@ export function ActionRouteRefreshPanel({
             {message}
           </p>
         ) : null}
-        {proposal && details ? (
-          <div className="space-y-4 rounded-2xl border border-emerald-200/70 bg-white/85 p-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <h4 className="font-black text-emerald-950">Itinéraire actuel</h4>
-                <dl className="mt-2 space-y-1 text-sm text-emerald-900/75">
-                  {details.rows.map(([label, current]) => <div key={label} className="flex justify-between gap-3"><dt>{label}</dt><dd className="font-semibold text-emerald-950">{current}</dd></div>)}
-                </dl>
-              </div>
-              <div>
-                <h4 className="font-black text-emerald-950">Nouvelle proposition</h4>
-                <dl className="mt-2 space-y-1 text-sm text-emerald-900/75">
-                  {details.rows.map(([label, , next]) => <div key={label} className="flex justify-between gap-3"><dt>{label}</dt><dd className="font-semibold text-emerald-950">{next}</dd></div>)}
-                </dl>
-              </div>
-            </div>
-            {details.comparison.identical ? <p className="text-sm font-semibold text-emerald-800">Cette proposition est identique à la version active.</p> : null}
-            <div className="grid gap-3 text-sm text-emerald-900/75 sm:grid-cols-3">
-              <p><strong className="text-emerald-950">Stops conservés :</strong> {details.comparison.keptStopIds.length}</p>
-              <p><strong className="text-emerald-950">Stops ajoutés :</strong> {details.comparison.addedStopIds.length}</p>
-              <p><strong className="text-emerald-950">Stops retirés :</strong> {details.comparison.removedStopIds.length}</p>
-            </div>
-            {details.comparison.priorityChanges.length > 0 ? (
-              <p className="text-sm text-emerald-900/75"><strong className="text-emerald-950">Évolution des priorités :</strong> {details.comparison.priorityChanges.length} stop(s) avec une justification différente.</p>
-            ) : null}
-            {proposal.calculation.explanation ? <p className="text-sm leading-6 text-emerald-950"><strong className="text-emerald-950">Explication du moteur :</strong> {proposal.calculation.explanation}</p> : null}
-            <div className="flex flex-wrap gap-2">
-              <CmmButton tone="tertiary" variant="pill" size="sm" onClick={() => { setProposal(null); setState("kept"); setMessage("L'itinéraire actuel est conservé."); }}>
-                Conserver l&apos;itinéraire actuel
-              </CmmButton>
-              <CmmButton tone="primary" variant="pill" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyProposal(); }} disabled={state === "applying"}>
-                {state === "applying" ? "Application…" : "Utiliser le nouvel itinéraire"}
-              </CmmButton>
-            </div>
-          </div>
-        ) : null}
+         {proposal && details ? (
+             <RouteRefreshProposalDetails
+               proposal={proposal}
+               details={details}
+               state={state}
+               setProposal={setProposal}
+               setState={setState}
+               setMessage={setMessage}
+               applyProposal={applyProposal}
+              />
+         ) : null}
       </div>
     </CmmCard>
   );

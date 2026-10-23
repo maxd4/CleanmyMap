@@ -888,15 +888,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx",
-      "line": 55,
-      "category": "React/JSX",
-      "ceiling": 1,
-      "status": "IMPROVED",
-      "functionIdentity": "named:FeedbackDashboardMode#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx",
       "line": 52,
       "category": "React/JSX",
@@ -3648,15 +3639,6 @@
       "ceiling": 34,
       "status": "IMPROVED",
       "functionIdentity": "named:ElusSection#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx",
-      "line": 55,
-      "category": "React/JSX",
-      "ceiling": 16,
-      "status": "IMPROVED",
-      "functionIdentity": "named:FeedbackDashboardMode#1"
     },
     {
       "metric": "functionLength",

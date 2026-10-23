@@ -24,15 +24,7 @@ type PublishedDirectoryResponse = {
   items: PublishedAnnuaireEntry[];
 };
 
-export function useAnnuaireLogic() {
-  const { user } = useUser();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterKind, setFilterKind] = useState<EntityKind | "all">("all");
-  const [filterContribution, setFilterContribution] = useState<ContributionType | "all">("all");
-  const [zoneFilter, setZoneFilter] = useState<ZoneFilter>("all");
-  const [highlightedActorId, setHighlightedActorId] = useState<string | null>(null);
-  const [actorCardsPage, setActorCardsPage] = useState(1);
-
+function usePublishedAnnuaireDirectory() {
   const {
     data: publishedDirectoryData,
     error: publishedDirectoryError,
@@ -45,12 +37,24 @@ export function useAnnuaireLogic() {
       const response = await fetch(url, { method: "GET", cache: "no-store" });
       if (!response.ok) throw new Error("published_directory_unavailable");
       return (await response.json()) as PublishedDirectoryResponse;
-    }
+    },
   );
-
   const retryPublishedDirectory = useCallback(() => {
     void mutatePublishedDirectory();
   }, [mutatePublishedDirectory]);
+  return { publishedDirectoryData, publishedDirectoryError, publishedDirectoryIsLoading, publishedDirectoryIsValidating, retryPublishedDirectory };
+}
+
+export function useAnnuaireLogic() {
+  const { user } = useUser();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterKind, setFilterKind] = useState<EntityKind | "all">("all");
+  const [filterContribution, setFilterContribution] = useState<ContributionType | "all">("all");
+  const [zoneFilter, setZoneFilter] = useState<ZoneFilter>("all");
+  const [highlightedActorId, setHighlightedActorId] = useState<string | null>(null);
+  const [actorCardsPage, setActorCardsPage] = useState(1);
+
+  const { publishedDirectoryData, publishedDirectoryError, publishedDirectoryIsLoading, publishedDirectoryIsValidating, retryPublishedDirectory } = usePublishedAnnuaireDirectory();
 
   const publishedEntries = useMemo(
     () => publishedDirectoryData?.items ?? [],

@@ -15,6 +15,48 @@ const CONTRIBUTION_OPTIONS: Array<{ value: ContributionType; label: string }> = 
   { value: "communication", label: "Communication" },
 ];
 
+function PartnerRelaySection({ relayActions, setRelayActions }: Pick<ReturnType<typeof usePartnerOnboarding>, "relayActions" | "setRelayActions">) {
+  return (
+    <label className="block space-y-1">
+        <span className="cmm-text-caption font-semibold cmm-text-secondary">Actions de relais</span>
+        <textarea
+          value={relayActions}
+          onChange={(event) => setRelayActions(event.target.value)}
+          rows={3}
+          placeholder="Relais presse, diffusion réseau local, mobilisation d'une antenne, partage sur les canaux partenaires..."
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 cmm-text-small"
+        />
+        <p className="cmm-text-caption cmm-text-muted">
+          Décris les relais que la structure peut activer pour un cleanup ou une action citoyenne.
+        </p>
+    </label>
+  );
+}
+
+function PartnerContributionSection({ contributionTypes, toggleContribution, contributionError }: Pick<ReturnType<typeof usePartnerOnboarding>, "contributionTypes" | "toggleContribution" | "contributionError">) {
+  return (
+    <fieldset className="space-y-2">
+        <legend className="cmm-text-caption font-semibold cmm-text-secondary">Contribution réelle possible</legend>
+        <div className="flex flex-wrap gap-2">
+          {CONTRIBUTION_OPTIONS.map((option) => {
+            const checked = contributionTypes.includes(option.value);
+            return (
+              <button
+                type="button"
+                key={option.value}
+                onClick={() => toggleContribution(option.value)}
+                className={`rounded-lg px-3 py-2 cmm-text-caption font-semibold ${checked ? "bg-slate-900 text-white" : "bg-slate-100 cmm-text-secondary"}`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        {contributionError ? <p className="cmm-text-caption text-rose-700">{contributionError}</p> : null}
+    </fieldset>
+  );
+}
+
 export function PartnerOnboardingForm() {
   const {
     organizationName, setOrganizationName,
@@ -87,19 +129,10 @@ export function PartnerOnboardingForm() {
         setCoverageQuartiers={setCoverageQuartiers}
       />
 
-      <label className="block space-y-1">
-        <span className="cmm-text-caption font-semibold cmm-text-secondary">Actions de relais</span>
-        <textarea
-          value={relayActions}
-          onChange={(event) => setRelayActions(event.target.value)}
-          rows={3}
-          placeholder="Relais presse, diffusion réseau local, mobilisation d'une antenne, partage sur les canaux partenaires..."
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 cmm-text-small"
-        />
-        <p className="cmm-text-caption cmm-text-muted">
-          Décris les relais que la structure peut activer pour un cleanup ou une action citoyenne.
-        </p>
-      </label>
+      <PartnerRelaySection
+        relayActions={relayActions}
+        setRelayActions={setRelayActions}
+      />
 
       <AvailabilitySection
         availabilitySlots={availabilitySlots}
@@ -110,33 +143,11 @@ export function PartnerOnboardingForm() {
         removeAvailabilitySlot={removeAvailabilitySlot}
       />
 
-      <fieldset className="space-y-2">
-        <legend className="cmm-text-caption font-semibold cmm-text-secondary">
-          Contribution réelle possible
-        </legend>
-        <div className="flex flex-wrap gap-2">
-          {CONTRIBUTION_OPTIONS.map((option) => {
-            const checked = contributionTypes.includes(option.value);
-            return (
-              <button
-                type="button"
-                key={option.value}
-                onClick={() => toggleContribution(option.value)}
-                className={`rounded-lg px-3 py-2 cmm-text-caption font-semibold ${
-                  checked
-                    ? "bg-slate-900 text-white"
-                    : "bg-slate-100 cmm-text-secondary"
-                }`}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-        {contributionError ? (
-          <p className="cmm-text-caption text-rose-700">{contributionError}</p>
-        ) : null}
-      </fieldset>
+      <PartnerContributionSection
+        contributionTypes={contributionTypes}
+        toggleContribution={toggleContribution}
+        contributionError={contributionError}
+      />
 
       <ContactSection
         contactName={contactName}
