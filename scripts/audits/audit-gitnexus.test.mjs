@@ -130,7 +130,7 @@ test("GitNexus phase failures identify the failed phase", async (t) => {
   assert.ok(diagnostics.includes("GITNEXUS_STATUS: HOST_ENVIRONMENT"));
 });
 
-test("GitNexus audit reports visible steps and PASS for a controlled runner", async (t) => {
+test("GitNexus audit reports visible steps and PASS for a controlled non-cycle runner", async (t) => {
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-audit-"));
   const runnerPath = path.join(repoRoot, ".gitnexus", "run.cjs");
   fs.mkdirSync(path.dirname(runnerPath), { recursive: true });
@@ -141,12 +141,22 @@ test("GitNexus audit reports visible steps and PASS for a controlled runner", as
   t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
 
   const diagnostics = [];
-  const result = await main(["--cycles"], repoRoot, { writeDiagnostic: (line) => diagnostics.push(line) });
+  const result = await main([], repoRoot, { writeDiagnostic: (line) => diagnostics.push(line) });
   assert.equal(result, 0);
   assert.ok(diagnostics.includes("GITNEXUS_STEP_START: analyze --index-only"));
   assert.ok(diagnostics.includes("GITNEXUS_STEP_START: status"));
-  assert.ok(diagnostics.includes("GITNEXUS_STEP_START: check --cycles --json"));
   assert.ok(diagnostics.includes("GITNEXUS_STATUS: PASS"));
+});
+
+test("GitNexus cycle audit is skipped before preflight by repository policy", async (t) => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-cycle-policy-"));
+  t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
+
+  const diagnostics = [];
+  const result = await main(["--cycles"], repoRoot, { writeDiagnostic: (line) => diagnostics.push(line) });
+  assert.equal(result, 0);
+  assert.ok(diagnostics.includes("GITNEXUS_STATUS: SKIPPED_BY_POLICY"));
+  assert.equal(diagnostics.some((line) => line.includes("GITNEXUS_PREFLIGHT")), false);
 });
 
 test("GitNexus audit captures a non-zero report for its parent checker", async (t) => {

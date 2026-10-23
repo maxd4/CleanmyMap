@@ -43,7 +43,7 @@ scripts/
 | Rapports techniques | `reports/` et scripts de génération propriétaires |
 | GitNexus | `audits/audit-gitnexus.mjs`, `check:gitnexus-hygiene` |
 
-Les entrées GitNexus restent `npm run audit:gitnexus`, `npm run audit:gitnexus:cycles` et `npm run check:gitnexus-hygiene`. Les timings, seuils, causes d'échec et mécanismes de reprise sont définis par les scripts et leurs tests : **ne pas figer dans ce README une mesure historique de durée comme performance garantie**. L'index local `.gitnexus` est dérivé et sa validité dépend du commit, de la version et de la configuration.
+Les entrées GitNexus restent `npm run audit:gitnexus`, `npm run audit:gitnexus:cycles` et `npm run check:gitnexus-hygiene`. `audit:gitnexus:cycles` et `quality:cycles` sont toutefois officiellement `SKIPPED_BY_POLICY` jusqu'à réactivation explicite ; ils ne lancent pas l'analyse des cycles. Les timings, seuils, causes d'échec et mécanismes de reprise sont définis par les scripts et leurs tests : **ne pas figer dans ce README une mesure historique de durée comme performance garantie**. L'index local `.gitnexus` est dérivé et sa validité dépend du commit, de la version et de la configuration.
 
 Toute invocation doit distinguer read-only, génération d'artefacts et écriture distante. Un rapport `PASS` ne prouve que le périmètre couvert par le script réellement exécuté.
 

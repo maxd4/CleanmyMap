@@ -6,7 +6,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { buildQualitySummary, collectQualityEvidence, validateQualityEvidence } from "../ci/write-quality-summary.mjs";
-import { readQualityEvidence, writeQualityEvidence } from "./quality-evidence.mjs";
+import { readQualityEvidence, validateQualityEvidenceForGate, writeQualityEvidence } from "./quality-evidence.mjs";
 
 const PASS_SHA = "0123456789abcdef0123456789abcdef01234567";
 const FAIL_SHA = "fedcba9876543210fedcba9876543210fedcba98";
@@ -121,6 +121,24 @@ test("PASS_WITH_GRACE is an accepted quality result", () => {
     gitRunner: () => undefined,
   });
   assert.deepEqual(failures, []);
+});
+
+test("a cycle policy skip is valid evidence without pretending to be executed", () => {
+  const root = temporaryRepository();
+  const evidencePath = writeQualityEvidence({
+    repositoryRoot: root,
+    gate: "cycles",
+    candidateSha: PASS_SHA,
+    status: "SKIPPED_BY_POLICY",
+    metrics: {},
+    details: { reason: "fixture policy" },
+  });
+  const evidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+  assert.equal(evidence.status, "SKIPPED_BY_POLICY");
+  assert.equal(evidence.executed, false);
+  assert.deepEqual(validateQualityEvidenceForGate({ evidence, candidateSha: PASS_SHA }), []);
+  const summary = buildQualitySummary({ candidateSha: PASS_SHA, evidenceByKey: { cycles: evidence } });
+  assert.match(summary, /\| cycles \| SKIPPED_BY_POLICY \| policy \| not run \|/);
 });
 
 test("the summary command fails on a FAIL evidence", () => {

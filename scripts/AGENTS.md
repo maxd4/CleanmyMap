@@ -258,7 +258,9 @@ audits distants restent donc disponibles pour FULL sans être ajoutées aux hook
 ou aux jobs CI ordinaires. Le job CI `mobile-validation` fait exception et
 exécute systématiquement les validations mobiles, y compris tests et couverture,
 sur les pushes et Pull Requests ciblant `main`. Un contrôle différé en DEVELOPMENT est
-`SKIPPED_BY_POLICY`, jamais `PASS`.
+`SKIPPED_BY_POLICY`, jamais `PASS`. Le gate `quality:cycles` est actuellement
+suspendu par cette politique : son invocation produit cette preuve explicite
+sans lancer GitNexus jusqu'à réactivation documentée.
 Le rapport doit indiquer `VALIDATION_MODE`, `CANDIDATE_SCOPE`,
 `ELAPSED_SECONDS`, `TIME_BUDGET_SECONDS`, les contrôles `PASSED`, `FAILED` et
 `NOT_RUN`, ainsi que `VERDICT`. Un dépassement est explicitement

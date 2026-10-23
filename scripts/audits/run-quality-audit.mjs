@@ -131,6 +131,7 @@ export function serialize(value, active = new WeakSet()) {
 }
 
 function statusForAudit(audit, result) {
+  if (result?.status === "SKIPPED_BY_POLICY") return "SKIPPED_BY_POLICY";
   if (result?.status === "FAIL") return "FAIL";
   if (audit === "dead-code") return hasBlockingDeadCodeFindings(result.comparison) ? "FAIL" : "PASS";
   if (audit === "duplication") {
@@ -156,8 +157,7 @@ function isComplexityResult(result) {
 function isCycleResult(result) {
   return Boolean(result)
     && typeof result.gateStatus === "string"
-    && result.baseline
-    && result.report
+    && (result.status === "SKIPPED_BY_POLICY" || (result.baseline && result.report))
     && Array.isArray(result.cycles)
     && Array.isArray(result.cycleObjects)
     && Array.isArray(result.comparison?.added)
@@ -229,6 +229,7 @@ function preserveMalformedAsyncResult(audit, result) {
 
 export function attentionRequired(audit, result) {
   if (!result || result.error) return true;
+  if (result.status === "SKIPPED_BY_POLICY") return false;
   if (audit === "dead-code") {
     const comparison = result.comparison;
     return !comparison
@@ -430,6 +431,9 @@ function makeSummary({ audit, manifest, result, paths }) {
   if (audit === "cycles" && result?.comparison) {
     lines.splice(6, 0, `- Current cycles: ${result.cycles.length}`, `- New cycles: ${result.comparison.added.length}`, `- Stale baseline entries: ${result.comparison.stale.length}`);
   }
+  if (audit === "cycles" && result?.status === "SKIPPED_BY_POLICY") {
+    lines.splice(6, 0, `- Policy reason: ${result.reason}`);
+  }
   if (result?.error) lines.splice(6, 0, `- Error: ${result.error.message}`);
   return `${lines.join("\n")}\n`;
 }
@@ -502,6 +506,7 @@ export async function executeAudit(
   }
   if (audit === "cycles") {
     const result = await cycleRunner();
+    if (result?.status === "SKIPPED_BY_POLICY") return { ...result, readProvenance: "NOT_RUN" };
     return isCycleResult(result)
       ? { ...result, readProvenance: "WORKTREE_LIVE" }
       : preserveMalformedAsyncResult(audit, result);
@@ -527,6 +532,9 @@ export function isAuditBaselineStable(snapshot) {
 }
 
 function classifyEvidence({ readProvenance, start, worktreeChanged, status }) {
+  if (status === "SKIPPED_BY_POLICY") {
+    return { readProvenance: "NOT_RUN", worktreeChanged, reproducible: false, resultClass: "SKIPPED_BY_POLICY" };
+  }
   const reproducible = readProvenance === "COMMITTED_SNAPSHOT"
     ? Boolean(start.auditedHead)
     : start.worktreeClean && !worktreeChanged;
@@ -625,6 +633,8 @@ export async function runQualityAudit(mode, {
     const evaluatedManifests = mode === "all" ? manifests.filter((entry) => QUALITY_GATE_AUDITS.includes(entry.audit)) : manifests;
     const overallStatus = evaluatedManifests.some((entry) => entry.status === "FAIL")
       ? "FAIL"
+      : evaluatedManifests.some((entry) => entry.status === "SKIPPED_BY_POLICY")
+        ? "SKIPPED_BY_POLICY"
       : evaluatedManifests.some((entry) => entry.status === "PASS_WITH_GRACE")
         ? "PASS_WITH_GRACE"
         : "PASS";

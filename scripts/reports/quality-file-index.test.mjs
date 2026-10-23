@@ -730,6 +730,14 @@ test("offline refuse un run incomplet ou un rapport cycles en erreur est conserv
   }
 });
 
+test("projection conserve la suspension des cycles comme SKIPPED_BY_POLICY", () => {
+  const run = buildRun();
+  run.reports.cycles = { status: "SKIPPED_BY_POLICY", reason: "fixture policy", cycleObjects: [], comparison: { added: [], stale: [] } };
+  const index = buildQualityFileIndex({ run, mode: "OFFLINE" });
+  assert.equal(index.audits.cycles.state, "SKIPPED_BY_POLICY");
+  assert.equal(index.files.find((file) => file.path === fileA)?.findings.cycles.state, "SKIPPED_BY_POLICY");
+});
+
 test("projection conserve un rapport dead-code absent en NOT_MEASURED sans planter", () => {
   const run = buildRun();
   run.reports["dead-code"] = null;

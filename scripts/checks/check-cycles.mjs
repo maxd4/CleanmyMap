@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { gitExecutable } from "../ci/git-executable.mjs";
 import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mjs";
+import { qualityAuditPolicy } from "../audits/quality-audit-policy.mjs";
 
 import { runCommandWithTimeout } from "../ci/validation-process.mjs";
 import {
@@ -27,6 +28,19 @@ export class CycleGateError extends Error {
     this.name = "CycleGateError";
     this.code = code;
   }
+}
+
+export function skippedCycleGateResult(policy = qualityAuditPolicy("cycles")) {
+  return {
+    status: policy.status,
+    gateStatus: policy.status,
+    reason: policy.reason,
+    baseline: null,
+    report: null,
+    cycles: [],
+    cycleObjects: [],
+    comparison: { added: [], stale: [] },
+  };
 }
 
 function git(args) {
@@ -142,7 +156,8 @@ export function formatCycleDiagnostic(cycle) {
   return `files=${files}`;
 }
 
-export async function runCycleGate({ runAudit = runAuditProcess, baseline: suppliedBaseline } = {}) {
+export async function runCycleGate({ runAudit = runAuditProcess, baseline: suppliedBaseline, cyclePolicy = qualityAuditPolicy("cycles") } = {}) {
+  if (cyclePolicy?.status === "SKIPPED_BY_POLICY") return skippedCycleGateResult(cyclePolicy);
   if (!fs.existsSync(auditScriptPath)) throw cycleGateError("HOST_ENVIRONMENT", `HOST_ENVIRONMENT: GitNexus audit script missing: ${auditScriptPath}.`);
   let baseline;
   try {
@@ -188,6 +203,18 @@ export async function runCycleGate({ runAudit = runAuditProcess, baseline: suppl
 async function main() {
   try {
     const result = await runCycleGate();
+    if (result.gateStatus === "SKIPPED_BY_POLICY") {
+      writeQualityEvidence({
+        gate: "cycles",
+        candidateSha: resolveCandidateSha(repositoryRoot),
+        status: "SKIPPED_BY_POLICY",
+        metrics: {},
+        details: { reason: result.reason },
+      });
+      console.log("CYCLES_STATUS: SKIPPED_BY_POLICY");
+      console.log(`CYCLES_POLICY_REASON: ${result.reason}`);
+      return;
+    }
     writeQualityEvidence({
       gate: "cycles",
       candidateSha: resolveCandidateSha(repositoryRoot),

@@ -4,6 +4,22 @@ import test from "node:test";
 
 import { compareCycleBaseline, cycleFingerprint, formatCycleDiagnostic, normalizeCycleReport, runCycleGate } from "./check-cycles.mjs";
 
+const ENABLED_CYCLE_POLICY = { status: "ENABLED" };
+
+test("cycle analysis is explicitly skipped by repository policy", async () => {
+  let called = false;
+  const result = await runCycleGate({
+    cyclePolicy: undefined,
+    runAudit: () => {
+      called = true;
+      throw new Error("GitNexus must not run while cycles are suspended");
+    },
+  });
+  assert.equal(result.status, "SKIPPED_BY_POLICY");
+  assert.equal(result.gateStatus, "SKIPPED_BY_POLICY");
+  assert.equal(called, false);
+});
+
 test("cycle fingerprints are stable regardless of member order", () => {
   assert.equal(cycleFingerprint({ members: ["b", "a"], edges: [{ to: "b", from: "a" }] }), cycleFingerprint({ edges: [{ from: "a", to: "b" }], members: ["a", "b"] }));
 });
@@ -22,6 +38,7 @@ test("incomplete GitNexus reports fail closed", () => {
 
 test("a complete clean report passes", async () => {
   const result = await runCycleGate({
+    cyclePolicy: ENABLED_CYCLE_POLICY,
     runAudit: () => ({ status: 0, stdout: JSON.stringify({ status: "clean", enumeration: "complete", cycles: [] }), stderr: "" }),
   });
   assert.deepEqual(result.cycles, []);
@@ -32,6 +49,7 @@ test("a complete clean report passes", async () => {
 test("a new cycle fails with a stable fingerprint and readable files", async () => {
   const cycle = { files: ["a.ts", "b.ts", "a.ts"] };
   const result = await runCycleGate({
+    cyclePolicy: ENABLED_CYCLE_POLICY,
     runAudit: () => ({ status: 1, stdout: JSON.stringify({ status: "cycles_found", enumeration: "complete", cycles: [cycle] }), stderr: "" }),
   });
   assert.deepEqual(result.comparison.added, [cycleFingerprint(cycle)]);
@@ -41,14 +59,14 @@ test("a new cycle fails with a stable fingerprint and readable files", async () 
 
 test("a failed GitNexus process without a report is classified as host environment", async () => {
   await assert.rejects(
-    () => runCycleGate({ runAudit: () => ({ status: 1, stdout: "", stderr: "GitNexus crashed" }) }),
+    () => runCycleGate({ cyclePolicy: ENABLED_CYCLE_POLICY, runAudit: () => ({ status: 1, stdout: "", stderr: "GitNexus crashed" }) }),
     (error) => error.code === "HOST_ENVIRONMENT" && /exited with code 1/.test(error.message),
   );
 });
 
 test("a successful GitNexus process without a report remains a malformed report", async () => {
   await assert.rejects(
-    () => runCycleGate({ runAudit: () => ({ status: 0, stdout: "", stderr: "" }) }),
+    () => runCycleGate({ cyclePolicy: ENABLED_CYCLE_POLICY, runAudit: () => ({ status: 0, stdout: "", stderr: "" }) }),
     (error) => error.code === "MALFORMED_REPORT" && /no JSON report/.test(error.message),
   );
 });
@@ -56,6 +74,7 @@ test("a successful GitNexus process without a report remains a malformed report"
 test("a failed analyze phase is classified before cycle JSON parsing", async () => {
   await assert.rejects(
     () => runCycleGate({
+      cyclePolicy: ENABLED_CYCLE_POLICY,
       runAudit: () => ({
         status: 1,
         stdout: "GITNEXUS_STEP_FAILED: analyze --index-only\n",
@@ -69,6 +88,7 @@ test("a failed analyze phase is classified before cycle JSON parsing", async () 
 test("a GitNexus host timeout is classified explicitly", async () => {
   await assert.rejects(
     () => runCycleGate({
+      cyclePolicy: ENABLED_CYCLE_POLICY,
       runAudit: () => ({
         status: 1,
         stdout: "",
@@ -82,6 +102,7 @@ test("a GitNexus host timeout is classified explicitly", async () => {
 test("a GitNexus runner absence is classified before JSON parsing", async () => {
   await assert.rejects(
     () => runCycleGate({
+      cyclePolicy: ENABLED_CYCLE_POLICY,
       runAudit: () => ({
         status: 1,
         stdout: "",
@@ -95,6 +116,7 @@ test("a GitNexus runner absence is classified before JSON parsing", async () => 
 test("a stale baseline is classified separately from a new cycle", async () => {
   const cycle = { members: ["legacy.ts"] };
   const result = await runCycleGate({
+    cyclePolicy: ENABLED_CYCLE_POLICY,
     runAudit: () => ({ status: 0, stdout: JSON.stringify({ status: "clean", enumeration: "complete", cycles: [] }), stderr: "" }),
     baseline: {
       schemaVersion: 1,

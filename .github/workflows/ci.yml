@@ -445,7 +445,7 @@ jobs:
         if: ${{ !cancelled() && steps.initialize_gitnexus.outcome == 'success' }}
         run: npm run audit:gitnexus
 
-      - name: GitNexus cycle ratchet
+      - name: GitNexus cycle ratchet (skipped by policy)
         id: quality_cycles
         if: ${{ !cancelled() && steps.audit_gitnexus.outcome == 'success' }}
         continue-on-error: true

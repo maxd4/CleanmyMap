@@ -218,7 +218,8 @@ assert.doesNotMatch(
   webQualityJob,
   /npm install --global(?! --ignore-scripts) [^\n]*gitnexus@1\.6\.12/,
 );
-assert.match(webQualityJob, /- name: GitNexus cycle ratchet[\s\S]*?if: \$\{\{ !cancelled\(\)/);
+assert.match(webQualityJob, /- name: GitNexus cycle ratchet \(skipped by policy\)[\s\S]*?if: \$\{\{ !cancelled\(\)/);
+assert.match(webQualityJob, /- name: GitNexus cycle ratchet \(skipped by policy\)[\s\S]*?run: npm run quality:cycles/);
 assert.match(
   webQualityJob,
   /if: \$\{\{ !cancelled\(\) && steps\.checkout\.outcome == 'success' && steps\.setup_node\.outcome == 'success' && steps\.install_node_dependencies\.outcome == 'success' \}\}/,

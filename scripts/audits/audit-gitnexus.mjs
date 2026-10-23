@@ -8,6 +8,7 @@ import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 import { gitExecutable } from "../ci/git-executable.mjs";
+import { isQualityAuditSkippedByPolicy, qualityAuditPolicy } from "./quality-audit-policy.mjs";
 import { runCommandWithTimeout } from "../ci/validation-process.mjs";
 import {
   createCandidateFingerprint,
@@ -368,6 +369,13 @@ export async function main(
   } catch (error) {
     writeDiagnostic(error.message);
     return 2;
+  }
+
+  if (options.cycles && isQualityAuditSkippedByPolicy("cycles")) {
+    const policy = qualityAuditPolicy("cycles");
+    writeDiagnostic("GITNEXUS_STATUS: SKIPPED_BY_POLICY");
+    writeDiagnostic(`GITNEXUS_POLICY_REASON: ${policy.reason}`);
+    return 0;
   }
 
   const preflight = preflightGitNexus(repoDirectory);

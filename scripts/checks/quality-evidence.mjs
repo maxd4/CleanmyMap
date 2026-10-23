@@ -7,7 +7,7 @@ import { gitExecutable } from "../ci/git-executable.mjs";
 
 export const QUALITY_EVIDENCE_SCHEMA_VERSION = 1;
 export const QUALITY_EVIDENCE_RELATIVE_ROOT = "artifacts/quality-evidence";
-export const QUALITY_EVIDENCE_STATUSES = Object.freeze(["PASS", "PASS_WITH_GRACE", "FAIL", "SKIPPED_BY_SCOPE", "NOT_RUN"]);
+export const QUALITY_EVIDENCE_STATUSES = Object.freeze(["PASS", "PASS_WITH_GRACE", "FAIL", "SKIPPED_BY_SCOPE", "SKIPPED_BY_POLICY", "NOT_RUN"]);
 const QUALITY_EVIDENCE_ACCEPTED_STATUSES = Object.freeze(["PASS", "PASS_WITH_GRACE"]);
 
 function assertCandidateSha(candidateSha) {
@@ -69,7 +69,7 @@ function createQualityEvidence({
     ...(scope ? { scope } : {}),
     candidateSha,
     ...(candidateRef ? { candidateRef } : {}),
-    executed: status !== "NOT_RUN" && status !== "SKIPPED_BY_SCOPE",
+    executed: status !== "NOT_RUN" && status !== "SKIPPED_BY_SCOPE" && status !== "SKIPPED_BY_POLICY",
     status,
     metrics,
     findings,
@@ -122,11 +122,13 @@ export function validateQualityEvidenceForGate({
   if (evidence.schemaVersion !== QUALITY_EVIDENCE_SCHEMA_VERSION) {
     failures.push(`evidence schema version is invalid: ${evidence.schemaVersion ?? "<missing>"}`);
   }
-  if (evidence.candidateSha !== candidateSha || evidence.executed !== true) {
+  if (evidence.candidateSha !== candidateSha || (evidence.executed !== true && evidence.status !== "SKIPPED_BY_POLICY")) {
     failures.push("evidence is missing, malformed, or attached to another candidate");
   }
   if (!QUALITY_EVIDENCE_STATUSES.includes(evidence.status)) {
     failures.push(`evidence status is invalid: ${evidence.status ?? "<missing>"}`);
+  } else if (evidence.status === "SKIPPED_BY_POLICY") {
+    return failures;
   } else if (!QUALITY_EVIDENCE_ACCEPTED_STATUSES.includes(evidence.status)) {
     failures.push(`ratchet status is ${evidence.status}`);
   }

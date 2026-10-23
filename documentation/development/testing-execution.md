@@ -310,6 +310,11 @@ aucun état autre que `PASS` ou `ALREADY_PROVEN` ne peut contribuer à
 `DYNAMIC_CANDIDATE` décrivent le candidat contrôlé ; ils ne constituent pas de
 nouveaux modes.
 
+Le gate `quality:cycles` est actuellement `SKIPPED_BY_POLICY` par décision
+explicite : ses commandes restent vérifiables, mais ne lancent pas GitNexus et
+ne produisent aucune mesure de cycles. Ce statut est conservé dans les preuves
+et doit rester distinct de `PASS` jusqu'à une réactivation documentée.
+
 La lane maintenance reste disponible à part, comme compatibilité spécialisée :
 
 ```bash

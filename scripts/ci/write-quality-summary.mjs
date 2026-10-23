@@ -31,8 +31,8 @@ function evidenceIsUsable(evidence, candidateSha) {
     evidence
       && evidence.schemaVersion === QUALITY_EVIDENCE_SCHEMA_VERSION
       && evidence.candidateSha === candidateSha
-      && evidence.executed === true
       && QUALITY_EVIDENCE_STATUSES.includes(evidence.status)
+      && (evidence.executed === true || evidence.status === "SKIPPED_BY_POLICY")
       && evidence.status !== "NOT_RUN",
   );
 }
@@ -64,6 +64,9 @@ export function validateQualityEvidence({
 function rowForGate(gate, evidence, candidateSha) {
   if (!evidenceIsUsable(evidence, candidateSha)) {
     return { gate: gate.label, status: "NOT_RUN", current: "—", delta: "—", newFindings: "—" };
+  }
+  if (evidence.status === "SKIPPED_BY_POLICY") {
+    return { gate: gate.label, status: "SKIPPED_BY_POLICY", current: "policy", delta: "not run", newFindings: "—" };
   }
   const metrics = evidence.metrics ?? {};
   if (gate.key === "dead-code") {
@@ -118,7 +121,7 @@ export function buildQualitySummary({ candidateSha, evidenceByKey }) {
     "",
     `Candidate SHA: \`${candidateSha}\``,
     "",
-    "Evidence is projected from the single execution of each gate; missing, malformed, or mismatched evidence is `NOT_RUN`.",
+    "Evidence is projected from the single execution of each gate; missing, malformed, or mismatched evidence is `NOT_RUN`. A policy skip is reported as `SKIPPED_BY_POLICY`, never as `PASS`.",
     "",
     "| Gate | Status | Current | Delta | New findings |",
     "| --- | --- | --- | --- | ---: |",

@@ -37,7 +37,7 @@ export const QUALITY_ARCHITECTURE_DOMAIN_PREFIX = "architecture:";
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 const RUN_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
-const QUALITY_STATUS_STATES = new Set(["PRESENT", "NONE", "NOT_MEASURED", "NOT_APPLICABLE", "OUT_OF_INSTRUMENTATION"]);
+const QUALITY_STATUS_STATES = new Set(["PRESENT", "NONE", "NOT_MEASURED", "SKIPPED_BY_POLICY", "NOT_APPLICABLE", "OUT_OF_INSTRUMENTATION"]);
 
 function normalizePath(value) {
   return String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
@@ -901,6 +901,9 @@ function addDuplication(report, files, domains, candidateGroups) {
 
 function addCycles(report, files, domains, candidateGroups) {
   if (report.error) return { state: "NOT_MEASURED", status: "FAIL", error: report.error };
+  if (report.status === "SKIPPED_BY_POLICY") {
+    return { state: "SKIPPED_BY_POLICY", status: report.status, reason: report.reason ?? "contrôle suspendu par la politique du dépôt", cycles: [] };
+  }
   const cycles = [];
   for (const cycle of report.cycleObjects ?? []) {
     const cycleFiles = [...new Set((cycle.files ?? []).map(normalizePath).filter(Boolean))].sort();
@@ -1096,7 +1099,7 @@ function finalizeFiles(files, reports, architecture) {
     coverage: !reports.coverage || reports.coverage.error || reports.coverage.measurementStatus === "NOT_MEASURED" ? "NOT_MEASURED" : "PRESENT",
     deadCode: reports["dead-code"]?.error ? "NOT_MEASURED" : "PRESENT",
     duplication: reports.duplication?.error ? "NOT_MEASURED" : "PRESENT",
-    cycles: reports.cycles?.error ? "NOT_MEASURED" : "PRESENT",
+    cycles: reports.cycles?.status === "SKIPPED_BY_POLICY" ? "SKIPPED_BY_POLICY" : reports.cycles?.error ? "NOT_MEASURED" : "PRESENT",
     documentation: !reports.documentation || reports.documentation.status === "NOT_MEASURED" ? "NOT_MEASURED" : "PRESENT",
   };
   const output = [];
@@ -1134,6 +1137,7 @@ function finalizeFiles(files, reports, architecture) {
       : null;
     const category = (auditKey, findingItems, measured, detail) => {
       if (findingItems.length > 0) return state("PRESENT", `${findingItems.length} finding(s)`, findingItems);
+      if (categoryAvailability[auditKey] === "SKIPPED_BY_POLICY") return state("SKIPPED_BY_POLICY", "contrôle suspendu par la politique du dépôt");
       if (categoryAvailability[auditKey] === "NOT_MEASURED") return state("NOT_MEASURED", detail);
       if (measured) return state("NONE", "aucun finding attribué", []);
       return state("NOT_MEASURED", "le rapport ne fournit pas une couverture négative par fichier", []);

@@ -73,11 +73,13 @@ l'artefact court terme ; `web-coverage` le télécharge puis exécute uniquement
 la comparaison informative. `checks:fast` ne relance pas cette suite complète instrumentée afin
 de respecter son budget et d'éviter une seconde exécution inutile des tests.
 
-Les étapes CI `Duplication ratchet` et `GitNexus cycle ratchet` restent
-exécutées avec `continue-on-error: true` afin de conserver leurs logs, preuves
-et rapports même lorsqu'une gate échoue. Le step final de résumé valide ensuite
-chaque preuve : seuls `PASS` et `PASS_WITH_GRACE` rattachés au candidat courant
-et à une baseline ancêtre sont acceptés ; un `FAIL`, une baseline obsolète, une
+Les étapes CI `Duplication ratchet` et `GitNexus cycle ratchet (skipped by
+policy)` restent exécutées avec `continue-on-error: true` afin de conserver
+leurs logs et preuves même lorsqu'une gate échoue. Le step final de résumé
+valide ensuite chaque preuve : `PASS` et `PASS_WITH_GRACE` doivent être
+rattachés au candidat courant et à une baseline ancêtre ; le cycle
+`SKIPPED_BY_POLICY` est accepté uniquement comme suspension explicite et ne
+contribue jamais à un score `PASS`. Un `FAIL`, une baseline obsolète, une
 preuve manquante, invalide ou rattachée à un autre SHA fait échouer
 `web-quality`. Le job `web-coverage` télécharge la preuve produite par
 `web-tests` et exécute directement la comparaison checker-only ; une baisse
@@ -496,24 +498,24 @@ présents dans la baseline native et sont documentés séparément dans
 autoriser un nouveau fingerprint. Aucun seuil, ignore ou grace ne peut être
 relevé pour masquer une régression.
 
-Le contrôle de cycles réutilise l'analyseur GitNexus existant. La CI installe
-explicitement la version épinglée `1.6.12`, puis passe par l'audit observable
-qui initialise l'index en mode `--index-only` et enregistre une preuve de
-statut liée au même candidat. `quality:cycles` réutilise alors l'analyse et le
-statut valides avant d'exécuter son propre rapport de cycles ; `.gitnexus/`
-reste un état local ignoré :
+Le contrôle de cycles est officiellement suspendu jusqu'à réactivation
+explicite. `quality:cycles` et `audit:gitnexus:cycles` retournent
+`SKIPPED_BY_POLICY`, avec une preuve rattachée au candidat courant, sans
+installer GitNexus, construire d'index ou prétendre avoir mesuré l'absence de
+cycles. Le contrôle conserve donc un état explicite et ne devient jamais un
+`PASS` implicite :
 
 ```bash
 npm run quality:cycles
 ```
 
-Il exige un rapport complet et stable, plafonne les cycles historiques
-identifiés et échoue sur tout nouveau cycle ou baseline obsolète. Ces gates,
-comme `quality:duplication`, `quality:complexity`, `quality:dead-code` et
-`quality:top-heavy`, sont obligatoires sur le candidat final en `FULL` et dans
-la CI FULL ; ils ne sont pas déclenchés automatiquement en `DEVELOPMENT` par
-une extraction, un module, un import ou un refactor. Toute modification du
-code après leur exécution impose d'actualiser les preuves concernées.
+La politique est portée par `scripts/audits/quality-audit-policy.mjs` et
+réutilisée par les runners, le résumé CI et la projection de fichiers. Tant
+qu'elle est active, aucun rapport complet de cycles n'est produit ; une
+exécution `FULL` conserve donc cette dimension comme `SKIPPED_BY_POLICY`, et
+non comme une couverture ou un `PASS`. La réactivation devra être un lot
+explicite qui rétablira la preuve GitNexus et ses validations sans modifier les
+seuils, baselines ou critères du gate.
 
 ### GitNexus ciblé pendant DEVELOPMENT
 
@@ -568,9 +570,9 @@ changements staged/unstaged et vérification de l'absence de processus qui
 pourrait rendre l'index ambigu ; la propreté n'est pas requise pour poursuivre
 les autres validations. Elle ne doit jamais écraser, restaurer ou modifier les
 fichiers staged ou unstaged préexistants.
-Les cycles globaux restent contrôlés par `quality:cycles` en `FULL` ; aucune
-requête GitNexus d'impact ne devient un contrôle bloquant de pré-commit ou de
-pré-push.
+Les cycles globaux restent documentés par `quality:cycles`, mais ce contrôle
+est `SKIPPED_BY_POLICY` jusqu'à nouvel ordre ; aucune requête GitNexus d'impact
+ne devient un contrôle bloquant de pré-commit ou de pré-push.
 
 #### Qualification d'usage GitNexus
 
@@ -872,7 +874,8 @@ résultat déjà calculé par le processus `quality:dead-code`,
 `quality:complexity`, `quality:duplication` ou `quality:cycles` ; elle ne relance
 ni Knip, ni ESLint, ni jscpd, ni GitNexus. Chaque fichier porte le
 `candidateSha`, l'identité de baseline disponible, le statut `PASS`,
-`PASS_WITH_GRACE` ou `FAIL`, les métriques et les compteurs de findings. Une
+`PASS_WITH_GRACE`, `FAIL` ou `SKIPPED_BY_POLICY`, les métriques et les compteurs
+de findings. Une
 preuve manquante, invalide ou rattachée à un autre SHA est `NOT_RUN` dans le
 Job Summary et ne devient jamais implicitement `PASS`.
 

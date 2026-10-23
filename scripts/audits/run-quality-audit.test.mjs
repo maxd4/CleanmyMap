@@ -492,6 +492,27 @@ test("executeAudit attend la promesse de cycles et conserve le gate et la compar
   }
 });
 
+test("executeAudit conserve SKIPPED_BY_POLICY sans produire une mesure de cycles", async () => {
+  const root = tempRoot();
+  try {
+    const result = await executeAudit("cycles", root, {
+      cycleRunner: async () => ({
+        status: "SKIPPED_BY_POLICY",
+        gateStatus: "SKIPPED_BY_POLICY",
+        reason: "fixture policy",
+        cycles: [],
+        cycleObjects: [],
+        comparison: { added: [], stale: [] },
+      }),
+    });
+    assert.equal(result.status, "SKIPPED_BY_POLICY");
+    assert.equal(result.readProvenance, "NOT_RUN");
+    assert.deepEqual(result.cycles, []);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("executeAudit transmet le SHA audité aux projections hotspots et testability", async () => {
   const root = tempRoot();
   const auditedHead = "d".repeat(40);
