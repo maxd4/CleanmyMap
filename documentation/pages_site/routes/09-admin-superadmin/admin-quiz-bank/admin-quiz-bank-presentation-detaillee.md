@@ -1,12 +1,14 @@
 # Banque de quiz — Présentation détaillée
 
+**Statut : `CURRENT` pour le parcours d'audit interne.** Le contrat d'accès et les sources propriétaires restent dans [admin-quiz-bank-README.md](./admin-quiz-bank-README.md). Ce document complète les interactions, sans créer une politique AuthZ parallèle.
+
 ## Parcours
 
 ```mermaid
 flowchart TD
-  A[Arrivée sur /admin/quiz-bank] --> B{Session + rôle admin}
+  A[Arrivée sur /admin/quiz-bank] --> B{Session et canAccessAdminPage}
   B -->|non| C[notFound]
-  B -->|oui| D[Construire snapshot de la banque]
+  B -->|oui - admin ou max autorisé| D[Construire snapshot de la banque]
   D --> E[Charger métriques pédagogiques]
   E --> F[Afficher synthèse]
   F --> G[Filtrer et relire les questions]
@@ -58,7 +60,7 @@ Le panneau rappelle que les métriques sont agrégées et anonymes dans cette co
 
 Invariants :
 
-- rôle `admin` obligatoire ;
+- `getCurrentUserEffectiveAccess().canAccessAdminPage` obligatoire ; rôles `admin` et `max` autorisés selon le contrat CURRENT ;
 - pas de banque admin exposée publiquement ;
 - pas d'autorisation implicite basée uniquement sur la présence d'un compte ;
 - pas de données personnelles supplémentaires sans besoin explicite.

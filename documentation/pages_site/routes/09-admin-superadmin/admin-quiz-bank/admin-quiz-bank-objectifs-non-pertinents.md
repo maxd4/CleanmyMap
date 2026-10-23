@@ -26,13 +26,7 @@ Motifs :
 
 ### Autoriser tous les comptes connectés
 
-Écarté.
-
-Le runtime exige actuellement exactement :
-
-```txt
-role = admin
-```
+Écarté. Le runtime vérifie le compte connecté et `getCurrentUserEffectiveAccess().canAccessAdminPage`. Cette capacité concerne `admin` et `max` selon le contrat CURRENT ; elle n'est pas ouverte aux autres comptes authentifiés. Le rôle `max` n'est pas exclu par une formulation historique « admin seulement ».
 
 ### Ajouter une base parallèle uniquement pour les métriques
 

@@ -70,5 +70,3 @@
 ## Fichiers associés
 
 - [Présentation détaillée](./feedback-presentation-detaillee.md)
-- [Liste des propositions à traiter](./feedback-liste-propositions-a-traiter.md)
-- [Objectifs non pertinents](./feedback-objectifs-non-pertinents.md)

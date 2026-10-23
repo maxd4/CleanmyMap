@@ -80,8 +80,6 @@
 - **recherche** : le champ du header est débouncé, affiche loading/vide/erreur et permet de sélectionner un résultat pour réutiliser l'ancrage `messageId` du fil.
 - **vote de sondage** : le choix, le changement et le retrait sont disponibles dans le fil ; l'interface applique la mise à jour localement puis réconcilie avec l'agrégat serveur. Les votes restent anonymes dans la lecture.
 
-
-
 ## Références legacy
 
 - Aucun fichier legacy dédié.
@@ -95,4 +93,3 @@
 ## Fichiers associés
 
 - [Présentation détaillée](./messagerie-presentation-detaillee.md)
-- [Objectifs non pertinents](./messagerie-objectifs-non-pertinents.md)

@@ -27,7 +27,7 @@ Les formes de gamification suivantes ont été proposées puis non retenues à c
 - `Séries et régularité` - streak mensuel, participation consécutive, continuité;
 - `Missions et quêtes` - objectifs courts, clairs, ponctuels;
 - `Défis coopératifs` - objectifs d équipe, de quartier, d association;
-- `Mécaniques d apprentissage` - quiz, tutoriels, progression de maîtrise, validation de connaissances;
+- `Mécaniques d apprentissage` autonomes ajoutées en parallèle du moteur actuel — ne remet pas en cause la progression CURRENT `Apprentissage` déjà livrée;
 - `Réputation utile` - historique d actions fiables, qualité des contributions, confiance;
 - `Défis saisonniers` - campagnes temporaires thématiques.
 

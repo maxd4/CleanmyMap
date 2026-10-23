@@ -58,7 +58,3 @@ Ce document est une note de compatibilité `LEGACY / REDIRECT`, pas une fiche
 `CURRENT`. Les fichiers associés ci-dessous conservent les décisions et limites
 historiques de la page supprimée ; aucune de leurs propositions ne décrit une
 fonctionnalité actuellement rendue.
-
-- [Présentation historique](./community-presentation-detaillee.md)
-- [Propositions historiques](./community-liste-propositions-a-traiter.md)
-- [Objectifs hors périmètre](./community-objectifs-non-pertinents.md)

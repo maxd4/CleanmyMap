@@ -50,8 +50,6 @@
 - **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
 - **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
 
-
-
 ## Références legacy
 
 - Référence legacy non versionnée dans le dépôt actuel ; consulter les documents canoniques de cette page et ne pas recréer l'ancien chemin.
@@ -60,7 +58,3 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
-
-## Fichiers associés
-
-- [Objectifs non pertinents](./partners-onboarding-objectifs-non-pertinents.md)
