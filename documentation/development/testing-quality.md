@@ -1,5 +1,7 @@
 # Testing — qualité et audits
 
+> **Statut documentaire : `CURRENT`.**
+
 Ce module porte la couverture, les ratchets de qualité, les audits structurels et leurs artefacts.
 
 [Retour au guide canonique](./TESTING.md).

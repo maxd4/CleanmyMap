@@ -1,6 +1,6 @@
 # Audits et preuves CI
 
-> Module associé à [testing-quality.md](./testing-quality.md). Statut : provenance.
+> Module associé à [testing-quality.md](./testing-quality.md). Statut : `CURRENT` — provenance et preuves d'audit.
 
 ### Audits qualité et artefacts locaux
 

@@ -1,6 +1,6 @@
 # Accès, identités et surfaces
 
-> Module associé à [spogomi.md](./spogomi.md). Statut : contrats et périmètres.
+> Module associé à [spogomi.md](./spogomi.md). Statut : `CURRENT` — contrats et périmètres.
 
 ## 10. Organisateur, permissions et identités
 

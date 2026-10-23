@@ -1,6 +1,6 @@
 # Complexité, dead-code et mutation
 
-> Module associé à [testing-quality.md](./testing-quality.md). Statut : ratchets.
+> Module associé à [testing-quality.md](./testing-quality.md). Statut : `CURRENT` — ratchets de qualité.
 
 ## Complexité, longueur et ratchet legacy
 

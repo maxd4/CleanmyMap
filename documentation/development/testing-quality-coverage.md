@@ -1,6 +1,6 @@
 # Couverture runtime et SonarQube
 
-> Module associé à [testing-quality.md](./testing-quality.md). Statut : qualité.
+> Module associé à [testing-quality.md](./testing-quality.md). Statut : `CURRENT` — qualité et couverture.
 
 ## Couverture runtime et ratchet
 

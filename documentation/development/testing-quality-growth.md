@@ -1,6 +1,6 @@
 # Croissance du dépôt
 
-> Module associé à [testing-quality.md](./testing-quality.md). Statut : mesures descriptives.
+> Module associé à [testing-quality.md](./testing-quality.md). Statut : `CURRENT` — mesures descriptives.
 
 ## Suivi historique de croissance du dépôt
 

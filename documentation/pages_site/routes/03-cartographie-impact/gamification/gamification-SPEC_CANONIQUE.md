@@ -1,5 +1,7 @@
 # Spécification canonique de la gamification
 
+> **Statut documentaire : `CURRENT`.**
+
 Ce document est la référence unique à lire en premier pour comprendre la gamification CleanMyMap.
 
 ## Leaderboard CURRENT et projection publique

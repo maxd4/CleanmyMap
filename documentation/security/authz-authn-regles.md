@@ -1,6 +1,7 @@
 # AuthN, AuthZ, secrets et frontières API (`CURRENT`)
 
-> Source canonique de l'état runtime actuel. La matrice de capacités cible est
+> **Statut documentaire : `CURRENT`.** Source canonique de l'état runtime actuel.
+> La matrice de capacités cible est
 > séparée dans [`authorization-capabilities.md`](./authorization-capabilities.md)
 > et ne doit pas être lue comme une permission déjà déployée.
 

@@ -1,6 +1,6 @@
 # Duplication, cycles et GitNexus
 
-> Module associé à [testing-quality.md](./testing-quality.md). Statut : audits structurels.
+> Module associé à [testing-quality.md](./testing-quality.md). Statut : `CURRENT` — audits structurels.
 
 ## Duplication et cycles
 
