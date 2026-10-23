@@ -15,6 +15,7 @@ import type {ActionsMapPresentation} from "./map-feed/map-feed.types";
 import {DEFAULT_VISIBLE_MAP_LAYERS,toggleVisibleMapLayer,type VisibleMapLayerKey} from "./actions-map-canvas.layers";
 import type {ShapeBasemapMode} from "./map/layers/map-layers.shared";
 import { ActionsMapCanvasView } from "./actions-map-canvas-view";
+import { usePlasticOriginsData } from "@/lib/plastic-origins/use-plastic-origins-data";
 import {
   deriveActionsMapCategoryCounts,
   resolveActionsMapCanvasTheme,
@@ -89,6 +90,9 @@ export function ActionsMapCanvas({
     recenterViewport,
   });
   const [visibleLayers, setVisibleLayers] = useState(DEFAULT_VISIBLE_MAP_LAYERS);
+  const plasticOriginsData = usePlasticOriginsData(
+    !isMinimalPreview && visibleLayers.plasticOrigins,
+  );
   const [basemapMode, setBasemapMode] = useState<ShapeBasemapMode>("light");
   const [internalDisplayMode, setInternalDisplayMode] = useState<CurrentPlaceStateMode>(
     "projected_today",
@@ -161,6 +165,7 @@ export function ActionsMapCanvas({
         layerButtonClasses,
         basemapMode,
         setBasemapMode,
+        plasticOriginsData,
       }}
       logicalRecenterViewport={logicalRecenterViewport}
       tone={tone}
@@ -181,6 +186,7 @@ export function ActionsMapCanvas({
       displayMode={displayMode}
       scoreScope={scoreScope}
       isEmerald={isEmerald}
+      plasticOriginsData={plasticOriginsData}
     />
   );
 }

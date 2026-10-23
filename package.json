@@ -48,6 +48,7 @@
     "audit:supabase:quota": "npm run backend:supabase:quota-audit -w apps/web",
     "audit:quiz-quality": "node --experimental-strip-types scripts/audits/audit-quiz-quality.mjs",
     "audit:quiz-sources": "node --experimental-strip-types scripts/audits/audit-quiz-sources.mjs",
+    "audit:plastic-origins": "node scripts/audits/audit-plastic-origins.mjs --source-dir .artifacts/plastic-origins-audit --report .artifacts/plastic-origins-audit/quality-report.json --export apps/web/public/data/plastic-origins/observations.json --write",
     "audit:vercel:ci": "node scripts/audits/audit-vercel-ci.mjs",
     "vercel:deploy:preflight": "npm run vercel:deploy:preflight -w apps/web",
     "test:vercel-deploy-preflight": "npm run test:vercel-deploy-preflight -w apps/web",

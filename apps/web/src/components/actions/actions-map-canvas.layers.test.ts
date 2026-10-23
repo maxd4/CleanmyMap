@@ -16,6 +16,7 @@ describe("actions map canvas layers", () => {
       shapes: true,
       infrastructure: true,
       trashSpotter: true,
+      plasticOrigins: false,
     });
   });
 
@@ -27,12 +28,19 @@ describe("actions map canvas layers", () => {
       shapes: false,
       infrastructure: true,
       trashSpotter: true,
+      plasticOrigins: false,
     });
     expect(DEFAULT_VISIBLE_MAP_LAYERS).toEqual({
       points: true,
       shapes: true,
       infrastructure: true,
       trashSpotter: true,
+      plasticOrigins: false,
     });
+  });
+
+  it("keeps historical Plastic Origins disabled by default", () => {
+    expect(MAP_LAYER_LABELS.plasticOrigins).toBe("Plastic Origins | Observations historiques");
+    expect(DEFAULT_VISIBLE_MAP_LAYERS.plasticOrigins).toBe(false);
   });
 });

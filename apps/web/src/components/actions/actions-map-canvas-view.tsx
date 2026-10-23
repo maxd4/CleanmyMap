@@ -16,11 +16,12 @@ import { MapScoreScopeControl } from "./map/controls/map-score-scope-control";
 import { MapGeometryLegend } from "./map/layers/map-geometry-legend";
 import { ACTIONS_MAP_DISPLAY_MODE_OPTIONS } from "./map/filters/actions-map-display-mode";
 import { ActionsMapFilterControls } from "./map/filters/actions-map-filter-controls";
-import { SignalementMarkers, ShapeLayers, InfrastructureMarkers, TrashSpotterMarkers } from "./map/layers/map-layers";
+import { SignalementMarkers, ShapeLayers, InfrastructureMarkers, TrashSpotterMarkers, PlasticOriginsLayer } from "./map/layers/map-layers";
 import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 import type { ShapeBasemapMode } from "./map/layers/map-layers.shared";
 import { ActionsMapCanvasStyles } from "./actions-map-canvas-styles";
 import { ActionsMapCanvasViewport } from "./actions-map-canvas-viewport";
+import type { PlasticOriginsDataState } from "@/lib/plastic-origins/use-plastic-origins-data";
 
 type ActionsMapCanvasControlsProps = {
   isMinimalPreview: boolean;
@@ -41,6 +42,7 @@ type ActionsMapCanvasControlsProps = {
   layerButtonClasses: { active: string; inactive: string };
   basemapMode: ShapeBasemapMode;
   setBasemapMode: Dispatch<SetStateAction<ShapeBasemapMode>>;
+  plasticOriginsData: PlasticOriginsDataState;
 };
 
 function ActionsMapCanvasDisplayPanel({
@@ -53,12 +55,14 @@ function ActionsMapCanvasDisplayPanel({
   layerButtonClasses,
   basemapMode,
   setBasemapMode,
+  plasticOriginsData,
 }: Omit<ActionsMapCanvasControlsProps, "isMinimalPreview" | "activePanel" | "setActivePanel" | "filters" | "onZoneQueryChange" | "onDateScopeChange" | "onCategoryToggle" | "onResetFilters" | "categoryCounts">) {
   const layers = [
     { key: "points" as const, label: "Points" },
     { key: "shapes" as const, label: "Parcours & zones" },
     { key: "infrastructure" as const, label: "Infras" },
     { key: "trashSpotter" as const, label: "Trash Spotter" },
+    { key: "plasticOrigins" as const, label: "Plastic Origins | Observations historiques" },
   ];
   return (
     <div id="actions-map-display-panel" className="absolute left-3 right-3 top-28 z-[1000] max-h-[calc(100%-5rem)] overflow-y-auto rounded-2xl border border-sky-200/90 bg-white/95 p-4 text-slate-900 shadow-xl backdrop-blur-xl sm:left-auto sm:right-3 sm:top-16 sm:max-w-md" role="region" aria-label="Options d’affichage">
@@ -67,6 +71,23 @@ function ActionsMapCanvasDisplayPanel({
           <p className="text-sm font-semibold text-slate-900">Référence du score</p>
           <MapScoreScopeControl value={scoreScope} onChange={onScoreScopeChange} />
         </div>
+        {visibleLayers.plasticOrigins ? (
+          <div className="space-y-2 rounded-xl border border-fuchsia-200 bg-fuchsia-50 p-3 text-sm text-fuchsia-950" role="status" aria-live="polite">
+            {plasticOriginsData.isLoading ? <p>Chargement des observations historiques…</p> : null}
+            {plasticOriginsData.error ? (
+              <div className="space-y-2">
+                <p>Le calque Plastic Origins est temporairement indisponible.</p>
+                <button type="button" onClick={plasticOriginsData.reload} className="min-h-10 rounded-lg border border-fuchsia-300 bg-white px-3 py-2 font-semibold hover:bg-fuchsia-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/50">
+                  Réessayer
+                </button>
+              </div>
+            ) : null}
+            {plasticOriginsData.data && plasticOriginsData.data.observations.length === 0 ? <p>Aucune observation historique disponible.</p> : null}
+            {plasticOriginsData.data && plasticOriginsData.data.observations.length > 0 ? (
+              <p>{plasticOriginsData.data.observations.length.toLocaleString("fr-FR")} observations historiques chargées. Les points visibles suivent le viewport.</p>
+            ) : null}
+          </div>
+        ) : null}
         {scoreScope === "global" ? (
           <div className="space-y-2" role="group" aria-label="Mode temporel du score global">
             <p className="text-sm font-semibold text-slate-900">Période du score</p>
@@ -172,6 +193,7 @@ export type ActionsMapCanvasViewProps = {
   displayMode: CurrentPlaceStateMode;
   scoreScope: PollutionScoreScope;
   isEmerald: boolean;
+  plasticOriginsData: PlasticOriginsDataState;
 };
 
 export function ActionsMapCanvasView({
@@ -205,6 +227,7 @@ export function ActionsMapCanvasView({
   displayMode,
   scoreScope,
   isEmerald,
+  plasticOriginsData,
 }: ActionsMapCanvasViewProps) {
   return (
     <div className={cn("relative overflow-hidden rounded-[2rem]", mapShellClasses, isMinimalPreview && "h-full rounded-none border-0 bg-transparent shadow-none ring-0", className)}>
@@ -217,6 +240,7 @@ export function ActionsMapCanvasView({
           <SignalementMarkers items={mainItems} visible={visibleLayers.points} selectedActionId={selectedActionId} onSelectAction={onSelectAction} displayMode={displayMode} currentPlaceStateViews={currentPlaceStateViews} scoreScope={scoreScope} basemapMode={basemapMode} />
           <ShapeLayers items={mainItems} visible={visibleLayers.shapes} selectedActionId={selectedActionId} onSelectAction={onSelectAction} displayMode={displayMode} currentPlaceStateViews={currentPlaceStateViews} scoreScope={scoreScope} />
           {!isMinimalPreview ? <><InfrastructureMarkers items={mainItems} visible={visibleLayers.infrastructure} selectedActionId={selectedActionId} onSelectAction={onSelectAction} /><TrashSpotterMarkers items={trashSpotterItems} visible={visibleLayers.trashSpotter} selectedActionId={selectedActionId} onSelectAction={onSelectAction} displayMode={displayMode} currentPlaceStateViews={currentPlaceStateViews} scoreScope={scoreScope} /></> : null}
+          {!isMinimalPreview ? <PlasticOriginsLayer dataset={plasticOriginsData.data} visible={visibleLayers.plasticOrigins} /> : null}
         </LayerGroup>
         {!isMinimalPreview && selectedItem && onClearSelection ? <ActionSelectionPanel item={selectedItem} displayMode={displayMode} scoreScope={scoreScope} currentPlaceStateViews={currentPlaceStateViews} frameOnMount={frameSelectedActionId === selectedItem.id} onClose={onClearSelection} /> : null}
         <ActionsMapCanvasStyles isEmerald={isEmerald} />
