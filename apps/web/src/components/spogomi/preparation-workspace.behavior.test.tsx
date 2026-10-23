@@ -59,12 +59,12 @@ describe("SPOGOMI preparation workspace", () => {
 
   it("previews a synthetic roster, exposes its anomaly, then confirms only the selected rows", async () => {
     const preview = {
-      sourceSystem: "cachan_ticketing", format: "csv", encoding: "utf-8", sheetName: null, headerRow: 1,
+      sourceSystem: "cachan_ticketing", format: "csv", fileName: "synthetic-roster.csv", contentHash: "hash-roster", importKey: "import-roster", encoding: "utf-8", sheetName: null, headerRow: 1,
       rowsRead: 2, headers: ["ticket", "name"], unknownHeaders: [],
       rows: [{ rowNumber: 2, name: "Participant synthétique", externalReference: "TICKET-1", groupPreference: null }],
       errors: [{ rowNumber: 3, code: "empty_occupant", message: "Place sans occupant" }],
-      mapping: { ticketReference: "ticket", name: "name" }, sheetCandidates: [], columnDiagnostics: [],
-      cancelledRowNumbers: [], changedRowNumbers: [], conflictRowNumbers: [], rowEffects: { "2": "created" }, requiresExplicitSelection: false,
+      mapping: { ticketReference: "ticket", name: "name" }, sheetCandidates: [], columnDiagnostics: [], missingFields: [], ambiguousFields: [],
+      probableDuplicateRowNumbers: [], ignoredRowNumbers: [], cancelledRowNumbers: [], changedRowNumbers: [], conflictRowNumbers: [], rowEffects: { "2": "created" }, requiresExplicitSelection: false,
     };
     const calls: Array<[RequestInfo | URL, RequestInit | undefined]> = [];
     fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
@@ -97,7 +97,8 @@ describe("SPOGOMI preparation workspace", () => {
   it("keeps team preview and lock actions revision-scoped", async () => {
     const teamPreview = {
       expectedRevision: 2, proposalFingerprint: "proposal-a", explanation: ["Composition déterministe"],
-      formation: { teams: [{ draftKey: "team-1", teamNumber: 1, participantIds: ["participant-1"] }], unassignedParticipantIds: [] },
+      participantCount: 1, assignedParticipantCount: 1, preservedTeamIds: [],
+      formation: { teams: [{ draftKey: "team-1", teamNumber: 1, participantIds: ["participant-1"], compositionState: "draft", explanation: "incomplete_team" }], unassignedParticipantIds: [], reasons: {} },
     };
     fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);

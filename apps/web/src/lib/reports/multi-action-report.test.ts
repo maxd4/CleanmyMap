@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildActionDataContract } from "@/lib/actions/contracts/contract-model";
+import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 
 const mocks = vi.hoisted(() => ({
   loadReportsGenerationData: vi.fn(),
-  toActionListItem: vi.fn((contract) => ({
+  toActionListItem: vi.fn((contract: ActionDataContract) => ({
     status: contract.status,
     created_by_clerk_id: contract.createdByClerkId,
     actor_name: contract.metadata.actorName,
@@ -12,11 +13,11 @@ const mocks = vi.hoisted(() => ({
     action_date: contract.dates.observedAt,
     contract,
   })),
-  toActionMapItem: vi.fn((contract) => ({ status: contract.status, contract })),
+  toActionMapItem: vi.fn((contract: ActionDataContract) => ({ status: contract.status, contract })),
   computeReportModel: vi.fn(),
   buildPdfData: vi.fn(),
   buildReportTitle: vi.fn((scopeLabel: string) => `Rapport - ${scopeLabel}`),
-  toReportsExportRow: vi.fn((contract) => ({ id: contract.id })),
+  toReportsExportRow: vi.fn((contract: ActionDataContract) => ({ id: contract.id })),
 }));
 
 vi.mock("@/lib/reports/page-data", () => ({

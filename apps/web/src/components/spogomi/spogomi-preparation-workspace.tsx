@@ -38,6 +38,32 @@ export function buildSpogomiCompositionRevision(data: WorkspaceData): { expected
 
 type ImportSummary = { created: number; unchanged: number; changed: number; conflicts: number; excluded: number };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+async function readJsonRecord(response: Response): Promise<Record<string, unknown>> {
+  let raw: unknown;
+  try { raw = await response.json(); } catch { throw new Error("Le serveur a renvoyé une réponse illisible."); }
+  if (!isRecord(raw)) throw new Error("Le serveur a renvoyé une réponse invalide.");
+  return raw;
+}
+
+function parseWorkspaceData(value: unknown): WorkspaceData | null {
+  if (!isRecord(value) || !isRecord(value.event) || !Array.isArray(value.divisions) || !Array.isArray(value.participants) || !Array.isArray(value.teams) || !Array.isArray(value.categoryRules) || !Array.isArray(value.eventAccess)) return null;
+  return value as WorkspaceData;
+}
+
+function parseRosterPreview(value: unknown): SpogomiRosterPreview | null {
+  if (!isRecord(value) || typeof value.contentHash !== "string" || typeof value.importKey !== "string" || !isRecord(value.mapping) || !Array.isArray(value.rows) || !Array.isArray(value.errors)) return null;
+  return value as SpogomiRosterPreview;
+}
+
+function parseTeamPreview(value: unknown): SpogomiTeamCompositionPreview | null {
+  if (!isRecord(value) || !isRecord(value.formation) || typeof value.proposalFingerprint !== "string" || typeof value.expectedRevision !== "number" || typeof value.participantCount !== "number" || typeof value.assignedParticipantCount !== "number" || !Array.isArray(value.preservedTeamIds) || !Array.isArray(value.explanation)) return null;
+  return value as SpogomiTeamCompositionPreview;
+}
+
 function countAssignedParticipants(data: WorkspaceData | null): number {
   return data?.participants.filter((participant) => participant.team_id).length ?? 0;
 }
@@ -100,26 +126,26 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
   const [teamNameDraft, setTeamNameDraft] = useState("");
   const divisionQuery = activeDivisionId ? `?divisionId=${encodeURIComponent(activeDivisionId)}` : "";
   const scopedUrl = (url: string) => activeDivisionId ? `${url}${url.includes("?") ? "&" : "?"}divisionId=${encodeURIComponent(activeDivisionId)}` : url;
-  const refresh = async () => { const response = await fetch(`/api/spogomi/events/${eventId}${divisionQuery}`, { cache: "no-store" }); const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "Événement indisponible."); setData(body); };
+  const refresh = async () => { const response = await fetch(`/api/spogomi/events/${eventId}${divisionQuery}`, { cache: "no-store" }); const body = await readJsonRecord(response); if (!response.ok) throw new Error(typeof body.error === "string" ? body.error : "Événement indisponible."); const nextData = parseWorkspaceData(body); if (!nextData) throw new Error("Événement renvoyé dans un format invalide."); setData(nextData); };
   useEffect(() => {
     let active = true;
-    void fetch(`/api/spogomi/events/${eventId}`, { cache: "no-store" }).then(async (response) => { const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "Événement indisponible."); if (active) { setData(body); if (!activeDivisionId && body.divisions?.[0]?.id) setActiveDivisionId(body.divisions[0].id); } }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Événement indisponible."); });
+    void fetch(`/api/spogomi/events/${eventId}`, { cache: "no-store" }).then(async (response) => { const body = await readJsonRecord(response); if (!response.ok) throw new Error(typeof body.error === "string" ? body.error : "Événement indisponible."); const nextData = parseWorkspaceData(body); if (!nextData) throw new Error("Événement renvoyé dans un format invalide."); if (active) { setData(nextData); if (!activeDivisionId && nextData.divisions[0]?.id) setActiveDivisionId(nextData.divisions[0].id); } }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Événement indisponible."); });
     return () => { active = false; };
   }, [eventId, activeDivisionId]);
   const assignedCount = useMemo(() => countAssignedParticipants(data), [data]);
   const compositionEditable = data ? ["draft", "registration_open"].includes(data.event.state) : false;
   const compositionLocked = !compositionEditable;
   const teamPreviewError = useMemo(() => validateTeamPreview(data, activeDivisionId, teamPreview), [activeDivisionId, data, teamPreview]);
-  async function action(url: string, init?: RequestInit): Promise<Record<string, unknown> | null> { setBusy(true); setError(null); setMessage(null); try { const response = await fetch(scopedUrl(url), init); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error ?? "Opération refusée."); setMessage("Opération enregistrée."); await refresh(); return body as Record<string, unknown>; } catch (reason) { setError(reason instanceof Error ? reason.message : "Opération refusée."); return null; } finally { setBusy(false); } }
-  async function issueIdentityCode(participantId: string) { const body = await action(`/api/spogomi/events/${eventId}/participants/${participantId}/identity-code`, { method: "POST" }); if (body && typeof body.code === "string") setIdentityCodes((current) => ({ ...current, [participantId]: body.code as string })); }
-  async function previewRoster(file: File, options?: { mapping?: Record<string, string>; sheetName?: string; headerRow?: number; allowIncompatibleMapping?: boolean }) { const form = new FormData(); form.set("file", file); if (activeDivisionId) form.set("divisionId", activeDivisionId); if (options?.mapping) form.set("mapping", JSON.stringify(options.mapping)); if (options?.sheetName) form.set("sheetName", options.sheetName); if (options?.headerRow) form.set("headerRow", String(options.headerRow)); if (options?.allowIncompatibleMapping) form.set("allowIncompatibleMapping", "true"); setRosterFile(file); setBusy(true); setError(null); try { const response = await fetch(`/api/spogomi/events/${eventId}/imports/preview`, { method: "POST", body: form }); const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "Aperçu impossible."); const nextPreview = body as SpogomiRosterPreview; setPreview(nextPreview); setMappingSelection(nextPreview.mapping); setSheetSelection(nextPreview.sheetName ?? ""); setHeaderRowSelection(nextPreview.headerRow || undefined); setRosterPage(0); const invalidRows = new Set(nextPreview.errors.map((item) => item.rowNumber)); setAcceptedRowNumbers(nextPreview.rows.filter((row) => !invalidRows.has(row.rowNumber)).map((row) => row.rowNumber)); } catch (reason) { setPreview(null); setError(reason instanceof Error ? reason.message : "Aperçu impossible."); } finally { setBusy(false); } }
+  async function action(url: string, init?: RequestInit): Promise<Record<string, unknown> | null> { setBusy(true); setError(null); setMessage(null); try { const response = await fetch(scopedUrl(url), init); const body = await readJsonRecord(response); if (!response.ok) throw new Error(typeof body.error === "string" ? body.error : "Opération refusée."); setMessage("Opération enregistrée."); await refresh(); return body; } catch (reason) { setError(reason instanceof Error ? reason.message : "Opération refusée."); return null; } finally { setBusy(false); } }
+  async function issueIdentityCode(participantId: string) { const body = await action(`/api/spogomi/events/${eventId}/participants/${participantId}/identity-code`, { method: "POST" }); const code = body?.code; if (typeof code === "string") setIdentityCodes((current) => ({ ...current, [participantId]: code })); }
+  async function previewRoster(file: File, options?: { mapping?: Record<string, string>; sheetName?: string; headerRow?: number; allowIncompatibleMapping?: boolean }) { const form = new FormData(); form.set("file", file); if (activeDivisionId) form.set("divisionId", activeDivisionId); if (options?.mapping) form.set("mapping", JSON.stringify(options.mapping)); if (options?.sheetName) form.set("sheetName", options.sheetName); if (options?.headerRow) form.set("headerRow", String(options.headerRow)); if (options?.allowIncompatibleMapping) form.set("allowIncompatibleMapping", "true"); setRosterFile(file); setBusy(true); setError(null); try { const response = await fetch(`/api/spogomi/events/${eventId}/imports/preview`, { method: "POST", body: form }); const body = await readJsonRecord(response); if (!response.ok) throw new Error(typeof body.error === "string" ? body.error : "Aperçu impossible."); const nextPreview = parseRosterPreview(body); if (!nextPreview) throw new Error("Aperçu renvoyé dans un format invalide."); setPreview(nextPreview); setMappingSelection(nextPreview.mapping); setSheetSelection(nextPreview.sheetName ?? ""); setHeaderRowSelection(nextPreview.headerRow || undefined); setRosterPage(0); const invalidRows = new Set(nextPreview.errors.map((item) => item.rowNumber)); setAcceptedRowNumbers(nextPreview.rows.filter((row) => !invalidRows.has(row.rowNumber)).map((row) => row.rowNumber)); } catch (reason) { setPreview(null); setError(reason instanceof Error ? reason.message : "Aperçu impossible."); } finally { setBusy(false); } }
   async function confirmRoster() { if (!preview || !rosterFile || !acceptedRowNumbers.length) return; const form = new FormData(); form.set("file", rosterFile); form.set("mapping", JSON.stringify(mappingSelection)); if (activeDivisionId) form.set("divisionId", activeDivisionId); if (preview.sheetName) form.set("sheetName", preview.sheetName); if (preview.headerRow) form.set("headerRow", String(preview.headerRow)); form.set("acceptedRowNumbers", JSON.stringify(acceptedRowNumbers)); const result = await action(`/api/spogomi/events/${eventId}/imports/confirm`, { method: "POST", body: form }); if (result) { setPreview(null); setRosterFile(null); setAcceptedRowNumbers([]); } }
   function toggleAcceptedRow(rowNumber: number) { setAcceptedRowNumbers((current) => current.includes(rowNumber) ? current.filter((value) => value !== rowNumber) : [...current, rowNumber].sort((a, b) => a - b)); }
   const validRosterRows = useMemo(() => getValidRosterRows(preview), [preview]);
   const visibleRosterRows = useMemo(() => validRosterRows.slice(rosterPage * ROSTER_PAGE_SIZE, (rosterPage + 1) * ROSTER_PAGE_SIZE), [rosterPage, validRosterRows]);
   const rosterPageCount = Math.max(1, Math.ceil(validRosterRows.length / ROSTER_PAGE_SIZE));
   const selectedImportSummary = useMemo(() => summarizeSelectedImport(acceptedRowNumbers, preview), [acceptedRowNumbers, preview]);
-  async function previewTeams() { const result = await action(`/api/spogomi/events/${eventId}/teams/auto`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ divisionId: activeDivisionId }) }); if (result) setTeamPreview(result as unknown as SpogomiTeamCompositionPreview); }
+  async function previewTeams() { const result = await action(`/api/spogomi/events/${eventId}/teams/auto`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ divisionId: activeDivisionId }) }); const nextPreview = result ? parseTeamPreview(result) : null; if (result && !nextPreview) setError("La prévisualisation des équipes est invalide."); if (nextPreview) setTeamPreview(nextPreview); }
   function movePreviewParticipant(participantId: string, teamNumber: number | null) { setTeamPreview((current) => { if (!current) return current; const teams = current.formation.teams.map((team) => ({ ...team, participantIds: team.participantIds.filter((id) => id !== participantId) })); let unassignedParticipantIds = current.formation.unassignedParticipantIds.filter((id) => id !== participantId); if (teamNumber === null) unassignedParticipantIds = [...unassignedParticipantIds, participantId]; else { const target = teams.find((team) => team.teamNumber === teamNumber); if (!target) return current; target.participantIds = [...target.participantIds, participantId]; } const formation: SpogomiTeamFormation = { ...current.formation, teams, unassignedParticipantIds }; return { ...current, formation }; }); }
   async function confirmTeams() { if (!teamPreview || teamPreviewError) return; const result = await action(`/api/spogomi/events/${eventId}/teams/auto`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ confirm: true, divisionId: activeDivisionId, expectedRevision: teamPreview.expectedRevision, proposalFingerprint: teamPreview.proposalFingerprint, formation: teamPreview.formation }) }); if (result) setTeamPreview(null); }
   function beginTeamNameEdit(team: WorkspaceData["teams"][number]) { setEditingTeamId(team.id); setTeamNameDraft(team.public_name); setError(null); setMessage(null); }
