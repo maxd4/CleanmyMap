@@ -10,65 +10,90 @@ function renderInlineMarkdown(value: string): string {
     .replace(/\*([^*]+)\*/g, "<em>$1</em>");
 }
 
+type InlineMarkdownLinkResult =
+  | { kind: "tail"; text: string }
+  | { kind: "skip"; text: string; nextCursor: number }
+  | { kind: "link"; text: string; nextCursor: number };
+
+type InlineMarkdownLinkDestination = {
+  href: string;
+  title?: string;
+  end: number;
+};
+
+function readInlineMarkdownLinkDestination(
+  value: string,
+  start: number,
+): InlineMarkdownLinkDestination | null {
+  let hrefEnd = start;
+  while (hrefEnd < value.length && !/\s/.test(value[hrefEnd] ?? "") && value[hrefEnd] !== ")") {
+    hrefEnd += 1;
+  }
+  if (hrefEnd === start) return null;
+
+  if (value[hrefEnd] === ")") {
+    return { href: value.slice(start, hrefEnd), end: hrefEnd };
+  }
+
+  let end = hrefEnd;
+  while (end < value.length && /\s/.test(value[end] ?? "")) end += 1;
+  if (value[end] !== '"') return null;
+
+  const titleEnd = value.indexOf('"', end + 1);
+  if (titleEnd <= end + 1 || value[titleEnd + 1] !== ")") return null;
+  return {
+    href: value.slice(start, hrefEnd),
+    title: value.slice(end + 1, titleEnd),
+    end: titleEnd + 1,
+  };
+}
+
+function readNextInlineMarkdownLink(
+  value: string,
+  cursor: number,
+): InlineMarkdownLinkResult {
+  const openBracket = value.indexOf("[", cursor);
+  if (openBracket < 0) return { kind: "tail", text: value.slice(cursor) };
+
+  const closeBracket = value.indexOf("]", openBracket + 1);
+  if (closeBracket < 0) return { kind: "tail", text: value.slice(cursor) };
+  if (closeBracket <= openBracket + 1 || value[closeBracket + 1] !== "(") {
+    return {
+      kind: "skip",
+      text: value.slice(cursor, closeBracket + 1),
+      nextCursor: closeBracket + 1,
+    };
+  }
+
+  const destination = readInlineMarkdownLinkDestination(value, closeBracket + 2);
+  if (!destination) {
+    return {
+      kind: "skip",
+      text: value.slice(cursor, openBracket + 1),
+      nextCursor: openBracket + 1,
+    };
+  }
+
+  const label = value.slice(openBracket + 1, closeBracket);
+  const safeTitle = destination.title ? ` title="${escapeHtml(destination.title)}"` : "";
+  return {
+    kind: "link",
+    text: `${value.slice(cursor, openBracket)}<a href="${escapeHtml(destination.href)}" target="_blank" rel="noopener noreferrer"${safeTitle}>${label}</a>`,
+    nextCursor: destination.end + 1,
+  };
+}
+
 function replaceInlineMarkdownLinks(value: string): string {
   let output = "";
   let cursor = 0;
 
   while (cursor < value.length) {
-    const openBracket = value.indexOf("[", cursor);
-    if (openBracket < 0) {
-      output += value.slice(cursor);
+    const link = readNextInlineMarkdownLink(value, cursor);
+    output += link.text;
+    if (link.kind === "tail") {
       break;
     }
-    const closeBracket = value.indexOf("]", openBracket + 1);
-    if (closeBracket < 0) {
-      output += value.slice(cursor);
-      break;
-    }
-    if (closeBracket <= openBracket + 1 || value[closeBracket + 1] !== "(") {
-      output += value.slice(cursor, closeBracket + 1);
-      cursor = closeBracket + 1;
-      continue;
-    }
-
-    let hrefEnd = closeBracket + 2;
-    while (hrefEnd < value.length && !/\s/.test(value[hrefEnd] ?? "") && value[hrefEnd] !== ")") {
-      hrefEnd += 1;
-    }
-    if (hrefEnd === closeBracket + 2) {
-      output += value.slice(cursor, openBracket + 1);
-      cursor = openBracket + 1;
-      continue;
-    }
-
-    let end = hrefEnd;
-    let title: string | undefined;
-    if (value[hrefEnd] === ")") {
-      end = hrefEnd;
-    } else {
-      while (end < value.length && /\s/.test(value[end] ?? "")) end += 1;
-      if (value[end] === '"') {
-        const titleEnd = value.indexOf('"', end + 1);
-        if (titleEnd > end + 1 && value[titleEnd + 1] === ")") {
-          title = value.slice(end + 1, titleEnd);
-          end = titleEnd + 1;
-        } else {
-          output += value.slice(cursor, openBracket + 1);
-          cursor = openBracket + 1;
-          continue;
-        }
-      } else {
-        output += value.slice(cursor, openBracket + 1);
-        cursor = openBracket + 1;
-        continue;
-      }
-    }
-
-    const label = value.slice(openBracket + 1, closeBracket);
-    const href = value.slice(closeBracket + 2, hrefEnd);
-    const safeTitle = title ? ` title="${escapeHtml(title)}"` : "";
-    output += `${value.slice(cursor, openBracket)}<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer"${safeTitle}>${label}</a>`;
-    cursor = end + 1;
+    cursor = link.nextCursor;
   }
 
   return output;

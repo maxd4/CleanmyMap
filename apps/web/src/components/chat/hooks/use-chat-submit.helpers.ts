@@ -33,6 +33,20 @@ export type ChatAttachmentUpload = {
   size: number;
 };
 
+async function cleanupPreparedChatAttachment(params: {
+  supabase: SupabaseClient;
+  filePath: string;
+}): Promise<void> {
+  try {
+    const { error: cleanupError } = await params.supabase.storage
+      .from(CHAT_ATTACHMENTS_BUCKET)
+      .remove([params.filePath]);
+    if (cleanupError) throw cleanupError;
+  } catch (cleanupError) {
+    console.warn("Nettoyage de la pièce jointe Chat impossible après échec de signature.", cleanupError);
+  }
+}
+
 async function prepareChatAttachment(file: File): Promise<{
   file: File;
   type: string | undefined;
@@ -109,14 +123,7 @@ async function uploadPreparedChatAttachment(params: {
     };
   } catch (error) {
     if (objectCreated) {
-      try {
-        const { error: cleanupError } = await params.supabase.storage
-          .from(CHAT_ATTACHMENTS_BUCKET)
-          .remove([filePath]);
-        if (cleanupError) throw cleanupError;
-      } catch (cleanupError) {
-        console.warn("Nettoyage de la pièce jointe Chat impossible après échec de signature.", cleanupError);
-      }
+      await cleanupPreparedChatAttachment({ supabase: params.supabase, filePath });
     }
     throw error;
   } finally {

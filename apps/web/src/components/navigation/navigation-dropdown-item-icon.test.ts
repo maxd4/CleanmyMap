@@ -5,22 +5,20 @@ import { DISPLAY_MODES } from "../../lib/ui/preferences";
 import { getNavigationDropdownItemAccent } from "./navigation-dropdown-accent-theme";
 import { getNavigationDropdownItemIcon } from "./navigation-dropdown-item-icon";
 
+const NAVIGATION_ROUTE_IDS = new Set(
+  PROFILE_ORDER.flatMap((profile) =>
+    DISPLAY_MODES.flatMap((displayMode) =>
+      getNavigationSpacesForProfile(profile, displayMode, "fr").flatMap((space) =>
+        space.items.map((item) => item.routeId),
+      ),
+    ),
+  ),
+);
+
 describe("navigation dropdown item icons", () => {
   it("covers every routeId produced by the navigation registry", () => {
-    const routeIds = new Set<string>();
-
-    for (const profile of PROFILE_ORDER) {
-      for (const displayMode of DISPLAY_MODES) {
-        for (const space of getNavigationSpacesForProfile(profile, displayMode, "fr")) {
-          for (const item of space.items) {
-            routeIds.add(item.routeId);
-          }
-        }
-      }
-    }
-
-    expect(routeIds.size).toBeGreaterThan(0);
-    for (const routeId of routeIds) {
+    expect(NAVIGATION_ROUTE_IDS.size).toBeGreaterThan(0);
+    for (const routeId of NAVIGATION_ROUTE_IDS) {
       expect(getNavigationDropdownItemIcon(routeId)).toBe(
         getNavigationDropdownItemIcon(routeId),
       );

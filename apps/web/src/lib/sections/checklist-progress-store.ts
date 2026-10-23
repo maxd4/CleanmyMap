@@ -89,6 +89,56 @@ async function writeStore(store: ProgressStore): Promise<void> {
   await writeFile(STORE_FILE, JSON.stringify(store, null, 2), "utf-8");
 }
 
+async function readChecklistProgressFromSupabase(
+  userId: string,
+  checklistId: string,
+): Promise<ChecklistProgressEntry | null> {
+  const supabase = getSupabaseServerClient(true);
+  const result = await supabase
+    .from("checklist_progress")
+    .select("user_id, checklist_id, checks, updated_at")
+    .eq("user_id", userId)
+    .eq("checklist_id", checklistId)
+    .maybeSingle();
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+  if (!result.data) return null;
+
+  const parsedRow = parseChecklistProgressRow(result.data);
+  if (!parsedRow) {
+    throw new Error("Checklist progress returned an invalid persisted row.");
+  }
+  return toChecklistProgressEntry(parsedRow);
+}
+
+async function upsertChecklistProgressToSupabase(
+  updated: ChecklistProgressEntry,
+): Promise<ChecklistProgressEntry> {
+  const supabase = getSupabaseServerClient(true);
+  const result = await supabase
+    .from("checklist_progress")
+    .upsert(
+      {
+        user_id: updated.userId,
+        checklist_id: updated.checklistId,
+        checks: updated.checks,
+        updated_at: updated.updatedAt,
+      },
+      { onConflict: "user_id,checklist_id" },
+    )
+    .select("user_id, checklist_id, checks, updated_at")
+    .single();
+
+  if (result.error) throw new Error(result.error.message);
+  const parsedRow = parseChecklistProgressRow(result.data);
+  if (!parsedRow) {
+    throw new Error("Checklist progress upsert returned an invalid persisted row.");
+  }
+  return toChecklistProgressEntry(parsedRow);
+}
+
 export async function getChecklistProgress(
   userId: string,
   checklistId: string,
@@ -97,30 +147,7 @@ export async function getChecklistProgress(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient(true);
-      const result = await supabase
-        .from("checklist_progress")
-        .select("user_id, checklist_id, checks, updated_at")
-        .eq("user_id", userId)
-        .eq("checklist_id", checklistId)
-        .maybeSingle();
-
-      if (!result.error && !result.data) {
-        return null;
-      }
-
-      if (!result.error && result.data) {
-        const row: unknown = result.data;
-        const parsedRow = parseChecklistProgressRow(row);
-        if (!parsedRow) {
-          throw new Error("Checklist progress returned an invalid persisted row.");
-        }
-        return toChecklistProgressEntry(parsedRow);
-      }
-
-      if (!allowLocalFileStoreFallback()) {
-        throw new Error(result.error?.message ?? "Checklist progress could not be loaded.");
-      }
+      return await readChecklistProgressFromSupabase(userId, checklistId);
     } catch (error) {
       if (!allowLocalFileStoreFallback()) {
         throw error;
@@ -151,33 +178,7 @@ export async function upsertChecklistProgress(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient(true);
-      const result = await supabase
-        .from("checklist_progress")
-        .upsert(
-          {
-            user_id: userId,
-            checklist_id: checklistId,
-            checks,
-            updated_at: updated.updatedAt,
-          },
-          { onConflict: "user_id,checklist_id" },
-        )
-        .select("user_id, checklist_id, checks, updated_at")
-        .single();
-
-      if (!result.error) {
-        const row: unknown = result.data;
-        const parsedRow = parseChecklistProgressRow(row);
-        if (!parsedRow) {
-          throw new Error("Checklist progress upsert returned an invalid persisted row.");
-        }
-        return toChecklistProgressEntry(parsedRow);
-      }
-
-      if (!allowLocalFileStoreFallback()) {
-        throw new Error(result.error.message);
-      }
+      return await upsertChecklistProgressToSupabase(updated);
     } catch (error) {
       if (!allowLocalFileStoreFallback()) {
         throw error;

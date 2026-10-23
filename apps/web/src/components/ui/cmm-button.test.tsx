@@ -2,7 +2,14 @@ import { readFileSync } from "node:fs";
 import Link from "next/link";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { CmmButton, CmmButtonGroup } from "./cmm-button";
+import {
+  CmmButton,
+  CmmButtonGroup,
+  type ButtonSize,
+  type ButtonTone,
+  type ButtonVariant,
+  type ButtonWidth,
+} from "./cmm-button";
 
 const css = [
   readFileSync(new URL("../../styles/tokens.css", import.meta.url), "utf8"),
@@ -11,39 +18,40 @@ const css = [
 ].join("\n");
 const source = readFileSync(new URL("./cmm-button.tsx", import.meta.url), "utf8");
 
+const BUTTON_TONES: ButtonTone[] = [
+  "primary",
+  "secondary",
+  "tertiary",
+  "important",
+  "critical",
+  "destructive",
+];
+const BUTTON_SIZES: ButtonSize[] = ["sm", "md", "lg"];
+const BUTTON_VARIANTS: ButtonVariant[] = ["default", "pill", "ghost"];
+const BUTTON_WIDTHS: ButtonWidth[] = ["auto", "wide"];
+const BUTTON_CONTRACT_CASES = BUTTON_TONES.flatMap((tone) =>
+  BUTTON_SIZES.flatMap((size) =>
+    BUTTON_VARIANTS.flatMap((variant) =>
+      BUTTON_WIDTHS.map((width) => ({ tone, size, variant, width })),
+    ),
+  ),
+);
+
 describe("CmmButton", () => {
   it("exposes the canonical tone, size, variant and width contract", () => {
-    const tones = [
-      "primary",
-      "secondary",
-      "tertiary",
-      "important",
-      "critical",
-      "destructive",
-    ] as const;
-    const sizes = ["sm", "md", "lg"] as const;
-    const variants = ["default", "pill", "ghost"] as const;
-    const widths = ["auto", "wide"] as const;
+    BUTTON_CONTRACT_CASES.forEach(({ tone, size, variant, width }) => {
+      const markup = renderToStaticMarkup(
+        <CmmButton tone={tone} size={size} variant={variant} width={width}>
+          Action
+        </CmmButton>,
+      );
 
-    for (const tone of tones) {
-      for (const size of sizes) {
-        for (const variant of variants) {
-          for (const width of widths) {
-            const markup = renderToStaticMarkup(
-              <CmmButton tone={tone} size={size} variant={variant} width={width}>
-                Action
-              </CmmButton>,
-            );
-
-            expect(markup).toContain('class="cmm-button"');
-            expect(markup).toContain(`data-cmm-button-tone="${tone}"`);
-            expect(markup).toContain(`data-cmm-button-size="${size}"`);
-            expect(markup).toContain(`data-cmm-button-variant="${variant}"`);
-            expect(markup).toContain(`data-cmm-button-width="${width}"`);
-          }
-        }
-      }
-    }
+      expect(markup).toContain('class="cmm-button"');
+      expect(markup).toContain(`data-cmm-button-tone="${tone}"`);
+      expect(markup).toContain(`data-cmm-button-size="${size}"`);
+      expect(markup).toContain(`data-cmm-button-variant="${variant}"`);
+      expect(markup).toContain(`data-cmm-button-width="${width}"`);
+    });
   });
 
   it("supports a wide button spanning two columns in a balanced group", () => {

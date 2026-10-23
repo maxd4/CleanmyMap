@@ -412,11 +412,7 @@ export function useChatData({
               ) {
                 scheduleMessagesRefresh();
               }
-            } else if (activeChannelType === "community") {
-              if (!activeTopicIds?.length || activeTopicIds.includes(newMsg.topic_id as ChatTopicId)) {
-                scheduleMessagesRefresh();
-              }
-            } else if (activeChannelType === "admin_elu") {
+            } else if (activeChannelType === "community" || activeChannelType === "admin_elu") {
               if (!activeTopicIds?.length || activeTopicIds.includes(newMsg.topic_id as ChatTopicId)) {
                 scheduleMessagesRefresh();
               }

@@ -201,6 +201,35 @@ async function loadActorLabelsByUserId(
   return labels;
 }
 
+async function normalizeSupabaseAuditRows(
+  rawRows: unknown,
+): Promise<AdminOperationAuditEntry[]> {
+  if (!Array.isArray(rawRows)) {
+    throw new Error("Admin audit returned an invalid row collection.");
+  }
+
+  const rows = rawRows.map(parseAdminOperationAuditDbRow);
+  if (rows.some((row) => row === null)) {
+    throw new Error("Admin audit returned an invalid persisted row.");
+  }
+
+  const parsedRows = rows as AdminOperationAuditDbRow[];
+  const actorLabels = await loadActorLabelsByUserId(
+    parsedRows.map((row) => row.actor_user_id),
+  );
+
+  return parsedRows.map((row) => ({
+    operationId: row.operation_id,
+    at: row.at,
+    actorUserId: row.actor_user_id,
+    actorLabel: actorLabels.get(row.actor_user_id) ?? buildActorLabel(undefined, row.actor_user_id),
+    operationType: row.operation_type,
+    outcome: row.outcome,
+    targetId: row.target_id ?? undefined,
+    details: row.details,
+  }));
+}
+
 export async function appendAdminOperationAudit(
   entry: AdminOperationAuditEntry,
 ): Promise<void> {
@@ -275,25 +304,7 @@ export async function listAdminOperationAudit(
         .limit(normalizedLimit);
 
       if (!result.error) {
-        const rawRows: unknown = result.data ?? [];
-        if (!Array.isArray(rawRows)) throw new Error("Admin audit returned an invalid row collection.");
-        const rows = rawRows.map(parseAdminOperationAuditDbRow);
-        if (rows.some((row) => row === null)) throw new Error("Admin audit returned an invalid persisted row.");
-        const parsedRows = rows as AdminOperationAuditDbRow[];
-        const actorLabels = await loadActorLabelsByUserId(
-          parsedRows.map((row) => row.actor_user_id),
-        );
-
-        return parsedRows.map((row) => ({
-          operationId: row.operation_id,
-          at: row.at,
-          actorUserId: row.actor_user_id,
-          actorLabel: actorLabels.get(row.actor_user_id) ?? buildActorLabel(undefined, row.actor_user_id),
-          operationType: row.operation_type,
-          outcome: row.outcome,
-          targetId: row.target_id ?? undefined,
-          details: row.details,
-        }));
+        return normalizeSupabaseAuditRows(result.data ?? []);
       }
 
       if (!allowLocalFileStoreFallback()) {

@@ -27,6 +27,63 @@ function tableToCsv(table: Element): string {
     .join("\n");
 }
 
+async function downloadServerExport(params: {
+  endpoint: string;
+  filename: string;
+  setDailyExportAvailability: (availability: ReportExportAvailability) => void;
+}): Promise<void> {
+  const response = await fetch(params.endpoint, { method: "GET" });
+  if (!response.ok) {
+    if (response.status === 429) {
+      params.setDailyExportAvailability("used");
+    }
+    const body = (await response.json().catch(() => null)) as { error?: unknown } | null;
+    throw new Error(typeof body?.error === "string" ? body.error : "Export indisponible");
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = response.headers.get("X-Deliverable-Name") ?? params.filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+  params.setDailyExportAvailability("used");
+}
+
+function buildClientExportCsv(params: {
+  data?: Record<string, unknown>[];
+  columns?: { key: string; label: string }[];
+  targetTableSelector?: string;
+}): string {
+  if (params.data && params.data.length > 0) {
+    return buildTabularCsv(params.data, params.columns);
+  }
+  if (!params.targetTableSelector) {
+    throw new Error("Aucune donnée à exporter");
+  }
+
+  const table = document.querySelector(params.targetTableSelector);
+  if (!table) throw new Error("Table non trouvée");
+  return tableToCsv(table);
+}
+
+function downloadClientCsv(csv: string, filename: string): void {
+  if (!csv.trim()) throw new Error("Aucune ligne exportable");
+
+  const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
 export function RubriqueExcelExportButton({
  rubriqueTitle,
  data,
@@ -54,55 +111,12 @@ export function RubriqueExcelExportButton({
     setIsExporting(true);
     try {
       if (serverEndpoint) {
-        const response = await fetch(serverEndpoint, { method: "GET" });
-        if (!response.ok) {
-          if (response.status === 429) {
-            setDailyExportAvailability("used");
-          }
-          const body = (await response.json().catch(() => null)) as { error?: unknown } | null;
-          throw new Error(typeof body?.error === "string" ? body.error : "Export indisponible");
-        }
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = response.headers.get("X-Deliverable-Name") ?? filename;
-        document.body.appendChild(anchor);
-        anchor.click();
-        document.body.removeChild(anchor);
-        URL.revokeObjectURL(url);
-        setDailyExportAvailability("used");
+        await downloadServerExport({ endpoint: serverEndpoint, filename, setDailyExportAvailability });
         return;
       }
 
-      let csv = "";
-
-      if (data && data.length > 0) {
-        csv = buildTabularCsv(data, columns);
-      } else if (targetTableSelector) {
-        const table = document.querySelector(targetTableSelector);
-        if (table) {
-          csv = tableToCsv(table);
-        } else {
-          throw new Error("Table non trouvée");
-        }
-      } else {
-        throw new Error("Aucune donnée à exporter");
-      }
-
-      if (!csv.trim()) {
-        throw new Error("Aucune ligne exportable");
-      }
-
-      const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = filename;
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-      URL.revokeObjectURL(url);
+      const csv = buildClientExportCsv({ data, columns, targetTableSelector });
+      downloadClientCsv(csv, filename);
     } catch (error) {
       console.error("Erreur export CSV:", error);
       alert(copy.errorMessage);
