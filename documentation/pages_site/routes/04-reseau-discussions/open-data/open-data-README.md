@@ -48,8 +48,6 @@
 - **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
 - **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
 
-
-
 ## Références legacy
 
 - Aucun fichier legacy dédié.
@@ -63,5 +61,3 @@
 ## Fichiers associés
 
 - [Présentation détaillée](./open-data-presentation-detaillee.md)
-- [Liste des propositions à traiter](./open-data-liste-propositions-a-traiter.md)
-- [Objectifs non pertinents](./open-data-objectifs-non-pertinents.md)

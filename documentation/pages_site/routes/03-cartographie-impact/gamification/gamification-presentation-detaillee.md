@@ -1,39 +1,14 @@
 # Gamification - Présentation détaillée
 
-## Fiche canonique
+## Usage et frontières fonctionnelles
 
-- **Route** : `/sections/gamification`
-- **Fichier(s) source(s)** :
-- `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
-- **Type fonctionnel** : page de bloc
-- **Famille / bloc fonctionnel** : Cartographie & Impact (bloc)
-- **Accès runtime** : `auth-disabled-gate` ; la section reste verrouillée avant connexion, conformément au registre des sections.
-- **Objectif utilisateur principal** : Lire sa progression, ses badges, les formes de reconnaissance et les repères de méthode associés.
-- **Action principale attendue** : Explorer sa progression, ses collections et les informations de fonctionnement de la gamification.
-- **Palette attendue** : red
-- **Scope** : progression personnelle owner-scoped pour le compte connecté ; classement public distinct, opt-in, projeté sans données privées.
-- **Statut** : contrat CURRENT décrit dans la fiche de page ; revue visuelle non exécutée.
-- **Couleurs actuellement détectées** : blanc / rose / rouge — interface claire avec accents d'impact rouges et roses.
-- **Incohérences de couleurs** : Aucune incohérence majeure avec l'identité rouge attendue n'est établie par le composant actuel.
-- **Risque de conflit avec les couleurs existantes** : moyen : attention au chevauchement entre sky cartographique et rouge impact / alerte.
-- **Niveau de surcharge textuelle** : moyen
-- **Textes à conserver** :
-- Carte
-- légende
-- chiffres clés
-- résumés d impact
-- **Textes à réduire ou supprimer** :
-- Commentaires de contexte
-- badges de répétition
-- cartes trop proches visuellement
-- **Bulles / cartes / contextes trop nombreux** : Les widgets de lecture d impact se superposent facilement avec la carte ou les stats.
-- **Composants UI concernés** :
-- progression et collections
-- badges et reconnaissance
-- préférences de présentation
-- méthode et états opérationnels
-- **Captures attendues** : desktop, mobile
-- **Priorité de correction** : critique
+**Statut : `CURRENT` pour les parcours effectivement livrés ; les améliorations visuelles non testées ne sont pas des constats runtime.** La source fonctionnelle propriétaire de la page est [gamification-README.md](./gamification-README.md) ; les règles d'XP, badges et progression restent dans [gamification-SPEC_CANONIQUE.md](./gamification-SPEC_CANONIQUE.md) et le moteur web.
+
+- **Route** : `/sections/gamification`, section personnelle accessible après authentification, distincte du classement public `/sections/leaderboard`.
+- **Parcours** : consulter le niveau acquis/potentiel, les prérequis, les collections, les jalons, la reconnaissance personnelle et les reçus de réconciliation ; accéder volontairement au classement sans l'intégrer à la rubrique privée.
+- **Vie privée** : le classement est une projection publique opt-in, désactivée par défaut dans les réglages. Aucun historique personnel détaillé ni identifiant privé ne doit y apparaître.
+- **États UI** : chargement, progression non démarrée, collections en cours/terminées, notifications acquittées/non acquittées, absence ou indisponibilité des données. Ne pas remplacer un état inconnu par un zéro ou une valeur supposée.
+- **Présentation** : palette Impact rouge, respect des modes de visibilité et préférences de mouvement. Les anciens jugements de « surcharge » ou de « priorité critique » ne valent pas preuve d'audit visuel actuel.
 
 ## Rôle produit
 
@@ -91,14 +66,12 @@ l'état courant de la zone ne peut pas révoquer cette contribution. Elle ne
 produit pas de nouvelle attribution XP ; les anciens événements de palier sont
 conservés uniquement en compatibilité historique.
 
-## États à documenter
+## États utilisateur et limites
 
-- **loading** : fond `slate`, skeletons sobres, loader discret, même largeur et mêmes espacements que les autres états.
-- **empty state** : fond `slate` doux, ton encourageant, CTA utile unique.
-- **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
-- **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
-- **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
-- **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
+- **Anonyme** : la page privée ne divulgue ni métrique ni projection owner-scoped ; seul le parcours d'accès prévu par le registre est applicable.
+- **Connecté** : la progression, ses collections et les reçus sont résolus depuis les lectures canoniques, sans calcul UI concurrent.
+- **Chargement, données absentes, erreur** : distinguer ces états sans simuler un niveau, un badge ou une attribution.
+- **Classement opt-in** : affichage uniquement sur la route publique dédiée et seulement pour les comptes ayant accepté la publication.
 
 ## Références legacy
 
@@ -106,7 +79,7 @@ conservés uniquement en compatibilité historique.
 
 ## Notes d audit
 
-- Cette fiche est la source de vérité canonique pour la section.
+- Le [README de la rubrique](./gamification-README.md) est la source fonctionnelle canonique ; cette présentation complète uniquement ses parcours et ses limites.
 - `/gamification` reste un alias de compatibilité vers cette section canonique.
 - La source canonique des règles de gamification vit dans [gamification-SPEC_CANONIQUE.md](./gamification-SPEC_CANONIQUE.md).
 - Les conventions de scopes temporels et le résumé de l interface cible vivent dans [gamification-scope-ui-notes.md](./gamification-scope-ui-notes.md).

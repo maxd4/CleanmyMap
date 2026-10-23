@@ -2,10 +2,6 @@
 
 Connexion, inscription et configuration initiale.
 
-## Décisions écartées et sources
-
-- [Refus documentés](./auth-onboarding-objectifs-non-pertinents.md) — `HISTORY`, reconsidération sur décision explicite
-
 ## Inventaire des pages
 
 L’inventaire exhaustif des routes canoniques, alias et fiches est tenu dans

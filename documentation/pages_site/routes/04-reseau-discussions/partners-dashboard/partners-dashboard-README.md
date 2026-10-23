@@ -89,8 +89,6 @@ après acceptation/vérification ; le rapprochement par nom est interdit.
 - Une entrée statique ne peut modifier les totaux, actifs, zones, fiches à revoir, activité récente, décisions ou priorités du dashboard.
 - La « Checklist de gouvernance » est une aide générique de revue ; elle ne constitue pas une liste de priorités calculées et ne fabrique aucune décision opérationnelle.
 
-
-
 ## Références legacy
 
 - Référence legacy non versionnée dans le dépôt actuel ; consulter les documents canoniques de cette page et ne pas recréer l'ancien chemin.
@@ -99,8 +97,3 @@ après acceptation/vérification ; le rapprochement par nom est interdit.
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
-
-## Fichiers associés
-
-- [Liste des propositions à traiter](./partners-dashboard-liste-propositions-a-traiter.md)
-- [Objectifs non pertinents](./partners-dashboard-objectifs-non-pertinents.md)

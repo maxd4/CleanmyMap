@@ -38,15 +38,7 @@ Terminé quand :
 
 Priorité : faible.
 
-Le shell utilise actuellement :
-
-```txt
-/learn/ressources
-```
-
-Or cette surface est documentée comme intégrée et non autonome.
-
-Vérifier le comportement runtime réel et remplacer le lien si la route n'est plus canonique.
+Le chemin historique `/learn/ressources` a été mentionné comme cible de retour, alors que le registre route-first ne le présente pas comme une destination autonome. Vérifier le CTA et le comportement effectifs dans le checkout courant avant de décider d'un éventuel correctif : ce fichier `PLAN` ne prouve pas que le lien existe encore dans l'UI.
 
 ## Règle
 

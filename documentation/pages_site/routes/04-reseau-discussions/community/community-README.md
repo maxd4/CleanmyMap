@@ -55,10 +55,6 @@ une origine historique lors de la création d’une action ; ils ne confondent p
 ## Statut documentaire
 
 Ce document est une note de compatibilité `LEGACY / REDIRECT`, pas une fiche
-`CURRENT`. Les fichiers associés ci-dessous conservent les décisions et limites
-historiques de la page supprimée ; aucune de leurs propositions ne décrit une
-fonctionnalité actuellement rendue.
-
-- [Présentation historique](./community-presentation-detaillee.md)
-- [Propositions historiques](./community-liste-propositions-a-traiter.md)
-- [Objectifs hors périmètre](./community-objectifs-non-pertinents.md)
+`CURRENT`. Les redirections, les décisions historiques et les limites encore pertinentes
+sont conservées dans cette fiche. Les anciens fichiers compagnons génériques
+ont été supprimés ; ils ne définissent aucune fonctionnalité actuellement rendue.

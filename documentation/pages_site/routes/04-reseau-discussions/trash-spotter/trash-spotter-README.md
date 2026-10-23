@@ -40,7 +40,3 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Compléter après alignement visuel et métier.
-
-## Fichiers associés
-
-- [Présentation détaillée](./trash-spotter-presentation-detaillee.md)
