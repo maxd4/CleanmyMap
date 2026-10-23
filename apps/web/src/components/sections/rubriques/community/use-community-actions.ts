@@ -8,7 +8,6 @@ import {
 } from "@/lib/community/http";
 import { AppError, defaultMessageForKind, isAppError, toAppError } from "@/lib/errors/app-errors";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
-import { standardPostMortemTemplate } from "@/lib/community/event-ops";
 import { parseOptionalInt, toRsvpLabel } from "./helpers";
 import { redirectToCommunitySignIn } from "./mutation-auth";
 import type { OpsDraft } from "./types";
@@ -74,12 +73,13 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
     }
   }
 
-  const updateOpsDraft = useCallback((eventId: string, patch: Partial<OpsDraft>) => {
+  const updateOpsDraft = useCallback((event: CommunityEventItem, patch: Partial<OpsDraft>) => {
     setOpsDraftByEventId((previous) => ({
       ...previous,
-      [eventId]: {
-        attendanceCount: previous[eventId]?.attendanceCount ?? "",
-        postMortem: previous[eventId]?.postMortem ?? "",
+      [event.id]: {
+        attendanceCount: previous[event.id]?.attendanceCount
+          ?? (event.attendanceCount === null ? "" : String(event.attendanceCount)),
+        postMortem: previous[event.id]?.postMortem ?? (event.postMortem ?? ""),
         ...patch,
       },
     }));
@@ -88,7 +88,7 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
   const getOpsDraft = useCallback((event: CommunityEventItem): OpsDraft => {
     return opsDraftByEventId[event.id] ?? {
       attendanceCount: event.attendanceCount === null ? "" : String(event.attendanceCount),
-      postMortem: event.postMortem ?? standardPostMortemTemplate(),
+      postMortem: event.postMortem ?? "",
     };
   }, [opsDraftByEventId]);
 
@@ -99,10 +99,10 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
 
     const draft = getOpsDraft(event);
     const attendanceCount = parseOptionalInt(draft.attendanceCount);
-    if (draft.attendanceCount.trim() && (attendanceCount === null || attendanceCount < 0)) {
-      setCommunityError(toAppError("La présence doit être un entier positif ou nul.", {
+    if (draft.attendanceCount.trim() && attendanceCount === null) {
+      setCommunityError(toAppError("La présence doit être un entier compris entre 0 et 200000.", {
         kind: "validation",
-        message: "La présence doit être un entier positif ou nul.",
+        message: "La présence doit être un entier compris entre 0 et 200000.",
       }));
       return;
     }
@@ -117,7 +117,45 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
         postMortem: draft.postMortem.trim() || null,
       });
       setCommunitySuccessMessage("Suivi de la mission mis à jour.");
-      await reloadEvents();
+      try {
+        await reloadEvents();
+        setOpsDraftByEventId((previous) => {
+          if (!(event.id in previous)) {
+            return previous;
+          }
+          const next = { ...previous };
+          delete next[event.id];
+          return next;
+        });
+      } catch (refreshError) {
+        const appError = isAppError(refreshError)
+          ? refreshError
+          : toAppError(refreshError, {
+              kind: "server",
+              message: "Actualisation des événements impossible.",
+            });
+        setCommunitySuccessMessage("Suivi de la mission mis à jour. L’affichage n’a pas pu être actualisé.");
+        notifyNetworkToast({
+          title: "Suivi enregistré",
+          message: appError.message || "L’actualisation des événements a échoué.",
+          retryLabel: "Réessayer l’actualisation",
+          onRetry: () => {
+            void reloadEvents()
+              .then(() => {
+                setOpsDraftByEventId((previous) => {
+                  if (!(event.id in previous)) {
+                    return previous;
+                  }
+                  const next = { ...previous };
+                  delete next[event.id];
+                  return next;
+                });
+                setCommunitySuccessMessage("Suivi de la mission mis à jour.");
+              })
+              .catch(() => undefined);
+          },
+        });
+      }
     } catch (error) {
       const appError = isAppError(error)
         ? error

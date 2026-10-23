@@ -252,7 +252,7 @@ export function PastActionsPanel({
   communitySuccessMessage?: string | null;
   isUpdatingEventOpsId?: string | null;
   getOpsDraft?: (event: import("@/lib/community/http").CommunityEventItem) => OpsDraft;
-  updateOpsDraft?: (eventId: string, patch: Partial<OpsDraft>) => void;
+  updateOpsDraft?: (event: import("@/lib/community/http").CommunityEventItem, patch: Partial<OpsDraft>) => void;
   onSaveEventOps?: (event: import("@/lib/community/http").CommunityEventItem) => Promise<void>;
 }) {
   const [claimOverrides, setClaimOverrides] = useState<Record<string, ClaimState>>({});

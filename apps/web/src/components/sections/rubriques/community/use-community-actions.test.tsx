@@ -89,7 +89,7 @@ describe("useCommunityActions historical ops", () => {
     const hook = renderHook(reloadEvents);
 
     act(() => {
-      hook.result.updateOpsDraft(event.id, { attendanceCount: "7", postMortem: "Retour actualisé" });
+      hook.result.updateOpsDraft(event, { attendanceCount: "7", postMortem: "Retour actualisé" });
     });
     await act(async () => {
       await hook.result.onSaveEventOps(event);
@@ -103,6 +103,151 @@ describe("useCommunityActions historical ops", () => {
     expect(reloadEvents).toHaveBeenCalledTimes(1);
     expect(hook.result.communitySuccessMessage).toBe("Suivi de la mission mis à jour.");
     expect(hook.result.communityError).toBeNull();
+    hook.unmount();
+  });
+
+  it("preserves the persisted post-mortem when only attendance changes", async () => {
+    const reloadEvents = vi.fn().mockResolvedValue(undefined);
+    mocks.updateCommunityEventOps.mockResolvedValue(event);
+    const hook = renderHook(reloadEvents);
+
+    act(() => {
+      hook.result.updateOpsDraft(event, { attendanceCount: "12" });
+    });
+    await act(async () => {
+      await hook.result.onSaveEventOps(event);
+    });
+
+    expect(mocks.updateCommunityEventOps).toHaveBeenCalledWith({
+      eventId: event.id,
+      attendanceCount: 12,
+      postMortem: "Ancien retour",
+    });
+    hook.unmount();
+  });
+
+  it("does not let a refreshed event overwrite an in-progress draft", () => {
+    const hook = renderHook(vi.fn().mockResolvedValue(undefined));
+
+    act(() => {
+      hook.result.updateOpsDraft(event, { attendanceCount: "12" });
+    });
+
+    expect(hook.result.getOpsDraft({ ...event, attendanceCount: 99 })).toEqual({
+      attendanceCount: "12",
+      postMortem: "Ancien retour",
+    });
+    hook.unmount();
+  });
+
+  it("preserves the persisted attendance when only the post-mortem changes", async () => {
+    const reloadEvents = vi.fn().mockResolvedValue(undefined);
+    mocks.updateCommunityEventOps.mockResolvedValue(event);
+    const hook = renderHook(reloadEvents);
+
+    act(() => {
+      hook.result.updateOpsDraft(event, { postMortem: "Retour mis à jour" });
+    });
+    await act(async () => {
+      await hook.result.onSaveEventOps(event);
+    });
+
+    expect(mocks.updateCommunityEventOps).toHaveBeenCalledWith({
+      eventId: event.id,
+      attendanceCount: 2,
+      postMortem: "Retour mis à jour",
+    });
+    hook.unmount();
+  });
+
+  it.each([
+    ["la présence", { attendanceCount: "" }, { attendanceCount: null, postMortem: "Ancien retour" }],
+    ["le bilan", { postMortem: "" }, { attendanceCount: 2, postMortem: null }],
+  ])("permet d'effacer volontairement %s sans effacer l'autre champ", async (_label, patch, expected) => {
+    const reloadEvents = vi.fn().mockResolvedValue(undefined);
+    mocks.updateCommunityEventOps.mockResolvedValue(event);
+    const hook = renderHook(reloadEvents);
+
+    act(() => {
+      hook.result.updateOpsDraft(event, patch);
+    });
+    await act(async () => {
+      await hook.result.onSaveEventOps(event);
+    });
+
+    expect(mocks.updateCommunityEventOps).toHaveBeenCalledWith({
+      eventId: event.id,
+      ...expected,
+    });
+    hook.unmount();
+  });
+
+  it("does not turn an empty post-mortem into a template or a declared bilan", async () => {
+    const eventWithoutPostMortem = { ...event, postMortem: null };
+    const reloadEvents = vi.fn().mockResolvedValue(undefined);
+    mocks.updateCommunityEventOps.mockResolvedValue(eventWithoutPostMortem);
+    const hook = renderHook(reloadEvents);
+
+    expect(hook.result.getOpsDraft(eventWithoutPostMortem)).toEqual({
+      attendanceCount: "2",
+      postMortem: "",
+    });
+    await act(async () => {
+      await hook.result.onSaveEventOps(eventWithoutPostMortem);
+    });
+
+    expect(mocks.updateCommunityEventOps).toHaveBeenCalledWith({
+      eventId: event.id,
+      attendanceCount: 2,
+      postMortem: null,
+    });
+    hook.unmount();
+  });
+
+  it.each(["3.9", "200001", "Infinity"])("rejects an invalid attendance value %s without calling the API", async (attendanceCount) => {
+    const reloadEvents = vi.fn().mockResolvedValue(undefined);
+    const hook = renderHook(reloadEvents);
+
+    act(() => {
+      hook.result.updateOpsDraft(event, { attendanceCount });
+    });
+    await act(async () => {
+      await hook.result.onSaveEventOps(event);
+    });
+
+    expect(mocks.updateCommunityEventOps).not.toHaveBeenCalled();
+    expect(reloadEvents).not.toHaveBeenCalled();
+    expect(hook.result.communityError).toMatchObject({ kind: "validation" });
+    hook.unmount();
+  });
+
+  it("keeps the mutation success separate when only the reload fails", async () => {
+    const reloadEvents = vi.fn().mockRejectedValue(new Error("refresh unavailable"));
+    mocks.updateCommunityEventOps.mockResolvedValue(event);
+    const hook = renderHook(reloadEvents);
+
+    await act(async () => {
+      await hook.result.onSaveEventOps(event);
+    });
+
+    expect(mocks.updateCommunityEventOps).toHaveBeenCalledTimes(1);
+    expect(reloadEvents).toHaveBeenCalledTimes(1);
+    expect(hook.result.communityError).toBeNull();
+    expect(hook.result.communitySuccessMessage).toContain("Suivi de la mission mis à jour.");
+    expect(hook.result.communitySuccessMessage).toContain("affichage");
+    expect(mocks.notifyNetworkToast).toHaveBeenCalledWith(expect.objectContaining({
+      title: "Suivi enregistré",
+      retryLabel: "Réessayer l’actualisation",
+      onRetry: expect.any(Function),
+    }));
+
+    const retry = mocks.notifyNetworkToast.mock.calls[0]?.[0]?.onRetry as (() => void) | undefined;
+    await act(async () => {
+      retry?.();
+      await Promise.resolve();
+    });
+    expect(mocks.updateCommunityEventOps).toHaveBeenCalledTimes(1);
+    expect(reloadEvents).toHaveBeenCalledTimes(2);
     hook.unmount();
   });
 

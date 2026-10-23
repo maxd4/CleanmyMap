@@ -222,7 +222,7 @@ export const EventArticlePast = memo(function EventArticlePast({
   event: CommunityEventItem;
   isUpdating: boolean;
   getOpsDraft?: (event: CommunityEventItem) => OpsDraft;
-  updateOpsDraft?: (eventId: string, patch: Partial<OpsDraft>) => void;
+  updateOpsDraft?: (event: CommunityEventItem, patch: Partial<OpsDraft>) => void;
   onSaveEventOps?: (event: CommunityEventItem) => Promise<void>;
   onShare?: (event: CommunityEventItem) => void;
 }) {
@@ -272,9 +272,10 @@ export const EventArticlePast = memo(function EventArticlePast({
               <input
                 type="number"
                 min="0"
+                max="200000"
                 step="1"
                 value={opsDraft.attendanceCount}
-                onChange={(inputEvent) => updateOpsDraft(event.id, { attendanceCount: inputEvent.target.value })}
+                onChange={(inputEvent) => updateOpsDraft(event, { attendanceCount: inputEvent.target.value })}
                 className="cmm-input mt-1 w-full"
               />
             </label>
@@ -282,7 +283,7 @@ export const EventArticlePast = memo(function EventArticlePast({
               Retour d&apos;expérience
               <textarea
                 value={opsDraft.postMortem}
-                onChange={(inputEvent) => updateOpsDraft(event.id, { postMortem: inputEvent.target.value })}
+                onChange={(inputEvent) => updateOpsDraft(event, { postMortem: inputEvent.target.value })}
                 className="cmm-input mt-1 min-h-28 w-full"
                 rows={5}
               />

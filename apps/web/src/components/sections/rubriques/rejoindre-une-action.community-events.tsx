@@ -29,7 +29,7 @@ type JoinCommunityEventsPanelProps = {
   successMessage?: string | null;
   isUpdatingEventOpsId?: string | null;
   getOpsDraft?: (event: CommunityEventItem) => OpsDraft;
-  updateOpsDraft?: (eventId: string, patch: Partial<OpsDraft>) => void;
+  updateOpsDraft?: (event: CommunityEventItem, patch: Partial<OpsDraft>) => void;
   onSaveEventOps?: (event: CommunityEventItem) => Promise<void>;
   tab: "future" | "past";
 };

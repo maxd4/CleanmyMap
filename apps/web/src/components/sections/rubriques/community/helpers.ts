@@ -18,11 +18,10 @@ export function parseOptionalInt(value: string): number | null {
  return null;
  }
  const parsed = Number(trimmed);
- if (!Number.isFinite(parsed)) {
+ if (!Number.isInteger(parsed) || parsed < 0 || parsed > 200000) {
  return null;
  }
- const asInt = Math.trunc(parsed);
- return asInt >= 0 ? asInt : null;
+ return parsed;
 }
 
 export function toRsvpLabel(status: CommunityRsvpStatus): string {

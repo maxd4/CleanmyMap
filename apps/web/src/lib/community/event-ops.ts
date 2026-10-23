@@ -229,16 +229,6 @@ export function serializeCommunityEventDescription(
     : `${EVENT_OPS_NOTE_PREFIX}${serializedOps}`;
 }
 
-export function standardPostMortemTemplate(): string {
-  return [
-    "Objectif:",
-    "Ce qui a bien fonctionne:",
-    "Ce qui a bloque:",
-    "Actions correctives:",
-    "Responsables + echeance:",
-  ].join("\n");
-}
-
 export function formatCleanupSupportLabel(
   level: CleanupSupportLevel | null,
 ): string {

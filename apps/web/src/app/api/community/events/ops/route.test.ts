@@ -128,6 +128,10 @@ describe("POST /api/community/events/ops", () => {
   });
 
   it("keeps the normal organizer path unaudited", async () => {
+    configureSupabase({
+      event: makeEvent("organizer-1"),
+      updatedEvent: makeEvent("organizer-1", { attendanceCount: 3 }),
+    });
     const response = await POST(
       makeRequest({ eventId: "event-1", attendanceCount: 3 }),
     );
@@ -137,8 +141,25 @@ describe("POST /api/community/events/ops", () => {
     expect(revalidateCommunityEventCachesMock).toHaveBeenCalledOnce();
     expect(trackCommunityOpsUpdateMock).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ userId: "organizer-1", eventId: "event-1" }),
+      expect.objectContaining({
+        userId: "organizer-1",
+        eventId: "event-1",
+        attendanceCount: 3,
+        hasPostMortem: false,
+      }),
     );
+  });
+
+  it.each([3.9, 200001])("rejects an attendance count outside the integer contract (%s)", async (attendanceCount) => {
+    const { table } = configureSupabase({ event: makeEvent("organizer-1") });
+
+    const response = await POST(
+      makeRequest({ eventId: "event-1", attendanceCount }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(table.update).not.toHaveBeenCalled();
+    expect(trackCommunityOpsUpdateMock).not.toHaveBeenCalled();
   });
 
   it("allows an authorized event edit to add explicit coordinates", async () => {
