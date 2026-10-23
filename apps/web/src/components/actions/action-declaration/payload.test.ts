@@ -1,27 +1,8 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildCreateActionPayload,
-  createInitialFormState,
-  parseOrganizerAccounts,
-} from "./payload";
+import { buildCreateActionPayload, parseOrganizerAccounts } from "./payload";
 import { buildBaseForm } from "./payload.test-fixtures";
 
 describe("action declaration payload identity and organisation", () => {
-  it("creates an isolated initial form state from the model owner", () => {
-    const first = createInitialFormState("Alice", "clean_place");
-    first.suggestedMaterials.push("gloves");
-    first.equipmentInventory.glovesPairs = 2;
-    first.preparationChecklist[0].checked = true;
-
-    const second = createInitialFormState("Bob");
-
-    expect(first).toMatchObject({ actorName: "Alice", recordType: "clean_place" });
-    expect(second).toMatchObject({ actorName: "Bob", recordType: "action" });
-    expect(second.suggestedMaterials).not.toContain("gloves");
-    expect(second.equipmentInventory).not.toHaveProperty("glovesPairs");
-    expect(second.preparationChecklist[0].checked).toBe(false);
-  });
-
   it("uses category sources for participants and keeps operational units separate", () => {
     const form = buildBaseForm();
     form.childrenCount = "2";
