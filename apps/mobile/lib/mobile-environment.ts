@@ -1,17 +1,25 @@
-type PublicEnvironment = Readonly<Record<string, string | undefined>>
+type MobilePublicEnvName =
+  | 'EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY'
+  | 'EXPO_PUBLIC_SUPABASE_URL'
+  | 'EXPO_PUBLIC_SUPABASE_ANON_KEY'
+  | 'EXPO_PUBLIC_WEB_APP_URL'
+  | 'EXPO_PUBLIC_WEB_URL'
 
-type MobileRuntime = typeof globalThis & {
-  process?: {
-    env?: PublicEnvironment
+export function getMobilePublicEnv(name: MobilePublicEnvName): string | undefined {
+  switch (name) {
+    case 'EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY':
+      return process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
+    case 'EXPO_PUBLIC_SUPABASE_URL':
+      return process.env.EXPO_PUBLIC_SUPABASE_URL
+    case 'EXPO_PUBLIC_SUPABASE_ANON_KEY':
+      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+    case 'EXPO_PUBLIC_WEB_APP_URL':
+      return process.env.EXPO_PUBLIC_WEB_APP_URL
+    case 'EXPO_PUBLIC_WEB_URL':
+      return process.env.EXPO_PUBLIC_WEB_URL
+    default:
+      return undefined
   }
-}
-
-const runtime = globalThis as unknown as MobileRuntime
-
-export function getMobilePublicEnv(name: string): string | undefined {
-  const environment = runtime.process?.env
-  const value: unknown = environment?.[name]
-  return typeof value === 'string' ? value : undefined
 }
 
 export function getMobileApiBaseUrl(): string | undefined {
