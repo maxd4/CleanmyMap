@@ -12,6 +12,14 @@ function response(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), { status });
 }
 
+function responseWithJsonError(error = new SyntaxError("invalid JSON")): Response {
+  return {
+    ok: true,
+    status: 200,
+    json: vi.fn<typeof Response.prototype.json>().mockRejectedValue(error),
+  } as unknown as Response;
+}
+
 function reviewItem(id = "request-1"): ActionParticipationReviewItem {
   return {
     id,
@@ -88,6 +96,13 @@ function readState(renderer: ReturnType<typeof create>) {
   return JSON.parse(String(renderer.root.findByType("output").children[0]));
 }
 
+async function mountQueue(props: Partial<ProbeProps> = {}) {
+  let renderer!: ReturnType<typeof create>;
+  act(() => { renderer = create(<QueueProbe queueActionId="action-1" {...props} />); });
+  await act(async () => { await Promise.resolve(); });
+  return renderer;
+}
+
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -156,6 +171,93 @@ describe("useJoinFormSectionQueue behavior", () => {
     await act(async () => { await post; await Promise.resolve(); });
     expect(readState(renderer).error).toBe("refusée");
     expect(readState(renderer).reviewing).toBeNull();
+    renderer.unmount();
+  });
+
+  it("turns a review network rejection into a visible error and resets its busy state", async () => {
+    const notice = vi.fn();
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response({ status: "ok", canReview: true, pendingRequests: [reviewItem()], confirmedParticipants: [] }))
+      .mockRejectedValueOnce(new Error("network down"));
+    vi.stubGlobal("fetch", fetchMock);
+    const renderer = await mountQueue({ onNotice: notice });
+
+    await act(async () => { renderer.root.findAllByType("button")[0]?.props.onClick(); await Promise.resolve(); });
+    expect(readState(renderer)).toMatchObject({ error: "La demande n'a pas pu être traitée.", reviewing: null });
+    expect(notice).not.toHaveBeenCalled();
+    renderer.unmount();
+  });
+
+  it("turns an unreadable review response into a visible error and resets its busy state", async () => {
+    const notice = vi.fn();
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response({ status: "ok", canReview: true, pendingRequests: [reviewItem()], confirmedParticipants: [] }))
+      .mockResolvedValueOnce(responseWithJsonError());
+    vi.stubGlobal("fetch", fetchMock);
+    const renderer = await mountQueue({ onNotice: notice });
+
+    await act(async () => { renderer.root.findAllByType("button")[0]?.props.onClick(); await Promise.resolve(); });
+    expect(readState(renderer)).toMatchObject({ error: "La demande n'a pas pu être traitée.", reviewing: null });
+    expect(notice).not.toHaveBeenCalled();
+    renderer.unmount();
+  });
+
+  it("turns a manual-add network rejection into a visible error and resets its busy state", async () => {
+    const notice = vi.fn();
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response({ status: "ok", canReview: true, pendingRequests: [], confirmedParticipants: [] }))
+      .mockRejectedValueOnce(new Error("network down"));
+    vi.stubGlobal("fetch", fetchMock);
+    const renderer = await mountQueue({ onNotice: notice });
+
+    await act(async () => { renderer.root.findAllByType("button")[1]?.props.onClick(); await Promise.resolve(); });
+    expect(readState(renderer)).toMatchObject({ error: "L'ajout du compte a échoué.", adding: null });
+    expect(notice).not.toHaveBeenCalled();
+    renderer.unmount();
+  });
+
+  it("surfaces an explicit manual-add HTTP refusal without reporting success", async () => {
+    const notice = vi.fn();
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response({ status: "ok", canReview: true, pendingRequests: [], confirmedParticipants: [] }))
+      .mockResolvedValueOnce(response({ error: "compte refusé" }, 403));
+    vi.stubGlobal("fetch", fetchMock);
+    const renderer = await mountQueue({ onNotice: notice });
+
+    await act(async () => { renderer.root.findAllByType("button")[1]?.props.onClick(); await Promise.resolve(); });
+    expect(readState(renderer)).toMatchObject({ error: "compte refusé", adding: null });
+    expect(notice).not.toHaveBeenCalled();
+    renderer.unmount();
+  });
+
+  it("turns an unreadable manual-add response into a visible error and resets its busy state", async () => {
+    const notice = vi.fn();
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response({ status: "ok", canReview: true, pendingRequests: [], confirmedParticipants: [] }))
+      .mockResolvedValueOnce(responseWithJsonError());
+    vi.stubGlobal("fetch", fetchMock);
+    const renderer = await mountQueue({ onNotice: notice });
+
+    await act(async () => { renderer.root.findAllByType("button")[1]?.props.onClick(); await Promise.resolve(); });
+    expect(readState(renderer)).toMatchObject({ error: "L'ajout du compte a échoué.", adding: null });
+    expect(notice).not.toHaveBeenCalled();
+    renderer.unmount();
+  });
+
+  it("keeps a confirmed review successful when reloading the queue fails", async () => {
+    const countsChanged = vi.fn();
+    const notice = vi.fn();
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response({ status: "ok", canReview: true, pendingRequests: [reviewItem()], confirmedParticipants: [] }))
+      .mockResolvedValueOnce(response({ status: "ok", participantId: "request-1", participationStatus: "confirmed", participationSource: "group_form", participantsCount: 4 }))
+      .mockRejectedValueOnce(new Error("reload unavailable"));
+    vi.stubGlobal("fetch", fetchMock);
+    const renderer = await mountQueue({ onActionCountsChanged: countsChanged, onNotice: notice });
+
+    await act(async () => { renderer.root.findAllByType("button")[0]?.props.onClick(); await Promise.resolve(); });
+    expect(readState(renderer)).toMatchObject({ error: "Impossible de charger la file publique.", reviewing: null });
+    expect(notice).toHaveBeenCalledWith("Demande acceptée.");
+    expect(countsChanged).not.toHaveBeenCalled();
     renderer.unmount();
   });
 

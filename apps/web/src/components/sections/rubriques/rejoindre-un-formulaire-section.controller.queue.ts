@@ -18,6 +18,13 @@ type GroupJoinSearchResponse = {
   items: ActionParticipationSearchItem[];
 };
 
+type QueueMutationKind = "review" | "add";
+
+function queueMutationFallbackMessage(fr: boolean, kind: QueueMutationKind) {
+  if (kind === "review") return fr ? "La demande n'a pas pu être traitée." : "The request could not be processed.";
+  return fr ? "L'ajout du compte a échoué." : "Adding the account failed.";
+}
+
 export function useJoinFormSectionQueue({
   fr,
   queueActionId,
@@ -186,23 +193,24 @@ export function useJoinFormSectionQueue({
         const message =
           typeof payload === "object" && payload && "error" in payload && payload.error
             ? payload.error
-            : fr
-              ? "La demande n'a pas pu être traitée."
-              : "The request could not be processed.";
+            : queueMutationFallbackMessage(fr, "review");
         setQueueError(message);
         return;
       }
 
       const refreshedQueue = await loadQueue(queueActionId);
-      const refreshedPendingCount = refreshedQueue?.pendingRequests.length ?? 0;
-      onActionCountsChanged(
-        queueActionId,
-        typeof payload === "object" && payload && "participantsCount" in payload
-          ? payload.participantsCount
-          : null,
-        refreshedPendingCount,
-      );
+      if (refreshedQueue) {
+        onActionCountsChanged(
+          queueActionId,
+          typeof payload === "object" && payload && "participantsCount" in payload
+            ? payload.participantsCount
+            : null,
+          refreshedQueue.pendingRequests.length,
+        );
+      }
       onNotice(decision === "accept" ? (fr ? "Demande acceptée." : "Request approved.") : fr ? "Demande refusée." : "Request rejected.");
+    } catch {
+      setQueueError(queueMutationFallbackMessage(fr, "review"));
     } finally {
       setReviewingQueueId(null);
     }
@@ -229,23 +237,24 @@ export function useJoinFormSectionQueue({
         const message =
           typeof payload === "object" && payload && "error" in payload && payload.error
             ? payload.error
-            : fr
-              ? "L'ajout du compte a échoué."
-              : "Adding the account failed.";
+            : queueMutationFallbackMessage(fr, "add");
         setQueueError(message);
         return;
       }
 
       const refreshedQueue = await loadQueue(queueActionId);
-      const refreshedPendingCount = refreshedQueue?.pendingRequests.length ?? 0;
-      onActionCountsChanged(
-        queueActionId,
-        typeof payload === "object" && payload && "participantsCount" in payload
-          ? payload.participantsCount
-          : null,
-        refreshedPendingCount,
-      );
+      if (refreshedQueue) {
+        onActionCountsChanged(
+          queueActionId,
+          typeof payload === "object" && payload && "participantsCount" in payload
+            ? payload.participantsCount
+            : null,
+          refreshedQueue.pendingRequests.length,
+        );
+      }
       onNotice(fr ? "Le compte a été ajouté à l'action." : "The account has been added to the action.");
+    } catch {
+      setQueueError(queueMutationFallbackMessage(fr, "add"));
     } finally {
       setAddingQueueParticipantId(null);
     }
