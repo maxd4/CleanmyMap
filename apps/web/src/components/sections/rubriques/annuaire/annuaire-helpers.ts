@@ -31,6 +31,63 @@ export {
 
 export type EnrichedAnnuaireEntry = AnnuaireEntry & { distanceKm: number | null };
 
+/**
+ * Keep directory search predictable for public text while preserving
+ * substring matching. Punctuation and hyphens become separators so a query
+ * can use either the displayed spelling or separate words.
+ */
+export function normalizeAnnuaireSearchText(value: string): string {
+ return value
+  .normalize("NFD")
+  .replace(/\p{Diacritic}/gu, "")
+  .toLocaleLowerCase("fr-FR")
+  .replace(/[^\p{L}\p{N}]+/gu, " ")
+  .trim()
+  .replace(/\s+/gu, " ");
+}
+
+export function tokenizeAnnuaireSearchQuery(query: string): string[] {
+ const normalizedQuery = normalizeAnnuaireSearchText(query);
+ return normalizedQuery ? normalizedQuery.split(" ") : [];
+}
+
+function getAnnuaireSearchFields(entry: AnnuaireEntry): string[] {
+ return [
+  entry.name,
+  entry.legalIdentity,
+  entry.description,
+  entry.location,
+  ...(entry.tags ?? []),
+  entry.associationProfile?.mission ?? "",
+  ...(entry.associationProfile?.recurringNeeds ?? []),
+  ...(entry.associationProfile?.pastActions ?? []),
+  ...(entry.associationProfile?.usefulResources ?? []).flatMap((resource) => [
+   resource.label,
+   resource.description ?? "",
+  ]),
+ ];
+}
+
+/**
+ * Every query term must occur in at least one admissible public field. The
+ * caller tokenizes the query once so filtering a directory does not repeat
+ * query normalization for every entry.
+ */
+export function matchesAnnuaireSearch(
+ entry: AnnuaireEntry,
+ searchTerms: readonly string[],
+): boolean {
+ if (searchTerms.length === 0) return true;
+
+ const normalizedFields = getAnnuaireSearchFields(entry)
+  .map(normalizeAnnuaireSearchText)
+  .filter(Boolean);
+
+ return searchTerms.every((term) =>
+  normalizedFields.some((field) => field.includes(term)),
+ );
+}
+
 export const ENTITY_LABELS: Record<AnnuaireEntry["kind"], string> = {
  association:"Association",
  groupe_parole:"Collectif",

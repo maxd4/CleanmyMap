@@ -14,7 +14,9 @@ import {
   getAnnuaireDistanceKm,
   isNearbyEntry, 
   isNationalAnnuaireEntry,
+  matchesAnnuaireSearch,
   mergeAnnuaireEntries,
+  tokenizeAnnuaireSearchQuery,
   type EnrichedAnnuaireEntry 
 } from "./annuaire-helpers";
 import type { PublishedAnnuaireEntry } from "@/lib/partners/annuaire-types";
@@ -53,6 +55,10 @@ export function useAnnuaireLogic() {
   const [zoneFilter, setZoneFilter] = useState<ZoneFilter>("all");
   const [highlightedActorId, setHighlightedActorId] = useState<string | null>(null);
   const [actorCardsPage, setActorCardsPage] = useState(1);
+  const updateSearchTerm = useCallback((value: string) => {
+    setSearchTerm(value);
+    setActorCardsPage(1);
+  }, []);
 
   const { publishedDirectoryData, publishedDirectoryError, publishedDirectoryIsLoading, publishedDirectoryIsValidating, retryPublishedDirectory } = usePublishedAnnuaireDirectory();
 
@@ -88,24 +94,16 @@ export function useAnnuaireLogic() {
     [enrichedEntries],
   );
 
+  const searchTerms = useMemo(
+    () => tokenizeAnnuaireSearchQuery(searchTerm),
+    [searchTerm],
+  );
+
   const sortedAndFilteredEntries = useMemo(() => {
     let result = [...enrichedEntries];
 
-    if (searchTerm) {
-      const low = searchTerm.toLowerCase();
-      result = result.filter(e => 
-        e.name.toLowerCase().includes(low) || 
-        e.legalIdentity.toLowerCase().includes(low) ||
-        e.description.toLowerCase().includes(low) ||
-        e.tags?.some(t => t.toLowerCase().includes(low)) ||
-        e.associationProfile?.mission.toLowerCase().includes(low) ||
-        e.associationProfile?.recurringNeeds.some((need) => need.toLowerCase().includes(low)) ||
-        e.associationProfile?.pastActions.some((action) => action.toLowerCase().includes(low)) ||
-        e.associationProfile?.usefulResources.some((resource) =>
-          resource.label.toLowerCase().includes(low) ||
-          (resource.description?.toLowerCase().includes(low) ?? false),
-        )
-      );
+    if (searchTerms.length > 0) {
+      result = result.filter((entry) => matchesAnnuaireSearch(entry, searchTerms));
     }
 
     if (filterKind !== "all") {
@@ -125,7 +123,7 @@ export function useAnnuaireLogic() {
     }
 
     return result.sort(compareAnnuaireEntries);
-  }, [enrichedEntries, searchTerm, filterKind, filterContribution, zoneFilter, targetArrondissement]);
+  }, [enrichedEntries, searchTerms, filterKind, filterContribution, zoneFilter, targetArrondissement]);
 
   const actorCardsTotalPages = Math.ceil(sortedAndFilteredEntries.length / ACTOR_CARDS_PAGE_SIZE);
   const safeActorCardsPage = Math.min(actorCardsPage, Math.max(1, actorCardsTotalPages));
@@ -145,7 +143,7 @@ export function useAnnuaireLogic() {
   }, []);
 
   return {
-    searchTerm, setSearchTerm,
+    searchTerm, setSearchTerm: updateSearchTerm,
     filterKind, setFilterKind,
     filterContribution, setFilterContribution,
     zoneFilter, setZoneFilter,

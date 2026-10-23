@@ -42,7 +42,10 @@ le compteur et les résultats visibles peuvent être partiels, avec une action d
 Si des fiches précédemment chargées sont conservées par SWR après un échec, elles sont
 signalées comme potentiellement périmées et ne sont pas présentées comme fraîches.
 
-La recherche, les filtres, la liste paginée, la carte et le graphe consomment le même
+La recherche publique est insensible à la casse et aux accents. Elle accepte plusieurs
+termes, les espaces multiples, la ponctuation et les tirets ; les termes sont combinés
+par un ET, chaque terme pouvant correspondre à un champ public différent, sans exposer
+les contacts administratifs ni les identifiants internes. La recherche, les filtres, la liste paginée, la carte et le graphe consomment le même
 état d'exploration. Les limites géographiques et la provenance sont affichées sans
 transformer une couverture nationale ou une position dérivée en adresse réelle.
 

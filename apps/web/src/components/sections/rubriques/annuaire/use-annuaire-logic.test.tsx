@@ -120,6 +120,20 @@ describe("useAnnuaireLogic canonical results", () => {
     expect(hook.current.filterKey).toContain(targetTag);
   });
 
+  it("resets pagination when the normalized search changes", () => {
+    const hook = renderHook();
+
+    act(() => {
+      hook.current.setActorCardsPage(3);
+      hook.current.setSearchTerm("  ACADEMIE   ");
+    });
+
+    expect(hook.current.actorCardsPage).toBe(1);
+    expect(hook.current.sortedAndFilteredEntries.map((entry) => entry.id)).toEqual(["asso-4"]);
+    expect(hook.current.paginatedEntries.map((entry) => entry.id)).toEqual(["asso-4"]);
+    expect(hook.current.totalPages).toBe(1);
+  });
+
   it("resets all filters before a selection that was previously excluded", () => {
     const hook = renderHook();
     const target = hook.current.allEntries[0];

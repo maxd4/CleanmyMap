@@ -27,9 +27,14 @@ provenance ni le niveau de confiance de l'entrée sélectionnée.
 ## 2. Recherche, filtres et résultats
 
 `useAnnuaireLogic` est le propriétaire unique de l'état et des résultats de la page.
-La saisie est recherchée sans distinction de casse dans le nom, l'identité légale,
-la description, les tags et, lorsqu'ils existent, la mission, les besoins récurrents,
-les actions passées et le libellé ou la description des ressources utiles.
+La saisie est normalisée sans distinction de casse ni d'accents, puis découpée en
+termes séparés par des espaces, une ponctuation ou un tiret. Chaque terme doit être
+présent comme sous-chaîne dans au moins un champ public du nom, de l'identité légale,
+de la description, de la localisation, des tags et, lorsqu'ils existent, de la mission,
+des besoins récurrents, des actions passées ou du libellé et de la description des
+ressources utiles. Les termes peuvent donc être répartis entre plusieurs champs et
+saisis dans n'importe quel ordre. Les contacts administratifs, identifiants et
+métadonnées de modération ne sont pas recherchés.
 
 Les filtres actuellement disponibles sont :
 

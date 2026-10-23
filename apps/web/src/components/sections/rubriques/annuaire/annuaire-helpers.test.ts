@@ -13,8 +13,85 @@ import {
   hasTraceablePastActions,
   hasPreciseAnnuaireCoordinates,
   isNationalAnnuaireEntry,
+  matchesAnnuaireSearch,
   mergeAnnuaireEntries,
+  tokenizeAnnuaireSearchQuery,
 } from "./annuaire-helpers";
+
+function createSearchEntry() {
+  return {
+    id: "published-search-fixture",
+    name: "Énergie Solidaire",
+    legalIdentity: "Association Énergie Solidaire",
+    kind: "association" as const,
+    types: ["environnemental" as const],
+    description: "Accompagnement d'une mairie pour l'économie circulaire.",
+    location: "Île-de-France",
+    lat: null,
+    lng: null,
+    coveredArrondissements: [],
+    contributionTypes: ["communication" as const],
+    tags: ["Économie circulaire"],
+    provenance: "published_partner" as const,
+    verificationStatus: "verifie" as const,
+    qualificationStatus: "partenaire_actif" as const,
+    availability: "Sur rendez-vous",
+    lastUpdatedAt: "2026-10-01T00:00:00.000Z",
+    associationProfile: {
+      mission: "Accompagner les collectivités",
+      recurringNeeds: ["Bénévoles"],
+      pastActions: ["Ateliers de quartier"],
+      usefulResources: [
+        {
+          label: "Guide énergie et tri",
+          description: "Ressource publique pour les équipes locales.",
+          url: "https://example.com/guide",
+        },
+      ],
+      publicCalls: [],
+    },
+  };
+}
+
+describe("annuaire public text search", () => {
+  it("normalizes accents and case, matches terms across fields in any order, and keeps substrings", () => {
+    const entry = createSearchEntry();
+
+    expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("energie"))).toBe(true);
+    expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("ÉNERGIE"))).toBe(true);
+    expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("energie mairie"))).toBe(true);
+    expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("mairie energie"))).toBe(true);
+    expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("soli"))).toBe(true);
+    expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("energie ocean"))).toBe(false);
+  });
+
+  it("treats repeated spaces, punctuation and hyphens as separators", () => {
+    const entry = createSearchEntry();
+
+    expect(
+      matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("  eco-circulaire,   mairie  ")),
+    ).toBe(true);
+    expect(tokenizeAnnuaireSearchQuery("   ,---  ")).toEqual([]);
+  });
+
+  it("searches public resources and public location, but not administrative fields", () => {
+    const entry = {
+      ...createSearchEntry(),
+      internalAdminContact: {
+        referentName: "Contact secret",
+        email: "clerk-secret@example.com",
+        phone: "+33102030405",
+      },
+      organizerDirectoryId: "clerk-internal-id",
+    };
+
+    expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("guide tri"))).toBe(true);
+    expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("ile france"))).toBe(true);
+    expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("clerk secret"))).toBe(false);
+    expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery(""))).toBe(true);
+    expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("   "))).toBe(true);
+  });
+});
 
 describe("association profile provenance", () => {
   it("does not retain the unused recommendation pseudo-score", () => {
