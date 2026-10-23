@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   filterPlasticOriginsObservationsByBounds,
   isPlasticOriginsObservationInBounds,
@@ -34,6 +35,14 @@ const observation = (coordinates: [number, number], availableSourceFields = ["da
 }) satisfies PlasticOriginsObservation;
 
 describe("Plastic Origins map contract", () => {
+  it("keeps resource provenance in the dataset while internalizing its helper type", () => {
+    const source = readFileSync(new URL("./contract.ts", import.meta.url), "utf8");
+
+    expect(source).toContain("sourceResources: PlasticOriginsResourceAudit[]");
+    expect(source).toContain("export type PlasticOriginsDataset");
+    expect(source).not.toContain("export type PlasticOriginsResourceAudit");
+  });
+
   it("keeps longitude/latitude order explicit and filters by viewport", () => {
     const inside = observation([2.35, 48.85]);
     const outside = observation([6.35, 46.85]);

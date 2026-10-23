@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { buildPublishedPartnerAnnuaireEntry, normalizePublishedRecord } from "./published-annuaire-entries-store";
 import { isPlaceholderUrl } from "./onboarding-types";
 
 describe("buildPublishedPartnerAnnuaireEntry", () => {
+  it("keeps EngagementType internal while retaining the public entry contract", () => {
+    const source = readFileSync(new URL("./annuaire-types.ts", import.meta.url), "utf8");
+
+    expect(source).toContain("types: EngagementType[]");
+    expect(source).toContain("export type AnnuaireEntry");
+    expect(source).not.toContain("export type EngagementType");
+  });
+
   it("promotes an onboarding request into a published annuaire entry", () => {
     const entry = buildPublishedPartnerAnnuaireEntry({
       requestId: "req-123",

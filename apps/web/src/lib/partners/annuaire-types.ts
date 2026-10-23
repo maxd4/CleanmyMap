@@ -1,4 +1,4 @@
-export type EngagementType = "environnemental" | "social" | "humanitaire";
+type EngagementType = "environnemental" | "social" | "humanitaire";
 
 type EntityKind =
   | "association"

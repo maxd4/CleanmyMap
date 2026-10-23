@@ -35,7 +35,7 @@ export type PlasticOriginsObservation = {
   };
 };
 
-export type PlasticOriginsResourceAudit = {
+type PlasticOriginsResourceAudit = {
   year: number;
   filename: string;
   resourceId: string;

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { readFileSync } from "node:fs";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -70,6 +71,17 @@ function createStatus(
 }
 
 describe("ReportsWebDocumentDelivery", () => {
+  it("keeps internal history controls private while preserving the delivery surface", () => {
+    const controlsSource = readFileSync(new URL("./reports-history-action-controls.tsx", import.meta.url), "utf8");
+    const deliverySource = readFileSync(new URL("./reports-web-document-delivery.tsx", import.meta.url), "utf8");
+
+    expect(controlsSource).toContain("export function HistoryActionButtons");
+    expect(controlsSource).toContain("export function HistoryActionFeedback");
+    expect(controlsSource).not.toContain("export function HistoryActionPrimaryButtons");
+    expect(controlsSource).not.toContain("export function HistoryPublicationFeedback");
+    expect(deliverySource).not.toContain("export { HistoryActionButtons, HistoryActionFeedback }");
+  });
+
   it.each([
     ["idle", "Export indisponible"],
     ["pending", "Génération en cours"],

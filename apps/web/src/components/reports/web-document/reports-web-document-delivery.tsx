@@ -16,8 +16,6 @@ export type {
   ReportGenerationHistoryActionState,
   ReportsWebDocumentDeliveryHistoryProps,
 } from "./reports-history-contract";
-export { HistoryActionButtons, HistoryActionFeedback } from "./reports-history-action-controls";
-
 export type ReportsWebDocumentExportStatus = {
   icon: LucideIcon;
   label: string;

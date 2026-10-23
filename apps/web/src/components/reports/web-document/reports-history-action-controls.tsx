@@ -37,7 +37,7 @@ export type HistoryActionButtonsProps = {
   onRevokePublication: (id: string) => void;
 };
 
-export function HistoryActionPrimaryButtons({
+function HistoryActionPrimaryButtons({
   row,
   rowId,
   actionState,
@@ -236,7 +236,7 @@ export function HistoryActionFeedback({
   );
 }
 
-export function HistoryPublicationFeedback({
+function HistoryPublicationFeedback({
   rowId,
   isPending,
   publicationPreview,
