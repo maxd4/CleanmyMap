@@ -20,6 +20,7 @@ import {
 } from "../checks/repository-view.mjs";
 import {
   collectMeasuredRows,
+  TOP_HEAVY_SCAN_ROOTS,
 } from "../checks/top-heavy-measurement.mjs";
 import {
   FILE_KIND_POLICY,
@@ -36,7 +37,7 @@ const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 const OUTPUT_PATH = "documentation/architecture/monolith-split-plan.md";
 export const MODULARITY_DECISIONS_PATH = "documentation/architecture/modularity-decisions.md";
 const LEGACY_MODULARITY_PLAN_PATH = OUTPUT_PATH;
-const SCAN_ROOTS = ["apps/web/src"];
+export const MODULARITY_SCAN_ROOTS = TOP_HEAVY_SCAN_ROOTS;
 const HUMAN_BEGIN = "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->";
 const HUMAN_END = "<!-- RADAR:HUMAN_DECISIONS:END -->";
 const DEFAULT_TOP = 25;
@@ -783,8 +784,9 @@ automatiquement de la taille.
 ## I. Portée / reproductibilité
 
 La mesure porte sur les fichiers .ts et .tsx suivis sous
-apps/web/src, lus depuis la ref exacte affichée en tête. Pour régénérer un
-snapshot courant, utiliser --ref=HEAD ; une ref ancienne est signalée
+apps/web/src et apps/mobile, lus depuis la ref exacte affichée en tête. Elle
+réutilise les mêmes roots, classifications KIND et seuils que quality:top-heavy.
+Pour régénérer un snapshot courant, utiliser --ref=HEAD ; une ref ancienne est signalée
 HISTORICAL_SNAPSHOT et ne peut pas être présentée comme courante.
 
 Les décisions humaines sont lues depuis le registre canonique lié dans la
@@ -801,7 +803,7 @@ export function createRadarReport({ root = REPOSITORY_ROOT, ref }) {
   const refInfo = resolveRadarRef(ref, root);
   const view = createRepositoryView({ root, ref: refInfo.resolved });
   const human = readHumanDecisionsFromView(view, { requireRegistry: refInfo.status === "CURRENT_AT_GENERATION" });
-  const rows = collectMeasuredRows(view, SCAN_ROOTS);
+  const rows = collectMeasuredRows(view, MODULARITY_SCAN_ROOTS);
   const correlations = loadQualityAuditArtifacts({ root, auditedSha: refInfo.resolved });
   const radarRows = createRadarRows(rows, correlations).map((row) => ({
     ...row,

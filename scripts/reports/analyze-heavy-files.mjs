@@ -19,6 +19,7 @@ import {
   isRegenerableGeneratedFile,
   measureContent,
   collectMeasuredRows,
+  TOP_HEAVY_SCAN_ROOTS,
 } from "../checks/top-heavy-measurement.mjs";
 import {
   FILE_KIND_POLICY,
@@ -28,7 +29,7 @@ import {
   isExcludedGeneratedRow,
 } from "../checks/top-heavy-policy.mjs";
 
-const SCAN_ROOTS = ["apps/web/src"];
+export const HEAVY_REPORT_SCAN_ROOTS = TOP_HEAVY_SCAN_ROOTS;
 const BASELINE_PATH = "scripts/checks/heavy-files-baseline.json";
 
 export function analyzeFile(filePath) {
@@ -97,7 +98,7 @@ export function getRadarGroups(rows) {
       .filter(isInPreventiveZone)
       .sort((a, b) => b.lines - a.lines || b.bytes - a.bytes),
     architectural: rows
-      .filter((row) => !isExcludedGeneratedRow(row) && row.kind !== "test" && isAboveReview(row))
+      .filter((row) => row.kind !== "generated" && row.kind !== "test" && isAboveReview(row))
       .sort((a, b) => b.lines - a.lines || b.bytes - a.bytes),
     tests: rows
       .filter((row) => row.kind === "test" && isAboveReview(row))
@@ -146,10 +147,10 @@ function getRatchetFindings(rows, baseline) {
 
 export function analyzeRepository({ root = process.cwd(), ref = null } = {}) {
   const view = createRepositoryView({ root, ref });
-  const rows = collectMeasuredRows(view, SCAN_ROOTS);
+  const rows = collectMeasuredRows(view, HEAVY_REPORT_SCAN_ROOTS);
   let baseline;
   try {
-    baseline = loadHeavyFilesBaseline(view, BASELINE_PATH, SCAN_ROOTS);
+    baseline = loadHeavyFilesBaseline(view, BASELINE_PATH, HEAVY_REPORT_SCAN_ROOTS);
   } catch (error) {
     baseline = error;
   }

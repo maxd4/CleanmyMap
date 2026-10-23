@@ -11,11 +11,13 @@ import {
   createRadarRows,
   extractHumanDecisions,
   loadQualityAuditArtifacts,
+  MODULARITY_SCAN_ROOTS,
   parseHumanDecisions,
   parseDecisionSummary,
   readHumanDecisionsFromView,
   resolveRadarRef,
 } from "./generate-modularity-radar.mjs";
+import { TOP_HEAVY_SCAN_ROOTS } from "../checks/top-heavy-measurement.mjs";
 
 const currentRef = "a".repeat(40);
 const HUMAN_FIELDS = [
@@ -109,6 +111,11 @@ test("human decisions are preserved and remain the only source of architecture d
     RATIONALE: "the file is cohesive",
   }]);
   assert.equal(extractHumanDecisions(`before\n<!-- RADAR:HUMAN_DECISIONS:BEGIN -->\n${human}\n<!-- RADAR:HUMAN_DECISIONS:END -->`), human);
+});
+
+test("le radar mesure les roots Web et mobile du gate top-heavy", () => {
+  assert.deepEqual(MODULARITY_SCAN_ROOTS, TOP_HEAVY_SCAN_ROOTS);
+  assert.deepEqual(MODULARITY_SCAN_ROOTS, ["apps/web/src", "apps/mobile"]);
 });
 
 test("the migrated registry preserves every human decision and manual field", () => {

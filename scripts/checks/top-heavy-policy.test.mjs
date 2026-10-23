@@ -9,6 +9,7 @@ import {
   isAboveReview,
   isExcludedGeneratedRow,
 } from "./top-heavy-policy.mjs";
+import { classifyFileKind, isRegenerableGeneratedFile } from "./top-heavy-measurement.mjs";
 
 function row(kind, lines, bytes, generated = false) {
   return { file: `fixture-${kind}`, kind, lines, bytes, generated };
@@ -21,6 +22,16 @@ test("la politique expose les seuils REVIEW/HARD propres à chaque KIND", () => 
   assert.deepEqual(FILE_KIND_POLICY.test.hard, { lines: 1500, bytes: 80 * 1024 });
   assert.deepEqual(FILE_KIND_POLICY["data/config"].review, { lines: 800, bytes: 50 * 1024 });
   assert.deepEqual(FILE_KIND_POLICY["data/config"].hard, { lines: 1500, bytes: 80 * 1024 });
+});
+
+test("la classification couvre Web et mobile sans déduire un monolithe de la taille", () => {
+  assert.equal(classifyFileKind("apps/web/src/lib/feature.ts"), "runtime");
+  assert.equal(classifyFileKind("apps/mobile/screens/feature.tsx"), "runtime");
+  assert.equal(classifyFileKind("apps/mobile/tests/feature.test.ts"), "test");
+  assert.equal(classifyFileKind("apps/mobile/data/catalog.ts"), "data/config");
+  assert.equal(classifyFileKind("apps/mobile/generated/schema.ts"), "generated");
+  assert.equal(isRegenerableGeneratedFile("apps/mobile/generated/schema.ts", "// @generated\n"), true);
+  assert.equal(isRegenerableGeneratedFile("apps/mobile/generated/manual.ts", "export const value = 1;\n"), false);
 });
 
 test("un test sous son seuil KIND n'est pas assimilé à un monolithe runtime", () => {

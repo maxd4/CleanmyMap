@@ -17,6 +17,7 @@ import { gitExecutable } from "../ci/git-executable.mjs";
 import { createGitRepositoryView } from "../checks/repository-view.mjs";
 import {
   collectMeasuredRows,
+  TOP_HEAVY_SCAN_ROOTS,
 } from "../checks/top-heavy-measurement.mjs";
 import {
   isAboveHard,
@@ -250,7 +251,7 @@ export function measureEntries(entries, readBinary) {
 
 function measureTopHeavy(ref, root = REPOSITORY_ROOT) {
   const view = createGitRepositoryView(ref, root);
-  const rows = collectMeasuredRows(view, ["apps/web/src", "apps/mobile"]);
+  const rows = collectMeasuredRows(view, TOP_HEAVY_SCAN_ROOTS);
   return {
     status: "MEASURED",
     source: "scripts/checks/top-heavy-measurement.mjs + top-heavy-policy.mjs",

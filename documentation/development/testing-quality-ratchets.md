@@ -39,6 +39,12 @@ la mesure exhaustive des deux roots. `quality:top-heavy` réutilise lui aussi le
 source canonique du ratchet de taille des fichiers et de ses seuils
 `REVIEW_REQUIRED`/`HARD`.
 
+Le radar `audit:modularity` et le rapport informatif `analyze:heavy-files`
+réutilisent exactement ces roots, la classification KIND et les seuils de
+`quality:top-heavy`. Ils séparent leurs vues runtime/data-config, tests et
+generated ; une taille élevée reste un signal de revue et ne produit jamais
+automatiquement une décision de monolithe ou de split.
+
 Pour un lot de modularisation de routes API ou de services backend, valider
 pendant DEVELOPMENT les contrats et tests directement concernés. En FULL,
 répéter les ratchets structurels sur le candidat final :

@@ -196,6 +196,13 @@ L’audit architectural ponctuel est distinct du radar top-heavy :
 npm run audit:architecture
 ```
 
+Il ne faut pas confondre cette vue avec `audit:modularity` ou
+`analyze:heavy-files` : ces deux rapports réutilisent le périmètre typé de
+`quality:top-heavy` (`apps/web/src` et `apps/mobile`) et conservent des
+sections distinctes pour runtime/data-config, tests et generated. `audit:architecture`
+garde son inventaire élargi des sources `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs` et
+`.cjs`, notamment sous `scripts`.
+
 Il lit l’arbre Git du SHA audité et écrit un artefact local régénérable sous
 `artifacts/architecture/<SHA>/architecture.json`. Son inventaire first-party
 mesure les sources `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs` et `.cjs` de `apps/web`,

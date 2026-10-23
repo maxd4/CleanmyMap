@@ -6,7 +6,7 @@ import {
   parseRepositoryRef,
 } from "./repository-view.mjs";
 import { loadHeavyFilesBaseline } from "./top-heavy-baseline.mjs";
-import { collectMeasuredRows } from "./top-heavy-measurement.mjs";
+import { collectMeasuredRows, TOP_HEAVY_SCAN_ROOTS } from "./top-heavy-measurement.mjs";
 import {
   FILE_KIND_POLICY,
   isInPreventiveZone,
@@ -126,7 +126,8 @@ export function runTopHeavyPolicy({ root = process.cwd(), args = [] } = {}) {
   if (!Number.isFinite(topCount) || topCount <= 0) throw new Error("--top doit être un nombre positif.");
   const enforce = hasFlag(args, "--enforce");
   const baselinePath = normalizeRepositoryPath(readArg(args, "--baseline", "scripts/checks/heavy-files-baseline.json"));
-  const scanRoots = (readArg(args, "--roots", "apps/web/src,apps/mobile") ?? "apps/web/src,apps/mobile")
+  const defaultScanRoots = TOP_HEAVY_SCAN_ROOTS.join(",");
+  const scanRoots = (readArg(args, "--roots", defaultScanRoots) ?? defaultScanRoots)
     .split(",").map((value) => normalizeRepositoryPath(value.trim())).filter(Boolean);
   const ref = parseRepositoryRef(args);
   const view = createRepositoryView({ root, ref });
