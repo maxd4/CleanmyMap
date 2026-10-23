@@ -59,6 +59,10 @@ export async function getChecklistProgress(
         .eq("checklist_id", checklistId)
         .maybeSingle();
 
+      if (!result.error && !result.data) {
+        return null;
+      }
+
       if (!result.error && result.data) {
         return {
           userId: result.data.user_id,
