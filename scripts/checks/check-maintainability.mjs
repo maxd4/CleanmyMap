@@ -9,7 +9,7 @@ import { pathToFileURL } from "node:url";
 import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
 import sonarjs from "eslint-plugin-sonarjs";
-import { classifyComplexityCategory, listFunctionMetadata } from "./complexity-policy.mjs";
+import { listFunctionMetadata } from "./complexity-policy.mjs";
 import { gitExecutable } from "../ci/git-executable.mjs";
 
 const require = createRequire(import.meta.url);

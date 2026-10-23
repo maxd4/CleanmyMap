@@ -8,7 +8,6 @@ import { buildArchitectureImportGraph } from "../reports/generate-architecture-i
 import { parseRepositoryRef } from "./repository-view.mjs";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
-const baselinePath = path.join(repositoryRoot, "scripts/checks/architecture-import-boundary-baseline.json");
 export const AUTHORIZED_BOUNDARY_RULES = Object.freeze([
   "UI_TO_INFRASTRUCTURE",
   "DOMAIN_TO_UI",

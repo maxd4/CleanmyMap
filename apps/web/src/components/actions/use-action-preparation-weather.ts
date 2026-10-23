@@ -91,7 +91,7 @@ export function useActionPreparationWeather({
     const controller = new AbortController();
     abortRef.current = controller;
     setState({ requestKey: currentKey, state: "loading", context: null });
-    const promise = (async () => {
+    const requestPromise = (async () => {
       try {
         const context = await fetchPlannerWeatherContext({
           ...currentRequest,
@@ -111,11 +111,12 @@ export function useActionPreparationWeather({
         if (version === requestVersion.current) abortRef.current = null;
       }
     })();
-    inFlightRef.current = { requestKey: currentKey, promise };
+    const inFlightRequest = { requestKey: currentKey, promise: requestPromise };
+    inFlightRef.current = inFlightRequest;
     try {
-      await promise;
+      await requestPromise;
     } finally {
-      if (inFlightRef.current?.promise === promise) inFlightRef.current = null;
+      if (inFlightRef.current === inFlightRequest) inFlightRef.current = null;
     }
   }, [initialWeatherContext, key, request, state]);
 
