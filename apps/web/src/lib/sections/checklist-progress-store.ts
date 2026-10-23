@@ -25,6 +25,52 @@ type ProgressStore = {
   entries: ChecklistProgressEntry[];
 };
 
+type ChecklistProgressRow = {
+  user_id: string;
+  checklist_id: string;
+  checks: Record<string, boolean>;
+  updated_at: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function parseChecks(value: unknown): Record<string, boolean> | null {
+  if (!isRecord(value)) return null;
+  const entries = Object.entries(value);
+  if (entries.some(([, checked]) => typeof checked !== "boolean")) return null;
+  return Object.fromEntries(entries) as Record<string, boolean>;
+}
+
+function parseChecklistProgressRow(value: unknown): ChecklistProgressRow | null {
+  if (!isRecord(value)) return null;
+  const checks = parseChecks(value.checks);
+  if (
+    typeof value.user_id !== "string" ||
+    typeof value.checklist_id !== "string" ||
+    !checks ||
+    typeof value.updated_at !== "string"
+  ) {
+    return null;
+  }
+  return {
+    user_id: value.user_id,
+    checklist_id: value.checklist_id,
+    checks,
+    updated_at: value.updated_at,
+  };
+}
+
+function toChecklistProgressEntry(row: ChecklistProgressRow): ChecklistProgressEntry {
+  return {
+    userId: row.user_id,
+    checklistId: row.checklist_id,
+    checks: row.checks,
+    updatedAt: row.updated_at,
+  };
+}
+
 async function readStore(): Promise<ProgressStore> {
   try {
     const raw = await readFile(STORE_FILE, "utf-8");
@@ -64,12 +110,12 @@ export async function getChecklistProgress(
       }
 
       if (!result.error && result.data) {
-        return {
-          userId: result.data.user_id,
-          checklistId: result.data.checklist_id,
-          checks: (result.data.checks ?? {}) as Record<string, boolean>,
-          updatedAt: result.data.updated_at,
-        };
+        const row: unknown = result.data;
+        const parsedRow = parseChecklistProgressRow(row);
+        if (!parsedRow) {
+          throw new Error("Checklist progress returned an invalid persisted row.");
+        }
+        return toChecklistProgressEntry(parsedRow);
       }
 
       if (!allowLocalFileStoreFallback()) {
@@ -121,12 +167,12 @@ export async function upsertChecklistProgress(
         .single();
 
       if (!result.error) {
-        return {
-          userId: result.data.user_id,
-          checklistId: result.data.checklist_id,
-          checks: (result.data.checks ?? {}) as Record<string, boolean>,
-          updatedAt: result.data.updated_at,
-        };
+        const row: unknown = result.data;
+        const parsedRow = parseChecklistProgressRow(row);
+        if (!parsedRow) {
+          throw new Error("Checklist progress upsert returned an invalid persisted row.");
+        }
+        return toChecklistProgressEntry(parsedRow);
       }
 
       if (!allowLocalFileStoreFallback()) {

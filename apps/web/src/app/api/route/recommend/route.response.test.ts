@@ -19,6 +19,18 @@ const buildHotspotsMock = vi.hoisted(() => vi.fn());
 const buildProactiveAssistantMock = vi.hoisted(() => vi.fn());
 const defaultRouteAssistantPayloadMock = vi.hoisted(() => vi.fn());
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+async function readRouteResponse(response: Response): Promise<RouteRecommendationResponse> {
+  const raw: unknown = await response.json();
+  if (!isRecord(raw) || !["isLoop", "planningMode", "status", "dataStatus", "dataLayers", "sourceHealth", "origin", "stops", "prediction", "trace", "routeGeometry"].every((key) => key in raw)) {
+    throw new Error("La réponse de recommandation de route est invalide.");
+  }
+  return raw as RouteRecommendationResponse;
+}
+
 vi.mock("@/lib/route/route-data-status", () => ({
   resolveRouteDataLayers: resolveRouteDataLayersMock,
 }));
@@ -306,7 +318,7 @@ describe("route recommendation response trace contract", () => {
     installDefaultMocks();
 
     const response = buildRouteRecommendationResponse(responseInput());
-    const payload: RouteRecommendationResponse = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(payload.streetCleaningCorridors).toMatchObject({
       schemaVersion: "street-cleaning-corridor-v1",
@@ -343,7 +355,7 @@ describe("route recommendation response trace contract", () => {
       },
     };
     const response = buildRouteRecommendationResponse(responseInput({ weatherContext }));
-    const payload: RouteRecommendationResponse = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(payload.weatherContext).toEqual(weatherContext);
     expect(payload.trace.weatherContext).toEqual(weatherContext);
@@ -353,7 +365,7 @@ describe("route recommendation response trace contract", () => {
   it("returns a trace and aligned data layers for an empty response", async () => {
     installDefaultMocks();
     const response = buildRouteRecommendationResponse(responseInput());
-    const payload: RouteRecommendationResponse = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(payload.trace).toBeDefined();
     expect(payload.trace.selectedStops).toEqual([]);
@@ -431,7 +443,7 @@ describe("route recommendation response trace contract", () => {
         budgetPrefixApplied: false,
       },
     }));
-    const payload: RouteRecommendationResponse = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(payload.trace.selectedStops[0]).toMatchObject({
       id: observed.id,
@@ -471,7 +483,7 @@ describe("route recommendation response trace contract", () => {
         predictionSummary: predictionSummary(),
       },
     }));
-    const payload: RouteRecommendationResponse = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(payload.constraintsApplied).toEqual({ pickupPreference: "waste" });
     expect(payload.trace.parameters.pickupPreference).toBe("waste");
@@ -524,7 +536,7 @@ describe("route recommendation response trace contract", () => {
         }),
       },
     }));
-    const payload: RouteRecommendationResponse = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(payload.serviceMinutesEstimate).toBe(18);
     expect(payload.actionMinutesEstimate).toBe(18);
@@ -576,7 +588,7 @@ describe("route recommendation response trace contract", () => {
         budgetPrefixApplied: false,
       },
     }));
-    const payload: RouteRecommendationResponse = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(payload.trace.selectedStops[0]?.targetFamily).toBe("predicted");
     expect(payload.dataLayers.prediction).toBe("available");
@@ -689,7 +701,7 @@ describe("route recommendation response trace contract", () => {
         }),
       },
     }));
-    const payload: RouteRecommendationResponse = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(payload.groupRoutes.map(({ operationalBudget }) => operationalBudget?.totalMinutes))
       .toEqual([25, 25]);
@@ -736,7 +748,7 @@ describe("route recommendation response trace contract", () => {
         budgetPrefixApplied: false,
       },
     }));
-    const payload: RouteRecommendationResponse = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(payload.trace.fallbacks).toContain("fallback_route_geometry");
     expect(payload.status).toBe("degraded");

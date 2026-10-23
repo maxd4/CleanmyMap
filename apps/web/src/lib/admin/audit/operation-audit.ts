@@ -29,6 +29,16 @@ type ProfileLookupRow = {
   handle: string | null;
 };
 
+type AdminOperationAuditDbRow = {
+  operation_id: string;
+  at: string;
+  actor_user_id: string;
+  operation_type: AdminOperationAuditEntry["operationType"];
+  outcome: AdminOperationAuditEntry["outcome"];
+  target_id: string | null;
+  details: Record<string, unknown>;
+};
+
 export type AdminOperationAuditEntry = {
   operationId: string;
   at: string;
@@ -72,6 +82,39 @@ function isAuditOutcome(value: unknown): value is AdminOperationAuditEntry["outc
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function parseProfileLookupRow(value: unknown): ProfileLookupRow | null {
+  if (!isRecord(value) || typeof value.id !== "string") return null;
+  if (value.display_name !== null && value.display_name !== undefined && typeof value.display_name !== "string") return null;
+  if (value.handle !== null && value.handle !== undefined && typeof value.handle !== "string") return null;
+  return {
+    id: value.id,
+    display_name: value.display_name === undefined ? null : value.display_name,
+    handle: value.handle === undefined ? null : value.handle,
+  };
+}
+
+function parseAdminOperationAuditDbRow(value: unknown): AdminOperationAuditDbRow | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.operation_id !== "string" ||
+    typeof value.at !== "string" ||
+    typeof value.actor_user_id !== "string" ||
+    !isAuditOperationType(value.operation_type) ||
+    !isAuditOutcome(value.outcome) ||
+    (value.target_id !== null && value.target_id !== undefined && typeof value.target_id !== "string") ||
+    !isRecord(value.details)
+  ) return null;
+  return {
+    operation_id: value.operation_id,
+    at: value.at,
+    actor_user_id: value.actor_user_id,
+    operation_type: value.operation_type,
+    outcome: value.outcome,
+    target_id: value.target_id === undefined ? null : value.target_id,
+    details: value.details,
+  };
 }
 
 async function readStore(): Promise<AuditStore> {
@@ -148,8 +191,11 @@ async function loadActorLabelsByUserId(
     return labels;
   }
 
-  for (const row of (result.data ?? []) as ProfileLookupRow[]) {
-    labels.set(row.id, buildActorLabel(row, row.id));
+  const rawRows: unknown = result.data ?? [];
+  if (!Array.isArray(rawRows)) return labels;
+  for (const rawRow of rawRows) {
+    const row = parseProfileLookupRow(rawRow);
+    if (row) labels.set(row.id, buildActorLabel(row, row.id));
   }
 
   return labels;
@@ -229,21 +275,24 @@ export async function listAdminOperationAudit(
         .limit(normalizedLimit);
 
       if (!result.error) {
+        const rawRows: unknown = result.data ?? [];
+        if (!Array.isArray(rawRows)) throw new Error("Admin audit returned an invalid row collection.");
+        const rows = rawRows.map(parseAdminOperationAuditDbRow);
+        if (rows.some((row) => row === null)) throw new Error("Admin audit returned an invalid persisted row.");
+        const parsedRows = rows as AdminOperationAuditDbRow[];
         const actorLabels = await loadActorLabelsByUserId(
-          (result.data ?? []).map((row) => row.actor_user_id),
+          parsedRows.map((row) => row.actor_user_id),
         );
 
-        return (result.data ?? []).map((row) => ({
+        return parsedRows.map((row) => ({
           operationId: row.operation_id,
           at: row.at,
           actorUserId: row.actor_user_id,
-          actorLabel:
-            actorLabels.get(row.actor_user_id) ??
-            buildActorLabel(undefined, row.actor_user_id),
+          actorLabel: actorLabels.get(row.actor_user_id) ?? buildActorLabel(undefined, row.actor_user_id),
           operationType: row.operation_type,
           outcome: row.outcome,
           targetId: row.target_id ?? undefined,
-          details: (row.details ?? {}) as Record<string, unknown>,
+          details: row.details,
         }));
       }
 

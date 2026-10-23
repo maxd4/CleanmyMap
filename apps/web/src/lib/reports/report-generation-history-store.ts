@@ -59,6 +59,34 @@ type ReportGenerationDbMetadataRow = {
   theme: ReportGenerationHistoryInput["theme"];
 };
 
+type ReportGenerationDbSnapshotRow = {
+  id: string;
+  filename: string;
+  generated_at: string;
+  snapshot: unknown;
+  period_id: string;
+  scope_kind: ReportGenerationSnapshotRecord["scopeKind"];
+  scope_value: string;
+  scope_label: string;
+  detail_level: ReportGenerationSnapshotRecord["detailLevel"];
+  modules: unknown;
+  theme: ReportGenerationSnapshotRecord["theme"];
+};
+
+function isReportGenerationDbSnapshotRow(value: unknown): value is ReportGenerationDbSnapshotRow {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const row = value as Record<string, unknown>;
+  return typeof row.id === "string" &&
+    typeof row.filename === "string" &&
+    typeof row.generated_at === "string" &&
+    typeof row.period_id === "string" &&
+    typeof row.scope_kind === "string" &&
+    typeof row.scope_value === "string" &&
+    typeof row.scope_label === "string" &&
+    typeof row.detail_level === "string" &&
+    (row.theme === null || row.theme === undefined || row.theme === "impact" || row.theme === "scientific");
+}
+
 function hasSameModules(left: ModuleState, right: unknown): boolean {
   if (!right || typeof right !== "object") return false;
   const candidate = right as Record<string, unknown>;
@@ -282,13 +310,18 @@ export async function getReportGenerationSnapshotById(
     throw error;
   }
 
-  if (!data) {
+  const rawData: unknown = data;
+  if (!rawData) {
     return null;
   }
+  if (!isReportGenerationDbSnapshotRow(rawData)) {
+    throw new InvalidReportGenerationSnapshotError();
+  }
+  const row = rawData;
 
   let snapshot;
   try {
-    snapshot = parseReportGenerationPayload(data.snapshot);
+    snapshot = parseReportGenerationPayload(row.snapshot);
   } catch (error) {
     if (error instanceof InvalidReportGenerationSnapshotError) {
       throw error;
@@ -296,18 +329,18 @@ export async function getReportGenerationSnapshotById(
     throw new InvalidReportGenerationSnapshotError();
   }
 
-  assertSnapshotMatchesHistoryRow(snapshot, data);
+  assertSnapshotMatchesHistoryRow(snapshot, row);
 
   return {
-    id: data.id,
-    filename: data.filename,
-    generatedAt: data.generated_at,
-    scopeKind: data.scope_kind as ReportGenerationSnapshotRecord["scopeKind"],
-    scopeValue: data.scope_value,
-    scopeLabel: data.scope_label,
-    detailLevel: data.detail_level as ReportGenerationSnapshotRecord["detailLevel"],
-    modules: isModuleState(data.modules) ? data.modules : null,
-    theme: data.theme ?? null,
+    id: row.id,
+    filename: row.filename,
+    generatedAt: row.generated_at,
+    scopeKind: row.scope_kind,
+    scopeValue: row.scope_value,
+    scopeLabel: row.scope_label,
+    detailLevel: row.detail_level,
+    modules: isModuleState(row.modules) ? row.modules : null,
+    theme: row.theme ?? null,
     snapshot,
   };
 }

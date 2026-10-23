@@ -15,6 +15,66 @@ type AssistanceRequest = {
   createdAt: string;
 };
 
+type AssistanceResponse = {
+  requests?: AssistanceRequest[];
+  code?: string;
+  url?: string;
+  error?: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function readNullableString(record: Record<string, unknown>, key: string): string | null {
+  const value = record[key];
+  return typeof value === "string" ? value : null;
+}
+
+function parseAssistanceRequest(value: unknown): AssistanceRequest | null {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.providedContext !== "string" || typeof value.createdAt !== "string") return null;
+  if (!["pending", "treated", "rejected", "cancelled"].includes(String(value.status))) return null;
+  const nullableStrings = ["matchedParticipantId", "verificationNote", "resolutionNote", "handledAt"];
+  if (nullableStrings.some((key) => value[key] !== null && value[key] !== undefined && typeof value[key] !== "string")) return null;
+  const matchedParticipantId = readNullableString(value, "matchedParticipantId");
+  const verificationNote = readNullableString(value, "verificationNote");
+  const resolutionNote = readNullableString(value, "resolutionNote");
+  const handledAt = readNullableString(value, "handledAt");
+  return {
+    id: value.id,
+    providedContext: value.providedContext,
+    status: value.status as AssistanceRequest["status"],
+    matchedParticipantId,
+    verificationNote,
+    resolutionNote,
+    handledAt,
+    createdAt: value.createdAt,
+  };
+}
+
+async function readAssistanceResponse(response: Response): Promise<AssistanceResponse> {
+  let raw: unknown;
+  try {
+    raw = await response.json();
+  } catch {
+    throw new Error("Le service d’assistance a renvoyé une réponse illisible.");
+  }
+  if (!isRecord(raw)) throw new Error("Le service d’assistance a renvoyé une réponse invalide.");
+  if (!response.ok) throw new Error(typeof raw.error === "string" ? raw.error : "Le service d’assistance est indisponible.");
+  if (raw.requests !== undefined) {
+    if (!Array.isArray(raw.requests)) throw new Error("Le service d’assistance a renvoyé des demandes invalides.");
+    const requests = raw.requests.map(parseAssistanceRequest);
+    if (requests.some((request) => request === null)) throw new Error("Le service d’assistance a renvoyé une demande invalide.");
+    return { requests: requests as AssistanceRequest[] };
+  }
+  if (raw.code !== undefined && typeof raw.code !== "string") throw new Error("Le service d’assistance a renvoyé un code invalide.");
+  if (raw.url !== undefined && typeof raw.url !== "string") throw new Error("Le service d’assistance a renvoyé une invitation invalide.");
+  return {
+    code: raw.code as string | undefined,
+    url: raw.url as string | undefined,
+  };
+}
+
 function statusLabel(status: AssistanceRequest["status"]): string {
   if (status === "treated") return "Traitée — code à remettre manuellement";
   if (status === "rejected") return "Refusée";
@@ -35,8 +95,7 @@ export function SpogomiIdentityAssistancePanel({ eventId, participants }: { even
 
   const loadRequests = useCallback(async () => {
     const response = await fetch(`/api/spogomi/events/${encodeURIComponent(eventId)}/identity-assistance/requests`, { cache: "no-store" });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error ?? "Les demandes d’assistance sont indisponibles.");
+    const body = await readAssistanceResponse(response);
     setRequests(body.requests ?? []);
   }, [eventId]);
 
@@ -61,8 +120,7 @@ export function SpogomiIdentityAssistancePanel({ eventId, participants }: { even
           resolutionNote: resolutionNotes[request.id] || undefined,
         }),
       });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error ?? "La décision n’a pas pu être enregistrée.");
+      await readAssistanceResponse(response);
       await loadRequests();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "La décision n’a pas pu être enregistrée.");
@@ -75,9 +133,10 @@ export function SpogomiIdentityAssistancePanel({ eventId, participants }: { even
     setError(null);
     try {
       const response = await fetch(`/api/spogomi/events/${encodeURIComponent(eventId)}/participants/${encodeURIComponent(request.matchedParticipantId)}/identity-code`, { method: "POST" });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error ?? "Le code n’a pas pu être émis.");
-      setIssuedCodes((current) => ({ ...current, [request.id]: body.code }));
+      const body = await readAssistanceResponse(response);
+      const code = body.code;
+      if (!code) throw new Error("Le service d’assistance n’a pas renvoyé de code.");
+      setIssuedCodes((current) => ({ ...current, [request.id]: code }));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Le code n’a pas pu être émis.");
     } finally { setBusy(null); }
@@ -88,18 +147,22 @@ export function SpogomiIdentityAssistancePanel({ eventId, participants }: { even
     setError(null);
     try {
       const response = await fetch(`/api/spogomi/events/${encodeURIComponent(eventId)}/identity-assistance/invitation`, { method: "POST" });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error ?? "L’invitation n’a pas pu être créée.");
+      const body = await readAssistanceResponse(response);
+      if (!body.url) throw new Error("Le service d’assistance n’a pas renvoyé d’invitation.");
       setInvitationUrl(body.url);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "L’invitation n’a pas pu être créée.");
     } finally { setBusy(null); }
   }
 
+  function runAction(action: () => Promise<void>): void {
+    void action().catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "L’opération d’assistance a échoué."));
+  }
+
   return <section className="space-y-4" aria-labelledby="spogomi-identity-assistance-title">
     <div><h2 id="spogomi-identity-assistance-title" className="font-black text-slate-900">Demandes de rattachement sans code</h2><p className="mt-1 text-sm text-slate-600">Une demande oriente votre recherche uniquement. Aucun nom, billet ou adresse ne valide une identité ; sélectionnez une ligne du roster après une vérification indépendante, puis remettez le code directement.</p></div>
-    <div className="flex flex-wrap items-center gap-2"><CmmButton type="button" tone="secondary" disabled={busy !== null} loading={busy === "invitation"} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ createInvitation(); }}>Créer une invitation privée</CmmButton>{invitationUrl ? <p className="min-w-0 flex-1 rounded-lg bg-emerald-50 p-2 font-mono text-xs text-emerald-950 break-all">{invitationUrl}<br /><span className="font-sans">À remettre directement · expiration limitée · ne pas publier.</span></p> : null}</div>
+    <div className="flex flex-wrap items-center gap-2"><CmmButton type="button" tone="secondary" disabled={busy !== null} loading={busy === "invitation"} onClick={() => runAction(createInvitation)}>Créer une invitation privée</CmmButton>{invitationUrl ? <p className="min-w-0 flex-1 rounded-lg bg-emerald-50 p-2 font-mono text-xs text-emerald-950 break-all">{invitationUrl}<br /><span className="font-sans">À remettre directement · expiration limitée · ne pas publier.</span></p> : null}</div>
     {error ? <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm font-semibold text-rose-800">{error}</p> : null}
-    {!requests.length ? <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600">Aucune demande reçue.</p> : <div className="space-y-3">{requests.map((request) => <article key={request.id} className="space-y-3 rounded-xl border border-slate-200 bg-white/80 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-bold text-slate-900">Demande reçue le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(request.createdAt))}</p><p className="text-sm font-semibold text-slate-700">{statusLabel(request.status)}</p></div>{request.matchedParticipantId ? <p className="text-sm text-slate-700">Roster rapproché : {participantLabel.get(request.matchedParticipantId) ?? "entrée sélectionnée"}</p> : null}</div>{request.providedContext ? <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-800"><span className="font-bold">Élément fourni :</span> {request.providedContext}</p> : <p className="text-sm text-slate-600">Aucun élément supplémentaire fourni.</p>}{request.status === "pending" ? <div className="grid gap-3 md:grid-cols-2"><label className="text-sm font-bold text-slate-800">Entrée roster après vérification<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" value={selectedParticipants[request.id] ?? ""} onChange={(event) => setSelectedParticipants((current) => ({ ...current, [request.id]: event.target.value }))}><option value="">Choisir une entrée</option>{participants.filter((participant) => participant.account_link_status !== "verified").map((participant) => <option key={participant.id} value={participant.id}>{participant.display_name ?? "Place à identifier"}{participant.external_reference ? ` · ${participant.external_reference}` : ""}</option>)}</select></label><label className="text-sm font-bold text-slate-800">Vérification indépendante<textarea className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" rows={3} minLength={10} maxLength={1200} value={verificationNotes[request.id] ?? ""} onChange={(event) => setVerificationNotes((current) => ({ ...current, [request.id]: event.target.value }))} placeholder="Décrire la vérification hors bande effectuée." /></label><label className="text-sm font-bold text-slate-800 md:col-span-2">Note de décision <span className="font-normal text-slate-500">(facultatif)</span><textarea className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" rows={2} maxLength={1200} value={resolutionNotes[request.id] ?? ""} onChange={(event) => setResolutionNotes((current) => ({ ...current, [request.id]: event.target.value }))} /></label></div> : null}{request.status === "pending" ? <div className="flex flex-wrap gap-2"><CmmButton type="button" tone="primary" disabled={busy !== null || !selectedParticipants[request.id] || (verificationNotes[request.id] ?? "").trim().length < 10} loading={busy === request.id} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ decide(request, "treated"); }}>Marquer vérifiée</CmmButton><CmmButton type="button" tone="critical" disabled={busy !== null} loading={busy === request.id} onClick={() => void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ decide(request, "rejected")}>Refuser</CmmButton></div> : null}{request.status === "treated" && request.matchedParticipantId ? <div className="space-y-2"><CmmButton type="button" tone="primary" disabled={busy !== null} loading={busy === request.id} onClick={() => void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ issueCode(request)}>Émettre le code à remettre</CmmButton>{issuedCodes[request.id] ? <p className="rounded-lg bg-emerald-50 p-2 font-mono text-xs text-emerald-950">{issuedCodes[request.id]}<br /><span className="font-sans">Affiché une seule fois · remise directe uniquement.</span></p> : null}</div> : null}</article>)}</div>}
+    {!requests.length ? <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600">Aucune demande reçue.</p> : <div className="space-y-3">{requests.map((request) => <article key={request.id} className="space-y-3 rounded-xl border border-slate-200 bg-white/80 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-bold text-slate-900">Demande reçue le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(request.createdAt))}</p><p className="text-sm font-semibold text-slate-700">{statusLabel(request.status)}</p></div>{request.matchedParticipantId ? <p className="text-sm text-slate-700">Roster rapproché : {participantLabel.get(request.matchedParticipantId) ?? "entrée sélectionnée"}</p> : null}</div>{request.providedContext ? <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-800"><span className="font-bold">Élément fourni :</span> {request.providedContext}</p> : <p className="text-sm text-slate-600">Aucun élément supplémentaire fourni.</p>}{request.status === "pending" ? <div className="grid gap-3 md:grid-cols-2"><label className="text-sm font-bold text-slate-800">Entrée roster après vérification<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" value={selectedParticipants[request.id] ?? ""} onChange={(event) => setSelectedParticipants((current) => ({ ...current, [request.id]: event.target.value }))}><option value="">Choisir une entrée</option>{participants.filter((participant) => participant.account_link_status !== "verified").map((participant) => <option key={participant.id} value={participant.id}>{participant.display_name ?? "Place à identifier"}{participant.external_reference ? ` · ${participant.external_reference}` : ""}</option>)}</select></label><label className="text-sm font-bold text-slate-800">Vérification indépendante<textarea className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" rows={3} minLength={10} maxLength={1200} value={verificationNotes[request.id] ?? ""} onChange={(event) => setVerificationNotes((current) => ({ ...current, [request.id]: event.target.value }))} placeholder="Décrire la vérification hors bande effectuée." /></label><label className="text-sm font-bold text-slate-800 md:col-span-2">Note de décision <span className="font-normal text-slate-500">(facultatif)</span><textarea className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" rows={2} maxLength={1200} value={resolutionNotes[request.id] ?? ""} onChange={(event) => setResolutionNotes((current) => ({ ...current, [request.id]: event.target.value }))} /></label></div> : null}{request.status === "pending" ? <div className="flex flex-wrap gap-2"><CmmButton type="button" tone="primary" disabled={busy !== null || !selectedParticipants[request.id] || (verificationNotes[request.id] ?? "").trim().length < 10} loading={busy === request.id} onClick={() => runAction(() => decide(request, "treated"))}>Marquer vérifiée</CmmButton><CmmButton type="button" tone="critical" disabled={busy !== null} loading={busy === request.id} onClick={() => runAction(() => decide(request, "rejected"))}>Refuser</CmmButton></div> : null}{request.status === "treated" && request.matchedParticipantId ? <div className="space-y-2"><CmmButton type="button" tone="primary" disabled={busy !== null} loading={busy === request.id} onClick={() => runAction(() => issueCode(request))}>Émettre le code à remettre</CmmButton>{issuedCodes[request.id] ? <p className="rounded-lg bg-emerald-50 p-2 font-mono text-xs text-emerald-950">{issuedCodes[request.id]}<br /><span className="font-sans">Affiché une seule fois · remise directe uniquement.</span></p> : null}</div> : null}</article>)}</div>}
   </section>;
 }

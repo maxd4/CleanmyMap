@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { RouteRecommendationResponse } from "@/lib/route/route-response-contract";
 import {
   applyOriginRouteGeometryLegsMock,
   buildPredictedRouteCandidatesMock,
@@ -20,6 +21,12 @@ import {
   request,
   trackRouteRecommendationUseMock,
 } from "./route.test.harness";
+
+async function readRouteResponse(response: Response): Promise<RouteRecommendationResponse> {
+  const raw: unknown = await response.json();
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("La réponse de recommandation de route est invalide.");
+  return raw as RouteRecommendationResponse;
+}
 
 describe("POST /api/route/recommend — routage réseau et budget", () => {
   const networkGeometry = (overrides: Record<string, unknown> = {}) => ({
@@ -74,7 +81,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
         scheduledStartAt: "2026-09-15T10:00",
         scheduledEndAt: "2026-09-15T12:00",
       }));
-      const payload = await response.json();
+      const payload = await readRouteResponse(response);
 
       expect(response.status).toBe(200);
       expect(weatherFetch).toHaveBeenCalledTimes(1);
@@ -124,7 +131,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       maxStops: 1,
       travelBudgetMinutes: 60,
     }));
-    const payload = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(response.status).toBe(200);
     expect(payload.groupRoutes).toHaveLength(2);
@@ -134,6 +141,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       return group.routeGeometry.isLoop && first?.[0] === last?.[0] && first?.[1] === last?.[1];
     })).toBe(true);
     expect(payload.groupRoutes.every((group: { withinBudget: boolean }) => group.withinBudget)).toBe(true);
+    if (!payload.multiRoute || !payload.trace.multiRoute) throw new Error("La réponse multi-route est incomplète.");
     expect(payload.multiRoute.groupCount).toBe(2);
     expect(payload.trace.multiRoute.groups).toHaveLength(2);
     expect(new Set(payload.groupRoutes.flatMap((group: { candidateIds: string[] }) => group.candidateIds)).size).toBe(2);
@@ -172,7 +180,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
         }),
       }),
     }));
-    expect((await response.json()).origin).toEqual(explicitOrigin);
+    expect((await readRouteResponse(response)).origin).toEqual(explicitOrigin);
   });
 
   it("falls back to the saved arrondissement center", async () => {
@@ -213,7 +221,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
 
     const { POST } = await import("./route");
     const response = await POST(request({ origin: { latitude: 48.85, longitude: 2.35, source: "browser" } }));
-    const payload = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(response.status).toBe(200);
     expect(payload.dataStatus).toBe("complete");
@@ -274,7 +282,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       origin: { latitude: 48.9, longitude: 2.4, source: "browser" },
       travelBudgetMinutes: 60,
     }));
-    const payload = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledTimes(2);
     expect(routePolylineThroughFossgisFootMock).toHaveBeenNthCalledWith(
@@ -325,7 +333,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       origin: { latitude: 48.9, longitude: 2.4, source: "browser" },
       travelBudgetMinutes: 60,
     }));
-    const payload = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledTimes(2);
     expect(payload.routeGeometry.mode).toBe("fallback");
@@ -358,7 +366,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       origin: { latitude: 48.9, longitude: 2.4, source: "browser" },
       travelBudgetMinutes: 60,
     }));
-    const payload = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledOnce();
     expect(payload.stops).toEqual([]);
@@ -429,7 +437,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       origin: { latitude: 48.9, longitude: 2.4, source: "browser" },
       travelBudgetMinutes: 60,
     }));
-    const payload = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(payload.stops.map((stop: { id: string }) => stop.id)).toEqual([observed.id]);
     expect(payload.prediction.selected).toBe(0);

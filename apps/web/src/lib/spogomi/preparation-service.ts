@@ -61,6 +61,56 @@ type ConfirmRosterImportParams = {
 
 type SelectedImportRows = { eligibleRows: SpogomiRosterPreview["rows"]; selectedRows: SpogomiRosterPreview["rows"] };
 
+type CompositionParticipantRow = {
+  id: string;
+  group_preference: string | null;
+  source_row_number: number | null;
+  team_id: string | null;
+  registration_status: string;
+  source_system: string | null;
+  ticket_status: string | null;
+  ticket_deleted: boolean | null;
+};
+
+type CompositionTeamRow = {
+  id: string;
+  team_number: number;
+  composition_state: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function parseCompositionParticipantRow(value: unknown): CompositionParticipantRow | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== "string" ||
+    (value.group_preference !== null && value.group_preference !== undefined && typeof value.group_preference !== "string") ||
+    (value.source_row_number !== null && value.source_row_number !== undefined && typeof value.source_row_number !== "number") ||
+    (value.team_id !== null && value.team_id !== undefined && typeof value.team_id !== "string") ||
+    typeof value.registration_status !== "string" ||
+    (value.source_system !== null && value.source_system !== undefined && typeof value.source_system !== "string") ||
+    (value.ticket_status !== null && value.ticket_status !== undefined && typeof value.ticket_status !== "string") ||
+    (value.ticket_deleted !== null && value.ticket_deleted !== undefined && typeof value.ticket_deleted !== "boolean")
+  ) return null;
+  return {
+    id: value.id,
+    group_preference: value.group_preference === undefined ? null : value.group_preference,
+    source_row_number: value.source_row_number === undefined ? null : value.source_row_number,
+    team_id: value.team_id === undefined ? null : value.team_id,
+    registration_status: value.registration_status,
+    source_system: value.source_system === undefined ? null : value.source_system,
+    ticket_status: value.ticket_status === undefined ? null : value.ticket_status,
+    ticket_deleted: value.ticket_deleted === undefined ? null : value.ticket_deleted,
+  };
+}
+
+function parseCompositionTeamRow(value: unknown): CompositionTeamRow | null {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.team_number !== "number" || typeof value.composition_state !== "string") return null;
+  return { id: value.id, team_number: value.team_number, composition_state: value.composition_state };
+}
+
 function selectImportRows(preview: SpogomiRosterPreview, acceptedRowNumbers?: number[]): SelectedImportRows {
   const errorsByRow = new Set(preview.errors.map((error) => error.rowNumber));
   const eligibleRows = preview.rows.filter((row) => !errorsByRow.has(row.rowNumber));
@@ -368,9 +418,13 @@ async function loadCompositionParticipants(supabase: SupabaseClient, event: Even
   if (division) query = query.eq("division_id", division.id);
   const result = await query;
   if (result.error) throw result.error;
-  const rows = result.data ?? [];
-  if (rows.some((row) => row.source_system === "cachan_ticketing" && isCancelledCachanTicket(row.ticket_status, Boolean(row.ticket_deleted)))) throw conflict("une place billetterie annulée ou supprimée reste enregistrée comme active ; une résolution organisateur est requise avant toute composition.");
-  return rows.filter((row) => isCachanTicketCompositionEligible({ sourceSystem: row.source_system, ticketStatus: row.ticket_status, ticketDeleted: Boolean(row.ticket_deleted), registrationStatus: String(row.registration_status) })).map((row) => ({ id: String(row.id), sourceOrder: row.source_row_number ?? 0, groupPreference: row.group_preference, teamId: row.team_id, registrationStatus: String(row.registration_status) }));
+  const rawRows: unknown = result.data ?? [];
+  if (!Array.isArray(rawRows)) throw new Error("La persistance a renvoyé une liste de participants invalide.");
+  const rows = rawRows.map(parseCompositionParticipantRow);
+  if (rows.some((row) => row === null)) throw new Error("La persistance a renvoyé un participant invalide.");
+  const parsedRows = rows as CompositionParticipantRow[];
+  if (parsedRows.some((row) => row.source_system === "cachan_ticketing" && isCancelledCachanTicket(row.ticket_status, Boolean(row.ticket_deleted)))) throw conflict("une place billetterie annulée ou supprimée reste enregistrée comme active ; une résolution organisateur est requise avant toute composition.");
+  return parsedRows.filter((row) => isCachanTicketCompositionEligible({ sourceSystem: row.source_system, ticketStatus: row.ticket_status, ticketDeleted: Boolean(row.ticket_deleted), registrationStatus: row.registration_status })).map((row) => ({ id: row.id, sourceOrder: row.source_row_number ?? 0, groupPreference: row.group_preference, teamId: row.team_id, registrationStatus: row.registration_status }));
 }
 
 async function loadExistingCompositionTeams(supabase: SupabaseClient, event: EventRow, division?: SpogomiDivisionContext) {
@@ -378,8 +432,13 @@ async function loadExistingCompositionTeams(supabase: SupabaseClient, event: Eve
   if (division) query = query.eq("division_id", division.id);
   const result = await query;
   if (result.error) throw result.error;
-  if ((result.data ?? []).some((team) => team.composition_state === "locked" || team.composition_state === "verified")) throw new Error("Validation: une équipe possède déjà une composition verrouillée ou vérifiée.");
-  return (result.data ?? []).map((row) => ({ id: String(row.id), teamNumber: Number(row.team_number), compositionState: String(row.composition_state) }));
+  const rawRows: unknown = result.data ?? [];
+  if (!Array.isArray(rawRows)) throw new Error("La persistance a renvoyé une liste d’équipes invalide.");
+  const rows = rawRows.map(parseCompositionTeamRow);
+  if (rows.some((row) => row === null)) throw new Error("La persistance a renvoyé une équipe invalide.");
+  const parsedRows = rows as CompositionTeamRow[];
+  if (parsedRows.some((team) => team.composition_state === "locked" || team.composition_state === "verified")) throw new Error("Validation: une équipe possède déjà une composition verrouillée ou vérifiée.");
+  return parsedRows.map((row) => ({ id: row.id, teamNumber: row.team_number, compositionState: row.composition_state }));
 }
 
 export async function previewSpogomiTeams(supabase: SupabaseClient, event: EventRow, division?: SpogomiDivisionContext): Promise<SpogomiTeamCompositionPreview> {

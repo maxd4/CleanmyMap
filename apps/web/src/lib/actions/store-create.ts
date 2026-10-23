@@ -70,6 +70,19 @@ type ActionCreationResult = {
   replayed?: true;
 };
 
+type CreateActionRpcRow = {
+  action_id: string;
+  replayed?: boolean;
+};
+
+function isCreateActionRpcRow(value: unknown): value is CreateActionRpcRow {
+  return Boolean(value) &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    typeof (value as Record<string, unknown>).action_id === "string" &&
+    ((value as Record<string, unknown>).replayed === undefined || typeof (value as Record<string, unknown>).replayed === "boolean");
+}
+
 export class ActionCreationPersistenceError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
     super(message);
@@ -161,12 +174,13 @@ export async function persistActionWithRelations(
     throw result.error;
   }
   const row = Array.isArray(result.data) ? result.data[0] : result.data;
-  if (!row || typeof row.action_id !== "string") {
+  const rawRow: unknown = row;
+  if (!isCreateActionRpcRow(rawRow)) {
     throw new ActionCreationPersistenceError(
       "La création atomique de l’action n’a pas renvoyé de référence persistée.",
     );
   }
-  return row.replayed ? { id: row.action_id, replayed: true } : { id: row.action_id };
+  return rawRow.replayed ? { id: rawRow.action_id, replayed: true } : { id: rawRow.action_id };
 }
 
 export async function resolveCreateActionDrawing(

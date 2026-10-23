@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { RouteRecommendationResponse } from "@/lib/route/route-response-contract";
 import {
   availableSourceHealth,
   candidate,
@@ -6,6 +7,16 @@ import {
   plannedStop,
   request,
 } from "./route.test.fixtures";
+
+type RouteTestCandidate = typeof candidate;
+type RouteTestObservedLayer = { candidateCount: number; isTruncated: boolean; sourceHealth: { failedSources: string[]; availableSources: string[]; partial: boolean } };
+type RouteTestPredictionLayer = { status: "available" | "partial" | "unavailable"; selectedCount: number };
+
+async function readRouteResponse(response: Response): Promise<RouteRecommendationResponse> {
+  const raw: unknown = await response.json();
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("La réponse de recommandation de route est invalide.");
+  return raw as RouteRecommendationResponse;
+}
 
 const getSafeAuthSessionMock = vi.hoisted(() => vi.fn());
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
@@ -187,7 +198,7 @@ describe("POST /api/route/recommend", () => {
     getTerritoryArrondissementCenterMock.mockReturnValue({ lat: 48.86, lng: 2.36 });
     defaultRouteRecommendationFloorDateMock.mockReturnValue("2026-01-01");
     loadParisPressureSnapshotMock.mockReturnValue(null);
-    applyParisPressureToCandidatesMock.mockImplementation((values) => values);
+    applyParisPressureToCandidatesMock.mockImplementation((values: RouteTestCandidate[]) => values);
     const emptyPredictionSummary = {
       status: "unavailable",
       selected: 0,
@@ -198,7 +209,7 @@ describe("POST /api/route/recommend", () => {
       finalRoutingBudgetExcludedCandidateIds: [],
     };
     buildPredictedRouteCandidatesMock.mockReturnValue({ candidates: [], summary: emptyPredictionSummary });
-    buildRoutePlannerCandidatePoolMock.mockImplementation(({ observedCandidates, predictedCandidates, maxCandidates }) => {
+    buildRoutePlannerCandidatePoolMock.mockImplementation(({ observedCandidates, predictedCandidates, maxCandidates }: { observedCandidates: RouteTestCandidate[]; predictedCandidates: RouteTestCandidate[]; maxCandidates: number }) => {
       const candidates = [...observedCandidates, ...predictedCandidates].slice(0, maxCandidates);
       return {
         candidates,
@@ -211,17 +222,17 @@ describe("POST /api/route/recommend", () => {
     });
     applyRoutePredictionPoolAuditMock.mockImplementation((summary) => summary);
     applyRoutePredictionPlannerBudgetAuditMock.mockImplementation((summary) => summary);
-    applyRoutePredictionFinalRoutingBudgetAuditMock.mockImplementation((summary, excludedIds) => ({
+    applyRoutePredictionFinalRoutingBudgetAuditMock.mockImplementation((summary: typeof emptyPredictionSummary, excludedIds: string[]) => ({
       ...summary,
       excludedByFinalRoutingBudget: excludedIds.length,
       finalRoutingBudgetExcludedCandidateIds: excludedIds,
     }));
-    resolveRouteDataStatusMock.mockImplementation(({ candidateCount, isTruncated, sourceHealth }) => {
+    resolveRouteDataStatusMock.mockImplementation(({ candidateCount, isTruncated, sourceHealth }: RouteTestObservedLayer) => {
       if (sourceHealth.failedSources.length > 0 || sourceHealth.availableSources.length === 0) return "unavailable";
       if (isTruncated || sourceHealth.partial) return "partial";
       return candidateCount === 0 ? "empty" : "complete";
     });
-    resolveRouteDataLayersMock.mockImplementation(({ observed, prediction, routeGeometryMode }) => ({
+    resolveRouteDataLayersMock.mockImplementation(({ observed, prediction, routeGeometryMode }: { observed: RouteTestObservedLayer; prediction: RouteTestPredictionLayer; routeGeometryMode: "network" | "fallback" }) => ({
       observed: observed.candidateCount === 0 ? "empty" : "complete",
       prediction: prediction.status,
       recommendation: observed.sourceHealth.failedSources.length > 0 || observed.sourceHealth.partial || observed.isTruncated || routeGeometryMode === "fallback" || prediction.status !== "available" ? (observed.candidateCount === 0 && observed.sourceHealth.failedSources.length === 0 && !observed.sourceHealth.partial && !observed.isTruncated && prediction.status === "unavailable" ? "empty" : "degraded") : "ok",
@@ -260,10 +271,10 @@ describe("POST /api/route/recommend", () => {
       upcomingEvents: [],
       hotspots: [],
     });
-    planRouteMock.mockImplementation((input) => {
+    planRouteMock.mockImplementation((input: { candidates: RouteTestCandidate[]; maxStops: number }) => {
       const stops = input.candidates
         .slice(0, input.maxStops)
-        .map((item: typeof candidate, index: number) => plannedStop(item, index));
+        .map((item: RouteTestCandidate, index: number) => plannedStop(item, index));
       return {
         stops,
         diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
@@ -271,7 +282,7 @@ describe("POST /api/route/recommend", () => {
       };
     });
     fallbackRoutePrefixWithinBudgetMock.mockImplementation(
-      (_origin, stops) => stops,
+      (_origin: unknown, stops: ReturnType<typeof plannedStop>[]) => stops,
     );
     buildHotspotsMock.mockReturnValue([]);
     buildProactiveAssistantMock.mockReturnValue({
@@ -432,7 +443,7 @@ describe("POST /api/route/recommend", () => {
         maxStops: 4,
       }),
     );
-    const payload = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(response.status).toBe(200);
     expect(payload.constraintsApplied).toEqual({ pickupPreference: "balanced" });
@@ -480,7 +491,7 @@ describe("POST /api/route/recommend", () => {
       origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
       travelBudgetMinutes: 10,
     }));
-    const payload = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(payload).toEqual(expect.objectContaining({
       status: "degraded",
