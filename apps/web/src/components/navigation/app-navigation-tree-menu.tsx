@@ -194,6 +194,16 @@ export function AppNavigationTreeMenu({
                                         prefetch={false}
                                         aria-current={isActiveItem ? "page" : undefined}
                                         onClick={(event) => {
+                                          if (
+                                            event.defaultPrevented
+                                            || event.button !== 0
+                                            || event.metaKey
+                                            || event.ctrlKey
+                                            || event.shiftKey
+                                            || event.altKey
+                                          ) {
+                                            return;
+                                          }
                                           event.preventDefault();
                                           onTrackNavigation(item.href, getLocalizedText(item.label, locale, item.href), space.id);
                                           router.push(item.href);

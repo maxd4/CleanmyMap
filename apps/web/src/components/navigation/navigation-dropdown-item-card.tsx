@@ -62,6 +62,16 @@ export function NavigationDropdownItemCard({
         aria-current={isActiveItem ? "page" : undefined}
         aria-describedby={descriptionId}
         onClick={(event) => {
+          if (
+            event.defaultPrevented
+            || event.button !== 0
+            || event.metaKey
+            || event.ctrlKey
+            || event.shiftKey
+            || event.altKey
+          ) {
+            return;
+          }
           event.preventDefault();
           onTrackNavigation(item.href, itemLabel, spaceId);
           router.push(item.href);
