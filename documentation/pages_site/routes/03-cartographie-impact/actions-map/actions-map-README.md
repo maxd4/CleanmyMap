@@ -179,6 +179,30 @@ La carte ne doit pas confondre mémoire des interventions et pollution actuellem
 
 Une action ancienne ne devient jamais automatiquement un nouveau spot Trash Spotter.
 
+## Calques cartographiques publiés
+
+Le panneau `Affichage` expose les cinq calques suivants sur la carte complète.
+Les quatre calques CleanMyMap utilisent le feed public partagé déjà décrit
+ci-dessus ; ils ne déclenchent pas une lecture supplémentaire par point. Le
+calque Plastic Origins est une source historique externe autonome.
+
+| Calque | Activation et chargement | Provenance et limite géographique | KPI, scores, exports et itinéraires |
+|---|---|---|---|
+| Points | Activé par défaut avec le feed public de la carte. | Points issus des `ActionMapItem` publics chargés pour la vue ; ils restent bornés par le feed, ses filtres et le viewport courant. | Conserve le contrat Actions existant : sélection, couleurs de score et export de la vue restent ceux de la carte. Il ne crée pas d'itinéraire supplémentaire. |
+| Parcours & zones | Activé par défaut avec les mêmes éléments Actions ; les géométries déjà disponibles sont rendues dans la vue. | Parcours et zones provenant des contrats géométriques des actions publiques ; une géométrie estimée ou reconstruite conserve sa provenance et ne devient pas une trace GPS. | Conserve la sélection, la légende, les scores et l'export Actions existants. Le rendu ne déclenche pas de routage et n'alimente pas automatiquement le générateur d'itinéraires. |
+| Infras | Activé par défaut ; rendu à partir des signaux d'infrastructure des éléments déjà chargés. | Besoins `bac`, `cendrier` ou combinés dérivés des signaux publics d'action ; aucune couverture géographique supplémentaire n'est déduite au-delà des éléments visibles. | Les seuils affichés restent une lecture du contrat d'infrastructure et des références de score existantes. Le calque n'ajoute aucun KPI, export ou itinéraire. |
+| Trash Spotter | Activé par défaut ; filtré dans le feed public partagé, sans chargement séparé de preuves au montage. | Signalements publics encore actionnables, limités aux éléments et au viewport de la carte. Les preuves photo restent chargées uniquement après l'action explicite du popup. | Conserve la symbologie, les filtres et la sélection existants ; il ne modifie pas les KPI consolidés et ne fabrique pas d'itinéraire. |
+| Plastic Origins \| Observations historiques | Facultatif et désactivé par défaut. Disponible uniquement sur la carte complète ; le fichier statique est chargé à la demande après activation, puis filtré côté client selon le viewport. | Observations historiques réelles du jeu [Déchets en rivière en France](https://www.data.gouv.fr/datasets/dechets-en-riviere-en-france). La fiche conserve date, catégorie, méthode, campagne et lignes sources. Les coordonnées lat/lon sont conservées sans reprojection : la source ne déclare pas de CRS et la carte ne prétend pas fournir une couverture exhaustive. | Source indépendante des actions CleanMyMap : aucune contribution aux KPI, aux scores ou aux filtres Actions ; aucune ligne dans l'export Actions et aucun apport au générateur d'itinéraires. Symbologie et popups de provenance restent séparés. |
+
+L'activation de Plastic Origins ne transforme jamais une observation historique
+en action CleanMyMap, en spot Trash Spotter, en mesure de score ou en résultat
+d'impact. Les doublons exacts sont regroupés dans l'export statique sans
+supprimer les lignes sources ; les références de ressource et de ligne restent
+disponibles dans la provenance. La fiche data.gouv.fr actuelle indique ODbL ;
+la documentation PDF téléchargée indique encore CC BY-NC 3.0 France. Cette
+divergence de licence reste explicitement signalée dans la provenance et ne
+doit pas être résolue par une déduction locale.
+
 ## Contrat des filtres publics
 
 Le flux public de cette route est limité aux actions `approved` visibles et aux
