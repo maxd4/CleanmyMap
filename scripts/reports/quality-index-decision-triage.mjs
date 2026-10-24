@@ -82,6 +82,17 @@ function distinctLineCount(occurrences) {
   return total > 0 ? total : null;
 }
 
+function occurrenceEndpoints(occurrences) {
+  return occurrences.flatMap((occurrence) => {
+    const endpoints = [occurrence?.occurrenceA, occurrence?.occurrenceB].filter(Boolean);
+    return endpoints.length > 0 ? endpoints : [occurrence];
+  });
+}
+
+function distinctLinesAcrossFiles(occurrences) {
+  return distinctLineCount(occurrenceEndpoints(occurrences));
+}
+
 function fileRiskSignals(file, category, finding = null) {
   const architecture = file?.architecture ?? {};
   const architectureValue = architecture.metrics ?? architecture.value ?? {};
@@ -228,17 +239,19 @@ function effortEstimate(category, { files, prudence, evidenceState, classificati
   return { level: "NOT_ESTIMABLE", basis: ["le rapport ne mesure pas l’effort d’implémentation"] };
 }
 
-function isConfirmedCritical(finding, category, prudence) {
-  const text = textOf(finding).toLowerCase();
-  return Boolean(finding?.confirmed === true || finding?.critical === true || (prudence.level === "R4" && /confirmed|critical|security incident|integrity breach/i.test(text) && category !== "cycles"));
+function isConfirmedCritical() {
+  // Quality Audit findings currently expose no structured, attributable proof
+  // that jointly confirms a defect and its criticality. Do not infer P0 from
+  // free text, field names, risk levels, or engine statuses.
+  return false;
 }
 
-function makeCandidate({ id, sourceKind, category, files, finding = null, classification = null, occurrences = [], groupEvidence = null, audits = {} }) {
+function makeCandidate({ id, sourceKind, category, files, finding = null, classification = null, occurrences = [], distinctLinesAcrossFiles: measuredDistinctLines, groupEvidence = null, audits = {} }) {
   const normalizedFiles = files.sort((left, right) => left.path.localeCompare(right.path));
   const prudence = combinePrudence(normalizedFiles, category, finding);
   const evidence = evidenceForFiles(normalizedFiles, category, finding ? [finding] : []);
   const hotspot = hotspotEvidence(normalizedFiles);
-  const exactLines = distinctLineCount(occurrences);
+  const exactLines = measuredDistinctLines === undefined ? distinctLineCount(occurrences) : measuredDistinctLines;
   const findingCount = sourceKind === "group" ? occurrences.length : finding ? 1 : 0;
   const architectureDecisions = architectureDecision(normalizedFiles);
   const humanDecision = classification ?? finding?.classification ?? null;
@@ -358,6 +371,7 @@ function duplicationCandidates(audits, candidateGroups, fileByPath) {
     const files = uniqueSorted(occurrences.flatMap((pair) => [pair.occurrenceA.path, pair.occurrenceB.path])).map((file) => fileByPath.get(file)).filter(Boolean);
     const group = candidateGroups.find((candidateGroup) => candidateGroup.id === fingerprint.relationId) ?? null;
     const id = fingerprint.relationId ?? stableId("duplication-group", { scope: fingerprint.scope, fingerprint: fingerprint.fingerprint });
+    const measuredDistinctLines = distinctLinesAcrossFiles(occurrences);
     candidates.push(makeCandidate({
       id,
       sourceKind: "group",
@@ -365,12 +379,13 @@ function duplicationCandidates(audits, candidateGroups, fileByPath) {
       files,
       classification: fingerprint.classification,
       occurrences,
+      distinctLinesAcrossFiles: measuredDistinctLines,
       groupEvidence: {
         scope: fingerprint.scope,
         fingerprint: fingerprint.fingerprint,
         occurrencePairs: occurrences.length,
         uniqueFiles: uniqueSorted(occurrences.flatMap((pair) => [pair.occurrenceA.path, pair.occurrenceB.path])),
-        distinctLinesAcrossFiles: distinctLineCount(occurrences.flatMap((pair) => [pair.occurrenceA, pair.occurrenceB])),
+        distinctLinesAcrossFiles: measuredDistinctLines,
         relations: group?.relations ?? occurrences,
         classification: fingerprint.classification ?? null,
       },
@@ -468,7 +483,7 @@ export function buildQualityIndexDecisionTriage({ files = [], audits = {}, sourc
       "La prudence utilise les responsabilités observables dans les fichiers, l’architecture et les findings ; un périmètre indéterminé reste REVIEW_REQUIRED.",
     ],
     rules: {
-      p0: "uniquement une criticité explicitement confirmée ; aucun FAIL, seuil ou duplication ne suffit à lui seul",
+      p0: "uniquement une preuve structurée, attribuable et explicitement confirmée conjointement pour le défaut et sa criticité ; aucun FAIL, seuil, R4 ou duplication ne suffit à lui seul",
       p1: "potentiel élevé, effort apparent limité, preuve complète et prudence R1/R2",
       p2: "bénéfice important, diffusion large, périmètre R3/R4 ou effort significatif",
       p3: "bénéfice faible, surveillance ou décision humaine de conservation déjà enregistrée",

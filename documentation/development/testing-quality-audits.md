@@ -157,9 +157,11 @@ Deux axes restent indépendants :
   plusieurs responsabilités conserve le niveau le plus élevé justifié ; une
   partie indispensable indéterminée reste `REVIEW_REQUIRED` ;
 - `proposedPriority` vaut `P0` à `P3` ou `REVIEW_REQUIRED`. `P0` exige une
-  criticité explicitement confirmée : un `FAIL`, une complexité, un seuil ou un
-  fingerprint ne suffit jamais. Ces priorités ne remplacent pas les statuts
-  originaux des moteurs.
+  preuve structurée, attribuable et explicitement confirmée conjointement pour
+  le défaut et sa criticité. Le périmètre actuel ne fournit pas ce contrat de
+  preuve : aucun P0 n'est donc inféré à partir d'un champ libre, d'un nom de
+  propriété, d'un `FAIL`, d'une complexité, d'un seuil, d'un fingerprint ou d'un
+  niveau R4. Ces priorités ne remplacent pas les statuts originaux des moteurs.
 
 Les vues Markdown sont `Gains rapides et maîtrisés` et `Corrections importantes
 sous revue renforcée`. La première applique la règle déterministe

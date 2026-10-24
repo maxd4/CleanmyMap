@@ -377,6 +377,8 @@ test("classe les gains, la prudence et les groupes sans double comptage", () => 
   assert.deepEqual(shared.evidence.group.uniqueFiles, [fileA, fileB]);
   assert.equal(shared.evidence.group.distinctLinesAcrossFiles, 14);
   assert.equal(shared.benefitPotential.measures.occurrencePairs, 2);
+  assert.equal(shared.benefitPotential.measures.distinctLinesAcrossFiles, 14);
+  assert.equal(shared.benefitPotential.level, "HIGH");
   assert.notEqual(shared.id, second.id);
   assert.equal(second.humanDecision, "KEEP_INTENTIONAL");
   assert.equal(second.recommendation, "KEEP_JUSTIFIED");
@@ -432,9 +434,39 @@ test("conserve l'identité du run et un ordre décisionnel reproductible", () =>
   assert.deepEqual(first.triage.decision, second.triage.decision);
   assert.deepEqual(JSON.parse(JSON.stringify(first.triage.decision)), first.triage.decision);
   assert.equal(first.source.initialStatus, "FAIL");
+  assert.equal(first.audits.complexity.status, "FAIL");
   assert.equal(first.audits.duplication.status, "FAIL");
   assert.equal(first.audits.cycles.status, "SKIPPED_BY_POLICY");
   assert.equal(first.triage.decision.candidates.every((candidate) => candidate.rank >= 1), true);
+});
+
+function criticalTriageCandidate(finding = {}) {
+  const run = buildRun();
+  const criticalPath = "apps/web/src/lib/authz/critical-triage.ts";
+  const metric = { metric: "complexity", path: criticalPath, value: 99, line: 8, ...finding };
+  run.reports.complexity.metrics = [metric];
+  run.reports.complexity.result.failures = [{ type: "failures", ...metric }];
+  const index = buildQualityFileIndex({ run, mode: "OFFLINE" });
+  return index.triage.decision.candidates.find((candidate) => candidate.auditCategory === "complexity" && candidate.files.includes(criticalPath));
+}
+
+test("n'attribue jamais P0 à une présence textuelle ou à un champ non structuré", () => {
+  const cases = [
+    { confirmed: false, critical: false },
+    { message: "not confirmed" },
+    { message: "critical risk not established" },
+    {},
+    { confirmed: true, critical: false },
+    { criticality: { defectConfirmed: true, criticalityConfirmed: true, attributedTo: "security-review" } },
+  ];
+
+  for (const finding of cases) {
+    const candidate = criticalTriageCandidate(finding);
+    assert.ok(candidate, `finding candidate missing for ${JSON.stringify(finding)}`);
+    assert.equal(candidate.prudence.level, "R4");
+    assert.notEqual(candidate.proposedPriority, "P0");
+    assert.equal(candidate.proposedPriority, "P2");
+  }
 });
 
 test("projette la couverture détaillée et ses branches sans la confondre avec les gates", () => {
