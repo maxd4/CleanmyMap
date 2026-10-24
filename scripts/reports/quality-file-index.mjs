@@ -9,259 +9,45 @@
  * rendre visible une correction de ratchet sans réécrire le verdict initial.
  */
 
-import crypto from "node:crypto";
 import fs from "node:fs";
-import path from "node:path";
-import zlib from "node:zlib";
-import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { evaluatePolicy } from "../checks/check-top-heavy-files.mjs";
 import { FILE_KIND_POLICY, isAboveHard, isAboveReview } from "../checks/top-heavy-policy.mjs";
-import { loadBoundaryBaseline, evaluateBoundary } from "../checks/check-architecture-import-boundary.mjs";
-import { createRepositoryView } from "../checks/repository-view.mjs";
-import {
-  createAuditPaths,
-  createQualityProjectionPaths,
-  writeNewFile,
-} from "../audits/quality-audit-storage.mjs";
-import { validateDocumentationReport } from "../audits/documentation-maintainability.mjs";
-import { buildArchitectureImportGraph } from "./generate-architecture-import-graph.mjs";
 import { createCorrelationSignalsFromAuditResults } from "./generate-modularity-radar.mjs";
-import { buildQualityIndexDecisionTriage } from "./quality-index-decision-triage.mjs";
+import { buildArchitectureCouplingProjection, buildArchitectureCouplingFromRepository } from "./quality-index-architecture.mjs";
+import { buildQualityFileIndexTriage } from "./quality-index-triage.mjs";
 
-export const QUALITY_INDEX_SCHEMA_VERSION = 7;
-export const QUALITY_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage"]);
-export const QUALITY_GATE_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
-export const QUALITY_INDEX_PREFIX = "quality-index";
-export const QUALITY_ARCHITECTURE_DOMAIN_PREFIX = "architecture:";
+export { buildArchitectureCouplingProjection, buildArchitectureCouplingFromRepository };
 
-const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const SHA_PATTERN = /^[0-9a-f]{40}$/i;
-const RUN_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
-const QUALITY_STATUS_STATES = new Set(["PRESENT", "NONE", "NOT_MEASURED", "SKIPPED_BY_POLICY", "NOT_APPLICABLE", "OUT_OF_INSTRUMENTATION"]);
+export {
+  QUALITY_INDEX_SCHEMA_VERSION,
+  QUALITY_INDEX_AUDITS,
+  QUALITY_GATE_INDEX_AUDITS,
+  QUALITY_INDEX_PREFIX,
+  QUALITY_ARCHITECTURE_DOMAIN_PREFIX,
+} from "./quality-index-primitives.mjs";
+import {
+  QUALITY_INDEX_SCHEMA_VERSION,
+  QUALITY_INDEX_AUDITS,
+  QUALITY_GATE_INDEX_AUDITS,
+  QUALITY_INDEX_PREFIX,
+  QUALITY_ARCHITECTURE_DOMAIN_PREFIX,
+  REPOSITORY_ROOT,
+  normalizePath,
+  stableId,
+  state,
+} from "./quality-index-primitives.mjs";
+import { readOfflineQualityRun } from "./quality-index-offline.mjs";
+import { buildQualityFileIndexMarkdown } from "./quality-index-markdown.mjs";
+import { writeQualityIndexOutputs } from "./quality-index-output.mjs";
+import { runQualityFileIndexCli } from "./quality-index-cli.mjs";
+import { complexityFindingCategory, finalizeFiles } from "./quality-index-file-finalization.mjs";
 
-function normalizePath(value) {
-  return String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
-}
-
-function architectureEdgeId(edge) {
-  return stableId("architecture-edge", {
-    from: edge.from,
-    to: edge.to,
-    kind: edge.kind,
-    sourceKind: edge.sourceKind,
-    form: edge.form,
-    specifier: edge.specifier,
-    line: edge.line,
-  });
-}
-
-function serializeArchitectureEdge(edge) {
-  return {
-    id: architectureEdgeId(edge),
-    from: edge.from,
-    to: edge.to,
-    kind: edge.kind,
-    sourceKind: edge.sourceKind,
-    form: edge.form,
-    specifier: edge.specifier,
-    line: edge.line,
-    fromDomain: edge.fromDomain,
-    toDomain: edge.toDomain,
-    fromLayer: edge.fromLayer,
-    toLayer: edge.toLayer,
-    fromEffectiveLayer: edge.fromEffectiveLayer ?? edge.fromLayer,
-    toEffectiveLayer: edge.toEffectiveLayer ?? edge.toLayer,
-    crossDomain: Boolean(edge.crossDomain),
-    targetsPublicFacade: Boolean(edge.targetsPublicFacade),
-    importsOwnFacade: Boolean(edge.importsOwnFacade),
-    uiToInfrastructure: Boolean(edge.uiToInfrastructure),
-    domainToUi: Boolean(edge.domainToUi),
-    invertedLayer: Boolean(edge.invertedLayer),
-  };
-}
-
-function architectureState(items, detail) {
-  return state(items.length > 0 ? "PRESENT" : "NONE", detail, items);
-}
-
-function architectureBucket(edge) {
-  if (edge.sourceKind === "test") return "tests";
-  return edge.kind === "type-only" ? "typeOnly" : "runtime";
-}
-
-export function buildArchitectureCouplingProjection({ graph, boundary = null, error = null } = {}) {
-  if (error || !graph) {
-    return {
-      state: "NOT_MEASURED",
-      detail: error?.message ?? "graphe d'import architectural absent",
-      error: error ? { name: error.name, message: error.message, code: error.code ?? null } : null,
-      files: [],
-      domains: [],
-      boundary: { state: "NOT_MEASURED", blocking: [], current: [] },
-    };
-  }
-
-  const outgoing = new Map((graph.nodes ?? []).map((node) => [node.path, []]));
-  const incoming = new Map((graph.nodes ?? []).map((node) => [node.path, []]));
-  for (const edge of graph.edges ?? []) {
-    const serialized = serializeArchitectureEdge(edge);
-    outgoing.get(edge.from)?.push(serialized);
-    incoming.get(edge.to)?.push(serialized);
-  }
-  for (const relations of [...outgoing.values(), ...incoming.values()]) relations.sort((left, right) => left.id.localeCompare(right.id));
-
-  const unresolvedByFile = new Map();
-  for (const unresolved of graph.findings?.unresolvedInternal ?? []) {
-    const item = { from: unresolved.from, specifier: unresolved.specifier, line: unresolved.line };
-    const values = unresolvedByFile.get(unresolved.from) ?? [];
-    values.push(item);
-    unresolvedByFile.set(unresolved.from, values);
-  }
-  for (const values of unresolvedByFile.values()) values.sort((left, right) => `${left.specifier}:${left.line}`.localeCompare(`${right.specifier}:${right.line}`));
-
-  const currentBoundary = boundary?.currentViolations ?? [];
-  const blockingBoundaryIds = new Set([
-    ...(boundary?.newViolations ?? []),
-    ...(boundary?.reintroduced ?? []),
-  ].map((violation) => violation.id));
-  const boundaryByFile = new Map();
-  for (const violation of currentBoundary) {
-    const item = { ...violation, blocking: blockingBoundaryIds.has(violation.id) };
-    const values = boundaryByFile.get(violation.from) ?? [];
-    values.push(item);
-    boundaryByFile.set(violation.from, values);
-  }
-  for (const values of boundaryByFile.values()) values.sort((left, right) => left.signature.localeCompare(right.signature));
-
-  const files = (graph.nodes ?? []).map((node) => {
-    const dependencies = outgoing.get(node.path) ?? [];
-    const dependents = incoming.get(node.path) ?? [];
-    const countByBucket = (relations) => Object.fromEntries(["runtime", "typeOnly", "tests"].map((bucket) => [bucket, relations.filter((edge) => architectureBucket(edge) === bucket).length]));
-    const crossDomainImports = dependencies.filter((edge) => edge.crossDomain);
-    const layerCrossings = dependencies.filter((edge) => edge.fromLayer !== edge.toLayer || edge.fromEffectiveLayer !== edge.toEffectiveLayer);
-    const boundaryFindings = boundaryByFile.get(node.path) ?? [];
-    const unresolved = unresolvedByFile.get(node.path) ?? [];
-    return {
-      path: node.path,
-      domain: node.domain,
-      layer: node.layer,
-      effectiveLayer: node.effectiveLayer,
-      sourceKind: node.sourceKind,
-      clientEntry: node.clientEntry,
-      clientReachable: node.clientReachable,
-      serverBoundary: node.serverBoundary,
-      publicFacade: node.publicFacade,
-      facadeOwner: node.facadeOwner,
-      metrics: {
-        fanIn: countByBucket(dependents),
-        fanOut: countByBucket(dependencies),
-        totalFanIn: dependents.length,
-        totalFanOut: dependencies.length,
-      },
-      relations: {
-        dependencies,
-        dependents,
-        crossDomainImports,
-        layerCrossings,
-      },
-      findings: {
-        crossDomainImports: architectureState(crossDomainImports, "imports sortants vers un autre domaine"),
-        layerCrossings: architectureState(layerCrossings, "imports sortants traversant une couche"),
-        boundaryViolations: architectureState(boundaryFindings, "règles de frontière architecturale explicites"),
-        unresolvedInternal: architectureState(unresolved, "imports internes non résolus"),
-      },
-    };
-  }).sort((left, right) => left.path.localeCompare(right.path));
-
-  const domainFiles = new Map();
-  for (const file of files) {
-    const values = domainFiles.get(file.domain) ?? [];
-    values.push(file.path);
-    domainFiles.set(file.domain, values);
-  }
-  const domains = (graph.domains ?? []).map((domain) => ({
-    id: `${QUALITY_ARCHITECTURE_DOMAIN_PREFIX}${domain.domain}`,
-    domain: domain.domain,
-    responsibility: "couplage issu du graphe d'import TypeScript",
-    files: [...(domainFiles.get(domain.domain) ?? [])].sort(),
-    metrics: {
-      layers: domain.layers,
-      files: domain.files,
-      runtimeFanIn: domain.runtimeFanIn,
-      runtimeFanOut: domain.runtimeFanOut,
-      typeOnlyFanIn: domain.typeOnlyFanIn,
-      typeOnlyFanOut: domain.typeOnlyFanOut,
-      testFanIn: domain.testFanIn,
-      testFanOut: domain.testFanOut,
-    },
-  })).sort((left, right) => left.id.localeCompare(right.id));
-
-  const blocking = [...(boundary?.newViolations ?? []), ...(boundary?.reintroduced ?? [])].sort((left, right) => left.signature.localeCompare(right.signature));
-  return {
-    state: "PRESENT",
-    gitSha: graph.gitSha,
-    provenance: graph.provenance,
-    graphSummary: graph.summary,
-    files,
-    domains,
-    boundary: {
-      state: boundary ? "PRESENT" : "NOT_MEASURED",
-      status: boundary?.status ?? "NOT_MEASURED",
-      blocking,
-      current: currentBoundary,
-      new: boundary?.newViolations ?? [],
-      reintroduced: boundary?.reintroduced ?? [],
-      stale: boundary?.staleExceptions ?? [],
-      invalid: boundary?.invalidExceptions ?? [],
-      blockingStatus: blocking.length > 0 ? "FAIL" : "PASS",
-    },
-  };
-}
-
-export function buildArchitectureCouplingFromRepository({ root = REPOSITORY_ROOT, auditedSha } = {}) {
-  if (!SHA_PATTERN.test(auditedSha ?? "")) throw new Error(`SHA architecture invalide: ${auditedSha}`);
-  const view = createRepositoryView({ root, ref: auditedSha });
-  const graph = buildArchitectureImportGraph({ root, source: "git-ref", ref: auditedSha, view });
-  const baseline = loadBoundaryBaseline({ view });
-  const boundary = evaluateBoundary(graph, baseline);
-  return buildArchitectureCouplingProjection({ graph, boundary });
-}
-
-function stableId(scope, value) {
-  return crypto.createHash("sha256").update(`${scope}:${JSON.stringify(value)}`).digest("hex").slice(0, 24);
-}
-
-function state(value, detail = "", items = []) {
-  if (!QUALITY_STATUS_STATES.has(value)) throw new Error(`État quality inconnu: ${value}`);
-  return { state: value, detail, items };
-}
-
-function readJson(filePath, fsApi = fs) {
-  try {
-    return JSON.parse(fsApi.readFileSync(filePath, "utf8"));
-  } catch (error) {
-    throw new Error(`Rapport quality illisible: ${filePath}: ${error.message}`);
-  }
-}
-
-function assertOfflineIdentity(auditedSha, runId) {
-  if (!SHA_PATTERN.test(auditedSha ?? "")) throw new Error(`SHA offline invalide: ${auditedSha}`);
-  if (!RUN_ID_PATTERN.test(runId ?? "")) throw new Error(`runId offline invalide: ${runId}`);
-}
-
-function validateManifest(manifest, { audit, auditedSha, runId }) {
-  if (!manifest || manifest.schemaVersion !== 1) throw new Error(`Manifest ${audit} absent ou schemaVersion invalide.`);
-  for (const [field, expected] of [["audit", audit], ["auditedHead", auditedSha], ["runId", runId]]) {
-    if (manifest[field] !== expected) throw new Error(`Manifest ${audit} incohérent: ${field}.`);
-  }
-  if (manifest.originMain !== null && manifest.originMain !== undefined && typeof manifest.originMain !== "string") {
-    throw new Error(`Manifest ${audit} incohérent: originMain.`);
-  }
-  if (typeof manifest.readProvenance !== "string") throw new Error(`Manifest ${audit} sans readProvenance.`);
-  if (!["PASS", "PASS_WITH_GRACE", "FAIL", "SKIPPED_BY_POLICY"].includes(manifest.status)) throw new Error(`Manifest ${audit} sans status valide.`);
-  return manifest;
-}
+export {
+  readOfflineQualityRun,
+  buildQualityFileIndexMarkdown,
+  buildQualityFileIndexTriage,
+};
 
 const QUALITY_MANIFEST_PROJECTION_FIELDS = Object.freeze([
   "schemaVersion",
@@ -280,128 +66,6 @@ function projectManifest(manifest) {
   return Object.fromEntries(QUALITY_MANIFEST_PROJECTION_FIELDS
     .filter((field) => manifest[field] !== undefined)
     .map((field) => [field, manifest[field]]));
-}
-
-function reportStatus(audit, report) {
-  if (report?.error) return "FAIL";
-  if (typeof report?.status === "string") return report.status;
-  if (audit === "cycles" && typeof report?.gateStatus === "string") return report.gateStatus === "PASS" ? "PASS" : "FAIL";
-  return null;
-}
-
-function expectedOverallStatus(statuses) {
-  if (statuses.includes("FAIL")) return "FAIL";
-  if (statuses.includes("SKIPPED_BY_POLICY")) return "SKIPPED_BY_POLICY";
-  if (statuses.includes("PASS_WITH_GRACE")) return "PASS_WITH_GRACE";
-  return "PASS";
-}
-
-function validateReport(audit, report) {
-  if (!report || typeof report !== "object") throw new Error(`Rapport ${audit} absent.`);
-  if (report.error && typeof report.error === "object") return report;
-  if (audit === "dead-code" && (!Array.isArray(report.currentFindings) || !report.comparison)) {
-    throw new Error("Rapport dead-code incomplet.");
-  }
-  if (audit === "duplication" && !Array.isArray(report.results)) throw new Error("Rapport duplication incomplet.");
-  if (audit === "top-heavy" && (!Array.isArray(report.rows) || !report.evaluation)) throw new Error("Rapport top-heavy incomplet.");
-  if (audit === "complexity" && (!Array.isArray(report.metrics) || !report.result)) throw new Error("Rapport complexity incomplet.");
-  if (audit === "cycles" && !report.error && (!Array.isArray(report.cycleObjects) || !report.comparison)) {
-    throw new Error("Rapport cycles incomplet.");
-  }
-  if (audit === "maintainability" && (!Array.isArray(report.metrics) || !Array.isArray(report.findings) || !report.summary)) {
-    throw new Error("Rapport maintainability incomplet.");
-  }
-  if (audit === "type-safety" && (!Array.isArray(report.findings) || !Array.isArray(report.diagnostics) || !Array.isArray(report.coverage) || !report.summary)) {
-    throw new Error("Rapport type-safety incomplet.");
-  }
-  if (audit === "hotspots" && (!Array.isArray(report.files) || !report.methodology || !report.summary || !Array.isArray(report.diagnostics))) {
-    throw new Error("Rapport hotspots incomplet.");
-  }
-  if (audit === "testability" && (!Array.isArray(report.domains) || !report.summary || !Array.isArray(report.diagnostics))) {
-    throw new Error("Rapport testability incomplet.");
-  }
-  if (audit === "coverage" && (!Array.isArray(report.scopes) || !report.summary || !report.duplication || !Array.isArray(report.warnings) || !Array.isArray(report.diagnostics))) {
-    throw new Error("Rapport coverage incomplet.");
-  }
-  return report;
-}
-
-function manifestPathExists(root, auditedSha, runId, audit, fsApi) {
-  return fsApi.existsSync(createAuditPaths({ root, auditedHead: auditedSha, audit, runId }).manifest);
-}
-
-export function readOfflineQualityRun({ root = REPOSITORY_ROOT, auditedSha, runId, fsApi = fs } = {}) {
-  assertOfflineIdentity(auditedSha, runId);
-  const reports = {};
-  const manifests = {};
-  const sourceFiles = [];
-
-  for (const audit of QUALITY_GATE_INDEX_AUDITS) {
-    const paths = createAuditPaths({ root, auditedHead: auditedSha, audit, runId });
-    const manifest = validateManifest(readJson(paths.manifest, fsApi), { audit, auditedSha, runId });
-    const report = validateReport(audit, readJson(paths.report, fsApi));
-    const measuredStatus = reportStatus(audit, report);
-    if (measuredStatus && measuredStatus !== manifest.status) throw new Error(`Rapport ${audit} contradictoire avec son manifeste: status.`);
-    try { fsApi.readFileSync(paths.summary, "utf8"); } catch { throw new Error(`Résumé ${audit} absent ou illisible.`); }
-    manifests[audit] = manifest;
-    reports[audit] = report;
-    sourceFiles.push(paths.manifest, paths.report, paths.summary);
-  }
-
-  for (const audit of ["maintainability", "type-safety", "hotspots", "testability", "coverage"]) {
-    if (!manifestPathExists(root, auditedSha, runId, audit, fsApi)) continue;
-    const paths = createAuditPaths({ root, auditedHead: auditedSha, audit, runId });
-    const manifest = validateManifest(readJson(paths.manifest, fsApi), { audit, auditedSha, runId });
-    const report = validateReport(audit, readJson(paths.report, fsApi));
-    const measuredStatus = reportStatus(audit, report);
-    if (measuredStatus && measuredStatus !== manifest.status) throw new Error(`Rapport ${audit} contradictoire avec son manifeste: status.`);
-    try { fsApi.readFileSync(paths.summary, "utf8"); } catch { throw new Error(`Résumé ${audit} absent ou illisible.`); }
-    manifests[audit] = manifest;
-    reports[audit] = report;
-    sourceFiles.push(paths.manifest, paths.report, paths.summary);
-  }
-  const allPaths = createAuditPaths({ root, auditedHead: auditedSha, audit: "all", runId });
-  const aggregateManifest = validateManifest(readJson(allPaths.manifest, fsApi), { audit: "all", auditedSha, runId });
-  const aggregateReport = readJson(allPaths.report, fsApi);
-  try { fsApi.readFileSync(allPaths.summary, "utf8"); } catch { throw new Error("Résumé all absent ou illisible."); }
-  const optionalAudits = ["maintainability", "type-safety", "hotspots", "testability", "coverage"].filter((audit) => Boolean(manifestPathExists(root, auditedSha, runId, audit, fsApi)));
-  if (!Array.isArray(aggregateReport?.audits) || aggregateReport.audits.length !== QUALITY_GATE_INDEX_AUDITS.length + optionalAudits.length) {
-    throw new Error("Rapport all incomplet: les cinq audits de gate et les auxiliaires présents sont attendus.");
-  }
-  const aggregateAudits = new Map(aggregateReport.audits.map((entry) => [entry.audit, entry]));
-  const expectedAudits = [...QUALITY_GATE_INDEX_AUDITS, ...optionalAudits];
-  if (aggregateAudits.size !== expectedAudits.length || expectedAudits.some((audit) => !aggregateAudits.has(audit))) {
-    throw new Error("Rapport all incohérent: audit manquant ou dupliqué.");
-  }
-  for (const audit of expectedAudits) {
-    const entry = aggregateAudits.get(audit);
-    if (!entry || typeof entry.status !== "string" || entry.status !== manifests[audit].status) {
-      throw new Error(`Rapport all incohérent: verdict ${audit}.`);
-    }
-  }
-  const individualStatuses = QUALITY_GATE_INDEX_AUDITS.map((audit) => manifests[audit].status);
-  if (aggregateManifest.status !== expectedOverallStatus(individualStatuses)) throw new Error("Manifeste all incohérent: verdict global.");
-  if (aggregateManifest.attentionRequired !== Object.values(manifests).some((manifest) => manifest.attentionRequired)) {
-    throw new Error("Manifeste all incohérent: attentionRequired.");
-  }
-  sourceFiles.push(allPaths.manifest, allPaths.report, allPaths.summary);
-  const documentation = validateDocumentationReport(aggregateReport.documentation ?? null, { auditedSha, runId });
-
-  const readProvenance = new Set(Object.values(manifests).map((manifest) => manifest.readProvenance));
-  readProvenance.add(aggregateManifest.readProvenance);
-  return {
-    root,
-    auditedSha,
-    runId,
-    reports,
-    manifests,
-    aggregateManifest,
-    aggregateReport,
-    documentation,
-    sourceFiles,
-    shaRoot: allPaths.shaRoot,
-    provenance: readProvenance.size === 1 ? [...readProvenance][0] : "MIXED",
-  };
 }
 
 function ensureFile(files, filePath) {
@@ -1011,27 +675,31 @@ function addDocumentation(report, files, domains) {
   };
 }
 
+function attachArchitectureFile(architectureFile, domainIdsByName, files) {
+  const file = ensureFile(files, architectureFile.path);
+  file.architecture = architectureFile;
+  file.functionalDomains.add(domainIdsByName.get(architectureFile.domain) ?? `${QUALITY_ARCHITECTURE_DOMAIN_PREFIX}${architectureFile.domain}`);
+}
+
+function mergeArchitectureDomain(architectureDomain, domains) {
+  const domain = domains.get(architectureDomain.id) ?? {
+    id: architectureDomain.id,
+    responsibility: architectureDomain.responsibility,
+    files: new Set(),
+    findingIds: new Set(),
+    candidateGroups: new Set(),
+    coupling: null,
+  };
+  for (const file of architectureDomain.files) domain.files.add(file);
+  domain.coupling = architectureDomain.metrics;
+  domains.set(architectureDomain.id, domain);
+}
+
 function addArchitecture(architecture, files, domains) {
-  if (!architecture || architecture.state !== "PRESENT") return;
+  if (architecture?.state !== "PRESENT") return;
   const domainIdsByName = new Map((architecture.domains ?? []).map((domain) => [domain.domain, domain.id]));
-  for (const architectureFile of architecture.files) {
-    const file = ensureFile(files, architectureFile.path);
-    file.architecture = architectureFile;
-    file.functionalDomains.add(domainIdsByName.get(architectureFile.domain) ?? `${QUALITY_ARCHITECTURE_DOMAIN_PREFIX}${architectureFile.domain}`);
-  }
-  for (const architectureDomain of architecture.domains) {
-    const domain = domains.get(architectureDomain.id) ?? {
-      id: architectureDomain.id,
-      responsibility: architectureDomain.responsibility,
-      files: new Set(),
-      findingIds: new Set(),
-      candidateGroups: new Set(),
-      coupling: null,
-    };
-    for (const file of architectureDomain.files) domain.files.add(file);
-    domain.coupling = architectureDomain.metrics;
-    domains.set(architectureDomain.id, domain);
-  }
+  for (const architectureFile of architecture.files) attachArchitectureFile(architectureFile, domainIdsByName, files);
+  for (const architectureDomain of architecture.domains) mergeArchitectureDomain(architectureDomain, domains);
 }
 
 const FUNCTIONAL_QUALITY_CATEGORIES = Object.freeze([
@@ -1056,10 +724,6 @@ const FUNCTIONAL_ARCHITECTURE_RELATION_CATEGORIES = Object.freeze([
 function architectureRelationReference(category, relation) {
   const id = relation?.id ?? stableId(`architecture:${category}`, relation);
   return { id, category };
-}
-
-function complexityFindingCategory(finding) {
-  return finding?.metric === "functionLength" ? "functionLength" : "complexity";
 }
 
 function attachFunctionalDomainFindings(files, domains) {
@@ -1103,127 +767,6 @@ function attachFunctionalDomainFindings(files, domains) {
       }
     }
   }
-}
-
-function finalizeFiles(files, reports, architecture) {
-  const categoryAvailability = {
-    topHeavy: reports["top-heavy"]?.error ? "NOT_MEASURED" : "PRESENT",
-    complexity: reports.complexity?.error ? "NOT_MEASURED" : "PRESENT",
-    maintainability: !reports.maintainability || reports.maintainability.error ? "NOT_MEASURED" : "PRESENT",
-    typeSafety: !reports["type-safety"] || reports["type-safety"].error || reports["type-safety"].measurementStatus === "MEASUREMENT_FAILED" ? "NOT_MEASURED" : "PRESENT",
-    hotspots: !reports.hotspots || reports.hotspots.error ? "NOT_MEASURED" : "PRESENT",
-    testability: !reports.testability || reports.testability.error || reports.testability.measurementStatus === "NOT_MEASURED" ? "NOT_MEASURED" : "PRESENT",
-    coverage: !reports.coverage || reports.coverage.error || reports.coverage.measurementStatus === "NOT_MEASURED" ? "NOT_MEASURED" : "PRESENT",
-    deadCode: reports["dead-code"]?.error ? "NOT_MEASURED" : "PRESENT",
-    duplication: reports.duplication?.error ? "NOT_MEASURED" : "PRESENT",
-    cycles: reports.cycles?.status === "SKIPPED_BY_POLICY" ? "SKIPPED_BY_POLICY" : reports.cycles?.error ? "NOT_MEASURED" : "PRESENT",
-    documentation: !reports.documentation || reports.documentation.status === "NOT_MEASURED" ? "NOT_MEASURED" : "PRESENT",
-  };
-  const output = [];
-  for (const file of files.values()) {
-    const topHeavyFindingItems = [...file.topHeavy.findings.values()];
-    const complexityItems = [...file.complexity.findings.values()];
-    const functionLengthItems = complexityItems.filter((item) => complexityFindingCategory(item) === "functionLength");
-    const complexityFindingItems = complexityItems.filter((item) => complexityFindingCategory(item) === "complexity");
-    const maintainabilityFindingItems = [...file.maintainability.findings.values()];
-    const typeSafetyFindingItems = [...file.typeSafety.findings.values()];
-    const typeSafetyItems = typeSafetyFindingItems.filter((finding) => finding.family === "TYPE_SAFETY");
-    const asyncSafetyItems = typeSafetyFindingItems.filter((finding) => finding.family === "ASYNC_SAFETY");
-    const typeSafetyCoverage = file.typeSafety.coverage;
-    const typeSafetyMeasured = typeSafetyCoverage?.state === "TYPED";
-    const typeSafetyNotMeasured = !typeSafetyMeasured;
-    const typeSafetyDetail = typeSafetyCoverage?.reason === "UNSUPPORTED_CONFIGURATION"
-      ? "configuration TypeScript incompatible : UNSUPPORTED_CONFIGURATION"
-      : typeSafetyCoverage?.reason ?? "inventaire des fichiers mesurés absent du rapport type-safety";
-    const hotspotFindingItems = [...file.hotspots.findings.values()];
-    const cognitiveMetrics = file.maintainability.cognitiveMetrics;
-    const hotspotMeasurement = file.hotspots.measurement
-      ? {
-        ...file.hotspots.measurement,
-        currentMetrics: {
-          cyclomaticComplexity: file.complexity.metrics.filter((metric) => metric.metric === "complexity"),
-          functionLength: file.complexity.metrics.filter((metric) => metric.metric === "functionLength"),
-          cognitiveComplexity: cognitiveMetrics,
-        },
-        debtAccumulation: {
-          categories: ["topHeavy", "complexity", "maintainability", "typeSafety", "deadCode", "duplication", "cycles", "documentation"]
-            .filter((category) => file[category]?.findings?.size > 0),
-          note: "catégories avec findings attribués ; les mêmes causes restent reliées par leur relation canonique et ne sont pas fusionnées implicitement",
-        },
-      }
-      : null;
-    const category = (auditKey, findingItems, measured, detail) => {
-      if (findingItems.length > 0) return state("PRESENT", `${findingItems.length} finding(s)`, findingItems);
-      if (categoryAvailability[auditKey] === "SKIPPED_BY_POLICY") return state("SKIPPED_BY_POLICY", "contrôle suspendu par la politique du dépôt");
-      if (categoryAvailability[auditKey] === "NOT_MEASURED") return state("NOT_MEASURED", detail);
-      if (measured) return state("NONE", "aucun finding attribué", []);
-      return state("NOT_MEASURED", "le rapport ne fournit pas une couverture négative par fichier", []);
-    };
-    const typeSafetyCategory = (family, findingItems) => typeSafetyNotMeasured
-      ? state("NOT_MEASURED", typeSafetyDetail, findingItems)
-      : state(findingItems.length > 0 ? "PRESENT" : "NONE", `${findingItems.length} finding(s) ${family}`, findingItems);
-    output.push({
-      path: file.path,
-      auditCategories: [...file.auditCategories].sort(),
-      functionalDomains: [...file.functionalDomains].sort(),
-      metrics: {
-        topHeavy: file.topHeavy.measurements ? state("PRESENT", "mesure de taille disponible", [file.topHeavy.measurements]) : categoryAvailability.topHeavy === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport top-heavy en échec") : state("NOT_APPLICABLE", "fichier hors roots top-heavy"),
-        complexity: file.complexity.metrics.length > 0 ? state("PRESENT", `${file.complexity.metrics.length} fonction(s) mesurée(s)`, file.complexity.metrics) : categoryAvailability.complexity === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport complexity en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
-        cognitiveComplexity: cognitiveMetrics.length > 0 ? state("PRESENT", `${cognitiveMetrics.length} fonction(s) mesurée(s)`, cognitiveMetrics) : categoryAvailability.maintainability === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport maintainability en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
-        typeSafety: typeSafetyNotMeasured ? state("NOT_MEASURED", typeSafetyDetail, typeSafetyItems) : state(typeSafetyItems.length > 0 ? "PRESENT" : "NONE", `${typeSafetyItems.length} finding(s) TYPE_SAFETY`, typeSafetyItems),
-        asyncSafety: typeSafetyNotMeasured ? state("NOT_MEASURED", typeSafetyDetail, asyncSafetyItems) : state(asyncSafetyItems.length > 0 ? "PRESENT" : "NONE", `${asyncSafetyItems.length} finding(s) ASYNC_SAFETY`, asyncSafetyItems),
-        hotspots: hotspotMeasurement ? state("PRESENT", "activité, dette structurelle et relations de maintenance mesurées", [hotspotMeasurement]) : categoryAvailability.hotspots === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport hotspots absent ou en échec") : state("NOT_APPLICABLE", "aucune observation hotspot pour ce fichier"),
-        testability: categoryAvailability.testability === "NOT_MEASURED" ? state("NOT_MEASURED", "preuve de testabilité absente, périmée ou non attribuable") : state("NOT_MEASURED", "aucune correspondance fichier inventée depuis une mesure par domaine"),
-        coverage: file.coverage.measurement
-          ? state(file.coverage.measurement.state === "MEASURED" ? (file.coverage.measurement.uncoveredBranches > 0 ? "PRESENT" : "NONE") : "NOT_MEASURED", file.coverage.measurement.state === "MEASURED" ? "mesure de couverture attribuée" : file.coverage.measurement.state, [file.coverage.measurement])
-          : state(categoryAvailability.coverage === "NOT_MEASURED" ? "NOT_MEASURED" : "OUT_OF_INSTRUMENTATION", categoryAvailability.coverage === "NOT_MEASURED" ? "preuve de couverture absente ou non vérifiable" : "fichier absent des sources instrumentées", []),
-        architecture: file.architecture
-          ? { state: "PRESENT", detail: "graphe d'import architectural disponible", value: file.architecture.metrics }
-          : state(architecture?.state === "NOT_MEASURED" ? "NOT_MEASURED" : "NOT_APPLICABLE", architecture?.detail ?? "fichier absent du graphe architectural"),
-        documentation: file.documentation.measurements
-          ? state("PRESENT", "mesures de maintenabilité documentaire disponibles", [file.documentation.measurements])
-          : state(categoryAvailability.documentation === "NOT_MEASURED" ? "NOT_MEASURED" : "NOT_APPLICABLE", categoryAvailability.documentation === "NOT_MEASURED" ? "rapport documentaire absent du run" : "fichier hors projection documentaire"),
-      },
-      findings: {
-        topHeavy: category("topHeavy", topHeavyFindingItems, Boolean(file.topHeavy.measurements), "rapport top-heavy en échec"),
-        complexity: category("complexity", complexityFindingItems, file.complexity.metrics.some((metric) => metric.metric === "complexity"), "rapport complexity en échec"),
-        functionLength: category("complexity", functionLengthItems, file.complexity.metrics.some((metric) => metric.metric === "functionLength"), "rapport complexity en échec"),
-        cognitiveComplexity: category("maintainability", maintainabilityFindingItems.filter((finding) => finding.category === "cognitive-complexity"), cognitiveMetrics.length > 0, "rapport maintainability en échec"),
-        localMaintainability: category("maintainability", maintainabilityFindingItems.filter((finding) => finding.category !== "cognitive-complexity"), Boolean(file.maintainability.findings.size), "rapport maintainability en échec"),
-        typeSafety: typeSafetyCategory("TYPE_SAFETY", typeSafetyItems),
-        asyncSafety: typeSafetyCategory("ASYNC_SAFETY", asyncSafetyItems),
-        hotspots: category("hotspots", hotspotFindingItems, Boolean(file.hotspots.measurement), "rapport hotspots absent ou sans fichier mesuré"),
-        testability: category("testability", [...file.testability.findings.values()], Boolean(file.testability.measurement), "la source de testabilité ne fournit pas de correspondance fichier sans preuve"),
-        coverage: category("coverage", [...file.coverage.findings.values()], Boolean(file.coverage.measurement), "rapport coverage absent ou sans preuve attribuable"),
-        deadCode: category("deadCode", [...file.deadCode.findings.values()], false, "rapport dead-code en échec"),
-        duplication: category("duplication", [...file.duplication.findings.values()], false, "rapport duplication en échec"),
-        cycles: category("cycles", [...file.cycles.findings.values()], false, "rapport cycles en échec"),
-        documentation: category("documentation", [...file.documentation.findings.values()], Boolean(file.documentation.measurements), "rapport documentaire absent du run"),
-      },
-      architecture: file.architecture ?? {
-        state: architecture?.state === "NOT_MEASURED" ? "NOT_MEASURED" : "NOT_APPLICABLE",
-        detail: architecture?.detail ?? "fichier absent du graphe architectural",
-      },
-      exceptions: {
-        topHeavy: file.topHeavy.exceptions,
-        deadCode: file.deadCode.exceptions,
-      },
-      provenance: {
-        topHeavy: reports["top-heavy"]?.readProvenance ?? null,
-        complexity: reports.complexity?.readProvenance ?? null,
-        maintainability: reports.maintainability?.readProvenance ?? null,
-        typeSafety: reports["type-safety"]?.readProvenance ?? null,
-        deadCode: reports["dead-code"]?.readProvenance ?? null,
-        duplication: reports.duplication?.readProvenance ?? null,
-        cycles: reports.cycles?.readProvenance ?? null,
-        hotspots: reports.hotspots?.readProvenance ?? null,
-        testability: reports.testability?.readProvenance ?? null,
-        coverage: reports.coverage?.readProvenance ?? null,
-        documentation: reports.documentation?.provenance ?? null,
-      },
-    });
-  }
-  return output.sort((left, right) => left.path.localeCompare(right.path));
 }
 
 function finalizeAuditCategories(domains) {
@@ -1280,6 +823,68 @@ function finalizeDocumentationDomains(domains, report) {
   };
 }
 
+function buildCategorySummaries(values) {
+  return {
+    topHeavy: values.topHeavy,
+    complexity: values.complexity,
+    maintainability: values.maintainability,
+    typeSafety: values.typeSafety,
+    hotspots: values.hotspots,
+    testability: values.testability,
+    coverage: values.coverage,
+    deadCode: values.deadCode,
+    duplication: values.duplication,
+    cycles: values.cycles,
+    documentation: values.documentation,
+  };
+}
+
+function buildSourceProjection(run) {
+  const documentation = run.documentation
+    ? { status: run.documentation.status, readProvenance: run.documentation.provenance, reason: run.documentation.reason ?? null, error: run.documentation.error ?? null, attentionRequired: run.documentation.attentionRequired }
+    : { status: "NOT_MEASURED", readProvenance: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", error: null, attentionRequired: false };
+  return {
+    auditedHead: run.auditedSha,
+    runId: run.runId,
+    provenance: run.provenance,
+    aggregateManifest: projectManifest(run.aggregateManifest),
+    auditManifests: Object.fromEntries(Object.entries(run.manifests).map(([audit, manifest]) => [audit, projectManifest(manifest)])),
+    documentation,
+    initialStatus: run.aggregateManifest.status,
+    attentionRequired: run.aggregateManifest.attentionRequired,
+    sourceReports: QUALITY_INDEX_AUDITS.filter((audit) => run.manifests[audit]).map((audit) => ({ audit, status: run.manifests[audit].status, readProvenance: run.manifests[audit].readProvenance, resultClass: run.manifests[audit].resultClass })),
+  };
+}
+
+function projectCandidateGroups(candidateGroups) {
+  return [...candidateGroups.values()]
+    .map((group) => ({ ...group, files: [...group.files].sort() }))
+    .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function buildGlobalCounts({ finalFiles, finalAuditCategories, finalFunctionalDomains, candidateGroups, findingsByCategory, duplication, cycles, architecture, documentation, typeSafety, hotspots, testability }) {
+  return {
+    files: finalFiles.length,
+    auditCategories: finalAuditCategories.length,
+    functionalDomains: finalFunctionalDomains.items.length,
+    candidateGroups: candidateGroups.size,
+    findingsByCategory,
+    duplicationFingerprintCount: duplication.fingerprints?.length ?? 0,
+    duplicationOccurrencePairCount: duplication.scopes?.reduce((sum, scope) => sum + scope.occurrencePairCount, 0) ?? 0,
+    cycleCount: cycles.cycles?.length ?? 0,
+    architectureFiles: architecture.files?.length ?? 0,
+    architectureBlockingBoundaryCount: architecture.boundary?.blocking?.length ?? 0,
+    architectureUnresolvedInternalCount: architecture.graphSummary?.unresolvedInternalImports ?? 0,
+    documentationFiles: documentation.summary?.trackedDocuments ?? 0,
+    documentationInvalidReferences: documentation.summary?.invalidReferences ?? 0,
+    documentationUnverifiedReferences: documentation.summary?.unverifiedReferences ?? 0,
+    typeSafetyFindings: typeSafety.findingCounts?.typeSafety ?? 0,
+    asyncSafetyFindings: typeSafety.findingCounts?.asyncSafety ?? 0,
+    hotspotCandidates: hotspots.findingCounts?.hotspotCandidates ?? 0,
+    testabilityDomains: testability.measuredDomains ?? 0,
+  };
+}
+
 export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new Date().toISOString(), architecture = null } = {}) {
   if (!run?.reports || !run?.auditedSha || !run?.runId) throw new Error("Run quality absent pour construire l'index.");
   const architectureProjection = architecture ?? {
@@ -1313,34 +918,10 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
   const finalAuditCategories = finalizeAuditCategories(auditCategories);
   const finalFunctionalDomains = finalizeFunctionalDomains(functionalDomains, architectureProjection);
   const finalDocumentationDomains = finalizeDocumentationDomains(documentationDomains, documentation);
-  const categorySummaries = {
-    topHeavy,
-    complexity,
-    maintainability,
-    typeSafety,
-    hotspots,
-    testability,
-    coverage,
-    deadCode,
-    duplication,
-    cycles,
-    documentation,
-  };
+  const categorySummaries = buildCategorySummaries({ topHeavy, complexity, maintainability, typeSafety, hotspots, testability, coverage, deadCode, duplication, cycles, documentation });
   const findingsByCategory = Object.fromEntries(Object.entries(categorySummaries).map(([key, value]) => [key, value.findingCounts ?? value.counts ?? {}]));
-  const source = {
-    auditedHead: run.auditedSha,
-    runId: run.runId,
-    provenance: run.provenance,
-    aggregateManifest: projectManifest(run.aggregateManifest),
-    auditManifests: Object.fromEntries(Object.entries(run.manifests).map(([audit, manifest]) => [audit, projectManifest(manifest)])),
-    documentation: run.documentation ? { status: run.documentation.status, readProvenance: run.documentation.provenance, reason: run.documentation.reason ?? null, error: run.documentation.error ?? null, attentionRequired: run.documentation.attentionRequired } : { status: "NOT_MEASURED", readProvenance: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", error: null, attentionRequired: false },
-    initialStatus: run.aggregateManifest.status,
-    attentionRequired: run.aggregateManifest.attentionRequired,
-    sourceReports: QUALITY_INDEX_AUDITS.filter((audit) => run.manifests[audit]).map((audit) => ({ audit, status: run.manifests[audit].status, readProvenance: run.manifests[audit].readProvenance, resultClass: run.manifests[audit].resultClass })),
-  };
-  const projectedCandidateGroups = [...candidateGroups.values()]
-    .map((group) => ({ ...group, files: [...group.files].sort() }))
-    .sort((left, right) => left.id.localeCompare(right.id));
+  const source = buildSourceProjection(run);
+  const projectedCandidateGroups = projectCandidateGroups(candidateGroups);
   const triage = buildQualityFileIndexTriage({ files: finalFiles, audits: categorySummaries, source, candidateGroups: projectedCandidateGroups });
   return {
     schemaVersion: QUALITY_INDEX_SCHEMA_VERSION,
@@ -1357,26 +938,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
     },
     audits: categorySummaries,
     architecture: architectureProjection,
-    globalCounts: {
-      files: finalFiles.length,
-      auditCategories: finalAuditCategories.length,
-      functionalDomains: finalFunctionalDomains.items.length,
-      candidateGroups: candidateGroups.size,
-      findingsByCategory,
-      duplicationFingerprintCount: duplication.fingerprints?.length ?? 0,
-      duplicationOccurrencePairCount: duplication.scopes?.reduce((sum, scope) => sum + scope.occurrencePairCount, 0) ?? 0,
-      cycleCount: cycles.cycles?.length ?? 0,
-      architectureFiles: architectureProjection.files?.length ?? 0,
-      architectureBlockingBoundaryCount: architectureProjection.boundary?.blocking?.length ?? 0,
-      architectureUnresolvedInternalCount: architectureProjection.graphSummary?.unresolvedInternalImports ?? 0,
-      documentationFiles: documentation.summary?.trackedDocuments ?? 0,
-      documentationInvalidReferences: documentation.summary?.invalidReferences ?? 0,
-      documentationUnverifiedReferences: documentation.summary?.unverifiedReferences ?? 0,
-      typeSafetyFindings: typeSafety.findingCounts?.typeSafety ?? 0,
-      asyncSafetyFindings: typeSafety.findingCounts?.asyncSafety ?? 0,
-      hotspotCandidates: hotspots.findingCounts?.hotspotCandidates ?? 0,
-      testabilityDomains: testability.measuredDomains ?? 0,
-    },
+    globalCounts: buildGlobalCounts({ finalFiles, finalAuditCategories, finalFunctionalDomains, candidateGroups, findingsByCategory, duplication, cycles, architecture: architectureProjection, documentation, typeSafety, hotspots, testability }),
     files: finalFiles,
     triage,
     auditCategories: finalAuditCategories,
@@ -1397,491 +959,16 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
   };
 }
 
-function escapeMarkdown(value) {
-  return String(value ?? "").replaceAll("|", "\\|").replaceAll("\n", " ");
-}
-
-function stateLabel(value) {
-  return value?.state ?? "NOT_MEASURED";
-}
-
-const TRIAGE_STRUCTURAL_CATEGORIES = Object.freeze([
-  "complexity",
-  "functionLength",
-  "cognitiveComplexity",
-  "localMaintainability",
-  "duplication",
-  "cycles",
-]);
-
-const TRIAGE_LEVEL_ORDER = Object.freeze({
-  HARD: 0,
-  FAIL: 0,
-  REVIEW: 1,
-  REVIEW_REQUIRED: 1,
-  ARCHITECTURE_REVIEW: 1,
-  SURVEILLANCE: 2,
-  PREVENTIVE: 2,
-  PRESENT: 3,
-  NONE: 4,
-  NOT_MEASURED: 5,
-  NOT_APPLICABLE: 6,
-  OUT_OF_INSTRUMENTATION: 6,
-});
-
-function triageFileKind(file) {
-  return file.metrics.topHeavy.items?.[0]?.kind ?? file.architecture?.sourceKind ?? null;
-}
-
-function triageTopHeavyLevel(file) {
-  const measurement = file.metrics.topHeavy.items?.[0];
-  if (!measurement) return file.metrics.topHeavy.state;
-  if (measurement.aboveHard) return "HARD";
-  if (measurement.aboveReview) return "REVIEW";
-  const preventive = measurement.limits?.preventive ?? FILE_KIND_POLICY[measurement.kind]?.preventive;
-  if (preventive && measurement.lines >= preventive.lines) return "PREVENTIVE";
-  return "PRESENT";
-}
-
-function triageStructuralCategories(file) {
-  return TRIAGE_STRUCTURAL_CATEGORIES.filter((category) => file.findings[category]?.state === "PRESENT");
-}
-
-function triageEvidenceState(file, categories) {
-  const states = categories.map((category) => file.findings[category]?.state ?? file.metrics[category]?.state);
-  const stale = categories.some((category) => (file.findings[category]?.items ?? []).some((finding) => finding.type === "stale" || String(finding.type ?? "").startsWith("stale")));
-  if (stale) return "STALE_EVIDENCE";
-  if (states.some((value) => value === "PRESENT")) return "PRESENT";
-  if (states.some((value) => value === "NOT_MEASURED")) return "NOT_MEASURED";
-  return "NOT_APPLICABLE";
-}
-
-function triageProvenance(file, categories) {
-  for (const category of categories) {
-    const provenance = file.provenance[category];
-    if (provenance) return provenance;
-  }
-  return "NOT_MEASURED";
-}
-
-function triageDecision(file) {
-  return file.architecture?.decision
-    ?? file.architecture?.architectureDecision
-    ?? "NOT_RECORDED_IN_QUALITY_INDEX";
-}
-
-function triageCandidate(file, { level, categories, quantitative = null, detail = null }) {
-  const evidenceCategories = categories.length > 0 ? categories : ["topHeavy"];
-  return {
-    path: file.path,
-    kind: triageFileKind(file),
-    level,
-    quantitative,
-    structural: categories.filter((category) => category !== "topHeavy"),
-    decision: triageDecision(file),
-    evidence: triageEvidenceState(file, evidenceCategories),
-    provenance: triageProvenance(file, evidenceCategories),
-    detail,
-  };
-}
-
-function sortTriageCandidates(left, right) {
-  return (TRIAGE_LEVEL_ORDER[left.level] ?? 99) - (TRIAGE_LEVEL_ORDER[right.level] ?? 99)
-    || left.path.localeCompare(right.path)
-    || String(left.detail ?? "").localeCompare(String(right.detail ?? ""));
-}
-
-function buildCodeTriage(files) {
-  return files.flatMap((file) => {
-    const kind = triageFileKind(file);
-    if (!(kind === "runtime" || kind === "data/config")) return [];
-    const topHeavyLevel = triageTopHeavyLevel(file);
-    const structural = triageStructuralCategories(file);
-    const hasSizeSignal = ["HARD", "REVIEW", "PREVENTIVE"].includes(topHeavyLevel);
-    if (!hasSizeSignal && structural.length === 0) return [];
-    const categories = [...(hasSizeSignal ? ["topHeavy"] : []), ...structural];
-    return [triageCandidate(file, {
-      level: hasSizeSignal ? topHeavyLevel : "PRESENT",
-      categories,
-      quantitative: hasSizeSignal ? {
-        level: topHeavyLevel,
-        lines: file.metrics.topHeavy.items[0].lines,
-        bytes: file.metrics.topHeavy.items[0].bytes,
-      } : null,
-      detail: structural.length > 0 ? structural.join(", ") : "taille",
-    })];
-  }).sort(sortTriageCandidates).slice(0, 10);
-}
-
-function buildTestTriage(files) {
-  return files.flatMap((file) => {
-    if (triageFileKind(file) !== "test") return [];
-    const topHeavyLevel = triageTopHeavyLevel(file);
-    const structural = triageStructuralCategories(file);
-    const hasSizeSignal = ["HARD", "REVIEW", "PREVENTIVE"].includes(topHeavyLevel);
-    if (!hasSizeSignal && structural.length === 0) return [];
-    const categories = [...(hasSizeSignal ? ["topHeavy"] : []), ...structural];
-    return [triageCandidate(file, {
-      level: hasSizeSignal ? topHeavyLevel : "PRESENT",
-      categories,
-      quantitative: hasSizeSignal ? {
-        level: topHeavyLevel,
-        lines: file.metrics.topHeavy.items[0].lines,
-        bytes: file.metrics.topHeavy.items[0].bytes,
-      } : null,
-      detail: structural.length > 0 ? structural.join(", ") : "taille",
-    })];
-  }).sort(sortTriageCandidates).slice(0, 10);
-}
-
-function buildDocumentationTriage(audits, source) {
-  if (audits.documentation.state === "NOT_MEASURED") {
-    return { state: "NOT_MEASURED", candidates: [], currentPlan: [], historyAudit: [], missingLifecycle: 0 };
-  }
-  const ranked = (audits.documentation.ranking ?? [])
-    .filter((document) => document.level !== "NONE")
-    .slice(0, 10)
-    .map((document) => ({
-      path: document.path,
-      level: document.level,
-      quantitative: { level: document.level, lines: document.lines, bytes: document.bytes },
-      decision: "NOT_RECORDED_IN_QUALITY_INDEX",
-      evidence: "PRESENT",
-      provenance: source.documentation?.readProvenance ?? "NOT_MEASURED",
-      lifecycle: document.lifecycle?.statuses ?? [],
-      detail: document.internalLinks?.invalid?.length ? `${document.internalLinks.invalid.length} lien(s) invalide(s)` : "longueur",
-    }));
-  const currentPlan = ranked.filter((document) => document.lifecycle.some((status) => status === "CURRENT" || status === "PLAN"));
-  const historyAudit = ranked.filter((document) => !currentPlan.includes(document) && document.lifecycle.some((status) => status === "HISTORY" || status === "AUDIT"));
-  return {
-    state: "PRESENT",
-    candidates: ranked,
-    currentPlan,
-    historyAudit,
-    missingLifecycle: ranked.filter((document) => document.lifecycle.length === 0).length,
-  };
-}
-
-function buildFunctionTriage(files, audits) {
-  const byFile = new Map();
-  for (const file of files) {
-    for (const { finding, metric } of [
-      ...(file.findings.functionLength?.items ?? []).map((item) => ({ finding: item, metric: "functionLength" })),
-      ...(file.findings.complexity?.items ?? []).map((item) => ({ finding: item, metric: "complexity" })),
-    ].filter(({ finding }) => finding.type === "failures" || finding.type === "reviews")) {
-      const candidate = byFile.get(file.path) ?? {
-        path: file.path,
-        level: "REVIEW",
-        quantitative: { level: "REVIEW", details: [] },
-        decision: triageDecision(file),
-        evidence: "PRESENT",
-        provenance: file.provenance.complexity ?? "NOT_MEASURED",
-        detail: new Set(),
-      };
-      if (finding.type === "failures") {
-        candidate.level = "FAIL";
-        candidate.quantitative.level = "FAIL";
-      }
-      candidate.quantitative.details.push(`${metric}=${finding.value ?? "NOT_MEASURED"}${finding.line ? ` (L${finding.line})` : ""}`);
-      candidate.detail.add(finding.type);
-      byFile.set(file.path, candidate);
-    }
-  }
-  const candidates = [...byFile.values()].map((candidate) => ({ ...candidate, detail: [...candidate.detail].sort().join(", ") })).sort(sortTriageCandidates).slice(0, 10);
-  const staleEvidenceCount = files.reduce((count, file) => count + [...(file.findings.complexity?.items ?? [])].filter((finding) => finding.type === "stale").length, 0);
-  return {
-    state: candidates.length > 0 ? "PRESENT" : staleEvidenceCount > 0 ? "STALE_EVIDENCE" : audits.complexity.state === "NOT_MEASURED" ? "NOT_MEASURED" : "NONE",
-    candidates,
-    staleEvidenceCount,
-  };
-}
-
-export function buildQualityFileIndexTriage({ files = [], audits = {}, source = {}, candidateGroups = [] } = {}) {
-  const code = buildCodeTriage(files);
-  const tests = buildTestTriage(files);
-  const decision = buildQualityIndexDecisionTriage({ files, audits, source, candidateGroups });
-  return {
-    code: { state: code.length > 0 ? "PRESENT" : files.length > 0 ? "NONE" : "NOT_MEASURED", candidates: code },
-    tests: { state: tests.length > 0 ? "PRESENT" : files.length > 0 ? "NONE" : "NOT_MEASURED", candidates: tests },
-    documentation: buildDocumentationTriage(audits, source),
-    functions: buildFunctionTriage(files, audits),
-    decision,
-    provenance: source.provenance ?? "NOT_MEASURED",
-    detail: "Projection dérivée exclusivement des mesures, findings et provenances déjà présents dans quality-file-index.",
-  };
-}
-
-function triageQuantitativeText(candidate) {
-  if (!candidate.quantitative) return "—";
-  if (candidate.quantitative.details) return candidate.quantitative.details.join(" ; ");
-  if (candidate.metric) return `${candidate.metric}=${candidate.value ?? "NOT_MEASURED"}${candidate.line ? ` (L${candidate.line})` : ""}`;
-  return `${candidate.quantitative.level} — ${candidate.quantitative.lines ?? "NOT_MEASURED"} lignes / ${candidate.quantitative.bytes ?? "NOT_MEASURED"} octets`;
-}
-
-function triageRows(candidates, { documentation = false } = {}) {
-  if (candidates.length === 0) return ["_Aucun candidat dans cette projection._"];
-  const lines = [
-    "| Candidat | Niveau existant | Dépassement quantitatif | Problème mesuré | Décision architecturale humaine | Preuve / provenance |",
-    "| --- | --- | --- | --- | --- | --- |",
-  ];
-  for (const candidate of candidates) {
-    const detail = documentation ? `${candidate.detail}${candidate.lifecycle.length > 0 ? ` — ${candidate.lifecycle.join(" / ")}` : " — cycle NOT_STATED"}` : candidate.detail ?? "—";
-    lines.push(`| \`${escapeMarkdown(candidate.path)}\` | ${candidate.level} | ${escapeMarkdown(triageQuantitativeText(candidate))} | ${escapeMarkdown(detail)} | ${escapeMarkdown(candidate.decision)} | ${candidate.evidence} — ${escapeMarkdown(candidate.provenance)} |`);
-  }
-  return lines;
-}
-
-function decisionTriageRows(candidates) {
-  if (candidates.length === 0) return ["_Aucun candidat dans cette vue._"];
-  const lines = [
-    "| Rang | Priorité | Catégorie / finding | Fichiers | Bénéfice potentiel et preuve | Effort apparent | Prudence | Confiance / lacunes | Recommandation | Validations nécessaires |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-  ];
-  for (const candidate of candidates.slice(0, 10)) {
-    const benefit = `${candidate.benefitPotential.level} — ${candidate.benefitPotential.proof}`;
-    const measures = `fichiers=${candidate.benefitPotential.measures.files}, paires=${candidate.benefitPotential.measures.occurrencePairs ?? "NOT_APPLICABLE"}, lignes distinctes=${candidate.benefitPotential.measures.distinctLinesAcrossFiles ?? "NOT_ESTIMABLE"}`;
-    const confidence = `${candidate.confidence}${candidate.gaps.length > 0 ? ` — ${candidate.gaps.join(" ; ")}` : ""}`;
-    lines.push(`| ${candidate.rank} | ${candidate.proposedPriority} | \`${escapeMarkdown(candidate.auditCategory)} / ${escapeMarkdown(candidate.findingId)}\` | ${escapeMarkdown(candidate.files.join(", ") || "NOT_MEASURED")} | ${escapeMarkdown(`${benefit} (${measures})`)} | ${escapeMarkdown(candidate.effort.level)} | ${escapeMarkdown(candidate.prudence.level)} | ${escapeMarkdown(confidence)} | ${escapeMarkdown(candidate.recommendation)} | ${escapeMarkdown(candidate.validations.join(" ; "))} |`);
-  }
-  if (candidates.length > 10) lines.push("", `_Vue Markdown limitée aux 10 meilleurs candidats ; le JSON conserve les ${candidates.length} candidats._`);
-  return lines;
-}
-
-function renderTriageSummary(index) {
-  const triage = index.triage ?? buildQualityFileIndexTriage({ files: index.files, audits: index.audits, source: index.source, candidateGroups: index.candidateGroups });
-  const lines = [
-    "## Synthèse de triage",
-    "",
-    "Cette synthèse est une projection lisible du quality-index : elle ne crée ni score, ni seuil, ni verdict, ni décision de monolithe. Les niveaux sont ceux des mesures existantes ; `NOT_MEASURED` et `STALE_EVIDENCE` restent distincts de `PRESENT`. Les décisions humaines ne sont affichées que si elles sont déjà présentes dans l'index.",
-    "",
-    "### 1. Code",
-    "",
-    `État : **${triage.code.state}** — runtime et data/config ; ${triage.code.candidates.length} candidat(s), maximum 10.`,
-    "",
-    ...triageRows(triage.code.candidates),
-    "",
-    "### 2. Tests",
-    "",
-    `État : **${triage.tests.state}** — fichiers volumineux et problèmes structurels mesurés ; ${triage.tests.candidates.length} candidat(s), maximum 10.`,
-    "",
-    ...triageRows(triage.tests.candidates),
-    "",
-    "### 3. Documentation",
-    "",
-    `État : **${triage.documentation.state}** — ${triage.documentation.candidates.length} document(s) retenu(s), maximum 10 au total ; cycle de vie absent sur ${triage.documentation.missingLifecycle} document(s) retenu(s).`,
-    "",
-    "#### CURRENT / PLAN",
-    "",
-    ...triageRows(triage.documentation.currentPlan, { documentation: true }),
-    "",
-    "#### HISTORY / AUDIT",
-    "",
-    ...triageRows(triage.documentation.historyAudit, { documentation: true }),
-    "",
-    "Les documents sans marqueur de cycle de vie ne sont pas artificiellement classés CURRENT/PLAN ou HISTORY/AUDIT ; leur état reste `NOT_STATED` dans l’index détaillé.",
-    "",
-    "### 4. Fonctions",
-    "",
-    `État : **${triage.functions.state}** — dépassements functionLength et complexité présents dans les findings mesurés ; ${triage.functions.candidates.length} candidat(s), maximum 10.`,
-    "",
-    ...triageRows(triage.functions.candidates),
-    "",
-    `Preuves périmées conservées dans les findings détaillés : **${triage.functions.staleEvidenceCount ?? 0}**.`,
-    "",
-    `Provenance de la projection : **${escapeMarkdown(triage.provenance)}**. Les résultats détaillés restent accessibles dans FILE INDEX et les domaines d’audit ci-dessous.`,
-    "",
-    "### 5. Gains rapides et maîtrisés",
-    "",
-    "Classement informatif : `P1` + prudence `R1/R2` + effort `APPARENTLY_LIMITED` + confiance `HIGH` + recommandation `CORRECT`. Les lignes ci-dessous ne remplacent aucun verdict, seuil, baseline ou décision humaine.",
-    "",
-    ...decisionTriageRows(triage.decision?.views?.quickWins ?? []),
-    "",
-    "### 6. Corrections importantes sous revue renforcée",
-    "",
-    "Cette vue conserve les problèmes `P0/P2`, les périmètres `R3/R4`, les responsabilités indéterminées et les preuves manquantes. `REVIEW_REQUIRED` et `INVESTIGATE` signifient qu’une preuve supplémentaire est requise ; ils ne constituent pas un finding inventé.",
-    "",
-    ...decisionTriageRows(triage.decision?.views?.reinforcedReview ?? []),
-    "",
-    `Classement décisionnel : **${triage.decision?.candidates?.length ?? 0}** candidat(s) JSON, dont **${triage.decision?.views?.quickWins?.length ?? 0}** gain(s) rapide(s) et **${triage.decision?.views?.reinforcedReview?.length ?? 0}** revue(s) renforcée(s).`,
-    "",
-    ...(triage.decision?.limitations ?? []).map((limitation) => `- ${escapeMarkdown(limitation)}`),
-    "",
-  ];
-  return lines;
-}
-
-export function buildQualityFileIndexMarkdown(index) {
-  const lines = [
-    "# Quality Audit — index consolidé par fichier et domaine",
-    "",
-    `- SHA audité : \`${index.auditedHead}\``,
-    `- runId : \`${index.runId}\``,
-    `- Mode de projection : **${index.mode}**`,
-    `- Provenance globale : **${index.source.provenance}**`,
-    `- Verdict initial du run : **${index.source.initialStatus}**`,
-    `- Fichiers indexés : **${index.globalCounts.files}**`,
-    `- Groupes candidats relationnels : **${index.globalCounts.candidateGroups}**`,
-    "",
-    "La projection lit les cinq moteurs de gate, les audits auxiliaires de maintenabilité, sûreté typée/asynchrone, couverture détaillée, hotspots et testabilité, ainsi que la dimension documentaire du run identifié lorsqu'ils existent. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines.",
-    "",
-    ...renderTriageSummary(index),
-    "## États et audits",
-    "",
-    "| Audit | État | Verdict initial | Provenance |",
-    "| --- | --- | --- | --- |",
-  ];
-  for (const audit of QUALITY_INDEX_AUDITS) {
-    const summary = index.audits[audit === "top-heavy" ? "topHeavy" : audit === "dead-code" ? "deadCode" : audit === "type-safety" ? "typeSafety" : audit];
-    const source = index.source.sourceReports.find((entry) => entry.audit === audit);
-    lines.push(`| ${audit} | ${summary.state ?? "PRESENT"} | ${source?.status ?? "NOT_MEASURED"} | ${source?.readProvenance ?? "NOT_MEASURED"} |`);
-  }
-  lines.push(`| documentation-maintainability | ${index.audits.documentation.state} | ${index.source.documentation.status} | ${index.source.documentation.readProvenance} |`);
-  lines.push("", "## Top-heavy : verdict initial et réévaluation dérivée", "", "| Vue | État | Statut | Violations ratchet REVIEW |", "| --- | --- | --- | ---: |");
-  lines.push(`| Initiale | ${index.audits.topHeavy.initialVerdict.evaluation.state} | ${index.audits.topHeavy.initialVerdict.status} | ${index.audits.topHeavy.initialVerdict.evaluation.counts.reviewRatchetViolations ?? 0} |`);
-  lines.push(`| Dérivée | ${index.audits.topHeavy.derivedReevaluation.state} | ${index.audits.topHeavy.derivedReevaluation.status ?? "NOT_MEASURED"} | ${index.audits.topHeavy.derivedReevaluation.counts?.reviewRatchetViolations ?? 0} |`);
-  lines.push("", "## DOCUMENTATION MAINTAINABILITY", "", `- État : **${index.audits.documentation.state}**`, `- Raison : **${index.audits.documentation.reason ?? (index.audits.documentation.state === "PRESENT" ? "MEASURED" : index.source.documentation.reason ?? "NOT_MEASURED")}**`, `- Diagnostic : **${index.audits.documentation.error?.message ?? "—"}**`, `- Documents suivis : **${index.globalCounts.documentationFiles}**`, `- Surveillance : **${index.audits.documentation.summary?.surveillance ?? "NOT_MEASURED"}**`, `- REVIEW_REQUIRED : **${index.audits.documentation.summary?.reviewRequired ?? "NOT_MEASURED"}**`, `- ARCHITECTURE_REVIEW : **${index.audits.documentation.summary?.architectureReview ?? "NOT_MEASURED"}**`, `- Références internes invalides : **${index.audits.documentation.summary?.invalidReferences ?? "NOT_MEASURED"}**`, `- Références non vérifiées : **${index.globalCounts.documentationUnverifiedReferences ?? "NOT_MEASURED"}**`, "", "| Rang | Document | Niveau | Lignes | Plus grande section | Références invalides | Cycle de vie |", "| ---: | --- | --- | ---: | --- | ---: | --- |");
-  for (const [rank, document] of (index.audits.documentation.ranking ?? []).slice(0, 20).entries()) {
-    lines.push(`| ${rank + 1} | \`${escapeMarkdown(document.path)}\` | ${document.level} | ${document.lines} | ${document.largestSection ? `L${document.largestSection.startLine}-${document.largestSection.endLine} (${document.largestSection.lines}) : ${escapeMarkdown(document.largestSection.title)}` : "—"} | ${document.internalLinks?.invalid?.length ?? 0} | ${document.lifecycle?.statuses?.join(" / ") || "NOT_STATED"} |`);
-  }
-  lines.push("", "## HOTSPOTS", "", `- État : **${index.audits.hotspots.state}**`, `- Fichiers suivis examinés : **${index.audits.hotspots.trackedFilesExamined ?? "NOT_MEASURED"}**`, `- Fichiers rapportés : **${index.audits.hotspots.filesReported ?? index.audits.hotspots.measuredFiles ?? "NOT_MEASURED"}**`, `- Activité élevée : **${index.audits.hotspots.findingCounts?.highActivityFiles ?? "NOT_MEASURED"}**`, `- Dette structurelle : **${index.audits.hotspots.findingCounts?.structuralDebtFiles ?? "NOT_MEASURED"}**`, `- Disponibilité dette structurelle : **${index.audits.hotspots.structuralDebtAvailability?.state ?? "NOT_MEASURED"}**`, `- Candidats activité + dette : **${index.globalCounts.hotspotCandidates ?? "NOT_MEASURED"}**`, `- Récurrence des régressions : **${index.audits.hotspots.summary?.regressionRecurrence ?? "NOT_MEASURED"}**`, "", "L'activité Git est descriptive et n'est pas un défaut en soi. Les candidats combinent activité élevée et signaux de dette ; le couplage est joint depuis le graphe architectural exact lorsque disponible. Une dette structurelle n'est déclarée NONE que lorsque les rapports structurels attendus sont tous exploitables.");
-  lines.push("", "## TESTABILITY", "", `- État : **${index.audits.testability.state}**`, `- Domaines/modules mesurés : **${index.audits.testability.measuredDomains ?? "NOT_MEASURED"}**`, `- Domaines critiques sans preuve suffisante : **${index.audits.testability.criticalDomainsWithoutSufficientEvidence ?? "NOT_MEASURED"}**`, "", "Les preuves absentes, périmées ou non attribuables restent NOT_MEASURED. Aucune absence de fichier voisin et aucune correspondance fonction-test ne sont inventées.");
-  lines.push("", "## Couplage architectural", "", `- État : **${index.architecture?.state ?? "NOT_MEASURED"}**`, `- Imports : **${index.architecture?.graphSummary?.imports ?? "NOT_MEASURED"}**`, `- Frontières bloquantes : **${index.architecture?.boundary?.blocking?.length ?? "NOT_MEASURED"}**`, `- Imports internes non résolus : **${index.architecture?.graphSummary?.unresolvedInternalImports ?? "NOT_MEASURED"}**`, "", "Les métriques de centralité sont informatives ; seuls les findings de frontière explicitement interdits sont bloquants.");
-  lines.push("", "## COVERAGE", "", `- État : **${index.audits.coverage.state}**`, `- Seuil informatif couverture : **<${index.audits.coverage.thresholds?.coverageWarningPct ?? "NOT_MEASURED"}%**`, `- Seuil informatif duplication : **>${index.audits.coverage.thresholds?.duplicationWarningPct ?? "NOT_MEASURED"}%**`, `- Avertissements : **${index.audits.coverage.warnings?.length ?? "NOT_MEASURED"}**`, `- Fichiers avec branches non couvertes : **${index.audits.coverage.findingCounts?.uncoveredBranchFiles ?? "NOT_MEASURED"}**`, "", "Les quatre métriques (statements, branches, functions, lines) restent séparées. Les rapports absents, périmés ou non attestés restent NOT_MEASURED/EVIDENCE_UNVERIFIED ; aucun warning de seuil n'est fabriqué dans ce cas. Le classement complet des points de décision vient de LCOV BRDA ou des branches Cobertura réellement présentes.", "", "| Scope | État | Statements | Branches | Functions | Lines | Avertissements |", "| --- | --- | ---: | ---: | ---: | ---: | ---: |");
-  for (const scope of index.audits.coverage.scopes ?? []) {
-    const value = (name) => scope.metrics?.[name]?.state === "MEASURED" ? `${scope.metrics[name].pct}% (${scope.metrics[name].covered}/${scope.metrics[name].total})` : scope.metrics?.[name]?.state ?? "NOT_MEASURED";
-    lines.push(`| ${scope.scope} | ${scope.state} | ${value("statements")} | ${value("branches")} | ${value("functions")} | ${value("lines")} | ${scope.warnings?.length ?? 0} |`);
-  }
-  lines.push("", "### Top 20 fichiers par branches non couvertes", "", "| Rang | Scope | Fichier | Branches non couvertes | Lignes | Priorité |", "| ---: | --- | --- | ---: | --- | --- |");
-  for (const [rank, item] of (index.audits.coverage.scopes ?? []).flatMap((scope) => scope.files ?? []).filter((item) => item.uncoveredBranches > 0).slice(0, 20).entries()) lines.push(`| ${rank + 1} | ${item.scope} | \`${escapeMarkdown(item.path)}\` | ${item.uncoveredBranches} | ${item.uncoveredBranchLines.join(", ") || "—"} | ${item.priority} |`);
-  lines.push("", "## FILE INDEX", "", "| Fichier | Catégories d'audit | Domaines fonctionnels | Top-heavy | Complexité cyclomatique | Longueur de fonction | Complexité cognitive | Défaut local de maintenabilité | TYPE_SAFETY | ASYNC_SAFETY | Coverage | Hotspots | Testabilité | Dead-code | Duplication | Cycles | Documentation | Architecture |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
-  for (const file of index.files) {
-    lines.push(`| \`${escapeMarkdown(file.path)}\` | ${escapeMarkdown(file.auditCategories.join(", ") || "—")} | ${escapeMarkdown(file.functionalDomains.join(", ") || "—")} | ${stateLabel(file.findings.topHeavy)} | ${stateLabel(file.findings.complexity)} | ${stateLabel(file.findings.functionLength)} | ${stateLabel(file.findings.cognitiveComplexity)} | ${stateLabel(file.findings.localMaintainability)} | ${stateLabel(file.findings.typeSafety)} | ${stateLabel(file.findings.asyncSafety)} | ${stateLabel(file.findings.coverage)} | ${stateLabel(file.findings.hotspots)} | ${stateLabel(file.findings.testability)} | ${stateLabel(file.findings.deadCode)} | ${stateLabel(file.findings.duplication)} | ${stateLabel(file.findings.cycles)} | ${stateLabel(file.findings.documentation)} | ${stateLabel(file.metrics.architecture)} |`);
-  }
-  lines.push("", "## AUDIT CATEGORY INDEX", "", "Les catégories décrivent les familles de contrôles ; elles ne constituent pas des domaines fonctionnels.", "");
-  for (const domain of index.auditCategories) {
-    lines.push(`### ${domain.id}`, "", `Responsabilité : ${domain.responsibility}`, "", `- Fichiers : ${domain.files.length}`, `- Findings dédupliqués : ${domain.findingIds.length}`, `- Groupes candidats : ${domain.candidateGroups.length}`, "");
-    if (domain.coupling) {
-      lines.push(`- Fan-in runtime/type-only/tests : ${domain.coupling.runtimeFanIn}/${domain.coupling.typeOnlyFanIn}/${domain.coupling.testFanIn}`, `- Fan-out runtime/type-only/tests : ${domain.coupling.runtimeFanOut}/${domain.coupling.typeOnlyFanOut}/${domain.coupling.testFanOut}`, "");
-    }
-    if (domain.candidateGroups.length > 0) lines.push(`Groupes : ${domain.candidateGroups.map((id) => `\`${id}\``).join(", ")}`, "");
-  }
-  lines.push("## DOCUMENTATION DOMAIN INDEX", "", `État : **${index.documentationDomains.state}**`, index.documentationDomains.detail, "", "| Domaine | Fichiers | Cycle de vie | Niveaux | Références invalides |", "| --- | ---: | --- | --- | ---: |");
-  for (const domain of index.documentationDomains.items) {
-    lines.push(`| ${domain.id} | ${domain.files.length} | ${escapeMarkdown(Object.entries(domain.lifecycleStatuses).map(([status, count]) => `${status}:${count}`).join(", ") || "NOT_STATED")} | ${escapeMarkdown(Object.entries(domain.levels).map(([level, count]) => `${level}:${count}`).join(", "))} | ${domain.invalidReferences} |`);
-  }
-  lines.push("", "## FUNCTIONAL DOMAIN INDEX", "", `État : **${index.functionalDomains.state}**`, index.functionalDomains.detail, "");
-  for (const domain of index.functionalDomains.items) {
-    lines.push(`### ${domain.id}`, "", `Responsabilité : ${domain.responsibility}`, "", `- Fichiers : ${domain.files.length}`, `- Relations de contrôle : ${domain.findingIds.length}`, "");
-    lines.push(`- Findings qualité : ${domain.qualityFindingIds.length}`, `- Violations de frontières : ${domain.boundaryViolationIds.length}`, `- Violations de frontières bloquantes : ${domain.blockingBoundaryViolationIds.length}`, `- Relations architecturales informatives : ${domain.informativeRelationIds.length}`, "");
-    if (domain.findingIds.length > 0) lines.push(`- Références FILE INDEX : ${domain.findingIds.map((id) => `\`${id}\``).join(", ")}`, "");
-    if (domain.informativeRelationIds.length > 0) lines.push(`- Références architecturales informatives : ${domain.informativeRelationIds.map((id) => `\`${id}\``).join(", ")}`, "");
-    if (domain.coupling) {
-      lines.push(`- Fan-in runtime/type-only/tests : ${domain.coupling.runtimeFanIn}/${domain.coupling.typeOnlyFanIn}/${domain.coupling.testFanIn}`, `- Fan-out runtime/type-only/tests : ${domain.coupling.runtimeFanOut}/${domain.coupling.typeOnlyFanOut}/${domain.coupling.testFanOut}`, "");
-    }
-  }
-  lines.push("## Limites conservées", "", ...index.limitations.map((limitation) => `- ${limitation}`), "");
-  return `${lines.join("\n")}\n`;
-}
-
-function crc32(buffer) {
-  let crc = 0xffffffff;
-  for (const byte of buffer) {
-    crc ^= byte;
-    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function u16(value) { const buffer = Buffer.alloc(2); buffer.writeUInt16LE(value, 0); return buffer; }
-function u32(value) { const buffer = Buffer.alloc(4); buffer.writeUInt32LE(value >>> 0, 0); return buffer; }
-
-function createZip(entries) {
-  const localParts = [];
-  const centralParts = [];
-  let offset = 0;
-  for (const entry of entries) {
-    const name = Buffer.from(entry.name.replaceAll("\\", "/"), "utf8");
-    const source = Buffer.isBuffer(entry.data) ? entry.data : Buffer.from(entry.data);
-    const compressed = zlib.deflateRawSync(source);
-    const crc = crc32(source);
-    const local = Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), u16(20), u16(0x800), u16(8), u16(0), u16(0), u32(crc), u32(compressed.length), u32(source.length), u16(name.length), u16(0), name, compressed]);
-    localParts.push(local);
-    const central = Buffer.concat([Buffer.from([0x50, 0x4b, 0x01, 0x02]), u16(20), u16(20), u16(0x800), u16(8), u16(0), u16(0), u32(crc), u32(compressed.length), u32(source.length), u16(name.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset), name]);
-    centralParts.push(central);
-    offset += local.length;
-  }
-  const central = Buffer.concat(centralParts);
-  const locals = Buffer.concat(localParts);
-  const end = Buffer.concat([Buffer.from([0x50, 0x4b, 0x05, 0x06]), u16(0), u16(0), u16(entries.length), u16(entries.length), u32(central.length), u32(locals.length), u16(0)]);
-  return Buffer.concat([locals, central, end]);
-}
-
-function zipEntryNames(buffer) {
-  const end = buffer.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
-  if (end < 0) throw new Error("ZIP invalide: end of central directory absent.");
-  const count = buffer.readUInt16LE(end + 10);
-  const centralOffset = buffer.readUInt32LE(end + 16);
-  const names = [];
-  let cursor = centralOffset;
-  for (let index = 0; index < count; index += 1) {
-    if (buffer.readUInt32LE(cursor) !== 0x02014b50) throw new Error("ZIP invalide: entrée centrale absente.");
-    const nameLength = buffer.readUInt16LE(cursor + 28);
-    names.push(buffer.subarray(cursor + 46, cursor + 46 + nameLength).toString("utf8"));
-    cursor += 46 + nameLength + buffer.readUInt16LE(cursor + 30) + buffer.readUInt16LE(cursor + 32);
-  }
-  return names;
-}
-
 export async function generateQualityFileIndex({ root = REPOSITORY_ROOT, auditedSha, runId, mode = "OFFLINE", generatedAt = new Date().toISOString(), includeBundle = false, architecture = null, fsApi = fs } = {}) {
   const run = readOfflineQualityRun({ root, auditedSha, runId, fsApi });
   const index = buildQualityFileIndex({ run, mode, generatedAt, architecture });
   const markdown = buildQualityFileIndexMarkdown(index);
-  const paths = createQualityProjectionPaths({ root, auditedHead: auditedSha, runId });
-  fsApi.mkdirSync(paths.shaRoot, { recursive: true });
-  writeNewFile(paths.index, `${JSON.stringify(index, null, 2)}\n`, fsApi);
-  writeNewFile(paths.summary, markdown, fsApi);
-
-  let bundle = null;
-  if (includeBundle) {
-    const originalEntries = run.sourceFiles.map((filePath) => ({
-      name: path.relative(run.shaRoot, filePath).replaceAll("\\", "/"),
-      data: fsApi.readFileSync(filePath),
-    }));
-    const entries = [
-      ...originalEntries,
-      { name: path.relative(run.shaRoot, paths.index).replaceAll("\\", "/"), data: fsApi.readFileSync(paths.index) },
-      { name: path.relative(run.shaRoot, paths.summary).replaceAll("\\", "/"), data: fsApi.readFileSync(paths.summary) },
-    ].sort((left, right) => left.name.localeCompare(right.name));
-    const zip = createZip(entries);
-    const names = zipEntryNames(zip);
-    const expected = entries.map((entry) => entry.name);
-    if (JSON.stringify(names) !== JSON.stringify(expected)) throw new Error("ZIP incomplet ou ordre des chemins incohérent.");
-    writeNewFile(paths.bundle, zip, fsApi);
-    bundle = { path: paths.bundle, entries: expected, bytes: zip.length };
-  }
-  return { run, index, markdown, paths, bundle };
-}
-
-function option(args, name) {
-  const prefix = `--${name}=`;
-  const value = args.find((arg) => arg.startsWith(prefix));
-  return value ? value.slice(prefix.length) : null;
+  const output = writeQualityIndexOutputs({ run, index, markdown, root, auditedSha, runId, includeBundle, fsApi });
+  return { run, index, markdown, ...output };
 }
 
 export async function main(args = process.argv.slice(2)) {
-  try {
-    if (!args.includes("--offline")) throw new Error("Le mode offline exige --offline.");
-    const auditedSha = option(args, "sha");
-    const runId = option(args, "run-id");
-    if (!auditedSha || !runId) throw new Error("Usage: node scripts/reports/quality-file-index.mjs --offline --sha=<SHA> --run-id=<runId> [--bundle]");
-    const result = await generateQualityFileIndex({ auditedSha, runId, includeBundle: args.includes("--bundle") });
-    console.log(`Quality file index généré: ${result.paths.index}`);
-    console.log(`Quality domain summary générée: ${result.paths.summary}`);
-    if (result.bundle) console.log(`ZIP généré: ${result.bundle.path}`);
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exitCode = 1;
-  }
+  return runQualityFileIndexCli({ args, generate: generateQualityFileIndex });
 }
 
-if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) await main();
+if (process.argv[1]?.replaceAll("\\", "/").endsWith("/scripts/reports/quality-file-index.mjs")) await main();
