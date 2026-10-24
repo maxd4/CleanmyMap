@@ -177,6 +177,7 @@ describe("admin operation audit", () => {
     expect(items[0]?.operationId).toBe("op-1");
     expect(items[0]?.actorLabel).toBe("Maxence Deroome (@maxence_deroome)");
     expect(items[0]?.details["editedFields"]).toEqual(["locationLabel", "notes"]);
+    expect(readLocalRecordStoreMock).not.toHaveBeenCalled();
   });
 
   it("falls back to local records when Supabase normalization rejects an invalid row", async () => {
@@ -249,6 +250,126 @@ describe("admin operation audit", () => {
     const items = await listAdminOperationAudit();
 
     expect(items[0]?.operationId).toBe("local-op");
+    expect(readLocalRecordStoreMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("propagates an asynchronous actor label failure when local fallback is forbidden", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createAuditClientMock({
+        auditRows: [
+          {
+            operation_id: "op-1",
+            at: "2026-06-20T10:00:00Z",
+            actor_user_id: "admin-1",
+            operation_type: "moderation",
+            outcome: "success",
+            target_id: "action-1",
+            details: {},
+          },
+        ],
+        profiles: [],
+        profilesError: new Error("profile lookup failed"),
+      }),
+    );
+
+    const { listAdminOperationAudit } = await import("./operation-audit");
+
+    await expect(listAdminOperationAudit()).rejects.toThrow("profile lookup failed");
+    expect(readLocalRecordStoreMock).not.toHaveBeenCalled();
+  });
+
+  it("preserves targetId and limit on the Supabase path", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createAuditClientMock({
+        auditRows: [
+          {
+            operation_id: "op-1",
+            at: "2026-06-20T10:00:00Z",
+            actor_user_id: "admin-1",
+            operation_type: "moderation",
+            outcome: "success",
+            target_id: "action-1",
+            details: {},
+          },
+          {
+            operation_id: "op-2",
+            at: "2026-06-20T09:00:00Z",
+            actor_user_id: "admin-2",
+            operation_type: "moderation",
+            outcome: "success",
+            target_id: "action-1",
+            details: {},
+          },
+          {
+            operation_id: "op-other",
+            at: "2026-06-20T08:00:00Z",
+            actor_user_id: "admin-3",
+            operation_type: "moderation",
+            outcome: "success",
+            target_id: "action-2",
+            details: {},
+          },
+        ],
+        profiles: [],
+      }),
+    );
+
+    const { listAdminOperationAudit } = await import("./operation-audit");
+    const items = await listAdminOperationAudit(1, "action-1");
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.operationId).toBe("op-1");
+    expect(items[0]?.targetId).toBe("action-1");
+    expect(readLocalRecordStoreMock).not.toHaveBeenCalled();
+  });
+
+  it("preserves targetId and limit on the local fallback path", async () => {
+    runtimeState.allowFallback = true;
+    readLocalRecordStoreMock.mockResolvedValue({
+      updatedAt: "2026-06-20T11:00:00Z",
+      records: [
+        {
+          operationId: "local-op-1",
+          at: "2026-06-20T11:00:00Z",
+          actorUserId: "local-admin-1",
+          operationType: "admin_operation",
+          outcome: "success",
+          targetId: "action-local",
+          details: {},
+        },
+        {
+          operationId: "local-op-2",
+          at: "2026-06-19T11:00:00Z",
+          actorUserId: "local-admin-2",
+          operationType: "admin_operation",
+          outcome: "success",
+          targetId: "action-local",
+          details: {},
+        },
+        {
+          operationId: "local-other",
+          at: "2026-06-18T11:00:00Z",
+          actorUserId: "local-admin-3",
+          operationType: "admin_operation",
+          outcome: "success",
+          targetId: "action-other",
+          details: {},
+        },
+      ],
+    });
+    getSupabaseServerClientMock.mockReturnValue(
+      createAuditClientMock({
+        auditRows: [{ operation_id: "invalid-row", target_id: "action-local" }],
+        profiles: [],
+      }),
+    );
+
+    const { listAdminOperationAudit } = await import("./operation-audit");
+    const items = await listAdminOperationAudit(1, " action-local ");
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.operationId).toBe("local-op-1");
+    expect(items[0]?.targetId).toBe("action-local");
     expect(readLocalRecordStoreMock).toHaveBeenCalledTimes(1);
   });
 });
