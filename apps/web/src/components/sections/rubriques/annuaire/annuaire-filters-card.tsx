@@ -26,6 +26,7 @@ interface AnnuaireFiltersCardProps {
   zoneFilter: ZoneFilter;
   setZoneFilter: (val: ZoneFilter) => void;
   setActorCardsPage: (val: number | ((prev: number) => number)) => void;
+  resetFilters: () => void;
   targetArrondissement: number | null;
   resultsCount: number;
 }
@@ -43,6 +44,7 @@ export function AnnuaireFiltersCard({
   zoneFilter,
   setZoneFilter,
   setActorCardsPage,
+  resetFilters,
   targetArrondissement,
   resultsCount,
 }: AnnuaireFiltersCardProps) {
@@ -222,12 +224,7 @@ export function AnnuaireFiltersCard({
                     type="button"
                     tone="secondary"
                     variant="pill"
-                    onClick={() => {
-                      setZoneFilter("all");
-                      setFilterKind("all");
-                      setFilterContribution("all");
-                      setSearchTerm("");
-                    }}
+                    onClick={resetFilters}
                     className="flex items-center gap-3 px-6 py-3 cmm-text-caption font-black uppercase tracking-[0.2em] transition-all"
                   >
                     <RotateCcw size={14} />

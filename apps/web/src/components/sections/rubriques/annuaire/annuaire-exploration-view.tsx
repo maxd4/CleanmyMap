@@ -147,6 +147,7 @@ function AnnuaireSearchPanel({
   zoneFilter,
   setZoneFilter,
   setActorCardsPage,
+  resetFilters,
   targetArrondissement,
   resultsCount,
 }: {
@@ -164,6 +165,7 @@ function AnnuaireSearchPanel({
   zoneFilter: AnnuaireLogic["zoneFilter"];
   setZoneFilter: AnnuaireLogic["setZoneFilter"];
   setActorCardsPage: AnnuaireLogic["setActorCardsPage"];
+  resetFilters: AnnuaireLogic["resetFilters"];
   targetArrondissement: AnnuaireLogic["targetArrondissement"];
   resultsCount: number;
 }) {
@@ -286,6 +288,7 @@ function AnnuaireSearchPanel({
                 zoneFilter={zoneFilter}
                 setZoneFilter={setZoneFilter}
                 setActorCardsPage={setActorCardsPage}
+                resetFilters={resetFilters}
                 targetArrondissement={targetArrondissement}
                 resultsCount={resultsCount}
               />
@@ -319,6 +322,7 @@ export function AnnuaireExplorationView({
     setZoneFilter,
     actorCardsPage,
     setActorCardsPage,
+    resetFilters,
     targetArrondissement,
     enrichedEntries,
     sortedAndFilteredEntries,
@@ -361,6 +365,7 @@ export function AnnuaireExplorationView({
           zoneFilter={zoneFilter}
           setZoneFilter={setZoneFilter}
           setActorCardsPage={setActorCardsPage}
+          resetFilters={resetFilters}
           targetArrondissement={targetArrondissement}
           resultsCount={sortedAndFilteredEntries.length}
         />
