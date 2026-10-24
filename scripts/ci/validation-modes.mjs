@@ -2,6 +2,7 @@
 
 import {
   getVitestFiles,
+  isDependencyGraphRelevantFile,
   isBuildRelevantFile,
   isWebRelevantFile,
 } from "../checks/validation-policy.mjs";
@@ -129,14 +130,6 @@ function isRegressionRelevantFile(file) {
 function isLockfileRelevantFile(file) {
   const normalized = normalizePath(file);
   return normalized === "package-lock.json" || normalized.endsWith("/package-lock.json");
-}
-
-function isDependencyGraphRelevantFile(file) {
-  const normalized = normalizePath(file);
-  return normalized === "package.json"
-    || normalized.endsWith("/package.json")
-    || normalized === "package-lock.json"
-    || normalized.endsWith("/package-lock.json");
 }
 
 function isWebRuntimeRelevantFile(file) {
@@ -270,11 +263,7 @@ function addFullPlanChecks(checks) {
   }
 }
 
-export function createModeValidationPlan({
-  mode = "FAST",
-  candidateScope = "WORKTREE",
-  changedFiles = [],
-} = {}) {
+function normalizePlanInput({ mode, candidateScope, changedFiles }) {
   const normalizedMode = String(mode).toUpperCase();
   const normalizedScope = String(candidateScope).toUpperCase();
   if (!(normalizedMode in VALIDATION_MODE_BUDGETS)) {
@@ -283,39 +272,70 @@ export function createModeValidationPlan({
   if (!["WORKTREE", "STAGED"].includes(normalizedScope)) {
     throw new Error(`Unsupported candidate scope: ${candidateScope}`);
   }
+  return {
+    normalizedMode,
+    normalizedScope,
+    files: [...new Set(changedFiles.map(normalizePath))],
+  };
+}
 
-  const files = [...new Set(changedFiles.map(normalizePath))];
-  const full = normalizedMode === "FULL";
+function classifyChangedFiles(files) {
   const docsRelevant = files.some(isDocumentationFile);
-  const pagesSiteRelevant = files.some(isPagesSiteFile);
-  const webRelevant = files.some(isWebRelevantFile);
   const webRuntimeRelevant = files.some(isWebRuntimeRelevantFile);
-  const webSourceRelevant = files.some(isWebSourceFile);
-  const motionRelevant = files.some(isMotionRelevantFile);
-  const buildRelevant = files.some(isBuildRelevantFile);
   const scriptsRelevant = files.some(isScriptRelevantFile);
-  const pythonRelevant = files.some(isPythonRelevantFile);
-  const supabaseRelevant = files.some(isSupabaseRelevantFile);
-  const migrationRelevant = files.some(isMigrationRelevantFile);
-  const securityRelevant = files.some(isSecurityRelevantFile);
-  const semgrepRelevant = files.some(isSemgrepRelevantFile);
-  const regressionRelevant = files.some(isRegressionRelevantFile);
-  const githubRelevant = files.some((file) => normalizePath(file).startsWith(".github/"));
   const mobileRelevant = files.some(isMobileRelevantFile);
-  const lockfileRelevant = files.some(isLockfileRelevantFile);
-  const dependencyGraphRelevant = files.some(isDependencyGraphRelevantFile);
-  const architectureImportRelevant = files.some(isArchitectureImportRelevantFile);
-  const deadCodeRelevant =
-    webRuntimeRelevant ||
-    scriptsRelevant ||
-    mobileRelevant ||
-    lockfileRelevant ||
-    files.includes("package.json") ||
-    files.includes("scripts/knip.json");
-  const checks = [];
-  const deduplicated = [];
-  const migrationContracts = resolveMigrationContracts(files);
+  return {
+    docsRelevant,
+    pagesSiteRelevant: files.some(isPagesSiteFile),
+    webRelevant: files.some(isWebRelevantFile),
+    webRuntimeRelevant,
+    webSourceRelevant: files.some(isWebSourceFile),
+    motionRelevant: files.some(isMotionRelevantFile),
+    buildRelevant: files.some(isBuildRelevantFile),
+    scriptsRelevant,
+    pythonRelevant: files.some(isPythonRelevantFile),
+    supabaseRelevant: files.some(isSupabaseRelevantFile),
+    migrationRelevant: files.some(isMigrationRelevantFile),
+    securityRelevant: files.some(isSecurityRelevantFile),
+    semgrepRelevant: files.some(isSemgrepRelevantFile),
+    regressionRelevant: files.some(isRegressionRelevantFile),
+    githubRelevant: files.some((file) => file.startsWith(".github/")),
+    mobileRelevant,
+    lockfileRelevant: files.some(isLockfileRelevantFile),
+    dependencyGraphRelevant: files.some(isDependencyGraphRelevantFile),
+    architectureImportRelevant: files.some(isArchitectureImportRelevantFile),
+    deadCodeRelevant: webRuntimeRelevant
+      || scriptsRelevant
+      || mobileRelevant
+      || files.includes("package.json")
+      || files.includes("scripts/knip.json"),
+  };
+}
 
+function createFullDomains(domains) {
+  return {
+    ...domains,
+    webRelevant: true,
+    webRuntimeRelevant: true,
+    webSourceRelevant: true,
+    motionRelevant: true,
+    buildRelevant: true,
+    scriptsRelevant: true,
+    pythonRelevant: true,
+    supabaseRelevant: true,
+    migrationRelevant: true,
+    securityRelevant: true,
+    semgrepRelevant: true,
+    regressionRelevant: true,
+    githubRelevant: true,
+    mobileRelevant: true,
+    lockfileRelevant: true,
+    dependencyGraphRelevant: true,
+    deadCodeRelevant: true,
+  };
+}
+
+function addInitialChecks({ checks, normalizedScope }) {
   addCheck(checks, {
     id: "diff-check",
     label: "Git diff --check",
@@ -327,7 +347,6 @@ export function createModeValidationPlan({
     },
     candidateScope: normalizedScope,
   });
-
   addCheck(checks, {
     id: "file-naming",
     label: "Convention de nommage des fichiers",
@@ -335,63 +354,33 @@ export function createModeValidationPlan({
     critical: true,
     command: npmCommand("check:file-naming"),
   });
+}
 
-  if (full) {
-    if (normalizedScope === "WORKTREE") {
-      addCheck(checks, {
-        id: "diff-check-staged",
-        label: "Git diff --cached --check",
-        estimatedSeconds: 1,
-        critical: true,
-        command: { executable: "git", args: ["diff", "--cached", "--check"] },
-        candidateScope: "STAGED",
-      });
-    }
-    addFullCheck(checks, {
-      id: "security-secrets",
-      label: "Audit des secrets",
-      estimatedSeconds: 5,
-      command: npmCommand("security:secrets"),
-    });
-    addFullPlanChecks(checks);
-    deduplicated.push(
-      { id: "test:security", status: "ALREADY_PROVEN", reason: "couvert par test:coverage + FULL_SUITE_INCLUDE_GLOBS" },
-      { id: "test:regression-gates", status: "ALREADY_PROVEN", reason: "couvert par test:coverage + FULL_SUITE_INCLUDE_GLOBS" },
-    );
-
-    const domains = Object.freeze({
-      docsRelevant: files.some(isDocumentationFile),
-      pagesSiteRelevant: files.some(isPagesSiteFile),
-      webRelevant: true,
-      webRuntimeRelevant: true,
-      webSourceRelevant: true,
-      motionRelevant: true,
-      buildRelevant: true,
-      scriptsRelevant: true,
-      pythonRelevant: true,
-      supabaseRelevant: true,
-      migrationRelevant: true,
-      securityRelevant: true,
-      semgrepRelevant: true,
-      regressionRelevant: true,
-      githubRelevant: true,
-      mobileRelevant: true,
-      lockfileRelevant: true,
-      dependencyGraphRelevant: true,
-      deadCodeRelevant: true,
-    });
-    return Object.freeze({
-      mode: normalizedMode,
-      candidateScope: normalizedScope,
-      changedFiles: files,
-      domains,
-      budgetSeconds: null,
-      plannedSeconds: checks.reduce((total, check) => total + check.estimatedSeconds, 0),
-      checks: Object.freeze(checks),
-      deduplicated: Object.freeze(deduplicated),
+function addFullModeChecks({ checks, deduplicated, normalizedScope }) {
+  if (normalizedScope === "WORKTREE") {
+    addCheck(checks, {
+      id: "diff-check-staged",
+      label: "Git diff --cached --check",
+      estimatedSeconds: 1,
+      critical: true,
+      command: { executable: "git", args: ["diff", "--cached", "--check"] },
+      candidateScope: "STAGED",
     });
   }
+  addFullCheck(checks, {
+    id: "security-secrets",
+    label: "Audit des secrets",
+    estimatedSeconds: 5,
+    command: npmCommand("security:secrets"),
+  });
+  addFullPlanChecks(checks);
+  deduplicated.push(
+    { id: "test:security", status: "ALREADY_PROVEN", reason: "couvert par test:coverage + FULL_SUITE_INCLUDE_GLOBS" },
+    { id: "test:regression-gates", status: "ALREADY_PROVEN", reason: "couvert par test:coverage + FULL_SUITE_INCLUDE_GLOBS" },
+  );
+}
 
+function addFastFoundationalChecks({ checks, normalizedScope, semgrepRelevant }) {
   if (semgrepRelevant) {
     addCheck(checks, {
       id: "semgrep-architecture",
@@ -421,78 +410,84 @@ export function createModeValidationPlan({
       normalizedScope === "STAGED" ? ["--", "--staged-only"] : [],
     ),
   });
+}
 
-  if (architectureImportRelevant) {
-    addCheck(checks, {
-      id: "architecture-import-boundary",
-      label: "Graphe et frontières d'import",
-      estimatedSeconds: 15,
-      critical: true,
-      command: npmCommand("check:architecture-import-boundary"),
-    });
-  }
+function addArchitectureImportCheck({ checks, relevant }) {
+  if (!relevant) return;
+  addCheck(checks, {
+    id: "architecture-import-boundary",
+    label: "Graphe et frontières d'import",
+    estimatedSeconds: 15,
+    critical: true,
+    command: npmCommand("check:architecture-import-boundary"),
+  });
+}
 
-  if (docsRelevant) {
-    addCheck(checks, {
-      id: "documentation-governance",
-      label: "Gouvernance documentaire",
-      estimatedSeconds: 5,
-      critical: true,
-      command: npmCommand("check:doc-governance"),
-    });
-  }
-  if (pagesSiteRelevant) {
-    addCheck(checks, {
-      id: "pages-site-drift",
-      label: "Dérive pages_site",
-      estimatedSeconds: 5,
-      critical: true,
-      command: npmCommand("check:pages-site-drift"),
-    });
-  }
-  if (githubRelevant) {
-    addCheck(checks, {
-      id: "github-actions-security",
-      label: "Sécurité GitHub Actions",
-      estimatedSeconds: 5,
-      critical: true,
-      command: npmCommand("check:github-actions"),
-    });
-  }
-  if (lockfileRelevant) {
-    addCheck(checks, {
-      id: "lockfile-policy",
-      label: "Politique lockfile",
-      estimatedSeconds: 4,
-      critical: true,
-      command: npmCommand("check:lockfile-policy"),
-    });
-  }
-  if (dependencyGraphRelevant) {
-    addCheck(checks, {
-      id: "dependency-audit",
-      label: "Audit des dépendances npm",
-      estimatedSeconds: 15,
-      critical: true,
-      command: npmCommand("security:dependencies"),
-    });
-  }
-  if (full && files.length > 0) {
-    addCheck(checks, {
-      id: "root-file-hygiene",
-      label: "Hygiène des fichiers racine",
-      estimatedSeconds: 5,
-      critical: true,
-      command: npmCommand("check:root-files"),
-    });
-    addCheck(checks, {
-      id: "stack-documentation-drift",
-      label: "Dérive stack/documentation",
-      estimatedSeconds: 5,
-      critical: true,
-      command: npmCommand("check:stack-doc-drift"),
-    });
-  }
+function addDocumentationChecks({ checks, relevant }) {
+  if (!relevant) return;
+  addCheck(checks, {
+    id: "documentation-governance",
+    label: "Gouvernance documentaire",
+    estimatedSeconds: 5,
+    critical: true,
+    command: npmCommand("check:doc-governance"),
+  });
+}
+
+function addPagesSiteCheck({ checks, relevant }) {
+  if (!relevant) return;
+  addCheck(checks, {
+    id: "pages-site-drift",
+    label: "Dérive pages_site",
+    estimatedSeconds: 5,
+    critical: true,
+    command: npmCommand("check:pages-site-drift"),
+  });
+}
+
+function addGitHubActionsCheck({ checks, relevant }) {
+  if (!relevant) return;
+  addCheck(checks, {
+    id: "github-actions-security",
+    label: "Sécurité GitHub Actions",
+    estimatedSeconds: 5,
+    critical: true,
+    command: npmCommand("check:github-actions"),
+  });
+}
+
+function addLockfileCheck({ checks, relevant }) {
+  if (!relevant) return;
+  addCheck(checks, {
+    id: "lockfile-policy",
+    label: "Politique lockfile",
+    estimatedSeconds: 4,
+    critical: true,
+    command: npmCommand("check:lockfile-policy"),
+  });
+}
+
+function addDependencyAuditCheck({ checks, relevant }) {
+  if (!relevant) return;
+  addCheck(checks, {
+    id: "dependency-audit",
+    label: "Audit des dépendances npm",
+    estimatedSeconds: 15,
+    critical: true,
+    command: npmCommand("security:dependencies"),
+  });
+}
+
+function addFastRepositoryChecks({ checks, domains }) {
+  addArchitectureImportCheck({ checks, relevant: domains.architectureImportRelevant });
+  addDocumentationChecks({ checks, relevant: domains.docsRelevant });
+  addPagesSiteCheck({ checks, relevant: domains.pagesSiteRelevant });
+  addGitHubActionsCheck({ checks, relevant: domains.githubRelevant });
+  addLockfileCheck({ checks, relevant: domains.lockfileRelevant });
+  addDependencyAuditCheck({ checks, relevant: domains.dependencyGraphRelevant });
+}
+
+function addFastScriptChecks({ checks, files, scriptsRelevant, pythonRelevant }) {
   if (scriptsRelevant) {
     const scriptTests = resolveAssociatedScriptTestFiles(files);
     if (scriptTests.length > 0) {
@@ -515,226 +510,136 @@ export function createModeValidationPlan({
       command: { executable: process.execPath, args: ["scripts/ci/run-python-tests.mjs"] },
     });
   }
-  if (mobileRelevant) {
-    addCheck(checks, {
-      id: "mobile-typecheck",
-      label: "Typecheck mobile",
-      estimatedSeconds: 20,
-      critical: true,
-      command: npmCommand("mobile:typecheck"),
-    });
-    addCheck(checks, {
-      id: "mobile-test",
-      label: "Vitest mobile",
-      estimatedSeconds: 20,
-      critical: true,
-      command: npmCommand("mobile:test"),
-    });
-    addCheck(checks, {
-      id: "mobile-security",
-      label: "Tests de sécurité mobile",
-      estimatedSeconds: 15,
-      critical: true,
-      command: npmCommand("mobile:security"),
-    });
-    addCheck(checks, {
-      id: "mobile-lint",
-      label: "ESLint mobile",
-      estimatedSeconds: 20,
-      critical: true,
-      command: npmCommand("mobile:lint"),
-    });
-    if (full) {
-      if (!webSourceRelevant) {
-        addCheck(checks, {
-          id: "quality-top-heavy-mobile",
-          label: "Qualité des fichiers lourds mobile",
-          estimatedSeconds: 5,
-          critical: true,
-          command: npmCommand("quality:top-heavy", ["--roots=apps/mobile"]),
-        });
-        addCheck(checks, {
-          id: "quality-complexity-mobile",
-          label: "Ratchet complexité/longueur mobile",
-          estimatedSeconds: 45,
-          critical: true,
-          command: npmCommand("quality:complexity", ["--roots=apps/mobile"]),
-        });
-      }
-      addCheck(checks, {
-        id: "quality-coverage-mobile",
-        label: "Couverture mobile + ratchet",
-        estimatedSeconds: 30,
-        critical: true,
-        command: npmCommand("quality:mobile-coverage"),
-      });
-    }
-  }
-  if (supabaseRelevant) {
-    addCheck(checks, {
-      id: "supabase-migration-tree",
-      label: "Arbre des migrations Supabase",
-      estimatedSeconds: 5,
-      critical: true,
-      command: npmCommand("audit:supabase-migration-trees"),
-    });
-  }
-  if (migrationRelevant) {
-    const migrationVitestTests = migrationContracts.flatMap((entry) => entry.vitestTests);
-    for (const contract of migrationContracts.flatMap((entry) => entry.scriptTests)) {
-      const contractName = contract.split("/").at(-1).replace(/\.test\.mjs$/, "");
-      addCheck(checks, {
-        id: `${contractName}`,
-        label: `Contrat migration ${contractName}`,
-        estimatedSeconds: 10,
-        critical: true,
-        command: { executable: "node", args: ["--test", contract] },
-        contractTest: contract,
-      });
-    }
-    if (full && webRuntimeRelevant) {
-      for (const testFile of migrationVitestTests) {
-        deduplicated.push({
-          id: `migration-contract:${testFile}`,
-          status: "ALREADY_PROVEN",
-          reason: "couvert par vitest-full + quality:coverage",
-        });
-      }
-    } else {
-      addTargetedVitest(checks, migrationVitestTests, 25);
-    }
-  }
+}
 
-  if (webRuntimeRelevant) {
-    if (motionRelevant) {
-      addCheck(checks, {
-        id: "check:motion",
-        label: "Gouvernance Motion/reveal",
-        estimatedSeconds: 5,
-        critical: true,
-        command: npmCommand("check:motion"),
-      });
-    }
-    if (full) {
-      addCheck(checks, {
-        id: "vercel-ci-audit",
-        label: "Audit Vercel CI",
-        estimatedSeconds: 10,
-        critical: true,
-        command: npmCommand("audit:vercel:ci"),
-      });
-    }
-    if (full) {
-      addCheck(checks, {
-        id: "typecheck",
-        label: "Typecheck web",
-        estimatedSeconds: 35,
-        critical: true,
-        command: npmCommand("typecheck"),
-      });
-      addCheck(checks, {
-        id: "lint",
-        label: "ESLint web",
-        estimatedSeconds: 45,
-        critical: true,
-        command: npmCommand("lint"),
-      });
-    } else {
-      const tsChanged = files.some(isTypeScriptFile);
-      if (tsChanged) {
-        addCheck(checks, {
-          id: "typecheck",
-          label: "Typecheck web",
-          estimatedSeconds: 35,
-          critical: true,
-          command: npmCommand("typecheck"),
-        });
-      }
-      if (webSourceRelevant) {
-        const lintFiles = files
-          .filter(
-            (file) =>
-              isWebSourceFile(file) &&
-              /\.(js|jsx|ts|tsx)$/.test(file) &&
-              fs.existsSync(file),
-          )
-          .map((file) => file.slice("apps/web/".length));
-        addCheck(checks, {
-          id: "lint-targeted",
-          label: "ESLint web ciblé",
-          estimatedSeconds: 15,
-          critical: true,
-          command: {
-            executable: "npx",
-            args: [
-              "eslint",
-              "--max-warnings=0",
-              "--config",
-              "apps/web/eslint.config.mjs",
-              ...(lintFiles.length > 0 ? lintFiles.map((file) => `apps/web/${file}`) : ["apps/web/src"]),
-            ],
-          },
-        });
-      }
-    }
-    if (full) {
-      addCheck(checks, {
-        id: "vitest-full",
-        label: "Vitest Web complet + couverture",
-        estimatedSeconds: 190,
-        critical: true,
-        command: npmCommand("quality:coverage"),
-      });
-      if (buildRelevant) {
-        addCheck(checks, {
-          id: "build",
-          label: "Build production",
-          estimatedSeconds: 150,
-          critical: true,
-          command: npmCommand("build"),
-        });
-      }
-      deduplicated.push(
-        { id: "test:security", status: "ALREADY_PROVEN", reason: "couvert par vitest-full + quality:coverage" },
-        { id: "test:regression-gates", status: "ALREADY_PROVEN", reason: "couvert par vitest-full + quality:coverage" },
-      );
-    } else {
-      const changedTests = resolveAssociatedWebTestFiles(files);
-      const targetedFiles = changedTests.filter(
-        (file) => !SECURITY_GROUP_FILES.has(file) && !REGRESSION_GROUP_FILES.has(file),
-      );
-      addTargetedVitest(checks, targetedFiles);
-    }
-  }
+function addFastMobileChecks({ checks, mobileRelevant }) {
+  if (!mobileRelevant) return;
+  addCheck(checks, {
+    id: "mobile-typecheck",
+    label: "Typecheck mobile",
+    estimatedSeconds: 20,
+    critical: true,
+    command: npmCommand("mobile:typecheck"),
+  });
+  addCheck(checks, {
+    id: "mobile-test",
+    label: "Vitest mobile",
+    estimatedSeconds: 20,
+    critical: true,
+    command: npmCommand("mobile:test"),
+  });
+  addCheck(checks, {
+    id: "mobile-security",
+    label: "Tests de sécurité mobile",
+    estimatedSeconds: 15,
+    critical: true,
+    command: npmCommand("mobile:security"),
+  });
+  addCheck(checks, {
+    id: "mobile-lint",
+    label: "ESLint mobile",
+    estimatedSeconds: 20,
+    critical: true,
+    command: npmCommand("mobile:lint"),
+  });
+}
 
-  if (full && (webRuntimeRelevant || mobileRelevant || scriptsRelevant)) {
+function addFastDatabaseChecks({ checks, supabaseRelevant }) {
+  if (!supabaseRelevant) return;
+  addCheck(checks, {
+    id: "supabase-migration-tree",
+    label: "Arbre des migrations Supabase",
+    estimatedSeconds: 5,
+    critical: true,
+    command: npmCommand("audit:supabase-migration-trees"),
+  });
+}
+
+function addFastMigrationChecks({ checks, migrationRelevant, migrationContracts }) {
+  if (!migrationRelevant) return;
+  const migrationVitestTests = migrationContracts.flatMap((entry) => entry.vitestTests);
+  for (const contract of migrationContracts.flatMap((entry) => entry.scriptTests)) {
+    const contractName = contract.split("/").at(-1).replace(/\.test\.mjs$/, "");
     addCheck(checks, {
-      id: "quality-duplication",
-      label: "Ratchet duplication jscpd",
-      estimatedSeconds: 5,
+      id: contractName,
+      label: `Contrat migration ${contractName}`,
+      estimatedSeconds: 10,
       critical: true,
-      command: npmCommand("quality:duplication"),
-    });
-    addCheck(checks, {
-      id: "quality-cycles",
-      label: "Ratchet cycles GitNexus",
-      estimatedSeconds: 35,
-      critical: true,
-      command: npmCommand("quality:cycles"),
+      command: { executable: "node", args: ["--test", contract] },
+      contractTest: contract,
     });
   }
+  addTargetedVitest(checks, migrationVitestTests, 25);
+}
 
-  if (full && deadCodeRelevant) {
-    addCheck(checks, {
-      id: "quality-dead-code",
-      label: "Ratchet dead-code Knip",
-      estimatedSeconds: 30,
-      critical: true,
-      command: npmCommand("quality:dead-code"),
-    });
-  }
+function addMotionCheck({ checks, relevant }) {
+  if (!relevant) return;
+  addCheck(checks, {
+    id: "check:motion",
+    label: "Gouvernance Motion/reveal",
+    estimatedSeconds: 5,
+    critical: true,
+    command: npmCommand("check:motion"),
+  });
+}
 
-  if (securityRelevant && (!webRuntimeRelevant || normalizedMode === "FAST")) {
+function addFastWebTypecheck({ checks, files }) {
+  if (!files.some(isTypeScriptFile)) return;
+  addCheck(checks, {
+    id: "typecheck",
+    label: "Typecheck web",
+    estimatedSeconds: 35,
+    critical: true,
+    command: npmCommand("typecheck"),
+  });
+}
+
+function addFastWebLint({ checks, files, relevant }) {
+  if (!relevant) return;
+  const lintFiles = files
+    .filter(
+      (file) =>
+        isWebSourceFile(file) &&
+        /\.(js|jsx|ts|tsx)$/.test(file) &&
+        fs.existsSync(file),
+    )
+    .map((file) => file.slice("apps/web/".length));
+  addCheck(checks, {
+    id: "lint-targeted",
+    label: "ESLint web ciblé",
+    estimatedSeconds: 15,
+    critical: true,
+    command: {
+      executable: "npx",
+      args: [
+        "eslint",
+        "--max-warnings=0",
+        "--config",
+        "apps/web/eslint.config.mjs",
+        ...(lintFiles.length > 0 ? lintFiles.map((file) => `apps/web/${file}`) : ["apps/web/src"]),
+      ],
+    },
+  });
+}
+
+function addFastWebTests({ checks, files }) {
+  const changedTests = resolveAssociatedWebTestFiles(files);
+  const targetedFiles = changedTests.filter(
+    (file) => !SECURITY_GROUP_FILES.has(file) && !REGRESSION_GROUP_FILES.has(file),
+  );
+  addTargetedVitest(checks, targetedFiles);
+}
+
+function addFastWebChecks({ checks, files, domains }) {
+  if (!domains.webRuntimeRelevant) return;
+  addMotionCheck({ checks, relevant: domains.motionRelevant });
+  addFastWebTypecheck({ checks, files });
+  addFastWebLint({ checks, files, relevant: domains.webSourceRelevant });
+  addFastWebTests({ checks, files });
+}
+
+function addFastSafetyChecks({ checks, securityRelevant, regressionRelevant }) {
+  if (securityRelevant) {
     addCheck(checks, {
       id: "test:security",
       label: "Tests de sécurité",
@@ -743,7 +648,7 @@ export function createModeValidationPlan({
       command: npmCommand("test:security"),
     });
   }
-  if (regressionRelevant && (!webRuntimeRelevant || normalizedMode === "FAST")) {
+  if (regressionRelevant) {
     addCheck(checks, {
       id: "test:regression-gates",
       label: "Tests de régression",
@@ -752,38 +657,69 @@ export function createModeValidationPlan({
       command: npmCommand("test:regression-gates"),
     });
   }
+}
 
+function addFastModeChecks(context) {
+  addFastFoundationalChecks(context);
+  addFastRepositoryChecks({ checks: context.checks, domains: context });
+  addFastScriptChecks(context);
+  addFastMobileChecks(context);
+  addFastDatabaseChecks(context);
+  addFastMigrationChecks(context);
+  addFastWebChecks({ checks: context.checks, files: context.files, domains: context });
+  addFastSafetyChecks(context);
+}
+
+function finalizeModeValidationPlan({ normalizedMode, normalizedScope, files, domains, checks, deduplicated }) {
   const budgetSeconds = VALIDATION_MODE_BUDGETS[normalizedMode];
   const plannedSeconds = checks.reduce((total, check) => total + check.estimatedSeconds, 0);
+  const { architectureImportRelevant, ...publicDomains } = domains;
   return Object.freeze({
     mode: normalizedMode,
     candidateScope: normalizedScope,
     changedFiles: files,
-    domains: Object.freeze({
-      docsRelevant,
-      pagesSiteRelevant,
-      webRelevant,
-      webRuntimeRelevant,
-      webSourceRelevant,
-      motionRelevant,
-      buildRelevant,
-      scriptsRelevant,
-      pythonRelevant,
-      supabaseRelevant,
-      migrationRelevant,
-      securityRelevant,
-      semgrepRelevant,
-      regressionRelevant,
-      githubRelevant,
-      mobileRelevant,
-      lockfileRelevant,
-      dependencyGraphRelevant,
-      deadCodeRelevant,
-    }),
+    domains: Object.freeze(publicDomains),
     budgetSeconds,
     plannedSeconds,
     checks: Object.freeze(checks),
     deduplicated: Object.freeze(deduplicated),
+  });
+}
+
+export function createModeValidationPlan({
+  mode = "FAST",
+  candidateScope = "WORKTREE",
+  changedFiles = [],
+} = {}) {
+  const input = normalizePlanInput({ mode, candidateScope, changedFiles });
+  const domains = classifyChangedFiles(input.files);
+  const checks = [];
+  const deduplicated = [];
+  addInitialChecks({ checks, normalizedScope: input.normalizedScope });
+
+  if (input.normalizedMode === "FULL") {
+    addFullModeChecks({ checks, deduplicated, normalizedScope: input.normalizedScope });
+    return finalizeModeValidationPlan({
+      ...input,
+      domains: createFullDomains(domains),
+      checks,
+      deduplicated,
+    });
+  }
+
+  addFastModeChecks({
+    checks,
+    deduplicated,
+    files: input.files,
+    normalizedScope: input.normalizedScope,
+    migrationContracts: resolveMigrationContracts(input.files),
+    ...domains,
+  });
+  return finalizeModeValidationPlan({
+    ...input,
+    domains,
+    checks,
+    deduplicated,
   });
 }
 
