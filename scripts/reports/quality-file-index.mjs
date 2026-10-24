@@ -27,8 +27,9 @@ import {
 import { validateDocumentationReport } from "../audits/documentation-maintainability.mjs";
 import { buildArchitectureImportGraph } from "./generate-architecture-import-graph.mjs";
 import { createCorrelationSignalsFromAuditResults } from "./generate-modularity-radar.mjs";
+import { buildQualityIndexDecisionTriage } from "./quality-index-decision-triage.mjs";
 
-export const QUALITY_INDEX_SCHEMA_VERSION = 6;
+export const QUALITY_INDEX_SCHEMA_VERSION = 7;
 export const QUALITY_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage"]);
 export const QUALITY_GATE_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
 export const QUALITY_INDEX_PREFIX = "quality-index";
@@ -1337,7 +1338,10 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
     attentionRequired: run.aggregateManifest.attentionRequired,
     sourceReports: QUALITY_INDEX_AUDITS.filter((audit) => run.manifests[audit]).map((audit) => ({ audit, status: run.manifests[audit].status, readProvenance: run.manifests[audit].readProvenance, resultClass: run.manifests[audit].resultClass })),
   };
-  const triage = buildQualityFileIndexTriage({ files: finalFiles, audits: categorySummaries, source });
+  const projectedCandidateGroups = [...candidateGroups.values()]
+    .map((group) => ({ ...group, files: [...group.files].sort() }))
+    .sort((left, right) => left.id.localeCompare(right.id));
+  const triage = buildQualityFileIndexTriage({ files: finalFiles, audits: categorySummaries, source, candidateGroups: projectedCandidateGroups });
   return {
     schemaVersion: QUALITY_INDEX_SCHEMA_VERSION,
     kind: "quality-file-index",
@@ -1378,7 +1382,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
     auditCategories: finalAuditCategories,
     functionalDomains: finalFunctionalDomains,
     documentationDomains: finalDocumentationDomains,
-    candidateGroups: [...candidateGroups.values()].map((group) => ({ ...group, files: [...group.files].sort() })).sort((left, right) => left.id.localeCompare(right.id)),
+    candidateGroups: projectedCandidateGroups,
     limitations: [
       "Les rapports originaux et leur verdict initial ne sont pas modifiés.",
       "La réévaluation top-heavy est dérivée uniquement des lignes et de la baseline contenues dans le rapport historique.",
@@ -1592,14 +1596,16 @@ function buildFunctionTriage(files, audits) {
   };
 }
 
-export function buildQualityFileIndexTriage({ files = [], audits = {}, source = {} } = {}) {
+export function buildQualityFileIndexTriage({ files = [], audits = {}, source = {}, candidateGroups = [] } = {}) {
   const code = buildCodeTriage(files);
   const tests = buildTestTriage(files);
+  const decision = buildQualityIndexDecisionTriage({ files, audits, source, candidateGroups });
   return {
     code: { state: code.length > 0 ? "PRESENT" : files.length > 0 ? "NONE" : "NOT_MEASURED", candidates: code },
     tests: { state: tests.length > 0 ? "PRESENT" : files.length > 0 ? "NONE" : "NOT_MEASURED", candidates: tests },
     documentation: buildDocumentationTriage(audits, source),
     functions: buildFunctionTriage(files, audits),
+    decision,
     provenance: source.provenance ?? "NOT_MEASURED",
     detail: "Projection dérivée exclusivement des mesures, findings et provenances déjà présents dans quality-file-index.",
   };
@@ -1625,8 +1631,24 @@ function triageRows(candidates, { documentation = false } = {}) {
   return lines;
 }
 
+function decisionTriageRows(candidates) {
+  if (candidates.length === 0) return ["_Aucun candidat dans cette vue._"];
+  const lines = [
+    "| Rang | Priorité | Catégorie / finding | Fichiers | Bénéfice potentiel et preuve | Effort apparent | Prudence | Confiance / lacunes | Recommandation | Validations nécessaires |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+  ];
+  for (const candidate of candidates.slice(0, 10)) {
+    const benefit = `${candidate.benefitPotential.level} — ${candidate.benefitPotential.proof}`;
+    const measures = `fichiers=${candidate.benefitPotential.measures.files}, paires=${candidate.benefitPotential.measures.occurrencePairs ?? "NOT_APPLICABLE"}, lignes distinctes=${candidate.benefitPotential.measures.distinctLinesAcrossFiles ?? "NOT_ESTIMABLE"}`;
+    const confidence = `${candidate.confidence}${candidate.gaps.length > 0 ? ` — ${candidate.gaps.join(" ; ")}` : ""}`;
+    lines.push(`| ${candidate.rank} | ${candidate.proposedPriority} | \`${escapeMarkdown(candidate.auditCategory)} / ${escapeMarkdown(candidate.findingId)}\` | ${escapeMarkdown(candidate.files.join(", ") || "NOT_MEASURED")} | ${escapeMarkdown(`${benefit} (${measures})`)} | ${escapeMarkdown(candidate.effort.level)} | ${escapeMarkdown(candidate.prudence.level)} | ${escapeMarkdown(confidence)} | ${escapeMarkdown(candidate.recommendation)} | ${escapeMarkdown(candidate.validations.join(" ; "))} |`);
+  }
+  if (candidates.length > 10) lines.push("", `_Vue Markdown limitée aux 10 meilleurs candidats ; le JSON conserve les ${candidates.length} candidats._`);
+  return lines;
+}
+
 function renderTriageSummary(index) {
-  const triage = index.triage ?? buildQualityFileIndexTriage({ files: index.files, audits: index.audits, source: index.source });
+  const triage = index.triage ?? buildQualityFileIndexTriage({ files: index.files, audits: index.audits, source: index.source, candidateGroups: index.candidateGroups });
   const lines = [
     "## Synthèse de triage",
     "",
@@ -1667,6 +1689,22 @@ function renderTriageSummary(index) {
     `Preuves périmées conservées dans les findings détaillés : **${triage.functions.staleEvidenceCount ?? 0}**.`,
     "",
     `Provenance de la projection : **${escapeMarkdown(triage.provenance)}**. Les résultats détaillés restent accessibles dans FILE INDEX et les domaines d’audit ci-dessous.`,
+    "",
+    "### 5. Gains rapides et maîtrisés",
+    "",
+    "Classement informatif : `P1` + prudence `R1/R2` + effort `APPARENTLY_LIMITED` + confiance `HIGH` + recommandation `CORRECT`. Les lignes ci-dessous ne remplacent aucun verdict, seuil, baseline ou décision humaine.",
+    "",
+    ...decisionTriageRows(triage.decision?.views?.quickWins ?? []),
+    "",
+    "### 6. Corrections importantes sous revue renforcée",
+    "",
+    "Cette vue conserve les problèmes `P0/P2`, les périmètres `R3/R4`, les responsabilités indéterminées et les preuves manquantes. `REVIEW_REQUIRED` et `INVESTIGATE` signifient qu’une preuve supplémentaire est requise ; ils ne constituent pas un finding inventé.",
+    "",
+    ...decisionTriageRows(triage.decision?.views?.reinforcedReview ?? []),
+    "",
+    `Classement décisionnel : **${triage.decision?.candidates?.length ?? 0}** candidat(s) JSON, dont **${triage.decision?.views?.quickWins?.length ?? 0}** gain(s) rapide(s) et **${triage.decision?.views?.reinforcedReview?.length ?? 0}** revue(s) renforcée(s).`,
+    "",
+    ...(triage.decision?.limitations ?? []).map((limitation) => `- ${escapeMarkdown(limitation)}`),
     "",
   ];
   return lines;

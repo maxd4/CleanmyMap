@@ -313,6 +313,130 @@ test("conserve l'absence de mesure et la preuve périmée dans le triage des fon
   assert.equal(staleIndex.files.find((file) => file.path === fileA).findings.complexity.state, "PRESENT");
 });
 
+function decisionTriageFixtureRun() {
+  const run = buildRun();
+  const uiFile = "apps/web/src/components/triage-card.tsx";
+  const authzFile = "apps/web/src/lib/authz/triage-guard.ts";
+  run.reports["top-heavy"].readProvenance = "COMMITTED_SNAPSHOT";
+  run.reports["top-heavy"].rows.push({ file: uiFile, kind: "runtime", lines: 510, bytes: 41_000, generated: false });
+  run.reports["top-heavy"].baseline.review.push({ path: uiFile, maxLines: 500, maxBytes: 40_000, status: "IMPROVED" });
+  run.reports.hotspots = {
+    status: "PASS",
+    kind: "quality-hotspots",
+    readProvenance: "COMMITTED_SNAPSHOT",
+    methodology: { historyWindowDays: 180 },
+    files: [{
+      file: uiFile,
+      activity: { commits: 6, substantiveChanges: 2, addedLines: 100, deletedLines: 20, highActivity: true },
+      structuralDebt: { state: "PRESENT", signals: ["top-heavy"], signalCount: 1 },
+      regressionRecurrence: { state: "NOT_MEASURED" },
+      hotspotCandidate: true,
+      severity: "informational",
+    }],
+    summary: { trackedFilesExamined: 4, filesReported: 1, highActivityFiles: 1, hotspotCandidates: 1, structuralDebtFiles: 1 },
+    diagnostics: [],
+  };
+  run.reports.complexity.metrics.push({ metric: "complexity", path: authzFile, value: 99, line: 8, endLine: 80, functionIdentity: "authorizeTriage" });
+  run.reports.complexity.result.failures.push({ metric: "complexity", path: authzFile, value: 99, line: 8, type: "failures" });
+  run.reports.complexity.result.stale.push({ metric: "complexity", path: fileA, value: null, line: null, type: "stale" });
+  const occurrence = (fingerprint, occurrenceA, occurrenceB) => ({ fingerprint, occurrenceA, occurrenceB });
+  run.reports.duplication = {
+    status: "FAIL",
+    results: [{
+      scopeName: "runtime",
+      metrics: { clones: 4, duplicatedLines: 16, duplicatedTokens: 80, newClones: 3 },
+      fingerprints: ["fp-shared", "fp-second", "fp-authz"],
+      occurrences: [
+        occurrence("fp-shared", { path: fileA, startLine: 12, endLine: 15 }, { path: fileB, startLine: 22, endLine: 25 }),
+        occurrence("fp-shared", { path: fileA, startLine: 14, endLine: 18 }, { path: fileB, startLine: 24, endLine: 28 }),
+        occurrence("fp-second", { path: fileA, startLine: 50, endLine: 53 }, { path: fileB, startLine: 60, endLine: 63 }),
+        occurrence("fp-authz", { path: uiFile, startLine: 10, endLine: 14 }, { path: authzFile, startLine: 20, endLine: 24 }),
+      ],
+    }],
+    justificationReport: {
+      classifications: { KEEP_INTENTIONAL: ["runtime:fp-second"], NO_ACTION_NOISE: [] },
+      classificationCounts: { KEEP_INTENTIONAL: 1, NO_ACTION_NOISE: 0 },
+    },
+  };
+  run.reports.cycles = { status: "SKIPPED_BY_POLICY", reason: "CURRENT_POLICY", cycleObjects: [], comparison: { added: [], stale: [] } };
+  return { run, uiFile, authzFile };
+}
+
+test("classe les gains, la prudence et les groupes sans double comptage", () => {
+  const { run, uiFile, authzFile } = decisionTriageFixtureRun();
+  const index = buildQualityFileIndex({ run, mode: "ALL" });
+  const decision = index.triage.decision;
+  const duplication = decision.candidates.filter((candidate) => candidate.auditCategory === "duplication");
+  const shared = duplication.find((candidate) => candidate.evidence.group?.fingerprint === "fp-shared");
+  const second = duplication.find((candidate) => candidate.evidence.group?.fingerprint === "fp-second");
+  const authz = duplication.find((candidate) => candidate.evidence.group?.fingerprint === "fp-authz");
+  const quick = decision.views.quickWins.find((candidate) => candidate.files.includes(uiFile));
+
+  assert.equal(duplication.length, 3);
+  assert.equal(shared.evidence.group.occurrencePairs, 2);
+  assert.deepEqual(shared.evidence.group.uniqueFiles, [fileA, fileB]);
+  assert.equal(shared.evidence.group.distinctLinesAcrossFiles, 14);
+  assert.equal(shared.benefitPotential.measures.occurrencePairs, 2);
+  assert.notEqual(shared.id, second.id);
+  assert.equal(second.humanDecision, "KEEP_INTENTIONAL");
+  assert.equal(second.recommendation, "KEEP_JUSTIFIED");
+  assert.equal(authz.prudence.level, "R4");
+  assert.equal(authz.validationEffort, "REINFORCED");
+  assert.ok(authz.prudence.participants.some((participant) => participant.file === uiFile && participant.level === "R2"));
+  assert.ok(authz.prudence.participants.some((participant) => participant.file === authzFile && participant.level === "R4"));
+  assert.ok(authz.prudence.level === "R4" && decision.views.reinforcedReview.some((candidate) => candidate.id === authz.id));
+  assert.ok(quick);
+  assert.equal(quick.proposedPriority, "P1");
+  assert.equal(quick.effort.level, "APPARENTLY_LIMITED");
+  assert.equal(quick.confidence, "HIGH");
+  assert.match(buildQualityFileIndexMarkdown(index), /Gains rapides et maîtrisés/);
+  assert.match(buildQualityFileIndexMarkdown(index), /Corrections importantes sous revue renforcée/);
+});
+
+test("sépare les preuves manquantes, la complexité sensible et les cycles suspendus", () => {
+  const { run, authzFile } = decisionTriageFixtureRun();
+  const index = buildQualityFileIndex({ run, mode: "OFFLINE" });
+  const decision = index.triage.decision;
+  const complexAuthz = decision.candidates.find((candidate) => candidate.auditCategory === "complexity" && candidate.files.includes(authzFile));
+  const stale = decision.candidates.find((candidate) => candidate.auditCategory === "complexity" && candidate.evidence.finding?.type === "stale");
+  const cycleCandidates = decision.candidates.filter((candidate) => candidate.auditCategory === "cycles");
+
+  assert.equal(index.audits.cycles.state, "SKIPPED_BY_POLICY");
+  assert.equal(index.audits.cycles.status, "SKIPPED_BY_POLICY");
+  assert.equal(cycleCandidates.filter((candidate) => candidate.sourceKind === "group").length, 0);
+  assert.ok(cycleCandidates.some((candidate) => candidate.sourceKind === "measurement-gap" && candidate.proposedPriority === "REVIEW_REQUIRED"));
+  assert.equal(complexAuthz.prudence.level, "R4");
+  assert.equal(complexAuthz.recommendation, "REVIEW_FIRST");
+  assert.equal(complexAuthz.proposedPriority, "P2");
+  assert.ok(complexAuthz.validations.some((validation) => /renforcée|sécurité/i.test(validation)));
+  assert.equal(stale.evidence.state, "STALE_EVIDENCE");
+  assert.equal(stale.proposedPriority, "REVIEW_REQUIRED");
+  assert.equal(stale.effort.level, "NOT_ESTIMABLE");
+  assert.equal(stale.validationEffort, "NOT_ESTIMABLE");
+  assert.ok(stale.gaps.some((gap) => /périmée/i.test(gap)));
+
+  const historicalIndex = buildQualityFileIndex({ run: buildRun(), mode: "OFFLINE" });
+  assert.equal(historicalIndex.triage.decision.source.auditedHead, sha);
+  assert.equal(historicalIndex.triage.decision.source.runId, runId);
+  assert.ok(historicalIndex.triage.decision.candidates.some((candidate) => candidate.sourceKind === "measurement-gap"));
+});
+
+test("conserve l'identité du run et un ordre décisionnel reproductible", () => {
+  const { run } = decisionTriageFixtureRun();
+  const first = buildQualityFileIndex({ run, mode: "ALL" });
+  const second = buildQualityFileIndex({ run, mode: "ALL" });
+
+  assert.equal(first.schemaVersion, 7);
+  assert.equal(first.triage.decision.source.auditedHead, sha);
+  assert.equal(first.triage.decision.source.runId, runId);
+  assert.deepEqual(first.triage.decision, second.triage.decision);
+  assert.deepEqual(JSON.parse(JSON.stringify(first.triage.decision)), first.triage.decision);
+  assert.equal(first.source.initialStatus, "FAIL");
+  assert.equal(first.audits.duplication.status, "FAIL");
+  assert.equal(first.audits.cycles.status, "SKIPPED_BY_POLICY");
+  assert.equal(first.triage.decision.candidates.every((candidate) => candidate.rank >= 1), true);
+});
+
 test("projette la couverture détaillée et ses branches sans la confondre avec les gates", () => {
   const run = buildRun();
   run.reports.coverage = {

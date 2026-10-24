@@ -127,11 +127,55 @@ bornée à dix candidats par catégorie : `Code` (runtime et data/config),
 `Tests` (taille et findings structurels), `Documentation` (documents longs
 séparés entre `CURRENT/PLAN` et `HISTORY/AUDIT`) et `Fonctions` (findings
 `functionLength` et `complexity` effectivement mesurés). Elle n'ajoute aucun
-score, seuil, baseline, scanner ou gate. Chaque ligne distingue le dépassement
+score numérique, seuil, baseline, scanner ou gate. Chaque ligne distingue le dépassement
 quantitatif, la décision architecturale humaine lorsqu'elle est déjà présente
 dans l'index, et la preuve disponible ; `NOT_MEASURED`, `STALE_EVIDENCE` et
 `NOT_STATED` ne sont jamais convertis en défaut ou en décision de monolithe.
 Les détails restent dans l'index complet et les sections détaillées du résumé.
+
+La projection ajoute également `triage.decision`, une aide à la décision
+informative et additive, attribuée au même couple `auditedHead`/`runId`. Elle
+conserve le jeu JSON complet des candidats ; le résumé Markdown peut limiter
+chaque vue aux dix premiers candidats sans supprimer les données de l'index.
+Deux axes restent indépendants :
+
+- `benefitPotential` décrit uniquement le potentiel observé : impact démontré,
+  réduction de dette potentielle, fichiers et findings reliés, activité hotspot,
+  et mesures exactes disponibles. Pour la duplication, le groupe est la paire
+  native `(scope, fingerprint)` ; `occurrencePairs`, `uniqueFiles` et
+  `distinctLinesAcrossFiles` sont séparés. Les intervalles de lignes recouvrants
+  sont fusionnés par fichier. Cela ne prouve ni une cause racine commune, ni des
+  lignes supprimables, ni une économie future ;
+- `effort`, `validationEffort` et `confidence` sont séparés du bénéfice. L’effort ne contient pas de
+  durée inventée : il vaut `APPARENTLY_LIMITED`, `SIGNIFICANT`,
+  `NOT_APPLICABLE` ou `NOT_ESTIMABLE`; `validationEffort` vaut `TARGETED`,
+  `REINFORCED` ou `NOT_ESTIMABLE`. Une preuve périmée, absente ou non
+  attribuable conserve `NOT_ESTIMABLE` et `REVIEW_REQUIRED` ;
+- `prudence.level` vaut `R1`, `R2`, `R3`, `R4` ou `REVIEW_REQUIRED`. Il est
+  déduit des responsabilités observées dans le fichier, sa projection
+  architecturale et le finding, pas du seul nom de dossier. Un groupe traversant
+  plusieurs responsabilités conserve le niveau le plus élevé justifié ; une
+  partie indispensable indéterminée reste `REVIEW_REQUIRED` ;
+- `proposedPriority` vaut `P0` à `P3` ou `REVIEW_REQUIRED`. `P0` exige une
+  criticité explicitement confirmée : un `FAIL`, une complexité, un seuil ou un
+  fingerprint ne suffit jamais. Ces priorités ne remplacent pas les statuts
+  originaux des moteurs.
+
+Les vues Markdown sont `Gains rapides et maîtrisés` et `Corrections importantes
+sous revue renforcée`. La première applique la règle déterministe
+`P1 + R1/R2 + APPARENTLY_LIMITED + confiance HIGH + CORRECT`. La seconde
+conserve les `P0/P2`, les niveaux `R3/R4`, les responsabilités indéterminées,
+les décisions `REVIEW_FIRST`/`INVESTIGATE` et les preuves manquantes. Une
+justification humaine `KEEP_INTENTIONAL` ou `NO_ACTION_NOISE` reste la décision
+existante ; elle ne peut pas être inventée par le classement. Les décisions
+`COHESIVE_SINGLE_FILE` et `DEFERRED_SPLIT` du registre de modularisation ne
+déclenchent jamais une recommandation automatique de scission.
+
+Le classement est non bloquant et reproductible offline. Il ne crée aucune
+nouvelle baseline, exclusion, justification, règle de moteur ou source de
+vérité. Un contrôle `cycles` `SKIPPED_BY_POLICY` produit seulement un candidat
+de manque de mesure avec la recommandation `INVESTIGATE` ; il ne produit ni
+cycle fictif ni preuve d’absence.
 
 Le mode `all` conserve aussi dans le rapport agrégé une dimension documentaire
 non bloquante, calculée sur les fichiers Markdown et MDX suivis par Git du SHA

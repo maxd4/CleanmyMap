@@ -4,6 +4,12 @@ Ce registre est la source humaine canonique. Le radar `monolith-split-plan.md` e
 
 Les quatre champs décisionnels (`ARCHITECTURE_DECISION`, `PRIORITY`, `DEPENDENCY_OR_BLOCKER`, `NEXT_TRIGGER`) sont portés **uniquement** par le tableau récapitulatif ; chaque fiche détaillée conserve les huit champs complémentaires. Cette représentation ne modifie aucune décision.
 
+Le classement décisionnel informatif du `quality-index` peut afficher ces
+décisions comme preuve de prudence, mais ne les remplace ni ne les réécrit.
+Une fiche `COHESIVE_SINGLE_FILE` ou `DEFERRED_SPLIT` conserve son owner et son
+`NEXT_TRIGGER` : le triage peut recommander `REVIEW_FIRST`, jamais une scission
+automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
+
 <!-- RADAR:HUMAN_DECISIONS:BEGIN -->
 | PATH | ARCHITECTURE_DECISION | PRIORITY | DEPENDENCY_OR_BLOCKER | NEXT_TRIGGER |
 | --- | --- | --- | --- | --- |

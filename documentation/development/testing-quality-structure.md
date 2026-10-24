@@ -73,6 +73,18 @@ présents dans la baseline native et sont documentés séparément dans
 autoriser un nouveau fingerprint. Aucun seuil, ignore ou grace ne peut être
 relevé pour masquer une régression.
 
+La projection `quality-index` réutilise ces occurrences sans relancer jscpd.
+Elle forme un candidat par couple natif `(scope, fingerprint)`, conserve chaque
+paire d’occurrences, compte séparément les paires et les fichiers uniques, puis
+calcule les lignes distinctes par union d’intervalles dans chaque fichier. Un
+fingerprint partagé est donc un regroupement de détection et non une preuve de
+cause racine, de mutualisation métier ou de lignes supprimables. Une
+classification humaine existante reste `KEEP_JUSTIFIED` ou `NO_ACTION_NOISE` ;
+une absence de justification conserve `REVIEW_FIRST`/`INVESTIGATE` selon les
+autres preuves. Le classement `P1`–`P3` et les niveaux de prudence `R1`–`R4`
+restent informatifs et ne modifient ni le ratchet, ni la baseline, ni le verdict
+du moteur.
+
 Le contrôle de cycles est officiellement suspendu jusqu'à réactivation
 explicite. `quality:cycles` et `audit:gitnexus:cycles` retournent
 `SKIPPED_BY_POLICY`, avec une preuve rattachée au candidat courant, sans
