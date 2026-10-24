@@ -39,6 +39,7 @@ import {
   retainQualityAuditArtifacts,
   writeAuditArtifactFiles,
 } from "./quality-audit-storage.mjs";
+import { qualityAuditPolicy } from "./quality-audit-policy.mjs";
 
 export const QUALITY_GATE_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
 export const AUXILIARY_AUDITS = Object.freeze(["maintainability", "type-safety", "hotspots", "testability", "coverage"]);
@@ -419,6 +420,61 @@ function makeSummary({ audit, manifest, result, paths }) {
   return `${lines.join("\n")}\n`;
 }
 
+function createAuditExecutors({
+  root,
+  auditedHead,
+  complexityRunner,
+  cycleRunner,
+  maintainabilityRunner,
+  typeSafetyRunner,
+  hotspotsRunner,
+  testabilityRunner,
+  coverageRunner,
+  complexityResult,
+  previousResults,
+  topHeavyRunner,
+  repositoryViewFactory,
+}) {
+  return {
+    "dead-code": () => {
+      const result = runDeadCodePolicy({ report: runKnipReport() });
+      return { result: { ...result, status: statusForAudit("dead-code", result), formatted: formatDeadCodeReport(result) }, readProvenance: "WORKTREE_LIVE" };
+    },
+    duplication: () => {
+      const result = runDuplicationPolicy();
+      return { result: { ...result, status: statusForAudit("duplication", result), formatted: formatDuplicationReport(result) }, readProvenance: "WORKTREE_LIVE" };
+    },
+    "top-heavy": () => {
+      const ref = auditedHead || "HEAD";
+      const result = topHeavyRunner({ root, args: [`--ref=${ref}`, "--enforce"] });
+      const view = repositoryViewFactory({ root, ref });
+      const humanDecisions = readHumanDecisionsFromView(view);
+      const humanDecisionsByFile = buildHumanDecisionsByFile(humanDecisions.markdown);
+      const enrichedResult = { ...result, evaluation: enrichTopHeavyEvaluation(result.evaluation, humanDecisionsByFile) };
+      return { result: { ...enrichedResult, status: statusForAudit("top-heavy", enrichedResult) }, readProvenance: "COMMITTED_SNAPSHOT" };
+    },
+    complexity: async () => ({ result: await complexityRunner(), readProvenance: "WORKTREE_LIVE", validate: isComplexityResult }),
+    "type-safety": async () => ({ result: await typeSafetyRunner({ root }), readProvenance: "WORKTREE_LIVE", validate: isTypeSafetyResult }),
+    hotspots: () => ({ result: hotspotsRunner({ root, auditedSha: auditedHead, reports: previousResults }), readProvenance: "COMMITTED_SNAPSHOT", validate: isHotspotsResult }),
+    testability: () => ({ result: testabilityRunner({ root, auditedSha: auditedHead }), readProvenance: "MIXED", validate: isTestabilityResult }),
+    coverage: () => ({ result: coverageRunner({ root, auditedSha: auditedHead, duplicationReport: previousResults.duplication ?? null }), readProvenance: "MIXED", validate: isCoverageResult, format: formatCoverageInsightsReport }),
+    cycles: async () => {
+      const result = await cycleRunner();
+      const policy = qualityAuditPolicy("cycles");
+      return result?.status === policy?.status
+        ? { result, readProvenance: "NOT_RUN" }
+        : { result, readProvenance: "WORKTREE_LIVE", validate: isCycleResult };
+    },
+    maintainability: () => ({ result: maintainabilityRunner({ root, complexityReport: complexityResult ?? null }), readProvenance: "WORKTREE_LIVE", validate: isMaintainabilityResult }),
+  };
+}
+
+function normalizeAuditExecution(audit, execution) {
+  if (execution.validate && !execution.validate(execution.result)) return preserveMalformedAsyncResult(audit, execution.result);
+  const formatted = execution.format ? { formatted: execution.format(execution.result) } : {};
+  return { ...execution.result, ...formatted, readProvenance: execution.readProvenance };
+}
+
 export async function executeAudit(
   audit,
   root,
@@ -437,68 +493,23 @@ export async function executeAudit(
     repositoryViewFactory = createRepositoryView,
   } = {},
 ) {
-  if (audit === "dead-code") {
-    const result = runDeadCodePolicy({ report: runKnipReport() });
-    return { ...result, status: statusForAudit(audit, result), formatted: formatDeadCodeReport(result), readProvenance: "WORKTREE_LIVE" };
-  }
-  if (audit === "duplication") {
-    const result = runDuplicationPolicy();
-    return { ...result, status: statusForAudit(audit, result), formatted: formatDuplicationReport(result), readProvenance: "WORKTREE_LIVE" };
-  }
-  if (audit === "top-heavy") {
-    const ref = auditedHead || "HEAD";
-    const result = topHeavyRunner({ root, args: [`--ref=${ref}`, "--enforce"] });
-    const view = repositoryViewFactory({ root, ref });
-    const humanDecisions = readHumanDecisionsFromView(view);
-    const humanDecisionsByFile = buildHumanDecisionsByFile(humanDecisions.markdown);
-    const evaluation = enrichTopHeavyEvaluation(result.evaluation, humanDecisionsByFile);
-    const enrichedResult = { ...result, evaluation };
-    return { ...enrichedResult, status: statusForAudit(audit, enrichedResult), readProvenance: "COMMITTED_SNAPSHOT" };
-  }
-  if (audit === "complexity") {
-    const result = await complexityRunner();
-    return isComplexityResult(result)
-      ? { ...result, readProvenance: "WORKTREE_LIVE" }
-      : preserveMalformedAsyncResult(audit, result);
-  }
-  if (audit === "type-safety") {
-    const result = await typeSafetyRunner({ root });
-    return isTypeSafetyResult(result)
-      ? { ...result, readProvenance: "WORKTREE_LIVE" }
-      : preserveMalformedAsyncResult(audit, result);
-  }
-  if (audit === "hotspots") {
-    const result = hotspotsRunner({ root, auditedSha: auditedHead, reports: previousResults });
-    return isHotspotsResult(result)
-      ? { ...result, readProvenance: "COMMITTED_SNAPSHOT" }
-      : preserveMalformedAsyncResult(audit, result);
-  }
-  if (audit === "testability") {
-    const result = testabilityRunner({ root, auditedSha: auditedHead });
-    return isTestabilityResult(result)
-      ? { ...result, readProvenance: "MIXED" }
-      : preserveMalformedAsyncResult(audit, result);
-  }
-  if (audit === "coverage") {
-    const result = coverageRunner({ root, auditedSha: auditedHead, duplicationReport: previousResults.duplication ?? null });
-    return isCoverageResult(result)
-      ? { ...result, formatted: formatCoverageInsightsReport(result), readProvenance: "MIXED" }
-      : preserveMalformedAsyncResult(audit, result);
-  }
-  if (audit === "cycles") {
-    const result = await cycleRunner();
-    if (result?.status === "SKIPPED_BY_POLICY") return { ...result, readProvenance: "NOT_RUN" };
-    return isCycleResult(result)
-      ? { ...result, readProvenance: "WORKTREE_LIVE" }
-      : preserveMalformedAsyncResult(audit, result);
-  }
-  if (audit === "maintainability") {
-    const result = await maintainabilityRunner({ root, complexityReport: complexityResult ?? null });
-    return isMaintainabilityResult(result)
-      ? { ...result, readProvenance: "WORKTREE_LIVE" }
-      : preserveMalformedAsyncResult(audit, result);
-  }
-  throw new QualityAuditError(`Unknown audit: ${audit}`, "INVALID_MODE");
+  const executor = createAuditExecutors({
+    root,
+    auditedHead,
+    complexityRunner,
+    cycleRunner,
+    maintainabilityRunner,
+    typeSafetyRunner,
+    hotspotsRunner,
+    testabilityRunner,
+    coverageRunner,
+    complexityResult,
+    previousResults,
+    topHeavyRunner,
+    repositoryViewFactory,
+  })[audit];
+  if (!executor) throw new QualityAuditError(`Unknown audit: ${audit}`, "INVALID_MODE");
+  return normalizeAuditExecution(audit, await executor());
 }
 
 function classifyEvidence({ readProvenance, status }) {
@@ -509,6 +520,149 @@ function classifyEvidence({ readProvenance, status }) {
     readProvenance,
     resultClass: status === "FAIL" ? "FAILURE" : "MEASURED",
   };
+}
+
+function auditErrorResult(error) {
+  return { status: "FAIL", error: { name: error?.name ?? "Error", message: error?.message ?? String(error), code: error?.code } };
+}
+
+async function executeAuditBatch(audits, { engine, root, snapshot }) {
+  const results = [];
+  for (const audit of audits) {
+    const previousResults = Object.fromEntries(results.map((entry) => [entry.audit, entry.result]));
+    let raw;
+    try {
+      raw = await engine(audit, root, {
+        auditedHead: snapshot.auditedHead,
+        snapshot,
+        complexityResult: previousResults.complexity ?? null,
+        previousResults,
+      });
+    } catch (error) {
+      raw = auditErrorResult(error);
+    }
+    results.push({ audit, result: raw, status: statusForAudit(audit, raw), attentionRequired: attentionRequired(audit, raw) });
+  }
+  return results;
+}
+
+function addRadarProjection(results) {
+  const resultsByAudit = Object.fromEntries(results.map(({ audit, result }) => [audit, result]));
+  const topHeavy = results.find((entry) => entry.audit === "top-heavy");
+  if (!topHeavy?.result?.rows) return results;
+  const correlations = createCorrelationSignalsFromAuditResults(resultsByAudit);
+  topHeavy.result = {
+    ...topHeavy.result,
+    radarProjection: {
+      rows: createRadarRows(topHeavy.result.rows, correlations),
+      evidence: { measured: correlations.measured, detail: correlations.detail },
+    },
+  };
+  return results;
+}
+
+function writeAuditManifests({ root, auditedHead, runId, generatedAt, results, fsApi }) {
+  return results.map((entry) => {
+    const readProvenance = entry.result?.readProvenance ?? "WORKTREE_LIVE";
+    const evidence = classifyEvidence({ readProvenance, status: entry.status });
+    const paths = createAuditPaths({ root, auditedHead, audit: entry.audit, runId });
+    const manifest = {
+      schemaVersion: 1,
+      audit: entry.audit,
+      runId,
+      auditedHead,
+      ...evidence,
+      status: entry.status,
+      attentionRequired: entry.attentionRequired,
+      generatedAt,
+    };
+    writeAuditArtifactFiles({
+      paths,
+      report: serialize(entry.result),
+      manifest: serialize(manifest),
+      summary: makeSummary({ audit: entry.audit, manifest, result: entry.result, paths }),
+      fsApi,
+    });
+    return { ...entry, paths, manifest, ...evidence };
+  });
+}
+
+function summarizeAuditStatus(manifests) {
+  const statusPriority = ["FAIL", "SKIPPED_BY_POLICY", "PASS_WITH_GRACE"];
+  return statusPriority.find((status) => manifests.some((entry) => entry.status === status)) ?? "PASS";
+}
+
+async function buildAggregateInputs({ root, auditedHead, runId, documentationRunner, architectureBuilder }) {
+  let documentation;
+  try {
+    documentation = await documentationRunner({ root, auditedSha: auditedHead, runId });
+  } catch (error) {
+    documentation = buildDocumentationNotMeasured({ auditedHead, runId, error, reason: "MEASUREMENT_FAILED" });
+  }
+  let architecture;
+  try {
+    architecture = architectureBuilder({ root, auditedSha: auditedHead });
+  } catch (error) {
+    architecture = buildArchitectureCouplingProjection({ error });
+  }
+  return { documentation, architecture };
+}
+
+function writeAggregateArtifacts({ root, auditedHead, runId, generatedAt, manifests, overallStatus, overallAttention, documentation, fsApi }) {
+  const paths = createAuditPaths({ root, auditedHead, audit: "all", runId });
+  const aggregateEvidence = {
+    readProvenance: manifests.every((entry) => entry.readProvenance === "COMMITTED_SNAPSHOT") ? "COMMITTED_SNAPSHOT" : "MIXED",
+    resultClass: overallStatus === "FAIL" ? "FAILURE" : overallStatus === "SKIPPED_BY_POLICY" ? "SKIPPED_BY_POLICY" : "MEASURED",
+  };
+  const manifest = {
+    schemaVersion: 1,
+    audit: "all",
+    runId,
+    auditedHead,
+    ...aggregateEvidence,
+    status: overallStatus,
+    attentionRequired: overallAttention,
+    generatedAt,
+  };
+  writeAuditArtifactFiles({
+    paths,
+    report: serialize({
+      status: overallStatus,
+      attentionRequired: overallAttention,
+      audits: manifests.map(({ audit, status, attentionRequired: attention, readProvenance, resultClass }) => ({ audit, status, attentionRequired: attention, readProvenance, resultClass })),
+      documentation,
+    }),
+    manifest: serialize(manifest),
+    summary: [
+      "# Quality audit — all",
+      "",
+      `- Audited HEAD: \`${auditedHead}\``,
+      `- Status: **${overallStatus}**`,
+      `- Attention required: **${overallAttention ? "yes" : "no"}**`,
+      "",
+      ...manifests.map((entry) => `- ${entry.audit}: **${entry.status}**, attention **${entry.attentionRequired ? "yes" : "no"}**`),
+      `- documentation-maintainability: **${documentation.status}**, attention **${documentation.attentionRequired ? "yes" : "no"}**`,
+    ].join("\n") + "\n",
+    fsApi,
+  });
+  return paths;
+}
+
+async function buildQualityProjection({ root, auditedHead, runId, generatedAt, architecture, fsApi }) {
+  try {
+    const projection = await generateQualityFileIndex({ root, auditedSha: auditedHead, runId, mode: "ALL", generatedAt, includeBundle: true, architecture, fsApi });
+    return { projectionPaths: projection.paths, projectionStatus: "PASS" };
+  } catch (error) {
+    return { projectionPaths: { error: error.message }, projectionStatus: "FAIL" };
+  }
+}
+
+async function retainRunArtifacts({ root, now, fsApi }) {
+  try {
+    return await retainQualityAuditArtifacts({ root, now, fsApi });
+  } catch (error) {
+    return { status: "FAIL", diagnostics: [`${error?.code ?? "RETENTION_FAILED"}: ${error?.message ?? String(error)}`], retainedSha: [], removedSha: [], migrated: [] };
+  }
 }
 
 export async function runQualityAudit(mode, {
@@ -527,157 +681,50 @@ export async function runQualityAudit(mode, {
   const activeMarker = await beginActiveAudit({ root, auditedHead: start.auditedHead, runId, fsApi });
 
   try {
-    const results = [];
-    for (const audit of audits) {
-      let raw;
-      try {
-        raw = await engine(audit, root, {
-          auditedHead: start.auditedHead,
-          snapshot: start,
-          complexityResult: results.find((entry) => entry.audit === "complexity")?.result ?? null,
-          previousResults: Object.fromEntries(results.map((entry) => [entry.audit, entry.result])),
-        });
-      } catch (error) {
-        raw = { status: "FAIL", error: { name: error?.name ?? "Error", message: error?.message ?? String(error), code: error?.code } };
-      }
-      const status = statusForAudit(audit, raw);
-      results.push({ audit, result: raw, status, attentionRequired: attentionRequired(audit, raw) });
-    }
-
-    if (mode === "all") {
-      const resultsByAudit = Object.fromEntries(results.map(({ audit, result }) => [audit, result]));
-      const topHeavy = results.find((entry) => entry.audit === "top-heavy");
-      if (topHeavy?.result?.rows) {
-        const correlations = createCorrelationSignalsFromAuditResults(resultsByAudit);
-        topHeavy.result = {
-          ...topHeavy.result,
-          radarProjection: {
-            rows: createRadarRows(topHeavy.result.rows, correlations),
-            evidence: {
-              measured: correlations.measured,
-              detail: correlations.detail,
-            },
-          },
-        };
-      }
-    }
+    const results = await executeAuditBatch(audits, { engine, root, snapshot: start });
+    if (mode === "all") addRadarProjection(results);
 
     const generatedAt = now();
-    const manifests = [];
-    for (const entry of results) {
-      const readProvenance = entry.result?.readProvenance ?? "WORKTREE_LIVE";
-      const evidence = classifyEvidence({ readProvenance, status: entry.status });
-      const paths = createAuditPaths({ root, auditedHead: start.auditedHead, audit: entry.audit, runId });
-      const manifest = {
-        schemaVersion: 1,
-        audit: entry.audit,
-        runId,
-        auditedHead: start.auditedHead,
-        ...evidence,
-        status: entry.status,
-        attentionRequired: entry.attentionRequired,
-        generatedAt,
-      };
-      writeAuditArtifactFiles({
-        paths,
-        report: serialize(entry.result),
-        manifest: serialize(manifest),
-        summary: makeSummary({ audit: entry.audit, manifest, result: entry.result, paths }),
-        fsApi,
-      });
-      manifests.push({ ...entry, paths, manifest, ...evidence });
-    }
-
+    const manifests = writeAuditManifests({ root, auditedHead: start.auditedHead, runId, generatedAt, results, fsApi });
     const evaluatedManifests = mode === "all" ? manifests.filter((entry) => QUALITY_GATE_AUDITS.includes(entry.audit)) : manifests;
-    const overallStatus = evaluatedManifests.some((entry) => entry.status === "FAIL")
-      ? "FAIL"
-      : evaluatedManifests.some((entry) => entry.status === "SKIPPED_BY_POLICY")
-        ? "SKIPPED_BY_POLICY"
-      : evaluatedManifests.some((entry) => entry.status === "PASS_WITH_GRACE")
-        ? "PASS_WITH_GRACE"
-        : "PASS";
+    const overallStatus = summarizeAuditStatus(evaluatedManifests);
     const overallAttention = manifests.some((entry) => entry.attentionRequired);
     let allPaths = null;
     let projectionPaths = null;
     let projectionStatus = mode === "all" ? "NOT_MEASURED" : null;
     let documentation = null;
+
     if (mode === "all") {
-      try {
-        documentation = await documentationRunner({ root, auditedSha: start.auditedHead, runId });
-      } catch (error) {
-        documentation = buildDocumentationNotMeasured({ auditedHead: start.auditedHead, runId, error, reason: "MEASUREMENT_FAILED" });
-      }
-      let architecture;
-      try {
-        architecture = architectureBuilder({ root, auditedSha: start.auditedHead });
-      } catch (error) {
-        architecture = buildArchitectureCouplingProjection({ error });
-      }
-      allPaths = createAuditPaths({ root, auditedHead: start.auditedHead, audit: "all", runId });
-      const aggregateEvidence = {
-        readProvenance: manifests.every((entry) => entry.readProvenance === "COMMITTED_SNAPSHOT")
-          ? "COMMITTED_SNAPSHOT"
-          : "MIXED",
-        resultClass: overallStatus === "FAIL"
-          ? "FAILURE"
-          : overallStatus === "SKIPPED_BY_POLICY" ? "SKIPPED_BY_POLICY" : "MEASURED",
-      };
-      const manifest = {
-        schemaVersion: 1,
-        audit: "all",
-        runId,
+      const aggregate = await buildAggregateInputs({
+        root,
         auditedHead: start.auditedHead,
-        ...aggregateEvidence,
-        status: overallStatus,
-        attentionRequired: overallAttention,
+        runId,
+        documentationRunner,
+        architectureBuilder,
+      });
+      documentation = aggregate.documentation;
+      allPaths = writeAggregateArtifacts({
+        root,
+        auditedHead: start.auditedHead,
+        runId,
         generatedAt,
-      };
-      writeAuditArtifactFiles({
-        paths: allPaths,
-        report: serialize({
-          status: overallStatus,
-          attentionRequired: overallAttention,
-          audits: manifests.map(({ audit, status, attentionRequired: attention, readProvenance, resultClass }) => ({ audit, status, attentionRequired: attention, readProvenance, resultClass })),
-          documentation,
-        }),
-        manifest: serialize(manifest),
-        summary: [
-          "# Quality audit — all",
-          "",
-          `- Audited HEAD: \`${start.auditedHead}\``,
-          `- Status: **${overallStatus}**`,
-          `- Attention required: **${overallAttention ? "yes" : "no"}**`,
-          "",
-          ...manifests.map((entry) => `- ${entry.audit}: **${entry.status}**, attention **${entry.attentionRequired ? "yes" : "no"}**`),
-          `- documentation-maintainability: **${documentation.status}**, attention **${documentation.attentionRequired ? "yes" : "no"}**`,
-        ].join("\n") + "\n",
+        manifests,
+        overallStatus,
+        overallAttention,
+        documentation,
         fsApi,
       });
-      try {
-        const projection = await generateQualityFileIndex({
-          root,
-          auditedSha: start.auditedHead,
-          runId,
-          mode: "ALL",
-          generatedAt,
-          includeBundle: true,
-          architecture,
-          fsApi,
-        });
-        projectionPaths = projection.paths;
-        projectionStatus = "PASS";
-      } catch (error) {
-        projectionPaths = { error: error.message };
-        projectionStatus = "FAIL";
-      }
+      ({ projectionPaths, projectionStatus } = await buildQualityProjection({
+        root,
+        auditedHead: start.auditedHead,
+        runId,
+        generatedAt,
+        architecture: aggregate.architecture,
+        fsApi,
+      }));
     }
 
-    let retention;
-    try {
-      retention = await retainQualityAuditArtifacts({ root, now, fsApi });
-    } catch (error) {
-      retention = { status: "FAIL", diagnostics: [`${error?.code ?? "RETENTION_FAILED"}: ${error?.message ?? String(error)}`], retainedSha: [], removedSha: [], migrated: [] };
-    }
+    const retention = await retainRunArtifacts({ root, now, fsApi });
     return {
       mode,
       runId,
