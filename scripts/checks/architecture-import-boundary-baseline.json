@@ -109,26 +109,26 @@
       "reviewedRef": "ccf2167fae29921908394e77b30c9868a44b9187"
     },
     {
-      "id": "e83cb45bffa8da68fb81e37e",
-      "signature": "UI_TO_INFRASTRUCTURE|apps/mobile/screens/action-create.tsx|apps/mobile/lib/linked-mission-service.ts|runtime|runtime",
+      "id": "3882dea840f7865589238f22",
+      "signature": "UI_TO_INFRASTRUCTURE|apps/mobile/hooks/use-action-create-controller.ts|apps/mobile/lib/linked-mission-service.ts|runtime|runtime",
       "rule": "UI_TO_INFRASTRUCTURE",
-      "from": "apps/mobile/screens/action-create.tsx",
+      "from": "apps/mobile/hooks/use-action-create-controller.ts",
       "to": "apps/mobile/lib/linked-mission-service.ts",
       "kind": "runtime",
       "sourceKind": "runtime",
-      "reason": "Présent dans le graphe du worktree observé après l’avance concurrente de main ; les changements préexistants restent hors du lot.",
-      "reviewedRef": "ccf2167fae29921908394e77b30c9868a44b9187"
+      "reason": "Le contrôleur de création orchestre le workflow UI complet : hydratation et persistance du brouillon, création ou mise à jour, publication, puis liaison GPS après le brouillon serveur. Le service conserve l’owner Clerk/Bearer et la requête mission ; déplacer cette séquence créerait une façade métier artificielle et risquerait la reprise ou l’idempotence.",
+      "reviewedRef": "e79e7230ac7dccd765e598e4860de4c43431404b"
     },
     {
-      "id": "178bc2e0ffa4e059833a85d3",
-      "signature": "UI_TO_INFRASTRUCTURE|apps/mobile/screens/action-create.tsx|apps/mobile/lib/mobile-actions-service.ts|runtime|runtime",
+      "id": "276c53fe0ca58df0b41f655d",
+      "signature": "UI_TO_INFRASTRUCTURE|apps/mobile/hooks/use-action-create-controller.ts|apps/mobile/lib/mobile-actions-service.ts|runtime|runtime",
       "rule": "UI_TO_INFRASTRUCTURE",
-      "from": "apps/mobile/screens/action-create.tsx",
+      "from": "apps/mobile/hooks/use-action-create-controller.ts",
       "to": "apps/mobile/lib/mobile-actions-service.ts",
       "kind": "runtime",
       "sourceKind": "runtime",
-      "reason": "Présent dans le graphe du worktree observé après l’avance concurrente de main ; les changements préexistants restent hors du lot.",
-      "reviewedRef": "ccf2167fae29921908394e77b30c9868a44b9187"
+      "reason": "Le hook porte l’état de formulaire et l’ordre des mutations create/update/publish ; mobile-actions-service reste l’owner du transport API et des payloads canoniques. Cette dépendance est une orchestration de présentation nécessaire, pas une seconde logique métier ni une inversion à corriger.",
+      "reviewedRef": "e79e7230ac7dccd765e598e4860de4c43431404b"
     },
     {
       "id": "7af8ad029b5b38f31a459cb4",
@@ -217,6 +217,17 @@
       "sourceKind": "runtime",
       "reason": "Présent dans le graphe du worktree observé après l’avance concurrente de main ; les changements préexistants restent hors du lot.",
       "reviewedRef": "ccf2167fae29921908394e77b30c9868a44b9187"
+    },
+    {
+      "id": "9e3d129d3ee89d965d6dea05",
+      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/components/account/account-settings-editor.view.tsx|apps/web/src/lib/storage/ui-state-storage.ts|runtime|runtime",
+      "rule": "UI_TO_INFRASTRUCTURE",
+      "from": "apps/web/src/components/account/account-settings-editor.view.tsx",
+      "to": "apps/web/src/lib/storage/ui-state-storage.ts",
+      "kind": "runtime",
+      "sourceKind": "runtime",
+      "reason": "requestCookieConsentPreferences est l’événement UI étroit qui ouvre la gestion du consentement depuis les réglages ; ui-state-storage reste l’owner canonique de l’état sérialisé, de l’expiration, du défaut refusé, du parsing de tranche d’âge et des événements de changement. Une façade supplémentaire séparerait la frontière d’événement de son owner sans améliorer le contrat.",
+      "reviewedRef": "e79e7230ac7dccd765e598e4860de4c43431404b"
     },
     {
       "id": "9bbd0e5d1b69395a3e0efd6e",
@@ -527,15 +538,26 @@
       "reviewedRef": "ccf2167fae29921908394e77b30c9868a44b9187"
     },
     {
-      "id": "9dde491a5283151afc0c57ed",
-      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/components/profil/impact-profile-page.tsx|apps/web/src/lib/logging/failure-log.ts|runtime|runtime",
+      "id": "fc45efe4a21f199f4b7e16c3",
+      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/components/posthog-provider.tsx|apps/web/src/lib/storage/ui-state-storage.ts|runtime|runtime",
       "rule": "UI_TO_INFRASTRUCTURE",
-      "from": "apps/web/src/components/profil/impact-profile-page.tsx",
+      "from": "apps/web/src/components/posthog-provider.tsx",
+      "to": "apps/web/src/lib/storage/ui-state-storage.ts",
+      "kind": "runtime",
+      "sourceKind": "runtime",
+      "reason": "Le provider lit la tranche d’âge locale dans le même stockage de consentement avant de calculer l’éligibilité analytics ; l’initialisation PostHog reste bloquée jusqu’au consentement explicite et à l’éligibilité serveur. La lecture directe préserve le défaut prudent et la synchronisation, sans état optimiste ni second owner.",
+      "reviewedRef": "e79e7230ac7dccd765e598e4860de4c43431404b"
+    },
+    {
+      "id": "feb03f53994b1d89f6152ec2",
+      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/components/profil/use-impact-profile-actions.ts|apps/web/src/lib/logging/failure-log.ts|runtime|runtime",
+      "rule": "UI_TO_INFRASTRUCTURE",
+      "from": "apps/web/src/components/profil/use-impact-profile-actions.ts",
       "to": "apps/web/src/lib/logging/failure-log.ts",
       "kind": "runtime",
       "sourceKind": "runtime",
-      "reason": "Présent dans le graphe du worktree observé après l’avance concurrente de main ; les changements préexistants restent hors du lot.",
-      "reviewedRef": "ccf2167fae29921908394e77b30c9868a44b9187"
+      "reason": "Le hook délègue les erreurs des actions utilisateur à l’owner de journalisation qui borne et assainit les messages, clés, profondeurs et erreurs avant la console. Une extraction locale du logging du hook dupliquerait la protection et pourrait dégrader la remontée sans gain de responsabilité.",
+      "reviewedRef": "e79e7230ac7dccd765e598e4860de4c43431404b"
     },
     {
       "id": "a6de1535345300e322c8217a",
@@ -1088,17 +1110,6 @@
       "reviewedRef": "ad3d4280a2d47914e65b35806b42ee49d42fad9c"
     },
     {
-      "id": "3d4339651faa276a53fa3ce7",
-      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/lib/pdf-export/official-report-html.ts|apps/web/src/lib/security/html-escape.ts|runtime|runtime",
-      "rule": "UI_TO_INFRASTRUCTURE",
-      "from": "apps/web/src/lib/pdf-export/official-report-html.ts",
-      "to": "apps/web/src/lib/security/html-escape.ts",
-      "kind": "runtime",
-      "sourceKind": "runtime",
-      "reason": "Constatée sur le graphe client effectif avant ce correctif ; cette entrée documente un état préexistant et n autorise aucune signature future.",
-      "reviewedRef": "ad3d4280a2d47914e65b35806b42ee49d42fad9c"
-    },
-    {
       "id": "cf055f20130b6d40de0078d6",
       "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/lib/pdf-export/official-report-markdown.ts|apps/web/src/lib/security/html-escape.ts|runtime|runtime",
       "rule": "UI_TO_INFRASTRUCTURE",
@@ -1297,15 +1308,37 @@
       "reviewedRef": "a64198d74b0cc646f6efcf8037a88e913dd7dc0a"
     },
     {
-      "id": "88e38cf1c039f73f113801eb",
-      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/lib/pdf-export/browser-report.ts|apps/web/src/lib/security/html-escape.ts|runtime|runtime",
+      "id": "70b7f67beac7652679b1262b",
+      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/lib/pdf-export/official-report-html-classic.ts|apps/web/src/lib/security/html-escape.ts|runtime|runtime",
       "rule": "UI_TO_INFRASTRUCTURE",
-      "from": "apps/web/src/lib/pdf-export/browser-report.ts",
+      "from": "apps/web/src/lib/pdf-export/official-report-html-classic.ts",
       "to": "apps/web/src/lib/security/html-escape.ts",
       "kind": "runtime",
       "sourceKind": "runtime",
-      "reason": "L’adaptateur d’impression navigateur construit une réponse HTML à partir de données non fiables et réutilise directement l’owner de sécurité canonique ; une copie locale réduirait la cohérence de l’échappement.",
-      "reviewedRef": "a64198d74b0cc646f6efcf8037a88e913dd7dc0a"
+      "reason": "Le renderer HTML classique interpole titres, métadonnées, chapitres et valeurs de rapport non fiables ; il doit appeler directement l’owner de sécurité canonique. Une façade ou copie PDF locale diviserait l’échappement et risquerait une divergence de protection.",
+      "reviewedRef": "e79e7230ac7dccd765e598e4860de4c43431404b"
+    },
+    {
+      "id": "59785471d385ce4d884e5033",
+      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/lib/pdf-export/official-report-html-web.ts|apps/web/src/lib/security/html-escape.ts|runtime|runtime",
+      "rule": "UI_TO_INFRASTRUCTURE",
+      "from": "apps/web/src/lib/pdf-export/official-report-html-web.ts",
+      "to": "apps/web/src/lib/security/html-escape.ts",
+      "kind": "runtime",
+      "sourceKind": "runtime",
+      "reason": "Le renderer HTML web construit directement le titre, les métadonnées, les ancres et les contenus de chapitres ; l’échappement doit rester celui de l’owner sécurité partagé. La dépendance est une protection explicite, pas une inversion à masquer par une extraction.",
+      "reviewedRef": "e79e7230ac7dccd765e598e4860de4c43431404b"
+    },
+    {
+      "id": "92e65787659b25b0c39c6004",
+      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/lib/pdf-export/report-window-renderer.ts|apps/web/src/lib/security/html-escape.ts|runtime|runtime",
+      "rule": "UI_TO_INFRASTRUCTURE",
+      "from": "apps/web/src/lib/pdf-export/report-window-renderer.ts",
+      "to": "apps/web/src/lib/security/html-escape.ts",
+      "kind": "runtime",
+      "sourceKind": "runtime",
+      "reason": "L’adaptateur de fenêtre imprimable combine DOMPurify et escapeHtmlPreservingEntities pour sécuriser le titre HTML avant chargement ; l’appel direct à l’owner canonique est nécessaire à cette défense en profondeur. Le supprimer ou le recopier localement dégraderait la sécurité.",
+      "reviewedRef": "e79e7230ac7dccd765e598e4860de4c43431404b"
     }
   ],
   "retired": [
