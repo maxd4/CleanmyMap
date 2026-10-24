@@ -10,6 +10,7 @@ import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
 import sonarjs from "eslint-plugin-sonarjs";
 import { listFunctionMetadata } from "./complexity-policy.mjs";
+import { profileFunctionControlFlow } from "./control-flow-profile.mjs";
 import { gitExecutable } from "../ci/git-executable.mjs";
 
 const require = createRequire(import.meta.url);
@@ -59,7 +60,7 @@ function normalizePath(file) {
 function sourceFileEntries(root, sourceRoots) {
   const tracked = execFileSync(gitExecutable(), ["ls-files", "--", ...sourceRoots], { cwd: root, encoding: "utf8" });
   const untracked = execFileSync(gitExecutable(), ["ls-files", "--others", "--exclude-standard", "--", ...sourceRoots], { cwd: root, encoding: "utf8" });
-  return [...new Set(`${tracked}\n${untracked}`.split(/\r?\n/).map(normalizePath).filter((file) => /\.(?:ts|tsx)$/.test(file)))].map((file) => ({
+  return [...new Set(`${tracked}\n${untracked}`.split(/\r?\n/).map(normalizePath).filter((file) => /\.(?:mjs|ts|tsx)$/.test(file)))].map((file) => ({
     path: file,
     source: fs.readFileSync(path.join(root, file), "utf8"),
   }));
@@ -101,13 +102,26 @@ function relationFor(item, complexityMetrics) {
   };
 }
 
+function cognitiveRelationFor(item, cognitiveMetrics) {
+  const related = cognitiveMetrics.filter((metric) => metric.path === item.path && metric.functionIdentity === item.functionIdentity);
+  const metric = related[0];
+  return metric ? { value: metric.value, line: metric.line ?? null, thresholdTarget: metric.thresholdTarget ?? null } : null;
+}
+
 export function relateMaintainabilityReport(report, complexityReport) {
-  if (!report || report.error || !complexityReport || complexityReport.error) return report;
-  const complexityMetrics = complexityReport.metrics ?? [];
+  if (!report || report.error) return report;
+  const complexityMetrics = complexityReport?.error ? [] : complexityReport?.metrics ?? [];
   return {
     ...report,
     metrics: report.metrics.map((metric) => ({ ...metric, relation: relationFor(metric, complexityMetrics) })),
     findings: report.findings.map((finding) => ({ ...finding, relation: relationFor(finding, complexityMetrics) })),
+    controlFlowProfiles: (report.controlFlowProfiles ?? []).map((profile) => ({
+      ...profile,
+      relation: {
+        ...relationFor(profile, complexityMetrics),
+        cognitiveComplexity: cognitiveRelationFor(profile, report.metrics),
+      },
+    })),
   };
 }
 
@@ -122,15 +136,26 @@ export async function analyzeMaintainabilitySources({ files, complexityReport = 
       rules: Object.fromEntries(Object.entries(SELECTED_RULES).map(([ruleId, configuration]) => [ruleId, configuration.ruleConfiguration])),
     }],
   });
-  const lintResults = await Promise.all(files.map(async (file) => ({ file, results: await eslint.lintText(file.source, { filePath: file.path }) })));
+  const lintResults = await Promise.all(files.map(async (file) => ({
+    file,
+    results: /\.(?:ts|tsx)$/.test(file.path)
+      ? await eslint.lintText(file.source, { filePath: file.path })
+      : [],
+  })));
   const metrics = [];
   const findings = [];
+  const controlFlowProfiles = [];
+  const controlFlowStatuses = [];
   const diagnostics = [];
   let functionCount = 0;
 
   for (const { file, results } of lintResults) {
     const functions = listFunctionMetadata(file.path, file.source);
+    const controlFlow = profileFunctionControlFlow(file.path, file.source);
     functionCount += functions.length;
+    controlFlowStatuses.push({ path: file.path, status: controlFlow.status, reason: controlFlow.reason ?? null });
+    controlFlowProfiles.push(...controlFlow.functions);
+    diagnostics.push(...controlFlow.diagnostics.map((diagnostic) => ({ file: file.path, ...diagnostic })));
     const cognitiveByIdentity = new Map(functions.map((candidate) => [candidate.functionIdentity, 0]));
     for (const result of results) for (const message of result.messages ?? []) {
       if (message.fatal) {
@@ -186,7 +211,7 @@ export async function analyzeMaintainabilitySources({ files, complexityReport = 
     }
   }
 
-  const related = relateMaintainabilityReport({ metrics, findings }, complexityReport);
+  const related = relateMaintainabilityReport({ metrics, findings, controlFlowProfiles }, complexityReport);
   const findingsByRule = Object.fromEntries([...new Set(findings.map((finding) => finding.ruleId))].sort().map((ruleId) => [ruleId, findings.filter((finding) => finding.ruleId === ruleId).length]));
   const elapsedMs = Math.round((performance.now() - startedAt) * 100) / 100;
   const result = {
@@ -206,12 +231,18 @@ export async function analyzeMaintainabilitySources({ files, complexityReport = 
     }])),
     metrics: related.metrics,
     findings: related.findings,
+    controlFlowProfiles: related.controlFlowProfiles,
+    controlFlowStatuses,
     diagnostics,
     summary: {
       filesMeasured: files.length,
       functionsMeasured: functionCount,
       cognitiveComplexityFunctions: related.metrics.length,
       cognitiveComplexityAboveTarget: related.metrics.filter((metric) => metric.value > COGNITIVE_TARGET).length,
+      controlFlowFunctions: related.controlFlowProfiles.length,
+      controlFlowDecisionPoints: related.controlFlowProfiles.reduce((sum, profile) => sum + profile.decisionPoints, 0),
+      controlFlowNestedDecisionFunctions: related.controlFlowProfiles.filter((profile) => profile.nestedDecisionCount > 0).length,
+      controlFlowFilesNotMeasured: controlFlowStatuses.filter((entry) => entry.status === "NOT_MEASURED").length,
       localMaintainabilityFindings: related.findings.length,
       findingsByRule,
       elapsedMs,
@@ -222,6 +253,7 @@ export async function analyzeMaintainabilitySources({ files, complexityReport = 
       cognitiveComplexity: `measured with sonarjs/cognitive-complexity at rule threshold 0; reference target ${COGNITIVE_TARGET}; no ratchet yet`,
       functionLength: "measured by quality:complexity; not replaced",
       localMaintainability: "selected complementary findings; no universal blocking threshold",
+      controlFlowStructure: "descriptive TypeScript AST profile per function; no CodeScene algorithm, threshold, gate or score",
     },
   };
   return result;
@@ -233,6 +265,6 @@ export async function runMaintainabilityAudit({ root = process.cwd(), sourceRoot
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
   const report = await runMaintainabilityAudit();
-  console.log(`Maintainability audit: ${report.summary.functionsMeasured} functions, ${report.findings.length} local findings, ${report.summary.elapsedMs} ms.`);
+  console.log(`Maintainability audit: ${report.summary.functionsMeasured} functions, ${report.summary.controlFlowFunctions} control-flow profiles, ${report.summary.controlFlowDecisionPoints} decision points, ${report.findings.length} local findings, ${report.summary.elapsedMs} ms.`);
   if (report.status === "FAIL") process.exitCode = 1;
 }

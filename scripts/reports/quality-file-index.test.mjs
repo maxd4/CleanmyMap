@@ -559,6 +559,50 @@ test("projette la complexité cognitive et les défauts locaux avec leurs relati
   assert.equal(index.auditCategories.some((category) => category.id === "local-maintainability"), true);
 });
 
+test("projette la structure AST, sa relation aux métriques existantes et les signaux cumulés sans créer de finding", () => {
+  const run = buildRun();
+  run.reports.complexity.metrics = [
+    { metric: "complexity", path: fileA, functionIdentity: "named:fixture#1", value: 12, line: 5, functionStartLine: 5, functionEndLine: 20, category: "runtime/services/orchestration" },
+    { metric: "functionLength", path: fileA, functionIdentity: "named:fixture#1", value: 44, line: 5, functionStartLine: 5, functionEndLine: 20, category: "runtime/services/orchestration" },
+  ];
+  run.reports.maintainability = {
+    status: "PASS",
+    measurementStatus: "MEASURED_NOT_RATCHETED",
+    summary: { findingsByRule: {} },
+    metrics: [{ category: "cognitive-complexity", metric: "cognitiveComplexity", path: fileA, functionIdentity: "named:fixture#1", function: "named:fixture", line: 5, functionStartLine: 5, functionEndLine: 20, value: 18, thresholdTarget: 15 }],
+    controlFlowProfiles: [{
+      status: "PRESENT",
+      path: fileA,
+      functionIdentity: "named:fixture#1",
+      functionStartLine: 5,
+      functionEndLine: 20,
+      line: 5,
+      decisionPoints: 5,
+      maxDecisionNestingDepth: 3,
+      nestedDecisionCount: 2,
+      decisionKinds: { if: 3, "&&": 1, ternary: 1 },
+      decisionSubtrees: [{ index: 0, kind: "IfStatement", line: 6, endLine: 15, decisionPoints: 5, maxDecisionNestingDepth: 3, nestedDecisionCount: 2, decisionKinds: { if: 3, "&&": 1, ternary: 1 }, locations: [] }],
+      busiestSubtree: { index: 0, kind: "IfStatement", line: 6, endLine: 15, decisionPoints: 5 },
+    }],
+    findings: [],
+    diagnostics: [],
+  };
+  const index = buildQualityFileIndex({ run, mode: "ALL" });
+  const indexed = index.files.find((file) => file.path === fileA);
+  const profile = indexed.metrics.controlFlowStructure.items[0];
+
+  assert.equal(indexed.metrics.controlFlowStructure.state, "PRESENT");
+  assert.equal(profile.decisionPoints, 5);
+  assert.deepEqual(profile.relation.cyclomaticComplexity, { value: 12, category: "runtime/services/orchestration", line: 5 });
+  assert.deepEqual(profile.relation.functionLength, { value: 44, category: "runtime/services/orchestration", line: 5 });
+  assert.deepEqual(profile.relation.cognitiveComplexity, { value: 18, line: 5, thresholdTarget: 15 });
+  assert.equal(indexed.findings.localMaintainability.state, "NONE");
+  assert.equal(index.triage.functions.candidates.length, 1);
+  assert.deepEqual(index.triage.functions.candidates[0].functionSignals[0].signals, ["complexity", "functionLength", "cognitiveComplexity", "controlFlowStructure"]);
+  assert.match(buildQualityFileIndexMarkdown(index), /FUNCTION CONTROL-FLOW STRUCTURE/);
+  assert.match(buildQualityFileIndexMarkdown(index), /named:fixture#1/);
+});
+
 test("projette séparément TYPE_SAFETY et ASYNC_SAFETY par fichier", () => {
   const run = buildRun();
   run.reports["type-safety"] = {

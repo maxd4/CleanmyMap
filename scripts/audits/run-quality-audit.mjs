@@ -369,6 +369,7 @@ function makeSummary({ audit, manifest, result, paths }) {
       `- Measured files/functions: ${result.summary.filesMeasured}/${result.summary.functionsMeasured}`,
       `- Cognitive complexity functions: ${result.summary.cognitiveComplexityFunctions}`,
       `- Cognitive complexity above target ${result.rules?.["sonarjs/cognitive-complexity"]?.thresholdTarget ?? "—"}: ${result.summary.cognitiveComplexityAboveTarget}`,
+      `- Control-flow profiles / decision points: ${result.summary.controlFlowFunctions ?? "NOT_MEASURED"}/${result.summary.controlFlowDecisionPoints ?? "NOT_MEASURED"}`,
       `- Local maintainability findings: ${result.summary.localMaintainabilityFindings}`,
       `- Elapsed: ${result.summary.elapsedMs} ms`,
     );

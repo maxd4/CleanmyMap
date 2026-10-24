@@ -109,18 +109,45 @@ function collectFunctionNodes(sourceFile) {
   return nodes;
 }
 
-export function createFunctionMetadataResolver(file, source) {
-  const scriptKind = file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
-  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, scriptKind);
-  const nodes = collectFunctionNodes(sourceFile);
-  const identityByNode = new Map();
+function sourceFileFor(file, source) {
+  const normalized = file.replaceAll("\\", "/");
+  const scriptKind = normalized.endsWith(".tsx")
+    ? ts.ScriptKind.TSX
+    : /\.(?:c|m)?jsx?$/.test(normalized)
+      ? ts.ScriptKind.JSX
+      : ts.ScriptKind.TS;
+  return ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, scriptKind);
+}
+
+export function listFunctionSyntaxMetadata(file, source) {
+  const sourceFile = sourceFileFor(file, source);
   const occurrenceByRole = new Map();
-  const nodesByLine = new Map();
-  for (const node of nodes) {
+  return collectFunctionNodes(sourceFile).map((node) => {
     const role = functionRole(node, sourceFile);
     const occurrence = (occurrenceByRole.get(role) ?? 0) + 1;
     occurrenceByRole.set(role, occurrence);
-    identityByNode.set(node, `${role}#${occurrence}`);
+    const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+    const end = sourceFile.getLineAndCharacterOfPosition(node.end);
+    return {
+      functionIdentity: `${role}#${occurrence}`,
+      functionStartLine: start.line + 1,
+      functionEndLine: end.line + 1,
+      line: start.line + 1,
+      name: role,
+      node,
+      sourceFile,
+    };
+  });
+}
+
+export function createFunctionMetadataResolver(file, source) {
+  const syntaxMetadata = listFunctionSyntaxMetadata(file, source);
+  const sourceFile = syntaxMetadata[0]?.sourceFile ?? sourceFileFor(file, source);
+  const nodes = syntaxMetadata.map((entry) => entry.node);
+  const identityByNode = new Map(syntaxMetadata.map((entry) => [entry.node, entry.functionIdentity]));
+  const metadataByNode = new Map(syntaxMetadata.map((entry) => [entry.node, entry]));
+  const nodesByLine = new Map();
+  for (const node of nodes) {
     const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
     if (!nodesByLine.has(line)) nodesByLine.set(line, []);
     nodesByLine.get(line).push(node);
@@ -133,34 +160,13 @@ export function createFunctionMetadataResolver(file, source) {
       ? candidates.find((candidate) => nodeName(candidate, sourceFile) === namedMessage)
       : candidates[0]) ?? candidates[0];
     if (!node) return null;
-    return {
-      functionIdentity: identityByNode.get(node),
-      startLine: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
-      endLine: sourceFile.getLineAndCharacterOfPosition(node.end).line + 1,
-    };
+    const metadata = metadataByNode.get(node);
+    return { functionIdentity: identityByNode.get(node), startLine: metadata.functionStartLine, endLine: metadata.functionEndLine };
   };
 }
 
 export function listFunctionMetadata(file, source) {
-  const scriptKind = file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
-  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, scriptKind);
-  const nodes = collectFunctionNodes(sourceFile);
-  const occurrenceByRole = new Map();
-  return nodes.map((node) => {
-    const role = functionRole(node, sourceFile);
-    const occurrence = (occurrenceByRole.get(role) ?? 0) + 1;
-    occurrenceByRole.set(role, occurrence);
-    const functionIdentity = `${role}#${occurrence}`;
-    const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
-    const end = sourceFile.getLineAndCharacterOfPosition(node.end);
-    return {
-      functionIdentity,
-      functionStartLine: start.line + 1,
-      functionEndLine: end.line + 1,
-      line: start.line + 1,
-      name: role,
-    };
-  });
+  return listFunctionSyntaxMetadata(file, source).map(({ node, sourceFile, ...metadata }) => metadata);
 }
 
 function createFunctionIdentityResolver(file, source) {

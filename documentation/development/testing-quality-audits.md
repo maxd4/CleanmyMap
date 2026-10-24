@@ -66,6 +66,33 @@ des cinq gates historiques. `maintainability` distingue la complexité
 cognitive, les défauts locaux et leurs relations avec la complexité
 cyclomatique et la longueur de fonction. `type-safety` sépare strictement les
 findings `TYPE_SAFETY` et `ASYNC_SAFETY`, sans double comptage dans l'index.
+Le rapport `maintainability` contient aussi `controlFlowProfiles`, une mesure
+descriptive AST par fonction. Elle réutilise exactement l'identité v2, les
+lignes de début/fin et le fichier des métriques de complexité ; son champ
+`relation` rapproche donc, lorsque la preuve existe, la complexité cyclomatique
+et la longueur de fonction sans les recalculer. Le profil compte précisément :
+
+- un `if` par `IfStatement` (un `else if` est donc un second `if` ; `else` seul
+  ne compte pas) ;
+- un `switch` par `SwitchStatement`, puis un point par `CaseClause` ou
+  `DefaultClause` ;
+- un point pour chaque boucle `ForStatement`, `ForInStatement`,
+  `ForOfStatement`, `WhileStatement` ou `DoStatement` ;
+- un point par `ConditionalExpression` (ternaire) et par `CatchClause` ;
+- un point pour chacun des opérateurs courts `&&`, `||` et `??` représentés par
+  un `BinaryExpression`.
+
+La profondeur augmente lorsqu'un de ces nœuds est rencontré dans le sous-arbre
+d'un autre point de décision. `nestedDecisionCount` compte les décisions de
+profondeur supérieure à un. La distribution est calculée pour chaque instruction
+directe du bloc de fonction (ou pour le corps expression d'une arrow function) ;
+les fonctions imbriquées sont profilées séparément et ne gonflent pas le profil
+du parent. `busiestSubtree` est le sous-arbre qui contient le plus de décisions,
+départagé par sa position source. Les lignes, les locations, les catégories et
+les ordres sont déterministes. Un type de fichier non supporté ou une erreur de
+parse reste `NOT_MEASURED`. Cette mesure ne reproduit pas CodeScene, n'ajoute
+aucun seuil, score, coût futur ou gate, et ne crée pas de candidat décisionnel
+sans un finding existant.
 Une exception `fire-and-forget` exige à la fois une justification locale et
 une expression AST commençant par `void`; le commentaire seul ne neutralise
 pas une promesse flottante. Les suppressions ESLint justifiées sont reconnues

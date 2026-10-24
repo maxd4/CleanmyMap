@@ -166,6 +166,30 @@ function buildDocumentationTriage(audits, source) {
   };
 }
 
+function functionSignalSummaries(file) {
+  const complexity = new Set((file.metrics.complexity?.items ?? []).map((item) => `${item.functionIdentity}:${item.metric}`));
+  const cognitive = new Set((file.metrics.cognitiveComplexity?.items ?? []).map((item) => item.functionIdentity));
+  const local = new Set((file.findings.localMaintainability?.items ?? []).map((item) => item.functionIdentity).filter(Boolean));
+  return (file.metrics.controlFlowStructure?.items ?? []).map((profile) => {
+    const identity = profile.functionIdentity;
+    const signals = [
+      complexity.has(`${identity}:complexity`) ? "complexity" : null,
+      complexity.has(`${identity}:functionLength`) ? "functionLength" : null,
+      cognitive.has(identity) ? "cognitiveComplexity" : null,
+      profile.decisionPoints > 0 ? "controlFlowStructure" : null,
+      local.has(identity) ? "localMaintainability" : null,
+    ].filter(Boolean);
+    return {
+      functionIdentity: identity,
+      functionStartLine: profile.functionStartLine,
+      functionEndLine: profile.functionEndLine,
+      signals,
+      decisionPoints: profile.decisionPoints,
+      maxDecisionNestingDepth: profile.maxDecisionNestingDepth,
+    };
+  }).filter((summary) => summary.signals.length > 1);
+}
+
 function buildFunctionTriage(files, audits) {
   const byFile = new Map();
   for (const file of files) {
@@ -191,7 +215,12 @@ function buildFunctionTriage(files, audits) {
       byFile.set(file.path, candidate);
     }
   }
-  const candidates = [...byFile.values()].map((candidate) => ({ ...candidate, detail: [...candidate.detail].sort().join(", ") })).sort(sortTriageCandidates).slice(0, 10);
+  const fileByPath = new Map(files.map((file) => [file.path, file]));
+  const candidates = [...byFile.values()].map((candidate) => ({
+    ...candidate,
+    detail: [...candidate.detail].sort().join(", "),
+    functionSignals: functionSignalSummaries(fileByPath.get(candidate.path)),
+  })).sort(sortTriageCandidates).slice(0, 10);
   const staleEvidenceCount = files.reduce((count, file) => count + [...(file.findings.complexity?.items ?? [])].filter((finding) => finding.type === "stale").length, 0);
   return {
     state: candidates.length > 0 ? "PRESENT" : staleEvidenceCount > 0 ? "STALE_EVIDENCE" : audits.complexity.state === "NOT_MEASURED" ? "NOT_MEASURED" : "NONE",

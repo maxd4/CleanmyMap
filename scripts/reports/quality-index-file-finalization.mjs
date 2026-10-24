@@ -44,6 +44,7 @@ function buildHotspotMeasurement(file) {
       cyclomaticComplexity: file.complexity.metrics.filter((metric) => metric.metric === "complexity"),
       functionLength: file.complexity.metrics.filter((metric) => metric.metric === "functionLength"),
       cognitiveComplexity: file.maintainability.cognitiveMetrics,
+      controlFlowStructure: file.maintainability.controlFlowProfiles,
     },
     debtAccumulation: {
       categories: DEBT_CATEGORIES.filter((category) => file[category]?.findings?.size > 0),
@@ -67,6 +68,7 @@ function typeSafetyState(family, findings, context) {
 
 function buildMetrics(file, availability, architecture, typeSafety, hotspotMeasurement) {
   const cognitiveMetrics = file.maintainability.cognitiveMetrics;
+  const controlFlowProfiles = file.maintainability.controlFlowProfiles;
   const coverage = file.coverage.measurement;
   return {
     topHeavy: file.topHeavy.measurements
@@ -78,6 +80,11 @@ function buildMetrics(file, availability, architecture, typeSafety, hotspotMeasu
     cognitiveComplexity: cognitiveMetrics.length > 0
       ? state("PRESENT", `${cognitiveMetrics.length} fonction(s) mesurée(s)`, cognitiveMetrics)
       : availability.maintainability === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport maintainability en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
+    controlFlowStructure: controlFlowProfiles.length > 0
+      ? state("PRESENT", `${controlFlowProfiles.length} fonction(s) profilée(s)`, controlFlowProfiles)
+      : file.maintainability.controlFlowStatus?.status === "NOT_MEASURED"
+        ? state("NOT_MEASURED", file.maintainability.controlFlowStatus.reason ?? "profil AST de contrôle de flux non pris en charge", [])
+      : availability.maintainability === "NOT_MEASURED" ? state("NOT_MEASURED", "profil AST de contrôle de flux indisponible avec le rapport maintainability") : state("NOT_APPLICABLE", "aucune fonction profilée dans ce rapport"),
     typeSafety: typeSafetyState("TYPE_SAFETY", typeSafety.typeSafety, typeSafety),
     asyncSafety: typeSafetyState("ASYNC_SAFETY", typeSafety.asyncSafety, typeSafety),
     hotspots: hotspotMeasurement

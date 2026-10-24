@@ -481,6 +481,7 @@ export function buildQualityIndexDecisionTriage({ files = [], audits = {}, sourc
       "L’effort, le gain futur et la probabilité de régression ne sont pas mesurés ; ils restent NOT_ESTIMABLE lorsqu’aucune preuve déterministe n’existe.",
       "Un contrôle cycles SKIPPED_BY_POLICY produit uniquement un candidat de manque de mesure, jamais un cycle ou une absence de cycle.",
       "La prudence utilise les responsabilités observables dans les fichiers, l’architecture et les findings ; un périmètre indéterminé reste REVIEW_REQUIRED.",
+      "La structure descriptive du contrôle de flux enrichit les profils de fonctions existants, mais ne crée jamais à elle seule un finding, une priorité ou une recommandation.",
     ],
     rules: {
       p0: "uniquement une preuve structurée, attribuable et explicitement confirmée conjointement pour le défaut et sa criticité ; aucun FAIL, seuil, R4 ou duplication ne suffit à lui seul",

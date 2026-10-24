@@ -78,7 +78,7 @@ function ensureFile(files, filePath) {
       functionalDomains: new Set(),
       topHeavy: { measurements: null, findings: new Map(), exceptions: [] },
       complexity: { metrics: [], findings: new Map() },
-      maintainability: { cognitiveMetrics: [], findings: new Map() },
+      maintainability: { cognitiveMetrics: [], controlFlowProfiles: [], controlFlowStatus: null, findings: new Map() },
       typeSafety: { findings: new Map(), coverage: null },
       hotspots: { measurement: null, findings: new Map() },
       testability: { measurement: null, findings: new Map() },
@@ -284,6 +284,7 @@ function addComplexity(report, files, domains) {
 function addMaintainability(report, files, domains, complexityReport) {
   if (!report || report.error) return { state: "NOT_MEASURED", status: report?.error ? "FAIL" : "NOT_MEASURED", error: report?.error ?? null, measuredFunctions: 0, measuredFiles: 0, findingCounts: {} };
   const complexityMetrics = complexityReport?.metrics ?? [];
+  const cognitiveMetrics = report.metrics ?? [];
   const related = (item) => item.relation ?? (() => {
     const sameFunction = complexityMetrics.filter((metric) => metric.path === item.path && metric.functionIdentity === item.functionIdentity);
     const sameRange = complexityMetrics.filter((metric) => metric.path === item.path
@@ -314,19 +315,40 @@ function addMaintainability(report, files, domains, complexityReport) {
       addDomain(domains, "cognitive-complexity", "complexité cognitive au-dessus de la cible informative", file, findingId);
     }
   }
+  for (const profile of report.controlFlowProfiles ?? []) {
+    const file = ensureFile(files, profile.path);
+    const cognitive = cognitiveMetrics.find((metric) => metric.path === profile.path && metric.functionIdentity === profile.functionIdentity);
+    const relation = {
+      ...related(profile),
+      cognitiveComplexity: profile.relation?.cognitiveComplexity ?? (cognitive ? {
+        value: cognitive.value,
+        line: cognitive.line ?? null,
+        thresholdTarget: cognitive.thresholdTarget ?? null,
+      } : null),
+    };
+    if (file) file.maintainability.controlFlowProfiles.push({ ...profile, relation });
+  }
+  for (const status of report.controlFlowStatuses ?? []) {
+    const file = ensureFile(files, status.path);
+    if (file) file.maintainability.controlFlowStatus = { status: status.status, reason: status.reason ?? null };
+  }
   for (const finding of report.findings ?? []) {
     const file = ensureFile(files, finding.file);
     const domain = finding.category === "cognitive-complexity" ? "cognitive-complexity" : "local-maintainability";
     const findingId = addFinding(file, "maintainability", { ...finding, relation: related(finding) }, domain, stableId(`maintainability:${finding.ruleId}`, finding));
     addDomain(domains, domain, domain === "cognitive-complexity" ? "complexité cognitive des fonctions" : "défauts locaux de maintenabilité sélectionnés", file, findingId);
   }
-  const cognitiveMetrics = report.metrics ?? [];
+  const controlFlowProfiles = report.controlFlowProfiles ?? [];
   return {
     state: "PRESENT",
     status: report.status,
     measurementStatus: report.measurementStatus ?? "MEASURED_NOT_RATCHETED",
     measuredFunctions: cognitiveMetrics.length,
-    measuredFiles: new Set(cognitiveMetrics.map((metric) => metric.path)).size,
+    measuredFiles: new Set([...cognitiveMetrics, ...controlFlowProfiles].map((metric) => metric.path)).size,
+    controlFlowFunctions: controlFlowProfiles.length,
+    controlFlowDecisionPoints: controlFlowProfiles.reduce((sum, profile) => sum + (profile.decisionPoints ?? 0), 0),
+    controlFlowNestedDecisionFunctions: controlFlowProfiles.filter((profile) => (profile.nestedDecisionCount ?? 0) > 0).length,
+    controlFlowFilesNotMeasured: (report.controlFlowStatuses ?? []).filter((entry) => entry.status === "NOT_MEASURED").length,
     findingCounts: {
       cognitiveComplexity: cognitiveMetrics.filter((metric) => metric.value > (metric.thresholdTarget ?? Number.POSITIVE_INFINITY)).length,
       localMaintainability: report.findings?.length ?? 0,
