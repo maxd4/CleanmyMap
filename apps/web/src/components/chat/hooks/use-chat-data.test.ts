@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { buildMessagesKey, getChatRefreshIntervalMs } from "./use-chat-data";
+import { isRelevantChatMessageChange } from "./use-chat-data.model";
 
 const chatUserSearchSource = readFileSync(
   new URL("./use-chat-user-search.ts", import.meta.url),
@@ -195,5 +196,52 @@ describe("chat topic feed keys", () => {
       effectiveZone: "",
       territoryFocus: null,
     })).toBeNull();
+  });
+});
+
+describe("chat realtime scope", () => {
+  it("ignores changes outside the active DM and accepts both directions of the active conversation", () => {
+    const scope = {
+      activeChannelType: "dm" as const,
+      selectedRecipientId: "user-2",
+      currentUserId: "user-1",
+      effectiveZone: "",
+      territoryFocus: null,
+    };
+
+    expect(isRelevantChatMessageChange({
+      channel_type: "dm",
+      sender_id: "user-3",
+      recipient_id: "user-4",
+    }, scope)).toBe(false);
+    expect(isRelevantChatMessageChange({
+      channel_type: "dm",
+      sender_id: "user-2",
+      recipient_id: "user-1",
+    }, scope)).toBe(true);
+  });
+
+  it("keeps topic and territory filtering in the realtime owner", () => {
+    expect(isRelevantChatMessageChange({
+      channel_type: "community",
+      topic_id: "appel_aux_benevoles",
+    }, {
+      activeChannelType: "community",
+      activeTopicIds: ["relais_associatif"],
+      selectedRecipientId: null,
+      effectiveZone: "",
+      territoryFocus: null,
+    })).toBe(false);
+
+    expect(isRelevantChatMessageChange({
+      channel_type: "territory",
+      zone_name: "Paris 11e",
+      arrondissement_id: null,
+    }, {
+      activeChannelType: "territory",
+      selectedRecipientId: null,
+      effectiveZone: "Paris 11e",
+      territoryFocus: 11,
+    })).toBe(true);
   });
 });

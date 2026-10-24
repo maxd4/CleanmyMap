@@ -231,8 +231,12 @@ describe("useChatData behavior", () => {
 
   it("subscribes to realtime only when enabled and removes the channel on unmount", async () => {
     realtimeEnabledMock.mockReturnValue(true);
+    const realtimeHandlers: Array<(payload: { new: unknown }) => void> = [];
     const subscription = {
-      on: vi.fn().mockReturnThis(),
+      on: vi.fn().mockImplementation((_event: string, _filter: unknown, handler: unknown) => {
+        realtimeHandlers.push(handler as (payload: { new: unknown }) => void);
+        return subscription;
+      }),
       subscribe: vi.fn().mockReturnThis(),
     };
     const supabase = {
@@ -243,8 +247,60 @@ describe("useChatData behavior", () => {
     expect(supabase.channel).toHaveBeenCalledWith("chat-updates");
     expect(subscription.on).toHaveBeenCalledTimes(2);
     expect(subscription.subscribe).toHaveBeenCalledTimes(1);
+    fetchChatJsonMock.mockResolvedValue(response([]));
+    await act(async () => {
+      realtimeHandlers[0]?.({
+        new: { channel_type: "dm", sender_id: "other-1", recipient_id: "other-2" },
+      });
+      await Promise.resolve();
+    });
+    expect(fetchChatJsonMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      realtimeHandlers[0]?.({
+        new: { channel_type: "community", topic_id: null },
+      });
+      await Promise.resolve();
+    });
+    expect(fetchChatJsonMock).toHaveBeenCalledWith("/api/chat?channelType=community");
     act(() => renderer.unmount());
     await Promise.resolve();
     expect(supabase.removeChannel).toHaveBeenCalledWith(subscription);
+  });
+
+  it("does not apply an older pagination response after the active channel changes", async () => {
+    const current = currentMessage();
+    swrState.data = response([current], {
+      hasMore: true,
+      previousCursor: { createdAt: current.created_at, id: current.id },
+    });
+    let resolveOlder!: (value: ChatMessagesResponse) => void;
+    fetchChatJsonMock.mockReturnValueOnce(new Promise<ChatMessagesResponse>((resolve) => {
+      resolveOlder = resolve;
+    }));
+    const { renderer, getState } = renderProbe();
+    let loadPromise!: Promise<void>;
+
+    await act(async () => {
+      loadPromise = getState().loadPreviousMessages();
+      await Promise.resolve();
+    });
+    act(() => {
+      renderer.update(
+        <Probe
+          {...baseParams}
+          activeChannelType="dm"
+          selectedRecipientId="user-2"
+          onState={() => undefined}
+        />,
+      );
+    });
+    await act(async () => {
+      resolveOlder(response([currentMessage({ id: "message-old" })]));
+      await loadPromise;
+    });
+
+    expect(swrState.data?.messages.map((message) => message.id)).toEqual(["message-current"]);
+    renderer.unmount();
   });
 });
