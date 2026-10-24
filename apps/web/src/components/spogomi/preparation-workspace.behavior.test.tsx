@@ -123,4 +123,33 @@ describe("SPOGOMI preparation workspace", () => {
     expect(JSON.parse(lockCall?.[1]?.body as string)).toEqual({ divisionId: "division-casual", expectedRevision: 2 });
     renderer.unmount();
   });
+
+  it("ignores a late projection response from a previous division selection", async () => {
+    let resolveCasual!: (response: Response) => void;
+    let resolveWorld!: (response: Response) => void;
+    const casualProjection = new Promise<Response>((resolve) => { resolveCasual = resolve; });
+    const worldProjection = new Promise<Response>((resolve) => { resolveWorld = resolve; });
+    const casualBody = { ...body, participants: [{ ...body.participants[0], display_name: "Casual tardif" }], teams: [{ ...body.teams[0], public_name: "Équipe casual tardive" }] };
+    const worldBody = { ...body, participants: [{ ...body.participants[0], division_id: "division-world", display_name: "World courant", composition_eligible: true }], teams: [{ ...body.teams[0], division_id: "division-world", public_name: "Équipe World courante" }] };
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("divisionId=division-casual")) return casualProjection;
+      if (url.includes("divisionId=division-world")) return worldProjection;
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
+    });
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const worldTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "World Cup");
+    expect(worldTab).toBeTruthy();
+    act(() => { worldTab?.props.onClick(); });
+    await act(async () => { resolveWorld(new Response(JSON.stringify(worldBody), { status: 200 })); await Promise.resolve(); });
+    await act(async () => { resolveCasual(new Response(JSON.stringify(casualBody), { status: 200 })); await Promise.resolve(); });
+
+    const rendered = JSON.stringify(renderer.toJSON());
+    expect(rendered).toContain("Équipe World courante");
+    expect(rendered).not.toContain("Équipe casual tardive");
+    renderer.unmount();
+  });
 });

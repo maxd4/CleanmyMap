@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 const moveRoute = readFileSync(new URL("../../app/api/spogomi/events/[eventId]/teams/move/route.ts", import.meta.url), "utf8");
 const lockRoute = readFileSync(new URL("../../app/api/spogomi/events/[eventId]/teams/lock/route.ts", import.meta.url), "utf8");
 const workspace = readFileSync(new URL("../../components/spogomi/spogomi-preparation-workspace.tsx", import.meta.url), "utf8");
+const workspaceView = readFileSync(new URL("../../components/spogomi/spogomi-preparation-workspace-view.tsx", import.meta.url), "utf8");
+const workspaceContract = readFileSync(new URL("../../components/spogomi/spogomi-preparation-workspace-contract.ts", import.meta.url), "utf8");
 
 describe("SPOGOMI composition mutation STATIC_CONTRACT", () => {
   it("passes the current revision and organizer actor to both mutation services", () => {
@@ -16,9 +18,9 @@ describe("SPOGOMI composition mutation STATIC_CONTRACT", () => {
   it("exposes an explicit arbitration refusal and disables ordinary moves outside preparation", () => {
     expect(moveRoute).toContain("SpogomiCompositionProtectionError");
     expect(lockRoute).toContain("SpogomiCompositionProtectionError");
-    expect(workspace).toContain("Une absence ou un remplacement nécessite une procédure d’arbitrage versionnée");
-    expect(workspace).toContain("Billet annulé ou supprimé : affectation bloquée");
-    expect(workspace).toContain("!compositionEditable");
+    expect(workspaceContract).toContain("Une absence ou un remplacement nécessite une procédure d’arbitrage versionnée");
+    expect(workspaceContract).toContain("Billet annulé ou supprimé : affectation bloquée");
+    expect(workspaceView).toContain("!compositionEditable");
     expect(workspace).toContain("expectedRevision: data.event.composition_revision ?? 0");
   });
 });
