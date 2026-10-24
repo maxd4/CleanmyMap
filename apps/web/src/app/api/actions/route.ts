@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
-import { ACTION_STATUSES, type ActionStatus } from "@/lib/actions/types";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { z } from "zod";
 import { createActionSchema } from "@/lib/validation/action";
 import {
   canManageActionsGlobally,
   canModerateActionsGlobally,
 } from "@/lib/actions/permissions";
 import {
-  getCurrentUserIdentity,
   getCurrentUserActiveRole,
-  pickTraceableActorName,
+  getCurrentUserIdentity,
   requireAuthenticatedAccess,
-  type UserIdentity,
 } from "@/lib/authz";
 import {
   toActionListItem,
@@ -19,303 +16,41 @@ import {
   toPublicActionListResponse,
 } from "@/lib/actions/data-contract";
 import {
-  fetchUnifiedActionContracts,
-  parseEntityTypesParam,
-} from "@/lib/actions/unified-source";
-import { buildActionInsights } from "@/lib/actions/insights";
-import { filterActionContractsByScope, type ReportScope } from "@/lib/reports/scope";
-import {
   forbiddenJsonResponse,
   unauthorizedJsonResponse,
 } from "@/lib/http/auth-responses";
-import { handleApiError, parseJsonBodyWithValidation, validationErrorResponse } from "@/lib/http/api-errors";
-import { buildDateFloor, resolveReportQuery } from "@/lib/reports/csv";
-import { parsePositiveInteger } from "@/lib/http/query-params";
 import {
-  enforceServerRateLimit,
-} from "@/lib/rate-limit/server";
-import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
-import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
-import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
-import { isActionStartInFuture } from "@/lib/actions/temporal";
+  handleApiError,
+  parseJsonBodyWithValidation,
+  validationErrorResponse,
+} from "@/lib/http/api-errors";
+import { enforceServerRateLimit } from "@/lib/rate-limit/server";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
-import { z } from "zod";
+import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
+import { executeActionCreation } from "./route.create";
+import {
+  buildActionsRoutePayload,
+  getActionsSnapshotMeta,
+  resolveActionListQuery,
+} from "./route.query";
 
 export const runtime = "nodejs";
 // Justification Vercel: cette route varie selon la requete, le statut Clerk et le scope demande.
 export const dynamic = "force-dynamic";
 
-const QUALITY_GRADES = ["A", "B", "C"] as const;
-const IMPACT_LEVELS = ["faible", "moyen", "fort", "critique"] as const;
 const ACTIONS_SNAPSHOT_TTL_MINUTES = 30;
 const ACTIONS_SNAPSHOT_VERSION = "public-actions-v2";
 
-function parseStatusParam(raw: string | null): ActionStatus | null {
-  if (!raw) {
-    return null;
-  }
-  return ACTION_STATUSES.includes(raw as ActionStatus)
-    ? (raw as ActionStatus)
-    : null;
-}
-
-function parseQualityGradeParam(
-  raw: string | null,
-): (typeof QUALITY_GRADES)[number] | null {
-  if (!raw) {
-    return null;
-  }
-  return QUALITY_GRADES.includes(raw as (typeof QUALITY_GRADES)[number])
-    ? (raw as (typeof QUALITY_GRADES)[number])
-    : null;
-}
-
-function parseBooleanFlag(raw: string | null): boolean | null {
-  if (!raw) {
-    return null;
-  }
-  const value = raw.trim().toLowerCase();
-  if (value === "1" || value === "true" || value === "yes") {
-    return true;
-  }
-  if (value === "0" || value === "false" || value === "no") {
-    return false;
-  }
-  return null;
-}
-
-function parseImpactParam(
-  raw: string | null,
-): (typeof IMPACT_LEVELS)[number] | null {
-  if (!raw) {
-    return null;
-  }
-  return IMPACT_LEVELS.includes(raw as (typeof IMPACT_LEVELS)[number])
-    ? (raw as (typeof IMPACT_LEVELS)[number])
-    : null;
-}
-
-function buildActionsSnapshotKey(params: {
-  reportQuery: ReturnType<typeof resolveReportQuery>;
-  limit: number;
-  status: ActionStatus | null;
-  days: number | null;
-  types: string;
-  qualityGrade: (typeof QUALITY_GRADES)[number] | null;
-  toFixPriority: boolean | null;
-  impact: (typeof IMPACT_LEVELS)[number] | null;
-  view: string;
-}): string {
-  return JSON.stringify({
-    route: "api/actions",
-    scopeKind: params.reportQuery.scopeKind,
-    scopeValue:
-      params.reportQuery.scopeKind === "association"
-        ? params.reportQuery.scopeValue ?? params.reportQuery.association
-        : params.reportQuery.scopeValue,
-    limit: params.limit,
-    status: params.status ?? "all",
-    days: params.days ?? "all",
-    types: params.types,
-    qualityGrade: params.qualityGrade ?? "all",
-    toFixPriority:
-      params.toFixPriority === null ? "all" : String(params.toFixPriority),
-    impact: params.impact ?? "all",
-    view: params.view,
-  });
-}
-
-function resolveActionListFilters(url: URL) {
-  return {
-    types: parseEntityTypesParam(url.searchParams.get("types")),
-    qualityGrade: parseQualityGradeParam(url.searchParams.get("qualityGrade")),
-    toFixPriority: parseBooleanFlag(url.searchParams.get("toFixPriority")),
-    impact: parseImpactParam(url.searchParams.get("impact")),
-  };
-}
-
-type CreateActionRequest = z.infer<typeof createActionSchema>;
-
-function buildVolunteerValidationDetails(
-  issues: ReturnType<typeof getVolunteerActionValidationIssues>,
-): Record<string, string[]> {
-  return issues.reduce<Record<string, string[]>>((details, issue) => {
-    const current = details[issue.field] ?? [];
-    current.push(issue.message);
-    details[issue.field] = current;
-    return details;
-  }, {});
-}
-
-async function executeActionCreation({
-  request,
-  userId,
-  payload,
-  idempotencyKey,
-  identity,
-  isCreatorGlobalAdmin,
-}: {
-  request: Request;
-  userId: string;
-  payload: CreateActionRequest;
-  idempotencyKey?: string;
-  identity: UserIdentity | null;
-  isCreatorGlobalAdmin: boolean;
+function actionListResponse(payload: {
+  partialSource?: boolean;
+  [key: string]: unknown;
 }) {
-  const supabase = getSupabaseServerClient(true);
-  const { ActionCreationValidationError, createActionSubmission } = await import("@/lib/actions/create-submission");
-  const resolvedIdentity = identity ?? {
-    displayName: userId,
-    handle: userId,
-    username: userId,
-    email: null,
-  };
-  const normalizedPayload = {
-    ...payload,
-    actorName: pickTraceableActorName(identity, payload.actorName),
-  };
-  if (normalizedPayload.submissionMode !== "quick") {
-    const volunteerIssues = getVolunteerActionValidationIssues(normalizedPayload);
-    if (volunteerIssues.length > 0) {
-      return validationErrorResponse(buildVolunteerValidationDetails(volunteerIssues));
-    }
-  }
-  try {
-    const created = await createActionSubmission({
-      supabase,
-      userId,
-      payload: normalizedPayload,
-      idempotencyKey,
-      creator: {
-        userId,
-        displayName: resolvedIdentity.displayName,
-        handle: resolvedIdentity.handle,
-        username: resolvedIdentity.username,
-        email: resolvedIdentity.email,
-      },
-      isCreatorGlobalAdmin,
-      consentGranted: hasAnalyticsConsentCookie(request.headers.get("cookie")),
-    });
-    return NextResponse.json(
-      {
-        status: "created",
-        id: created.id,
-        source: created.source,
-        retentionLoop: created.kind === "action" ? created.retentionLoop : null,
-      },
-      { status: 201 },
-    );
-  } catch (error) {
-    if (error instanceof ActionCreationValidationError) {
-      return validationErrorResponse(error.fieldErrors);
-    }
-    throw error;
-  }
-}
-
-async function buildActionsRoutePayload(
-  url: URL,
-  statusOverride: ActionStatus | null,
-  toListItem: typeof toActionListItem | typeof toPublicActionListItem,
-  includePrivateActions = false,
-) {
-  const futureOnly = url.searchParams.get("view") === "future";
-  const reportQuery = resolveReportQuery(url);
-  const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 200, 30);
-  const status = statusOverride;
-  const daysRaw = url.searchParams.get("days");
-  const days =
-    daysRaw === null ? null : parsePositiveInteger(daysRaw, 1, 3650, 90);
-  const floorDate = futureOnly ? null : days === null ? null : buildDateFloor(days);
-  const { types, qualityGrade, toFixPriority, impact } = resolveActionListFilters(url);
-
-  const supabase = getSupabaseServerClient(true);
-  const result = await fetchUnifiedActionContracts(supabase, {
-    limit: Math.max(limit * 2, limit),
-    status,
-    includeFuturePublicActions: futureOnly,
-    futureOnly,
-    floorDate,
-    requireCoordinates: false,
-    types,
-    includePrivateActions,
-  });
-
-  const now = new Date();
-  const scope: ReportScope = {
-    kind: reportQuery.scopeKind,
-    value:
-      reportQuery.scopeKind === "association"
-        ? reportQuery.scopeValue ?? reportQuery.association
-        : reportQuery.scopeValue,
-  };
-
-  const items = filterActionContractsByScope(result.items, scope)
-    .filter((contract) => {
-      if (!futureOnly) return true;
-      return (
-        contract.source === "actions" &&
-        contract.type === "action" &&
-        Boolean(contract.publishedAt) &&
-        contract.metadata?.actionPhase === "pre_action" &&
-        isActionStartInFuture({
-          action_date: contract.dates.observedAt,
-          event_start_time: contract.dates.eventStartTime,
-        })
-      );
-    })
-    .map((contract) => {
-      const insights = buildActionInsights(contract, now);
-      return toListItem(contract, insights);
-    })
-    .filter((item) => {
-      if (qualityGrade && item.quality_grade !== qualityGrade) {
-        return false;
-      }
-      if (
-        toFixPriority !== null &&
-        Boolean(item.to_fix_priority) !== toFixPriority
-      ) {
-        return false;
-      }
-      if (impact && item.impact_level !== impact) {
-        return false;
-      }
-      return true;
-    })
-    .slice(0, limit);
-
-  return {
-    status: "ok" as const,
-    source: "unified_actions" as const,
-    count: items.length,
-    items,
-    sourceHealth: result.sourceHealth,
-    partialSource: result.sourceHealth.partial,
-  };
-}
-
-type ActionsReadPolicy = {
-  status: ActionStatus | null;
-  usePublicSurfaceSnapshot: boolean;
-};
-
-function resolveActionsReadPolicy(rawStatus: string | null): ActionsReadPolicy {
-  const requestedStatus = parseStatusParam(rawStatus);
-  const isExplicitGlobalView = rawStatus?.trim() === "all";
-  const includesNonPublicState =
-    isExplicitGlobalView ||
-    requestedStatus === "pending" ||
-    requestedStatus === "rejected" ||
-    requestedStatus === "cancelled";
-
-  return {
-    // An omitted, empty or invalid status is public-safe and must not mean
-    // "all". The explicit all/pending/rejected/cancelled paths are reserved for
-    // moderation and retain their source status semantics.
-    status: includesNonPublicState ? requestedStatus : "approved",
-    usePublicSurfaceSnapshot: !includesNonPublicState,
-  };
+  return NextResponse.json(
+    payload,
+    payload.partialSource === true
+      ? { headers: { "X-Data-Warning": "Partial source data" } }
+      : undefined,
+  );
 }
 
 async function requireGlobalActionsModerationAccess(): Promise<
@@ -323,100 +58,74 @@ async function requireGlobalActionsModerationAccess(): Promise<
   | { ok: false; status: 401 | 403; error: string }
 > {
   const authenticated = await requireAuthenticatedAccess();
-  if (!authenticated.ok) {
-    return authenticated;
-  }
+  if (!authenticated.ok) return authenticated;
 
   const activeRole = await getCurrentUserActiveRole();
   if (activeRole === "anonymous" || !canModerateActionsGlobally({ activeRole })) {
     return { ok: false, status: 403, error: "Forbidden" };
   }
-
   return authenticated;
+}
+
+function moderationResponse(
+  access: { ok: false; status: 401 | 403; error: string },
+) {
+  return access.status === 401
+    ? unauthorizedJsonResponse({ hint: access.error })
+    : forbiddenJsonResponse({ hint: access.error });
 }
 
 export async function GET(request: Request) {
   try {
-    const url = new URL(request.url);
-    const reportQuery = resolveReportQuery(url);
-    const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 200, 30);
-    const readPolicy = resolveActionsReadPolicy(url.searchParams.get("status"));
-    const daysRaw = url.searchParams.get("days");
-    const days =
-      daysRaw === null ? null : parsePositiveInteger(daysRaw, 1, 3650, 90);
-    const { types, qualityGrade, toFixPriority, impact } = resolveActionListFilters(url);
-
-    const snapshotKey = buildActionsSnapshotKey({
-      reportQuery,
-      limit,
-      status: readPolicy.status,
-      days,
-      types: types === null ? "all" : types.slice().sort((left, right) => left < right ? -1 : left > right ? 1 : 0).join(","),
-      qualityGrade,
-      toFixPriority,
-      impact,
-      view: url.searchParams.get("view") ?? "all",
-    });
-
-    if (!readPolicy.usePublicSurfaceSnapshot) {
+    const query = resolveActionListQuery(new URL(request.url));
+    if (!query.readPolicy.usePublicSurfaceSnapshot) {
+      // Keep the moderation boundary explicit in the route inspected by api-boundary.
       const access = await requireGlobalActionsModerationAccess();
-      if (!access.ok) {
-        return access.status === 401
-          ? unauthorizedJsonResponse({ hint: access.error })
-          : forbiddenJsonResponse({ hint: access.error });
-      }
+      if (!access.ok) return moderationResponse(access);
 
       const payload = await buildActionsRoutePayload(
-        url,
-        readPolicy.status,
+        query,
         toActionListItem,
         true,
       );
-      return NextResponse.json(
-        payload,
-        payload.partialSource
-          ? {
-              headers: {
-                "X-Data-Warning": "Partial source data",
-              },
-            }
-          : undefined,
-      );
+      return actionListResponse(payload);
     }
 
     const snapshot = await loadOrRefreshPublicSurfaceSnapshot({
-      snapshotKey,
+      snapshotKey: query.snapshotKey,
       title: "Actions publiques",
       version: ACTIONS_SNAPSHOT_VERSION,
       ttlMinutes: ACTIONS_SNAPSHOT_TTL_MINUTES,
       buildPayload: async () =>
-        buildActionsRoutePayload(url, readPolicy.status, toPublicActionListItem),
-      meta: {
-        route: "api/actions",
-        limit,
-        status: readPolicy.status,
-        days,
-        types,
-        qualityGrade,
-        toFixPriority,
-        impact,
-      },
+        buildActionsRoutePayload(query, toPublicActionListItem),
+      meta: getActionsSnapshotMeta(query),
     });
-
-    const payload = toPublicActionListResponse(snapshot.payload);
-    return NextResponse.json(
-      payload,
-      payload.partialSource
-        ? {
-            headers: {
-              "X-Data-Warning": "Partial source data",
-            },
-          }
-        : undefined,
-    );
+    return actionListResponse(toPublicActionListResponse(snapshot.payload));
   } catch (error) {
     return handleApiError(error, "api/actions");
   }
+}
+
+type CreateActionRequest = z.infer<typeof createActionSchema>;
+
+function resolveIdempotencyKey(request: Request): string | Response | undefined {
+  const raw = request.headers.get("Idempotency-Key");
+  const key = raw?.trim() || undefined;
+  if (raw && (!key || key.length < 16 || key.length > 160)) {
+    return validationErrorResponse({
+      idempotencyKey: ["La clé de retry doit contenir entre 16 et 160 caractères."],
+    });
+  }
+  return key;
+}
+
+function validateActionCreationPayload(payload: CreateActionRequest): Response | null {
+  if ((payload.recordType ?? "action") === "action" && !payload.organizerType) {
+    return validationErrorResponse({
+      organizerType: ["Sélectionnez un type de structure."],
+    });
+  }
+  return null;
 }
 
 export async function POST(request: Request) {
@@ -424,42 +133,27 @@ export async function POST(request: Request) {
     limit: 10,
     window: 60,
   });
-  if (rateLimitResponse) {
-    return rateLimitResponse;
-  }
+  if (rateLimitResponse) return rateLimitResponse;
 
+  // Authentication remains at the HTTP boundary; the service receives only this userId.
   const access = await requireActionRequestAccess(request);
-  if (!access.ok) {
-    return unauthorizedJsonResponse();
-  }
-  const { userId } = access;
+  if (!access.ok) return unauthorizedJsonResponse();
 
-  const rawIdempotencyKey = request.headers.get("Idempotency-Key");
-  const idempotencyKey = rawIdempotencyKey?.trim() || undefined;
-  if (
-    rawIdempotencyKey &&
-    (!idempotencyKey || idempotencyKey.length < 16 || idempotencyKey.length > 160)
-  ) {
-    return validationErrorResponse({
-      idempotencyKey: ["La clé de retry doit contenir entre 16 et 160 caractères."],
-    });
-  }
+  const idempotencyKey = resolveIdempotencyKey(request);
+  if (idempotencyKey instanceof Response) return idempotencyKey;
 
   const parsed = await parseJsonBodyWithValidation(request, createActionSchema);
   if (!parsed.ok) return parsed.response;
-
-  if ((parsed.data.recordType ?? "action") === "action" && !parsed.data.organizerType) {
-    return validationErrorResponse({
-      organizerType: ["Sélectionnez un type de structure."],
-    });
-  }
+  const payloadError = validateActionCreationPayload(parsed.data);
+  if (payloadError) return payloadError;
 
   try {
-    const identity = await getCurrentUserIdentity({ userId });
+    const identity = await getCurrentUserIdentity({ userId: access.userId });
+    // This is the existing global-management policy input, not a route-local role check.
     const isCreatorGlobalAdmin = canManageActionsGlobally(identity);
     return await executeActionCreation({
       request,
-      userId,
+      userId: access.userId,
       payload: parsed.data,
       idempotencyKey,
       identity,

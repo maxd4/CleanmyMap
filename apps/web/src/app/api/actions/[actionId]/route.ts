@@ -11,53 +11,28 @@ import {
   getCurrentUserIdentity,
   requireAuthenticatedAccess,
 } from "@/lib/authz";
-import {
-  canManageAction,
-} from "@/lib/actions/permissions";
-import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
+import { canManageAction } from "@/lib/actions/permissions";
 import { loadManualInvitationStatusesForAction, loadManualRegistrationIdsForAction } from "@/lib/actions/participation/registration-records";
-import {
-  loadCanonicalActionOrganizerIdsForAction,
-} from "@/lib/actions/participation/organizers";
+import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { updateActionSchema } from "@/lib/validation/action";
 import { buildActionEditorPayload } from "@/lib/actions/action-editor-payload";
-import {
-  buildActionAuditSnapshots,
-  type ActionUpdateInput,
-} from "@/lib/actions/action-update-audit";
-import {
-  ActionUpdateValidationError,
-  persistActionUpdate,
-} from "@/lib/actions/action-update-persistence";
-import {
-  runActionUpdatePostProcessing,
-  type AdminOverrideErrorStage,
-} from "@/lib/actions/action-update-post-processing";
-import { syncUpdatedOrganizers } from "@/lib/actions/participation/action-update-participation-sync";
+import type { ActionUpdateInput } from "@/lib/actions/action-update-audit";
 import {
   preparePatchMutation,
-  shouldSyncOrganizersBeforeFinalization,
-  type PreparedPatchMutation,
 } from "./route.patch-preparation";
 import { createAdminAuditOnceAppender } from "./route.patch-audit";
 import {
-  ensureGpxGeometryContributionEligible,
-  hasGpxGeometryContribution,
-  recordGpxGeometryContributionIfPresent,
-  reconcileGeometryContributionProgressionIfNeeded,
-  stripObservedGeometryProjectionFields,
-} from "@/lib/actions/geometry/action-geometry-contribution-workflow";
-import { emitPublishedActionUpdateIfNeeded } from "@/lib/actions/action-change-notifications";
-import { emitAdministrativeRequirementNotificationsIfNeeded } from "@/lib/actions/administrative-requirement-notifications";
-import {
-  captureActionUpdateParticipantImpactSnapshot,
-} from "@/lib/actions/action-participant-impact-notifications";
-import type { ActionParticipantImpactSnapshot } from "@/lib/actions/participation/group-participation-read";
+  executePreparedActionUpdate,
+  handlePatchError,
+  type PatchExecutionState,
+} from "./route.patch-execution";
+import type { EditableAction } from "./route.types";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
 export const dynamic = "force-dynamic";
+
 async function loadActionPermissionContext(
   supabase: ReturnType<typeof getSupabaseServerClient>,
   userId: string,
@@ -70,6 +45,7 @@ async function loadActionPermissionContext(
   const organizerIds = await loadCanonicalActionOrganizerIdsForAction(supabase, actionId);
   return { identity, permissionIdentity, organizerIds };
 }
+
 async function parsePatchRequest(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
@@ -85,12 +61,8 @@ async function parsePatchRequest(
 
   const parsed = await parseJsonBodyWithValidation(request, updateActionSchema);
   if (!parsed.ok) return parsed.response;
-
   return { userId: access.userId, trimmedActionId, parsedBody: parsed.data };
 }
-
-type EditableAction = NonNullable<Awaited<ReturnType<typeof loadActionById>>>;
-type PreparedActionUpdate = PreparedPatchMutation["preparedUpdate"];
 
 async function loadAuthorizedPatchAction({
   supabase,
@@ -113,6 +85,7 @@ async function loadAuthorizedPatchAction({
     userId,
     actionId,
   );
+  // This owner/organizer/admin decision stays visible at the HTTP boundary.
   if (!canManageAction(permissionIdentity, { createdByClerkId: current.created_by_clerk_id }, organizerIds)) {
     return NextResponse.json(
       { error: "Vous n'êtes pas autorisé à modifier cette action." },
@@ -131,164 +104,95 @@ async function loadAuthorizedPatchAction({
   return { current, identity, organizerIds };
 }
 
-type PatchExecutionState = {
-  auditSnapshots: ReturnType<typeof buildActionAuditSnapshots> | null;
-  actionWriteSucceeded: boolean;
-  persistedActionRevision: string | null;
-  contributionPersisted: boolean;
-  adminErrorStage: AdminOverrideErrorStage;
-};
-
-const PATCH_ATOMICITY = "PARTIAL_ALLOWED" as const;
-
-async function executePreparedActionUpdate({
-  supabase,
-  actionId,
-  userId,
-  current,
-  identity,
-  preparedUpdate,
-  shouldAuditModeration,
-  adminAuditActorUserId,
-  adminAuditTargetUserId,
-  moderationOperation,
-  moderationReason,
-  appendAdminAuditOnce,
-  state,
-}: {
-  supabase: ReturnType<typeof getSupabaseServerClient>;
-  actionId: string;
-  userId: string;
-  current: EditableAction;
-  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
-  preparedUpdate: PreparedActionUpdate;
-  shouldAuditModeration: boolean;
-  adminAuditActorUserId: string;
-  adminAuditTargetUserId: string | null;
-  moderationOperation: string;
-  moderationReason: string | null;
-  appendAdminAuditOnce: (params: Parameters<typeof appendActionModerationAudit>[0]) => Promise<void>;
-  state: PatchExecutionState;
-}): Promise<Response | PreparedActionUpdate["body"]> {
-  const { body, currentMetadata, updateData } = preparedUpdate;
-  state.auditSnapshots = shouldAuditModeration
-    ? buildActionAuditSnapshots(current, body, currentMetadata)
-    : null;
-  const hasGeometryContribution = hasGpxGeometryContribution(updateData);
-  const eligibilityResponse = await ensureGpxGeometryContributionEligible({
-    supabase,
-    actionId,
-    userId,
-    updateData,
-  });
-  if (eligibilityResponse) return eligibilityResponse;
-
-  const scalarUpdateData = hasGeometryContribution
-    ? stripObservedGeometryProjectionFields(updateData)
-    : updateData;
-
-  const previousImpactSnapshot: ActionParticipantImpactSnapshot | null =
-    await captureActionUpdateParticipantImpactSnapshot({ supabase, actionId, current, body });
-
-  const organizerMustPrecedeSpontaneousFinalization = shouldSyncOrganizersBeforeFinalization({ body, current, updateData: scalarUpdateData });
-  if (organizerMustPrecedeSpontaneousFinalization) {
-    await syncUpdatedOrganizers({
-      supabase,
-      actionId,
-      body,
-      userId,
-      identity,
-    });
-  }
-  state.adminErrorStage = "action_update";
-  const actionWrite = await persistActionUpdate({ supabase, actionId, updateData: scalarUpdateData });
-  state.actionWriteSucceeded = actionWrite.succeeded;
-  state.persistedActionRevision = actionWrite.revision;
-  await emitPublishedActionUpdateIfNeeded({
-    supabase,
-    actionId,
-    actorUserId: userId,
-    current,
-    updateData: scalarUpdateData,
-    actionWriteSucceeded: state.actionWriteSucceeded,
-    persistedActionRevision: state.persistedActionRevision,
-  });
-  await emitAdministrativeRequirementNotificationsIfNeeded({
-    supabase,
-    actionId,
-    current,
-    updateData: scalarUpdateData,
-    actionWriteSucceeded: state.actionWriteSucceeded,
-  });
-  state.adminErrorStage = hasGeometryContribution
-    ? "geometry_contribution"
-    : state.adminErrorStage;
-  const geometryContribution = hasGeometryContribution
-    ? await recordGpxGeometryContributionIfPresent({ supabase, actionId, userId, updateData })
-    : null;
-  if (geometryContribution instanceof Response) return geometryContribution;
-  if (geometryContribution) {
-    state.contributionPersisted ||= geometryContribution.persisted;
-  }
-  await reconcileGeometryContributionProgressionIfNeeded({
-    accepted: geometryContribution?.accepted ?? false,
-    supabase,
-    actionId,
-    userId,
-  });
-  await runActionUpdatePostProcessing({ supabase, actionId, updateData: scalarUpdateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, previousImpactSnapshot, persistedActionRevision: state.persistedActionRevision, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, organizersAlreadySynced: organizerMustPrecedeSpontaneousFinalization, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
-  return body;
+function createPatchExecutionState(): PatchExecutionState {
+  return {
+    auditSnapshots: null,
+    actionWriteSucceeded: false,
+    persistedActionRevision: null,
+    contributionPersisted: false,
+    adminErrorStage: "action_update",
+  };
 }
 
-async function handlePatchError({
-  error,
-  shouldAuditModeration,
-  auditSnapshots,
-  appendAdminAuditOnce,
-  adminAuditActorUserId,
-  adminAuditTargetUserId,
-  moderationOperation,
-  moderationReason,
-  adminErrorStage,
-  actionWriteSucceeded,
-  contributionPersisted,
-  actionId,
+async function executePatchRequest({
+  userId,
+  trimmedActionId,
+  parsed,
 }: {
-  error: unknown;
-  shouldAuditModeration: boolean;
-  auditSnapshots: ReturnType<typeof buildActionAuditSnapshots> | null;
-  appendAdminAuditOnce: (params: Parameters<typeof appendActionModerationAudit>[0]) => Promise<void>;
-  adminAuditActorUserId: string;
-  adminAuditTargetUserId: string | null;
-  moderationOperation: string;
-  moderationReason: string | null;
-  adminErrorStage: AdminOverrideErrorStage;
-  actionWriteSucceeded: boolean;
-  contributionPersisted: boolean;
-  actionId: string;
+  userId: string;
+  trimmedActionId: string;
+  parsed: ActionUpdateInput;
 }): Promise<Response> {
-  if (error instanceof ActionUpdateValidationError) {
-    return validationErrorResponse({ [error.field]: [error.message] });
-  }
-  if (shouldAuditModeration && auditSnapshots) {
-    await appendAdminAuditOnce({
-      operationId: `action-edit-${actionId}-${Date.now()}`,
-      actorUserId: adminAuditActorUserId,
-      targetActionId: actionId,
-      operation: moderationOperation,
-      outcome: "error",
-      reason: moderationReason,
-      targetUserId: adminAuditTargetUserId,
-      previousValue: auditSnapshots.previousValue,
-      newValue: auditSnapshots.newValue,
-      details: {
-        stage: adminErrorStage,
-        atomicity: PATCH_ATOMICITY,
-        partialMutation: actionWriteSucceeded || contributionPersisted,
-      },
+  let shouldAuditModeration = false;
+  let adminAuditActorUserId = userId;
+  let adminAuditTargetUserId: string | null = null;
+  let moderationOperation = "edit_action";
+  let moderationReason: string | null = null;
+  const appendAdminAuditOnce = createAdminAuditOnceAppender();
+  const state = createPatchExecutionState();
+
+  try {
+    const supabase = getSupabaseServerClient(true);
+    const actionContext = await loadAuthorizedPatchAction({
+      supabase,
+      userId,
+      actionId: trimmedActionId,
+    });
+    if (actionContext instanceof Response) return actionContext;
+    const { current, identity, organizerIds } = actionContext;
+    const mutation = await preparePatchMutation({
+      supabase,
+      userId,
+      current,
+      identity,
+      organizerIds,
+      parsed,
+    });
+    if (mutation instanceof Response) return mutation;
+
+    shouldAuditModeration = mutation.shouldAuditModeration;
+    adminAuditActorUserId = mutation.adminAuditActorUserId;
+    adminAuditTargetUserId = mutation.adminAuditTargetUserId;
+    moderationOperation = mutation.moderationOperation;
+    moderationReason = mutation.moderationReason;
+
+    const body = await executePreparedActionUpdate({
+      supabase,
+      actionId: trimmedActionId,
+      userId,
+      current,
+      identity,
+      preparedUpdate: mutation.preparedUpdate,
+      shouldAuditModeration,
+      adminAuditActorUserId,
+      adminAuditTargetUserId,
+      moderationOperation,
+      moderationReason,
+      appendAdminAuditOnce,
+      state,
+    });
+    if (body instanceof Response) return body;
+
+    return NextResponse.json({
+      status: "ok",
+      actionId: trimmedActionId,
+      actionPhase: body.actionPhase ?? current["action_phase"],
+    });
+  } catch (error) {
+    return handlePatchError({
+      error,
+      shouldAuditModeration,
+      auditSnapshots: state.auditSnapshots,
+      appendAdminAuditOnce,
+      adminAuditActorUserId,
+      adminAuditTargetUserId,
+      moderationOperation,
+      moderationReason,
+      adminErrorStage: state.adminErrorStage,
+      state,
+      actionId: trimmedActionId,
     });
   }
-  return handleApiError(error, "PATCH /api/actions/:actionId");
 }
 
 export async function GET(
@@ -296,41 +200,27 @@ export async function GET(
   ctx: { params: Promise<{ actionId: string }> },
 ) {
   const access = await requireActionRequestAccess(request);
-  if (!access.ok) {
-    return unauthorizedJsonResponse();
-  }
+  if (!access.ok) return unauthorizedJsonResponse();
   const { userId } = access;
 
   const { actionId } = await ctx.params;
   const trimmedActionId = actionId.trim();
   if (!trimmedActionId) {
-    return validationErrorResponse({
-      actionId: ["Identifiant d'action manquant."],
-    });
+    return validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
   }
 
   try {
     const supabase = getSupabaseServerClient(true);
     const row = await loadActionById(supabase, trimmedActionId);
-    if (!row) {
-      return NextResponse.json(
-        { error: "Action introuvable." },
-        { status: 404 },
-      );
-    }
+    if (!row) return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
 
     const { permissionIdentity, organizerIds } = await loadActionPermissionContext(
       supabase,
       userId,
       trimmedActionId,
     );
-    if (
-      !canManageAction(
-        permissionIdentity,
-        { createdByClerkId: row.created_by_clerk_id },
-        organizerIds,
-      )
-    ) {
+    // GET has the same management boundary as PATCH; visitors cannot read this editor payload.
+    if (!canManageAction(permissionIdentity, { createdByClerkId: row.created_by_clerk_id }, organizerIds)) {
       return NextResponse.json(
         { error: "Vous n'êtes pas autorisé à lire cette action." },
         { status: 403 },
@@ -350,110 +240,13 @@ export async function GET(
       organizerAccounts:
         row.organizer_type === "spontaneous"
           ? organizerIds
-          : organizerIds.filter(
-              (organizerId) => organizerId !== row.created_by_clerk_id,
-            ),
+          : organizerIds.filter((organizerId) => organizerId !== row.created_by_clerk_id),
       participantAccounts,
       manualInvitationStatuses,
     };
     return NextResponse.json({ status: "ok", action });
   } catch (error) {
     return handleApiError(error, "GET /api/actions/:actionId");
-  }
-}
-
-async function executePatchRequest({
-  userId,
-  trimmedActionId,
-  parsed,
-}: {
-  userId: string;
-  trimmedActionId: string;
-  parsed: ActionUpdateInput;
-}): Promise<Response> {
-  let shouldAuditModeration = false;
-  let adminAuditActorUserId = userId;
-  let adminAuditTargetUserId: string | null = null;
-  let moderationOperation = "edit_action";
-  let moderationReason: string | null = null;
-  const appendAdminAuditOnce = createAdminAuditOnceAppender();
-  const patchState: PatchExecutionState = {
-    auditSnapshots: null,
-    actionWriteSucceeded: false,
-    persistedActionRevision: null,
-    contributionPersisted: false,
-    adminErrorStage: "action_update",
-  };
-  try {
-    const supabase = getSupabaseServerClient(true);
-    const actionContext = await loadAuthorizedPatchAction({
-      supabase,
-      userId,
-      actionId: trimmedActionId,
-    });
-    if (actionContext instanceof Response) return actionContext;
-    const { current, identity, organizerIds } = actionContext;
-
-    const mutation = await preparePatchMutation({
-      supabase,
-      userId,
-      current,
-      identity,
-      organizerIds,
-      parsed,
-    });
-    if (mutation instanceof Response) return mutation;
-    const {
-      preparedUpdate,
-      shouldAuditModeration: mutationShouldAuditModeration,
-      adminAuditActorUserId: mutationAuditActorUserId,
-      adminAuditTargetUserId: mutationAuditTargetUserId,
-      moderationOperation: mutationOperation,
-      moderationReason: mutationReason,
-    } = mutation;
-    shouldAuditModeration = mutationShouldAuditModeration;
-    adminAuditActorUserId = mutationAuditActorUserId;
-    adminAuditTargetUserId = mutationAuditTargetUserId;
-    moderationOperation = mutationOperation;
-    moderationReason = mutationReason;
-
-    const body = await executePreparedActionUpdate({
-      supabase,
-      actionId: trimmedActionId,
-      userId,
-      current,
-      identity,
-      preparedUpdate,
-      shouldAuditModeration,
-      adminAuditActorUserId,
-      adminAuditTargetUserId,
-      moderationOperation,
-      moderationReason,
-      appendAdminAuditOnce,
-      state: patchState,
-    });
-    if (body instanceof Response) return body;
-
-    return NextResponse.json({
-      status: "ok",
-      actionId: trimmedActionId,
-      actionPhase: body.actionPhase ?? current["action_phase"],
-    });
-  } catch (error) {
-    return handlePatchError({
-      error,
-      shouldAuditModeration,
-      auditSnapshots: patchState.auditSnapshots,
-      appendAdminAuditOnce,
-      adminAuditActorUserId,
-      adminAuditTargetUserId,
-      moderationOperation,
-      moderationReason,
-      adminErrorStage: patchState.adminErrorStage,
-      actionWriteSucceeded: patchState.actionWriteSucceeded,
-      contributionPersisted: patchState.contributionPersisted,
-      actionId: trimmedActionId,
-    });
   }
 }
 
@@ -465,11 +258,14 @@ export async function PATCH(
   if (!access.ok) return unauthorizedJsonResponse();
 
   // Authorization is enforced by loadAuthorizedPatchAction via canManageAction;
-  // preparePatchMutation applies canEditValidatedImpact and
-  // canManageActionsGlobally to their respective privileged paths, while
-  // executePatchRequest records privileged failures with appendActionModerationAudit.
+  // preparePatchMutation applies canEditValidatedImpact and canManageActionsGlobally
+  // to their respective privileged paths, while the execution owner audits failures.
   const parsedRequest = await parsePatchRequest(request, ctx, access);
   if (parsedRequest instanceof Response) return parsedRequest;
-  const { userId, trimmedActionId, parsedBody: parsed } = parsedRequest;
-  return executePatchRequest({ userId, trimmedActionId, parsed });
+  const { userId, trimmedActionId, parsedBody } = parsedRequest;
+  return executePatchRequest({
+    userId,
+    trimmedActionId,
+    parsed: parsedBody,
+  });
 }
