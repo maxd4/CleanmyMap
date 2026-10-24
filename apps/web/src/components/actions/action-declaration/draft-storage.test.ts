@@ -9,6 +9,7 @@ import {
   loadDraftSnapshotResult,
   retryDraftLoad,
   saveDraft,
+  subscribeToDraftChanges,
 } from "./draft-storage";
 
 function installLocalStorage({
@@ -29,10 +30,21 @@ function installLocalStorage({
     },
   };
 
-  vi.stubGlobal("window", { localStorage });
+  const listeners = new Map<string, EventListener>();
+  const browserWindow = {
+    localStorage,
+    addEventListener: (type: string, listener: EventListener) => listeners.set(type, listener),
+    removeEventListener: (type: string) => listeners.delete(type),
+    dispatchEvent: (event: Event) => {
+      listeners.get(event.type)?.(event);
+      return true;
+    },
+  };
+
+  vi.stubGlobal("window", browserWindow);
   retryDraftLoad();
 
-  return { store, localStorage };
+  return { store, localStorage, browserWindow };
 }
 
 afterEach(() => {
@@ -181,6 +193,20 @@ describe("action declaration draft storage", () => {
     expect(first?.form.recordType).toBe("clean_place");
   });
 
+  it("invalidates the cached snapshot after a new save", () => {
+    installLocalStorage();
+    const draft = createInitialFormState("Alice");
+    saveDraft(draft, "2026-05-13T10:45:00.000Z");
+    expect(loadDraftSnapshot(createInitialFormState("Fallback"))?.form.actionTitle).toBe("");
+
+    saveDraft(
+      { ...draft, actionTitle: "Nouvelle action" },
+      "2026-05-13T10:46:00.000Z",
+    );
+
+    expect(loadDraftSnapshot(createInitialFormState("Fallback"))?.form.actionTitle).toBe("Nouvelle action");
+  });
+
   it("keeps a clean-place complement when applying the record-type override", () => {
     installLocalStorage();
     const draft = createInitialFormState("Alice");
@@ -237,6 +263,11 @@ describe("action declaration draft storage", () => {
         pointCount: 2,
         inferredTopology: "loop",
       },
+      manualDrawing: {
+        kind: "polyline",
+        coordinates: [[48.85, 2.35], [999, 2.36]],
+      },
+      manualDrawingSource: "gpx_import",
     }));
 
     const snapshot = loadDraftSnapshot(createInitialFormState("Fallback"));
@@ -306,5 +337,39 @@ describe("action declaration draft storage", () => {
     store.set(ACTION_DECLARATION_DRAFT_KEY, "{not-json");
 
     expect(loadDraftSnapshot(createInitialFormState("Alice"))).toBeNull();
+    expect(loadDraftSnapshotResult(createInitialFormState("Alice")).readError).toBe(false);
+  });
+
+  it("notifies subscribers for local changes and relevant external storage changes", () => {
+    const { browserWindow } = installLocalStorage();
+    const callback = vi.fn();
+    const unsubscribe = subscribeToDraftChanges(callback);
+
+    browserWindow.dispatchEvent(new Event("cmm-action-declaration-draft-change"));
+    expect(callback).toHaveBeenCalledTimes(1);
+
+    const storageEvent = new Event("storage");
+    Object.defineProperty(storageEvent, "key", { value: ACTION_DECLARATION_DRAFT_KEY });
+    browserWindow.dispatchEvent(storageEvent);
+    expect(callback).toHaveBeenCalledTimes(2);
+
+    saveDraft(createInitialFormState("Alice"));
+    clearDraft();
+    expect(callback).toHaveBeenCalledTimes(4);
+
+    unsubscribe();
+    browserWindow.dispatchEvent(new Event("cmm-action-declaration-draft-change"));
+    expect(callback).toHaveBeenCalledTimes(4);
+  });
+
+  it("clears only the requested action draft", () => {
+    const { store } = installLocalStorage();
+    saveDraft(createInitialFormState("Alice"), "2026-05-13T10:45:00.000Z", null, "action-a");
+    saveDraft(createInitialFormState("Alice"), "2026-05-13T10:46:00.000Z", null, "action-b");
+
+    clearDraft("action-a");
+
+    expect([...store.keys()].some((key) => key.endsWith("action-b"))).toBe(true);
+    expect([...store.keys()].some((key) => key.endsWith("action-a"))).toBe(false);
   });
 });

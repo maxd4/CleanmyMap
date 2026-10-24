@@ -109,41 +109,50 @@ const FORM_STATE_KEYS = [
   "placeType",
 ] as const satisfies readonly (keyof FormState)[];
 
+function isFiniteInRange(value: unknown, minimum: number, maximum: number): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= minimum && value <= maximum;
+}
+
 function parseCoordinates(value: unknown): ActionLocationCoordinates | null {
   if (!isRecord(value)) return null;
-  const latitude = value.latitude;
-  const longitude = value.longitude;
-  return typeof latitude === "number" && Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 &&
-    typeof longitude === "number" && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180
-    ? { latitude, longitude }
-    : null;
+  if (!isFiniteInRange(value.latitude, -90, 90)) return null;
+  if (!isFiniteInRange(value.longitude, -180, 180)) return null;
+  return { latitude: value.latitude, longitude: value.longitude };
+}
+
+function parseDrawingPoint(value: unknown): [number, number] | null {
+  if (!Array.isArray(value) || value.length !== 2) return null;
+  if (!isFiniteInRange(value[0], -90, 90)) return null;
+  if (!isFiniteInRange(value[1], -180, 180)) return null;
+  return [value[0], value[1]];
 }
 
 function parseDrawing(value: unknown): ActionDrawing | null {
-  if (!isRecord(value) || (value.kind !== "polyline" && value.kind !== "polygon") || !Array.isArray(value.coordinates)) {
-    return null;
+  if (!isRecord(value)) return null;
+  if (value.kind !== "polyline" && value.kind !== "polygon") return null;
+  if (!Array.isArray(value.coordinates)) return null;
+
+  const coordinates: [number, number][] = [];
+  for (const point of value.coordinates) {
+    const parsedPoint = parseDrawingPoint(point);
+    if (!parsedPoint) return null;
+    coordinates.push(parsedPoint);
   }
-  const coordinates = value.coordinates.filter(
-    (coordinate): coordinate is [number, number] =>
-      Array.isArray(coordinate) && coordinate.length === 2 &&
-      typeof coordinate[0] === "number" && Number.isFinite(coordinate[0]) && coordinate[0] >= -90 && coordinate[0] <= 90 &&
-      typeof coordinate[1] === "number" && Number.isFinite(coordinate[1]) && coordinate[1] >= -180 && coordinate[1] <= 180,
-  );
+
   const minimumPoints = value.kind === "polygon" ? 3 : 2;
-  return coordinates.length === value.coordinates.length && coordinates.length >= minimumPoints
+  return coordinates.length >= minimumPoints
     ? { kind: value.kind, coordinates }
     : null;
 }
 
 function parseGpxImport(value: unknown): ActionGpxImportMetadata | null {
   if (!isRecord(value) || value.source !== "gpx_import") return null;
-  if (
-    typeof value.observedDistanceKm !== "number" || !Number.isFinite(value.observedDistanceKm) || value.observedDistanceKm < 0 ||
-    typeof value.pointCount !== "number" || !Number.isInteger(value.pointCount) || value.pointCount < 2 ||
-    (value.inferredTopology !== "loop" && value.inferredTopology !== "point_to_point")
-  ) {
+  if (!isFiniteInRange(value.observedDistanceKm, 0, Number.POSITIVE_INFINITY)) return null;
+  if (typeof value.pointCount !== "number" || !Number.isInteger(value.pointCount) || value.pointCount < 2) {
     return null;
   }
+  if (value.inferredTopology !== "loop" && value.inferredTopology !== "point_to_point") return null;
+
   return {
     source: "gpx_import",
     observedDistanceKm: value.observedDistanceKm,
@@ -157,21 +166,43 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function scopedDraftKey(actionId: string | null): string {
-  return actionId
-    ? `${ACTION_DECLARATION_ACTION_DRAFT_KEY_PREFIX}${encodeURIComponent(actionId)}`
-    : ACTION_DECLARATION_DRAFT_KEY;
+type DraftStorageKeys = {
+  storageKey: string;
+  dateKey: string;
+};
+
+function resolveDraftStorageKeys(actionId: string | null): DraftStorageKeys {
+  if (!actionId) {
+    return {
+      storageKey: ACTION_DECLARATION_DRAFT_KEY,
+      dateKey: ACTION_DECLARATION_DRAFT_DATE_KEY,
+    };
+  }
+
+  const encodedActionId = encodeURIComponent(actionId);
+  return {
+    storageKey: `${ACTION_DECLARATION_ACTION_DRAFT_KEY_PREFIX}${encodedActionId}`,
+    dateKey: `${ACTION_DECLARATION_ACTION_DRAFT_DATE_KEY_PREFIX}${encodedActionId}`,
+  };
 }
 
-function scopedDraftDateKey(actionId: string | null): string {
-  return actionId
-    ? `${ACTION_DECLARATION_ACTION_DRAFT_DATE_KEY_PREFIX}${encodeURIComponent(actionId)}`
-    : ACTION_DECLARATION_DRAFT_DATE_KEY;
-}
+type DraftStorageReadResult = {
+  saved: string | null;
+  savedAt: string | null;
+  readError: boolean;
+};
 
-function getDraftSavedAtForAction(actionId: string | null): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(scopedDraftDateKey(actionId));
+function readDraftStorage(actionId: string | null): DraftStorageReadResult {
+  const { storageKey, dateKey } = resolveDraftStorageKeys(actionId);
+  try {
+    return {
+      saved: window.localStorage.getItem(storageKey),
+      savedAt: window.localStorage.getItem(dateKey),
+      readError: false,
+    };
+  } catch {
+    return { saved: null, savedAt: null, readError: true };
+  }
 }
 
 const ACTION_DECLARATION_DRAFT_CHANGE_EVENT = "cmm-action-declaration-draft-change";
@@ -234,20 +265,24 @@ function emitDraftChange(): void {
   window.dispatchEvent(new Event(ACTION_DECLARATION_DRAFT_CHANGE_EVENT));
 }
 
+function isDraftStorageKey(key: string | null): boolean {
+  return Boolean(
+    key && (
+      key === ACTION_DECLARATION_DRAFT_KEY ||
+      key === ACTION_DECLARATION_DRAFT_DATE_KEY ||
+      key.startsWith(ACTION_DECLARATION_ACTION_DRAFT_KEY_PREFIX) ||
+      key.startsWith(ACTION_DECLARATION_ACTION_DRAFT_DATE_KEY_PREFIX)
+    ),
+  );
+}
+
 export function subscribeToDraftChanges(callback: () => void): () => void {
   if (typeof window === "undefined") {
     return () => undefined;
   }
 
   const handleStorage = (event: StorageEvent) => {
-    if (
-      event.key === ACTION_DECLARATION_DRAFT_KEY ||
-      event.key === ACTION_DECLARATION_DRAFT_DATE_KEY ||
-      event.key?.startsWith(ACTION_DECLARATION_ACTION_DRAFT_KEY_PREFIX) ||
-      event.key?.startsWith(ACTION_DECLARATION_ACTION_DRAFT_DATE_KEY_PREFIX)
-    ) {
-      callback();
-    }
+    if (isDraftStorageKey(event.key)) callback();
   };
 
   window.addEventListener("storage", handleStorage);
@@ -261,9 +296,10 @@ export function subscribeToDraftChanges(callback: () => void): () => void {
 
 export function clearDraft(actionId: string | null = null): void {
   if (typeof window === "undefined") return;
+  const { storageKey, dateKey } = resolveDraftStorageKeys(actionId);
   try {
-    window.localStorage.removeItem(scopedDraftKey(actionId));
-    window.localStorage.removeItem(scopedDraftDateKey(actionId));
+    window.localStorage.removeItem(storageKey);
+    window.localStorage.removeItem(dateKey);
   } catch {
     // Clearing a local draft is best effort and must not turn a successful server save into an error.
   } finally {
@@ -300,6 +336,41 @@ export function createActionCreationRequestId(): string {
   return `action-create-${uuid}`;
 }
 
+function buildPersistedGpxFields(
+  form: FormState,
+  geometry: ActionDeclarationDraftGeometry,
+): Record<string, unknown> {
+  if (geometry?.source !== "gpx_import") return {};
+
+  const gpxImport = parseGpxImport(form.gpxImport);
+  const drawing = parseDrawing(geometry.drawing);
+  if (!gpxImport || !drawing || gpxImport.pointCount !== drawing.coordinates.length) {
+    return {};
+  }
+
+  return {
+    gpxImport,
+    manualDrawing: drawing,
+    manualDrawingSource: "gpx_import" as const,
+  };
+}
+
+function buildDraftPayload(
+  form: FormState,
+  geometry: ActionDeclarationDraftGeometry,
+  creationRequestId: string | null,
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  for (const key of FORM_STATE_KEYS) {
+    payload[key] = form[key];
+  }
+  if (form.midRouteCoordinates) payload.midRouteCoordinates = form.midRouteCoordinates;
+  if (form.arrivalCoordinates) payload.arrivalCoordinates = form.arrivalCoordinates;
+  Object.assign(payload, buildPersistedGpxFields(form, geometry));
+  if (creationRequestId) payload.creationRequestId = creationRequestId;
+  return payload;
+}
+
 export function saveDraft(
   form: FormState,
   savedAt = new Date().toISOString(),
@@ -308,29 +379,15 @@ export function saveDraft(
   creationRequestId: string | null = null,
 ): string | null {
   if (typeof window === "undefined") return null;
-  const storageKey = scopedDraftKey(actionId);
+  const { storageKey, dateKey } = resolveDraftStorageKeys(actionId);
   if (cachedDraftSnapshot?.storageKey === storageKey && cachedDraftSnapshot.readError) {
     return null;
   }
-  const draftPayload: Record<string, unknown> = {};
-  for (const key of FORM_STATE_KEYS) {
-    draftPayload[key] = form[key];
-  }
-  if (form.midRouteCoordinates) draftPayload.midRouteCoordinates = form.midRouteCoordinates;
-  if (form.arrivalCoordinates) draftPayload.arrivalCoordinates = form.arrivalCoordinates;
-
-  const gpxImport = parseGpxImport(form.gpxImport);
-  const drawing = geometry?.source === "gpx_import" ? parseDrawing(geometry.drawing) : null;
-  if (gpxImport && drawing && gpxImport.pointCount === drawing.coordinates.length) {
-    draftPayload.gpxImport = gpxImport;
-    draftPayload.manualDrawing = drawing;
-    draftPayload.manualDrawingSource = "gpx_import";
-  }
-  if (creationRequestId) draftPayload.creationRequestId = creationRequestId;
+  const draftPayload = buildDraftPayload(form, geometry, creationRequestId);
 
   try {
     window.localStorage.setItem(storageKey, JSON.stringify(draftPayload));
-    window.localStorage.setItem(scopedDraftDateKey(actionId), savedAt);
+    window.localStorage.setItem(dateKey, savedAt);
     cachedDraftSnapshot = null;
     emitDraftChange();
     return savedAt;
@@ -347,6 +404,69 @@ export function loadDraftSnapshot(
   return loadDraftSnapshotResult(fallback, recordTypeOverride, actionId).snapshot;
 }
 
+function parseStoredDraft(saved: string): Record<string, unknown> | null {
+  try {
+    const parsed: unknown = JSON.parse(saved);
+    return isRecord(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function hasValidGpxPair(
+  parsed: Record<string, unknown>,
+  gpxImport: ActionGpxImportMetadata | null,
+  manualDrawing: ActionDrawing | null,
+): boolean {
+  return Boolean(
+    gpxImport &&
+      manualDrawing &&
+      parsed.manualDrawingSource === "gpx_import" &&
+      gpxImport.pointCount === manualDrawing.coordinates.length,
+  );
+}
+
+function restoreDraftForm(
+  fallback: FormState,
+  parsed: Record<string, unknown>,
+  recordTypeOverride: FormState["recordType"] | null,
+): {
+  form: FormState;
+  manualDrawing: ActionDrawing | null;
+  manualDrawingSource: "gpx_import" | null;
+  creationRequestId: string | null;
+} {
+  const next = { ...fallback } as FormState & Record<string, unknown>;
+  restoreDraftFields(next, parsed, FORM_STATE_KEYS);
+  next.midRouteCoordinates = parseCoordinates(parsed.midRouteCoordinates);
+  next.arrivalCoordinates = parseCoordinates(parsed.arrivalCoordinates);
+
+  const gpxImport = parseGpxImport(parsed.gpxImport);
+  const manualDrawing = parseDrawing(parsed.manualDrawing);
+  const completeGpxPair = hasValidGpxPair(parsed, gpxImport, manualDrawing);
+  next.gpxImport = completeGpxPair ? gpxImport : null;
+  if (recordTypeOverride) next.recordType = recordTypeOverride;
+
+  next.routeStyle = "souple";
+  next.routeTopology = resolveActionRouteTopology({
+    topology: next.routeTopology as FormState["routeTopology"],
+    arrivalLocationLabel: next.arrivalLocationLabel,
+    recordType: next.recordType,
+  });
+
+  const creationRequestId =
+    typeof parsed.creationRequestId === "string" && parsed.creationRequestId.trim()
+      ? parsed.creationRequestId
+      : null;
+
+  return {
+    form: next as FormState,
+    manualDrawing: completeGpxPair ? manualDrawing : null,
+    manualDrawingSource: completeGpxPair ? "gpx_import" : null,
+    creationRequestId,
+  };
+}
+
 export function loadDraftSnapshotResult(
   fallback: FormState,
   recordTypeOverride: FormState["recordType"] | null = null,
@@ -356,74 +476,13 @@ export function loadDraftSnapshotResult(
     return { snapshot: null, readError: false };
   }
 
-  const storageKey = scopedDraftKey(actionId);
+  const { storageKey } = resolveDraftStorageKeys(actionId);
   const cachedReadError = getCachedDraftLoadResult(storageKey);
   if (cachedReadError?.readError) {
     return cachedReadError;
   }
-  try {
-    const saved = window.localStorage.getItem(storageKey);
-    const savedAt = getDraftSavedAtForAction(actionId);
-    const cacheKey = buildDraftSnapshotCacheKey(
-      fallback,
-      recordTypeOverride,
-      saved,
-      savedAt,
-      actionId,
-    );
-    const cached = getCachedDraftSnapshot(cacheKey);
-    if (cached !== undefined) {
-      return getCachedDraftLoadResult(storageKey) ?? { snapshot: cached, readError: false };
-    }
-
-    if (!saved) {
-      return cacheDraftSnapshot(cacheKey, storageKey, null);
-    }
-
-    const parsed: unknown = JSON.parse(saved);
-    if (!isRecord(parsed)) {
-      return cacheDraftSnapshot(cacheKey, storageKey, null);
-    }
-
-    const next = { ...fallback } as FormState & Record<string, unknown>;
-
-    restoreDraftFields(next, parsed, FORM_STATE_KEYS);
-
-    next.midRouteCoordinates = parseCoordinates(parsed.midRouteCoordinates);
-    next.arrivalCoordinates = parseCoordinates(parsed.arrivalCoordinates);
-    const gpxImport = parseGpxImport(parsed.gpxImport);
-    const manualDrawing = parseDrawing(parsed.manualDrawing);
-    const hasGpxPair = Boolean(
-      gpxImport &&
-        manualDrawing &&
-        parsed.manualDrawingSource === "gpx_import" &&
-        gpxImport.pointCount === manualDrawing.coordinates.length,
-    );
-    next.gpxImport = hasGpxPair ? gpxImport : null;
-
-    if (recordTypeOverride) {
-      next.recordType = recordTypeOverride;
-    }
-    next.routeStyle = "souple";
-    next.routeTopology = resolveActionRouteTopology({
-      topology: next.routeTopology as FormState["routeTopology"],
-      arrivalLocationLabel: next.arrivalLocationLabel,
-      recordType: next.recordType,
-    });
-
-    return cacheDraftSnapshot(cacheKey, storageKey, {
-      form: next as FormState,
-      savedAt,
-      actionId,
-      creationRequestId:
-        typeof parsed.creationRequestId === "string" && parsed.creationRequestId.trim()
-          ? parsed.creationRequestId
-          : null,
-      ...(hasGpxPair && manualDrawing
-        ? { manualDrawing, manualDrawingSource: "gpx_import" as const }
-        : {}),
-    });
-  } catch {
+  const storageRead = readDraftStorage(actionId);
+  if (storageRead.readError) {
     const cacheKey = buildDraftSnapshotCacheKey(
       fallback,
       recordTypeOverride,
@@ -433,4 +492,38 @@ export function loadDraftSnapshotResult(
     );
     return cacheDraftSnapshot(cacheKey, storageKey, null, true);
   }
+
+  const cacheKey = buildDraftSnapshotCacheKey(
+    fallback,
+    recordTypeOverride,
+    storageRead.saved,
+    storageRead.savedAt,
+    actionId,
+  );
+  const cached = getCachedDraftSnapshot(cacheKey);
+  if (cached !== undefined) {
+    return getCachedDraftLoadResult(storageKey) ?? { snapshot: cached, readError: false };
+  }
+  if (!storageRead.saved) {
+    return cacheDraftSnapshot(cacheKey, storageKey, null);
+  }
+
+  const parsed = parseStoredDraft(storageRead.saved);
+  if (!parsed) {
+    return cacheDraftSnapshot(cacheKey, storageKey, null);
+  }
+
+  const restored = restoreDraftForm(fallback, parsed, recordTypeOverride);
+  return cacheDraftSnapshot(cacheKey, storageKey, {
+    form: restored.form,
+    savedAt: storageRead.savedAt,
+    actionId,
+    creationRequestId: restored.creationRequestId,
+    ...(restored.manualDrawing && restored.manualDrawingSource
+      ? {
+          manualDrawing: restored.manualDrawing,
+          manualDrawingSource: restored.manualDrawingSource,
+        }
+      : {}),
+  });
 }
