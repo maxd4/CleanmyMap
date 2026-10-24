@@ -252,6 +252,19 @@ test("pre-commit and pre-push are blocking candidate guards", async () => {
   assert.notEqual(preCommitHook, prePushHook);
 });
 
+test("agent identity cannot bypass mandatory candidate guards", async () => {
+  const scriptsAgents = await readRepoFile("scripts/AGENTS.md");
+  const preCommitGuard = await readRepoFile("scripts/ci/pre_commit_guard.ps1");
+  const prePushGuard = await readRepoFile("scripts/ci/pre_push_guard.ps1");
+  const candidateGovernance = `${scriptsAgents}\n${preCommitGuard}\n${prePushGuard}`;
+
+  assert.doesNotMatch(candidateGovernance, /CHATGPT_AUTHORIZED_SKIP/);
+  assert.doesNotMatch(candidateGovernance, /Dérogation explicite\s+—\s+push effectué par ChatGPT/i);
+  assert.match(preCommitGuard, /npm run checks:staged:quick/);
+  assert.match(prePushGuard, /PUSH_CANDIDATE/);
+  assert.match(prePushGuard, /--candidate-ref=/);
+});
+
 test("pre-commit is independent from the retired coordinator", async () => {
   const sessionBootstrap = await readRepoFile("scripts/dev/session_bootstrap.mjs");
   const packageJson = JSON.parse(await readRepoFile("package.json"));
