@@ -16,6 +16,44 @@ function textOf(renderer: ReactTestRenderer): string {
   return JSON.stringify(renderer.toJSON());
 }
 
+function ownerAResponse() {
+  return Response.json({
+    status: "ok",
+    items: [
+      {
+        id: "owner-a-report",
+        title: "Retour du compte A",
+        type: "bug",
+        createdAt: "2026-08-27T11:00:00.000Z",
+        status: "new",
+        qualificationStatus: "pending",
+        qualificationReason: null,
+      },
+    ],
+    nextCursor: null,
+    hasMore: false,
+  });
+}
+
+function ownerBResponse() {
+  return Response.json({
+    status: "ok",
+    items: [
+      {
+        id: "owner-b-report",
+        title: "Retour du compte B",
+        type: "idea",
+        createdAt: "2026-08-27T12:00:00.000Z",
+        status: "treated",
+        qualificationStatus: "rejected",
+        qualificationReason: "Pas de changement produit retenu.",
+      },
+    ],
+    nextCursor: null,
+    hasMore: false,
+  });
+}
+
 const page = {
   status: "ok",
   items: [
@@ -206,47 +244,13 @@ describe("FeedbackHistory", () => {
     expect(textOf(renderer)).toContain("Chargement de vos retours...");
 
     await act(async () => {
-      ownerARequest.resolve(
-        Response.json({
-          status: "ok",
-          items: [
-            {
-              id: "owner-a-report",
-              title: "Retour du compte A",
-              type: "bug",
-              createdAt: "2026-08-27T11:00:00.000Z",
-              status: "new",
-              qualificationStatus: "pending",
-              qualificationReason: null,
-            },
-          ],
-          nextCursor: null,
-          hasMore: false,
-        }),
-      );
+      ownerARequest.resolve(ownerAResponse());
       await Promise.resolve();
     });
     expect(textOf(renderer)).not.toContain("Retour du compte A");
 
     await act(async () => {
-      ownerBRequest.resolve(
-        Response.json({
-          status: "ok",
-          items: [
-            {
-              id: "owner-b-report",
-              title: "Retour du compte B",
-              type: "idea",
-              createdAt: "2026-08-27T12:00:00.000Z",
-              status: "treated",
-              qualificationStatus: "rejected",
-              qualificationReason: "Pas de changement produit retenu.",
-            },
-          ],
-          nextCursor: null,
-          hasMore: false,
-        }),
-      );
+      ownerBRequest.resolve(ownerBResponse());
       await Promise.resolve();
     });
     expect(textOf(renderer)).toContain("Retour du compte B");
@@ -276,24 +280,7 @@ describe("FeedbackHistory", () => {
     expect(textOf(renderer)).not.toContain("Retour du compte A");
 
     await act(async () => {
-      ownerRequest.resolve(
-        Response.json({
-          status: "ok",
-          items: [
-            {
-              id: "owner-a-report",
-              title: "Retour du compte A",
-              type: "bug",
-              createdAt: "2026-08-27T11:00:00.000Z",
-              status: "new",
-              qualificationStatus: "pending",
-              qualificationReason: null,
-            },
-          ],
-          nextCursor: null,
-          hasMore: false,
-        }),
-      );
+      ownerRequest.resolve(ownerAResponse());
       await Promise.resolve();
     });
     expect(textOf(renderer)).not.toContain("Retour du compte A");
