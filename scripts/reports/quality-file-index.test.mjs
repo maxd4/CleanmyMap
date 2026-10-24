@@ -18,6 +18,8 @@ const sha = "c".repeat(40);
 const runId = "projection-run";
 const fileA = "apps/web/src/a.ts";
 const fileB = "apps/web/src/b.ts";
+const testFile = "apps/web/src/a.test.ts";
+const dataFile = "apps/web/src/data/config.ts";
 
 function architectureProjectionFixture() {
   const ui = "apps/web/src/components/entry.tsx";
@@ -256,6 +258,59 @@ test("construit un index exhaustif sans confondre complexity et functionLength",
   assert.equal(index.audits.documentation.reason, "HISTORICAL_ABSENCE");
   assert.equal(index.documentationDomains.state, "NOT_MEASURED");
   assert.equal(index.documentationDomains.reason, "HISTORICAL_ABSENCE");
+});
+
+test("projette un triage borné sans inventer une décision architecturale", () => {
+  const run = buildRun();
+  run.reports["top-heavy"].rows.push(
+    { file: testFile, kind: "test", lines: 1_100, bytes: 60_000, generated: false },
+    { file: dataFile, kind: "data/config", lines: 1_600, bytes: 90_000, generated: false },
+  );
+  run.documentation = documentationReport();
+  const current = { ...run.documentation.documents[0], path: "documentation/current.md", lifecycle: { statuses: ["CURRENT"], source: "EXPLICIT" }, lines: 1_600, level: "ARCHITECTURE_REVIEW" };
+  const historical = { ...run.documentation.documents[0], path: "documentation/history.md", lifecycle: { statuses: ["HISTORY"], source: "EXPLICIT" }, lines: 1_400, level: "REVIEW_REQUIRED" };
+  run.documentation.documents = [current, historical];
+  run.documentation.ranking = [current, historical];
+  run.documentation.summary = { trackedDocuments: 2, surveillance: 0, reviewRequired: 1, architectureReview: 1, invalidReferences: 0 };
+
+  const index = buildQualityFileIndex({ run, mode: "ALL" });
+  const markdown = buildQualityFileIndexMarkdown(index);
+
+  assert.equal(index.triage.code.candidates.length, 2);
+  assert.equal(index.triage.code.candidates[0].path, dataFile);
+  assert.equal(index.triage.tests.candidates.length, 1);
+  assert.equal(index.triage.tests.candidates[0].path, testFile);
+  assert.equal(index.triage.functions.candidates.length, 1);
+  assert.ok(index.triage.documentation.currentPlan.some((candidate) => candidate.path === "documentation/current.md"));
+  assert.ok(index.triage.documentation.historyAudit.some((candidate) => candidate.path === "documentation/history.md"));
+  assert.equal(new Set(index.triage.code.candidates.map((candidate) => candidate.path)).size, index.triage.code.candidates.length);
+  assert.equal(new Set(index.triage.functions.candidates.map((candidate) => candidate.path)).size, index.triage.functions.candidates.length);
+  assert.equal(new Set(index.triage.documentation.candidates.map((candidate) => candidate.path)).size, index.triage.documentation.candidates.length);
+  assert.equal(index.triage.code.candidates[0].decision, "NOT_RECORDED_IN_QUALITY_INDEX");
+  assert.ok(!JSON.stringify(index.triage).includes("MONOLITH"));
+  assert.match(markdown, /## Synthèse de triage/);
+  assert.ok(markdown.indexOf("### 1. Code") < markdown.indexOf("### 2. Tests"));
+  assert.ok(markdown.indexOf("### 2. Tests") < markdown.indexOf("### 3. Documentation"));
+  assert.ok(markdown.indexOf("### 3. Documentation") < markdown.indexOf("### 4. Fonctions"));
+  assert.match(markdown, /#### CURRENT \/ PLAN/);
+  assert.match(markdown, /#### HISTORY \/ AUDIT/);
+  assert.match(markdown, /NOT_RECORDED_IN_QUALITY_INDEX/);
+  assert.match(markdown, /FILE INDEX/);
+});
+
+test("conserve l'absence de mesure et la preuve périmée dans le triage des fonctions", () => {
+  const run = buildRun();
+  run.reports.complexity = { error: { code: "COMPLEXITY_UNAVAILABLE", message: "fixture" } };
+  const index = buildQualityFileIndex({ run, mode: "OFFLINE" });
+  assert.equal(index.triage.functions.state, "NOT_MEASURED");
+  assert.equal(index.triage.functions.candidates.length, 0);
+
+  const staleRun = buildRun();
+  staleRun.reports.complexity.result.stale = [{ metric: "complexity", path: fileA, value: 22, type: "stale" }];
+  const staleIndex = buildQualityFileIndex({ run: staleRun, mode: "OFFLINE" });
+  assert.equal(staleIndex.triage.functions.state, "PRESENT");
+  assert.equal(staleIndex.triage.functions.staleEvidenceCount, 1);
+  assert.equal(staleIndex.files.find((file) => file.path === fileA).findings.complexity.state, "PRESENT");
 });
 
 test("projette la couverture détaillée et ses branches sans la confondre avec les gates", () => {

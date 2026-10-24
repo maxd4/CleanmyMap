@@ -262,7 +262,7 @@ function validateManifest(manifest, { audit, auditedSha, runId }) {
   }
   if (typeof manifest.reproducible !== "boolean") throw new Error(`Manifest ${audit} sans qualification de reproductibilité.`);
   if (typeof manifest.readProvenance !== "string") throw new Error(`Manifest ${audit} sans readProvenance.`);
-  if (!["PASS", "PASS_WITH_GRACE", "FAIL"].includes(manifest.status)) throw new Error(`Manifest ${audit} sans status valide.`);
+  if (!["PASS", "PASS_WITH_GRACE", "FAIL", "SKIPPED_BY_POLICY"].includes(manifest.status)) throw new Error(`Manifest ${audit} sans status valide.`);
   return manifest;
 }
 
@@ -1310,6 +1310,19 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
     documentation,
   };
   const findingsByCategory = Object.fromEntries(Object.entries(categorySummaries).map(([key, value]) => [key, value.findingCounts ?? value.counts ?? {}]));
+  const source = {
+    auditedHead: run.auditedSha,
+    runId: run.runId,
+    provenance: run.provenance,
+    aggregateManifest: run.aggregateManifest,
+    auditManifests: run.manifests,
+    documentation: run.documentation ? { status: run.documentation.status, readProvenance: run.documentation.provenance, reason: run.documentation.reason ?? null, error: run.documentation.error ?? null, attentionRequired: run.documentation.attentionRequired } : { status: "NOT_MEASURED", readProvenance: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", error: null, attentionRequired: false },
+    initialStatus: run.aggregateManifest.status,
+    attentionRequired: run.aggregateManifest.attentionRequired,
+    reproducible: run.aggregateManifest.reproducible,
+    sourceReports: QUALITY_INDEX_AUDITS.filter((audit) => run.manifests[audit]).map((audit) => ({ audit, status: run.manifests[audit].status, readProvenance: run.manifests[audit].readProvenance, resultClass: run.manifests[audit].resultClass })),
+  };
+  const triage = buildQualityFileIndexTriage({ files: finalFiles, audits: categorySummaries, source });
   return {
     schemaVersion: QUALITY_INDEX_SCHEMA_VERSION,
     kind: "quality-file-index",
@@ -1317,18 +1330,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
     generatedAt,
     auditedHead: run.auditedSha,
     runId: run.runId,
-    source: {
-      auditedHead: run.auditedSha,
-      runId: run.runId,
-      provenance: run.provenance,
-      aggregateManifest: run.aggregateManifest,
-      auditManifests: run.manifests,
-      documentation: run.documentation ? { status: run.documentation.status, readProvenance: run.documentation.provenance, reason: run.documentation.reason ?? null, error: run.documentation.error ?? null, attentionRequired: run.documentation.attentionRequired } : { status: "NOT_MEASURED", readProvenance: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", error: null, attentionRequired: false },
-      initialStatus: run.aggregateManifest.status,
-      attentionRequired: run.aggregateManifest.attentionRequired,
-      reproducible: run.aggregateManifest.reproducible,
-      sourceReports: QUALITY_INDEX_AUDITS.filter((audit) => run.manifests[audit]).map((audit) => ({ audit, status: run.manifests[audit].status, readProvenance: run.manifests[audit].readProvenance, resultClass: run.manifests[audit].resultClass })),
-    },
+    source,
     correlation: {
       state: correlationSignals.measured ? "PRESENT" : "NOT_MEASURED",
       detail: correlationSignals.detail,
@@ -1357,6 +1359,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       testabilityDomains: testability.measuredDomains ?? 0,
     },
     files: finalFiles,
+    triage,
     auditCategories: finalAuditCategories,
     functionalDomains: finalFunctionalDomains,
     documentationDomains: finalDocumentationDomains,
@@ -1383,6 +1386,277 @@ function stateLabel(value) {
   return value?.state ?? "NOT_MEASURED";
 }
 
+const TRIAGE_STRUCTURAL_CATEGORIES = Object.freeze([
+  "complexity",
+  "functionLength",
+  "cognitiveComplexity",
+  "localMaintainability",
+  "duplication",
+  "cycles",
+]);
+
+const TRIAGE_LEVEL_ORDER = Object.freeze({
+  HARD: 0,
+  FAIL: 0,
+  REVIEW: 1,
+  REVIEW_REQUIRED: 1,
+  ARCHITECTURE_REVIEW: 1,
+  SURVEILLANCE: 2,
+  PREVENTIVE: 2,
+  PRESENT: 3,
+  NONE: 4,
+  NOT_MEASURED: 5,
+  NOT_APPLICABLE: 6,
+  OUT_OF_INSTRUMENTATION: 6,
+});
+
+function triageFileKind(file) {
+  return file.metrics.topHeavy.items?.[0]?.kind ?? file.architecture?.sourceKind ?? null;
+}
+
+function triageTopHeavyLevel(file) {
+  const measurement = file.metrics.topHeavy.items?.[0];
+  if (!measurement) return file.metrics.topHeavy.state;
+  if (measurement.aboveHard) return "HARD";
+  if (measurement.aboveReview) return "REVIEW";
+  const preventive = measurement.limits?.preventive ?? FILE_KIND_POLICY[measurement.kind]?.preventive;
+  if (preventive && measurement.lines >= preventive.lines) return "PREVENTIVE";
+  return "PRESENT";
+}
+
+function triageStructuralCategories(file) {
+  return TRIAGE_STRUCTURAL_CATEGORIES.filter((category) => file.findings[category]?.state === "PRESENT");
+}
+
+function triageEvidenceState(file, categories) {
+  const states = categories.map((category) => file.findings[category]?.state ?? file.metrics[category]?.state);
+  const stale = categories.some((category) => (file.findings[category]?.items ?? []).some((finding) => finding.type === "stale" || String(finding.type ?? "").startsWith("stale")));
+  if (stale) return "STALE_EVIDENCE";
+  if (states.some((value) => value === "PRESENT")) return "PRESENT";
+  if (states.some((value) => value === "NOT_MEASURED")) return "NOT_MEASURED";
+  return "NOT_APPLICABLE";
+}
+
+function triageProvenance(file, categories) {
+  for (const category of categories) {
+    const provenance = file.provenance[category];
+    if (provenance) return provenance;
+  }
+  return "NOT_MEASURED";
+}
+
+function triageDecision(file) {
+  return file.architecture?.decision
+    ?? file.architecture?.architectureDecision
+    ?? "NOT_RECORDED_IN_QUALITY_INDEX";
+}
+
+function triageCandidate(file, { level, categories, quantitative = null, detail = null }) {
+  const evidenceCategories = categories.length > 0 ? categories : ["topHeavy"];
+  return {
+    path: file.path,
+    kind: triageFileKind(file),
+    level,
+    quantitative,
+    structural: categories.filter((category) => category !== "topHeavy"),
+    decision: triageDecision(file),
+    evidence: triageEvidenceState(file, evidenceCategories),
+    provenance: triageProvenance(file, evidenceCategories),
+    detail,
+  };
+}
+
+function sortTriageCandidates(left, right) {
+  return (TRIAGE_LEVEL_ORDER[left.level] ?? 99) - (TRIAGE_LEVEL_ORDER[right.level] ?? 99)
+    || left.path.localeCompare(right.path)
+    || String(left.detail ?? "").localeCompare(String(right.detail ?? ""));
+}
+
+function buildCodeTriage(files) {
+  return files.flatMap((file) => {
+    const kind = triageFileKind(file);
+    if (!(kind === "runtime" || kind === "data/config")) return [];
+    const topHeavyLevel = triageTopHeavyLevel(file);
+    const structural = triageStructuralCategories(file);
+    const hasSizeSignal = ["HARD", "REVIEW", "PREVENTIVE"].includes(topHeavyLevel);
+    if (!hasSizeSignal && structural.length === 0) return [];
+    const categories = [...(hasSizeSignal ? ["topHeavy"] : []), ...structural];
+    return [triageCandidate(file, {
+      level: hasSizeSignal ? topHeavyLevel : "PRESENT",
+      categories,
+      quantitative: hasSizeSignal ? {
+        level: topHeavyLevel,
+        lines: file.metrics.topHeavy.items[0].lines,
+        bytes: file.metrics.topHeavy.items[0].bytes,
+      } : null,
+      detail: structural.length > 0 ? structural.join(", ") : "taille",
+    })];
+  }).sort(sortTriageCandidates).slice(0, 10);
+}
+
+function buildTestTriage(files) {
+  return files.flatMap((file) => {
+    if (triageFileKind(file) !== "test") return [];
+    const topHeavyLevel = triageTopHeavyLevel(file);
+    const structural = triageStructuralCategories(file);
+    const hasSizeSignal = ["HARD", "REVIEW", "PREVENTIVE"].includes(topHeavyLevel);
+    if (!hasSizeSignal && structural.length === 0) return [];
+    const categories = [...(hasSizeSignal ? ["topHeavy"] : []), ...structural];
+    return [triageCandidate(file, {
+      level: hasSizeSignal ? topHeavyLevel : "PRESENT",
+      categories,
+      quantitative: hasSizeSignal ? {
+        level: topHeavyLevel,
+        lines: file.metrics.topHeavy.items[0].lines,
+        bytes: file.metrics.topHeavy.items[0].bytes,
+      } : null,
+      detail: structural.length > 0 ? structural.join(", ") : "taille",
+    })];
+  }).sort(sortTriageCandidates).slice(0, 10);
+}
+
+function buildDocumentationTriage(audits, source) {
+  if (audits.documentation.state === "NOT_MEASURED") {
+    return { state: "NOT_MEASURED", candidates: [], currentPlan: [], historyAudit: [], missingLifecycle: 0 };
+  }
+  const ranked = (audits.documentation.ranking ?? [])
+    .filter((document) => document.level !== "NONE")
+    .slice(0, 10)
+    .map((document) => ({
+      path: document.path,
+      level: document.level,
+      quantitative: { level: document.level, lines: document.lines, bytes: document.bytes },
+      decision: "NOT_RECORDED_IN_QUALITY_INDEX",
+      evidence: "PRESENT",
+      provenance: source.documentation?.readProvenance ?? "NOT_MEASURED",
+      lifecycle: document.lifecycle?.statuses ?? [],
+      detail: document.internalLinks?.invalid?.length ? `${document.internalLinks.invalid.length} lien(s) invalide(s)` : "longueur",
+    }));
+  const currentPlan = ranked.filter((document) => document.lifecycle.some((status) => status === "CURRENT" || status === "PLAN"));
+  const historyAudit = ranked.filter((document) => !currentPlan.includes(document) && document.lifecycle.some((status) => status === "HISTORY" || status === "AUDIT"));
+  return {
+    state: "PRESENT",
+    candidates: ranked,
+    currentPlan,
+    historyAudit,
+    missingLifecycle: ranked.filter((document) => document.lifecycle.length === 0).length,
+  };
+}
+
+function buildFunctionTriage(files, audits) {
+  const byFile = new Map();
+  for (const file of files) {
+    for (const { finding, metric } of [
+      ...(file.findings.functionLength?.items ?? []).map((item) => ({ finding: item, metric: "functionLength" })),
+      ...(file.findings.complexity?.items ?? []).map((item) => ({ finding: item, metric: "complexity" })),
+    ].filter(({ finding }) => finding.type === "failures" || finding.type === "reviews")) {
+      const candidate = byFile.get(file.path) ?? {
+        path: file.path,
+        level: "REVIEW",
+        quantitative: { level: "REVIEW", details: [] },
+        decision: triageDecision(file),
+        evidence: "PRESENT",
+        provenance: file.provenance.complexity ?? "NOT_MEASURED",
+        detail: new Set(),
+      };
+      if (finding.type === "failures") {
+        candidate.level = "FAIL";
+        candidate.quantitative.level = "FAIL";
+      }
+      candidate.quantitative.details.push(`${metric}=${finding.value ?? "NOT_MEASURED"}${finding.line ? ` (L${finding.line})` : ""}`);
+      candidate.detail.add(finding.type);
+      byFile.set(file.path, candidate);
+    }
+  }
+  const candidates = [...byFile.values()].map((candidate) => ({ ...candidate, detail: [...candidate.detail].sort().join(", ") })).sort(sortTriageCandidates).slice(0, 10);
+  const staleEvidenceCount = files.reduce((count, file) => count + [...(file.findings.complexity?.items ?? [])].filter((finding) => finding.type === "stale").length, 0);
+  return {
+    state: candidates.length > 0 ? "PRESENT" : staleEvidenceCount > 0 ? "STALE_EVIDENCE" : audits.complexity.state === "NOT_MEASURED" ? "NOT_MEASURED" : "NONE",
+    candidates,
+    staleEvidenceCount,
+  };
+}
+
+export function buildQualityFileIndexTriage({ files = [], audits = {}, source = {} } = {}) {
+  const code = buildCodeTriage(files);
+  const tests = buildTestTriage(files);
+  return {
+    code: { state: code.length > 0 ? "PRESENT" : files.length > 0 ? "NONE" : "NOT_MEASURED", candidates: code },
+    tests: { state: tests.length > 0 ? "PRESENT" : files.length > 0 ? "NONE" : "NOT_MEASURED", candidates: tests },
+    documentation: buildDocumentationTriage(audits, source),
+    functions: buildFunctionTriage(files, audits),
+    provenance: source.provenance ?? "NOT_MEASURED",
+    detail: "Projection dérivée exclusivement des mesures, findings et provenances déjà présents dans quality-file-index.",
+  };
+}
+
+function triageQuantitativeText(candidate) {
+  if (!candidate.quantitative) return "—";
+  if (candidate.quantitative.details) return candidate.quantitative.details.join(" ; ");
+  if (candidate.metric) return `${candidate.metric}=${candidate.value ?? "NOT_MEASURED"}${candidate.line ? ` (L${candidate.line})` : ""}`;
+  return `${candidate.quantitative.level} — ${candidate.quantitative.lines ?? "NOT_MEASURED"} lignes / ${candidate.quantitative.bytes ?? "NOT_MEASURED"} octets`;
+}
+
+function triageRows(candidates, { documentation = false } = {}) {
+  if (candidates.length === 0) return ["_Aucun candidat dans cette projection._"];
+  const lines = [
+    "| Candidat | Niveau existant | Dépassement quantitatif | Problème mesuré | Décision architecturale humaine | Preuve / provenance |",
+    "| --- | --- | --- | --- | --- | --- |",
+  ];
+  for (const candidate of candidates) {
+    const detail = documentation ? `${candidate.detail}${candidate.lifecycle.length > 0 ? ` — ${candidate.lifecycle.join(" / ")}` : " — cycle NOT_STATED"}` : candidate.detail ?? "—";
+    lines.push(`| \`${escapeMarkdown(candidate.path)}\` | ${candidate.level} | ${escapeMarkdown(triageQuantitativeText(candidate))} | ${escapeMarkdown(detail)} | ${escapeMarkdown(candidate.decision)} | ${candidate.evidence} — ${escapeMarkdown(candidate.provenance)} |`);
+  }
+  return lines;
+}
+
+function renderTriageSummary(index) {
+  const triage = index.triage ?? buildQualityFileIndexTriage({ files: index.files, audits: index.audits, source: index.source });
+  const lines = [
+    "## Synthèse de triage",
+    "",
+    "Cette synthèse est une projection lisible du quality-index : elle ne crée ni score, ni seuil, ni verdict, ni décision de monolithe. Les niveaux sont ceux des mesures existantes ; `NOT_MEASURED` et `STALE_EVIDENCE` restent distincts de `PRESENT`. Les décisions humaines ne sont affichées que si elles sont déjà présentes dans l'index.",
+    "",
+    "### 1. Code",
+    "",
+    `État : **${triage.code.state}** — runtime et data/config ; ${triage.code.candidates.length} candidat(s), maximum 10.`,
+    "",
+    ...triageRows(triage.code.candidates),
+    "",
+    "### 2. Tests",
+    "",
+    `État : **${triage.tests.state}** — fichiers volumineux et problèmes structurels mesurés ; ${triage.tests.candidates.length} candidat(s), maximum 10.`,
+    "",
+    ...triageRows(triage.tests.candidates),
+    "",
+    "### 3. Documentation",
+    "",
+    `État : **${triage.documentation.state}** — ${triage.documentation.candidates.length} document(s) retenu(s), maximum 10 au total ; cycle de vie absent sur ${triage.documentation.missingLifecycle} document(s) retenu(s).`,
+    "",
+    "#### CURRENT / PLAN",
+    "",
+    ...triageRows(triage.documentation.currentPlan, { documentation: true }),
+    "",
+    "#### HISTORY / AUDIT",
+    "",
+    ...triageRows(triage.documentation.historyAudit, { documentation: true }),
+    "",
+    "Les documents sans marqueur de cycle de vie ne sont pas artificiellement classés CURRENT/PLAN ou HISTORY/AUDIT ; leur état reste `NOT_STATED` dans l’index détaillé.",
+    "",
+    "### 4. Fonctions",
+    "",
+    `État : **${triage.functions.state}** — dépassements functionLength et complexité présents dans les findings mesurés ; ${triage.functions.candidates.length} candidat(s), maximum 10.`,
+    "",
+    ...triageRows(triage.functions.candidates),
+    "",
+    `Preuves périmées conservées dans les findings détaillés : **${triage.functions.staleEvidenceCount ?? 0}**.`,
+    "",
+    `Provenance de la projection : **${escapeMarkdown(triage.provenance)}**. Les résultats détaillés restent accessibles dans FILE INDEX et les domaines d’audit ci-dessous.`,
+    "",
+  ];
+  return lines;
+}
+
 export function buildQualityFileIndexMarkdown(index) {
   const lines = [
     "# Quality Audit — index consolidé par fichier et domaine",
@@ -1397,6 +1671,7 @@ export function buildQualityFileIndexMarkdown(index) {
     "",
     "La projection lit les cinq moteurs de gate, les audits auxiliaires de maintenabilité, sûreté typée/asynchrone, couverture détaillée, hotspots et testabilité, ainsi que la dimension documentaire du run identifié lorsqu'ils existent. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines.",
     "",
+    ...renderTriageSummary(index),
     "## États et audits",
     "",
     "| Audit | État | Verdict initial | Provenance |",

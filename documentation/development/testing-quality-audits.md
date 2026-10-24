@@ -120,6 +120,17 @@ offline, elle, refuse tout run incomplet ou incohérent et exige l'identité
 exacte du couple demandé, sans exiger artificiellement une reproductibilité
 ou un `origin/main` égal au SHA audité.
 
+Le résumé Markdown de cette projection commence par une synthèse de triage
+bornée à dix candidats par catégorie : `Code` (runtime et data/config),
+`Tests` (taille et findings structurels), `Documentation` (documents longs
+séparés entre `CURRENT/PLAN` et `HISTORY/AUDIT`) et `Fonctions` (findings
+`functionLength` et `complexity` effectivement mesurés). Elle n'ajoute aucun
+score, seuil, baseline, scanner ou gate. Chaque ligne distingue le dépassement
+quantitatif, la décision architecturale humaine lorsqu'elle est déjà présente
+dans l'index, et la preuve disponible ; `NOT_MEASURED`, `STALE_EVIDENCE` et
+`NOT_STATED` ne sont jamais convertis en défaut ou en décision de monolithe.
+Les détails restent dans l'index complet et les sections détaillées du résumé.
+
 Le mode `all` conserve aussi dans le rapport agrégé une dimension documentaire
 non bloquante, calculée sur les fichiers Markdown et MDX suivis par Git du SHA
 audité. Elle mesure les lignes, octets, titres, profondeur, sections, liens
