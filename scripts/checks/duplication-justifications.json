@@ -507,14 +507,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "529036b838b38f8c",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/route/recommend/route.response.test.ts:9-14 et app/api/route/recommend/route.test.ts:20-24 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/route/recommend/route.response.test.ts:9-14 et app/api/route/recommend/route.test.ts:20-24 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "2e0086a860f7d201",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT app/api/route/recommend/route.response.test.ts:61-78 et app/api/route/recommend/route.test.ts:303-320 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
@@ -539,34 +531,10 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "6acbdeaee9e5f6ea",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/route/recommend/route.response.test.ts:489-503 ; symboles: uncertaintyMinutes, context, candidates, length et app/api/route/recommend/route.response.test.ts:654-668 ; symboles: uncertaintyMinutes, modelVersion, fixture, calibrated restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "app/api/route/recommend/route.response.test.ts:489-503 et app/api/route/recommend/route.response.test.ts:654-668 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "7e4065499cc12ee9",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT app/api/route/recommend/route.response.test.ts:567-580 et lib/route/route-planner.test.ts:74-87 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
       "evidence": "app/api/route/recommend/route.response.test.ts:567-580 et lib/route/route-planner.test.ts:74-87 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "cc36fc8e7ac7dfd5",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/route/recommend/route.routing.test.ts:267-280 et app/api/route/recommend/route.routing.test.ts:318-331 appartiennent à des scénarios de budget réseau, fallback et réconciliation de route ; leurs appels fournisseur et résultats de dégradation ne portent pas le même invariant.",
-      "evidence": "app/api/route/recommend/route.routing.test.ts:267-280 et app/api/route/recommend/route.routing.test.ts:318-331 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "307b0991afff6fe1",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/route/recommend/route.routing.test.ts:269-279 et app/api/route/recommend/route.routing.test.ts:447-457 appartiennent à des scénarios de budget réseau, fallback et réconciliation de route ; leurs appels fournisseur et résultats de dégradation ne portent pas le même invariant.",
-      "evidence": "app/api/route/recommend/route.routing.test.ts:269-279 et app/api/route/recommend/route.routing.test.ts:447-457 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
@@ -2227,26 +2195,10 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "a1e003251b6afaa8",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/route/recommend/route.routing.test.ts:270-279 et app/api/route/recommend/route.routing.test.ts:354-363 appartiennent à des scénarios de budget réseau, fallback et réconciliation de route ; leurs appels fournisseur et résultats de dégradation ne portent pas le même invariant.",
-      "evidence": "app/api/route/recommend/route.routing.test.ts:270-279 et app/api/route/recommend/route.routing.test.ts:354-363 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "8ccf8bf26cb83bea",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/route/recommend/route.routing.test.ts:308-314 et app/api/route/recommend/route.routing.test.ts:415-421 appartiennent à des scénarios de budget réseau, fallback et réconciliation de route ; leurs appels fournisseur et résultats de dégradation ne portent pas le même invariant.",
       "evidence": "app/api/route/recommend/route.routing.test.ts:308-314 et app/api/route/recommend/route.routing.test.ts:415-421 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "a6645c3a527413de",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/route/recommend/route.routing.test.ts:353-363 et app/api/route/recommend/route.routing.test.ts:424-434 appartiennent à des scénarios de budget réseau, fallback et réconciliation de route ; leurs appels fournisseur et résultats de dégradation ne portent pas le même invariant.",
-      "evidence": "app/api/route/recommend/route.routing.test.ts:353-363 et app/api/route/recommend/route.routing.test.ts:424-434 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
