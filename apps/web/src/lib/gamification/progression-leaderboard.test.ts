@@ -21,9 +21,7 @@ describe("gamification progression leaderboard", () => {
       "utf8",
     );
 
-    expect(source).toContain('export { getUserProgression } from "./progression-user";');
-    expect(source).toContain("getGamificationLeaderboard,");
-    expect(source).toContain("projectGamificationLeaderboardResponse,");
+    expect(source).toContain("getGamificationLeaderboard, projectGamificationLeaderboardResponse");
     expect(source).toContain('export { buildPostActionRetentionLoop } from "./progression-retention";');
   });
 });

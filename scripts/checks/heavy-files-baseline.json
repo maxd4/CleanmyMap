@@ -355,6 +355,22 @@
       "maxBytes": 21842
     },
     {
+      "path": "apps/web/src/lib/reports/report-generation-history-store.ts",
+      "kind": "runtime",
+      "status": "REVIEW",
+      "reviewedRef": "b984d68bf91e864d2242acf07488bdccb8f93431",
+      "maxLines": 532,
+      "maxBytes": 17614
+    },
+    {
+      "path": "apps/web/src/lib/spogomi/preparation-service.ts",
+      "kind": "runtime",
+      "status": "REVIEW",
+      "reviewedRef": "b984d68bf91e864d2242acf07488bdccb8f93431",
+      "maxLines": 553,
+      "maxBytes": 32623
+    },
+    {
       "path": "apps/web/src/lib/gamification/progression-leaderboard.ts",
       "kind": "runtime",
       "status": "IMPROVED",

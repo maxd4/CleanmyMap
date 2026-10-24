@@ -56,8 +56,36 @@ Les quatre champs décisionnels (`ARCHITECTURE_DECISION`, `PRIORITY`, `DEPENDENC
 | `apps/web/src/lib/auth/sync.ts` | ALREADY_MODULARIZED | NONE | préserver scope utilisateur, service-role server-only, idempotence et ordre d'upsert | nouvelle responsabilité autonome réintroduite dans la façade ou opacification AuthN/AuthZ |
 | `apps/web/src/components/actions/action-creation-shell.tsx` | DEFERRED_SPLIT | AFTER_ACTIVE_CHANGES | préserver l'isolation par `actionId`, les transitions d'état et l'URL reprenable | frontière indépendante et testée entre navigation/sections, état workflow et orchestration de persistance |
 | `apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts` | EXTRACTED_PURE_CONTRACT | CURRENT | préserver les modifications utilisateur, le premier identifiant persistant et la publication toujours explicite | nouvelle responsabilité autonome réintroduite dans le workflow ou couplage qui compromet la reprise et la publication explicite |
+| `apps/web/src/lib/spogomi/preparation-service.ts` | COHESIVE_SINGLE_FILE | NONE | préserver les contrats d'import de roster et de composition, les verrous de reprise et les RPC transactionnelles | nouveau consommateur indépendant d'import ou de composition, ou persistance d'un des deux workflows déplacée vers un owner dédié |
+| `apps/web/src/lib/reports/report-generation-history-store.ts` | COHESIVE_SINGLE_FILE | NONE | préserver la cohérence snapshot/métadonnées, l'ownership Clerk et les résolutions direct/derived | nouveau contrat de lecture ou de persistance indépendant, ou divergence entre historique et snapshot |
 
 ### Décisions établies — grille détaillée
+
+#### `apps/web/src/lib/spogomi/preparation-service.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | import de roster (aperçu, réservation idempotente, claim de lease et confirmation) et composition d'équipes (aperçu déterministe, validation de proposition et confirmation RPC) |
+| PUBLIC_CONTRACTS | `previewRosterImportChanges`, `confirmRosterImport`, `previewSpogomiTeams`, `confirmSpogomiTeams`, `autoComposeTeams`, `hashRosterPreview`, types `EventRow` et `SpogomiTeamCompositionPreview` |
+| SIDE_EFFECTS | persistance Supabase des imports/participants, lecture des participants/équipes et RPC de confirmation de composition ; les leases et révisions protègent la reprise et la concurrence |
+| MAIN_CONSUMERS | routes API Spogomi d'import, d'auto-composition et de confirmation ; services organisateur/résultat ; workspace de préparation et tests d'import/composition |
+| TEST_BOUNDARY | `preparation-service.import.test.ts`, `preparation-service.update.test.ts`, contrats de routes Spogomi et tests de persistance associés |
+| COUPLING | les deux workflows partagent `EventRow`, la sélection de division, les contrôles d'éligibilité et les invariants de préparation ; leurs écritures restent séparées par `spogomi_roster_imports`/participants et `spogomi_confirm_team_composition*` |
+| NATURAL_EXTRACTION_BOUNDARY | import roster d'un côté ; lecture/formation/confirmation de composition de l'autre ; extraction ultérieure seulement si un consommateur ou contrat de persistance devient indépendant |
+| RATIONALE | le fichier est une façade de préparation Spogomi cohésive qui compose deux parcours avec des garanties communes d'événement, division, idempotence et révision. Les helpers de création, accès événement, GPX et mutation de composition sont déjà leurs owners. Une extraction immédiate du seul volume créerait une seconde façade sans réduire le couplage partagé ; la décision CURRENT est donc de conserver ce owner et de déclencher une extraction sur un contrat indépendant démontré |
+
+#### `apps/web/src/lib/reports/report-generation-history-store.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | lecture paginée de l'historique et snapshot owner-scoped ; validation de cohérence ; persistance directe et dérivée ; résolution explicite `not_persisted`/`persisted`/`uncertain` |
+| PUBLIC_CONTRACTS | `listReportGenerationHistory`, `listReportGenerationHistoryPage`, `getReportGenerationSnapshotById`, `persistReportGeneration`, `persistDerivedReportGeneration`, résolutions de persistance et `ReportGenerationSnapshotRecord` |
+| SIDE_EFFECTS | accès Supabase admin borné par `created_by_clerk_id`, insertion des snapshots et projection facultative des statuts de publication ; aucune écriture hors de la table d'historique et des contrats de publication appelés |
+| MAIN_CONSUMERS | routes `/api/reports/generations`, reprise historique, publication/partage/PDF, loaders de la page Reports et exports scientifiques/CSV |
+| TEST_BOUNDARY | `report-generation-history-store.test.ts`, tests de routes generations, reprise historique, publication et exports scientifiques |
+| COUPLING | métadonnées et snapshot doivent rester cohérents avec le payload versionné ; les chemins direct et derived partagent la même lecture owner-scoped et les mêmes invariants de génération |
+| NATURAL_EXTRACTION_BOUNDARY | lecture/pagination, validation snapshot et persistance sont des seams techniques identifiables, mais pas des contrats publics indépendants aujourd'hui ; toute extraction doit conserver l'identité de génération et le contrôle owner |
+| RATIONALE | le store est l'owner canonique de l'historique : séparer artificiellement lecture, validation et persistance risquerait de dupliquer `ReportGenerationSnapshotRecord`, les sélecteurs et les contrôles de cohérence. La décision CURRENT justifie le REVIEW tant que les consommateurs utilisent le même contrat et les mêmes frontières de persistance ; un nouveau backend ou contrat de lecture indépendant déclenchera une extraction ciblée |
 
 #### `apps/web/src/components/sections/rubriques/partners-network-directory.tsx`
 

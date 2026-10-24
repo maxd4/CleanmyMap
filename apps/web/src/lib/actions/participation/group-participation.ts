@@ -13,12 +13,12 @@ export {
 } from "./group-participation-read";
 
 export {
-  addActionParticipationByAdmin,
   loadActionParticipationReviewPage,
   loadActionParticipationReviews,
   reviewActionParticipation,
   searchActionParticipationCandidates,
 } from "./group-participation-review";
+export { addActionParticipationByAdmin } from "./group-participation-admin";
 
 export {
   cancelActionParticipation,

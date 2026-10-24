@@ -132,6 +132,76 @@ function AnnuaireMapPanel({
   );
 }
 
+function AnnuaireQuickFilters({
+  fr,
+  searchTerm,
+  setSearchTerm,
+  engagementDomain,
+  setEngagementDomain,
+}: {
+  fr: boolean;
+  searchTerm: string;
+  setSearchTerm: (value: string) => void;
+  engagementDomain: AnnuaireLogic["engagementDomain"];
+  setEngagementDomain: AnnuaireLogic["setEngagementDomain"];
+}) {
+  return (
+    <div className="relative z-10 mt-6 space-y-3">
+      <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
+        {fr ? "Domaines déclarés ou éditoriaux" : "Declared or editorial domains"}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {[
+          { id: "environnemental" as const, label: fr ? "ENVIRONNEMENT" : "ENVIRONMENT" },
+          { id: "social" as const, label: "SOCIAL" },
+          { id: "humanitaire" as const, label: fr ? "HUMANITAIRE" : "HUMANITARIAN" },
+        ].map((theme) => (
+          <CmmButton
+            key={theme.id}
+            onClick={() => setEngagementDomain(theme.id === engagementDomain ? "all" : theme.id)}
+            tone={engagementDomain === theme.id ? "primary" : "tertiary"}
+            variant="pill"
+            className={cn(
+              "rounded-xl px-4 py-2 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
+              engagementDomain === theme.id ? "shadow-lg" : "hover:shadow-md",
+            )}
+          >
+            {theme.label}
+          </CmmButton>
+        ))}
+      </div>
+      <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
+        {fr ? "Mots-clés" : "Keywords"}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {[
+          { id: "propreté", label: fr ? "PROPRETÉ" : "CLEANLINESS" },
+          { id: "climat", label: "CLIMAT" },
+          { id: "sensibilisation", label: fr ? "SENSIBILISATION" : "AWARENESS" },
+        ].map((theme) => (
+          <CmmButton
+            key={theme.id}
+            onClick={() => setSearchTerm(theme.id === searchTerm ? "" : theme.id)}
+            tone={searchTerm === theme.id ? "primary" : "tertiary"}
+            variant="pill"
+            className={cn(
+              "rounded-xl px-4 py-2 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
+              searchTerm === theme.id ? "shadow-lg" : "hover:shadow-md",
+            )}
+          >
+            {theme.label}
+          </CmmButton>
+        ))}
+      </div>
+      <p className="cmm-text-caption cmm-text-muted">
+        {fr
+          ? "Les domaines proviennent du classement éditorial ou des déclarations des structures. Ils ne constituent pas une certification."
+          : "Domains come from editorial classification or structure declarations. They are not a certification."}
+      </p>
+    </div>
+  );
+}
+
 function AnnuaireSearchPanel({
   fr,
   searchTerm,
@@ -210,61 +280,13 @@ function AnnuaireSearchPanel({
           {fr ? "Filtres Avancés" : "Advanced Filters"}
         </CmmButton>
       </div>
-      <div className="relative z-10 mt-6 space-y-3">
-        <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
-          {fr ? "Domaines déclarés ou éditoriaux" : "Declared or editorial domains"}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {[
-            { id: "environnemental" as const, label: fr ? "ENVIRONNEMENT" : "ENVIRONMENT" },
-            { id: "social" as const, label: "SOCIAL" },
-            { id: "humanitaire" as const, label: fr ? "HUMANITAIRE" : "HUMANITARIAN" },
-          ].map((theme) => (
-            <CmmButton
-              key={theme.id}
-              onClick={() =>
-                setEngagementDomain(theme.id === engagementDomain ? "all" : theme.id)
-              }
-              tone={engagementDomain === theme.id ? "primary" : "tertiary"}
-              variant="pill"
-              className={cn(
-                "rounded-xl px-4 py-2 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
-                engagementDomain === theme.id ? "shadow-lg" : "hover:shadow-md",
-              )}
-            >
-              {theme.label}
-            </CmmButton>
-          ))}
-        </div>
-        <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
-          {fr ? "Mots-clés" : "Keywords"}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {[
-            { id: "propreté", label: fr ? "PROPRETÉ" : "CLEANLINESS" },
-            { id: "climat", label: "CLIMAT" },
-            { id: "sensibilisation", label: fr ? "SENSIBILISATION" : "AWARENESS" },
-          ].map((theme) => (
-            <CmmButton
-              key={theme.id}
-              onClick={() => setSearchTerm(theme.id === searchTerm ? "" : theme.id)}
-              tone={searchTerm === theme.id ? "primary" : "tertiary"}
-              variant="pill"
-              className={cn(
-                "rounded-xl px-4 py-2 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
-                searchTerm === theme.id ? "shadow-lg" : "hover:shadow-md",
-              )}
-            >
-              {theme.label}
-            </CmmButton>
-          ))}
-        </div>
-        <p className="cmm-text-caption cmm-text-muted">
-          {fr
-            ? "Les domaines proviennent du classement éditorial ou des déclarations des structures. Ils ne constituent pas une certification."
-            : "Domains come from editorial classification or structure declarations. They are not a certification."}
-        </p>
-      </div>
+      <AnnuaireQuickFilters
+        fr={fr}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        engagementDomain={engagementDomain}
+        setEngagementDomain={setEngagementDomain}
+      />
       <AnimatePresence>
         {showFilters && (
           <motion.div
@@ -296,6 +318,22 @@ function AnnuaireSearchPanel({
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function AnnuaireResultsSummary({ fr, count }: { fr: boolean; count: number }) {
+  return (
+    <div className="flex items-center justify-between px-4">
+      <div className="flex items-center gap-4">
+        <Building2 size={18} className="text-slate-500" />
+        <h3 className="text-xl font-black text-white tracking-tighter uppercase tracking-[0.1em]">
+          {fr ? "Acteurs de l'annuaire" : "Directory actors"}
+        </h3>
+      </div>
+      <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-1.5 cmm-text-caption font-black uppercase tracking-[0.2em] text-violet-300 shadow-2xl">
+        {count} {fr ? "résultats trouvés" : "results found"}
+      </div>
     </div>
   );
 }
@@ -370,19 +408,7 @@ export function AnnuaireExplorationView({
           resultsCount={sortedAndFilteredEntries.length}
         />
 
-        {/* Results Metadata */}
-        <div className="flex items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <Building2 size={18} className="text-slate-500" />
-            <h3 className="text-xl font-black text-white tracking-tighter uppercase tracking-[0.1em]">
-              {fr ? "Acteurs de l'annuaire" : "Directory actors"}
-            </h3>
-          </div>
-          <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-1.5 cmm-text-caption font-black uppercase tracking-[0.2em] text-violet-300 shadow-2xl">
-            {sortedAndFilteredEntries.length}{" "}
-            {fr ? "résultats trouvés" : "results found"}
-          </div>
-        </div>
+        <AnnuaireResultsSummary fr={fr} count={sortedAndFilteredEntries.length} />
 
         {/* Partner List */}
         <div className="min-h-[600px]">

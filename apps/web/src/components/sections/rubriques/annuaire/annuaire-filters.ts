@@ -3,7 +3,7 @@ import type { ParisArrondissement } from"@/lib/geo/paris-arrondissements";
 
 export type EntityKind = AnnuaireEntry["kind"];
 export type ContributionType = AnnuaireEntry["contributionTypes"][number];
-export type EngagementType = AnnuaireEntry["types"][number];
+type EngagementType = AnnuaireEntry["types"][number];
 export type EngagementDomainFilter = "all" | "unclassified" | EngagementType;
 export type ZoneFilter ="all" |"nearby" | ParisArrondissement;
 

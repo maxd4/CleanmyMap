@@ -31,6 +31,100 @@ interface AnnuaireFiltersCardProps {
   resultsCount: number;
 }
 
+function AnnuaireSearchAndZoneFields({
+  fr,
+  searchTerm,
+  setSearchTerm,
+  zoneFilter,
+  setZoneFilter,
+  setActorCardsPage,
+  targetArrondissement,
+}: Pick<AnnuaireFiltersCardProps, "fr" | "searchTerm" | "setSearchTerm" | "zoneFilter" | "setZoneFilter" | "setActorCardsPage" | "targetArrondissement">) {
+  return (
+    <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div className="space-y-3">
+        <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
+          {fr ? "Recherche textuelle" : "Text search"}
+        </span>
+        <div className="relative group">
+          <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-violet-400 transition-colors" />
+          <input
+            value={searchTerm}
+            onChange={(event) => {
+              setActorCardsPage(1);
+              setSearchTerm(event.target.value);
+            }}
+            placeholder={fr ? "Nom, mission, mot-clé..." : "Name, mission, keyword..."}
+            className="w-full h-14 rounded-2xl border border-white/5 bg-slate-950/40 pl-14 pr-6 text-sm font-bold text-white shadow-inner transition-all placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40 focus:ring-4 focus:ring-violet-500/10"
+          />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
+          {fr ? "Rayon d'action" : "Action radius"}
+        </span>
+        <div className="relative group">
+          <MapPin size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-violet-400 transition-colors" />
+          <select
+            value={String(zoneFilter)}
+            onChange={(event) => {
+              const raw = event.target.value;
+              setActorCardsPage(1);
+              setZoneFilter(raw === "all" ? "all" : raw === "nearby" ? "nearby" : Number.parseInt(raw, 10) as ParisArrondissement);
+            }}
+            className="w-full h-14 cursor-pointer appearance-none rounded-2xl border border-white/5 bg-slate-950/40 pl-14 pr-12 text-sm font-bold text-white shadow-inner transition-all focus:border-violet-500/40 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
+          >
+            <option value="all">{fr ? "Tout Paris" : "All Paris"}</option>
+            {targetArrondissement ? <option value="nearby">{fr ? "Proches de moi" : "Nearby"}</option> : null}
+            {PARIS_ARRONDISSEMENTS.map((item) => (
+              <option key={item.value} value={item.value}>{item.label}</option>
+            ))}
+          </select>
+          <ChevronDown size={18} className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-600" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnnuaireContributionFilters({
+  fr,
+  filterContribution,
+  setFilterContribution,
+  setActorCardsPage,
+}: Pick<AnnuaireFiltersCardProps, "fr" | "filterContribution" | "setFilterContribution" | "setActorCardsPage">) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <Zap size={14} className="text-slate-500" />
+        <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
+          {fr ? "Leviers & Besoins" : "Levers & Needs"}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {CONTRIBUTION_FILTERS.map((item) => (
+          <CmmButton
+            key={item.value}
+            type="button"
+            tone={filterContribution === item.value ? "primary" : "tertiary"}
+            variant="pill"
+            onClick={() => {
+              setActorCardsPage(1);
+              setFilterContribution(item.value as ContributionType | "all");
+            }}
+            className={cn(
+              "px-5 py-2.5 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
+              filterContribution === item.value ? "shadow-lg scale-105" : "",
+            )}
+          >
+            {item.label}
+          </CmmButton>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function AnnuaireFiltersCard({
   fr,
   searchTerm,
@@ -50,58 +144,15 @@ export function AnnuaireFiltersCard({
 }: AnnuaireFiltersCardProps) {
   return (
     <div className="space-y-10 relative z-10">
-      {/* Search & Area Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-3">
-          <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
-            {fr ? "Recherche textuelle" : "Text search"}
-          </span>
-          <div className="relative group">
-            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-violet-400 transition-colors" />
-            <input
-              value={searchTerm}
-              onChange={(event) => {
-                setActorCardsPage(1);
-                setSearchTerm(event.target.value);
-              }}
-              placeholder={fr ? "Nom, mission, mot-clé..." : "Name, mission, keyword..."}
-              className="w-full h-14 rounded-2xl border border-white/5 bg-slate-950/40 pl-14 pr-6 text-sm font-bold text-white shadow-inner transition-all placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40 focus:ring-4 focus:ring-violet-500/10"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
-            {fr ? "Rayon d'action" : "Action radius"}
-          </span>
-          <div className="relative group">
-            <MapPin size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-violet-400 transition-colors" />
-            <select
-              value={String(zoneFilter)}
-              onChange={(event) => {
-                const raw = event.target.value;
-                if (raw === "all" || raw === "nearby") {
-                  setActorCardsPage(1);
-                  setZoneFilter(raw);
-                  return;
-                }
-                setActorCardsPage(1);
-                setZoneFilter(Number.parseInt(raw, 10) as ParisArrondissement);
-              }}
-              className="w-full h-14 cursor-pointer appearance-none rounded-2xl border border-white/5 bg-slate-950/40 pl-14 pr-12 text-sm font-bold text-white shadow-inner transition-all focus:border-violet-500/40 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
-            >
-              <option value="all">{fr ? "Tout Paris" : "All Paris"}</option>
-              {targetArrondissement ? <option value="nearby">{fr ? "Proches de moi" : "Nearby"}</option> : null}
-              {PARIS_ARRONDISSEMENTS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={18} className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-600" />
-          </div>
-        </div>
-      </div>
+      <AnnuaireSearchAndZoneFields
+        fr={fr}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        zoneFilter={zoneFilter}
+        setZoneFilter={setZoneFilter}
+        setActorCardsPage={setActorCardsPage}
+        targetArrondissement={targetArrondissement}
+      />
 
       {/* Type Filter */}
       <div className="space-y-4">
@@ -168,35 +219,12 @@ export function AnnuaireFiltersCard({
         </p>
       </div>
 
-      {/* Contribution Filter */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-           <Zap size={14} className="text-slate-500" />
-           <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
-              {fr ? "Leviers & Besoins" : "Levers & Needs"}
-           </span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {CONTRIBUTION_FILTERS.map((item) => (
-            <CmmButton
-              key={item.value}
-              type="button"
-              tone={filterContribution === item.value ? "primary" : "tertiary"}
-              variant="pill"
-              onClick={() => {
-                setActorCardsPage(1);
-                setFilterContribution(item.value as ContributionType | "all");
-              }}
-              className={cn(
-                "px-5 py-2.5 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
-                filterContribution === item.value ? "shadow-lg scale-105" : ""
-              )}
-            >
-              {item.label}
-            </CmmButton>
-          ))}
-        </div>
-      </div>
+      <AnnuaireContributionFilters
+        fr={fr}
+        filterContribution={filterContribution}
+        setFilterContribution={setFilterContribution}
+        setActorCardsPage={setActorCardsPage}
+      />
 
       {/* Empty State / Reset */}
       <AnimatePresence>
