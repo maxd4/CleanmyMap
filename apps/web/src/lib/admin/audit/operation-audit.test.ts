@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
+const readLocalRecordStoreMock = vi.hoisted(() => vi.fn());
+const runtimeState = vi.hoisted(() => ({ allowFallback: false }));
 
 vi.mock("@/lib/persistence/runtime-store", () => ({
   canUseSupabaseServerPersistence: () => true,
-  allowLocalFileStoreFallback: () => false,
+  allowLocalFileStoreFallback: () => runtimeState.allowFallback,
   assertPersistenceAvailable: () => undefined,
+}));
+
+vi.mock("@/lib/persistence/local-record-store", () => ({
+  readLocalRecordStore: readLocalRecordStoreMock,
+  writeLocalRecordStore: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -13,20 +20,13 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 function createAuditClientMock(params: {
-  auditRows: Array<{
-    operation_id: string;
-    at: string;
-    actor_user_id: string;
-    operation_type: "moderation" | "import_dry_run" | "import_confirm";
-    outcome: "success" | "error";
-    target_id: string | null;
-    details: Record<string, unknown>;
-  }>;
+  auditRows: Array<{ target_id?: string | null; [key: string]: unknown }>;
   profiles: Array<{
     id: string;
     display_name: string | null;
     handle: string | null;
   }>;
+  profilesError?: unknown;
 }) {
   const state = {
     targetId: null as string | null,
@@ -88,12 +88,14 @@ function createAuditClientMock(params: {
     }),
     limit: vi.fn(() => profilesChain),
     then: (resolve, reject) =>
-      Promise.resolve({
-        data: params.profiles.filter((profile) =>
-          state.profileIds.length === 0 ? true : state.profileIds.includes(profile.id),
-        ),
-        error: null,
-      }).then(resolve, reject),
+      params.profilesError
+        ? Promise.reject(params.profilesError).then(resolve, reject)
+        : Promise.resolve({
+            data: params.profiles.filter((profile) =>
+              state.profileIds.length === 0 ? true : state.profileIds.includes(profile.id),
+            ),
+            error: null,
+          }).then(resolve, reject),
   };
 
   return {
@@ -113,6 +115,21 @@ describe("admin operation audit", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    runtimeState.allowFallback = false;
+    readLocalRecordStoreMock.mockResolvedValue({
+      updatedAt: "2026-06-20T11:00:00Z",
+      records: [
+        {
+          operationId: "local-op",
+          at: "2026-06-20T11:00:00Z",
+          actorUserId: "local-admin",
+          operationType: "admin_operation",
+          outcome: "success",
+          targetId: "action-local",
+          details: { source: "local" },
+        },
+      ],
+    });
   });
 
   it("filters by targetId and resolves the admin pseudo", async () => {
@@ -160,5 +177,78 @@ describe("admin operation audit", () => {
     expect(items[0]?.operationId).toBe("op-1");
     expect(items[0]?.actorLabel).toBe("Maxence Deroome (@maxence_deroome)");
     expect(items[0]?.details["editedFields"]).toEqual(["locationLabel", "notes"]);
+  });
+
+  it("falls back to local records when Supabase normalization rejects an invalid row", async () => {
+    runtimeState.allowFallback = true;
+    getSupabaseServerClientMock.mockReturnValue(
+      createAuditClientMock({
+        auditRows: [{ operation_id: "invalid-row" }],
+        profiles: [],
+      }),
+    );
+
+    const { listAdminOperationAudit } = await import("./operation-audit");
+    const items = await listAdminOperationAudit();
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.operationId).toBe("local-op");
+    expect(readLocalRecordStoreMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("propagates an invalid Supabase row when local fallback is forbidden", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createAuditClientMock({
+        auditRows: [{ operation_id: "invalid-row" }],
+        profiles: [],
+      }),
+    );
+
+    const { listAdminOperationAudit } = await import("./operation-audit");
+
+    await expect(listAdminOperationAudit()).rejects.toThrow(
+      "Admin audit returned an invalid persisted row.",
+    );
+    expect(readLocalRecordStoreMock).not.toHaveBeenCalled();
+  });
+
+  it("returns an empty Supabase result without reading local records", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createAuditClientMock({
+        auditRows: [],
+        profiles: [],
+      }),
+    );
+
+    const { listAdminOperationAudit } = await import("./operation-audit");
+    await expect(listAdminOperationAudit()).resolves.toEqual([]);
+    expect(readLocalRecordStoreMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back when asynchronous actor label loading rejects", async () => {
+    runtimeState.allowFallback = true;
+    getSupabaseServerClientMock.mockReturnValue(
+      createAuditClientMock({
+        auditRows: [
+          {
+            operation_id: "op-1",
+            at: "2026-06-20T10:00:00Z",
+            actor_user_id: "admin-1",
+            operation_type: "moderation",
+            outcome: "success",
+            target_id: "action-1",
+            details: {},
+          },
+        ],
+        profiles: [],
+        profilesError: new Error("profile lookup failed"),
+      }),
+    );
+
+    const { listAdminOperationAudit } = await import("./operation-audit");
+    const items = await listAdminOperationAudit();
+
+    expect(items[0]?.operationId).toBe("local-op");
+    expect(readLocalRecordStoreMock).toHaveBeenCalledTimes(1);
   });
 });

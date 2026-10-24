@@ -304,7 +304,7 @@ export async function listAdminOperationAudit(
         .limit(normalizedLimit);
 
       if (!result.error) {
-        return normalizeSupabaseAuditRows(result.data ?? []);
+        return await normalizeSupabaseAuditRows(result.data ?? []);
       }
 
       if (!allowLocalFileStoreFallback()) {
