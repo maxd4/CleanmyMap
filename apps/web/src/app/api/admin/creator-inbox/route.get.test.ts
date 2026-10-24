@@ -1,6 +1,23 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { canUseSupabaseServerPersistenceMock, getCurrentUserIdentityMock, loadCreatorInboxPageMock, makeGetRequest, resetCreatorInboxMocks } from "./route.test.helpers";
 
+const feedbackMetricsPage = {
+  items: [{ id: "feedback-1" }],
+  count: 1,
+  hasMore: false,
+  nextCursor: null,
+  feedbackMetrics: {
+    received: 6,
+    pendingQualification: 1,
+    accepted: 2,
+    duplicate: 1,
+    rejected: 1,
+    shipped: 1,
+    period: "all_time",
+    scope: "community_bug_reports",
+  },
+};
+
 describe("GET /api/admin/creator-inbox", () => {
   beforeEach(() => {
     resetCreatorInboxMocks();
@@ -41,22 +58,7 @@ describe("GET /api/admin/creator-inbox", () => {
         role: "admin",
         activeRole: "admin",
       });
-      loadCreatorInboxPageMock.mockResolvedValueOnce({
-        items: [{ id: "feedback-1" }],
-        count: 1,
-        hasMore: false,
-        nextCursor: null,
-        feedbackMetrics: {
-          received: 6,
-          pendingQualification: 1,
-          accepted: 2,
-          duplicate: 1,
-          rejected: 1,
-          shipped: 1,
-          period: "all_time",
-          scope: "community_bug_reports",
-        },
-      });
+      loadCreatorInboxPageMock.mockResolvedValueOnce(feedbackMetricsPage);
 
       const { GET } = await import("./route");
       const response = await GET(makeGetRequest());
@@ -78,22 +80,7 @@ describe("GET /api/admin/creator-inbox", () => {
         role: "max",
         activeRole: "max",
       });
-      loadCreatorInboxPageMock.mockResolvedValueOnce({
-        items: [{ id: "feedback-1" }],
-        count: 1,
-        hasMore: false,
-        nextCursor: null,
-        feedbackMetrics: {
-          received: 6,
-          pendingQualification: 1,
-          accepted: 2,
-          duplicate: 1,
-          rejected: 1,
-          shipped: 1,
-          period: "all_time",
-          scope: "community_bug_reports",
-        },
-      });
+      loadCreatorInboxPageMock.mockResolvedValueOnce(feedbackMetricsPage);
 
       const { GET } = await import("./route");
       const response = await GET(makeGetRequest());
