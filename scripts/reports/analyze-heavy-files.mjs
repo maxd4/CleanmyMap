@@ -93,18 +93,20 @@ function formatPolicy() {
 }
 
 export function getRadarGroups(rows) {
+  const generatedRows = rows.filter((row) => row.kind === "generated");
+  const radarRows = rows.filter((row) => row.kind !== "generated");
+
   return {
-    preventive: rows
+    preventive: radarRows
       .filter(isInPreventiveZone)
       .sort((a, b) => b.lines - a.lines || b.bytes - a.bytes),
-    architectural: rows
-      .filter((row) => row.kind !== "generated" && row.kind !== "test" && isAboveReview(row))
+    architectural: radarRows
+      .filter((row) => row.kind !== "test" && isAboveReview(row))
       .sort((a, b) => b.lines - a.lines || b.bytes - a.bytes),
-    tests: rows
+    tests: radarRows
       .filter((row) => row.kind === "test" && isAboveReview(row))
       .sort((a, b) => b.lines - a.lines || b.bytes - a.bytes),
-    generated: rows
-      .filter((row) => row.kind === "generated")
+    generated: generatedRows
       .sort((a, b) => b.lines - a.lines || b.bytes - a.bytes),
   };
 }
@@ -172,11 +174,11 @@ export function main(args = process.argv.slice(2)) {
   console.log(`Top-heavy informative report — REF=${report.ref}`);
   console.log("Politique par KIND:");
   console.log(formatPolicy());
-  console.log("\nRADAR ARCHITECTURAL (runtime + data/config)");
+  console.log("\nRADAR ARCHITECTURAL (runtime + data/config; generated exclus par KIND)");
   console.log(report.architectural.length === 0 ? "- none" : report.architectural.map(formatRow).join("\n"));
   console.log("\nTESTS VOLUMINEUX (signal de lisibilité/cohésion)");
   console.log(report.tests.length === 0 ? "- none" : report.tests.map(formatRow).join("\n"));
-  console.log("\nGENERATED (résumé informatif; exclusion seulement si régénérabilité prouvée)");
+  console.log("\nGENERATED (exclus du radar architectural par KIND; exemption du gate quality:top-heavy uniquement si régénérabilité prouvée)");
   console.log(report.generated.length === 0 ? "- none" : report.generated.map(formatRow).join("\n"));
   console.log("\nBASELINE_RATCHET");
   console.log(report.baselineFindings.length === 0 ? "- PASS: no finding" : report.baselineFindings.map((finding) => `- ${finding}`).join("\n"));
