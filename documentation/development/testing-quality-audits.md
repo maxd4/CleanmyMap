@@ -24,18 +24,20 @@ npm run audit:quality -- all
 Les audits capturent immédiatement `auditedHead` et peuvent démarrer dans un
 checkout dirty, avec des fichiers untracked, des commits locaux non publiés,
 `HEAD != origin/main` ou un autre writer actif. Aucun de ces états ne bloque
-le runner. `manifest.json` conserve notamment `baselineStable`, l’état dirty
-initial, `worktreeChanged`, le statut de chaque engine et la provenance de
-lecture : `COMMITTED_SNAPSHOT` pour un arbre Git immuable explicitement ciblé,
-`WORKTREE_LIVE` pour le checkout courant. Une modification détectée pendant
-l’exécution conserve les résultats mais les classe `INFORMATIVE` lorsque la
-lecture live n’est plus reproductible ; les échecs restent `FAILURE`.
+le runner ni la lecture offline d’un finding historique. `manifest.json`
+conserve le couple `auditedHead`/`runId`, le statut de chaque engine, la
+provenance de lecture et la classe du résultat : `COMMITTED_SNAPSHOT` pour un
+arbre Git immuable explicitement ciblé, `WORKTREE_LIVE` pour le checkout
+courant, `FAILURE` pour un échec et `SKIPPED_BY_POLICY` pour un contrôle non
+exécuté. La classe `MEASURED` décrit un résultat produit par le moteur ; elle
+ne constitue pas une preuve de publication ni une attestation de propreté du
+checkout.
 
 Les artefacts locaux régénérables sont écrits sous
 `artifacts/quality-audits/<auditedHead>/` avec les noms plats
 `<audit>--<runId>--manifest.json`, `<audit>--<runId>--report.json` et
 `<audit>--<runId>--summary.md` : `manifest.json`
-contient la baseline descriptive, la provenance et le statut, `report.json`
+contient la provenance, le statut et l’identité du run, `report.json`
 conserve le résultat brut de la gate et `summary.md` en est la projection
 lisible. Le mode `all` ajoute le même triplet avec `audit=all`. Aucun
 sous-dossier d’exécution ou de moteur n’est créé. Le `runId`, l’écriture
@@ -49,11 +51,11 @@ les variantes legacy reconnues et conserve au plus les trois SHA les plus
 récents hors exécutions actives. Les fichiers inconnus, liens symboliques,
 collisions et archives sont préservés avec un diagnostic explicite. Le radar
 exige les cinq manifestes et rapports du même `runId` et du même `auditedHead`,
-en privilégiant le run complet, reproductible et le plus récent ; en l’absence
-de preuve, il conserve `NOT_MEASURED`. Ces artefacts ne sont pas versionnés et
+en privilégiant le run complet et le plus récent ; en l’absence de rapport
+cohérent, il conserve `NOT_MEASURED`. Ces artefacts ne sont pas versionnés et
 ne sont pas une source de
 vérité ; les baselines, justifications et seuils des engines restent les
-seules sources normatives. Une sortie `REPRODUCIBLE` locale ne remplace pas
+seules sources normatives. Un audit local ne remplace pas
 une preuve `PUSH_CANDIDATE` ou FULL, et aucune baseline ou justification n’est
 mise à jour automatiquement. `attentionRequired: false` signifie qu’aucun
 delta top-heavy ni REVIEW non qualifié nécessitant une nouvelle analyse n’a
@@ -174,11 +176,11 @@ npm run report:quality-index -- --offline --sha=<SHA> --run-id=<runId> --bundle
 
 Le mode `--offline` lit exclusivement les cinq rapports de gate, les rapports
 auxiliaires présents (`maintainability`, `type-safety`, `hotspots`,
-`testability`), leurs manifestes et
-le rapport agrégé du couple exact `SHA/runId`. Il conserve la provenance
-`COMMITTED_SNAPSHOT`, `WORKTREE_LIVE` ou `MIXED` et les limites de reproductibilité
-du run ; il accepte donc un run informatif avec `origin/main` absent ou différent
-et `reproducible: false`, sans le requalifier en preuve `COMMITTED_SNAPSHOT`.
+`testability`), leurs manifestes et le rapport agrégé du couple exact
+`SHA/runId`. Il conserve la provenance `COMMITTED_SNAPSHOT`, `WORKTREE_LIVE`
+ou `MIXED` du run ; il accepte une archive ancienne ou nouvelle tant que
+l’identité exacte du couple `SHA/runId`, les rapports, les manifestes et les
+résumés sont cohérents.
 Il ne relit pas le HEAD courant, ne recalcule aucune métrique et ne ratifie
 aucune baseline. Il refuse uniquement les mélanges d'identité, de SHA, de
 runId, de verdicts ou les rapports incomplets. Le `--bundle` écrit un ZIP dans le même dossier avec

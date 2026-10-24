@@ -21,11 +21,13 @@ import { acquireRetentionLock, beginActiveAudit, createQualityProjectionPaths, e
 const sha = "a".repeat(40);
 const stableSnapshot = {
   auditedHead: sha,
-  originMain: sha,
-  worktree: "",
-  worktreeClean: true,
-  baselineStable: true,
 };
+
+const removedAuditMetadata = ["reproducible", "baselineStable", "worktreeChanged", "worktreeClean", "initialWorktreeClean"];
+
+function assertNoRemovedAuditMetadata(value) {
+  for (const field of removedAuditMetadata) assert.equal(Object.hasOwn(value, field), false, `métadonnée supprimée présente: ${field}`);
+}
 
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-quality-audit-"));
@@ -180,18 +182,15 @@ test("a single audit writes manifest, raw report and generated summary only belo
       audit: "dead-code",
       runId: "run-single",
       auditedHead: sha,
-      originMain: sha,
-      baselineStable: true,
-      worktreeClean: true,
-      initialWorktreeClean: true,
       readProvenance: "WORKTREE_LIVE",
-      worktreeChanged: false,
-      reproducible: true,
-      resultClass: "REPRODUCIBLE",
+      resultClass: "MEASURED",
       status: "PASS",
       attentionRequired: false,
       generatedAt: "2026-10-04T00:00:00.000Z",
     });
+    assertNoRemovedAuditMetadata(manifest);
+    assertNoRemovedAuditMetadata(JSON.parse(fs.readFileSync(path.join(auditRoot, "dead-code--run-single--report.json"), "utf8")));
+    assert.doesNotMatch(fs.readFileSync(path.join(auditRoot, "dead-code--run-single--summary.md"), "utf8"), /reproducible|baselineStable|worktreeChanged|worktreeClean|initialWorktreeClean/i);
     const files = fs.readdirSync(root, { recursive: true }).map((entry) => String(entry).replaceAll("\\", "/"));
     const artifactRoot = path.resolve(root, "artifacts", "quality-audits");
     const generatedRoot = path.resolve(root, "artifacts");
@@ -331,7 +330,7 @@ test("all enrichit l'index avec la projection architecturale du même SHA/run", 
   }
 });
 
-test("all produit la projection pour un checkout informatif dont origin/main diffère", async () => {
+test("all produit la projection pour un checkout dirty et ancien sans métadonnée de propreté", async () => {
   const root = tempRoot();
   try {
     const result = await runQualityAudit("all", {
@@ -343,7 +342,9 @@ test("all produit la projection pour un checkout informatif dont origin/main dif
     assert.equal(result.status, "PASS");
     assert.equal(result.projectionStatus, "PASS");
     assert.ok(result.projectionPaths.index);
-    assert.equal(JSON.parse(fs.readFileSync(result.projectionPaths.index, "utf8")).source.reproducible, false);
+    const index = JSON.parse(fs.readFileSync(result.projectionPaths.index, "utf8"));
+    assert.equal(index.source.reproducible, undefined);
+    assertNoRemovedAuditMetadata(index.source);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -591,8 +592,8 @@ test("une promesse asynchrone rejetée produit un FAIL diagnostiqué et laisse l
     assert.equal(complexityReport.error.message, "fixture complexity failure");
     assert.equal(cycles.status, "PASS");
     assert.equal(cyclesReport.gateStatus, "PASS");
-    assert.equal(manifest.worktreeChanged, true);
-    assert.equal(manifest.worktreeClean, false);
+    assert.equal(manifest.resultClass, "FAILURE");
+    assertNoRemovedAuditMetadata(manifest);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -677,7 +678,7 @@ test("all correlates the five current gate results after execution without rerun
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
-test("duplication audit accepts a stable dirty worktree and records it as non-clean evidence", async () => {
+test("duplication audit accepts a dirty worktree without recording checkout metadata", async () => {
   const root = tempRoot();
   const dirtySnapshot = { ...stableSnapshot, worktree: " M src/dirty.ts", worktreeClean: false, baselineStable: false };
   try {
@@ -688,14 +689,14 @@ test("duplication audit accepts a stable dirty worktree and records it as non-cl
     });
     const manifest = JSON.parse(fs.readFileSync(result.results[0].paths.manifest, "utf8"));
     assert.equal(result.status, "PASS");
-    assert.equal(manifest.baselineStable, false);
-    assert.equal(manifest.worktreeClean, false);
+    assert.equal(manifest.resultClass, "MEASURED");
+    assertNoRemovedAuditMetadata(manifest);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
-test("all audits accept a stable dirty worktree and record non-clean evidence", async () => {
+test("all audits accept a dirty worktree without recording checkout metadata", async () => {
   const root = tempRoot();
   const dirtySnapshot = { ...stableSnapshot, worktree: " M src/dirty.ts", worktreeClean: false, baselineStable: false };
   try {
@@ -706,31 +707,26 @@ test("all audits accept a stable dirty worktree and record non-clean evidence", 
     });
     const manifest = JSON.parse(fs.readFileSync(result.allPaths.manifest, "utf8"));
     assert.equal(result.status, "PASS");
-    assert.equal(manifest.baselineStable, false);
-    assert.equal(manifest.worktreeClean, false);
+    assert.equal(manifest.resultClass, "MEASURED");
+    assertNoRemovedAuditMetadata(manifest);
     assert.equal(manifest.audit, "all");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
-test("non-conflicting concurrent changes do not stop an audit and remain informative", async () => {
+test("non-conflicting concurrent execution does not stop an audit or alter its findings", async () => {
   const root = tempRoot();
   try {
     let snapshotCount = 0;
     let engineCalls = 0;
     const changed = {
       ...stableSnapshot,
-      auditedHead: "b".repeat(40),
-      originMain: "c".repeat(40),
-      worktree: " M src/audited.ts\n?? foreign.txt",
-      worktreeClean: false,
-      baselineStable: false,
     };
     const result = await runQualityAudit("dead-code", {
       root,
       runId: "run-changed",
-      snapshot: () => (++snapshotCount === 1 ? { ...stableSnapshot, originMain: "c".repeat(40), baselineStable: false, worktree: "?? foreign.txt", worktreeClean: false } : changed),
+      snapshot: () => (++snapshotCount === 1 ? { ...stableSnapshot } : changed),
       engine: async () => {
         engineCalls += 1;
         return fixtureResult("dead-code");
@@ -740,26 +736,22 @@ test("non-conflicting concurrent changes do not stop an audit and remain informa
     assert.equal(result.status, "PASS");
     assert.equal(engineCalls, 1);
     assert.equal(manifest.auditedHead, sha);
-    assert.equal(manifest.baselineStable, false);
-    assert.equal(manifest.initialWorktreeClean, false);
-    assert.equal(manifest.worktreeChanged, true);
-    assert.equal(manifest.reproducible, false);
-    assert.equal(manifest.resultClass, "INFORMATIVE");
+    assert.equal(manifest.resultClass, "MEASURED");
+    assertNoRemovedAuditMetadata(manifest);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
-test("HEAD divergence without worktree edits is accepted and remains reproducible locally", async () => {
+test("an audit on an old SHA is accepted without a reproducibility classification", async () => {
   const root = tempRoot();
   try {
-    const localSnapshot = { ...stableSnapshot, originMain: "c".repeat(40), baselineStable: false };
+    const localSnapshot = { ...stableSnapshot };
     const result = await runQualityAudit("dead-code", { root, runId: "run-local-commit", snapshot: () => localSnapshot, engine: async () => fixtureResult("dead-code") });
     const manifest = JSON.parse(fs.readFileSync(result.results[0].paths.manifest, "utf8"));
     assert.equal(result.status, "PASS");
-    assert.equal(manifest.baselineStable, false);
-    assert.equal(manifest.reproducible, true);
-    assert.equal(manifest.resultClass, "REPRODUCIBLE");
+    assert.equal(manifest.resultClass, "MEASURED");
+    assertNoRemovedAuditMetadata(manifest);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -781,7 +773,8 @@ test("each engine retains provenance and concurrent runs use distinct artifact r
     assert.ok(fs.existsSync(second.allPaths.manifest));
     const topHeavy = first.results.find((entry) => entry.audit === "top-heavy");
     assert.equal(topHeavy.readProvenance, "COMMITTED_SNAPSHOT");
-    assert.equal(topHeavy.reproducible, true);
+    assert.equal(topHeavy.resultClass, "MEASURED");
+    assertNoRemovedAuditMetadata(topHeavy);
     assert.equal(first.results.find((entry) => entry.audit === "dead-code").readProvenance, "WORKTREE_LIVE");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

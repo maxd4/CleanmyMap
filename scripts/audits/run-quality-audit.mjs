@@ -78,21 +78,7 @@ function git(args, root) {
 
 export function captureRepositorySnapshot({ root = REPOSITORY_ROOT, gitRunner = git } = {}) {
   const auditedHead = gitRunner(["rev-parse", "HEAD"], root);
-  let originMain = null;
-  try {
-    originMain = gitRunner(["rev-parse", "origin/main"], root);
-  } catch {
-    // A missing or temporarily unavailable tracking ref is evidence that the
-    // baseline is not canonical, not a reason to discard the local audit.
-  }
-  const worktree = gitRunner(["status", "--short"], root);
-  return {
-    auditedHead,
-    originMain,
-    worktree,
-    worktreeClean: worktree.length === 0,
-    baselineStable: worktree.length === 0 && auditedHead === originMain,
-  };
+  return { auditedHead };
 }
 
 export function serialize(value, active = new WeakSet()) {
@@ -335,13 +321,8 @@ function makeSummary({ audit, manifest, result, paths }) {
     `# Quality audit — ${audit}`,
     "",
     `- Audited HEAD: \`${manifest.auditedHead}\``,
-    `- origin/main: \`${manifest.originMain}\``,
-    `- Baseline stable: **${manifest.baselineStable ? "yes" : "no"}**`,
-    `- Worktree clean: **${manifest.worktreeClean ? "yes" : "no"}**`,
     `- Read provenance: **${manifest.readProvenance}**`,
-    `- Reproducible: **${manifest.reproducible ? "yes" : "no"}**`,
     `- Result class: **${manifest.resultClass}**`,
-    `- Worktree changed during run: **${manifest.worktreeChanged ? "yes" : "no"}**`,
     `- Status: **${manifest.status}**`,
     `- Attention required: **${manifest.attentionRequired ? "yes" : "no"}**`,
     `- Raw report: \`${path.relative(path.dirname(paths.summary), paths.report).replaceAll("\\", "/")}\``,
@@ -520,29 +501,13 @@ export async function executeAudit(
   throw new QualityAuditError(`Unknown audit: ${audit}`, "INVALID_MODE");
 }
 
-function snapshotChanged(left, right) {
-  return left.auditedHead !== right.auditedHead
-    || left.originMain !== right.originMain
-    || left.worktree !== right.worktree
-    || left.worktreeClean !== right.worktreeClean;
-}
-
-export function isAuditBaselineStable(snapshot) {
-  return Boolean(snapshot.worktreeClean && snapshot.originMain && snapshot.auditedHead === snapshot.originMain);
-}
-
-function classifyEvidence({ readProvenance, start, worktreeChanged, status }) {
+function classifyEvidence({ readProvenance, status }) {
   if (status === "SKIPPED_BY_POLICY") {
-    return { readProvenance: "NOT_RUN", worktreeChanged, reproducible: false, resultClass: "SKIPPED_BY_POLICY" };
+    return { readProvenance: "NOT_RUN", resultClass: "SKIPPED_BY_POLICY" };
   }
-  const reproducible = readProvenance === "COMMITTED_SNAPSHOT"
-    ? Boolean(start.auditedHead)
-    : start.worktreeClean && !worktreeChanged;
   return {
     readProvenance,
-    worktreeChanged,
-    reproducible,
-    resultClass: status === "FAIL" ? "FAILURE" : reproducible ? "REPRODUCIBLE" : "INFORMATIVE",
+    resultClass: status === "FAIL" ? "FAILURE" : "MEASURED",
   };
 }
 
@@ -597,24 +562,17 @@ export async function runQualityAudit(mode, {
       }
     }
 
-    const end = snapshot();
-    const worktreeChanged = snapshotChanged(start, end);
-
     const generatedAt = now();
     const manifests = [];
     for (const entry of results) {
       const readProvenance = entry.result?.readProvenance ?? "WORKTREE_LIVE";
-      const evidence = classifyEvidence({ readProvenance, start, worktreeChanged, status: entry.status });
+      const evidence = classifyEvidence({ readProvenance, status: entry.status });
       const paths = createAuditPaths({ root, auditedHead: start.auditedHead, audit: entry.audit, runId });
       const manifest = {
         schemaVersion: 1,
         audit: entry.audit,
         runId,
         auditedHead: start.auditedHead,
-        originMain: start.originMain,
-        baselineStable: start.baselineStable,
-        worktreeClean: start.worktreeClean,
-        initialWorktreeClean: start.worktreeClean,
         ...evidence,
         status: entry.status,
         attentionRequired: entry.attentionRequired,
@@ -660,21 +618,15 @@ export async function runQualityAudit(mode, {
         readProvenance: manifests.every((entry) => entry.readProvenance === "COMMITTED_SNAPSHOT")
           ? "COMMITTED_SNAPSHOT"
           : "MIXED",
-        worktreeChanged,
-        reproducible: manifests.every((entry) => entry.reproducible),
         resultClass: overallStatus === "FAIL"
           ? "FAILURE"
-          : manifests.every((entry) => entry.reproducible) ? "REPRODUCIBLE" : "INFORMATIVE",
+          : overallStatus === "SKIPPED_BY_POLICY" ? "SKIPPED_BY_POLICY" : "MEASURED",
       };
       const manifest = {
         schemaVersion: 1,
         audit: "all",
         runId,
         auditedHead: start.auditedHead,
-        originMain: start.originMain,
-        baselineStable: start.baselineStable,
-        worktreeClean: start.worktreeClean,
-        initialWorktreeClean: start.worktreeClean,
         ...aggregateEvidence,
         status: overallStatus,
         attentionRequired: overallAttention,
@@ -685,7 +637,7 @@ export async function runQualityAudit(mode, {
         report: serialize({
           status: overallStatus,
           attentionRequired: overallAttention,
-          audits: manifests.map(({ audit, status, attentionRequired: attention, readProvenance, reproducible, resultClass }) => ({ audit, status, attentionRequired: attention, readProvenance, reproducible, resultClass })),
+          audits: manifests.map(({ audit, status, attentionRequired: attention, readProvenance, resultClass }) => ({ audit, status, attentionRequired: attention, readProvenance, resultClass })),
           documentation,
         }),
         manifest: serialize(manifest),
@@ -732,10 +684,6 @@ export async function runQualityAudit(mode, {
       status: overallStatus,
       attentionRequired: overallAttention,
       auditedHead: start.auditedHead,
-      originMain: start.originMain,
-      baselineStable: start.baselineStable,
-      worktreeClean: start.worktreeClean,
-      worktreeChanged,
       allPaths,
       projectionPaths,
       projectionStatus,

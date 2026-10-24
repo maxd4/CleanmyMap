@@ -420,7 +420,7 @@ test("missing or other-SHA artifact proof remains NOT_MEASURED", () => {
   }
 });
 
-test("loads a reproducible quality run from its isolated runId directory", () => {
+test("loads a coherent quality run from its isolated runId directory", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-radar-run-"));
   const auditedSha = "c".repeat(40);
   const runId = "run-isolated";
@@ -544,7 +544,7 @@ function writeFlatQualityRun(root, auditedSha, runId, overrides = {}) {
   }
 }
 
-test("loads the latest complete reproducible flat run without mixing runIds", () => {
+test("loads the latest complete flat run without mixing runIds", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-radar-flat-"));
   const auditedSha = "f".repeat(40);
   try {
@@ -585,10 +585,31 @@ test("rejects absent, incorrect, unreadable and incomplete quality provenance", 
     const incomplete = loadQualityAuditArtifacts({ root, auditedSha, runId: "incomplete-run" });
     assert.equal(incomplete.measured, false);
 
-    writeQualityRun(root, auditedSha, "non-reproducible-run", {
-      manifest: { complexity: { worktreeClean: false }, cycles: { auditedHead: "e".repeat(40) } },
+    writeQualityRun(root, auditedSha, "incoherent-run", {
+      manifest: { complexity: { auditedHead: "e".repeat(40) } },
     });
-    assert.equal(loadQualityAuditArtifacts({ root, auditedSha, runId: "non-reproducible-run" }).measured, false);
+    assert.equal(loadQualityAuditArtifacts({ root, auditedSha, runId: "incoherent-run" }).measured, false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("selects a complete historical run despite origin/main divergence and removed metadata", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-radar-historical-"));
+  const auditedSha = "9".repeat(40);
+  const runId = "historical-run";
+  try {
+    writeFlatQualityRun(root, auditedSha, runId);
+    const shaRoot = path.join(root, "artifacts", "quality-audits", auditedSha);
+    const removed = ["reproducible", "baselineStable", "worktreeChanged", "worktreeClean", "initialWorktreeClean"];
+    for (const audit of ["dead-code", "duplication", "top-heavy", "complexity", "cycles"]) {
+      const manifestPath = path.join(shaRoot, `${audit}--${runId}--manifest.json`);
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      manifest.originMain = "8".repeat(40);
+      for (const field of removed) delete manifest[field];
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+    }
+    assert.equal(loadQualityAuditArtifacts({ root, auditedSha, runId }).measured, true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

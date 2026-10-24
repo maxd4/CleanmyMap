@@ -801,7 +801,7 @@ test("projection conserve un rapport dead-code absent en NOT_MEASURED sans plant
   assert.equal(index.audits.deadCode.error.code, "DEAD_CODE_REPORT_ABSENT");
 });
 
-test("offline accepte un run informatif sans confondre reproductibilité et identité SHA/run", async () => {
+test("offline accepte une ancienne archive sans confondre reproductibilité et identité SHA/run", async () => {
   const root = tempRoot();
   try {
     writeRun(root);
@@ -820,7 +820,37 @@ test("offline accepte un run informatif sans confondre reproductibilité et iden
     const run = readOfflineQualityRun({ root, auditedSha: sha, runId });
     assert.equal(run.provenance, "MIXED");
     const generated = await generateQualityFileIndex({ root, auditedSha: sha, runId, includeBundle: true });
-    assert.equal(generated.index.source.reproducible, false);
+    assert.equal(generated.index.source.reproducible, undefined);
+    assert.equal(generated.index.source.aggregateManifest.reproducible, undefined);
+    for (const manifest of Object.values(generated.index.source.auditManifests)) {
+      assert.equal(manifest.reproducible, undefined);
+      assert.equal(manifest.baselineStable, undefined);
+      assert.equal(manifest.worktreeChanged, undefined);
+      assert.equal(manifest.worktreeClean, undefined);
+      assert.equal(manifest.initialWorktreeClean, undefined);
+    }
+    assert.equal(generated.bundle.entries.length, 20);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("offline accepte un nouveau bundle sans les métadonnées de checkout supprimées", async () => {
+  const root = tempRoot();
+  try {
+    writeRun(root);
+    const shaRoot = path.join(root, "artifacts", "quality-audits", sha);
+    const removed = ["reproducible", "baselineStable", "worktreeChanged", "worktreeClean", "initialWorktreeClean"];
+    for (const audit of [...Object.keys(reports()), "all"]) {
+      const manifestPath = path.join(shaRoot, `${audit}--${runId}--manifest.json`);
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      for (const field of removed) delete manifest[field];
+      fs.writeFileSync(manifestPath, `${JSON.stringify(manifest)}\n`);
+    }
+    const generated = await generateQualityFileIndex({ root, auditedSha: sha, runId, includeBundle: true });
+    assert.equal(generated.index.auditedHead, sha);
+    assert.equal(generated.index.runId, runId);
+    assert.equal(generated.index.source.reproducible, undefined);
     assert.equal(generated.bundle.entries.length, 20);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

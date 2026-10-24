@@ -187,16 +187,12 @@ function readFilesystemJson(root, relativePath) {
   }
 }
 
-function qualityManifestIsReproducible(manifest, audit, auditedSha) {
+function qualityManifestIsCoherent(manifest, audit, auditedSha, runId = undefined) {
   return manifest
     && manifest.schemaVersion === 1
     && manifest.audit === audit
     && manifest.auditedHead === auditedSha
-    && manifest.originMain === auditedSha
-    && manifest.baselineStable === true
-    && manifest.worktreeClean === true
-    && (manifest.reproducible === undefined || manifest.reproducible === true)
-    && (manifest.resultClass === undefined || manifest.resultClass === "REPRODUCIBLE");
+    && (runId === undefined || manifest.runId === runId);
 }
 
 function legacyQualityAuditRunIds(root, auditedSha) {
@@ -220,7 +216,7 @@ function readFlatQualityRun({ root, auditedSha, runId }) {
     const reportArtifact = byKey.get(`${audit}:report`);
     const manifest = manifestArtifact ? readFilesystemJson(root, path.relative(root, manifestArtifact.path).replaceAll("\\", "/")) : null;
     const report = reportArtifact ? readFilesystemJson(root, path.relative(root, reportArtifact.path).replaceAll("\\", "/")) : null;
-    if (!qualityManifestIsReproducible(manifest, audit, auditedSha) || !report || manifest.runId !== runId) return null;
+    if (!qualityManifestIsCoherent(manifest, audit, auditedSha, runId ?? undefined) || !report) return null;
     generatedAt.push(Date.parse(manifest.generatedAt));
     reports[audit] = report;
   }
@@ -236,7 +232,7 @@ function readLegacyQualityRun({ root, auditedSha, runId }) {
       : `artifacts/quality-audits/${auditedSha}/${audit}`;
     const manifest = readFilesystemJson(root, `${base}/manifest.json`);
     const report = readFilesystemJson(root, `${base}/report.json`);
-    if (!qualityManifestIsReproducible(manifest, audit, auditedSha) || !report) return null;
+    if (!qualityManifestIsCoherent(manifest, audit, auditedSha, runId ?? undefined) || !report) return null;
     generatedAt.push(Date.parse(manifest.generatedAt));
     reports[audit] = report;
   }

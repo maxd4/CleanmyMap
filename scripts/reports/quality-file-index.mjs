@@ -257,13 +257,28 @@ function validateManifest(manifest, { audit, auditedSha, runId }) {
   if (manifest.originMain !== null && manifest.originMain !== undefined && typeof manifest.originMain !== "string") {
     throw new Error(`Manifest ${audit} incohérent: originMain.`);
   }
-  if (typeof manifest.baselineStable !== "boolean" || typeof manifest.worktreeClean !== "boolean") {
-    throw new Error(`Manifest ${audit} incohérent: baseline/worktree absents.`);
-  }
-  if (typeof manifest.reproducible !== "boolean") throw new Error(`Manifest ${audit} sans qualification de reproductibilité.`);
   if (typeof manifest.readProvenance !== "string") throw new Error(`Manifest ${audit} sans readProvenance.`);
   if (!["PASS", "PASS_WITH_GRACE", "FAIL", "SKIPPED_BY_POLICY"].includes(manifest.status)) throw new Error(`Manifest ${audit} sans status valide.`);
   return manifest;
+}
+
+const QUALITY_MANIFEST_PROJECTION_FIELDS = Object.freeze([
+  "schemaVersion",
+  "audit",
+  "runId",
+  "auditedHead",
+  "originMain",
+  "readProvenance",
+  "resultClass",
+  "status",
+  "attentionRequired",
+  "generatedAt",
+]);
+
+function projectManifest(manifest) {
+  return Object.fromEntries(QUALITY_MANIFEST_PROJECTION_FIELDS
+    .filter((field) => manifest[field] !== undefined)
+    .map((field) => [field, manifest[field]]));
 }
 
 function reportStatus(audit, report) {
@@ -1314,12 +1329,11 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
     auditedHead: run.auditedSha,
     runId: run.runId,
     provenance: run.provenance,
-    aggregateManifest: run.aggregateManifest,
-    auditManifests: run.manifests,
+    aggregateManifest: projectManifest(run.aggregateManifest),
+    auditManifests: Object.fromEntries(Object.entries(run.manifests).map(([audit, manifest]) => [audit, projectManifest(manifest)])),
     documentation: run.documentation ? { status: run.documentation.status, readProvenance: run.documentation.provenance, reason: run.documentation.reason ?? null, error: run.documentation.error ?? null, attentionRequired: run.documentation.attentionRequired } : { status: "NOT_MEASURED", readProvenance: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", error: null, attentionRequired: false },
     initialStatus: run.aggregateManifest.status,
     attentionRequired: run.aggregateManifest.attentionRequired,
-    reproducible: run.aggregateManifest.reproducible,
     sourceReports: QUALITY_INDEX_AUDITS.filter((audit) => run.manifests[audit]).map((audit) => ({ audit, status: run.manifests[audit].status, readProvenance: run.manifests[audit].readProvenance, resultClass: run.manifests[audit].resultClass })),
   };
   const triage = buildQualityFileIndexTriage({ files: finalFiles, audits: categorySummaries, source });
