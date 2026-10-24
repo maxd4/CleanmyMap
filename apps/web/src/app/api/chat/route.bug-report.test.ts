@@ -13,6 +13,26 @@ import {
 
 vi.mock("@/lib/env", () => ({ env: { CLERK_IMU_OWNER_USER_ID: "owner-1" } }));
 
+const bugReportProfile = {
+  id: "user-1",
+  display_name: "Alex",
+  handle: "alex",
+  paris_arrondissement: null,
+  role_label: "benevole",
+  metadata: null,
+};
+
+const unusedBugReportMessage = {
+  id: "unused",
+  created_at: "2026-05-01T12:00:00.000Z",
+  content: "unused",
+  channel_type: "bug_report",
+  sender_id: "user-1",
+  recipient_id: null,
+  arrondissement_id: null,
+  zone_name: null,
+};
+
 describe("POST /api/chat — bug_report routing", () => {
   beforeEach(() => {
     resetChatRouteMocks();
@@ -23,25 +43,9 @@ describe("POST /api/chat — bug_report routing", () => {
 
   it("returns explicit unavailability and never writes when Clerk cannot verify the owner", async () => {
     const supabaseMock = buildSupabaseMock({
-      profile: {
-        id: "user-1",
-        display_name: "Alex",
-        handle: "alex",
-        paris_arrondissement: null,
-        role_label: "benevole",
-        metadata: null,
-      },
+      profile: bugReportProfile,
       messages: [],
-      insertedMessage: {
-        id: "unused",
-        created_at: "2026-05-01T12:00:00.000Z",
-        content: "unused",
-        channel_type: "bug_report",
-        sender_id: "user-1",
-        recipient_id: null,
-        arrondissement_id: null,
-        zone_name: null,
-      },
+      insertedMessage: unusedBugReportMessage,
     });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
     getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
@@ -131,25 +135,9 @@ describe("POST /api/chat — bug_report routing", () => {
 
   it("refuses before persistence when Clerk confirms a non-max owner", async () => {
     const supabaseMock = buildSupabaseMock({
-      profile: {
-        id: "user-1",
-        display_name: "Alex",
-        handle: "alex",
-        paris_arrondissement: null,
-        role_label: "benevole",
-        metadata: null,
-      },
+      profile: bugReportProfile,
       messages: [],
-      insertedMessage: {
-        id: "unused",
-        created_at: "2026-05-01T12:00:00.000Z",
-        content: "unused",
-        channel_type: "bug_report",
-        sender_id: "user-1",
-        recipient_id: null,
-        arrondissement_id: null,
-        zone_name: null,
-      },
+      insertedMessage: unusedBugReportMessage,
     });
     clerkClientMock.mockResolvedValue({
       users: {

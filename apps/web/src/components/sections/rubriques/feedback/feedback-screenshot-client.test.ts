@@ -30,6 +30,22 @@ function pngFile(size = 8) {
   return new File([new Uint8Array(size)], "capture.png", { type: "image/png" });
 }
 
+function intentResponse() {
+  return new Response(
+    JSON.stringify({
+      intent: {
+        feedbackId,
+        attemptId,
+        bucket: "signalement-evidence",
+        path: `feedback/${feedbackId}/screenshot/${attemptId}`,
+        token: "signed-upload-token",
+        uploadState: "pending",
+      },
+    }),
+    { status: 201 },
+  );
+}
+
 describe("feedback screenshot browser upload contract", () => {
   it("creates and revokes only validated local previews", () => {
     const createObjectURL = vi.fn(() => "blob:owned-preview");
@@ -73,21 +89,7 @@ describe("feedback screenshot browser upload contract", () => {
     uploadToSignedUrlMock.mockResolvedValue({ data: {}, error: null });
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            intent: {
-              feedbackId,
-              attemptId,
-              bucket: "signalement-evidence",
-              path: `feedback/${feedbackId}/screenshot/${attemptId}`,
-              token: "signed-upload-token",
-              uploadState: "pending",
-            },
-          }),
-          { status: 201 },
-        ),
-      )
+      .mockResolvedValueOnce(intentResponse())
       .mockResolvedValueOnce(new Response(JSON.stringify({ status: "ok" }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -110,21 +112,7 @@ describe("feedback screenshot browser upload contract", () => {
     uploadToSignedUrlMock.mockResolvedValue({ error: new Error("storage down") });
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            intent: {
-              feedbackId,
-              attemptId,
-              bucket: "signalement-evidence",
-              path: `feedback/${feedbackId}/screenshot/${attemptId}`,
-              token: "signed-upload-token",
-              uploadState: "pending",
-            },
-          }),
-          { status: 201 },
-        ),
-      )
+      .mockResolvedValueOnce(intentResponse())
       .mockResolvedValueOnce(new Response(JSON.stringify({ status: "ok" }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
