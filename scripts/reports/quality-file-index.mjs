@@ -290,6 +290,7 @@ function reportStatus(audit, report) {
 
 function expectedOverallStatus(statuses) {
   if (statuses.includes("FAIL")) return "FAIL";
+  if (statuses.includes("SKIPPED_BY_POLICY")) return "SKIPPED_BY_POLICY";
   if (statuses.includes("PASS_WITH_GRACE")) return "PASS_WITH_GRACE";
   return "PASS";
 }

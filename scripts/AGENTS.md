@@ -68,6 +68,24 @@ Les scopes sont strictement séparés : `WORKTREE_LIVE` est le checkout mouvant,
 `PUSH_CANDIDATE` les refs effectivement transmises par le protocole Git. Une
 mesure live ne peut jamais être présentée comme preuve reproductible d'un SHA.
 
+### Dérogation explicite — push effectué par ChatGPT
+
+Sur autorisation explicite de l'utilisateur dans le prompt courant, un push
+effectué directement par ChatGPT peut ignorer les contrôles `STAGED` et
+`PUSH_CANDIDATE`. Cette dérogation doit être bornée au push identifié dans la
+demande et consignée comme `CHATGPT_AUTHORIZED_SKIP` ; elle ne peut jamais être
+déduite d'un timeout, d'un outil indisponible, d'un checkout dirty, d'un échec
+de contrôle ou d'une concurrence entre writers.
+
+Le skip n'autorise ni `git add -A`, ni l'inclusion de fichiers étrangers, ni
+la suppression ou l'écrasement de changements concurrents, ni le force-push,
+ni le contournement d'un fast-forward ou de la vérification de convergence
+distante. Les contrôles ignorés doivent être rapportés `NOT_RUN`, jamais
+`PASS`, et la publication ne peut pas être présentée comme validée par les
+scopes `STAGED` ou `PUSH_CANDIDATE`. Les contrôles restants, la revue de
+l'allowlist et les protections de sécurité demeurent applicables sauf
+autorisation distincte et explicite.
+
 Hors mode de développement rapide :
 
 ```text
@@ -121,10 +139,10 @@ marqueurs anciens, ambigus ou invérifiables restent préservés avec diagnostic
 Après chaque audit terminé,
 le runner conserve les trois SHA les plus récemment exécutés, sauf les SHA
 encore actifs, et migre les artefacts legacy reconnus sans supprimer un fichier
-inconnu, un lien symbolique ou une archive. `baselineStable` est descriptif et
-non bloquant pour ce runner. Les résultats `INFORMATIVE` ne constituent pas une
-preuve de candidat publié et aucun audit ne modifie automatiquement une
-baseline, une justification ou un seuil.
+inconnu, un lien symbolique ou une archive. Les informations de provenance et
+les résultats auxiliaires restent descriptifs et non bloquants pour ce runner :
+ils ne constituent pas une preuve de candidat publié et aucun audit ne modifie
+automatiquement une baseline, une justification ou un seuil.
 
 Pour `all`, les projections `quality-index--<runId>--{index.json,summary.md,bundle.zip}`
 restent dans le dossier SHA et sont des artefacts système reconnus par le même

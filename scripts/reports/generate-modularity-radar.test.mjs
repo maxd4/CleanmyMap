@@ -345,6 +345,38 @@ function auditResults(overrides = {}) {
   };
 }
 
+test("cycles SKIPPED_BY_POLICY reste NOT_MEASURED sans masquer les autres mesures", () => {
+  const candidate = row("apps/web/src/example.ts");
+  const correlations = createCorrelationSignalsFromAuditResults(auditResults({
+    complexity: { metrics: [{ metric: "complexity", category: "runtime/services/orchestration", path: candidate.file, value: 22 }], result: { failures: [], reviews: [], improvements: [], stale: [] } },
+    cycles: { status: "SKIPPED_BY_POLICY", cycleObjects: [] },
+  }));
+  const [result] = createRadarRows([candidate], correlations);
+  assert.equal(correlations.measured, true);
+  assert.equal(result.signals.complexity.state, "PRESENT");
+  assert.equal(result.signals.cycle.state, "NOT_MEASURED");
+});
+
+test("radar rejects a coherent-looking run whose report status contradicts its manifest", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-radar-status-"));
+  try {
+    const auditedSha = "d".repeat(40);
+    const runId = "status-mismatch";
+    const shaRoot = path.join(root, "artifacts", "quality-audits", auditedSha);
+    fs.mkdirSync(shaRoot, { recursive: true });
+    for (const audit of ["dead-code", "duplication", "top-heavy", "complexity", "cycles"]) {
+      const prefix = `${audit}--${runId}`;
+      fs.writeFileSync(path.join(shaRoot, `${prefix}--manifest.json`), JSON.stringify({ schemaVersion: 1, audit, runId, auditedHead: auditedSha, status: "PASS", generatedAt: "2026-10-24T00:00:00.000Z" }));
+      fs.writeFileSync(path.join(shaRoot, `${prefix}--report.json`), JSON.stringify(audit === "cycles" ? { status: "SKIPPED_BY_POLICY", gateStatus: "SKIPPED_BY_POLICY", cycleObjects: [] } : { status: "PASS" }));
+    }
+    const signals = loadQualityAuditArtifacts({ root, auditedSha, runId });
+    assert.equal(signals.measured, false);
+    assert.match(signals.detail, /preuve quality incomplète|non stable/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("size alone remains PRESENT while complementary measured gates remain NONE", () => {
   const [result] = createRadarRows([row("apps/web/src/example.ts")], createCorrelationSignalsFromAuditResults(auditResults()));
   assert.equal(result.signals.size.state, "PRESENT");

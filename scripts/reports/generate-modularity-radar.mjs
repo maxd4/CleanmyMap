@@ -100,6 +100,7 @@ function createEmptyCorrelationSignals(detail) {
   return {
     measured: false,
     detail,
+    gateMeasured: { complexity: false, deadCode: false, duplication: false, cycles: false },
     complexityByFile: new Map(),
     deadCodeByFile: new Map(),
     cycleByFile: new Map(),
@@ -107,10 +108,16 @@ function createEmptyCorrelationSignals(detail) {
   };
 }
 
-function createMeasuredCorrelationSignals({ complexityByFile = new Map(), deadCodeByFile = new Map(), cycleByFile = new Map(), duplicationByFile = new Map() }) {
+function createMeasuredCorrelationSignals({ complexityByFile = new Map(), deadCodeByFile = new Map(), cycleByFile = new Map(), duplicationByFile = new Map(), gateMeasured = {} }) {
   return {
     measured: true,
-    detail: "mesures actuelles des cinq gates quality:...",
+    detail: "mesures actuelles disponibles des gates quality:...",
+    gateMeasured: {
+      complexity: gateMeasured.complexity ?? true,
+      deadCode: gateMeasured.deadCode ?? true,
+      duplication: gateMeasured.duplication ?? true,
+      cycles: gateMeasured.cycles ?? true,
+    },
     complexityByFile,
     deadCodeByFile,
     cycleByFile,
@@ -174,9 +181,16 @@ export function createCorrelationSignalsFromAuditResults(resultsByAudit) {
   const duplicationByFile = new Map();
   addCurrentComplexityFindings(complexity.metrics, complexityByFile);
   addDeadCodeFindings(deadCode.comparison, deadCodeByFile);
-  addCycleFindings(cycles.cycleObjects, cycleByFile);
+  const cyclesMeasured = cycles.status !== "SKIPPED_BY_POLICY";
+  if (cyclesMeasured) addCycleFindings(cycles.cycleObjects, cycleByFile);
   addDuplicationFindings(duplication.results, duplication.justificationReport, duplicationByFile);
-  return createMeasuredCorrelationSignals({ complexityByFile, deadCodeByFile, cycleByFile, duplicationByFile });
+  return createMeasuredCorrelationSignals({
+    complexityByFile,
+    deadCodeByFile,
+    cycleByFile,
+    duplicationByFile,
+    gateMeasured: { cycles: cyclesMeasured },
+  });
 }
 
 function readFilesystemJson(root, relativePath) {
@@ -195,6 +209,24 @@ function qualityManifestIsCoherent(manifest, audit, auditedSha, runId = undefine
     && (runId === undefined || manifest.runId === runId);
 }
 
+function reportStatus(audit, report) {
+  if (report?.error) return "FAIL";
+  if (typeof report?.status === "string") return report.status;
+  if (audit === "cycles" && typeof report?.gateStatus === "string") {
+    if (report.gateStatus === "PASS") return "PASS";
+    if (report.gateStatus === "SKIPPED_BY_POLICY") return "SKIPPED_BY_POLICY";
+    return "FAIL";
+  }
+  return null;
+}
+
+function reportsMatchManifests(reports, manifests) {
+  return QUALITY_AUDITS.every((audit) => {
+    const measuredStatus = reportStatus(audit, reports[audit]);
+    return !measuredStatus || !manifests[audit]?.status || measuredStatus === manifests[audit].status;
+  });
+}
+
 function legacyQualityAuditRunIds(root, auditedSha) {
   const shaRoot = path.join(root, "artifacts", "quality-audits", auditedSha);
   let entries = [];
@@ -210,6 +242,7 @@ function readFlatQualityRun({ root, auditedSha, runId }) {
   const artifacts = listFlatQualityArtifacts({ root, auditedSha });
   const byKey = new Map(artifacts.filter((artifact) => artifact.runId === runId).map((artifact) => [`${artifact.audit}:${artifact.kind}`, artifact]));
   const reports = {};
+  const manifests = {};
   const generatedAt = [];
   for (const audit of QUALITY_AUDITS) {
     const manifestArtifact = byKey.get(`${audit}:manifest`);
@@ -218,13 +251,16 @@ function readFlatQualityRun({ root, auditedSha, runId }) {
     const report = reportArtifact ? readFilesystemJson(root, path.relative(root, reportArtifact.path).replaceAll("\\", "/")) : null;
     if (!qualityManifestIsCoherent(manifest, audit, auditedSha, runId ?? undefined) || !report) return null;
     generatedAt.push(Date.parse(manifest.generatedAt));
+    manifests[audit] = manifest;
     reports[audit] = report;
   }
+  if (!reportsMatchManifests(reports, manifests)) return null;
   return { reports, generatedAt: Math.max(...generatedAt) };
 }
 
 function readLegacyQualityRun({ root, auditedSha, runId }) {
   const reports = {};
+  const manifests = {};
   const generatedAt = [];
   for (const audit of QUALITY_AUDITS) {
     const base = runId
@@ -234,8 +270,10 @@ function readLegacyQualityRun({ root, auditedSha, runId }) {
     const report = readFilesystemJson(root, `${base}/report.json`);
     if (!qualityManifestIsCoherent(manifest, audit, auditedSha, runId ?? undefined) || !report) return null;
     generatedAt.push(Date.parse(manifest.generatedAt));
+    manifests[audit] = manifest;
     reports[audit] = report;
   }
+  if (!reportsMatchManifests(reports, manifests)) return null;
   return { reports, generatedAt: Math.max(...generatedAt) };
 }
 
@@ -257,17 +295,19 @@ export function loadQualityAuditArtifacts({ root = REPOSITORY_ROOT, auditedSha, 
 }
 
 function signalForRow(row, correlations) {
-  const signalFromMap = (map) => correlations.measured
+  const signalFromMap = (map, gate) => correlations.gateMeasured?.[gate] === false
+    ? signal("NOT_MEASURED", correlations.detail)
+    : correlations.measured
     ? signal(map.has(row.file) ? "PRESENT" : "NONE", map.has(row.file) ? `${map.get(row.file)} finding(s) actuel(s)` : "")
     : signal("NOT_MEASURED", correlations.detail);
   return {
     size: isAboveReview(row)
       ? signal("PRESENT", isAboveHard(row) ? "HARD" : "REVIEW")
       : signal("NONE"),
-    complexity: signalFromMap(correlations.complexityByFile),
-    cycle: signalFromMap(correlations.cycleByFile),
-    deadCode: signalFromMap(correlations.deadCodeByFile),
-    duplication: signalFromMap(correlations.duplicationByFile),
+    complexity: signalFromMap(correlations.complexityByFile, "complexity"),
+    cycle: signalFromMap(correlations.cycleByFile, "cycles"),
+    deadCode: signalFromMap(correlations.deadCodeByFile, "deadCode"),
+    duplication: signalFromMap(correlations.duplicationByFile, "duplication"),
     testability: signal("NOT_MEASURED", "quality:coverage n'est pas attribuable ici au fichier candidat"),
   };
 }

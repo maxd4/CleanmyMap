@@ -16,6 +16,7 @@ import {
   runQualityAudit,
   serialize,
 } from "./run-quality-audit.mjs";
+import { readOfflineQualityRun } from "../reports/quality-file-index.mjs";
 import { acquireRetentionLock, beginActiveAudit, createQualityProjectionPaths, endActiveAudit, listFlatQualityProjectionArtifacts, releaseRetentionLock, retainQualityAuditArtifacts } from "./quality-audit-storage.mjs";
 
 const sha = "a".repeat(40);
@@ -223,6 +224,85 @@ test("all writes every gate and the aggregate as flat files for one run", async 
     });
     assert.equal(fs.statSync(result.projectionPaths.bundle).isFile(), true);
     assert.equal(result.allPaths.runRoot, result.allPaths.shaRoot);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("all reduces FAIL, SKIPPED_BY_POLICY and PASS_WITH_GRACE in runner priority order", async () => {
+  const scenarios = [
+    {
+      runId: "run-status-skipped",
+      expected: "SKIPPED_BY_POLICY",
+      engine: async (audit) => audit === "cycles" ? { ...fixtureResult("cycles"), status: "SKIPPED_BY_POLICY", gateStatus: "SKIPPED_BY_POLICY" } : fixtureResult(audit),
+    },
+    {
+      runId: "run-status-grace",
+      expected: "PASS_WITH_GRACE",
+      engine: async (audit) => {
+        if (audit !== "duplication") return fixtureResult(audit);
+        return { ...fixtureResult(audit), results: [{ ...fixtureResult(audit).results[0], comparison: { status: "PASS_WITH_GRACE", failures: [] } }] };
+      },
+    },
+    {
+      runId: "run-status-grace-skipped",
+      expected: "SKIPPED_BY_POLICY",
+      engine: async (audit) => {
+        if (audit === "cycles") return { ...fixtureResult("cycles"), status: "SKIPPED_BY_POLICY", gateStatus: "SKIPPED_BY_POLICY" };
+        if (audit !== "duplication") return fixtureResult(audit);
+        return { ...fixtureResult(audit), results: [{ ...fixtureResult(audit).results[0], comparison: { status: "PASS_WITH_GRACE", failures: [] } }] };
+      },
+    },
+    {
+      runId: "run-status-fail",
+      expected: "FAIL",
+      engine: async (audit) => audit === "cycles"
+        ? { ...fixtureResult("cycles"), status: "SKIPPED_BY_POLICY", gateStatus: "SKIPPED_BY_POLICY" }
+        : audit === "complexity"
+          ? { ...fixtureResult("complexity"), status: "FAIL", result: { failures: [{ key: "fixture" }], reviews: [], improvements: [], stale: [] } }
+          : fixtureResult(audit),
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const root = tempRoot();
+    try {
+      const result = await runQualityAudit("all", {
+        root,
+        runId: scenario.runId,
+        snapshot: () => stableSnapshot,
+        engine: scenario.engine,
+      });
+      const aggregateManifest = JSON.parse(fs.readFileSync(result.allPaths.manifest, "utf8"));
+      const aggregateReport = JSON.parse(fs.readFileSync(result.allPaths.report, "utf8"));
+      assert.equal(result.status, scenario.expected, scenario.runId);
+      assert.equal(aggregateManifest.status, scenario.expected, scenario.runId);
+      assert.equal(aggregateReport.status, scenario.expected, scenario.runId);
+      assertNoRemovedAuditMetadata(aggregateManifest);
+      assertNoRemovedAuditMetadata(aggregateReport);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+test("offline lit le run réel produit avec cycles SKIPPED_BY_POLICY", async () => {
+  const root = tempRoot();
+  try {
+    const result = await runQualityAudit("all", {
+      root,
+      runId: "run-offline-skipped",
+      snapshot: () => stableSnapshot,
+      engine: async (audit) => audit === "cycles"
+        ? { ...fixtureResult("cycles"), status: "SKIPPED_BY_POLICY", gateStatus: "SKIPPED_BY_POLICY" }
+        : fixtureResult(audit),
+    });
+    const offline = readOfflineQualityRun({ root, auditedSha: sha, runId: "run-offline-skipped" });
+    assert.equal(result.status, "SKIPPED_BY_POLICY");
+    assert.equal(offline.aggregateManifest.status, "SKIPPED_BY_POLICY");
+    assert.equal(offline.manifests.cycles.status, "SKIPPED_BY_POLICY");
+    assert.equal(offline.reports.cycles.status, "SKIPPED_BY_POLICY");
+    assert.equal(offline.manifests.complexity.status, "PASS");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
