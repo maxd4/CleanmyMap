@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 
-export const QUALITY_DECISION_TRIAGE_SCHEMA_VERSION = 1;
+const QUALITY_DECISION_TRIAGE_SCHEMA_VERSION = 1;
 
 const RISK_ORDER = Object.freeze({ R1: 1, R2: 2, R3: 3, R4: 4, REVIEW_REQUIRED: 0 });
 const PRIORITY_ORDER = Object.freeze({ P0: 0, P1: 1, P2: 2, P3: 3, REVIEW_REQUIRED: 4 });
