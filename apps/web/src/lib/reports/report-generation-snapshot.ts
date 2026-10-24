@@ -10,6 +10,17 @@ export const REPORT_SNAPSHOT_SCHEMA_VERSION = 2 as const;
 export const REPORT_TEMPLATE_VERSION = "reports-template-v1" as const;
 export const REPORT_RENDERER_VERSION = "official-report-html-v1" as const;
 
+export function isReportModuleState(value: unknown): value is ModuleState {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Record<string, unknown>;
+  return [
+    "dataAndCartography",
+    "transparencyAndMethods",
+    "rawData",
+    "detailedFiles",
+  ].every((key) => typeof candidate[key] === "boolean");
+}
+
 type ReportGenerationSnapshotScopeKind =
   | "global"
   | "account"

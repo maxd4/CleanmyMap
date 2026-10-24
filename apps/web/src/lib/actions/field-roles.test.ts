@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   ACTION_FIELD_ROLE_OPTIONS,
   isActionFieldRoleCode,
+  loadActiveActionFieldRoleAssignments,
   loadActionFieldRoleState,
   normalizeActionFieldRoleCodes,
   replaceActionFieldRoles,
@@ -30,6 +31,18 @@ describe("action field roles contract", () => {
     const transferQuery = { select: vi.fn(() => transferQuery), eq: vi.fn(() => transferQuery), order: vi.fn(() => transferQuery), limit: vi.fn().mockResolvedValue({ data: [{ id: "t1", status: "pending" }], error: null }) };
     const supabase = { from: vi.fn((table: string) => table === "action_field_role_assignments" ? assignmentQuery : transferQuery) } as never;
     await expect(loadActionFieldRoleState(supabase, "action-1")).resolves.toMatchObject({ assignments: [{ user_id: "user-1" }], pendingTransfer: { id: "t1" }, transferProposals: [{ id: "t1" }] });
+  });
+
+  it("propagates active assignment query failures from the shared loader", async () => {
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      order: vi.fn(() => query),
+    };
+    query.order.mockImplementationOnce(() => query).mockImplementationOnce(() => Promise.resolve({ data: null, error: new Error("assignment read failed") }) as never);
+    const supabase = { from: vi.fn(() => query) } as never;
+
+    await expect(loadActiveActionFieldRoleAssignments(supabase, "action-1")).rejects.toThrow("assignment read failed");
   });
 
   it("delegates replacement to the transactional server RPC", async () => {

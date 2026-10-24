@@ -115,14 +115,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "72de5fb9a3473181",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les blocs de fallback appartiennent aux chemins append et list du même audit, avec des opérations et effets de lecture/écriture différents ; une primitive générique ne réduirait pas une connaissance métier durable.",
-      "evidence": "apps/web/src/lib/admin/audit/operation-audit.ts:187-201 et apps/web/src/lib/admin/audit/operation-audit.ts:245-259 ; l'un persiste une entrée normalisée, l'autre reconstruit une réponse filtrée.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "020cfe79eb329882",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les deux stores importent les mêmes primitives de persistence par convention de domaine ; l'import partagé ne constitue pas une duplication de connaissance à extraire.",
@@ -175,14 +167,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les deux objets de contexte dans le hook de soumission décrivent des étapes différentes du flux d’envoi ; leurs champs voisins servent à des callbacks distincts et non à une primitive de rendu commune.",
       "evidence": "apps/web/src/components/chat/hooks/use-chat-submit.ts:30-39 et apps/web/src/components/chat/hooks/use-chat-submit.ts:108-117 ; les deux signatures appartiennent à des handlers distincts.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "6ee559e948f55e19",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Le rafraîchissement de file et la notification restent répétés dans deux opérations de queue distinctes ; leurs messages et transitions métier doivent rester lisibles séparément.",
-      "evidence": "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.controller.queue.ts:191-205 et apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.controller.queue.ts:234-248 ; acceptation/refus et ajout de compte ont des effets propres.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {

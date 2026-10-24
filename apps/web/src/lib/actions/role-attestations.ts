@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ActionFieldRoleCode, ActionFieldRoleAssignment } from "./field-roles";
+import {
+  loadActiveActionFieldRoleAssignments,
+  type ActionFieldRoleCode,
+  type ActionFieldRoleAssignment,
+} from "./field-roles";
 import type { ActionRow } from "@/types/database";
 
 export type ActionRoleAttestationStatus = "pending" | "confirmed" | "rejected";
@@ -26,8 +30,6 @@ export type ActionRoleAttestationState = {
   attestations: ActionRoleAttestation[];
 };
 
-const ASSIGNMENT_COLUMNS =
-  "id, action_id, user_id, role_code, assignment_status, assigned_by_clerk_id, created_at, updated_at";
 const ATTESTATION_COLUMNS =
   "id, action_id, user_id, role_code, verification_status, reviewer_clerk_id, decided_at, decision_reason, responsibility_provenance, provenance_snapshot, revision, created_at, updated_at";
 
@@ -43,13 +45,7 @@ export async function loadActionRoleAttestationState(
   actionId: string,
 ): Promise<ActionRoleAttestationState> {
   const [assignmentsResult, attestationsResult] = await Promise.all([
-    supabase
-      .from("action_field_role_assignments")
-      .select(ASSIGNMENT_COLUMNS)
-      .eq("action_id", actionId)
-      .eq("assignment_status", "active")
-      .order("user_id", { ascending: true })
-      .order("role_code", { ascending: true }),
+    loadActiveActionFieldRoleAssignments(supabase, actionId),
     supabase
       .from("action_role_attestations")
       .select(ATTESTATION_COLUMNS)
@@ -57,10 +53,9 @@ export async function loadActionRoleAttestationState(
       .order("user_id", { ascending: true })
       .order("role_code", { ascending: true }),
   ]);
-  if (assignmentsResult.error) throw new Error(assignmentsResult.error.message);
   if (attestationsResult.error) throw new Error(attestationsResult.error.message);
   return {
-    assignments: (assignmentsResult.data ?? []) as ActionFieldRoleAssignment[],
+    assignments: assignmentsResult,
     attestations: (attestationsResult.data ?? []) as ActionRoleAttestation[],
   };
 }

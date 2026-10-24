@@ -7,6 +7,7 @@ import type {
 import type { ReportScopeKind } from "./scope";
 import type { ReportPdfTheme } from "@/lib/pdf-export/report-pdf-theme";
 import type { ReportGenerationSnapshotRecord } from "./report-generation-history-store";
+import { isReportModuleState } from "./report-generation-snapshot";
 
 type ReportGenerationResumeScopeKind = ReportScopeKind | "single_action";
 
@@ -45,17 +46,6 @@ function isPeriodId(value: unknown): value is SelectedPeriodId {
 }
 function isDetailLevel(value: unknown): value is DetailLevelId {
   return value === "concis" || value === "default" || value === "exhaustif";
-}
-
-function isModuleState(value: unknown): value is ModuleState {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Record<string, unknown>;
-  return [
-    "dataAndCartography",
-    "transparencyAndMethods",
-    "rawData",
-    "detailedFiles",
-  ].every((key) => typeof candidate[key] === "boolean");
 }
 
 function isTheme(value: unknown): value is ReportPdfTheme {
@@ -118,9 +108,9 @@ function resolveResumeMetadata(record: ReportGenerationSnapshotRecord) {
       : isDetailLevel(record.detailLevel)
         ? record.detailLevel
         : null,
-    modules: isModuleState(metadata?.modules)
+    modules: isReportModuleState(metadata?.modules)
       ? metadata.modules
-      : isModuleState(record.modules)
+      : isReportModuleState(record.modules)
         ? record.modules
         : null,
     filters: metadata?.filters ?? null,

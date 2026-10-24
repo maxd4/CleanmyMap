@@ -19,6 +19,7 @@ import {
   buildDerivedReportGenerationPayload,
 } from "./report-generation-derivation";
 import { getReportPublicationStatuses } from "./report-publication-store";
+import { isReportModuleState } from "./report-generation-snapshot";
 
 const REPORT_GENERATION_HISTORY_METADATA_SELECT =
   "id, generated_at, title, period_id, scope_label, detail_level, theme";
@@ -94,17 +95,6 @@ function hasSameModules(left: ModuleState, right: unknown): boolean {
     left.transparencyAndMethods === candidate.transparencyAndMethods &&
     left.rawData === candidate.rawData &&
     left.detailedFiles === candidate.detailedFiles;
-}
-
-function isModuleState(value: unknown): value is ModuleState {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Record<string, unknown>;
-  return [
-    "dataAndCartography",
-    "transparencyAndMethods",
-    "rawData",
-    "detailedFiles",
-  ].every((key) => typeof candidate[key] === "boolean");
 }
 
 const REPORT_GENERATION_INSTANT_PATTERN =
@@ -339,7 +329,7 @@ export async function getReportGenerationSnapshotById(
     scopeValue: row.scope_value,
     scopeLabel: row.scope_label,
     detailLevel: row.detail_level,
-    modules: isModuleState(row.modules) ? row.modules : null,
+    modules: isReportModuleState(row.modules) ? row.modules : null,
     theme: row.theme ?? null,
     snapshot,
   };

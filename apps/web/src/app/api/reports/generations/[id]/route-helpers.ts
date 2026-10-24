@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { requireAuthenticatedAccess } from "@/lib/authz";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import {
   getReportGenerationSnapshotById,
   InvalidReportGenerationIdError,
@@ -6,6 +8,14 @@ import {
 import { InvalidReportGenerationSnapshotError } from "@/lib/reports/report-generation-payload";
 
 type ReportGeneration = Awaited<ReturnType<typeof getReportGenerationSnapshotById>>;
+
+export async function requireReportGenerationAccess(): Promise<
+  { ok: true; userId: string } | Response
+> {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) return unauthorizedJsonResponse({ hint: access.error });
+  return { ok: true, userId: access.userId };
+}
 
 export async function executeReportGenerationRoute(
   id: string,

@@ -1,19 +1,15 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedAccess } from "@/lib/authz";
-import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { buildReportScientificExport } from "@/lib/reports/report-scientific-export";
 import { buildReportScientificExportFilename } from "@/lib/reports/report-scientific-csv";
-import { executeReportGenerationRoute } from "../route-helpers";
+import { executeReportGenerationRoute, requireReportGenerationAccess } from "../route-helpers";
 
 export const runtime = "nodejs";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: RouteContext) {
-  const access = await requireAuthenticatedAccess();
-  if (!access.ok) {
-    return unauthorizedJsonResponse({ hint: access.error });
-  }
+  const access = await requireReportGenerationAccess();
+  if (access instanceof Response) return access;
 
   const { id } = await params;
   return executeReportGenerationRoute(id, access.userId, (generation) => {

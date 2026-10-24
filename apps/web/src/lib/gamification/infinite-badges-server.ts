@@ -24,7 +24,7 @@ import {
   loadResolvedModerationCasesForUser,
 } from "./moderation-progression";
 
-function createFallbackActionBalanceSummary(): Awaited<ReturnType<typeof loadActionBalanceSummary>> {
+export function createFallbackActionBalanceSummary(): Awaited<ReturnType<typeof loadActionBalanceSummary>> {
   return {
     spontaneous: 0,
     association: 0,

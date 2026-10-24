@@ -92,19 +92,27 @@ export function normalizeActionFieldRoleCodes(values: readonly string[]): Action
   return [...new Set(values.map((value) => value.trim()).filter(isActionFieldRoleCode))];
 }
 
+export async function loadActiveActionFieldRoleAssignments(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<ActionFieldRoleAssignment[]> {
+  const result = await supabase
+    .from("action_field_role_assignments")
+    .select(ASSIGNMENT_COLUMNS)
+    .eq("action_id", actionId)
+    .eq("assignment_status", "active")
+    .order("user_id", { ascending: true })
+    .order("role_code", { ascending: true });
+  if (result.error) throw new Error(result.error.message);
+  return (result.data ?? []) as ActionFieldRoleAssignment[];
+}
 
 export async function loadActionFieldRoleState(
   supabase: SupabaseClient,
   actionId: string,
 ): Promise<ActionFieldRoleState> {
   const [assignmentsResult, transferResult] = await Promise.all([
-    supabase
-      .from("action_field_role_assignments")
-      .select(ASSIGNMENT_COLUMNS)
-      .eq("action_id", actionId)
-      .eq("assignment_status", "active")
-      .order("user_id", { ascending: true })
-      .order("role_code", { ascending: true }),
+    loadActiveActionFieldRoleAssignments(supabase, actionId),
     supabase
       .from("action_field_role_transfer_proposals")
       .select(TRANSFER_COLUMNS)
@@ -112,12 +120,11 @@ export async function loadActionFieldRoleState(
       .order("created_at", { ascending: false })
       .limit(20),
   ]);
-  if (assignmentsResult.error) throw new Error(assignmentsResult.error.message);
   if (transferResult.error) throw new Error(transferResult.error.message);
 
   const transferProposals = (transferResult.data ?? []) as ActionFieldRoleTransferProposal[];
   return {
-    assignments: (assignmentsResult.data ?? []) as ActionFieldRoleAssignment[],
+    assignments: assignmentsResult,
     pendingTransfer: transferProposals.find((proposal) => proposal.status === "pending") ?? null,
     transferProposals,
   };

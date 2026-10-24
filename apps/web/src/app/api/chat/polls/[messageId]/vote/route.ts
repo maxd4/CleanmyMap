@@ -30,6 +30,32 @@ type PollVoteResponse = {
   selectedOptionId: string | null;
 };
 
+type VoteIdentity = NonNullable<Awaited<ReturnType<typeof getCurrentUserIdentity>>>;
+
+async function requireVoteIdentity(request: Request): Promise<Response | { userId: string; identity: VoteIdentity }> {
+  const rateLimitResponse = await guardVoteRequest(request);
+  if (rateLimitResponse) return rateLimitResponse;
+
+  const { userId } = await auth();
+  if (!userId) return unauthorizedJsonResponse();
+  const identity = await getCurrentUserIdentity();
+  if (!identity) return unauthorizedJsonResponse();
+  return { userId, identity };
+}
+
+async function resolveVoteSupabase(identity: VoteIdentity): Promise<Response | ReturnType<typeof getSupabaseServerClient>> {
+  const supabase = await getSupabaseClerkRlsClient();
+  if (!supabase) {
+    return NextResponse.json(
+      { error: "Connexion sécurisée indisponible" },
+      { status: 503 },
+    );
+  }
+  return ["admin", "elu", "max"].includes(identity.activeRole)
+    ? getSupabaseServerClient(true)
+    : supabase;
+}
+
 async function loadVisiblePoll(
   supabase: ReturnType<typeof getSupabaseServerClient>,
   messageId: string,
@@ -116,19 +142,9 @@ async function guardVoteRequest(request: Request): Promise<Response | null> {
 }
 
 async function upsertVote(request: Request, context: VoteRouteContext) {
-  const rateLimitResponse = await guardVoteRequest(request);
-  if (rateLimitResponse) {
-    return rateLimitResponse;
-  }
-
-  const { userId } = await auth();
-  if (!userId) {
-    return unauthorizedJsonResponse();
-  }
-  const identity = await getCurrentUserIdentity();
-  if (!identity) {
-    return unauthorizedJsonResponse();
-  }
+  const authContext = await requireVoteIdentity(request);
+  if (authContext instanceof Response) return authContext;
+  const { userId, identity } = authContext;
 
   let payload: unknown;
   try {
@@ -143,16 +159,9 @@ async function upsertVote(request: Request, context: VoteRouteContext) {
   }
 
   const { messageId } = await context.params;
-  const supabase = await getSupabaseClerkRlsClient();
-  if (!supabase) {
-    return NextResponse.json(
-      { error: "Connexion sécurisée indisponible" },
-      { status: 503 },
-    );
-  }
-  const messageSupabase = ["admin", "elu", "max"].includes(identity.activeRole)
-    ? getSupabaseServerClient(true)
-    : supabase;
+  const messageSupabaseResult = await resolveVoteSupabase(identity);
+  if (messageSupabaseResult instanceof Response) return messageSupabaseResult;
+  const messageSupabase = messageSupabaseResult;
 
   try {
     const poll = await loadVisiblePoll(messageSupabase, messageId);
@@ -197,31 +206,14 @@ export async function PUT(request: Request, context: VoteRouteContext) {
 }
 
 export async function DELETE(_request: Request, context: VoteRouteContext) {
-  const rateLimitResponse = await guardVoteRequest(_request);
-  if (rateLimitResponse) {
-    return rateLimitResponse;
-  }
-
-  const { userId } = await auth();
-  if (!userId) {
-    return unauthorizedJsonResponse();
-  }
-  const identity = await getCurrentUserIdentity();
-  if (!identity) {
-    return unauthorizedJsonResponse();
-  }
+  const authContext = await requireVoteIdentity(_request);
+  if (authContext instanceof Response) return authContext;
+  const { userId, identity } = authContext;
 
   const { messageId } = await context.params;
-  const supabase = await getSupabaseClerkRlsClient();
-  if (!supabase) {
-    return NextResponse.json(
-      { error: "Connexion sécurisée indisponible" },
-      { status: 503 },
-    );
-  }
-  const messageSupabase = ["admin", "elu", "max"].includes(identity.activeRole)
-    ? getSupabaseServerClient(true)
-    : supabase;
+  const messageSupabaseResult = await resolveVoteSupabase(identity);
+  if (messageSupabaseResult instanceof Response) return messageSupabaseResult;
+  const messageSupabase = messageSupabaseResult;
 
   try {
     const poll = await loadVisiblePoll(messageSupabase, messageId);

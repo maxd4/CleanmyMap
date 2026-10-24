@@ -2,7 +2,10 @@ import { computeMonthlyRegularitySummary } from "@/lib/gamification/monthly-regu
 import { createFallbackSensitiveZoneApaisementSummary } from "@/lib/gamification/sensitive-zone-badge";
 import { fetchCachedReferralSummary } from "@/lib/gamification/referrals/referrals-cache";
 import { loadCachedReferralLineageView } from "@/lib/gamification/referrals/referral-lineage";
-import { getInfiniteBadgeTotals } from "@/lib/gamification/infinite-badges-server";
+import {
+  createFallbackActionBalanceSummary,
+  getInfiniteBadgeTotals,
+} from "@/lib/gamification/infinite-badges-server";
 import { buildCurrentMilestones } from "@/lib/gamification/milestones";
 import { buildTerrainProgressions } from "@/lib/gamification/terrain-progressions";
 import { getUserProgression } from "@/lib/gamification/progression";
@@ -82,32 +85,7 @@ function buildProfileTotalsFallback(): Awaited<ReturnType<typeof getInfiniteBadg
       cleanZonesCount: 0,
       events: [],
     }),
-    actionBalance: {
-      spontaneous: 0,
-      association: 0,
-      enterprise: 0,
-      totalValidated: 0,
-      balancedCycles: 0,
-      totalXpAwarded: 0,
-      currentCycleTarget: 1,
-      currentCycleProgress: 0,
-      currentCycleXpReward: 1,
-      missingCounts: { spontaneous: 1, association: 1, enterprise: 1 },
-      currentGrade: {
-        id: "balance-observateur",
-        label: "Observateur",
-        threshold: 0,
-        iconVariant: "sliders-horizontal",
-        visualVariant: "stone",
-        tooltip: "Aucun cycle équilibré encore",
-        xp: 0,
-      },
-      nextGrade: null,
-      progressPercent: 0,
-      currentLabel: "Observateur",
-      nextLabel: null,
-      awards: [],
-    },
+    actionBalance: createFallbackActionBalanceSummary(),
     monthlyRegularity: computeMonthlyRegularitySummary([]),
     sensitiveZoneApaisement: createFallbackSensitiveZoneApaisementSummary(),
     milestones: buildCurrentMilestones({ completeActionsCount: 0, events: [] }),
