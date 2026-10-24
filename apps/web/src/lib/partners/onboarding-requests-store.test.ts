@@ -36,6 +36,7 @@ describe("partner onboarding request store", () => {
 
     expect(normalized).not.toBeNull();
     expect(normalized?.coverage.arrondissements).toEqual([11, 19, 20]);
+    expect(normalized?.engagementTypes).toEqual([]);
     expect(normalized?.availability.slots).toHaveLength(1);
     expect(normalized?.creatorState).toBe("new");
 

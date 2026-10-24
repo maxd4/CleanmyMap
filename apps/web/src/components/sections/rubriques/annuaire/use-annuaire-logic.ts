@@ -6,6 +6,7 @@ import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
 import { 
   ACTOR_CARDS_PAGE_SIZE, 
   type ContributionType, 
+  type EngagementDomainFilter,
   type EntityKind, 
   type ZoneFilter 
 } from "./annuaire-filters";
@@ -14,6 +15,7 @@ import {
   getAnnuaireDistanceKm,
   isNearbyEntry, 
   isNationalAnnuaireEntry,
+  matchesAnnuaireEngagementDomain,
   matchesAnnuaireSearch,
   mergeAnnuaireEntries,
   tokenizeAnnuaireSearchQuery,
@@ -52,11 +54,16 @@ export function useAnnuaireLogic() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterKind, setFilterKind] = useState<EntityKind | "all">("all");
   const [filterContribution, setFilterContribution] = useState<ContributionType | "all">("all");
+  const [engagementDomain, setEngagementDomain] = useState<EngagementDomainFilter>("all");
   const [zoneFilter, setZoneFilter] = useState<ZoneFilter>("all");
   const [highlightedActorId, setHighlightedActorId] = useState<string | null>(null);
   const [actorCardsPage, setActorCardsPage] = useState(1);
   const updateSearchTerm = useCallback((value: string) => {
     setSearchTerm(value);
+    setActorCardsPage(1);
+  }, []);
+  const updateEngagementDomain = useCallback((value: EngagementDomainFilter) => {
+    setEngagementDomain(value);
     setActorCardsPage(1);
   }, []);
 
@@ -114,6 +121,12 @@ export function useAnnuaireLogic() {
       result = result.filter(e => e.contributionTypes.includes(filterContribution));
     }
 
+    if (engagementDomain !== "all") {
+      result = result.filter((entry) =>
+        matchesAnnuaireEngagementDomain(entry, engagementDomain),
+      );
+    }
+
     if (zoneFilter === "nearby") {
       result = result.filter(e => isNearbyEntry(e, targetArrondissement, e.distanceKm));
     } else if (typeof zoneFilter === "number") {
@@ -123,7 +136,7 @@ export function useAnnuaireLogic() {
     }
 
     return result.sort(compareAnnuaireEntries);
-  }, [enrichedEntries, searchTerms, filterKind, filterContribution, zoneFilter, targetArrondissement]);
+  }, [enrichedEntries, searchTerms, filterKind, filterContribution, engagementDomain, zoneFilter, targetArrondissement]);
 
   const actorCardsTotalPages = Math.ceil(sortedAndFilteredEntries.length / ACTOR_CARDS_PAGE_SIZE);
   const safeActorCardsPage = Math.min(actorCardsPage, Math.max(1, actorCardsTotalPages));
@@ -133,11 +146,12 @@ export function useAnnuaireLogic() {
     return sortedAndFilteredEntries.slice(start, start + ACTOR_CARDS_PAGE_SIZE);
   }, [sortedAndFilteredEntries, safeActorCardsPage]);
 
-  const filterKey = `${searchTerm}|${filterKind}|${filterContribution}|${zoneFilter}`;
+  const filterKey = `${searchTerm}|${filterKind}|${filterContribution}|${zoneFilter}|${engagementDomain}`;
   const resetFilters = useCallback(() => {
     setSearchTerm("");
     setFilterKind("all");
     setFilterContribution("all");
+    setEngagementDomain("all");
     setZoneFilter("all");
     setActorCardsPage(1);
   }, []);
@@ -146,6 +160,7 @@ export function useAnnuaireLogic() {
     searchTerm, setSearchTerm: updateSearchTerm,
     filterKind, setFilterKind,
     filterContribution, setFilterContribution,
+    engagementDomain, setEngagementDomain: updateEngagementDomain,
     zoneFilter, setZoneFilter,
     highlightedActorId, setHighlightedActorId,
     actorCardsPage, setActorCardsPage,

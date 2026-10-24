@@ -18,6 +18,7 @@ import {
 import {
   normalizePartnerAvailability,
   normalizePartnerCoverage,
+  normalizeEngagementTypes,
   normalizePublicWebUrl,
   type PartnerOnboardingRequestInput,
 } from "./onboarding-types";
@@ -41,7 +42,7 @@ const STORE_FILE = join(
   "partner_onboarding_requests.json",
 );
 const SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS =
-  "id, created_at, submitted_by_user_id, submitted_by_email, idempotency_key, organization_name, organization_type, partner_scope, legal_identity, coverage, contribution_types, relay_actions, availability, contact_name, contact_channel, contact_details, motivation, public_website_url, public_website_consent, status, creator_state";
+  "id, created_at, submitted_by_user_id, submitted_by_email, idempotency_key, organization_name, organization_type, partner_scope, legal_identity, coverage, contribution_types, engagement_types, relay_actions, availability, contact_name, contact_channel, contact_details, motivation, public_website_url, public_website_consent, status, creator_state";
 
 export type PartnerOnboardingRequestRecord = Omit<PartnerOnboardingRequestInput, "publicWebsiteConsent"> & {
   id: string;
@@ -133,6 +134,7 @@ export function normalizeStoredPartnerOnboardingRequest(
       : "local";
   const legalIdentity = readStringField(record, "legalIdentity");
   const contributionTypes = normalizeContributionTypes(record["contributionTypes"]);
+  const engagementTypes = normalizeEngagementTypes(record["engagementTypes"]);
 
   if (
     !id ||
@@ -162,6 +164,7 @@ export function normalizeStoredPartnerOnboardingRequest(
     legalIdentity,
     coverage,
     contributionTypes,
+    engagementTypes,
     relayActions: readStringField(record, "relayActions"),
     availability,
     contactName: readStringField(record, "contactName"),
@@ -189,6 +192,7 @@ function fromSupabaseRow(
     legalIdentity: row.legal_identity,
     coverage: row.coverage,
     contributionTypes: row.contribution_types,
+    engagementTypes: row.engagement_types,
     relayActions: row.relay_actions,
     availability: row.availability,
     contactName: row.contact_name,

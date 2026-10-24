@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
+import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
 import {
   formatAssociationImpactDate,
   formatAnnuaireCoverage,
@@ -9,12 +10,14 @@ import {
   getAnnuairePublicDestination,
   getAssociationProfile,
   getAssociationStructureBadge,
+  getReliableAnnuaireEngagementTypes,
   hasTraceableImpactHistory,
   hasTraceablePastActions,
   hasPreciseAnnuaireCoordinates,
   isNationalAnnuaireEntry,
   matchesAnnuaireSearch,
   mergeAnnuaireEntries,
+  matchesAnnuaireEngagementDomain,
   tokenizeAnnuaireSearchQuery,
 } from "./annuaire-helpers";
 
@@ -90,6 +93,49 @@ describe("annuaire public text search", () => {
     expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("clerk secret"))).toBe(false);
     expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery(""))).toBe(true);
     expect(matchesAnnuaireSearch(entry, tokenizeAnnuaireSearchQuery("   "))).toBe(true);
+  });
+});
+
+describe("annuaire engagement domain provenance", () => {
+  it("uses editorial seed classifications as reliable filter evidence", () => {
+    const seed = INITIAL_ANNUAIRE_ENTRIES.find((entry) => entry.id === "asso-zerowaste-paris");
+
+    expect(seed?.engagementTypesSource).toBe("editorial_seed");
+    expect(getReliableAnnuaireEngagementTypes(seed!)).toEqual(seed?.types);
+    expect(matchesAnnuaireEngagementDomain(seed!, "environnemental")).toBe(true);
+    expect(matchesAnnuaireEngagementDomain(seed!, "humanitaire")).toBe(false);
+  });
+
+  it("treats legacy synthetic published types as unclassified", () => {
+    const historical = {
+      ...createSearchEntry(),
+      types: ["social"] as AnnuaireEntry["types"],
+      engagementTypesSource: undefined,
+    };
+
+    expect(getReliableAnnuaireEngagementTypes(historical)).toEqual([]);
+    expect(matchesAnnuaireEngagementDomain(historical, "social")).toBe(false);
+    expect(matchesAnnuaireEngagementDomain(historical, "unclassified")).toBe(true);
+
+    const withoutDomain = {
+      ...historical,
+      types: [] as AnnuaireEntry["types"],
+    };
+    expect(matchesAnnuaireEngagementDomain(withoutDomain, "unclassified")).toBe(true);
+  });
+
+  it("matches every explicit partner declaration without certifying it", () => {
+    const declared = {
+      ...createSearchEntry(),
+      types: ["social", "humanitaire"] as AnnuaireEntry["types"],
+      engagementTypesSource: "partner_declaration" as const,
+    };
+
+    expect(getReliableAnnuaireEngagementTypes(declared)).toEqual(["social", "humanitaire"]);
+    expect(matchesAnnuaireEngagementDomain(declared, "social")).toBe(true);
+    expect(matchesAnnuaireEngagementDomain(declared, "humanitaire")).toBe(true);
+    expect(matchesAnnuaireEngagementDomain(declared, "environnemental")).toBe(false);
+    expect(matchesAnnuaireEngagementDomain(declared, "unclassified")).toBe(false);
   });
 });
 

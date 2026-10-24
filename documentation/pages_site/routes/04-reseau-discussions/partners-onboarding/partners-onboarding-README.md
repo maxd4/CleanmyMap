@@ -14,6 +14,7 @@
 - **Action principale attendue** : Renseigner les champs requis du formulaire partenaire et envoyer la demande.
 - **Palette attendue** : indigo
 - **Scope** : formulaire partenaire authentifié, champs obligatoires propres au parcours, contrôle serveur à l'envoi et soumission à validation ; la complétion générale du compte n'est pas un prérequis. Le formulaire peut recevoir un site web public facultatif, publié uniquement avec une autorisation explicite ; les coordonnées administratives restent privées.
+- **Domaines d'engagement** : le formulaire accepte zéro, un ou plusieurs domaines parmi Environnement, Social et Humanitaire. Cette sélection est une déclaration de la structure, non une certification ; elle est validée côté serveur et n'est publiée qu'avec la fiche `accepted` et sa provenance `partner_declaration`.
 - **Persistence** : la demande et la fiche annuaire associée sont créées par une transaction Supabase idempotente ; la fiche reste en `pending_admin_review` jusqu'à une revue administrative.
 - **Reprise** : une nouvelle tentative avec la même clé de soumission retrouve la demande existante. Les demandes historiques peuvent être réconciliées sans suppression ni changement de décision.
 - **Publication web** : une URL HTTP(S) publique syntaxiquement valide peut être conservée dans la demande privée avec la preuve du consentement. Elle n'entre dans la projection publique qu'après `publicationStatus=accepted`; sans URL autorisée, le contact public reste indisponible.

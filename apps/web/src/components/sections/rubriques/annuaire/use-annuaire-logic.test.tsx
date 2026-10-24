@@ -19,6 +19,7 @@ vi.mock("swr", () => ({
 }));
 
 import { useAnnuaireLogic } from "./use-annuaire-logic";
+import type { PublishedAnnuaireEntry } from "@/lib/partners/annuaire-types";
 
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
@@ -143,6 +144,7 @@ describe("useAnnuaireLogic canonical results", () => {
       hook.current.setSearchTerm("aucun résultat");
       hook.current.setFilterKind(target.kind);
       hook.current.setFilterContribution(target.contributionTypes[0]);
+      hook.current.setEngagementDomain("humanitaire");
       hook.current.setZoneFilter(1);
       hook.current.setActorCardsPage(3);
     });
@@ -152,9 +154,51 @@ describe("useAnnuaireLogic canonical results", () => {
       hook.current.resetFilters();
     });
 
-    expect(hook.current.filterKey).toBe("|all|all|all");
+    expect(hook.current.filterKey).toBe("|all|all|all|all");
     expect(hook.current.sortedAndFilteredEntries.some((entry) => entry.id === target.id)).toBe(true);
     expect(hook.current.safeActorCardsPage).toBe(1);
+  });
+
+  it("does not treat historical synthetic types as a thematic classification", () => {
+    const historical: PublishedAnnuaireEntry = {
+      id: "historical-synthetic-domain",
+      name: "Historique synthetic domain",
+      legalIdentity: "Historique synthetic domain",
+      kind: "association",
+      provenance: "published_partner",
+      types: ["social"],
+      description: "Fiche historique sans déclaration thématique.",
+      location: "Paris",
+      lat: null,
+      lng: null,
+      coveredArrondissements: [],
+      contributionTypes: ["communication"],
+      tags: [],
+      verificationStatus: "verifie",
+      qualificationStatus: "partenaire_actif",
+      availability: "Sur rendez-vous",
+      lastUpdatedAt: "2026-10-01T00:00:00.000Z",
+    };
+    useSWRMock.mockReturnValue({
+      data: { status: "ok", items: [historical] },
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+
+    const hook = renderHook();
+    act(() => {
+      hook.current.setSearchTerm("historique synthetic");
+      hook.current.setEngagementDomain("social");
+    });
+    expect(hook.current.sortedAndFilteredEntries).toEqual([]);
+
+    act(() => hook.current.setEngagementDomain("unclassified"));
+    expect(hook.current.sortedAndFilteredEntries.map((entry) => entry.id)).toEqual([
+      historical.id,
+    ]);
+    expect(hook.current.actorCardsPage).toBe(1);
   });
 
   it("distinguishes initial loading, an unavailable source, and stale data", () => {

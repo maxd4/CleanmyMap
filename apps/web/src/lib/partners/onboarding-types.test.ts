@@ -4,6 +4,7 @@ import {
   formatCoverageSummary,
   normalizePartnerAvailability,
   normalizePartnerCoverage,
+  normalizeEngagementTypes,
 } from "./onboarding-types";
 
 describe("partner onboarding types", () => {
@@ -33,5 +34,16 @@ describe("partner onboarding types", () => {
         note: "Sur rendez-vous",
       }),
     ).toBe("Mardi 10:00-18:00 · Jeudi 09:00-12:00 · Sur rendez-vous");
+  });
+
+  it("keeps only supported engagement values and removes duplicates", () => {
+    expect(
+      normalizeEngagementTypes([
+        "social",
+        "humanitaire",
+        "social",
+        "not-a-domain",
+      ]),
+    ).toEqual(["social", "humanitaire"]);
   });
 });

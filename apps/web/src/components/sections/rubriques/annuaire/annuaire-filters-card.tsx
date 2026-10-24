@@ -3,8 +3,10 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { 
   KIND_FILTERS, 
   CONTRIBUTION_FILTERS, 
+  ENGAGEMENT_DOMAIN_FILTERS,
   type EntityKind, 
   type ContributionType, 
+  type EngagementDomainFilter,
   type ZoneFilter 
 } from "./annuaire-filters";
 import { PARIS_ARRONDISSEMENTS, type ParisArrondissement } from "@/lib/geo/paris-arrondissements";
@@ -19,6 +21,8 @@ interface AnnuaireFiltersCardProps {
   setFilterKind: (val: EntityKind | "all") => void;
   filterContribution: ContributionType | "all";
   setFilterContribution: (val: ContributionType | "all") => void;
+  engagementDomain: EngagementDomainFilter;
+  setEngagementDomain: (val: EngagementDomainFilter) => void;
   zoneFilter: ZoneFilter;
   setZoneFilter: (val: ZoneFilter) => void;
   setActorCardsPage: (val: number | ((prev: number) => number)) => void;
@@ -34,6 +38,8 @@ export function AnnuaireFiltersCard({
   setFilterKind,
   filterContribution,
   setFilterContribution,
+  engagementDomain,
+  setEngagementDomain,
   zoneFilter,
   setZoneFilter,
   setActorCardsPage,
@@ -45,7 +51,7 @@ export function AnnuaireFiltersCard({
       {/* Search & Area Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-3">
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+          <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
             {fr ? "Recherche textuelle" : "Text search"}
           </span>
           <div className="relative group">
@@ -63,7 +69,7 @@ export function AnnuaireFiltersCard({
         </div>
 
         <div className="space-y-3">
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+          <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
             {fr ? "Rayon d'action" : "Action radius"}
           </span>
           <div className="relative group">
@@ -99,7 +105,7 @@ export function AnnuaireFiltersCard({
       <div className="space-y-4">
         <div className="flex items-center gap-3">
            <Building2 size={14} className="text-slate-500" />
-           <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+           <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
               {fr ? "Type de structure" : "Structure type"}
            </span>
         </div>
@@ -115,7 +121,7 @@ export function AnnuaireFiltersCard({
                 setFilterKind(item.value);
               }}
               className={cn(
-                "px-5 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+                "px-5 py-2.5 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
                 filterKind === item.value ? "shadow-lg scale-105" : ""
               )}
             >
@@ -125,11 +131,46 @@ export function AnnuaireFiltersCard({
         </div>
       </div>
 
+      {/* Engagement domain filter */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Building2 size={14} className="text-slate-500" />
+          <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
+            {fr ? "Domaine d'engagement" : "Engagement domain"}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {ENGAGEMENT_DOMAIN_FILTERS.map((item) => (
+            <CmmButton
+              key={item.value}
+              type="button"
+              tone={engagementDomain === item.value ? "primary" : "tertiary"}
+              variant="pill"
+              onClick={() => {
+                setActorCardsPage(1);
+                setEngagementDomain(item.value);
+              }}
+              className={cn(
+                "px-5 py-2.5 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
+                engagementDomain === item.value ? "shadow-lg scale-105" : "",
+              )}
+            >
+              {fr ? item.label : item.englishLabel}
+            </CmmButton>
+          ))}
+        </div>
+        <p className="cmm-text-caption cmm-text-muted">
+          {fr
+            ? "Les domaines proviennent du classement éditorial ou des déclarations des structures. Ils ne constituent pas une certification."
+            : "Domains come from editorial classification or structure declarations. They are not a certification."}
+        </p>
+      </div>
+
       {/* Contribution Filter */}
       <div className="space-y-4">
         <div className="flex items-center gap-3">
            <Zap size={14} className="text-slate-500" />
-           <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+           <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
               {fr ? "Leviers & Besoins" : "Levers & Needs"}
            </span>
         </div>
@@ -145,7 +186,7 @@ export function AnnuaireFiltersCard({
                 setFilterContribution(item.value as ContributionType | "all");
               }}
               className={cn(
-                "px-5 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+                "px-5 py-2.5 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
                 filterContribution === item.value ? "shadow-lg scale-105" : ""
               )}
             >
@@ -187,7 +228,7 @@ export function AnnuaireFiltersCard({
                       setFilterContribution("all");
                       setSearchTerm("");
                     }}
-                    className="flex items-center gap-3 px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+                    className="flex items-center gap-3 px-6 py-3 cmm-text-caption font-black uppercase tracking-[0.2em] transition-all"
                   >
                     <RotateCcw size={14} />
                     {fr ? "Réinitialiser" : "Reset"}
@@ -196,7 +237,7 @@ export function AnnuaireFiltersCard({
                     href="/partners/onboarding"
                     tone="primary"
                     variant="pill"
-                    className="flex items-center gap-3 px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all"
+                    className="flex items-center gap-3 px-6 py-3 cmm-text-caption font-black uppercase tracking-[0.2em] shadow-2xl transition-all"
                   >
                     <PlusCircle size={14} />
                     {fr ? "Proposer" : "Propose"}

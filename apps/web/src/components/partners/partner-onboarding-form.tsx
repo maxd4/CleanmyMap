@@ -5,7 +5,7 @@ import { GeneralInfoSection } from "./onboarding/sections/general-info-section";
 import { GeographicCoverageSection } from "./onboarding/sections/geographic-coverage-section";
 import { AvailabilitySection } from "./onboarding/sections/availability-section";
 import { ContactSection } from "./onboarding/sections/contact-section";
-import type { ContributionType } from "@/lib/partners/onboarding-types";
+import type { ContributionType, EngagementType } from "@/lib/partners/onboarding-types";
 
 const CONTRIBUTION_OPTIONS: Array<{ value: ContributionType; label: string }> = [
   { value: "materiel", label: "Matériel" },
@@ -14,6 +14,41 @@ const CONTRIBUTION_OPTIONS: Array<{ value: ContributionType; label: string }> = 
   { value: "financement", label: "Financement" },
   { value: "communication", label: "Communication" },
 ];
+
+const ENGAGEMENT_OPTIONS: Array<{ value: EngagementType; label: string; englishLabel: string }> = [
+  { value: "environnemental", label: "Environnement", englishLabel: "Environment" },
+  { value: "social", label: "Social", englishLabel: "Social" },
+  { value: "humanitaire", label: "Humanitaire", englishLabel: "Humanitarian" },
+];
+
+function PartnerEngagementSection({ engagementTypes, toggleEngagementType }: Pick<ReturnType<typeof usePartnerOnboarding>, "engagementTypes" | "toggleEngagementType">) {
+  return (
+    <fieldset className="space-y-2">
+      <legend className="cmm-text-caption font-semibold cmm-text-secondary">
+        Domaines d&apos;engagement de votre structure / Your structure&apos;s engagement areas
+      </legend>
+      <p className="cmm-text-caption cmm-text-muted">
+        Déclaration de la structure, non une certification / Self-declared, not certified.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {ENGAGEMENT_OPTIONS.map((option) => {
+          const checked = engagementTypes.includes(option.value);
+          return (
+            <button
+              type="button"
+              key={option.value}
+              aria-pressed={checked}
+              onClick={() => toggleEngagementType(option.value)}
+              className={`rounded-lg px-3 py-2 cmm-text-caption font-semibold ${checked ? "bg-slate-900 text-white" : "bg-slate-100 cmm-text-secondary"}`}
+            >
+              {option.label} / {option.englishLabel}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
 
 function PartnerRelaySection({ relayActions, setRelayActions }: Pick<ReturnType<typeof usePartnerOnboarding>, "relayActions" | "setRelayActions">) {
   return (
@@ -75,6 +110,7 @@ export function PartnerOnboardingForm() {
     motivation, setMotivation,
     relayActions, setRelayActions,
     contributionTypes,
+    engagementTypes,
     honeypot, setHoneypot,
     isSubmitting,
     message,
@@ -84,6 +120,7 @@ export function PartnerOnboardingForm() {
     estimatedDuration,
     addCoverageQuartiers,
     toggleContribution,
+    toggleEngagementType,
     toggleArrondissement,
     updateAvailabilitySlot,
     addAvailabilitySlot,
@@ -117,6 +154,11 @@ export function PartnerOnboardingForm() {
         setPartnerScope={setPartnerScope}
         legalIdentity={legalIdentity}
         setLegalIdentity={setLegalIdentity}
+      />
+
+      <PartnerEngagementSection
+        engagementTypes={engagementTypes}
+        toggleEngagementType={toggleEngagementType}
       />
 
       <GeographicCoverageSection

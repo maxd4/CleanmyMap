@@ -11,7 +11,9 @@ import {
 import type { AnnuaireEntry, AssociationProfile, AssociationPublicCall, AssociationResource } from "./annuaire-types";
 import type { PublishedPartnerAnnuaireEntry } from "./published-annuaire-entries-store";
 
-function organizationTypesToEngagementTypes(organizationType: PartnerOnboardingRequestInput["organizationType"]): AnnuaireEntry["types"] {
+// Kept only for legacy display consumers. It is never accompanied by a
+// reliable provenance and therefore cannot feed the thematic filter.
+function organizationTypesToLegacyTypes(organizationType: PartnerOnboardingRequestInput["organizationType"]): AnnuaireEntry["types"] {
   if (organizationType === "commerce") return ["social"];
   if (organizationType === "entreprise") return ["environnemental", "social"];
   return ["social", "environnemental"];
@@ -89,6 +91,7 @@ export function buildPublishedPartnerAnnuaireEntry(params: { request: PartnerOnb
   const publicChannelUrl = websiteUrl;
   const nowIso = new Date().toISOString();
   const associationProfile = buildPublishedAssociationProfile(params.request, websiteUrl);
+  const declaredEngagementTypes = params.request.engagementTypes ?? [];
   return {
     id: `onboarded-${randomUUID()}`,
     sourceRequestId: params.requestId,
@@ -98,7 +101,12 @@ export function buildPublishedPartnerAnnuaireEntry(params: { request: PartnerOnb
     name: params.request.organizationName,
     legalIdentity: params.request.legalIdentity,
     kind: organizationTypeToKind(params.request.organizationType),
-    types: organizationTypesToEngagementTypes(params.request.organizationType),
+    types: declaredEngagementTypes.length > 0
+      ? declaredEngagementTypes
+      : organizationTypesToLegacyTypes(params.request.organizationType),
+    ...(declaredEngagementTypes.length > 0
+      ? { engagementTypesSource: "partner_declaration" as const }
+      : {}),
     scope: params.request.partnerScope,
     description: [params.request.motivation.slice(0, 220), params.request.relayActions.trim() ? `Relais: ${params.request.relayActions.trim()}` : null].filter(Boolean).join(" · "),
     location: params.request.partnerScope === "local" ? formatCoverageSummary(coverage) : formatPartnerScopeLabel(params.request.partnerScope),

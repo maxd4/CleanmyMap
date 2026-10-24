@@ -39,6 +39,7 @@ métadonnées de modération ne sont pas recherchés.
 Les filtres actuellement disponibles sont :
 
 - le type de structure ;
+- le domaine d'engagement (`Environnement`, `Social`, `Humanitaire` ou `Domaine non renseigné`) ;
 - le type de contribution ;
 - le périmètre géographique (`Tout Paris`, un arrondissement ou `Proches de moi` lorsque la préférence de localisation le permet).
 
@@ -48,8 +49,14 @@ ou de rejoindre le référencement. La sélection d'une fiche mise en avant rét
 vue compatible avant d'ouvrir cette fiche : une sélection n'est pas perdue parce qu'un
 filtre précédent l'excluait.
 
-Il n'existe pas de sélecteur thématique autonome distinct dans la composition actuelle.
-Les thèmes éditoriaux restent consultables par les tags, la recherche et la fiche.
+Le sélecteur de domaine est une classification fiable, distincte de la recherche textuelle.
+Les trois boutons `Environnement`, `Social` et `Humanitaire` appliquent ce filtre structuré ;
+les boutons `Propreté`, `Climat` et `Sensibilisation` restent des mots-clés de recherche.
+`Domaine non renseigné` regroupe notamment les fiches partenaires historiques dont les
+anciens `types` étaient dérivés du type d'organisation sans déclaration explicite.
+Tous les filtres s'appliquent ensemble, réinitialisent la page courante et alimentent la
+liste, la carte, le graphe et le compteur avec le même résultat. La sélection active est
+conservée tant que sa fiche reste dans le résultat.
 
 ## 3. Fiches, contacts et provenance
 
@@ -65,6 +72,13 @@ téléphone ou une autre coordonnée de contact administratif du formulaire ne d
 jamais public par le seul fait qu'il est syntaxiquement valide.
 
 Les deux provenances ont des contrats différents :
+
+La propriété historique `types` reste disponible pour les badges, popups et autres
+consommateurs d'affichage. Elle n'est une preuve de classement thématique que lorsqu'une
+source explicite l'accompagne : `engagementTypesSource=editorial_seed` pour une
+classification éditoriale du dépôt ou `engagementTypesSource=partner_declaration` pour
+une déclaration de la structure persistée pendant l'onboarding. Ces domaines sont
+éditoriaux ou auto-déclarés ; ils ne constituent pas une certification.
 
 ### `editorial_seed`
 
@@ -120,6 +134,10 @@ du profil n'est pas un prérequis global.
 
 La demande et la fiche annuaire associée sont créées par la persistance Supabase
 canonique et idempotente. Une reprise avec la même clé retrouve la demande existante.
+Le formulaire propose zéro, un ou plusieurs domaines d'engagement. La déclaration est
+validée côté serveur, conservée sur la demande source et recopiée dans la projection
+publique seulement avec sa provenance explicite ; elle ne modifie ni les droits ni la
+qualification administrative.
 Après création, la fiche reste en attente de revue administrative. La revue autorisée
 conserve la décision, la fiche, la demande source et l'audit dans la même opération
 Supabase en mode persistant. Le fallback local est un chemin distinct et ne doit pas

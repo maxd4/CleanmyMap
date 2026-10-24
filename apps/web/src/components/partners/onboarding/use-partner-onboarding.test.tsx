@@ -120,6 +120,10 @@ describe("usePartnerOnboarding", () => {
       hook.result.setHoneypot("");
     });
     act(() => { hook.result.addCoverageQuartiers(); });
+    act(() => {
+      hook.result.toggleEngagementType("social");
+      hook.result.toggleEngagementType("humanitaire");
+    });
     await act(async () => { await hook.result.handleSubmit(event()); });
     expect(fetchMock).toHaveBeenCalledWith("/api/partners/onboarding-requests", {
       method: "POST",
@@ -131,6 +135,7 @@ describe("usePartnerOnboarding", () => {
         legalIdentity: "RNA-42",
         coverage: { arrondissements: [], quartiers: ["Centre"] },
         contributionTypes: ["accueil"],
+        engagementTypes: ["social", "humanitaire"],
         relayActions: "Relais locaux",
         availability: { slots: [{ day: "tue", start: "09:00", end: "18:00" }], note: "Matériel disponible" },
         contactName: "Contact",

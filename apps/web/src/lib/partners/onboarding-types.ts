@@ -3,6 +3,9 @@ import {
   normalizePublicChannelUrl as normalizePublicChannelUrlHelper,
   is24HourTimeString,
 } from "@/lib/security/validation";
+import type { AnnuaireEntry } from "./annuaire-types";
+
+export type EngagementType = AnnuaireEntry["types"][number];
 
 export const ORGANIZATION_TYPES = [
   "association",
@@ -91,6 +94,8 @@ export type PartnerOnboardingRequestInput = {
   legalIdentity: string;
   coverage: PartnerCoverage;
   contributionTypes: ContributionType[];
+  /** Optional self-declared engagement domains; empty means not provided. */
+  engagementTypes?: AnnuaireEntry["types"];
   relayActions: string;
   availability: PartnerAvailability;
   contactName: string;
@@ -101,6 +106,28 @@ export type PartnerOnboardingRequestInput = {
   publicWebsiteUrl?: string;
   publicWebsiteConsent?: boolean;
 };
+
+export const ENGAGEMENT_TYPE_VALUES = [
+  "environnemental",
+  "social",
+  "humanitaire",
+] as const satisfies readonly AnnuaireEntry["types"][number][];
+
+export function normalizeEngagementTypes(
+  value: unknown,
+): AnnuaireEntry["types"] {
+  if (!Array.isArray(value)) return [];
+  return [
+    ...new Set(
+      value.filter(
+        (item): item is AnnuaireEntry["types"][number] =>
+          ENGAGEMENT_TYPE_VALUES.includes(
+            item as (typeof ENGAGEMENT_TYPE_VALUES)[number],
+          ),
+      ),
+    ),
+  ];
+}
 
 export type PartnerTrustState = "trusted" | "pending" | "incomplete" | "editorial";
 

@@ -43,6 +43,7 @@ function toEditorialAnnuaireEntry(
   void _internalAdminContact;
   return {
     ...publicEntry,
+    engagementTypesSource: "editorial_seed",
     provenance: "editorial_seed",
     verificationStatus: "en_cours",
     qualificationStatus: "contact_non_qualifie",

@@ -87,7 +87,7 @@ export function AnnuaireSection() {
       (entry) => entry.id === id,
     );
     if (!entryIsVisible) {
-      selectionIntentFilterKeyRef.current = "|all|all|all";
+      selectionIntentFilterKeyRef.current = "|all|all|all|all";
       resetFilters();
     }
     setSelectedActorId(id);

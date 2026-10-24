@@ -58,10 +58,36 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
       primaryChannel: undefined,
       websiteUrl: undefined,
     });
+    expect(entry.types).toEqual(["social"]);
+    expect(entry.engagementTypesSource).toBeUndefined();
     expect(entry.id).toMatch(/^onboarded-/);
     expect(entry.lat).toBeNull();
     expect(entry.lng).toBeNull();
     expect(entry.coordinatesSource).toBe("derived_coverage");
+  });
+
+  it("publishes explicit self-declared domains with provenance", () => {
+    const entry = buildPublishedPartnerAnnuaireEntry({
+      requestId: "req-engagement",
+      request: {
+        organizationName: "Solidarité test",
+        organizationType: "association",
+        partnerScope: "national",
+        legalIdentity: "Solidarité test association",
+        coverage: { arrondissements: [], quartiers: [] },
+        contributionTypes: ["communication"],
+        engagementTypes: ["social", "humanitaire"],
+        relayActions: "Relais d'actions locales.",
+        availability: { slots: [{ day: "mon", start: "09:00", end: "12:00" }] },
+        contactName: "Contact",
+        contactChannel: "Email",
+        contactDetails: "canal-public-test",
+        motivation: "Une déclaration thématique explicitement fournie par la structure.",
+      },
+    });
+
+    expect(entry.types).toEqual(["social", "humanitaire"]);
+    expect(entry.engagementTypesSource).toBe("partner_declaration");
   });
 
   it("drops placeholder public channels", () => {
@@ -253,6 +279,7 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
     });
 
     expect(normalized.recentActivityAt).toBeUndefined();
+    expect(normalized.engagementTypesSource).toBeUndefined();
     expect(normalized.associationProfile?.impactHistory).toBeUndefined();
     expect(normalized.lastUpdatedAt).toBe("2026-10-22T00:00:00.000Z");
   });

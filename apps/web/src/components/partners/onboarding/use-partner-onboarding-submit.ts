@@ -3,6 +3,7 @@ import { useSubmissionLock } from "@/hooks/use-submission-lock";
 import {
   normalizePublicWebUrl,
   type ContributionType,
+  type EngagementType,
   type OrganizationType,
   type PartnerAvailabilitySlot,
   type PartnerCoverage,
@@ -15,6 +16,7 @@ type SubmissionProps = {
   legalIdentity: string;
   coverage: PartnerCoverage;
   contributionTypes: ContributionType[];
+  engagementTypes: EngagementType[];
   relayActions: string;
   availabilitySlots: PartnerAvailabilitySlot[];
   availabilityNote: string;
@@ -73,6 +75,7 @@ export function usePartnerOnboardingSubmit({
   legalIdentity,
   coverage,
   contributionTypes,
+  engagementTypes,
   relayActions,
   availabilitySlots,
   availabilityNote,
@@ -132,6 +135,7 @@ export function usePartnerOnboardingSubmit({
           legalIdentity,
           coverage,
           contributionTypes,
+          engagementTypes,
           relayActions,
           availability: {
             slots: availabilitySlots,
@@ -160,5 +164,5 @@ export function usePartnerOnboardingSubmit({
       setIsSubmitting(false);
       release();
     }
-  }, [acquire, availabilityNote, availabilitySlots, contactChannel, contactDetails, contactName, contributionTypes, coverage, getFormStartedAt, honeypot, legalIdentity, markSubmissionSucceeded, motivation, organizationName, organizationType, partnerScope, publicWebsiteConsent, publicWebsiteUrl, relayActions, release, setContributionError, setErrorMessage, setIsSubmitting, setMessage]);
+  }, [acquire, availabilityNote, availabilitySlots, contactChannel, contactDetails, contactName, contributionTypes, coverage, engagementTypes, getFormStartedAt, honeypot, legalIdentity, markSubmissionSucceeded, motivation, organizationName, organizationType, partnerScope, publicWebsiteConsent, publicWebsiteUrl, relayActions, release, setContributionError, setErrorMessage, setIsSubmitting, setMessage]);
 }

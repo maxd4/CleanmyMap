@@ -49,6 +49,13 @@ les contacts administratifs ni les identifiants internes. La recherche, les filt
 état d'exploration. Les limites géographiques et la provenance sont affichées sans
 transformer une couverture nationale ou une position dérivée en adresse réelle.
 
+Le filtre structuré des domaines d'engagement propose `Environnement`, `Social`,
+`Humanitaire` et `Domaine non renseigné`. Il ne consomme que les types accompagnés de
+`engagementTypesSource` (`editorial_seed` ou `partner_declaration`) ; les anciens types
+synthétiques des fiches partenaires sont conservés pour l'affichage mais restent non
+classés. Les domaines sont éditoriaux ou auto-déclarés, jamais une certification. Les
+boutons `Propreté`, `Climat` et `Sensibilisation` restent des recherches par mots-clés.
+
 Une fiche partenaire sépare les données déclarées et administratives des preuves
 d'activité. `availability`, les contributions et le périmètre décrivent ce que la
 structure déclare ; `lastUpdatedAt` indique une mise à jour administrative. Les

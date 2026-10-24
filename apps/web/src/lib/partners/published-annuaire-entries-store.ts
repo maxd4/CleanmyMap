@@ -1,4 +1,5 @@
 import {
+  normalizeEngagementTypes,
   normalizePublicWebUrl,
   type PartnerOnboardingRequestInput,
 } from "./onboarding-types";
@@ -151,10 +152,20 @@ export function normalizePublishedRecord(
   );
   const normalizedRecord = removeDemonstrablySyntheticActivity(record, initialAssociationProfile);
   const associationProfile = normalizeAssociationProfile(normalizedRecord.associationProfile);
+  const engagementTypes = normalizeEngagementTypes(
+    (normalizedRecord as { types?: unknown }).types,
+  );
+  const engagementTypesSource =
+    (normalizedRecord as { engagementTypesSource?: unknown }).engagementTypesSource ===
+      "partner_declaration" && engagementTypes.length > 0
+      ? "partner_declaration"
+      : undefined;
   const coordinates = normalizeCoordinates(record as Record<string, unknown>);
   return {
     ...normalizedRecord,
     ...coordinates,
+    types: engagementTypes,
+    engagementTypesSource,
     provenance: "published_partner",
     websiteUrl: websiteUrl ?? undefined,
     instagramUrl: instagramUrl ?? undefined,

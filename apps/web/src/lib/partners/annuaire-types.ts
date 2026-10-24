@@ -1,5 +1,9 @@
 type EngagementType = "environnemental" | "social" | "humanitaire";
 
+export type AnnuaireEngagementTypesSource =
+  | "editorial_seed"
+  | "partner_declaration";
+
 type EntityKind =
   | "association"
   | "groupe_parole"
@@ -78,6 +82,12 @@ type AnnuaireEntryShared = {
   kind: EntityKind;
   scope?: "local" | "national" | "france";
   types: EngagementType[];
+  /**
+   * The legacy `types` values remain available to existing badges and map
+   * popups. Only values carrying this provenance are admissible for the
+   * thematic directory filter.
+   */
+  engagementTypesSource?: AnnuaireEngagementTypesSource;
   description: string;
   location: string;
   /**

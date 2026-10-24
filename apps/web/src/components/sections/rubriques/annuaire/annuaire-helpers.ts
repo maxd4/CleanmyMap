@@ -19,6 +19,7 @@ import type {
   EditorialAnnuaireEntry,
   PublishedAnnuaireEntry,
 } from "@/lib/partners/annuaire-types";
+import type { EngagementDomainFilter } from "./annuaire-filters";
 
 export {
   formatAssociationImpactDate,
@@ -30,6 +31,23 @@ export {
 } from "./annuaire-association-profile";
 
 export type EnrichedAnnuaireEntry = AnnuaireEntry & { distanceKm: number | null };
+
+export function getReliableAnnuaireEngagementTypes(
+ entry: AnnuaireEntry,
+): AnnuaireEntry["types"] {
+ if (!entry.engagementTypesSource) return [];
+ return entry.types;
+}
+
+export function matchesAnnuaireEngagementDomain(
+ entry: AnnuaireEntry,
+ filter: EngagementDomainFilter,
+): boolean {
+ if (filter === "all") return true;
+ const engagementTypes = getReliableAnnuaireEngagementTypes(entry);
+ if (filter === "unclassified") return engagementTypes.length === 0;
+ return engagementTypes.includes(filter);
+}
 
 /**
  * Keep directory search predictable for public text while preserving

@@ -6,6 +6,7 @@ import { requireCreatorAccess } from"@/lib/authz";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import {
  CONTRIBUTION_TYPES,
+ ENGAGEMENT_TYPE_VALUES,
  formatAvailabilitySummary,
  formatCoverageSummary,
  formatPartnerScopeLabel,
@@ -63,6 +64,7 @@ const onboardingSchema = z.object({
  contributionTypes: z.array(z.enum(CONTRIBUTION_TYPES))
  .min(1)
  .max(5),
+ engagementTypes: z.array(z.enum(ENGAGEMENT_TYPE_VALUES)).max(3).optional().default([]),
  relayActions: z.string().trim().max(800),
  availability: z.object({
  slots: z.array(slotSchema).min(1).max(10),
@@ -90,6 +92,13 @@ const onboardingSchema = z.object({
    code: z.ZodIssueCode.custom,
    message: "Autorisez la publication du site web public pour continuer.",
    path: ["publicWebsiteConsent"],
+  });
+ }
+ if (new Set(data.engagementTypes).size !== data.engagementTypes.length) {
+  context.addIssue({
+   code: z.ZodIssueCode.custom,
+   message: "Chaque domaine d'engagement ne peut être sélectionné qu'une seule fois.",
+   path: ["engagementTypes"],
   });
  }
  if (!publicWebsiteUrl && data.publicWebsiteConsent) {
@@ -120,6 +129,7 @@ const html = `
 <p><strong>Identité légale :</strong> ${escapeHtml(payload.legalIdentity)}</p>
  <p><strong>Zone:</strong> ${escapeHtml(payload.partnerScope === "local" ? formatCoverageSummary(payload.coverage) : formatPartnerScopeLabel(payload.partnerScope))}</p>
 <p><strong>Contributions:</strong> ${escapeHtml(payload.contributionTypes.join(","))}</p>
+<p><strong>Domaines déclarés:</strong> ${escapeHtml(payload.engagementTypes.length > 0 ? payload.engagementTypes.join(",") : "Aucun")}</p>
  <p><strong>Actions de relais:</strong> ${escapeHtml(payload.relayActions)}</p>
 <p><strong>Disponibilité :</strong> ${escapeHtml(formatAvailabilitySummary(payload.availability))}</p>
 <p><strong>Contact:</strong> ${escapeHtml(`${payload.contactName} - ${payload.contactChannel} (${payload.contactDetails})`)}</p>
@@ -176,6 +186,7 @@ export async function POST(request: Request) {
   legalIdentity: parsed.data.legalIdentity,
   coverage: parsed.data.coverage,
   contributionTypes: parsed.data.contributionTypes,
+  engagementTypes: parsed.data.engagementTypes,
   relayActions: parsed.data.relayActions,
   availability: parsed.data.availability,
   contactName: parsed.data.contactName,
@@ -208,6 +219,7 @@ export async function POST(request: Request) {
     { label: "Source", value: "Formulaire partenaires" },
     { label: "Zone", value: parsed.data.partnerScope === "local" ? formatCoverageSummary(parsed.data.coverage) : formatPartnerScopeLabel(parsed.data.partnerScope) },
     { label: "Contributions", value: parsed.data.contributionTypes.join(", ") },
+    { label: "Domaines déclarés", value: parsed.data.engagementTypes.length > 0 ? parsed.data.engagementTypes.join(", ") : "Aucun" },
     { label: "Actions de relais", value: parsed.data.relayActions },
     { label: "Disponibilité", value: formatAvailabilitySummary(parsed.data.availability) },
     { label: "Contact", value: `${parsed.data.contactName} - ${parsed.data.contactChannel} (${parsed.data.contactDetails})` },

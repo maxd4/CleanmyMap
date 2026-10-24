@@ -142,6 +142,8 @@ function AnnuaireSearchPanel({
   setFilterKind,
   filterContribution,
   setFilterContribution,
+  engagementDomain,
+  setEngagementDomain,
   zoneFilter,
   setZoneFilter,
   setActorCardsPage,
@@ -157,6 +159,8 @@ function AnnuaireSearchPanel({
   setFilterKind: AnnuaireLogic["setFilterKind"];
   filterContribution: AnnuaireLogic["filterContribution"];
   setFilterContribution: AnnuaireLogic["setFilterContribution"];
+  engagementDomain: AnnuaireLogic["engagementDomain"];
+  setEngagementDomain: AnnuaireLogic["setEngagementDomain"];
   zoneFilter: AnnuaireLogic["zoneFilter"];
   setZoneFilter: AnnuaireLogic["setZoneFilter"];
   setActorCardsPage: AnnuaireLogic["setActorCardsPage"];
@@ -204,30 +208,60 @@ function AnnuaireSearchPanel({
           {fr ? "Filtres Avancés" : "Advanced Filters"}
         </CmmButton>
       </div>
-      <div className="flex flex-wrap gap-2 mt-6 relative z-10">
-        {[
-          { id: "environnement", label: "ENVIRONNEMENT" },
-          { id: "social", label: "SOCIAL" },
-          { id: "humanitaire", label: "HUMANITAIRE" },
-          { id: "propreté", label: "PROPRETÉ" },
-          { id: "climat", label: "CLIMAT" },
-          { id: "sensibilisation", label: "SENSIBILISATION" },
-        ].map((theme) => (
-          <CmmButton
-            key={theme.id}
-            onClick={() =>
-              setSearchTerm(theme.id === searchTerm ? "" : theme.id)
-            }
-            tone={searchTerm === theme.id ? "primary" : "tertiary"}
-            variant="pill"
-            className={cn(
-              "rounded-xl px-4 py-2 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
-              searchTerm === theme.id ? "shadow-lg" : "hover:shadow-md",
-            )}
-          >
-            {theme.label}
-          </CmmButton>
-        ))}
+      <div className="relative z-10 mt-6 space-y-3">
+        <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
+          {fr ? "Domaines déclarés ou éditoriaux" : "Declared or editorial domains"}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { id: "environnemental" as const, label: fr ? "ENVIRONNEMENT" : "ENVIRONMENT" },
+            { id: "social" as const, label: "SOCIAL" },
+            { id: "humanitaire" as const, label: fr ? "HUMANITAIRE" : "HUMANITARIAN" },
+          ].map((theme) => (
+            <CmmButton
+              key={theme.id}
+              onClick={() =>
+                setEngagementDomain(theme.id === engagementDomain ? "all" : theme.id)
+              }
+              tone={engagementDomain === theme.id ? "primary" : "tertiary"}
+              variant="pill"
+              className={cn(
+                "rounded-xl px-4 py-2 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
+                engagementDomain === theme.id ? "shadow-lg" : "hover:shadow-md",
+              )}
+            >
+              {theme.label}
+            </CmmButton>
+          ))}
+        </div>
+        <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
+          {fr ? "Mots-clés" : "Keywords"}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { id: "propreté", label: fr ? "PROPRETÉ" : "CLEANLINESS" },
+            { id: "climat", label: "CLIMAT" },
+            { id: "sensibilisation", label: fr ? "SENSIBILISATION" : "AWARENESS" },
+          ].map((theme) => (
+            <CmmButton
+              key={theme.id}
+              onClick={() => setSearchTerm(theme.id === searchTerm ? "" : theme.id)}
+              tone={searchTerm === theme.id ? "primary" : "tertiary"}
+              variant="pill"
+              className={cn(
+                "rounded-xl px-4 py-2 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
+                searchTerm === theme.id ? "shadow-lg" : "hover:shadow-md",
+              )}
+            >
+              {theme.label}
+            </CmmButton>
+          ))}
+        </div>
+        <p className="cmm-text-caption cmm-text-muted">
+          {fr
+            ? "Les domaines proviennent du classement éditorial ou des déclarations des structures. Ils ne constituent pas une certification."
+            : "Domains come from editorial classification or structure declarations. They are not a certification."}
+        </p>
       </div>
       <AnimatePresence>
         {showFilters && (
@@ -247,6 +281,8 @@ function AnnuaireSearchPanel({
                 setFilterKind={setFilterKind}
                 filterContribution={filterContribution}
                 setFilterContribution={setFilterContribution}
+                engagementDomain={engagementDomain}
+                setEngagementDomain={setEngagementDomain}
                 zoneFilter={zoneFilter}
                 setZoneFilter={setZoneFilter}
                 setActorCardsPage={setActorCardsPage}
@@ -277,6 +313,8 @@ export function AnnuaireExplorationView({
     setFilterKind,
     filterContribution,
     setFilterContribution,
+    engagementDomain,
+    setEngagementDomain,
     zoneFilter,
     setZoneFilter,
     actorCardsPage,
@@ -318,6 +356,8 @@ export function AnnuaireExplorationView({
           setFilterKind={setFilterKind}
           filterContribution={filterContribution}
           setFilterContribution={setFilterContribution}
+          engagementDomain={engagementDomain}
+          setEngagementDomain={setEngagementDomain}
           zoneFilter={zoneFilter}
           setZoneFilter={setZoneFilter}
           setActorCardsPage={setActorCardsPage}

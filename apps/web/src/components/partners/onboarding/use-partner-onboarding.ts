@@ -3,6 +3,7 @@ import { useUser } from "@clerk/nextjs";
 import { usePartnerOnboardingSubmit } from "./use-partner-onboarding-submit";
 import {
   type ContributionType,
+  type EngagementType,
   type OrganizationType,
   type PartnerScope,
   type ParisArrondissement,
@@ -36,11 +37,12 @@ function usePartnerOnboardingEstimatedDuration({ organizationName, legalIdentity
   }, [availabilitySlots.length, contactChannel, contactDetails, contributionTypes.length, coverage.arrondissements.length, partnerScope, organizationName, legalIdentity, contactName, motivation, relayActions]);
 }
 
-function usePartnerOnboardingFieldHandlers({ coverageQuartierInput, setCoverageQuartierInput, setCoverageQuartiers, setContributionTypes, setContributionError, setCoverageArrondissements, setAvailabilitySlots }: {
+function usePartnerOnboardingFieldHandlers({ coverageQuartierInput, setCoverageQuartierInput, setCoverageQuartiers, setContributionTypes, setEngagementTypes, setContributionError, setCoverageArrondissements, setAvailabilitySlots }: {
   coverageQuartierInput: string;
   setCoverageQuartierInput: (value: string) => void;
   setCoverageQuartiers: Dispatch<SetStateAction<string[]>>;
   setContributionTypes: Dispatch<SetStateAction<ContributionType[]>>;
+  setEngagementTypes: Dispatch<SetStateAction<EngagementType[]>>;
   setContributionError: (value: string | null) => void;
   setCoverageArrondissements: Dispatch<SetStateAction<ParisArrondissement[]>>;
   setAvailabilitySlots: Dispatch<SetStateAction<PartnerAvailabilitySlot[]>>;
@@ -65,11 +67,18 @@ function usePartnerOnboardingFieldHandlers({ coverageQuartierInput, setCoverageQ
       return [...current, value];
     });
   };
+  const toggleEngagementType = (value: EngagementType) => {
+    setEngagementTypes((current) =>
+      current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value],
+    );
+  };
   const toggleArrondissement = (value: ParisArrondissement) => setCoverageArrondissements((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
   const updateAvailabilitySlot = (index: number, key: keyof PartnerAvailabilitySlot, value: string) => setAvailabilitySlots((current) => current.map((slot, slotIndex) => slotIndex === index ? { ...slot, [key]: value } as PartnerAvailabilitySlot : slot));
   const addAvailabilitySlot = () => setAvailabilitySlots((current) => [...current, { ...INITIAL_AVAILABILITY_SLOT }]);
   const removeAvailabilitySlot = (index: number) => setAvailabilitySlots((current) => current.length === 1 ? current : current.filter((_, slotIndex) => slotIndex !== index));
-  return { addCoverageQuartiers, toggleContribution, toggleArrondissement, updateAvailabilitySlot, addAvailabilitySlot, removeAvailabilitySlot };
+  return { addCoverageQuartiers, toggleContribution, toggleEngagementType, toggleArrondissement, updateAvailabilitySlot, addAvailabilitySlot, removeAvailabilitySlot };
 }
 
 export function usePartnerOnboarding() {
@@ -100,6 +109,7 @@ export function usePartnerOnboarding() {
   const [motivation, setMotivation] = useState("");
   const [relayActions, setRelayActions] = useState("");
   const [contributionTypes, setContributionTypes] = useState<ContributionType[]>(["accueil"]);
+  const [engagementTypes, setEngagementTypes] = useState<EngagementType[]>([]);
   
   const [honeypot, setHoneypot] = useState("");
   const formStartedAt = useRef<number | null>(null);
@@ -132,9 +142,9 @@ export function usePartnerOnboarding() {
       : fallbackContactDetails;
   const estimatedDuration = usePartnerOnboardingEstimatedDuration({ organizationName, legalIdentity, contactName, contactChannel, contactDetails, motivation, relayActions, partnerScope, coverage, availabilitySlots, contributionTypes });
 
-  const fieldHandlers = usePartnerOnboardingFieldHandlers({ coverageQuartierInput, setCoverageQuartierInput, setCoverageQuartiers, setContributionTypes, setContributionError, setCoverageArrondissements, setAvailabilitySlots });
+  const fieldHandlers = usePartnerOnboardingFieldHandlers({ coverageQuartierInput, setCoverageQuartierInput, setCoverageQuartiers, setContributionTypes, setContributionError, setEngagementTypes, setCoverageArrondissements, setAvailabilitySlots });
 
-  const handleSubmit = usePartnerOnboardingSubmit({ organizationName, organizationType, partnerScope, legalIdentity, coverage, contributionTypes, relayActions, availabilitySlots, availabilityNote, contactName, contactChannel, contactDetails, motivation, publicWebsiteUrl, publicWebsiteConsent, honeypot, getFormStartedAt: () => formStartedAt.current, markSubmissionSucceeded: (submittedAt) => { formStartedAt.current = Math.max(Date.now(), submittedAt + 1); }, setIsSubmitting, setMessage, setErrorMessage, setContributionError });
+  const handleSubmit = usePartnerOnboardingSubmit({ organizationName, organizationType, partnerScope, legalIdentity, coverage, contributionTypes, engagementTypes, relayActions, availabilitySlots, availabilityNote, contactName, contactChannel, contactDetails, motivation, publicWebsiteUrl, publicWebsiteConsent, honeypot, getFormStartedAt: () => formStartedAt.current, markSubmissionSucceeded: (submittedAt) => { formStartedAt.current = Math.max(Date.now(), submittedAt + 1); }, setIsSubmitting, setMessage, setErrorMessage, setContributionError });
 
   return {
     organizationName, setOrganizationName,
@@ -154,6 +164,7 @@ export function usePartnerOnboarding() {
     motivation, setMotivation,
     relayActions, setRelayActions,
     contributionTypes,
+    engagementTypes,
     honeypot, setHoneypot,
     isSubmitting,
     message,
