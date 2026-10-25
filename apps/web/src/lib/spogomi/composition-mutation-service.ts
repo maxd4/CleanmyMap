@@ -6,7 +6,7 @@ type EventForCompositionMutation = {
 };
 
 type CompositionLockResult = {
-  alreadyProcessed: boolean;
+  already_processed: boolean;
   locked: boolean;
   teamCount: number;
   compositionRevision: number;
@@ -15,7 +15,7 @@ type CompositionLockResult = {
 };
 
 type CompositionMoveResult = {
-  alreadyProcessed: boolean;
+  already_processed: boolean;
   participantId: string;
   teamId: string | null;
   divisionId?: string;
@@ -38,7 +38,7 @@ function parseCompositionLockResult(value: unknown): CompositionLockResult {
     throw new Error("La réponse de verrouillage de composition SPOGOMI est invalide.");
   }
   return {
-    alreadyProcessed: value.already_processed,
+    already_processed: value.already_processed,
     locked: value.locked,
     teamCount: value.teamCount,
     compositionRevision: value.compositionRevision,
@@ -54,7 +54,7 @@ function parseCompositionMoveResult(value: unknown): CompositionMoveResult {
     throw new Error("La réponse de déplacement de composition SPOGOMI est invalide.");
   }
   return {
-    alreadyProcessed: value.already_processed,
+    already_processed: value.already_processed,
     participantId: value.participantId,
     teamId: value.teamId,
     compositionRevision: value.compositionRevision,

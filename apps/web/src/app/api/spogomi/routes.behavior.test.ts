@@ -282,10 +282,24 @@ describe("SPOGOMI persistence routes", () => {
     mocks.loadSpogomiEventForOrganizer.mockResolvedValue(mocks.event);
     mocks.createSpogomiEvent.mockResolvedValue({ event: mocks.event });
     mocks.updateSpogomiEvent.mockResolvedValue(mocks.event);
-    mocks.attachOfficialGpx.mockResolvedValue({ route: { source: "upload" } });
+    mocks.attachOfficialGpx.mockResolvedValue({
+      route: { source: "official_reference" },
+      synchronization: {
+        already_processed: false,
+        eventId: "event-1",
+        actionId: "action-1",
+        routeId: "route-1",
+        compositionRevision: 8,
+        source: "official_reference",
+        fileName: "route.gpx",
+        pointCount: 2,
+        referenceDistanceKm: 1.25,
+        inferredTopology: "point_to_point",
+      },
+    });
     mocks.autoComposeTeams.mockResolvedValue({ teams: [], unassignedParticipantIds: [], proposalFingerprint: "proposal" });
-    mocks.lockSpogomiTeams.mockResolvedValue({ status: "locked" });
-    mocks.moveParticipantToTeam.mockResolvedValue({ status: "moved" });
+    mocks.lockSpogomiTeams.mockResolvedValue({ already_processed: false, locked: true, teamCount: 2, compositionRevision: 8 });
+    mocks.moveParticipantToTeam.mockResolvedValue({ already_processed: false, participantId: "participant-1", teamId: "team-1", compositionRevision: 8 });
     mocks.renameSpogomiTeam.mockResolvedValue({ id: "team-1", publicName: "Alpha" });
     mocks.previewRosterImportChanges.mockResolvedValue({ importSummary: { created: 1 } });
     mocks.confirmRosterImport.mockResolvedValue({ alreadyImported: false, status: "confirmed" });
@@ -367,10 +381,20 @@ describe("SPOGOMI persistence routes", () => {
     expect((await auto.POST(jsonRequest("http://localhost", { confirm: true, proposalFingerprint: "proposal", expectedRevision: 1 }), eventContext)).status).toBe(200);
 
     const lock = await import("./events/[eventId]/teams/lock/route");
-    expect((await lock.POST(jsonRequest("http://localhost", { expectedRevision: 1 }), eventContext)).status).toBe(200);
+    const lockResponse = await lock.POST(jsonRequest("http://localhost", { expectedRevision: 1 }), eventContext);
+    expect(lockResponse.status).toBe(200);
+    expect(await lockResponse.json()).toEqual({ already_processed: false, locked: true, teamCount: 2, compositionRevision: 8 });
+    mocks.lockSpogomiTeams.mockResolvedValueOnce({ already_processed: true, locked: true, teamCount: 2, compositionRevision: 8 });
+    const replayLockResponse = await lock.POST(jsonRequest("http://localhost", { expectedRevision: 1 }), eventContext);
+    expect(await replayLockResponse.json()).toEqual({ already_processed: true, locked: true, teamCount: 2, compositionRevision: 8 });
 
     const move = await import("./events/[eventId]/teams/move/route");
-    expect((await move.POST(jsonRequest("http://localhost", { participantId: "11111111-1111-4111-8111-111111111111", teamId: "22222222-2222-4222-8222-222222222222", expectedRevision: 1 }), eventContext)).status).toBe(200);
+    const moveResponse = await move.POST(jsonRequest("http://localhost", { participantId: "11111111-1111-4111-8111-111111111111", teamId: "22222222-2222-4222-8222-222222222222", expectedRevision: 1 }), eventContext);
+    expect(moveResponse.status).toBe(200);
+    expect(await moveResponse.json()).toEqual({ already_processed: false, participantId: "participant-1", teamId: "team-1", compositionRevision: 8 });
+    mocks.moveParticipantToTeam.mockResolvedValueOnce({ already_processed: true, participantId: "participant-1", teamId: "team-1", compositionRevision: 8 });
+    const replayMoveResponse = await move.POST(jsonRequest("http://localhost", { participantId: "11111111-1111-4111-8111-111111111111", teamId: "22222222-2222-4222-8222-222222222222", expectedRevision: 1 }), eventContext);
+    expect(await replayMoveResponse.json()).toEqual({ already_processed: true, participantId: "participant-1", teamId: "team-1", compositionRevision: 8 });
 
     const rename = await import("./events/[eventId]/teams/[teamId]/route");
     expect((await rename.PATCH(jsonRequest("http://localhost", { expectedPublicName: "Old", publicName: "Alpha" }, "PATCH"), teamContext)).status).toBe(200);
@@ -391,7 +415,19 @@ describe("SPOGOMI persistence routes", () => {
     expect((await confirm.POST(formRequest("http://localhost", { file, acceptedRowNumbers: "[2]" }), eventContext)).status).toBe(201);
 
     const gpx = await import("./events/[eventId]/route-gpx/route");
-    expect((await gpx.POST(formRequest("http://localhost", { file: new File(["<gpx />"], "route.gpx", { type: "application/gpx+xml" }) }), eventContext)).status).toBe(201);
+    const gpxResponse = await gpx.POST(formRequest("http://localhost", { file: new File(["<gpx />"], "route.gpx", { type: "application/gpx+xml" }) }), eventContext);
+    expect(gpxResponse.status).toBe(201);
+    expect(await gpxResponse.json()).toMatchObject({
+      synchronization: { already_processed: false, routeId: "route-1", source: "official_reference" },
+    });
+    mocks.attachOfficialGpx.mockResolvedValueOnce({
+      route: { source: "official_reference" },
+      synchronization: { already_processed: true, routeId: "route-1", source: "official_reference" },
+    });
+    const replayGpxResponse = await gpx.POST(formRequest("http://localhost", { file: new File(["<gpx />"], "route.gpx", { type: "application/gpx+xml" }) }), eventContext);
+    expect(await replayGpxResponse.json()).toMatchObject({
+      synchronization: { already_processed: true, routeId: "route-1", source: "official_reference" },
+    });
 
     const identityCode = await import("./events/[eventId]/participants/[participantId]/identity-code/route");
     const response = await identityCode.POST(jsonRequest("http://localhost", {}), participantContext);

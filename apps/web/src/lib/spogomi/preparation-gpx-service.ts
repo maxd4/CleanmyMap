@@ -3,7 +3,7 @@ import { parseGpxFile } from "@/lib/actions/geometry/gpx";
 import type { EventRow } from "./preparation-service";
 
 type GpxSynchronization = {
-  alreadyProcessed: boolean;
+  already_processed: boolean;
   eventId: string;
   actionId: string;
   routeId: string;
@@ -28,7 +28,7 @@ function parseGpxSynchronization(value: unknown): GpxSynchronization {
     throw new Error("La synchronisation du parcours officiel SPOGOMI est invalide.");
   }
   return {
-    alreadyProcessed: value.already_processed,
+    already_processed: value.already_processed,
     eventId: value.eventId,
     actionId: value.actionId,
     routeId: value.routeId,

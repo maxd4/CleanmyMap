@@ -154,20 +154,68 @@ describe("SPOGOMI composition RPC boundaries", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("uses the division-scoped lock and the legacy parent lock only when no division is supplied", async () => {
-    const fixture = supabaseFor({}, { data: { already_processed: false, locked: true, teamCount: 2, compositionRevision: 3 } });
-    await lockSpogomiTeams(fixture.supabase, { id: "event-1", composition_revision: 2 }, "organizer", 3, "world-cup");
-    expect(fixture.rpc).toHaveBeenCalledWith("spogomi_lock_team_composition_for_division", expect.objectContaining({ p_division_id: "world-cup", p_expected_revision: 3 }));
+    const scopedFixture = supabaseFor({}, { data: { already_processed: false, locked: true, divisionId: "world-cup", allDivisionsLocked: false, teamCount: 2, compositionRevision: 3 } });
+    const scopedResult = await lockSpogomiTeams(scopedFixture.supabase, { id: "event-1", composition_revision: 2 }, "organizer", 3, "world-cup");
+    expect(scopedResult).toEqual({ already_processed: false, locked: true, divisionId: "world-cup", allDivisionsLocked: false, teamCount: 2, compositionRevision: 3 });
+    expect(scopedResult).not.toHaveProperty("alreadyProcessed");
+    expect(scopedFixture.rpc).toHaveBeenCalledWith("spogomi_lock_team_composition_for_division", expect.objectContaining({ p_division_id: "world-cup", p_expected_revision: 3 }));
 
-    await lockSpogomiTeams(fixture.supabase, { id: "event-1" }, "organizer");
-    expect(fixture.rpc).toHaveBeenLastCalledWith("spogomi_lock_team_composition", expect.objectContaining({ p_expected_revision: 0 }));
+    const parentFixture = supabaseFor({}, { data: { already_processed: false, locked: true, teamCount: 2, compositionRevision: 3 } });
+    const parentResult = await lockSpogomiTeams(parentFixture.supabase, { id: "event-1" }, "organizer");
+    expect(parentResult).toEqual({ already_processed: false, locked: true, teamCount: 2, compositionRevision: 3 });
+    expect(parentFixture.rpc).toHaveBeenLastCalledWith("spogomi_lock_team_composition", expect.objectContaining({ p_expected_revision: 0 }));
   });
 
   it("propagates explicit division and default revision on participant moves", async () => {
-    const fixture = supabaseFor({}, { data: { already_processed: false, participantId: "p", teamId: null, divisionId: "casual", compositionRevision: 4 } });
-    await moveParticipantToTeam({ supabase: fixture.supabase, event: { id: "event-1", composition_revision: 4 }, participantId: "p", teamId: null, actorClerkId: "a", divisionId: "casual" });
-    expect(fixture.rpc).toHaveBeenCalledWith("spogomi_move_participant_to_team_for_division", expect.objectContaining({ p_division_id: "casual", p_team_id: null, p_expected_revision: 4 }));
-    await moveParticipantToTeam({ supabase: fixture.supabase, event: { id: "event-1" }, participantId: "p", teamId: "team", actorClerkId: "a", expectedRevision: 8 });
-    expect(fixture.rpc).toHaveBeenLastCalledWith("spogomi_move_participant_to_team", expect.objectContaining({ p_team_id: "team", p_expected_revision: 8 }));
+    const scopedFixture = supabaseFor({}, { data: { already_processed: false, participantId: "p", teamId: null, divisionId: "casual", compositionRevision: 4 } });
+    const scopedResult = await moveParticipantToTeam({ supabase: scopedFixture.supabase, event: { id: "event-1", composition_revision: 4 }, participantId: "p", teamId: null, actorClerkId: "a", divisionId: "casual" });
+    expect(scopedResult).toEqual({ already_processed: false, participantId: "p", teamId: null, divisionId: "casual", compositionRevision: 4 });
+    expect(scopedResult).not.toHaveProperty("alreadyProcessed");
+    expect(scopedFixture.rpc).toHaveBeenCalledWith("spogomi_move_participant_to_team_for_division", expect.objectContaining({ p_division_id: "casual", p_team_id: null, p_expected_revision: 4 }));
+    const parentFixture = supabaseFor({}, { data: { already_processed: false, participantId: "p", teamId: "team", compositionRevision: 8 } });
+    const parentResult = await moveParticipantToTeam({ supabase: parentFixture.supabase, event: { id: "event-1" }, participantId: "p", teamId: "team", actorClerkId: "a", expectedRevision: 8 });
+    expect(parentResult).toEqual({ already_processed: false, participantId: "p", teamId: "team", compositionRevision: 8 });
+    expect(parentFixture.rpc).toHaveBeenLastCalledWith("spogomi_move_participant_to_team", expect.objectContaining({ p_team_id: "team", p_expected_revision: 8 }));
+  });
+
+  it("preserves already_processed for idempotent locks and moves", async () => {
+    const fixture = supabaseFor({}, { data: { already_processed: true, locked: true, teamCount: 2, compositionRevision: 9 } });
+    await expect(lockSpogomiTeams(fixture.supabase, { id: "event-1" }, "organizer")).resolves.toEqual({
+      already_processed: true,
+      locked: true,
+      teamCount: 2,
+      compositionRevision: 9,
+    });
+
+    const moveFixture = supabaseFor({}, { data: { already_processed: true, participantId: "p", teamId: null, divisionId: "casual", compositionRevision: 9 } });
+    await expect(moveParticipantToTeam({
+      supabase: moveFixture.supabase,
+      event: { id: "event-1", composition_revision: 9 },
+      participantId: "p",
+      teamId: null,
+      actorClerkId: "organizer",
+      divisionId: "casual",
+    })).resolves.toEqual({
+      already_processed: true,
+      participantId: "p",
+      teamId: null,
+      divisionId: "casual",
+      compositionRevision: 9,
+    });
+  });
+
+  it("rejects a camelCase replacement or missing required mutation fields", async () => {
+    const camelCase = supabaseFor({}, { data: { alreadyProcessed: true, locked: true, teamCount: 2, compositionRevision: 9 } });
+    await expect(lockSpogomiTeams(camelCase.supabase, { id: "event-1" }, "organizer")).rejects.toThrow(/réponse de verrouillage/i);
+
+    const missingField = supabaseFor({}, { data: { already_processed: false, participantId: "p", teamId: null } });
+    await expect(moveParticipantToTeam({
+      supabase: missingField.supabase,
+      event: { id: "event-1" },
+      participantId: "p",
+      teamId: null,
+      actorClerkId: "organizer",
+    })).rejects.toThrow(/réponse de déplacement/i);
   });
 
   it("rejects malformed mutation payloads instead of exposing invented success states", async () => {

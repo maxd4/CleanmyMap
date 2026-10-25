@@ -49,7 +49,62 @@ describe("SPOGOMI official GPX synchronization", () => {
       p_actor_clerk_id: "organizer-1",
       p_geometry_geojson: { type: "LineString", coordinates: [[2.31, 48.79], [2.32, 48.8]] },
     }));
-    expect(result.synchronization).toMatchObject({ routeId: "route-1", compositionRevision: 8 });
+    expect(result.synchronization).toEqual({
+      already_processed: false,
+      eventId: "event-1",
+      actionId: "action-1",
+      routeId: "route-1",
+      compositionRevision: 8,
+      source: "official_reference",
+      fileName: "synthetic-official.gpx",
+      pointCount: 2,
+      referenceDistanceKm: 1.25,
+      inferredTopology: "point_to_point",
+    });
+    expect(result.synchronization).not.toHaveProperty("alreadyProcessed");
+  });
+
+  it("preserves an idempotent GPX synchronization DTO", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        already_processed: true,
+        eventId: "event-1",
+        actionId: "action-1",
+        routeId: "route-1",
+        compositionRevision: 8,
+        source: "official_reference",
+        fileName: "synthetic-official.gpx",
+        pointCount: 2,
+        referenceDistanceKm: 1.25,
+        inferredTopology: "loop",
+      },
+      error: null,
+    });
+
+    const result = await attachOfficialGpx({
+      supabase: { rpc } as never,
+      event: spogomiPreparationEvent({ state: "in_progress" }),
+      userId: "organizer-1",
+      file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
+    });
+
+    expect(result.synchronization).toMatchObject({ already_processed: true, inferredTopology: "loop" });
+    expect(result.synchronization).not.toHaveProperty("alreadyProcessed");
+  });
+
+  it.each([
+    { already_processed: false, eventId: "event-1" },
+    { alreadyProcessed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", compositionRevision: 8, source: "official_reference", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: 1, inferredTopology: "loop" },
+    { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", compositionRevision: Number.NaN, source: "official_reference", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: 1, inferredTopology: "loop" },
+  ])("rejects a malformed GPX synchronization DTO: %j", async (data) => {
+    const rpc = vi.fn().mockResolvedValue({ data, error: null });
+
+    await expect(attachOfficialGpx({
+      supabase: { rpc } as never,
+      event: spogomiPreparationEvent({ state: "in_progress" }),
+      userId: "organizer-1",
+      file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
+    })).rejects.toThrow(/synchronisation.*invalide/i);
   });
 
   it("keeps the preparation boundary fail-closed for a currently locked event", async () => {
