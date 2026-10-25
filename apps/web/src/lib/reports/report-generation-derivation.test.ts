@@ -95,4 +95,55 @@ describe("report generation derivation", () => {
       generatedAt,
     })).toThrow(ReportGenerationDerivationUnavailableError);
   });
+
+  it.each([
+    ["missing generation id", { generationId: undefined }],
+    ["wrong template", { templateVersion: "reports-template-v0" }],
+    ["wrong renderer", { rendererVersion: "renderer-forged" }],
+    ["wrong filter version", { filtersVersion: "reports-filters-v0" }],
+    ["invalid source lineage", { sourceGenerationId: "not-a-uuid" }],
+  ] as const)("refuses a source with %s", (_label, metadataPatch) => {
+    const source = currentPayload({
+      snapshotMetadata: {
+        ...currentPayload().snapshotMetadata!,
+        ...metadataPatch,
+      },
+    });
+
+    expect(() => assertReportGenerationCanBeDerived(source)).toThrow(ReportGenerationDerivationUnavailableError);
+  });
+
+  it("accepts an existing derived source and keeps its immediate lineage", () => {
+    const source = currentPayload({
+      snapshotMetadata: {
+        ...currentPayload().snapshotMetadata!,
+        sourceGenerationId: sourceGenerationId,
+      },
+    });
+
+    expect(() => assertReportGenerationCanBeDerived(source)).not.toThrow();
+    const derived = buildDerivedReportGenerationPayload({
+      source,
+      generationId: targetGenerationId,
+      sourceGenerationId,
+      generatedAt,
+    });
+    expect(derived.snapshotMetadata?.sourceGenerationId).toBe(sourceGenerationId);
+    expect(derived.snapshotMetadata?.generationId).toBe(targetGenerationId);
+  });
+
+  it("does not replace the source title, scope, filters or measurements during derivation", () => {
+    const source = currentPayload();
+    const derived = buildDerivedReportGenerationPayload({
+      source,
+      generationId: targetGenerationId,
+      sourceGenerationId,
+      generatedAt: "2026-10-17T12:10:00.000Z",
+    });
+
+    expect(derived.title).toBe(source.title);
+    expect(derived.snapshotMetadata?.scope).toEqual(source.snapshotMetadata?.scope);
+    expect(derived.snapshotMetadata?.filters).toEqual(source.snapshotMetadata?.filters);
+    expect(derived.data.rows).toEqual(source.data.rows);
+  });
 });

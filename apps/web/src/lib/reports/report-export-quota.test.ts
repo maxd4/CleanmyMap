@@ -12,6 +12,7 @@ import {
   releaseReportExportSlot,
   reserveReportExportSlot,
 } from "./report-export-quota";
+import { isReportPdfShareExpiryValid } from "./report-generation-pdf-share-store";
 
 describe("report export daily quota", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -101,5 +102,47 @@ describe("report export daily quota", () => {
     getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
 
     await expect(getReportExportAvailability("user-1")).rejects.toThrow();
+  });
+
+  it.each([
+    ["minimum", 60 * 60, true],
+    ["maximum", 30 * 24 * 60 * 60, true],
+    ["below minimum", 60 * 60 - 1, false],
+    ["above maximum", 30 * 24 * 60 * 60 + 1, false],
+    ["fractional", 3600.5, false],
+  ] as const)("uses the server expiry boundary for %s", (_label, seconds, expected) => {
+    expect(isReportPdfShareExpiryValid(seconds)).toBe(expected);
+  });
+
+  it("treats an explicit zero export count as available", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: { export_count: 0 }, error: null });
+    const eqDay = vi.fn(() => ({ maybeSingle }));
+    const eqUser = vi.fn(() => ({ eq: eqDay }));
+    const select = vi.fn(() => ({ eq: eqUser }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
+
+    await expect(getReportExportAvailability("owner-9")).resolves.toBe("available");
+    expect(eqUser).toHaveBeenCalledWith("user_id", "owner-9");
+  });
+
+  it("rejects a false reservation without converting it to an allowed slot", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [{ allowed: false, quota_day: "2026-09-15" }], error: null });
+    getSupabaseAdminClientMock.mockReturnValue({ rpc });
+
+    await expect(reserveReportExportSlot("owner-9")).resolves.toEqual({
+      allowed: false,
+      quotaDay: "2026-09-15",
+    });
+  });
+
+  it("uses the supplied civil day when releasing a reservation", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+    getSupabaseAdminClientMock.mockReturnValue({ rpc });
+
+    await releaseReportExportSlot({ userId: "owner-9", quotaDay: "2026-09-15" });
+    expect(rpc).toHaveBeenCalledWith("release_report_generation_daily_quota", {
+      p_user_id: "owner-9",
+      p_quota_day: "2026-09-15",
+    });
   });
 });

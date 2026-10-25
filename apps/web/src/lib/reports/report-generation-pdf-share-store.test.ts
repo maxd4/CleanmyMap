@@ -197,4 +197,90 @@ describe("report-generation-pdf-share-store token contract", () => {
     configureQuery({ data: null, error: null });
     await expect(listReportPdfSharesForOwner({ generationId: row.generation_id, createdByClerkId: row.created_by_clerk_id })).resolves.toEqual([]);
   });
+
+  it.each([
+    ["zero", 0],
+    ["negative", -1],
+    ["string", "3600"],
+    ["null", null],
+  ] as const)("rejects a non-integer expiry value: %s", (_label, value) => {
+    expect(isReportPdfShareExpiryValid(value as number)).toBe(false);
+  });
+
+  it("maps every persisted share field without returning the bearer", async () => {
+    const query = configureQuery({ data: row, error: null });
+    const share = await createReportPdfShare({
+      generationId: row.generation_id,
+      artifactId: row.artifact_id,
+      createdByClerkId: row.created_by_clerk_id,
+      theme: row.theme,
+      rendererVersion: row.renderer_version,
+      expiresAt: row.expires_at,
+      token: "c".repeat(43),
+    });
+
+    expect(share).toEqual({
+      id: row.id,
+      generationId: row.generation_id,
+      artifactId: row.artifact_id,
+      createdByClerkId: row.created_by_clerk_id,
+      theme: row.theme,
+      rendererVersion: row.renderer_version,
+      expiresAt: row.expires_at,
+      revokedAt: null,
+      createdAt: row.created_at,
+    });
+    expect(query.insert.mock.calls[0]?.[0]).not.toHaveProperty("token");
+  });
+
+  it("keeps a revoked timestamp in the owner projection", async () => {
+    const revoked = { ...row, revoked_at: "2026-10-18T12:00:00.000Z" };
+    const query = configureQuery({ data: revoked, error: null });
+
+    await expect(findActiveReportPdfShareByTokenHash({ tokenHash: "hash" })).resolves.toMatchObject({
+      revokedAt: revoked.revoked_at,
+    });
+    expect(query.is).toHaveBeenCalledWith("revoked_at", null);
+  });
+
+  it("does not accept an artifact token hash that is computed from a different bearer", () => {
+    const first = hashReportPdfShareToken("a".repeat(43));
+    const second = hashReportPdfShareToken("b".repeat(43));
+
+    expect(first).not.toBe(second);
+    expect(first).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("uses the owner and generation predicates on every revocation", async () => {
+    const query = configureQuery({ data: null, error: null });
+    await revokeReportPdfShare({
+      shareId: "share-other",
+      generationId: "generation-other",
+      createdByClerkId: "owner-other",
+    });
+
+    expect(query.eq).toHaveBeenCalledWith("id", "share-other");
+    expect(query.eq).toHaveBeenCalledWith("generation_id", "generation-other");
+    expect(query.eq).toHaveBeenCalledWith("created_by_clerk_id", "owner-other");
+  });
+
+  it("preserves scientific shares as a distinct renderer variant", async () => {
+    const scientific = { ...row, theme: "scientific" as const, renderer_version: "scientific-pdf-v1" };
+    const query = configureQuery({ data: scientific, error: null });
+    const share = await createReportPdfShare({
+      generationId: row.generation_id,
+      artifactId: row.artifact_id,
+      createdByClerkId: row.created_by_clerk_id,
+      theme: "scientific",
+      rendererVersion: "scientific-pdf-v1",
+      expiresAt: row.expires_at,
+      token: "d".repeat(43),
+    });
+
+    expect(share.theme).toBe("scientific");
+    expect(query.insert).toHaveBeenCalledWith(expect.objectContaining({
+      theme: "scientific",
+      renderer_version: "scientific-pdf-v1",
+    }));
+  });
 });

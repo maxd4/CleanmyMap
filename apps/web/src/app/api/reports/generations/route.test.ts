@@ -860,6 +860,87 @@ describe("POST /api/reports/generations", () => {
       }),
     }));
   });
+
+  it.each([
+    ["malformed JSON", "{"],
+    ["empty body", ""],
+    ["null body", "null"],
+  ] as const)("rejects %s before resolving a source or reserving quota", async (_label, body) => {
+    const response = await POST(new Request("http://localhost/api/reports/generations", {
+      method: "POST",
+      body,
+    }));
+
+    expect(response.status).toBe(400);
+    expect(buildMultiActionReportGenerationInputMock).not.toHaveBeenCalled();
+    expect(resolveSingleActionReportContractMock).not.toHaveBeenCalled();
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+  });
+
+  it("does not persist or release a quota slot when the atomic reservation is denied", async () => {
+    reserveReportExportSlotMock.mockResolvedValueOnce({ allowed: false, quotaDay: "2026-08-27" });
+
+    const response = await POST(new Request("http://localhost/api/reports/generations", {
+      method: "POST",
+      body: JSON.stringify(validPayload),
+    }));
+
+    expect(response.status).toBe(429);
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+    expect(releaseReportExportSlotMock).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({ quotaDay: "2026-08-27" });
+  });
+
+  it("forwards the complete module selection to the canonical source builder", async () => {
+    const modules = {
+      dataAndCartography: false,
+      transparencyAndMethods: true,
+      rawData: true,
+      detailedFiles: false,
+    };
+    const response = await POST(new Request("http://localhost/api/reports/generations", {
+      method: "POST",
+      body: JSON.stringify({ ...validPayload, modules }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(buildMultiActionReportGenerationInputMock).toHaveBeenCalledWith(expect.objectContaining({ modules }));
+    expect(persistReportGenerationMock).toHaveBeenCalledWith({
+      createdByClerkId: "user-1",
+      input: expect.objectContaining({ theme: "impact" }),
+    });
+  });
+
+  it("does not expose a source payload in a persistence error response", async () => {
+    persistReportGenerationMock.mockRejectedValueOnce(new Error("database payload detail"));
+    resolveDirectReportGenerationPersistenceMock.mockResolvedValueOnce({ kind: "not_persisted" });
+
+    const response = await POST(new Request("http://localhost/api/reports/generations", {
+      method: "POST",
+      body: JSON.stringify(validPayload),
+    }));
+    const body = await response.text();
+
+    expect(response.status).toBe(503);
+    expect(body).not.toContain("database payload detail");
+    expect(body).not.toContain(validSnapshotPayload.title);
+  });
+
+  it("keeps owner identity on the persistence call when a source builder returns another label", async () => {
+    buildMultiActionReportGenerationInputMock.mockResolvedValueOnce({
+      ...multiInput,
+      payload: { ...validSnapshotPayload, organizationType: "private-forged-label" },
+    });
+
+    const response = await POST(new Request("http://localhost/api/reports/generations", {
+      method: "POST",
+      body: JSON.stringify(validPayload),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(persistReportGenerationMock).toHaveBeenCalledWith(expect.objectContaining({ createdByClerkId: "user-1" }));
+  });
 });
 
 describe("GET /api/reports/generations", () => {

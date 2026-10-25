@@ -132,4 +132,57 @@ describe("GET /api/reports/shared/[token]", () => {
     expect(artifactMock).not.toHaveBeenCalled();
     expect(downloadMock).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["empty", ""],
+    ["short", "a"],
+    ["punctuation", `${"a".repeat(42)}!`],
+    ["space", `${"a".repeat(42)} `],
+  ] as const)("refuses an %s token before hashing or Storage", async (_label, value) => {
+    const response = await GET(request(value), { params: Promise.resolve({ token: value }) });
+
+    expect(response.status).toBe(404);
+    expect(hashTokenMock).not.toHaveBeenCalled();
+    expect(findShareMock).not.toHaveBeenCalled();
+    expect(downloadMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["not ready", { ...artifact, status: "pending" as const }],
+    ["different owner", { ...artifact, createdByClerkId: "other-owner" }],
+    ["different generation", { ...artifact, generationId: "44444444-4444-4444-8444-444444444444" }],
+    ["different renderer", { ...artifact, rendererVersion: "forged-renderer" }],
+  ] as const)("refuses an artifact with a %s mismatch", async (_label, mismatchedArtifact) => {
+    artifactMock.mockResolvedValueOnce(mismatchedArtifact);
+
+    const response = await GET(request(), { params: Promise.resolve({ token }) });
+
+    expect(response.status).toBe(404);
+    expect(downloadMock).not.toHaveBeenCalled();
+  });
+
+  it("does not turn a download exception into an empty PDF", async () => {
+    downloadMock.mockRejectedValueOnce(new Error("storage timeout"));
+
+    const response = await GET(request(), { params: Promise.resolve({ token }) });
+
+    expect(response.status).toBe(503);
+    expect(await response.text()).not.toContain("storage timeout");
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+  });
+
+  it("publishes only download-safe headers for a valid scientific share", async () => {
+    const scientificShare = { ...share, theme: "scientific" as const, rendererVersion: "scientific-pdf-v1" };
+    const scientificArtifact = { ...artifact, theme: "scientific" as const, rendererVersion: "scientific-pdf-v1" };
+    findShareMock.mockResolvedValueOnce(scientificShare);
+    artifactMock.mockResolvedValueOnce(scientificArtifact);
+
+    const response = await GET(request(), { params: Promise.resolve({ token }) });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="rapport_cleanmymap_scientific.pdf"');
+    expect(response.headers.get("Content-Security-Policy")).toBe("default-src 'none'");
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(response.headers.get("X-Report-Pdf-Renderer-Version")).toBe("scientific-pdf-v1");
+  });
 });

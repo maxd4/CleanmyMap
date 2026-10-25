@@ -348,4 +348,73 @@ describe("POST /api/reports/generations/[id]", () => {
     expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
   });
+
+  it("returns the same owner-scoped not-found result for an absent snapshot", async () => {
+    getSnapshotMock.mockResolvedValueOnce(null);
+
+    const response = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
+
+    expect(response.status).toBe(404);
+    expect(reserveQuotaMock).not.toHaveBeenCalled();
+    expect(persistDerivedMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the rate-limit response unchanged and does not read history", async () => {
+    const limited = new Response("retry later", { status: 429 });
+    createRateLimitResponseMock.mockReturnValueOnce(limited);
+
+    const response = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
+
+    expect(response).toBe(limited);
+    expect(getSnapshotMock).not.toHaveBeenCalled();
+    expect(reserveQuotaMock).not.toHaveBeenCalled();
+  });
+
+  it("does not persist a derivation when the final quota slot is already used", async () => {
+    reserveQuotaMock.mockResolvedValueOnce({ allowed: false, quotaDay: "2026-10-17" });
+
+    const response = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
+
+    expect(response.status).toBe(429);
+    expect(persistDerivedMock).not.toHaveBeenCalled();
+    expect(releaseQuotaMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the original snapshot untouched when persistence fails", async () => {
+    const before = structuredClone(source);
+    persistDerivedMock.mockRejectedValueOnce(new Error("insert failed"));
+    resolvePersistenceMock.mockResolvedValueOnce({ kind: "not_persisted" });
+
+    const response = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
+
+    expect(response.status).toBe(503);
+    expect(source).toEqual(before);
+    expect(releaseQuotaMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not consume quota for a snapshot with an invalid schema version", async () => {
+    getSnapshotMock.mockResolvedValueOnce({
+      ...source,
+      snapshot: {
+        ...source.snapshot,
+        snapshotSchemaVersion: 1,
+      },
+    });
+
+    const response = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
+
+    expect(response.status).toBe(422);
+    expect(reserveQuotaMock).not.toHaveBeenCalled();
+    expect(persistDerivedMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a source-owned derivation scoped to the authenticated actor", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: true, userId: "owner-2" });
+    const response = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
+
+    expect(response.status).toBe(200);
+    expect(getSnapshotMock).toHaveBeenCalledWith(sourceId, "owner-2");
+    expect(persistDerivedMock).toHaveBeenCalledWith(expect.objectContaining({ createdByClerkId: "owner-2" }));
+    expect(reserveQuotaMock).toHaveBeenCalledWith("owner-2");
+  });
 });
