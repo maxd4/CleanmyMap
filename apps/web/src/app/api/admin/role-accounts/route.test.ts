@@ -301,6 +301,53 @@ describe("GET/POST /api/admin/role-accounts", () => {
     expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
   });
 
+  it("rejects self-role mutations before invoking Clerk or persistence", async () => {
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      roleAccountsPostRequest({
+        userId: "owner-1",
+        action: "assign",
+        role: "admin",
+        reason: "Self role mutation must fail",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Vous ne pouvez pas modifier votre propre niveau ici.",
+    });
+    expect(clerkClientMock).not.toHaveBeenCalled();
+    expect(syncClerkUserToSupabaseMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a max role without the canonical IMU identity before privileged access", async () => {
+    requireCreatorAccessMock.mockResolvedValueOnce({ ok: true, userId: "owner-2" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "owner-2",
+      displayName: "Owner delegate",
+      role: "max",
+      activeRole: "max",
+      activeProfile: "max",
+    });
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      roleAccountsPostRequest({
+        userId: "user-2",
+        action: "assign",
+        role: "admin",
+        reason: "Protected owner target test",
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(syncClerkUserToSupabaseMock).not.toHaveBeenCalled();
+    expect(clerkClientMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+  });
+
   it("rejects arbitrary metadata fields instead of treating them as role input", async () => {
     const { POST } = await import("./route");
     const response = await POST(roleAccountsPostRequest({
