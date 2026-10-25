@@ -52,6 +52,48 @@ test("DEVELOPMENT script changes never fan out to the complete script suite", ()
   assert.ok(!ids(plan).includes("quality:duplication"));
 });
 
+test("nested lockfiles preserve dead-code domain without changing FAST/FULL controls", () => {
+  const changedFiles = ["tools/package-lock.json", "tools/README.txt"];
+  const fast = createModeValidationPlan({ mode: "FAST", changedFiles });
+  const full = createModeValidationPlan({ mode: "FULL", changedFiles });
+
+  assert.deepEqual(fast.domains, {
+    docsRelevant: false,
+    pagesSiteRelevant: false,
+    webRelevant: false,
+    webRuntimeRelevant: false,
+    webSourceRelevant: false,
+    motionRelevant: false,
+    buildRelevant: false,
+    scriptsRelevant: false,
+    pythonRelevant: false,
+    supabaseRelevant: false,
+    migrationRelevant: false,
+    securityRelevant: false,
+    semgrepRelevant: false,
+    regressionRelevant: false,
+    githubRelevant: false,
+    mobileRelevant: false,
+    lockfileRelevant: true,
+    dependencyGraphRelevant: true,
+    deadCodeRelevant: true,
+  });
+  assert.deepEqual(ids(fast), [
+    "diff-check",
+    "file-naming",
+    "diff-check-staged",
+    "security-secrets",
+    "lockfile-policy",
+    "dependency-audit",
+  ]);
+  assert.ok(fast.checks.every((check) => check.id !== "quality:dead-code"));
+  assert.equal(full.domains.deadCodeRelevant, true);
+  assert.deepEqual(
+    ids(full),
+    ids(createModeValidationPlan({ mode: "FULL", changedFiles: ["documentation/development/TESTING.md"] })),
+  );
+});
+
 test("FULL is global even for documentation-only candidates", () => {
   const plan = createModeValidationPlan({ mode: "FULL", changedFiles: ["documentation/development/TESTING.md"] });
   assert.ok(ids(plan).includes("file-naming"));

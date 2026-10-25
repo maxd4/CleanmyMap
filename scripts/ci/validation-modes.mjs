@@ -284,6 +284,7 @@ function classifyChangedFiles(files) {
   const webRuntimeRelevant = files.some(isWebRuntimeRelevantFile);
   const scriptsRelevant = files.some(isScriptRelevantFile);
   const mobileRelevant = files.some(isMobileRelevantFile);
+  const lockfileRelevant = files.some(isLockfileRelevantFile);
   return {
     docsRelevant,
     pagesSiteRelevant: files.some(isPagesSiteFile),
@@ -307,6 +308,7 @@ function classifyChangedFiles(files) {
     deadCodeRelevant: webRuntimeRelevant
       || scriptsRelevant
       || mobileRelevant
+      || lockfileRelevant
       || files.includes("package.json")
       || files.includes("scripts/knip.json"),
   };
@@ -673,7 +675,9 @@ function addFastModeChecks(context) {
 function finalizeModeValidationPlan({ normalizedMode, normalizedScope, files, domains, checks, deduplicated }) {
   const budgetSeconds = VALIDATION_MODE_BUDGETS[normalizedMode];
   const plannedSeconds = checks.reduce((total, check) => total + check.estimatedSeconds, 0);
-  const { architectureImportRelevant, ...publicDomains } = domains;
+  const publicDomains = Object.fromEntries(
+    Object.entries(domains).filter(([key]) => key !== "architectureImportRelevant"),
+  );
   return Object.freeze({
     mode: normalizedMode,
     candidateScope: normalizedScope,
