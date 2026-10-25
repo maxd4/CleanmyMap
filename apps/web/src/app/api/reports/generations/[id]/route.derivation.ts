@@ -224,14 +224,20 @@ export async function deriveReportGeneration(params: {
     assertReportGenerationCanBeDerived(sourceResult.source.snapshot);
   } catch (error) {
     if (!(error instanceof ReportGenerationDerivationUnavailableError)) throw error;
-    await appendAdminOperationAudit({
+    await auditDerivationFailure({
       operationId: params.operationId,
-      at: new Date().toISOString(),
-      actorUserId: params.userId,
-      operationType: "admin_operation",
-      outcome: "error",
+      userId: params.userId,
       targetId: sourceResult.source.id,
-      details: { operation: "derive_report_generation", stage: "compatibility", code: "derivation_incompatible" },
+      details: {
+        operation: "derive_report_generation",
+        stage: "compatibility",
+        code: "derivation_incompatible",
+      },
+      message: "Report derived generation compatibility audit failed",
+      context: {
+        operationId: params.operationId,
+        sourceGenerationId: sourceResult.source.id,
+      },
     });
     return { kind: "failure", failure: { kind: "incompatible" } };
   }

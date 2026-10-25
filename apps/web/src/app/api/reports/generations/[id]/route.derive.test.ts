@@ -97,9 +97,11 @@ describe("POST /api/reports/generations/[id]", () => {
   });
 
   it("derives from the owner snapshot, consumes quota, and preserves lineage", async () => {
+    const sourceBefore = structuredClone(source);
     const response = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
 
     expect(response.status).toBe(200);
+    expect(source).toEqual(sourceBefore);
     expect(getSnapshotMock).toHaveBeenCalledWith(sourceId, "user-1");
     expect(persistDerivedMock).toHaveBeenCalledWith(expect.objectContaining({
       createdByClerkId: "user-1",
@@ -150,6 +152,29 @@ describe("POST /api/reports/generations/[id]", () => {
     const incompatible = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
     expect(incompatible.status).toBe(422);
     expect(reserveQuotaMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the incompatible refusal when its audit is unavailable", async () => {
+    getSnapshotMock.mockResolvedValueOnce({
+      ...source,
+      snapshot: {
+        ...source.snapshot,
+        snapshotMetadata: { ...source.snapshot.snapshotMetadata, filtersVersion: "reports-filters-v0" },
+      },
+    });
+    auditMock.mockRejectedValueOnce(new Error("audit unavailable"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toEqual({
+      error: "Ce snapshot ne contient pas les versions nécessaires pour créer une nouvelle version.",
+    });
+    expect(reserveQuotaMock).not.toHaveBeenCalled();
+    expect(persistDerivedMock).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it("rejects rate-limited and invalid-id derivation attempts before loading a source", async () => {
