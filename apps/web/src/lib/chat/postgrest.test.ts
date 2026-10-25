@@ -28,6 +28,16 @@ describe("Chat Supabase boundary parsers", () => {
   });
 
   it("fails closed for invalid envelopes and single rows", () => {
+    const malformedError = parseChatSupabaseResult({
+      data: null,
+      error: { code: "P0001" },
+    });
+
+    expect(malformedError.error).toBeInstanceOf(Error);
+    expect(malformedError.error).toMatchObject({
+      message: "La réponse Supabase du Chat est invalide.",
+    });
+
     expect(parseChatSupabaseResult({ data: "invalid", error: { message: "boom" } })).toMatchObject({
       data: "invalid",
       error: { message: "boom" },
@@ -36,6 +46,35 @@ describe("Chat Supabase boundary parsers", () => {
       typeof value === "object" && value !== null && !Array.isArray(value) &&
       "id" in value && typeof value.id === "string",
     )).toBeNull();
+  });
+
+  it("preserves Supabase error semantics and metadata", () => {
+    const result = parseChatSupabaseResult({
+      data: null,
+      error: {
+        message: "Invalid DM peer",
+        code: "P0001",
+        details: "internal detail",
+        hint: "internal hint",
+      },
+      count: 0,
+    });
+
+    expect(result.error).toBeInstanceOf(Error);
+    expect(result.error).toMatchObject({
+      message: "Invalid DM peer",
+      code: "P0001",
+      details: "internal detail",
+      hint: "internal hint",
+    });
+    expect(result.data).toBeNull();
+    expect(result.count).toBe(0);
+  });
+
+  it("keeps valid null-error envelopes unchanged", () => {
+    const result = parseChatSupabaseResult({ data: [], error: null, count: 0 });
+
+    expect(result).toEqual({ data: [], error: null, count: 0 });
   });
 });
 

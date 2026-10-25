@@ -98,4 +98,71 @@ describe("/api/chat/inbox", () => {
     expect(response.status).toBe(422);
     expect(rpcMock).not.toHaveBeenCalled();
   });
+
+  it("maps an invalid DM peer RPC error to HTTP 422 without leaking provider details", async () => {
+    rpcMock.mockResolvedValue({
+      data: null,
+      error: {
+        message: "Invalid DM peer",
+        code: "P0001",
+        details: "internal permission boundary",
+        hint: "internal hint",
+      },
+    });
+
+    const response = assertResponse(await PATCH(
+      new Request("http://localhost/api/chat/inbox", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ peerId: "peer-1" }),
+      }),
+    ));
+    const body = (await response.json()) as { error?: string };
+
+    expect(response.status).toBe(422);
+    expect(body.error).toBe("Certains champs doivent être corrigés avant de continuer.");
+    expect(JSON.stringify(body)).not.toContain("internal permission boundary");
+    expect(JSON.stringify(body)).not.toContain("internal hint");
+  });
+
+  it("maps a missing DM peer RPC error to HTTP 404", async () => {
+    rpcMock.mockResolvedValue({
+      data: null,
+      error: { message: "DM peer not found", code: "P0001" },
+    });
+
+    const response = assertResponse(await PATCH(
+      new Request("http://localhost/api/chat/inbox", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ peerId: "peer-1" }),
+      }),
+    ));
+
+    expect(response.status).toBe(404);
+  });
+
+  it("keeps permission errors classified without exposing Supabase details", async () => {
+    rpcMock.mockResolvedValue({
+      data: null,
+      error: {
+        message: "permission denied",
+        code: "42501",
+        details: "internal RLS policy detail",
+      },
+    });
+
+    const response = assertResponse(await PATCH(
+      new Request("http://localhost/api/chat/inbox", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ peerId: "peer-1" }),
+      }),
+    ));
+    const body = (await response.json()) as { error?: string };
+
+    expect(response.status).toBe(403);
+    expect(body.error).toBe("Vous n'avez pas accès à cette page.");
+    expect(JSON.stringify(body)).not.toContain("internal RLS policy detail");
+  });
 });
