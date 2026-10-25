@@ -152,4 +152,68 @@ describe("SPOGOMI preparation workspace", () => {
     expect(rendered).not.toContain("Équipe casual tardive");
     renderer.unmount();
   });
+
+  it("releases busy on division change without letting a stale operation release the current one", async () => {
+    let resolveCasualOperation!: (response: Response) => void;
+    let resolveWorldProjection!: (response: Response) => void;
+    let resolveWorldOperation!: (response: Response) => void;
+    const casualOperation = new Promise<Response>((resolve) => { resolveCasualOperation = resolve; });
+    const worldProjection = new Promise<Response>((resolve) => { resolveWorldProjection = resolve; });
+    const worldOperation = new Promise<Response>((resolve) => { resolveWorldOperation = resolve; });
+    const casualPreview = {
+      expectedRevision: 2, proposalFingerprint: "casual-late", explanation: ["Composition casual tardive"],
+      participantCount: 1, assignedParticipantCount: 1, preservedTeamIds: [],
+      formation: { teams: [{ draftKey: "team-1", teamNumber: 1, participantIds: ["participant-1"], compositionState: "draft", explanation: "late" }], unassignedParticipantIds: [], reasons: {} },
+    };
+    const worldPreview = {
+      expectedRevision: 2, proposalFingerprint: "world-current", explanation: ["Composition World courante"],
+      participantCount: 1, assignedParticipantCount: 1, preservedTeamIds: [],
+      formation: { teams: [{ draftKey: "team-1", teamNumber: 1, participantIds: ["participant-1"], compositionState: "draft", explanation: "current" }], unassignedParticipantIds: [], reasons: {} },
+    };
+    const worldBody = { ...body, participants: [{ ...body.participants[0], division_id: "division-world", display_name: "World courant", composition_eligible: true }], teams: [{ ...body.teams[0], division_id: "division-world", public_name: "Équipe World courante" }] };
+    let worldProjectionPending = true;
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/teams/auto") && url.includes("divisionId=division-casual")) return casualOperation;
+      if (url.includes("/teams/auto") && url.includes("divisionId=division-world")) return worldOperation;
+      if (url.includes("divisionId=division-world")) {
+        if (worldProjectionPending) {
+          worldProjectionPending = false;
+          return worldProjection;
+        }
+        return Promise.resolve(new Response(JSON.stringify(worldBody), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
+    });
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const casualPreviewButton = renderer.root.findAllByType("button").find((button) => button.props.children === "Prévisualiser ou régénérer");
+    expect(casualPreviewButton?.props.disabled).toBe(false);
+    await act(async () => { casualPreviewButton?.props.onClick(); await Promise.resolve(); });
+
+    const worldTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "World Cup");
+    expect(worldTab).toBeTruthy();
+    act(() => { worldTab?.props.onClick(); });
+    await act(async () => { resolveWorldProjection(new Response(JSON.stringify(worldBody), { status: 200 })); await Promise.resolve(); });
+
+    const worldPreviewButton = renderer.root.findAllByType("button").find((button) => button.props.children === "Prévisualiser ou régénérer");
+    expect(worldPreviewButton?.props.disabled).toBe(false);
+    await act(async () => { worldPreviewButton?.props.onClick(); await Promise.resolve(); });
+    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "Prévisualiser ou régénérer")?.props.disabled).toBe(true);
+
+    await act(async () => { resolveCasualOperation(new Response(JSON.stringify(casualPreview), { status: 200 })); await Promise.resolve(); });
+    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "Prévisualiser ou régénérer")?.props.disabled).toBe(true);
+    expect(JSON.stringify(renderer.toJSON())).toContain("Équipe World courante");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Composition casual tardive");
+
+    await act(async () => { resolveWorldOperation(new Response(JSON.stringify(worldPreview), { status: 200 })); await Promise.resolve(); await Promise.resolve(); });
+    const finalRendered = JSON.stringify(renderer.toJSON());
+    expect(finalRendered).toContain("Équipe World courante");
+    expect(finalRendered).toContain("Composition World courante");
+    expect(finalRendered).not.toContain("Composition casual tardive");
+    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "Prévisualiser ou régénérer")?.props.disabled).toBe(false);
+    renderer.unmount();
+  });
 });

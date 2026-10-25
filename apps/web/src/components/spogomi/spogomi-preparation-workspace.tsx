@@ -91,7 +91,10 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
     }).catch((reason) => {
       if (isCurrentRequest(request)) setError(reason instanceof Error ? reason.message : "Événement indisponible.");
     });
-    return () => { requestSequence.current += 1; };
+    return () => {
+      requestSequence.current += 1;
+      setBusy(false);
+    };
   }, [eventId, activeDivisionId]);
   const assignedCount = useMemo(() => countAssignedParticipants(data), [data]);
   const compositionEditable = data ? ["draft", "registration_open"].includes(data.event.state) : false;
