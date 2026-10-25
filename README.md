@@ -20,7 +20,7 @@
   <a href="https://github.com/maxd4/CleanMyMap/actions/workflows/ci.yml"><img src="https://github.com/maxd4/CleanMyMap/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="https://github.com/maxd4/CleanMyMap/actions/workflows/codeql.yml"><img src="https://github.com/maxd4/CleanMyMap/actions/workflows/codeql.yml/badge.svg?branch=main" alt="CodeQL Analysis" /></a>
   <img src="https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs" alt="Next.js 16" />
-  <img src="https://img.shields.io/badge/TypeScript-7-blue?logo=typescript" alt="TypeScript 7" />
+  <img src="https://img.shields.io/badge/TypeScript-6-blue?logo=typescript" alt="TypeScript 6" />
 </p>
 
 ## Le problème
@@ -98,7 +98,7 @@ La [documentation d'architecture](./documentation/architecture/README.md) décri
 
 ## Stack
 
-Next.js 16, React 19, TypeScript 7, Tailwind CSS 4, Clerk, Supabase/PostgreSQL, Vercel et Expo/React Native. Les versions exactes sont définies dans les manifestes du dépôt.
+Next.js 16, React 19, TypeScript 6, Tailwind CSS 4, Clerk, Supabase/PostgreSQL, Vercel et Expo/React Native. Les versions exactes sont définies dans les manifestes du dépôt.
 
 ## Structure du monorepo
 

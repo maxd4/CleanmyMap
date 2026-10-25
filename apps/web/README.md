@@ -32,7 +32,7 @@ Repères :
 
 - Next.js 16 App Router ;
 - React 19 ;
-- TypeScript 7 ;
+- TypeScript 6 ;
 - Clerk ;
 - Supabase ;
 - Vercel.

@@ -7,6 +7,7 @@ import { getUserOptionalConsentEligibility } from "@/lib/minor-consent-server";
 import {
   AGE_BAND_COOKIE_NAME,
   CLERK_AGE_BAND_METADATA_KEY,
+  CLERK_PARENTAL_CONSENT_METADATA_KEY,
   parseAgeBand,
 } from "@/lib/minor-consent";
 import { isOptionalConsentTreatmentAllowed } from "@/lib/minor-consent";
@@ -42,11 +43,17 @@ export async function GET(request: Request) {
   const access = await requireActionRequestAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
 
-  const eligibility = await getUserOptionalConsentEligibility(access.userId);
-  return responseWithAgeBand(
-    eligibility.ageBand,
-    eligibility.parentalConsentVerified,
-  );
+  try {
+    const client = await clerkClient();
+    const currentUser = await client.users.getUser(access.userId);
+    const privateMetadata = (currentUser.privateMetadata ?? {}) as Record<string, unknown>;
+    return responseWithAgeBand(
+      parseAgeBand(privateMetadata[CLERK_AGE_BAND_METADATA_KEY]),
+      privateMetadata[CLERK_PARENTAL_CONSENT_METADATA_KEY] === true,
+    );
+  } catch {
+    return responseWithAgeBand("unknown", false);
+  }
 }
 
 export async function PATCH(request: Request) {

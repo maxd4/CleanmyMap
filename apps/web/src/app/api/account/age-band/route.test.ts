@@ -53,6 +53,47 @@ describe("/api/account/age-band", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
+  it("reads only the current account metadata and does not expose raw private data", async () => {
+    const getUserMock = vi.fn().mockResolvedValue({
+      privateMetadata: {
+        cleanmymap_age_band: "under_15",
+        cleanmymap_parental_consent_verified: true,
+        email: "private@example.org",
+        internalToken: "secret-value",
+      },
+    });
+    clerkClientMock.mockResolvedValue({ users: { getUser: getUserMock } });
+    const { GET } = await import("./route");
+
+    const response = await GET(new Request("http://localhost/api/account/age-band"));
+
+    expect(response.status).toBe(200);
+    expect(getUserMock).toHaveBeenCalledWith("user-1");
+    expect(getUserOptionalConsentEligibilityMock).not.toHaveBeenCalled();
+    expect(await response.json()).toEqual({ ageBand: "under_15", parentalConsentVerified: true });
+    expect(response.headers.get("set-cookie")).toContain("cleanmymap_age_band=under_15");
+    expect(response.headers.get("set-cookie")).not.toContain("private@example.org");
+    expect(response.headers.get("set-cookie")).not.toContain("secret-value");
+  });
+
+  it("fails closed when Clerk cannot resolve the current account", async () => {
+    clerkClientMock.mockRejectedValue(new Error("Clerk unavailable"));
+    const { GET } = await import("./route");
+
+    const response = await GET(new Request("http://localhost/api/account/age-band"));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ageBand: "unknown", parentalConsentVerified: false });
+  });
+
+  it("rejects an unauthenticated GET before reading Clerk metadata", async () => {
+    requireActionRequestAccessMock.mockResolvedValue({ ok: false, status: 401 });
+    const { GET } = await import("./route");
+
+    expect((await GET(new Request("http://localhost/api/account/age-band"))).status).toBe(401);
+    expect(clerkClientMock).not.toHaveBeenCalled();
+  });
+
   it("rejects anonymous access and does not mutate Clerk", async () => {
     requireActionRequestAccessMock.mockResolvedValue({ ok: false, status: 401 });
     const { PATCH } = await import("./route");
