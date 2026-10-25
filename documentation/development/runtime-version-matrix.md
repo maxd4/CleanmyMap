@@ -1,6 +1,6 @@
 # Matrice des runtimes et versions
 
-État audité le 14 octobre 2026 à partir des manifests suivis, du lockfile npm,
+État vérifié le 25 octobre 2026 à partir des manifests suivis, du lockfile npm,
 des `tsconfig` associés et des fichiers de gouvernance propres à chaque
 surface. Cette matrice décrit les contrats actuels ; elle ne constitue pas une
 autorisation d'aligner ou d'upgrader les versions.
@@ -12,19 +12,24 @@ autorisation d'aligner ou d'upgrader les versions.
 | Outillage dépôt | Node 24.x (`apps/web/.nvmrc`) | Résolution racine 6.0.3 pour les scripts qui importent `typescript` depuis la racine ; `typescript-eslint` 8.71.2 | `node --test` pour les tests de scripts ; Vitest est appelé par workspace | Pas de build applicatif | `scripts/reports/generate-architecture-import-graph.mjs` consomme le TypeScript racine pour analyser les surfaces. Ce rôle d'outillage ne fixe pas le compilateur Web ou Mobile. |
 | Maintenance Python | Python 3.14.x ; hors runtimes Web/Mobile | Sans objet | pytest 9.1.1 dans `requirements-lock.txt` | Aucun build applicatif | `requirements.txt`, `requirements-dev.txt`, `requirements-lock.txt` et `pytest.ini` isolent la maintenance. `pyproject.toml` est absent ; aucune migration de configuration n'apporte actuellement de bénéfice démontré (`NO_CHANGE`). |
 
-## Divergence TypeScript Web/Mobile
+## Convergence des versions TypeScript Web/Mobile — configurations distinctes
 
-La divergence est explicite et volontaire :
+Web et Mobile utilisent actuellement la même version TypeScript `6.0.3` :
 
-- Web : `apps/web/package.json` déclare `typescript: 6.0.3` et npm résout
+- Web : `apps/web/package.json` la déclare et npm résout
   `node_modules/typescript` en `6.0.3` ;
-- Mobile : `apps/mobile/package.json` déclare `typescript: 6.0.3` et npm
-  résout le package depuis `node_modules/typescript` en `6.0.3`.
+- Mobile : `apps/mobile/package.json` la déclare et npm résout également
+  `node_modules/typescript` en `6.0.3`.
 
-Les deux workspaces ne sont donc pas officiellement décrits ici comme
-compatibles avec une version TypeScript commune. Aucun alignement n'a été
-tenté, aucun contournement n'a été ajouté et aucune version n'a été montée ou
-abaissée.
+Cette convergence de version est constatée dans les manifests et la résolution
+npm actuels. Elle ne constitue pas une politique d'alignement obligatoire pour
+les prochaines versions : toute évolution devra rester compatible avec les
+contrats propres à chaque surface.
+
+Les configurations de compilation et les contrats runtime restent distincts :
+Web possède une configuration Next/App Router complète, tandis que Mobile
+étend `expo/tsconfig.base`. La version TypeScript commune ne fusionne donc pas
+leurs `tsconfig` et ne remplace pas leurs runtimes respectifs.
 
 ## Résolution observée
 
