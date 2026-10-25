@@ -5,10 +5,6 @@ export function escapeMarkdown(value) {
   return String(value ?? "").replaceAll("|", "\\|").replaceAll("\n", " ");
 }
 
-function stateLabel(value) {
-  return value?.state ?? "NOT_MEASURED";
-}
-
 const TRIAGE_STRUCTURAL_CATEGORIES = Object.freeze([
   "complexity",
   "functionLength",

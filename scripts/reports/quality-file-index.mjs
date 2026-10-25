@@ -31,13 +31,10 @@ export {
 import {
   QUALITY_INDEX_SCHEMA_VERSION,
   QUALITY_INDEX_AUDITS,
-  QUALITY_GATE_INDEX_AUDITS,
-  QUALITY_INDEX_PREFIX,
   QUALITY_ARCHITECTURE_DOMAIN_PREFIX,
   REPOSITORY_ROOT,
   normalizePath,
   stableId,
-  state,
 } from "./quality-index-primitives.mjs";
 import { readOfflineQualityRun } from "./quality-index-offline.mjs";
 import { buildQualityFileIndexMarkdown } from "./quality-index-markdown.mjs";

@@ -193,10 +193,6 @@ function fileCategoryKey(category) {
   }[category] ?? category;
 }
 
-function humanClassification(candidate) {
-  return candidate.classification ?? candidate.finding?.classification ?? null;
-}
-
 function architectureDecision(files) {
   const decisions = uniqueSorted(files.flatMap((file) => [file.architecture?.decision, file.architecture?.architectureDecision]));
   return decisions.length > 0 ? decisions : [];
@@ -239,13 +235,6 @@ function effortEstimate(category, { files, prudence, evidenceState, classificati
   return { level: "NOT_ESTIMABLE", basis: ["le rapport ne mesure pas l’effort d’implémentation"] };
 }
 
-function isConfirmedCritical() {
-  // Quality Audit findings currently expose no structured, attributable proof
-  // that jointly confirms a defect and its criticality. Do not infer P0 from
-  // free text, field names, risk levels, or engine statuses.
-  return false;
-}
-
 function makeCandidate({ id, sourceKind, category, files, finding = null, classification = null, occurrences = [], distinctLinesAcrossFiles: measuredDistinctLines, groupEvidence = null, audits = {} }) {
   const normalizedFiles = files.sort((left, right) => left.path.localeCompare(right.path));
   const prudence = combinePrudence(normalizedFiles, category, finding);
@@ -282,7 +271,6 @@ function makeCandidate({ id, sourceKind, category, files, finding = null, classi
   const effort = effortEstimate(category, { files: normalizedFiles, prudence, evidenceState: evidence.state, classification: humanDecision, architectureDecisions });
   let proposedPriority = "P3";
   if (sourceKind === "measurement-gap" || evidence.state !== "PRESENT" || prudence.level === "REVIEW_REQUIRED") proposedPriority = "REVIEW_REQUIRED";
-  else if (isConfirmedCritical(finding, category, prudence)) proposedPriority = "P0";
   else if (humanDecision === "KEEP_INTENTIONAL" || humanDecision === "NO_ACTION_NOISE") proposedPriority = "P3";
   else if (benefit.level === "HIGH" && effort.level === "APPARENTLY_LIMITED" && ["R1", "R2"].includes(prudence.level)) proposedPriority = "P1";
   else if (["HIGH", "MEDIUM"].includes(benefit.level) || ["R3", "R4"].includes(prudence.level)) proposedPriority = "P2";
