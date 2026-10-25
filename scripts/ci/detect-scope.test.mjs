@@ -83,6 +83,12 @@ function resolveGitRangeScope(repositoryRoot, baseSha, candidateSha) {
   return { changedFiles, result: fromGitRange };
 }
 
+function currentRepositoryShas() {
+  const candidateSha = runGit(REPOSITORY_ROOT, ["rev-parse", "HEAD"]);
+  const baseSha = runGit(REPOSITORY_ROOT, ["rev-parse", "HEAD^"]);
+  return { baseSha, candidateSha };
+}
+
 test("workflow_dispatch FULL does not require event.before and keeps the candidate SHA", () => {
   const selection = resolveCiScopeSelection({
     eventName: "workflow_dispatch",
@@ -182,14 +188,7 @@ test("invalid events, modes, and SHAs fail closed", () => {
 });
 
 test("diff scope derives source-sensitive flags without widening a documentation-only change", () => {
-  const candidateSha = execFileSync(gitExecutable(), ["rev-parse", "HEAD"], {
-    cwd: REPOSITORY_ROOT,
-    encoding: "utf8",
-  }).trim();
-  const baseSha = execFileSync(gitExecutable(), ["rev-parse", "HEAD^"], {
-    cwd: REPOSITORY_ROOT,
-    encoding: "utf8",
-  }).trim();
+  const { baseSha, candidateSha } = currentRepositoryShas();
 
   const codeScope = resolveCiScope({
     repositoryRoot: REPOSITORY_ROOT,
@@ -247,6 +246,82 @@ test("diff scope derives source-sensitive flags without widening a documentation
   assert.equal(coverageControlScope.scope.docsOnly, false);
   assert.equal(coverageControlScope.scope.webCodeRelevant, true);
   assert.equal(coverageControlScope.scope.webCoverageRelevant, true);
+});
+
+test("Python source and every consumed dependency manifest select only the Python lane", () => {
+  const { baseSha, candidateSha } = currentRepositoryShas();
+  const pythonFiles = [
+    "maintenance/python/src/fixture.py",
+    "maintenance/python/scripts/fixture.py",
+    "maintenance/python/requirements.txt",
+    "maintenance/python/requirements-dev.txt",
+    "maintenance/python/requirements-lock.txt",
+    "maintenance/python/requirements-sonarqube-source.txt",
+  ];
+
+  for (const file of pythonFiles) {
+    const scope = resolveCiScope({
+      repositoryRoot: REPOSITORY_ROOT,
+      eventName: "push",
+      eventBefore: baseSha,
+      eventSha: candidateSha,
+      changedFiles: [file],
+    });
+    assert.equal(scope.scope.pythonCoverageRelevant, true, file);
+    assert.equal(scope.scope.webCoverageRelevant, false, file);
+    assert.equal(scope.scope.webCodeRelevant, false, file);
+    assert.equal(scope.scope.mobileCodeRelevant, false, file);
+  }
+
+  for (const file of ["documentation/python.md", "apps/web/src/page.tsx"]) {
+    const scope = resolveCiScope({
+      repositoryRoot: REPOSITORY_ROOT,
+      eventName: "push",
+      eventBefore: baseSha,
+      eventSha: candidateSha,
+      changedFiles: [file],
+    });
+    assert.equal(scope.scope.pythonCoverageRelevant, false, file);
+  }
+});
+
+test("Python dependency selection is identical for Git diff and explicit file lists", () => {
+  const fixture = createScopeGitFixture();
+  try {
+    const dependencyPath = join(
+      fixture.repositoryRoot,
+      "maintenance",
+      "python",
+      "requirements-lock.txt",
+    );
+    fs.mkdirSync(join(fixture.repositoryRoot, "maintenance", "python"), { recursive: true });
+    fs.writeFileSync(dependencyPath, "pytest==9.1.0\n", "utf8");
+    const dependencySha = commitFixture(fixture.repositoryRoot, "fixture Python dependency");
+    const dependency = resolveGitRangeScope(
+      fixture.repositoryRoot,
+      fixture.codeSha,
+      dependencySha,
+    );
+
+    assert.deepEqual(dependency.changedFiles, ["maintenance/python/requirements-lock.txt"]);
+    assert.equal(dependency.result.scope.pythonCoverageRelevant, true);
+    assert.equal(dependency.result.scope.webCoverageRelevant, false);
+    assert.equal(dependency.result.scope.webCodeRelevant, false);
+  } finally {
+    fs.rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+  }
+});
+
+test("CI consumes the Python scope signal for the exact candidate checkout", () => {
+  const workflow = fs.readFileSync(join(REPOSITORY_ROOT, ".github", "workflows", "ci.yml"), "utf8");
+  assert.match(workflow, /python_coverage_relevant:\s*\$\{\{\s*steps\.detect-scope\.outputs\.python_coverage_relevant\s*\}\}/);
+  assert.match(
+    workflow,
+    /python-validation:[\s\S]*?needs:\s*scope[\s\S]*?python_coverage_relevant == 'true'/,
+  );
+  assert.match(workflow, /maintenance\/python\/requirements-dev\.txt/);
+  assert.match(workflow, /maintenance\/python\/requirements-lock\.txt/);
+  assert.match(workflow, /npm run test:coverage:python/);
 });
 
 test("diff scope reads deterministic Git ranges without depending on the checkout HEAD", () => {

@@ -197,6 +197,16 @@ un push vers `main`, mais cette exécution post-publication ne bloque pas le
 push déjà accepté. Cette limite est distincte d'une protection de branche
 GitHub préalable, qui n'est pas créée ni modifiée par ce dépôt.
 
+Le périmètre Python est sélectionné pour les sources exécutables sous
+`maintenance/python/src/` et `maintenance/python/scripts/`, ainsi que pour les
+manifestes effectivement consommés par les lanes Python :
+`requirements.txt`, `requirements-dev.txt`, `requirements-lock.txt` et le
+manifeste source isolé de la lane SonarQube. Une modification de dépendance
+déclenche donc l'installation et la validation Python sur le SHA candidat
+exact ; une installation réussie seule ne constitue pas une preuve de
+compatibilité, et ne remplace pas l'exécution des tests et de la couverture.
+Cette sélection n'élargit pas automatiquement les suites Web ou mobile.
+
 ### FULL — préproduction exhaustive
 
 `FULL` est déclenché uniquement sur demande explicite ou dans une préparation

@@ -6,6 +6,16 @@ import { isWebCoverageRelevantFile } from "./coverage-publication.mjs";
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 
+// Keep this list aligned with the Python dependency manifests consumed by the
+// repository's validation lanes. A dependency-only change is executable risk:
+// it must select the Python lane even when no .py source file changed.
+const PYTHON_DEPENDENCY_MANIFESTS = new Set([
+  "maintenance/python/requirements.txt",
+  "maintenance/python/requirements-dev.txt",
+  "maintenance/python/requirements-lock.txt",
+  "maintenance/python/requirements-sonarqube-source.txt",
+]);
+
 const EMPTY_SCOPE = Object.freeze({
   docsOnly: false,
   webCodeRelevant: false,
@@ -52,6 +62,13 @@ function normalize(value) {
 function isDocumentationFile(file) {
   const normalized = String(file).replaceAll("\\", "/");
   return normalized.startsWith("documentation/") || /\.(md|mdx)$/i.test(normalized);
+}
+
+function isPythonCoverageRelevantFile(file) {
+  return (
+    /^maintenance\/python\/(src|scripts)\/.*\.py$/.test(file) ||
+    PYTHON_DEPENDENCY_MANIFESTS.has(file)
+  );
 }
 
 function isZeroSha(value) {
@@ -187,7 +204,7 @@ function deriveChangedScope(repositoryRoot, changedFiles) {
     if ((file.startsWith("scripts/") || file.startsWith("apps/web/scripts/")) && !file.endsWith(".md") && !file.endsWith(".mdx")) {
       nodeCoverageRelevant = true;
     }
-    if (/^maintenance\/python\/(src|scripts)\/.*\.py$/.test(file)) {
+    if (isPythonCoverageRelevantFile(file)) {
       pythonCoverageRelevant = true;
     }
   }
