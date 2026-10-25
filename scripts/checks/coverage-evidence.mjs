@@ -5,7 +5,10 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import { COVERAGE_SCOPE_FINGERPRINT } from "./coverage-policy.mjs";
+import {
+  COVERAGE_SCOPE_FINGERPRINT,
+  MOBILE_COVERAGE_SCOPE_FINGERPRINT,
+} from "./coverage-policy.mjs";
 import {
   createCandidateFingerprint,
   getWorktreeCandidateFiles,
@@ -15,17 +18,47 @@ import { gitExecutable } from "../ci/git-executable.mjs";
 const COVERAGE_EVIDENCE_VERSION = 2;
 export const COVERAGE_SUMMARY_RELATIVE_PATH = path.join("apps", "web", "coverage", "coverage-summary.json");
 export const COVERAGE_LCOV_RELATIVE_PATH = path.join("apps", "web", "coverage", "lcov.info");
-const COVERAGE_EVIDENCE_RELATIVE_PATH = path.join("apps", "web", "coverage", "coverage-evidence.json");
+export const MOBILE_COVERAGE_SUMMARY_RELATIVE_PATH = path.join("apps", "mobile", "coverage", "coverage-summary.json");
+export const MOBILE_COVERAGE_LCOV_RELATIVE_PATH = path.join("apps", "mobile", "coverage", "lcov.info");
+export const MOBILE_COVERAGE_EVIDENCE_RELATIVE_PATH = path.join("apps", "mobile", "coverage", "coverage-evidence.json");
 
-const CONFIGURATION_FILES = Object.freeze([
-  "apps/web/vitest.config.ts",
-  "apps/web/package.json",
-  "package.json",
-  "package-lock.json",
-  "scripts/checks/coverage-policy.mjs",
-  "scripts/checks/check-coverage.mjs",
-  "scripts/checks/coverage-evidence.mjs",
-]);
+const SCOPE_CONFIGURATION_FILES = Object.freeze({
+  web: Object.freeze([
+    "apps/web/vitest.config.ts",
+    "apps/web/package.json",
+    "package.json",
+    "package-lock.json",
+    "scripts/checks/coverage-policy.mjs",
+    "scripts/checks/check-coverage.mjs",
+    "scripts/checks/coverage-evidence.mjs",
+  ]),
+  mobile: Object.freeze([
+    "apps/mobile/vitest.config.ts",
+    "apps/mobile/package.json",
+    "package.json",
+    "package-lock.json",
+    "scripts/checks/coverage-policy.mjs",
+    "scripts/checks/check-coverage.mjs",
+    "scripts/checks/coverage-evidence.mjs",
+  ]),
+});
+
+const SCOPE_REPORTS = Object.freeze({
+  web: Object.freeze({
+    kind: "cleanmymap-web-coverage",
+    scopeFingerprint: COVERAGE_SCOPE_FINGERPRINT,
+    summaryPath: COVERAGE_SUMMARY_RELATIVE_PATH,
+    lcovPath: COVERAGE_LCOV_RELATIVE_PATH,
+    evidencePath: path.join("apps", "web", "coverage", "coverage-evidence.json"),
+  }),
+  mobile: Object.freeze({
+    kind: "cleanmymap-mobile-coverage",
+    scopeFingerprint: MOBILE_COVERAGE_SCOPE_FINGERPRINT,
+    summaryPath: MOBILE_COVERAGE_SUMMARY_RELATIVE_PATH,
+    lcovPath: MOBILE_COVERAGE_LCOV_RELATIVE_PATH,
+    evidencePath: MOBILE_COVERAGE_EVIDENCE_RELATIVE_PATH,
+  }),
+});
 
 const RELEVANT_ENVIRONMENT_KEYS = Object.freeze([
   "CI",
@@ -41,6 +74,12 @@ const RELEVANT_ENVIRONMENT_KEYS = Object.freeze([
 
 function repositoryPath(repositoryRoot, relativePath) {
   return path.join(repositoryRoot, ...relativePath.split("/"));
+}
+
+function scopeReport(scope) {
+  const report = SCOPE_REPORTS[scope];
+  if (!report) throw new Error(`Coverage evidence is not implemented for scope: ${scope}.`);
+  return report;
 }
 
 function gitHead(repositoryRoot) {
@@ -78,9 +117,11 @@ function readCandidateFile(repositoryRoot, relativePath, candidateRef = null) {
   return fs.readFileSync(repositoryPath(repositoryRoot, relativePath));
 }
 
-export function computeConfigurationFingerprint({ repositoryRoot = process.cwd(), candidateRef = null } = {}) {
+export function computeConfigurationFingerprint({ repositoryRoot = process.cwd(), candidateRef = null, scope = "web" } = {}) {
+  const configurationFiles = SCOPE_CONFIGURATION_FILES[scope];
+  if (!configurationFiles) throw new Error(`Coverage evidence is not implemented for scope: ${scope}.`);
   const hash = createHash("sha256");
-  for (const relativePath of CONFIGURATION_FILES) {
+  for (const relativePath of configurationFiles) {
     hash.update(`FILE:${relativePath}\n`);
     hash.update(readCandidateFile(repositoryRoot, relativePath, candidateRef));
   }
@@ -131,42 +172,45 @@ function expectedEvidence(
   repositoryRoot,
   summary,
   {
+    scope = "web",
     reportRoot = repositoryRoot,
     candidateRef = null,
     validateCandidateFingerprint = true,
   } = {},
 ) {
+  const report = scopeReport(scope);
   const candidateFingerprint = createCandidateFingerprint({
     repositoryRoot,
     candidateScope: "WORKTREE",
     changedFiles: getWorktreeCandidateFiles(repositoryRoot),
   });
   const environment = environmentDescriptor();
-  const lcovPath = repositoryPath(reportRoot, COVERAGE_LCOV_RELATIVE_PATH.replaceAll("\\", "/"));
+  const lcovPath = repositoryPath(reportRoot, report.lcovPath.replaceAll("\\", "/"));
   return {
     schemaVersion: COVERAGE_EVIDENCE_VERSION,
-    kind: "cleanmymap-web-coverage",
+    kind: report.kind,
     ...(validateCandidateFingerprint ? { candidateFingerprint } : {}),
     gitHead: candidateRef ?? gitHead(repositoryRoot),
-    scope: "web",
-    scopeFingerprint: COVERAGE_SCOPE_FINGERPRINT,
-    configurationFingerprint: computeConfigurationFingerprint({ repositoryRoot, candidateRef }),
+    scope,
+    scopeFingerprint: report.scopeFingerprint,
+    configurationFingerprint: computeConfigurationFingerprint({ repositoryRoot, candidateRef, scope }),
     environmentFingerprint: hashJson(environment),
     summarySha256: computeCoverageSummaryHash(summary, reportRoot),
-    summaryPath: COVERAGE_SUMMARY_RELATIVE_PATH.replaceAll("\\", "/"),
+    summaryPath: report.summaryPath.replaceAll("\\", "/"),
     lcovSha256: computeCoverageFileHash(lcovPath),
-    lcovPath: COVERAGE_LCOV_RELATIVE_PATH.replaceAll("\\", "/"),
+    lcovPath: report.lcovPath.replaceAll("\\", "/"),
   };
 }
 
-export function writeCoverageEvidence({ repositoryRoot = process.cwd() } = {}) {
-  const summaryPath = repositoryPath(repositoryRoot, COVERAGE_SUMMARY_RELATIVE_PATH.replaceAll("\\", "/"));
+export function writeCoverageEvidence({ repositoryRoot = process.cwd(), scope = "web" } = {}) {
+  const report = scopeReport(scope);
+  const summaryPath = repositoryPath(repositoryRoot, report.summaryPath.replaceAll("\\", "/"));
   const summary = JSON.parse(fs.readFileSync(summaryPath, "utf8"));
   const evidence = {
-    ...expectedEvidence(repositoryRoot, summary),
+    ...expectedEvidence(repositoryRoot, summary, { scope }),
     createdAt: new Date().toISOString(),
   };
-  const evidencePath = repositoryPath(repositoryRoot, COVERAGE_EVIDENCE_RELATIVE_PATH.replaceAll("\\", "/"));
+  const evidencePath = repositoryPath(repositoryRoot, report.evidencePath.replaceAll("\\", "/"));
   fs.writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
   console.log(`COVERAGE_EVIDENCE_WRITTEN: ${evidencePath}`);
   console.log(`COVERAGE_CANDIDATE: ${evidence.candidateFingerprint}`);
@@ -174,14 +218,16 @@ export function writeCoverageEvidence({ repositoryRoot = process.cwd() } = {}) {
 }
 export function validateCoverageEvidence({
   repositoryRoot = process.cwd(),
+  scope = "web",
   expectedCandidateSha = null,
   requireCleanWorktree = false,
   reportRoot = repositoryRoot,
   candidateRef = null,
   validateCandidateFingerprint = true,
 } = {}) {
-  const summaryPath = repositoryPath(reportRoot, COVERAGE_SUMMARY_RELATIVE_PATH.replaceAll("\\", "/"));
-  const evidencePath = repositoryPath(reportRoot, COVERAGE_EVIDENCE_RELATIVE_PATH.replaceAll("\\", "/"));
+  const report = scopeReport(scope);
+  const summaryPath = repositoryPath(reportRoot, report.summaryPath.replaceAll("\\", "/"));
+  const evidencePath = repositoryPath(reportRoot, report.evidencePath.replaceAll("\\", "/"));
   let evidence;
   let summary;
   try {
@@ -191,6 +237,7 @@ export function validateCoverageEvidence({
     throw new Error(`Coverage evidence incomplete or unreadable: ${error instanceof Error ? error.message : String(error)}`);
   }
   const expected = expectedEvidence(repositoryRoot, summary, {
+    scope,
     reportRoot,
     candidateRef,
     validateCandidateFingerprint,

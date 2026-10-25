@@ -250,6 +250,20 @@ export function validateCoveragePublicationProof({
   }
   if (scope === "mobile") {
     if (proof.scopeFingerprint !== MOBILE_COVERAGE_SCOPE_FINGERPRINT) throw new Error("Mobile coverage scope fingerprint is incompatible.");
+    const evidencePath = reportPath(proof, root, "apps/mobile/coverage/coverage-evidence.json");
+    if (!fs.existsSync(evidencePath)) throw new Error("Mobile coverage evidence is missing from the publication proof.");
+    validateCoverageEvidence({
+      repositoryRoot,
+      scope: "mobile",
+      expectedCandidateSha: candidateSha,
+      reportRoot: root,
+      candidateRef: candidateSha,
+      // A DYNAMIC_CANDIDATE is materialized elsewhere; its candidate
+      // fingerprint cannot be recomputed from the publishing checkout.
+      // The proof SHA, Git-bound evidence, configuration hash and report
+      // hashes remain mandatory and are checked above and here.
+      validateCandidateFingerprint: false,
+    });
   }
   if (proof.policyFingerprint !== COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT) {
     throw new Error("Coverage proof policy fingerprint is incompatible with the current policy.");
@@ -263,7 +277,11 @@ function sourceReports(scope) {
     "apps/web/coverage/lcov.info",
     "apps/web/coverage/coverage-evidence.json",
   ];
-  if (scope === "mobile") return ["apps/mobile/coverage/coverage-summary.json"];
+  if (scope === "mobile") return [
+    "apps/mobile/coverage/coverage-summary.json",
+    "apps/mobile/coverage/lcov.info",
+    "apps/mobile/coverage/coverage-evidence.json",
+  ];
   if (scope === "node") return ["scripts/coverage/coverage-summary.json", "scripts/coverage/lcov.info"];
   if (scope === "python") return ["maintenance/python/coverage.xml"];
   throw new Error(`Unsupported coverage publication scope: ${scope}.`);
@@ -357,7 +375,14 @@ export function runCoveragePublicationGate({
           paths: { ...getDefaultCoveragePaths(repositoryRoot, "mobile"), summary },
           currentCommit: candidateSha,
           enforcementPolicy: policy,
-          validateScopeEvidence: () => {},
+          validateScopeEvidence: ({ repositoryRoot: evidenceRepositoryRoot, expectedCandidateSha }) => validateCoverageEvidence({
+            repositoryRoot: evidenceRepositoryRoot,
+            scope: "mobile",
+            expectedCandidateSha,
+            reportRoot: proof.root,
+            candidateRef: candidateSha,
+            validateCandidateFingerprint: false,
+          }),
           setProcessExitCode: false,
         });
         if (result.enforcementStatus !== "PASS") throw new Error(`Coverage ENFORCE failed for mobile/${candidateSha}: ${result.enforcementStatus}.`);

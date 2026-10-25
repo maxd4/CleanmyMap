@@ -23,6 +23,7 @@ import {
   runCoveragePublicationGate,
   validateCoveragePublicationProof,
 } from "./coverage-publication.mjs";
+import { runCoverageCheck } from "../checks/check-coverage.mjs";
 import { gitExecutable } from "./git-executable.mjs";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
@@ -42,6 +43,14 @@ function changedLinesEnforcedWebPolicy() {
   const policy = structuredClone(COVERAGE_ENFORCEMENT_POLICY);
   policy.scopes.web.changedLines.state = "ENFORCE";
   policy.scopes.web.changedLines.activation = { version: 1, sourceCommit: candidateSha() };
+  return policy;
+}
+
+function enforcedMobilePolicy() {
+  const policy = structuredClone(COVERAGE_ENFORCEMENT_POLICY);
+  policy.scopes.mobile.state = "ENFORCE";
+  policy.scopes.mobile.minimum = { lines: 80 };
+  policy.scopes.mobile.activation = { version: 1, sourceCommit: candidateSha() };
   return policy;
 }
 
@@ -94,6 +103,60 @@ function writeWebProof(root, sha, { candidate = sha } = {}) {
     candidateScope: "CI_CANDIDATE",
     scope: "web",
     scopeFingerprint: COVERAGE_SCOPE_FINGERPRINT,
+    policyFingerprint: COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT,
+    reports: proofReports,
+  }), "utf8");
+}
+
+function writeMobileProof(root, sha, { candidate = sha, proofCandidate = sha, covered = 1, total = 1 } = {}) {
+  const scopeRoot = path.join(root, sha, "mobile");
+  const reports = [
+    "apps/mobile/coverage/coverage-summary.json",
+    "apps/mobile/coverage/lcov.info",
+    "apps/mobile/coverage/coverage-evidence.json",
+  ];
+  const summary = {
+    total: {
+      statements: { total, covered, pct: (covered / total) * 100 },
+      branches: { total, covered, pct: (covered / total) * 100 },
+      functions: { total, covered, pct: (covered / total) * 100 },
+      lines: { total, covered, pct: (covered / total) * 100 },
+    },
+  };
+  for (const report of reports) {
+    const absolute = path.join(scopeRoot, report);
+    fs.mkdirSync(path.dirname(absolute), { recursive: true });
+    fs.writeFileSync(absolute, report.endsWith("coverage-summary.json") ? JSON.stringify(summary) : report.endsWith(".json") ? "{}\n" : "TN:\n", "utf8");
+  }
+  fs.writeFileSync(
+    path.join(scopeRoot, "apps/mobile/coverage/coverage-evidence.json"),
+    JSON.stringify({
+      schemaVersion: 2,
+      kind: "cleanmymap-mobile-coverage",
+      gitHead: candidate,
+      scope: "mobile",
+      scopeFingerprint: MOBILE_COVERAGE_SCOPE_FINGERPRINT,
+      configurationFingerprint: computeConfigurationFingerprint({ repositoryRoot, candidateRef: sha, scope: "mobile" }),
+      environmentFingerprint: computeCoverageEnvironmentFingerprint(),
+      summarySha256: computeCoverageSummaryHash(summary, scopeRoot),
+      summaryPath: "apps/mobile/coverage/coverage-summary.json",
+      lcovSha256: computeCoverageFileHash(path.join(scopeRoot, "apps/mobile/coverage/lcov.info")),
+      lcovPath: "apps/mobile/coverage/lcov.info",
+    }),
+    "utf8",
+  );
+  const proofReports = reports.map((source) => ({
+    source,
+    path: source,
+    sha256: createHash("sha256").update(fs.readFileSync(path.join(scopeRoot, source))).digest("hex"),
+  }));
+  fs.writeFileSync(path.join(scopeRoot, "coverage-publication-proof.json"), JSON.stringify({
+    schemaVersion: 1,
+    kind: "cleanmymap-coverage-publication-proof",
+    candidateSha: proofCandidate,
+    candidateScope: "CI_CANDIDATE",
+    scope: "mobile",
+    scopeFingerprint: MOBILE_COVERAGE_SCOPE_FINGERPRINT,
     policyFingerprint: COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT,
     reports: proofReports,
   }), "utf8");
@@ -287,5 +350,181 @@ test("Web evidence rejects a summary or configuration fingerprint mismatch", () 
       else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
       fs.rmSync(temporaryRoot, { recursive: true, force: true });
     }
+  }
+});
+
+test("mobile ENFORCE reuses a valid exact-candidate proof without rerunning Vitest", () => {
+  const sha = candidateSha();
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-mobile-coverage-proof-"));
+  const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;
+  try {
+    writeMobileProof(temporaryRoot, sha);
+    let coverageCheckCalls = 0;
+    const coverageCheck = (options) => {
+      coverageCheckCalls += 1;
+      assert.equal(options.paths.summary, path.join(temporaryRoot, sha, "mobile", "apps/mobile/coverage/coverage-summary.json"));
+      return { enforcementStatus: "PASS" };
+    };
+    const first = runCoveragePublicationGate({
+      repositoryRoot,
+      candidateSha: sha,
+      changedFiles: ["apps/mobile/src/screens/home.tsx"],
+      policy: enforcedMobilePolicy(),
+      coverageCheck,
+    });
+    const second = runCoveragePublicationGate({
+      repositoryRoot,
+      candidateSha: sha,
+      changedFiles: ["apps/mobile/src/screens/home.tsx"],
+      policy: enforcedMobilePolicy(),
+      coverageCheck,
+    });
+    assert.equal(first.status, "PASS");
+    assert.equal(second.status, "PASS");
+    assert.equal(coverageCheckCalls, 2);
+  } finally {
+    if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("mobile ENFORCE passe par le checker réel au seuil exact", () => {
+  const sha = candidateSha();
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-mobile-exact-threshold-"));
+  const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;
+  try {
+    writeMobileProof(temporaryRoot, sha, { covered: 4, total: 5 });
+    const result = runCoveragePublicationGate({
+      repositoryRoot,
+      candidateSha: sha,
+      changedFiles: ["apps/mobile/src/screens/home.tsx"],
+      policy: enforcedMobilePolicy(),
+      coverageCheck: runCoverageCheck,
+    });
+    assert.equal(result.status, "PASS");
+  } finally {
+    if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("mobile publication rejects a proof presented for another candidate", () => {
+  const sha = candidateSha();
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-mobile-stale-proof-"));
+  const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;
+  try {
+    writeMobileProof(temporaryRoot, sha, { candidate: "f".repeat(40) });
+    assert.throws(
+      () => validateCoveragePublicationProof({ repositoryRoot, candidateSha: sha, scope: "mobile" }),
+      /candidate mismatch|gitHead/,
+    );
+  } finally {
+    if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("mobile ENFORCE refuse une preuve absente ou incomplète", () => {
+  const sha = candidateSha();
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-mobile-missing-proof-"));
+  const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;
+  try {
+    assert.throws(
+      () => runCoveragePublicationGate({
+        repositoryRoot,
+        candidateSha: sha,
+        changedFiles: ["apps/mobile/src/screens/home.tsx"],
+        policy: enforcedMobilePolicy(),
+      }),
+      /Coverage proof is missing/,
+    );
+  } finally {
+    if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("mobile publication rejects an old report when its manifest is recreated for a new candidate", () => {
+  const measuredSha = candidateSha();
+  const presentedSha = execFileSync(gitExecutable(), ["rev-parse", "HEAD^"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-mobile-recreated-proof-"));
+  const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;
+  try {
+    writeMobileProof(temporaryRoot, presentedSha, { candidate: measuredSha, proofCandidate: presentedSha });
+    assert.throws(
+      () => validateCoveragePublicationProof({ repositoryRoot, candidateSha: presentedSha, scope: "mobile" }),
+      /Coverage evidence mismatch: gitHead|candidate mismatch/,
+    );
+  } finally {
+    if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("mobile publication rejects altered LCOV, summary evidence, and configuration evidence", () => {
+  const sha = candidateSha();
+  for (const mutation of ["lcov", "evidence", "configuration"]) {
+    const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-mobile-falsified-proof-"));
+    const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;
+    try {
+      writeMobileProof(temporaryRoot, sha);
+      const scopeRoot = path.join(temporaryRoot, sha, "mobile");
+      if (mutation === "lcov") {
+        fs.appendFileSync(path.join(scopeRoot, "apps/mobile/coverage/lcov.info"), "TN:changed\n", "utf8");
+      } else {
+        const evidencePath = path.join(scopeRoot, "apps/mobile/coverage/coverage-evidence.json");
+        const evidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+        evidence[mutation === "configuration" ? "configurationFingerprint" : "summarySha256"] = "f".repeat(64);
+        fs.writeFileSync(evidencePath, JSON.stringify(evidence), "utf8");
+        const proofPath = path.join(scopeRoot, "coverage-publication-proof.json");
+        const proof = JSON.parse(fs.readFileSync(proofPath, "utf8"));
+        const evidenceReport = proof.reports.find((report) => report.source.endsWith("coverage-evidence.json"));
+        evidenceReport.sha256 = createHash("sha256").update(fs.readFileSync(evidencePath)).digest("hex");
+        fs.writeFileSync(proofPath, JSON.stringify(proof), "utf8");
+      }
+      assert.throws(
+        () => validateCoveragePublicationProof({ repositoryRoot, candidateSha: sha, scope: "mobile" }),
+        mutation === "lcov" ? /missing, changed, or falsified/ : new RegExp(mutation === "configuration" ? "configurationFingerprint" : "summarySha256"),
+      );
+    } finally {
+      if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+      else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+      fs.rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  }
+});
+
+test("mobile ENFORCE bloque un verdict sous le seuil même avec une preuve valide", () => {
+  const sha = candidateSha();
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-mobile-under-threshold-"));
+  const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;
+  try {
+    writeMobileProof(temporaryRoot, sha, { covered: 3, total: 5 });
+    assert.throws(
+      () => runCoveragePublicationGate({
+        repositoryRoot,
+        candidateSha: sha,
+        changedFiles: ["apps/mobile/src/screens/home.tsx"],
+        policy: enforcedMobilePolicy(),
+        coverageCheck: runCoverageCheck,
+      }),
+      /Coverage ENFORCE failed for mobile/,
+    );
+  } finally {
+    if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
   }
 });

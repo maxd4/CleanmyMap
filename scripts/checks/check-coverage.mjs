@@ -71,10 +71,13 @@ export function runCoverageCheck({
     if (scope === "web") {
       validateEvidence({ repositoryRoot, expectedCandidateSha: candidateSha });
     } else if (enforceScope) {
-      if (typeof validateScopeEvidence !== "function") {
+      if (typeof validateScopeEvidence === "function") {
+        validateScopeEvidence({ repositoryRoot, scope, expectedCandidateSha: candidateSha });
+      } else if (scope === "mobile") {
+        validateCoverageEvidence({ repositoryRoot, scope, expectedCandidateSha: candidateSha });
+      } else {
         throw new Error(`Coverage provenance validation is not implemented for ENFORCE scope: ${scope}.`);
       }
-      validateScopeEvidence({ repositoryRoot, scope, expectedCandidateSha: candidateSha });
     }
     console.log(`ALREADY_PROVEN: ${scope} coverage summary`);
     console.log(`REUSED_EVIDENCE_SOURCE: ${scope === "mobile" ? "apps/mobile/coverage" : "apps/web/coverage/coverage-evidence.json"}`);

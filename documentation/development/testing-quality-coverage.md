@@ -268,9 +268,18 @@ functions `47.89 %` (`114/238`) et lines `49.25 %` (`396/804`). Aucun
 pourcentage mobile n'est
 agrégé avec le web et le mobile ne possède pas de domaines web artificiels.
 Une baisse mobile est donc comparée indépendamment sur les quatre métriques.
-Comme pour le Web, elle est reportée mais ne bloque ni CI, ni FULL, ni le scan
-SonarQube ; l'échec des tests, de la production du rapport ou de sa validation
-reste bloquant.
+La mesure produit également `apps/mobile/coverage/coverage-evidence.json` et
+une preuve de publication mobile sous
+`artifacts/coverage-publication/<SHA>/mobile/`. Cette preuve est liée au SHA
+exact du candidat, à l'empreinte de configuration mobile, au résumé JSON et au
+LCOV ; le gate vérifie ces éléments séparément du Web. Une preuve mobile d'un
+autre candidat, un résumé ou LCOV modifié, une configuration divergente, une
+mesure absente ou incomplète ne peut donc pas être réutilisée comme succès.
+Les preuves valides du même candidat sont réutilisées sans relancer Vitest.
+Comme pour le Web, la comparaison historique mobile reste reportée mais ne
+bloque ni CI, ni FULL, ni le scan SonarQube ; l'échec des tests, de la
+production du rapport ou de sa validation reste bloquant lorsqu'un périmètre
+est activé.
 
 ### Rapports de couverture importés par SonarQube Cloud
 

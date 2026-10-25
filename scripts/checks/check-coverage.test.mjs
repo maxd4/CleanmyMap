@@ -20,6 +20,7 @@ import {
   aggregateCoverage,
   classifyCoverageFile,
   compareCoverage,
+  changedLineTarget,
   evaluateCoveragePolicy,
   formatCoverageGrace,
   measureChangedLineCoverage,
@@ -556,6 +557,28 @@ test("changedLines applique le ratio exact au seuil et échoue juste en dessous"
   const below = measureChangedLineCoverage({ changedLines, lcovContent: lcov(8), policyEntry });
   assert.equal(below.status, "FAIL");
   assert.equal(below.failures[0].target, 90);
+});
+
+test("changedLines utilise les cibles versionnées du périmètre et non les valeurs globales", () => {
+  const policyEntry = {
+    ...COVERAGE_CHANGED_LINE_POLICY,
+    state: "ENFORCE",
+    targets: { critical: 95, nonCritical: 77 },
+    activation: { version: 1, sourceCommit: "a".repeat(40) },
+  };
+  const changedLines = [{ path: "apps/web/src/lib/auth/feature.ts", lines: Array.from({ length: 20 }, (_, index) => index + 1) }];
+  const lcov = (covered) => [
+    "SF:apps/web/src/lib/auth/feature.ts",
+    ...Array.from({ length: 20 }, (_, index) => `DA:${index + 1},${index < covered ? 1 : 0}`),
+    "end_of_record",
+  ].join("\n");
+  const below = measureChangedLineCoverage({ changedLines, lcovContent: lcov(18), policyEntry });
+  assert.equal(below.status, "FAIL");
+  assert.equal(below.failures[0].target, 95);
+  const exact = measureChangedLineCoverage({ changedLines, lcovContent: lcov(19), policyEntry });
+  assert.equal(exact.status, "PASS");
+  assert.equal(exact.observations[0].target, 95);
+  assert.equal(changedLineTarget("new-code-non-critical", policyEntry), 77);
 });
 
 test("changedLines ENFORCE indisponible force le code de sortie non nul", () => {

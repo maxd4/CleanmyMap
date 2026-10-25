@@ -8,6 +8,9 @@ import test from "node:test";
 import {
   COVERAGE_LCOV_RELATIVE_PATH,
   COVERAGE_SUMMARY_RELATIVE_PATH,
+  MOBILE_COVERAGE_EVIDENCE_RELATIVE_PATH,
+  MOBILE_COVERAGE_LCOV_RELATIVE_PATH,
+  MOBILE_COVERAGE_SUMMARY_RELATIVE_PATH,
   validateCoverageEvidence,
   writeCoverageEvidence,
 } from "./coverage-evidence.mjs";
@@ -46,6 +49,37 @@ function fixture() {
 
 function cleanup(root) {
   fs.rmSync(root, { recursive: true, force: true });
+}
+
+function mobileFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-mobile-coverage-evidence-"));
+  fs.mkdirSync(path.join(root, "apps", "mobile", "coverage"), { recursive: true });
+  fs.mkdirSync(path.join(root, "apps", "mobile"), { recursive: true });
+  fs.mkdirSync(path.join(root, "scripts", "checks"), { recursive: true });
+  for (const relativePath of [
+    "apps/mobile/vitest.config.ts",
+    "apps/mobile/package.json",
+    "package.json",
+    "package-lock.json",
+    "scripts/checks/coverage-policy.mjs",
+    "scripts/checks/check-coverage.mjs",
+    "scripts/checks/coverage-evidence.mjs",
+  ]) {
+    const target = path.join(root, ...relativePath.split("/"));
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, relativePath, "utf8");
+  }
+  fs.writeFileSync(
+    path.join(root, ...MOBILE_COVERAGE_SUMMARY_RELATIVE_PATH.split("/")),
+    JSON.stringify({ total: { lines: { total: 2, covered: 1, pct: 50 } } }),
+    "utf8",
+  );
+  fs.writeFileSync(path.join(root, ...MOBILE_COVERAGE_LCOV_RELATIVE_PATH.split("/")), "TN:\nSF:src/example.ts\nDA:1,1\nend_of_record\n", "utf8");
+  fs.writeFileSync(path.join(root, ".gitignore"), "apps/mobile/coverage/\n", "utf8");
+  execFileSync("git", ["init", "-q"], { cwd: root });
+  execFileSync("git", ["add", "."], { cwd: root });
+  execFileSync("git", ["-c", "user.name=fixture", "-c", "user.email=fixture", "commit", "-qm", "fixture"], { cwd: root });
+  return root;
 }
 
 test("coverage evidence accepts the same candidate/configuration", () => {
@@ -95,6 +129,31 @@ test("missing coverage evidence cannot be treated as checker-only proof", () => 
   const root = fixture();
   try {
     assert.throws(() => validateCoverageEvidence({ repositoryRoot: root }), /evidence incomplete or unreadable/);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("mobile coverage evidence binds the candidate, mobile configuration, summary, and LCOV", () => {
+  const root = mobileFixture();
+  try {
+    writeCoverageEvidence({ repositoryRoot: root, scope: "mobile" });
+    const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    assert.doesNotThrow(() => validateCoverageEvidence({ repositoryRoot: root, scope: "mobile", expectedCandidateSha: candidateSha }));
+
+    fs.appendFileSync(path.join(root, ...MOBILE_COVERAGE_LCOV_RELATIVE_PATH.split("/")), "TN:changed\n", "utf8");
+    assert.throws(() => validateCoverageEvidence({ repositoryRoot: root, scope: "mobile" }), /lcovSha256/);
+
+    const configurationRoot = mobileFixture();
+    try {
+      writeCoverageEvidence({ repositoryRoot: configurationRoot, scope: "mobile" });
+      fs.appendFileSync(path.join(configurationRoot, "apps", "mobile", "vitest.config.ts"), "changed\n", "utf8");
+      assert.throws(() => validateCoverageEvidence({ repositoryRoot: configurationRoot, scope: "mobile" }), /configurationFingerprint/);
+    } finally {
+      cleanup(configurationRoot);
+    }
+
+    assert.equal(path.join("apps", "mobile", "coverage", "coverage-evidence.json"), MOBILE_COVERAGE_EVIDENCE_RELATIVE_PATH);
   } finally {
     cleanup(root);
   }

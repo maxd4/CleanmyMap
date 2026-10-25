@@ -632,10 +632,11 @@ export function parseLcovLineCoverage(content, { scope = "web" } = {}) {
   return records;
 }
 
-function changedLineTarget(domain) {
-  if (["security", "business", "api-persistence"].includes(domain)) return COVERAGE_CHANGED_LINE_POLICY.targets.critical;
-  if (domain === "ui-presentational") return COVERAGE_CHANGED_LINE_POLICY.uiPresentationalTarget;
-  if (domain === "new-code-non-critical") return COVERAGE_CHANGED_LINE_POLICY.targets.nonCritical;
+export function changedLineTarget(domain, policyEntry = COVERAGE_CHANGED_LINE_POLICY) {
+  const targets = policyEntry?.targets ?? COVERAGE_CHANGED_LINE_POLICY.targets;
+  if (["security", "business", "api-persistence"].includes(domain)) return targets.critical;
+  if (domain === "ui-presentational") return policyEntry?.uiPresentationalTarget ?? null;
+  if (domain === "new-code-non-critical") return targets.nonCritical;
   return null;
 }
 
@@ -748,7 +749,7 @@ export function measureChangedLineCoverage({
       const domain = classification.domain;
       const domainEntry = byDomain.get(domain) ?? {
         domain,
-        target: changedLineTarget(domain),
+        target: changedLineTarget(domain, policyEntry),
         covered: 0,
         total: 0,
         missing: [],
