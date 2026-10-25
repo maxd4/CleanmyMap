@@ -92,6 +92,113 @@ pas une preuve : les invariants critiques exigent un `EXECUTED_DB_CONTRACT`
 réel, conformément aux niveaux de preuve de `TESTING.md`. En l'absence de cette
 exécution, le compte rendu doit conserver `DB_SEMANTICS_NOT_EXECUTED`.
 
+## Exécution substantielle des macro-lots de couverture
+
+Cette section s'applique à tout lot de couverture qui vise plusieurs fonctions,
+routes, services, propriétaires runtime ou invariants métier. Elle ne transforme
+pas une correction locale en campagne globale et ne s'applique pas à un simple
+changement documentaire ou à une régression isolée sans objectif de couverture.
+
+### Matrice d'acceptation obligatoire
+
+Avant la première modification, le lot établit une matrice bornée, à partir du
+`main` réellement inspecté, des `AGENTS.md` applicables, des contrats `CURRENT`
+et des tests existants. Pour chaque objectif ou invariant retenu, la matrice
+contient au minimum :
+
+| Champ | Contenu attendu |
+| --- | --- |
+| Objectif / invariant | propriété métier ou technique à démontrer |
+| Owner runtime | fichier ou module canonique qui prend la décision |
+| Preuve existante | tests, assertions et niveau de preuve réellement exécuté |
+| Lacune | scénario absent, assertion trop faible ou branche non exercée |
+| Risque | impact sécurité, données, métier, concurrence ou confidentialité |
+| Validation | suite ciblée, mesure, contrat PostgreSQL ou autre preuve requise |
+
+La présence d'un fichier de test ne vaut pas couverture comportementale : la
+matrice examine les assertions, les effets observables et les chemins réellement
+exécutés. Elle inclut, lorsque le contrat le requiert, les chemins positifs et
+négatifs, l'identité ou le rôle insuffisant, la ressource étrangère, l'entrée
+invalide, les erreurs de dépendance et de persistance, la reprise, le retry,
+l'idempotence, la concurrence, les projections et l'absence d'effets indus.
+
+### Règle d'exécution complète
+
+Un défaut corrigé, une suite existante passée, un commit publié ou une mesure
+ciblée ne clôturent pas à eux seuls un macro-lot. Après chaque correction, le
+lot revient à sa matrice pour :
+
+1. identifier les invariants et propriétaires encore non traités ;
+2. compléter les tests des autres chemins directement concernés ;
+3. exécuter les validations applicables et rattacher les résultats au candidat
+   mesuré ;
+4. mesurer à nouveau le même périmètre lorsque la couverture est un objectif ;
+5. vérifier la `STOP CONDITION` globale avant tout verdict `terminé`.
+
+Une publication intermédiaire peut être nécessaire pour isoler une correction,
+mais elle est alors rapportée comme étape partielle et non comme clôture du
+macro-lot.
+
+### Tests à valeur métier
+
+Chaque invariant retenu doit être protégé par des assertions sur le résultat,
+les mutations, les effets secondaires et les données exposées. Les tests ne
+doivent pas seulement vérifier la présence d'un helper, d'un mock, d'un client
+privilégié ou d'un texte attendu. Les tests redondants, tautologiques ou ajoutés
+uniquement pour augmenter le compteur sont interdits.
+
+Pour une règle numérique, couvrir les limites pertinentes, notamment la valeur
+nulle ou absente, zéro observé, valeur négative, dénominateur absent et valeurs
+juste avant, sur et après le seuil lorsque ces états appartiennent au contrat.
+Pour une mutation, vérifier aussi le refus, l'absence d'écriture privilégiée,
+la reprise après erreur et l'idempotence lorsque ces propriétés sont requises.
+
+### Mesure comparable et limites de preuve
+
+Lorsqu'une mesure avant/après est demandée ou disponible, elle utilise le même
+projet, le même périmètre, les mêmes exclusions, la même méthode et une
+provenance explicite. Le rapport conserve le SHA exact et les quatre métriques
+`covered / total` : statements, branches, functions et lines. Il distingue la
+couverture ciblée de la couverture globale et liste les fichiers et branches
+critiques encore insuffisamment exercés.
+
+Il est interdit de modifier une baseline, un seuil, un dénominateur ou une
+exclusion pour améliorer le résultat. Une mesure ciblée ne remplace pas une
+mesure globale lorsque celle-ci fait partie de l'objectif. Rapportées
+explicitement, les situations `NOT_MEASURED`, `NOT_RUN`, `BLOCKED_*`, `FAIL` et
+`DB_SEMANTICS_NOT_EXECUTED` ne deviennent jamais un succès par défaut.
+
+### Porte de clôture et livrable
+
+Avant `VERDICT_REVIEW: terminé`, le compte rendu répond explicitement à ces
+questions :
+
+1. Tous les objectifs et propriétaires du périmètre ont-ils été traités ?
+2. Quels nouveaux tests protègent chaque invariant retenu ?
+3. Quelles branches critiques restent sans preuve ?
+4. Quels fichiers runtime ont réellement gagné en couverture ?
+5. Quels échecs sont préexistants, parallèles, introduits ou bloquants ?
+6. Les validations et niveaux de preuve sont-ils correctement qualifiés ?
+7. Le candidat publié et la convergence du `main` ont-ils été vérifiés ?
+
+Si un objectif important ou une preuve indispensable reste non traité, le
+verdict est `PARTIEL` ou `BLOQUÉ`, même si les tests exécutés sont verts et que
+le commit est publié. Le livrable conserve au minimum :
+
+- objectifs initiaux et matrice invariants → nouveaux tests ;
+- fichiers modifiés et propriétaires couverts ;
+- mesures avant/après comparables, ou diagnostic de leur indisponibilité ;
+- commandes réellement exécutées et résultats ;
+- échecs préexistants ou blocages ;
+- invariants encore sans preuve ;
+- commit, push et convergence du `main` lorsqu'ils sont demandés ;
+- verdict final `TERMINÉ`, `PARTIEL` ou `BLOQUÉ`.
+
+Cette porte de clôture reste proportionnée : elle n'impose ni `FULL`, ni une
+quantité arbitraire de tests, ni une nouvelle abstraction de harness. Elle
+interdit seulement de présenter un sous-ensemble validé comme l'achèvement
+d'un objectif de couverture plus large.
+
 ### Garde progressive et activation explicite
 
 Le moteur unique porte aussi `COVERAGE_ENFORCEMENT_POLICY`, versionné dans

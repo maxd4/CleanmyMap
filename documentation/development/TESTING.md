@@ -127,6 +127,12 @@ réécrits pour ratifier implicitement l'implémentation candidate ; une
 évolution légitime du contrat doit être documentée et accompagnée de la
 preuve correspondante dans son owner canonique.
 
+Pour les macro-lots de couverture couvrant plusieurs propriétaires, la matrice
+d'acceptation, la mesure comparable et la porte de clôture obligatoires sont
+définies dans [`testing-quality-coverage.md`](./testing-quality-coverage.md).
+Un test ciblé passé ou un commit publié ne suffit pas à déclarer le macro-lot
+terminé si un objectif important de cette matrice reste sans preuve.
+
 ## Seuils et qualité des assertions
 
 Un test doit protéger un invariant identifiable et non reproduire la structure
