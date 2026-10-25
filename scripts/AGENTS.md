@@ -118,13 +118,18 @@ par le même verrou borné que l'inventaire, la migration et la rétention, ce q
 empêche un démarrage de se glisser entre l'inventaire et une suppression. Un
 owner du même hôte dont le PID est démontré absent peut être récupéré ; les
 marqueurs anciens, ambigus ou invérifiables restent préservés avec diagnostic.
-Après chaque audit terminé,
-le runner conserve les trois SHA les plus récemment exécutés, sauf les SHA
-encore actifs, et migre les artefacts legacy reconnus sans supprimer un fichier
-inconnu, un lien symbolique ou une archive. Les informations de provenance et
-les résultats auxiliaires restent descriptifs et non bloquants pour ce runner :
-ils ne constituent pas une preuve de candidat publié et aucun audit ne modifie
-automatiquement une baseline, une justification ou un seuil.
+Après chaque audit terminé, le runner conserve les trois SHA les plus récemment
+exécutés et, en complément, le SHA du dernier run `all` complet et valide
+identifiable par ses manifestes, son rapport agrégé et son résumé. Ce dernier
+run peut avoir un verdict `FAIL` et sa provenance reste informative ; les
+auxiliaires présents sont pris en compte sans imposer une liste liée à une
+version donnée du runner. Le plafond normal est donc de trois ou quatre SHA,
+hors SHA encore actifs ou ambigus. Le runner migre les variantes legacy
+reconnues sans supprimer un fichier inconnu, un lien symbolique ou une archive.
+Les informations de provenance et les résultats auxiliaires restent descriptifs
+et non bloquants pour ce runner : ils ne constituent pas une preuve de candidat
+publié et aucun audit ne modifie automatiquement une baseline, une
+justification ou un seuil.
 
 Pour `all`, les projections `quality-index--<runId>--{index.json,summary.md,bundle.zip}`
 restent dans le dossier SHA et sont des artefacts système reconnus par le même
@@ -133,12 +138,13 @@ inventaire uniquement lorsqu'un manifeste `all` valide du même SHA et du même
 résumé classique sans manifeste correspondant, rend le SHA ambigu : aucune
 preuve du dossier ne doit alors être migrée ou supprimée, et le diagnostic doit
 identifier l'artefact concerné. Les projections valides sont supprimées avec
-le dossier lorsqu'il sort des trois versions conservées. Aucun ZIP système
-n'est stocké hors de ce périmètre ; les fichiers externes, noms inconnus,
-preuves ambiguës et suppressions incertaines restent préservés avec un
-diagnostic explicite. Une rétention différée par verrou ou protection active ne
-modifie pas la limite de référence et expose son état (`LOCK_ACTIVE`, owner
-ambigu ou `DELETE_FAILED`) au caller.
+le dossier lorsqu'il sort des trois versions conservées et n'est pas le SHA du
+dernier `all` complet protégé. Aucun ZIP système n'est stocké hors de ce
+périmètre ; les fichiers externes, noms inconnus, preuves ambiguës et
+suppressions incertaines restent préservés avec un diagnostic explicite. Une
+rétention différée par verrou ou protection active ne modifie pas la limite de
+référence et expose son état (`LOCK_ACTIVE`, owner ambigu ou `DELETE_FAILED`)
+au caller.
 
 Le mode `all` ajoute aussi, dans le rapport agrégé et la projection consolidée,
 une dimension documentaire non bloquante calculée sur les fichiers Markdown et

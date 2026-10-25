@@ -46,10 +46,17 @@ marqueurs avec l’inventaire, la migration et la suppression ; un démarrage ne
 peut donc pas se glisser entre le dernier contrôle d’inactivité et une
 suppression. Un marqueur dont l’owner du même hôte est démontré absent peut
 être récupéré ; l’ancienneté seule ne suffit jamais et les owners ambigus ou
-invérifiables sont préservés avec diagnostic. Après chaque audit, le runner classe les SHA par `generatedAt`, migre
-les variantes legacy reconnues et conserve au plus les trois SHA les plus
-récents hors exécutions actives. Les fichiers inconnus, liens symboliques,
-collisions et archives sont préservés avec un diagnostic explicite. Le radar
+invérifiables sont préservés avec diagnostic. Après chaque audit, le runner
+classe les SHA par `generatedAt`, migre les variantes legacy reconnues et
+conserve les trois SHA les plus récents, ainsi que, en complément, le SHA du
+dernier run `all` complet et valide identifiable par ses manifestes, son rapport
+agrégé et son résumé. Un run `all` terminé avec un verdict `FAIL` reste
+éligible ; aucune provenance particulière ni liste fixe d'auxiliaires n'est
+exigée. Le plafond normal est donc de trois ou quatre SHA hors exécutions
+actives ou ambiguës. Le résultat de rétention expose additivement l'identité
+protégée (`auditedHead`, `runId`, `generatedAt`) du dernier `all`, lorsqu'il
+existe. Les fichiers inconnus, liens symboliques, collisions et archives sont
+préservés avec un diagnostic explicite. Le radar
 exige les cinq manifestes et rapports du même `runId` et du même `auditedHead`,
 en privilégiant le run complet et le plus récent ; en l’absence de rapport
 cohérent, il conserve `NOT_MEASURED`. Ces artefacts ne sont pas versionnés et
@@ -295,7 +302,8 @@ reconnaissent ces trois artefacts de projection sans les confondre avec les
 triplets des engines uniquement lorsqu'un manifeste `all` valide du même SHA
 et du même `runId` les rattache au run : ils sont alors stockés dans le dossier
 SHA et suivent la suppression atomique de ce SHA lorsqu'il sort des trois
-versions conservées. Une projection orpheline, ou un rapport/résumé classique
+versions conservées et n'est pas le dernier `all` complet protégé. Une
+projection orpheline, ou un rapport/résumé classique
 sans manifeste correspondant, rend l'inventaire ambigu ; le SHA entier est
 préservé, sans suppression partielle, avec le chemin de l'artefact dans le
 diagnostic. Aucun ZIP système n'est stocké hors des dossiers SHA ; un éventuel

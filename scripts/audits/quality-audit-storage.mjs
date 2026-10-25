@@ -3,6 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
+import { QUALITY_GATE_INDEX_AUDITS } from "../reports/quality-index-primitives.mjs";
+
 export const QUALITY_AUDIT_ROOT = "artifacts/quality-audits";
 const QUALITY_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage", "all"]);
 const QUALITY_AUDIT_RETENTION_LIMIT = 3;
@@ -428,9 +430,47 @@ function listShaInventories(root, fsApi = fs) {
   return entries.filter(isSafeShaDirectory).map((entry) => inspectShaDirectory(root, entry, fsApi));
 }
 
+function findRunArtifact(inventory, { audit, runId, kind }) {
+  return inventory.artifacts.find((artifact) => artifact.audit === audit && artifact.runId === runId && artifact.kind === kind) ?? null;
+}
+
+function completeAllRun(inventory, allManifestArtifact, fsApi) {
+  const { runId } = allManifestArtifact;
+  const runManifests = inventory.artifacts.filter((artifact) => artifact.kind === "manifest" && artifact.runId === runId);
+  if (!QUALITY_GATE_INDEX_AUDITS.every((audit) => runManifests.some((artifact) => artifact.audit === audit))) return false;
+
+  const aggregateReportArtifact = findRunArtifact(inventory, { audit: "all", runId, kind: "report" });
+  const aggregateReport = aggregateReportArtifact ? readJson(aggregateReportArtifact.sourcePath, fsApi) : null;
+  if (!Array.isArray(aggregateReport?.audits) || typeof aggregateReport.status !== "string") return false;
+
+  const expectedAudits = runManifests.filter((artifact) => artifact.audit !== "all").map((artifact) => artifact.audit);
+  const expectedAuditSet = new Set(expectedAudits);
+  const aggregateAudits = new Map(aggregateReport.audits.map((entry) => [entry?.audit, entry]));
+  if (aggregateAudits.size !== expectedAuditSet.size || expectedAudits.some((audit) => !aggregateAudits.has(audit))) return false;
+  if (aggregateReport.status !== allManifestArtifact.manifest.status) return false;
+  return expectedAudits.every((audit) => aggregateAudits.get(audit)?.status === runManifests.find((artifact) => artifact.audit === audit)?.manifest.status);
+}
+
+function latestCompleteAll(inventories, fsApi) {
+  const candidates = inventories.flatMap((inventory) => inventory.generated
+    ? inventory.artifacts
+      .filter((artifact) => artifact.audit === "all" && artifact.kind === "manifest")
+      .filter((artifact) => completeAllRun(inventory, artifact, fsApi))
+      .map((artifact) => ({
+        auditedHead: inventory.name,
+        runId: artifact.runId,
+        generatedAt: artifact.manifest.generatedAt,
+      }))
+    : []);
+  candidates.sort((left, right) => Date.parse(right.generatedAt) - Date.parse(left.generatedAt)
+    || right.auditedHead.localeCompare(left.auditedHead)
+    || right.runId.localeCompare(left.runId));
+  return candidates[0] ?? null;
+}
+
 export async function retainQualityAuditArtifacts({ root, now = () => new Date().toISOString(), fsApi = fs, lockWaitMs = LOCK_WAIT_MS } = {}) {
   const lock = await acquireRetentionLock(root, { fsApi, waitMs: lockWaitMs });
-  if (lock.status !== "ACQUIRED") return { status: "DEFERRED", diagnostics: ["LOCK_ACTIVE"], retainedSha: [], removedSha: [], migrated: [] };
+  if (lock.status !== "ACQUIRED") return { status: "DEFERRED", diagnostics: ["LOCK_ACTIVE"], retainedSha: [], removedSha: [], migrated: [], protectedAll: null };
   const diagnostics = [];
   const migrated = [];
   const removedSha = [];
@@ -441,6 +481,8 @@ export async function retainQualityAuditArtifacts({ root, now = () => new Date()
     diagnostics.push(...activeState.diagnostics);
     const ranked = inventories.filter((inventory) => inventory.generated).sort((left, right) => right.lastExecuted - left.lastExecuted || left.name.localeCompare(right.name));
     const retained = new Set(ranked.slice(0, QUALITY_AUDIT_RETENTION_LIMIT).map((inventory) => inventory.name));
+    const protectedAll = latestCompleteAll(inventories, fsApi);
+    if (protectedAll) retained.add(protectedAll.auditedHead);
     for (const sha of active) retained.add(sha);
 
     for (const inventory of inventories) {
@@ -486,6 +528,7 @@ export async function retainQualityAuditArtifacts({ root, now = () => new Date()
       retainedSha: [...retained].sort(),
       removedSha,
       migrated,
+      protectedAll,
       diagnostics,
     };
   } finally {

@@ -129,6 +129,39 @@ function writeFlatQualityRun(root, auditedHead, runId, generatedAt, audits = qua
   }
 }
 
+function writeCompleteAllQualityRun(root, auditedHead, runId, generatedAt, { status = "PASS", failedAudit = null, withProjection = false } = {}) {
+  const allAudits = [...qualityAudits, "all"];
+  writeFlatQualityRun(root, auditedHead, runId, generatedAt, allAudits);
+  const shaRoot = path.join(root, "artifacts", "quality-audits", auditedHead);
+  const manifests = qualityAudits.map((audit) => {
+    const manifestPath = path.join(shaRoot, `${audit}--${runId}--manifest.json`);
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    if (audit === failedAudit) {
+      manifest.status = "FAIL";
+      manifest.resultClass = "FAILURE";
+    }
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest)}\n`);
+    return manifest;
+  });
+  const allManifestPath = path.join(shaRoot, `all--${runId}--manifest.json`);
+  const allManifest = JSON.parse(fs.readFileSync(allManifestPath, "utf8"));
+  allManifest.status = status;
+  allManifest.resultClass = status === "FAIL" ? "FAILURE" : "MEASURED";
+  fs.writeFileSync(allManifestPath, `${JSON.stringify(allManifest)}\n`);
+  fs.writeFileSync(path.join(shaRoot, `all--${runId}--report.json`), JSON.stringify({
+    status,
+    attentionRequired: status === "FAIL",
+    audits: manifests.map((manifest) => ({ audit: manifest.audit, status: manifest.status })),
+  }));
+  fs.writeFileSync(path.join(shaRoot, `all--${runId}--summary.md`), `# all ${status}\n`);
+  if (withProjection) {
+    const projection = createQualityProjectionPaths({ root, auditedHead, runId });
+    fs.writeFileSync(projection.index, JSON.stringify({ schemaVersion: 1, kind: "quality-file-index", auditedHead, runId }));
+    fs.writeFileSync(projection.summary, "# quality index\n");
+    fs.writeFileSync(projection.bundle, Buffer.from("PK\\x03\\x04fixture"));
+  }
+}
+
 function writeLegacyQualityRun(root, auditedHead, runId, generatedAt) {
   for (const audit of qualityAudits) {
     const target = path.join(root, "artifacts", "quality-audits", auditedHead, runId, audit);
@@ -885,6 +918,103 @@ test("retention keeps the three most recently executed SHA directories", async (
     const directories = fs.readdirSync(path.join(root, "artifacts", "quality-audits"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
     assert.equal(retention.status, "PASS");
     assert.deepEqual(directories, ["1".repeat(40), "2".repeat(40), "3".repeat(40)]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("retention protects an older complete all run in addition to the three recent SHA", async () => {
+  const root = tempRoot();
+  const completeAllSha = "0".repeat(40);
+  try {
+    writeCompleteAllQualityRun(root, completeAllSha, "run-all", "2026-10-01T00:00:00.000Z", { withProjection: true });
+    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.deepEqual(retention.protectedAll, { auditedHead: completeAllSha, runId: "run-all", generatedAt: "2026-10-01T00:00:00.000Z" });
+    assert.ok(retention.retainedSha.includes(completeAllSha));
+    assert.equal(retention.removedSha.includes(completeAllSha), false);
+    assert.equal(fs.existsSync(createQualityProjectionPaths({ root, auditedHead: completeAllSha, runId: "run-all" }).index), true);
+    assert.equal(fs.existsSync(createQualityProjectionPaths({ root, auditedHead: completeAllSha, runId: "run-all" }).bundle), true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a newer complete all run replaces an older protected all outside the recent window", async () => {
+  const root = tempRoot();
+  const oldAllSha = "0".repeat(40);
+  const newAllSha = "3".repeat(40);
+  try {
+    writeCompleteAllQualityRun(root, oldAllSha, "run-old-all", "2026-10-01T00:00:00.000Z");
+    writeFlatQualityRun(root, "1".repeat(40), "run-1", "2026-10-02T00:00:00.000Z");
+    writeFlatQualityRun(root, "2".repeat(40), "run-2", "2026-10-03T00:00:00.000Z");
+    writeCompleteAllQualityRun(root, newAllSha, "run-new-all", "2026-10-04T00:00:00.000Z");
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.deepEqual(retention.protectedAll, { auditedHead: newAllSha, runId: "run-new-all", generatedAt: "2026-10-04T00:00:00.000Z" });
+    assert.ok(retention.removedSha.includes(oldAllSha));
+    assert.equal(fs.existsSync(path.join(root, "artifacts", "quality-audits", oldAllSha)), false);
+    assert.equal(fs.existsSync(path.join(root, "artifacts", "quality-audits", newAllSha)), true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a complete all run with FAIL status remains eligible for protection", async () => {
+  const root = tempRoot();
+  const failedAllSha = "0".repeat(40);
+  try {
+    writeCompleteAllQualityRun(root, failedAllSha, "run-failed-all", "2026-10-01T00:00:00.000Z", { status: "FAIL", failedAudit: "complexity" });
+    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.equal(JSON.parse(fs.readFileSync(path.join(root, "artifacts", "quality-audits", failedAllSha, "all--run-failed-all--manifest.json"), "utf8")).status, "FAIL");
+    assert.deepEqual(retention.protectedAll, { auditedHead: failedAllSha, runId: "run-failed-all", generatedAt: "2026-10-01T00:00:00.000Z" });
+    assert.equal(retention.removedSha.includes(failedAllSha), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("an incomplete all run cannot replace the latest complete all and remains ambiguous", async () => {
+  const root = tempRoot();
+  const completeAllSha = "0".repeat(40);
+  const incompleteAllSha = "1".repeat(40);
+  try {
+    writeCompleteAllQualityRun(root, completeAllSha, "run-complete", "2026-10-01T00:00:00.000Z");
+    writeFlatQualityRun(root, incompleteAllSha, "run-incomplete", "2026-10-02T00:00:00.000Z", [...qualityAudits, "all"]);
+    fs.unlinkSync(path.join(root, "artifacts", "quality-audits", incompleteAllSha, "all--run-incomplete--report.json"));
+    for (let index = 2; index < 5; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 1}T00:00:00.000Z`);
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.deepEqual(retention.protectedAll, { auditedHead: completeAllSha, runId: "run-complete", generatedAt: "2026-10-01T00:00:00.000Z" });
+    assert.equal(retention.removedSha.includes(completeAllSha), false);
+    assert.equal(fs.existsSync(path.join(root, "artifacts", "quality-audits", incompleteAllSha)), true);
+    assert.ok(retention.diagnostics.some((entry) => entry.includes(`${incompleteAllSha}:missing:all:run-incomplete:report`)));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("multiple complete all runs on one SHA protect the most recent run", async () => {
+  const root = tempRoot();
+  const auditedHead = "0".repeat(40);
+  try {
+    writeCompleteAllQualityRun(root, auditedHead, "run-old", "2026-10-01T00:00:00.000Z");
+    writeCompleteAllQualityRun(root, auditedHead, "run-new", "2026-10-02T00:00:00.000Z");
+    for (let index = 1; index < 4; index += 1) writeFlatQualityRun(root, String(index).repeat(40), `run-${index}`, `2026-10-0${index + 2}T00:00:00.000Z`);
+
+    const retention = await retainQualityAuditArtifacts({ root });
+
+    assert.deepEqual(retention.protectedAll, { auditedHead, runId: "run-new", generatedAt: "2026-10-02T00:00:00.000Z" });
+    assert.equal(retention.removedSha.includes(auditedHead), false);
+    assert.equal(fs.existsSync(path.join(root, "artifacts", "quality-audits", auditedHead, "all--run-old--manifest.json")), true);
+    assert.equal(fs.existsSync(path.join(root, "artifacts", "quality-audits", auditedHead, "all--run-new--manifest.json")), true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
