@@ -1,26 +1,56 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
+import { NextResponse } from "next/server";
+import { z } from "zod";
 import {
+  qualifyActionFormalities,
+  type ActionFormality,
+} from "@/lib/actions/formalities-qualification";
+import {
+  actionFormalitiesFactsSchema,
   buildFormalitiesWorkflowState,
   deriveActionFormalitiesFacts,
+  type ActionFormalitiesWorkflowState,
 } from "@/lib/actions/formalities-workflow";
+import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
+import type { ActionRow } from "@/types/database";
 import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-rules";
 import { GET, PATCH } from "./route";
 
-const authMock = vi.hoisted(() => vi.fn());
-const identityMock = vi.hoisted(() => vi.fn());
-const loadActionMock = vi.hoisted(() => vi.fn());
-const loadOrganizersMock = vi.hoisted(() => vi.fn());
-const resolveActionTerritoryMock = vi.hoisted(() => vi.fn());
-const supabaseMock = vi.hoisted(() => vi.fn());
-const handleApiErrorMock = vi.hoisted(() => vi.fn());
+const authMock = vi.hoisted(() =>
+  vi.fn<typeof import("@/lib/authz").requireAuthenticatedAccess>(),
+);
+const identityMock = vi.hoisted(() =>
+  vi.fn<typeof import("@/lib/authz").getCurrentUserIdentity>(),
+);
+const loadActionMock = vi.hoisted(() =>
+  vi.fn<typeof import("@/lib/actions/store").loadActionById>(),
+);
+const loadOrganizersMock = vi.hoisted(() =>
+  vi.fn<typeof import("@/lib/actions/participation/organizers").loadCanonicalActionOrganizerIdsForAction>(),
+);
+const resolveActionTerritoryMock = vi.hoisted(() =>
+  vi.fn<typeof import("@/lib/geo/action-territory-resolver").resolveActionTerritory>(),
+);
+type FormalitiesUpdateQuery = {
+  eq: (column: string, value: unknown) => {
+    select: () => { single: () => Promise<{ data: { id: string } | null; error: Error | null }> };
+  };
+};
+type FormalitiesSupabase = {
+  from: (table: string) => {
+    update: (values: Record<string, unknown>) => FormalitiesUpdateQuery;
+  };
+};
+type FormalitiesUpdate = (values: Record<string, unknown>) => FormalitiesUpdateQuery;
+const supabaseMock = vi.hoisted(() => vi.fn<() => FormalitiesSupabase>());
+const handleApiErrorMock = vi.hoisted(() =>
+  vi.fn<typeof import("@/lib/http/api-errors").handleApiError>(),
+);
 const validationErrorMock = vi.hoisted(() =>
-  vi.fn((details: Record<string, string[]>) =>
-    Response.json({ error: details }, { status: 422 }),
-  ),
+  vi.fn<typeof import("@/lib/http/api-errors").validationErrorResponse>(),
 );
 const unauthorizedMock = vi.hoisted(() =>
-  vi.fn(() => Response.json({ error: "unauthorized" }, { status: 401 })),
+  vi.fn<typeof import("@/lib/http/auth-responses").unauthorizedJsonResponse>(),
 );
 
 vi.mock("@/lib/authz", () => ({
@@ -49,10 +79,25 @@ vi.mock("@/lib/http/auth-responses", () => ({
   unauthorizedJsonResponse: unauthorizedMock,
 }));
 
-const action = () => ({
+const action = (): ActionRow => ({
   id: "action-42",
-  action_phase: "pre_action",
+  created_at: "2026-09-01T00:00:00.000Z",
   created_by_clerk_id: "user-1",
+  actor_name: "Alice",
+  action_date: "2026-09-01",
+  location_label: "Paris",
+  latitude: 48.8566,
+  longitude: 2.3522,
+  derived_geometry_kind: "point",
+  derived_geometry_geojson: null,
+  geometry_confidence: null,
+  waste_kg: null,
+  cigarette_butts: null,
+  volunteers_count: null,
+  duration_minutes: 0,
+  notes: null,
+  status: "pending",
+  action_phase: "pre_action",
   department_code: "75",
   department_name: "Paris",
   preparation_data: {
@@ -78,22 +123,76 @@ const formalitiesFacts = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+const identity = (userId: string) => ({
+  userId,
+  displayName: "Test user",
+  handle: "test-user",
+  firstName: "Test",
+  username: "test-user",
+  email: null,
+  currentLevel: 1,
+  actorNameOptions: ["Test user"],
+  role: "benevole" as const,
+  activeRole: "benevole" as const,
+  activeProfile: "benevole" as const,
+  badges: [],
+});
+
+const responseFormalitySchema = z.object({
+  id: z.string(),
+  requirementStatus: z.enum(["required", "recommended", "not_required", "unknown"]),
+  procedureKind: z.enum(["city_aot", "police_declaration", "other_manager", "information_only", "none", "unknown"]),
+  source: z.object({ verifiedOn: z.literal("2026-09-17") }).nullable(),
+});
+const formalitiesResponseSchema = z.object({
+  facts: actionFormalitiesFactsSchema,
+  qualification: z.object({ formalities: z.array(responseFormalitySchema) }),
+  workflow: z.object({
+    progress: z.array(z.object({
+      formalityId: z.string(),
+      userStatus: z.enum(["not_started", "prepared", "sent"]),
+      validForQualification: z.boolean(),
+      invalidatedAt: z.string().nullable(),
+    })),
+    trace: z.object({
+      verifiedOn: z.string().nullable(),
+      actionDependencyFingerprint: z.string(),
+    }),
+  }),
+});
+type FormalitiesResponse = {
+  facts: ActionFormalitiesFacts;
+  qualification: {
+    formalities: Array<Pick<ActionFormality, "id" | "requirementStatus" | "procedureKind"> & {
+      source: Pick<NonNullable<ActionFormality["source"]>, "verifiedOn"> | null;
+    }>;
+  };
+  workflow: {
+    progress: Array<Pick<ActionFormalitiesWorkflowState["progress"][number], "formalityId" | "userStatus" | "validForQualification" | "invalidatedAt">>;
+    trace: Pick<ActionFormalitiesWorkflowState["trace"], "verifiedOn" | "actionDependencyFingerprint">;
+  };
+};
+
+async function readFormalitiesResponse(response: Response): Promise<FormalitiesResponse> {
+  const parsed = formalitiesResponseSchema.safeParse(await response.json());
+  if (!parsed.success) {
+    throw new Error("Malformed formalities response");
+  }
+  return parsed.data;
+}
+
 describe("/api/actions/:actionId/formalities", () => {
-  let update: ReturnType<typeof vi.fn>;
-  let from: ReturnType<typeof vi.fn>;
+  let update: ReturnType<typeof vi.fn<FormalitiesUpdate>>;
+  let from: FormalitiesSupabase["from"];
 
   beforeEach(() => {
     vi.clearAllMocks();
     authMock.mockResolvedValue({ ok: true, userId: "user-1" });
-    identityMock.mockResolvedValue({
-      userId: "user-1",
-      role: "benevole",
-      activeRole: "benevole",
-    });
+    identityMock.mockResolvedValue(identity("user-1"));
     loadActionMock.mockResolvedValue(action());
     loadOrganizersMock.mockResolvedValue(["user-1"]);
     resolveActionTerritoryMock.mockResolvedValue(null);
-    update = vi.fn().mockReturnValue({
+    update = vi.fn<FormalitiesUpdate>().mockReturnValue({
       eq: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           single: vi.fn().mockResolvedValue({ data: { id: "action-42" }, error: null }),
@@ -102,11 +201,30 @@ describe("/api/actions/:actionId/formalities", () => {
     });
     from = vi.fn().mockReturnValue({ update });
     supabaseMock.mockReturnValue({ from });
-    handleApiErrorMock.mockImplementation(() => Response.json({ error: "server" }, { status: 500 }));
+    validationErrorMock.mockImplementation((details) => NextResponse.json({
+      error: "Validation error",
+      kind: "validation",
+      referenceCode: "VAL-TEST",
+      details,
+      status: "validation_error",
+    }, { status: 422 }));
+    unauthorizedMock.mockImplementation(() => NextResponse.json({
+      error: "unauthorized",
+      kind: "permission",
+      code: "unauthorized",
+      hint: "Connectez-vous pour accéder à cette ressource.",
+      referenceCode: "AUTH-TEST",
+    }, { status: 401 }));
+    handleApiErrorMock.mockImplementation(() => NextResponse.json({
+      error: "server",
+      kind: "server",
+      referenceCode: "TEST-500",
+      status: "error",
+    }, { status: 500 }));
   });
 
   it("does not load a private action for an anonymous visitor", async () => {
-    authMock.mockResolvedValueOnce({ ok: false, status: 401 });
+    authMock.mockResolvedValueOnce({ ok: false, status: 401, error: "unauthorized" });
 
     const response = await GET(formalitiesRequest(), {
       params: Promise.resolve({ actionId: "action-42" }),
@@ -143,11 +261,7 @@ describe("/api/actions/:actionId/formalities", () => {
 
   it("refuses a GET when the authenticated user cannot manage the action", async () => {
     authMock.mockResolvedValueOnce({ ok: true, userId: "other-user" });
-    identityMock.mockResolvedValueOnce({
-      userId: "other-user",
-      role: "benevole",
-      activeRole: "benevole",
-    });
+    identityMock.mockResolvedValueOnce(identity("other-user"));
     loadOrganizersMock.mockResolvedValueOnce([]);
     const response = await GET(formalitiesRequest(), {
       params: Promise.resolve({ actionId: "action-42" }),
@@ -178,7 +292,7 @@ describe("/api/actions/:actionId/formalities", () => {
     const response = await GET(formalitiesRequest(), {
       params: Promise.resolve({ actionId: "action-42" }),
     });
-    const body = await response.json();
+    const body = await readFormalitiesResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.qualification.formalities).toEqual(
@@ -203,24 +317,20 @@ describe("/api/actions/:actionId/formalities", () => {
       }),
       { params: Promise.resolve({ actionId: "action-42" }) },
     );
-    const body = await response.json();
+    const body = await readFormalitiesResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.qualification.formalities[0].requirementStatus).toBe("required");
-    expect(body.qualification.formalities[0].source.verifiedOn).toBe("2026-09-17");
+    expect(body.qualification.formalities[0].source).toMatchObject({ verifiedOn: "2026-09-17" });
     expect(body.workflow.progress[0].userStatus).toBe("not_started");
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        preparation_data: expect.objectContaining({
-          formalitiesContext: expect.objectContaining({ publicSpace: "public_domain" }),
-          formalitiesWorkflow: expect.objectContaining({
-            progress: expect.arrayContaining([
-              expect.objectContaining({ userStatus: "not_started" }),
-            ]),
-          }),
-        }),
-      }),
-    );
+    const persisted = update.mock.calls.at(-1)?.[0];
+    if (!persisted) throw new Error("Expected formalities persistence payload");
+    expect(persisted).toMatchObject({
+      preparation_data: {
+        formalitiesContext: { publicSpace: "public_domain" },
+        formalitiesWorkflow: { progress: [{ userStatus: "not_started" }] },
+      },
+    });
   });
 
   it("rejects malformed JSON before loading the action", async () => {
@@ -256,14 +366,14 @@ describe("/api/actions/:actionId/formalities", () => {
     );
 
     expect(response.status).toBe(422);
-    expect(await response.json()).toEqual({
-      error: { transition: ["La formalité sélectionnée n'est plus applicable à ces faits."] },
+    expect(await response.json()).toMatchObject({
+      details: { transition: ["La formalité sélectionnée n'est plus applicable à ces faits."] },
     });
     expect(update).not.toHaveBeenCalled();
   });
 
   it("returns a server error when persisting the qualification fails", async () => {
-    update = vi.fn().mockReturnValue({
+    update = vi.fn<FormalitiesUpdate>().mockReturnValue({
       eq: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           single: vi.fn().mockResolvedValue({ error: new Error("database failure") }),
@@ -281,7 +391,7 @@ describe("/api/actions/:actionId/formalities", () => {
     );
 
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({ error: "server" });
+    expect(await response.json()).toMatchObject({ error: "server" });
     expect(handleApiErrorMock).toHaveBeenCalledWith(
       expect.objectContaining({ message: "database failure" }),
       "PATCH /api/actions/:actionId/formalities",
@@ -328,7 +438,7 @@ describe("/api/actions/:actionId/formalities", () => {
       }),
       { params: Promise.resolve({ actionId: "action-42" }) },
     );
-    const body = await response.json();
+    const body = await readFormalitiesResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.facts.territory).toEqual(
@@ -341,16 +451,16 @@ describe("/api/actions/:actionId/formalities", () => {
         expect.objectContaining({ id: "paris-police-public-roadway-declaration" }),
       ]),
     );
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        preparation_data: expect.objectContaining({
-          formalitiesContext: expect.objectContaining({
-            territory: expect.objectContaining({ code: "FR-92" }),
-            publicSpace: "public_domain",
-          }),
-        }),
-      }),
-    );
+    const persisted = update.mock.calls.at(-1)?.[0];
+    if (!persisted) throw new Error("Expected formalities persistence payload");
+    expect(persisted).toMatchObject({
+      preparation_data: {
+        formalitiesContext: {
+          territory: { code: "FR-92" },
+          publicSpace: "public_domain",
+        },
+      },
+    });
   });
 
   it("keeps the territory resolved from the current action", async () => {
@@ -375,7 +485,7 @@ describe("/api/actions/:actionId/formalities", () => {
       }),
       { params: Promise.resolve({ actionId: "action-42" }) },
     );
-    const body = await response.json();
+    const body = await readFormalitiesResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.facts.territory).toEqual({
@@ -438,7 +548,7 @@ describe("/api/actions/:actionId/formalities", () => {
       }),
       { params: Promise.resolve({ actionId: "action-42" }) },
     );
-    const body = await response.json();
+    const body = await readFormalitiesResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.facts.territory).toEqual(
@@ -495,31 +605,25 @@ describe("/api/actions/:actionId/formalities", () => {
       }),
       { params: Promise.resolve({ actionId: "action-42" }) },
     );
-    const body = await response.json();
+    const body = await readFormalitiesResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.facts.territory.code).toBe("FR-93");
     expect(body.workflow.trace.actionDependencyFingerprint).not.toBe(
       previousWorkflow.trace.actionDependencyFingerprint,
     );
-    expect(body.workflow.progress).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          formalityId: previousWorkflow.progress[0].formalityId,
-          userStatus: "sent",
-          validForQualification: false,
-          invalidatedAt: expect.any(String),
-        }),
-      ]),
+    const invalidatedProgress = body.workflow.progress.find(
+      (item) => item.formalityId === previousWorkflow.progress[0].formalityId,
     );
+    expect(invalidatedProgress).toMatchObject({
+      userStatus: "sent",
+      validForQualification: false,
+    });
+    expect(invalidatedProgress?.invalidatedAt).toBeTypeOf("string");
   });
 
   it("requires action management permission before changing formalities", async () => {
-    identityMock.mockResolvedValueOnce({
-      userId: "other-user",
-      role: "benevole",
-      activeRole: "benevole",
-    });
+    identityMock.mockResolvedValueOnce(identity("other-user"));
     authMock.mockResolvedValueOnce({ ok: true, userId: "other-user" });
     loadOrganizersMock.mockResolvedValueOnce([]);
     const response = await PATCH(

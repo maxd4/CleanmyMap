@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createClient } from "@supabase/supabase-js";
+import type { ActionDataQualitySummary } from "@/lib/actions/quality/data-quality-types";
 
-const requireAdminAccessMock = vi.hoisted(() => vi.fn());
-const normalizeExternalActionImportMock = vi.hoisted(() => vi.fn());
-const createActionMock = vi.hoisted(() => vi.fn());
-const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
-const verifyDryRunProofMock = vi.hoisted(() => vi.fn());
-const createDryRunProofMock = vi.hoisted(() => vi.fn());
-const hashImportPayloadMock = vi.hoisted(() => vi.fn());
-const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
+const supabaseClient = createClient("http://localhost:54321", "test-anon-key");
+
+const requireAdminAccessMock = vi.hoisted(() => vi.fn<typeof import("@/lib/authz").requireAdminAccess>());
+const normalizeExternalActionImportMock = vi.hoisted(() => vi.fn<typeof import("@/lib/actions/unified-source").normalizeExternalActionImport>());
+const createActionMock = vi.hoisted(() => vi.fn<typeof import("@/lib/actions/store").createAction>());
+const getSupabaseServerClientMock = vi.hoisted(() => vi.fn<typeof import("@/lib/supabase/server").getSupabaseServerClient>());
+const verifyDryRunProofMock = vi.hoisted(() => vi.fn<typeof import("@/lib/admin/import/dry-run-proof").verifyDryRunProof>());
+const createDryRunProofMock = vi.hoisted(() => vi.fn<typeof import("@/lib/admin/import/dry-run-proof").createDryRunProof>());
+const hashImportPayloadMock = vi.hoisted(() => vi.fn<typeof import("@/lib/admin/import/dry-run-proof").hashImportPayload>());
+const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn<typeof import("@/lib/admin/audit/operation-audit").appendAdminOperationAudit>());
 
 vi.mock("@/lib/authz", () => ({
   requireAdminAccess: requireAdminAccessMock,
@@ -34,7 +38,7 @@ vi.mock("@/lib/backpressure", () => ({
   releaseBackpressure: vi.fn(),
 }));
 
-const quality = (status: "ok" | "blocking") => ({
+const quality = (status: "ok" | "blocking"): ActionDataQualitySummary => ({
   version: "test",
   status,
   anomalies: status === "blocking" ? [{ code: "partial_coordinates", severity: "blocking", message: "partial" }] : [],
@@ -48,6 +52,20 @@ const quality = (status: "ok" | "blocking") => ({
   },
   provenance: { measures: "measured", geometry: "missing", impact: "derived" },
   confidence: null,
+});
+
+type NormalizedImportPayload = ReturnType<typeof import("@/lib/actions/unified-source").normalizeExternalActionImport>["payload"];
+
+const normalizedPayload = (): NormalizedImportPayload => ({
+  actionDate: "2026-08-04",
+  locationLabel: "Quai de test",
+  latitude: 48.85,
+  longitude: 2.35,
+  wasteKg: 4,
+  cigaretteButts: 20,
+  volunteersCount: 2,
+  durationMinutes: 60,
+  recordType: "action",
 });
 
 function payload(overrides: Record<string, unknown> = {}) {
@@ -82,21 +100,25 @@ describe("POST /api/actions/import", () => {
     vi.clearAllMocks();
     requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
     hashImportPayloadMock.mockReturnValue("payload-hash");
-    createDryRunProofMock.mockReturnValue("proof-token-123456789012345678");
+    createDryRunProofMock.mockReturnValue({
+      token: "proof-token-123456789012345678",
+      expiresAt: "2026-08-04T12:20:00.000Z",
+      payloadHash: "payload-hash",
+    });
     verifyDryRunProofMock.mockReturnValue({ ok: true });
-    getSupabaseServerClientMock.mockReturnValue({});
+    getSupabaseServerClientMock.mockReturnValue(supabaseClient);
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
     normalizeExternalActionImportMock.mockImplementation((input) => ({
       payload: {
         actionDate: input.dates.observedAt,
         locationLabel: input.location.label,
-        latitude: input.location.latitude,
-        longitude: input.location.longitude,
-        wasteKg: input.metadata.wasteKg,
-        cigaretteButts: input.metadata.cigaretteButts,
+        latitude: input.location.latitude ?? undefined,
+        longitude: input.location.longitude ?? undefined,
+        wasteKg: input.metadata.wasteKg ?? null,
+        cigaretteButts: input.metadata.cigaretteButts ?? null,
         volunteersCount: input.metadata.volunteersCount ?? 1,
         durationMinutes: input.metadata.durationMinutes ?? 0,
-        notes: input.metadata.notes,
+        notes: input.metadata.notes ?? undefined,
         recordType: "action",
       },
       dataQuality: quality("ok"),
@@ -119,13 +141,13 @@ describe("POST /api/actions/import", () => {
       stats: { withCoordinates: 1, blockingAnomalies: 0 },
     });
     expect(normalizeExternalActionImportMock).toHaveBeenCalledTimes(1);
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        operationType: "import_dry_run",
-        outcome: "success",
-        details: expect.objectContaining({ count: 1, payloadHash: "payload-hash" }),
-      }),
-    );
+    const dryRunAudit = appendAdminOperationAuditMock.mock.calls.at(-1)?.[0];
+    if (!dryRunAudit) throw new Error("Expected dry-run audit entry");
+    expect(dryRunAudit).toMatchObject({
+      operationType: "import_dry_run",
+      outcome: "success",
+      details: { count: 1, payloadHash: "payload-hash" },
+    });
   });
 
   it("does not let a dry-run query parameter select the write path", async () => {
@@ -162,9 +184,9 @@ describe("POST /api/actions/import", () => {
     };
 
     normalizeExternalActionImportMock
-      .mockReturnValueOnce({ payload: {}, dataQuality: missingQuality })
-      .mockReturnValueOnce({ payload: {}, dataQuality: partialQuality })
-      .mockReturnValueOnce({ payload: {}, dataQuality: invalidQuality });
+      .mockReturnValueOnce({ payload: normalizedPayload(), dataQuality: missingQuality })
+      .mockReturnValueOnce({ payload: normalizedPayload(), dataQuality: partialQuality })
+      .mockReturnValueOnce({ payload: normalizedPayload(), dataQuality: invalidQuality });
 
     const { POST } = await import("./route");
     const response = await POST(
@@ -234,33 +256,33 @@ describe("POST /api/actions/import", () => {
     );
 
     expect(response.status).toBe(201);
-    expect(createActionMock).toHaveBeenCalledWith(
-      {},
-      expect.objectContaining({
-        payload: expect.objectContaining({ recordType: "action" }),
-        organizers: [],
-        organizerRequirement: "optional",
-        departmentAttribution: {
-          trust: "trusted",
-          source: "admin_import",
-        },
-      }),
-    );
+    const createCall = createActionMock.mock.calls.at(0);
+    if (!createCall) throw new Error("Expected createAction to be called");
+    expect(createCall[0]).toBe(supabaseClient);
+    expect(createCall[1]).toMatchObject({
+      payload: { recordType: "action" },
+      organizers: [],
+      organizerRequirement: "optional",
+      departmentAttribution: {
+        trust: "trusted",
+        source: "admin_import",
+      },
+    });
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        operationType: "import_confirm",
-        outcome: "success",
-        details: expect.objectContaining({
-          count: 1,
-          attemptedCount: 1,
-          importedCount: 1,
-          currentItemIndex: 0,
-          totalCount: 1,
-          stage: "audit_finalize",
-        }),
-      }),
-    );
+    const successAudit = appendAdminOperationAuditMock.mock.calls.at(-1)?.[0];
+    if (!successAudit) throw new Error("Expected import audit entry");
+    expect(successAudit).toMatchObject({
+      operationType: "import_confirm",
+      outcome: "success",
+      details: {
+        count: 1,
+        attemptedCount: 1,
+        importedCount: 1,
+        currentItemIndex: 0,
+        totalCount: 1,
+        stage: "audit_finalize",
+      },
+    });
   });
 
   it("audits a first item write failure without partial mutation", async () => {
@@ -281,21 +303,21 @@ describe("POST /api/actions/import", () => {
 
     expect(response.status).toBe(500);
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        operationType: "import_confirm",
-        outcome: "error",
-        details: expect.objectContaining({
-          attemptedCount: 1,
-          importedCount: 0,
-          currentItemIndex: 0,
-          failedItemIndex: 0,
-          totalCount: 1,
-          stage: "item_write",
-          partialMutation: false,
-        }),
-      }),
-    );
+    const firstFailureAudit = appendAdminOperationAuditMock.mock.calls.at(-1)?.[0];
+    if (!firstFailureAudit) throw new Error("Expected failed import audit entry");
+    expect(firstFailureAudit).toMatchObject({
+      operationType: "import_confirm",
+      outcome: "error",
+      details: {
+        attemptedCount: 1,
+        importedCount: 0,
+        currentItemIndex: 0,
+        failedItemIndex: 0,
+        totalCount: 1,
+        stage: "item_write",
+        partialMutation: false,
+      },
+    });
     expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0])).not.toContain(
       externalError,
     );
@@ -326,21 +348,21 @@ describe("POST /api/actions/import", () => {
     expect(response.status).toBe(500);
     expect(createActionMock).toHaveBeenCalledTimes(3);
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        operationType: "import_confirm",
-        outcome: "error",
-        details: expect.objectContaining({
-          attemptedCount: 3,
-          importedCount: 2,
-          currentItemIndex: 2,
-          failedItemIndex: 2,
-          totalCount: 3,
-          stage: "item_write",
-          partialMutation: true,
-        }),
-      }),
-    );
+    const partialFailureAudit = appendAdminOperationAuditMock.mock.calls.at(-1)?.[0];
+    if (!partialFailureAudit) throw new Error("Expected partial failure audit entry");
+    expect(partialFailureAudit).toMatchObject({
+      operationType: "import_confirm",
+      outcome: "error",
+      details: {
+        attemptedCount: 3,
+        importedCount: 2,
+        currentItemIndex: 2,
+        failedItemIndex: 2,
+        totalCount: 3,
+        stage: "item_write",
+        partialMutation: true,
+      },
+    });
     expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0])).not.toContain(
       externalError,
     );

@@ -1,23 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildActionDataContract } from "@/lib/actions/contracts/contract-model";
+import {
+  toActionListItem as actualToActionListItem,
+  toActionMapItem as actualToActionMapItem,
+} from "@/lib/actions/contracts/contract-mappers";
 import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
+import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
+import type { ReportModel } from "@/lib/reports/report-model/types";
 
 const mocks = vi.hoisted(() => ({
-  loadReportsGenerationData: vi.fn(),
-  toActionListItem: vi.fn((contract: ActionDataContract) => ({
-    status: contract.status,
-    created_by_clerk_id: contract.createdByClerkId,
-    actor_name: contract.metadata.actorName,
-    association_name: contract.metadata.associationName,
-    location_label: contract.location.label,
-    action_date: contract.dates.observedAt,
-    contract,
-  })),
-  toActionMapItem: vi.fn((contract: ActionDataContract) => ({ status: contract.status, contract })),
-  computeReportModel: vi.fn(),
-  buildPdfData: vi.fn(),
-  buildReportTitle: vi.fn((scopeLabel: string) => `Rapport - ${scopeLabel}`),
-  toReportsExportRow: vi.fn((contract: ActionDataContract) => ({ id: contract.id })),
+  loadReportsGenerationData: vi.fn<typeof import("@/lib/reports/page-data").loadReportsGenerationData>(),
+  toActionListItem: vi.fn<(contract: ActionDataContract) => ActionListItem>(),
+  toActionMapItem: vi.fn<(contract: ActionDataContract) => ActionMapItem>(),
+  computeReportModel: vi.fn<typeof import("@/lib/reports/report-model").computeReportModel>(),
+  buildPdfData: vi.fn<typeof import("@/lib/reports/report-pdf-data").buildPdfData>(),
+  buildReportTitle: vi.fn<typeof import("@/lib/reports/report-pdf-data").buildReportTitle>(),
+  toReportsExportRow: vi.fn<typeof import("@/lib/reports/page-data-export").toReportsExportRow>(),
 }));
 
 vi.mock("@/lib/reports/page-data", () => ({
@@ -45,6 +43,63 @@ import {
   MultiActionReportScopeUnavailableError,
   MultiActionReportSourceUnavailableError,
 } from "./multi-action-report";
+
+type PdfData = ReturnType<typeof import("@/lib/reports/report-pdf-data").buildPdfData>;
+
+const reportModelFixture = (): ReportModel => ({
+  generatedAt: "2026-08-31T12:00:00.000Z",
+  totals: { actions: 1, kg: 4, knownWasteActions: 1, butts: 10, buttsKnownActions: 1, volunteers: 2, volunteersKnownActions: 1, hours: 0.5 },
+  map: { points: 1, traces: 0, polylines: 0, polygons: 0, geoCoverage: 100, traceCoverage: 0 },
+  moderation: { availability: "unavailable", pending: null, approved: 1, rejected: null, conversion: null, delayDays: null },
+  quality: { completenessScore: 100, coherenceScore: 100, freshnessDays: 0, geolocRate: 100 },
+  areas: [],
+  trendPercent: 0,
+  monthRows6: [],
+  monthRows12: [],
+  routeSteps: [],
+  routeDistance: 0,
+  terrain: { actionCount: 1, spotCount: 0, cleanPlaceCount: 0 },
+  recycling: { recyclableKg: 0, triIndex: 0 },
+  climate: { six: { actions: 1, kg: 4, butts: 10 }, twelve: { actions: 1, kg: 4, butts: 10 }, waterProtectedLiters: 0, co2AvoidedKg: 0 },
+  community: {
+    totalEvents: 0,
+    upcomingEvents: 0,
+    pastEvents: 0,
+    rsvp: { yes: 0, maybe: 0, no: 0 },
+    participationRate: 0,
+    topLeaderboard: [],
+    badgeConfirmed: 0,
+    badgeExpert: 0,
+    sourceBuckets: { citoyen: 0, associatif: 0, institutionnel: 0 },
+    conversion: { eventsCount: 0, rsvpYesTotal: 0, attendanceTotalKnown: 0, linkedActionsTotal: 0, rsvpToAttendanceRate: null, attendanceToActionRate: null, rsvpToActionRate: null },
+  },
+  impactMethodology: {
+    proxyVersion: "impact-proxy-v1",
+    qualityRulesVersion: "quality-v1",
+    scope: "test",
+    pollutionScoreAverage: 0,
+    formulas: [],
+    approximations: [],
+    hypotheses: [],
+    errorMargins: { waterSavedLitersPct: 0, co2AvoidedKgPct: 0, surfaceCleanedM2Pct: 0, pollutionScoreMeanPoints: 0 },
+  },
+  annualRows: [],
+  calendar: [],
+  highlightPhotos: [],
+  highlightActions: [],
+  executive: { readinessScore: 100, readinessLabel: "ready", headline: "Test", summary: "Test", evidence: [], budgetUseCases: [], watchouts: [] },
+});
+
+const pdfDataFixture = (): PdfData => ({
+  title: "Rapport - Association Canonique",
+  summary: [],
+  stats: [],
+  chapters: [],
+  rows: [],
+  columns: [],
+  generatedAt: "2026-08-31T12:00:00.000Z",
+  provenance: undefined,
+});
 
 function makeContract(id: string, overrides: Record<string, unknown> = {}) {
   return buildActionDataContract({
@@ -82,8 +137,12 @@ describe("multi-action report server resolver", () => {
     detailedFiles: true,
   } as const;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const actualPageDataExport = await vi.importActual<typeof import("@/lib/reports/page-data-export")>("@/lib/reports/page-data-export");
+    mocks.toActionListItem.mockImplementation(actualToActionListItem);
+    mocks.toActionMapItem.mockImplementation(actualToActionMapItem);
+    mocks.toReportsExportRow.mockImplementation(actualPageDataExport.toReportsExportRow);
     mocks.loadReportsGenerationData.mockResolvedValue({
       contracts: [
         makeContract("included"),
@@ -99,23 +158,11 @@ describe("multi-action report server resolver", () => {
       },
       communityEvents: [],
       communityEventsAvailability: "available",
+      actionMediaReadyCountByActionId: {},
+      actionMediaAvailability: "available",
     });
-    mocks.computeReportModel.mockReturnValue({
-      generatedAt: now.toISOString(),
-      totals: {
-        actions: 1,
-        kg: 4,
-        knownWasteActions: 1,
-        volunteersKnownActions: 1,
-        hours: 0.5,
-      },
-      impactMethodology: { proxyVersion: "impact-proxy-v1", qualityRulesVersion: "quality-v1" },
-    });
-    mocks.buildPdfData.mockReturnValue({
-      title: "Rapport - Association Canonique",
-      generatedAt: now.toISOString(),
-      summary: [],
-    });
+    mocks.computeReportModel.mockReturnValue(reportModelFixture());
+    mocks.buildPdfData.mockReturnValue(pdfDataFixture());
   });
 
   it("resolves canonical actions, period, scope and server model without a browser payload", async () => {
@@ -130,16 +177,16 @@ describe("multi-action report server resolver", () => {
       now,
     });
 
-    expect(mocks.computeReportModel).toHaveBeenCalledWith(expect.objectContaining({
-      allItems: [expect.objectContaining({ contract: expect.objectContaining({ id: "included" }) })],
-      approvedItems: [expect.objectContaining({ contract: expect.objectContaining({ id: "included" }) })],
-      now,
-    }));
-    expect(mocks.buildPdfData).toHaveBeenCalledWith(expect.objectContaining({
-      period: "custom_range",
-      periodRange: { from: "2026-08-01", to: "2026-08-31", timeZone: "UTC" },
-      surfaceProxy: expect.any(Number),
-    }));
+    const computeCall = mocks.computeReportModel.mock.calls.at(-1)?.[0];
+    if (!computeCall) throw new Error("Expected computeReportModel call");
+    expect(computeCall.allItems.map((item) => item.contract?.id)).toEqual(["included"]);
+    expect(computeCall.approvedItems.map((item) => item.contract?.id)).toEqual(["included"]);
+    expect(computeCall.now).toBe(now);
+    const pdfCall = mocks.buildPdfData.mock.calls.at(-1)?.[0];
+    if (!pdfCall) throw new Error("Expected buildPdfData call");
+    expect(pdfCall.period).toBe("custom_range");
+    expect(pdfCall.periodRange).toEqual({ from: "2026-08-01", to: "2026-08-31", timeZone: "UTC" });
+    expect(typeof pdfCall.surfaceProxy).toBe("number");
     expect(result.scopeKind).toBe("association");
     expect(result.scopeValue).toBe("Association Canonique");
     expect(result.payload.organizationType).toBe("multi_action");
@@ -152,11 +199,9 @@ describe("multi-action report server resolver", () => {
       modules,
     });
     expect(result.payload.data).not.toHaveProperty("forgedKpi");
-    expect(mocks.buildPdfData).toHaveBeenCalledWith(expect.objectContaining({
-      model: expect.objectContaining({
-        dataAvailability: expect.objectContaining({ communityEventsAvailability: "partial" }),
-      }),
-    }));
+    const scopedPdfCall = mocks.buildPdfData.mock.calls.at(-1)?.[0];
+    if (!scopedPdfCall) throw new Error("Expected scoped buildPdfData call");
+    expect(scopedPdfCall.model.dataAvailability?.communityEventsAvailability).toBe("partial");
   });
 
   it("applies advanced filters before the server model and records the exact selection", async () => {
@@ -257,6 +302,8 @@ describe("multi-action report server resolver", () => {
       sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
       communityEvents: [],
       communityEventsAvailability: "available",
+      actionMediaReadyCountByActionId: {},
+      actionMediaAvailability: "available",
     });
 
     await expect(buildMultiActionReportGenerationInput({
@@ -282,6 +329,8 @@ describe("multi-action report server resolver", () => {
       sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
       communityEvents: [],
       communityEventsAvailability: "available",
+      actionMediaReadyCountByActionId: {},
+      actionMediaAvailability: "available",
     });
     const result = await buildMultiActionReportGenerationInput({
       request: {
@@ -295,6 +344,8 @@ describe("multi-action report server resolver", () => {
     });
 
     const modelCall = mocks.computeReportModel.mock.calls.at(-1)?.[0];
+    if (!modelCall) throw new Error("Expected computeReportModel to be called");
+    if (!modelCall.contracts) throw new Error("Expected report contracts to be provided");
     expect(modelCall.contracts.map((contract: { id: string }) => contract.id)).toEqual(["included"]);
     expect(result.scopeKind).toBe(kind);
     expect(result.scopeValue).toBe(value);
@@ -324,6 +375,8 @@ describe("multi-action report server resolver", () => {
       sourceHealth: { partial: true, failedSources: ["actions"], availableSources: [], warnings: ["down"] },
       communityEvents: [],
       communityEventsAvailability: "unavailable",
+      actionMediaReadyCountByActionId: {},
+      actionMediaAvailability: "available",
     });
     await expect(buildMultiActionReportGenerationInput({
       request: { type: "multi_action", period: { id: "six_months" }, scope: { kind: "global" } },
@@ -338,6 +391,8 @@ describe("multi-action report server resolver", () => {
       sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
       communityEvents: [],
       communityEventsAvailability: "available",
+      actionMediaReadyCountByActionId: {},
+      actionMediaAvailability: "available",
     });
     await expect(buildMultiActionReportGenerationInput({
       request: { type: "multi_action", period: { id: "thirty_days" }, scope: { kind: "global" } },
@@ -364,6 +419,8 @@ describe("multi-action report server resolver", () => {
       sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
       communityEvents: [],
       communityEventsAvailability: "available",
+      actionMediaReadyCountByActionId: {},
+      actionMediaAvailability: "available",
     });
 
     const filters = {
@@ -397,10 +454,12 @@ describe("multi-action report server resolver", () => {
     });
 
     const modelCall = mocks.computeReportModel.mock.calls.at(-1)?.[0];
+    if (!modelCall) throw new Error("Expected computeReportModel to be called");
+    if (!modelCall.contracts) throw new Error("Expected report contracts to be provided");
     expect(modelCall.contracts.map((contract: { id: string }) => contract.id)).toEqual(["kept"]);
-    expect(modelCall.allItems.map((item: { contract: { id: string } }) => item.contract.id)).toEqual(["kept"]);
-    expect(modelCall.approvedItems.map((item: { contract: { id: string } }) => item.contract.id)).toEqual(["kept"]);
-    expect(modelCall.mapItems.map((item: { contract: { id: string } }) => item.contract.id)).toEqual(["kept"]);
+    expect(modelCall.allItems.map((item) => item.contract?.id)).toEqual(["kept"]);
+    expect(modelCall.approvedItems.map((item) => item.contract?.id)).toEqual(["kept"]);
+    expect(modelCall.mapItems.map((item) => item.contract?.id)).toEqual(["kept"]);
     expect(result.payload.snapshotMetadata).toMatchObject({ provenance: { actionCount: 1 }, filters });
   });
 
@@ -429,6 +488,8 @@ describe("multi-action report server resolver", () => {
       sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
       communityEvents: [],
       communityEventsAvailability: "available",
+      actionMediaReadyCountByActionId: {},
+      actionMediaAvailability: "available",
     });
 
     await buildMultiActionReportGenerationInput({
@@ -439,6 +500,7 @@ describe("multi-action report server resolver", () => {
     });
 
     const model = mocks.buildPdfData.mock.calls.at(-1)?.[0]?.model;
+    if (!model) throw new Error("Expected buildPdfData to receive a model");
     expect(model.wasteProfile).toMatchObject({
       coveragePercent: (2 / 3) * 100,
       dominantLabel: "Verre",
@@ -455,14 +517,23 @@ describe("multi-action report server resolver", () => {
     mocks.loadReportsGenerationData.mockResolvedValueOnce({
       contracts: [makeContract("unknown", { wasteKg: 0, volunteersCount: null, wasteBreakdown: null })],
       isTruncated: false,
-      sourceHealth: { partial: true, failedSources: ["community_events"], availableSources: ["actions"], warnings: ["events unavailable"] },
+      sourceHealth: { partial: true, failedSources: [], availableSources: ["actions"], warnings: ["events unavailable"] },
       communityEvents: [],
       communityEventsAvailability: "unavailable",
+      actionMediaReadyCountByActionId: {},
+      actionMediaAvailability: "available",
     });
     mocks.computeReportModel.mockReturnValueOnce({
+      ...reportModelFixture(),
       generatedAt: now.toISOString(),
-      totals: { actions: 1, kg: 0, knownWasteActions: 1, volunteersKnownActions: 0, hours: 0 },
-      impactMethodology: { proxyVersion: "impact-proxy-v1", qualityRulesVersion: "quality-v1" },
+      totals: {
+        ...reportModelFixture().totals,
+        actions: 1,
+        kg: 0,
+        knownWasteActions: 1,
+        volunteersKnownActions: 0,
+        hours: 0,
+      },
     });
 
     await buildMultiActionReportGenerationInput({
@@ -473,6 +544,7 @@ describe("multi-action report server resolver", () => {
     });
 
     const model = mocks.buildPdfData.mock.calls.at(-1)?.[0]?.model;
+    if (!model) throw new Error("Expected buildPdfData to receive a model");
     expect(model.wasteProfile).toEqual({
       categories: [],
       coveragePercent: 0,
@@ -480,7 +552,7 @@ describe("multi-action report server resolver", () => {
       dominantKg: 0,
     });
     expect(model.dataAvailability).toMatchObject({
-      sourceHealth: { partial: true, failedSources: ["community_events"] },
+      sourceHealth: { partial: true, failedSources: [] },
       communityEventsAvailability: "unavailable",
     });
     expect(mocks.buildPdfData).toHaveBeenCalledWith(expect.objectContaining({ surfaceProxy: null }));
@@ -497,6 +569,8 @@ describe("multi-action report server resolver", () => {
       sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
       communityEvents: [],
       communityEventsAvailability: "available",
+      actionMediaReadyCountByActionId: {},
+      actionMediaAvailability: "available",
     });
 
     await buildMultiActionReportGenerationInput({
@@ -507,6 +581,7 @@ describe("multi-action report server resolver", () => {
     });
 
     const model = mocks.buildPdfData.mock.calls.at(-1)?.[0]?.model;
+    if (!model) throw new Error("Expected buildPdfData to receive a model");
     expect(model.wasteProfile.categories).toEqual([
       expect.objectContaining({ key: "verreKg", kg: 2, actions: 2 }),
       expect.objectContaining({ key: "plastiqueKg", kg: 2, actions: 1 }),
