@@ -102,7 +102,7 @@ changement documentaire ou à une régression isolée sans objectif de couvertur
 ### Matrice d'acceptation obligatoire
 
 Avant la première modification, le lot établit une matrice bornée, à partir du
-`main` réellement inspecté, des `AGENTS.md` applicables, des contrats `CURRENT`
+`main` réellement inspecté, des instructions de dépôt applicables, des contrats `CURRENT`
 et des tests existants. Pour chaque objectif ou invariant retenu, la matrice
 contient au minimum :
 

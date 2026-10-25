@@ -56,6 +56,19 @@ describe("documentation roadmap governance", () => {
     ));
   });
 
+  it("rejects internal instruction filenames in public Markdown", () => {
+    const view = createView({
+      "documentation/development/fixture.md": "Consulter AGENTS.md avant toute modification.\n",
+      [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
+    });
+
+    const violations = validateDocumentationGovernance(view);
+
+    assert.ok(violations.some((violation) =>
+      violation.file === "documentation/development/fixture.md" && violation.pattern === "AGENTS.md",
+    ));
+  });
+
   it("accepts compliant MDX and keeps documentary exclusions", () => {
     const view = createView({
       "documentation/features/fixture.mdx": "# Public feature\n\nNo internal reference.\n",
