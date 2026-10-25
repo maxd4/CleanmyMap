@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RouteRecommendationResponse } from "@/lib/route/route-response-contract";
+import type { RouteGeometry } from "@/lib/route/route-contract";
 import {
   applyOriginRouteGeometryLegsMock,
   buildPredictedRouteCandidatesMock,
@@ -16,6 +17,7 @@ import {
   planRouteMock,
   plannedStop,
   plannerAudit,
+  predictedCandidate,
   resetRouteRecommendMocks,
   routePolylineThroughFossgisFootMock,
   request,
@@ -29,7 +31,7 @@ async function readRouteResponse(response: Response): Promise<RouteRecommendatio
 }
 
 describe("POST /api/route/recommend — routage réseau et budget", () => {
-  const networkGeometry = (overrides: Record<string, unknown> = {}) => ({
+  const networkGeometry = (overrides: Partial<RouteGeometry> = {}): RouteGeometry => ({
     ...fallbackGeometry(),
     mode: "network",
     provider: "fossgis-osrm",
@@ -103,9 +105,9 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
     const secondCandidate = { ...candidate, id: "spot-2", latitude: 48.84, longitude: 2.34 };
     buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate, secondCandidate]);
     planRouteMock.mockImplementation((input) => ({
-      stops: input.candidates.slice(0, input.maxStops).map((item: typeof candidate, index: number) => plannedStop(item, index)),
+      stops: input.candidates.slice(0, input.maxStops).map((item, index) => plannedStop(item, index)),
       diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
-      audit: plannerAudit(input.candidates.slice(0, input.maxStops).map((item: typeof candidate, index: number) => plannedStop(item, index))),
+      audit: plannerAudit(input.candidates.slice(0, input.maxStops).map((item, index) => plannedStop(item, index))),
     }));
     routePolylineThroughFossgisFootMock.mockImplementation(
       async (coordinates: [number, number][]) => ({
@@ -161,25 +163,23 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
     }));
 
     expect(response.status).toBe(200);
-    expect(planRouteMock).toHaveBeenCalledWith(expect.objectContaining({
-      origin: explicitOrigin,
-      candidates: [candidate],
-      travelBudgetMinutes: 42,
-      maxStops: 1,
-      priorityVsTravel: 25,
-      effectiveRiskFocus: "all",
-      volunteersExpected: 1,
-      groupCount: 1,
-      operationalBudget: undefined,
-      weatherContext: expect.objectContaining({
-        status: "unavailable",
-        unavailableReason: "missing_window",
-        operationalRisk: expect.objectContaining({
-          status: "fallback",
-          operationalLimitMinutes: null,
-        }),
-      }),
-    }));
+    const [plannerCall] = planRouteMock.mock.calls.at(-1) ?? [];
+    if (!plannerCall) throw new Error("Le planner n'a reçu aucun appel.");
+    expect(plannerCall.origin).toEqual(explicitOrigin);
+    expect(plannerCall.candidates).toEqual([candidate]);
+    expect(plannerCall.travelBudgetMinutes).toBe(42);
+    expect(plannerCall.maxStops).toBe(1);
+    expect(plannerCall.priorityVsTravel).toBe(25);
+    expect(plannerCall.effectiveRiskFocus).toBe("all");
+    expect(plannerCall.volunteersExpected).toBe(1);
+    expect(plannerCall.groupCount).toBe(1);
+    expect(plannerCall.operationalBudget).toBeUndefined();
+    if (!plannerCall.weatherContext) throw new Error("Le contexte météo du planner est absent.");
+    expect(plannerCall.weatherContext.status).toBe("unavailable");
+    expect(plannerCall.weatherContext.unavailableReason).toBe("missing_window");
+    if (!plannerCall.weatherContext.operationalRisk) throw new Error("Le risque opérationnel météo est absent.");
+    expect(plannerCall.weatherContext.operationalRisk.status).toBe("fallback");
+    expect(plannerCall.weatherContext.operationalRisk.operationalLimitMinutes).toBeNull();
     expect((await readRouteResponse(response)).origin).toEqual(explicitOrigin);
   });
 
@@ -263,13 +263,13 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
         { fromStopIndex: 1, toStopIndex: 2, distanceKm: 2, estimatedMinutes: 30 },
       ],
     });
-    const reconciledGeometry = {
+    const reconciledGeometry: RouteGeometry = {
       ...network,
       coordinates: [[48.9, 2.4], [candidate.latitude, candidate.longitude]],
       distanceKm: 1.5,
       durationMinutes: 40,
-      legs: [network.legs[0]],
-    } as const;
+      legs: network.legs.slice(0, 1),
+    };
     routePolylineThroughFossgisFootMock
       .mockResolvedValueOnce(network)
       .mockResolvedValueOnce(reconciledGeometry);
@@ -323,7 +323,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
     routePolylineThroughFossgisFootMock
       .mockResolvedValueOnce(overBudgetNetwork)
       .mockRejectedValueOnce(new Error("provider unavailable"));
-    fallbackRoutePrefixWithinBudgetMock.mockReturnValueOnce([plannedStops[0]]);
+    fallbackRoutePrefixWithinBudgetMock.mockReturnValueOnce(plannedStops.slice(0, 1).map(({ candidate: plannedCandidate }) => plannedCandidate));
     createFallbackRouteGeometryMock.mockImplementation(
       (coordinates: [number, number][]) => fallbackGeometry(coordinates, 8),
     );
@@ -378,12 +378,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
   });
 
   it("audite une prédiction retirée uniquement par le budget réseau final", async () => {
-    const predicted = {
-      ...candidate,
-      id: "predicted:zone-1",
-      family: "predicted" as const,
-      evidence: { family: "predicted" as const },
-    };
+    const predicted = predictedCandidate();
     const observed = { ...candidate, id: "spot-2", latitude: 48.86 };
     const plannedStops = [plannedStop(observed), plannedStop(predicted, 1)];
     buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([observed]);
@@ -391,6 +386,13 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       candidates: [predicted],
       summary: {
         status: "available",
+        source: "urban-pressure-model",
+        modelVersion: "test-model",
+        snapshot: null,
+        riskFocus: "all",
+        zonesConsidered: 1,
+        candidatesConsidered: 1,
+        admitted: 1,
         selected: 0,
         selectedCandidateIds: [],
         admittedCandidateIds: [predicted.id],
@@ -398,16 +400,22 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
         excludedByPreselection: 0,
         excludedByPlannerBudget: 0,
         preselectionExcludedCandidateIds: [],
+        preselectionExclusionReasons: {},
         excludedByFinalRoutingBudget: 0,
         finalRoutingBudgetExcludedCandidateIds: [],
+        excludedByCorridor: 0,
+        deduplicated: 0,
+        warnings: [],
       },
     });
     buildRoutePlannerCandidatePoolMock.mockReturnValueOnce({
       candidates: [predicted, observed],
       audit: {
+        effectiveRiskFocus: "all",
         admittedCandidateIds: [predicted.id, observed.id],
         passedToPlannerCandidateIds: [predicted.id, observed.id],
         excludedByPreselectionCandidateIds: [],
+        excludedByPreselectionReasons: {},
       },
     });
     planRouteMock.mockReturnValueOnce({
@@ -450,7 +458,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
   it("reduces an over-budget fallback route locally", async () => {
     const { plannedStops } = setupTwoStopPlan();
     routePolylineThroughFossgisFootMock.mockResolvedValueOnce(fallbackGeometry([], 70));
-    fallbackRoutePrefixWithinBudgetMock.mockReturnValueOnce([plannedStops[0]]);
+    fallbackRoutePrefixWithinBudgetMock.mockReturnValueOnce(plannedStops.slice(0, 1).map(({ candidate: plannedCandidate }) => plannedCandidate));
     createFallbackRouteGeometryMock.mockImplementation(
       (coordinates: [number, number][]) => fallbackGeometry(coordinates, 9),
     );
@@ -460,7 +468,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       origin: { latitude: 48.9, longitude: 2.4, source: "browser" },
       travelBudgetMinutes: 60,
     }));
-    const payload = await response.json();
+    const payload = await readRouteResponse(response);
 
     expect(fallbackRoutePrefixWithinBudgetMock).toHaveBeenCalledWith(
       expect.objectContaining({ latitude: 48.9, longitude: 2.4 }),

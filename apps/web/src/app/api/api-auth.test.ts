@@ -1,9 +1,45 @@
-import { describe, it, expect } from"vitest";
+import { describe, it, expect } from "vitest";
 import {
   unauthorizedJsonResponse,
   forbiddenJsonResponse,
   adminAccessErrorJsonResponse,
 } from"@/lib/http/auth-responses";
+
+type PermissionCode = "unauthorized" | "forbidden";
+
+type AuthResponseBody = {
+  error: string;
+  code: PermissionCode;
+  hint: string;
+  referenceCode: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isPermissionCode(value: unknown): value is PermissionCode {
+  return value === "unauthorized" || value === "forbidden";
+}
+
+async function readAuthResponseBody(response: Response): Promise<AuthResponseBody> {
+  const value: unknown = await response.json();
+  if (
+    !isRecord(value) ||
+    typeof value.error !== "string" ||
+    !isPermissionCode(value.code) ||
+    typeof value.hint !== "string" ||
+    typeof value.referenceCode !== "string"
+  ) {
+    throw new Error("Unexpected authentication response body");
+  }
+  return {
+    error: value.error,
+    code: value.code,
+    hint: value.hint,
+    referenceCode: value.referenceCode,
+  };
+}
 
 /**
  * Non-regression tests for standardized auth error responses.
@@ -15,13 +51,11 @@ describe("Auth Response Helpers", () => {
       const response = unauthorizedJsonResponse();
       expect(response.status).toBe(401);
 
-      const json = await response.json();
-      expect(json).toMatchObject({
-        error: expect.any(String),
-        code:"unauthorized",
-        hint: expect.any(String),
-        referenceCode: expect.any(String),
-      });
+      const json = await readAuthResponseBody(response);
+      expect(typeof json.error).toBe("string");
+      expect(json.code).toBe("unauthorized");
+      expect(typeof json.hint).toBe("string");
+      expect(typeof json.referenceCode).toBe("string");
     });
 
     it("uses custom hint and operationId when provided", async () => {
@@ -29,7 +63,7 @@ describe("Auth Response Helpers", () => {
         hint:"Custom hint",
         operationId:"op-123",
       });
-      const json = await response.json();
+      const json = await readAuthResponseBody(response);
       expect(json.hint).toBe("Custom hint");
       expect(json.referenceCode).toBe("AUTH-op-123".slice(0, 12));
     });
@@ -40,13 +74,11 @@ describe("Auth Response Helpers", () => {
       const response = forbiddenJsonResponse();
       expect(response.status).toBe(403);
 
-      const json = await response.json();
-      expect(json).toMatchObject({
-        error: expect.any(String),
-        code:"forbidden",
-        hint: expect.any(String),
-        referenceCode: expect.any(String),
-      });
+      const json = await readAuthResponseBody(response);
+      expect(typeof json.error).toBe("string");
+      expect(json.code).toBe("forbidden");
+      expect(typeof json.hint).toBe("string");
+      expect(typeof json.referenceCode).toBe("string");
     });
 
     it("uses custom hint and operationId when provided", async () => {
@@ -54,7 +86,7 @@ describe("Auth Response Helpers", () => {
         hint:"Pas admin",
         operationId:"op-456",
       });
-      const json = await response.json();
+      const json = await readAuthResponseBody(response);
       expect(json.hint).toBe("Pas admin");
       expect(json.referenceCode).toBe("FRB-op-456".slice(0, 12));
     });
@@ -68,7 +100,7 @@ describe("Auth Response Helpers", () => {
       );
       expect(response.status).toBe(401);
 
-      const json = await response.json();
+      const json = await readAuthResponseBody(response);
       expect(json.code).toBe("unauthorized");
       expect(json.referenceCode).toBe("AUTH-op-789".slice(0, 12));
     });
@@ -80,7 +112,7 @@ describe("Auth Response Helpers", () => {
       );
       expect(response.status).toBe(403);
 
-      const json = await response.json();
+      const json = await readAuthResponseBody(response);
       expect(json.code).toBe("forbidden");
       expect(json.referenceCode).toBe("FRB-op-abc".slice(0, 12));
     });
@@ -91,7 +123,7 @@ describe("Auth Response Helpers", () => {
         status: 401,
         error:"Unauthorized",
       });
-      const json = await response.json();
+      const json = await readAuthResponseBody(response);
       expect(json.referenceCode).toBeTruthy();
       expect(typeof json.referenceCode).toBe("string");
       expect(json.referenceCode.startsWith("AUTH-")).toBe(true);

@@ -1,45 +1,51 @@
 import { vi } from "vitest";
+import { createClient } from "@supabase/supabase-js";
 import {
   availableSourceHealth,
-  candidate,
   fallbackGeometry,
   plannedStop,
 } from "./route.test.fixtures";
+import type { RoutePredictionSummary } from "@/lib/route/route-predicted-targets-types";
+import type { RoutePlannerResult } from "@/lib/route/route-planner";
 
-export { candidate, fallbackGeometry, plannedStop, request } from "./route.test.fixtures";
+export { candidate, fallbackGeometry, plannedStop, predictedCandidate, request } from "./route.test.fixtures";
 
-const getSafeAuthSessionMock = vi.hoisted(() => vi.fn());
-const verifyRateLimitMock = vi.hoisted(() => vi.fn());
-const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
-const loadRouteRecommendationSourceMock = vi.hoisted(() => vi.fn());
-const buildTrashSpotterActionableCandidatesMock = vi.hoisted(() => vi.fn());
-const getCurrentUserLocationPreferenceMock = vi.hoisted(() => vi.fn());
-const trackRouteRecommendationUseMock = vi.hoisted(() => vi.fn());
-const buildTrashSpotterRouteCandidatesMock = vi.hoisted(() => vi.fn());
-const applyOriginRouteGeometryLegsMock = vi.hoisted(() => vi.fn());
-const createFallbackRouteGeometryMock = vi.hoisted(() => vi.fn());
-const routePolylineThroughFossgisFootMock = vi.hoisted(() => vi.fn());
-const buildHotspotsMock = vi.hoisted(() => vi.fn());
-const buildProactiveAssistantMock = vi.hoisted(() => vi.fn());
-const defaultRouteAssistantPayloadMock = vi.hoisted(() => vi.fn());
-const defaultRouteRecommendationFloorDateMock = vi.hoisted(() => vi.fn());
-const loadCachedEventPressureByArrondissementMock = vi.hoisted(() => vi.fn());
-const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
-const getTerritoryArrondissementCenterMock = vi.hoisted(() => vi.fn());
-const planRouteMock = vi.hoisted(() => vi.fn());
-const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
-const loadParisPressureSnapshotMock = vi.hoisted(() => vi.fn());
-const loadMunicipalCleaningServiceabilitySnapshotMock = vi.hoisted(() => vi.fn());
-const applyParisPressureToCandidatesMock = vi.hoisted(() => vi.fn());
-const buildPredictedRouteCandidatesMock = vi.hoisted(() => vi.fn());
-const buildRoutePlannerCandidatePoolMock = vi.hoisted(() => vi.fn());
-const applyRoutePredictionPoolAuditMock = vi.hoisted(() => vi.fn());
-const applyRoutePredictionPlannerBudgetAuditMock = vi.hoisted(() => vi.fn());
-const applyRoutePredictionFinalRoutingBudgetAuditMock = vi.hoisted(() => vi.fn());
-const resolveRouteDataStatusMock = vi.hoisted(() => vi.fn());
-const resolveRouteDataLayersMock = vi.hoisted(() => vi.fn());
-const routeEventSignalContextMock = vi.hoisted(() => vi.fn());
-const loadRouteEventCenteredAnchorMock = vi.hoisted(() => vi.fn());
+const getSafeAuthSessionMock = vi.hoisted(() => vi.fn<typeof import("@/lib/auth/safe-session").getSafeAuthSession>());
+const verifyRateLimitMock = vi.hoisted(() => vi.fn<typeof import("@/lib/rate-limit/server").verifyRateLimit>());
+const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn<typeof import("@/lib/rate-limit/server").createServerRateLimitResponse>());
+const loadRouteRecommendationSourceMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-recommendation-loader").loadRouteRecommendationSource>());
+const buildTrashSpotterActionableCandidatesMock = vi.hoisted(() => vi.fn<typeof import("@/lib/actions/trash-spotter-actionable-candidates").buildTrashSpotterActionableCandidates>());
+const getCurrentUserLocationPreferenceMock = vi.hoisted(() => vi.fn<typeof import("@/lib/auth/user-location").getCurrentUserLocationPreference>());
+const trackRouteRecommendationUseMock = vi.hoisted(() => vi.fn<typeof import("@/lib/gamification/progression").trackRouteRecommendationUse>());
+const buildTrashSpotterRouteCandidatesMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/trash-spotter-recommendation").buildTrashSpotterRouteCandidates>());
+const applyOriginRouteGeometryLegsMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-contract").applyOriginRouteGeometryLegs>());
+const createFallbackRouteGeometryMock = vi.hoisted(() => vi.fn<typeof import("@/lib/geo/osrm-routing").createFallbackRouteGeometry>());
+const routePolylineThroughFossgisFootMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/fossgis-foot-routing").routePolylineThroughFossgisFoot>());
+const buildHotspotsMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/recommendation-assistant").buildHotspots>());
+const buildProactiveAssistantMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/recommendation-assistant").buildProactiveAssistant>());
+const defaultRouteAssistantPayloadMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/recommendation-assistant").defaultRouteAssistantPayload>());
+const defaultRouteRecommendationFloorDateMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/recommendation-assistant").defaultRouteRecommendationFloorDate>());
+const loadCachedEventPressureByArrondissementMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/recommendation-assistant").loadCachedEventPressureByArrondissement>());
+const getSupabaseServerClientMock = vi.hoisted(() => vi.fn<typeof import("@/lib/supabase/server").getSupabaseServerClient>());
+const getTerritoryArrondissementCenterMock = vi.hoisted(() => vi.fn<typeof import("@/lib/geo/paris-arrondissements").getTerritoryArrondissementCenter>());
+const planRouteMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-planner").planRoute>());
+const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-planner").fallbackRoutePrefixWithinBudget>());
+const loadParisPressureSnapshotMock = vi.hoisted(() => vi.fn<typeof import("@/lib/geo/paris-pressure-loader").loadParisPressureSnapshot>());
+const loadMunicipalCleaningServiceabilitySnapshotMock = vi.hoisted(() => vi.fn<typeof import("@/lib/geo/municipal-cleaning-serviceability-loader").loadMunicipalCleaningServiceabilitySnapshot>());
+const applyParisPressureToCandidatesMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/paris-pressure-route-adapter").applyParisPressureToCandidates>());
+const buildPredictedRouteCandidatesMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-predicted-targets").buildPredictedRouteCandidates>());
+const buildRoutePlannerCandidatePoolMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-predicted-targets").buildRoutePlannerCandidatePool>());
+const applyRoutePredictionPoolAuditMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-predicted-targets").applyRoutePredictionPoolAudit>());
+const applyRoutePredictionPlannerBudgetAuditMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-predicted-targets").applyRoutePredictionPlannerBudgetAudit>());
+const applyRoutePredictionFinalRoutingBudgetAuditMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-predicted-targets").applyRoutePredictionFinalRoutingBudgetAudit>());
+const resolveRouteDataStatusMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-data-status").resolveRouteDataStatus>());
+const resolveRouteDataLayersMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-data-status").resolveRouteDataLayers>());
+const routeEventSignalContextMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-event-pressure-loader").loadCachedRouteEventSignalContext>());
+const loadRouteEventCenteredAnchorMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-event-centered-loader").loadRouteEventCenteredAnchor>());
+const supabaseServerClientFixture = createClient(
+  "https://example.supabase.co",
+  "test-anon-key-for-route-recommendation-harness",
+);
 
 export {
   loadRouteRecommendationSourceMock,
@@ -93,11 +99,11 @@ vi.mock("@/lib/geo/paris-arrondissements", () => ({
 }));
 vi.mock("@/lib/route/route-planner", () => ({
   fallbackRoutePrefixWithinBudget: fallbackRoutePrefixWithinBudgetMock,
-  isRoutePlannerCandidateEligible: vi.fn(() => true),
+  isRoutePlannerCandidateEligible: vi.fn<typeof import("@/lib/route/route-planner").isRoutePlannerCandidateEligible>(() => true),
   planRoute: planRouteMock,
   ROUTE_PLANNER_ENGINE_VERSION: "route-planner-v2",
-  routeDistanceKm: vi.fn(() => 1),
-  travelMinutesForDistance: vi.fn(() => 5),
+  routeDistanceKm: vi.fn<typeof import("@/lib/route/route-planner").routeDistanceKm>(() => 1),
+  travelMinutesForDistance: vi.fn<typeof import("@/lib/route/route-planner").travelMinutesForDistance>(() => 5),
 }));
 vi.mock("@/lib/route/route-event-pressure-loader", () => ({
   loadCachedRouteEventSignalContext: routeEventSignalContextMock,
@@ -143,7 +149,7 @@ vi.mock("@/lib/http/api-errors", () => ({
     new Response(error instanceof Error ? error.message : "error", { status: 500 }),
 }));
 
-export function plannerAudit(stops: Array<ReturnType<typeof plannedStop>>) {
+export function plannerAudit(stops: ReturnType<typeof plannedStop>[]): RoutePlannerResult["audit"] {
   return {
     evaluations: [],
     selections: stops.map(({ candidate: selectedCandidate, incrementalDistanceKm, incrementalTravelMinutes, cumulativeTravelMinutes, returnDistanceKm, returnTravelMinutes, loopDistanceKm, loopTravelMinutes }, index) => ({
@@ -170,7 +176,7 @@ export function plannerAudit(stops: Array<ReturnType<typeof plannedStop>>) {
       "priority_desc",
       "incremental_travel_asc",
       "id_lexicographic",
-    ] as const,
+    ],
   };
 }
 
@@ -194,7 +200,7 @@ export function resetRouteRecommendMocks() {
   createServerRateLimitResponseMock.mockImplementation(
     (allowed: boolean) => (allowed ? null : new Response("limited", { status: 429 })),
   );
-  getSupabaseServerClientMock.mockReturnValue({});
+  getSupabaseServerClientMock.mockReturnValue(supabaseServerClientFixture);
   getCurrentUserLocationPreferenceMock.mockResolvedValue({
     arrondissement: 4,
     locationType: "residence",
@@ -205,22 +211,38 @@ export function resetRouteRecommendMocks() {
   applyParisPressureToCandidatesMock.mockImplementation((values) => values);
   const emptyPredictionSummary = {
     status: "unavailable",
+    source: "urban-pressure-model",
+    modelVersion: null,
+    snapshot: null,
+    riskFocus: "all",
+    zonesConsidered: 0,
+    candidatesConsidered: 0,
+    admitted: 0,
     selected: 0,
     selectedCandidateIds: [],
+    passedToPlanner: 0,
+    excludedByPreselection: 0,
+    excludedByPlannerBudget: 0,
     admittedCandidateIds: [],
     preselectionExcludedCandidateIds: [],
+    preselectionExclusionReasons: {},
     excludedByFinalRoutingBudget: 0,
     finalRoutingBudgetExcludedCandidateIds: [],
-  };
+    excludedByCorridor: 0,
+    deduplicated: 0,
+    warnings: [],
+  } satisfies RoutePredictionSummary;
   buildPredictedRouteCandidatesMock.mockReturnValue({ candidates: [], summary: emptyPredictionSummary });
-  buildRoutePlannerCandidatePoolMock.mockImplementation(({ observedCandidates, predictedCandidates, maxCandidates }) => {
+  buildRoutePlannerCandidatePoolMock.mockImplementation(({ observedCandidates, predictedCandidates, maxCandidates, effectiveRiskFocus }) => {
     const candidates = [...observedCandidates, ...predictedCandidates].slice(0, maxCandidates);
     return {
       candidates,
       audit: {
+        effectiveRiskFocus: effectiveRiskFocus ?? "all",
         admittedCandidateIds: candidates.map((item) => item.id),
         passedToPlannerCandidateIds: candidates.map((item) => item.id),
         excludedByPreselectionCandidateIds: [],
+        excludedByPreselectionReasons: {},
       },
     };
   });
@@ -229,7 +251,7 @@ export function resetRouteRecommendMocks() {
   applyRoutePredictionFinalRoutingBudgetAuditMock.mockImplementation((summary, excludedIds) => ({
     ...summary,
     excludedByFinalRoutingBudget: excludedIds.length,
-    finalRoutingBudgetExcludedCandidateIds: excludedIds,
+    finalRoutingBudgetExcludedCandidateIds: [...excludedIds],
   }));
   resolveRouteDataStatusMock.mockImplementation(({ candidateCount, isTruncated, sourceHealth }) => {
     if (sourceHealth.failedSources.length > 0 || sourceHealth.availableSources.length === 0) return "unavailable";
@@ -278,7 +300,7 @@ export function resetRouteRecommendMocks() {
   planRouteMock.mockImplementation((input) => {
     const stops = input.candidates
       .slice(0, input.maxStops)
-      .map((item: typeof candidate, index: number) => plannedStop(item, index));
+      .map((item, index) => plannedStop(item, index));
     return {
       stops,
       diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },

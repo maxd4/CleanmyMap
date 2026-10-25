@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "./route";
+import { isChatChannelType } from "@/lib/chat/channels";
+import { isChatMessageKind } from "@/lib/chat/announcements";
+import { isChatTopicId } from "@/lib/chat/topics";
+import type { ChatSearchResponse } from "@/lib/chat/chat-search";
 
 type SearchRow = {
   id: string;
@@ -19,6 +23,58 @@ const authMock = vi.hoisted(() => vi.fn());
 const identityMock = vi.hoisted(() => vi.fn());
 const rlsClientMock = vi.hoisted(() => vi.fn());
 const serverClientMock = vi.hoisted(() => vi.fn());
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isChatSearchResponse(value: unknown): value is ChatSearchResponse {
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value.results) ||
+    typeof value.hasMore !== "boolean" ||
+    typeof value.query !== "string"
+  ) {
+    return false;
+  }
+
+  const hasValidCursor =
+    value.nextCursor === null ||
+    (isRecord(value.nextCursor) &&
+      typeof value.nextCursor.createdAt === "string" &&
+      typeof value.nextCursor.id === "string");
+
+  return (
+    hasValidCursor &&
+    value.results.every((result) => {
+      if (
+        !isRecord(result) ||
+        typeof result.messageId !== "string" ||
+        typeof result.excerpt !== "string" ||
+        typeof result.createdAt !== "string" ||
+        !isChatChannelType(typeof result.channelType === "string" ? result.channelType : null) ||
+        !isChatMessageKind(typeof result.messageKind === "string" ? result.messageKind : null) ||
+        (result.topicId !== null &&
+          (typeof result.topicId !== "string" || !isChatTopicId(result.topicId))) ||
+        !isRecord(result.author) ||
+        typeof result.author.displayName !== "string" ||
+        typeof result.author.handle !== "string" ||
+        (result.author.avatarUrl !== null && typeof result.author.avatarUrl !== "string")
+      ) {
+        return false;
+      }
+      return true;
+    })
+  );
+}
+
+async function readSearchResponse(response: Response): Promise<ChatSearchResponse> {
+  const value: unknown = await response.json();
+  if (!isChatSearchResponse(value)) {
+    throw new Error("Unexpected chat search response body");
+  }
+  return value;
+}
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: identityMock }));
@@ -42,7 +98,14 @@ function buildSupabaseMock({
     select: vi.fn(() => profileQuery),
     eq: vi.fn(() => profileQuery),
     maybeSingle: vi.fn().mockResolvedValue({
-      data: { paris_arrondissement: arrondissement, metadata },
+      data: {
+        id: "user-1",
+        display_name: "Alex",
+        handle: "alex",
+        paris_arrondissement: arrondissement,
+        role_label: null,
+        metadata,
+      },
       error: null,
     }),
   };
@@ -192,17 +255,16 @@ describe("GET /api/chat/search", () => {
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=community&topicId=relais_associatif&q=important"),
     );
-    const body = await response.json();
+    const body = await readSearchResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.results).toHaveLength(1);
-    expect(body.results[0]).toMatchObject({
-      messageId: expect.any(String),
-      excerpt: "Relais important",
-      messageKind: "message",
-      topicId: "relais_associatif",
-      author: { displayName: "Alex", handle: "alex" },
-    });
+    const [result] = body.results;
+    expect(result?.messageId).toBeTruthy();
+    expect(result?.excerpt).toBe("Relais important");
+    expect(result?.messageKind).toBe("message");
+    expect(result?.topicId).toBe("relais_associatif");
+    expect(result?.author).toEqual({ displayName: "Alex", handle: "alex", avatarUrl: null });
     expect(supabaseMock.calls.ilike).toHaveBeenCalledWith("content", "%important%");
   });
 
@@ -230,7 +292,7 @@ describe("GET /api/chat/search", () => {
         "http://localhost/api/chat/search?channelType=admin_elu&topicId=arbitrages&q=important",
       ),
     );
-    const body = await response.json();
+    const body = await readSearchResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.results).toHaveLength(1);
@@ -259,11 +321,11 @@ describe("GET /api/chat/search", () => {
         "http://localhost/api/chat/search?channelType=admin_elu&topicIds=arbitrages,priorites&q=important",
       ),
     );
-    const body = await response.json();
+    const body = await readSearchResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.results).toHaveLength(2);
-    expect(body.results.map((result: { topicId: string }) => result.topicId)).toEqual([
+    expect(body.results.map((result) => result.topicId)).toEqual([
       "priorites",
       "arbitrages",
     ]);
@@ -284,7 +346,7 @@ describe("GET /api/chat/search", () => {
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=dm&recipientId=user-2&q=plan"),
     );
-    const body = await response.json();
+    const body = await readSearchResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.results.map((result: { messageId: string }) => result.messageId)).toEqual([
@@ -322,7 +384,7 @@ describe("GET /api/chat/search", () => {
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=bug_report&q=signalement"),
     );
-    const body = await response.json();
+    const body = await readSearchResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.results.map((result: { messageId: string }) => result.messageId)).toEqual([
@@ -369,7 +431,7 @@ describe("GET /api/chat/search", () => {
         "http://localhost/api/chat/search?channelType=territory&zoneName=Paris%201er%20arrondissement&arrondissementId=1&q=Besoin",
       ),
     );
-    const body = await response.json();
+    const body = await readSearchResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.results.map((result: { messageId: string }) => result.messageId)).toEqual([
@@ -397,7 +459,7 @@ describe("GET /api/chat/search", () => {
     );
 
     expect(response.status).toBe(200);
-    expect((await response.json()).results).toHaveLength(1);
+    expect((await readSearchResponse(response)).results).toHaveLength(1);
   });
 
   it("rejects an explicitly invalid territory", async () => {
@@ -429,18 +491,21 @@ describe("GET /api/chat/search", () => {
     const firstResponse = await GET(
       new Request("http://localhost/api/chat/search?channelType=territory&q=local"),
     );
-    const firstBody = await firstResponse.json();
+    const firstBody = await readSearchResponse(firstResponse);
     expect(firstResponse.status).toBe(200);
     expect(firstBody.results).toHaveLength(20);
     expect(firstBody.hasMore).toBe(true);
-    expect(firstBody.nextCursor).toMatchObject({ id: expect.any(String) });
+    if (!firstBody.nextCursor) {
+      throw new Error("Expected a pagination cursor for the first search page");
+    }
+    expect(firstBody.nextCursor.id).toBeTruthy();
 
     const secondResponse = await GET(
       new Request(
         `http://localhost/api/chat/search?channelType=territory&q=local&beforeCreatedAt=${encodeURIComponent(firstBody.nextCursor.createdAt)}&beforeId=${firstBody.nextCursor.id}`,
       ),
     );
-    const secondBody = await secondResponse.json();
+    const secondBody = await readSearchResponse(secondResponse);
     expect(secondResponse.status).toBe(200);
     expect(secondBody.results).toHaveLength(1);
     expect(secondBody.results[0].excerpt).toContain("Besoin local");
