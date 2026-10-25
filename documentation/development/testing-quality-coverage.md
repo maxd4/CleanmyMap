@@ -132,7 +132,10 @@ PostgreSQL exécutés, et non une couverture Vitest de lignes.
 La publication Codex et le pré-push utilisent le même contrôle
 `scripts/ci/coverage-publication.mjs`. Il ne mesure pas une seconde fois la
 couverture : il vérifie la preuve produite par le rapport, son empreinte de
-fichiers, le hash du résumé et du LCOV, et le SHA complet du candidat. Une preuve `WORKTREE` n'est acceptée
+fichiers, le hash du résumé et du LCOV, la configuration lue dans l'arbre Git
+du candidat et le SHA complet du candidat. La validation canonique est
+également appliquée aux rapports Web matérialisés dans l'artefact de
+publication ; une simple empreinte de manifeste ne suffit donc pas. Une preuve `WORKTREE` n'est acceptée
 que si `HEAD`, `refs/heads/main` et le worktree sont cohérents ; une preuve
 `DYNAMIC_CANDIDATE` provient de l'arbre Git éphémère exact. Une preuve absente,
 illisible, falsifiée, périmée ou rattachée à un autre SHA échoue lorsqu'un
@@ -141,10 +144,22 @@ domaine est `ENFORCE`.
 Les preuves sont écrites sous `artifacts/coverage-publication/<SHA>/<scope>/`
 et restent ignorées par Git. Elles sont réutilisées pour le même SHA et le
 même périmètre ; elles ne changent jamais automatiquement une baseline, une
-classification ou une exclusion. Les changements documentaires n'exigent
-aucune suite de couverture. Les changements Web, mobile, scripts/Node et
-Python produisent chacun leur rapport séparé lorsque leur périmètre est
-concerné ; SQL reste réservé à la preuve PostgreSQL du lot suivant.
+classification ou une exclusion. Les changements documentaires seuls, y
+compris un Markdown sous `apps/web/`, n'exigent aucune suite de couverture.
+Les changements Web instrumentables et les changements techniques qui peuvent
+modifier la politique, le classificateur, l'instrumentation, le ciblage ou le
+gate produisent ou vérifient la preuve Web lorsqu'une activation Web est
+concernée. Les changements Web, mobile, scripts/Node et Python produisent
+chacun leur rapport séparé lorsque leur périmètre est concerné ; SQL reste
+réservé à la preuve PostgreSQL du lot suivant.
+
+Dans GitHub Actions, `web-tests` téléverse les rapports Web et la preuve de
+publication dans une archive commune ; `web-coverage` la télécharge à la
+racine du checkout afin de restaurer simultanément
+`apps/web/coverage/**` et `artifacts/coverage-publication/**`. Il vérifie ces
+emplacements avant d'exécuter `quality:coverage`. Un changement de la
+politique ou du gate ne peut donc pas être utilisé pour éviter le contrôle
+actif par absence de fichier `apps/web/**`.
 
 Le flux durable est donc : changement exécutable → tests adaptés → rapport de
 couverture → correction d'une violation → validation → commit/push. `OBSERVE`

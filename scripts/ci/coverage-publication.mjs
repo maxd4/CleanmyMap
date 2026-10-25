@@ -13,8 +13,10 @@ import {
   MOBILE_COVERAGE_SCOPE_FINGERPRINT,
   classifyCoverageFile,
   getDefaultCoveragePaths,
+  validateCoverageEnforcementPolicy,
 } from "../checks/coverage-policy.mjs";
 import { runCoverageCheck } from "../checks/check-coverage.mjs";
+import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
 import { getCandidateSha, getWorktreeCandidateFiles } from "./validation-evidence.mjs";
 import { gitExecutable } from "./git-executable.mjs";
 
@@ -37,7 +39,33 @@ function isDocumentationFile(file) {
 
 function isWebFile(file) {
   const normalized = normalizePath(file);
-  return normalized.startsWith("apps/web/") && !normalized.startsWith("apps/web/supabase/");
+  return normalized.startsWith("apps/web/")
+    && !normalized.startsWith("apps/web/supabase/")
+    && !isDocumentationFile(normalized);
+}
+
+const WEB_COVERAGE_CONTROL_FILES = Object.freeze(new Set([
+  "apps/web/vitest.config.ts",
+  "apps/web/package.json",
+  "package.json",
+  "package-lock.json",
+  ".github/workflows/ci.yml",
+  "scripts/ci/detect-scope.mjs",
+  "scripts/ci/publish-main.mjs",
+  "scripts/ci/pre_push_guard.ps1",
+]));
+
+export function isWebCoverageControlFile(file) {
+  const normalized = normalizePath(file);
+  return WEB_COVERAGE_CONTROL_FILES.has(normalized)
+    || normalized.startsWith("scripts/ci/coverage-")
+    || normalized.startsWith("scripts/checks/coverage-")
+    || normalized.startsWith("scripts/checks/check-coverage")
+    || normalized.startsWith("scripts/checks/write-coverage");
+}
+
+export function isWebCoverageRelevantFile(file) {
+  return isWebFile(file) || isWebCoverageControlFile(file);
 }
 
 function isMobileFile(file) {
@@ -58,7 +86,17 @@ function isSqlFile(file) {
 }
 
 function stateFor(policy, scope) {
-  return policy?.scopes?.[scope]?.state ?? "OBSERVE";
+  if (scope !== "web") return policy?.scopes?.[scope]?.state ?? "OBSERVE";
+  const web = policy?.scopes?.web;
+  return [
+    ...Object.values(web?.domains ?? {}).map((entry) => entry?.state),
+    web?.historical?.state,
+    web?.changedLines?.state,
+  ].includes("ENFORCE") ? "ENFORCE" : "OBSERVE";
+}
+
+function hasEnforcedWebRequirement(policy) {
+  return stateFor(policy, "web") === "ENFORCE";
 }
 
 function webRiskDomains(files) {
@@ -83,13 +121,9 @@ export function getCoveragePublicationRequirements({
 
   const requirements = [];
   const domains = webRiskDomains(files);
-  if (files.some(isWebFile)) {
+  if (files.some(isWebCoverageRelevantFile) && hasEnforcedWebRequirement(policy)) {
     const enforceDomains = domains.filter((domain) => policy?.scopes?.web?.domains?.[domain]?.state === "ENFORCE");
-    const anyEnforcedWebDomain = Object.values(policy?.scopes?.web?.domains ?? {}).some((entry) => entry.state === "ENFORCE");
-    const changedLinesEnforced = policy?.scopes?.web?.changedLines?.state === "ENFORCE";
-    if (enforceDomains.length > 0 || anyEnforcedWebDomain || changedLinesEnforced || stateFor(policy, "web") === "ENFORCE") {
-      requirements.push({ scope: "web", state: "ENFORCE", domains: enforceDomains });
-    }
+    requirements.push({ scope: "web", state: "ENFORCE", domains: enforceDomains });
   }
   if (files.some(isMobileFile) && stateFor(policy, "mobile") === "ENFORCE") {
     requirements.push({ scope: "mobile", state: "ENFORCE", domains: [] });
@@ -201,10 +235,18 @@ export function validateCoveragePublicationProof({
   }
   if (scope === "web") {
     const evidencePath = reportPath(proof, root, "apps/web/coverage/coverage-evidence.json");
-    const evidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
-    if (evidence.gitHead !== candidateSha || evidence.scope !== "web") throw new Error("Web coverage evidence is not bound to the candidate SHA.");
-    if (evidence.scopeFingerprint !== COVERAGE_SCOPE_FINGERPRINT) throw new Error("Web coverage scope fingerprint is incompatible.");
-    if (!evidence.configurationFingerprint || !evidence.summarySha256) throw new Error("Web coverage evidence is incomplete.");
+    if (!fs.existsSync(evidencePath)) throw new Error("Web coverage evidence is missing from the publication proof.");
+    validateCoverageEvidence({
+      repositoryRoot,
+      expectedCandidateSha: candidateSha,
+      reportRoot: root,
+      candidateRef: candidateSha,
+      // A DYNAMIC_CANDIDATE is materialized elsewhere; its candidate
+      // fingerprint cannot be recomputed from the publishing checkout.
+      // The proof SHA, Git-bound evidence, configuration hash and report
+      // hashes remain mandatory and are checked above and here.
+      validateCandidateFingerprint: false,
+    });
   }
   if (scope === "mobile") {
     if (proof.scopeFingerprint !== MOBILE_COVERAGE_SCOPE_FINGERPRINT) throw new Error("Mobile coverage scope fingerprint is incompatible.");
@@ -271,6 +313,7 @@ export function runCoveragePublicationGate({
   policy = COVERAGE_ENFORCEMENT_POLICY,
   coverageCheck = runCoverageCheck,
 } = {}) {
+  validateCoverageEnforcementPolicy(policy);
   const selection = getCoveragePublicationRequirements({ changedFiles, policy });
   if (selection.requirements.length === 0) {
     const status = selection.files.length === 0 || selection.files.every(isDocumentationFile) ? "NOT_REQUIRED" : "OBSERVE";
@@ -293,6 +336,13 @@ export function runCoveragePublicationGate({
         baseRef,
         currentRef,
         enforcementPolicy: policy,
+        validateEvidence: ({ repositoryRoot: evidenceRepositoryRoot, expectedCandidateSha }) => validateCoverageEvidence({
+          repositoryRoot: evidenceRepositoryRoot,
+          expectedCandidateSha,
+          reportRoot: proof.root,
+          candidateRef: candidateSha,
+          validateCandidateFingerprint: false,
+        }),
         setProcessExitCode: false,
       });
       const enforcementStatus = result.enforcementStatus ?? result.policyStatus;
@@ -313,7 +363,7 @@ export function runCoveragePublicationGate({
         if (result.enforcementStatus !== "PASS") throw new Error(`Coverage ENFORCE failed for mobile/${candidateSha}: ${result.enforcementStatus}.`);
         results.push({ scope: "mobile", status: result.enforcementStatus, proof: proof.proof });
       } else {
-        results.push({ scope: requirement.scope, status: "PASS", proof: proof.proof });
+        throw new Error(`Coverage ENFORCE is not implemented for ${requirement.scope}; activation was rejected before publication.`);
       }
     }
   }

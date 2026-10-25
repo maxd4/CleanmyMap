@@ -100,6 +100,9 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   const coverageJob = extractJob(workflow, "web-coverage");
   assert.match(coverageJob, /npm run quality:coverage/);
   assert.match(coverageJob, /actions\/download-artifact@/);
+  assert.match(coverageJob, /name: web-coverage-evidence-\$\{\{ env\.CANDIDATE_SHA \}\}[\s\S]*path: \./);
+  assert.match(coverageJob, /Verify Web coverage artifact layout/);
+  assert.match(coverageJob, /artifacts\/coverage-publication\/\$\{CANDIDATE_SHA\}\/web/);
   assert.match(coverageJob, /--from-existing-summary/);
   assert.doesNotMatch(coverageJob, /npm run test\s/);
   assert.match(extractJob(workflow, "web-vercel-audit"), /npm run audit:vercel:ci/);

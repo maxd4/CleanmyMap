@@ -13,6 +13,12 @@ import {
   MOBILE_COVERAGE_SCOPE_FINGERPRINT,
 } from "../checks/coverage-policy.mjs";
 import {
+  computeConfigurationFingerprint,
+  computeCoverageFileHash,
+  computeCoverageEnvironmentFingerprint,
+  computeCoverageSummaryHash,
+} from "../checks/coverage-evidence.mjs";
+import {
   getCoveragePublicationRequirements,
   runCoveragePublicationGate,
   validateCoveragePublicationProof,
@@ -32,6 +38,13 @@ function enforcedWebPolicy() {
   return policy;
 }
 
+function changedLinesEnforcedWebPolicy() {
+  const policy = structuredClone(COVERAGE_ENFORCEMENT_POLICY);
+  policy.scopes.web.changedLines.state = "ENFORCE";
+  policy.scopes.web.changedLines.activation = { version: 1, sourceCommit: candidateSha() };
+  return policy;
+}
+
 function writeWebProof(root, sha, { candidate = sha } = {}) {
   const scopeRoot = path.join(root, sha, "web");
   const reports = [
@@ -39,7 +52,14 @@ function writeWebProof(root, sha, { candidate = sha } = {}) {
     "apps/web/coverage/lcov.info",
     "apps/web/coverage/coverage-evidence.json",
   ];
-  const summary = {};
+  const summary = {
+    total: {
+      statements: { total: 1, covered: 1, pct: 100 },
+      branches: { total: 1, covered: 1, pct: 100 },
+      functions: { total: 1, covered: 1, pct: 100 },
+      lines: { total: 1, covered: 1, pct: 100 },
+    },
+  };
   for (const report of reports) {
     const absolute = path.join(scopeRoot, report);
     fs.mkdirSync(path.dirname(absolute), { recursive: true });
@@ -48,11 +68,17 @@ function writeWebProof(root, sha, { candidate = sha } = {}) {
   fs.writeFileSync(
     path.join(scopeRoot, "apps/web/coverage/coverage-evidence.json"),
     JSON.stringify({
+      schemaVersion: 2,
+      kind: "cleanmymap-web-coverage",
       gitHead: candidate,
       scope: "web",
       scopeFingerprint: COVERAGE_SCOPE_FINGERPRINT,
-      configurationFingerprint: "configuration",
-      summarySha256: "summary",
+      configurationFingerprint: computeConfigurationFingerprint({ repositoryRoot, candidateRef: sha }),
+      environmentFingerprint: computeCoverageEnvironmentFingerprint(),
+      summarySha256: computeCoverageSummaryHash(summary, scopeRoot),
+      summaryPath: "apps/web/coverage/coverage-summary.json",
+      lcovSha256: computeCoverageFileHash(path.join(scopeRoot, "apps/web/coverage/lcov.info")),
+      lcovPath: "apps/web/coverage/lcov.info",
     }),
     "utf8",
   );
@@ -88,6 +114,22 @@ test("OBSERVE candidates remain diagnostic and do not require a proof", () => {
   assert.equal(result.status, "OBSERVE");
 });
 
+test("changedLines ENFORCE alone requires Web proof for a relevant file", () => {
+  const result = getCoveragePublicationRequirements({
+    changedFiles: ["apps/web/src/lib/actions/action.ts"],
+    policy: changedLinesEnforcedWebPolicy(),
+  });
+  assert.deepEqual(result.requirements.map(({ scope }) => scope), ["web"]);
+});
+
+test("an active Web policy requires proof when the classifier or gate changes", () => {
+  const result = getCoveragePublicationRequirements({
+    changedFiles: ["scripts/checks/coverage-policy.mjs"],
+    policy: enforcedWebPolicy(),
+  });
+  assert.deepEqual(result.requirements.map(({ scope }) => scope), ["web"]);
+});
+
 test("an unknown Web domain cannot bypass an active Web gate", () => {
   const result = getCoveragePublicationRequirements({
     changedFiles: ["apps/web/src/lib/notifications/server.ts"],
@@ -117,6 +159,57 @@ test("an ENFORCE candidate requires an exact proof and accepts a conforming repo
     else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
     fs.rmSync(temporaryRoot, { recursive: true, force: true });
   }
+});
+
+test("an ENFORCE candidate with missing proof is rejected", () => {
+  assert.throws(
+    () => runCoveragePublicationGate({
+      repositoryRoot,
+      candidateSha: candidateSha(),
+      changedFiles: ["apps/web/src/lib/actions/action.ts"],
+      policy: enforcedWebPolicy(),
+    }),
+    /Coverage proof is missing/,
+  );
+});
+
+test("a valid proof with an under-threshold verdict is rejected", () => {
+  const sha = candidateSha();
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-under-threshold-"));
+  const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;
+  try {
+    writeWebProof(temporaryRoot, sha);
+    assert.throws(
+      () => runCoveragePublicationGate({
+        repositoryRoot,
+        candidateSha: sha,
+        changedFiles: ["apps/web/src/lib/actions/action.ts"],
+        policy: enforcedWebPolicy(),
+        coverageCheck: () => ({ enforcementStatus: "FAIL", policyStatus: "FAIL" }),
+      }),
+      /Coverage ENFORCE failed for web/,
+    );
+  } finally {
+    if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("a node ENFORCE activation is rejected before a proof can become PASS", () => {
+  const policy = structuredClone(COVERAGE_ENFORCEMENT_POLICY);
+  policy.scopes.node.state = "ENFORCE";
+  policy.scopes.node.activation = { version: 1, sourceCommit: candidateSha() };
+  assert.throws(
+    () => runCoveragePublicationGate({
+      repositoryRoot,
+      candidateSha: candidateSha(),
+      changedFiles: ["scripts/checks/example.mjs"],
+      policy,
+    }),
+    /node ENFORCE is not implemented/,
+  );
 });
 
 test("an absent or differently fingerprinted proof fails closed", () => {
@@ -165,5 +258,34 @@ test("a report changed after publication proof is rejected", () => {
     if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
     else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
     fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("Web evidence rejects a summary or configuration fingerprint mismatch", () => {
+  const sha = candidateSha();
+  for (const mismatch of ["summarySha256", "configurationFingerprint"]) {
+    const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-evidence-mismatch-"));
+    const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;
+    try {
+      writeWebProof(temporaryRoot, sha);
+      const evidencePath = path.join(temporaryRoot, sha, "web", "apps/web/coverage/coverage-evidence.json");
+      const evidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+      evidence[mismatch] = "f".repeat(64);
+      fs.writeFileSync(evidencePath, JSON.stringify(evidence), "utf8");
+      const proofPath = path.join(temporaryRoot, sha, "web", "coverage-publication-proof.json");
+      const proof = JSON.parse(fs.readFileSync(proofPath, "utf8"));
+      const evidenceReport = proof.reports.find((report) => report.source.endsWith("coverage-evidence.json"));
+      evidenceReport.sha256 = createHash("sha256").update(fs.readFileSync(evidencePath)).digest("hex");
+      fs.writeFileSync(proofPath, JSON.stringify(proof), "utf8");
+      assert.throws(
+        () => validateCoveragePublicationProof({ repositoryRoot, candidateSha: sha, scope: "web" }),
+        new RegExp(`${mismatch}`),
+      );
+    } finally {
+      if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+      else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+      fs.rmSync(temporaryRoot, { recursive: true, force: true });
+    }
   }
 });

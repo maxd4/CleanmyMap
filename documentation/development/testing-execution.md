@@ -266,7 +266,13 @@ diff ; le checkout et les preuves restent liés à `github.sha`. Les événement
 `push` utilisent `before`/`sha` et les `pull_request` utilisent les SHA base/head
 pour le ciblage DEVELOPMENT. Un `workflow_dispatch` DEVELOPMENT ne disposant
 pas de référence de base conserve un périmètre vide explicite et ne devient pas
-automatiquement FULL.
+automatiquement FULL. La détection considère comme couverture Web les fichiers
+instrumentables ainsi que les fichiers techniques qui peuvent modifier sa
+politique, son classificateur, son instrumentation ou son gate. Un Markdown
+seul, y compris sous `apps/web/`, reste documentaire et ne déclenche pas la
+suite lourde. Les preuves Web sont téléchargées à la racine du checkout pour
+préserver les chemins canoniques consommés par `quality:coverage` ; une
+archive absente, mal placée ou incomplète échoue explicitement.
 
 ### RELEASE — publication contrôlée
 

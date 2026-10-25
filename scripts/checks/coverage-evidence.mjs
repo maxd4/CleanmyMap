@@ -67,11 +67,22 @@ function hashJson(value) {
   return createHash("sha256").update(JSON.stringify(stableValue(value))).digest("hex");
 }
 
-function hashConfiguration(repositoryRoot) {
+function readCandidateFile(repositoryRoot, relativePath, candidateRef = null) {
+  if (candidateRef) {
+    return execFileSync(gitExecutable(), ["show", `${candidateRef}:${relativePath}`], {
+      cwd: repositoryRoot,
+      encoding: "buffer",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+  }
+  return fs.readFileSync(repositoryPath(repositoryRoot, relativePath));
+}
+
+export function computeConfigurationFingerprint({ repositoryRoot = process.cwd(), candidateRef = null } = {}) {
   const hash = createHash("sha256");
   for (const relativePath of CONFIGURATION_FILES) {
     hash.update(`FILE:${relativePath}\n`);
-    hash.update(fs.readFileSync(repositoryPath(repositoryRoot, relativePath)));
+    hash.update(readCandidateFile(repositoryRoot, relativePath, candidateRef));
   }
   return hash.digest("hex");
 }
@@ -89,6 +100,10 @@ function environmentDescriptor() {
   };
 }
 
+export function computeCoverageEnvironmentFingerprint() {
+  return hashJson(environmentDescriptor());
+}
+
 function canonicalSummary(summary, repositoryRoot) {
   const absoluteRoot = path.resolve(repositoryRoot).replaceAll("\\", "/");
   const replaceRoot = (value) => typeof value === "string"
@@ -104,34 +119,42 @@ function canonicalSummary(summary, repositoryRoot) {
   return normalize(summary);
 }
 
-function summaryHash(summary, repositoryRoot) {
+export function computeCoverageSummaryHash(summary, repositoryRoot) {
   return hashJson(canonicalSummary(summary, repositoryRoot));
 }
 
-function fileHash(file) {
+export function computeCoverageFileHash(file) {
   return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 }
 
-function expectedEvidence(repositoryRoot, summary) {
+function expectedEvidence(
+  repositoryRoot,
+  summary,
+  {
+    reportRoot = repositoryRoot,
+    candidateRef = null,
+    validateCandidateFingerprint = true,
+  } = {},
+) {
   const candidateFingerprint = createCandidateFingerprint({
     repositoryRoot,
     candidateScope: "WORKTREE",
     changedFiles: getWorktreeCandidateFiles(repositoryRoot),
   });
   const environment = environmentDescriptor();
-  const lcovPath = repositoryPath(repositoryRoot, COVERAGE_LCOV_RELATIVE_PATH.replaceAll("\\", "/"));
+  const lcovPath = repositoryPath(reportRoot, COVERAGE_LCOV_RELATIVE_PATH.replaceAll("\\", "/"));
   return {
     schemaVersion: COVERAGE_EVIDENCE_VERSION,
     kind: "cleanmymap-web-coverage",
-    candidateFingerprint,
-    gitHead: gitHead(repositoryRoot),
+    ...(validateCandidateFingerprint ? { candidateFingerprint } : {}),
+    gitHead: candidateRef ?? gitHead(repositoryRoot),
     scope: "web",
     scopeFingerprint: COVERAGE_SCOPE_FINGERPRINT,
-    configurationFingerprint: hashConfiguration(repositoryRoot),
+    configurationFingerprint: computeConfigurationFingerprint({ repositoryRoot, candidateRef }),
     environmentFingerprint: hashJson(environment),
-    summarySha256: summaryHash(summary, repositoryRoot),
+    summarySha256: computeCoverageSummaryHash(summary, reportRoot),
     summaryPath: COVERAGE_SUMMARY_RELATIVE_PATH.replaceAll("\\", "/"),
-    lcovSha256: fileHash(lcovPath),
+    lcovSha256: computeCoverageFileHash(lcovPath),
     lcovPath: COVERAGE_LCOV_RELATIVE_PATH.replaceAll("\\", "/"),
   };
 }
@@ -153,9 +176,12 @@ export function validateCoverageEvidence({
   repositoryRoot = process.cwd(),
   expectedCandidateSha = null,
   requireCleanWorktree = false,
+  reportRoot = repositoryRoot,
+  candidateRef = null,
+  validateCandidateFingerprint = true,
 } = {}) {
-  const summaryPath = repositoryPath(repositoryRoot, COVERAGE_SUMMARY_RELATIVE_PATH.replaceAll("\\", "/"));
-  const evidencePath = repositoryPath(repositoryRoot, COVERAGE_EVIDENCE_RELATIVE_PATH.replaceAll("\\", "/"));
+  const summaryPath = repositoryPath(reportRoot, COVERAGE_SUMMARY_RELATIVE_PATH.replaceAll("\\", "/"));
+  const evidencePath = repositoryPath(reportRoot, COVERAGE_EVIDENCE_RELATIVE_PATH.replaceAll("\\", "/"));
   let evidence;
   let summary;
   try {
@@ -164,7 +190,11 @@ export function validateCoverageEvidence({
   } catch (error) {
     throw new Error(`Coverage evidence incomplete or unreadable: ${error instanceof Error ? error.message : String(error)}`);
   }
-  const expected = expectedEvidence(repositoryRoot, summary);
+  const expected = expectedEvidence(repositoryRoot, summary, {
+    reportRoot,
+    candidateRef,
+    validateCandidateFingerprint,
+  });
   for (const field of [
     "schemaVersion",
     "kind",
@@ -177,7 +207,7 @@ export function validateCoverageEvidence({
     "summaryPath",
     "lcovSha256",
     "lcovPath",
-    "candidateFingerprint",
+    ...(validateCandidateFingerprint ? ["candidateFingerprint"] : []),
   ]) {
     if (evidence[field] !== expected[field]) {
       throw new Error(`Coverage evidence mismatch: ${field}. Re-run npm run test:coverage for this candidate/configuration.`);

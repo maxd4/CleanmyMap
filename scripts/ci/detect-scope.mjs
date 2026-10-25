@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import process from "node:process";
 import { gitExecutable } from "./git-executable.mjs";
+import { isWebCoverageRelevantFile } from "./coverage-publication.mjs";
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 
@@ -46,6 +47,11 @@ const OUTPUT_KEYS = Object.freeze({
 
 function normalize(value) {
   return String(value ?? "").trim();
+}
+
+function isDocumentationFile(file) {
+  const normalized = String(file).replaceAll("\\", "/");
+  return normalized.startsWith("documentation/") || /\.(md|mdx)$/i.test(normalized);
 }
 
 function isZeroSha(value) {
@@ -153,7 +159,7 @@ function deriveChangedScope(repositoryRoot, changedFiles) {
 
   for (const file of files) {
     policyArgs.push("--changed-file", file);
-    if (!(file.startsWith("documentation/") || file.endsWith(".md"))) {
+    if (!isDocumentationFile(file)) {
       docsOnly = false;
     }
     if (
@@ -165,16 +171,16 @@ function deriveChangedScope(repositoryRoot, changedFiles) {
       mobileCodeRelevant = true;
     }
     if (
-      file.startsWith("apps/web/") ||
+      (file.startsWith("apps/web/") && !isDocumentationFile(file)) ||
       file.startsWith(".github/workflows/") ||
       [".nvmrc", ".node-version", "package.json", "package-lock.json"].includes(file) ||
-      file.startsWith("scripts/checks/")
+      file.startsWith("scripts/checks/") ||
+      isWebCoverageRelevantFile(file)
     ) {
       webCodeRelevant = true;
     }
     if (
-      (file.startsWith("apps/web/") && !file.startsWith("apps/web/supabase/")) ||
-      ["package.json", "package-lock.json"].includes(file)
+      isWebCoverageRelevantFile(file)
     ) {
       webCoverageRelevant = true;
     }

@@ -225,6 +225,28 @@ test("diff scope derives source-sensitive flags without widening a documentation
   assert.equal(docsScope.scope.webCoverageRelevant, false);
   assert.equal(docsScope.scope.nodeCoverageRelevant, false);
   assert.equal(docsScope.scope.pythonCoverageRelevant, false);
+
+  const webDocumentationScope = resolveCiScope({
+    repositoryRoot: REPOSITORY_ROOT,
+    eventName: "push",
+    eventBefore: baseSha,
+    eventSha: candidateSha,
+    changedFiles: ["apps/web/README.md", "apps/web/docs/usage.mdx"],
+  });
+  assert.equal(webDocumentationScope.scope.docsOnly, true);
+  assert.equal(webDocumentationScope.scope.webCodeRelevant, false);
+  assert.equal(webDocumentationScope.scope.webCoverageRelevant, false);
+
+  const coverageControlScope = resolveCiScope({
+    repositoryRoot: REPOSITORY_ROOT,
+    eventName: "push",
+    eventBefore: baseSha,
+    eventSha: candidateSha,
+    changedFiles: ["scripts/ci/coverage-publication.mjs"],
+  });
+  assert.equal(coverageControlScope.scope.docsOnly, false);
+  assert.equal(coverageControlScope.scope.webCodeRelevant, true);
+  assert.equal(coverageControlScope.scope.webCoverageRelevant, true);
 });
 
 test("diff scope reads deterministic Git ranges without depending on the checkout HEAD", () => {
