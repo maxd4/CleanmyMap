@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
 import { deriveSpogomiClosureSummary, effectiveSpogomiTeamClosureDecision } from "./closure";
+import { setSpogomiTeamClosureDecision } from "./closure-service";
 
 describe("SPOGOMI closure decisions", () => {
   it.each([
@@ -105,5 +107,56 @@ describe("SPOGOMI closure decisions", () => {
     expect(summary.arbitration).toBe("ongoing");
     expect(summary.environmental).toBe("blocked");
     expect(summary.blockers).toEqual(expect.arrayContaining(["casual:certification_remaining", "casual:contested_result"]));
+  });
+
+  it("sends a trimmed decision reason to the canonical RPC", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: { decision_version: 2 }, error: null });
+
+    await expect(setSpogomiTeamClosureDecision({
+      supabase: { rpc } as never,
+      eventId: "event-1",
+      divisionId: "division-1",
+      teamId: "team-1",
+      status: "present_measured",
+      sportEligible: true,
+      environmentalEligibility: "eligible",
+      reason: "  Présence mesurée  ",
+      decisionVersion: 2,
+      actorClerkId: "organizer-1",
+    })).resolves.toEqual({ decision_version: 2 });
+
+    expect(rpc).toHaveBeenCalledWith("spogomi_set_team_closure_decision", {
+      p_event_id: "event-1",
+      p_division_id: "division-1",
+      p_team_id: "team-1",
+      p_status: "present_measured",
+      p_sport_eligible: true,
+      p_environmental_eligibility: "eligible",
+      p_reason: "Présence mesurée",
+      p_decision_version: 2,
+      p_actor_clerk_id: "organizer-1",
+    });
+  });
+
+  it("maps stale and duplicate closure decisions to a conflict without retrying the mutation", async () => {
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: null, error: { code: "40001", message: "stale" } })
+      .mockResolvedValueOnce({ data: null, error: { code: "23505", message: "duplicate" } });
+    const params = {
+      supabase: { rpc } as never,
+      eventId: "event-1",
+      divisionId: "division-1",
+      teamId: "team-1",
+      status: "forfeit" as const,
+      sportEligible: false,
+      environmentalEligibility: "excluded" as const,
+      reason: "Équipe absente",
+      decisionVersion: 3,
+      actorClerkId: "organizer-1",
+    };
+
+    await expect(setSpogomiTeamClosureDecision(params)).rejects.toThrow("décision de clôture a changé");
+    await expect(setSpogomiTeamClosureDecision(params)).rejects.toThrow("décision de clôture a changé");
+    expect(rpc).toHaveBeenCalledTimes(2);
   });
 });
