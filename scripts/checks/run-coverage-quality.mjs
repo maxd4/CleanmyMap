@@ -7,6 +7,8 @@ import { runCommandWithTimeout, resolveValidationCommand } from "../ci/validatio
 
 const repositoryRoot = process.cwd();
 const fromExistingSummary = process.argv.includes("--from-existing-summary");
+const baseRef = process.argv.find((argument) => argument.startsWith("--base-ref="));
+const currentRef = process.argv.find((argument) => argument.startsWith("--current-ref="));
 
 async function run(command) {
   const resolved = resolveValidationCommand(command, process.platform, process.execPath);
@@ -35,5 +37,7 @@ if (!fromExistingSummary) {
 
 if (!process.exitCode || process.exitCode === 0) {
   const checkerArgs = ["scripts/checks/check-coverage.mjs", "--from-existing-summary"];
+  if (baseRef) checkerArgs.push(baseRef);
+  if (currentRef) checkerArgs.push(currentRef);
   await run({ executable: process.execPath, args: checkerArgs });
 }

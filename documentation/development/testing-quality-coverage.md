@@ -67,6 +67,52 @@ pas une preuve : les invariants critiques exigent un `EXECUTED_DB_CONTRACT`
 réel, conformément aux niveaux de preuve de `TESTING.md`. En l'absence de cette
 exécution, le compte rendu doit conserver `DB_SEMANTICS_NOT_EXECUTED`.
 
+### Garde progressive et activation explicite
+
+Le moteur unique porte aussi `COVERAGE_ENFORCEMENT_POLICY`, versionné dans
+`scripts/checks/coverage-policy.mjs`. Chaque périmètre possède un état explicite
+:
+
+- `OBSERVE` mesure, expose les quatre ratios exacts `covered / total` et
+  chiffre l'écart à l'objectif ; il ne constitue pas une conformité et ne fait
+  pas échouer la commande ;
+- `ENFORCE` n'est applicable qu'après une modification explicite de la
+  politique. Son entrée doit conserver sa `policyVersion` et une activation
+  portant une version et le SHA complet du commit source. Une activation
+  incomplète ou non versionnée est invalide.
+
+Pour un périmètre `ENFORCE`, le résumé courant doit être lisible, valide,
+complet et cohérent avec son périmètre instrumenté et sa politique. Un rapport
+absent, invalide, obsolète, incomplet, rattaché à un autre candidat ou une
+classification incompatible produit un échec ; aucune baseline ni exclusion
+ne peut être ajustée automatiquement pour retrouver un succès. La comparaison
+historique conserve ses statuts de compatibilité (`PASS`, `PASS_WITH_GRACE`,
+`INFORMATIVE_REGRESSION`, `UNAVAILABLE`), mais son statut informatif ne
+neutralise jamais `COVERAGE_POLICY_STATUS: FAIL`. La commande retourne alors un
+code non nul lorsque l'état `ENFORCE` est violé. Tant que les objectifs actuels
+ne sont pas ratifiés et atteints, les familles restent `OBSERVE`.
+
+Web et mobile sont contrôlés séparément. Les rapports Node (`scripts/coverage/`)
+et Python (`maintenance/python/coverage.xml`) restent des producteurs distincts
+suivis séparément ; le moteur ne fabrique pas de couverture monorepo agrégée.
+Les invariants Supabase SQL, RLS, RPC et triggers continuent d'exiger des tests
+PostgreSQL exécutés, et non une couverture Vitest de lignes.
+
+La couverture des lignes ajoutées ou modifiées est préparée par la combinaison
+d'un diff Git et du LCOV du même candidat :
+
+```bash
+node scripts/checks/check-coverage.mjs --base-ref=<commit-ou-ref> --current-ref=<commit-ou-ref>
+```
+
+La base Git est obligatoire et doit être une révision vérifiable ; elle n'est
+jamais devinée. Sans base, sans ligne instrumentable ou sans mesure LCOV
+complète, le résultat est `COVERAGE_CHANGED_LINES_STATUS: NOT_MEASURED`, et non
+`0 %`. Une ligne LCOV avec `DA:<ligne>,0` est au contraire une mesure réelle à
+`0 %`. Les lignes non critiques visent 80 % minimum et 90 % en cible ; les
+lignes critiques visent 90 %. Cette méthode reste `OBSERVE` tant que son coût,
+sa reproductibilité et son rattachement au candidat n'ont pas été ratifiés.
+
 La commande de contrôle est :
 
 ```bash

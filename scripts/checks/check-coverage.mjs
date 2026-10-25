@@ -5,13 +5,17 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { validateCoverageEvidence } from "./coverage-evidence.mjs";
 import {
+  COVERAGE_ENFORCEMENT_POLICY,
   aggregateCoverage,
   assertBaselineFresh,
   compareCoverage,
+  evaluateCoveragePolicy,
   formatCoverageGrace,
   getDefaultCoveragePaths,
   loadCoverageBaseline,
   loadCoverageSummary,
+  measureChangedLineCoverage,
+  validateCoverageEnforcementPolicy,
 } from "./coverage-policy.mjs";
 
 function printMetrics(current) {
@@ -27,7 +31,12 @@ export function runCoverageCheck({
   fromExistingSummary = false,
   validateEvidence = validateCoverageEvidence,
   currentCommit = null,
+  enforcementPolicy = COVERAGE_ENFORCEMENT_POLICY,
+  baseRef = null,
+  currentRef = "HEAD",
+  setProcessExitCode = false,
 } = {}) {
+  validateCoverageEnforcementPolicy(enforcementPolicy);
   if (fromExistingSummary) {
     validateEvidence({ repositoryRoot });
     console.log(`ALREADY_PROVEN: ${scope} coverage summary`);
@@ -37,6 +46,38 @@ export function runCoverageCheck({
   const current = aggregateCoverage(loadCoverageSummary(paths.summary), { scope });
   console.log(`COVERAGE_SCOPE: ${scope}`);
 
+  const policy = evaluateCoveragePolicy(current, { scope, policy: enforcementPolicy });
+  console.log(`COVERAGE_POLICY_STATUS: ${policy.status}`);
+  for (const observation of policy.observations) {
+    console.log(
+      `COVERAGE_POLICY_OBSERVATION: ${observation.domain}.${observation.metric} `
+      + `current=${observation.current.toFixed(2)}% target=${observation.target.toFixed(2)}% `
+      + `gap=${observation.gapPp.toFixed(2)}pp state=${observation.state}`,
+    );
+  }
+  for (const failure of policy.failures) {
+    console.warn(`COVERAGE_POLICY_FAILURE: ${failure.code} ${failure.domain ?? scope}.${failure.metric ?? "scope"}`);
+  }
+
+  const changedLineCoverage = scope === "web"
+    ? measureChangedLineCoverage({
+      repositoryRoot,
+      baseRef,
+      currentRef,
+      lcovPath: paths.lcov,
+      scope,
+      policyEntry: enforcementPolicy.scopes.web.changedLines,
+    })
+    : { status: "NOT_MEASURED", reason: "SCOPE_NOT_WEB", files: [], lines: null, provenance: { baseRef: null, currentRef: null } };
+  console.log(`COVERAGE_CHANGED_LINES_STATUS: ${changedLineCoverage.status}`);
+  if (changedLineCoverage.reason) console.log(`COVERAGE_CHANGED_LINES_REASON: ${changedLineCoverage.reason}`);
+  if (changedLineCoverage.lines?.pct !== null && changedLineCoverage.lines?.pct !== undefined) {
+    console.log(
+      `COVERAGE_CHANGED_LINES_MEASURED: ${changedLineCoverage.lines.covered}/${changedLineCoverage.lines.total} `
+      + `(${changedLineCoverage.lines.pct.toFixed(2)}%)`,
+    );
+  }
+
   let baseline;
   try {
     baseline = loadCoverageBaseline(paths.baseline);
@@ -45,7 +86,17 @@ export function runCoverageCheck({
     console.warn("COVERAGE_COMPARISON_STATUS: UNAVAILABLE");
     console.warn(`COVERAGE_COMPARISON_REASON: ${error instanceof Error ? error.message : String(error)}`);
     printMetrics(current);
-    return { status: "UNAVAILABLE", current, failures: [], grace: [] };
+    if (setProcessExitCode && policy.status === "FAIL") process.exitCode = 1;
+    return {
+      status: "UNAVAILABLE",
+      historicalStatus: "UNAVAILABLE",
+      policyStatus: policy.status,
+      policy,
+      changedLineCoverage,
+      current,
+      failures: [],
+      grace: [],
+    };
   }
 
   const comparison = compareCoverage(current, baseline);
@@ -62,7 +113,16 @@ export function runCoverageCheck({
   }
 
   printMetrics(current);
-  return { ...comparison, current, baseline };
+  if (setProcessExitCode && policy.status === "FAIL") process.exitCode = 1;
+  return {
+    ...comparison,
+    historicalStatus: comparison.status,
+    policyStatus: policy.status,
+    policy,
+    changedLineCoverage,
+    current,
+    baseline,
+  };
 }
 
 const isMainModule = process.argv[1]
@@ -71,9 +131,11 @@ const isMainModule = process.argv[1]
 if (isMainModule) {
   const scope = process.argv.find((argument) => argument.startsWith("--scope="))?.slice("--scope=".length) ?? "web";
   const fromExistingSummary = process.argv.includes("--from-existing-summary");
+  const baseRef = process.argv.find((argument) => argument.startsWith("--base-ref="))?.slice("--base-ref=".length) ?? null;
+  const currentRef = process.argv.find((argument) => argument.startsWith("--current-ref="))?.slice("--current-ref=".length) ?? "HEAD";
 
   try {
-    runCoverageCheck({ scope, fromExistingSummary });
+    runCoverageCheck({ scope, fromExistingSummary, baseRef, currentRef, setProcessExitCode: true });
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;

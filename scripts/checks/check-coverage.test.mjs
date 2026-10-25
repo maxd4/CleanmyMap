@@ -7,6 +7,7 @@ import { test } from "node:test";
 
 import {
   COVERAGE_GRACE,
+  COVERAGE_ENFORCEMENT_POLICY,
   COVERAGE_METRICS,
   COVERAGE_RISK_FAMILIES,
   COVERAGE_RISK_POLICY_FINGERPRINT,
@@ -16,7 +17,11 @@ import {
   aggregateCoverage,
   classifyCoverageFile,
   compareCoverage,
+  evaluateCoveragePolicy,
   formatCoverageGrace,
+  measureChangedLineCoverage,
+  parseChangedLinesFromDiff,
+  validateCoverageEnforcementPolicy,
   validateBaseline,
 } from "./coverage-policy.mjs";
 import { runCoverageCheck } from "./check-coverage.mjs";
@@ -73,6 +78,20 @@ function coverageFixture({ global = {}, domains = {} } = {}) {
         .map((scope) => [scope, { metrics: makeMetrics(domains[scope] ?? {}) }]),
     ),
   };
+}
+
+function enforcedPolicy(domain = "security") {
+  const policy = structuredClone(COVERAGE_ENFORCEMENT_POLICY);
+  policy.scopes.web.domains[domain] = {
+    state: "ENFORCE",
+    policyVersion: 1,
+    activation: { version: 1, sourceCommit: "a".repeat(40) },
+  };
+  return policy;
+}
+
+function setSummaryRowMetric(summaryValue, file, metricName, covered, total = 100) {
+  summaryValue[file][metricName] = metric(covered, total);
 }
 
 test("baseline exacte => PASS", () => {
@@ -166,6 +185,77 @@ test("la politique de risque expose les cibles futures sans les rendre bloquante
   assert.deepEqual(COVERAGE_RISK_FAMILIES["ui-presentational"].minimum, { statements: null, lines: null, branches: null, functions: null });
   assert.deepEqual(COVERAGE_RISK_FAMILIES["new-code-non-critical"].minimum, { lines: 80 });
   assert.deepEqual(COVERAGE_RISK_FAMILIES["new-code-non-critical"].target, { lines: 90 });
+});
+
+test("la politique versionnée valide ses états OBSERVE et ENFORCE", () => {
+  assert.doesNotThrow(() => validateCoverageEnforcementPolicy());
+  assert.doesNotThrow(() => validateCoverageEnforcementPolicy(enforcedPolicy()));
+  const invalid = enforcedPolicy();
+  invalid.scopes.web.domains.security.activation.sourceCommit = "not-a-sha";
+  assert.throws(() => validateCoverageEnforcementPolicy(invalid), /full Git SHA/);
+  const missingActivation = enforcedPolicy();
+  missingActivation.scopes.web.domains.security.activation = null;
+  assert.throws(() => validateCoverageEnforcementPolicy(missingActivation), /explicit activation/);
+});
+
+test("un seuil exactement atteint est PASS dans le domaine ENFORCE", () => {
+  const currentSummary = summary();
+  const securityFile = "C:\\repo\\apps\\web\\src\\lib\\auth\\auth.ts";
+  for (const metricName of COVERAGE_METRICS) {
+    setSummaryRowMetric(currentSummary, securityFile, metricName, metricName === "branches" ? 84 : 90);
+  }
+  const current = aggregateCoverage(currentSummary);
+  const policy = evaluateCoveragePolicy(current, { policy: enforcedPolicy() });
+  assert.equal(policy.status, "FAIL");
+  const security = policy.assessments.find(({ domain }) => domain === "security");
+  assert.equal(security.status, "FAIL");
+  assert.ok(security.failures.some(({ metric }) => metric === "branches"));
+
+  setSummaryRowMetric(currentSummary, securityFile, "branches", 85);
+  const exact = evaluateCoveragePolicy(aggregateCoverage(currentSummary), { policy: enforcedPolicy() });
+  assert.equal(exact.status, "PASS");
+  assert.equal(exact.assessments.find(({ domain }) => domain === "security").status, "PASS");
+});
+
+test("OBSERVE conserve l'écart chiffré sans annoncer une conformité", () => {
+  const current = aggregateCoverage(summary());
+  const policy = evaluateCoveragePolicy(current);
+  assert.equal(policy.status, "OBSERVE");
+  const observation = policy.observations.find(({ domain, metric }) => domain === "security" && metric === "lines");
+  assert.equal(observation.current, 80);
+  assert.equal(observation.target, 90);
+  assert.equal(observation.gapPp, -10);
+  assert.equal(policy.assessments.find(({ domain }) => domain === "security").state, "OBSERVE");
+});
+
+test("une violation ENFORCE reste FAIL malgré une comparaison historique indisponible", () => {
+  withCoverageFixture(({ paths }) => {
+    const currentSummary = summary();
+    fs.writeFileSync(paths.summary, JSON.stringify(currentSummary));
+    const result = runCoverageCheck({
+      paths,
+      enforcementPolicy: enforcedPolicy(),
+      setProcessExitCode: true,
+    });
+    assert.equal(result.status, "UNAVAILABLE");
+    assert.equal(result.policyStatus, "FAIL");
+    assert.equal(process.exitCode, 1);
+    process.exitCode = undefined;
+  });
+});
+
+test("un rapport falsifié est NOT_MEASURED par l'agrégateur et n'est pas un succès", () => {
+  const invalid = summary();
+  invalid.total.lines = { covered: 101, total: 100, pct: 101 };
+  assert.throws(() => aggregateCoverage(invalid), /covered must be <=/);
+});
+
+test("une empreinte de classification incompatible rend la politique NOT_MEASURED", () => {
+  const current = aggregateCoverage(summary());
+  const incompatible = { ...current, riskPolicyFingerprint: "stale-classification" };
+  const result = evaluateCoveragePolicy(incompatible);
+  assert.equal(result.status, "NOT_MEASURED");
+  assert.match(result.diagnostics[0], /classification fingerprint/);
 });
 
 test("la classification primaire donne priorité à la sécurité sur les routes API", () => {
@@ -279,4 +369,52 @@ test("la couverture mobile reste un scope indépendant sans domaines web", () =>
   assert.doesNotThrow(() => validateBaseline(baseline, { scope: "mobile" }));
   assert.deepEqual(compareCoverage(current, baseline), { status: "PASS", failures: [], grace: [] });
   assert.throws(() => validateBaseline({ ...baseline, scopeFingerprint: COVERAGE_SCOPE_FINGERPRINT }, { scope: "mobile" }), /stale/);
+  assert.equal(evaluateCoveragePolicy(current, { scope: "mobile" }).status, "OBSERVE");
+});
+
+test("le diff Git des lignes ajoutées et le LCOV restent bornés au candidat", () => {
+  const diff = [
+    "diff --git a/apps/web/src/lib/feature.ts b/apps/web/src/lib/feature.ts",
+    "--- a/apps/web/src/lib/feature.ts",
+    "+++ b/apps/web/src/lib/feature.ts",
+    "@@ -1,0 +1,2 @@",
+    "+export const first = 1;",
+    "+export const second = 2;",
+  ].join("\n");
+  const changed = parseChangedLinesFromDiff(diff);
+  assert.deepEqual([...changed.get("apps/web/src/lib/feature.ts")], [1, 2]);
+
+  const measured = measureChangedLineCoverage({
+    changedLines: changed,
+    lcovContent: [
+      "SF:apps/web/src/lib/feature.ts",
+      "DA:1,1",
+      "DA:2,0",
+      "end_of_record",
+    ].join("\n"),
+  });
+  assert.equal(measured.status, "OBSERVE");
+  assert.deepEqual(measured.lines, { covered: 1, total: 2, pct: 50 });
+  assert.equal(measured.observations[0].target, 80);
+  assert.equal(measured.observations[0].gapPp, -30);
+});
+
+test("les lignes ajoutées non instrumentables ou sans LCOV sont NOT_MEASURED, pas 0 %", () => {
+  const entrypoint = measureChangedLineCoverage({
+    changedLines: [{ path: "apps/web/src/app/demo/page.tsx", lines: [1] }],
+    lcovContent: "SF:apps/web/src/app/demo/page.tsx\nDA:1,0\nend_of_record",
+  });
+  assert.equal(entrypoint.status, "NOT_MEASURED");
+  assert.equal(entrypoint.reason, "NO_INSTRUMENTABLE_LINES");
+
+  const missingLcov = measureChangedLineCoverage({
+    changedLines: [{ path: "apps/web/src/lib/feature.ts", lines: [1, 2] }],
+    lcovContent: "SF:apps/web/src/lib/feature.ts\nDA:1,1\nend_of_record",
+  });
+  assert.equal(missingLcov.status, "NOT_MEASURED");
+  assert.equal(missingLcov.reason, "LCOV_INCOMPLETE");
+
+  const missingBase = measureChangedLineCoverage();
+  assert.equal(missingBase.status, "NOT_MEASURED");
+  assert.equal(missingBase.reason, "BASE_REF_REQUIRED");
 });
