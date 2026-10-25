@@ -147,6 +147,25 @@ test("FULL keeps canonical Web command and does not relaunch covered groups", ()
   assert.equal(new Set(ids(plan)).size, ids(plan).length);
 });
 
+test("FULL runs the equivalent mobile suite once and keeps coverage status separate", () => {
+  const plan = createModeValidationPlan({ mode: "FULL", changedFiles: ["apps/mobile/App.tsx"] });
+  const mobileTests = plan.checks.find((check) => check.id === "mobile:test");
+  const mobileCoverage = plan.checks.find((check) => check.id === "quality:mobile-coverage");
+
+  assert.deepEqual(mobileTests.command, {
+    executable: "npm",
+    args: ["run", "mobile:coverage"],
+  });
+  assert.deepEqual(mobileCoverage.command, {
+    executable: process.execPath,
+    args: ["scripts/checks/check-coverage.mjs", "--scope=mobile", "--from-existing-summary"],
+  });
+  assert.deepEqual(mobileCoverage.dependencies, ["mobile:test"]);
+  assert.equal(mobileCoverage.estimatedSeconds, 5);
+  assert.equal(plan.checks.filter((check) => check.id === "mobile:test").length, 1);
+  assert.equal(plan.checks.filter((check) => check.id === "quality:mobile-coverage").length, 1);
+});
+
 test("FULL annotates categories and protects known exclusive resources", () => {
   const plan = createModeValidationPlan({ mode: "FULL", changedFiles: [] });
   const coverage = plan.checks.find((check) => check.id === "quality:coverage");
