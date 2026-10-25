@@ -560,7 +560,9 @@ export async function confirmSpogomiTeams(params: {
     p_actor_clerk_id: params.actorClerkId,
   });
   if (result.error) throw result.error;
-  return { ...preview, formation, assignedParticipantCount: formation.teams.reduce((total, team) => total + team.participantIds.length, 0), explanation: formation.explanation, confirmed: true, confirmation: result.data };
+  const confirmation: unknown = result.data;
+  if (!isRecord(confirmation)) throw new Error("La confirmation de composition SPOGOMI est invalide.");
+  return { ...preview, formation, assignedParticipantCount: formation.teams.reduce((total, team) => total + team.participantIds.length, 0), explanation: formation.explanation, confirmed: true, confirmation };
 }
 
 export async function autoComposeTeams(

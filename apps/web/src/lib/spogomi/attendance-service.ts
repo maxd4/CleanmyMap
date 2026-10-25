@@ -19,6 +19,69 @@ type AttendanceParticipantRow = {
 
 type AttendanceTeamRow = { id: string; division_id: string; team_number: number; public_name: string };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isAttendanceStatus(value: unknown): value is SpogomiAttendanceStatus {
+  return value === "unknown" || value === "present" || value === "absent";
+}
+
+function parseAttendanceTeam(value: unknown): AttendanceTeamRow {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.division_id !== "string" || typeof value.team_number !== "number" || !Number.isFinite(value.team_number) || typeof value.public_name !== "string") {
+    throw new Error("La projection des équipes SPOGOMI est invalide.");
+  }
+  return { id: value.id, division_id: value.division_id, team_number: value.team_number, public_name: value.public_name };
+}
+
+function parseAttendanceParticipant(value: unknown): AttendanceParticipantRow {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.division_id !== "string" ||
+    (value.display_name !== null && typeof value.display_name !== "string") ||
+    (value.external_reference !== null && typeof value.external_reference !== "string") ||
+    (value.source_row_number !== null && (typeof value.source_row_number !== "number" || !Number.isFinite(value.source_row_number))) ||
+    (value.team_id !== null && typeof value.team_id !== "string") || !isAttendanceStatus(value.attendance_status) ||
+    (value.registration_status !== "registered" && value.registration_status !== "withdrawn") || typeof value.updated_at !== "string") {
+    throw new Error("La projection des participants SPOGOMI est invalide.");
+  }
+  return {
+    id: value.id,
+    division_id: value.division_id,
+    display_name: value.display_name,
+    external_reference: value.external_reference,
+    source_row_number: value.source_row_number,
+    team_id: value.team_id,
+    attendance_status: value.attendance_status,
+    registration_status: value.registration_status,
+    updated_at: value.updated_at,
+  };
+}
+
+type AttendanceMutationResult = {
+  changed: boolean;
+  eventId: string;
+  divisionId: string;
+  participantId: string;
+  previousStatus: SpogomiAttendanceStatus;
+  attendanceStatus: SpogomiAttendanceStatus;
+  updatedAt: string;
+};
+
+function parseAttendanceMutationResult(value: unknown): AttendanceMutationResult {
+  if (!isRecord(value) || typeof value.changed !== "boolean" || typeof value.eventId !== "string" || typeof value.divisionId !== "string" ||
+    typeof value.participantId !== "string" || !isAttendanceStatus(value.previousStatus) || !isAttendanceStatus(value.attendanceStatus) || typeof value.updatedAt !== "string") {
+    throw new Error("La réponse de persistance de la présence SPOGOMI est invalide.");
+  }
+  return {
+    changed: value.changed,
+    eventId: value.eventId,
+    divisionId: value.divisionId,
+    participantId: value.participantId,
+    previousStatus: value.previousStatus,
+    attendanceStatus: value.attendanceStatus,
+    updatedAt: value.updatedAt,
+  };
+}
+
 function safeSearchTerm(value: string | null | undefined): string | null {
   const normalized = value?.trim().replace(/[(),]/g, " ").replace(/\s+/g, " ").slice(0, 80) ?? "";
   return normalized.length ? normalized : null;
@@ -71,12 +134,12 @@ export async function loadSpogomiAttendanceProjection(params: {
     .eq("event_id", params.eventId)
     .order("team_number", { ascending: true });
   if (teamsResult.error) throw teamsResult.error;
-  const teams = (teamsResult.data ?? []) as AttendanceTeamRow[];
+  const teams = (teamsResult.data ?? []).map(parseAttendanceTeam);
   const teamFilter = resolveAttendanceTeamFilter(teams, params.divisionId, search);
   const participantsResult = await buildAttendanceParticipantsQuery({ supabase: params.supabase, eventId: params.eventId, divisionId: params.divisionId, search, teamFilter, page, pageSize });
   if (participantsResult.error) throw participantsResult.error;
   const teamById = new Map(teams.map((team) => [team.id, team]));
-  const participants = (participantsResult.data ?? [] as AttendanceParticipantRow[]).map((participant) => mapAttendanceParticipant(participant as AttendanceParticipantRow, teamById));
+  const participants = (participantsResult.data ?? []).map((participant) => mapAttendanceParticipant(parseAttendanceParticipant(participant), teamById));
   return {
     eventId: params.eventId,
     divisionId: params.divisionId ?? null,
@@ -109,5 +172,5 @@ export async function setSpogomiAttendanceStatus(params: {
     p_expected_updated_at: params.expectedUpdatedAt ?? null,
   });
   if (result.error) throw result.error;
-  return result.data;
+  return parseAttendanceMutationResult(result.data);
 }

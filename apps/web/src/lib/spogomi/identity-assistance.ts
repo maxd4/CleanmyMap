@@ -34,6 +34,10 @@ export class SpogomiIdentityAssistanceError extends Error {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function mapError(error: unknown): SpogomiIdentityAssistanceError {
   const code = error && typeof error === "object" && typeof (error as { code?: unknown }).code === "string"
     ? (error as { code: string }).code
@@ -104,11 +108,11 @@ export async function createSpogomiIdentityAssistanceRequest(params: {
     p_invitation_token_hash: params.invitationToken ? hashSpogomiIdentityAssistanceToken(params.invitationToken) : null,
   });
   if (result.error) throw mapError(result.error);
-  const row = Array.isArray(result.data) ? result.data[0] : result.data;
-  if (!row || typeof row !== "object") throw new SpogomiIdentityAssistanceError("La demande d’assistance n’a pas pu être enregistrée.", "validation");
-  const status = (row as Record<string, unknown>).request_status;
-  if (status !== "pending") throw new SpogomiIdentityAssistanceError("La demande d’assistance n’a pas pu être enregistrée.", "validation");
-  return { id: String((row as Record<string, unknown>).request_id), status };
+  const row: unknown = Array.isArray(result.data) ? result.data[0] : result.data;
+  if (!isRecord(row) || typeof row.request_id !== "string" || row.request_status !== "pending") {
+    throw new SpogomiIdentityAssistanceError("La demande d’assistance n’a pas pu être enregistrée.", "validation");
+  }
+  return { id: row.request_id, status: row.request_status };
 }
 
 export async function listSpogomiIdentityAssistanceRequests(

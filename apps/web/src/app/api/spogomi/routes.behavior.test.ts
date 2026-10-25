@@ -329,7 +329,7 @@ describe("SPOGOMI persistence routes", () => {
     mocks.handleApiError.mockImplementation(() => new Response(JSON.stringify({ error: "Internal error" }), { status: 500 }));
     mocks.query.maybeSingle.mockResolvedValue({ data: null, error: null });
     mocks.query.single.mockResolvedValue({ data: {}, error: null });
-    mocks.supabase.rpc.mockResolvedValue({ data: {}, error: null });
+    mocks.supabase.rpc.mockResolvedValue({ data: { public_name: "Alpha" }, error: null });
   });
 
   it("protects event creation, event updates and team composition mutations", async () => {

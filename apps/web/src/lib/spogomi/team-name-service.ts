@@ -2,6 +2,18 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeSpogomiTeamPublicName } from "./team-name";
 
 type TeamNameRpcError = { code?: string; message?: string };
+type RenamedTeam = Record<string, unknown> & { public_name: string };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseRenamedTeam(value: unknown): RenamedTeam {
+  if (!isRecord(value) || typeof value.public_name !== "string") {
+    throw new Error("La réponse de renommage d’équipe SPOGOMI est invalide.");
+  }
+  return { ...value, public_name: value.public_name };
+}
 
 function teamNameRpcError(error: TeamNameRpcError): Error {
   if (error.code === "40001") {
@@ -33,5 +45,5 @@ export async function renameSpogomiTeam(params: {
     p_actor_clerk_id: params.actorClerkId,
   });
   if (result.error) throw teamNameRpcError(result.error);
-  return result.data;
+  return parseRenamedTeam(result.data);
 }

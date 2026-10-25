@@ -5,6 +5,63 @@ type EventForCompositionMutation = {
   composition_revision?: number;
 };
 
+type CompositionLockResult = {
+  alreadyProcessed: boolean;
+  locked: boolean;
+  teamCount: number;
+  compositionRevision: number;
+  divisionId?: string;
+  allDivisionsLocked?: boolean;
+};
+
+type CompositionMoveResult = {
+  alreadyProcessed: boolean;
+  participantId: string;
+  teamId: string | null;
+  divisionId?: string;
+  compositionRevision: number;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function finiteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function parseCompositionLockResult(value: unknown): CompositionLockResult {
+  if (!isRecord(value) || typeof value.already_processed !== "boolean" || value.locked !== true ||
+    !finiteNumber(value.teamCount) || !finiteNumber(value.compositionRevision) ||
+    (value.divisionId !== undefined && typeof value.divisionId !== "string") ||
+    (value.allDivisionsLocked !== undefined && typeof value.allDivisionsLocked !== "boolean")) {
+    throw new Error("La réponse de verrouillage de composition SPOGOMI est invalide.");
+  }
+  return {
+    alreadyProcessed: value.already_processed,
+    locked: value.locked,
+    teamCount: value.teamCount,
+    compositionRevision: value.compositionRevision,
+    ...(typeof value.divisionId === "string" ? { divisionId: value.divisionId } : {}),
+    ...(typeof value.allDivisionsLocked === "boolean" ? { allDivisionsLocked: value.allDivisionsLocked } : {}),
+  };
+}
+
+function parseCompositionMoveResult(value: unknown): CompositionMoveResult {
+  if (!isRecord(value) || typeof value.already_processed !== "boolean" || typeof value.participantId !== "string" ||
+    (value.teamId !== null && typeof value.teamId !== "string") ||
+    (value.divisionId !== undefined && typeof value.divisionId !== "string") || !finiteNumber(value.compositionRevision)) {
+    throw new Error("La réponse de déplacement de composition SPOGOMI est invalide.");
+  }
+  return {
+    alreadyProcessed: value.already_processed,
+    participantId: value.participantId,
+    teamId: value.teamId,
+    compositionRevision: value.compositionRevision,
+    ...(typeof value.divisionId === "string" ? { divisionId: value.divisionId } : {}),
+  };
+}
+
 export class SpogomiCompositionProtectionError extends Error {
   constructor(message = "Cette composition nécessite une procédure d’arbitrage versionnée et auditée.") {
     super(message);
@@ -41,7 +98,7 @@ export async function lockSpogomiTeams(
       p_actor_clerk_id: actorClerkId,
     });
     if (scoped.error) throw compositionRpcError(scoped.error);
-    return scoped.data;
+    return parseCompositionLockResult(scoped.data);
   }
   const result = await supabase.rpc("spogomi_lock_team_composition", {
     p_event_id: event.id,
@@ -49,7 +106,7 @@ export async function lockSpogomiTeams(
     p_actor_clerk_id: actorClerkId,
   });
   if (result.error) throw compositionRpcError(result.error);
-  return result.data;
+  return parseCompositionLockResult(result.data);
 }
 
 export async function moveParticipantToTeam(params: {
@@ -71,5 +128,5 @@ export async function moveParticipantToTeam(params: {
     p_actor_clerk_id: params.actorClerkId,
   });
   if (result.error) throw compositionRpcError(result.error);
-  return result.data;
+  return parseCompositionMoveResult(result.data);
 }

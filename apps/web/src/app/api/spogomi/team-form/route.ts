@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const rateLimitResponse = await enforceServerRateLimit(request, { limit: 20, window: 60 });
   if (rateLimitResponse) return rateLimitResponse;
-  const body = await request.json().catch(() => null);
+  const body: unknown = await request.json().catch(() => null);
   const parsed = submissionSchema.safeParse(body);
   if (!parsed.success) return validationErrorResponse({ body: ["Les mesures saisies sont invalides."] });
   try {

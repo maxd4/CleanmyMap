@@ -29,6 +29,37 @@ export type SpogomiEventAccessDecision = {
 const EVENT_ACCESS_SELECT =
   "id, action_id, created_by_clerk_id, name, event_slug, mode, state, starts_at, ends_at, official_timezone, public_visibility, public_results_visibility";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseEventAccessRow(value: unknown): SpogomiEventAccessDecision["event"] | null {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.action_id !== "string" ||
+    typeof value.created_by_clerk_id !== "string" || typeof value.name !== "string" ||
+    (value.event_slug !== null && typeof value.event_slug !== "string") ||
+    (value.mode !== "casual" && value.mode !== "world_cup" && value.mode !== "mixed") || typeof value.state !== "string" ||
+    typeof value.starts_at !== "string" || (value.ends_at !== null && typeof value.ends_at !== "string") ||
+    typeof value.official_timezone !== "string" ||
+    (value.public_visibility !== "private" && value.public_visibility !== "published") ||
+    (value.public_results_visibility !== "hidden" && value.public_results_visibility !== "provisional" && value.public_results_visibility !== "certified")) {
+    return null;
+  }
+  return {
+    id: value.id,
+    action_id: value.action_id,
+    created_by_clerk_id: value.created_by_clerk_id,
+    name: value.name,
+    event_slug: value.event_slug,
+    mode: value.mode,
+    state: value.state,
+    starts_at: value.starts_at,
+    ends_at: value.ends_at,
+    official_timezone: value.official_timezone,
+    public_visibility: value.public_visibility,
+    public_results_visibility: value.public_results_visibility,
+  };
+}
+
 export function hasSpogomiCapability(
   access: Pick<SpogomiEventAccessDecision, "capabilities"> | null | undefined,
   capability: SpogomiCapability,
@@ -83,9 +114,9 @@ export async function resolveSpogomiEventAccess(params: {
   const identity = await getCurrentUserIdentity({ userId: params.userId });
   if (!identity || identity.userId !== params.userId) return null;
 
-  const { organizersResult, reviewersResult, participantResult } = await loadSpogomiAccessRelations({ ...params, actionId: eventResult.data.action_id });
-
-  const event = eventResult.data as SpogomiEventAccessDecision["event"];
+  const event = parseEventAccessRow(eventResult.data);
+  if (!event) throw new Error("La réponse d’accès à l’événement SPOGOMI est invalide.");
+  const { organizersResult, reviewersResult, participantResult } = await loadSpogomiAccessRelations({ ...params, actionId: event.action_id });
   const organizerIds = (organizersResult.data ?? []).map((row) => String(row.organizer_clerk_id));
   const reviewerRoles = (reviewersResult.data ?? [])
     .map((row) => String(row.role))

@@ -35,7 +35,7 @@ export async function GET(request: Request, context: { params: Promise<{ eventId
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse();
-  const body = await request.json().catch(() => null);
+  const body: unknown = await request.json().catch(() => null);
   const parsed = reviewSchema.safeParse(body);
   if (!parsed.success) return validationErrorResponse({ body: ["La décision d’arbitrage est invalide."] });
   try {

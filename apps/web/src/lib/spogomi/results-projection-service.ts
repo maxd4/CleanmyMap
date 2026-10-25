@@ -8,8 +8,64 @@ import {
   type SpogomiExportProjection,
 } from "./results-projection";
 
-function isPublishedAction(row: { status: string | null; published_at: string | null; moderation_visibility: string | null }): boolean {
-  return row.status === "approved" && Boolean(row.published_at) && row.moderation_visibility !== "hidden";
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPublishedAction(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return value.status === "approved" && typeof value.published_at === "string" && value.published_at.length > 0 && value.moderation_visibility !== "hidden";
+}
+
+type ResultsEventRow = {
+  id: string;
+  action_id: string;
+  name: string;
+  location_label: string;
+  mode: "casual" | "world_cup" | "mixed";
+  state: string;
+  starts_at: string;
+  ends_at: string | null;
+  official_timezone: string | null;
+  regulation_version: string;
+  regulation_status: "incomplete" | "complete";
+  regulation_source_reference: string | null;
+  regulation_config: unknown;
+  team_size_config: unknown;
+  public_visibility: "private" | "published";
+  public_results_visibility: "hidden" | "provisional" | "certified";
+  updated_at: string;
+};
+
+function parseResultsEvent(value: unknown): ResultsEventRow | null {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.action_id !== "string" || typeof value.name !== "string" ||
+    typeof value.location_label !== "string" || (value.mode !== "casual" && value.mode !== "world_cup" && value.mode !== "mixed") ||
+    typeof value.state !== "string" || typeof value.starts_at !== "string" || (value.ends_at !== null && typeof value.ends_at !== "string") ||
+    (value.official_timezone !== null && typeof value.official_timezone !== "string") || typeof value.regulation_version !== "string" ||
+    (value.regulation_status !== "incomplete" && value.regulation_status !== "complete") ||
+    (value.regulation_source_reference !== null && typeof value.regulation_source_reference !== "string") ||
+    (value.public_visibility !== "private" && value.public_visibility !== "published") ||
+    (value.public_results_visibility !== "hidden" && value.public_results_visibility !== "provisional" && value.public_results_visibility !== "certified") ||
+    typeof value.updated_at !== "string") return null;
+  return {
+    id: value.id,
+    action_id: value.action_id,
+    name: value.name,
+    location_label: value.location_label,
+    mode: value.mode,
+    state: value.state,
+    starts_at: value.starts_at,
+    ends_at: value.ends_at,
+    official_timezone: value.official_timezone,
+    regulation_version: value.regulation_version,
+    regulation_status: value.regulation_status,
+    regulation_source_reference: value.regulation_source_reference,
+    regulation_config: value.regulation_config,
+    team_size_config: value.team_size_config,
+    public_visibility: value.public_visibility,
+    public_results_visibility: value.public_results_visibility,
+    updated_at: value.updated_at,
+  };
 }
 
 export async function loadSpogomiResultsProjection(params: {
@@ -25,10 +81,12 @@ export async function loadSpogomiResultsProjection(params: {
     .maybeSingle();
   if (eventResult.error) throw eventResult.error;
   if (!eventResult.data) return null;
-  if (params.publicOnly && (eventResult.data.public_visibility !== "published" || eventResult.data.state === "cancelled")) return null;
+  const event = parseResultsEvent(eventResult.data);
+  if (!event) throw new Error("La projection de l’événement SPOGOMI est invalide.");
+  if (params.publicOnly && (event.public_visibility !== "published" || event.state === "cancelled")) return null;
 
   const [actionResult, divisions, categories, teams, submissions, items, participants, rankings, consolidation, closureDecisions] = await Promise.all([
-    params.supabase.from("actions").select("status, published_at, moderation_visibility").eq("id", eventResult.data.action_id).maybeSingle(),
+    params.supabase.from("actions").select("status, published_at, moderation_visibility").eq("id", event.action_id).maybeSingle(),
     readAllSpogomiPages("public SPOGOMI divisions", (from, to) => params.supabase.from("spogomi_divisions").select("id, division_type, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config").eq("event_id", params.eventId).order("division_type", { ascending: true }).range(from, to)),
     readAllSpogomiPages("public SPOGOMI categories", (from, to) => params.supabase.from("spogomi_category_rules").select("id, event_id, division_id, regulation_version, code, label, measurement_kind, unit, coefficient, coefficient_status, environmental_category_slug, display_order, is_complete, updated_at").eq("event_id", params.eventId).order("display_order", { ascending: true }).order("id", { ascending: true }).range(from, to)),
     readAllSpogomiPages("public SPOGOMI teams", (from, to) => params.supabase.from("spogomi_teams").select("id, division_id, team_number, public_name, composition_state, certified_submission_id, updated_at").eq("event_id", params.eventId).order("team_number", { ascending: true }).order("id", { ascending: true }).range(from, to)),
@@ -40,7 +98,12 @@ export async function loadSpogomiResultsProjection(params: {
     readAllSpogomiPages("public SPOGOMI closure decisions", (from, to) => params.supabase.from("spogomi_team_closure_decisions").select("team_id, division_id, status, sport_eligible, environmental_eligibility, decision_version").eq("event_id", params.eventId).eq("is_current", true).order("team_id", { ascending: true }).range(from, to)),
   ]);
   if (actionResult.error || consolidation.error) throw actionResult.error ?? consolidation.error;
-  const event = eventResult.data;
+  const consolidationData: unknown = consolidation.data;
+  const consolidationProjection = consolidationData === null
+    ? null
+    : isRecord(consolidationData) && isRecord(consolidationData.projection) && typeof consolidationData.published_at === "string"
+      ? { projection: consolidationData.projection, published_at: consolidationData.published_at }
+      : (() => { throw new Error("La projection de consolidation SPOGOMI est invalide."); })();
   const source: SpogomiResultsSource = {
     event: {
       id: String(event.id), actionId: String(event.action_id), name: String(event.name), locationLabel: String(event.location_label), mode: event.mode,
@@ -81,7 +144,7 @@ export async function loadSpogomiResultsProjection(params: {
     items: items as Array<Record<string, unknown>>,
     participants: participants as unknown as SpogomiResultsSource["participants"],
     officialRankings: rankings as unknown as SpogomiResultsSource["officialRankings"],
-    consolidation: consolidation.data ? { projection: consolidation.data.projection as Record<string, unknown>, published_at: String(consolidation.data.published_at) } : null,
+    consolidation: consolidationProjection,
     actionIsPublished: Boolean(actionResult.data && isPublishedAction(actionResult.data)),
   };
   return buildSpogomiResultsProjection(source);

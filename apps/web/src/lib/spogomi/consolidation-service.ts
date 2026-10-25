@@ -356,5 +356,9 @@ export async function publishSpogomiConsolidation(params: {
     if (rpc.error.code === "40001" || rpc.error.code === "23514") throw new Error(`Conflict: ${rpc.error.message}`);
     throw rpc.error;
   }
-  return rpc.data;
+  const data: unknown = rpc.data;
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    throw new Error("La réponse de publication du bilan SPOGOMI est invalide.");
+  }
+  return data;
 }

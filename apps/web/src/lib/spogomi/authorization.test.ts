@@ -35,6 +35,7 @@ function supabaseFor(fixture: Fixture) {
           state: "draft",
           starts_at: "2026-01-01T10:00:00.000Z",
           ends_at: null,
+           official_timezone: "Europe/Paris",
           public_visibility: "private",
           public_results_visibility: "hidden",
         } : table === "spogomi_participants"

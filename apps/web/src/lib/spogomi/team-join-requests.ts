@@ -38,6 +38,10 @@ export class SpogomiTeamJoinRequestError extends Error {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function mapError(error: unknown): SpogomiTeamJoinRequestError {
   const code = error && typeof error === "object" && typeof (error as { code?: unknown }).code === "string"
     ? (error as { code: string }).code
@@ -123,9 +127,9 @@ export async function createSpogomiTeamJoinRequest(params: {
     p_requester_clerk_id: params.requesterClerkId,
   });
   if (result.error) throw mapError(result.error);
-  const row = Array.isArray(result.data) ? result.data[0] : result.data;
-  if (!row || typeof row !== "object") throw new SpogomiTeamJoinRequestError("La demande n’a pas pu être créée.", "validation");
-  const requestTeamId = (row as Record<string, unknown>).request_team_id;
+  const row: unknown = Array.isArray(result.data) ? result.data[0] : result.data;
+  if (!isRecord(row)) throw new SpogomiTeamJoinRequestError("La demande n’a pas pu être créée.", "validation");
+  const requestTeamId = row.request_team_id;
   if (typeof requestTeamId !== "string" || !requestTeamId) {
     throw new SpogomiTeamJoinRequestError("La demande retournée est incohérente.", "validation");
   }
@@ -137,7 +141,7 @@ export async function createSpogomiTeamJoinRequest(params: {
     teamId: requestTeamId,
     requesterClerkId: params.requesterClerkId,
   });
-  if (!persisted || persisted.id !== String((row as Record<string, unknown>).request_id)) {
+  if (!persisted || persisted.id !== String(row.request_id)) {
     throw new SpogomiTeamJoinRequestError("La demande retournée est introuvable.", "validation");
   }
   return persisted;

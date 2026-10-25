@@ -43,7 +43,8 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
   if (!access.ok) return unauthorizedJsonResponse();
   const rateLimited = await enforceServerRateLimitForAuthenticatedUser(request, access.userId, { limit: 10, window: 60 });
   if (rateLimited) return rateLimited;
-  const parsed = publishSchema.safeParse(await request.json().catch(() => null));
+  const body: unknown = await request.json().catch(() => null);
+  const parsed = publishSchema.safeParse(body);
   if (!parsed.success) return validationErrorResponse({ body: ["La confirmation du bilan SPOGOMI est invalide."] });
   try {
     const event = await authorizedEvent((await context.params).eventId, access.userId);

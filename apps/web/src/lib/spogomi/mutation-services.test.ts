@@ -120,7 +120,10 @@ describe("SPOGOMI attendance and mutation services", () => {
   });
 
   it("uses a numeric team search and propagates RPC attendance provenance and optimistic version", async () => {
-    const fixture = supabaseFor({ spogomi_teams: [], spogomi_participants: [] }, { data: { accepted: true } });
+    const fixture = supabaseFor({ spogomi_teams: [], spogomi_participants: [] }, { data: {
+      changed: true, eventId: "event-1", divisionId: "world", participantId: "participant-1",
+      previousStatus: "unknown", attendanceStatus: "absent", updatedAt: "2026-10-13T12:00:00.000Z",
+    } });
     await loadSpogomiAttendanceProjection({ supabase: fixture.supabase, eventId: "event-1", userId: "user-1", search: "12" });
     const participantQuery = fixture.queries.get("spogomi_participants")?.[0];
     expect(participantQuery?.calls.eq).toContainEqual(["source_row_number", 12]);
@@ -129,7 +132,7 @@ describe("SPOGOMI attendance and mutation services", () => {
       supabase: fixture.supabase,
       eventId: "event-1", divisionId: "world", participantId: "participant-1", status: "absent",
       actorClerkId: "checkin-1", reason: "  arrivée tardive  ", provenance: "  feuille papier  ", expectedUpdatedAt: "version-1",
-    })).resolves.toEqual({ accepted: true });
+    })).resolves.toMatchObject({ changed: true, attendanceStatus: "absent" });
     expect(fixture.rpc).toHaveBeenCalledWith("spogomi_set_attendance_status", expect.objectContaining({
       p_next_status: "absent", p_reason: "arrivée tardive", p_provenance: "feuille papier", p_expected_updated_at: "version-1",
     }));
@@ -151,7 +154,7 @@ describe("SPOGOMI composition RPC boundaries", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("uses the division-scoped lock and the legacy parent lock only when no division is supplied", async () => {
-    const fixture = supabaseFor({}, { data: { revision: 3 } });
+    const fixture = supabaseFor({}, { data: { already_processed: false, locked: true, teamCount: 2, compositionRevision: 3 } });
     await lockSpogomiTeams(fixture.supabase, { id: "event-1", composition_revision: 2 }, "organizer", 3, "world-cup");
     expect(fixture.rpc).toHaveBeenCalledWith("spogomi_lock_team_composition_for_division", expect.objectContaining({ p_division_id: "world-cup", p_expected_revision: 3 }));
 
@@ -160,11 +163,21 @@ describe("SPOGOMI composition RPC boundaries", () => {
   });
 
   it("propagates explicit division and default revision on participant moves", async () => {
-    const fixture = supabaseFor({}, { data: { moved: true } });
+    const fixture = supabaseFor({}, { data: { already_processed: false, participantId: "p", teamId: null, divisionId: "casual", compositionRevision: 4 } });
     await moveParticipantToTeam({ supabase: fixture.supabase, event: { id: "event-1", composition_revision: 4 }, participantId: "p", teamId: null, actorClerkId: "a", divisionId: "casual" });
     expect(fixture.rpc).toHaveBeenCalledWith("spogomi_move_participant_to_team_for_division", expect.objectContaining({ p_division_id: "casual", p_team_id: null, p_expected_revision: 4 }));
     await moveParticipantToTeam({ supabase: fixture.supabase, event: { id: "event-1" }, participantId: "p", teamId: "team", actorClerkId: "a", expectedRevision: 8 });
     expect(fixture.rpc).toHaveBeenLastCalledWith("spogomi_move_participant_to_team", expect.objectContaining({ p_team_id: "team", p_expected_revision: 8 }));
+  });
+
+  it("rejects malformed mutation payloads instead of exposing invented success states", async () => {
+    const fixture = supabaseFor({}, { data: { accepted: true } });
+    await expect(setSpogomiAttendanceStatus({
+      supabase: fixture.supabase, eventId: "event-1", divisionId: "casual", participantId: "participant-1", status: "present",
+      actorClerkId: "organizer", reason: "r", provenance: "p",
+    })).rejects.toThrow(/réponse de persistance/i);
+    await expect(lockSpogomiTeams(fixture.supabase, { id: "event-1" }, "organizer")).rejects.toThrow(/réponse de verrouillage/i);
+    await expect(moveParticipantToTeam({ supabase: fixture.supabase, event: { id: "event-1" }, participantId: "participant-1", teamId: null, actorClerkId: "organizer" })).rejects.toThrow(/réponse de déplacement/i);
   });
 
   it.each([

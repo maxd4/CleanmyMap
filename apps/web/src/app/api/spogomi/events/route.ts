@@ -23,7 +23,7 @@ const createSchema = z.object({
 export async function POST(request: Request) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse();
-  const body = await request.json().catch(() => null);
+  const body: unknown = await request.json().catch(() => null);
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return validationErrorResponse({ body: ["Paramètres d'événement invalides."] });
   try {

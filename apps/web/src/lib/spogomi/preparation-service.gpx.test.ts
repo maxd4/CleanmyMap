@@ -22,7 +22,18 @@ import { spogomiPreparationEvent } from "./preparation-test-fixtures";
 describe("SPOGOMI official GPX synchronization", () => {
   it("delegates route and Action writes to the transactional RPC with the loaded revision", async () => {
     const rpc = vi.fn().mockResolvedValue({
-      data: { routeId: "route-1", compositionRevision: 8 },
+      data: {
+        already_processed: false,
+        eventId: "event-1",
+        actionId: "action-1",
+        routeId: "route-1",
+        compositionRevision: 8,
+        source: "official_reference",
+        fileName: "synthetic-official.gpx",
+        pointCount: 2,
+        referenceDistanceKm: 1.25,
+        inferredTopology: "point_to_point",
+      },
       error: null,
     });
     const result = await attachOfficialGpx({
@@ -38,7 +49,7 @@ describe("SPOGOMI official GPX synchronization", () => {
       p_actor_clerk_id: "organizer-1",
       p_geometry_geojson: { type: "LineString", coordinates: [[2.31, 48.79], [2.32, 48.8]] },
     }));
-    expect(result.synchronization).toEqual({ routeId: "route-1", compositionRevision: 8 });
+    expect(result.synchronization).toMatchObject({ routeId: "route-1", compositionRevision: 8 });
   });
 
   it("keeps the preparation boundary fail-closed for a currently locked event", async () => {

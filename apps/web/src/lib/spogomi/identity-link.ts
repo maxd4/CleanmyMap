@@ -34,12 +34,20 @@ function toErrorCode(error: unknown): string | null {
   return typeof code === "string" ? code : null;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
+}
+
 function toRpcRow(data: unknown): Record<string, unknown> | null {
-  if (Array.isArray(data)) {
+  if (isUnknownArray(data)) {
     const first = data[0];
-    return first && typeof first === "object" ? first as Record<string, unknown> : null;
+    return isRecord(first) ? first : null;
   }
-  return data && typeof data === "object" ? data as Record<string, unknown> : null;
+  return isRecord(data) ? data : null;
 }
 
 export function normalizeSpogomiIdentityCode(value: string): string {
@@ -288,7 +296,9 @@ async function loadLinkedDivisionType(supabase: SupabaseClient, eventId: string,
   if (!divisionId) return null;
   const result = await supabase.from("spogomi_divisions").select("division_type").eq("id", divisionId).eq("event_id", eventId).maybeSingle();
   if (result.error) throw result.error;
-  return result.data?.division_type === "casual" || result.data?.division_type === "world_cup" ? result.data.division_type : null;
+  const row: unknown = result.data;
+  if (!isRecord(row)) return null;
+  return row.division_type === "casual" || row.division_type === "world_cup" ? row.division_type : null;
 }
 
 async function loadLinkedPublishedResults(supabase: SupabaseClient, eventId: string, teamId: string, divisionId: string | null): Promise<SpogomiLinkedTeam["publishedResults"]> {

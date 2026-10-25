@@ -40,6 +40,32 @@ type CreationEvent = Record<string, unknown> & {
   idempotency_key: string | null;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
+function parseCreationAttempt(value: unknown): CreationAttempt | null {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.idempotency_key !== "string" ||
+    typeof value.created_by_clerk_id !== "string" || !isNullableString(value.action_id) || !isNullableString(value.event_id) ||
+    typeof value.state !== "string" || !isNullableString(value.intention_fingerprint) || !isNullableString(value.processing_token) ||
+    !isNullableString(value.processing_started_at)) return null;
+  return {
+    id: value.id,
+    idempotency_key: value.idempotency_key,
+    created_by_clerk_id: value.created_by_clerk_id,
+    action_id: value.action_id,
+    event_id: value.event_id,
+    state: value.state,
+    intention_fingerprint: value.intention_fingerprint,
+    processing_token: value.processing_token,
+    processing_started_at: value.processing_started_at,
+  };
+}
+
 function actionIdentity(identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>): ActionPermissionIdentity {
   return { userId: identity?.userId ?? "", role: identity?.role ?? null, activeRole: identity?.activeRole ?? null };
 }
@@ -414,11 +440,13 @@ export async function createSpogomiEvent(params: { supabase: SupabaseClient; use
   const fingerprint = creationFingerprint(input);
   const existing = await supabase.from("spogomi_event_creation_attempts").select("*").eq("idempotency_key", input.idempotencyKey).maybeSingle();
   if (existing.error) throw existing.error;
-  if (existing.data && existing.data.created_by_clerk_id !== userId) throw conflict("la clé d'idempotence est déjà utilisée.");
-  if (existing.data?.event_id && existing.data.state === "ready") {
-    const event = await loadEventById(supabase, String(existing.data.event_id));
+  const existingAttempt = parseCreationAttempt(existing.data);
+  if (existing.data && !existingAttempt) throw new Error("La réservation de création SPOGOMI est invalide.");
+  if (existingAttempt && existingAttempt.created_by_clerk_id !== userId) throw conflict("la clé d'idempotence est déjà utilisée.");
+  if (existingAttempt?.event_id && existingAttempt.state === "ready") {
+    const event = await loadEventById(supabase, existingAttempt.event_id);
     if (!event) throw conflict("l'événement lié à la tentative est introuvable.");
-    const proof = await ensureAttemptFingerprint(supabase, existing.data as CreationAttempt, input, userId, identity, fingerprint);
+    const proof = await ensureAttemptFingerprint(supabase, existingAttempt, input, userId, identity, fingerprint);
     await assertEventIntegrity(supabase, event, input, userId, event.action_id, identity, [proof]);
     return { eventId: event.id, actionId: event.action_id };
   }

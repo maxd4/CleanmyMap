@@ -126,6 +126,11 @@ class Query implements PromiseLike<{ data: Row | Row[] | null; error: Row | null
       }
       const row: Row = { ...payload };
       if (this.table === "spogomi_event_creation_attempts") {
+        row.action_id = row.action_id ?? null;
+        row.event_id = row.event_id ?? null;
+        row.intention_fingerprint = row.intention_fingerprint ?? null;
+        row.processing_token = row.processing_token ?? null;
+        row.processing_started_at = row.processing_started_at ?? null;
         row.id = `attempt-${this.store.attempts.length + 1}`;
         this.store.attempts.push(row);
       } else if (this.table === "spogomi_events") {

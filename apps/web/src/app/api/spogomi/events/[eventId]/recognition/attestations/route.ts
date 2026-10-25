@@ -41,7 +41,11 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
     const reconciliation = event.state === "certified"
       ? await reconcileSpogomiRecognition({ supabase, eventId, actorClerkId: access.userId })
       : null;
-    return NextResponse.json({ status: "ok", attestation: result.data, reconciliation });
+    const attestation: unknown = result.data;
+    if (typeof attestation !== "object" || attestation === null || Array.isArray(attestation)) {
+      throw new Error("La réponse de l’attestation SPOGOMI est invalide.");
+    }
+    return NextResponse.json({ status: "ok", attestation, reconciliation });
   } catch (error) {
     const partial = getSpogomiRecognitionPartialDetails(error);
     if (partial) return NextResponse.json({ error: "L’attestation est enregistrée, mais la réconciliation SPOGOMI est partielle et doit être rejouée.", reconciliation: partial }, { status: 503 });

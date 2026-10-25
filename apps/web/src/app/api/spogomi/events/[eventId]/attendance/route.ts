@@ -52,7 +52,8 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
   if (!access.ok) return unauthorizedJsonResponse();
   const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(request, access.userId, { limit: 120, window: 60 });
   if (rateLimitResponse) return rateLimitResponse;
-  const parsed = attendanceSchema.safeParse(await request.json().catch(() => null));
+  const body: unknown = await request.json().catch(() => null);
+  const parsed = attendanceSchema.safeParse(body);
   if (!parsed.success) return validationErrorResponse({ body: ["La décision de présence est invalide."] });
   try {
     const eventId = (await context.params).eventId;

@@ -85,6 +85,64 @@ function localDate(startsAt: string, timezone: string): string {
   }
 }
 
+function isRecord(value: unknown): value is Row {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isVolunteerMissionKind(value: unknown): value is SpogomiRecognitionKind {
+  return value === "collector" || value === "referee" || value === "organizer" || value === "finish_control" || value === "field_safety" || value === "weighing_sorting" || value === "logistics_support";
+}
+
+function parseVolunteerSourceSnapshot(value: unknown): SpogomiVolunteerCertificate["sourceSnapshot"] {
+  if (!isRecord(value) || !isRecord(value.event) || !Array.isArray(value.missions)) throw new Error("La source du certificat bénévole SPOGOMI est invalide.");
+  const event = value.event;
+  if (typeof event.eventId !== "string" || (event.divisionId !== undefined && event.divisionId !== null && typeof event.divisionId !== "string") ||
+    typeof event.eventName !== "string" || (event.eventSlug !== null && typeof event.eventSlug !== "string") || typeof event.eventPublic !== "boolean" ||
+    typeof event.locationLabel !== "string" || typeof event.eventDate !== "string" || typeof event.eventState !== "string" ||
+    (event.participantId !== null && typeof event.participantId !== "string") || typeof event.identityVerified !== "boolean" ||
+    (event.attendanceStatus !== null && event.attendanceStatus !== "unknown" && event.attendanceStatus !== "present" && event.attendanceStatus !== "absent") ||
+    typeof event.actionParticipationConfirmed !== "boolean") throw new Error("La source du certificat bénévole SPOGOMI est invalide.");
+  const missions = value.missions.map((mission): SpogomiVolunteerMission => {
+    if (!isRecord(mission) || typeof mission.id !== "string" || typeof mission.eventId !== "string" ||
+      (mission.divisionId !== undefined && typeof mission.divisionId !== "string") || typeof mission.eventName !== "string" ||
+      typeof mission.locationLabel !== "string" || typeof mission.eventDate !== "string" ||
+      !isVolunteerMissionKind(mission.kind) ||
+      (mission.status !== "certified" && mission.status !== "revoked") ||
+      (mission.certifiedAt !== null && typeof mission.certifiedAt !== "string") || typeof mission.evidenceReference !== "string" ||
+      typeof mission.certificationVersion !== "string") throw new Error("La source du certificat bénévole SPOGOMI est invalide.");
+    return {
+      id: mission.id,
+      eventId: mission.eventId,
+      ...(typeof mission.divisionId === "string" ? { divisionId: mission.divisionId } : {}),
+      eventName: mission.eventName,
+      locationLabel: mission.locationLabel,
+      eventDate: mission.eventDate,
+      kind: mission.kind,
+      status: mission.status,
+      certifiedAt: mission.certifiedAt,
+      evidenceReference: mission.evidenceReference,
+      certificationVersion: mission.certificationVersion,
+    };
+  });
+  return {
+    event: {
+      eventId: event.eventId,
+      divisionId: event.divisionId,
+      eventName: event.eventName,
+      eventSlug: event.eventSlug,
+      eventPublic: event.eventPublic,
+      locationLabel: event.locationLabel,
+      eventDate: event.eventDate,
+      eventState: event.eventState,
+      participantId: event.participantId,
+      identityVerified: event.identityVerified,
+      attendanceStatus: event.attendanceStatus,
+      actionParticipationConfirmed: event.actionParticipationConfirmed,
+    },
+    missions,
+  };
+}
+
 async function loadVolunteerEvents(supabase: SupabaseClient, userId: string, eventId?: string): Promise<SpogomiVolunteerEvent[]> {
   const participants = await readAllSpogomiPages("private SPOGOMI volunteer participants", (from, to) => {
     let query = supabase.from("spogomi_participants")
@@ -187,12 +245,18 @@ export async function loadSpogomiVolunteerSummaryForUser(supabase: SupabaseClien
   };
 }
 
-function mapCertificate(row: Row): SpogomiVolunteerCertificate {
+function mapCertificate(value: unknown): SpogomiVolunteerCertificate {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.certificate_reference !== "string" || typeof value.user_id !== "string" ||
+    typeof value.event_id !== "string" || (value.division_id !== null && typeof value.division_id !== "string") || typeof value.source_fingerprint !== "string" ||
+    (value.status !== "active" && value.status !== "revoked" && value.status !== "replaced") || typeof value.issued_at !== "string" ||
+    (value.revoked_at !== null && typeof value.revoked_at !== "string") || (value.revocation_reason !== null && typeof value.revocation_reason !== "string")) {
+    throw new Error("La réponse de certificat bénévole SPOGOMI est invalide.");
+  }
   return {
-    id: String(row.id), certificateReference: String(row.certificate_reference), userId: String(row.user_id), eventId: String(row.event_id), divisionId: row.division_id ? String(row.division_id) : null,
-    sourceFingerprint: String(row.source_fingerprint), sourceSnapshot: row.source_snapshot as SpogomiVolunteerCertificate["sourceSnapshot"],
-    status: String(row.status) as SpogomiVolunteerCertificate["status"], issuedAt: String(row.issued_at),
-    revokedAt: row.revoked_at ? String(row.revoked_at) : null, revocationReason: row.revocation_reason ? String(row.revocation_reason) : null,
+    id: value.id, certificateReference: value.certificate_reference, userId: value.user_id, eventId: value.event_id, divisionId: value.division_id,
+    sourceFingerprint: value.source_fingerprint, sourceSnapshot: parseVolunteerSourceSnapshot(value.source_snapshot),
+    status: value.status, issuedAt: value.issued_at,
+    revokedAt: value.revoked_at, revocationReason: value.revocation_reason,
   };
 }
 
@@ -219,9 +283,9 @@ export async function issueSpogomiVolunteerCertificate(supabase: SupabaseClient,
     p_source_snapshot: { event: { ...event, missions: undefined }, missions }, p_actor_clerk_id: userId,
   });
   if (result.error) throw result.error;
-  const row = Array.isArray(result.data) ? result.data[0] : result.data;
+  const row: unknown = Array.isArray(result.data) ? result.data[0] : result.data;
   if (!row) throw new Error("La référence de certificat SPOGOMI n’a pas été créée.");
-  return mapCertificate(row as Row);
+  return mapCertificate(row);
 }
 
 export async function revokeSpogomiVolunteerCertificate(supabase: SupabaseClient, userId: string, eventId: string, reason: string): Promise<void> {
@@ -234,5 +298,5 @@ export async function loadSpogomiCertificateForUser(supabase: SupabaseClient, us
     .select("id, certificate_reference, user_id, event_id, division_id, source_fingerprint, source_snapshot, status, issued_at, revoked_at, revocation_reason")
     .eq("user_id", userId).eq("certificate_reference", certificateReference).maybeSingle();
   if (result.error) throw result.error;
-  return result.data ? mapCertificate(result.data as Row) : null;
+  return result.data ? mapCertificate(result.data) : null;
 }

@@ -15,7 +15,7 @@ function fakeSupabase() {
   const rows: Record<string, unknown> = {
     spogomi_events: {
       id: "event-1", action_id: "action-1", name: "SPOGOMI", location_label: "Paris", mode: "casual", state: "certified",
-      starts_at: "2026-10-12T09:00:00Z", ends_at: null, regulation_version: "rules-v1", regulation_status: "complete",
+      starts_at: "2026-10-12T09:00:00Z", ends_at: null, official_timezone: null, regulation_version: "rules-v1", regulation_status: "complete",
       regulation_source_reference: "reglement:test", regulation_config: { tiebreakers: ["mass_grams"] }, team_size_config: { minMembers: 1, maxMembers: 5 },
       public_visibility: "published", public_results_visibility: "hidden", updated_at: "2026-10-12T10:00:00Z",
     },
