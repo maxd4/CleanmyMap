@@ -13,6 +13,7 @@ import {
   postSubmitPayload,
   resolveActionOrganizersMock,
   resolveActionParticipantsMock,
+  requireAuthenticatedAccessMock,
   trackActionCreatedMock,
   trackServerEventMock,
   resetSubmitRouteMocks,
@@ -94,6 +95,34 @@ describe("POST /api/actions — création standard et pré-action", () => {
       actionId: "action-test-1",
     });
     expect(trackServerEventMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("refuses creation without an authenticated identity before parsing or writing", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
+
+    const response = await postSubmitPayload(buildSubmitPayload());
+
+    expect(response.status).toBe(401);
+    expect(createActionMock).not.toHaveBeenCalled();
+    expect(resolveActionOrganizersMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("rejects a malformed retry key before any action effect", async () => {
+    const invalidResponse = await (await import("./route")).POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        headers: { "Idempotency-Key": "short" },
+        body: JSON.stringify(buildSubmitPayload()),
+      }),
+    );
+
+    expect(invalidResponse.status).toBe(422);
+    expect(createActionMock).not.toHaveBeenCalled();
+    expect(resolveActionOrganizersMock).not.toHaveBeenCalled();
   }, 15000);
 
   it("forwards the authenticated retry key without using it as action content", async () => {

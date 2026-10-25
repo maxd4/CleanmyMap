@@ -15,6 +15,7 @@ import {
 } from "@/app/api/test-helpers";
 
 export const requireAuthenticatedAccessMock = authenticatedRouteMocks.requireAuthenticatedAccess;
+const requireMobileAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 export const getCurrentUserIdentityMock = authenticatedRouteMocks.getCurrentUserIdentity;
 export const pickTraceableActorNameMock = authenticatedRouteMocks.pickTraceableActorName;
 export const getSupabaseServerClientMock = authenticatedRouteMocks.getSupabaseServerClient;
@@ -133,6 +134,9 @@ const resolveDefaultActionOrganizerIdsMock = vi.hoisted(() => vi.fn());
 const trackActionCreatedMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => createAuthenticatedRouteAuthzModule());
+vi.mock("@/lib/auth/mobile-bearer", () => ({
+  requireMobileAuthenticatedAccess: requireMobileAuthenticatedAccessMock,
+}));
 vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
 vi.mock("@/lib/gamification/progression", () => ({
   buildPostActionRetentionLoop: buildPostActionRetentionLoopMock,
@@ -173,6 +177,7 @@ export {
   resolveActionParticipantsMock,
   resolveDefaultActionOrganizerIdsMock,
   trackServerEventMock,
+  requireMobileAuthenticatedAccessMock,
 };
 
 export function resetSubmitRouteMocks() {
@@ -231,6 +236,11 @@ export function resetSubmitRouteMocks() {
   requireAuthenticatedAccessMock.mockResolvedValue({
     ok: true,
     userId: "user-test-1",
+  });
+  requireMobileAuthenticatedAccessMock.mockResolvedValue({
+    ok: false,
+    status: 401,
+    error: "Unauthorized",
   });
   getCurrentUserIdentityMock.mockResolvedValue({
     userId: "user-test-1",
