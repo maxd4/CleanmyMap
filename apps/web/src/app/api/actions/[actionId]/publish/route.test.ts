@@ -205,7 +205,7 @@ describe("POST /api/actions/:actionId/publish", () => {
     ["empty id", "", 400],
     ["already approved", "approved", 422],
     ["already completed", "post_action_complete", 422],
-  ] as const)("refuses publication for %s before persistence", async (_label, state) => {
+  ] as const)("refuses publication for %s before persistence", async (_label, state, expectedStatus) => {
     const { POST } = await import("./route");
     const params = state === "" ? { actionId: "" } : { actionId: "action-1" };
     if (state === "approved" || state === "post_action_complete") {
@@ -220,7 +220,7 @@ describe("POST /api/actions/:actionId/publish", () => {
 
     const response = await POST(new Request("http://localhost"), { params: Promise.resolve(params) });
 
-    expect(response.status).toBe(state === "" ? 400 : 422);
+    expect(response.status).toBe(expectedStatus);
     if (state === "") expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
     else expect(getSupabaseServerClientMock).toHaveBeenCalledTimes(1);
   });

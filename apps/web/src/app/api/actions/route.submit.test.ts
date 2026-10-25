@@ -315,13 +315,11 @@ describe("POST /api/actions — création standard et pré-action", () => {
     ["empty location", { location: { label: " " } }],
   ] as const)("rejects %s without persistence", async (_label, override) => {
     const base = buildSubmitPayload();
-    const response = await postSubmitPayload({
-      ...base,
-      ...override,
-      ...(override.metadata ? { metadata: { ...base.metadata, ...override.metadata } } : {}),
-      ...(override.dates ? { dates: { ...base.dates, ...override.dates } } : {}),
-      ...(override.location ? { location: { ...base.location, ...override.location } } : {}),
-    });
+    const payload = { ...base };
+    if ("metadata" in override) payload.metadata = { ...base.metadata, ...override.metadata };
+    if ("dates" in override) payload.dates = { ...base.dates, ...override.dates };
+    if ("location" in override) payload.location = { ...base.location, ...override.location };
+    const response = await postSubmitPayload(payload);
 
     expect(response.status).toBe(422);
     expect(createActionMock).not.toHaveBeenCalled();
