@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.18",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "4.1.12",
     "braces": "file:vendor/braces",
     "eslint": "^9.39.4",
     "eslint-plugin-react": "^7.37.0",
@@ -52,7 +52,7 @@
     "globals": "^14.0.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.2",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
   },
   "private": true
 }
