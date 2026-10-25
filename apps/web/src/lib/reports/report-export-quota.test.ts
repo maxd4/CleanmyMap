@@ -35,6 +35,8 @@ describe("report export daily quota", () => {
   it.each([
     ["an RPC error", { data: null, error: new Error("rpc unavailable") }],
     ["an invalid RPC payload", { data: [{ allowed: true }], error: null }],
+    ["a malformed Supabase envelope", { data: [{ allowed: true, quota_day: "2026-09-15" }] }],
+    ["an empty RPC array", { data: [], error: null }],
   ])("rejects %s instead of inventing a reservation", async (_label, result) => {
     const rpc = vi.fn().mockResolvedValue(result);
     getSupabaseAdminClientMock.mockReturnValue({ rpc });
@@ -85,5 +87,19 @@ describe("report export daily quota", () => {
 
     await expect(getReportExportAvailability("user-1")).resolves.toBe("available");
     await expect(getReportExportAvailability("user-1")).rejects.toThrow("quota read unavailable");
+  });
+
+  it.each([
+    undefined,
+    { data: { export_count: 1 } },
+    { error: null },
+  ])("rejects malformed quota read responses: %j", async (response) => {
+    const maybeSingle = vi.fn().mockResolvedValue(response);
+    const eqDay = vi.fn(() => ({ maybeSingle }));
+    const eqUser = vi.fn(() => ({ eq: eqDay }));
+    const select = vi.fn(() => ({ eq: eqUser }));
+    getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
+
+    await expect(getReportExportAvailability("user-1")).rejects.toThrow();
   });
 });

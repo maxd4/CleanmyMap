@@ -59,7 +59,7 @@ function queryFor(data: unknown, error: Row | null = null): Query {
 function supabaseFor(tables: Record<string, unknown>, rpcResult: { data?: unknown; error?: Row | null } = {}) {
   const queries = new Map<string, Query[]>();
   const rpc = vi.fn(async (name: string, args: Record<string, unknown>) => ({
-    data: rpcResult.data ?? { name, args },
+    data: Object.prototype.hasOwnProperty.call(rpcResult, "data") ? rpcResult.data : { name, args },
     error: rpcResult.error ?? null,
   }));
   const supabase = {
@@ -226,6 +226,36 @@ describe("SPOGOMI composition RPC boundaries", () => {
     })).rejects.toThrow(/réponse de persistance/i);
     await expect(lockSpogomiTeams(fixture.supabase, { id: "event-1" }, "organizer")).rejects.toThrow(/réponse de verrouillage/i);
     await expect(moveParticipantToTeam({ supabase: fixture.supabase, event: { id: "event-1" }, participantId: "participant-1", teamId: null, actorClerkId: "organizer" })).rejects.toThrow(/réponse de déplacement/i);
+  });
+
+  it.each([
+    ["null", null],
+    ["an empty array", []],
+    ["a non-object", "locked"],
+    ["a non-finite team count", { already_processed: false, locked: true, teamCount: Number.POSITIVE_INFINITY, compositionRevision: 1 }],
+    ["an invalid optional division", { already_processed: false, locked: true, teamCount: 2, compositionRevision: 1, divisionId: 7 }],
+  ] as const)("rejects a lock response that is %s", async (_label, data) => {
+    const fixture = supabaseFor({}, { data });
+
+    await expect(lockSpogomiTeams(fixture.supabase, { id: "event-1" }, "organizer")).rejects.toThrow(/réponse de verrouillage/i);
+  });
+
+  it.each([
+    ["null", null],
+    ["an empty array", []],
+    ["a missing team id", { already_processed: false, participantId: "participant-1", compositionRevision: 1 }],
+    ["a non-finite revision", { already_processed: false, participantId: "participant-1", teamId: null, compositionRevision: Number.NaN }],
+    ["an invalid nullable team id", { already_processed: false, participantId: "participant-1", teamId: 7, compositionRevision: 1 }],
+  ] as const)("rejects a move response that is %s", async (_label, data) => {
+    const fixture = supabaseFor({}, { data });
+
+    await expect(moveParticipantToTeam({
+      supabase: fixture.supabase,
+      event: { id: "event-1" },
+      participantId: "participant-1",
+      teamId: null,
+      actorClerkId: "organizer",
+    })).rejects.toThrow(/réponse de déplacement/i);
   });
 
   it.each([

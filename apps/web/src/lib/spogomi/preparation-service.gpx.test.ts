@@ -96,6 +96,9 @@ describe("SPOGOMI official GPX synchronization", () => {
     { already_processed: false, eventId: "event-1" },
     { alreadyProcessed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", compositionRevision: 8, source: "official_reference", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: 1, inferredTopology: "loop" },
     { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", compositionRevision: Number.NaN, source: "official_reference", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: 1, inferredTopology: "loop" },
+    { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", compositionRevision: 8, source: "imported", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: 1, inferredTopology: "loop" },
+    { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", compositionRevision: 8, source: "official_reference", fileName: "route.gpx", pointCount: "2", referenceDistanceKm: 1, inferredTopology: "loop" },
+    { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", compositionRevision: 8, source: "official_reference", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: Number.POSITIVE_INFINITY, inferredTopology: "loop" },
   ])("rejects a malformed GPX synchronization DTO: %j", async (data) => {
     const rpc = vi.fn().mockResolvedValue({ data, error: null });
 
@@ -105,6 +108,18 @@ describe("SPOGOMI official GPX synchronization", () => {
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
     })).rejects.toThrow(/synchronisation.*invalide/i);
+  });
+
+  it("propagates an RPC failure without parsing it as a successful synchronization", async () => {
+    const rpcError = new Error("official route RPC unavailable");
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: rpcError });
+
+    await expect(attachOfficialGpx({
+      supabase: { rpc } as never,
+      event: spogomiPreparationEvent({ state: "in_progress" }),
+      userId: "organizer-1",
+      file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
+    })).rejects.toBe(rpcError);
   });
 
   it("keeps the preparation boundary fail-closed for a currently locked event", async () => {

@@ -13,7 +13,7 @@ vi.mock("@/lib/services/clerk", () => ({
 }));
 
 function installSupabaseResponseQueue(
-  responses: Array<{ data: unknown; error: null }>,
+  responses: Array<{ data: unknown; error: unknown }>,
 ): void {
   const maybeSingleMock = vi.fn();
   for (const response of responses) {
@@ -135,5 +135,95 @@ describe("applyCanonicalLegalContentMutation", () => {
     await expect(
       applyCanonicalLegalContentMutation(baseParams),
     ).rejects.toThrow("Canonical action moderation update returned invalid data");
+  });
+
+  it("keeps unsupported content types and missing ids as a no-op", async () => {
+    const { applyCanonicalLegalContentMutation } = await import(
+      "./legal-content-moderation"
+    );
+
+    await expect(applyCanonicalLegalContentMutation({
+      ...baseParams,
+      contentType: "partner",
+    })).resolves.toEqual({
+      supported: false,
+      found: false,
+      beforeState: {},
+      afterState: {},
+      authorEmail: null,
+    });
+    await expect(applyCanonicalLegalContentMutation({
+      ...baseParams,
+      contentId: null,
+    })).resolves.toEqual({
+      supported: false,
+      found: false,
+      beforeState: {},
+      afterState: {},
+      authorEmail: null,
+    });
+    expect(getSupabaseAdminClientMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a missing canonical action distinct from an invalid projection", async () => {
+    installSupabaseResponseQueue([{ data: null, error: null }]);
+    const { applyCanonicalLegalContentMutation } = await import(
+      "./legal-content-moderation"
+    );
+
+    await expect(applyCanonicalLegalContentMutation(baseParams)).resolves.toEqual({
+      supported: true,
+      found: false,
+      beforeState: {},
+      afterState: {},
+      authorEmail: null,
+    });
+  });
+
+  const supabaseErrorCases: Array<readonly [string, Array<{ data: unknown; error: unknown }>, string]> = [
+    ["read", [{ data: null, error: { code: "PGRST116" } }], "Canonical action moderation read failed"],
+    ["update", [
+      { data: { status: "approved", moderation_visibility: "visible", created_by_clerk_id: "author-1" }, error: null },
+      { data: null, error: { code: "42501" } },
+    ], "Canonical action moderation update failed"],
+  ];
+
+  it.each(supabaseErrorCases)("normalizes a Supabase %s error", async (_stage, responses, message) => {
+    installSupabaseResponseQueue(responses);
+    const { applyCanonicalLegalContentMutation } = await import(
+      "./legal-content-moderation"
+    );
+
+    await expect(applyCanonicalLegalContentMutation(baseParams)).rejects.toThrow(message);
+  });
+
+  it("does not resolve an email when the canonical author is absent", async () => {
+    installSupabaseResponseQueue([
+      {
+        data: {
+          status: "approved",
+          moderation_visibility: "visible",
+          created_by_clerk_id: null,
+        },
+        error: null,
+      },
+      {
+        data: {
+          status: "approved",
+          moderation_visibility: "hidden",
+          created_by_clerk_id: null,
+        },
+        error: null,
+      },
+    ]);
+    const { applyCanonicalLegalContentMutation } = await import(
+      "./legal-content-moderation"
+    );
+
+    await expect(applyCanonicalLegalContentMutation(baseParams)).resolves.toMatchObject({
+      found: true,
+      authorEmail: null,
+    });
+    expect(resolveEmailMock).not.toHaveBeenCalled();
   });
 });
