@@ -38,26 +38,51 @@ encore utilisées comme seuils bloquants par `quality:coverage`.
 | API et persistance applicative sensibles (`api-persistence`) | 85 % | 80 % | 85 % |
 | UI purement présentative (`ui-presentational`) | aucun minimum uniforme | aucun minimum | aucun minimum |
 | Nouveau code non critique (`new-code-non-critical`) | minimum 80 % des lignes modifiées, cible 90 % | selon le risque | selon le risque |
+| Risque non encore qualifié (`unclassified`) | aucune conformité annoncée | aucune conformité annoncée | aucune conformité annoncée |
 
 L'implémentation attribue chaque fichier Web instrumentable à un owner primaire
 déterministe : sécurité d'abord, puis API/persistance, métier, UI explicitement
-présentative, et enfin le fallback `new-code-non-critical`. Les règles sont
-ordonnées dans le moteur unique ; un fichier peut correspondre à plusieurs
-préfixes historiques, mais une seule famille de risque reçoit ses métriques.
+présentative, les chemins explicitement qualifiés non critiques, ou
+`unclassified` lorsque la qualification manque. Les règles sont ordonnées dans
+le moteur unique ; un fichier peut correspondre à plusieurs préfixes
+historiques, mais une seule famille de risque reçoit ses métriques.
 Les routes `src/app/api/**` restent donc dans la mesure et sont attribuées à
 `api-persistence`, sauf les routes d'account qui relèvent prioritairement de la
 sécurité. La projection historique `persistence` conserve son préfixe API pour
 ne pas invalider la baseline actuelle ; elle reste une vue informative de
 compatibilité et ne doit pas être additionnée aux familles de risque.
+La vue historique `actions` peut conserver son préfixe large
+`src/components/actions/` pour la compatibilité des baselines ; ce préfixe ne
+gouverne plus l'attribution primaire ni les seuils de risque.
 
-Les fichiers instrumentables non reconnus par une règle explicite ne sont pas
-abandonnés : ils reçoivent le fallback déterministe `new-code-non-critical`.
+Les propriétaires sensibles connus sont explicitement qualifiés dans le moteur,
+notamment le fournisseur de jetons Clerk/Supabase, les contrats runtime Chat,
+la gestion des rôles d'administration, la préparation métier SPOGOMI et la
+transition de modération. Le préfixe large `src/components/actions/` n'est
+plus assimilé au métier : seuls les sous-chemins de calcul ou de préparation
+explicitement identifiés le sont ; les autres restent à qualifier.
+
+Les fichiers instrumentables non reconnus par une règle explicite sont
+comptabilisés dans `unclassified`, avec une attribution
+`requires-risk-qualification`. Ils restent présents dans les métriques et les
+diagnostics, mais ne reçoivent jamais par défaut le seuil
+`new-code-non-critical`. Une ligne modifiée non qualifiée conserve son ratio
+LCOV et son fichier dans le rapport, mais produit
+`RISK_CLASSIFICATION_REQUIRED` au lieu d'une mesure de conformité. Si un
+domaine est `ENFORCE`, la présence d'un fichier non qualifié est bloquante ;
+elle ne peut pas abaisser silencieusement le seuil actif. Les chemins réellement
+non critiques doivent être ajoutés explicitement aux règles après qualification.
 Les fichiers non instrumentables restent documentés par le périmètre technique
 existant : tests et `__tests__`, déclarations `.d.ts`, fichiers générés, points
 d'entrée App Router (`page`, `layout`, `loading`, `error`, `not-found`,
 `robots`, `sitemap`, `template`, `default`) et fichiers de types purs
 explicitement listés. Un fichier n'est jamais exclu pour cause de faible
 couverture.
+
+Cette évolution incrémente l'empreinte de classification risque. Les rapports
+Web existants deviennent donc incompatibles jusqu'à une nouvelle mesure fiable,
+tandis que les baselines historiques et leurs domaines de compatibilité restent
+inchangés ; aucune baseline n'est relevée ou remplacée par ce correctif.
 
 Les métriques globales Web, mobile, Node et Python restent des indicateurs de
 suivi ; cette politique ne crée aucun objectif global obligatoire de 70 % ou
@@ -137,7 +162,8 @@ jamais devinée. Sans base, sans ligne instrumentable ou sans mesure LCOV
 complète, le résultat est `COVERAGE_CHANGED_LINES_STATUS: NOT_MEASURED`, et non
 `0 %`. Une ligne LCOV avec `DA:<ligne>,0` est au contraire une mesure réelle à
 `0 %`. Les lignes non critiques visent 80 % minimum et 90 % en cible ; les
-lignes critiques visent 90 %. Cette méthode reste `OBSERVE` tant que son coût,
+lignes critiques visent 90 %. Une ligne `unclassified` reste `NOT_MEASURED`
+pour la conformité jusqu'à sa qualification explicite. Cette méthode reste `OBSERVE` tant que son coût,
 sa reproductibilité et son rattachement au candidat n'ont pas été ratifiés.
 
 La commande de contrôle est :

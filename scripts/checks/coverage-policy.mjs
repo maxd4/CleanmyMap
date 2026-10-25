@@ -46,6 +46,11 @@ export const COVERAGE_RISK_FAMILIES = Object.freeze({
     target: Object.freeze({ lines: 90 }),
     otherMetrics: "according-to-risk",
   }),
+  unclassified: Object.freeze({
+    minimum: Object.freeze({ statements: null, lines: null, branches: null, functions: null }),
+    target: Object.freeze({ statements: null, lines: null, branches: null, functions: null }),
+    classification: "requires-risk-qualification",
+  }),
 });
 
 const COVERAGE_ENFORCEMENT_SCHEMA_VERSION = 1;
@@ -89,13 +94,6 @@ export const COVERAGE_ENFORCEMENT_POLICY = Object.freeze({
   }),
 });
 
-export const COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT = createHash("sha256")
-  .update(JSON.stringify({
-    schemaVersion: COVERAGE_ENFORCEMENT_SCHEMA_VERSION,
-    policy: COVERAGE_ENFORCEMENT_POLICY,
-  }))
-  .digest("hex");
-
 // The first matching rule owns a file. A file may match more than one rule for
 // compatibility reasons (for example, an account API route), but risk metrics
 // are aggregated through this primary selection exactly once per file.
@@ -103,6 +101,9 @@ export const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
   Object.freeze({
     domain: "security",
     patterns: Object.freeze([
+      "src/lib/clerk-supabase-token.ts",
+      "src/lib/chat/runtime-contracts.ts",
+      "src/lib/admin/role-management.ts",
       "src/lib/account/",
       "src/lib/auth/",
       "src/lib/authz",
@@ -126,6 +127,7 @@ export const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
   Object.freeze({
     domain: "business",
     patterns: Object.freeze([
+      "src/lib/admin/moderation/transition.ts",
       "src/lib/actions/",
       "src/lib/environmental-impact-estimator/",
       "src/lib/geo/",
@@ -133,11 +135,17 @@ export const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
       "src/lib/maps/",
       "src/lib/recycling/",
       "src/lib/route/",
+      "src/lib/spogomi/",
       "src/lib/waste/",
-      "src/components/actions/",
       "src/components/environmental-impact-estimator/",
       "src/components/map/",
       "src/components/maps/",
+      "src/components/actions/action-declaration/action-drawing-validation",
+      "src/components/actions/action-declaration/action-location.model",
+      "src/components/actions/action-declaration/operational-route",
+      "src/components/actions/action-declaration/payload",
+      "src/components/actions/action-drawing-map.geometry",
+      "src/components/actions/map/layers/actions-map-geometry",
     ]),
   }),
   Object.freeze({
@@ -148,14 +156,30 @@ export const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
       "src/components/ui/",
     ]),
   }),
+  // No path is implicitly non-critical. A future qualification must add an
+  // explicit prefix here; every other unmatched instrumented file is
+  // classified as `unclassified` and remains visible to the policy.
+  Object.freeze({
+    domain: "new-code-non-critical",
+    patterns: Object.freeze([]),
+  }),
 ]);
 
-const COVERAGE_RISK_POLICY_VERSION = 1;
+const COVERAGE_RISK_POLICY_VERSION = 2;
+export const COVERAGE_UNCLASSIFIED_RISK_DOMAIN = "unclassified";
 export const COVERAGE_RISK_POLICY_FINGERPRINT = createHash("sha256")
   .update(JSON.stringify({
     version: COVERAGE_RISK_POLICY_VERSION,
     families: COVERAGE_RISK_FAMILIES,
     rules: COVERAGE_RISK_CLASSIFICATION_RULES,
+  }))
+  .digest("hex");
+
+export const COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT = createHash("sha256")
+  .update(JSON.stringify({
+    schemaVersion: COVERAGE_ENFORCEMENT_SCHEMA_VERSION,
+    policy: COVERAGE_ENFORCEMENT_POLICY,
+    riskPolicyFingerprint: COVERAGE_RISK_POLICY_FINGERPRINT,
   }))
   .digest("hex");
 
@@ -356,13 +380,14 @@ export function classifyCoverageFile(file, { scope = "web" } = {}) {
   }
 
   const matches = riskMatches(normalizedPath);
-  const primary = matches[0] ?? { domain: "new-code-non-critical", pattern: null };
+  const primary = matches[0] ?? { domain: COVERAGE_UNCLASSIFIED_RISK_DOMAIN, pattern: null };
   return {
     scope,
     normalizedPath,
     domain: primary.domain,
     pattern: primary.pattern,
-    attribution: primary.pattern ? "ordered-primary-prefix" : "fallback",
+    attribution: primary.pattern ? "ordered-primary-prefix" : "requires-risk-qualification",
+    classificationStatus: primary.pattern ? "QUALIFIED" : "UNCLASSIFIED",
     matches,
   };
 }
@@ -565,7 +590,8 @@ export function parseLcovLineCoverage(content, { scope = "web" } = {}) {
 function changedLineTarget(domain) {
   if (["security", "business", "api-persistence"].includes(domain)) return COVERAGE_CHANGED_LINE_POLICY.targets.critical;
   if (domain === "ui-presentational") return COVERAGE_CHANGED_LINE_POLICY.uiPresentationalTarget;
-  return COVERAGE_CHANGED_LINE_POLICY.targets.nonCritical;
+  if (domain === "new-code-non-critical") return COVERAGE_CHANGED_LINE_POLICY.targets.nonCritical;
+  return null;
 }
 
 function changedLineEntries(changedLines, scope) {
@@ -615,7 +641,14 @@ export function measureChangedLineCoverage({
       const record = records.get(entry.path);
       const classification = classifyCoverageFile(entry.path, { scope });
       const domain = classification.domain;
-      const domainEntry = byDomain.get(domain) ?? { domain, target: changedLineTarget(domain), covered: 0, total: 0, missing: [] };
+      const domainEntry = byDomain.get(domain) ?? {
+        domain,
+        target: changedLineTarget(domain),
+        covered: 0,
+        total: 0,
+        missing: [],
+        classificationStatus: classification.classificationStatus,
+      };
       let fileCovered = 0;
       for (const line of entry.lines) {
         const hits = record?.get(line);
@@ -632,7 +665,14 @@ export function measureChangedLineCoverage({
         total += 1;
         domainEntry.total += 1;
       }
-      files.push({ path: entry.path, lines: entry.lines.length, covered: fileCovered, target: domainEntry.target, domain });
+      files.push({
+        path: entry.path,
+        lines: entry.lines.length,
+        covered: fileCovered,
+        target: domainEntry.target,
+        domain,
+        classificationStatus: classification.classificationStatus,
+      });
       byDomain.set(domain, domainEntry);
     }
     if (missing.length > 0) {
@@ -644,6 +684,21 @@ export function measureChangedLineCoverage({
         missing,
         byDomain: Object.fromEntries([...byDomain].map(([domain, value]) => [domain, value])),
         provenance,
+      };
+    }
+    const unclassified = [...byDomain.values()].filter(({ domain }) => domain === COVERAGE_UNCLASSIFIED_RISK_DOMAIN);
+    if (unclassified.length > 0) {
+      return {
+        status: "NOT_MEASURED",
+        reason: "RISK_CLASSIFICATION_REQUIRED",
+        files,
+        lines: { covered, total, pct: Number(((covered / total) * 100).toFixed(2)) },
+        observations: [],
+        failures: [],
+        unclassified,
+        byDomain: Object.fromEntries([...byDomain].map(([domain, value]) => [domain, value])),
+        provenance,
+        policyVersion: policyEntry.policyVersion,
       };
     }
     const observations = [...byDomain.values()]
@@ -718,10 +773,33 @@ export function evaluateCoveragePolicy(current, { scope = "web", policy = COVERA
   const assessments = [];
   const failures = [];
   const observations = [];
+  const hasEnforcedRiskDomain = Object.entries(scopePolicy.domains)
+    .some(([domain, entry]) => domain !== COVERAGE_UNCLASSIFIED_RISK_DOMAIN && entry.state === "ENFORCE");
+  let hasUnclassifiedFiles = false;
   for (const [domain, entry] of Object.entries(scopePolicy.domains)) {
     const family = COVERAGE_RISK_FAMILIES[domain];
     const thresholds = Object.entries(family.minimum).filter(([, value]) => value !== null);
     if (thresholds.length === 0) {
+      const currentDomain = current?.riskDomains?.[domain];
+      if (domain === COVERAGE_UNCLASSIFIED_RISK_DOMAIN) {
+        if (!currentDomain || currentDomain.files === 0) {
+          assessments.push({ domain, state: entry.state, status: "OBSERVE", reason: "NO_UNCLASSIFIED_FILES" });
+          continue;
+        }
+        hasUnclassifiedFiles = true;
+        const unclassified = {
+          domain,
+          state: entry.state,
+          status: "NOT_MEASURED",
+          reason: "RISK_CLASSIFICATION_REQUIRED",
+          files: currentDomain.files,
+        };
+        assessments.push(unclassified);
+        if (hasEnforcedRiskDomain) {
+          failures.push({ ...unclassified, code: "ENFORCE_CLASSIFICATION_UNQUALIFIED" });
+        }
+        continue;
+      }
       assessments.push({ domain, state: entry.state, status: "OBSERVE", reason: "NO_UNIFORM_THRESHOLD" });
       continue;
     }
@@ -751,6 +829,8 @@ export function evaluateCoveragePolicy(current, { scope = "web", policy = COVERA
   const enforceAssessments = assessments.filter(({ state }) => state === "ENFORCE");
   const status = failures.length > 0
     ? "FAIL"
+    : hasUnclassifiedFiles
+      ? "NOT_MEASURED"
     : enforceAssessments.length > 0 && enforceAssessments.every(({ status: domainStatus }) => domainStatus === "PASS")
       ? "PASS"
       : assessments.some(({ status: domainStatus }) => ["OBSERVE", "PASS"].includes(domainStatus))

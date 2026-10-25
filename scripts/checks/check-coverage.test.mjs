@@ -12,6 +12,7 @@ import {
   COVERAGE_RISK_FAMILIES,
   COVERAGE_RISK_POLICY_FINGERPRINT,
   COVERAGE_SCOPE_FINGERPRINT,
+  COVERAGE_UNCLASSIFIED_RISK_DOMAIN,
   MOBILE_COVERAGE_SCOPE_FINGERPRINT,
   aggregateRiskCoverage,
   aggregateCoverage,
@@ -185,6 +186,8 @@ test("la politique de risque expose les cibles futures sans les rendre bloquante
   assert.deepEqual(COVERAGE_RISK_FAMILIES["ui-presentational"].minimum, { statements: null, lines: null, branches: null, functions: null });
   assert.deepEqual(COVERAGE_RISK_FAMILIES["new-code-non-critical"].minimum, { lines: 80 });
   assert.deepEqual(COVERAGE_RISK_FAMILIES["new-code-non-critical"].target, { lines: 90 });
+  assert.deepEqual(COVERAGE_RISK_FAMILIES[COVERAGE_UNCLASSIFIED_RISK_DOMAIN].minimum, { statements: null, lines: null, branches: null, functions: null });
+  assert.equal(COVERAGE_RISK_FAMILIES[COVERAGE_UNCLASSIFIED_RISK_DOMAIN].classification, "requires-risk-qualification");
 });
 
 test("la politique versionnée valide ses états OBSERVE et ENFORCE", () => {
@@ -268,7 +271,37 @@ test("la classification primaire donne priorité à la sécurité sur les routes
   assert.equal(apiRoute.domain, "api-persistence");
   assert.equal(classifyCoverageFile("C:\\repo\\apps\\web\\src\\lib\\actions\\actions.ts").domain, "business");
   assert.equal(classifyCoverageFile("C:\\repo\\apps\\web\\src\\components\\ui\\button.tsx").domain, "ui-presentational");
-  assert.equal(classifyCoverageFile("C:\\repo\\apps\\web\\src\\lib\\notifications\\server.ts").domain, "new-code-non-critical");
+});
+
+test("les propriétaires sensibles connus sont qualifiés par le moteur canonique", () => {
+  const securityFiles = [
+    "src/lib/clerk-supabase-token.ts",
+    "src/lib/chat/runtime-contracts.ts",
+    "src/lib/admin/role-management.ts",
+  ];
+  for (const file of securityFiles) {
+    const result = classifyCoverageFile(file);
+    assert.equal(result.domain, "security", file);
+    assert.equal(result.classificationStatus, "QUALIFIED", file);
+  }
+
+  for (const file of ["src/lib/spogomi/preparation-service.ts", "src/lib/admin/moderation/transition.ts"]) {
+    assert.equal(classifyCoverageFile(file).domain, "business", file);
+  }
+});
+
+test("un chemin non reconnu reste visible et ne devient pas non critique par défaut", () => {
+  const result = classifyCoverageFile("src/lib/notifications/server.ts");
+  assert.equal(result.domain, COVERAGE_UNCLASSIFIED_RISK_DOMAIN);
+  assert.equal(result.attribution, "requires-risk-qualification");
+  assert.equal(result.classificationStatus, "UNCLASSIFIED");
+  assert.deepEqual(result.matches, []);
+});
+
+test("le préfixe large des actions ne transforme pas toute l'UI en métier critique", () => {
+  assert.equal(classifyCoverageFile("src/components/actions/action-creation-shell.tsx").domain, COVERAGE_UNCLASSIFIED_RISK_DOMAIN);
+  assert.equal(classifyCoverageFile("src/components/actions/action-drawing-map.geometry.ts").domain, "business");
+  assert.equal(classifyCoverageFile("src/components/ui/button.tsx").domain, "ui-presentational");
 });
 
 test("l'agrégation de risque compte chaque fichier instrumenté une seule fois", () => {
@@ -280,6 +313,17 @@ test("l'agrégation de risque compte chaque fichier instrumenté une seule fois"
   assert.equal(current.riskDomains.business.files, 2);
   assert.equal(current.riskDomains.security.files, 1);
   assert.equal(aggregateRiskCoverage(summary())["api-persistence"].attribution, "primary-file-owner");
+});
+
+test("l'agrégation conserve les fichiers non qualifiés sans double comptage", () => {
+  const currentSummary = summary();
+  currentSummary["C:\\repo\\apps\\web\\src\\lib\\notifications\\server.ts"] = currentSummary["C:\\repo\\apps\\web\\src\\lib\\auth\\auth.ts"];
+  const current = aggregateCoverage(currentSummary);
+  const riskFiles = Object.values(current.riskDomains).reduce((total, domain) => total + domain.files, 0);
+  assert.equal(current.files, 6);
+  assert.equal(riskFiles, current.files);
+  assert.equal(current.riskDomains[COVERAGE_UNCLASSIFIED_RISK_DOMAIN].files, 1);
+  assert.equal(current.riskDomains[COVERAGE_UNCLASSIFIED_RISK_DOMAIN].attribution, "primary-file-owner");
 });
 
 function withCoverageFixture(callback) {
@@ -374,20 +418,20 @@ test("la couverture mobile reste un scope indépendant sans domaines web", () =>
 
 test("le diff Git des lignes ajoutées et le LCOV restent bornés au candidat", () => {
   const diff = [
-    "diff --git a/apps/web/src/lib/feature.ts b/apps/web/src/lib/feature.ts",
-    "--- a/apps/web/src/lib/feature.ts",
-    "+++ b/apps/web/src/lib/feature.ts",
+    "diff --git a/apps/web/src/lib/actions/feature.ts b/apps/web/src/lib/actions/feature.ts",
+    "--- a/apps/web/src/lib/actions/feature.ts",
+    "+++ b/apps/web/src/lib/actions/feature.ts",
     "@@ -1,0 +1,2 @@",
     "+export const first = 1;",
     "+export const second = 2;",
   ].join("\n");
   const changed = parseChangedLinesFromDiff(diff);
-  assert.deepEqual([...changed.get("apps/web/src/lib/feature.ts")], [1, 2]);
+  assert.deepEqual([...changed.get("apps/web/src/lib/actions/feature.ts")], [1, 2]);
 
   const measured = measureChangedLineCoverage({
     changedLines: changed,
     lcovContent: [
-      "SF:apps/web/src/lib/feature.ts",
+      "SF:apps/web/src/lib/actions/feature.ts",
       "DA:1,1",
       "DA:2,0",
       "end_of_record",
@@ -395,8 +439,8 @@ test("le diff Git des lignes ajoutées et le LCOV restent bornés au candidat", 
   });
   assert.equal(measured.status, "OBSERVE");
   assert.deepEqual(measured.lines, { covered: 1, total: 2, pct: 50 });
-  assert.equal(measured.observations[0].target, 80);
-  assert.equal(measured.observations[0].gapPp, -30);
+  assert.equal(measured.observations[0].target, 90);
+  assert.equal(measured.observations[0].gapPp, -40);
 });
 
 test("les lignes ajoutées non instrumentables ou sans LCOV sont NOT_MEASURED, pas 0 %", () => {
@@ -408,8 +452,8 @@ test("les lignes ajoutées non instrumentables ou sans LCOV sont NOT_MEASURED, p
   assert.equal(entrypoint.reason, "NO_INSTRUMENTABLE_LINES");
 
   const missingLcov = measureChangedLineCoverage({
-    changedLines: [{ path: "apps/web/src/lib/feature.ts", lines: [1, 2] }],
-    lcovContent: "SF:apps/web/src/lib/feature.ts\nDA:1,1\nend_of_record",
+    changedLines: [{ path: "apps/web/src/lib/actions/feature.ts", lines: [1, 2] }],
+    lcovContent: "SF:apps/web/src/lib/actions/feature.ts\nDA:1,1\nend_of_record",
   });
   assert.equal(missingLcov.status, "NOT_MEASURED");
   assert.equal(missingLcov.reason, "LCOV_INCOMPLETE");
@@ -417,4 +461,32 @@ test("les lignes ajoutées non instrumentables ou sans LCOV sont NOT_MEASURED, p
   const missingBase = measureChangedLineCoverage();
   assert.equal(missingBase.status, "NOT_MEASURED");
   assert.equal(missingBase.reason, "BASE_REF_REQUIRED");
+});
+
+test("les lignes d'un fichier non qualifié restent mesurées mais sans seuil non critique", () => {
+  const result = measureChangedLineCoverage({
+    changedLines: [{ path: "apps/web/src/lib/notifications/server.ts", lines: [1, 2] }],
+    lcovContent: [
+      "SF:apps/web/src/lib/notifications/server.ts",
+      "DA:1,1",
+      "DA:2,0",
+      "end_of_record",
+    ].join("\n"),
+  });
+  assert.equal(result.status, "NOT_MEASURED");
+  assert.equal(result.reason, "RISK_CLASSIFICATION_REQUIRED");
+  assert.deepEqual(result.lines, { covered: 1, total: 2, pct: 50 });
+  assert.equal(result.files[0].domain, COVERAGE_UNCLASSIFIED_RISK_DOMAIN);
+  assert.equal(result.files[0].target, null);
+});
+
+test("une classification non qualifiée ne peut pas assouplir un domaine ENFORCE", () => {
+  const currentSummary = summary();
+  const securityFile = "C:\\repo\\apps\\web\\src\\lib\\auth\\auth.ts";
+  for (const metricName of COVERAGE_METRICS) setSummaryRowMetric(currentSummary, securityFile, metricName, 100);
+  currentSummary["C:\\repo\\apps\\web\\src\\lib\\notifications\\server.ts"] = currentSummary[securityFile];
+
+  const result = evaluateCoveragePolicy(aggregateCoverage(currentSummary), { policy: enforcedPolicy() });
+  assert.equal(result.status, "FAIL");
+  assert.ok(result.failures.some(({ code, domain }) => code === "ENFORCE_CLASSIFICATION_UNQUALIFIED" && domain === COVERAGE_UNCLASSIFIED_RISK_DOMAIN));
 });
