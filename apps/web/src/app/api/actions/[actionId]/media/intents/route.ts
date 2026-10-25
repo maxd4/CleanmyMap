@@ -15,12 +15,14 @@ export const runtime = "nodejs";
 // statically cached or replayed across action owners.
 export const dynamic = "force-dynamic";
 
+const NOT_ADMISSIBLE_MEDIA_MESSAGE = "Les photos de bilan ne sont pas admissibles dans l'état actuel de l'action.";
+
 function errorResponse(error: unknown) {
   if (error instanceof ActionMediaError) {
     if (error.code === "validation") return validationErrorResponse({ media: [error.message] });
     if (error.code === "forbidden") return forbiddenJsonResponse();
     if (error.code === "not_found") return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
-    if (error.code === "not_admissible") return NextResponse.json({ error: error.message, code: error.code }, { status: 409 });
+    if (error.code === "not_admissible") return NextResponse.json({ error: NOT_ADMISSIBLE_MEDIA_MESSAGE, code: error.code }, { status: 409 });
     if (error.code === "limit_reached") return NextResponse.json({ error: error.message, code: error.code }, { status: 409 });
     if (error.code === "conflict") return NextResponse.json({ error: error.message, code: error.code }, { status: 409 });
     if (error.code === "storage_missing") return NextResponse.json({ error: error.message, code: error.code }, { status: 422 });

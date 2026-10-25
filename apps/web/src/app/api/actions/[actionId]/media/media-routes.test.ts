@@ -50,6 +50,7 @@ import { ActionMediaError } from "@/lib/actions/action-media/action-media";
 const supabase = { from: vi.fn() };
 const identity = { userId: "owner-1", role: "benevole", activeRole: "benevole" };
 const params = Promise.resolve({ actionId: "action-1" });
+const notAdmissibleMessage = "Les photos de bilan ne sont pas admissibles dans l'état actuel de l'action.";
 
 function request(url: string, init?: RequestInit) {
   return new Request(`http://localhost${url}`, init);
@@ -121,6 +122,17 @@ describe("Action media HTTP boundaries", () => {
     expect(await response.text()).not.toContain("private detail");
   });
 
+  it("maps an inadmissible media listing to a stable conflict without exposing service details", async () => {
+    listActionMediaMock.mockRejectedValueOnce(new ActionMediaError("private storage detail", "not_admissible"));
+
+    const response = await listMedia(request("/api/actions/action-1/media"), { params });
+
+    expect(response.status).toBe(409);
+    const body = await response.json();
+    expect(body).toEqual({ error: notAdmissibleMessage });
+    expect(body.error).not.toContain("private storage detail");
+  });
+
   it("rejects malformed upload metadata before creating an intent", async () => {
     const response = await createUploadIntent(
       request("/api/actions/action-1/media/intents", {
@@ -174,7 +186,34 @@ describe("Action media HTTP boundaries", () => {
     });
   });
 
-  it("keeps finalization idempotent and maps an inadmissible action to conflict", async () => {
+  it("maps an inadmissible upload intent to a stable conflict without exposing service details", async () => {
+    createActionMediaUploadIntentMock.mockRejectedValueOnce(
+      new ActionMediaError("private storage detail", "not_admissible"),
+    );
+
+    const response = await createUploadIntent(
+      request("/api/actions/action-1/media/intents", {
+        method: "POST",
+        body: JSON.stringify({
+          originalName: "bilan.jpg",
+          mimeType: "image/jpeg",
+          sizeBytes: 1234,
+          width: 1200,
+          height: 800,
+          sortOrder: 0,
+          clientUploadId: "stable-client-upload-1",
+        }),
+      }),
+      { params },
+    );
+
+    expect(response.status).toBe(409);
+    const body = await response.json();
+    expect(body).toEqual({ error: notAdmissibleMessage, code: "not_admissible" });
+    expect(body.error).not.toContain("private storage detail");
+  });
+
+  it("maps an inadmissible finalization to a stable conflict without exposing service details", async () => {
     finalizeActionMediaMock.mockRejectedValueOnce(
       new ActionMediaError("private storage detail", "not_admissible"),
     );
@@ -186,7 +225,8 @@ describe("Action media HTTP boundaries", () => {
 
     expect(response.status).toBe(409);
     const body = await response.json();
-    expect(body).toEqual({ error: "private storage detail", code: "not_admissible" });
+    expect(body).toEqual({ error: notAdmissibleMessage, code: "not_admissible" });
+    expect(body.error).not.toContain("private storage detail");
     expect(finalizeActionMediaMock).toHaveBeenCalledWith(supabase, {
       userId: "owner-1",
       identity,
