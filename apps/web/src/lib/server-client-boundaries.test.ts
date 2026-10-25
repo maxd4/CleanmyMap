@@ -115,11 +115,16 @@ describe("Server/Client boundaries", () => {
   });
 
   it("keeps the admin page server-rendered without callback props on its report boundary", async () => {
-    const source = await readFile(
+    const pageSource = await readFile(
       path.join(SRC_ROOT, "app", "(app)", "admin", "page.tsx"),
       "utf8",
     );
+    const source = await readFile(
+      path.join(SRC_ROOT, "app", "(app)", "admin", "admin-page-content.tsx"),
+      "utf8",
+    );
 
+    expect(pageSource).not.toMatch(USE_CLIENT_PATTERN);
     expect(source).not.toMatch(USE_CLIENT_PATTERN);
     const reportUsage = source.match(/<ActionsReportPanel[\s\S]*?\/>/);
     expect(reportUsage?.[0]).toBeDefined();

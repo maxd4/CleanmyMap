@@ -81,7 +81,7 @@ describe("SPOGOMI consumer components", () => {
     vi.clearAllMocks();
     authState.isLoaded = true;
     authState.isSignedIn = false;
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({}), { status: 200, headers: { "content-type": "application/json" } }));
+    fetchMock.mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ accessUrl: "https://example.test/team-access", expiresAt: "2026-06-02T12:00:00.000Z" }), { status: 200, headers: { "content-type": "application/json" } })));
   });
 
   it("keeps countdown, empty and access states explicit", () => {
@@ -158,7 +158,7 @@ describe("SPOGOMI consumer components", () => {
     act(() => { links = create(<SpogomiTeamAccessLinks eventId="event-1" teams={[{ id: "team-1", team_number: 1, public_name: "Alpha" }]} />); });
     await act(async () => { links.root.findByType("button").props.onClick(); });
     expect(fetchMock).toHaveBeenCalledWith("/api/spogomi/events/event-1/teams/team-1/access", expect.objectContaining({ method: "POST" }));
-    expect(links.root.findAll((node) => node.type === "textarea" && node.props.value === "undefined")).toHaveLength(1);
+    expect(links.root.findAll((node) => node.type === "textarea" && node.props.value === "https://example.test/team-access")).toHaveLength(1);
     links.unmount();
   });
 

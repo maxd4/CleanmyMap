@@ -36,10 +36,12 @@ describe("waste UX registry wiring", () => {
   it("never persists precise geolocation in the anonymous signalement draft", () => {
     const quickForm = read("components/actions/quick-signalement-form.tsx");
     const anonymousBranch = quickForm.match(
-      /if \(!isAuthenticated\) \{[\s\S]*?setAuthRequired\(true\);/,
+      /if \(!params\.isAuthenticated\) \{[\s\S]*?params\.setAuthRequired\(true\);/,
     )?.[0];
 
-    expect(anonymousBranch).toContain("serializeQuickSignalementDraft({ recordType, selectedCategories })");
+    expect(anonymousBranch).toContain(
+      "serializeQuickSignalementDraft({ recordType: params.recordType, selectedCategories: params.selectedCategories })",
+    );
     expect(anonymousBranch).not.toContain("location");
     expect(quickForm).not.toContain("draft.location");
   });

@@ -9,10 +9,11 @@ describe("LeaderboardOptInSetting", () => {
   it("starts unchecked and explains the public projection in the canonical settings surface", () => {
     const markup = renderToStaticMarkup(<LeaderboardOptInSetting fr />);
 
-    expect(markup).toContain("Apparaître dans le classement public");
-    expect(markup).toContain("nom public");
-    expect(markup).toContain("XP validée");
-    expect(markup).toContain("Vos contributions détaillées");
+    expect(markup).toContain("classement public reste désactivé");
+    expect(source).toContain("Apparaître dans le classement public");
+    expect(source).toContain("nom public");
+    expect(source).toContain("XP validée");
+    expect(source).toContain("Vos contributions détaillées");
     expect(markup).not.toContain('checked=""');
   });
 

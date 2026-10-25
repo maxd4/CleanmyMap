@@ -79,7 +79,7 @@ export default defineConfig({
     },
     {
       name: "dashboard clerk validation",
-      testMatch: /dashboard-clerk-validation\.spec\.ts/,
+      testMatch: /dashboard-clerk-validation\.(?:spec|test)\.ts/,
       dependencies: ["global setup"],
       use: { ...devices["Desktop Chrome"] },
     },

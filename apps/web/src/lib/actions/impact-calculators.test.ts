@@ -231,6 +231,19 @@ describe("canonical action impact calculation", () => {
     });
   });
 
+  it("keeps invalid participant measures unavailable", () => {
+    for (const value of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const impact = computeActionImpactKpis(
+        { metadata: { cigaretteButts: value, volunteersCount: value } },
+      );
+
+      expect(impact.butts).toBe(0);
+      expect(impact.buttsKnown).toBe(false);
+      expect(impact.volunteers).toBe(0);
+      expect(impact.volunteersKnown).toBe(false);
+    }
+  });
+
   it("distinguishes an unknown butt measure from an explicitly measured zero", () => {
     expect(computeActionImpactKpis(makeContract({ cigaretteButts: null })).buttsKnown).toBe(false);
     expect(computeActionImpactKpis(makeContract({ cigaretteButts: 0 })).buttsKnown).toBe(true);
@@ -253,6 +266,16 @@ describe("canonical action impact calculation", () => {
       wasteKnownActions: 0,
       wasteActionCount: 0,
       wasteCoverageRate: 0,
+      butts: 0,
+      buttsKnown: false,
+      buttsKnownActions: 0,
+      buttsActionCount: 0,
+      buttsCoverageRate: 0,
+      volunteers: 0,
+      volunteersKnown: false,
+      volunteersKnownActions: 0,
+      volunteersActionCount: 0,
+      volunteersCoverageRate: 0,
       streetCleaningSavings: {
         wasteKg: 0,
         durationMinutes: 0,

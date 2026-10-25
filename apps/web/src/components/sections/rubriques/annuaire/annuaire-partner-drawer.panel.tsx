@@ -381,7 +381,7 @@ function AnnuaireDrawerFooter({ entry, fr, isEditorial, publicDestination, onClo
                   tone="primary"
                   variant="default"
                   ariaLabel={`${isEditorial ? (fr ? "Consulter la ressource" : "View resource") : (fr ? "Engager le contact" : "Get in touch")} — ${entry.name}`}
-                  className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-sm font-black uppercase tracking-[0.2em] text-white shadow-[0_10px_30px_rgba(139,92,246,0.3)] hover:bg-violet-500"
+                  className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-sm font-black uppercase tracking-[0.2em] text-white hover:bg-violet-500"
                 >
                   <a href={publicDestination.url} target="_blank" rel="noopener noreferrer">
                     <span>{isEditorial ? (fr ? "Consulter la ressource" : "View resource") : (fr ? "Engager le contact" : "Get in touch")}</span>
@@ -394,7 +394,7 @@ function AnnuaireDrawerFooter({ entry, fr, isEditorial, publicDestination, onClo
                   tone="primary"
                   variant="default"
                   ariaLabel={fr ? "Canal public indisponible" : "Public channel unavailable"}
-                  className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-sm font-black uppercase tracking-[0.2em] text-white shadow-[0_10px_30px_rgba(139,92,246,0.3)]"
+                   className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-sm font-black uppercase tracking-[0.2em] text-white"
                 >
                   <span>{isEditorial ? (fr ? "Ressource indisponible" : "Resource unavailable") : (fr ? "Contact indisponible" : "Contact unavailable")}</span>
                   <MessageSquare size={18} className="ml-3" />

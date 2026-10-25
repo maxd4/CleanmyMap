@@ -2,9 +2,10 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import strykerConfig from "../../apps/web/stryker.config.mjs";
+import { gitExecutable } from "../ci/git-executable.mjs";
 import {
   assertMutationBaselineFresh,
   compareMutationReport,
@@ -19,6 +20,20 @@ const baselinePath = path.join(repositoryRoot, "scripts", "checks", "mutation-ba
 const reportPath = path.join(repositoryRoot, "artifacts", "quality-hardening", "mutation", "stryker-report.json");
 const runnerPath = path.join(repositoryRoot, "node_modules", "@stryker-mutator", "core", "bin", "stryker.js");
 
+function mutationReportProvenance() {
+  const candidateSha = process.env.CMM_DYNAMIC_CANDIDATE_SHA
+    ?? execFileSync(gitExecutable(), ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  const worktreeState = execFileSync(gitExecutable(), ["status", "--short"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  const attributable = /^[0-9a-f]{40}$/i.test(candidateSha) && worktreeState.length === 0;
+  return {
+    sourceSha: attributable ? candidateSha : null,
+    candidateSha: attributable ? candidateSha : null,
+    candidateScope: process.env.CMM_DYNAMIC_CANDIDATE_SHA ? "DYNAMIC_CANDIDATE" : "WORKTREE",
+    provenance: attributable ? "EXACT_CANDIDATE" : "WORKTREE_LIVE_NOT_ATTRIBUTABLE",
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 function runMutation() {
   if (!fs.existsSync(runnerPath)) throw new Error("HOST_ENVIRONMENT: Stryker 10.0.0 is not installed.");
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
@@ -31,7 +46,10 @@ function runMutation() {
     throw new Error(`Mutation runner failed with exit ${result.status}: ${result.stderr || result.stdout || "no output"}`);
   }
   if (!fs.existsSync(reportPath)) throw new Error("Mutation report missing after Stryker run.");
-  return JSON.parse(fs.readFileSync(reportPath, "utf8"));
+  const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+  const enriched = { ...report, ...mutationReportProvenance() };
+  fs.writeFileSync(reportPath, `${JSON.stringify(enriched, null, 2)}\n`, "utf8");
+  return enriched;
 }
 
 export function runMutationPolicy() {

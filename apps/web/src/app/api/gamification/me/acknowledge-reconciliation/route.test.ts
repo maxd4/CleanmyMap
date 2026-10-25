@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireAuthenticatedAccessMock, getSupabaseServerClientMock, handleApiErrorMock } = vi.hoisted(() => ({
+const { requireAuthenticatedAccessMock, getSupabaseServerClientMock, handleApiErrorMock, parseJsonBodyWithValidationMock } = vi.hoisted(() => ({
   requireAuthenticatedAccessMock: vi.fn(),
   getSupabaseServerClientMock: vi.fn(),
   handleApiErrorMock: vi.fn((error: unknown) => NextResponse.json({ error: String(error) }, { status: 500 })),
+  parseJsonBodyWithValidationMock: vi.fn(),
 }));
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: requireAuthenticatedAccessMock }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: getSupabaseServerClientMock }));
-vi.mock("@/lib/http/api-errors", () => ({ handleApiError: handleApiErrorMock }));
+vi.mock("@/lib/http/api-errors", () => ({
+  handleApiError: handleApiErrorMock,
+  parseJsonBodyWithValidation: parseJsonBodyWithValidationMock,
+}));
 
 import { POST } from "./route";
 
@@ -36,6 +40,12 @@ describe("POST /api/gamification/me/acknowledge-reconciliation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
+    parseJsonBodyWithValidationMock.mockImplementation(async (request: Request, schema: { safeParse(value: unknown): { success: true; data: { notificationId: string } } | { success: false } }) => {
+      const parsed = schema.safeParse(await request.json().catch(() => null));
+      return parsed.success
+        ? { ok: true, data: parsed.data }
+        : { ok: false, response: NextResponse.json({ error: "notificationId requis." }, { status: 400 }) };
+    });
   });
 
   it("acknowledges only the requested receipt for the authenticated user", async () => {

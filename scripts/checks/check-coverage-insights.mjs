@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { validateCoverageEvidence } from "./coverage-evidence.mjs";
 import { COVERAGE_METRICS } from "./coverage-policy.mjs";
+import { validateCoveragePublicationProof } from "../ci/coverage-publication.mjs";
 import { REPORT_DEFINITIONS, validateSonarCoverageReports } from "./prepare-sonarqube-coverage.mjs";
 
 const COVERAGE_INSIGHTS_SCHEMA_VERSION = 1;
@@ -173,7 +174,7 @@ function emptyScope(definition, state, diagnostics = []) {
   };
 }
 
-function buildScope({ root, auditedSha, definition, fsApi, validateEvidence, validateSonar }) {
+function buildScope({ root, auditedSha, definition, fsApi, validateEvidence, validatePublicationProof, validateSonar }) {
   const diagnostics = [];
   let validation = null;
   try {
@@ -199,7 +200,16 @@ function buildScope({ root, auditedSha, definition, fsApi, validateEvidence, val
       evidenceState = "EVIDENCE_UNVERIFIED";
       diagnostics.push({ code: "COVERAGE_EVIDENCE_UNVERIFIED", message: error instanceof Error ? error.message : String(error) });
     }
-  } else diagnostics.push({ code: "COVERAGE_EVIDENCE_NOT_ATTESTED", message: `${definition.scope} has a report but no candidate evidence artifact` });
+  } else {
+    try {
+      if (!auditedSha) throw new Error("coverage publication proof requires an audited candidate SHA");
+      validatePublicationProof({ repositoryRoot: root, candidateSha: auditedSha, scope: definition.scope });
+      evidenceState = "MEASURED";
+    } catch (error) {
+      evidenceState = "EVIDENCE_UNVERIFIED";
+      diagnostics.push({ code: "COVERAGE_EVIDENCE_UNVERIFIED", message: error instanceof Error ? error.message : String(error) });
+    }
+  }
 
   try {
     const summary = definition.format === "cobertura" ? null : readJson(repositoryPath(root, definition.summaryPath), fsApi);
@@ -258,9 +268,9 @@ function duplicationInsights(report) {
   return { state: scopes.some((entry) => entry.state === "MEASURED") ? "MEASURED" : "NOT_MEASURED", threshold: DUPLICATION_WARNING_THRESHOLD, scopes, warnings, diagnostics: [] };
 }
 
-export function buildCoverageInsightsReport({ root = process.cwd(), auditedSha = null, fsApi = fs, reports = REPORT_DEFINITIONS, validateEvidence: validateEvidenceFn = validateCoverageEvidence, validateSonar: validateSonarFn = validateSonarCoverageReports, duplicationReport = null } = {}) {
+export function buildCoverageInsightsReport({ root = process.cwd(), auditedSha = null, fsApi = fs, reports = REPORT_DEFINITIONS, validateEvidence: validateEvidenceFn = validateCoverageEvidence, validatePublicationProof: validatePublicationProofFn = validateCoveragePublicationProof, validateSonar: validateSonarFn = validateSonarCoverageReports, duplicationReport = null } = {}) {
   const startedAt = Date.now();
-  const scopes = reports.map((definition) => buildScope({ root, auditedSha, definition, fsApi, validateEvidence: validateEvidenceFn, validateSonar: validateSonarFn }));
+  const scopes = reports.map((definition) => buildScope({ root, auditedSha, definition, fsApi, validateEvidence: validateEvidenceFn, validatePublicationProof: validatePublicationProofFn, validateSonar: validateSonarFn }));
   const duplication = duplicationInsights(duplicationReport);
   const warnings = [...scopes.flatMap((scope) => scope.warnings), ...duplication.warnings];
   const diagnostics = [...scopes.flatMap((scope) => scope.diagnostics), ...duplication.diagnostics];

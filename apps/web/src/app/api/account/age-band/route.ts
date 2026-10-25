@@ -25,6 +25,8 @@ function responseWithAgeBand(
   ageBand: ReturnType<typeof parseAgeBand>,
   parentalConsentVerified: boolean,
 ) {
+  // Cache/no-store justification: age-band and parental-consent state is private,
+  // user-specific metadata; no-store prevents shared-cache disclosure.
   const response = NextResponse.json({
     ageBand,
     parentalConsentVerified,

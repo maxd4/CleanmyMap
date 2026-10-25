@@ -121,7 +121,7 @@ describe("StorageUsagePanel", () => {
   });
 
   it("performs one initial read and delegates refresh to SWR mutate", async () => {
-    const mutate = vi.fn();
+    const mutate = vi.fn().mockResolvedValue(undefined);
     mocks.useSWR.mockReturnValue({
       data: { status: "ok", current, history: [], warnings: [], cron: null },
       error: undefined,

@@ -1,11 +1,14 @@
-import type {
-  ActionDrawing,
-  ActionGpxImportMetadata,
-  ActionLocationCoordinates,
-} from "@/lib/actions/types";
+import type { ActionDrawing } from "@/lib/actions/types";
 import type { FormState } from "./types";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 import { restoreDraftFields } from "./draft-storage-preparation";
+import {
+  hasValidGpxPair,
+  isRecord,
+  parseCoordinates,
+  parseDrawing,
+  parseGpxImport,
+} from "./draft-storage-geometry";
 
 export const ACTION_DECLARATION_DRAFT_KEY = "cmm_action_draft";
 export const ACTION_DECLARATION_DRAFT_DATE_KEY = "cmm_action_draft_date";
@@ -108,63 +111,6 @@ const FORM_STATE_KEYS = [
   "triQuality",
   "placeType",
 ] as const satisfies readonly (keyof FormState)[];
-
-function isFiniteInRange(value: unknown, minimum: number, maximum: number): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value >= minimum && value <= maximum;
-}
-
-function parseCoordinates(value: unknown): ActionLocationCoordinates | null {
-  if (!isRecord(value)) return null;
-  if (!isFiniteInRange(value.latitude, -90, 90)) return null;
-  if (!isFiniteInRange(value.longitude, -180, 180)) return null;
-  return { latitude: value.latitude, longitude: value.longitude };
-}
-
-function parseDrawingPoint(value: unknown): [number, number] | null {
-  if (!Array.isArray(value) || value.length !== 2) return null;
-  if (!isFiniteInRange(value[0], -90, 90)) return null;
-  if (!isFiniteInRange(value[1], -180, 180)) return null;
-  return [value[0], value[1]];
-}
-
-function parseDrawing(value: unknown): ActionDrawing | null {
-  if (!isRecord(value)) return null;
-  if (value.kind !== "polyline" && value.kind !== "polygon") return null;
-  if (!Array.isArray(value.coordinates)) return null;
-
-  const coordinates: [number, number][] = [];
-  for (const point of value.coordinates) {
-    const parsedPoint = parseDrawingPoint(point);
-    if (!parsedPoint) return null;
-    coordinates.push(parsedPoint);
-  }
-
-  const minimumPoints = value.kind === "polygon" ? 3 : 2;
-  return coordinates.length >= minimumPoints
-    ? { kind: value.kind, coordinates }
-    : null;
-}
-
-function parseGpxImport(value: unknown): ActionGpxImportMetadata | null {
-  if (!isRecord(value) || value.source !== "gpx_import") return null;
-  if (!isFiniteInRange(value.observedDistanceKm, 0, Number.POSITIVE_INFINITY)) return null;
-  if (typeof value.pointCount !== "number" || !Number.isInteger(value.pointCount) || value.pointCount < 2) {
-    return null;
-  }
-  if (value.inferredTopology !== "loop" && value.inferredTopology !== "point_to_point") return null;
-
-  return {
-    source: "gpx_import",
-    observedDistanceKm: value.observedDistanceKm,
-    pointCount: value.pointCount,
-    inferredTopology: value.inferredTopology,
-    ...(typeof value.fileName === "string" ? { fileName: value.fileName } : {}),
-  };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
 
 type DraftStorageKeys = {
   storageKey: string;
@@ -411,19 +357,6 @@ function parseStoredDraft(saved: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
-}
-
-function hasValidGpxPair(
-  parsed: Record<string, unknown>,
-  gpxImport: ActionGpxImportMetadata | null,
-  manualDrawing: ActionDrawing | null,
-): boolean {
-  return Boolean(
-    gpxImport &&
-      manualDrawing &&
-      parsed.manualDrawingSource === "gpx_import" &&
-      gpxImport.pointCount === manualDrawing.coordinates.length,
-  );
 }
 
 function restoreDraftForm(

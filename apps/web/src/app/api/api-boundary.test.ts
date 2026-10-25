@@ -59,6 +59,45 @@ function withoutComments(source: string): string {
     .replace(/(^|\s)\/\/.*$/gm, "$1");
 }
 
+function resolveLocalModulePath(fromPath: string, specifier: string): string | null {
+  const basePath = join(dirname(fromPath), specifier);
+  const candidates = [
+    basePath,
+    `${basePath}.ts`,
+    `${basePath}.tsx`,
+    `${basePath}.mjs`,
+    `${basePath}.js`,
+    join(basePath, "index.ts"),
+    join(basePath, "index.tsx"),
+  ];
+  return candidates.find((candidate) => existsSync(candidate)) ?? null;
+}
+
+function collectLocalModuleSources(
+  path: string,
+  source: string,
+  moduleSources: string[],
+  visited: Set<string>,
+): void {
+  if (visited.has(path)) return;
+  visited.add(path);
+  moduleSources.push(source);
+
+  const imports = source.matchAll(
+    /(?:import|export)(?:[\s\S]*?from\s*)?\(?\s*["'](\.{1,2}\/[^"']+)["']\s*\)?/g,
+  );
+  for (const match of imports) {
+    const targetPath = resolveLocalModulePath(path, match[1] ?? "");
+    if (!targetPath) continue;
+    collectLocalModuleSources(
+      targetPath,
+      readFileSync(targetPath, "utf8"),
+      moduleSources,
+      visited,
+    );
+  }
+}
+
 function missingEvidence(
   entry: ApiAuthorizationContractEntry,
   routeEntry: { source: string; methods: Map<ApiHttpMethod, string> },
@@ -78,7 +117,8 @@ function missingEvidence(
 
 function resolveRouteMethods(path: string, source: string) {
   const methods = extractRouteMethods(source);
-  const moduleSources = [source];
+  const moduleSources: string[] = [];
+  collectLocalModuleSources(path, source, moduleSources, new Set());
   const reExports = Array.from(
     source.matchAll(
       /export\s*\{\s*(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\}\s*from\s*["']([^"']+)["']/g,
@@ -88,13 +128,12 @@ function resolveRouteMethods(path: string, source: string) {
   for (const match of reExports) {
     const method = match[1] as ApiHttpMethod;
     const specifier = match[2];
-    const targetPath = join(dirname(path), `${specifier}.ts`);
-    if (!existsSync(targetPath)) continue;
+    const targetPath = resolveLocalModulePath(path, specifier);
+    if (!targetPath) continue;
     const targetSource = readFileSync(targetPath, "utf8");
     const targetMethods = extractRouteMethods(targetSource);
     const methodSource = targetMethods.get(method);
     if (methodSource) methods.set(method, methodSource);
-    moduleSources.push(targetSource);
   }
 
   return { methods, source: moduleSources.join("\n") };

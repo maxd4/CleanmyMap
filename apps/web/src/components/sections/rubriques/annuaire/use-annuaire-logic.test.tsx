@@ -202,7 +202,7 @@ describe("useAnnuaireLogic canonical results", () => {
   });
 
   it("distinguishes initial loading, an unavailable source, and stale data", () => {
-    const retry = vi.fn();
+    const retry = vi.fn().mockResolvedValue(undefined);
     const sourceError = new Error("published_directory_unavailable");
     useSWRMock.mockReturnValue({
       data: { status: "ok", items: [] },

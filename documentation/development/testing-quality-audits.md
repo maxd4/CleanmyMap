@@ -343,9 +343,11 @@ La couverture Web n’est déclarée disponible par cet audit que si
 `apps/web/coverage/coverage-evidence.json` passe le validateur canonique, si
 son `gitHead`, sa configuration, son empreinte de candidat et son résumé
 convergent vers le SHA audité, et si le worktree permet cette vérification. Un
-résumé présent sur disque ne constitue pas seul une preuve fraîche. Pour le
-mobile, l’absence actuelle de producteur de preuve dédié reste explicitement
-`EVIDENCE_NOT_PRODUCED` et ne signifie ni couverture nulle ni mesure exécutée.
+résumé présent sur disque ne constitue pas seul une preuve fraîche. Les
+rapports mobile, Node et Python sont contrôlés séparément par leur preuve de
+publication canonique, rattachée au même SHA et au même périmètre ; une preuve
+absente, périmée ou produite depuis un worktree non propre reste
+`EVIDENCE_UNVERIFIED` et ne signifie ni couverture nulle ni mesure exécutée.
 Les références historiques non rejouées sont `UNVERIFIABLE_HISTORICAL_REFERENCE`.
 
 ### Évidence compacte des gates de qualité

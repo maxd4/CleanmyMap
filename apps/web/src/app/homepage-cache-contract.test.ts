@@ -17,7 +17,7 @@ describe("homepage cache contract", () => {
     const route = read("./api/homepage/activity/route.ts");
     const dataCache = read("../lib/actions/unified-source/unified-source-cache.ts");
     const component = read(
-      "../components/accueil/accueil-community-credibility.tsx",
+      "../components/accueil/accueil-community-credibility-hook.ts",
     );
 
     expect(route).toMatch(/export const revalidate = 600/);

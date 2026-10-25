@@ -16,7 +16,7 @@ export const chatAuthorizationContract = {
       evidence: [
         "auth()",
         "getCurrentUserIdentity",
-        "canAccessChatChannel",
+        "loadChatAccessContext",
         "resolveActionDiscussionAccess",
         "sender_id",
       ],
@@ -36,9 +36,9 @@ export const chatAuthorizationContract = {
       evidence: [
         "auth()",
         "getCurrentUserIdentity",
-        "canAccessChatChannel",
-        "resolveActionDiscussionAccess",
-        "sender_id",
+        "validateChatPostRequest",
+        "processValidatedChatPost",
+        "userId",
       ],
       evidenceScope: "module",
     },

@@ -291,7 +291,14 @@ test("une validation ENFORCE vérifie la preuve même sans mode checker-only", (
     const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
     let evidenceArguments;
     assert.throws(
-      () => runCoverageCheck({ paths, enforcementPolicy: enforcedPolicy(), currentCommit: candidateSha }),
+      () => runCoverageCheck({
+        paths,
+        enforcementPolicy: enforcedPolicy(),
+        currentCommit: candidateSha,
+        validateEvidence: () => {
+          throw new Error("Coverage evidence incomplete or unreadable");
+        },
+      }),
       /Coverage evidence incomplete or unreadable/,
     );
     const result = runCoverageCheck({

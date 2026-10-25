@@ -220,10 +220,11 @@ export const actionsAuthorizationContract = {
       evidence: [
         "requireActionRequestAccess",
         "canManageAction",
-        "canManageActionsGlobally",
-        "canEditValidatedImpact",
-        "appendActionModerationAudit",
+        "preparePatchMutation",
+        "executePreparedActionUpdate",
       ],
+      handlerEvidence: ["requireActionRequestAccess", "executePatchRequest"],
+      evidenceScope: "module",
     },
   },
   "actions/[actionId]/administrative-requirements": {

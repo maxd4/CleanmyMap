@@ -162,16 +162,16 @@ export const platformAuthorizationContract = {
     GET: {
       expected: "Authenticated owner may export the structured JSON projection of their immutable Reports snapshot",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess before owner-scoped snapshot lookup and scientific export projection",
-      evidence: ["requireAuthenticatedAccess", "getReportGenerationSnapshotById", "buildReportScientificExport"],
+      actual: "requireReportGenerationAccess before owner-scoped snapshot lookup and scientific export projection",
+      evidence: ["requireReportGenerationAccess", "executeReportGenerationRoute", "buildReportScientificExport"],
     },
   },
   "reports/generations/[id]/csv": {
     GET: {
       expected: "Authenticated owner may export the tabular CSV projection of their immutable Reports snapshot",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess before owner-scoped snapshot lookup and scientific CSV projection",
-      evidence: ["requireAuthenticatedAccess", "getReportGenerationSnapshotById", "buildReportScientificCsv"],
+      actual: "requireReportGenerationAccess before owner-scoped snapshot lookup and scientific CSV projection",
+      evidence: ["requireReportGenerationAccess", "executeReportGenerationRoute", "buildReportScientificCsv"],
     },
   },
   "reports/generations/[id]/share": {

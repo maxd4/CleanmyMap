@@ -215,10 +215,10 @@ export const adminCommunityAuthorizationContract = {
       evidenceScope: "module",
     },
     POST: {
-      expected: "Authenticated user creates an event owned by current user",
-      dimensions: ["authentication", "ownership"],
-      actual: "auth() + organizer_clerk_id from current session",
-      evidence: ["auth()", "organizer_clerk_id"],
+      expected: "Authenticated user receives the retired-event response",
+      dimensions: ["authentication"],
+      actual: "auth() + userId guard before the explicit 410 retirement response",
+      evidence: ["auth()", "userId"],
     },
   },
   "community/funnel.csv": {

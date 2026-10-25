@@ -271,8 +271,12 @@ describe("/admin data availability contract", () => {
   });
 
   it("guards the /admin surface against removed artificial copy", () => {
-    const source = readFileSync(
+    const pageSource = readFileSync(
       new URL("../../app/(app)/admin/page.tsx", import.meta.url),
+      "utf8",
+    );
+    const source = readFileSync(
+      new URL("../../app/(app)/admin/admin-page-content.tsx", import.meta.url),
       "utf8",
     );
     const maxToolsSource = readFileSync(
@@ -280,6 +284,7 @@ describe("/admin data availability contract", () => {
       "utf8",
     );
 
+    expect(pageSource).not.toContain("loadPilotageOverview");
     expect(source).not.toContain("loadPilotageOverview");
     expect(source).not.toContain("Prévision prochaine");
     expect(source).not.toContain("100 - (publicationStatus.pending");

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const smoke = readFileSync(new URL("../../../supabase/tests/spogomi-mixed-division-smoke.sql", import.meta.url), "utf8");
 const workflow = readFileSync(new URL("../../../../../.github/workflows/e2e-supabase.yml", import.meta.url), "utf8");
+const proofRunner = readFileSync(new URL("../../../../../scripts/ci/run-supabase-sql-proof.mjs", import.meta.url), "utf8");
 
 describe("SPOGOMI mixed-division PostgreSQL smoke STATIC_CONTRACT", () => {
   it("keeps the smoke transaction reversible and exercises idempotence plus division isolation", () => {
@@ -21,7 +22,9 @@ describe("SPOGOMI mixed-division PostgreSQL smoke STATIC_CONTRACT", () => {
 
   it("runs this exact SQL in the authorized ephemeral PostgreSQL job", () => {
     expect(workflow).toContain('apps/web/supabase/tests/spogomi-mixed-division-smoke.sql');
-    expect(workflow).toContain('Execute SPOGOMI mixed-division PostgreSQL contract');
-    expect(workflow).toContain('supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/spogomi-mixed-division-smoke.sql)"');
+    expect(workflow).toContain("Execute and attest all existing PostgreSQL proofs");
+    expect(workflow).toContain("scripts/ci/run-supabase-sql-proof.mjs");
+    expect(proofRunner).toContain('"apps/web/supabase/tests/spogomi-mixed-division-smoke.sql"');
+    expect(proofRunner).toContain("EXECUTED_DB_CONTRACT: SPOGOMI mixed-division closure and replay contract passed");
   });
 });

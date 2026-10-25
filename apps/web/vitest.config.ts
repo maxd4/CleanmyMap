@@ -10,6 +10,7 @@ export default defineConfig({
   test: {
     globals: true,
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    exclude: ["src/**/__codex-*.test.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text-summary", "json-summary", "lcovonly"],
