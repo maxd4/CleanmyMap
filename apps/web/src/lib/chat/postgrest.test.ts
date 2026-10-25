@@ -3,8 +3,41 @@ import {
   dedupeById,
   escapePostgrestLikePattern,
   mergeRowGroupsById,
+  parseChatRows,
+  parseChatSingleRow,
+  parseChatSupabaseResult,
   sortByCreatedAtAsc,
 } from "./postgrest";
+
+describe("Chat Supabase boundary parsers", () => {
+  it("keeps valid result envelopes and rejects malformed row collections", () => {
+    const result = parseChatSupabaseResult({
+      data: [{ id: "message-1" }],
+      error: null,
+      count: null,
+    });
+
+    expect(result.error).toBeNull();
+    expect(parseChatRows(result.data, (value): value is { id: string } =>
+      typeof value === "object" && value !== null && !Array.isArray(value) &&
+      "id" in value && typeof value.id === "string",
+    )).toEqual([{ id: "message-1" }]);
+    expect(parseChatRows({ id: "message-1" }, (value): value is { id: string } =>
+      typeof value === "object" && value !== null,
+    )).toBeNull();
+  });
+
+  it("fails closed for invalid envelopes and single rows", () => {
+    expect(parseChatSupabaseResult({ data: "invalid", error: { message: "boom" } })).toMatchObject({
+      data: "invalid",
+      error: { message: "boom" },
+    });
+    expect(parseChatSingleRow({ id: 42 }, (value): value is { id: string } =>
+      typeof value === "object" && value !== null && !Array.isArray(value) &&
+      "id" in value && typeof value.id === "string",
+    )).toBeNull();
+  });
+});
 
 describe("escapePostgrestLikePattern", () => {
   it("escapes wildcard and backslash characters", () => {

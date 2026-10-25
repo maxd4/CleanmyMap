@@ -23,22 +23,15 @@ import {
   type ChatPollOption,
 } from "@/lib/chat/polls";
 import { sortByCreatedAtAsc } from "@/lib/chat/postgrest";
+import {
+  isChatPollOptionRuntimeRow,
+  type ChatMessageRuntimeRow,
+  type CurrentChatProfileRuntimeRow,
+} from "@/lib/chat/runtime-contracts";
 export { sendMessageSchemaForUser } from "./route.validation";
 
-export type CurrentProfileRow = {
-  id: string;
-  display_name: string | null;
-  handle: string | null;
-  paris_arrondissement: number | null;
-  role_label: string | null;
-  metadata: Record<string, unknown> | null;
-};
-
-export type ChatMessageRow = {
-  id: string;
-  created_at: string;
-  [key: string]: unknown;
-};
+export type CurrentProfileRow = CurrentChatProfileRuntimeRow;
+export type ChatMessageRow = ChatMessageRuntimeRow;
 
 export function validateTopicForChannel(
   channelType: ChatChannelType,
@@ -83,9 +76,10 @@ export function validateTopicRequestForChannel(
   if (results.length === 0 || results.some((result) => result.error || !result.topicId)) {
     return { topicId: null, topicIds: null, error: "Ce groupe de salons n'est pas disponible dans ce canal." };
   }
+  const validTopicIds = results.flatMap((result) => result.topicId ? [result.topicId] : []);
   return {
     topicId: null,
-    topicIds: results.map((result) => result.topicId as ChatTopicId),
+    topicIds: validTopicIds,
   };
 }
 
@@ -220,7 +214,7 @@ export const messageSelect =
 
 export function normalizeChatMessageRow(row: ChatMessageRow): ChatMessageRow {
   const pollOptions = Array.isArray(row.poll_options)
-    ? [...(row.poll_options as ChatPollOption[])]
+    ? row.poll_options.filter(isChatPollOptionRuntimeRow)
         .map((option) => ({
           ...option,
           voteCount:
@@ -229,7 +223,7 @@ export function normalizeChatMessageRow(row: ChatMessageRow): ChatMessageRow {
               : 0,
         }))
         .sort((left, right) => left.position - right.position)
-    : [];
+    : [] satisfies ChatPollOption[];
 
   return {
     ...row,

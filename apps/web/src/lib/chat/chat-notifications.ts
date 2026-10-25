@@ -1,25 +1,27 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { parseChatSupabaseResult } from "./postgrest";
 
 export async function createChatNotificationsForMessage(
   supabase: SupabaseClient,
   messageId: string,
   actorUserId: string,
 ): Promise<number> {
-  const { data, error } = await supabase.rpc("create_chat_notifications_for_message", {
+  const rawResult: unknown = await supabase.rpc("create_chat_notifications_for_message", {
     p_message_id: messageId,
     p_actor_user_id: actorUserId,
   });
 
-  if (error) {
-    throw new Error(error.message);
+  const result = parseChatSupabaseResult(rawResult);
+  if (result.error) {
+    throw new Error(result.error.message);
   }
 
-  if (typeof data === "number" && Number.isFinite(data)) {
-    return data;
+  if (typeof result.data === "number" && Number.isFinite(result.data)) {
+    return result.data;
   }
 
-  if (typeof data === "string") {
-    const parsed = Number.parseInt(data, 10);
+  if (typeof result.data === "string") {
+    const parsed = Number.parseInt(result.data, 10);
     if (Number.isFinite(parsed)) {
       return parsed;
     }

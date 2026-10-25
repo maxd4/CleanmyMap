@@ -6,19 +6,11 @@ import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import type { DmConversation, ChatUser } from "@/components/chat/chat-types";
-
-type DmInboxRow = {
-  peer_id: string;
-  peer_display_name: string | null;
-  peer_handle: string | null;
-  peer_avatar_url: string | null;
-  last_message_id: string;
-  last_message_content: string;
-  last_message_created_at: string;
-  last_message_sender_id: string;
-  last_message_direction: "sent" | "received";
-  unread_count: number | string | null;
-};
+import { parseChatRows, parseChatSupabaseResult } from "@/lib/chat/postgrest";
+import {
+  isDmInboxRuntimeRow,
+  type DmInboxRuntimeRow,
+} from "@/lib/chat/runtime-contracts";
 
 const markReadSchema = z.object({
   peerId: z.string().trim().min(1).max(256),
@@ -29,7 +21,7 @@ const PRIVATE_NO_STORE_HEADERS = {
   "Cache-Control": "private, no-store",
 };
 
-function normalizeConversation(row: DmInboxRow): DmConversation {
+function normalizeConversation(row: DmInboxRuntimeRow): DmConversation {
   const peer: ChatUser = {
     id: row.peer_id,
     display_name: row.peer_display_name?.trim() || row.peer_handle?.trim() || "Membre",
@@ -85,14 +77,15 @@ export async function GET() {
   }
 
   try {
-    const { data, error } = await client.supabase.rpc("list_my_dm_conversations");
-    if (error) {
-      return handleApiError(error, "GET /api/chat/inbox");
-    }
+    const rawResult: unknown = await client.supabase.rpc("list_my_dm_conversations");
+    const result = parseChatSupabaseResult(rawResult);
+    if (result.error) return handleApiError(result.error, "GET /api/chat/inbox");
+    const rows = parseChatRows(result.data, isDmInboxRuntimeRow);
+    if (!rows) throw new Error("La réponse de l'inbox DM est invalide.");
 
     return NextResponse.json(
       {
-        conversations: ((data ?? []) as DmInboxRow[]).map(normalizeConversation),
+        conversations: rows.map(normalizeConversation),
       },
       { headers: PRIVATE_NO_STORE_HEADERS },
     );
@@ -120,19 +113,21 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const { data, error } = await client.supabase.rpc(
+    const rawResult: unknown = await client.supabase.rpc(
       "mark_my_dm_conversation_read",
       { p_peer_id: parsed.data.peerId },
     );
-    if (error) {
-      return handleApiError(error, "PATCH /api/chat/inbox");
+    const result = parseChatSupabaseResult(rawResult);
+    if (result.error) return handleApiError(result.error, "PATCH /api/chat/inbox");
+    if (typeof result.data !== "string") {
+      throw new Error("La réponse de marquage de lecture est invalide.");
     }
 
     return NextResponse.json(
       {
         status: "read",
         peerId: parsed.data.peerId,
-        lastReadAt: data,
+        lastReadAt: result.data,
       },
       { headers: PRIVATE_NO_STORE_HEADERS },
     );

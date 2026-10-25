@@ -11,6 +11,10 @@ import {
 import { respondToActionShareRequest } from "@/lib/chat/action-share-requests";
 import { loadActionById } from "@/lib/actions/store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { parseChatRows, parseChatSupabaseResult } from "@/lib/chat/postgrest";
+import {
+  isChatContactRequestRuntimeRow,
+} from "@/lib/chat/runtime-contracts";
 
 export const runtime = "nodejs";
 // Justification Vercel: les demandes sont privées, liées à l’identité courante et leur état peut changer à tout moment.
@@ -26,17 +30,6 @@ const decisionSchema = z.object({
   decision: z.enum(["accept", "reject", "ignore"]),
 });
 
-type ContactRequestRow = {
-  request_id: string;
-  created_at: string;
-  sender_id: string;
-  sender_display_name: string | null;
-  sender_handle: string | null;
-  sender_avatar_url: string | null;
-  action_id: string;
-  content: string;
-};
-
 async function getAuthenticatedUser() {
   const { userId } = await auth();
   if (!userId) return null;
@@ -50,13 +43,17 @@ export async function GET() {
 
   try {
     const supabase = getSupabaseServerClient(true);
-    const { data, error } = await supabase.rpc(
+    const rawResult: unknown = await supabase.rpc(
       "list_action_share_requests_for_recipient",
       { p_recipient_id: currentUser.userId },
     );
-    if (error) return handleApiError(error, "GET /api/chat/contact-requests");
+    const result = parseChatSupabaseResult(rawResult);
+    if (result.error) return handleApiError(result.error, "GET /api/chat/contact-requests");
 
-    const rows = (data ?? []) as ContactRequestRow[];
+    const rows = parseChatRows(result.data, isChatContactRequestRuntimeRow);
+    if (!rows) {
+      throw new Error("La liste des demandes de partage est invalide.");
+    }
     const requests = (
       await Promise.all(
         rows.map(async (row) => {

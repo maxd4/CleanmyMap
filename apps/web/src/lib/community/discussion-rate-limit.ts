@@ -1,15 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildPublicRateLimitPayload } from "@/lib/security/validation";
+import { parseChatSingleRow, parseChatSupabaseResult } from "@/lib/chat/postgrest";
+import { isDiscussionRateLimitRuntimeRow } from "@/lib/chat/runtime-contracts";
 
 export type DiscussionChannel = "discussion_event" | "bug_report";
-
-type ReserveSlotRow = {
-  allowed: boolean;
-  reason: "ok" | "cooldown" | "daily_limit" | string;
-  retry_after_seconds: number | null;
-  messages_today: number;
-  remaining_today: number;
-};
 
 export type DiscussionRateLimitResult = {
   allowed: boolean;
@@ -26,17 +20,17 @@ export async function reserveDiscussionMessageSlot(
     channel: DiscussionChannel;
   },
 ): Promise<DiscussionRateLimitResult> {
-  const result = await supabase.rpc("reserve_community_message_slot", {
+  const rawResult: unknown = await supabase.rpc("reserve_community_message_slot", {
     p_user_id: params.userId,
     p_channel: params.channel,
   });
 
+  const result = parseChatSupabaseResult(rawResult);
   if (result.error) {
     throw new Error(`Failed to reserve discussion message slot: ${result.error.message}`);
   }
 
-  const raw = Array.isArray(result.data) ? result.data[0] : result.data;
-  const row = (raw ?? null) as ReserveSlotRow | null;
+  const row = parseChatSingleRow(result.data, isDiscussionRateLimitRuntimeRow);
 
   if (!row || typeof row.allowed !== "boolean") {
     return {

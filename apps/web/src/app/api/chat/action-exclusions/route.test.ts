@@ -42,7 +42,16 @@ function buildSupabaseMock() {
     upsert: vi.fn(() => ({
       select: vi.fn(() => ({
         single: vi.fn().mockResolvedValue({
-          data: { conversation_id: "conversation-1", user_id: "target-1", active: true },
+          data: {
+            conversation_id: "conversation-1",
+            user_id: "target-1",
+            excluded_by_user_id: "moderator-1",
+            excluded_at: "2098-12-02T10:00:00.000Z",
+            reason: "Règle de discussion",
+            active: true,
+            reinstated_at: null,
+            reinstated_by_user_id: null,
+          },
           error: null,
         }),
       })),
@@ -55,8 +64,12 @@ function buildSupabaseMock() {
               data: {
                 conversation_id: "conversation-1",
                 user_id: "target-1",
+                excluded_by_user_id: "moderator-1",
+                excluded_at: "2098-12-02T10:00:00.000Z",
+                reason: "Retour autorisé",
                 active: false,
                 reinstated_at: "2098-12-03T10:00:00.000Z",
+                reinstated_by_user_id: "moderator-1",
               },
               error: null,
             }),

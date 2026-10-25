@@ -18,13 +18,26 @@ import {
   normalizeChatMessageRow,
   resolveChatAccessContext,
 } from "./route.shared";
+import {
+  isChatMessageRuntimeRow,
+  isChatRelatedEventRuntimeRow,
+  isCurrentChatProfileRuntimeRow,
+} from "@/lib/chat/runtime-contracts";
+import {
+  isChatRecord,
+  parseChatRows,
+  parseChatSingleRow,
+  parseChatSupabaseResult,
+} from "@/lib/chat/postgrest";
 
 export async function runMessageQuery(query: ChatQueryResult<ChatMessageRow>): Promise<ChatMessageRow[]> {
   const { data, error } = await query;
   if (error) {
     throw error;
   }
-  return (data ?? []) as ChatMessageRow[];
+  const rows = parseChatRows(data, isChatMessageRuntimeRow);
+  if (!rows) throw new Error("La réponse des messages du Chat est invalide.");
+  return rows;
 }
 
 export function pollOpts(options: readonly string[] | undefined) {
@@ -53,20 +66,22 @@ async function loadVisiblePollIds(
     return [];
   }
 
-  const { data, error } = await supabase
+  const rawResult: unknown = await supabase
     .from("app_messages")
     .select("id")
     .in("id", candidateIds)
     .eq("message_kind", "poll")
     .in("channel_type", ["community", "admin_elu", "territory", "action", "dm"]);
+  const result = parseChatSupabaseResult(rawResult);
 
-  if (error) {
-    throw error;
-  }
+  if (result.error) throw result.error;
 
-  return (data ?? [])
-    .map((row) => row.id)
-    .filter((id): id is string => typeof id === "string");
+  const rows = parseChatRows(
+    result.data,
+    (value): value is { id: string } => isChatRecord(value) && typeof value.id === "string",
+  );
+  if (!rows) throw new Error("La réponse des sondages visibles est invalide.");
+  return rows.map((row) => row.id);
 }
 
 export async function enrichPollVoteSummaries(
@@ -96,15 +111,14 @@ export async function enrichPollVoteSummaries(
     return normalizedRows;
   }
 
-  const { data, error } = await serviceSupabase.rpc("get_my_chat_poll_vote_summaries", {
+  const rawResult: unknown = await serviceSupabase.rpc("get_my_chat_poll_vote_summaries", {
     p_message_ids: visiblePollIds,
     p_user_id: userId,
   });
-  if (error) {
-    throw error;
-  }
+  const result = parseChatSupabaseResult(rawResult);
+  if (result.error) throw result.error;
 
-  const summaries = normalizeChatPollVoteSummaryRows(data);
+  const summaries = normalizeChatPollVoteSummaryRows(result.data);
   const summaryByMessageId = new Map<string, ChatPollVoteSummary>(
     summaries.map((summary) => [summary.messageId, summary]),
   );
@@ -143,15 +157,16 @@ async function enrichRelatedCommunityEvents(
   );
   if (eventIds.length === 0) return rows;
 
-  const { data, error } = await serviceSupabase
+  const rawResult: unknown = await serviceSupabase
     .from("community_events")
     .select(COMMUNITY_EVENT_CHAT_SELECT)
     .in("id", eventIds);
-  if (error) throw error;
+  const result = parseChatSupabaseResult(rawResult);
+  if (result.error) throw result.error;
+  const events = parseChatRows(result.data, isChatRelatedEventRuntimeRow);
+  if (!events) throw new Error("La réponse des événements communautaires est invalide.");
 
-  const eventsById = new Map(
-    ((data ?? []) as ChatRelatedEvent[]).map((event) => [event.id, event]),
-  );
+  const eventsById = new Map(events.map((event) => [event.id, event]));
   return rows.map((row) => {
     const eventId = row.related_event_id;
     if (typeof eventId !== "string" || eventId.length === 0) return row;
@@ -163,17 +178,20 @@ export async function loadCurrentProfile(
   supabase: ReturnType<typeof getSupabaseServerClient>,
   userId: string,
 ): Promise<CurrentProfileRow | null> {
-  const { data, error } = await supabase
+  const rawResult: unknown = await supabase
     .from("profiles")
     .select("id, display_name, handle, paris_arrondissement, role_label, metadata")
     .eq("id", userId)
     .maybeSingle();
 
-  if (error) {
-    throw error;
-  }
+  const result = parseChatSupabaseResult(rawResult);
+  if (result.error) throw result.error;
 
-  return (data ?? null) as CurrentProfileRow | null;
+  const profile = parseChatSingleRow(result.data, isCurrentChatProfileRuntimeRow);
+  if (result.data !== null && !profile) {
+    throw new Error("La réponse du profil Chat est invalide.");
+  }
+  return profile;
 }
 
 export async function loadChatAccessContext(
@@ -193,17 +211,20 @@ export async function loadRelatedCommunityEvent(
   serviceSupabase: ReturnType<typeof getSupabaseServerClient>,
   eventId: string,
 ): Promise<ChatRelatedEvent | null> {
-  const { data, error } = await serviceSupabase
+  const rawResult: unknown = await serviceSupabase
     .from("community_events")
     .select(COMMUNITY_EVENT_CHAT_SELECT)
     .eq("id", eventId)
     .maybeSingle();
 
-  if (error) {
-    throw error;
-  }
+  const result = parseChatSupabaseResult(rawResult);
+  if (result.error) throw result.error;
 
-  return (data ?? null) as ChatRelatedEvent | null;
+  const event = parseChatSingleRow(result.data, isChatRelatedEventRuntimeRow);
+  if (result.data !== null && !event) {
+    throw new Error("La réponse de l'événement communautaire est invalide.");
+  }
+  return event;
 }
 
 export async function loadMessageById(
@@ -212,27 +233,30 @@ export async function loadMessageById(
   userId: string,
   messageId: string,
 ): Promise<ChatMessageRow | null> {
-  const { data, error } = await supabase
+  const rawResult: unknown = await supabase
     .from("app_messages")
     .select(messageSelect)
     .eq("id", messageId)
     .maybeSingle();
 
-  if (error) {
-    throw error;
-  }
+  const result = parseChatSupabaseResult(rawResult);
+  if (result.error) throw result.error;
 
-  if (!data) {
+  const message = parseChatSingleRow(result.data, isChatMessageRuntimeRow);
+  if (result.data !== null && !message) {
+    throw new Error("La réponse du message Chat est invalide.");
+  }
+  if (!message) {
     return null;
   }
 
-  const [message] = await enrichPollVoteSummaries(
+  const [enrichedMessage] = await enrichPollVoteSummaries(
     supabase,
     serviceSupabase,
     userId,
-    [data as ChatMessageRow],
+    [message],
   );
-  return message ?? null;
+  return enrichedMessage ?? null;
 }
 
 export async function resolveBugReportRecipientId(
@@ -255,12 +279,14 @@ export async function hasExistingDmConversation(
   supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
   recipientId: string,
 ): Promise<boolean> {
-  const { data, error } = await supabase.rpc("list_my_dm_conversations");
-  if (error) {
-    throw error;
-  }
+  const rawResult: unknown = await supabase.rpc("list_my_dm_conversations");
+  const result = parseChatSupabaseResult(rawResult);
+  if (result.error) throw result.error;
 
-  return ((data ?? []) as Array<{ peer_id?: unknown }>).some(
-    (row) => row.peer_id === recipientId,
+  const rows = parseChatRows(
+    result.data,
+    (value): value is { peer_id: string } => isChatRecord(value) && typeof value.peer_id === "string",
   );
+  if (!rows) throw new Error("La réponse des conversations DM est invalide.");
+  return rows.some((row) => row.peer_id === recipientId);
 }

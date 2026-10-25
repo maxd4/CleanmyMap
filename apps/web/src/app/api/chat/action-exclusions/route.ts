@@ -11,6 +11,15 @@ import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import {
+  isChatActionExclusionRuntimeRow,
+} from "@/lib/chat/runtime-contracts";
+import {
+  isChatRecord,
+  parseChatRows,
+  parseChatSingleRow,
+  parseChatSupabaseResult,
+} from "@/lib/chat/postgrest";
 
 export const runtime = "nodejs";
 // Justification Vercel: moderation reads/writes depend on the authenticated Clerk session and live action state.
@@ -42,13 +51,18 @@ async function getModerationContext(actionId: string) {
 }
 
 async function resolveConversationId(supabase: ReturnType<typeof getSupabaseServerClient>, actionId: string) {
-  const result = await supabase
+  const rawResult: unknown = await supabase
     .from("action_conversations")
     .select("id")
     .eq("action_id", actionId)
     .maybeSingle();
+  const result = parseChatSupabaseResult(rawResult);
   if (result.error) throw result.error;
-  return typeof result.data?.id === "string" ? result.data.id : null;
+  const row = parseChatSingleRow(
+    result.data,
+    (value): value is { id: string } => isChatRecord(value) && typeof value.id === "string",
+  );
+  return row?.id ?? null;
 }
 
 export async function GET(request: Request) {
@@ -65,13 +79,16 @@ export async function GET(request: Request) {
     const conversationId = await resolveConversationId(context.supabase, actionIdResult.data);
     if (!conversationId) return NextResponse.json({ error: "Discussion introuvable." }, { status: 404 });
 
-    const result = await context.supabase
+    const rawResult: unknown = await context.supabase
       .from("action_conversation_exclusions")
       .select("user_id, excluded_by_user_id, excluded_at, reason, active, reinstated_at, reinstated_by_user_id")
       .eq("conversation_id", conversationId)
       .order("excluded_at", { ascending: false });
+    const result = parseChatSupabaseResult(rawResult);
     if (result.error) throw result.error;
-    return NextResponse.json({ canModerate: true, exclusions: result.data ?? [] });
+    const exclusions = parseChatRows(result.data, isChatActionExclusionRuntimeRow);
+    if (!exclusions) throw new Error("La réponse des exclusions de discussion est invalide.");
+    return NextResponse.json({ canModerate: true, exclusions });
   } catch (error) {
     return handleApiError(error, "GET /api/chat/action-exclusions");
   }
@@ -106,7 +123,7 @@ async function mutateExclusion(request: Request, exclude: boolean) {
 
     if (exclude) {
       const excludedAt = new Date().toISOString();
-      const result = await context.supabase.from("action_conversation_exclusions").upsert({
+      const rawResult: unknown = await context.supabase.from("action_conversation_exclusions").upsert({
         conversation_id: conversationId,
         user_id: parsed.data.userId,
         excluded_by_user_id: userId,
@@ -116,7 +133,10 @@ async function mutateExclusion(request: Request, exclude: boolean) {
         reinstated_at: null,
         reinstated_by_user_id: null,
       }, { onConflict: "conversation_id,user_id" }).select().single();
+      const result = parseChatSupabaseResult(rawResult);
       if (result.error) throw result.error;
+      const exclusion = parseChatSingleRow(result.data, isChatActionExclusionRuntimeRow);
+      if (!exclusion) throw new Error("La réponse de l'exclusion de discussion est invalide.");
       await appendActionModerationAudit({
         operationId: `action-conversation-exclude:${conversationId}:${parsed.data.userId}:${excludedAt}`,
         actorUserId: userId,
@@ -128,17 +148,19 @@ async function mutateExclusion(request: Request, exclude: boolean) {
         targetUserId: parsed.data.userId,
         details: { conversationId },
       });
-      return NextResponse.json({ exclusion: result.data }, { status: 201 });
+      return NextResponse.json({ exclusion }, { status: 201 });
     }
 
     const reinstatedAt = new Date().toISOString();
-    const result = await context.supabase.from("action_conversation_exclusions").update({
+    const rawResult: unknown = await context.supabase.from("action_conversation_exclusions").update({
       active: false,
       reinstated_at: reinstatedAt,
       reinstated_by_user_id: userId,
     }).eq("conversation_id", conversationId).eq("user_id", parsed.data.userId).select().maybeSingle();
+    const result = parseChatSupabaseResult(rawResult);
     if (result.error) throw result.error;
-    if (!result.data) return NextResponse.json({ error: "Exclusion introuvable." }, { status: 404 });
+    const exclusion = parseChatSingleRow(result.data, isChatActionExclusionRuntimeRow);
+    if (!exclusion) return NextResponse.json({ error: "Exclusion introuvable." }, { status: 404 });
     await appendActionModerationAudit({
       operationId: `action-conversation-reinstate:${conversationId}:${parsed.data.userId}:${reinstatedAt}`,
       actorUserId: userId,
@@ -151,7 +173,7 @@ async function mutateExclusion(request: Request, exclude: boolean) {
       targetUserId: parsed.data.userId,
       details: { conversationId },
     });
-    return NextResponse.json({ exclusion: result.data });
+    return NextResponse.json({ exclusion });
   } catch (error) {
     return handleApiError(error, `${exclude ? "POST" : "PATCH"} /api/chat/action-exclusions`);
   }

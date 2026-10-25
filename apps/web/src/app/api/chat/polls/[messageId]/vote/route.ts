@@ -8,6 +8,8 @@ import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import { parseChatRows, parseChatSingleRow, parseChatSupabaseResult, isChatRecord } from "@/lib/chat/postgrest";
+import { isChatPollOptionRuntimeRow } from "@/lib/chat/runtime-contracts";
 
 const votePayloadSchema = z.object({
   optionId: z.string().uuid(),
@@ -60,15 +62,19 @@ async function loadVisiblePoll(
   supabase: ReturnType<typeof getSupabaseServerClient>,
   messageId: string,
 ): Promise<{ options: PollOptionRow[] } | null> {
-  const { data: message, error: messageError } = await supabase
+  const rawMessageResult: unknown = await supabase
     .from("app_messages")
     .select("id, message_kind, channel_type")
     .eq("id", messageId)
     .maybeSingle();
 
-  if (messageError) {
-    throw messageError;
-  }
+  const messageResult = parseChatSupabaseResult(rawMessageResult);
+  if (messageResult.error) throw messageResult.error;
+  const message = parseChatSingleRow(
+    messageResult.data,
+    (value): value is { id: string; message_kind: unknown; channel_type: string } =>
+      isChatRecord(value) && typeof value.id === "string" && "message_kind" in value && typeof value.channel_type === "string",
+  );
   if (
     !message ||
     message.message_kind !== "poll" ||
@@ -77,17 +83,18 @@ async function loadVisiblePoll(
     return null;
   }
 
-  const { data: options, error: optionsError } = await supabase
+  const rawOptionsResult: unknown = await supabase
     .from("chat_poll_options")
     .select("id, position, label")
     .eq("message_id", messageId)
     .order("position", { ascending: true });
 
-  if (optionsError) {
-    throw optionsError;
-  }
+  const optionsResult = parseChatSupabaseResult(rawOptionsResult);
+  if (optionsResult.error) throw optionsResult.error;
+  const options = parseChatRows(optionsResult.data, isChatPollOptionRuntimeRow);
+  if (!options) throw new Error("Les options du sondage sont invalides.");
 
-  return { options: (options ?? []) as PollOptionRow[] };
+  return { options };
 }
 
 async function loadPollVoteResponse(
@@ -96,15 +103,14 @@ async function loadPollVoteResponse(
   messageId: string,
   options: PollOptionRow[],
 ): Promise<PollVoteResponse> {
-  const { data, error } = await serviceSupabase.rpc("get_my_chat_poll_vote_summaries", {
+  const rawResult: unknown = await serviceSupabase.rpc("get_my_chat_poll_vote_summaries", {
     p_message_ids: [messageId],
     p_user_id: userId,
   });
-  if (error) {
-    throw error;
-  }
+  const result = parseChatSupabaseResult(rawResult);
+  if (result.error) throw result.error;
 
-  const summary = normalizeChatPollVoteSummaryRows(data).find(
+  const summary = normalizeChatPollVoteSummaryRows(result.data).find(
     (candidate) => candidate.messageId === messageId,
   );
   const counts = new Map(
