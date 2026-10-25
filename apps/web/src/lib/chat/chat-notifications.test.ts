@@ -23,4 +23,17 @@ describe("createChatNotificationsForMessage", () => {
       createChatNotificationsForMessage(supabase, "msg_123", "user_123"),
     ).rejects.toThrow("boom");
   });
+
+  it.each([
+    null,
+    { count: 2 },
+    Number.NaN,
+    "not-a-number",
+  ])("returns zero for a non-count RPC payload: %j", async (data) => {
+    const rpc = vi.fn(async () => ({ data, error: null }));
+    const supabase = { rpc } as never;
+
+    await expect(createChatNotificationsForMessage(supabase, "msg_123", "user_123"))
+      .resolves.toBe(0);
+  });
 });

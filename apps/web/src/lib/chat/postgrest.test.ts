@@ -76,6 +76,60 @@ describe("Chat Supabase boundary parsers", () => {
 
     expect(result).toEqual({ data: [], error: null, count: 0 });
   });
+
+  it("keeps only validated error metadata and normalizes an invalid count", () => {
+    const result = parseChatSupabaseResult({
+      data: null,
+      error: {
+        message: "DM peer not found",
+        code: 42,
+        details: null,
+        hint: { internal: true },
+      },
+      count: "1",
+    });
+
+    expect(result.error).toBeInstanceOf(Error);
+    expect(result.error).toMatchObject({ message: "DM peer not found" });
+    expect(result.error?.code).toBeUndefined();
+    expect(result.error?.details).toBeUndefined();
+    expect(result.error?.hint).toBeUndefined();
+    expect(result.count).toBeNull();
+  });
+
+  it.each([
+    null,
+    undefined,
+    {},
+    [],
+    "invalid",
+  ])("normalizes a structurally invalid response: %j", (value) => {
+    const result = parseChatSupabaseResult(value);
+
+    expect(result.data).toBeNull();
+    expect(result.count).toBeNull();
+    expect(result.error).toBeInstanceOf(Error);
+    expect(result.error?.message).toBe("La réponse Supabase du Chat est invalide.");
+  });
+});
+
+describe("Chat row parsers", () => {
+  const isMessageIdRow = (value: unknown): value is { id: string } =>
+    typeof value === "object" && value !== null && !Array.isArray(value) &&
+    "id" in value && typeof value.id === "string";
+
+  it("keeps empty row collections distinct from malformed collections", () => {
+    expect(parseChatRows([], isMessageIdRow)).toEqual([]);
+    expect(parseChatRows([{ id: "message-1" }, { id: 4 }], isMessageIdRow)).toBeNull();
+    expect(parseChatRows({ id: "message-1" }, isMessageIdRow)).toBeNull();
+  });
+
+  it("accepts a single row or the first row of a singleton array", () => {
+    expect(parseChatSingleRow({ id: "message-1" }, isMessageIdRow)).toEqual({ id: "message-1" });
+    expect(parseChatSingleRow([{ id: "message-1" }], isMessageIdRow)).toEqual({ id: "message-1" });
+    expect(parseChatSingleRow([], isMessageIdRow)).toBeNull();
+    expect(parseChatSingleRow([{ id: 4 }], isMessageIdRow)).toBeNull();
+  });
 });
 
 describe("escapePostgrestLikePattern", () => {

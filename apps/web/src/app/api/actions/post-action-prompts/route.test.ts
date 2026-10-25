@@ -49,4 +49,36 @@ describe("/api/actions/post-action-prompts", () => {
     }))).status).toBe(401);
     expect(serverMock).not.toHaveBeenCalled();
   });
+
+  it("fails closed when the prompt projection is structurally invalid", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ notification_id: "notification-1", action_id: null }],
+      error: null,
+    });
+    serverMock.mockReturnValue({ rpc });
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/post-action-prompts"));
+    const body = await response.text();
+
+    expect(response.status).toBe(500);
+    expect(body).toBe("La réponse des sollicitations est invalide.");
+    expect(body).not.toContain("notification-1");
+  });
+
+  it("returns a gateway error for an invalid prompt decision row", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ status: "claimed", action_id: null }],
+      error: null,
+    });
+    serverMock.mockReturnValue({ rpc });
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/actions/post-action-prompts", {
+      method: "PATCH",
+      body: JSON.stringify({ actionId: "11111111-1111-4111-8111-111111111111", decision: "claim" }),
+    }));
+
+    expect(response.status).toBe(502);
+  });
 });

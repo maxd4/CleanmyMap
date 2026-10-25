@@ -99,4 +99,20 @@ describe("/api/chat/contact-requests", () => {
       p_decision: decision,
     });
   });
+
+  it("fails closed when a contact request row is malformed", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ request_id: "request-1", sender_id: "sender-1", action_id: 42 }],
+      error: null,
+    });
+    serverMock.mockReturnValue({ rpc });
+
+    const { GET } = await import("./route");
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body.error).toBe("Certains champs doivent être corrigés avant de continuer.");
+    expect(loadActionMock).not.toHaveBeenCalled();
+  });
 });

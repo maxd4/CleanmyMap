@@ -165,4 +165,32 @@ describe("/api/chat/inbox", () => {
     expect(body.error).toBe("Vous n'avez pas accès à cette page.");
     expect(JSON.stringify(body)).not.toContain("internal RLS policy detail");
   });
+
+  it("fails closed when the inbox projection is malformed", async () => {
+    rpcMock.mockResolvedValue({
+      data: [{ peer_id: "peer-1", last_message_direction: "unknown" }],
+      error: null,
+    });
+
+    const response = assertResponse(await GET());
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body.error).toBe("Certains champs doivent être corrigés avant de continuer.");
+    expect(JSON.stringify(body)).not.toContain("peer-1");
+  });
+
+  it("fails closed when the read RPC returns a non-string timestamp", async () => {
+    rpcMock.mockResolvedValue({ data: 42, error: null });
+
+    const response = assertResponse(await PATCH(
+      new Request("http://localhost/api/chat/inbox", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ peerId: "peer-1" }),
+      }),
+    ));
+
+    expect(response.status).toBe(422);
+  });
 });

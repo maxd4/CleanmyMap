@@ -81,4 +81,37 @@ describe("/api/actions/invitations", () => {
       p_decision: "reject",
     });
   });
+
+  it("fails closed when the invitation list contains an invalid row", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ registration_id: "registration-1", action_id: null }],
+      error: null,
+    });
+    serverMock.mockReturnValue({ rpc });
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/invitations"));
+    const body = await response.text();
+
+    expect(response.status).toBe(500);
+    expect(body).toBe("La réponse des invitations est invalide.");
+    expect(body).not.toContain("registration-1");
+  });
+
+  it("returns a gateway error without projecting an invalid invitation decision", async () => {
+    const registrationId = "33333333-3333-4333-8333-333333333333";
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ status: "accepted", registration_id: registrationId, action_id: 42 }],
+      error: null,
+    });
+    serverMock.mockReturnValue({ rpc });
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/actions/invitations", {
+      method: "PATCH",
+      body: JSON.stringify({ registrationId, decision: "accept" }),
+    }));
+
+    expect(response.status).toBe(502);
+  });
 });
