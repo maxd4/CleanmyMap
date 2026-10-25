@@ -135,7 +135,7 @@ export function useMyObservations() {
   );
 
   useEffect(() => {
-    void controller.load();
+    controller.load().catch(() => undefined);
   }, [controller]);
 
   return {

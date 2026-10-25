@@ -47,6 +47,16 @@ function buildRequest(path: string, init?: RequestInit) {
 }
 
 function invitationFrom(data: Record<string, unknown> | null) {
+  const row = data
+    ? {
+        registration_status: "confirmed",
+        registration_source: "invite_link",
+        registration_cancellation_reason: null,
+        participation_status: "pending",
+        participation_source: "post_action_claim",
+        ...data,
+      }
+    : null;
   const chain: {
     select: () => typeof chain;
     eq: () => typeof chain;
@@ -54,7 +64,7 @@ function invitationFrom(data: Record<string, unknown> | null) {
   } = {
     select: () => chain,
     eq: () => chain,
-    maybeSingle: async () => ({ data, error: null }),
+    maybeSingle: async () => ({ data: row, error: null }),
   };
   return chain;
 }

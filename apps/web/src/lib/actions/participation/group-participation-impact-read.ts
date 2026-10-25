@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { runSingleActionQuery } from "@/lib/actions/query";
+import { isActionRecord, runSingleActionQuery } from "@/lib/actions/query";
 import {
   ACTION_PREVIEW_COLUMNS,
   ACTIVE_PARTICIPATION_STATUS,
@@ -23,7 +23,10 @@ function groupParticipantImpactRows(
   data: unknown,
 ): Map<string, ParticipantImpactRow[]> {
   const rowsByActionId = new Map<string, ParticipantImpactRow[]>();
-  for (const row of (data ?? []) as Array<Record<string, unknown>>) {
+  const candidates = Array.isArray(data) ? data : [];
+  for (const candidate of candidates) {
+    if (!isActionRecord(candidate)) continue;
+    const row = candidate;
     const actionId = typeof row.action_id === "string" ? row.action_id : null;
     const id = typeof row.user_id === "string" ? row.user_id : null;
     if (!actionId || !id) continue;
@@ -166,7 +169,7 @@ export async function loadActionParticipantImpactSnapshot(
       ? projection.revisionByActionId.get(action.id) ?? null
       : null,
     attributions: availableProjection
-      ? projection.attributionsByActionId.get(action.id) ?? new Map()
-      : new Map(),
+      ? projection.attributionsByActionId.get(action.id) ?? new Map<string, ActionParticipantImpactAttribution>()
+      : new Map<string, ActionParticipantImpactAttribution>(),
   };
 }

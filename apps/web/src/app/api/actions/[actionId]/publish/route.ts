@@ -19,6 +19,8 @@ import {
 } from "@/lib/actions/formalities-workflow";
 import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-rules";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
+import { isPublishedActionRow } from "@/lib/actions/runtime-contracts";
+import { parseActionSingleRow, parseActionSupabaseResult } from "@/lib/actions/query";
 
 export const runtime = "nodejs";
 // Justification Vercel: la publication dépend de l’action et de l’utilisateur courant.
@@ -110,7 +112,7 @@ async function completeActionPublication({
     );
   }
   const publishedAt = new Date().toISOString();
-  const result = await supabase
+  const rawResult: unknown = await supabase
     .from("actions")
     .update(buildPublicationUpdate({
       currentPreparationData: current.preparation_data,
@@ -125,10 +127,13 @@ async function completeActionPublication({
     .is("published_at", null)
     .select("id, published_at")
     .maybeSingle();
+  const result = parseActionSupabaseResult(rawResult);
   if (result.error) throw result.error;
   if (!result.data) return NextResponse.json({ error: "La publication n'a pas pu être confirmée." }, { status: 409 });
-  await emitAdministrativeRequirementNotifications({ supabase, actionId: result.data.id });
-  return NextResponse.json({ status: "published", id: result.data.id, publishedAt: result.data.published_at, alreadyPublished: false });
+  const row = parseActionSingleRow(result.data, isPublishedActionRow);
+  if (!row) throw new Error("La réponse de publication de l'action est invalide.");
+  await emitAdministrativeRequirementNotifications({ supabase, actionId: row.id });
+  return NextResponse.json({ status: "published", id: row.id, publishedAt: row.published_at, alreadyPublished: false });
 }
 
 export async function POST(

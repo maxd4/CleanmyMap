@@ -8,6 +8,15 @@ import {
   verifyRateLimit,
 } from "@/lib/rate-limit/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  isActionInvitationDecisionRow,
+  isPendingRegistrationRequestRow,
+} from "@/lib/actions/runtime-contracts";
+import {
+  parseActionRows,
+  parseActionSingleRow,
+  parseActionSupabaseResult,
+} from "@/lib/actions/query";
 
 export const runtime = "nodejs";
 // Justification Vercel: les invitations privées restent fraîches par destinataire (no-store).
@@ -36,13 +45,18 @@ export async function GET(request: Request) {
   if (!userId) return unauthorizedJsonResponse();
 
   try {
-    const { data, error } = await getSupabaseServerClient(true).rpc(
+    const rawResult: unknown = await getSupabaseServerClient(true).rpc(
       "list_pending_action_invitations_for_recipient",
       { p_recipient_id: userId },
     );
-    if (error) throw error;
+    const result = parseActionSupabaseResult(rawResult);
+    if (result.error) throw result.error;
+    const invitations = result.data === null
+      ? []
+      : parseActionRows(result.data, isPendingRegistrationRequestRow);
+    if (!invitations) throw new Error("La réponse des invitations est invalide.");
     return NextResponse.json(
-      { invitations: data ?? [] },
+      { invitations },
       // Cache/no-store justification: cette projection privée doit rester fraîche par destinataire.
       { headers: { "Cache-Control": "private, no-store" } },
     );
@@ -75,7 +89,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const { data, error } = await getSupabaseServerClient(true).rpc(
+    const rawResult: unknown = await getSupabaseServerClient(true).rpc(
       "respond_to_action_invitation",
       {
         p_registration_id: parsed.data.registrationId,
@@ -83,21 +97,17 @@ export async function PATCH(request: Request) {
         p_decision: parsed.data.decision,
       },
     );
-    if (error) throw error;
-    const result = (data ?? [])[0] as {
-      status?: string;
-      registration_id?: string;
-      action_id?: string;
-    } | undefined;
-    const status = result?.status;
-    if (status !== "accepted" && status !== "rejected" && status !== "unavailable") {
+    const result = parseActionSupabaseResult(rawResult);
+    if (result.error) throw result.error;
+    const decision = parseActionSingleRow(result.data, isActionInvitationDecisionRow);
+    if (!decision) {
       return NextResponse.json({ error: "État d'invitation invalide." }, { status: 502 });
     }
     return NextResponse.json(
       {
-        status,
-        registrationId: result?.registration_id ?? parsed.data.registrationId,
-        actionId: result?.action_id ?? null,
+        status: decision.status,
+        registrationId: decision.registration_id,
+        actionId: decision.action_id,
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );

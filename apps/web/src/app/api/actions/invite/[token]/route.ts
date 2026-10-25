@@ -9,11 +9,20 @@ import {
   isInvitationExpired,
   isInvitationTokenFormat,
   resolvePrivateInvitationActionState,
-  type PrivateInvitationAction,
   type PrivateInvitationActionState,
 } from "@/lib/actions/private-invitation";
 import { claimFinishedActionParticipation } from "@/lib/actions/participation/post-action-claims";
 import { appendParticipationClaimAudit } from "@/lib/actions/participation/claim-audit";
+import {
+  isActionInvitationLinkResolutionRow,
+  isActionParticipantStateRow,
+  isActionRegistrationStateRow,
+  isPrivateActionRegistrationRow,
+} from "@/lib/actions/runtime-contracts";
+import {
+  parseActionSingleRow,
+  parseActionSupabaseResult,
+} from "@/lib/actions/query";
 
 type Context = { params: Promise<{ token: string }> };
 
@@ -56,32 +65,42 @@ async function loadRecipientState(
   if (!userId) return emptyRecipientState();
 
   if (actionState === "post_action_claim") {
-    const result = await supabase
+    const rawResult: unknown = await supabase
       .from("action_participants")
       .select("participation_status, participation_source")
       .eq("action_id", actionId)
       .eq("user_id", userId)
       .maybeSingle();
+    const result = parseActionSupabaseResult(rawResult);
     if (result.error) throw result.error;
+    const row = parseActionSingleRow(result.data, isActionParticipantStateRow);
+    if (result.data !== null && !row) {
+      throw new Error("La réponse de participation de l'invitation est invalide.");
+    }
     return {
       ...emptyRecipientState(),
-      participationStatus: result.data?.participation_status ?? null,
-      participationSource: result.data?.participation_source ?? null,
+      participationStatus: row?.participation_status ?? null,
+      participationSource: row?.participation_source ?? null,
     };
   }
 
-  const result = await supabase
+  const rawResult: unknown = await supabase
     .from("action_registrations")
     .select("registration_status, registration_source, registration_cancellation_reason")
     .eq("action_id", actionId)
     .eq("user_id", userId)
     .maybeSingle();
+  const result = parseActionSupabaseResult(rawResult);
   if (result.error) throw result.error;
+  const row = parseActionSingleRow(result.data, isActionRegistrationStateRow);
+  if (result.data !== null && !row) {
+    throw new Error("La réponse d'inscription de l'invitation est invalide.");
+  }
   return {
     ...emptyRecipientState(),
-    registrationStatus: result.data?.registration_status ?? null,
-    registrationSource: result.data?.registration_source ?? null,
-    registrationCancellationReason: result.data?.registration_cancellation_reason ?? null,
+    registrationStatus: row?.registration_status ?? null,
+    registrationSource: row?.registration_source ?? null,
+    registrationCancellationReason: row?.registration_cancellation_reason ?? null,
   };
 }
 
@@ -100,31 +119,34 @@ async function resolveInvite(ctx: Context): Promise<InvitationResolution> {
 
   const supabase = getSupabaseServerClient(true);
   const tokenHash = hashInvitationToken(token);
-  const link = await supabase
+  const rawLink: unknown = await supabase
     .from("action_invitation_links")
     .select("action_id, revoked_at, expires_at")
     .eq("token_hash", tokenHash)
     .maybeSingle();
-  if (link.error) throw link.error;
-  if (!link.data) return { kind: "invalid" };
-  if (link.data.revoked_at) return { kind: "revoked" };
-  if (!link.data.expires_at || isInvitationExpired(link.data.expires_at)) {
+  const linkResult = parseActionSupabaseResult(rawLink);
+  if (linkResult.error) throw linkResult.error;
+  const link = parseActionSingleRow(linkResult.data, isActionInvitationLinkResolutionRow);
+  if (!link) {
+    if (linkResult.data === null) return { kind: "invalid" };
+    throw new Error("La réponse du lien d'invitation est invalide.");
+  }
+  if (link.revoked_at) return { kind: "revoked" };
+  if (!link.expires_at || isInvitationExpired(link.expires_at)) {
     return { kind: "expired" };
   }
 
-  const action = await loadActionById(supabase, link.data.action_id);
+  const action = await loadActionById(supabase, link.action_id);
   if (!action) return { kind: "invalid" };
-  const actionState = resolvePrivateInvitationActionState(
-    action as PrivateInvitationAction,
-  );
+  const actionState = resolvePrivateInvitationActionState(action);
   if (actionState === "closed") return { kind: "invalid" };
 
   return {
     kind: "valid",
     action,
-    actionId: link.data.action_id,
+    actionId: link.action_id,
     actionState,
-    expiresAt: link.data.expires_at,
+    expiresAt: link.expires_at,
     tokenHash,
     supabase,
   };
@@ -236,18 +258,20 @@ export async function POST(request: Request, ctx: Context) {
     }
 
     if (resolution.actionState === "pre_action") {
-      const result = await resolution.supabase.rpc("request_private_action_registration", {
+      const rawResult: unknown = await resolution.supabase.rpc("request_private_action_registration", {
         p_action_id: resolution.actionId,
         p_user_id: access.userId,
         p_token_hash: resolution.tokenHash,
       });
+      const result = parseActionSupabaseResult(rawResult);
       if (result.error) throw result.error;
-      const row = Array.isArray(result.data) ? result.data[0] : result.data;
+      const row = parseActionSingleRow(result.data, isPrivateActionRegistrationRow);
+      if (!row) throw new Error("La réponse d'inscription de l'invitation est invalide.");
       return NextResponse.json({
         status: "ok",
         flow: "pre_action",
         actionId: resolution.actionId,
-        registrationStatus: row?.registration_status ?? "confirmed",
+        registrationStatus: row.registration_status,
         registrationSource: "invite_link",
       });
     }

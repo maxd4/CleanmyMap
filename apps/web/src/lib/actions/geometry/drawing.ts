@@ -86,7 +86,7 @@ export function parseDrawingFromNotes(
   }
 
   try {
-    const parsed = JSON.parse(drawingJson);
+    const parsed: unknown = JSON.parse(drawingJson);
     const manualDrawing = normalizeDrawing(parsed);
     return {
       cleanNotes: stripEventRefFromNotes(body),

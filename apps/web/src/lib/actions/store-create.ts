@@ -38,6 +38,7 @@ import {
   resolveCreateActionRouteTopology,
 } from "./store-create-contract";
 import { resolveCanonicalCreateActionPayload } from "./organizer-directory-registry";
+import { parseActionSingleRow, parseActionSupabaseResult } from "./query";
 
 export { buildActionInsertPayload, buildCreateActionGeometry } from "./store-create-contract";
 
@@ -150,7 +151,7 @@ export async function persistActionWithRelations(
         registrations,
       })
     : null;
-  const result = await supabase.rpc("create_action_with_relations", {
+  const rawResult: unknown = await supabase.rpc("create_action_with_relations", {
     p_action: action,
     p_organizers: params.organizers.map((organizer) => ({
       organizer_clerk_id: organizer.userId,
@@ -164,6 +165,7 @@ export async function persistActionWithRelations(
     p_client_request_fingerprint: fingerprint,
     p_organizer_required: params.organizerRequirement !== "optional" || params.organizers.length > 0,
   });
+  const result = parseActionSupabaseResult(rawResult);
   if (result.error) {
     if (isMissingAtomicCreationRpc(result.error)) {
       throw new ActionCreationPersistenceError(
@@ -173,14 +175,13 @@ export async function persistActionWithRelations(
     }
     throw result.error;
   }
-  const row = Array.isArray(result.data) ? result.data[0] : result.data;
-  const rawRow: unknown = row;
-  if (!isCreateActionRpcRow(rawRow)) {
+  const row = parseActionSingleRow(result.data, isCreateActionRpcRow);
+  if (!row) {
     throw new ActionCreationPersistenceError(
       "La création atomique de l’action n’a pas renvoyé de référence persistée.",
     );
   }
-  return rawRow.replayed ? { id: rawRow.action_id, replayed: true } : { id: rawRow.action_id };
+  return row.replayed ? { id: row.action_id, replayed: true } : { id: row.action_id };
 }
 
 export async function resolveCreateActionDrawing(

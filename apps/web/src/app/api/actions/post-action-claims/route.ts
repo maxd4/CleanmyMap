@@ -4,6 +4,8 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { isPendingPostActionClaimRow } from "@/lib/actions/runtime-contracts";
+import { parseActionRows, parseActionSupabaseResult } from "@/lib/actions/query";
 
 export const runtime = "nodejs";
 // Justification Vercel: this reviewer projection is private, dynamic and must
@@ -25,13 +27,16 @@ export async function GET(request: Request) {
   if (!userId) return unauthorizedJsonResponse();
 
   try {
-    const { data, error } = await getSupabaseServerClient(true).rpc(
+    const rawResult: unknown = await getSupabaseServerClient(true).rpc(
       "list_pending_post_action_claims_for_reviewer",
       { p_reviewer_id: userId },
     );
-    if (error) throw error;
+    const result = parseActionSupabaseResult(rawResult);
+    if (result.error) throw result.error;
+    const claims = result.data === null ? [] : parseActionRows(result.data, isPendingPostActionClaimRow);
+    if (!claims) throw new Error("La réponse des demandes de rattachement est invalide.");
     return NextResponse.json(
-      { claims: data ?? [] },
+      { claims },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {

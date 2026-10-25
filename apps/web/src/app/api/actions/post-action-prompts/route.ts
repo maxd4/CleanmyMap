@@ -5,6 +5,15 @@ import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  isActionResultPromptDecisionRow,
+  isPendingActionResultPromptRow,
+} from "@/lib/actions/runtime-contracts";
+import {
+  parseActionRows,
+  parseActionSingleRow,
+  parseActionSupabaseResult,
+} from "@/lib/actions/query";
 
 export const runtime = "nodejs";
 // Justification Vercel: this is a private, recipient-bound projection whose
@@ -35,13 +44,16 @@ export async function GET(request: Request) {
   if (!userId) return unauthorizedJsonResponse();
 
   try {
-    const { data, error } = await getSupabaseServerClient(true).rpc(
+    const rawResult: unknown = await getSupabaseServerClient(true).rpc(
       "list_pending_action_result_prompts_for_recipient",
       { p_recipient_id: userId },
     );
-    if (error) throw error;
+    const result = parseActionSupabaseResult(rawResult);
+    if (result.error) throw result.error;
+    const prompts = result.data === null ? [] : parseActionRows(result.data, isPendingActionResultPromptRow);
+    if (!prompts) throw new Error("La réponse des sollicitations est invalide.");
     return NextResponse.json(
-      { prompts: data ?? [] },
+      { prompts },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
@@ -73,7 +85,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const { data, error } = await getSupabaseServerClient(true).rpc(
+    const rawResult: unknown = await getSupabaseServerClient(true).rpc(
       "respond_to_action_result_prompt",
       {
         p_action_id: parsed.data.actionId,
@@ -81,15 +93,16 @@ export async function PATCH(request: Request) {
         p_decision: parsed.data.decision,
       },
     );
-    if (error) throw error;
-    const result = (data ?? [])[0] as { status?: string; action_id?: string } | undefined;
-    if (result?.status !== "claimed" && result?.status !== "declined" && result?.status !== "unavailable") {
+    const result = parseActionSupabaseResult(rawResult);
+    if (result.error) throw result.error;
+    const decision = parseActionSingleRow(result.data, isActionResultPromptDecisionRow);
+    if (!decision) {
       return NextResponse.json({ error: "État de sollicitation invalide." }, { status: 502 });
     }
     return NextResponse.json(
       {
-        status: result.status,
-        actionId: result.action_id ?? parsed.data.actionId,
+        status: decision.status,
+        actionId: decision.action_id,
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );

@@ -8,7 +8,7 @@ describe("/api/actions/post-action-prompts", () => {
   });
 
   it("projects prompts through the authenticated recipient-bound RPC", async () => {
-    const rpc = vi.fn().mockResolvedValue({ data: [{ action_id: "action-1" }], error: null });
+    const rpc = vi.fn().mockResolvedValue({ data: [{ notification_id: "notification-1", action_id: "action-1" }], error: null });
     serverMock.mockReturnValue({ rpc });
     const { GET } = await import("./route");
 

@@ -7,6 +7,13 @@ import {
   isPublicActionReferenceAvailable,
 } from "@/lib/chat/action-sharing";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  isPublicCommunityEventRow,
+} from "@/lib/actions/runtime-contracts";
+import {
+  parseActionSingleRow,
+  parseActionSupabaseResult,
+} from "@/lib/actions/query";
 
 export const runtime = "nodejs";
 // Justification Vercel: cette projection publique doit relire l’action courante et ne pas être mise en cache.
@@ -38,23 +45,33 @@ export async function GET(
       );
     }
 
-    let event = null;
+    let event: {
+      id: string;
+      title: string;
+      eventDate: string;
+      locationLabel: string;
+    } | null = null;
     const eventId = eventReferenceFromAction(action);
     if (eventId) {
-      const eventResult = await supabase
+      const rawEventResult: unknown = await supabase
         .from("community_events")
         .select("id, title, event_date, location_label")
         .eq("id", eventId)
         .maybeSingle();
+      const eventResult = parseActionSupabaseResult(rawEventResult);
       if (eventResult.error) {
         return handleApiError(eventResult.error, "GET /api/actions/[actionId]/public (event)");
       }
-      if (eventResult.data) {
+      const eventRow = parseActionSingleRow(eventResult.data, isPublicCommunityEventRow);
+      if (eventResult.data !== null && !eventRow) {
+        throw new Error("La réponse de l'événement public est invalide.");
+      }
+      if (eventRow) {
         event = {
-          id: eventResult.data.id,
-          title: eventResult.data.title,
-          eventDate: eventResult.data.event_date,
-          locationLabel: eventResult.data.location_label,
+          id: eventRow.id,
+          title: eventRow.title,
+          eventDate: eventRow.event_date,
+          locationLabel: eventRow.location_label,
         };
       }
     }

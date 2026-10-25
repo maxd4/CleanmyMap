@@ -14,6 +14,13 @@ import {
   hashInvitationToken,
   isInvitationExpired,
 } from "@/lib/actions/private-invitation";
+import {
+  isActionInvitationLinkMetadataRow,
+} from "@/lib/actions/runtime-contracts";
+import {
+  parseActionSingleRow,
+  parseActionSupabaseResult,
+} from "@/lib/actions/query";
 
 type Context = { params: Promise<{ actionId: string }> };
 
@@ -38,18 +45,23 @@ export async function GET(request: Request, ctx: Context) {
   try {
     const resolved = await resolveManagedAction(request, ctx);
     if ("response" in resolved) return resolved.response;
-    const result = await resolved.supabase
+    const rawResult: unknown = await resolved.supabase
       .from("action_invitation_links")
       .select("created_at, revoked_at, expires_at")
       .eq("action_id", resolved.actionId)
       .maybeSingle();
+    const result = parseActionSupabaseResult(rawResult);
     if (result.error) throw result.error;
+    const row = parseActionSingleRow(result.data, isActionInvitationLinkMetadataRow);
+    if (result.data !== null && !row) {
+      throw new Error("La réponse du lien d'invitation est invalide.");
+    }
     return NextResponse.json({
       status: "ok",
-      active: Boolean(result.data && !result.data.revoked_at && result.data.expires_at && !isInvitationExpired(result.data.expires_at)),
-      createdAt: result.data?.created_at ?? null,
-      expiresAt: result.data?.expires_at ?? null,
-      revokedAt: result.data?.revoked_at ?? null,
+      active: Boolean(row && !row.revoked_at && row.expires_at && !isInvitationExpired(row.expires_at)),
+      createdAt: row?.created_at ?? null,
+      expiresAt: row?.expires_at ?? null,
+      revokedAt: row?.revoked_at ?? null,
     });
   } catch (error) {
     return handleApiError(error, "GET /api/actions/:actionId/invite-link");
@@ -70,19 +82,22 @@ export async function POST(request: Request, ctx: Context) {
       p_actor_id: resolved.access.userId,
     });
     if (result.error) throw result.error;
-    const link = await resolved.supabase
+    const rawLink: unknown = await resolved.supabase
       .from("action_invitation_links")
       .select("created_at, revoked_at, expires_at")
       .eq("action_id", resolved.actionId)
       .maybeSingle();
+    const link = parseActionSupabaseResult(rawLink);
     if (link.error) throw link.error;
+    const row = parseActionSingleRow(link.data, isActionInvitationLinkMetadataRow);
+    if (!row) throw new Error("La réponse du lien d'invitation est invalide.");
     return NextResponse.json({
       status: "ok",
       active: true,
       url: buildInvitationUrl(request, token),
-      createdAt: link.data?.created_at ?? null,
-      expiresAt: link.data?.expires_at ?? null,
-      revokedAt: link.data?.revoked_at ?? null,
+      createdAt: row.created_at,
+      expiresAt: row.expires_at,
+      revokedAt: row.revoked_at,
     }, { status: 201 });
   } catch (error) {
     return handleApiError(error, "POST /api/actions/:actionId/invite-link");
