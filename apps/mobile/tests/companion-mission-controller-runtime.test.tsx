@@ -132,6 +132,39 @@ describe('mobile companion mission controller runtime', () => {
     await act(async () => { renderer.unmount() })
   })
 
+  it('returns to idle without inventing a mission when the authenticated start fails', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    state.startMobileMission.mockResolvedValueOnce({ ok: false, error: 'Permission GPS refusée.' })
+    const { getController } = await renderController()
+
+    await act(async () => { await getController().handleStartMobileMission() })
+
+    expect(getController().phase).toBe('idle')
+    expect(getController().mission).toBeNull()
+    expect(getController().errorMsg).toBe('Permission GPS refusée.')
+    expect(state.alert).toHaveBeenCalledWith('Suivi GPS impossible', 'Permission GPS refusée.')
+  })
+
+  it('retries restoration when the application becomes active again after a closed-app interruption', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    state.restoreActiveTracking
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce('mission-1')
+    state.getMission.mockResolvedValue({ ok: true, data: mission })
+    const { getController } = await renderController()
+    await act(async () => { await settle() })
+    expect(getController().phase).toBe('idle')
+
+    await act(async () => {
+      state.appStateListener?.('active')
+      await settle()
+    })
+
+    expect(state.restoreActiveTracking).toHaveBeenCalledTimes(2)
+    expect(getController().phase).toBe('tracking')
+    expect(getController().mission?.id).toBe('mission-1')
+  })
+
   it('keeps a mission active after a finalization failure and completes it after retry', async () => {
     state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
     const { getController } = await renderController()

@@ -11,7 +11,7 @@ vi.mock('../lib/storage', () => ({
   }),
 }))
 
-import { reconcileLinkedMission } from '../lib/linked-mission-service'
+import { createLinkedMission, reconcileLinkedMission } from '../lib/linked-mission-service'
 
 describe('linked mission gamification handoff', () => {
   afterEach(() => {
@@ -42,6 +42,49 @@ describe('linked mission gamification handoff', () => {
       }),
     )
     expect(JSON.stringify(fetchMock.mock.calls[0]?.[1])).not.toContain('gps_points')
+  })
+
+  it('creates a linked mission only through the authenticated web boundary', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test/')
+    getToken.mockResolvedValue('clerk-bearer')
+    const mission = { id: 'mission-1', action_id: 'action-1', volunteer_id: 'user_123', label: 'Terrain', status: 'pending' }
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ mission }), { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createLinkedMission(' Terrain ', 'action-1')).resolves.toEqual({ ok: true, data: mission })
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://cleanmymap.test/api/missions',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { Authorization: 'Bearer clerk-bearer', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actionId: 'action-1', label: ' Terrain ' }),
+      }),
+    )
+    expect(JSON.stringify(fetchMock.mock.calls[0]?.[1])).not.toContain('distance_m')
+    expect(JSON.stringify(fetchMock.mock.calls[0]?.[1])).not.toContain('gps_points')
+  })
+
+  it('fails closed for missing tokens, forbidden responses and network errors without local success', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    getToken.mockResolvedValueOnce(null)
+    await expect(createLinkedMission('Terrain', 'action-1')).resolves.toEqual({
+      ok: false,
+      error: 'Connexion Clerk requise pour accéder à cette mission.',
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    getToken.mockResolvedValueOnce('clerk-bearer')
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 }))
+    await expect(createLinkedMission('Terrain', 'action-1')).resolves.toEqual({ ok: false, error: 'Forbidden' })
+
+    fetchMock.mockRejectedValueOnce(new Error('network unavailable'))
+    await expect(createLinkedMission('Terrain', 'action-1')).resolves.toEqual({
+      ok: false,
+      error: 'Impossible de joindre le site pour créer la mission liée : network unavailable',
+    })
   })
 
   it('replays several pending missions once and removes successful handoffs', async () => {
