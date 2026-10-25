@@ -99,6 +99,37 @@ describe('mobile GPS TaskManager task', () => {
     expect(state.flushCount).toBe(1)
   })
 
+  it('persists every point from one OS batch with distinct idempotency keys', async () => {
+    const secondLocation = {
+      ...location,
+      coords: { ...location.coords, latitude: 48.857, longitude: 2.353 },
+      timestamp: Date.parse('2026-10-02T10:00:05.000Z'),
+    }
+    const upsert = vi.fn(async () => ({ error: null }))
+    state.client = { from: vi.fn(() => ({ upsert })) }
+
+    await state.task?.({ data: { locations: [location, secondLocation] } })
+
+    expect(upsert).toHaveBeenCalledTimes(2)
+    const payloads = (upsert.mock.calls as unknown[][]).map((call) => call[0] as Record<string, unknown>)
+    expect(payloads[0]).toMatchObject({ mission_id: 'mission-1', latitude: 48.8566, recorded_at: '2026-10-02T10:00:00.000Z' })
+    expect(payloads[1]).toMatchObject({ mission_id: 'mission-1', latitude: 48.857, recorded_at: '2026-10-02T10:00:05.000Z' })
+    expect(payloads[0]?.client_point_id).not.toBe(payloads[1]?.client_point_id)
+    expect(state.flushCount).toBe(1)
+  })
+
+  it('buffers the whole batch when the Clerk identity disappears before emission', async () => {
+    state.currentUserId = null
+    const upsert = vi.fn(async () => ({ error: null }))
+    state.client = { from: vi.fn(() => ({ upsert })) }
+
+    await state.task?.({ data: { locations: [location] } })
+
+    expect(upsert).not.toHaveBeenCalled()
+    expect(state.bufferedPoints).toHaveLength(1)
+    expect(state.flushCount).toBe(0)
+  })
+
   it('buffers a point when the headless GPS insert fails', async () => {
     const insertError = new Error('network unavailable')
     const upsert = vi.fn(async () => ({ error: insertError }))

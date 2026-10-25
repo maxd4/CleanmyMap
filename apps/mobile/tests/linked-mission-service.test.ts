@@ -87,6 +87,65 @@ describe('linked mission gamification handoff', () => {
     })
   })
 
+  it('does not call Clerk or the network when the linked-mission endpoint is not configured', async () => {
+    getToken.mockResolvedValue('clerk-bearer')
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createLinkedMission('Terrain', 'action-1')).resolves.toEqual({
+      ok: false,
+      error: 'URL du site web absente pour créer une mission liée.',
+    })
+    expect(getToken).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not turn an invalid successful response into a local mission', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
+    getToken.mockResolvedValue('clerk-bearer')
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{invalid-json', { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createLinkedMission('Terrain', 'action-1')).resolves.toEqual({
+      ok: false,
+      error: 'Impossible de créer la mission GPS liée.',
+    })
+  })
+
+  it('classifies forbidden and missing handoffs as terminal while retaining retryable failures', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
+    getToken.mockResolvedValue('clerk-bearer')
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Not found' }), { status: 404 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Service unavailable' }), { status: 503 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(reconcileLinkedMission('mission-1')).resolves.toEqual({ ok: false, error: 'Forbidden', terminal: true })
+    await expect(reconcileLinkedMission('mission-2')).resolves.toEqual({ ok: false, error: 'Not found', terminal: true })
+    await expect(reconcileLinkedMission('mission-3')).resolves.toEqual({ ok: false, error: 'Service unavailable', terminal: false })
+  })
+
+  it('rejects a linked handoff before the network when the endpoint or token is unavailable', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(reconcileLinkedMission('mission-1')).resolves.toEqual({
+      ok: false,
+      error: 'URL du site web absente pour réconcilier la mission liée.',
+      terminal: false,
+    })
+
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
+    getToken.mockResolvedValue(null)
+    await expect(reconcileLinkedMission('mission-1')).resolves.toEqual({
+      ok: false,
+      error: 'Connexion Clerk requise pour accéder à cette mission.',
+      terminal: false,
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('replays several pending missions once and removes successful handoffs', async () => {
     vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
     getToken.mockResolvedValue('clerk-bearer')
@@ -138,6 +197,38 @@ describe('linked mission gamification handoff', () => {
 
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(storage.pending).toEqual([])
+  })
+
+  it('replays at most five pending handoffs per resume and leaves later items queued', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
+    getToken.mockResolvedValue('clerk-bearer')
+    storage.pending = ['mission-1', 'mission-2', 'mission-3', 'mission-4', 'mission-5', 'mission-6', 'mission-7']
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      const missionId = url.split('/').at(-2)
+      return new Response(JSON.stringify({ missionId, actionId: `action-${missionId}` }), { status: 200 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { reconcilePendingLinkedMissions } = await import('../lib/linked-mission-service')
+    await reconcilePendingLinkedMissions('user_123')
+
+    expect(fetchMock).toHaveBeenCalledTimes(5)
+    expect(storage.pending).toEqual(['mission-6', 'mission-7'])
+  })
+
+  it('stops a pending replay when the Clerk identity changes before the first network call', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
+    getToken.mockResolvedValue('clerk-bearer')
+    storage.pending = ['mission-1', 'mission-2']
+    getUserId.mockResolvedValueOnce('user_123').mockResolvedValueOnce('user_other')
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { reconcilePendingLinkedMissions } = await import('../lib/linked-mission-service')
+    await reconcilePendingLinkedMissions('user_123')
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(storage.pending).toEqual(['mission-1', 'mission-2'])
   })
 
   it('refuses a replay explicitly owned by an obsolete Clerk identity', async () => {

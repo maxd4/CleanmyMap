@@ -130,4 +130,39 @@ describe('pending GPS point polling', () => {
     expect(readCount).toHaveBeenCalledTimes(2)
     expect(onCount).toHaveBeenLastCalledWith(8)
   })
+
+  it('keeps only the newest overlapping refresh result', async () => {
+    let releaseFirst!: (count: number) => void
+    let releaseSecond!: (count: number) => void
+    const readCount = vi.fn()
+      .mockImplementationOnce(() => new Promise<number>((resolve) => { releaseFirst = resolve }))
+      .mockImplementationOnce(() => new Promise<number>((resolve) => { releaseSecond = resolve }))
+    const onCount = vi.fn()
+    const poller = createPendingGpsPointPoller({ readCount, onCount })
+
+    const first = poller.refresh()
+    const second = poller.refresh()
+    releaseSecond(9)
+    await second
+    releaseFirst(3)
+    await first
+
+    expect(onCount).toHaveBeenCalledOnce()
+    expect(onCount).toHaveBeenCalledWith(9)
+  })
+
+  it('does not start a read after disposal, including an explicit refresh', async () => {
+    const readCount = vi.fn(async () => 4)
+    const onCount = vi.fn()
+    const poller = createPendingGpsPointPoller({ readCount, onCount })
+
+    poller.dispose()
+    await poller.refresh()
+    poller.start()
+    await vi.advanceTimersByTimeAsync(PENDING_GPS_POINT_POLL_INTERVAL_MS)
+
+    expect(readCount).not.toHaveBeenCalled()
+    expect(onCount).not.toHaveBeenCalled()
+    expect(poller.isRunning()).toBe(false)
+  })
 })

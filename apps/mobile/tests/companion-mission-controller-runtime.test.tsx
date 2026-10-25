@@ -165,6 +165,45 @@ describe('mobile companion mission controller runtime', () => {
     expect(getController().mission?.id).toBe('mission-1')
   })
 
+  it('does not resurrect a mission whose server status is already completed', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    state.restoreActiveTracking.mockResolvedValue('mission-1')
+    state.getMission.mockResolvedValue({ ok: true, data: { ...mission, status: 'completed', ended_at: '2026-10-20T10:30:00.000Z' } })
+
+    const { getController } = await renderController()
+    await act(async () => { await settle() })
+
+    expect(state.getMission).toHaveBeenCalledWith('mission-1')
+    expect(getController().phase).toBe('idle')
+    expect(getController().mission).toBeNull()
+    expect(state.refreshPendingGpsPointCount).not.toHaveBeenCalled()
+  })
+
+  it('does not open a finalization prompt when no mission is active', async () => {
+    const { getController } = await renderController()
+
+    await act(async () => { getController().handleStop() })
+
+    expect(state.alert).not.toHaveBeenCalled()
+    expect(state.stopTracking).not.toHaveBeenCalled()
+  })
+
+  it('clears a completed summary when returning to the home state', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    const { getController } = await renderController()
+    await act(async () => { await getController().handleStartMobileMission(); await settle() })
+    await act(async () => { getController().handleStop() })
+    const buttons = state.alert.mock.calls.at(-1)?.[2] as Array<{ text: string; onPress?: () => void }>
+    await act(async () => { await buttons.find((button) => button.text === 'Terminer')?.onPress?.(); await settle() })
+
+    expect(getController().completionSummary).not.toBeNull()
+    await act(async () => { getController().handleReturnHome() })
+
+    expect(getController().completionSummary).toBeNull()
+    expect(getController().errorMsg).toBeNull()
+    expect(getController().phase).toBe('idle')
+  })
+
   it('keeps a mission active after a finalization failure and completes it after retry', async () => {
     state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
     const { getController } = await renderController()
