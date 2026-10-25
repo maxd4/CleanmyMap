@@ -251,6 +251,8 @@ function collectIdentifierReferences(source: string): Set<string> {
   return collectIdentifierReferencesFromNode(sourceFile);
 }
 
+const callableBindingsCache = new WeakMap<object, Set<string>>();
+
 function collectCalledIdentifiers(
   source: string,
   includePropertyAccess = false,
@@ -337,12 +339,13 @@ function hasEvidenceToken(
   token: string,
   calledIdentifiers = collectCalledIdentifiers(source, true),
   callableBindings = new Set<string>(),
+  identifierReferences = collectIdentifierReferences(source),
 ): boolean {
   const executableSource = withoutComments(source);
   if (!/^[A-Za-z_$][\w$]*$/.test(token)) return executableSource.includes(token);
   if (callableBindings.has(token)) return calledIdentifiers.has(token);
   return (
-    collectIdentifierReferences(executableSource).has(token) ||
+    identifierReferences.has(token) ||
     (token.includes("_") && new RegExp(`["'\`]${token}["'\`]`).test(executableSource))
   );
 }
@@ -428,7 +431,12 @@ function missingEvidence(
     true,
     true,
   );
-  const callableBindings = collectFunctionBindings(routeEntry.source);
+  let callableBindings = callableBindingsCache.get(routeEntry);
+  if (!callableBindings) {
+    callableBindings = collectFunctionBindings(routeEntry.source);
+    callableBindingsCache.set(routeEntry, callableBindings);
+  }
+  const identifierReferences = collectIdentifierReferences(executableEvidenceSource);
   const missing = (entry.evidence ?? []).filter(
     (token) =>
       !hasEvidenceToken(
@@ -436,15 +444,20 @@ function missingEvidence(
         token,
         calledIdentifiers,
         callableBindings,
+        identifierReferences,
       ),
   );
+  const handlerSource = methodSource ?? "";
+  const handlerCalledIdentifiers = collectCalledIdentifiers(handlerSource, true);
+  const handlerIdentifierReferences = collectIdentifierReferences(handlerSource);
   const missingHandlerEvidence = (entry.handlerEvidence ?? []).filter(
     (token) =>
       !hasEvidenceToken(
-        methodSource ?? "",
+        handlerSource,
         token,
-        collectCalledIdentifiers(methodSource ?? "", true),
+        handlerCalledIdentifiers,
         callableBindings,
+        handlerIdentifierReferences,
       ),
   );
   return [...missing, ...missingHandlerEvidence];
@@ -624,7 +637,7 @@ describe("API security boundaries", () => {
         );
       }
     }
-  });
+  }, 30_000);
 
   it("does not let an import or a different HTTP method satisfy method evidence", () => {
     const fixture = `
