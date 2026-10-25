@@ -406,4 +406,67 @@ export function registerActionVisibilityScenarios({
     );
   });
 
+  it("sanitizes an invalid visibility projection returned by Supabase", async () => {
+    const selectMock = vi.fn((columns: string) => ({
+      eq: vi.fn(() => ({
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: columns.includes("moderation_visibility, hidden_at")
+            ? {
+                moderation_visibility: { leaked: true },
+                hidden_at: null,
+                hidden_by_clerk_id: null,
+                hidden_reason: null,
+              }
+            : {
+                status: "pending",
+                moderation_visibility: "visible",
+                created_by_clerk_id: "creator-1",
+                waste_kg: 1,
+                cigarette_butts: 2,
+                volunteers_count: 3,
+                duration_minutes: 30,
+                notes: null,
+              },
+          error: null,
+        }),
+      })),
+    }));
+    const updateMock = vi.fn(() => ({
+      eq: vi.fn(() => ({
+        select: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: "action-1", updated_at: "2026-10-25T10:00:00.000Z" },
+            error: null,
+          }),
+        })),
+      })),
+    }));
+    getSupabaseAdminClientMock.mockReturnValue({
+      from: vi.fn(() => ({ select: selectMock, update: updateMock })),
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/moderation", {
+        method: "POST",
+        body: JSON.stringify({
+          entityType: "action",
+          id: "action-1",
+          status: "pending",
+          moderationVisibility: "hidden",
+          confirmPhrase: "CONFIRMER MODERATION",
+          reason: "Projection Supabase à vérifier.",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    const body = await response.json();
+    expect(body).toMatchObject({
+      error: "La modération a échoué.",
+      code: "server_error",
+    });
+    expect(JSON.stringify(body)).not.toContain("leaked");
+  });
+
 }
