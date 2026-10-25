@@ -19,6 +19,21 @@ type ObserverProjection = {
   participation: { registered: number; present: number };
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isObserverProjection(value: unknown): value is ObserverProjection {
+  if (!isRecord(value) || !Array.isArray(value.divisions) || !Array.isArray(value.teams) || !isRecord(value.participation) || typeof value.participation.registered !== "number" || typeof value.participation.present !== "number") return false;
+  const divisionsValid = value.divisions.every((division) => isRecord(division) && typeof division.id === "string" && typeof division.divisionType === "string" && typeof division.divisionKey === "string");
+  const teamsValid = value.teams.every((team) => isRecord(team) && typeof team.id === "string" && (team.divisionId === null || typeof team.divisionId === "string") && typeof team.teamNumber === "number" && typeof team.publicName === "string" && typeof team.compositionState === "string" && (team.submissionStatus === null || typeof team.submissionStatus === "string") && (team.submissionVersion === null || typeof team.submissionVersion === "number") && (team.submittedAt === null || typeof team.submittedAt === "string") && typeof team.certified === "boolean");
+  return divisionsValid && teamsValid;
+}
+
+function errorMessage(value: unknown, fallback: string): string {
+  return isRecord(value) && typeof value.error === "string" ? value.error : fallback;
+}
+
 function divisionLabel(value: string): string {
   return value === "world_cup" ? "World Cup" : "Casual";
 }
@@ -40,9 +55,10 @@ export function SpogomiObserverCockpitPanel({ eventId, view }: { eventId: string
     let active = true;
     void fetch(`/api/spogomi/events/${eventId}/observer`, { cache: "no-store" })
       .then(async (response) => {
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(body.error ?? "Les données opérationnelles sont indisponibles.");
-        if (active) setProjection(body.projection as ObserverProjection);
+        const body: unknown = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(errorMessage(body, "Les données opérationnelles sont indisponibles."));
+        if (!isRecord(body) || !isObserverProjection(body.projection)) throw new Error("Les données opérationnelles ont renvoyé une réponse invalide.");
+        if (active) setProjection(body.projection);
       })
       .catch((reason) => {
         if (active) setError(reason instanceof Error ? reason.message : "Les données opérationnelles sont indisponibles.");

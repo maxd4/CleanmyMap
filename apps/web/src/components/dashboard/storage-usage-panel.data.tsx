@@ -287,7 +287,7 @@ export function StorageUsageDataView({
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 10, fontWeight: 800 }}
-                        tickFormatter={(value) => `${value.toFixed(1)} GB`}
+                         tickFormatter={(value) => `${Number(value).toFixed(1)} GB`}
                       />
                       <Tooltip
                         cursor={{ fill: "rgba(255,255,255,0.04)" }}

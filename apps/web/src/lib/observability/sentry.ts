@@ -2,7 +2,7 @@ import { env, isConfigured } from "@/lib/env";
 import {
   resolveSentryEnvironment,
   resolveSentryRelease,
-} from "./sentry-metadata.mjs";
+} from "./sentry-metadata";
 
 export function isSentryEnabled(): boolean {
   return getSentryDsn() !== null;

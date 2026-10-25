@@ -104,16 +104,16 @@ function NotificationBellSession({
     const startPolling = () => {
       clearPolling();
       if (!mounted || document.visibilityState !== "visible") return;
-      intervalId = window.setInterval(() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ fetchNotifications(); }, pollIntervalMs);
+      intervalId = window.setInterval(() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ fetchNotifications().catch(() => undefined); }, pollIntervalMs);
     };
     const handleVisibilityChange = () => {
       if (!mounted) return;
       if (document.visibilityState === "visible") {
-        void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ fetchNotifications();
+        void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ fetchNotifications().catch(() => undefined);
         startPolling();
       } else clearPolling();
     };
-    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ Promise.resolve().then(() => fetchNotifications());
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ Promise.resolve().then(() => fetchNotifications()).catch(() => undefined);
     startPolling();
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {

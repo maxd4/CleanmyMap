@@ -102,7 +102,7 @@ export function DisplayNameModeSetting({
               : copy.error,
           );
         }
-      })();
+      })().catch(() => undefined);
     });
   };
 

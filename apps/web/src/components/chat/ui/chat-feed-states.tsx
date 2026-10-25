@@ -11,7 +11,7 @@ export function ChatLoadingState({ count = 3, tone = "dark" }: ChatLoadingStateP
   const isLight = tone === "light";
   return (
     <div className="space-y-8 p-4">
-      {[...Array(count)].map((_, i) => (
+      {Array.from({ length: count }, (_, i) => (
         <div key={i} className="flex items-start gap-4 animate-pulse">
           <div className={`h-10 w-10 rounded-2xl ${isLight ? "bg-rose-100" : "bg-pink-100 dark:bg-slate-800"}`} />
           <div className="flex-1 space-y-3">

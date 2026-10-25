@@ -45,7 +45,7 @@ describe('mobile Expo environment boundary', () => {
   })
 
   it('preserves missing configuration behavior and the canonical web fallback', () => {
-    const originalValues = publicEnvironmentNames.map((name) => [name, process.env[name]] as const)
+    const originalValues = publicEnvironmentNames.map((name) => [name, getMobilePublicEnv(name)] as const)
 
     try {
       for (const name of publicEnvironmentNames) delete process.env[name]

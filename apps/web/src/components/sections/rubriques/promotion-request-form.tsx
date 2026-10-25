@@ -123,7 +123,7 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
       if (appError.kind === "network") {
         notifyNetworkToast({
           message: appError.message || defaultMessageForKind("network"),
-          onRetry: () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submitRequest(); },
+          onRetry: () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submitRequest().catch(() => undefined); },
           onRefresh: () => window.location.reload(),
         });
         setSubmitState("idle");

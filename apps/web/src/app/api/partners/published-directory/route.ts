@@ -20,6 +20,8 @@ export async function GET() {
  items: visibleItems,
  }, {
   headers: {
+    // Cache/no-store justification: the public directory is assembled from
+    // mutable publication state and must not be served from a shared cache.
     "Cache-Control": "no-store",
   },
  });

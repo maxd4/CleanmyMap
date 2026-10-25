@@ -48,6 +48,29 @@ type QuizSrsTableClient = {
 
 type AccessTokenProvider = () => Promise<string | null>;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isSrsStats(value: unknown): value is SRSStats {
+  if (!isRecord(value)) return false;
+  return typeof value.question_id === "string" && (value.last_seen_at === undefined || typeof value.last_seen_at === "string") && typeof value.next_review_at === "string" && typeof value.success_count === "number" && typeof value.failure_count === "number" && typeof value.streak === "number" && typeof value.ease_factor === "number" && typeof value.mastery_level === "number";
+}
+
+function parseLocalSrsData(raw: string): Record<string, SRSStats> {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!isRecord(parsed)) return {};
+    const result: Record<string, SRSStats> = {};
+    for (const [questionId, value] of Object.entries(parsed)) {
+      if (isSrsStats(value)) result[questionId] = value;
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
 function getQuizSrsCacheKey(userId: string, questionIds: string[]): string {
   return `${userId}::${[...questionIds].sort((left, right) => left < right ? -1 : left > right ? 1 : 0).join("|")}`;
 }
@@ -136,7 +159,7 @@ export async function loadQuizSRSData(
     // LocalStorage fallback
     const local = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (local) {
-      const parsed = JSON.parse(local);
+      const parsed = parseLocalSrsData(local);
       questionIds.forEach(id => {
         if (parsed[id]) data[id] = parsed[id];
       });
@@ -182,7 +205,7 @@ export async function saveQuizSRSState(
   } else {
     // LocalStorage fallback
     const local = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const parsed = local ? JSON.parse(local) : {};
+    const parsed = local ? parseLocalSrsData(local) : {};
     parsed[stats.question_id] = stats;
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsed));
   }

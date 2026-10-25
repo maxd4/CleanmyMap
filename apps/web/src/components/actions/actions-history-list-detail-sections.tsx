@@ -109,7 +109,7 @@ export function ActionHistoryGroupJoinSection({
       </div>
       {pendingGroupJoinError ? <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 cmm-text-small text-rose-700">{pendingGroupJoinError}</p> : null}
       {pendingGroupJoinLoading ? (
-        <div className="mt-2 space-y-2">{[...Array(2)].map((_, index) => <div key={index} className="rounded-lg border border-amber-100 bg-white px-3 py-2.5"><CmmSkeleton className="h-4 w-40" /><CmmSkeleton className="mt-2 h-3 w-24" /></div>)}</div>
+        <div className="mt-2 space-y-2">{Array.from({ length: 2 }, (_, index) => <div key={index} className="rounded-lg border border-amber-100 bg-white px-3 py-2.5"><CmmSkeleton className="h-4 w-40" /><CmmSkeleton className="mt-2 h-3 w-24" /></div>)}</div>
       ) : pendingGroupJoinRequests.length > 0 ? (
         <div className="mt-2 space-y-2.5">
           {pendingGroupJoinRequests.map((request) => (

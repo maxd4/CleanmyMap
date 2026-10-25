@@ -21,11 +21,8 @@ export async function readLocalRecordStore<T>(
 ): Promise<LocalRecordStorePayload<T>> {
   try {
     const raw = await readFile(filePath, "utf8");
-    const parsed = JSON.parse(raw) as {
-      updatedAt?: unknown;
-      records?: unknown;
-    };
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.records)) {
+    const parsed: unknown = JSON.parse(raw);
+    if (!isPlainRecord(parsed) || !Array.isArray(parsed.records)) {
       return { updatedAt: new Date().toISOString(), records: [] };
     }
     return {

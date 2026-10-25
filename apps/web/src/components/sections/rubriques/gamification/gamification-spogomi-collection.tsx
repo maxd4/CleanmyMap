@@ -94,7 +94,7 @@ function AwardRow({ award }: { award: SpogomiCollectionAward }) {
 
 export function GamificationSpogomiCollection({ locale }: Props) {
   const fr = locale === "fr";
-  const { data, error, isLoading } = useSWR("gamification-spogomi-collection", () => fetchCollection("/api/gamification/spogomi/collection"));
+  const { data, error, isLoading } = useSWR<SpogomiCollection, unknown>("gamification-spogomi-collection", () => fetchCollection("/api/gamification/spogomi/collection"));
   const [filters, setFilters] = useState<SpogomiCollectionFilters>({ year: "all", kind: "all", eventId: "all" });
   const awards = data?.awards ?? [];
   const filteredAwards = filterSpogomiCollection(awards, filters);

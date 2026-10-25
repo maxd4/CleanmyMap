@@ -126,7 +126,11 @@ export async function GET(request: Request) {
  status:"ok",
  count: items.length,
  items,
- }, { headers: { "Cache-Control": "private, no-store" } });
+ }, { headers: {
+  // Cache/no-store justification: authenticated spot projections are
+  // user-scoped and must not be reused by a shared cache.
+  "Cache-Control": "private, no-store",
+ } });
  } catch (error) {
  return handleApiError(error,"api/spots");
  }

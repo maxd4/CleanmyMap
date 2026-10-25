@@ -50,7 +50,7 @@ export function SpogomiVolunteerContributionsCard({ eventId, signInHref }: { eve
   }, [eventId, isLoaded, isSignedIn]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ load(); }, 0);
+    const timer = window.setTimeout(() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ load().catch(() => undefined); }, 0);
     return () => window.clearTimeout(timer);
   }, [load]);
 

@@ -42,7 +42,7 @@ const [isVisible, setIsVisible] = useState(false);
  } catch (err) {
  console.error("Météo fetch error:", err);
  }
- })(); },
+ })().catch(() => undefined); },
  () => {
  // User denied GPS or error, silent
  },

@@ -1,7 +1,7 @@
 import {
   normalizeSentryEnvironment,
   normalizeSentryRelease,
-} from "./sentry-metadata.mjs";
+} from "./sentry-metadata";
 
 export function getSentryClientDsn(): string | null {
   const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim();

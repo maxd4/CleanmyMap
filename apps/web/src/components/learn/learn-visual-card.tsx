@@ -143,7 +143,7 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
   if (motif === "calendar") {
     return (
       <div className="grid h-full grid-cols-3 gap-2">
-        {[...Array(9)].map((_, index) => (
+         {Array.from({ length: 9 }, (_, index) => (
           <span
             key={index}
             className={cn(

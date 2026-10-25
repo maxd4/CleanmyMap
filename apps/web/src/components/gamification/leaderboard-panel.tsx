@@ -131,7 +131,7 @@ export function LeaderboardPanel({
   const [scope, setScope] = useState<PublicLeaderboardScope>(initialScope);
   const [metric, setMetric] = useState<LeaderboardMetric>("level");
   const key = buildPublicLeaderboardUrl(scope, metric);
-  const { data, error, isLoading } = useSWR(key, fetchPublicLeaderboard, {
+  const { data, error, isLoading } = useSWR<Awaited<ReturnType<typeof fetchPublicLeaderboard>>, unknown>(key, fetchPublicLeaderboard, {
     ...swrRecentViewOptions,
   });
 
@@ -168,7 +168,7 @@ export function LeaderboardPanel({
         </div>
 
         {isLoading ? <p role="status" aria-live="polite" className="rounded-2xl bg-rose-50 p-6 font-semibold text-slate-700">Chargement du classement…</p> : null}
-        {error ? <p role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 font-semibold text-red-800">{error.message}</p> : null}
+        {error ? <p role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 font-semibold text-red-800">{error instanceof Error ? error.message : "Classement indisponible."}</p> : null}
         {!isLoading && !error && data?.items.length === 0 ? (
           <p className="rounded-2xl border border-rose-100 bg-rose-50/60 p-6 font-semibold text-slate-700">
             {scope === "user" ? "Aucun utilisateur n’a encore choisi de figurer dans le classement." : "Aucune structure publique n’est encore disponible."}

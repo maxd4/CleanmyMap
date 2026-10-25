@@ -12,6 +12,15 @@ import { RecyclingQualitySummary, RecyclingStreamTable } from "./recycling-compo
 
 const BREAKDOWN_KEY = "section-recycling-breakdown";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPublicSectionBreakdown(value: unknown): value is PublicSectionBreakdown {
+  if (!isRecord(value) || typeof value.totalKg !== "number" || typeof value.wasteCoverageRate !== "number" || typeof value.generatedAt !== "string" || !Array.isArray(value.lines) || !isRecord(value.triQuality)) return false;
+  return typeof value.triQuality.elevee === "number" && typeof value.triQuality.moyenne === "number" && typeof value.triQuality.faible === "number" && value.lines.every((line) => isRecord(line) && typeof line.category === "string" && typeof line.kg === "number" && typeof line.sharePercent === "number" && typeof line.entries === "number");
+}
+
 async function fetchRecyclingBreakdown(): Promise<PublicSectionBreakdown> {
   const response = await fetch("/api/recycling/breakdown", {
     method: "GET",
@@ -20,7 +29,9 @@ async function fetchRecyclingBreakdown(): Promise<PublicSectionBreakdown> {
   if (!response.ok) {
     throw new Error(response.status === 401 ? "breakdown_auth_required" : "breakdown_unavailable");
   }
-  return (await response.json()) as PublicSectionBreakdown;
+  const body: unknown = await response.json().catch(() => null);
+  if (!isPublicSectionBreakdown(body)) throw new Error("breakdown_invalid");
+  return body;
 }
 
 function DetailState({ children, tone = "default" }: { children: ReactNode; tone?: "default" | "error" }) {
@@ -73,7 +84,7 @@ export function RecyclingBreakdownDetails({
   const [requestedIdentity, setRequestedIdentity] = useState<string | null>(null);
   const requested = identityKey !== null && requestedIdentity === identityKey;
   const key = requested && identityKey ? [BREAKDOWN_KEY, identityKey] : null;
-  const { data, error, isLoading, isValidating } = useSWR<PublicSectionBreakdown>(
+  const { data, error, isLoading, isValidating } = useSWR<PublicSectionBreakdown, unknown>(
     key,
     fetchRecyclingBreakdown,
     {
@@ -119,7 +130,7 @@ export function RecyclingBreakdownDetails({
   }
 
   if (error) {
-    return <BreakdownErrorState fr={fr} authRequired={error.message === "breakdown_auth_required"} onRetry={() => setRequestedIdentity(null)} />;
+    return <BreakdownErrorState fr={fr} authRequired={error instanceof Error && error.message === "breakdown_auth_required"} onRetry={() => setRequestedIdentity(null)} />;
   }
 
   if (!visibleData) {

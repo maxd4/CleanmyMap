@@ -276,7 +276,7 @@ export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) 
 
   useEffect(() => () => searchAbortRef.current?.abort(), []);
 
-  const { data, error, isLoading } = useSWR<ChatSearchResponse>(
+  const { data, error, isLoading } = useSWR<ChatSearchResponse, unknown>(
     searchKey,
     searchFetcher,
     {

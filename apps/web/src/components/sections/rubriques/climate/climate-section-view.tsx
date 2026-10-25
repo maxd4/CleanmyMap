@@ -27,5 +27,5 @@ export function ClimateResults({ fr, context }: { fr: boolean; context: ClimateC
 }
 
 export function ClimateLoading() {
-  return <motion.div key="loading" initial={{ opacity: 1 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="cmm-section-group"><div className="grid gap-[var(--cmm-section-gap)] md:grid-cols-2 lg:grid-cols-4">{[...Array(4)].map((_, i) => <CmmSkeleton key={i} className="h-44 w-full rounded-[var(--radius-lg)]" />)}</div><CmmSkeleton className="h-96 w-full rounded-[var(--radius-lg)]" /></motion.div>;
+   return <motion.div key="loading" initial={{ opacity: 1 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="cmm-section-group"><div className="grid gap-[var(--cmm-section-gap)] md:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }, (_, i) => <CmmSkeleton key={i} className="h-44 w-full rounded-[var(--radius-lg)]" />)}</div><CmmSkeleton className="h-96 w-full rounded-[var(--radius-lg)]" /></motion.div>;
 }

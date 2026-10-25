@@ -62,7 +62,7 @@ export function ActionsHistoryListTable({
           <CmmSkeleton className="h-4 w-32" />
           <CmmSkeleton className="h-4 w-20" />
         </div>
-        {[...Array(5)].map((_, index) => (
+        {Array.from({ length: 5 }, (_, index) => (
           <div
             key={index}
             className="flex items-center gap-4 border-b border-slate-50 px-2 py-2"

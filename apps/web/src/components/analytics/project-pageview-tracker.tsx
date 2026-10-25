@@ -178,7 +178,7 @@ export function ProjectPageviewTracker() {
       "page_view",
       "complete",
       buildRouteMeta(pathname, searchParamsRef.current),
-    );
+    ).catch(() => undefined);
   }, [pathname]);
 
   return null;

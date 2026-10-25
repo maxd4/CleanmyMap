@@ -2,14 +2,46 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import type { SpogomiConsolidationProjection, SpogomiEnvironmentalMapping } from "@/lib/spogomi/consolidation";
+import type { SpogomiConsolidationProjection } from "@/lib/spogomi/consolidation";
 
 type SpogomiConsolidationPreview = {
-  event: { id: string; action_id: string; name: string; location_label: string; starts_at: string; ends_at: string | null; state: string; environmental_mapping_version: string };
-  mappings: SpogomiEnvironmentalMapping[];
   currentProjection: { id: string; projectionRevision: number; sourceHash: string; status: string } | null;
-  projection: SpogomiConsolidationProjection;
+  projection: Pick<SpogomiConsolidationProjection, "readyForPublication" | "sourceHash" | "actionId" | "projectionVersion" | "teamsIncluded" | "participantsPresent" | "totalWasteMassGrams" | "cigaretteButtsMassGrams" | "cigaretteButtsCount" | "categoriesWithoutMapping"> & {
+    excludedMeasures: Array<{ teamId: string; categoryCode: string; reason: string }>;
+    officialRoute: { fileName: string; referenceDistanceKm: number } | null;
+    organizer: { name: string; organizerType: string } | null;
+  };
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item): item is string => typeof item === "string");
+}
+
+function parseConsolidationPreview(value: unknown): SpogomiConsolidationPreview | null {
+  if (!isRecord(value) || !isRecord(value.projection)) return null;
+  const projection = value.projection;
+  if (typeof projection.readyForPublication !== "boolean" || typeof projection.sourceHash !== "string" || typeof projection.actionId !== "string" || typeof projection.projectionVersion !== "string" || typeof projection.teamsIncluded !== "number" || typeof projection.participantsPresent !== "number" || !(projection.totalWasteMassGrams === null || typeof projection.totalWasteMassGrams === "number") || !(projection.cigaretteButtsMassGrams === null || typeof projection.cigaretteButtsMassGrams === "number") || !(projection.cigaretteButtsCount === null || typeof projection.cigaretteButtsCount === "number") || !isStringArray(projection.categoriesWithoutMapping) || !Array.isArray(projection.excludedMeasures)) return null;
+  const excludedMeasures = projection.excludedMeasures.filter((measure): measure is { teamId: string; categoryCode: string; reason: string } => isRecord(measure) && typeof measure.teamId === "string" && typeof measure.categoryCode === "string" && typeof measure.reason === "string");
+  if (excludedMeasures.length !== projection.excludedMeasures.length) return null;
+  const organizer = projection.organizer === null ? null : isRecord(projection.organizer) && typeof projection.organizer.name === "string" && typeof projection.organizer.organizerType === "string" ? { name: projection.organizer.name, organizerType: projection.organizer.organizerType } : null;
+  if (projection.organizer !== null && organizer === null) return null;
+  const officialRoute = projection.officialRoute === null ? null : isRecord(projection.officialRoute) && typeof projection.officialRoute.fileName === "string" && typeof projection.officialRoute.referenceDistanceKm === "number" ? { fileName: projection.officialRoute.fileName, referenceDistanceKm: projection.officialRoute.referenceDistanceKm } : null;
+  if (projection.officialRoute !== null && officialRoute === null) return null;
+  let currentProjection: SpogomiConsolidationPreview["currentProjection"] = null;
+  if (value.currentProjection !== null) {
+    if (!isRecord(value.currentProjection) || typeof value.currentProjection.id !== "string" || typeof value.currentProjection.projectionRevision !== "number" || typeof value.currentProjection.sourceHash !== "string" || typeof value.currentProjection.status !== "string") return null;
+    currentProjection = { id: value.currentProjection.id, projectionRevision: value.currentProjection.projectionRevision, sourceHash: value.currentProjection.sourceHash, status: value.currentProjection.status };
+  }
+  return { currentProjection, projection: { readyForPublication: projection.readyForPublication, sourceHash: projection.sourceHash, actionId: projection.actionId, projectionVersion: projection.projectionVersion, teamsIncluded: projection.teamsIncluded, participantsPresent: projection.participantsPresent, totalWasteMassGrams: projection.totalWasteMassGrams, cigaretteButtsMassGrams: projection.cigaretteButtsMassGrams, cigaretteButtsCount: projection.cigaretteButtsCount, categoriesWithoutMapping: projection.categoriesWithoutMapping, excludedMeasures, officialRoute, organizer } };
+}
+
+function errorMessage(value: unknown, fallback: string): string {
+  return isRecord(value) && typeof value.error === "string" ? value.error : fallback;
+}
 
 function grams(value: number | null): string {
   return value === null ? "non renseigné" : `${value.toLocaleString("fr-FR")} g`;
@@ -17,9 +49,11 @@ function grams(value: number | null): string {
 
 async function fetchSpogomiConsolidationPreview(eventId: string): Promise<SpogomiConsolidationPreview> {
   const response = await fetch(`/api/spogomi/events/${eventId}/consolidation`, { cache: "no-store" });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error ?? "Aperçu du bilan impossible.");
-  return body as SpogomiConsolidationPreview;
+  const body: unknown = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(errorMessage(body, "Aperçu du bilan impossible."));
+  const parsed = parseConsolidationPreview(body);
+  if (!parsed) throw new Error("L’aperçu du bilan a renvoyé une réponse invalide.");
+  return parsed;
 }
 
 export function SpogomiConsolidationPanel({ eventId }: { eventId: string }) {
@@ -52,8 +86,8 @@ export function SpogomiConsolidationPanel({ eventId }: { eventId: string }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "publish", sourceHash: preview.projection.sourceHash }),
       });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error ?? "Publication du bilan refusée.");
+      const body: unknown = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(errorMessage(body, "Publication du bilan refusée."));
       setMessage("Bilan consolidé publié dans l’action CleanMyMap cible.");
       await load();
     } catch (reason) {

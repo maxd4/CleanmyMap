@@ -22,14 +22,17 @@ export type ResolvedActionTerritory = {
   source: "geo.api.gouv.fr" | "persisted_department";
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function parseTerritoryPart(value: unknown): ResolvedTerritoryPart | null {
-  if (!value || typeof value !== "object") {
+  if (!isRecord(value)) {
     return null;
   }
 
-  const record = value as { code?: unknown; nom?: unknown };
-  const code = readStringField(record.code);
-  const name = readStringField(record.nom);
+  const code = readStringField(value.code);
+  const name = readStringField(value.nom);
   return code && name ? { code, name } : null;
 }
 

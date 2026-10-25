@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
+
+type LeaderboardPreferencePayload = { leaderboardPublicOptIn?: unknown; optionalTreatmentAllowed?: unknown };
+
+function parsePreferencePayload(value: unknown): LeaderboardPreferencePayload | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? value : null;
+}
 
 export function LeaderboardOptInSetting({ fr }: { fr: boolean }) {
   const [enabled, setEnabled] = useState(false);
@@ -14,11 +21,13 @@ export function LeaderboardOptInSetting({ fr }: { fr: boolean }) {
     let active = true;
     void fetch("/api/users/profile/leaderboard-opt-in", { cache: "no-store" })
       .then(async (response) => {
-        const payload = await response.json().catch(() => null);
+        const payload = await parseJsonSafely(response);
         if (!response.ok) throw new Error("leaderboard preference load failed");
-        return payload as { leaderboardPublicOptIn?: unknown; optionalTreatmentAllowed?: unknown };
+        const parsed = parsePreferencePayload(payload);
+        if (!parsed) throw new Error("leaderboard preference response invalid");
+        return parsed;
       })
-      .then((payload: { leaderboardPublicOptIn?: unknown; optionalTreatmentAllowed?: unknown }) => {
+      .then((payload) => {
         if (!active) return;
         setEnabled(payload.leaderboardPublicOptIn === true);
         setEligible(payload.optionalTreatmentAllowed === true);
@@ -45,7 +54,7 @@ export function LeaderboardOptInSetting({ fr }: { fr: boolean }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leaderboardPublicOptIn: nextValue }),
       });
-      const payload = await response.json().catch(() => null) as { leaderboardPublicOptIn?: unknown; optionalTreatmentAllowed?: unknown } | null;
+      const payload = parsePreferencePayload(await parseJsonSafely(response));
       if (!response.ok) throw new Error("leaderboard preference update failed");
       setEnabled(payload?.leaderboardPublicOptIn === true);
       setEligible(payload?.optionalTreatmentAllowed === true);

@@ -118,12 +118,12 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
   const { locationSuggestions, locationSuggestionsError } =
     useWeatherLocationSuggestions(locationQuery);
   const locationPreference = useMemo(
-    () => extractTerritoryLocationPreferenceFromMetadata(user?.unsafeMetadata as Record<string, unknown> | undefined)
-      ?? extractTerritoryLocationPreferenceFromMetadata(user?.publicMetadata as Record<string, unknown> | undefined),
+    () => extractTerritoryLocationPreferenceFromMetadata(user?.unsafeMetadata)
+      ?? extractTerritoryLocationPreferenceFromMetadata(user?.publicMetadata),
     [user?.publicMetadata, user?.unsafeMetadata],
   );
 
-  const { data, isLoading, error } = useSWR(
+  const { data, isLoading, error } = useSWR<Awaited<ReturnType<typeof fetchOpenMeteoForecast>>, unknown>(
     contextReady && selectedLocation.resolution === "resolved"
       ? ["section-weather-location", selectedLocation.latitude, selectedLocation.longitude]
       : null,
@@ -214,7 +214,7 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
     }).then((location) => {
       if (isCancelled || controller.signal.aborted || !location) return;
       applyResolvedLocation(location, source === "stored" || source === "preference");
-    });
+    }).catch(() => undefined);
 
     return () => {
       isCancelled = true;

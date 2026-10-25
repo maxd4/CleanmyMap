@@ -30,9 +30,9 @@ export function ChatActionReferenceCard({
   tone?: "light" | "dark";
 }) {
   const isLight = tone === "light";
-  const { data, error, isLoading } = useSWR(
-    actionId ? ["chat-action-reference", actionId] : null,
-    ([, id]) => fetchPublicActionReference(id),
+  const { data, error, isLoading } = useSWR<PublicActionReference, unknown>(
+    actionId ? (["chat-action-reference", actionId] as const) : null,
+    ([, id]: readonly [string, string]) => fetchPublicActionReference(id),
     { revalidateOnFocus: true, revalidateOnReconnect: true },
   );
 

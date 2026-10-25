@@ -2,7 +2,7 @@ import {
   isValidParisPressureGeometry as isValidCoreGeometry,
   parisPressureGeometryAreaKm2 as coreGeometryAreaKm2,
   pointInParisPressureGeometry as corePointInGeometry,
-} from "./paris-pressure-geometry-core.mjs";
+} from "./paris-pressure-geometry-core";
 import type {
   ParisPressureGeometry,
   ParisPressurePoint,

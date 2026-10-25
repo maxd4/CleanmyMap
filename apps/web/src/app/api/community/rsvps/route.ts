@@ -14,6 +14,22 @@ const communityRsvpSchema = z.object({
  status: z.enum(["yes","maybe","no"]),
 });
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+ return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+type RsvpRow = { event_id: string; participant_clerk_id: string; status: "yes" | "maybe" | "no"; updated_at: string };
+
+function isRsvpRow(value: unknown): value is RsvpRow {
+ if (!isRecord(value)) return false;
+ return typeof value.event_id === "string" && typeof value.participant_clerk_id === "string" && (value.status === "yes" || value.status === "maybe" || value.status === "no") && typeof value.updated_at === "string";
+}
+
+function parseRsvpResult(value: unknown): { data: RsvpRow | null; error: unknown | null } {
+ if (!isRecord(value) || !("data" in value) || !("error" in value)) throw new Error("Réponse Supabase RSVP invalide.");
+ return { data: isRsvpRow(value.data) ? value.data : null, error: value.error ?? null };
+}
+
 export async function POST(request: Request) {
  const rateLimit = await verifyRateLimit(request, { limit: 30, window: 60 });
  const rateLimitResponse = createServerRateLimitResponse(
@@ -43,7 +59,7 @@ export async function POST(request: Request) {
  const supabase = getSupabaseServerClient(true);
 
  try {
- const upsertedResult = await supabase
+ const rawUpsertedResult: unknown = await supabase
  .from("event_rsvps")
  .upsert(
  {
@@ -57,8 +73,9 @@ export async function POST(request: Request) {
  .select("event_id, participant_clerk_id, status, updated_at")
  .single();
 
+ const upsertedResult = parseRsvpResult(rawUpsertedResult);
  if (upsertedResult.error) {
-  if (upsertedResult.error.code ==="23503") {
+  if (isRecord(upsertedResult.error) && upsertedResult.error.code ==="23503") {
    return NextResponse.json({ error:"Event not found" }, { status: 404 });
   }
   return handleApiError(upsertedResult.error, "POST /api/community/rsvps (upsert)");

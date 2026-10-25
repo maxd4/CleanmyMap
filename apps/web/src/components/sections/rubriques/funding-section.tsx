@@ -295,7 +295,7 @@ export function FundingSection({
       .then((payload: { confirmed?: boolean } | null) => {
         if (!cancelled && payload?.confirmed) {
           setConfirmation("confirmed");
-          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadAggregates();
+          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadAggregates().catch(() => undefined);
         }
       })
       .catch(() => undefined);

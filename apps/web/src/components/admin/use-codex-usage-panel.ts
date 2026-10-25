@@ -49,7 +49,7 @@ export function useCodexUsagePanel() {
           setIsLoading(false);
         }
       }
-    })();
+    })().catch(() => undefined);
 
     return () => {
       isMounted = false;

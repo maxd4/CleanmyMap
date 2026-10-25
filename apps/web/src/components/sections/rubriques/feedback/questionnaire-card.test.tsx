@@ -568,7 +568,7 @@ describe("QuestionnaireCard serialized description validation", () => {
     });
     const recognition = CardSpeechRecognition.instances[0];
     await act(async () => {
-      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ formProps(renderer).onSubmit({ preventDefault: () => undefined });
+      await formProps(renderer).onSubmit({ preventDefault: () => undefined });
       await Promise.resolve();
     });
     act(() => {

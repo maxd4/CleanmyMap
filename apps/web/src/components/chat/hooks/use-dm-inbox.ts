@@ -29,7 +29,7 @@ export function useDmInbox({ enabled, currentUserId, supabase }: DmInboxParams) 
   const surfaceActive = useChatSurfaceActivity();
   const key = enabled && surfaceActive && currentUserId ? "/api/chat/inbox" : null;
   const realtimeEnabled = isChatRealtimeEnabled();
-  const { data, error, isLoading, mutate } = useSWR<DmInboxResponse>(key, fetchInbox, {
+  const { data, error, isLoading, mutate } = useSWR<DmInboxResponse, unknown>(key, fetchInbox, {
     refreshWhenHidden: false,
     refreshWhenOffline: false,
     refreshInterval: realtimeEnabled ? 180_000 : 600_000,
@@ -63,7 +63,7 @@ export function useDmInbox({ enabled, currentUserId, supabase }: DmInboxParams) 
             message.channel_type === "dm" &&
             (message.sender_id === currentUserId || message.recipient_id === currentUserId)
           ) {
-            void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refreshInbox();
+            void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refreshInbox().catch(() => undefined);
           }
         },
       )

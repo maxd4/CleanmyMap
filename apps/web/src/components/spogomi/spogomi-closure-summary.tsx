@@ -23,15 +23,37 @@ const labels: Record<keyof Pick<Summary, "fieldCompetition" | "arbitration" | "r
   individualRequests: "Demandes individuelles",
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isSummary(value: unknown): value is Summary {
+  return isRecord(value)
+    && typeof value.fieldCompetition === "string"
+    && typeof value.arbitration === "string"
+    && typeof value.rankings === "string"
+    && typeof value.environmental === "string"
+    && typeof value.action === "string"
+    && typeof value.individualRequests === "string"
+    && Array.isArray(value.blockers)
+    && value.blockers.every((blocker): blocker is string => typeof blocker === "string")
+    && typeof value.certificationsRemaining === "number";
+}
+
+function errorMessage(value: unknown, fallback: string): string {
+  return isRecord(value) && typeof value.error === "string" ? value.error : fallback;
+}
+
 export function SpogomiClosureSummary({ eventId }: { eventId: string }) {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
     void fetch(`/api/spogomi/events/${eventId}/closure`, { cache: "no-store" }).then(async (response) => {
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error ?? "Récapitulatif de clôture indisponible.");
-      if (active) setSummary(body.summary as Summary);
+      const body: unknown = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(errorMessage(body, "Récapitulatif de clôture indisponible."));
+      if (!isRecord(body) || !isSummary(body.summary)) throw new Error("Le récapitulatif de clôture est invalide.");
+      if (active) setSummary(body.summary);
     }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Récapitulatif de clôture indisponible."); });
     return () => { active = false; };
   }, [eventId]);

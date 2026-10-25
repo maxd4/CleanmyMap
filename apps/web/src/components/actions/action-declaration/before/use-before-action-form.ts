@@ -204,7 +204,12 @@ function useBeforeActionFormRuntime({
   const { requestPublish, cancelPublication, confirmPublish } = useBeforeActionPublication({ createdId, publishedAt, publicationState, setForm, setPublishedAction, setCreatedId, setPublishedAt, setPublicationState, setPublicationError, setPublicationConfirmationOpen });
   const shareLink = createdId ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}` : null;
   const summaryNote = useMemo(() => buildPreActionSummaryNote(form), [form]);
-  const onContinueComplete = () => continueToComplete(form, createdId, persistedActionId, creationRequestId, onPassToComplete);
+  const onContinueComplete = () => {
+    const continuation = continueToComplete(form, createdId, persistedActionId, creationRequestId, onPassToComplete);
+    if (continuation instanceof Promise) {
+      void continuation.catch(() => undefined);
+    }
+  };
 
   return { form, submissionState, errorMessage, createdId, publishedAction, invitationStatuses, terminalActionStatus, publishedAt, publicationState, publicationError, publicationConfirmationOpen, isHydratingAction: !draftHydrationReady || isHydratingAction || Boolean(duplicateFromActionId && duplicateLoadedFor !== duplicateFromActionId), validationIssues, validationIssueFields, showGroupJoinHelp, setShowGroupJoinHelp, shareLink, summaryNote, updateField, updateFields, handleSubmit, requestPublish, cancelPublication, confirmPublish, onContinueComplete, persistenceStatus, retryDraftPersistence };
 }

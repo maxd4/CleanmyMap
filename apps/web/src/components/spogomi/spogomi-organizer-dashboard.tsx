@@ -27,6 +27,10 @@ function inputClassName() {
   return "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200";
 }
 
+function errorMessage(value: unknown, fallback: string): string {
+  return typeof value === "object" && value !== null && "error" in value && typeof value.error === "string" ? value.error : fallback;
+}
+
 export type SpogomiOrganizerDashboardView = "all" | "events" | "create";
 
 export function SpogomiOrganizerDashboard({
@@ -91,8 +95,8 @@ export function SpogomiOrganizerDashboard({
           ...attempt.payload,
         }),
       });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error ?? "La compétition n’a pas pu être créée.");
+      const body: unknown = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(errorMessage(body, "La compétition n’a pas pu être créée."));
       creationAttemptRef.current = null;
       formElement.reset();
       setMessage("Compétition créée en privé. Vous pouvez maintenant ouvrir son espace de préparation.");

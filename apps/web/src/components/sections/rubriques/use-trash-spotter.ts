@@ -11,7 +11,7 @@ import { swrRecentViewOptions } from "@/lib/swr-config";
  * maintaining a second spot/clean_place creation engine.
  */
 export function useTrashSpotter() {
-  const { data, isLoading, error, mutate } = useSWR(
+  const { data, isLoading, error, mutate } = useSWR<Awaited<ReturnType<typeof fetchMapActions>>, unknown>(
     ["section-trash-spotter"],
     () =>
       fetchMapActions({

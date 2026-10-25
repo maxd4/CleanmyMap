@@ -25,7 +25,7 @@ function capture(eventName: string, payload: Record<string, unknown>): void {
       return;
     }
     posthog.capture(eventName, sanitizedPayload);
-  });
+  }).catch(() => undefined);
 }
 
 export function trackNavigationClick(payload: NavClickPayload): void {

@@ -57,7 +57,7 @@ export function useActionsHistoryListQuery(): ActionsHistoryListQueryModel {
     isLoading,
     isValidating,
     mutate: reload,
-  } = useSWR(
+  } = useSWR<Awaited<ReturnType<typeof fetchActions>>, unknown>(
     swrKey,
     () =>
       fetchActions({

@@ -47,7 +47,7 @@ export function ActionPollutionScoreReferencesProvider({
 }: {
   children: ReactNode;
 }) {
-  const { data, error: fetchError, isLoading, mutate } = useSWR(
+  const { data, error: fetchError, isLoading, mutate } = useSWR<PollutionScoreReferences | null, unknown>(
     POLLUTION_SCORE_REFERENCES_KEY,
     fetchPollutionScoreReferences,
     {

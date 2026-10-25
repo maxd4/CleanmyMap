@@ -265,7 +265,7 @@ export function useActionsMapViewport(
         }
 
         await applyAutomaticViewport(null, fallbackViewport);
-      })();
+      })().catch(() => undefined);
     });
   }, [applyAutomaticViewport, fallbackViewport, loadFallbackViewport]);
 
@@ -287,7 +287,7 @@ export function useActionsMapViewport(
         if (useRemoteFallback) {
           queueFallbackViewport();
         } else {
-          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyAutomaticViewport(null, fallbackViewport);
+          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyAutomaticViewport(null, fallbackViewport).catch(() => undefined);
         }
       }
     };
@@ -312,7 +312,7 @@ export function useActionsMapViewport(
           void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyAutomaticViewport(
             reference,
             createActionsMapViewport([reference.latitude, reference.longitude], 12),
-          );
+          ).catch(() => undefined);
         }
       },
       handleGeolocationFailure,

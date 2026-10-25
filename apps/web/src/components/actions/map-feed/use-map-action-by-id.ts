@@ -8,7 +8,7 @@ export function useMapActionById(
   knownItem?: ActionMapItem | null,
 ) {
   const shouldFetch = Boolean(actionId && !knownItem);
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<ActionMapItem | null, unknown>(
     shouldFetch && actionId ? ["actions-map-action", actionId] : null,
     () =>
       fetchMapActions({

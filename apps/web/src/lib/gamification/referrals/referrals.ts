@@ -38,6 +38,18 @@ const REFERRAL_RECONCILIATION_CONFIG = {
   cacheTag: REFERRAL_EXPORT_CACHE_TAG,
 } as const;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isReferralAward(value: unknown): value is { xp_awarded: number | null } {
+  return isRecord(value) && (value.xp_awarded === null || typeof value.xp_awarded === "number");
+}
+
+function isInviterProfile(value: unknown): value is { id: string; display_name: string | null } {
+  return isRecord(value) && typeof value.id === "string" && (value.display_name === null || typeof value.display_name === "string");
+}
+
 function normalizeReferralCode(code: string | null | undefined): string {
   return (code ?? "").trim().toUpperCase();
 }
@@ -216,7 +228,11 @@ export async function loadReferralSummary(
   }
 
   const referralCode = normalizeReferralCode(profile?.referral_code);
-  const awardedXp = ((referralAwardsResult.data ?? []) as Array<{ xp_awarded: number | null }>).reduce(
+  const awards = Array.isArray(referralAwardsResult.data)
+    ? referralAwardsResult.data.filter(isReferralAward)
+    : [];
+  const inviter = isInviterProfile(inviterResult.data) ? inviterResult.data : null;
+  const awardedXp = awards.reduce(
     (total, row) => total + Math.max(0, Number(row.xp_awarded) || 0),
     0,
   );
@@ -225,10 +241,10 @@ export async function loadReferralSummary(
     referralCode: referralCode || null,
     inviteUrl: referralCode ? buildReferralInviteUrl(referralCode) : null,
     invitedUsersCount: invitedUsersResult.count ?? 0,
-    invitedBy: inviterResult.data
+    invitedBy: inviter
       ? {
-          userId: inviterResult.data.id,
-          displayName: inviterResult.data.display_name || inviterResult.data.id,
+          userId: inviter.id,
+          displayName: inviter.display_name || inviter.id,
         }
       : null,
     badgeUnlocked: awardedXp > 0,
@@ -352,7 +368,7 @@ export async function claimReferralInviteForUser(
     };
   }
 
-  if ((profile as { referred_by_profile_id?: string | null } | null)?.referred_by_profile_id) {
+  if (profile?.referred_by_profile_id) {
     return {
       claimed: false,
       inviterUserId: inviter.id,

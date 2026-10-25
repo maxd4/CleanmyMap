@@ -48,6 +48,14 @@ type CachedResolution = {
 
 const departmentResolutionCache = new Map<string, CachedResolution>();
 
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function isValidLatitude(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= -90 && value <= 90;
 }
@@ -58,7 +66,7 @@ function isValidLongitude(value: unknown): value is number {
 
 function isCoordinate(value: unknown): value is Coordinate {
   return (
-    Array.isArray(value) &&
+    isUnknownArray(value) &&
     value.length >= 2 &&
     isValidLatitude(value[0]) &&
     isValidLongitude(value[1])
@@ -66,7 +74,7 @@ function isCoordinate(value: unknown): value is Coordinate {
 }
 
 function normalizeCoordinates(value: unknown): Coordinate[] {
-  if (!Array.isArray(value)) {
+  if (!isUnknownArray(value)) {
     return [];
   }
   return value.filter(isCoordinate).map(([latitude, longitude]) => [latitude, longitude]);
@@ -100,7 +108,7 @@ function parseGeoJsonCoordinates(
 }
 
 function normalizeCoordinatesFromGeoJson(value: unknown): Coordinate[] {
-  if (!Array.isArray(value)) {
+  if (!isUnknownArray(value)) {
     return [];
   }
 
@@ -247,23 +255,22 @@ function emptyDepartment(): {
 }
 
 function parseCommunePayload(value: unknown): string | null {
-  if (!Array.isArray(value) || value.length === 0) {
+  if (!isUnknownArray(value) || value.length === 0) {
     return null;
   }
   const first = value[0];
-  if (!first || typeof first !== "object") {
+  if (!isRecord(first)) {
     return null;
   }
-  return readStringField((first as { codeDepartement?: unknown }).codeDepartement);
+  return readStringField(first.codeDepartement);
 }
 
 function parseDepartmentPayload(value: unknown): ResolvedDepartment | null {
-  if (!value || typeof value !== "object") {
+  if (!isRecord(value)) {
     return null;
   }
-  const record = value as { code?: unknown; nom?: unknown };
-  const departmentCode = readStringField(record.code);
-  const departmentName = readStringField(record.nom);
+  const departmentCode = readStringField(value.code);
+  const departmentName = readStringField(value.nom);
   return departmentCode && departmentName ? { departmentCode, departmentName } : null;
 }
 

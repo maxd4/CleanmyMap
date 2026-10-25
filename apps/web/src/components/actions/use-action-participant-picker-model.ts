@@ -36,7 +36,7 @@ function useHydrateSelectedUsers(
       if (!active) return;
       const next = Object.fromEntries(resolved.filter((item): item is ChatUserOption => Boolean(item)).map((item) => [item.id, item]));
       if (Object.keys(next).length > 0) setKnownUsers((previous) => ({ ...previous, ...next }));
-    });
+    }).catch(() => undefined);
     return () => { active = false; };
   }, [endpoint, includeCurrentUser, knownUsers, selectedIds, setKnownUsers]);
 }

@@ -58,7 +58,7 @@ function SkeletonChart({ className }: SkeletonProps) {
 function SkeletonList({ count = 3, className }: { count?: number } & SkeletonProps) {
   return (
     <div className={cn("space-y-2", className)}>
-      {[...Array(count)].map((_, i) => (
+      {Array.from({ length: count }, (_, i) => (
         <CmmSkeleton key={i} variant="list-item" />
       ))}
     </div>
@@ -68,7 +68,7 @@ function SkeletonList({ count = 3, className }: { count?: number } & SkeletonPro
 function SkeletonGrid({ count = 4, className }: { count?: number } & SkeletonProps) {
   return (
     <div className={cn("grid gap-4", className)}>
-      {[...Array(count)].map((_, i) => (
+      {Array.from({ length: count }, (_, i) => (
         <CmmSkeleton key={i} variant="card" />
       ))}
     </div>

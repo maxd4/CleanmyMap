@@ -50,7 +50,7 @@ export function usePlasticOriginsData(enabled: boolean): PlasticOriginsDataState
     },
   );
   const reload = useCallback(() => {
-    void mutate();
+    void mutate().catch(() => undefined);
   }, [mutate]);
 
   return {

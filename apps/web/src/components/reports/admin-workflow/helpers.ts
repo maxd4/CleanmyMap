@@ -10,8 +10,12 @@ export const ADMIN_SIGNALEMENTS_MODERATION_HREF =
  "/admin?moderation=signalements#workflow-administration";
 
 export function parseAdminModerationParam(value: unknown): "signalements" | null {
- const candidate = Array.isArray(value) ? value[0] : value;
+ const candidate = isUnknownArray(value) ? value[0] : value;
  return candidate === "signalements" ? "signalements" : null;
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+ return Array.isArray(value);
 }
 
 export function adminRecordTypeFilterToActionTypes(

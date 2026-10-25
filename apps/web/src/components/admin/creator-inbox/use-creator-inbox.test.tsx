@@ -305,7 +305,7 @@ describe("useCreatorInbox", () => {
     let refreshPromise!: Promise<void>;
     act(() => {
       refreshPromise = hook.result.refreshInbox();
-      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ hook.result.loadNextPage();
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ hook.result.loadNextPage().catch(() => undefined);
     });
     expect(mocks.fetchCreatorInboxPage).toHaveBeenCalledTimes(1);
     expect(hook.result.refreshing).toBe(true);

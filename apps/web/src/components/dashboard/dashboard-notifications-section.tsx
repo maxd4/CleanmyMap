@@ -181,7 +181,7 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !userId) return;
-    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ Promise.resolve().then(() => fetchNotifications());
+    void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ Promise.resolve().then(() => fetchNotifications()).catch(() => undefined);
   }, [fetchNotifications, isLoaded, isSignedIn, userId]);
 
   const stateFor = useCallback((notification: AppNotification): NotificationDisplayState => {

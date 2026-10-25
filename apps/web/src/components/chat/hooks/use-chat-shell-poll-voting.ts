@@ -63,7 +63,7 @@ export function useChatShellPollVoting({
           headers: optionId ? { "Content-Type": "application/json" } : undefined,
           body: optionId ? JSON.stringify({ optionId }) : undefined,
         });
-        const payload = await response.json().catch(() => null);
+        const payload: unknown = await response.json().catch(() => null);
         if (!response.ok) {
           const errorPayload = payload as { hint?: unknown; error?: unknown } | null;
           throw new Error(

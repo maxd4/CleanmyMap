@@ -7,6 +7,7 @@ import type {
   ReportPublicLibrarySort,
   ReportPublicLibraryTheme,
 } from "@/lib/reports/report-publication-contract";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 type ReportsLibraryProps = {
   initialPage: ReportPublicLibraryPage;
@@ -31,6 +32,19 @@ function dateLabel(value: string): string {
     : "Date indisponible";
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function parseLibraryPage(value: unknown): ReportPublicLibraryPage | null {
+  if (!isRecord(value) || !Array.isArray(value.rows) || typeof value.page !== "number" || typeof value.pageSize !== "number" || typeof value.total !== "number" || typeof value.hasNextPage !== "boolean" || typeof value.hasPreviousPage !== "boolean") return null;
+  const rows = value.rows.filter((row): row is ReportPublicLibraryPage["rows"][number] => {
+    if (!isRecord(row) || typeof row.id !== "string" || typeof row.title !== "string" || typeof row.period !== "string" || typeof row.scope !== "string" || typeof row.publishedAt !== "string" || typeof row.viewUrl !== "string" || typeof row.downloadUrl !== "string") return false;
+    return (row.theme === "impact" || row.theme === "scientific") && (row.authorLabel === null || typeof row.authorLabel === "string");
+  });
+  return rows.length === value.rows.length ? { rows, page: value.page, pageSize: value.pageSize, total: value.total, hasNextPage: value.hasNextPage, hasPreviousPage: value.hasPreviousPage } : null;
+}
+
 export function ReportsLibrary({ initialPage, initialAvailability = "available" }: ReportsLibraryProps) {
   const [page, setPage] = useState(initialPage);
   const [search, setSearch] = useState("");
@@ -47,9 +61,10 @@ export function ReportsLibrary({ initialPage, initialAvailability = "available" 
     const params = new URLSearchParams({ page: String(nextPage), pageSize: String(page.pageSize || 12), search: search.trim(), period, theme, sort });
     try {
       const response = await fetch(`/api/reports/library?${params.toString()}`, { cache: "no-store" });
-      const body = await response.json().catch(() => null);
-      if (!response.ok || !body || !("rows" in body)) throw new Error(body?.error ?? "Bibliothèque temporairement indisponible.");
-      setPage(body as ReportPublicLibraryPage);
+      const body = await parseJsonSafely(response);
+      const parsedPage = parseLibraryPage(body);
+      if (!response.ok || !parsedPage) throw new Error(isRecord(body) && typeof body.error === "string" ? body.error : "Bibliothèque temporairement indisponible.");
+      setPage(parsedPage);
       setAvailability("available");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Bibliothèque temporairement indisponible.");
@@ -77,7 +92,7 @@ export function ReportsLibrary({ initialPage, initialAvailability = "available" 
       <div className="grid gap-4 md:grid-cols-2">
         {page.rows.map((row) => <article key={row.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h3 className="text-lg font-black text-slate-950">{row.title}</h3><dl className="cmm-text-body mt-3 grid gap-2 text-slate-900"><div><dt className="inline font-semibold">Période : </dt><dd className="inline">{row.period}</dd></div><div><dt className="inline font-semibold">Périmètre : </dt><dd className="inline">{row.scope}</dd></div><div><dt className="inline font-semibold">Thème : </dt><dd className="inline">{row.theme === "scientific" ? "Scientifique" : "Impact"}</dd></div><div><dt className="inline font-semibold">Publié le : </dt><dd className="inline">{dateLabel(row.publishedAt)}</dd></div>{row.authorLabel ? <div><dt className="inline font-semibold">Auteur : </dt><dd className="inline">{row.authorLabel}</dd></div> : null}</dl><div className="mt-4 flex flex-wrap gap-2"><a className="inline-flex min-h-11 items-center rounded-xl bg-red-600 px-4 text-sm font-bold text-white" href={row.viewUrl} target="_blank" rel="noreferrer">Consulter</a><a className="inline-flex min-h-11 items-center rounded-xl border border-slate-300 px-4 text-sm font-bold text-slate-800" href={row.downloadUrl}>Télécharger PDF</a></div></article>)}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"><span>{page.total} fichier{page.total === 1 ? "" : "s"} · Page {page.page}</span><div className="flex gap-2"><button type="button" className="min-h-10 rounded-lg border border-slate-300 px-3 font-semibold disabled:opacity-50" disabled={!page.hasPreviousPage || loading} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadPage(page.page - 1); }}>Précédent</button><button type="button" className="min-h-10 rounded-lg border border-slate-300 px-3 font-semibold disabled:opacity-50" disabled={!page.hasNextPage || loading} onClick={() => void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadPage(page.page + 1)}>Suivant</button></div></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"><span>{page.total} fichier{page.total === 1 ? "" : "s"} · Page {page.page}</span><div className="flex gap-2"><button type="button" className="min-h-10 rounded-lg border border-slate-300 px-3 font-semibold disabled:opacity-50" disabled={!page.hasPreviousPage || loading} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadPage(page.page - 1).catch(() => undefined); }}>Précédent</button><button type="button" className="min-h-10 rounded-lg border border-slate-300 px-3 font-semibold disabled:opacity-50" disabled={!page.hasNextPage || loading} onClick={() => void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadPage(page.page + 1).catch(() => undefined)}>Suivant</button></div></div>
     </section>
   );
 }

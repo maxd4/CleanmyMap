@@ -24,6 +24,20 @@ type JoinRequest = {
   createdAt: string;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isJoinRequest(value: unknown): value is JoinRequest {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.teamId !== "string" || typeof value.requesterClerkId !== "string" || typeof value.createdAt !== "string") return false;
+  if (value.status !== "pending" && value.status !== "approved" && value.status !== "rejected" && value.status !== "cancelled") return false;
+  return (value.matchedParticipantId === null || typeof value.matchedParticipantId === "string") && (value.verificationNote === null || typeof value.verificationNote === "string") && (value.resolutionNote === null || typeof value.resolutionNote === "string");
+}
+
+function errorMessage(value: unknown, fallback: string): string {
+  return isRecord(value) && typeof value.error === "string" ? value.error : fallback;
+}
+
 function statusLabel(status: RequestStatus): string {
   if (status === "approved") return "Acceptée — identité liée";
   if (status === "rejected") return "Refusée";
@@ -50,9 +64,10 @@ export function SpogomiTeamJoinRequestsPanel({
 
   const loadRequests = useCallback(async () => {
     const response = await fetch(`/api/spogomi/events/${encodeURIComponent(eventId)}/team-join-requests`, { cache: "no-store" });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error ?? "Les demandes de rattachement sont indisponibles.");
-    setRequests(body.requests ?? []);
+    const body: unknown = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(errorMessage(body, "Les demandes de rattachement sont indisponibles."));
+    if (!isRecord(body) || !Array.isArray(body.requests) || !body.requests.every(isJoinRequest)) throw new Error("La réponse des demandes de rattachement est invalide.");
+    setRequests(body.requests);
   }, [eventId]);
 
   useEffect(() => {
@@ -77,8 +92,8 @@ export function SpogomiTeamJoinRequestsPanel({
           resolutionNote: resolutionNotes[request.id] || undefined,
         }),
       });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error ?? "La décision n’a pas pu être enregistrée.");
+      const body: unknown = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(errorMessage(body, "La décision n’a pas pu être enregistrée."));
       await loadRequests();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "La décision n’a pas pu être enregistrée.");
@@ -107,7 +122,7 @@ export function SpogomiTeamJoinRequestsPanel({
               <label className="block text-sm font-bold text-slate-800">Participant historique correspondant<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" value={selectedParticipants[request.id] ?? ""} onChange={(event) => setSelectedParticipants((current) => ({ ...current, [request.id]: event.target.value }))}><option value="">Choisir une identité existante</option>{matchingParticipants.map((participant) => <option key={participant.id} value={participant.id}>{participant.display_name ?? "Place à identifier"}{participant.external_reference ? ` · ${participant.external_reference}` : ""}</option>)}</select></label>
               <label className="block text-sm font-bold text-slate-800">Preuve de vérification indépendante<textarea className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" rows={3} minLength={10} maxLength={1200} value={verificationNotes[request.id] ?? ""} onChange={(event) => setVerificationNotes((current) => ({ ...current, [request.id]: event.target.value }))} placeholder="Décrire la vérification effectuée avant la décision." /></label>
               <label className="block text-sm font-bold text-slate-800">Note de décision <span className="font-normal text-slate-500">(facultatif)</span><textarea className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" rows={2} maxLength={1200} value={resolutionNotes[request.id] ?? ""} onChange={(event) => setResolutionNotes((current) => ({ ...current, [request.id]: event.target.value }))} /></label>
-              <div className="flex flex-wrap gap-2"><CmmButton type="button" tone="primary" disabled={busy !== null || !selectedParticipants[request.id] || (verificationNotes[request.id] ?? "").trim().length < 10} loading={busy === request.id} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ decide(request, "approved"); }}>Accepter et lier l’identité</CmmButton><CmmButton type="button" tone="critical" disabled={busy !== null} loading={busy === request.id} onClick={() => void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ decide(request, "rejected")}>Refuser</CmmButton></div>
+              <div className="flex flex-wrap gap-2"><CmmButton type="button" tone="primary" disabled={busy !== null || !selectedParticipants[request.id] || (verificationNotes[request.id] ?? "").trim().length < 10} loading={busy === request.id} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ decide(request, "approved").catch(() => undefined); }}>Accepter et lier l’identité</CmmButton><CmmButton type="button" tone="critical" disabled={busy !== null} loading={busy === request.id} onClick={() => void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ decide(request, "rejected").catch(() => undefined)}>Refuser</CmmButton></div>
             </> : request.resolutionNote ? <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-800"><span className="font-bold">Note :</span> {request.resolutionNote}</p> : null}
           </article>
         );

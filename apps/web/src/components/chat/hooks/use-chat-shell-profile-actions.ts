@@ -2,6 +2,7 @@
 
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 
+import { readAppErrorResponse } from "@/lib/errors/app-errors";
 import { logFailure } from "@/lib/logging/failure-log";
 
 type UseChatShellProfileActionsParams = {
@@ -25,11 +26,11 @@ export function useChatShellProfileActions({
         setIsEditingHandle(false);
         location.reload();
       } else {
-        const err = await res.json();
-        alert(
-          err.error ||
-            "Impossible de mettre à jour votre profil. Veuillez réessayer.",
+        const error = await readAppErrorResponse(
+          res,
+          "Impossible de mettre à jour votre profil. Veuillez réessayer.",
         );
+        alert(error.message);
       }
     } catch (err) {
       logFailure("ChatShell", "Handle update failed", err, {

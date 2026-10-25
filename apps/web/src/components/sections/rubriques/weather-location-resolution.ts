@@ -157,7 +157,7 @@ export async function resolveGeolocationWeatherLocation(
           } catch {
             finish(null);
           }
-        })();
+        })().catch(() => undefined);
       },
       () => finish(null),
       { enableHighAccuracy: false, timeout: 6_000, maximumAge: 300_000 },

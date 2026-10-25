@@ -127,7 +127,7 @@ export function useChatData({
     error: messagesError,
     isLoading,
     mutate: mutateMessages,
-  } = useSWR<ChatMessagesResponse>(messagesKey, fetchChatJson, {
+  } = useSWR<ChatMessagesResponse, unknown>(messagesKey, fetchChatJson, {
     // Historical pages are merged explicitly; SWR must not replace them with the recent page.
     refreshWhenHidden: false,
     refreshWhenOffline: false,

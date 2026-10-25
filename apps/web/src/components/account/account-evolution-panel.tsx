@@ -95,7 +95,7 @@ export function AccountEvolutionPanel({
 
   useEffect(() => {
     if (!initialStatusAvailable) {
-      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ Promise.resolve().then(() => refreshStatus());
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ Promise.resolve().then(() => refreshStatus()).catch(() => undefined);
     }
   }, [initialStatusAvailable, refreshStatus]);
 

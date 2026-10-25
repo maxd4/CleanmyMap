@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import { handleApiError, parseJsonBodyWithValidation } from "@/lib/http/api-errors";
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -51,13 +51,8 @@ export async function PATCH(request: Request) {
   if (!access.ok) return unauthorizedJsonResponse();
   const userId = access.userId;
 
-  const payload = await request.json().catch(() => undefined);
-  if (payload === undefined) {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const parsed = updateSchema.safeParse(payload);
-  if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
+  const parsed = await parseJsonBodyWithValidation(request, updateSchema);
+  if (!parsed.ok) return parsed.response;
 
   const eligibility = await getUserOptionalConsentEligibility(userId);
   if (

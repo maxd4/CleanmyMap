@@ -14,7 +14,7 @@ import { CompareLoading, ComparePeriodPicker, CompareSectionResults } from "./co
 export function CompareSection() {
   const [periodDays, setPeriodDays] = useState<30 | 90 | 365>(() => dashboardPeriodStorage.read() ?? 90);
   useEffect(() => { dashboardPeriodStorage.write(periodDays); }, [periodDays]);
-  const { data, isLoading, error } = useSWR(["section-compare-v3"], () => fetchActions({ status: "approved", limit: 1000 }));
+  const { data, isLoading, error } = useSWR<Awaited<ReturnType<typeof fetchActions>>, unknown>(["section-compare-v3"], () => fetchActions({ status: "approved", limit: 1000 }));
   const comparison = useMemo(() => computeZoneCompare({
     records: (data?.items ?? []).map((item) => ({
       observedAt: item.action_date,

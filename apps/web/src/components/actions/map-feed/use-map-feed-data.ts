@@ -107,7 +107,7 @@ export function useMapFeedData({
 
   const [lastRefreshedAt, setLastRefreshedAt] = useState<number | null>(null);
 
-  const { data, error, isLoading: swrIsLoading, isValidating, mutate: reload } = useSWR(
+  const { data, error, isLoading: swrIsLoading, isValidating, mutate: reload } = useSWR<Awaited<ReturnType<typeof fetchMapActions>>, unknown>(
     swrKey,
     () =>
       fetchMapActions({

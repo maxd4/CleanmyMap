@@ -29,13 +29,13 @@ type FakeQuery = {
   then: (resolve: (value: QueryResult) => unknown, reject?: (error: unknown) => unknown) => Promise<unknown>;
 };
 
-function makeQuery(result: QueryResult, options: { listData?: unknown[]; insertData?: unknown; updateData?: unknown } = {}) {
+function makeQuery(result: QueryResult, queryOptions: { listData?: unknown[]; insertData?: unknown; updateData?: unknown; count?: number } = {}) {
   const query = {} as FakeQuery;
   let currentResult = result;
   let listMode = false;
-  query.select = vi.fn((_columns?: unknown, options?: { count?: string; head?: boolean }) => {
-    if (options?.count) {
-      currentResult = result;
+  query.select = vi.fn((_columns?: unknown, selectOptions?: { count?: string; head?: boolean }) => {
+    if (selectOptions?.count) {
+      currentResult = queryOptions.count === undefined ? result : { ...result, data: null, count: queryOptions.count };
     }
     return query;
   });
@@ -48,17 +48,17 @@ function makeQuery(result: QueryResult, options: { listData?: unknown[]; insertD
   });
   query.limit = vi.fn(() => query);
   query.insert = vi.fn(() => {
-    currentResult = { data: options.insertData ?? result.data, error: null };
+    currentResult = { data: queryOptions.insertData ?? result.data, error: null };
     return query;
   });
   query.update = vi.fn(() => {
-    currentResult = { data: options.updateData ?? result.data, error: null };
+    currentResult = { data: queryOptions.updateData ?? result.data, error: null };
     return query;
   });
   query.maybeSingle = vi.fn(async () => currentResult);
   query.single = vi.fn(async () => currentResult);
   query.then = (resolve: (value: QueryResult) => unknown, reject?: (error: unknown) => unknown) =>
-    Promise.resolve(listMode ? { data: options.listData ?? [], error: null } : currentResult).then(resolve, reject);
+    Promise.resolve(listMode ? { data: queryOptions.listData ?? [], error: null } : currentResult).then(resolve, reject);
   return query;
 }
 
@@ -78,20 +78,12 @@ function makeSupabase(params: {
       listData: params.existingMedia ? [params.existingMedia] : [],
       insertData: params.insertedMedia,
       updateData: params.updatedMedia,
+      count: params.activeCount,
     },
   );
   const from = vi.fn((table: string) => {
     if (table === "trash_spotter_spots") return parentQuery;
     if (table !== "signalement_media") throw new Error(`Unexpected table ${table}`);
-    if (params.activeCount !== undefined && params.activeCount > 0) {
-      mediaQuery.select.mockImplementation((_columns?: unknown, options?: { count?: string }) => {
-        if (options?.count) {
-          mediaQuery.then = (resolve: (value: QueryResult) => unknown, reject?: (error: unknown) => unknown) =>
-            Promise.resolve({ data: null, error: null, count: params.activeCount }).then(resolve, reject);
-        }
-        return mediaQuery;
-      });
-    }
     return mediaQuery;
   });
   const mediaBuilder = {

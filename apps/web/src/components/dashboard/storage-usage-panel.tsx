@@ -41,7 +41,7 @@ export function StorageUsagePanel() {
       : current && current.usagePercent >= 80
         ? "Vigilance"
         : "Stable";
-  const refresh = () => void usage.mutate();
+  const refresh = () => void usage.mutate().catch(() => undefined);
 
   return (
     <AdminPanelShell

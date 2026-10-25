@@ -69,7 +69,7 @@ function usePublishedAnnuaireReview(fr: boolean) {
   }
   setError(null);
   setSubmittingId(entryId);
-  void (async () => {
+   void (async () => {
    try {
     const response = await fetch("/api/admin/partners/published-directory", {
      method: "POST",
@@ -88,7 +88,7 @@ function usePublishedAnnuaireReview(fr: boolean) {
    } finally {
     setSubmittingId(null);
    }
-  })();
+   })().catch(() => undefined);
  };
 
  return { confirmPhrase, setConfirmPhrase, reasons, setReasons, error, submittingId, reviewEntry };

@@ -268,7 +268,7 @@ function RouteRefreshProposalDetails({
         <CmmButton tone="tertiary" variant="pill" size="sm" onClick={() => { setProposal(null); setState("kept"); setMessage("L'itinéraire actuel est conservé."); }}>
           Conserver l&apos;itinéraire actuel
         </CmmButton>
-        <CmmButton tone="primary" variant="pill" size="sm" onClick={() => { void applyProposal(); }} disabled={state === "applying"}>
+        <CmmButton tone="primary" variant="pill" size="sm" onClick={() => { void applyProposal().catch(() => undefined); }} disabled={state === "applying"}>
           {state === "applying" ? "Application…" : "Utiliser le nouvel itinéraire"}
         </CmmButton>
       </div>

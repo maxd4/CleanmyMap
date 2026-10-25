@@ -56,14 +56,14 @@ function ImportConfirmationPanel({ workflow, fr }: StepConfirmProps & { fr: bool
       </CmmField>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <CmmButton
-          onClick={() => { void workflow.onImportDryRun(); }}
+          onClick={() => { void workflow.onImportDryRun().catch(() => undefined); }}
           tone="secondary"
           loading={workflow.importDryRunState === "pending"}
         >
           {workflow.importDryRunState === "pending" ? "Dry-run..." : "Previsualiser (dry-run)"}
         </CmmButton>
         <CmmButton
-          onClick={() => { void workflow.onImportPastActions(); }}
+          onClick={() => { void workflow.onImportPastActions().catch(() => undefined); }}
           disabled={!workflow.canConfirmImport}
           loading={workflow.importState === "pending"}
           tone="primary"
@@ -199,7 +199,7 @@ function ModerationConfirmationPanel({ workflow }: StepConfirmProps) {
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         {workflow.moderationEntityType === "action" ? <CmmField label="Statut action"><CmmSelect value={workflow.actionStatus} onChange={(event) => workflow.setActionStatus(event.target.value as ModerationActionStatus)}><option value="pending">pending</option><option value="approved">approved</option><option value="rejected">rejected</option></CmmSelect></CmmField> : <CmmField label="Statut du signalement"><CmmSelect value={workflow.cleanPlaceStatus} onChange={(event) => workflow.setCleanPlaceStatus(event.target.value as ModerationCleanPlaceStatus)}><option value="new">new</option><option value="validated">validated</option><option value="cleaned">cleaned</option></CmmSelect></CmmField>}
-        <div className="flex items-end"><CmmButton onClick={() => { void workflow.onModerateEntity(); }} disabled={!canConfirm} loading={workflow.moderationState === "pending"} tone="destructive">{workflow.moderationState === "pending" ? "Application..." : "Confirmer moderation"}</CmmButton></div>
+        <div className="flex items-end"><CmmButton onClick={() => { void workflow.onModerateEntity().catch(() => undefined); }} disabled={!canConfirm} loading={workflow.moderationState === "pending"} tone="destructive">{workflow.moderationState === "pending" ? "Application..." : "Confirmer moderation"}</CmmButton></div>
       </div>
       {workflow.selectedRecordType === "spot" || workflow.selectedRecordType === "clean_place" ? <div className="mt-4"><SignalementMediaProofs signalementId={workflow.moderationId} variant="panel" /></div> : null}
       {workflow.moderationEntityType === "action" ? <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"><p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">Compte auteur</p><p className="mt-1 break-all font-mono cmm-text-small cmm-text-secondary">{workflow.selectedActionCreatorId?.trim() || "Non renseigné depuis la sélection"}</p></div> : null}
@@ -221,8 +221,8 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
     <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
       <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">{fr ? "Étape 3 - Confirmer" : "Step 3 - Confirm"}</p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <CmmButton onClick={() => { void workflow.onDownloadCsv(); }} tone="primary" loading={workflow.csvState === "pending"}>{workflow.csvState === "pending" ? fr ? "Préparation CSV..." : "Preparing CSV..." : fr ? "Confirmer export CSV" : "Confirm CSV export"}</CmmButton>
-        <CmmButton onClick={() => { void workflow.onDownloadJson(); }} tone="secondary" loading={workflow.jsonState === "pending"}>{workflow.jsonState === "pending" ? fr ? "Préparation JSON..." : "Preparing JSON..." : fr ? "Confirmer export JSON" : "Confirm JSON export"}</CmmButton>
+        <CmmButton onClick={() => { void workflow.onDownloadCsv().catch(() => undefined); }} tone="primary" loading={workflow.csvState === "pending"}>{workflow.csvState === "pending" ? fr ? "Préparation CSV..." : "Preparing CSV..." : fr ? "Confirmer export CSV" : "Confirm CSV export"}</CmmButton>
+        <CmmButton onClick={() => { void workflow.onDownloadJson().catch(() => undefined); }} tone="secondary" loading={workflow.jsonState === "pending"}>{workflow.jsonState === "pending" ? fr ? "Préparation JSON..." : "Preparing JSON..." : fr ? "Confirmer export JSON" : "Confirm JSON export"}</CmmButton>
       </div>
       <ImportConfirmationPanel workflow={workflow} fr={fr} />
       <ModerationConfirmationPanel workflow={workflow} />

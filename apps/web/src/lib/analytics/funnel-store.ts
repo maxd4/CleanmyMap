@@ -35,16 +35,30 @@ type FunnelStore = LocalRecordStorePayload<FunnelEvent>;
 
 const FILE_PATH = join(process.cwd(), "data", "local-db", "funnel_events.json");
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+type FunnelPersistenceRow = {
+  at: string;
+  session_id: string;
+  user_id: string | null;
+  step: FunnelStep;
+  mode: FunnelMode;
+  meta: Record<string, unknown> | null;
+};
+
+function isFunnelPersistenceRow(value: unknown): value is FunnelPersistenceRow {
+  if (!isRecord(value) || typeof value.at !== "string" || typeof value.session_id !== "string" || (value.user_id !== null && typeof value.user_id !== "string") || !isSafeAnalyticsSessionId(value.session_id)) return false;
+  return (value.step === "view_new" || value.step === "page_view" || value.step === "start_form" || value.step === "submit_success") && (value.mode === "quick" || value.mode === "complete") && (value.meta === null || isRecord(value.meta));
+}
+
 function isMissingFunnelEventsTable(error: unknown): boolean {
   if (!error || typeof error !== "object") {
     return false;
   }
 
-  const record = error as {
-    code?: unknown;
-    message?: unknown;
-    details?: unknown;
-  };
+  const record = isRecord(error) ? error : {};
   const code = typeof record.code === "string" ? record.code : "";
   const message = typeof record.message === "string" ? record.message : "";
   const details = typeof record.details === "string" ? record.details : "";
@@ -88,14 +102,18 @@ function normalizeFunnelEvent(record: Record<string, unknown>): FunnelEvent | nu
     return null;
   }
 
-  if (
-    record.meta !== undefined &&
-    (!record.meta || typeof record.meta !== "object" || Array.isArray(record.meta))
-  ) {
+  if (record.meta !== undefined && (!isRecord(record.meta))) {
     return null;
   }
 
-  return record as unknown as FunnelEvent;
+  return {
+    at: record.at,
+    sessionId: record.sessionId,
+    userId: userId ?? null,
+    step,
+    mode,
+    ...(record.meta ? { meta: record.meta } : {}),
+  };
 }
 
 function throwIfFunnelPersistenceCannotFallback(error: unknown): void {
@@ -166,7 +184,8 @@ export async function listFunnelEvents(
         .limit(12000);
 
       if (!result.error) {
-        return (result.data ?? [])
+        const rows = Array.isArray(result.data) ? result.data.filter(isFunnelPersistenceRow) : [];
+        return rows
           .filter((entry) => isFunnelEventInWindow(entry, floor, nowMs))
           .map((entry) => ({
             at: entry.at,
@@ -174,9 +193,7 @@ export async function listFunnelEvents(
             userId: entry.user_id,
             step: entry.step,
             mode: entry.mode,
-            meta: (entry.meta ?? undefined) as
-              | Record<string, unknown>
-              | undefined,
+            ...(entry.meta && isRecord(entry.meta) ? { meta: entry.meta } : {}),
           }));
       }
       if (!shouldFallbackToLocalStoreForFunnelEvents(result.error)) {

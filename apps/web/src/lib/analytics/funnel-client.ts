@@ -142,7 +142,7 @@ function schedulePageviewFlush(): void {
 
   pageviewFlushTimer = setTimeout(() => {
     pageviewFlushTimer = null;
-    void flushQueuedPageviews({ preferBeacon: false });
+    void flushQueuedPageviews({ preferBeacon: false }).catch(() => undefined);
   }, PAGEVIEW_QUEUE_FLUSH_DELAY_MS);
 }
 
@@ -153,12 +153,12 @@ function registerPageviewFlushListeners(): void {
 
   const flushOnHide = () => {
     if (typeof document !== "undefined" && document.visibilityState === "hidden") {
-      void flushQueuedPageviews({ preferBeacon: true });
+      void flushQueuedPageviews({ preferBeacon: true }).catch(() => undefined);
     }
   };
 
   const flushOnPageHide = () => {
-    void flushQueuedPageviews({ preferBeacon: true });
+    void flushQueuedPageviews({ preferBeacon: true }).catch(() => undefined);
   };
 
   if (typeof document !== "undefined") {

@@ -111,7 +111,7 @@ function QueueSearchPanel({
                   variant="pill"
                   size="sm"
                   disabled={addingQueueParticipantId === candidate.userId}
-                  onClick={() => { void onAddQueueParticipant(candidate.userId); }}
+                  onClick={() => { void onAddQueueParticipant(candidate.userId).catch(() => undefined); }}
                 >
                   {addingQueueParticipantId === candidate.userId ? (
                     <><Loader2 size={14} className="animate-spin" />{fr ? "Ajout..." : "Adding..."}</>
@@ -220,7 +220,7 @@ export function JoinFormPublicQueue({
   onAddQueueParticipant,
 }: JoinFormPublicQueueProps) {
   const handleReviewQueueRequest = (requestId: string, decision: "accept" | "reject") => {
-    void onReviewQueueRequest(requestId, decision);
+    void onReviewQueueRequest(requestId, decision).catch(() => undefined);
   };
   return (
     <div id="file-publique" className="rounded-[1.1rem] border border-slate-200 bg-white shadow-[0_16px_36px_-30px_rgba(15,23,42,0.16)]">

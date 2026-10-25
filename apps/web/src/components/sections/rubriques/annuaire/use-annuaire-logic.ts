@@ -21,12 +21,16 @@ import {
   tokenizeAnnuaireSearchQuery,
   type EnrichedAnnuaireEntry 
 } from "./annuaire-helpers";
-import type { PublishedAnnuaireEntry } from "@/lib/partners/annuaire-types";
+import { isPublishedAnnuaireEntry, type PublishedAnnuaireEntry } from "@/lib/partners/annuaire-types";
 
 type PublishedDirectoryResponse = {
   status: "ok";
   items: PublishedAnnuaireEntry[];
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
 
 function usePublishedAnnuaireDirectory() {
   const {
@@ -35,16 +39,20 @@ function usePublishedAnnuaireDirectory() {
     isLoading: publishedDirectoryIsLoading,
     isValidating: publishedDirectoryIsValidating,
     mutate: mutatePublishedDirectory,
-  } = useSWR<PublishedDirectoryResponse>(
+  } = useSWR<PublishedDirectoryResponse, unknown>(
     "/api/partners/published-directory",
-    async (url: string) => {
+    async (url: string): Promise<PublishedDirectoryResponse> => {
       const response = await fetch(url, { method: "GET", cache: "no-store" });
       if (!response.ok) throw new Error("published_directory_unavailable");
-      return (await response.json()) as PublishedDirectoryResponse;
+      const body: unknown = await response.json().catch(() => null);
+      if (!isRecord(body) || body.status !== "ok" || !Array.isArray(body.items) || !body.items.every(isPublishedAnnuaireEntry)) {
+        throw new Error("published_directory_invalid");
+      }
+      return { status: "ok", items: body.items.filter(isPublishedAnnuaireEntry) };
     },
   );
   const retryPublishedDirectory = useCallback(() => {
-    void mutatePublishedDirectory();
+    void mutatePublishedDirectory().catch(() => undefined);
   }, [mutatePublishedDirectory]);
   return { publishedDirectoryData, publishedDirectoryError, publishedDirectoryIsLoading, publishedDirectoryIsValidating, retryPublishedDirectory };
 }
@@ -75,7 +83,7 @@ export function useAnnuaireLogic() {
   );
 
   const locationPreference = useMemo(() => 
-    extractUserLocationPreferenceFromMetadata(user?.unsafeMetadata as Record<string, unknown> | undefined),
+    extractUserLocationPreferenceFromMetadata(user?.unsafeMetadata),
     [user?.unsafeMetadata]
   );
 

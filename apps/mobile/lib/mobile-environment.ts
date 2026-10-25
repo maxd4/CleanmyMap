@@ -5,18 +5,22 @@ type MobilePublicEnvName =
   | 'EXPO_PUBLIC_WEB_APP_URL'
   | 'EXPO_PUBLIC_WEB_URL'
 
+function readMobilePublicEnvValue(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined
+}
+
 export function getMobilePublicEnv(name: MobilePublicEnvName): string | undefined {
   switch (name) {
     case 'EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY':
-      return process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
+      return readMobilePublicEnvValue(process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY)
     case 'EXPO_PUBLIC_SUPABASE_URL':
-      return process.env.EXPO_PUBLIC_SUPABASE_URL
+      return readMobilePublicEnvValue(process.env.EXPO_PUBLIC_SUPABASE_URL)
     case 'EXPO_PUBLIC_SUPABASE_ANON_KEY':
-      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+      return readMobilePublicEnvValue(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY)
     case 'EXPO_PUBLIC_WEB_APP_URL':
-      return process.env.EXPO_PUBLIC_WEB_APP_URL
+      return readMobilePublicEnvValue(process.env.EXPO_PUBLIC_WEB_APP_URL)
     case 'EXPO_PUBLIC_WEB_URL':
-      return process.env.EXPO_PUBLIC_WEB_URL
+      return readMobilePublicEnvValue(process.env.EXPO_PUBLIC_WEB_URL)
     default:
       return undefined
   }

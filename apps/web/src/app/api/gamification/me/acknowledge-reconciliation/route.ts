@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { handleApiError } from "@/lib/http/api-errors";
+import { handleApiError, parseJsonBodyWithValidation } from "@/lib/http/api-errors";
 
 export const runtime = "nodejs";
 
@@ -17,11 +17,8 @@ export async function POST(request: Request) {
   const { userId } = access;
 
   try {
-    const body = await request.json().catch(() => null);
-    const parsed = acknowledgeReconciliationSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: "notificationId requis." }, { status: 400 });
-    }
+    const parsed = await parseJsonBodyWithValidation(request, acknowledgeReconciliationSchema);
+    if (!parsed.ok) return parsed.response;
     const { notificationId } = parsed.data;
 
     const { error } = await getSupabaseServerClient(true)

@@ -60,6 +60,10 @@ type StorePayload = {
   records: PartnerOnboardingRequestRecord[];
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function readStringField(record: Record<string, unknown>, key: string): string {
   return typeof record[key] === "string" ? record[key] : "";
 }
@@ -242,7 +246,7 @@ export async function appendPartnerOnboardingRequest(params: {
 
   if (canUseSupabaseServerPersistence()) {
     const serializedEntry = serializePublishedPartnerAnnuaireEntry(entry);
-    const result = await getSupabaseServerClient(true).rpc(
+    const rawResult: unknown = await getSupabaseServerClient(true).rpc(
       "create_partner_onboarding_request_with_annuaire",
       {
         p_request_id: record.id,
@@ -272,9 +276,10 @@ export async function appendPartnerOnboardingRequest(params: {
         },
       },
     );
-    if (result.error) throw new Error(result.error.message);
-    const rpcRow = Array.isArray(result.data) ? result.data[0] : result.data;
-    if (!rpcRow || typeof rpcRow.request_id !== "string") {
+    if (!isRecord(rawResult) || !("data" in rawResult) || !("error" in rawResult)) throw new Error("Supabase returned an invalid partner onboarding response.");
+    if (rawResult.error) throw new Error(isRecord(rawResult.error) && typeof rawResult.error.message === "string" ? rawResult.error.message : "Partner onboarding RPC failed.");
+    const rpcRow = Array.isArray(rawResult.data) ? rawResult.data[0] : rawResult.data;
+    if (!isRecord(rpcRow) || typeof rpcRow.request_id !== "string") {
       throw new Error("Supabase returned no partner onboarding request.");
     }
     return persistSupabaseRecord(

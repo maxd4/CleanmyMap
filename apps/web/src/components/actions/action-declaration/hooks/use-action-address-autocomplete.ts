@@ -41,7 +41,7 @@ export function useActionAddressAutocomplete({ value, onChange }: UseActionAddre
       }
     };
     const timer = window.setTimeout(() => {
-      void /* fire-and-forget -- the debounce callback owns its loading state and abort handling. */ loadSuggestions();
+      void /* fire-and-forget -- the debounce callback owns its loading state and abort handling. */ loadSuggestions().catch(() => undefined);
     }, 220);
     return () => {
       clearTimeout(timer);

@@ -46,7 +46,7 @@ export function useCommunityActionMutations({ isLoaded, isSignedIn, redirectToSi
         redirectAnonymousToCommunity();
         return;
       }
-      if (appError.kind === "network") notifyNetworkToast({ message: appError.message || defaultMessageForKind("network"), onRetry: () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onRsvp(eventId, status); }, onRefresh: () => window.location.reload() });
+      if (appError.kind === "network") notifyNetworkToast({ message: appError.message || defaultMessageForKind("network"), onRetry: () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onRsvp(eventId, status).catch(() => undefined); }, onRefresh: () => window.location.reload() });
       setCommunityError(appError);
     } finally {
       setRsvpLoadingEventId(null);
@@ -92,7 +92,7 @@ export function useCommunityActionMutations({ isLoaded, isSignedIn, redirectToSi
         redirectAnonymousToCommunity();
         return;
       }
-      if (appError.kind === "network") notifyNetworkToast({ message: appError.message || defaultMessageForKind("network"), onRetry: () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onSaveEventOps(event); }, onRefresh: () => window.location.reload() });
+      if (appError.kind === "network") notifyNetworkToast({ message: appError.message || defaultMessageForKind("network"), onRetry: () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onSaveEventOps(event).catch(() => undefined); }, onRefresh: () => window.location.reload() });
       setCommunityError(appError);
     } finally {
       setIsUpdatingEventOpsId(null);

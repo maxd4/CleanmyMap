@@ -4,6 +4,10 @@ import type {
 } from "./project-signals.calculations";
 import { parseDateOrNull } from "./services/utils";
 
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
+}
+
 export function countDistinct(values: Array<string | null | undefined>): number {
   return new Set(
     values.map((value) => value?.trim()).filter((value): value is string => Boolean(value)),
@@ -15,7 +19,7 @@ export function countProjectUnreadNotifications(rows: AppNotificationRow[]): num
 }
 
 export function countTrainingPhotos(raw: unknown): number {
-  if (!Array.isArray(raw)) {
+  if (!isUnknownArray(raw)) {
     return 0;
   }
 
@@ -23,15 +27,15 @@ export function countTrainingPhotos(raw: unknown): number {
 }
 
 export function sumTrainingPhotoBytes(raw: unknown): number {
-  if (!Array.isArray(raw)) {
+  if (!isUnknownArray(raw)) {
     return 0;
   }
 
-  return raw.reduce((acc, item) => {
-    if (!item || typeof item !== "object") {
+  return raw.reduce<number>((acc, item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
       return acc;
     }
-    const maybeSize = (item as { size?: unknown }).size;
+    const maybeSize = "size" in item ? item.size : undefined;
     return acc + (typeof maybeSize === "number" && Number.isFinite(maybeSize) ? maybeSize : 0);
   }, 0);
 }

@@ -153,3 +153,15 @@ export type PublishedAnnuaireEntry = AnnuaireEntryShared & {
 };
 
 export type AnnuaireEntry = EditorialAnnuaireEntry | PublishedAnnuaireEntry;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function isPublishedAnnuaireEntry(value: unknown): value is PublishedAnnuaireEntry {
+  if (!isRecord(value)) return false;
+  const record = value;
+  const isStringArray = (candidate: unknown): candidate is string[] => Array.isArray(candidate) && candidate.every((item) => typeof item === "string");
+  const isNumberArray = (candidate: unknown): candidate is number[] => Array.isArray(candidate) && candidate.every((item) => typeof item === "number" && Number.isFinite(item));
+  return typeof record.id === "string" && typeof record.name === "string" && typeof record.legalIdentity === "string" && (record.kind === "association" || record.kind === "groupe_parole" || record.kind === "evenement" || record.kind === "commerce" || record.kind === "entreprise") && (record.scope === undefined || record.scope === "local" || record.scope === "national" || record.scope === "france") && isStringArray(record.types) && typeof record.description === "string" && typeof record.location === "string" && (record.lat === null || (typeof record.lat === "number" && Number.isFinite(record.lat))) && (record.lng === null || (typeof record.lng === "number" && Number.isFinite(record.lng))) && isNumberArray(record.coveredArrondissements) && isStringArray(record.contributionTypes) && record.provenance === "published_partner" && (record.verificationStatus === "verifie" || record.verificationStatus === "en_cours" || record.verificationStatus === "a_revalider") && (record.qualificationStatus === "partenaire_actif" || record.qualificationStatus === "contact_non_qualifie") && typeof record.availability === "string" && typeof record.lastUpdatedAt === "string";
+}

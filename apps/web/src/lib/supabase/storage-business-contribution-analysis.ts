@@ -97,7 +97,7 @@ export function buildStorageBusinessContributionMimeSubtypesByDomain(
     const key = mimeType ?? `file-type:${extension || "sans-extension"}`;
     const label = mimeType ?? inferStorageFileTypeLabel(extension, mimeType);
 
-    const domain = grouped.get(classification.id) ?? new Map();
+    const domain = grouped.get(classification.id) ?? new Map<string, { label: string; bytes: number; count: number; knownSizeCount: number }>();
     const current = domain.get(key) ?? {
       label,
       bytes: 0,

@@ -114,6 +114,64 @@ export type SpogomiPublicResults = {
   }>;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function nullableNumber(value: unknown): value is number | null {
+  return value === null || typeof value === "number";
+}
+
+function optionalNullableNumber(value: unknown): value is number | null | undefined {
+  return value === undefined || nullableNumber(value);
+}
+
+function parsePublicRankingEntry(value: unknown): SpogomiPublicRankingEntry | null {
+  if (!isRecord(value) || typeof value.teamNumber !== "number" || typeof value.publicName !== "string" || !(value.rank === null || typeof value.rank === "number") || (value.status !== "certified" && value.status !== "provisional" && value.status !== "unavailable") || typeof value.eligible !== "boolean" || !(value.reason === null || typeof value.reason === "string") || (value.valueUnit !== "points" && value.valueUnit !== "mégots/participant") || !optionalNullableNumber(value.score) || !optionalNullableNumber(value.countedButts) || !optionalNullableNumber(value.presentParticipants) || !optionalNullableNumber(value.numerator) || !optionalNullableNumber(value.denominator) || !optionalNullableNumber(value.ratio)) return null;
+  if (value.teamId !== undefined && typeof value.teamId !== "string") return null;
+  if (value.divisionId !== undefined && typeof value.divisionId !== "string") return null;
+  return {
+    ...(value.teamId === undefined ? {} : { teamId: value.teamId }),
+    ...(value.divisionId === undefined ? {} : { divisionId: value.divisionId }),
+    teamNumber: value.teamNumber,
+    publicName: value.publicName,
+    rank: value.rank,
+    status: value.status,
+    eligible: value.eligible,
+    reason: value.reason,
+    ...(value.score === undefined ? {} : { score: value.score }),
+    ...(value.countedButts === undefined ? {} : { countedButts: value.countedButts }),
+    ...(value.presentParticipants === undefined ? {} : { presentParticipants: value.presentParticipants }),
+    ...(value.numerator === undefined ? {} : { numerator: value.numerator }),
+    ...(value.denominator === undefined ? {} : { denominator: value.denominator }),
+    valueUnit: value.valueUnit,
+    ...(value.ratio === undefined ? {} : { ratio: value.ratio }),
+  };
+}
+
+function parsePublicRanking(value: unknown): SpogomiPublicResults["sport"] | null {
+  if (!isRecord(value) || (value.status !== "hidden" && value.status !== "certified" && value.status !== "provisional" && value.status !== "unavailable") || !(value.reason === null || typeof value.reason === "string") || !Array.isArray(value.entries)) return null;
+  const entries = value.entries.map(parsePublicRankingEntry);
+  return entries.every((entry): entry is SpogomiPublicRankingEntry => entry !== null) ? { status: value.status, reason: value.reason, entries } : null;
+}
+
+export function parseSpogomiPublicResults(value: unknown): SpogomiPublicResults | null {
+  if (!isRecord(value) || (value.visibility !== "hidden" && value.visibility !== "provisional" && value.visibility !== "certified") || typeof value.regulationVersion !== "string" || typeof value.regulationComplete !== "boolean" || typeof value.refreshedAt !== "string") return null;
+  const sport = parsePublicRanking(value.sport);
+  const butts = parsePublicRanking(value.butts);
+  if (!sport || !butts || !isRecord(value.environmental) || (value.environmental.status !== "available" && value.environmental.status !== "unavailable") || !nullableNumber(value.environmental.totalWasteMassGrams) || !nullableNumber(value.environmental.cigaretteButtsMassGrams) || !nullableNumber(value.environmental.cigaretteButtsCount) || !nullableNumber(value.environmental.participantsPresent) || !(value.environmental.projectionVersion === null || typeof value.environmental.projectionVersion === "string") || !(value.environmental.sourceHash === null || typeof value.environmental.sourceHash === "string")) return null;
+  const divisions = value.divisions === undefined ? undefined : Array.isArray(value.divisions) ? value.divisions.map((division) => {
+    if (!isRecord(division) || typeof division.id !== "string" || (division.type !== "casual" && division.type !== "world_cup") || typeof division.regulationVersion !== "string" || typeof division.regulationComplete !== "boolean") return null;
+    const divisionSport = parsePublicRanking(division.sport);
+    const divisionButts = parsePublicRanking(division.butts);
+    const divisionType: SpogomiDivisionType = division.type === "casual" ? "casual" : "world_cup";
+    return divisionSport && divisionButts ? { id: division.id, type: divisionType, regulationVersion: division.regulationVersion, regulationComplete: division.regulationComplete, sport: divisionSport, butts: divisionButts } : null;
+  }) : null;
+  if (divisions === null || divisions?.some((division) => division === null)) return null;
+  const validDivisions = divisions?.filter((division): division is NonNullable<typeof division> => division !== null);
+  return { visibility: value.visibility, regulationVersion: value.regulationVersion, regulationComplete: value.regulationComplete, refreshedAt: value.refreshedAt, sport, butts, environmental: { status: value.environmental.status, totalWasteMassGrams: value.environmental.totalWasteMassGrams, cigaretteButtsMassGrams: value.environmental.cigaretteButtsMassGrams, cigaretteButtsCount: value.environmental.cigaretteButtsCount, participantsPresent: value.environmental.participantsPresent, projectionVersion: value.environmental.projectionVersion, sourceHash: value.environmental.sourceHash }, ...(validDivisions === undefined ? {} : { divisions: validDivisions }) };
+}
+
 type SpogomiExportTeam = {
   teamId: string;
   divisionId?: string;

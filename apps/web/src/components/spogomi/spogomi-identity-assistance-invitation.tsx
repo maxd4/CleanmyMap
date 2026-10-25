@@ -5,6 +5,10 @@ import { useAuth } from "@clerk/nextjs";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 
+function errorMessage(value: unknown, fallback: string): string {
+  return typeof value === "object" && value !== null && "error" in value && typeof value.error === "string" ? value.error : fallback;
+}
+
 export function SpogomiIdentityAssistanceInvitation({ eventId, token, signInHref }: { eventId: string; token: string; signInHref: string }) {
   const { isLoaded, isSignedIn } = useAuth();
   const [context, setContext] = useState("");
@@ -22,8 +26,8 @@ export function SpogomiIdentityAssistanceInvitation({ eventId, token, signInHref
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ assistance: true, context, invitationToken: token }),
       });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error ?? "Le lien d’assistance n’est plus disponible.");
+      const body: unknown = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(errorMessage(body, "Le lien d’assistance n’est plus disponible."));
       setMessage("Demande transmise à l’organisateur. Vous recevrez le code directement après sa vérification.");
       setContext("");
     } catch (reason) {

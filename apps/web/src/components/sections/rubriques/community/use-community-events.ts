@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import useSWR from "swr";
-import { fetchCommunityEvents } from "@/lib/community/http";
+import { fetchCommunityEvents, type CommunityEventsResponse } from "@/lib/community/http";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { isAppError, toAppError } from "@/lib/errors/app-errors";
 
@@ -11,7 +11,7 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
     isLoading: eventsLoading,
     isValidating: eventsValidating,
     mutate: reloadEvents,
-  } = useSWR(
+  } = useSWR<CommunityEventsResponse, unknown>(
     enabled ? ["section-community-events"] : null,
     () => fetchCommunityEvents({ limit: 120 }),
     swrRecentViewOptions,
@@ -22,7 +22,7 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
     isLoading: focusedEventLoading,
     isValidating: focusedEventValidating,
     mutate: reloadFocusedEvent,
-  } = useSWR(
+  } = useSWR<CommunityEventsResponse, unknown>(
     enabled && focusEventId ? ["section-community-event", focusEventId] : null,
     () => fetchCommunityEvents({ limit: 1, eventId: focusEventId }),
     swrRecentViewOptions,

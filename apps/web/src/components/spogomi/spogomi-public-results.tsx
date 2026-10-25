@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
-import type { SpogomiPublicResults } from "@/lib/spogomi/results-projection";
+import { parseSpogomiPublicResults, type SpogomiPublicResults } from "@/lib/spogomi/results-projection";
 
 function formatNumber(value: number | null, maximumFractionDigits = 2) { return value === null ? "—" : new Intl.NumberFormat("fr-FR", { maximumFractionDigits }).format(value); }
 
@@ -29,14 +29,14 @@ export function SpogomiPublicResults({ eventSlug, initial }: { eventSlug: string
   const [divisionId, setDivisionId] = useState<string | null>(initial?.divisions?.[0]?.id ?? null);
   const refresh = useCallback(async () => {
     setBusy(true); setError(null);
-    try { const response = await fetch(`/api/spogomi/public/events/${encodeURIComponent(eventSlug)}`, { cache: "no-store" }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error ?? "Résultats indisponibles."); setResults(body.results as SpogomiPublicResults); }
+  try { const response = await fetch(`/api/spogomi/public/events/${encodeURIComponent(eventSlug)}`, { cache: "no-store" }); const body: unknown = await response.json().catch(() => ({})); if (!response.ok) throw new Error(typeof body === "object" && body !== null && "error" in body && typeof body.error === "string" ? body.error : "Résultats indisponibles."); const parsed = typeof body === "object" && body !== null && "results" in body ? parseSpogomiPublicResults(body.results) : null; if (!parsed) throw new Error("Les résultats ont renvoyé une réponse invalide."); setResults(parsed); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Résultats indisponibles."); }
     finally { setBusy(false); }
   }, [eventSlug]);
   // Justification polling: public provisional results may change after arbitration;
   // refresh every 60 seconds only while the tab is visible and results remain public;
   // pause while hidden or inactive to avoid background traffic.
-  useEffect(() => { if (document.visibilityState === "hidden" || results?.visibility === "hidden") return; const timer = window.setInterval(() => { if (document.visibilityState !== "hidden") void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refresh(); }, 60_000); return () => window.clearInterval(timer); }, [refresh, results?.visibility]);
+  useEffect(() => { if (document.visibilityState === "hidden" || results?.visibility === "hidden") return; const timer = window.setInterval(() => { if (document.visibilityState !== "hidden") void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refresh().catch(() => undefined); }, 60_000); return () => window.clearInterval(timer); }, [refresh, results?.visibility]);
   if (!results || results.visibility === "hidden") return <CmmCard tone="slate" variant="glass" className="border-dashed p-5"><h2 className="font-black text-slate-900">Classements et résultats</h2><p className="mt-2 text-sm text-slate-700">Les résultats restent masqués jusqu’à publication par l’organisateur.</p></CmmCard>;
   const activeDivision = results.divisions?.find((division) => division.id === divisionId) ?? results.divisions?.[0] ?? null;
   return <PublicResultsContent results={results} activeDivision={activeDivision} busy={busy} error={error} refresh={refresh} setDivisionId={(id) => setDivisionId(id)} />;

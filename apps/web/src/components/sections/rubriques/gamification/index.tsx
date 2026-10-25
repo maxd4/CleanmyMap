@@ -51,7 +51,7 @@ export function GamificationSection() {
     isLoading: meLoading,
     error: meError,
     mutate: mutateMe,
-  } = useSWR(
+  } = useSWR<MeResponse, unknown>(
     ["gamification-me", receiptId],
     () => fetchJson<MeResponse>(receiptId
       ? `/api/gamification/me?receipt=${encodeURIComponent(receiptId)}`

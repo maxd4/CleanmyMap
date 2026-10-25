@@ -57,12 +57,54 @@ type OsrmResponse = {
   routes?: unknown;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isOsrmResponse(value: unknown): value is OsrmResponse {
+  return isRecord(value);
+}
+
+function isOsrmRoute(value: unknown): value is OsrmRoute {
+  return isRecord(value);
+}
+
+function isOsrmLeg(value: unknown): value is OsrmLeg {
+  return isRecord(value);
+}
+
+function isOsrmStep(value: unknown): value is OsrmStep {
+  return isRecord(value);
+}
+
+function isOsrmLegArray(value: unknown): value is OsrmLeg[] {
+  return Array.isArray(value) && value.every(isOsrmLeg);
+}
+
+function isOsrmStepArray(value: unknown): value is OsrmStep[] {
+  return Array.isArray(value) && value.every(isOsrmStep);
+}
+
+function isOsrmRouteArray(value: unknown): value is OsrmRoute[] {
+  return Array.isArray(value) && value.every(isOsrmRoute);
+}
+
+function isMeasuredStep(
+  value: OsrmStep,
+): value is OsrmStep & { distance: number; duration: number } {
+  return isFiniteNumber(value.distance) && value.distance >= 0 && isFiniteNumber(value.duration) && value.duration >= 0;
+}
+
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
+}
+
 function isCoordinate(value: unknown): value is [number, number] {
-  if (!Array.isArray(value) || value.length !== 2) {
+  if (!isUnknownArray(value) || value.length !== 2) {
     return false;
   }
 
@@ -81,13 +123,13 @@ function isCoordinate(value: unknown): value is [number, number] {
 function normalizeCoordinates(
   coordinates: unknown,
 ): [number, number][] | null {
-  if (!Array.isArray(coordinates)) {
+  if (!isUnknownArray(coordinates)) {
     return null;
   }
 
   const normalized: [number, number][] = [];
   for (const point of coordinates) {
-    if (!Array.isArray(point) || point.length !== 2) {
+    if (!isUnknownArray(point) || point.length !== 2) {
       return null;
     }
 
@@ -186,7 +228,8 @@ function parseNetworkRoute(
     return null;
   }
 
-  const route = payload.routes[0] as OsrmRoute | undefined;
+  const routes = isOsrmRouteArray(payload.routes) ? payload.routes : [];
+  const route = routes[0];
   if (!route) {
     return null;
   }
@@ -221,25 +264,20 @@ function parseNetworkRoute(
   let legs: RouteGeometryLeg[] = [];
   if (hasCompleteLegs) {
     const parsedLegs: RouteGeometryLeg[] = [];
-    for (const [index, rawLeg] of (route.legs as OsrmLeg[]).entries()) {
+    const rawLegs = isOsrmLegArray(route.legs) ? route.legs : [];
+    for (const [index, rawLeg] of rawLegs.entries()) {
       if (!isFiniteNumber(rawLeg.distance) || !isFiniteNumber(rawLeg.duration)) {
         parsedLegs.length = 0;
         break;
       }
-      const rawSteps = Array.isArray(rawLeg.steps)
-        ? (rawLeg.steps as OsrmStep[])
+      const rawSteps = isOsrmStepArray(rawLeg.steps)
+        ? rawLeg.steps
         : undefined;
       const steps = rawSteps
-        ?.filter(
-          (step) =>
-            isFiniteNumber(step.distance) &&
-            step.distance >= 0 &&
-            isFiniteNumber(step.duration) &&
-            step.duration >= 0,
-        )
+        ?.filter(isMeasuredStep)
         .map((step) => {
-          const distance = step.distance as number;
-          const duration = step.duration as number;
+          const distance = step.distance;
+          const duration = step.duration;
           const maneuverType = typeof step.maneuver?.type === "string" ? step.maneuver.type : null;
           const maneuverModifier = typeof step.maneuver?.modifier === "string" ? step.maneuver.modifier : null;
           const geometry = normalizeCoordinates(step.geometry?.coordinates);
@@ -307,7 +345,8 @@ async function fetchOsrmRoute(
       });
       return null;
     }
-    const payload = (await response.json()) as OsrmResponse;
+    const payload: unknown = await response.json();
+    if (!isOsrmResponse(payload)) return null;
     return parseNetworkRoute(
       payload,
       coordinates,

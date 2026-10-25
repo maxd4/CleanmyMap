@@ -28,7 +28,7 @@ export function useActionShareContactRequests({
 }: UseActionShareContactRequestsParams) {
   const surfaceActive = useChatSurfaceActivity();
   const key = enabled && surfaceActive && currentUserId ? "/api/chat/contact-requests" : null;
-  const { data, error, isLoading, mutate } = useSWR<ActionShareContactRequestsResponse>(
+  const { data, error, isLoading, mutate } = useSWR<ActionShareContactRequestsResponse, unknown>(
     key,
     fetchRequests,
     {
@@ -51,7 +51,7 @@ export function useActionShareContactRequests({
         throw await readAppErrorResponse(response, "La demande de partage n’a pas pu être traitée.");
       }
       await mutate();
-      return response.json();
+      await response.json().catch(() => null);
     },
     [mutate],
   );

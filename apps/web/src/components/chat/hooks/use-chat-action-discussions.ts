@@ -32,7 +32,7 @@ export function mergePublishedActionItems(
 export function useChatActionDiscussions(enabled: boolean) {
   const surfaceActive = useChatSurfaceActivity();
   const key = enabled && surfaceActive ? ["chat-action-discussions"] : null;
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<ActionListItem[], unknown>(
     key,
     async () => {
       const [published, future] = await Promise.all([

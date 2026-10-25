@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { fetchCommunityEvents, type CommunityEventItem } from "@/lib/community/http";
+import { fetchCommunityEvents, type CommunityEventItem, type CommunityEventsResponse } from "@/lib/community/http";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 import {
   filterRouteEventsByDate,
@@ -30,7 +30,7 @@ export function RouteEventSelector({
   fr,
 }: RouteEventSelectorProps) {
   const [dateFilter, setDateFilter] = useState<RouteEventDateFilter>("all");
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading } = useSWR<CommunityEventsResponse, unknown>(
     "route-event-selector",
     () => fetchCommunityEvents({ limit: 300 }),
     { revalidateOnFocus: false, revalidateOnReconnect: false },

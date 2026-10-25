@@ -116,7 +116,7 @@ export function CreatorInboxPanel({
                   void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.applyInboxAction({
                     ...params,
                     reason: inbox.actionReasons[item.sourceRecordId] ?? "",
-                  })
+                  }).catch(() => undefined)
                 }
                 onLegalDecision={(params) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.decideLegalReport(params); }}
                 canQualify={inbox.canQualify}

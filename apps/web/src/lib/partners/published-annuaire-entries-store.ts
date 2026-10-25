@@ -43,6 +43,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
+}
+
+function isAssociationResource(value: unknown): value is { label: string; description?: string; url?: string } {
+  return isRecord(value) && typeof value.label === "string" && (value.description === undefined || typeof value.description === "string") && (value.url === undefined || typeof value.url === "string");
+}
+
 function fromSupabaseRow(row: Record<string, unknown>): PublishedPartnerAnnuaireEntry | null {
   if (!isRecord(row.public_data)) {
     return null;
@@ -249,12 +257,9 @@ function removeDemonstrablySyntheticActivity(
 
 function normalizeAssociationProfile(value: unknown): AssociationProfile | undefined {
   if (!isRecord(value)) return undefined;
-  const resources = Array.isArray(value.usefulResources)
-    ? value.usefulResources.filter((resource) => {
-        if (!isRecord(resource)) return false;
-        const label = typeof resource.label === "string" ? resource.label : "";
-        const url = typeof resource.url === "string" ? resource.url : "";
-        return !/^contact direct$/i.test(label.trim()) && !/^(mailto:|tel:)/i.test(url.trim());
+  const resources = isUnknownArray(value.usefulResources)
+    ? value.usefulResources.filter(isAssociationResource).filter((resource) => {
+        return !/^contact direct$/i.test(resource.label.trim()) && !/^(mailto:|tel:)/i.test((resource.url ?? "").trim());
       })
     : value.usefulResources;
   return {
@@ -370,7 +375,7 @@ export async function updatePublishedPartnerAnnuaireEntryPublicationStatus(param
   assertPersistenceAvailable("published_partner_annuaire_entries");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true).rpc(
+    const rawResult: unknown = await getSupabaseServerClient(true).rpc(
       "review_partner_publication",
       {
         p_entry_id: params.entryId,
@@ -380,9 +385,10 @@ export async function updatePublishedPartnerAnnuaireEntryPublicationStatus(param
         p_reason: params.reason ?? "Revue administrative partenaire",
       },
     );
-    if (result.error) throw new Error(result.error.message);
-    const row = Array.isArray(result.data) ? result.data[0] : result.data;
-    return row ? fromSupabaseRow(row as Record<string, unknown>) : null;
+    if (!isRecord(rawResult) || !("data" in rawResult) || !("error" in rawResult)) throw new Error("Supabase returned an invalid partner review response.");
+    if (rawResult.error) throw new Error(isRecord(rawResult.error) && typeof rawResult.error.message === "string" ? rawResult.error.message : "Partner review RPC failed.");
+    const row = Array.isArray(rawResult.data) ? rawResult.data[0] : rawResult.data;
+    return isRecord(row) ? fromSupabaseRow(row) : null;
   }
 
   const store = await readStore();

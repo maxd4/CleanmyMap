@@ -43,12 +43,12 @@ function useQueueData({ fr, queueActionId, reloadAction }: { fr: boolean; queueA
   useEffect(() => {
     if (!queueActionId) return undefined;
     const controller = new AbortController();
-    void (async () => { await loadQueue(queueActionId, controller.signal); })();
+    void (async () => { await loadQueue(queueActionId, controller.signal); })().catch(() => undefined);
     return () => controller.abort();
   }, [loadQueue, queueActionId]);
   useEffect(() => {
     if (reloadAction?.actionId !== queueActionId || !queueActionId) return;
-    void (async () => { await loadQueue(queueActionId); })();
+    void (async () => { await loadQueue(queueActionId); })().catch(() => undefined);
   }, [loadQueue, reloadAction?.actionId, reloadAction?.version, queueActionId]);
 
   return { queueRequests, queueConfirmedParticipants, queueLoading, queueError, queueCanReview, setQueueError, loadQueue };

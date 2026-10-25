@@ -185,7 +185,7 @@ describe("SpogomiIdentityLinkCard behavior", () => {
     await act(() => codeInput.props.onChange({ target: { value: "SPOGOMI-1234567890123456" } }));
     fetchMock.mockResolvedValueOnce(jsonResponse({ state: "identity_verified", recognition: null, team: null }));
     await act(async () => {
-      findForm(renderer).props.onSubmit({ preventDefault: vi.fn() });
+      await findForm(renderer).props.onSubmit({ preventDefault: vi.fn() });
       await flushPromises();
     });
 
@@ -207,7 +207,7 @@ describe("SpogomiIdentityLinkCard behavior", () => {
     await act(() => findInput(renderer, "spogomi-identity-code").props.onChange({ target: { value: "SPOGOMI-1234567890123456" } }));
     fetchMock.mockResolvedValueOnce(jsonResponse({ error: "Code invalide" }, 400));
     await act(async () => {
-      findForm(renderer).props.onSubmit({ preventDefault: vi.fn() });
+      await findForm(renderer).props.onSubmit({ preventDefault: vi.fn() });
       await flushPromises();
     });
     expect(renderer.root.findByProps({ role: "alert" }).props.children).toBe("Code invalide");
@@ -266,7 +266,7 @@ describe("SpogomiIdentityLinkCard behavior", () => {
     });
     fetchMock.mockResolvedValueOnce(jsonResponse({ error: "Assistance refusée" }, 400));
     await act(async () => {
-      findForm(assistanceRenderer).props.onSubmit({ preventDefault: vi.fn() });
+      await findForm(assistanceRenderer).props.onSubmit({ preventDefault: vi.fn() });
       await flushPromises();
     });
     expect(assistanceRenderer.root.findByProps({ role: "alert" }).props.children).toBe("Assistance refusée");
@@ -300,7 +300,7 @@ describe("SpogomiIdentityLinkCard behavior", () => {
       },
     }));
     await act(async () => {
-      findForm(renderer).props.onSubmit({ preventDefault: vi.fn() });
+      await findForm(renderer).props.onSubmit({ preventDefault: vi.fn() });
       await flushPromises();
     });
 
@@ -464,7 +464,7 @@ describe("SpogomiIdentityLinkCard behavior", () => {
     const context = findInput(renderer, "spogomi-identity-assistance-context");
     await act(() => context.props.onChange({ target: { value: "Présence confirmée par l’équipe terrain." } }));
     await act(async () => {
-      findForm(renderer).props.onSubmit({ preventDefault: vi.fn() });
+      await findForm(renderer).props.onSubmit({ preventDefault: vi.fn() });
       await flushPromises();
     });
 

@@ -10,6 +10,7 @@ import {
 } from "@/lib/chat/chat-notification-unreads";
 import type { ChatTopicId } from "@/lib/chat/topics";
 import { isChatRealtimeEnabled } from "@/lib/chat/chat-config";
+import { parseChatSupabaseResult } from "@/lib/chat/postgrest";
 import { useChatSurfaceActivity } from "../chat-surface-activity-context";
 
 export type ChatNotificationReadScope =
@@ -49,17 +50,20 @@ export function useChatNotificationUnreads({
       return emptyCounts;
     }
 
-    const { data, error } = await supabase.rpc(
+    const rawResult: unknown = await supabase.rpc(
       "get_my_unread_chat_notification_counts",
     );
-    if (error) {
-      throw error;
+    const result = parseChatSupabaseResult(rawResult);
+    if (result.error) {
+      throw result.error;
     }
 
-    return normalizeChatNotificationUnreadCounts(data);
+    return normalizeChatNotificationUnreadCounts(
+      Array.isArray(result.data) ? result.data : null,
+    );
   }, [emptyCounts, supabase]);
 
-  const { data, error, isLoading, mutate } = useSWR<ChatNotificationUnreadCounts>(
+  const { data, error, isLoading, mutate } = useSWR<ChatNotificationUnreadCounts, unknown>(
     key,
     fetcher,
     {
@@ -87,7 +91,7 @@ export function useChatNotificationUnreads({
           : [null];
       const updatedCounts = await Promise.all(
         topicIds.map(async (topicId) => {
-          const { data: updatedCount, error: updateError } = await supabase.rpc(
+          const rawResult: unknown = await supabase.rpc(
             "mark_my_chat_notifications_read",
             {
               p_channel_type: scope.channelType,
@@ -96,8 +100,9 @@ export function useChatNotificationUnreads({
               p_action_id: scope.channelType === "action" ? scope.actionId : null,
             },
           );
-          if (updateError) throw updateError;
-          return Number(updatedCount ?? 0) || 0;
+          const result = parseChatSupabaseResult(rawResult);
+          if (result.error) throw result.error;
+          return Number(result.data ?? 0) || 0;
         }),
       );
 
