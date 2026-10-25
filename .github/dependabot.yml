@@ -11,18 +11,41 @@ updates:
       - "maxd4"
     labels:
       - "dependencies"
-      - "npm"
     groups:
-      npm-mobile-runtime:
+      # Expo packages and Expo modules share the SDK compatibility boundary.
+      npm-mobile-expo-sdk:
+        applies-to: "version-updates"
+        update-types:
+          - "patch"
+          - "minor"
+        patterns:
+          - "@expo/*"
+          - "expo*"
+      # Clerk's Expo adapter has its own peer/runtime compatibility contract.
+      npm-mobile-clerk-expo:
         applies-to: "version-updates"
         update-types:
           - "patch"
           - "minor"
         patterns:
           - "@clerk/expo"
-          - "@expo/*"
-          - "expo*"
-          - "react-native*"
+      # React Native core is governed by the selected Expo SDK and must not be
+      # bundled with independently versioned native libraries.
+      npm-mobile-react-native-core:
+        applies-to: "version-updates"
+        update-types:
+          - "patch"
+          - "minor"
+        patterns:
+          - "react-native"
+      # These libraries can be reviewed independently against the active SDK.
+      npm-mobile-native-libraries:
+        applies-to: "version-updates"
+        update-types:
+          - "patch"
+          - "minor"
+        patterns:
+          - "react-native-*"
       npm-web-runtime:
         applies-to: "version-updates"
         update-types:
