@@ -20,6 +20,7 @@ vi.mock("./use-weather-location-suggestions", () => ({
 }));
 
 import { useWeatherData } from "./use-weather-data";
+import { storeWeatherLocation } from "./weather-location-storage";
 
 type WeatherDraftContext = NonNullable<Parameters<typeof useWeatherData>[0]>;
 
@@ -39,6 +40,17 @@ function deferred<T>(): Deferred<T> {
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
 
+function WeatherHookHarness({
+  context,
+  onValue,
+}: {
+  context: WeatherDraftContext;
+  onValue: (value: ReturnType<typeof useWeatherData>) => void;
+}) {
+  onValue(useWeatherData(context));
+  return null;
+}
+
 function renderHook(context: WeatherDraftContext) {
   let current: ReturnType<typeof useWeatherData> | null = null;
   host = document.createElement("div");
@@ -47,9 +59,11 @@ function renderHook(context: WeatherDraftContext) {
   const render = (nextContext: WeatherDraftContext) => {
     act(() => {
       root?.render(
-        React.createElement(() => {
-          current = useWeatherData(nextContext);
-          return null;
+        React.createElement(WeatherHookHarness, {
+          context: nextContext,
+          onValue: (value) => {
+            current = value;
+          },
         }),
       );
     });
@@ -95,6 +109,61 @@ beforeEach(() => {
 });
 
 describe("useWeatherData asynchronous location lifecycle", () => {
+  it("resolves a draft location before Clerk is loaded", async () => {
+    mocks.useUser.mockReturnValue({ isLoaded: false, user: null });
+    const request = deferred<Response>();
+    const fetchMock = vi.fn(() => request.promise);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const hook = renderHook({ locationLabel: "Paris 15e", contextReady: true });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/geo/address-suggestions?q=Paris%2015e&limit=1",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+
+    await act(async () => {
+      request.resolve(new Response(JSON.stringify({ items: [suggestion("Paris 15e", 48.84)] }), { status: 200 }));
+      await Promise.resolve();
+    });
+
+    expect(hook.current.selectedLocation).toMatchObject({
+      label: "Paris 15e",
+      latitude: 48.84,
+      resolution: "resolved",
+    });
+  });
+
+  it("resolves stored location before Clerk is loaded without starting geolocation", async () => {
+    mocks.useUser.mockReturnValue({ isLoaded: false, user: null });
+    storeWeatherLocation({ label: "Lieu stockage test 9f3", subtitle: "Rhône" });
+    const request = deferred<Response>();
+    const getCurrentPosition = vi.fn();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+    vi.stubGlobal("fetch", vi.fn(() => request.promise));
+
+    const hook = renderHook({});
+
+    expect(getCurrentPosition).not.toHaveBeenCalled();
+    await act(async () => {
+      request.resolve(new Response(JSON.stringify({ items: [suggestion("Lyon", 45.76)] }), { status: 200 }));
+      await Promise.resolve();
+    });
+
+    expect(hook.current.selectedLocation).toMatchObject({
+      label: "Lyon",
+      latitude: 45.76,
+      resolution: "resolved",
+    });
+    expect(JSON.parse(window.localStorage.getItem("cmm.weather.selected-location") ?? "null")).toEqual({
+      label: "Lyon",
+      subtitle: "Localisation résolue",
+    });
+  });
+
   it("keeps a newer draft location when the previous resolution returns late", async () => {
     const requests = new Map<string, Deferred<Response>>();
     vi.stubGlobal("fetch", vi.fn((url: string) => {
@@ -115,6 +184,48 @@ describe("useWeatherData asynchronous location lifecycle", () => {
 
     expect(hook.current.selectedLocation.label).toBe("Nouveau lieu");
     expect(hook.current.selectedLocation.latitude).toBe(48.9);
+  });
+
+  it("does not start geolocation before Clerk preference loading completes", async () => {
+    mocks.useUser.mockReturnValue({ isLoaded: false, user: null });
+    const getCurrentPosition = vi.fn();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+    const hook = renderHook({});
+
+    expect(getCurrentPosition).not.toHaveBeenCalled();
+
+    mocks.useUser.mockReturnValue({
+      isLoaded: true,
+      user: {
+        unsafeMetadata: {
+          territoryPreferences: {
+            residence: {
+              country: "France",
+              level: "country",
+              label: "France entière",
+              subtitle: "Vue nationale",
+              arrondissement: null,
+              arrondissementCity: null,
+            },
+            work: null,
+          },
+        },
+      },
+    });
+    hook.render({});
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(getCurrentPosition).not.toHaveBeenCalled();
+    expect(hook.current.selectedLocation.label).toBe("France entière");
+    expect(JSON.parse(window.localStorage.getItem("cmm.weather.selected-location") ?? "null")).toEqual({
+      label: "France entière",
+      subtitle: "Vue nationale",
+    });
   });
 
   it("keeps an explicit manual selection when an automatic resolution returns late", async () => {
@@ -149,6 +260,29 @@ describe("useWeatherData asynchronous location lifecycle", () => {
     });
 
     expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+    expect(hook.current.selectedLocation.label).toBe("France");
+    expect(hook.current.weatherStatus).toBe("empty");
+  });
+
+  it("keeps the neutral fallback when reverse geolocation is unavailable", async () => {
+    const getCurrentPosition = vi.fn((success: PositionCallback) => {
+      success({
+        coords: { latitude: 43.3, longitude: 5.4 } as GeolocationCoordinates,
+        timestamp: Date.now(),
+      } as GeolocationPosition);
+    });
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 503 })));
+
+    const hook = renderHook({});
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
     expect(hook.current.selectedLocation.label).toBe("France");
     expect(hook.current.weatherStatus).toBe("empty");
   });

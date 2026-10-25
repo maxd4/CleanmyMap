@@ -181,7 +181,7 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
   }, [actionLocation, contextReady, selectedLocation]);
 
   useEffect(() => {
-    if (!isLoaded || !contextReady || hasCanonicalActionLocation || preparationContextWithoutLocation) {
+    if (!contextReady || hasCanonicalActionLocation || preparationContextWithoutLocation) {
       return;
     }
 
@@ -196,8 +196,8 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
       hasManualLocation: hasManualLocationRef.current,
       hasResolvedInitialLocation: hasResolvedInitialLocationRef.current,
       hasStoredLocation: Boolean(storedLocation),
-      hasPreference: Boolean(locationPreference),
-      geolocationAvailable: canRequestGeolocation(),
+      hasPreference: isLoaded && Boolean(locationPreference),
+      geolocationAvailable: isLoaded && canRequestGeolocation(),
     });
     if (!source) {
       return;
