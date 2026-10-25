@@ -31,7 +31,7 @@ export const accountAnalyticsAuthorizationContract = {
       expected: "Authenticated current account updates only its own activity status",
       dimensions: ["authentication", "ownership"],
       actual: "requireActionRequestAccess accepts the authenticated web cookie or a bounded Clerk session Bearer; Clerk update is scoped to access.userId",
-      evidence: ["requireActionRequestAccess", "access.userId", "updateUser"],
+      evidence: ["requireActionRequestAccess", "access.userId", "updateUserMetadata"],
     },
   },
   "account/identity": {

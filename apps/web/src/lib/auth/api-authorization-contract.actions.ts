@@ -220,6 +220,9 @@ export const actionsAuthorizationContract = {
       evidence: [
         "requireActionRequestAccess",
         "canManageAction",
+        "canManageActionsGlobally",
+        "canEditValidatedImpact",
+        "appendActionModerationAudit",
         "preparePatchMutation",
         "executePreparedActionUpdate",
       ],
@@ -320,12 +323,14 @@ export const actionsAuthorizationContract = {
       dimensions: ["authentication", "ownership"],
       actual: "Clerk auth userId + service-only recipient-scoped pending invitation RPC",
       evidence: ["auth", "list_pending_action_invitations_for_recipient"],
+      evidenceScope: "module",
     },
     PATCH: {
       expected: "Authenticated recipient-only atomic and idempotent invitation decision",
       dimensions: ["authentication", "ownership"],
       actual: "Clerk auth userId + recipient-scoped respond_to_action_invitation RPC",
       evidence: ["auth", "respond_to_action_invitation"],
+      evidenceScope: "module",
     },
   },
   "actions/[actionId]/invite-link": {
@@ -382,7 +387,6 @@ export const actionsAuthorizationContract = {
         "isInvitationTokenFormat",
         "request_private_action_registration",
         "claimFinishedActionParticipation",
-        "claim_private_action_participation",
         "appendParticipationClaimAudit",
       ],
       evidenceScope: "module",
@@ -394,6 +398,7 @@ export const actionsAuthorizationContract = {
       dimensions: ["authentication", "business permission", "ownership"],
       actual: "Clerk auth userId + service-only reviewer-scoped pending registration RPC; the projection rechecks the canonical registration and current reviewer rights",
       evidence: ["auth", "list_pending_action_registration_requests_for_reviewer"],
+      evidenceScope: "module",
     },
   },
   "actions/post-action-prompts": {
@@ -402,12 +407,14 @@ export const actionsAuthorizationContract = {
       dimensions: ["authentication", "ownership"],
       actual: "Clerk auth userId + service-only recipient-scoped public-result prompt RPC",
       evidence: ["auth", "list_pending_action_result_prompts_for_recipient"],
+      evidenceScope: "module",
     },
     PATCH: {
       expected: "Authenticated confirmed-registration recipient response that either creates a pending post_action_claim or closes only the prompt",
       dimensions: ["authentication", "ownership", "business permission"],
       actual: "Clerk auth userId + recipient-bound atomic respond_to_action_result_prompt RPC",
       evidence: ["auth", "respond_to_action_result_prompt"],
+      evidenceScope: "module",
     },
   },
   "actions/post-action-claims": {
@@ -416,6 +423,7 @@ export const actionsAuthorizationContract = {
       dimensions: ["authentication", "business permission", "ownership"],
       actual: "Clerk auth userId + service-only reviewer-scoped pending post_action_claim RPC",
       evidence: ["auth", "list_pending_post_action_claims_for_reviewer"],
+      evidenceScope: "module",
     },
   },
   "actions/[actionId]/day": {
@@ -461,7 +469,12 @@ export const actionsAuthorizationContract = {
       expected: "Authorized action manager reads all final confirmed participants and their role decisions; a final participant reads only their own decisions",
       dimensions: ["authentication", "business permission", "ownership"],
       actual: "requireActionRequestAccess + canManageAction or action_participants confirmed + finalized action gate + server-only attestation projection",
-      evidence: ["requireActionRequestAccess", "canManageAction", "action_participants", "loadActionRoleAttestationState"],
+      evidence: [
+        "requireActionRequestAccess",
+        "canManageAction",
+        "loadActionParticipationReviewPage",
+        "loadActionRoleAttestationState",
+      ],
       evidenceScope: "module",
     },
     POST: {

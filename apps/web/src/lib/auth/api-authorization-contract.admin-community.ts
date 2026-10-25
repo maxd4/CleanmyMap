@@ -166,6 +166,7 @@ export const adminCommunityAuthorizationContract = {
       dimensions: ["admin/creator role", "audit"],
       actual: "getCurrentUserActiveRole must resolve max + appendAdminOperationAudit",
       evidence: ["getCurrentUserActiveRole", "appendAdminOperationAudit"],
+      evidenceScope: "module",
     },
   },
   "community/bug-reports/[reportId]/screenshot": {
