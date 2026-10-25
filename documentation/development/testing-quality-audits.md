@@ -66,6 +66,14 @@ des cinq gates historiques. `maintainability` distingue la complexité
 cognitive, les défauts locaux et leurs relations avec la complexité
 cyclomatique et la longueur de fonction. `type-safety` sépare strictement les
 findings `TYPE_SAFETY` et `ASYNC_SAFETY`, sans double comptage dans l'index.
+La couverture maintenabilité inclut les fichiers `.ts`/`.tsx` des racines Web et
+mobile ainsi que les `.mjs` sous `scripts/`. Les scripts sont mesurés à titre
+informatif par le même moteur ESLint/SonarJS, sans extension du ratchet
+historique `quality:complexity` ni modification d'une baseline. Le rapport
+conserve `sourceRoots`, l'engine et sa version, les identités de fonctions, les
+lignes et les diagnostics. `maintainabilityStatuses` distingue explicitement
+`PRESENT` de `NOT_MEASURED` pour un type hors périmètre ou un parseur invalide ;
+un fichier non couvert n'est donc jamais interprété comme un PASS.
 Le rapport `maintainability` contient aussi `controlFlowProfiles`, une mesure
 descriptive AST par fonction. Elle réutilise exactement l'identité v2, les
 lignes de début/fin et le fichier des métriques de complexité ; son champ

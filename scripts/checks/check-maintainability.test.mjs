@@ -136,6 +136,72 @@ function clean(value: number) {
   assert.equal(report.metrics[0].value, 0);
 });
 
+test("mesure réellement les fonctions MJS avec les mêmes identités et diagnostics locaux", async () => {
+  const report = await analyzeMaintainabilitySources({
+    files: [{
+      path: "scripts/quality-fixtures/complex.mjs",
+      source: `
+function complex(value, other) {
+  if (value > 0 && other > 0) {
+    if (value === other) return true;
+  } else if (value < 0) {
+    return false;
+  }
+  return value > 3 ? true : false;
+}
+`,
+    }],
+  });
+
+  const metric = report.metrics.find((entry) => entry.functionIdentity === "named:complex#1");
+  const profile = report.controlFlowProfiles.find((entry) => entry.functionIdentity === "named:complex#1");
+  assert.ok(metric);
+  assert.ok(metric.value > 0);
+  assert.equal(metric.line, 2);
+  assert.equal(metric.functionStartLine, 2);
+  assert.equal(metric.functionEndLine, 9);
+  assert.ok(profile);
+  assert.equal(profile.path, "scripts/quality-fixtures/complex.mjs");
+  assert.equal(report.maintainabilityStatuses[0].status, "PRESENT");
+  assert.equal(report.summary.filesMeasured, 1);
+  assert.equal(report.summary.filesNotMeasured, 0);
+  assert.equal(report.status, "PASS");
+});
+
+test("un MJS linéaire mesuré reste sans finding artificiel", async () => {
+  const report = await analyzeMaintainabilitySources({
+    files: [{
+      path: "scripts/quality-fixtures/clean.mjs",
+      source: `
+export function clean(value) {
+  return Math.abs(value) + 1;
+}
+`,
+    }],
+  });
+
+  assert.equal(report.status, "PASS");
+  assert.equal(report.diagnostics.length, 0);
+  assert.equal(report.findings.length, 0);
+  assert.equal(report.metrics[0].functionIdentity, "named:clean#1");
+  assert.equal(report.metrics[0].value, 0);
+  assert.deepEqual(report.maintainabilityStatuses, [{ path: "scripts/quality-fixtures/clean.mjs", status: "PRESENT", reason: null }]);
+});
+
+test("un MJS invalide expose un diagnostic et reste NOT_MEASURED", async () => {
+  const report = await analyzeMaintainabilitySources({
+    files: [{ path: "scripts/quality-fixtures/invalid.mjs", source: "function broken( {" }],
+  });
+
+  assert.equal(report.status, "FAIL");
+  assert.deepEqual(report.maintainabilityStatuses, [{ path: "scripts/quality-fixtures/invalid.mjs", status: "NOT_MEASURED", reason: "PARSER_FAILED" }]);
+  assert.equal(report.summary.filesMeasured, 0);
+  assert.equal(report.summary.filesNotMeasured, 1);
+  assert.ok(report.diagnostics.some((diagnostic) => /Parsing error|Unexpected token/.test(diagnostic.message)));
+  assert.deepEqual(report.metrics, []);
+  assert.deepEqual(report.controlFlowProfiles, []);
+});
+
 test("distingue une structure plate d'une structure imbriquée et conserve la distribution des sous-arbres", () => {
   const flat = profileFunctionControlFlow("apps/web/src/flat.ts", `
 function sameComplexity(first: boolean, second: boolean) {
@@ -211,5 +277,7 @@ test("un fichier non pris en charge reste NOT_MEASURED sans faux profil", () => 
 test("le rapport conserve NOT_MEASURED pour un fichier non pris en charge", async () => {
   const report = await analyzeMaintainabilitySources({ files: [{ path: "apps/web/src/fixture.css", source: ".selector { color: red; }" }] });
   assert.equal(report.summary.controlFlowFilesNotMeasured, 1);
+  assert.equal(report.summary.filesNotMeasured, 1);
   assert.deepEqual(report.controlFlowStatuses, [{ path: "apps/web/src/fixture.css", status: "NOT_MEASURED", reason: "UNSUPPORTED_FILE_TYPE" }]);
+  assert.deepEqual(report.maintainabilityStatuses, [{ path: "apps/web/src/fixture.css", status: "NOT_MEASURED", reason: "UNSUPPORTED_FILE_TYPE" }]);
 });

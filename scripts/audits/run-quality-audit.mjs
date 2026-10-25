@@ -367,6 +367,7 @@ function makeSummary({ audit, manifest, result, paths }) {
   if (audit === "maintainability" && result?.summary) {
     lines.splice(6, 0,
       `- Measured files/functions: ${result.summary.filesMeasured}/${result.summary.functionsMeasured}`,
+      `- Files not measured: ${result.summary.filesNotMeasured ?? "NOT_MEASURED"}`,
       `- Cognitive complexity functions: ${result.summary.cognitiveComplexityFunctions}`,
       `- Cognitive complexity above target ${result.rules?.["sonarjs/cognitive-complexity"]?.thresholdTarget ?? "—"}: ${result.summary.cognitiveComplexityAboveTarget}`,
       `- Control-flow profiles / decision points: ${result.summary.controlFlowFunctions ?? "NOT_MEASURED"}/${result.summary.controlFlowDecisionPoints ?? "NOT_MEASURED"}`,

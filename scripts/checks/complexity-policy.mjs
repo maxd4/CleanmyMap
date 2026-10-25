@@ -113,6 +113,8 @@ function sourceFileFor(file, source) {
   const normalized = file.replaceAll("\\", "/");
   const scriptKind = normalized.endsWith(".tsx")
     ? ts.ScriptKind.TSX
+    : normalized.endsWith(".mjs")
+      ? ts.ScriptKind.JS
     : /\.(?:c|m)?jsx?$/.test(normalized)
       ? ts.ScriptKind.JSX
       : ts.ScriptKind.TS;

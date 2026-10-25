@@ -603,6 +603,66 @@ test("projette la structure AST, sa relation aux métriques existantes et les si
   assert.match(buildQualityFileIndexMarkdown(index), /named:fixture#1/);
 });
 
+test("projette la couverture MJS et conserve NOT_MEASURED pour un parseur invalide", () => {
+  const run = buildRun();
+  const mjsFile = "scripts/reports/fixture.mjs";
+  const invalidFile = "scripts/reports/invalid.mjs";
+  run.reports.complexity.metrics.push(
+    { metric: "complexity", path: mjsFile, functionIdentity: "named:fixture#1", value: 12, line: 2, functionStartLine: 2, functionEndLine: 5 },
+    { metric: "functionLength", path: mjsFile, functionIdentity: "named:fixture#1", value: 8, line: 2, functionStartLine: 2, functionEndLine: 5 },
+  );
+  run.reports.maintainability = {
+    status: "FAIL",
+    measurementStatus: "MEASUREMENT_FAILED",
+    summary: { findingsByRule: {}, filesMeasured: 1, filesNotMeasured: 1 },
+    metrics: [{
+      category: "cognitive-complexity",
+      metric: "cognitiveComplexity",
+      path: mjsFile,
+      functionIdentity: "named:fixture#1",
+      function: "named:fixture",
+      line: 2,
+      functionStartLine: 2,
+      functionEndLine: 5,
+      value: 18,
+      thresholdTarget: 15,
+    }],
+    controlFlowProfiles: [{
+      status: "PRESENT",
+      path: mjsFile,
+      functionIdentity: "named:fixture#1",
+      line: 2,
+      functionStartLine: 2,
+      functionEndLine: 5,
+      decisionPoints: 1,
+      nestedDecisionCount: 0,
+      decisionKinds: { if: 1 },
+      decisionSubtrees: [],
+      busiestSubtree: null,
+    }],
+    controlFlowStatuses: [
+      { path: mjsFile, status: "PRESENT", reason: null },
+      { path: invalidFile, status: "NOT_MEASURED", reason: "PARSER_FAILED" },
+    ],
+    maintainabilityStatuses: [
+      { path: mjsFile, status: "PRESENT", reason: null },
+      { path: invalidFile, status: "NOT_MEASURED", reason: "PARSER_FAILED" },
+    ],
+    findings: [],
+    diagnostics: [{ file: invalidFile, message: "Parsing error: Unexpected token", severity: "error" }],
+  };
+
+  const index = buildQualityFileIndex({ run, mode: "ALL" });
+  const measured = index.files.find((file) => file.path === mjsFile);
+  const invalid = index.files.find((file) => file.path === invalidFile);
+  assert.equal(measured.metrics.cognitiveComplexity.state, "PRESENT");
+  assert.equal(measured.metrics.controlFlowStructure.state, "PRESENT");
+  assert.equal(invalid.metrics.cognitiveComplexity.state, "NOT_MEASURED");
+  assert.equal(invalid.metrics.controlFlowStructure.state, "NOT_MEASURED");
+  assert.equal(index.audits.maintainability.filesNotMeasured, 1);
+  assert.equal(index.triage.functions.candidates.some((candidate) => candidate.path === mjsFile), true);
+});
+
 test("projette séparément TYPE_SAFETY et ASYNC_SAFETY par fichier", () => {
   const run = buildRun();
   run.reports["type-safety"] = {

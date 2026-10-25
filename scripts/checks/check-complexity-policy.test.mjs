@@ -11,6 +11,7 @@ import {
   compareLegacyValue,
   deriveFunctionIdentity,
   createFunctionMetadataResolver,
+  listFunctionMetadata,
   evaluateNewMetric,
   intersectsChangedFunction,
   evaluateBaselinedMetric,
@@ -332,6 +333,13 @@ test("body-only changed line intersects the full AST function range", () => {
   const metadata = createFunctionMetadataResolver("fixture.ts", source)(1, "Function 'fixture'");
   assert.deepEqual(metadata, { functionIdentity: "named:fixture#1", startLine: 1, endLine: 4 });
   assert.equal(intersectsChangedFunction(new Map([["apps/web/src/fixture.ts", [{ start: 3, end: 3 }]]]), "apps/web/src/fixture.ts", metadata.startLine, metadata.endLine), true);
+});
+
+test("MJS utilise le parser JavaScript tout en conservant l'identité et les lignes v2", () => {
+  const metadata = listFunctionMetadata("scripts/reports/fixture.mjs", "export function fixture(value) {\n  return value ? value : 0;\n}");
+  assert.deepEqual(metadata.map(({ functionIdentity, line, functionStartLine, functionEndLine }) => ({ functionIdentity, line, functionStartLine, functionEndLine })), [
+    { functionIdentity: "named:fixture#1", line: 1, functionStartLine: 1, functionEndLine: 3 },
+  ]);
 });
 
 test("test filename forms are classified as tests by both quality owners", () => {

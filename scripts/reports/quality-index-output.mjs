@@ -6,7 +6,9 @@ import { createQualityIndexZip, qualityIndexZipEntryNames } from "./quality-inde
 export function writeQualityIndexOutputs({ run, index, markdown, root, auditedSha, runId, includeBundle, fsApi }) {
   const paths = createQualityProjectionPaths({ root, auditedHead: auditedSha, runId });
   fsApi.mkdirSync(paths.shaRoot, { recursive: true });
-  writeNewFile(paths.index, `${JSON.stringify(index, null, 2)}\n`, fsApi);
+  // The index can legitimately contain one entry per measured function. Keep
+  // serialization bounded for large runs while preserving deterministic JSON.
+  writeNewFile(paths.index, `${JSON.stringify(index)}\n`, fsApi);
   writeNewFile(paths.summary, markdown, fsApi);
   if (!includeBundle) return { paths, bundle: null };
 

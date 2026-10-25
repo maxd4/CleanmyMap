@@ -78,7 +78,7 @@ function ensureFile(files, filePath) {
       functionalDomains: new Set(),
       topHeavy: { measurements: null, findings: new Map(), exceptions: [] },
       complexity: { metrics: [], findings: new Map() },
-      maintainability: { cognitiveMetrics: [], controlFlowProfiles: [], controlFlowStatus: null, findings: new Map() },
+      maintainability: { cognitiveMetrics: [], controlFlowProfiles: [], controlFlowStatus: null, measurementStatus: null, findings: new Map() },
       typeSafety: { findings: new Map(), coverage: null },
       hotspots: { measurement: null, findings: new Map() },
       testability: { measurement: null, findings: new Map() },
@@ -281,27 +281,46 @@ function addComplexity(report, files, domains) {
   };
 }
 
+function buildMetricRelationIndex(metrics) {
+  const byFunction = new Map();
+  const byPath = new Map();
+  for (const metric of metrics) {
+    const functionKey = `${metric.path}\u0000${metric.functionIdentity}`;
+    const functionMetrics = byFunction.get(functionKey) ?? [];
+    functionMetrics.push(metric);
+    byFunction.set(functionKey, functionMetrics);
+    const pathMetrics = byPath.get(metric.path) ?? [];
+    pathMetrics.push(metric);
+    byPath.set(metric.path, pathMetrics);
+  }
+  return { byFunction, byPath };
+}
+
+function metricRelation(item, relationIndex) {
+  const sameFunction = relationIndex.byFunction.get(`${item.path}\u0000${item.functionIdentity}`) ?? [];
+  const sameRange = (relationIndex.byPath.get(item.path) ?? []).filter((metric) =>
+    typeof metric.functionStartLine === "number"
+    && typeof metric.functionEndLine === "number"
+    && metric.functionStartLine <= (item.functionEndLine ?? item.line)
+    && metric.functionEndLine >= (item.functionStartLine ?? item.line));
+  const candidates = sameFunction.length > 0 ? sameFunction : sameRange;
+  const pick = (metric) => candidates.find((entry) => entry.metric === metric) ?? null;
+  const complexity = pick("complexity");
+  const functionLength = pick("functionLength");
+  return {
+    status: candidates.length > 0 ? "PRESENT" : "NOT_MEASURED",
+    cyclomaticComplexity: complexity ? { value: complexity.value, category: complexity.category ?? null, line: complexity.line ?? null } : null,
+    functionLength: functionLength ? { value: functionLength.value, category: functionLength.category ?? null, line: functionLength.line ?? null } : null,
+  };
+}
+
 function addMaintainability(report, files, domains, complexityReport) {
   if (!report || report.error) return { state: "NOT_MEASURED", status: report?.error ? "FAIL" : "NOT_MEASURED", error: report?.error ?? null, measuredFunctions: 0, measuredFiles: 0, findingCounts: {} };
   const complexityMetrics = complexityReport?.metrics ?? [];
+  const complexityIndex = buildMetricRelationIndex(complexityMetrics);
   const cognitiveMetrics = report.metrics ?? [];
-  const related = (item) => item.relation ?? (() => {
-    const sameFunction = complexityMetrics.filter((metric) => metric.path === item.path && metric.functionIdentity === item.functionIdentity);
-    const sameRange = complexityMetrics.filter((metric) => metric.path === item.path
-      && typeof metric.functionStartLine === "number"
-      && typeof metric.functionEndLine === "number"
-      && metric.functionStartLine <= (item.functionEndLine ?? item.line)
-      && metric.functionEndLine >= (item.functionStartLine ?? item.line));
-    const candidates = sameFunction.length > 0 ? sameFunction : sameRange;
-    const pick = (metric) => candidates.find((entry) => entry.metric === metric) ?? null;
-    const complexity = pick("complexity");
-    const functionLength = pick("functionLength");
-    return {
-      status: candidates.length > 0 ? "PRESENT" : "NOT_MEASURED",
-      cyclomaticComplexity: complexity ? { value: complexity.value, category: complexity.category ?? null, line: complexity.line ?? null } : null,
-      functionLength: functionLength ? { value: functionLength.value, category: functionLength.category ?? null, line: functionLength.line ?? null } : null,
-    };
-  })();
+  const cognitiveByFunction = new Map(cognitiveMetrics.map((metric) => [`${metric.path}\u0000${metric.functionIdentity}`, metric]));
+  const related = (item) => item.relation ?? metricRelation(item, complexityIndex);
   for (const metric of report.metrics ?? []) {
     const file = ensureFile(files, metric.path);
     const enrichedMetric = { ...metric, relation: related(metric) };
@@ -317,7 +336,7 @@ function addMaintainability(report, files, domains, complexityReport) {
   }
   for (const profile of report.controlFlowProfiles ?? []) {
     const file = ensureFile(files, profile.path);
-    const cognitive = cognitiveMetrics.find((metric) => metric.path === profile.path && metric.functionIdentity === profile.functionIdentity);
+    const cognitive = cognitiveByFunction.get(`${profile.path}\u0000${profile.functionIdentity}`);
     const relation = {
       ...related(profile),
       cognitiveComplexity: profile.relation?.cognitiveComplexity ?? (cognitive ? {
@@ -332,6 +351,10 @@ function addMaintainability(report, files, domains, complexityReport) {
     const file = ensureFile(files, status.path);
     if (file) file.maintainability.controlFlowStatus = { status: status.status, reason: status.reason ?? null };
   }
+  for (const status of report.maintainabilityStatuses ?? []) {
+    const file = ensureFile(files, status.path);
+    if (file) file.maintainability.measurementStatus = { status: status.status, reason: status.reason ?? null };
+  }
   for (const finding of report.findings ?? []) {
     const file = ensureFile(files, finding.file);
     const domain = finding.category === "cognitive-complexity" ? "cognitive-complexity" : "local-maintainability";
@@ -339,12 +362,17 @@ function addMaintainability(report, files, domains, complexityReport) {
     addDomain(domains, domain, domain === "cognitive-complexity" ? "complexité cognitive des fonctions" : "défauts locaux de maintenabilité sélectionnés", file, findingId);
   }
   const controlFlowProfiles = report.controlFlowProfiles ?? [];
+  const maintainabilityStatuses = report.maintainabilityStatuses ?? [];
+  const measuredFiles = maintainabilityStatuses.length > 0
+    ? maintainabilityStatuses.filter((entry) => entry.status === "PRESENT").length
+    : new Set([...cognitiveMetrics, ...controlFlowProfiles].map((metric) => metric.path)).size;
   return {
     state: "PRESENT",
     status: report.status,
     measurementStatus: report.measurementStatus ?? "MEASURED_NOT_RATCHETED",
     measuredFunctions: cognitiveMetrics.length,
-    measuredFiles: new Set([...cognitiveMetrics, ...controlFlowProfiles].map((metric) => metric.path)).size,
+    measuredFiles,
+    filesNotMeasured: maintainabilityStatuses.filter((entry) => entry.status === "NOT_MEASURED").length,
     controlFlowFunctions: controlFlowProfiles.length,
     controlFlowDecisionPoints: controlFlowProfiles.reduce((sum, profile) => sum + (profile.decisionPoints ?? 0), 0),
     controlFlowNestedDecisionFunctions: controlFlowProfiles.filter((profile) => (profile.nestedDecisionCount ?? 0) > 0).length,

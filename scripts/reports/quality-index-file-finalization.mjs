@@ -79,6 +79,8 @@ function buildMetrics(file, availability, architecture, typeSafety, hotspotMeasu
       : availability.complexity === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport complexity en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
     cognitiveComplexity: cognitiveMetrics.length > 0
       ? state("PRESENT", `${cognitiveMetrics.length} fonction(s) mesurée(s)`, cognitiveMetrics)
+      : file.maintainability.measurementStatus?.status === "NOT_MEASURED"
+        ? state("NOT_MEASURED", file.maintainability.measurementStatus.reason ?? "mesure maintainability non attribuable", [])
       : availability.maintainability === "NOT_MEASURED" ? state("NOT_MEASURED", "rapport maintainability en échec") : state("NOT_APPLICABLE", "aucune fonction mesurée dans ce rapport"),
     controlFlowStructure: controlFlowProfiles.length > 0
       ? state("PRESENT", `${controlFlowProfiles.length} fonction(s) profilée(s)`, controlFlowProfiles)

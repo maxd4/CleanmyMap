@@ -193,17 +193,26 @@ function functionSignalSummaries(file) {
 function buildFunctionTriage(files, audits) {
   const byFile = new Map();
   for (const file of files) {
-    for (const { finding, metric } of [
+    const functionItems = [
       ...(file.findings.functionLength?.items ?? []).map((item) => ({ finding: item, metric: "functionLength" })),
       ...(file.findings.complexity?.items ?? []).map((item) => ({ finding: item, metric: "complexity" })),
-    ].filter(({ finding }) => finding.type === "failures" || finding.type === "reviews")) {
+      ...(file.findings.cognitiveComplexity?.items ?? [])
+        .filter((item) => item.value > (item.thresholdTarget ?? Number.POSITIVE_INFINITY))
+        .map((item) => ({ finding: { ...item, type: "reviews" }, metric: "cognitiveComplexity" })),
+      ...(file.findings.localMaintainability?.items ?? [])
+        .filter((item) => item.functionIdentity)
+        .map((item) => ({ finding: { ...item, type: "reviews" }, metric: "localMaintainability" })),
+    ].filter(({ finding }) => finding.type === "failures" || finding.type === "reviews");
+    for (const { finding, metric } of functionItems) {
       const candidate = byFile.get(file.path) ?? {
         path: file.path,
         level: "REVIEW",
         quantitative: { level: "REVIEW", details: [] },
         decision: triageDecision(file),
         evidence: "PRESENT",
-        provenance: file.provenance.complexity ?? "NOT_MEASURED",
+        provenance: metric === "complexity" || metric === "functionLength"
+          ? file.provenance.complexity ?? "NOT_MEASURED"
+          : file.provenance.maintainability ?? "NOT_MEASURED",
         detail: new Set(),
       };
       if (finding.type === "failures") {
