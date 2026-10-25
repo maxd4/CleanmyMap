@@ -121,10 +121,13 @@ canoniques et `seed.sql`, `scripts/ci/run-supabase-sql-proof.mjs` dérive son
 inventaire des fichiers présents sous `apps/web/supabase/tests/` et `e2e/` :
 
 - les fichiers `*.pgtap.sql` passent par `supabase test db --local` et leur
-  plan, le nombre d'assertions et l'absence de `not ok` sont contrôlés ;
+  `plan(N)` est comparé soit au flux TAP détaillé, soit au résumé `pg_prove`
+  (`Files=1`, `Tests=N`, `Result: PASS`) lorsqu'il est produit ; le rapport
+  conserve le mode de vérification et ne transforme pas un résumé en assertions
+  TAP inventées ;
 - les scripts SQL contractuels sont exécutés avec `supabase db query --local`
   selon leur protocole propre et doivent émettre leur marqueur de fin ;
-- les scripts multi-sessions/concurrence existants sont lancés séparément et
+- les scripts de concurrence à deux sessions existants sont lancés séparément et
   doivent produire leur propre marqueur de fin.
 
 L'ajout d'un fichier de preuve sans protocole enregistré fait échouer la lane.

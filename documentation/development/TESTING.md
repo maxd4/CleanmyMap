@@ -87,6 +87,14 @@ existants. Il exige un plan pgTAP complet ou un marqueur de fin contractuel ;
 un fichier présent, une commande interrompue, une sortie incomplète ou une
 preuve d'un autre SHA ne produit jamais `INTEGRATION_PROOF`.
 
+Pour pgTAP, le runner accepte deux formats réellement produits par la commande
+`supabase test db` : le flux TAP détaillé lorsqu'il est disponible, et le
+résumé `pg_prove` (`Files=1`, `Tests=N`, `Result: PASS`) pour un fichier unique.
+Dans les deux cas, `N` doit correspondre au `plan(N)` du SQL source. Le rapport
+conserve `verificationMode` (`tap-detailed` ou `pg-prove-summary`) et ne
+fabrique jamais de lignes `ok` à partir d'un résumé. Un résultat absent,
+contradictoire, incomplet, échoué ou multi-fichiers reste un échec de preuve.
+
 Le rapport porte le SHA exact du checkout CI et distingue
 `INTEGRATION_PROOF` (exécution PostgreSQL observée), `NOT_RUN` (preuve non
 atteinte ou volontairement non déclenchée) et `DB_SEMANTICS_NOT_EXECUTED`

@@ -73,17 +73,67 @@ export function extractPlan(sql) {
   return match ? Number(match[1]) : null;
 }
 
+function parsePgProveSummary(output, expectedPlan) {
+  const filesMatches = [...output.matchAll(/\bFiles\s*=\s*(\d+)\b/gi)];
+  const testsMatches = [...output.matchAll(/\bTests\s*=\s*(\d+)\b/gi)];
+  const resultMatches = [...output.matchAll(/\bResult\s*:\s*(PASS|FAIL)\b/gi)];
+  const failedCountMatches = [...output.matchAll(/(?:\bFailed\s*=\s*(\d+)\b|\b(\d+)\s+Failed\b)/gi)];
+
+  if (filesMatches.length === 0 || testsMatches.length === 0 || resultMatches.length === 0) {
+    throw new Error("pg_prove summary is incomplete: expected exactly one Files, Tests and Result field");
+  }
+  if (filesMatches.length !== 1 || testsMatches.length !== 1 || resultMatches.length !== 1) {
+    throw new Error("pg_prove summary is ambiguous: duplicate Files, Tests or Result fields");
+  }
+
+  const files = Number(filesMatches[0][1]);
+  const tests = Number(testsMatches[0][1]);
+  const result = resultMatches[0][1].toUpperCase();
+  if (result !== "PASS") throw new Error(`pg_prove reported Result: ${result}`);
+  if (failedCountMatches.some((match) => Number(match[1] ?? match[2]) !== 0)) {
+    throw new Error("pg_prove summary reports failed tests");
+  }
+  if (/\bnot ok\b/i.test(output)) throw new Error("pg_prove summary contains a failing TAP assertion");
+  if (files !== 1) throw new Error(`pg_prove summary expected one file, received ${files}`);
+  if (tests !== expectedPlan) throw new Error(`pg_prove summary test count mismatch: expected ${expectedPlan}, received ${tests}`);
+
+  return {
+    expectedPlan,
+    actualPlan: null,
+    passed: tests,
+    failures: 0,
+    files,
+    tests,
+    verificationMode: "pg-prove-summary",
+  };
+}
+
 export function parsePgTapOutput(output, expectedPlan) {
+  if (expectedPlan === null) throw new Error("pgTAP source has no explicit plan() assertion");
+
   const planMatch = output.match(/(?:^|\n)\s*1\.\.(\d+)\s*(?:\n|$)/m);
   const assertions = [...output.matchAll(/(?:^|\n)\s*(ok|not ok)\s+\d+\b[^\n]*/gi)].map((match) => match[1].toLowerCase());
+  const hasSummaryFields = /\b(?:Files|Tests)\s*=|\bResult\s*:/i.test(output);
+
+  if (assertions.length === 0 && hasSummaryFields) {
+    if (planMatch) throw new Error("pgTAP output contains an incomplete TAP stream alongside a pg_prove summary");
+    return parsePgProveSummary(output, expectedPlan);
+  }
+  if (assertions.length === 0) throw new Error("pgTAP output contains neither a complete TAP stream nor a pg_prove summary");
+
   const failures = assertions.filter((assertion) => assertion === "not ok").length;
   const passed = assertions.filter((assertion) => assertion === "ok").length;
   const actualPlan = planMatch ? Number(planMatch[1]) : null;
-  if (expectedPlan === null) throw new Error("pgTAP source has no explicit plan() assertion");
   if (actualPlan !== expectedPlan) throw new Error(`pgTAP output plan mismatch: expected ${expectedPlan}, received ${actualPlan ?? "missing"}`);
   if (failures > 0) throw new Error(`pgTAP output contains ${failures} failing assertion(s)`);
   if (passed !== expectedPlan) throw new Error(`pgTAP output is incomplete: expected ${expectedPlan} passing assertions, received ${passed}`);
-  return { expectedPlan, actualPlan, passed, failures };
+
+  if (hasSummaryFields) {
+    const summary = parsePgProveSummary(output, expectedPlan);
+    if (summary.tests !== passed) throw new Error(`pgTAP and pg_prove test counts disagree: TAP=${passed}, summary=${summary.tests}`);
+  }
+
+  return { expectedPlan, actualPlan, passed, failures, verificationMode: "tap-detailed" };
 }
 
 export function validateSqlContractMarkerPlacement(sql, marker) {
@@ -130,6 +180,25 @@ function baseRecord(path, category) {
   return { path, category, status: "NOT_RUN", outcome: "NOT_RUN" };
 }
 
+export function attestProofResult(record, result, validate) {
+  if (result.code !== 0) {
+    record.status = "INTEGRATION_PROOF";
+    record.outcome = "FAIL";
+    record.reason = `command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}`;
+    throw new Error(record.reason);
+  }
+  try {
+    record.status = "INTEGRATION_PROOF";
+    record.outcome = "PASS";
+    record.details = validate(result.output);
+  } catch (error) {
+    record.status = "INTEGRATION_PROOF";
+    record.outcome = "FAIL";
+    record.reason = error instanceof Error ? error.message : String(error);
+    throw new Error(record.reason);
+  }
+}
+
 async function runProof(record, command, args, validate) {
   let result;
   try {
@@ -140,22 +209,10 @@ async function runProof(record, command, args, validate) {
     record.reason = error instanceof Error ? error.message : String(error);
     throw new Error(`${record.path}: ${record.reason}`);
   }
-  if (result.code !== 0) {
-    record.status = "INTEGRATION_PROOF";
-    record.outcome = "FAIL";
-    record.reason = `command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}`;
-    throw new Error(`${record.path}: ${record.reason}`);
-  }
   try {
-    const details = validate(result.output);
-    record.status = "INTEGRATION_PROOF";
-    record.outcome = "PASS";
-    record.details = details;
+    attestProofResult(record, result, validate);
   } catch (error) {
-    record.status = "INTEGRATION_PROOF";
-    record.outcome = "FAIL";
-    record.reason = error instanceof Error ? error.message : String(error);
-    throw new Error(`${record.path}: ${record.reason}`);
+    throw new Error(`${record.path}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

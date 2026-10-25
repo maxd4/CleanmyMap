@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   extractPlan,
   inventorySqlProofs,
+  attestProofResult,
   parsePgTapOutput,
   validateSqlContractMarkerPlacement,
 } from "./run-supabase-sql-proof.mjs";
@@ -35,13 +36,90 @@ test("pgTAP parser accepts an exact complete plan", () => {
     actualPlan: 2,
     passed: 2,
     failures: 0,
+    verificationMode: "tap-detailed",
   });
 });
 
-test("pgTAP parser rejects missing, failing or incomplete assertions", () => {
+test("pgTAP parser accepts the real pg_prove summary and preserves its verification mode", () => {
+  const output = [
+    "/tmp/supabase/tests/example.pgtap.sql .. ok",
+    "All tests successful.",
+    "Files=1, Tests=16, 0 Failed, 0 Ignored, 0 Todo, 0 Skipped, 0% ok",
+    "Result: PASS",
+  ].join("\n");
+
+  assert.deepEqual(parsePgTapOutput(output, 16), {
+    expectedPlan: 16,
+    actualPlan: null,
+    passed: 16,
+    failures: 0,
+    files: 1,
+    tests: 16,
+    verificationMode: "pg-prove-summary",
+  });
+});
+
+test("pgTAP parser cross-checks detailed TAP with a present pg_prove summary", () => {
+  const output = [
+    "ok 1 - first",
+    "ok 2 - second",
+    "1..2",
+    "Files=1, Tests=2, 0 Failed",
+    "Result: PASS",
+  ].join("\n");
+
+  assert.deepEqual(parsePgTapOutput(output, 2), {
+    expectedPlan: 2,
+    actualPlan: 2,
+    passed: 2,
+    failures: 0,
+    verificationMode: "tap-detailed",
+  });
+});
+
+test("pgTAP parser rejects missing, failing, incomplete or ambiguous proof", () => {
   assert.throws(() => parsePgTapOutput("ok 1 - first\n1..2\n", 2), /incomplete/);
   assert.throws(() => parsePgTapOutput("ok 1 - first\nnot ok 2 - second\n1..2\n", 2), /failing assertion/);
   assert.throws(() => parsePgTapOutput("ok 1 - first\n1..1\n", 2), /plan mismatch/);
+  assert.throws(() => parsePgTapOutput("Files=1, Tests=2\n", 2), /summary is incomplete/);
+  assert.throws(() => parsePgTapOutput("Files=1, Tests=2\nResult: FAIL\n", 2), /Result: FAIL/);
+  assert.throws(() => parsePgTapOutput("Files=1, Tests=2, 1 Failed\nResult: PASS\n", 2), /failed tests/);
+  assert.throws(() => parsePgTapOutput("Files=2, Tests=2\nResult: PASS\n", 2), /one file/);
+  assert.throws(() => parsePgTapOutput("Files=1, Tests=1\nResult: PASS\n", 2), /test count mismatch/);
+  assert.throws(() => parsePgTapOutput("Files=1, Tests=2\nResult: PASS\nResult: PASS\n", 2), /ambiguous/);
+  assert.throws(() => parsePgTapOutput("All tests successful.\n", 2), /neither/);
+  assert.throws(() => parsePgTapOutput("1..2\nok 1 - first\n", 2), /incomplete/);
+  assert.throws(() => parsePgTapOutput("1..2\nFiles=1, Tests=2\nResult: PASS\n", 2), /incomplete TAP/);
+  assert.throws(() => parsePgTapOutput("Files=1, Tests=2\nResult: PASS\nResult: FAIL\n", 2), /ambiguous/);
+  assert.throws(() => parsePgTapOutput("Files=1, Tests=2\nResult: PASS\n", null), /no explicit plan/);
+});
+
+test("proof attestation maps verified and failed executions to explicit statuses", () => {
+  const passingRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };
+  attestProofResult(
+    passingRecord,
+    { code: 0, output: "Files=1, Tests=2\nResult: PASS\n" },
+    (output) => parsePgTapOutput(output, 2),
+  );
+  assert.equal(passingRecord.status, "INTEGRATION_PROOF");
+  assert.equal(passingRecord.outcome, "PASS");
+  assert.equal(passingRecord.details.verificationMode, "pg-prove-summary");
+
+  const failedRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };
+  assert.throws(
+    () => attestProofResult(failedRecord, { code: 1, output: "Result: FAIL" }, () => ({ unreachable: true })),
+    /command exited with 1/,
+  );
+  assert.equal(failedRecord.status, "INTEGRATION_PROOF");
+  assert.equal(failedRecord.outcome, "FAIL");
+
+  const incompleteRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };
+  assert.throws(
+    () => attestProofResult(incompleteRecord, { code: 0, output: "Files=1, Tests=1\nResult: PASS" }, (output) => parsePgTapOutput(output, 2)),
+    /test count mismatch/,
+  );
+  assert.equal(incompleteRecord.status, "INTEGRATION_PROOF");
+  assert.equal(incompleteRecord.outcome, "FAIL");
 });
 
 test("SQL completion markers cannot precede a later assertion", () => {
