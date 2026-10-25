@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "sourceSha": "b0c543ff62779fedd5fc233fd8fcc5d8e2cfe908",
-  "timestamp": "2026-10-25T17:36:17.521Z",
+  "sourceSha": "049bdd8403b7445843be4ec2eb1902206a330742",
+  "timestamp": "2026-10-25T22:03:27.602Z",
   "methodology": {
     "source": "git-tracked-source-at-sourceSha",
     "physicalLines": "UTF-8 lines after CRLF normalization; trailing split line retained, matching repository quality measurement.",
@@ -81,21 +81,21 @@
     "domainAssignment": "current repository path organization with semantic path rules for web and top-level module rules for mobile/scripts"
   },
   "totals": {
-    "runtimeFiles": 2644,
-    "runtimeLines": 377065,
-    "testFiles": 1590,
-    "testLines": 215588,
+    "runtimeFiles": 2646,
+    "runtimeLines": 377792,
+    "testFiles": 1591,
+    "testLines": 218392,
     "testRuntimeRatio": {
-      "files": 0.6014,
-      "lines": 0.5718
+      "files": 0.6013,
+      "lines": 0.5781
     }
   },
   "execution": {
-    "webTests": "FAIL",
+    "webTests": "FAIL_INTERRUPTED",
     "mobileTests": "PASS",
     "webCoverage": {
       "execution": "FAIL",
-      "ratchet": "NOT_RUN",
+      "ratchet": "FAIL",
       "status": "NOT_RUN",
       "attestation": "NOT_ATTESTED",
       "sourceSha": null,
@@ -103,15 +103,15 @@
     },
     "mobileCoverage": {
       "execution": "PASS",
-      "ratchet": "NOT_RUN",
+      "ratchet": "PASS",
       "status": "PRESENT_NOT_ATTESTED",
       "attestation": "NOT_ATTESTED",
-      "sourceSha": null,
+      "sourceSha": "049bdd8403b7445843be4ec2eb1902206a330742",
       "reason": "NO_CANONICAL_MOBILE_COVERAGE_ATTESTATION"
     },
     "duplication": {
-      "policy": "NOT_MEASURED",
-      "reason": "coverage and worktree evidence not attributable to a clean published candidate"
+      "policy": "NOT_RUN",
+      "reason": "NOT_REQUESTED"
     },
     "testFilesModified": "NOT_ATTESTED"
   },
@@ -119,34 +119,34 @@
     "tests": {
       "status": "AVAILABLE_NOT_ATTESTED",
       "attestation": "NOT_ATTESTED",
-      "observedSha": "b0c543ff62779fedd5fc233fd8fcc5d8e2cfe908",
+      "observedSha": "049bdd8403b7445843be4ec2eb1902206a330742",
       "provenance": "working-tree",
       "provenanceReason": "JSCPD_OBSERVED_ON_DIRTY_WORKTREE",
       "metrics": {
-        "files": 1438,
-        "lines": 184824,
-        "tokens": 1243730,
-        "clones": 682,
-        "duplicatedLines": 7229,
-        "duplicatedTokens": 46357,
-        "percentage": 3.9112885772410513,
-        "percentageTokens": 3.727255915673016,
-        "newClones": 434
+        "files": 1439,
+        "lines": 187388,
+        "tokens": 1263006,
+        "clones": 699,
+        "duplicatedLines": 7388,
+        "duplicatedTokens": 47385,
+        "percentage": 3.942621726044357,
+        "percentageTokens": 3.7517636495788618,
+        "newClones": 451
       },
       "comparison": {
         "status": "FAIL",
         "failures": [
-          "new clone fingerprints detected (434)",
-          "duplicatedLines exceeded grace (4206 > 150)",
-          "duplicatedTokens exceeded grace (28019 > 1500)",
-          "linePercentagePoints exceeded grace (1.5098904757992588 > 0.15)",
-          "tokenPercentagePoints exceeded grace (1.3328360186678034 > 0.15)"
+          "new clone fingerprints detected (451)",
+          "duplicatedLines exceeded grace (4365 > 150)",
+          "duplicatedTokens exceeded grace (29047 > 1500)",
+          "linePercentagePoints exceeded grace (1.5412236246025648 > 0.15)",
+          "tokenPercentagePoints exceeded grace (1.3573437525736494 > 0.15)"
         ],
         "deltas": {
-          "duplicatedLines": 4206,
-          "duplicatedTokens": 28019,
-          "linePercentagePoints": 1.5098904757992588,
-          "tokenPercentagePoints": 1.3328360186678034
+          "duplicatedLines": 4365,
+          "duplicatedTokens": 29047,
+          "linePercentagePoints": 1.5412236246025648,
+          "tokenPercentagePoints": 1.3573437525736494
         }
       },
       "clonePairsByDomain": {
@@ -164,12 +164,13 @@
           ]
         },
         "actions": {
-          "clonePairs": 153,
-          "pairedLines": 3337,
+          "clonePairs": 161,
+          "pairedLines": 3506,
           "testFiles": [
             "apps/web/src/app/(app)/actions/map/page-client.test.tsx",
             "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.test.ts",
             "apps/web/src/app/api/actions/[actionId]/audit/route.test.ts",
+            "apps/web/src/app/api/actions/[actionId]/cancel/route.test.ts",
             "apps/web/src/app/api/actions/[actionId]/day/route.test.ts",
             "apps/web/src/app/api/actions/[actionId]/duplicate/route.test.ts",
             "apps/web/src/app/api/actions/[actionId]/field-roles/route.test.ts",
@@ -178,6 +179,7 @@
             "apps/web/src/app/api/actions/[actionId]/group-join/route.get.test.ts",
             "apps/web/src/app/api/actions/[actionId]/group-join/route.patch.test.ts",
             "apps/web/src/app/api/actions/[actionId]/group-join/route.post.test.ts",
+            "apps/web/src/app/api/actions/[actionId]/media/media-routes.test.ts",
             "apps/web/src/app/api/actions/[actionId]/participation-claim/route.test.ts",
             "apps/web/src/app/api/actions/[actionId]/public/route.test.ts",
             "apps/web/src/app/api/actions/[actionId]/publish/route.test.ts",
@@ -244,8 +246,8 @@
           ]
         },
         "api": {
-          "clonePairs": 105,
-          "pairedLines": 2265,
+          "clonePairs": 108,
+          "pairedLines": 2335,
           "testFiles": [
             "apps/web/src/app/api/admin/creator-inbox/route.authorization.test.ts",
             "apps/web/src/app/api/admin/creator-inbox/route.patch-creator-state.test.ts",
@@ -391,8 +393,8 @@
           ]
         },
         "mobile/tests": {
-          "clonePairs": 23,
-          "pairedLines": 422,
+          "clonePairs": 24,
+          "pairedLines": 438,
           "testFiles": [
             "apps/mobile/tests/account-controller-runtime.test.tsx",
             "apps/mobile/tests/account-screen-runtime.test.tsx",
@@ -400,6 +402,7 @@
             "apps/mobile/tests/action-join-runtime.test.tsx",
             "apps/mobile/tests/emergency-contact-ui-contract.test.ts",
             "apps/mobile/tests/emergency-screens-runtime.test.tsx",
+            "apps/mobile/tests/gps-task.test.ts",
             "apps/mobile/tests/mission-finalization.test.ts",
             "apps/mobile/tests/mission-track-restoration.test.ts",
             "apps/mobile/tests/mobile-navigation-ui-contract.test.ts",
@@ -409,8 +412,8 @@
           ]
         },
         "reports": {
-          "clonePairs": 87,
-          "pairedLines": 1816,
+          "clonePairs": 91,
+          "pairedLines": 1868,
           "testFiles": [
             "apps/web/src/app/(app)/reports/page.test.ts",
             "apps/web/src/app/api/reports/actions.csv/route.test.ts",
@@ -426,6 +429,7 @@
             "apps/web/src/app/api/reports/generations/route.test.ts",
             "apps/web/src/app/api/reports/governance-monthly/route.test.ts",
             "apps/web/src/app/api/reports/library/route.test.ts",
+            "apps/web/src/app/api/reports/shared/[token]/route.test.ts",
             "apps/web/src/components/reports/admin-workflow/use-admin-workflow.actions.test.ts",
             "apps/web/src/components/reports/admin-workflow/use-admin-workflow.state.test.ts",
             "apps/web/src/components/reports/reports-impact-readings-section.test.ts",
@@ -446,8 +450,8 @@
           ]
         },
         "spogomi": {
-          "clonePairs": 76,
-          "pairedLines": 1125,
+          "clonePairs": 77,
+          "pairedLines": 1137,
           "testFiles": [
             "apps/web/src/app/(app)/dashboard/spogomi/page.test.tsx",
             "apps/web/src/app/(app)/spogomi/nouveau/page.test.tsx",
@@ -634,7 +638,7 @@
   "domains": {
     "account": {
       "runtimeFiles": 44,
-      "runtimeLines": 5923,
+      "runtimeLines": 5920,
       "testFiles": 17,
       "testLines": 1167,
       "runtimeFilesWithoutDirectTest": 10,
@@ -653,7 +657,7 @@
       ],
       "testRuntimeRatio": {
         "files": 0.3864,
-        "lines": 0.197
+        "lines": 0.1971
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -675,12 +679,12 @@
       }
     },
     "actions": {
-      "runtimeFiles": 523,
-      "runtimeLines": 73851,
-      "testFiles": 112,
-      "testLines": 12597,
-      "runtimeFilesWithoutDirectTest": 241,
-      "runtimeFilesWithDirectTest": 282,
+      "runtimeFiles": 524,
+      "runtimeLines": 73883,
+      "testFiles": 111,
+      "testLines": 12761,
+      "runtimeFilesWithoutDirectTest": 238,
+      "runtimeFilesWithDirectTest": 286,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/app/(app)/actions/history/page.tsx",
         "apps/web/src/app/(app)/actions/invite/[token]/page.tsx",
@@ -690,9 +694,6 @@
         "apps/web/src/app/api/actions/[actionId]/group-join/route.queue.ts",
         "apps/web/src/app/api/actions/[actionId]/group-join/route.review.ts",
         "apps/web/src/app/api/actions/[actionId]/group-join/route.toggle.ts",
-        "apps/web/src/app/api/actions/[actionId]/media/[mediaId]/finalize/route.ts",
-        "apps/web/src/app/api/actions/[actionId]/media/intents/route.ts",
-        "apps/web/src/app/api/actions/[actionId]/media/route.ts",
         "apps/web/src/app/api/actions/[actionId]/route.patch-audit.ts",
         "apps/web/src/app/api/actions/[actionId]/route.patch-execution.ts",
         "apps/web/src/app/api/actions/[actionId]/route.patch-organizers.ts",
@@ -701,11 +702,14 @@
         "apps/web/src/app/api/actions/map/initial-nearest/route.ts",
         "apps/web/src/app/api/actions/route.create.ts",
         "apps/web/src/app/api/actions/route.query.ts",
-        "apps/web/src/app/preview/actions/new/page.tsx"
+        "apps/web/src/app/preview/actions/new/page.tsx",
+        "apps/web/src/components/actions/action-creation-shell-completion.tsx",
+        "apps/web/src/components/actions/action-creation-shell-navigation.tsx",
+        "apps/web/src/components/actions/action-creation-shell-sections.tsx"
       ],
       "testRuntimeRatio": {
-        "files": 0.2141,
-        "lines": 0.1706
+        "files": 0.2118,
+        "lines": 0.1727
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -713,12 +717,13 @@
         "metrics": null
       },
       "testDuplication": {
-        "clonePairs": 153,
-        "pairedLines": 3337,
+        "clonePairs": 161,
+        "pairedLines": 3506,
         "testFiles": [
           "apps/web/src/app/(app)/actions/map/page-client.test.tsx",
           "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.test.ts",
           "apps/web/src/app/api/actions/[actionId]/audit/route.test.ts",
+          "apps/web/src/app/api/actions/[actionId]/cancel/route.test.ts",
           "apps/web/src/app/api/actions/[actionId]/day/route.test.ts",
           "apps/web/src/app/api/actions/[actionId]/duplicate/route.test.ts",
           "apps/web/src/app/api/actions/[actionId]/field-roles/route.test.ts",
@@ -727,6 +732,7 @@
           "apps/web/src/app/api/actions/[actionId]/group-join/route.get.test.ts",
           "apps/web/src/app/api/actions/[actionId]/group-join/route.patch.test.ts",
           "apps/web/src/app/api/actions/[actionId]/group-join/route.post.test.ts",
+          "apps/web/src/app/api/actions/[actionId]/media/media-routes.test.ts",
           "apps/web/src/app/api/actions/[actionId]/participation-claim/route.test.ts",
           "apps/web/src/app/api/actions/[actionId]/public/route.test.ts",
           "apps/web/src/app/api/actions/[actionId]/publish/route.test.ts",
@@ -795,9 +801,9 @@
     },
     "api": {
       "runtimeFiles": 106,
-      "runtimeLines": 15006,
+      "runtimeLines": 15043,
       "testFiles": 51,
-      "testLines": 5870,
+      "testLines": 5880,
       "runtimeFilesWithoutDirectTest": 32,
       "runtimeFilesWithDirectTest": 74,
       "runtimeFilesWithoutDirectTestExamples": [
@@ -824,7 +830,7 @@
       ],
       "testRuntimeRatio": {
         "files": 0.4811,
-        "lines": 0.3912
+        "lines": 0.3909
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -832,8 +838,8 @@
         "metrics": null
       },
       "testDuplication": {
-        "clonePairs": 105,
-        "pairedLines": 2265,
+        "clonePairs": 108,
+        "pairedLines": 2335,
         "testFiles": [
           "apps/web/src/app/api/admin/creator-inbox/route.authorization.test.ts",
           "apps/web/src/app/api/admin/creator-inbox/route.patch-creator-state.test.ts",
@@ -890,9 +896,9 @@
     },
     "auth-authz": {
       "runtimeFiles": 40,
-      "runtimeLines": 3917,
+      "runtimeLines": 3918,
       "testFiles": 17,
-      "testLines": 1805,
+      "testLines": 1850,
       "runtimeFilesWithoutDirectTest": 17,
       "runtimeFilesWithDirectTest": 23,
       "runtimeFilesWithoutDirectTestExamples": [
@@ -916,7 +922,7 @@
       ],
       "testRuntimeRatio": {
         "files": 0.425,
-        "lines": 0.4608
+        "lines": 0.4722
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -935,8 +941,8 @@
     "cross-domain-tests": {
       "runtimeFiles": 0,
       "runtimeLines": 0,
-      "testFiles": 643,
-      "testLines": 122541,
+      "testFiles": 647,
+      "testLines": 124498,
       "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [],
@@ -1036,7 +1042,7 @@
     },
     "learning": {
       "runtimeFiles": 99,
-      "runtimeLines": 17086,
+      "runtimeLines": 17109,
       "testFiles": 18,
       "testLines": 1286,
       "runtimeFilesWithoutDirectTest": 36,
@@ -1065,7 +1071,7 @@
       ],
       "testRuntimeRatio": {
         "files": 0.1818,
-        "lines": 0.0753
+        "lines": 0.0752
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -1086,7 +1092,7 @@
     },
     "maps-location": {
       "runtimeFiles": 40,
-      "runtimeLines": 6863,
+      "runtimeLines": 6912,
       "testFiles": 11,
       "testLines": 1118,
       "runtimeFilesWithoutDirectTest": 12,
@@ -1107,7 +1113,7 @@
       ],
       "testRuntimeRatio": {
         "files": 0.275,
-        "lines": 0.1629
+        "lines": 0.1617
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -1261,23 +1267,23 @@
         "metrics": {
           "lines": {
             "total": 266,
-            "covered": 254,
-            "pct": 95.49
+            "covered": 263,
+            "pct": 98.87
           },
           "functions": {
             "total": 89,
-            "covered": 77,
-            "pct": 86.52
+            "covered": 79,
+            "pct": 88.76
           },
           "branches": {
             "total": 198,
-            "covered": 158,
-            "pct": 79.8
+            "covered": 162,
+            "pct": 81.82
           },
           "statements": {
             "total": 353,
-            "covered": 319,
-            "pct": 90.37
+            "covered": 330,
+            "pct": 93.48
           }
         }
       },
@@ -1404,9 +1410,9 @@
     },
     "mobile/services": {
       "runtimeFiles": 17,
-      "runtimeLines": 2009,
+      "runtimeLines": 2013,
       "testFiles": 19,
-      "testLines": 2522,
+      "testLines": 2557,
       "runtimeFilesWithoutDirectTest": 2,
       "runtimeFilesWithDirectTest": 15,
       "runtimeFilesWithoutDirectTestExamples": [
@@ -1415,7 +1421,7 @@
       ],
       "testRuntimeRatio": {
         "files": 1.1176,
-        "lines": 1.2554
+        "lines": 1.2702
       },
       "coverage": {
         "status": "PRESENT_NOT_ATTESTED",
@@ -1423,23 +1429,23 @@
         "metrics": {
           "lines": {
             "total": 673,
-            "covered": 638,
-            "pct": 94.8
+            "covered": 642,
+            "pct": 95.39
           },
           "functions": {
             "total": 172,
-            "covered": 158,
-            "pct": 91.86
+            "covered": 159,
+            "pct": 92.44
           },
           "branches": {
             "total": 492,
-            "covered": 417,
-            "pct": 84.76
+            "covered": 428,
+            "pct": 86.99
           },
           "statements": {
             "total": 764,
-            "covered": 693,
-            "pct": 90.71
+            "covered": 702,
+            "pct": 91.88
           }
         }
       },
@@ -1453,13 +1459,13 @@
       "runtimeFiles": 1,
       "runtimeLines": 114,
       "testFiles": 1,
-      "testLines": 153,
+      "testLines": 184,
       "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 1,
       "runtimeFilesWithoutDirectTestExamples": [],
       "testRuntimeRatio": {
         "files": 1,
-        "lines": 1.3421
+        "lines": 1.614
       },
       "coverage": {
         "status": "PRESENT_NOT_ATTESTED",
@@ -1467,8 +1473,8 @@
         "metrics": {
           "lines": {
             "total": 41,
-            "covered": 35,
-            "pct": 85.37
+            "covered": 38,
+            "pct": 92.68
           },
           "functions": {
             "total": 2,
@@ -1477,13 +1483,13 @@
           },
           "branches": {
             "total": 20,
-            "covered": 16,
-            "pct": 80
+            "covered": 17,
+            "pct": 85
           },
           "statements": {
             "total": 42,
-            "covered": 36,
-            "pct": 85.71
+            "covered": 39,
+            "pct": 92.86
           }
         }
       },
@@ -1532,8 +1538,8 @@
         }
       },
       "testDuplication": {
-        "clonePairs": 23,
-        "pairedLines": 422,
+        "clonePairs": 24,
+        "pairedLines": 438,
         "testFiles": [
           "apps/mobile/tests/account-controller-runtime.test.tsx",
           "apps/mobile/tests/account-screen-runtime.test.tsx",
@@ -1541,6 +1547,7 @@
           "apps/mobile/tests/action-join-runtime.test.tsx",
           "apps/mobile/tests/emergency-contact-ui-contract.test.ts",
           "apps/mobile/tests/emergency-screens-runtime.test.tsx",
+          "apps/mobile/tests/gps-task.test.ts",
           "apps/mobile/tests/mission-finalization.test.ts",
           "apps/mobile/tests/mission-track-restoration.test.ts",
           "apps/mobile/tests/mobile-navigation-ui-contract.test.ts",
@@ -1646,9 +1653,9 @@
     },
     "reports": {
       "runtimeFiles": 141,
-      "runtimeLines": 17622,
-      "testFiles": 36,
-      "testLines": 4678,
+      "runtimeLines": 17647,
+      "testFiles": 35,
+      "testLines": 4739,
       "runtimeFilesWithoutDirectTest": 52,
       "runtimeFilesWithDirectTest": 89,
       "runtimeFilesWithoutDirectTestExamples": [
@@ -1674,8 +1681,8 @@
         "apps/web/src/components/reports/analytics-cockpit.tsx"
       ],
       "testRuntimeRatio": {
-        "files": 0.2553,
-        "lines": 0.2655
+        "files": 0.2482,
+        "lines": 0.2685
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -1683,8 +1690,8 @@
         "metrics": null
       },
       "testDuplication": {
-        "clonePairs": 87,
-        "pairedLines": 1816,
+        "clonePairs": 91,
+        "pairedLines": 1868,
         "testFiles": [
           "apps/web/src/app/(app)/reports/page.test.ts",
           "apps/web/src/app/api/reports/actions.csv/route.test.ts",
@@ -1700,6 +1707,7 @@
           "apps/web/src/app/api/reports/generations/route.test.ts",
           "apps/web/src/app/api/reports/governance-monthly/route.test.ts",
           "apps/web/src/app/api/reports/library/route.test.ts",
+          "apps/web/src/app/api/reports/shared/[token]/route.test.ts",
           "apps/web/src/components/reports/admin-workflow/use-admin-workflow.actions.test.ts",
           "apps/web/src/components/reports/admin-workflow/use-admin-workflow.state.test.ts",
           "apps/web/src/components/reports/reports-impact-readings-section.test.ts",
@@ -1755,9 +1763,9 @@
     },
     "scripts/checks": {
       "runtimeFiles": 97,
-      "runtimeLines": 16378,
+      "runtimeLines": 16458,
       "testFiles": 46,
-      "testLines": 6614,
+      "testLines": 6709,
       "runtimeFilesWithoutDirectTest": 47,
       "runtimeFilesWithDirectTest": 50,
       "runtimeFilesWithoutDirectTestExamples": [
@@ -1784,7 +1792,7 @@
       ],
       "testRuntimeRatio": {
         "files": 0.4742,
-        "lines": 0.4038
+        "lines": 0.4076
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -1799,9 +1807,9 @@
     },
     "scripts/ci": {
       "runtimeFiles": 23,
-      "runtimeLines": 5561,
+      "runtimeLines": 5709,
       "testFiles": 17,
-      "testLines": 2979,
+      "testLines": 3151,
       "runtimeFilesWithoutDirectTest": 2,
       "runtimeFilesWithDirectTest": 21,
       "runtimeFilesWithoutDirectTestExamples": [
@@ -1810,7 +1818,7 @@
       ],
       "testRuntimeRatio": {
         "files": 0.7391,
-        "lines": 0.5357
+        "lines": 0.5519
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -2081,11 +2089,11 @@
     },
     "spogomi": {
       "runtimeFiles": 156,
-      "runtimeLines": 16362,
-      "testFiles": 82,
-      "testLines": 7236,
-      "runtimeFilesWithoutDirectTest": 24,
-      "runtimeFilesWithDirectTest": 132,
+      "runtimeLines": 16593,
+      "testFiles": 81,
+      "testLines": 7457,
+      "runtimeFilesWithoutDirectTest": 23,
+      "runtimeFilesWithDirectTest": 133,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/components/spogomi/spogomi-future-card.tsx",
         "apps/web/src/components/spogomi/spogomi-identity-link-card-actions.ts",
@@ -2097,7 +2105,6 @@
         "apps/web/src/components/spogomi/spogomi-preparation-workspace.model.ts",
         "apps/web/src/components/spogomi/spogomi-preparation-workspace.network.ts",
         "apps/web/src/components/spogomi/spogomi-public-route-map.tsx",
-        "apps/web/src/lib/spogomi/closure-service.ts",
         "apps/web/src/lib/spogomi/identity-link-contract.ts",
         "apps/web/src/lib/spogomi/import-completeness.ts",
         "apps/web/src/lib/spogomi/observer-route.ts",
@@ -2106,11 +2113,12 @@
         "apps/web/src/lib/spogomi/preparation-gpx-service.ts",
         "apps/web/src/lib/spogomi/preparation-import-delimited.ts",
         "apps/web/src/lib/spogomi/preparation-import-preview.ts",
-        "apps/web/src/lib/spogomi/regulation.ts"
+        "apps/web/src/lib/spogomi/regulation.ts",
+        "apps/web/src/lib/spogomi/result-input.ts"
       ],
       "testRuntimeRatio": {
-        "files": 0.5256,
-        "lines": 0.4422
+        "files": 0.5192,
+        "lines": 0.4494
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -2118,8 +2126,8 @@
         "metrics": null
       },
       "testDuplication": {
-        "clonePairs": 76,
-        "pairedLines": 1125,
+        "clonePairs": 77,
+        "pairedLines": 1137,
         "testFiles": [
           "apps/web/src/app/(app)/dashboard/spogomi/page.test.tsx",
           "apps/web/src/app/(app)/spogomi/nouveau/page.test.tsx",
@@ -2238,7 +2246,7 @@
     },
     "web/components": {
       "runtimeFiles": 606,
-      "runtimeLines": 81554,
+      "runtimeLines": 81590,
       "testFiles": 134,
       "testLines": 9855,
       "runtimeFilesWithoutDirectTest": 329,
@@ -2434,11 +2442,11 @@
       }
     },
     "web/lib": {
-      "runtimeFiles": 550,
-      "runtimeLines": 82419,
+      "runtimeFiles": 551,
+      "runtimeLines": 82483,
       "testFiles": 302,
-      "testLines": 24854,
-      "runtimeFilesWithoutDirectTest": 198,
+      "testLines": 24867,
+      "runtimeFilesWithoutDirectTest": 199,
       "runtimeFilesWithDirectTest": 352,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/lib/account-setup/account-setup-runtime.ts",
@@ -2463,8 +2471,8 @@
         "apps/web/src/lib/community/engagement.quality.ts"
       ],
       "testRuntimeRatio": {
-        "files": 0.5491,
-        "lines": 0.3016
+        "files": 0.5481,
+        "lines": 0.3015
       },
       "coverage": {
         "status": "NOT_RUN",
