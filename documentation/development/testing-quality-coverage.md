@@ -24,6 +24,49 @@ configuration Vitest et les conventions d'entrée App Router Next (`page`,
 `default`, etc.) sont exclus. Les routes API et les modules métier restent
 inclus ; aucune exclusion n'est motivée par une couverture faible.
 
+## Politique de couverture fondée sur le risque — cibles futures
+
+La politique canonique définit les familles de risque et leurs objectifs
+futurs dans `scripts/checks/coverage-policy.mjs`. Ces valeurs décrivent une
+cible de conception ; elles ne sont pas des résultats observés et ne sont pas
+encore utilisées comme seuils bloquants par `quality:coverage`.
+
+| Famille primaire | Instructions / lignes | Branches | Fonctions |
+| --- | ---: | ---: | ---: |
+| Sécurité, AuthN/AuthZ, validations sensibles (`security`) | 90 % | 85 % | 90 % |
+| Métier, environnement, géométrie, calculs (`business`) | 85 % | 80 % | 85 % |
+| API et persistance applicative sensibles (`api-persistence`) | 85 % | 80 % | 85 % |
+| UI purement présentative (`ui-presentational`) | aucun minimum uniforme | aucun minimum | aucun minimum |
+| Nouveau code non critique (`new-code-non-critical`) | minimum 80 % des lignes modifiées, cible 90 % | selon le risque | selon le risque |
+
+L'implémentation attribue chaque fichier Web instrumentable à un owner primaire
+déterministe : sécurité d'abord, puis API/persistance, métier, UI explicitement
+présentative, et enfin le fallback `new-code-non-critical`. Les règles sont
+ordonnées dans le moteur unique ; un fichier peut correspondre à plusieurs
+préfixes historiques, mais une seule famille de risque reçoit ses métriques.
+Les routes `src/app/api/**` restent donc dans la mesure et sont attribuées à
+`api-persistence`, sauf les routes d'account qui relèvent prioritairement de la
+sécurité. La projection historique `persistence` conserve son préfixe API pour
+ne pas invalider la baseline actuelle ; elle reste une vue informative de
+compatibilité et ne doit pas être additionnée aux familles de risque.
+
+Les fichiers instrumentables non reconnus par une règle explicite ne sont pas
+abandonnés : ils reçoivent le fallback déterministe `new-code-non-critical`.
+Les fichiers non instrumentables restent documentés par le périmètre technique
+existant : tests et `__tests__`, déclarations `.d.ts`, fichiers générés, points
+d'entrée App Router (`page`, `layout`, `loading`, `error`, `not-found`,
+`robots`, `sitemap`, `template`, `default`) et fichiers de types purs
+explicitement listés. Un fichier n'est jamais exclu pour cause de faible
+couverture.
+
+Les métriques globales Web, mobile, Node et Python restent des indicateurs de
+suivi ; cette politique ne crée aucun objectif global obligatoire de 70 % ou
+80 %, et ne remplace aucune baseline sans nouvelle mesure fiable ratifiée.
+Pour Supabase SQL, RLS, RPC et triggers, la couverture Vitest de lignes n'est
+pas une preuve : les invariants critiques exigent un `EXECUTED_DB_CONTRACT`
+réel, conformément aux niveaux de preuve de `TESTING.md`. En l'absence de cette
+exécution, le compte rendu doit conserver `DB_SEMANTICS_NOT_EXECUTED`.
+
 La commande de contrôle est :
 
 ```bash
@@ -43,10 +86,11 @@ pourcentage ; pour chaque métrique, la marge effective est le maximum entre
 cette valeur et une unité mesurée (`100 / baseline.total`). Les ratios exacts
 `covered / total` sont comparés, et non les pourcentages JSON arrondis.
 
-Le même ratchet est calculé pour les domaines mesurables `auth-authz`,
-`actions`, `formalities`, `route-calculs` et `persistence`. Leurs valeurs de
-départ et leurs chemins sont dans la baseline ; elles ne constituent pas des
-objectifs historiques inventés. Les marges sont de `0.25` point pour
+Le même ratchet historique est calculé pour les domaines mesurables
+`auth-authz`, `actions`, `formalities`, `route-calculs` et `persistence`. Leurs
+valeurs de départ et leurs chemins sont dans la baseline ; elles ne constituent
+pas des objectifs historiques inventés ni les nouvelles familles de risque.
+Les marges sont de `0.25` point pour
 `auth-authz` et de `0.75` point pour chacun des quatre autres domaines, avec la
 même règle d'unité mesurée. Une petite baisse bornée est reportée avec
 `COVERAGE_GRACE <scope>.<metric>` et le statut `PASS_WITH_GRACE` ; elle ne

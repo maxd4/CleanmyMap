@@ -8,9 +8,13 @@ import { test } from "node:test";
 import {
   COVERAGE_GRACE,
   COVERAGE_METRICS,
+  COVERAGE_RISK_FAMILIES,
+  COVERAGE_RISK_POLICY_FINGERPRINT,
   COVERAGE_SCOPE_FINGERPRINT,
   MOBILE_COVERAGE_SCOPE_FINGERPRINT,
+  aggregateRiskCoverage,
   aggregateCoverage,
+  classifyCoverageFile,
   compareCoverage,
   formatCoverageGrace,
   validateBaseline,
@@ -155,6 +159,39 @@ test("les tolérances auth-authz et des autres domaines restent distinctes", () 
   }
 });
 
+test("la politique de risque expose les cibles futures sans les rendre bloquantes", () => {
+  assert.deepEqual(COVERAGE_RISK_FAMILIES.security.minimum, { statements: 90, lines: 90, branches: 85, functions: 90 });
+  assert.deepEqual(COVERAGE_RISK_FAMILIES.business.minimum, { statements: 85, lines: 85, branches: 80, functions: 85 });
+  assert.deepEqual(COVERAGE_RISK_FAMILIES["api-persistence"].target, { statements: 85, lines: 85, branches: 80, functions: 85 });
+  assert.deepEqual(COVERAGE_RISK_FAMILIES["ui-presentational"].minimum, { statements: null, lines: null, branches: null, functions: null });
+  assert.deepEqual(COVERAGE_RISK_FAMILIES["new-code-non-critical"].minimum, { lines: 80 });
+  assert.deepEqual(COVERAGE_RISK_FAMILIES["new-code-non-critical"].target, { lines: 90 });
+});
+
+test("la classification primaire donne priorité à la sécurité sur les routes API", () => {
+  const accountRoute = classifyCoverageFile("C:\\repo\\apps\\web\\src\\app\\api\\account\\route.ts");
+  assert.equal(accountRoute.domain, "security");
+  assert.deepEqual(accountRoute.matches.map(({ domain }) => domain), ["security", "api-persistence"]);
+  assert.equal(accountRoute.attribution, "ordered-primary-prefix");
+
+  const apiRoute = classifyCoverageFile("C:\\repo\\apps\\web\\src\\app\\api\\actions\\route.ts");
+  assert.equal(apiRoute.domain, "api-persistence");
+  assert.equal(classifyCoverageFile("C:\\repo\\apps\\web\\src\\lib\\actions\\actions.ts").domain, "business");
+  assert.equal(classifyCoverageFile("C:\\repo\\apps\\web\\src\\components\\ui\\button.tsx").domain, "ui-presentational");
+  assert.equal(classifyCoverageFile("C:\\repo\\apps\\web\\src\\lib\\notifications\\server.ts").domain, "new-code-non-critical");
+});
+
+test("l'agrégation de risque compte chaque fichier instrumenté une seule fois", () => {
+  const current = aggregateCoverage(summary());
+  const riskFiles = Object.values(current.riskDomains).reduce((total, domain) => total + domain.files, 0);
+  assert.equal(riskFiles, current.files);
+  assert.equal(current.riskPolicyFingerprint, COVERAGE_RISK_POLICY_FINGERPRINT);
+  assert.equal(current.riskDomains["api-persistence"].files, 2);
+  assert.equal(current.riskDomains.business.files, 2);
+  assert.equal(current.riskDomains.security.files, 1);
+  assert.equal(aggregateRiskCoverage(summary())["api-persistence"].attribution, "primary-file-owner");
+});
+
 function withCoverageFixture(callback) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-check-"));
   const paths = {
@@ -231,6 +268,7 @@ test("la couverture mobile reste un scope indépendant sans domaines web", () =>
   };
   const current = aggregateCoverage(mobileSummary, { scope: "mobile" });
   assert.deepEqual(current.domains, {});
+  assert.deepEqual(current.riskDomains, {});
   const baseline = {
     schemaVersion: 1,
     sourceCommit: "a".repeat(40),

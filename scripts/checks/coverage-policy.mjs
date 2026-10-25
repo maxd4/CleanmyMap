@@ -21,6 +21,99 @@ export const COVERAGE_GRACE = Object.freeze({
   persistence: 0.75,
 });
 
+// Future targets are descriptive policy metadata for now. They are deliberately
+// not consumed by compareCoverage(), which remains the historical informative
+// ratchet until reliable measurements justify a separate gate.
+export const COVERAGE_RISK_FAMILIES = Object.freeze({
+  security: Object.freeze({
+    minimum: Object.freeze({ statements: 90, lines: 90, branches: 85, functions: 90 }),
+    target: Object.freeze({ statements: 90, lines: 90, branches: 85, functions: 90 }),
+  }),
+  business: Object.freeze({
+    minimum: Object.freeze({ statements: 85, lines: 85, branches: 80, functions: 85 }),
+    target: Object.freeze({ statements: 85, lines: 85, branches: 80, functions: 85 }),
+  }),
+  "api-persistence": Object.freeze({
+    minimum: Object.freeze({ statements: 85, lines: 85, branches: 80, functions: 85 }),
+    target: Object.freeze({ statements: 85, lines: 85, branches: 80, functions: 85 }),
+  }),
+  "ui-presentational": Object.freeze({
+    minimum: Object.freeze({ statements: null, lines: null, branches: null, functions: null }),
+    target: Object.freeze({ statements: null, lines: null, branches: null, functions: null }),
+  }),
+  "new-code-non-critical": Object.freeze({
+    minimum: Object.freeze({ lines: 80 }),
+    target: Object.freeze({ lines: 90 }),
+    otherMetrics: "according-to-risk",
+  }),
+});
+
+// The first matching rule owns a file. A file may match more than one rule for
+// compatibility reasons (for example, an account API route), but risk metrics
+// are aggregated through this primary selection exactly once per file.
+export const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
+  Object.freeze({
+    domain: "security",
+    patterns: Object.freeze([
+      "src/lib/account/",
+      "src/lib/auth/",
+      "src/lib/authz",
+      "src/lib/security/",
+      "src/lib/validation/",
+      "src/lib/rate-limit/",
+      "src/proxy",
+      "src/app/api/account/",
+    ]),
+  }),
+  Object.freeze({
+    domain: "api-persistence",
+    patterns: Object.freeze([
+      "src/app/api/",
+      "src/lib/http/",
+      "src/lib/persistence/",
+      "src/lib/storage/",
+      "src/lib/supabase/",
+    ]),
+  }),
+  Object.freeze({
+    domain: "business",
+    patterns: Object.freeze([
+      "src/lib/actions/",
+      "src/lib/environmental-impact-estimator/",
+      "src/lib/geo/",
+      "src/lib/impact/",
+      "src/lib/maps/",
+      "src/lib/recycling/",
+      "src/lib/route/",
+      "src/lib/waste/",
+      "src/components/actions/",
+      "src/components/environmental-impact-estimator/",
+      "src/components/map/",
+      "src/components/maps/",
+    ]),
+  }),
+  Object.freeze({
+    domain: "ui-presentational",
+    patterns: Object.freeze([
+      "src/components/brand/",
+      "src/components/layout/",
+      "src/components/ui/",
+    ]),
+  }),
+]);
+
+const COVERAGE_RISK_POLICY_VERSION = 1;
+export const COVERAGE_RISK_POLICY_FINGERPRINT = createHash("sha256")
+  .update(JSON.stringify({
+    version: COVERAGE_RISK_POLICY_VERSION,
+    families: COVERAGE_RISK_FAMILIES,
+    rules: COVERAGE_RISK_CLASSIFICATION_RULES,
+  }))
+  .digest("hex");
+
+// These domains are historical, informative compatibility views. Some of
+// their prefixes overlap by design and they remain tied to the existing
+// baseline; risk targets use COVERAGE_RISK_CLASSIFICATION_RULES instead.
 const COVERAGE_DOMAINS = Object.freeze({
   "auth-authz": Object.freeze([
     "src/lib/auth/",
@@ -101,12 +194,14 @@ const COVERAGE_SCOPES = Object.freeze({
     scope: COVERAGE_SCOPE,
     domains: COVERAGE_DOMAINS,
     fingerprint: COVERAGE_SCOPE_FINGERPRINT,
+    riskPolicyFingerprint: COVERAGE_RISK_POLICY_FINGERPRINT,
   }),
   mobile: Object.freeze({
     root: "apps/mobile",
     scope: MOBILE_COVERAGE_SCOPE,
     domains: Object.freeze({}),
     fingerprint: MOBILE_COVERAGE_SCOPE_FINGERPRINT,
+    riskPolicyFingerprint: null,
   }),
 });
 
@@ -134,6 +229,36 @@ function normalizeCoveragePath(file, scope = "web") {
   return normalized;
 }
 
+function riskMatches(normalizedPath) {
+  return COVERAGE_RISK_CLASSIFICATION_RULES.flatMap(({ domain, patterns }) => patterns
+    .filter((pattern) => normalizedPath.startsWith(pattern))
+    .map((pattern) => ({ domain, pattern })));
+}
+
+export function classifyCoverageFile(file, { scope = "web" } = {}) {
+  const normalizedPath = normalizeCoveragePath(file, scope);
+  if (scope !== "web") {
+    return {
+      scope,
+      normalizedPath,
+      domain: null,
+      attribution: "scope-without-risk-families",
+      matches: [],
+    };
+  }
+
+  const matches = riskMatches(normalizedPath);
+  const primary = matches[0] ?? { domain: "new-code-non-critical", pattern: null };
+  return {
+    scope,
+    normalizedPath,
+    domain: primary.domain,
+    pattern: primary.pattern,
+    attribution: primary.pattern ? "ordered-primary-prefix" : "fallback",
+    matches,
+  };
+}
+
 function normalizeMetricRecord(metric, label) {
   const total = metricValue(metric, "total", label);
   const covered = metricValue(metric, "covered", label);
@@ -154,6 +279,30 @@ function aggregateRows(rows) {
   );
 }
 
+export function aggregateRiskCoverage(summary, { scope = "web" } = {}) {
+  if (!summary || typeof summary !== "object") throw new Error("Coverage summary must be an object.");
+  if (scope !== "web") return {};
+
+  const rowsByDomain = new Map();
+  for (const [file, row] of Object.entries(summary).filter(([file]) => file !== "total")) {
+    const { domain } = classifyCoverageFile(file, { scope });
+    const rows = rowsByDomain.get(domain) ?? [];
+    rows.push(row);
+    rowsByDomain.set(domain, rows);
+  }
+
+  return Object.fromEntries([...rowsByDomain.entries()].map(([domain, rows]) => {
+    const rule = COVERAGE_RISK_CLASSIFICATION_RULES.find((candidate) => candidate.domain === domain);
+    return [domain, {
+      files: rows.length,
+      metrics: aggregateRows(rows),
+      patterns: rule?.patterns ?? [],
+      policy: COVERAGE_RISK_FAMILIES[domain],
+      attribution: "primary-file-owner",
+    }];
+  }));
+}
+
 export function aggregateCoverage(summary, { scope = "web" } = {}) {
   if (!summary || typeof summary !== "object") throw new Error("Coverage summary must be an object.");
   const scopeConfig = getCoverageScope(scope);
@@ -170,7 +319,14 @@ export function aggregateCoverage(summary, { scope = "web" } = {}) {
       return [domain, { files: rows.length, metrics: aggregateRows(rows), patterns: prefixes }];
     }),
   );
-  return { metrics: total, files: files.length, domains, scope };
+  return {
+    metrics: total,
+    files: files.length,
+    domains,
+    riskDomains: aggregateRiskCoverage(summary, { scope }),
+    riskPolicyFingerprint: scopeConfig.riskPolicyFingerprint,
+    scope,
+  };
 }
 
 export function loadCoverageSummary(file) {

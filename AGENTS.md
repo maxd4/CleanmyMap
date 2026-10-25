@@ -250,6 +250,10 @@ d'impact le justifie. Ne pas imposer automatiquement `quality:cycles`,
 ciblé reste possible sur risque concret. Ces contrôles sont obligatoires dans
 `FULL` sur le candidat exact.
 
+Pour tout changement fonctionnel, Codex ajoute ou adapte les tests nécessaires
+avant publication et respecte la politique canonique de couverture de
+`documentation/development/testing-quality-coverage.md`.
+
 `npm run checks:full` / `FULL` **uniquement** sur demande explicite dédiée ou
 préparation immédiate, explicitement demandée, d'un déploiement Vercel. Ne
 jamais en faire la STOP CONDITION d'un lot ordinaire ; hors de ces cas, renvoyer
