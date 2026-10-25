@@ -34,7 +34,7 @@ const codexUsageWeeklyInputSchema = z.object({
   meta: z.record(z.string(), z.unknown()).optional().nullable(),
 });
 
-async function readRequestBody(request: Request) {
+async function readRequestBody(request: Request): Promise<unknown> {
   try {
     return await request.json();
   } catch {

@@ -1,3 +1,7 @@
+import {
+  isActionRecord,
+  isNullableString,
+} from "@/lib/actions/query";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { getClerkService } from "@/lib/services/clerk";
 import type { LegalContentReportDecisionAction } from "@/lib/legal-content-report/legal-content-report";
@@ -8,6 +12,23 @@ type LegalContentMutationSnapshot = {
   moderationVisibility: string | null;
   authorUserId: string | null;
 };
+
+type LegalContentActionRow = {
+  status: string | null;
+  moderation_visibility: string | null;
+  created_by_clerk_id: string | null;
+};
+
+function isLegalContentActionRow(
+  value: unknown,
+): value is LegalContentActionRow {
+  return (
+    isActionRecord(value) &&
+    isNullableString(value.status) &&
+    isNullableString(value.moderation_visibility) &&
+    isNullableString(value.created_by_clerk_id)
+  );
+}
 
 export type LegalContentMutationResult = {
   supported: boolean;
@@ -53,7 +74,8 @@ export async function applyCanonicalLegalContentMutation(params: {
     .maybeSingle();
 
   if (current.error) throw new Error("Canonical action moderation read failed");
-  if (!current.data) {
+  const currentData: unknown = current.data;
+  if (currentData === null || currentData === undefined) {
     return {
       supported: true,
       found: false,
@@ -62,12 +84,15 @@ export async function applyCanonicalLegalContentMutation(params: {
       authorEmail: null,
     };
   }
+  if (!isLegalContentActionRow(currentData)) {
+    throw new Error("Canonical action moderation read returned invalid data");
+  }
 
   const beforeState = {
     source: "actions",
-    status: current.data.status ?? null,
-    moderationVisibility: current.data.moderation_visibility ?? "visible",
-    authorUserId: current.data.created_by_clerk_id ?? null,
+    status: currentData.status,
+    moderationVisibility: currentData.moderation_visibility ?? "visible",
+    authorUserId: currentData.created_by_clerk_id,
   } satisfies LegalContentMutationSnapshot;
 
   const now = new Date().toISOString();
@@ -90,7 +115,8 @@ export async function applyCanonicalLegalContentMutation(params: {
     .maybeSingle();
 
   if (updated.error) throw new Error("Canonical action moderation update failed");
-  if (!updated.data) {
+  const updatedData: unknown = updated.data;
+  if (updatedData === null || updatedData === undefined) {
     return {
       supported: true,
       found: false,
@@ -99,6 +125,9 @@ export async function applyCanonicalLegalContentMutation(params: {
       authorEmail: null,
     };
   }
+  if (!isLegalContentActionRow(updatedData)) {
+    throw new Error("Canonical action moderation update returned invalid data");
+  }
 
   return {
     supported: true,
@@ -106,11 +135,11 @@ export async function applyCanonicalLegalContentMutation(params: {
     beforeState,
     afterState: {
       source: "actions",
-      status: updated.data.status ?? null,
-      moderationVisibility: updated.data.moderation_visibility ?? "visible",
-      authorUserId: updated.data.created_by_clerk_id ?? null,
+      status: updatedData.status,
+      moderationVisibility: updatedData.moderation_visibility ?? "visible",
+      authorUserId: updatedData.created_by_clerk_id,
     } satisfies LegalContentMutationSnapshot,
-    authorEmail: await resolveAuthorEmail(updated.data.created_by_clerk_id),
+    authorEmail: await resolveAuthorEmail(updatedData.created_by_clerk_id),
   };
 }
 

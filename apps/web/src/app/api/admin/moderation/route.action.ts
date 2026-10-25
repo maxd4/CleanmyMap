@@ -1,5 +1,8 @@
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
-import { runSingleActionQuery } from "@/lib/actions/query";
+import {
+  isActionRecord,
+  runSingleActionQuery,
+} from "@/lib/actions/query";
 import { buildAdminActionUpdates } from "@/lib/admin/moderation/action-moderation-edits";
 import {
   actionNotFoundResponse,
@@ -54,6 +57,19 @@ type ActionImpactRow = {
   duration_minutes?: unknown;
   notes?: string | null;
 };
+
+type ActionVisibilityRow = {
+  moderation_visibility: "visible" | "hidden" | null;
+};
+
+function isActionVisibilityRow(value: unknown): value is ActionVisibilityRow {
+  return (
+    isActionRecord(value) &&
+    (value.moderation_visibility === null ||
+      value.moderation_visibility === "visible" ||
+      value.moderation_visibility === "hidden")
+  );
+}
 
 function toActionImpactValues(row: ActionImpactRow): ActionImpactValues {
   const metadata = extractActionMetadataFromNotes(row.notes ?? null);
@@ -211,7 +227,13 @@ async function updateActionModerationVisibility(
     .eq("id", params.id)
     .maybeSingle();
   if (current.error) throw new Error("Database visibility read failed");
-  if (!current.data) return { found: false, previousValue: null, newValue: null };
+  const currentData: unknown = current.data;
+  if (currentData === null || currentData === undefined) {
+    return { found: false, previousValue: null, newValue: null };
+  }
+  if (!isActionVisibilityRow(currentData)) {
+    throw new Error("Database visibility read returned invalid data");
+  }
 
   const now = new Date().toISOString();
   const updates =
@@ -235,14 +257,27 @@ async function updateActionModerationVisibility(
     .select("moderation_visibility, hidden_at, hidden_by_clerk_id, hidden_reason")
     .maybeSingle();
   if (updated.error) throw new Error("Database visibility update failed");
+  const updatedData: unknown = updated.data;
+  if (updatedData === null || updatedData === undefined) {
+    return {
+      found: false,
+      previousValue: {
+        moderationVisibility: currentData.moderation_visibility ?? "visible",
+      },
+      newValue: null,
+    };
+  }
+  if (!isActionVisibilityRow(updatedData)) {
+    throw new Error("Database visibility update returned invalid data");
+  }
   return {
-    found: Boolean(updated.data),
+    found: true,
     previousValue: {
-      moderationVisibility: current.data.moderation_visibility ?? "visible",
+      moderationVisibility: currentData.moderation_visibility ?? "visible",
     },
-    newValue: updated.data
-      ? { moderationVisibility: updated.data.moderation_visibility ?? "visible" }
-      : null,
+    newValue: {
+      moderationVisibility: updatedData.moderation_visibility ?? "visible",
+    },
   };
 }
 

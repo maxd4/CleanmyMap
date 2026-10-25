@@ -84,6 +84,16 @@ export type CreatorInboxMutationSource = Exclude<
 
 const AUDIT_OPERATION = "creator_inbox_update";
 
+type CreatorInboxAuditDetails = {
+  operation: typeof AUDIT_OPERATION;
+  reason: string;
+  targetUserId?: string;
+  previousValue: Record<string, unknown>;
+  newValue: Record<string, unknown>;
+  stage?: ErrorStage;
+  partialMutation?: boolean;
+};
+
 export type InboxSnapshot = {
   source: CreatorInboxMutationSource;
   status?: string;
@@ -122,16 +132,18 @@ function buildAuditDetails(params: {
   newValue: Record<string, unknown>;
   stage?: ErrorStage;
   partialMutation?: boolean;
-}) {
-  return Object.assign(
-    { operation: AUDIT_OPERATION, reason: params.reason },
-    params.targetUserId ? { targetUserId: params.targetUserId } : {},
-    { previousValue: params.previousValue, newValue: params.newValue },
-    params.stage ? { stage: params.stage } : {},
-    params.partialMutation === undefined
+}): CreatorInboxAuditDetails {
+  return {
+    operation: AUDIT_OPERATION,
+    reason: params.reason,
+    ...(params.targetUserId ? { targetUserId: params.targetUserId } : {}),
+    previousValue: params.previousValue,
+    newValue: params.newValue,
+    ...(params.stage ? { stage: params.stage } : {}),
+    ...(params.partialMutation === undefined
       ? {}
-      : { partialMutation: params.partialMutation },
-  );
+      : { partialMutation: params.partialMutation }),
+  };
 }
 
 function unknownSnapshot(
