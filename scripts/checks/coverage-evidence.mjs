@@ -12,8 +12,9 @@ import {
 } from "../ci/validation-evidence.mjs";
 import { gitExecutable } from "../ci/git-executable.mjs";
 
-const COVERAGE_EVIDENCE_VERSION = 1;
+const COVERAGE_EVIDENCE_VERSION = 2;
 export const COVERAGE_SUMMARY_RELATIVE_PATH = path.join("apps", "web", "coverage", "coverage-summary.json");
+export const COVERAGE_LCOV_RELATIVE_PATH = path.join("apps", "web", "coverage", "lcov.info");
 const COVERAGE_EVIDENCE_RELATIVE_PATH = path.join("apps", "web", "coverage", "coverage-evidence.json");
 
 const CONFIGURATION_FILES = Object.freeze([
@@ -107,6 +108,10 @@ function summaryHash(summary, repositoryRoot) {
   return hashJson(canonicalSummary(summary, repositoryRoot));
 }
 
+function fileHash(file) {
+  return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+}
+
 function expectedEvidence(repositoryRoot, summary) {
   const candidateFingerprint = createCandidateFingerprint({
     repositoryRoot,
@@ -114,6 +119,7 @@ function expectedEvidence(repositoryRoot, summary) {
     changedFiles: getWorktreeCandidateFiles(repositoryRoot),
   });
   const environment = environmentDescriptor();
+  const lcovPath = repositoryPath(repositoryRoot, COVERAGE_LCOV_RELATIVE_PATH.replaceAll("\\", "/"));
   return {
     schemaVersion: COVERAGE_EVIDENCE_VERSION,
     kind: "cleanmymap-web-coverage",
@@ -125,6 +131,8 @@ function expectedEvidence(repositoryRoot, summary) {
     environmentFingerprint: hashJson(environment),
     summarySha256: summaryHash(summary, repositoryRoot),
     summaryPath: COVERAGE_SUMMARY_RELATIVE_PATH.replaceAll("\\", "/"),
+    lcovSha256: fileHash(lcovPath),
+    lcovPath: COVERAGE_LCOV_RELATIVE_PATH.replaceAll("\\", "/"),
   };
 }
 
@@ -167,6 +175,8 @@ export function validateCoverageEvidence({
     "environmentFingerprint",
     "summarySha256",
     "summaryPath",
+    "lcovSha256",
+    "lcovPath",
     "candidateFingerprint",
   ]) {
     if (evidence[field] !== expected[field]) {

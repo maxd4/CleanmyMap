@@ -113,9 +113,13 @@ classification incompatible produit un échec ; aucune baseline ni exclusion
 ne peut être ajustée automatiquement pour retrouver un succès. La comparaison
 historique conserve ses statuts de compatibilité (`PASS`, `PASS_WITH_GRACE`,
 `INFORMATIVE_REGRESSION`, `UNAVAILABLE`), mais son statut informatif ne
-neutralise jamais `COVERAGE_POLICY_STATUS: FAIL`. La commande retourne alors un
-code non nul lorsque l'état `ENFORCE` est violé. Tant que les objectifs actuels
-ne sont pas ratifiés et atteints, les familles restent `OBSERVE`.
+neutralise jamais `COVERAGE_ENFORCEMENT_STATUS: FAIL`. Toute mesure obligatoire
+`NOT_MEASURED`, une comparaison obligatoire `UNAVAILABLE` ou une preuve absente
+fait échouer le périmètre `ENFORCE` ; `NOT_MEASURED` n'est jamais un succès dans
+cet état. La commande retourne alors un code non nul. Une activation sans seuil
+numérique et mesure effectivement implémentée est refusée ; Node et Python
+restent donc `OBSERVE`. Tant que les objectifs actuels ne sont pas ratifiés et
+atteints, les familles restent `OBSERVE`.
 
 Web et mobile sont contrôlés séparément. Les rapports Node (`scripts/coverage/`)
 et Python (`maintenance/python/coverage.xml`) restent des producteurs distincts
@@ -128,7 +132,7 @@ PostgreSQL exécutés, et non une couverture Vitest de lignes.
 La publication Codex et le pré-push utilisent le même contrôle
 `scripts/ci/coverage-publication.mjs`. Il ne mesure pas une seconde fois la
 couverture : il vérifie la preuve produite par le rapport, son empreinte de
-fichiers et le SHA complet du candidat. Une preuve `WORKTREE` n'est acceptée
+fichiers, le hash du résumé et du LCOV, et le SHA complet du candidat. Une preuve `WORKTREE` n'est acceptée
 que si `HEAD`, `refs/heads/main` et le worktree sont cohérents ; une preuve
 `DYNAMIC_CANDIDATE` provient de l'arbre Git éphémère exact. Une preuve absente,
 illisible, falsifiée, périmée ou rattachée à un autre SHA échoue lorsqu'un
@@ -163,8 +167,13 @@ complète, le résultat est `COVERAGE_CHANGED_LINES_STATUS: NOT_MEASURED`, et no
 `0 %`. Une ligne LCOV avec `DA:<ligne>,0` est au contraire une mesure réelle à
 `0 %`. Les lignes non critiques visent 80 % minimum et 90 % en cible ; les
 lignes critiques visent 90 %. Une ligne `unclassified` reste `NOT_MEASURED`
-pour la conformité jusqu'à sa qualification explicite. Cette méthode reste `OBSERVE` tant que son coût,
-sa reproductibilité et son rattachement au candidat n'ont pas été ratifiés.
+pour la conformité jusqu'à sa qualification explicite. Les commentaires,
+accolades et déclarations TypeScript non exécutables absents du LCOV sont
+exclus du dénominateur seulement lorsque la source du candidat permet de les
+identifier ; une ligne exécutable absente reste une mesure incomplète. Le
+ratio `covered / total` est comparé sans arrondi ; l'arrondi est réservé à
+l'affichage. Cette méthode reste `OBSERVE` tant que son coût, sa reproductibilité
+et son rattachement au candidat n'ont pas été ratifiés.
 
 La commande de contrôle est :
 
@@ -197,7 +206,8 @@ modifie jamais la baseline. Une baisse au-delà de l'enveloppe conserve tous ses
 détails dans le rapport et le statut `INFORMATIVE_REGRESSION`, mais reste
 non bloquante. Une baseline absente, malformée ou obsolète rend la comparaison
 historique `UNAVAILABLE` sans invalider une mesure courante correctement
-produite. En revanche, un résumé courant invalide, une preuve obligatoire
+produite en `OBSERVE`. En `ENFORCE`, cette mesure historique obligatoire reste
+un échec fail-closed. En revanche, un résumé courant invalide, une preuve obligatoire
 manquante ou une preuve ne correspondant plus au candidat échoue strictement.
 
 Une amélioration de la baseline doit être ratifiée par une modification

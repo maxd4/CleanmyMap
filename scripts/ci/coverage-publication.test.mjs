@@ -88,6 +88,14 @@ test("OBSERVE candidates remain diagnostic and do not require a proof", () => {
   assert.equal(result.status, "OBSERVE");
 });
 
+test("an unknown Web domain cannot bypass an active Web gate", () => {
+  const result = getCoveragePublicationRequirements({
+    changedFiles: ["apps/web/src/lib/notifications/server.ts"],
+    policy: enforcedWebPolicy(),
+  });
+  assert.deepEqual(result.requirements.map(({ scope }) => scope), ["web"]);
+});
+
 test("an ENFORCE candidate requires an exact proof and accepts a conforming report", () => {
   const sha = candidateSha();
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-proof-"));

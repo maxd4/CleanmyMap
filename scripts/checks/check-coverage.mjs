@@ -2,6 +2,7 @@
 
 import path from "node:path";
 import process from "node:process";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { validateCoverageEvidence } from "./coverage-evidence.mjs";
 import {
@@ -17,6 +18,30 @@ import {
   measureChangedLineCoverage,
   validateCoverageEnforcementPolicy,
 } from "./coverage-policy.mjs";
+import { gitExecutable } from "../ci/git-executable.mjs";
+
+function hasEnforceScope(policy, scope) {
+  if (scope !== "web") return policy?.scopes?.[scope]?.state === "ENFORCE";
+  return Object.values(policy?.scopes?.web?.domains ?? {}).some((entry) => entry.state === "ENFORCE");
+}
+
+function hasEnforceChangedLines(policy, scope) {
+  return scope === "web" && policy?.scopes?.web?.changedLines?.state === "ENFORCE";
+}
+
+function expectedCandidateSha({ repositoryRoot, currentCommit, currentRef }) {
+  if (currentCommit) return currentCommit;
+  if (!currentRef || currentRef === "HEAD") return null;
+  try {
+    return execFileSync(gitExecutable(), ["rev-parse", "--verify", `${currentRef}^{commit}`], {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    throw new Error(`Coverage candidate ref cannot be resolved: ${currentRef}.`);
+  }
+}
 
 function printMetrics(current) {
   console.log(
@@ -30,6 +55,8 @@ export function runCoverageCheck({
   paths = getDefaultCoveragePaths(repositoryRoot, scope),
   fromExistingSummary = false,
   validateEvidence = validateCoverageEvidence,
+  validateScopeEvidence = null,
+  evaluatePolicy = evaluateCoveragePolicy,
   currentCommit = null,
   enforcementPolicy = COVERAGE_ENFORCEMENT_POLICY,
   baseRef = null,
@@ -37,8 +64,18 @@ export function runCoverageCheck({
   setProcessExitCode = false,
 } = {}) {
   validateCoverageEnforcementPolicy(enforcementPolicy);
-  if (fromExistingSummary) {
-    validateEvidence({ repositoryRoot });
+  const enforceScope = hasEnforceScope(enforcementPolicy, scope);
+  const enforceChangedLines = hasEnforceChangedLines(enforcementPolicy, scope);
+  if (fromExistingSummary || enforceScope || enforceChangedLines) {
+    const candidateSha = expectedCandidateSha({ repositoryRoot, currentCommit, currentRef });
+    if (scope === "web") {
+      validateEvidence({ repositoryRoot, expectedCandidateSha: candidateSha });
+    } else if (enforceScope) {
+      if (typeof validateScopeEvidence !== "function") {
+        throw new Error(`Coverage provenance validation is not implemented for ENFORCE scope: ${scope}.`);
+      }
+      validateScopeEvidence({ repositoryRoot, scope, expectedCandidateSha: candidateSha });
+    }
     console.log(`ALREADY_PROVEN: ${scope} coverage summary`);
     console.log(`REUSED_EVIDENCE_SOURCE: ${scope === "mobile" ? "apps/mobile/coverage" : "apps/web/coverage/coverage-evidence.json"}`);
   }
@@ -46,7 +83,7 @@ export function runCoverageCheck({
   const current = aggregateCoverage(loadCoverageSummary(paths.summary), { scope });
   console.log(`COVERAGE_SCOPE: ${scope}`);
 
-  const policy = evaluateCoveragePolicy(current, { scope, policy: enforcementPolicy });
+  const policy = evaluatePolicy(current, { scope, policy: enforcementPolicy });
   console.log(`COVERAGE_POLICY_STATUS: ${policy.status}`);
   for (const observation of policy.observations) {
     console.log(
@@ -58,6 +95,8 @@ export function runCoverageCheck({
   for (const failure of policy.failures) {
     console.warn(`COVERAGE_POLICY_FAILURE: ${failure.code} ${failure.domain ?? scope}.${failure.metric ?? "scope"}`);
   }
+  const policyEnforcementFailure = enforceScope && policy.status !== "PASS";
+  if (policyEnforcementFailure) console.warn(`COVERAGE_ENFORCEMENT_FAILURE: ${policy.status}`);
 
   const changedLineCoverage = scope === "web"
     ? measureChangedLineCoverage({
@@ -77,6 +116,16 @@ export function runCoverageCheck({
       + `(${changedLineCoverage.lines.pct.toFixed(2)}%)`,
     );
   }
+  const changedLineEnforcementFailure = enforceChangedLines && changedLineCoverage.status !== "PASS";
+  if (changedLineEnforcementFailure) {
+    console.warn(`COVERAGE_CHANGED_LINES_FAILURE: ${changedLineCoverage.status} ${changedLineCoverage.reason ?? "THRESHOLD_NOT_MET"}`);
+  }
+  const enforcementStatus = policyEnforcementFailure || changedLineEnforcementFailure
+    ? "FAIL"
+    : enforceScope || enforceChangedLines
+      ? "PASS"
+      : "OBSERVE";
+  console.log(`COVERAGE_ENFORCEMENT_STATUS: ${enforcementStatus}`);
 
   let baseline;
   try {
@@ -85,12 +134,17 @@ export function runCoverageCheck({
   } catch (error) {
     console.warn("COVERAGE_COMPARISON_STATUS: UNAVAILABLE");
     console.warn(`COVERAGE_COMPARISON_REASON: ${error instanceof Error ? error.message : String(error)}`);
+    const unavailableEnforcementStatus = enforceScope || enforceChangedLines ? "FAIL" : enforcementStatus;
+    if (unavailableEnforcementStatus === "FAIL" && enforcementStatus !== "FAIL") {
+      console.warn("COVERAGE_ENFORCEMENT_FAILURE: UNAVAILABLE");
+    }
     printMetrics(current);
-    if (setProcessExitCode && policy.status === "FAIL") process.exitCode = 1;
+    if (setProcessExitCode && unavailableEnforcementStatus === "FAIL") process.exitCode = 1;
     return {
       status: "UNAVAILABLE",
       historicalStatus: "UNAVAILABLE",
       policyStatus: policy.status,
+      enforcementStatus: unavailableEnforcementStatus,
       policy,
       changedLineCoverage,
       current,
@@ -113,11 +167,12 @@ export function runCoverageCheck({
   }
 
   printMetrics(current);
-  if (setProcessExitCode && policy.status === "FAIL") process.exitCode = 1;
+  if (setProcessExitCode && enforcementStatus === "FAIL") process.exitCode = 1;
   return {
     ...comparison,
     historicalStatus: comparison.status,
     policyStatus: policy.status,
+    enforcementStatus,
     policy,
     changedLineCoverage,
     current,

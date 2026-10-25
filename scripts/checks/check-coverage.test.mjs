@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { test } from "node:test";
 
 import {
   COVERAGE_GRACE,
+  COVERAGE_CHANGED_LINE_POLICY,
   COVERAGE_ENFORCEMENT_POLICY,
   COVERAGE_METRICS,
   COVERAGE_RISK_FAMILIES,
@@ -85,6 +87,18 @@ function enforcedPolicy(domain = "security") {
   const policy = structuredClone(COVERAGE_ENFORCEMENT_POLICY);
   policy.scopes.web.domains[domain] = {
     state: "ENFORCE",
+    policyVersion: 1,
+    activation: { version: 1, sourceCommit: "a".repeat(40) },
+  };
+  return policy;
+}
+
+function enforcedMobilePolicy({ minimum = { lines: 80 } } = {}) {
+  const policy = structuredClone(COVERAGE_ENFORCEMENT_POLICY);
+  policy.scopes.mobile = {
+    ...policy.scopes.mobile,
+    state: "ENFORCE",
+    minimum,
     policyVersion: 1,
     activation: { version: 1, sourceCommit: "a".repeat(40) },
   };
@@ -238,10 +252,75 @@ test("une violation ENFORCE reste FAIL malgré une comparaison historique indisp
     const result = runCoverageCheck({
       paths,
       enforcementPolicy: enforcedPolicy(),
+      validateEvidence: () => {},
       setProcessExitCode: true,
     });
     assert.equal(result.status, "UNAVAILABLE");
     assert.equal(result.policyStatus, "FAIL");
+    assert.equal(result.enforcementStatus, "FAIL");
+    assert.equal(process.exitCode, 1);
+    process.exitCode = undefined;
+  });
+});
+
+test("une comparaison historique UNAVAILABLE reste bloquante quand ENFORCE est conforme", () => {
+  withCoverageFixture(({ paths }) => {
+    const currentSummary = summary();
+    const securityFile = "C:\\repo\\apps\\web\\src\\lib\\auth\\auth.ts";
+    for (const metricName of COVERAGE_METRICS) setSummaryRowMetric(currentSummary, securityFile, metricName, 100);
+    fs.writeFileSync(paths.summary, JSON.stringify(currentSummary), "utf8");
+    const result = runCoverageCheck({
+      paths,
+      enforcementPolicy: enforcedPolicy(),
+      validateEvidence: () => {},
+      setProcessExitCode: true,
+    });
+    assert.equal(result.policyStatus, "PASS");
+    assert.equal(result.status, "UNAVAILABLE");
+    assert.equal(result.enforcementStatus, "FAIL");
+    assert.equal(process.exitCode, 1);
+    process.exitCode = undefined;
+  });
+});
+
+test("une validation ENFORCE vérifie la preuve même sans mode checker-only", () => {
+  withCoverageFixture(({ paths }) => {
+    const currentSummary = summary();
+    fs.writeFileSync(paths.summary, JSON.stringify(currentSummary), "utf8");
+    const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+    let evidenceArguments;
+    assert.throws(
+      () => runCoverageCheck({ paths, enforcementPolicy: enforcedPolicy(), currentCommit: candidateSha }),
+      /Coverage evidence incomplete or unreadable/,
+    );
+    const result = runCoverageCheck({
+      paths,
+      enforcementPolicy: enforcedPolicy(),
+      currentCommit: candidateSha,
+      validateEvidence: (argumentsValue) => { evidenceArguments = argumentsValue; },
+    });
+    assert.equal(result.policyStatus, "FAIL");
+    assert.equal(evidenceArguments.expectedCandidateSha, candidateSha);
+  });
+});
+
+test("une politique ENFORCE non mesurée force l'échec du processus", () => {
+  withCoverageFixture(({ paths }) => {
+    const current = aggregateCoverage(summary());
+    const baseline = baselineFrom(current);
+    const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+    baseline.sourceCommit = candidateSha;
+    fs.writeFileSync(paths.summary, JSON.stringify(summary()), "utf8");
+    fs.writeFileSync(paths.baseline, JSON.stringify(baseline), "utf8");
+    const result = runCoverageCheck({
+      paths,
+      currentCommit: candidateSha,
+      enforcementPolicy: enforcedPolicy(),
+      validateEvidence: () => {},
+      evaluatePolicy: () => ({ status: "NOT_MEASURED", scope: "web", failures: [], observations: [], assessments: [], diagnostics: ["fingerprint"] }),
+      setProcessExitCode: true,
+    });
+    assert.equal(result.enforcementStatus, "FAIL");
     assert.equal(process.exitCode, 1);
     process.exitCode = undefined;
   });
@@ -416,6 +495,24 @@ test("la couverture mobile reste un scope indépendant sans domaines web", () =>
   assert.equal(evaluateCoveragePolicy(current, { scope: "mobile" }).status, "OBSERVE");
 });
 
+test("une activation mobile compare un ratio exact et refuse un seuil non atteint", () => {
+  const mobileSummary = {
+    scope: "mobile",
+    metrics: Object.fromEntries(COVERAGE_METRICS.map((name) => [name, metric(79, 100)])),
+  };
+  const policy = evaluateCoveragePolicy(mobileSummary, { scope: "mobile", policy: enforcedMobilePolicy({ minimum: { lines: 80 } }) });
+  assert.equal(policy.status, "FAIL");
+  assert.equal(policy.failures[0].code, "ENFORCE_THRESHOLD_NOT_MET");
+  assert.equal(policy.failures[0].metric, "lines");
+});
+
+test("une activation sans mesure numérique est refusée avant toute évaluation", () => {
+  const policy = structuredClone(COVERAGE_ENFORCEMENT_POLICY);
+  policy.scopes.node.state = "ENFORCE";
+  policy.scopes.node.activation = { version: 1, sourceCommit: "a".repeat(40) };
+  assert.throws(() => validateCoverageEnforcementPolicy(policy), /node ENFORCE is not implemented/);
+});
+
 test("le diff Git des lignes ajoutées et le LCOV restent bornés au candidat", () => {
   const diff = [
     "diff --git a/apps/web/src/lib/actions/feature.ts b/apps/web/src/lib/actions/feature.ts",
@@ -441,6 +538,105 @@ test("le diff Git des lignes ajoutées et le LCOV restent bornés au candidat", 
   assert.deepEqual(measured.lines, { covered: 1, total: 2, pct: 50 });
   assert.equal(measured.observations[0].target, 90);
   assert.equal(measured.observations[0].gapPp, -40);
+});
+
+test("changedLines applique le ratio exact au seuil et échoue juste en dessous", () => {
+  const policyEntry = {
+    ...COVERAGE_CHANGED_LINE_POLICY,
+    state: "ENFORCE",
+    activation: { version: 1, sourceCommit: "a".repeat(40) },
+  };
+  const changedLines = [{ path: "apps/web/src/lib/actions/feature.ts", lines: Array.from({ length: 10 }, (_, index) => index + 1) }];
+  const lcov = (covered) => [
+    "SF:apps/web/src/lib/actions/feature.ts",
+    ...Array.from({ length: 10 }, (_, index) => `DA:${index + 1},${index < covered ? 1 : 0}`),
+    "end_of_record",
+  ].join("\n");
+  assert.equal(measureChangedLineCoverage({ changedLines, lcovContent: lcov(9), policyEntry }).status, "PASS");
+  const below = measureChangedLineCoverage({ changedLines, lcovContent: lcov(8), policyEntry });
+  assert.equal(below.status, "FAIL");
+  assert.equal(below.failures[0].target, 90);
+});
+
+test("changedLines ENFORCE indisponible force le code de sortie non nul", () => {
+  withCoverageFixture(({ paths }) => {
+    const current = aggregateCoverage(summary());
+    const baseline = baselineFrom(current);
+    const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+    baseline.sourceCommit = candidateSha;
+    fs.writeFileSync(paths.summary, JSON.stringify(summary()), "utf8");
+    fs.writeFileSync(paths.baseline, JSON.stringify(baseline), "utf8");
+    const policy = structuredClone(COVERAGE_ENFORCEMENT_POLICY);
+    policy.scopes.web.changedLines = {
+      ...policy.scopes.web.changedLines,
+      state: "ENFORCE",
+      activation: { version: 1, sourceCommit: candidateSha },
+    };
+    const result = runCoverageCheck({
+      paths,
+      currentCommit: candidateSha,
+      baseRef: "HEAD",
+      currentRef: "HEAD",
+      enforcementPolicy: policy,
+      validateEvidence: () => {},
+      setProcessExitCode: true,
+    });
+    assert.equal(result.changedLineCoverage.status, "NOT_MEASURED");
+    assert.equal(result.enforcementStatus, "FAIL");
+    assert.equal(process.exitCode, 1);
+    process.exitCode = undefined;
+  });
+});
+
+test("un rapport ENFORCE sous le seuil donne un code de sortie non nul dans un processus enfant", () => {
+  withCoverageFixture(({ root, paths }) => {
+    const current = aggregateCoverage(summary());
+    const baseline = baselineFrom(current);
+    const currentSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+    baseline.sourceCommit = currentSha;
+    fs.writeFileSync(paths.summary, JSON.stringify(summary()), "utf8");
+    fs.writeFileSync(paths.baseline, JSON.stringify(baseline), "utf8");
+    const policy = enforcedPolicy();
+    const checkerUrl = pathToFileURL(path.join(process.cwd(), "scripts", "checks", "check-coverage.mjs")).href;
+    const child = spawnSync(process.execPath, [
+      "--input-type=module",
+      "-e",
+      `import { runCoverageCheck } from ${JSON.stringify(checkerUrl)}; runCoverageCheck({ paths: ${JSON.stringify(paths)}, currentCommit: ${JSON.stringify(currentSha)}, enforcementPolicy: ${JSON.stringify(policy)}, validateEvidence: () => {}, setProcessExitCode: true });`,
+    ], { cwd: process.cwd(), encoding: "utf8" });
+    assert.equal(child.status, 1, child.stderr);
+    assert.match(child.stdout, /COVERAGE_ENFORCEMENT_STATUS: FAIL/);
+  });
+});
+
+test("les lignes exécutables, non exécutées et non exécutables sont distinguées", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-changed-lines-source-"));
+  const source = path.join(root, "apps", "web", "src", "lib", "actions", "feature.ts");
+  fs.mkdirSync(path.dirname(source), { recursive: true });
+  fs.writeFileSync(source, [
+    "// documentation",
+    "export const value = 1;",
+    "export type Value = { id: string };",
+    "export const uncovered = value + 1;",
+    "}",
+  ].join("\n"), "utf8");
+  try {
+    const result = measureChangedLineCoverage({
+      repositoryRoot: root,
+      changedLines: [{ path: "apps/web/src/lib/actions/feature.ts", lines: [1, 2, 3, 4, 5] }],
+      lcovContent: [
+        "SF:apps/web/src/lib/actions/feature.ts",
+        "DA:2,1",
+        "DA:4,0",
+        "end_of_record",
+      ].join("\n"),
+    });
+    assert.equal(result.status, "OBSERVE");
+    assert.deepEqual(result.lines, { covered: 1, total: 2, pct: 50 });
+    assert.deepEqual(result.files[0].nonExecutable, [1, 3, 5]);
+    assert.deepEqual(result.files[0].missing, []);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("les lignes ajoutées non instrumentables ou sans LCOV sont NOT_MEASURED, pas 0 %", () => {

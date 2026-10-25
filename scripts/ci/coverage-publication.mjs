@@ -85,7 +85,9 @@ export function getCoveragePublicationRequirements({
   const domains = webRiskDomains(files);
   if (files.some(isWebFile)) {
     const enforceDomains = domains.filter((domain) => policy?.scopes?.web?.domains?.[domain]?.state === "ENFORCE");
-    if (enforceDomains.length > 0 || stateFor(policy, "web") === "ENFORCE") {
+    const anyEnforcedWebDomain = Object.values(policy?.scopes?.web?.domains ?? {}).some((entry) => entry.state === "ENFORCE");
+    const changedLinesEnforced = policy?.scopes?.web?.changedLines?.state === "ENFORCE";
+    if (enforceDomains.length > 0 || anyEnforcedWebDomain || changedLinesEnforced || stateFor(policy, "web") === "ENFORCE") {
       requirements.push({ scope: "web", state: "ENFORCE", domains: enforceDomains });
     }
   }
@@ -293,10 +295,26 @@ export function runCoveragePublicationGate({
         enforcementPolicy: policy,
         setProcessExitCode: false,
       });
-      if (result.policyStatus !== "PASS") throw new Error(`Coverage ENFORCE failed for web/${candidateSha}: ${result.policyStatus}.`);
-      results.push({ scope: "web", status: result.policyStatus });
+      const enforcementStatus = result.enforcementStatus ?? result.policyStatus;
+      if (enforcementStatus !== "PASS") throw new Error(`Coverage ENFORCE failed for web/${candidateSha}: ${enforcementStatus ?? "NOT_MEASURED"}.`);
+      results.push({ scope: "web", status: enforcementStatus });
     } else {
-      results.push({ scope: requirement.scope, status: "PASS", proof: proof.proof });
+      if (requirement.scope === "mobile") {
+        const summary = reportPath(proof.proof, proof.root, "apps/mobile/coverage/coverage-summary.json");
+        const result = coverageCheck({
+          scope: "mobile",
+          repositoryRoot,
+          paths: { ...getDefaultCoveragePaths(repositoryRoot, "mobile"), summary },
+          currentCommit: candidateSha,
+          enforcementPolicy: policy,
+          validateScopeEvidence: () => {},
+          setProcessExitCode: false,
+        });
+        if (result.enforcementStatus !== "PASS") throw new Error(`Coverage ENFORCE failed for mobile/${candidateSha}: ${result.enforcementStatus}.`);
+        results.push({ scope: "mobile", status: result.enforcementStatus, proof: proof.proof });
+      } else {
+        results.push({ scope: requirement.scope, status: "PASS", proof: proof.proof });
+      }
     }
   }
   console.log(`COVERAGE_PUBLICATION_GATE: PASS (${results.map((result) => result.scope).join(", ")})`);

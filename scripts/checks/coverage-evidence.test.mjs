@@ -6,6 +6,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  COVERAGE_LCOV_RELATIVE_PATH,
   COVERAGE_SUMMARY_RELATIVE_PATH,
   validateCoverageEvidence,
   writeCoverageEvidence,
@@ -34,6 +35,7 @@ function fixture() {
     JSON.stringify({ total: { lines: { total: 1, covered: 1, pct: 100 } } }),
     "utf8",
   );
+  fs.writeFileSync(path.join(root, ...COVERAGE_LCOV_RELATIVE_PATH.split("/")), "TN:\nSF:src/example.ts\nDA:1,1\nend_of_record\n", "utf8");
   fs.writeFileSync(path.join(root, ".gitignore"), "apps/web/coverage/\n", "utf8");
   fs.writeFileSync(path.join(root, "candidate.txt"), "candidate", "utf8");
   execFileSync("git", ["init", "-q"], { cwd: root });
@@ -51,6 +53,9 @@ test("coverage evidence accepts the same candidate/configuration", () => {
   try {
     writeCoverageEvidence({ repositoryRoot: root });
     assert.doesNotThrow(() => validateCoverageEvidence({ repositoryRoot: root }));
+    const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    assert.doesNotThrow(() => validateCoverageEvidence({ repositoryRoot: root, expectedCandidateSha: candidateSha }));
+    assert.throws(() => validateCoverageEvidence({ repositoryRoot: root, expectedCandidateSha: "f".repeat(40) }), /candidate mismatch/);
   } finally {
     cleanup(root);
   }

@@ -78,17 +78,19 @@ export const COVERAGE_ENFORCEMENT_POLICY = Object.freeze({
       historical: observePolicyEntry(),
       changedLines: COVERAGE_CHANGED_LINE_POLICY,
     }),
-    mobile: Object.freeze({ kind: "global-metrics", ...observePolicyEntry() }),
+    mobile: Object.freeze({ kind: "global-metrics", minimum: null, ...observePolicyEntry() }),
     node: Object.freeze({
       kind: "external-report",
       reportPath: "scripts/coverage/coverage-summary.json",
       reportFormat: "lcov",
+      minimum: null,
       ...observePolicyEntry(),
     }),
     python: Object.freeze({
       kind: "external-report",
       reportPath: "maintenance/python/coverage.xml",
       reportFormat: "cobertura",
+      minimum: null,
       ...observePolicyEntry(),
     }),
   }),
@@ -315,6 +317,34 @@ function validatePolicyEntry(entry, label, { requireActivation = true } = {}) {
   return entry;
 }
 
+function validateMinimums(minimum, label) {
+  if (!minimum || typeof minimum !== "object") {
+    throw new Error(`Coverage enforcement policy is invalid: ${label} has no implemented numeric threshold.`);
+  }
+  const entries = Object.entries(minimum);
+  if (entries.length === 0) {
+    throw new Error(`Coverage enforcement policy is invalid: ${label} has no implemented numeric threshold.`);
+  }
+  for (const [metric, threshold] of entries) {
+    if (!COVERAGE_METRICS.includes(metric) || !Number.isInteger(threshold) || threshold < 0 || threshold > 100) {
+      throw new Error(`Coverage enforcement policy is invalid: ${label}.${metric} must be a percentage between 0 and 100.`);
+    }
+  }
+  return minimum;
+}
+
+function validateChangedLineTargets(targets, label) {
+  if (!targets || typeof targets !== "object") {
+    throw new Error(`Coverage enforcement policy is invalid: ${label} has no implemented numeric threshold.`);
+  }
+  for (const key of ["critical", "nonCritical"]) {
+    if (!Number.isInteger(targets[key]) || targets[key] < 0 || targets[key] > 100) {
+      throw new Error(`Coverage enforcement policy is invalid: ${label}.targets.${key} must be a percentage between 0 and 100.`);
+    }
+  }
+  return targets;
+}
+
 export function validateCoverageEnforcementPolicy(policy = COVERAGE_ENFORCEMENT_POLICY) {
   if (!policy || policy.schemaVersion !== COVERAGE_ENFORCEMENT_SCHEMA_VERSION) {
     throw new Error("Coverage enforcement policy is malformed: unsupported schemaVersion.");
@@ -338,8 +368,23 @@ export function validateCoverageEnforcementPolicy(policy = COVERAGE_ENFORCEMENT_
   }
   validatePolicyEntry(web.historical, "web.historical");
   validatePolicyEntry(web.changedLines, "web.changedLines");
+  if (web.historical.state === "ENFORCE") {
+    throw new Error("Coverage enforcement policy is invalid: web.historical has no implemented numeric threshold.");
+  }
+  if (web.changedLines.state === "ENFORCE") {
+    validateChangedLineTargets(web.changedLines.targets, "web.changedLines");
+  }
 
-  for (const scope of ["mobile", "node", "python"]) validatePolicyEntry(getEnforcementScope(scope, policy), scope);
+  for (const scope of ["mobile", "node", "python"]) {
+    const entry = getEnforcementScope(scope, policy);
+    validatePolicyEntry(entry, scope);
+    if (entry.state === "ENFORCE") {
+      if (scope !== "mobile") {
+        throw new Error(`Coverage enforcement policy is invalid: ${scope} ENFORCE is not implemented.`);
+      }
+      validateMinimums(entry.minimum, scope);
+    }
+  }
   return policy;
 }
 
@@ -594,6 +639,64 @@ function changedLineTarget(domain) {
   return null;
 }
 
+function thresholdReached(covered, total, threshold) {
+  return covered * 100 >= threshold * total;
+}
+
+function sourceLinesForCandidate({ repositoryRoot, file, currentRef, scope }) {
+  const normalized = normalizeCoveragePath(file, scope);
+  const repositoryRelativePath = `${getCoverageScope(scope).root}/${normalized}`;
+  if (currentRef) {
+    try {
+      return execFileSync(gitExecutable(), ["show", `${currentRef}:${repositoryRelativePath}`], {
+        cwd: repositoryRoot,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).split(/\r?\n/);
+    } catch {
+      // Manual fixtures and WORKTREE-only callers may not have a Git blob.
+    }
+  }
+  try {
+    return readFileSync(path.join(repositoryRoot, ...repositoryRelativePath.split("/")), "utf8").split(/\r?\n/);
+  } catch {
+    return null;
+  }
+}
+
+function sourceLineKinds(sourceLines) {
+  let inBlockComment = false;
+  return sourceLines.map((line) => {
+    let remaining = String(line ?? "").trim();
+    if (!remaining) return "non-executable";
+    while (remaining.startsWith("/*")) {
+      const close = remaining.indexOf("*/", 2);
+      if (close < 0) {
+        inBlockComment = true;
+        return "non-executable";
+      }
+      remaining = remaining.slice(close + 2).trim();
+      if (!remaining) return "non-executable";
+    }
+    if (inBlockComment) {
+      const close = remaining.indexOf("*/");
+      if (close < 0) return "non-executable";
+      inBlockComment = false;
+      remaining = remaining.slice(close + 2).trim();
+      if (!remaining) return "non-executable";
+    }
+    if (/^\/\//.test(remaining) || /^\*/.test(remaining) || /^\*\//.test(remaining)) return "non-executable";
+    if (/^[{}()[\],;]+$/.test(remaining) || /^[{}()[\],;]+\s*;?$/.test(remaining)) return "non-executable";
+    if (/^(?:import\b|export\s+(?:type|interface)\b|type\s+[A-Za-z_$]|interface\s+[A-Za-z_$]|declare\b|namespace\s+[A-Za-z_$])/.test(remaining)) return "non-executable";
+    return "executable";
+  });
+}
+
+function getChangedLineKind(sourceKinds, line) {
+  if (!sourceKinds || line > sourceKinds.length) return "unknown";
+  return sourceKinds[line - 1];
+}
+
 function changedLineEntries(changedLines, scope) {
   const source = changedLines instanceof Map
     ? [...changedLines.entries()]
@@ -639,6 +742,8 @@ export function measureChangedLineCoverage({
     const missing = [];
     for (const entry of entries) {
       const record = records.get(entry.path);
+      const sourceLines = sourceLinesForCandidate({ repositoryRoot, file: entry.path, currentRef, scope });
+      const sourceKinds = sourceLines ? sourceLineKinds(sourceLines) : null;
       const classification = classifyCoverageFile(entry.path, { scope });
       const domain = classification.domain;
       const domainEntry = byDomain.get(domain) ?? {
@@ -647,14 +752,24 @@ export function measureChangedLineCoverage({
         covered: 0,
         total: 0,
         missing: [],
+        nonExecutable: [],
         classificationStatus: classification.classificationStatus,
       };
       let fileCovered = 0;
+      let fileMeasured = 0;
+      const fileNonExecutable = [];
+      const fileMissing = [];
       for (const line of entry.lines) {
         const hits = record?.get(line);
         if (hits === undefined) {
+          if (getChangedLineKind(sourceKinds, line) === "non-executable") {
+            fileNonExecutable.push(line);
+            domainEntry.nonExecutable.push(line);
+            continue;
+          }
           missing.push({ path: entry.path, line });
           domainEntry.missing.push(line);
+          fileMissing.push(line);
           continue;
         }
         if (hits > 0) {
@@ -663,12 +778,16 @@ export function measureChangedLineCoverage({
           domainEntry.covered += 1;
         }
         total += 1;
+        fileMeasured += 1;
         domainEntry.total += 1;
       }
       files.push({
         path: entry.path,
         lines: entry.lines.length,
         covered: fileCovered,
+        measured: fileMeasured,
+        nonExecutable: fileNonExecutable,
+        missing: fileMissing,
         target: domainEntry.target,
         domain,
         classificationStatus: classification.classificationStatus,
@@ -684,6 +803,19 @@ export function measureChangedLineCoverage({
         missing,
         byDomain: Object.fromEntries([...byDomain].map(([domain, value]) => [domain, value])),
         provenance,
+      };
+    }
+    if (total === 0) {
+      return {
+        status: "NOT_MEASURED",
+        reason: "NO_EXECUTABLE_CHANGED_LINES",
+        files,
+        lines: null,
+        observations: [],
+        failures: [],
+        byDomain: Object.fromEntries([...byDomain].map(([domain, value]) => [domain, value])),
+        provenance,
+        policyVersion: policyEntry.policyVersion,
       };
     }
     const unclassified = [...byDomain.values()].filter(({ domain }) => domain === COVERAGE_UNCLASSIFIED_RISK_DOMAIN);
@@ -712,7 +844,7 @@ export function measureChangedLineCoverage({
         gapPp: Number((((entry.covered / entry.total) * 100) - entry.target).toFixed(2)),
       }));
     const failures = policyEntry.state === "ENFORCE"
-      ? observations.filter((entry) => entry.pct + 1e-12 < entry.target)
+      ? observations.filter((entry) => !thresholdReached(entry.covered, entry.total, entry.target))
       : [];
     return {
       status: failures.length > 0 ? "FAIL" : policyEntry.state === "ENFORCE" ? "PASS" : "OBSERVE",
@@ -762,12 +894,34 @@ export function evaluateCoveragePolicy(current, { scope = "web", policy = COVERA
   const scopePolicy = getEnforcementScope(scope, policy);
   if (scope !== "web") {
     const metrics = current?.metrics;
+    const thresholds = Object.entries(scopePolicy.minimum ?? {});
+    const observations = [];
+    const failures = [];
     try {
       for (const metric of COVERAGE_METRICS) coverageMetricRatio(metrics?.[metric], `${scope}.${metric}`);
     } catch (error) {
       return { status: "NOT_MEASURED", scope, failures: [], observations: [], assessments: [], diagnostics: [error instanceof Error ? error.message : String(error)] };
     }
-    return { status: scopePolicy.state === "ENFORCE" ? "PASS" : "OBSERVE", scope, failures: [], observations: [], assessments: [{ scope, state: scopePolicy.state, status: scopePolicy.state === "ENFORCE" ? "PASS" : "OBSERVE" }], diagnostics: [] };
+    for (const [metric, threshold] of thresholds) {
+      const currentMetric = metrics[metric];
+      const ratio = coverageMetricRatio(currentMetric, `${scope}.${metric}`);
+      const observation = {
+        scope,
+        metric,
+        covered: currentMetric.covered,
+        total: currentMetric.total,
+        current: ratio * 100,
+        target: threshold,
+        gapPp: Number(((ratio * 100) - threshold).toFixed(2)),
+        state: scopePolicy.state,
+      };
+      observations.push(observation);
+      if (scopePolicy.state === "ENFORCE" && !thresholdReached(currentMetric.covered, currentMetric.total, threshold)) {
+        failures.push({ ...observation, code: "ENFORCE_THRESHOLD_NOT_MET" });
+      }
+    }
+    const status = failures.length > 0 ? "FAIL" : scopePolicy.state === "ENFORCE" ? "PASS" : "OBSERVE";
+    return { status, scope, failures, observations, assessments: [{ scope, state: scopePolicy.state, status, failures }], diagnostics: [] };
   }
 
   const assessments = [];
@@ -817,7 +971,7 @@ export function evaluateCoveragePolicy(current, { scope = "web", policy = COVERA
         const pct = ratio * 100;
         const observation = { domain, metric, covered: currentDomain.metrics[metric].covered, total: currentDomain.metrics[metric].total, current: pct, target: threshold, gapPp: Number((pct - threshold).toFixed(2)), state: entry.state };
         observations.push(observation);
-        if (pct + 1e-12 < threshold) domainFailures.push({ ...observation, code: entry.state === "ENFORCE" ? "ENFORCE_THRESHOLD_NOT_MET" : "OBSERVE_THRESHOLD_NOT_MET" });
+        if (!thresholdReached(currentDomain.metrics[metric].covered, currentDomain.metrics[metric].total, threshold)) domainFailures.push({ ...observation, code: entry.state === "ENFORCE" ? "ENFORCE_THRESHOLD_NOT_MET" : "OBSERVE_THRESHOLD_NOT_MET" });
       } catch (error) {
         domainFailures.push({ domain, metric, state: entry.state, code: entry.state === "ENFORCE" ? "ENFORCE_METRIC_NOT_MEASURED" : "OBSERVE_METRIC_NOT_MEASURED", reason: error instanceof Error ? error.message : String(error) });
       }
