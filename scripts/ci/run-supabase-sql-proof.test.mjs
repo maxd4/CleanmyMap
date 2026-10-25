@@ -4,6 +4,7 @@ import {
   extractPlan,
   inventorySqlProofs,
   attestProofResult,
+  main,
   parsePgTapOutput,
   validateSqlContractMarkerPlacement,
 } from "./run-supabase-sql-proof.mjs";
@@ -34,6 +35,8 @@ test("pgTAP parser accepts an exact complete plan", () => {
   assert.deepEqual(parsePgTapOutput("ok 1 - first\nok 2 - second\n1..2\n", 2), {
     expectedPlan: 2,
     actualPlan: 2,
+    planned: 2,
+    executed: 2,
     passed: 2,
     failures: 0,
     verificationMode: "tap-detailed",
@@ -51,10 +54,16 @@ test("pgTAP parser accepts the real pg_prove summary and preserves its verificat
   assert.deepEqual(parsePgTapOutput(output, 16), {
     expectedPlan: 16,
     actualPlan: null,
+    planned: 16,
+    executed: 16,
     passed: 16,
     failures: 0,
     files: 1,
     tests: 16,
+    failed: 0,
+    ignored: 0,
+    todo: 0,
+    skipped: 0,
     verificationMode: "pg-prove-summary",
   });
 });
@@ -71,6 +80,8 @@ test("pgTAP parser cross-checks detailed TAP with a present pg_prove summary", (
   assert.deepEqual(parsePgTapOutput(output, 2), {
     expectedPlan: 2,
     actualPlan: 2,
+    planned: 2,
+    executed: 2,
     passed: 2,
     failures: 0,
     verificationMode: "tap-detailed",
@@ -79,6 +90,9 @@ test("pgTAP parser cross-checks detailed TAP with a present pg_prove summary", (
 
 test("pgTAP parser rejects missing, failing, incomplete or ambiguous proof", () => {
   assert.throws(() => parsePgTapOutput("ok 1 - first\n1..2\n", 2), /incomplete/);
+  assert.throws(() => parsePgTapOutput("ok 1 - first\nok 1 - duplicate\n1..2\n", 2), /numbering is incomplete or inconsistent/);
+  assert.throws(() => parsePgTapOutput("ok 1 - first\nok 3 - outside plan\n1..2\n", 2), /numbering is incomplete or inconsistent/);
+  assert.throws(() => parsePgTapOutput("ok 2 - second\nok 3 - outside plan\n1..2\n", 2), /numbering is incomplete or inconsistent/);
   assert.throws(() => parsePgTapOutput("ok 1 - first\nnot ok 2 - second\n1..2\n", 2), /failing assertion/);
   assert.throws(() => parsePgTapOutput("ok 1 - first\n1..1\n", 2), /plan mismatch/);
   assert.throws(() => parsePgTapOutput("Files=1, Tests=2\n", 2), /summary is incomplete/);
@@ -92,6 +106,23 @@ test("pgTAP parser rejects missing, failing, incomplete or ambiguous proof", () 
   assert.throws(() => parsePgTapOutput("1..2\nFiles=1, Tests=2\nResult: PASS\n", 2), /incomplete TAP/);
   assert.throws(() => parsePgTapOutput("Files=1, Tests=2\nResult: PASS\nResult: FAIL\n", 2), /ambiguous/);
   assert.throws(() => parsePgTapOutput("Files=1, Tests=2\nResult: PASS\n", null), /no explicit plan/);
+  assert.throws(() => parsePgTapOutput("Files=1, Tests=2, 0 Failed, 0 Ignored, 1 Todo, 0 Skipped\nResult: PASS\n", 2), /does not prove/);
+  assert.throws(() => parsePgTapOutput("Files=1, Tests=2, 0 Failed, 1 Ignored, 0 Todo, 0 Skipped\nResult: PASS\n", 2), /does not prove/);
+  assert.throws(() => parsePgTapOutput("Files=1, Tests=2, 0 Failed, 0 Ignored, 0 Todo, 2 Skipped\nResult: PASS\n", 2), /does not prove/);
+  assert.throws(() => parsePgTapOutput("Files=1, Tests=2, 0 Failed, 0 Ignored, 0 Todo, 0 Skipped\nResult: PASS\nResult: PASS\n", 2), /ambiguous/);
+  assert.throws(() => parsePgTapOutput("Files=1, Tests=2, 0 Failed, 1 Failed\nResult: PASS\n", 2), /ambiguous/);
+});
+
+test("pgTAP parser rejects detailed and summary divergence", () => {
+  const output = [
+    "ok 1 - first",
+    "ok 2 - second",
+    "1..2",
+    "Files=1, Tests=3, 0 Failed, 0 Ignored, 0 Todo, 0 Skipped",
+    "Result: PASS",
+  ].join("\n");
+
+  assert.throws(() => parsePgTapOutput(output, 2), /test count mismatch/);
 });
 
 test("proof attestation maps verified and failed executions to explicit statuses", () => {
@@ -120,6 +151,31 @@ test("proof attestation maps verified and failed executions to explicit statuses
   );
   assert.equal(incompleteRecord.status, "INTEGRATION_PROOF");
   assert.equal(incompleteRecord.outcome, "FAIL");
+});
+
+test("rejected proof reaches the runner failure exit code", async () => {
+  const rejectedRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };
+  let validationError;
+  assert.throws(
+    () => attestProofResult(
+      rejectedRecord,
+      { code: 0, output: "Files=1, Tests=2, 0 Failed, 0 Ignored, 1 Skipped\nResult: PASS\n" },
+      (output) => parsePgTapOutput(output, 2),
+    ),
+    (error) => {
+      validationError = error;
+      return /does not prove/.test(error.message);
+    },
+  );
+  assert.equal(rejectedRecord.status, "INTEGRATION_PROOF");
+  assert.equal(rejectedRecord.outcome, "FAIL");
+  const originalConsoleError = console.error;
+  console.error = () => {};
+  try {
+    assert.equal(await main(async () => { throw validationError; }), 1);
+  } finally {
+    console.error = originalConsoleError;
+  }
 });
 
 test("SQL completion markers cannot precede a later assertion", () => {

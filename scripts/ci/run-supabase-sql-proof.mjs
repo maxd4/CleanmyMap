@@ -73,11 +73,22 @@ export function extractPlan(sql) {
   return match ? Number(match[1]) : null;
 }
 
+function parseSummaryCounter(output, label) {
+  const matches = [...output.matchAll(new RegExp(`(?:\\b${label}\\s*=\\s*(\\d+)\\b|\\b(\\d+)\\s+${label}\\b)`, "gi"))]
+    .map((match) => Number(match[1] ?? match[2]));
+  if (matches.length > 1) {
+    throw new Error(`pg_prove summary is ambiguous: duplicate ${label} counter`);
+  }
+  if (matches.length === 0 && new RegExp(`\\b${label}\\b`, "i").test(output)) {
+    throw new Error(`pg_prove summary is incomplete: ${label} counter has no numeric value`);
+  }
+  return matches[0] ?? null;
+}
+
 function parsePgProveSummary(output, expectedPlan) {
   const filesMatches = [...output.matchAll(/\bFiles\s*=\s*(\d+)\b/gi)];
   const testsMatches = [...output.matchAll(/\bTests\s*=\s*(\d+)\b/gi)];
   const resultMatches = [...output.matchAll(/\bResult\s*:\s*(PASS|FAIL)\b/gi)];
-  const failedCountMatches = [...output.matchAll(/(?:\bFailed\s*=\s*(\d+)\b|\b(\d+)\s+Failed\b)/gi)];
 
   if (filesMatches.length === 0 || testsMatches.length === 0 || resultMatches.length === 0) {
     throw new Error("pg_prove summary is incomplete: expected exactly one Files, Tests and Result field");
@@ -89,9 +100,17 @@ function parsePgProveSummary(output, expectedPlan) {
   const files = Number(filesMatches[0][1]);
   const tests = Number(testsMatches[0][1]);
   const result = resultMatches[0][1].toUpperCase();
+  const failed = parseSummaryCounter(output, "Failed");
+  const ignored = parseSummaryCounter(output, "Ignored");
+  const todo = parseSummaryCounter(output, "Todo");
+  const skipped = parseSummaryCounter(output, "Skipped");
+
   if (result !== "PASS") throw new Error(`pg_prove reported Result: ${result}`);
-  if (failedCountMatches.some((match) => Number(match[1] ?? match[2]) !== 0)) {
+  if ((failed ?? 0) !== 0) {
     throw new Error("pg_prove summary reports failed tests");
+  }
+  if ((ignored ?? 0) !== 0 || (todo ?? 0) !== 0 || (skipped ?? 0) !== 0) {
+    throw new Error("pg_prove summary does not prove that every planned assertion was executed and passed");
   }
   if (/\bnot ok\b/i.test(output)) throw new Error("pg_prove summary contains a failing TAP assertion");
   if (files !== 1) throw new Error(`pg_prove summary expected one file, received ${files}`);
@@ -100,10 +119,16 @@ function parsePgProveSummary(output, expectedPlan) {
   return {
     expectedPlan,
     actualPlan: null,
+    planned: expectedPlan,
+    executed: tests,
     passed: tests,
     failures: 0,
     files,
     tests,
+    failed,
+    ignored,
+    todo,
+    skipped,
     verificationMode: "pg-prove-summary",
   };
 }
@@ -112,7 +137,8 @@ export function parsePgTapOutput(output, expectedPlan) {
   if (expectedPlan === null) throw new Error("pgTAP source has no explicit plan() assertion");
 
   const planMatch = output.match(/(?:^|\n)\s*1\.\.(\d+)\s*(?:\n|$)/m);
-  const assertions = [...output.matchAll(/(?:^|\n)\s*(ok|not ok)\s+\d+\b[^\n]*/gi)].map((match) => match[1].toLowerCase());
+  const assertions = [...output.matchAll(/(?:^|\n)\s*(ok|not ok)\s+(\d+)\b[^\n]*/gi)]
+    .map((match) => ({ status: match[1].toLowerCase(), number: Number(match[2]) }));
   const hasSummaryFields = /\b(?:Files|Tests)\s*=|\bResult\s*:/i.test(output);
 
   if (assertions.length === 0 && hasSummaryFields) {
@@ -121,19 +147,25 @@ export function parsePgTapOutput(output, expectedPlan) {
   }
   if (assertions.length === 0) throw new Error("pgTAP output contains neither a complete TAP stream nor a pg_prove summary");
 
-  const failures = assertions.filter((assertion) => assertion === "not ok").length;
-  const passed = assertions.filter((assertion) => assertion === "ok").length;
+  const failures = assertions.filter((assertion) => assertion.status === "not ok").length;
+  const passed = assertions.filter((assertion) => assertion.status === "ok").length;
   const actualPlan = planMatch ? Number(planMatch[1]) : null;
   if (actualPlan !== expectedPlan) throw new Error(`pgTAP output plan mismatch: expected ${expectedPlan}, received ${actualPlan ?? "missing"}`);
+  const duplicateOrOutOfRange = assertions.find((assertion, index) => assertion.number !== index + 1 || assertion.number < 1 || assertion.number > expectedPlan);
+  if (duplicateOrOutOfRange) {
+    throw new Error(`pgTAP output assertion numbering is incomplete or inconsistent at assertion ${duplicateOrOutOfRange.number}`);
+  }
   if (failures > 0) throw new Error(`pgTAP output contains ${failures} failing assertion(s)`);
   if (passed !== expectedPlan) throw new Error(`pgTAP output is incomplete: expected ${expectedPlan} passing assertions, received ${passed}`);
 
   if (hasSummaryFields) {
     const summary = parsePgProveSummary(output, expectedPlan);
-    if (summary.tests !== passed) throw new Error(`pgTAP and pg_prove test counts disagree: TAP=${passed}, summary=${summary.tests}`);
+    if (summary.executed !== assertions.length || summary.passed !== passed) {
+      throw new Error(`pgTAP and pg_prove assertion counts disagree: TAP=${passed}, summary=${summary.passed}`);
+    }
   }
 
-  return { expectedPlan, actualPlan, passed, failures, verificationMode: "tap-detailed" };
+  return { expectedPlan, actualPlan, planned: expectedPlan, executed: assertions.length, passed, failures, verificationMode: "tap-detailed" };
 }
 
 export function validateSqlContractMarkerPlacement(sql, marker) {
@@ -298,14 +330,19 @@ export async function runSupabaseSqlProof({ sha, run = true } = {}) {
   return report;
 }
 
-async function main() {
+export async function main(run = runSupabaseSqlProof) {
   try {
-    const report = await runSupabaseSqlProof();
+    const report = await run();
     console.log(`SUPABASE_SQL_EVIDENCE: ${report.outcome} candidate=${report.candidateSha} records=${report.records.length}`);
+    return 0;
   } catch (error) {
     console.error(`SUPABASE_SQL_EVIDENCE: FAIL ${error instanceof Error ? error.message : String(error)}`);
-    process.exitCode = 1;
+    return 1;
   }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) main();
+if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
+  main().then((exitCode) => {
+    if (exitCode !== 0) process.exitCode = exitCode;
+  });
+}
