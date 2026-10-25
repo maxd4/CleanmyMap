@@ -603,6 +603,48 @@ test("projette la structure AST, sa relation aux métriques existantes et les si
   assert.match(buildQualityFileIndexMarkdown(index), /named:fixture#1/);
 });
 
+test("projette une comparaison historique exacte dans l'index et le triage sans changer le verdict", () => {
+  const current = buildRun();
+  current.reports.complexity.metrics = [
+    { metric: "complexity", path: fileA, functionIdentity: "named:fixture#1", value: 12, line: 5, functionStartLine: 5, functionEndLine: 20 },
+    { metric: "functionLength", path: fileA, functionIdentity: "named:fixture#1", value: 50, line: 5, functionStartLine: 5, functionEndLine: 20 },
+  ];
+  current.reports.maintainability = {
+    schemaVersion: 1,
+    kind: "quality-maintainability",
+    status: "PASS",
+    measurementStatus: "MEASURED_NOT_RATCHETED",
+    readProvenance: "COMMITTED_SNAPSHOT",
+    engine: { name: "eslint-plugin-sonarjs", version: "3.0.0", eslint: "9.0.0" },
+    sourceRoots: ["scripts"],
+    rules: { "sonarjs/cognitive-complexity": { thresholdTarget: 15 } },
+    policy: { controlFlowStructure: "descriptive" },
+    metrics: [{ metric: "cognitiveComplexity", path: fileA, functionIdentity: "named:fixture#1", function: "fixture", value: 18, line: 5, functionStartLine: 5, functionEndLine: 20 }],
+    findings: [{ category: "local-maintainability", ruleId: "sonarjs/no-collapsible-if", file: fileA, functionIdentity: "named:fixture#1", line: 9 }],
+    controlFlowProfiles: [{ status: "PRESENT", path: fileA, functionIdentity: "named:fixture#1", functionStartLine: 5, functionEndLine: 20, decisionPoints: 5, maxDecisionNestingDepth: 2, nestedDecisionCount: 1, busiestSubtree: { decisionPoints: 3 }, decisionSubtrees: [{ index: 0, kind: "IfStatement", decisionPoints: 3 }] }],
+    maintainabilityStatuses: [{ path: fileA, status: "PRESENT", reason: null }],
+    summary: { findingsByRule: {} },
+  };
+  const previous = structuredClone(current);
+  previous.auditedSha = "d".repeat(40);
+  previous.runId = "previous-projection-run";
+  previous.reports.complexity.metrics[0].value = 8;
+  previous.reports.complexity.metrics[1].value = 44;
+  previous.reports.maintainability.metrics[0].value = 12;
+  previous.reports.maintainability.findings = [];
+  previous.manifests.maintainability = { readProvenance: "COMMITTED_SNAPSHOT", status: "PASS" };
+  current.manifests.maintainability = { readProvenance: "COMMITTED_SNAPSHOT", status: "PASS" };
+
+  const index = buildQualityFileIndex({ run: current, previousRun: previous, comparisonRequested: true, mode: "OFFLINE" });
+  assert.equal(index.source.initialStatus, "FAIL");
+  assert.equal(index.comparison.state, "PRESENT");
+  assert.equal(index.comparison.summary.functionsChanged, 1);
+  assert.equal(index.triage.decision.historicalComparison.candidates.length, 1);
+  assert.equal(index.triage.decision.historicalComparison.candidates[0].priority, "REVIEW_REQUIRED");
+  assert.match(buildQualityFileIndexMarkdown(index), /Comparaison historique non bloquante/);
+  assert.match(buildQualityFileIndexMarkdown(index), /named:fixture#1/);
+});
+
 test("projette la couverture MJS et conserve NOT_MEASURED pour un parseur invalide", () => {
   const run = buildRun();
   const mjsFile = "scripts/reports/fixture.mjs";
@@ -979,6 +1021,28 @@ test("le mode offline lit un run exact, crée le bundle sans réécrire les orig
       assert.equal(crypto.createHash("sha256").update(fs.readFileSync(path.join(shaRoot, name))).digest("hex"), digest);
     }
     await assert.rejects(() => generateQualityFileIndex({ root, auditedSha: sha, runId }), /refus d'écrasement/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("la projection offline conserve le run courant quand le run historique demandé est absent", async () => {
+  const root = tempRoot();
+  try {
+    writeRun(root);
+    const generated = await generateQualityFileIndex({
+      root,
+      auditedSha: sha,
+      runId,
+      previousSha: "d".repeat(40),
+      previousRunId: "missing-history",
+    });
+    assert.equal(generated.index.auditedHead, sha);
+    assert.equal(generated.index.runId, runId);
+    assert.equal(generated.index.source.initialStatus, "FAIL");
+    assert.equal(generated.index.comparison.state, "NOT_MEASURED");
+    assert.equal(generated.index.comparison.reason, "PREVIOUS_RUN_UNAVAILABLE");
+    assert.equal(generated.index.triage.decision.historicalComparison.reason, "PREVIOUS_RUN_UNAVAILABLE");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

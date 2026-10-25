@@ -442,7 +442,30 @@ function viewCandidate(candidate) {
   return candidate;
 }
 
-export function buildQualityIndexDecisionTriage({ files = [], audits = {}, source = {}, candidateGroups = [] } = {}) {
+function historyComparisonTriage(comparison) {
+  const candidates = (comparison?.functions ?? [])
+    .filter((entry) => entry.state === "CHANGED")
+    .map((entry) => ({
+      path: entry.path,
+      functionIdentity: entry.functionIdentity,
+      state: entry.state,
+      comparability: entry.comparability,
+      changes: entry.changes,
+      recommendation: "REVIEW_FIRST",
+      priority: "REVIEW_REQUIRED",
+    }))
+    .sort((left, right) => left.path.localeCompare(right.path) || left.functionIdentity.localeCompare(right.functionIdentity));
+  return {
+    state: comparison?.state ?? "NOT_MEASURED",
+    comparability: comparison?.comparability ?? "NOT_COMPARABLE",
+    reason: comparison?.reason ?? "HISTORICAL_COMPARISON_NOT_AVAILABLE",
+    summary: comparison?.summary ?? null,
+    candidates,
+    unmatchedFunctions: comparison?.unmatchedFunctions ?? [],
+  };
+}
+
+export function buildQualityIndexDecisionTriage({ files = [], audits = {}, source = {}, candidateGroups = [], comparison = null } = {}) {
   const fileByPath = new Map(files.map((file) => [file.path, file]));
   const candidates = [
     ...fileFindingCandidates(files, audits),
@@ -474,6 +497,7 @@ export function buildQualityIndexDecisionTriage({ files = [], audits = {}, sourc
       quickWins: quickWins.map(viewCandidate),
       reinforcedReview: reinforcedReview.map(viewCandidate),
     },
+    historicalComparison: historyComparisonTriage(comparison),
     limitations: [
       "Les niveaux P0–P3 sont des priorités proposées et ne remplacent aucun statut de moteur, seuil, baseline ou verdict.",
       "Les groupes de duplication conservent le fingerprint natif, les paires et les fichiers ; ils ne prouvent pas qu’une mutualisation métier est possible.",
@@ -482,6 +506,7 @@ export function buildQualityIndexDecisionTriage({ files = [], audits = {}, sourc
       "Un contrôle cycles SKIPPED_BY_POLICY produit uniquement un candidat de manque de mesure, jamais un cycle ou une absence de cycle.",
       "La prudence utilise les responsabilités observables dans les fichiers, l’architecture et les findings ; un périmètre indéterminé reste REVIEW_REQUIRED.",
       "La structure descriptive du contrôle de flux enrichit les profils de fonctions existants, mais ne crée jamais à elle seule un finding, une priorité ou une recommandation.",
+      "La comparaison historique reste dérivée et informative : elle exige des couples SHA/runId exacts, des identités de fonction communes et une provenance immuable ; une dégradation n’est jamais une priorité critique par elle-même.",
     ],
     rules: {
       p0: "uniquement une preuve structurée, attribuable et explicitement confirmée conjointement pour le défaut et sa criticité ; aucun FAIL, seuil, R4 ou duplication ne suffit à lui seul",

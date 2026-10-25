@@ -238,10 +238,10 @@ function buildFunctionTriage(files, audits) {
   };
 }
 
-export function buildQualityFileIndexTriage({ files = [], audits = {}, source = {}, candidateGroups = [] } = {}) {
+export function buildQualityFileIndexTriage({ files = [], audits = {}, source = {}, candidateGroups = [], comparison = null } = {}) {
   const code = buildCodeTriage(files);
   const tests = buildTestTriage(files);
-  const decision = buildQualityIndexDecisionTriage({ files, audits, source, candidateGroups });
+  const decision = buildQualityIndexDecisionTriage({ files, audits, source, candidateGroups, comparison });
   return {
     code: { state: code.length > 0 ? "PRESENT" : files.length > 0 ? "NONE" : "NOT_MEASURED", candidates: code },
     tests: { state: tests.length > 0 ? "PRESENT" : files.length > 0 ? "NONE" : "NOT_MEASURED", candidates: tests },

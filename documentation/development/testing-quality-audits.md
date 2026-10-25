@@ -214,6 +214,30 @@ vérité. Un contrôle `cycles` `SKIPPED_BY_POLICY` produit seulement un candida
 de manque de mesure avec la recommandation `INVESTIGATE` ; il ne produit ni
 cycle fictif ni preuve d’absence.
 
+Une comparaison historique optionnelle peut être demandée lors de la projection
+offline avec deux couples exacts :
+
+```bash
+npm run report:quality-index -- --offline --sha=<CURRENT_SHA> --run-id=<CURRENT_RUN_ID> \
+  --previous-sha=<PREVIOUS_SHA> --previous-run-id=<PREVIOUS_RUN_ID>
+```
+
+Elle lit les artefacts existants des deux runs, sans scanner supplémentaire ni
+base historique. Elle n'est exploitable que lorsque les deux rapports de
+maintenabilité et de complexité ont des identités `path/functionIdentity`
+exactement communes, des versions d'engine, règles, policy et racines de
+couverture comparables, et une provenance `COMMITTED_SNAPSHOT` attestée par
+les manifestes. Un run `WORKTREE_LIVE`, un SHA identique, une preuve périmée,
+un schéma différent, une mesure partielle ou une fonction renommée sans
+identité commune restent `NOT_MEASURED` ou `NOT_COMPARABLE` avec une raison
+explicite ; aucune valeur, amélioration ou correspondance approximative n'est
+inventée. Les profils de contrôle de flux ne sont comparés que lorsqu'ils sont
+présents dans les deux runs. La vue `comparison` de l'index et
+`triage.decision.historicalComparison` sont informatives : elles ne modifient
+ni le verdict initial, ni les gates, ni les hotspots, ni les décisions
+architecturales humaines, et une dégradation ne produit jamais à elle seule
+une priorité critique.
+
 Le mode `all` conserve aussi dans le rapport agrégé une dimension documentaire
 non bloquante, calculée sur les fichiers Markdown et MDX suivis par Git du SHA
 audité. Elle mesure les lignes, octets, titres, profondeur, sections, liens

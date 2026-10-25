@@ -38,8 +38,20 @@ function decisionTriageRows(candidates) {
   return lines;
 }
 
+function historicalComparisonRows(comparison) {
+  if ((comparison?.candidates ?? []).length === 0) return ["_Aucune fonction modifiée dans cette comparaison._"];
+  const lines = ["| Fichier | Fonction | Comparabilité | Changements observés |", "| --- | --- | --- | --- |"];
+  for (const candidate of comparison.candidates.slice(0, 30)) {
+    const changes = candidate.changes.map((change) => `${change.metric}:${change.direction}${change.delta === undefined ? "" : ` (${change.delta > 0 ? "+" : ""}${change.delta})`}`).join(" ; ");
+    lines.push(`| \`${escapeMarkdown(candidate.path)}\` | \`${escapeMarkdown(candidate.functionIdentity)}\` | ${candidate.comparability} | ${escapeMarkdown(changes || "—")} |`);
+  }
+  if (comparison.candidates.length > 30) lines.push("", `_Vue Markdown limitée à 30 fonctions ; le JSON conserve les ${comparison.candidates.length} fonctions comparées._`);
+  return lines;
+}
+
 function renderTriageSummary(index) {
-  const triage = index.triage ?? buildQualityFileIndexTriage({ files: index.files, audits: index.audits, source: index.source, candidateGroups: index.candidateGroups });
+  const triage = index.triage ?? buildQualityFileIndexTriage({ files: index.files, audits: index.audits, source: index.source, candidateGroups: index.candidateGroups, comparison: index.comparison });
+  const historical = triage.decision?.historicalComparison ?? {};
   return [
     "## Synthèse de triage", "",
     "Cette synthèse est une projection lisible du quality-index : elle ne crée ni score, ni seuil, ni verdict, ni décision de monolithe. Les niveaux sont ceux des mesures existantes ; `NOT_MEASURED` et `STALE_EVIDENCE` restent distincts de `PRESENT`. Les décisions humaines ne sont affichées que si elles sont déjà présentes dans l’index.", "",
@@ -49,11 +61,12 @@ function renderTriageSummary(index) {
     "### 4. Fonctions", "", `État : **${triage.functions.state}** — dépassements functionLength et complexité présents dans les findings mesurés ; ${triage.functions.candidates.length} candidat(s), maximum 10.`, "", ...triageRows(triage.functions.candidates), "", `Preuves périmées conservées dans les findings détaillés : **${triage.functions.staleEvidenceCount ?? 0}**.`, "", `Provenance de la projection : **${escapeMarkdown(triage.provenance)}**. Les résultats détaillés restent accessibles dans FILE INDEX et les domaines d’audit ci-dessous.`, "",
     "### 5. Gains rapides et maîtrisés", "", "Classement informatif : `P1` + prudence `R1/R2` + effort `APPARENTLY_LIMITED` + confiance `HIGH` + recommandation `CORRECT`. Les lignes ci-dessous ne remplacent aucun verdict, seuil, baseline ou décision humaine.", "", ...decisionTriageRows(triage.decision?.views?.quickWins ?? []), "",
     "### 6. Corrections importantes sous revue renforcée", "", "Cette vue conserve les problèmes `P0/P2`, les périmètres `R3/R4`, les responsabilités indéterminées et les preuves manquantes. `REVIEW_REQUIRED` et `INVESTIGATE` signifient qu’une preuve supplémentaire est requise ; ils ne constituent pas un finding inventé.", "", ...decisionTriageRows(triage.decision?.views?.reinforcedReview ?? []), "", `Classement décisionnel : **${triage.decision?.candidates?.length ?? 0}** candidat(s) JSON, dont **${triage.decision?.views?.quickWins?.length ?? 0}** gain(s) rapide(s) et **${triage.decision?.views?.reinforcedReview?.length ?? 0}** revue(s) renforcée(s).`, "", ...(triage.decision?.limitations ?? []).map((limitation) => `- ${escapeMarkdown(limitation)}`), "",
+    "### 7. Comparaison historique non bloquante", "", `État : **${historical.state ?? "NOT_MEASURED"}** — comparabilité **${historical.comparability ?? "NOT_COMPARABLE"}** — raison **${escapeMarkdown(historical.reason ?? "NOT_MEASURED")}**. Cette vue compare uniquement les identités exactes des deux rapports Quality Audit ; elle ne transforme pas une dégradation en verdict ou priorité critique.`, "", `Fonctions comparées : **${historical.summary?.functionsCompared ?? "NOT_MEASURED"}** ; modifiées : **${historical.summary?.functionsChanged ?? "NOT_MEASURED"}** ; fichiers modifiés : **${historical.summary?.filesChanged ?? "NOT_MEASURED"}**.`, "", ...historicalComparisonRows(historical), "",
   ];
 }
 
 export function buildQualityFileIndexMarkdown(index) {
-  const lines = ["# Quality Audit — index consolidé par fichier et domaine", "", `- SHA audité : \`${index.auditedHead}\``, `- runId : \`${index.runId}\``, `- Mode de projection : **${index.mode}**`, `- Provenance globale : **${index.source.provenance}**`, `- Verdict initial du run : **${index.source.initialStatus}**`, `- Fichiers indexés : **${index.globalCounts.files}**`, `- Groupes candidats relationnels : **${index.globalCounts.candidateGroups}**`, "", "La projection lit les cinq moteurs de gate, les audits auxiliaires de maintenabilité, sûreté typée/asynchrone, couverture détaillée, hotspots et testabilité, ainsi que la dimension documentaire du run identifié lorsqu'ils existent. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines.", "", ...renderTriageSummary(index), "## États et audits", "", "| Audit | État | Verdict initial | Provenance |", "| --- | --- | --- | --- |"];
+  const lines = ["# Quality Audit — index consolidé par fichier et domaine", "", `- SHA audité : \`${index.auditedHead}\``, `- runId : \`${index.runId}\``, `- Mode de projection : **${index.mode}**`, `- Provenance globale : **${index.source.provenance}**`, `- Verdict initial du run : **${index.source.initialStatus}**`, `- Fichiers indexés : **${index.globalCounts.files}**`, `- Groupes candidats relationnels : **${index.globalCounts.candidateGroups}**`, "", "La projection lit les cinq moteurs de gate, les audits auxiliaires de maintenabilité, sûreté typée/asynchrone, couverture détaillée, hotspots et testabilité, ainsi que la dimension documentaire du run identifié lorsqu'ils existent. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines. La comparaison historique éventuelle est dérivée de deux runs exacts et reste informative.", "", ...renderTriageSummary(index), "## États et audits", "", "| Audit | État | Verdict initial | Provenance |", "| --- | --- | --- | --- |"];
   for (const audit of QUALITY_INDEX_AUDITS) {
     const summary = index.audits[audit === "top-heavy" ? "topHeavy" : audit === "dead-code" ? "deadCode" : audit === "type-safety" ? "typeSafety" : audit];
     const source = index.source.sourceReports.find((entry) => entry.audit === audit);

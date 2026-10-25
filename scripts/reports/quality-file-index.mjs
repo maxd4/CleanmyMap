@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * Projection des cinq rapports de gate et du rapport auxiliaire de maintenabilité d'un même run.
+ * Projection des cinq rapports de gate et du rapport auxiliaire de maintenabilité d'un run.
  *
  * Ce module ne scanne jamais le dépôt. Il lit uniquement les rapports et les
- * manifestes déjà écrits par run-quality-audit.mjs. La vue "derived" du
- * top-heavy réévalue seulement les lignes présentes dans le rapport, afin de
- * rendre visible une correction de ratchet sans réécrire le verdict initial.
+ * manifestes déjà écrits par run-quality-audit.mjs. Une comparaison historique
+ * optionnelle lit un second run exact et reste une vue dérivée informative.
+ * La vue "derived" du top-heavy réévalue seulement les lignes présentes dans
+ * le rapport, afin de rendre visible une correction de ratchet sans réécrire
+ * le verdict initial.
  */
 
 import fs from "node:fs";
@@ -42,6 +44,7 @@ import { buildQualityFileIndexMarkdown } from "./quality-index-markdown.mjs";
 import { writeQualityIndexOutputs } from "./quality-index-output.mjs";
 import { runQualityFileIndexCli } from "./quality-index-cli.mjs";
 import { complexityFindingCategory, finalizeFiles } from "./quality-index-file-finalization.mjs";
+import { buildQualityAuditHistoryComparison } from "./quality-index-history-comparison.mjs";
 
 export {
   readOfflineQualityRun,
@@ -935,7 +938,7 @@ function buildGlobalCounts({ finalFiles, finalAuditCategories, finalFunctionalDo
   };
 }
 
-export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new Date().toISOString(), architecture = null } = {}) {
+export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new Date().toISOString(), architecture = null, previousRun = null, previousRunError = null, comparisonRequested = false } = {}) {
   if (!run?.reports || !run?.auditedSha || !run?.runId) throw new Error("Run quality absent pour construire l'index.");
   const architectureProjection = architecture ?? {
     state: "NOT_MEASURED",
@@ -972,7 +975,8 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
   const findingsByCategory = Object.fromEntries(Object.entries(categorySummaries).map(([key, value]) => [key, value.findingCounts ?? value.counts ?? {}]));
   const source = buildSourceProjection(run);
   const projectedCandidateGroups = projectCandidateGroups(candidateGroups);
-  const triage = buildQualityFileIndexTriage({ files: finalFiles, audits: categorySummaries, source, candidateGroups: projectedCandidateGroups });
+  const comparison = buildQualityAuditHistoryComparison({ currentRun: run, previousRun, previousRunError, requested: comparisonRequested });
+  const triage = buildQualityFileIndexTriage({ files: finalFiles, audits: categorySummaries, source, candidateGroups: projectedCandidateGroups, comparison });
   return {
     schemaVersion: QUALITY_INDEX_SCHEMA_VERSION,
     kind: "quality-file-index",
@@ -981,6 +985,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
     auditedHead: run.auditedSha,
     runId: run.runId,
     source,
+    comparison,
     correlation: {
       state: correlationSignals.measured ? "PRESENT" : "NOT_MEASURED",
       detail: correlationSignals.detail,
@@ -1009,9 +1014,19 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
   };
 }
 
-export async function generateQualityFileIndex({ root = REPOSITORY_ROOT, auditedSha, runId, mode = "OFFLINE", generatedAt = new Date().toISOString(), includeBundle = false, architecture = null, fsApi = fs } = {}) {
+export async function generateQualityFileIndex({ root = REPOSITORY_ROOT, auditedSha, runId, mode = "OFFLINE", generatedAt = new Date().toISOString(), includeBundle = false, architecture = null, previousSha = null, previousRunId = null, fsApi = fs } = {}) {
   const run = readOfflineQualityRun({ root, auditedSha, runId, fsApi });
-  const index = buildQualityFileIndex({ run, mode, generatedAt, architecture });
+  const comparisonRequested = previousSha !== null || previousRunId !== null;
+  let previousRun = null;
+  let previousRunError = null;
+  if (comparisonRequested && previousSha && previousRunId) {
+    try {
+      previousRun = readOfflineQualityRun({ root, auditedSha: previousSha, runId: previousRunId, fsApi });
+    } catch (error) {
+      previousRunError = error;
+    }
+  }
+  const index = buildQualityFileIndex({ run, mode, generatedAt, architecture, previousRun, previousRunError, comparisonRequested });
   const markdown = buildQualityFileIndexMarkdown(index);
   const output = writeQualityIndexOutputs({ run, index, markdown, root, auditedSha, runId, includeBundle, fsApi });
   return { run, index, markdown, ...output };
