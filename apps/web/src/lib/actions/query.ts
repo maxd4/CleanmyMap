@@ -5,12 +5,26 @@ type ActionQueryResult<TData = unknown> = {
   error: { message: string } | null;
 };
 
-export type ActionSupabaseError = {
-  message: string;
-  code?: string;
-  details?: string;
-  hint?: string;
-};
+export class ActionSupabaseError extends Error {
+  readonly code?: string;
+  readonly details?: string;
+  readonly hint?: string;
+
+  constructor(
+    message: string,
+    metadata: {
+      code?: string;
+      details?: string;
+      hint?: string;
+    } = {},
+  ) {
+    super(message);
+    this.name = "ActionSupabaseError";
+    this.code = metadata.code;
+    this.details = metadata.details;
+    this.hint = metadata.hint;
+  }
+}
 
 export type ActionSupabaseResult = {
   data: unknown;
@@ -33,21 +47,20 @@ export function isNullableString(value: unknown): value is string | null {
 function parseActionSupabaseError(value: unknown): ActionSupabaseError | null {
   if (value === null || value === undefined) return null;
   if (!isActionRecord(value) || typeof value.message !== "string") {
-    return { message: "La réponse Supabase est invalide." };
+    return new ActionSupabaseError("La réponse Supabase est invalide.");
   }
-  return {
-    message: value.message,
+  return new ActionSupabaseError(value.message, {
     ...(typeof value.code === "string" ? { code: value.code } : {}),
     ...(typeof value.details === "string" ? { details: value.details } : {}),
     ...(typeof value.hint === "string" ? { hint: value.hint } : {}),
-  };
+  });
 }
 
 export function parseActionSupabaseResult(value: unknown): ActionSupabaseResult {
   if (!isActionRecord(value) || (!("data" in value) && !("error" in value))) {
     return {
       data: null,
-      error: { message: "La réponse Supabase est invalide." },
+      error: new ActionSupabaseError("La réponse Supabase est invalide."),
       count: null,
     };
   }

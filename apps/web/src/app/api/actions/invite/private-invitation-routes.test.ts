@@ -167,6 +167,50 @@ describe("private invitation route boundaries", () => {
     expect(mocks.claim).not.toHaveBeenCalled();
   });
 
+  it.each([
+    {
+      message: "private_registration_action_awaiting_finalization",
+      status: 409,
+      expected: {
+        code: "ACTION_AWAITING_FINALIZATION",
+        error: "Action en attente de finalisation. Les demandes ouvriront lorsque le bilan sera finalisé.",
+      },
+    },
+    {
+      message: "private_registration_already_decided",
+      status: 409,
+      expected: {
+        code: "REGISTRATION_ALREADY_DECIDED",
+        error: "Cette inscription a déjà été refusée ou annulée.",
+      },
+    },
+    {
+      message: "private_registration_invitation_invalid",
+      status: 404,
+      expected: { error: "Lien d’invitation invalide, expiré ou révoqué." },
+    },
+    {
+      message: "private_registration_action_unavailable",
+      status: 404,
+      expected: { error: "Cette action n’est plus disponible pour une demande privée." },
+    },
+  ])("maps the SQL invitation error $message to its HTTP contract", async ({ message, status, expected }) => {
+    const token = "G".repeat(43);
+    mocks.from.mockReturnValue(invitationFrom({ action_id: action.id, revoked_at: null, expires_at: "2027-01-18T10:00:00Z" }));
+    mocks.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { message, code: "P0001", details: "private SQL detail", hint: "private SQL hint" },
+    });
+    const { POST } = await import("./[token]/route");
+
+    const response = await POST(buildRequest(`/api/actions/invite/${token}`, { method: "POST" }), {
+      params: Promise.resolve({ token }),
+    });
+
+    expect(response.status).toBe(status);
+    await expect(response.json()).resolves.toMatchObject(expected);
+  });
+
   it("exposes an awaiting-finalization state without opening registration", async () => {
     const token = "D".repeat(43);
     mocks.loadAction.mockResolvedValue({ ...action, action_date: "2026-10-01", event_start_time: "09:00:00" });

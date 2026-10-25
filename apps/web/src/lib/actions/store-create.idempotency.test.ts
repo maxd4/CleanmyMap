@@ -126,6 +126,22 @@ describe("action creation idempotency", () => {
     expect(harness.from).not.toHaveBeenCalled();
   });
 
+  it("recognizes a missing atomic RPC from its message when the provider omits the code", async () => {
+    const harness = createSupabase({
+      data: null,
+      error: { message: "function public.create_action_with_relations does not exist" },
+    });
+
+    await expect(persistActionWithRelations(harness.client, {
+      userId: "clerk-user-1",
+      baseInsert: { created_by_clerk_id: "clerk-user-1", action_date: "2026-10-20", location_label: "Parc test" },
+      organizers: [organizer],
+      manualParticipants: [],
+      clientRequestId: "action-create-retry-key-1",
+    })).rejects.toBeInstanceOf(ActionCreationPersistenceError);
+    expect(harness.from).not.toHaveBeenCalled();
+  });
+
   it("keeps the idempotency scope bound to the authenticated creator", async () => {
     const harness = createSupabase({
       data: [{ action_id: "action-created", replayed: false }],
