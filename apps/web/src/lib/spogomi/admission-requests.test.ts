@@ -6,6 +6,7 @@ vi.mock("server-only", () => ({}));
 import {
   createSpogomiAdmissionRequest,
   cancelSpogomiAdmissionRequest,
+  listSpogomiAdmissionRequestsForAdmin,
   listSpogomiAdmissionRequestsForRequester,
   transitionSpogomiAdmissionRequest,
 } from "./admission-requests";
@@ -181,6 +182,55 @@ describe("SPOGOMI admission requests", () => {
       p_actor_role: "admin",
       p_matched_participant_id: null,
     }));
+  });
+
+  it("maps the public admission error families without exposing database messages", async () => {
+    const cases = [
+      [{ code: "P0002", message: "event unavailable" }, "unavailable", "Cette édition n’est pas disponible pour ce parcours."],
+      [{ code: "23505", message: "duplicate" }, "conflict", "Une demande ou une liaison existe déjà pour ce compte."],
+      [{ code: "42501", message: "external_ticketing" }, "forbidden", "Cette édition doit être rejointe par la billetterie officielle."],
+      [{ code: "42501", message: "capacity" }, "forbidden", "La capacité d’inscription de cette édition est atteinte."],
+      [{ code: "42501", message: "world_cup" }, "forbidden", "Cette division World Cup doit être rejointe par le parcours officiel."],
+      [{ code: "22023", message: "invalid" }, "validation", "La division ou les informations de la demande sont invalides."],
+    ] as const;
+
+    for (const [error, kind, message] of cases) {
+      const rpc = vi.fn().mockResolvedValue({ data: null, error });
+      await expect(createSpogomiAdmissionRequest({
+        supabase: { rpc } as never, eventId: "event-1", divisionId: "division-1",
+        requesterClerkId: "user-1", requestKind: "registration",
+      })).rejects.toMatchObject({ kind, message });
+    }
+  });
+
+  it("keeps administrator history separate from requester projections", async () => {
+    const supabase = { from: vi.fn(() => query([{
+      id: "request-1", event_id: "event-1", request_kind: "registration", division_id: "division-1", team_id: "team-1",
+      provided_context: "Contexte", status: "approved", decision_message: "Accepté", decided_at: "v2", created_at: "v1",
+      requester_clerk_id: "user-1", matched_participant_id: "participant-1", verification_note: "Vérifié",
+      resolution_note: "Résolu", decided_by_clerk_id: "admin-1",
+    }])) } as never;
+
+    await expect(listSpogomiAdmissionRequestsForAdmin(supabase, "event-1")).resolves.toEqual([expect.objectContaining({
+      requesterClerkId: "user-1", matchedParticipantId: "participant-1", verificationNote: "Vérifié", decidedByClerkId: "admin-1",
+    })]);
+  });
+
+  it("rejects a transition response that cannot be projected as an admin decision", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+
+    await expect(transitionSpogomiAdmissionRequest({
+      supabase: { rpc } as never, requestId: "request-1", eventId: "event-1", targetStatus: "rejected",
+      actorClerkId: "admin-1", actorRole: "admin",
+    })).rejects.toMatchObject({ kind: "validation" });
+  });
+
+  it("rejects a cancellation response that cannot be projected as a requester decision", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+
+    await expect(cancelSpogomiAdmissionRequest({
+      supabase: { rpc } as never, requestId: "request-1", eventId: "event-1", requesterClerkId: "user-1",
+    })).rejects.toMatchObject({ kind: "validation" });
   });
 
   it("locks the public admission boundary in SQL", () => {

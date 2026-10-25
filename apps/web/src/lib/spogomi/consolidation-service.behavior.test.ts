@@ -84,6 +84,44 @@ describe("SPOGOMI consolidation service", () => {
     expect(after.rpc).not.toHaveBeenCalled();
   });
 
+  it("refuses publication of an incomplete preview without calling the consolidation RPC", async () => {
+    const fixture = supabaseFor({
+      spogomi_teams: [{ id: "team-1", division_id: "casual", team_number: 1, public_name: "Equipe 1", certified_submission_id: null, updated_at: "team-updated" }],
+    }, { data: { status: "published" }, error: null });
+    const preview = await buildSpogomiConsolidationPreview({ supabase: fixture.supabase, eventId: "event-1" });
+
+    await expect(publishSpogomiConsolidation({
+      supabase: fixture.supabase, eventId: "event-1", publishedByClerkId: "organizer", expectedSourceHash: preview.projection.sourceHash,
+    })).rejects.toThrow("bilan environnemental est incomplet");
+    expect(fixture.rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid RPC response instead of presenting a publication as persisted", async () => {
+    const fixture = supabaseFor({}, { data: "published", error: null });
+    const preview = await buildSpogomiConsolidationPreview({ supabase: fixture.supabase, eventId: "event-1" });
+
+    await expect(publishSpogomiConsolidation({
+      supabase: fixture.supabase, eventId: "event-1", publishedByClerkId: "organizer", expectedSourceHash: preview.projection.sourceHash,
+    })).rejects.toThrow("réponse de publication");
+  });
+
+  it("exposes the current persisted consolidation without replacing the freshly derived preview", async () => {
+    const fixture = supabaseFor({
+      spogomi_action_consolidations: [{ id: "consolidation-1", projection_revision: 4, source_hash: "old-hash", status: "published" }],
+    });
+
+    const preview = await buildSpogomiConsolidationPreview({ supabase: fixture.supabase, eventId: "event-1" });
+
+    expect(preview.currentProjection).toEqual({ id: "consolidation-1", projectionRevision: 4, sourceHash: "old-hash", status: "published" });
+    expect(preview.projection.sourceHash).not.toBe("old-hash");
+  });
+
+  it("stops before deriving a projection when the event cannot be found", async () => {
+    const fixture = supabaseFor({ spogomi_events: [] });
+
+    await expect(buildSpogomiConsolidationPreview({ supabase: fixture.supabase, eventId: "missing-event" })).rejects.toThrow("event not found");
+  });
+
   it.each([
     [{ code: "40001", message: "stale projection" }, /Conflict: stale projection/],
     [{ code: "23514", message: "projection invalid" }, /Conflict: projection invalid/],

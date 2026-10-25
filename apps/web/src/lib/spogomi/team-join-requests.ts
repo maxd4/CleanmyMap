@@ -217,6 +217,9 @@ export async function transitionSpogomiTeamJoinRequest(params: {
   if (result.error) throw mapError(result.error);
   if (!result.data || typeof result.data !== "object") throw new SpogomiTeamJoinRequestError("La décision n’a pas pu être enregistrée.", "validation");
   const row = result.data as Record<string, unknown>;
+  if (typeof row.team_id !== "string" || !row.team_id) {
+    throw new SpogomiTeamJoinRequestError("La décision retournée est incohérente.", "validation");
+  }
   const labels = await loadTeamLabels(params.supabase, params.eventId, [String(row.team_id)]);
   return mapRequest(row, labels.get(String(row.team_id)) ?? null);
 }

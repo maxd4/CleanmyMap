@@ -223,6 +223,55 @@ describe("SPOGOMI team join requests", () => {
     expect(requestQuery.select).toHaveBeenCalledWith("id, event_id, team_id, status, decided_at, created_at");
   });
 
+  it("returns no requester history for an unpublished or cancelled event", async () => {
+    const eventQuery = dataQuery([], null);
+    const from = vi.fn(() => eventQuery);
+    const supabase = { from } as never;
+
+    await expect(loadSpogomiTeamJoinRequestForRequester(supabase, {
+      eventId: "event-1", teamId: "team-1", requesterClerkId: "user-1",
+    })).resolves.toBeNull();
+    expect(from).toHaveBeenCalledOnce();
+  });
+
+  it("returns no requester history when the event is public but no request exists", async () => {
+    const eventQuery = dataQuery([], { id: "event-1" });
+    const requestQuery = dataQuery([]);
+    const supabase = { from: vi.fn((table: string) => table === "spogomi_events" ? eventQuery : requestQuery) } as never;
+
+    await expect(loadSpogomiTeamJoinRequestForRequester(supabase, {
+      eventId: "event-1", teamId: "team-1", requesterClerkId: "user-1",
+    })).resolves.toBeNull();
+    expect(requestQuery.limit).toHaveBeenCalledWith(1);
+  });
+
+  it("maps unavailable, conflict and forbidden RPC errors without retrying a mutation", async () => {
+    const cases = [
+      [{ code: "P0002" }, "unavailable"],
+      [{ code: "23505" }, "conflict"],
+      [{ code: "42501" }, "forbidden"],
+    ] as const;
+
+    for (const [error, kind] of cases) {
+      const rpc = vi.fn().mockResolvedValue({ data: null, error });
+      await expect(createSpogomiTeamJoinRequest({
+        supabase: { rpc } as never, eventId: "event-1", teamId: "team-1", requesterClerkId: "user-1",
+      })).rejects.toMatchObject({ kind });
+      expect(rpc).toHaveBeenCalledOnce();
+    }
+  });
+
+  it("rejects a transition response without a team identity instead of loading unrelated labels", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: { id: "request-1", event_id: "event-1" }, error: null });
+    const from = vi.fn();
+
+    await expect(transitionSpogomiTeamJoinRequest({
+      supabase: { rpc, from } as never, requestId: "request-1", eventId: "event-1", targetStatus: "cancelled",
+      actorKind: "requester", actorClerkId: "user-1",
+    })).rejects.toMatchObject({ kind: "validation", message: "La décision retournée est incohérente." });
+    expect(from).not.toHaveBeenCalled();
+  });
+
   it("keeps the SQL contract team-scoped, atomic and isolated from participation data", () => {
     expect(baseMigration).toContain("spogomi_team_join_pending_requester_unique");
     expect(migration).toContain("spogomi_team_join_request_already_approved");
