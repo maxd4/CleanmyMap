@@ -190,6 +190,12 @@ projection offline.
   npm/Vercel utilisent explicitement `--dependency-mode=isolated`. Cette voie
   complète est opt-in avec `npm run prepush:guard -- -Full`; les validations
   larges restent disponibles via les commandes de release canoniques ;
+- la couverture suit la même frontière : le pré-push rapide vérifie seulement
+  la preuve `artifacts/coverage-publication/<sha>/<scope>/` lorsqu'un périmètre
+  `ENFORCE` est actif ; `-Full` peut produire les rapports Web, mobile, Node et
+  Python dans un `DYNAMIC_CANDIDATE` avant de vérifier le SHA exact. Une preuve
+  absente, périmée, falsifiée ou appartenant à un autre candidat est bloquante
+  pour `ENFORCE` et ne peut jamais être reclassée `PASS` ;
 - `.artifacts/` est ignoré par Git et réservé aux candidates et sorties
   locales de validation ; une preuve durable doit être déplacée vers
   `documentation/` avant d'être versionnée ;
@@ -259,11 +265,11 @@ externes et environnementaux restent `BLOCKED_*`, avec une preuve explicite,
 et ne doivent jamais être masqués ou reclassés en `PASS`.
 
 Le planificateur ne déclenche jamais `FULL` implicitement. Les suites Web
-complètes, couverture Web globale, duplication, cycles, Knip, mutation, E2E et
-audits distants restent donc disponibles pour FULL sans être ajoutées aux hooks
-ou aux jobs CI ordinaires. Le job CI `mobile-validation` fait exception et
-exécute systématiquement les validations mobiles, y compris tests et couverture,
-sur les pushes et Pull Requests ciblant `main`. Un contrôle différé en DEVELOPMENT est
+complètes, duplication, cycles, Knip, mutation, E2E et audits distants restent
+donc disponibles pour FULL sans être ajoutées aux hooks. La CI exécute toutefois
+la couverture Web, Node ou Python lorsque le diff concerne réellement leur
+périmètre, et conserve le job mobile séparé ; un changement documentaire ne
+déclenche pas sa couverture. Un contrôle différé en DEVELOPMENT est
 `SKIPPED_BY_POLICY`, jamais `PASS`. Le gate `quality:cycles` est actuellement
 suspendu par cette politique : son invocation produit cette preuve explicite
 sans lancer GitNexus jusqu'à réactivation documentée.

@@ -92,6 +92,8 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.match(testsJob, /npm run test:regression-gates/);
   assert.match(testsJob, /validation-policy\.mjs --assert-full-suite/);
   assert.match(testsJob, /github\.event_name == 'workflow_dispatch' && inputs\.validation_mode == 'FULL'/);
+  assert.match(testsJob, /web_coverage_relevant/);
+  assert.match(testsJob, /npm run test:coverage/);
   assert.match(testsJob, /actions\/upload-artifact@/);
   assert.match(testsJob, /apps\/web\/coverage/);
   assert.doesNotMatch(testsJob, /quality:coverage/);
@@ -103,13 +105,17 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.match(extractJob(workflow, "web-vercel-audit"), /npm run audit:vercel:ci/);
   assert.match(extractJob(workflow, "web-build"), /npm run build/);
   const pythonJob = extractJob(workflow, "python-validation");
-  assert.match(pythonJob, /if: github\.event_name == 'workflow_dispatch' && inputs\.validation_mode == 'FULL'/);
+  assert.match(pythonJob, /if: needs\.scope\.outputs\.python_coverage_relevant == 'true'/);
   assert.match(pythonJob, /actions\/setup-python@/);
   assert.match(pythonJob, /requirements-dev\.txt/);
   assert.match(pythonJob, /scripts\/ci\/run_checks\.ps1 -Scope full/);
+  assert.match(pythonJob, /npm run test:coverage:python/);
+  const nodeCoverageJob = extractJob(workflow, "node-coverage");
+  assert.match(nodeCoverageJob, /if: needs\.scope\.outputs\.node_coverage_relevant == 'true'/);
+  assert.match(nodeCoverageJob, /npm run test:coverage:node/);
   const mobileJob = extractJob(workflow, "mobile-validation");
   assert.match(mobileJob, /^    needs: scope$/m);
-  assert.doesNotMatch(mobileJob, /if: needs\.scope\.outputs\.mobile_code_relevant == 'true'/);
+  assert.match(mobileJob, /if: needs\.scope\.outputs\.mobile_code_relevant == 'true'/);
   for (const command of ["npm run mobile:security", "npm run mobile:typecheck", "npm run mobile:test", "npm run quality:mobile-coverage", "npm run mobile:lint"]) {
     assert.match(mobileJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
   }
@@ -119,6 +125,7 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.doesNotMatch(mobileJob, /Mobile Vitest tests \(FULL only\)/);
   assert.doesNotMatch(mobileJob, /Mobile Vitest coverage comparison \(FULL only\)/);
   assert.match(workflow, /build_relevant: \$\{\{ steps\.detect-scope\.outputs\.build_relevant \}\}/);
+  assert.match(workflow, /web_coverage_relevant: \$\{\{ steps\.detect-scope\.outputs\.web_coverage_relevant \}\}/);
   const scopeJob = extractJob(workflow, "scope");
   assert.match(scopeJob, /VALIDATION_MODE: \$\{\{ inputs\.validation_mode \}\}/);
   assert.match(scopeJob, /run: node scripts\/ci\/detect-scope\.mjs/);
@@ -130,7 +137,7 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.match(scopeScript, /scripts\/checks\/validation-policy\.mjs/);
   assert.match(scopeScript, /"--scope", "changed", "--json"/);
   assert.doesNotMatch(scopeScript, /git rev-list/);
-  assert.match(workflow, /if: github\.event_name == 'workflow_dispatch' && inputs\.validation_mode == 'FULL' && needs\.web-tests\.result == 'success'/);
+  assert.match(workflow, /web_coverage_relevant == 'true'[\s\S]*needs\.web-tests\.result == 'success'/);
   assert.doesNotMatch(extractJob(workflow, "web-coverage"), /needs\.scope\.outputs\.web_code_relevant/);
   assert.equal((workflow.match(/continue-on-error:\s*true/g) ?? []).length, 2);
   const qualityJobForGrace = extractJob(workflow, "web-quality");
@@ -138,10 +145,7 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
     const step = qualityJobForGrace.match(new RegExp(`- name: ${stepName}[\\s\\S]*?(?=\\n      - name:|\\n\\n  [a-z0-9-]+:)`))?.[0] ?? "";
     assert.match(step, /continue-on-error:\s*true/);
   }
-  assert.match(
-    workflow,
-    /- name: Web coverage comparison from existing evidence[\s\S]*?run: npm run quality:coverage -- --from-existing-summary/,
-  );
+  assert.match(workflow, /- name: Web coverage comparison from existing evidence[\s\S]*?npm run quality:coverage/);
   const coverageStep = extractJob(workflow, "web-coverage").match(/- name: Web coverage comparison from existing evidence[\s\S]*$/)?.[0] ?? "";
   assert.doesNotMatch(coverageStep, /continue-on-error:\s*true/);
   const summaryStep = qualityJobForGrace.match(/- name: Publish web-quality summary[\s\S]*?(?=\n      - name:|\n\n  [a-z0-9-]+:)/)?.[0] ?? "";

@@ -13,6 +13,9 @@ const EMPTY_SCOPE = Object.freeze({
   dependencyGraphRelevant: false,
   dependencyAuditRelevant: false,
   securityToolingRelevant: false,
+  webCoverageRelevant: false,
+  nodeCoverageRelevant: false,
+  pythonCoverageRelevant: false,
 });
 
 const FULL_SCOPE = Object.freeze({
@@ -23,6 +26,9 @@ const FULL_SCOPE = Object.freeze({
   dependencyGraphRelevant: true,
   dependencyAuditRelevant: true,
   securityToolingRelevant: true,
+  webCoverageRelevant: true,
+  nodeCoverageRelevant: true,
+  pythonCoverageRelevant: true,
 });
 
 const OUTPUT_KEYS = Object.freeze({
@@ -33,6 +39,9 @@ const OUTPUT_KEYS = Object.freeze({
   dependencyGraphRelevant: "dependency_graph_relevant",
   dependencyAuditRelevant: "dependency_audit_relevant",
   securityToolingRelevant: "security_tooling_relevant",
+  webCoverageRelevant: "web_coverage_relevant",
+  nodeCoverageRelevant: "node_coverage_relevant",
+  pythonCoverageRelevant: "python_coverage_relevant",
 });
 
 function normalize(value) {
@@ -137,6 +146,9 @@ function deriveChangedScope(repositoryRoot, changedFiles) {
   let docsOnly = true;
   let webCodeRelevant = false;
   let mobileCodeRelevant = false;
+  let webCoverageRelevant = false;
+  let nodeCoverageRelevant = false;
+  let pythonCoverageRelevant = false;
   const policyArgs = ["scripts/checks/validation-policy.mjs", "--scope", "changed", "--json"];
 
   for (const file of files) {
@@ -160,6 +172,18 @@ function deriveChangedScope(repositoryRoot, changedFiles) {
     ) {
       webCodeRelevant = true;
     }
+    if (
+      (file.startsWith("apps/web/") && !file.startsWith("apps/web/supabase/")) ||
+      ["package.json", "package-lock.json"].includes(file)
+    ) {
+      webCoverageRelevant = true;
+    }
+    if ((file.startsWith("scripts/") || file.startsWith("apps/web/scripts/")) && !file.endsWith(".md") && !file.endsWith(".mdx")) {
+      nodeCoverageRelevant = true;
+    }
+    if (/^maintenance\/python\/(src|scripts)\/.*\.py$/.test(file)) {
+      pythonCoverageRelevant = true;
+    }
   }
 
   const policy = JSON.parse(execFileSync(process.execPath, policyArgs, {
@@ -174,6 +198,9 @@ function deriveChangedScope(repositoryRoot, changedFiles) {
     dependencyGraphRelevant: Boolean(policy.dependencyGraphRelevant),
     dependencyAuditRelevant: Boolean(policy.dependencyAuditRelevant),
     securityToolingRelevant: Boolean(policy.securityToolingRelevant),
+    webCoverageRelevant,
+    nodeCoverageRelevant,
+    pythonCoverageRelevant,
   };
 }
 

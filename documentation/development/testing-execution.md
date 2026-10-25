@@ -181,6 +181,22 @@ globale, GitNexus, Knip, mutation testing, la campagne E2E complète et les
 audits distants restent également hors DEVELOPMENT. Un contrôle différé est
 `SKIPPED_BY_POLICY`, jamais `PASS`.
 
+Pour un changement exécutable, la séquence de gouvernance de couverture est
+explicite : changement exécutable → tests adaptés → rapport de couverture →
+correction d'une violation → validation → commit/push. Le pré-push normal ne
+relance pas une mesure coûteuse ; il exige toutefois toute preuve valide d'un
+domaine `ENFORCE`. Le flux de publication peut préparer cette preuve dans un
+`DYNAMIC_CANDIDATE` éphémère, puis le publisher la vérifie sur le SHA exact
+juste avant l'envoi. Une preuve absente, non exécutée, invalide ou en échec
+reste `FAIL`/`BLOCKED`, jamais `PASS`.
+
+La sélection est dérivée du diff Git du candidat : une modification
+documentaire seule ne déclenche pas de couverture ; le Web, le mobile, Node et
+Python restent des périmètres distincts. La CI peut vérifier le résultat après
+un push vers `main`, mais cette exécution post-publication ne bloque pas le
+push déjà accepté. Cette limite est distincte d'une protection de branche
+GitHub préalable, qui n'est pas créée ni modifiée par ce dépôt.
+
 ### FULL — préproduction exhaustive
 
 `FULL` est déclenché uniquement sur demande explicite ou dans une préparation

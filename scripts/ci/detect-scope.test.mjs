@@ -208,6 +208,9 @@ test("diff scope derives source-sensitive flags without widening a documentation
   assert.equal(codeScope.scope.webCodeRelevant, true);
   assert.equal(codeScope.scope.mobileCodeRelevant, true);
   assert.equal(codeScope.scope.dependencyGraphRelevant, true);
+  assert.equal(codeScope.scope.webCoverageRelevant, true);
+  assert.equal(codeScope.scope.nodeCoverageRelevant, true);
+  assert.equal(codeScope.scope.pythonCoverageRelevant, false);
 
   const docsScope = resolveCiScope({
     repositoryRoot: REPOSITORY_ROOT,
@@ -219,6 +222,9 @@ test("diff scope derives source-sensitive flags without widening a documentation
   assert.equal(docsScope.scope.docsOnly, true);
   assert.equal(docsScope.scope.webCodeRelevant, false);
   assert.equal(docsScope.scope.mobileCodeRelevant, false);
+  assert.equal(docsScope.scope.webCoverageRelevant, false);
+  assert.equal(docsScope.scope.nodeCoverageRelevant, false);
+  assert.equal(docsScope.scope.pythonCoverageRelevant, false);
 });
 
 test("diff scope reads deterministic Git ranges without depending on the checkout HEAD", () => {
@@ -270,9 +276,15 @@ test("scope outputs preserve the workflow's snake_case contract", () => {
     dependencyGraphRelevant: true,
     dependencyAuditRelevant: true,
     securityToolingRelevant: true,
+    webCoverageRelevant: true,
+    nodeCoverageRelevant: true,
+    pythonCoverageRelevant: true,
   });
   assert.match(output, /docs_only=false/);
   assert.match(output, /web_code_relevant=true/);
   assert.match(output, /dependency_graph_relevant=true/);
+  assert.match(output, /web_coverage_relevant=true/);
+  assert.match(output, /node_coverage_relevant=true/);
+  assert.match(output, /python_coverage_relevant=true/);
   assert.doesNotMatch(output, /docsOnly|webCodeRelevant/);
 });

@@ -1,0 +1,322 @@
+#!/usr/bin/env node
+
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import {
+  COVERAGE_ENFORCEMENT_POLICY,
+  COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT,
+  COVERAGE_SCOPE_FINGERPRINT,
+  MOBILE_COVERAGE_SCOPE_FINGERPRINT,
+  classifyCoverageFile,
+  getDefaultCoveragePaths,
+} from "../checks/coverage-policy.mjs";
+import { runCoverageCheck } from "../checks/check-coverage.mjs";
+import { getCandidateSha, getWorktreeCandidateFiles } from "./validation-evidence.mjs";
+import { gitExecutable } from "./git-executable.mjs";
+
+const SHA_PATTERN = /^[0-9a-f]{40}$/i;
+const PROOF_SCHEMA_VERSION = 1;
+const PUBLICATION_ROOT = path.join("artifacts", "coverage-publication");
+
+function normalizePath(file) {
+  return String(file).replaceAll("\\", "/").replace(/^\.\//, "");
+}
+
+function normalizeFiles(files = []) {
+  return [...new Set(files.map(normalizePath).filter(Boolean))].sort((a, b) => a.localeCompare(b, "en"));
+}
+
+function isDocumentationFile(file) {
+  const normalized = normalizePath(file);
+  return normalized.startsWith("documentation/") || /\.(md|mdx)$/i.test(normalized);
+}
+
+function isWebFile(file) {
+  const normalized = normalizePath(file);
+  return normalized.startsWith("apps/web/") && !normalized.startsWith("apps/web/supabase/");
+}
+
+function isMobileFile(file) {
+  return normalizePath(file).startsWith("apps/mobile/") && !isDocumentationFile(file);
+}
+
+function isNodeFile(file) {
+  const normalized = normalizePath(file);
+  return (normalized.startsWith("scripts/") || normalized.startsWith("apps/web/scripts/")) && !isDocumentationFile(file);
+}
+
+function isPythonFile(file) {
+  return /^maintenance\/python\/(src|scripts)\/.*\.py$/i.test(normalizePath(file));
+}
+
+function isSqlFile(file) {
+  return normalizePath(file).startsWith("apps/web/supabase/");
+}
+
+function stateFor(policy, scope) {
+  return policy?.scopes?.[scope]?.state ?? "OBSERVE";
+}
+
+function webRiskDomains(files) {
+  const domains = new Set();
+  for (const file of files) {
+    if (!isWebFile(file)) continue;
+    const relative = normalizePath(file).replace(/^apps\/web\//, "");
+    const classification = classifyCoverageFile(relative, { scope: "web" });
+    if (classification.domain) domains.add(classification.domain);
+  }
+  return [...domains].sort((a, b) => a.localeCompare(b, "en"));
+}
+
+export function getCoveragePublicationRequirements({
+  changedFiles = [],
+  policy = COVERAGE_ENFORCEMENT_POLICY,
+} = {}) {
+  const files = normalizeFiles(changedFiles);
+  if (files.length === 0 || files.every(isDocumentationFile)) {
+    return Object.freeze({ files, requirements: [], reason: "DOCUMENTATION_ONLY_OR_EMPTY" });
+  }
+
+  const requirements = [];
+  const domains = webRiskDomains(files);
+  if (files.some(isWebFile)) {
+    const enforceDomains = domains.filter((domain) => policy?.scopes?.web?.domains?.[domain]?.state === "ENFORCE");
+    if (enforceDomains.length > 0 || stateFor(policy, "web") === "ENFORCE") {
+      requirements.push({ scope: "web", state: "ENFORCE", domains: enforceDomains });
+    }
+  }
+  if (files.some(isMobileFile) && stateFor(policy, "mobile") === "ENFORCE") {
+    requirements.push({ scope: "mobile", state: "ENFORCE", domains: [] });
+  }
+  if (files.some(isNodeFile) && stateFor(policy, "node") === "ENFORCE") {
+    requirements.push({ scope: "node", state: "ENFORCE", domains: [] });
+  }
+  if (files.some(isPythonFile) && stateFor(policy, "python") === "ENFORCE") {
+    requirements.push({ scope: "python", state: "ENFORCE", domains: [] });
+  }
+
+  return Object.freeze({
+    files,
+    requirements: Object.freeze(requirements),
+    observeScopes: Object.freeze([
+      files.some(isWebFile) ? "web" : null,
+      files.some(isMobileFile) ? "mobile" : null,
+      files.some(isNodeFile) ? "node" : null,
+      files.some(isPythonFile) ? "python" : null,
+    ].filter(Boolean)),
+    sqlRequiresPostgresProof: files.some(isSqlFile),
+    riskDomains: domains,
+    reason: requirements.length > 0 ? "ENFORCED_SCOPE" : "NO_ACTIVE_ENFORCEMENT",
+  });
+}
+
+function gitSha(repositoryRoot, ref) {
+  return execFileSync(gitExecutable(), ["rev-parse", "--verify", `${ref}^{commit}`], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim();
+}
+
+function sha256(file) {
+  return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+}
+
+function proofRoot(repositoryRoot, candidateSha, scope) {
+  const configured = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  const root = configured ? path.resolve(configured) : path.join(repositoryRoot, PUBLICATION_ROOT);
+  return path.join(root, candidateSha, scope);
+}
+
+function proofPath(repositoryRoot, candidateSha, scope) {
+  return path.join(proofRoot(repositoryRoot, candidateSha, scope), "coverage-publication-proof.json");
+}
+
+function assertSafeRelativePath(value) {
+  const normalized = normalizePath(value);
+  if (!normalized || path.isAbsolute(normalized) || normalized.split("/").includes("..")) {
+    throw new Error(`Coverage publication proof contains an unsafe report path: ${value}`);
+  }
+  return normalized;
+}
+
+function readProof(repositoryRoot, candidateSha, scope) {
+  const file = proofPath(repositoryRoot, candidateSha, scope);
+  let proof;
+  try {
+    proof = JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (error) {
+    throw new Error(`Coverage proof is missing or unreadable for ${scope}/${candidateSha}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (proof.schemaVersion !== PROOF_SCHEMA_VERSION || proof.kind !== "cleanmymap-coverage-publication-proof") {
+    throw new Error(`Coverage proof is incompatible for ${scope}/${candidateSha}.`);
+  }
+  if (proof.candidateSha !== candidateSha || proof.scope !== scope || !SHA_PATTERN.test(proof.candidateSha)) {
+    throw new Error(`Coverage proof candidate mismatch for ${scope}: expected ${candidateSha}.`);
+  }
+  if (!Array.isArray(proof.reports) || proof.reports.length === 0) {
+    throw new Error(`Coverage proof has no reports for ${scope}/${candidateSha}.`);
+  }
+  return { proof, root: proofRoot(repositoryRoot, candidateSha, scope) };
+}
+
+function validateReportHashes(root, proof) {
+  for (const report of proof.reports) {
+    const relativePath = assertSafeRelativePath(report.path);
+    const absolutePath = path.join(root, relativePath);
+    if (!fs.existsSync(absolutePath) || sha256(absolutePath) !== report.sha256) {
+      throw new Error(`Coverage report is missing, changed, or falsified: ${relativePath}.`);
+    }
+  }
+}
+
+function reportPath(proof, root, source) {
+  const report = proof.reports.find((entry) => entry.source === source);
+  if (!report) throw new Error(`Coverage proof does not contain ${source}.`);
+  return path.join(root, assertSafeRelativePath(report.path));
+}
+
+export function validateCoveragePublicationProof({
+  repositoryRoot = process.cwd(),
+  candidateSha,
+  scope,
+} = {}) {
+  if (!SHA_PATTERN.test(String(candidateSha ?? ""))) throw new Error(`Invalid coverage candidate SHA: ${candidateSha ?? "<missing>"}.`);
+  if (gitSha(repositoryRoot, candidateSha) !== candidateSha) throw new Error(`Coverage candidate SHA cannot be resolved: ${candidateSha}.`);
+  const { proof, root } = readProof(repositoryRoot, candidateSha, scope);
+  validateReportHashes(root, proof);
+  if (!["WORKTREE", "DYNAMIC_CANDIDATE", "CI_CANDIDATE"].includes(proof.candidateScope)) {
+    throw new Error(`Coverage proof has an unsupported candidate scope: ${proof.candidateScope}.`);
+  }
+  if (proof.candidateScope === "WORKTREE") {
+    if (getCandidateSha(repositoryRoot) !== candidateSha || getWorktreeCandidateFiles(repositoryRoot).length > 0) {
+      throw new Error("Coverage WORKTREE proof does not match a clean exact candidate tree.");
+    }
+  }
+  if (scope === "web") {
+    const evidencePath = reportPath(proof, root, "apps/web/coverage/coverage-evidence.json");
+    const evidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+    if (evidence.gitHead !== candidateSha || evidence.scope !== "web") throw new Error("Web coverage evidence is not bound to the candidate SHA.");
+    if (evidence.scopeFingerprint !== COVERAGE_SCOPE_FINGERPRINT) throw new Error("Web coverage scope fingerprint is incompatible.");
+    if (!evidence.configurationFingerprint || !evidence.summarySha256) throw new Error("Web coverage evidence is incomplete.");
+  }
+  if (scope === "mobile") {
+    if (proof.scopeFingerprint !== MOBILE_COVERAGE_SCOPE_FINGERPRINT) throw new Error("Mobile coverage scope fingerprint is incompatible.");
+  }
+  if (proof.policyFingerprint !== COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT) {
+    throw new Error("Coverage proof policy fingerprint is incompatible with the current policy.");
+  }
+  return { proof, root };
+}
+
+function sourceReports(scope) {
+  if (scope === "web") return [
+    "apps/web/coverage/coverage-summary.json",
+    "apps/web/coverage/lcov.info",
+    "apps/web/coverage/coverage-evidence.json",
+  ];
+  if (scope === "mobile") return ["apps/mobile/coverage/coverage-summary.json"];
+  if (scope === "node") return ["scripts/coverage/coverage-summary.json", "scripts/coverage/lcov.info"];
+  if (scope === "python") return ["maintenance/python/coverage.xml"];
+  throw new Error(`Unsupported coverage publication scope: ${scope}.`);
+}
+
+function copyReports(repositoryRoot, targetRoot, sources) {
+  const reports = [];
+  for (const source of sources) {
+    const sourcePath = path.join(repositoryRoot, ...source.split("/"));
+    if (!fs.existsSync(sourcePath)) throw new Error(`Coverage report is missing: ${source}.`);
+    const targetPath = path.join(targetRoot, ...source.split("/"));
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.copyFileSync(sourcePath, targetPath);
+    reports.push({ source, path: source, sha256: sha256(targetPath) });
+  }
+  return reports;
+}
+
+export function writeCoveragePublicationProof({ repositoryRoot = process.cwd(), scope } = {}) {
+  const candidateSha = process.env.CMM_DYNAMIC_CANDIDATE_SHA ?? getCandidateSha(repositoryRoot);
+  if (!SHA_PATTERN.test(candidateSha)) throw new Error(`Cannot create coverage proof without a full candidate SHA: ${candidateSha}.`);
+  const targetRoot = proofRoot(repositoryRoot, candidateSha, scope);
+  fs.mkdirSync(targetRoot, { recursive: true });
+  const reports = copyReports(repositoryRoot, targetRoot, sourceReports(scope));
+  const proof = {
+    schemaVersion: PROOF_SCHEMA_VERSION,
+    kind: "cleanmymap-coverage-publication-proof",
+    candidateSha,
+    candidateScope: process.env.CMM_DYNAMIC_CANDIDATE_SHA ? "DYNAMIC_CANDIDATE" : "WORKTREE",
+    scope,
+    scopeFingerprint: scope === "web" ? COVERAGE_SCOPE_FINGERPRINT : scope === "mobile" ? MOBILE_COVERAGE_SCOPE_FINGERPRINT : null,
+    policyFingerprint: COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT,
+    reports,
+    generatedAt: new Date().toISOString(),
+  };
+  fs.writeFileSync(path.join(targetRoot, "coverage-publication-proof.json"), `${JSON.stringify(proof, null, 2)}\n`, "utf8");
+  console.log(`COVERAGE_PUBLICATION_PROOF_WRITTEN: ${path.join(targetRoot, "coverage-publication-proof.json")}`);
+  return proof;
+}
+
+export function runCoveragePublicationGate({
+  repositoryRoot = process.cwd(),
+  candidateSha,
+  baseRef = null,
+  currentRef = candidateSha,
+  changedFiles = [],
+  policy = COVERAGE_ENFORCEMENT_POLICY,
+  coverageCheck = runCoverageCheck,
+} = {}) {
+  const selection = getCoveragePublicationRequirements({ changedFiles, policy });
+  if (selection.requirements.length === 0) {
+    const status = selection.files.length === 0 || selection.files.every(isDocumentationFile) ? "NOT_REQUIRED" : "OBSERVE";
+    console.log(`COVERAGE_PUBLICATION_GATE: ${status}`);
+    if (selection.sqlRequiresPostgresProof) console.log("COVERAGE_SQL_STATUS: DEFERRED_TO_POSTGRESQL_PROOF");
+    return { status, selection, results: [] };
+  }
+
+  const results = [];
+  for (const requirement of selection.requirements) {
+    const proof = validateCoveragePublicationProof({ repositoryRoot, candidateSha, scope: requirement.scope });
+    if (requirement.scope === "web") {
+      const summary = reportPath(proof.proof, proof.root, "apps/web/coverage/coverage-summary.json");
+      const lcov = reportPath(proof.proof, proof.root, "apps/web/coverage/lcov.info");
+      const result = coverageCheck({
+        scope: "web",
+        repositoryRoot,
+        paths: { ...getDefaultCoveragePaths(repositoryRoot, "web"), summary, lcov },
+        currentCommit: candidateSha,
+        baseRef,
+        currentRef,
+        enforcementPolicy: policy,
+        setProcessExitCode: false,
+      });
+      if (result.policyStatus !== "PASS") throw new Error(`Coverage ENFORCE failed for web/${candidateSha}: ${result.policyStatus}.`);
+      results.push({ scope: "web", status: result.policyStatus });
+    } else {
+      results.push({ scope: requirement.scope, status: "PASS", proof: proof.proof });
+    }
+  }
+  console.log(`COVERAGE_PUBLICATION_GATE: PASS (${results.map((result) => result.scope).join(", ")})`);
+  return { status: "PASS", selection, results };
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  const candidateRef = process.argv.find((argument) => argument.startsWith("--candidate-ref="))?.slice("--candidate-ref=".length) ?? "HEAD";
+  const baseRef = process.argv.find((argument) => argument.startsWith("--base-ref="))?.slice("--base-ref=".length) ?? null;
+  const candidateSha = gitSha(process.cwd(), candidateRef);
+  const changedFiles = process.argv.filter((argument) => argument.startsWith("--changed-file=")).map((argument) => argument.slice("--changed-file=".length));
+  const resolvedChangedFiles = changedFiles.length > 0
+    ? changedFiles
+    : baseRef
+      ? execFileSync(gitExecutable(), ["diff", "--name-only", baseRef, candidateSha], { cwd: process.cwd(), encoding: "utf8" }).split(/\r?\n/).filter(Boolean)
+      : [];
+  try {
+    runCoveragePublicationGate({ repositoryRoot: process.cwd(), candidateSha, baseRef, currentRef: candidateSha, changedFiles: resolvedChangedFiles });
+  } catch (error) {
+    console.error(`COVERAGE_PUBLICATION_GATE_BLOCKED: ${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
+  }
+}

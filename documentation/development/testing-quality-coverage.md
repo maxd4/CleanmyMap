@@ -98,6 +98,33 @@ suivis séparément ; le moteur ne fabrique pas de couverture monorepo agrégée
 Les invariants Supabase SQL, RLS, RPC et triggers continuent d'exiger des tests
 PostgreSQL exécutés, et non une couverture Vitest de lignes.
 
+### Preuve de publication et rattachement au candidat
+
+La publication Codex et le pré-push utilisent le même contrôle
+`scripts/ci/coverage-publication.mjs`. Il ne mesure pas une seconde fois la
+couverture : il vérifie la preuve produite par le rapport, son empreinte de
+fichiers et le SHA complet du candidat. Une preuve `WORKTREE` n'est acceptée
+que si `HEAD`, `refs/heads/main` et le worktree sont cohérents ; une preuve
+`DYNAMIC_CANDIDATE` provient de l'arbre Git éphémère exact. Une preuve absente,
+illisible, falsifiée, périmée ou rattachée à un autre SHA échoue lorsqu'un
+domaine est `ENFORCE`.
+
+Les preuves sont écrites sous `artifacts/coverage-publication/<SHA>/<scope>/`
+et restent ignorées par Git. Elles sont réutilisées pour le même SHA et le
+même périmètre ; elles ne changent jamais automatiquement une baseline, une
+classification ou une exclusion. Les changements documentaires n'exigent
+aucune suite de couverture. Les changements Web, mobile, scripts/Node et
+Python produisent chacun leur rapport séparé lorsque leur périmètre est
+concerné ; SQL reste réservé à la preuve PostgreSQL du lot suivant.
+
+Le flux durable est donc : changement exécutable → tests adaptés → rapport de
+couverture → correction d'une violation → validation → commit/push. `OBSERVE`
+reste un diagnostic chiffré ; il ne peut pas être présenté comme une
+conformité. `ENFORCE` est bloquant avant l'envoi normal. La CI post-push vérifie
+le SHA publié et publie ses artefacts, mais ne peut pas empêcher
+rétroactivement un push ; une garantie serveur exige une protection GitHub
+appropriée activée séparément.
+
 La couverture des lignes ajoutées ou modifiées est préparée par la combinaison
 d'un diff Git et du LCOV du même candidat :
 

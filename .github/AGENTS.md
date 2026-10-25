@@ -82,9 +82,14 @@ valider un workflow uniquement par lecture si le garde-fou local est
 disponible.
 
 Les jobs `push` et `pull_request` restent en mode `DEVELOPMENT` pour les gates
-Web : sécurité, typecheck/lint et tests ciblés. L'exception canonique est
-`mobile-validation`, qui exécute systématiquement sécurité, typecheck, tests,
-couverture et lint mobiles. Les suites Web complètes, couverture Web,
-ratchets structurels, mutation testing et E2E complet ne s'exécutent que dans
-une exécution `workflow_dispatch` avec `validation_mode=FULL`. Un contrôle non
-exécuté doit rester explicitement `SKIPPED_BY_POLICY` ou `NOT_RUN`.
+Web : sécurité, typecheck/lint et tests ciblés. Lorsqu'un diff contient du code
+Web instrumentable, le rapport de couverture Web et son contrôle de provenance
+sont exécutés pour le commit candidat exact ; un diff documentaire seul ne
+déclenche pas cette mesure. L'exception canonique est
+`mobile-validation`, qui conserve sécurité, typecheck, tests et lint mobiles,
+mais n'exécute sa mesure de couverture que si le diff mobile est pertinent ou
+si `validation_mode=FULL`. Les rapports Node et Python restent des jobs
+distincts, déclenchés par leurs périmètres respectifs. Une exécution
+`workflow_dispatch` avec `validation_mode=FULL` peut en plus demander les
+suites Web complètes et les ratchets associés. Un contrôle non exécuté doit
+rester explicitement `SKIPPED_BY_POLICY` ou `NOT_RUN`.

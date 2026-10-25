@@ -87,6 +87,31 @@ test("publishes exactly the immutable candidate SHA with an explicit refspec", a
   assert.equal(fake.calls.some((args) => ["reset", "stash", "clean"].includes(args[0])), false);
 });
 
+test("blocks before push when the active coverage proof is absent", async () => {
+  const fake = fakeGit({
+    local: "candidate",
+    remote: "base",
+    parents: { candidate: "base" },
+  });
+  let gateCalls = 0;
+
+  await assert.rejects(
+    publishMain({
+      runGitCommand: fake.runGitCommand,
+      sleep: async () => {},
+      coverageGate: ({ candidateSha, baseRef }) => {
+        gateCalls += 1;
+        assert.equal(candidateSha, "candidate");
+        assert.equal(baseRef, "base");
+        throw new Error("Coverage proof is missing for enforced web scope.");
+      },
+    }),
+    /Coverage proof is missing for enforced web scope/,
+  );
+  assert.equal(gateCalls, 1);
+  assert.equal(pushCalls(fake).length, 0);
+});
+
 test("blocks a new local commit created between candidate capture and push", async () => {
   const fake = fakeGit({
     parents: { candidate: "base", local2: "candidate" },

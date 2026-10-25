@@ -141,7 +141,11 @@ export function writeCoverageEvidence({ repositoryRoot = process.cwd() } = {}) {
   console.log(`COVERAGE_CANDIDATE: ${evidence.candidateFingerprint}`);
   return evidence;
 }
-export function validateCoverageEvidence({ repositoryRoot = process.cwd() } = {}) {
+export function validateCoverageEvidence({
+  repositoryRoot = process.cwd(),
+  expectedCandidateSha = null,
+  requireCleanWorktree = false,
+} = {}) {
   const summaryPath = repositoryPath(repositoryRoot, COVERAGE_SUMMARY_RELATIVE_PATH.replaceAll("\\", "/"));
   const evidencePath = repositoryPath(repositoryRoot, COVERAGE_EVIDENCE_RELATIVE_PATH.replaceAll("\\", "/"));
   let evidence;
@@ -168,6 +172,12 @@ export function validateCoverageEvidence({ repositoryRoot = process.cwd() } = {}
     if (evidence[field] !== expected[field]) {
       throw new Error(`Coverage evidence mismatch: ${field}. Re-run npm run test:coverage for this candidate/configuration.`);
     }
+  }
+  if (expectedCandidateSha && evidence.gitHead !== expectedCandidateSha) {
+    throw new Error(`Coverage evidence candidate mismatch: ${evidence.gitHead} !== ${expectedCandidateSha}.`);
+  }
+  if (requireCleanWorktree && getWorktreeCandidateFiles(repositoryRoot).length > 0) {
+    throw new Error("Coverage evidence is tied to a dirty worktree and cannot prove the exact candidate tree.");
   }
   if (!summary?.total || typeof summary.total !== "object") {
     throw new Error("Coverage evidence summary is incomplete: total metrics are missing.");

@@ -435,6 +435,50 @@ function Invoke-GuardStep {
         Invoke-GuardStep "$Label ($CandidateRef)" { & node @runnerArguments }
     }
 
+    function Invoke-CoveragePublicationGuard {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$CandidateRef,
+            [Parameter(Mandatory = $false)]
+            [string]$BaseRef,
+            [Parameter(Mandatory = $true)]
+            [AllowEmptyCollection()]
+            [string[]]$ChangedFiles
+        )
+
+        $coverageArguments = @(
+            "scripts/ci/coverage-publication.mjs",
+            "--candidate-ref=$CandidateRef"
+        )
+        if (-not [string]::IsNullOrWhiteSpace($BaseRef)) {
+            $coverageArguments += "--base-ref=$BaseRef"
+        }
+        foreach ($file in @($ChangedFiles | Sort-Object -Unique)) {
+            $coverageArguments += "--changed-file=$file"
+        }
+        Invoke-GuardStep "coverage publication proof ($CandidateRef)" { & node @coverageArguments }
+    }
+
+    function Invoke-DynamicCoverageCommand {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$CandidateRef,
+            [Parameter(Mandatory = $true)]
+            [string]$Label,
+            [Parameter(Mandatory = $true)]
+            [string[]]$CommandArguments
+        )
+
+        $previousCoverageRoot = $env:CMM_COVERAGE_PUBLICATION_ROOT
+        $env:CMM_COVERAGE_PUBLICATION_ROOT = Join-Path $RepoRoot "artifacts/coverage-publication"
+        try {
+            Invoke-DynamicCandidateCommand -CandidateRef $CandidateRef -Label $Label -Command "npm" -DependencyMode "reuse" -CommandArguments $CommandArguments
+        } finally {
+            if ($null -eq $previousCoverageRoot) { Remove-Item Env:CMM_COVERAGE_PUBLICATION_ROOT -ErrorAction SilentlyContinue }
+            else { $env:CMM_COVERAGE_PUBLICATION_ROOT = $previousCoverageRoot }
+        }
+    }
+
     $vercelProjectFiles = @(
         @(
             ".vercel/project.json",
@@ -506,6 +550,10 @@ function Invoke-GuardStep {
         Write-Host "Quick PUSH_CANDIDATE checks"
         foreach ($candidateRef in @($candidates | Select-Object -ExpandProperty LocalSha -Unique)) {
             Invoke-CriticalStaticCandidateChecks -CandidateRef $candidateRef
+            $candidateBaseRef = @($candidates | Where-Object { $_.LocalSha -eq $candidateRef -and -not (Test-ZeroSha $_.RemoteSha) } | Select-Object -ExpandProperty RemoteSha -Unique | Select-Object -First 1)
+            $candidateRanges = @($candidates | Where-Object { $_.LocalSha -eq $candidateRef } | Select-Object -ExpandProperty Range -Unique)
+            $candidateFiles = if ($candidateRanges.Count -gt 0) { @(Get-ChangedFilesFromRanges -Ranges $candidateRanges) } else { @($changedFiles) }
+            Invoke-CoveragePublicationGuard -CandidateRef $candidateRef -BaseRef ([string]$candidateBaseRef) -ChangedFiles $candidateFiles
         }
 
         Write-Host ""
@@ -534,7 +582,11 @@ function Invoke-GuardStep {
             DocumentationRelevant = Test-DocumentationChange -ChangedFiles $candidateFiles
             SupabaseRelevant = Test-ChangedPathPrefix -ChangedFiles $candidateFiles -Prefix "apps/web/supabase/"
             WebRelevant = [bool]$candidatePolicy.webRelevant -or $candidateVercelConfigRelevant
+            WebCoverageRelevant = (@($candidateFiles | Where-Object { $_.StartsWith("apps/web/", [System.StringComparison]::OrdinalIgnoreCase) -and -not $_.StartsWith("apps/web/supabase/", [System.StringComparison]::OrdinalIgnoreCase) }).Count -gt 0) -or $candidateFiles -contains "package.json" -or $candidateFiles -contains "package-lock.json"
             BuildRelevant = [bool]$candidatePolicy.buildRelevant -or $candidateVercelConfigRelevant
+            MobileCoverageRelevant = @($candidateFiles | Where-Object { $_.StartsWith("apps/mobile/", [System.StringComparison]::OrdinalIgnoreCase) -and -not $_.EndsWith(".md", [System.StringComparison]::OrdinalIgnoreCase) -and -not $_.EndsWith(".mdx", [System.StringComparison]::OrdinalIgnoreCase) }).Count -gt 0
+            NodeCoverageRelevant = (@($candidateFiles | Where-Object { ($_.StartsWith("scripts/", [System.StringComparison]::OrdinalIgnoreCase) -or $_.StartsWith("apps/web/scripts/", [System.StringComparison]::OrdinalIgnoreCase)) -and -not $_.EndsWith(".md", [System.StringComparison]::OrdinalIgnoreCase) -and -not $_.EndsWith(".mdx", [System.StringComparison]::OrdinalIgnoreCase) }).Count -gt 0)
+            PythonCoverageRelevant = @($candidateFiles | Where-Object { $_ -match "^maintenance/python/(src|scripts)/.*\.py$" }).Count -gt 0
         }
     }
 
@@ -548,7 +600,11 @@ function Invoke-GuardStep {
                 DocumentationRelevant = $true
                 SupabaseRelevant = $true
                 WebRelevant = $true
+                WebCoverageRelevant = $true
                 BuildRelevant = $true
+                MobileCoverageRelevant = $true
+                NodeCoverageRelevant = $true
+                PythonCoverageRelevant = $true
             })
     }
 
@@ -583,9 +639,36 @@ function Invoke-GuardStep {
             } else {
                 Write-SkippedGuardStep "build ($($plan.CandidateRef))" "changed web scope does not require a production build"
             }
+
+            if ([bool]$plan.WebCoverageRelevant) {
+                Invoke-DynamicCoverageCommand -CandidateRef $plan.CandidateRef -Label "Web coverage" -CommandArguments @("run", "test:coverage")
+            } else {
+                Write-SkippedGuardStep "Web coverage ($($plan.CandidateRef))" "no Web instrumented files in this candidate"
+            }
         } else {
             Write-SkippedGuardStep "web quality gates ($($plan.CandidateRef))" "no web-relevant changes in this candidate"
         }
+
+        if ([bool]$plan.MobileCoverageRelevant) {
+            Invoke-DynamicCoverageCommand -CandidateRef $plan.CandidateRef -Label "Mobile coverage" -CommandArguments @("run", "quality:mobile-coverage")
+        } else {
+            Write-SkippedGuardStep "Mobile coverage ($($plan.CandidateRef))" "no mobile changes in this candidate"
+        }
+
+        if ([bool]$plan.NodeCoverageRelevant) {
+            Invoke-DynamicCoverageCommand -CandidateRef $plan.CandidateRef -Label "Node coverage" -CommandArguments @("run", "test:coverage:node")
+        } else {
+            Write-SkippedGuardStep "Node coverage ($($plan.CandidateRef))" "no script changes in this candidate"
+        }
+
+        if ([bool]$plan.PythonCoverageRelevant) {
+            Invoke-DynamicCoverageCommand -CandidateRef $plan.CandidateRef -Label "Python coverage" -CommandArguments @("run", "test:coverage:python")
+        } else {
+            Write-SkippedGuardStep "Python coverage ($($plan.CandidateRef))" "no Python source changes in this candidate"
+        }
+
+        $candidateBaseRef = @($plan.Ranges | ForEach-Object { if ($_ -match "^([^\.]+)\.\.\.(.+)$") { $Matches[1] } } | Select-Object -First 1)
+        Invoke-CoveragePublicationGuard -CandidateRef $plan.CandidateRef -BaseRef ([string]$candidateBaseRef) -ChangedFiles $plan.ChangedFiles
     }
 
     if ($SkipVercel) {

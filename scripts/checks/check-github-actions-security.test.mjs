@@ -243,7 +243,7 @@ assert.match(ciWorkflow, /Web targeted security and regression tests/);
 assert.match(ciWorkflow, /Web production build/);
 assert.match(ciWorkflow, /mobile-validation:\n    needs: scope/);
 const mobileValidationJob = ciWorkflow.match(/  mobile-validation:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";
-assert.doesNotMatch(mobileValidationJob, /if: needs\.scope\.outputs\.mobile_code_relevant == 'true'/);
+assert.match(mobileValidationJob, /if: needs\.scope\.outputs\.mobile_code_relevant == 'true'/);
 const webStaticJob = ciWorkflow.match(/  web-static:[\s\S]*?\n\n  web-quality:/)?.[0] ?? "";
 assert.match(
   webStaticJob,
@@ -267,8 +267,8 @@ assert.match(ciWorkflow, /fail-on-severity: high/);
 const dependencyReviewJob = ciWorkflow.match(/  dependency-review:[\s\S]*?\n\n  web-governance:/)?.[0] ?? "";
 assert.doesNotMatch(dependencyReviewJob, /secrets\./);
 assert.doesNotMatch(dependencyReviewJob, /actions\/checkout@/);
-assert.equal((ciWorkflow.match(/persist-credentials: false/g) ?? []).length, 12);
-assert.equal((ciWorkflow.match(/node-version-file: \$\{\{ env\.NODE_VERSION_FILE \}\}/g) ?? []).length, 11);
+assert.equal((ciWorkflow.match(/persist-credentials: false/g) ?? []).length, 13);
+assert.equal((ciWorkflow.match(/node-version-file: \$\{\{ env\.NODE_VERSION_FILE \}\}/g) ?? []).length, 12);
 assert.equal((ciWorkflow.match(/check-node-version-contract\.mjs/g) ?? []).length, 8);
 assert.doesNotMatch(ciWorkflow, /check:agent-skills/);
 assert.match(ciWorkflow, /check:doc-governance/);

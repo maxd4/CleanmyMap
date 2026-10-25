@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
+import { runCoveragePublicationGate } from "./coverage-publication.mjs";
 import { gitExecutable } from "./git-executable.mjs";
 
 const DEFAULT_MAX_ATTEMPTS = 3;
@@ -50,6 +51,19 @@ function isRetryablePushRace(result) {
 
 function waitMs(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function runPublicationCoverageGate({ candidateSha, baseRef, runGitCommand }) {
+  const changedFiles = baseRef
+    ? gitText(runGitCommand, ["diff", "--name-only", baseRef, candidateSha]).split(/\r?\n/).filter(Boolean)
+    : [];
+  return runCoveragePublicationGate({
+    repositoryRoot: process.cwd(),
+    candidateSha,
+    baseRef,
+    currentRef: candidateSha,
+    changedFiles,
+  });
 }
 
 function readLocalMain(runGitCommand) {
@@ -107,6 +121,7 @@ export async function publishMain({
   maxAttempts = DEFAULT_MAX_ATTEMPTS,
   backoffMs = DEFAULT_BACKOFF_MS,
   log = console.log,
+  coverageGate = null,
 } = {}) {
   assertMain(runGitCommand);
   assertNoOperationInProgress(runGitCommand);
@@ -141,6 +156,10 @@ export async function publishMain({
     }
 
     assertCandidateIsCurrent(runGitCommand, candidateSha, "immediately before push");
+    if (coverageGate) {
+      coverageGate({ candidateSha, baseRef: remoteSha, runGitCommand });
+      log(`Coverage publication gate passed for candidate ${candidateSha}.`);
+    }
     const push = runGitCommand(["push", "origin", `${candidateSha}:refs/heads/main`]);
     if (push.status === 0) {
       const verifyFetch = runGitCommand(["fetch", "origin", "main"]);
@@ -183,6 +202,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   publishMain({
     maxAttempts: Number(process.env.CMM_PUBLISH_MAX_ATTEMPTS ?? DEFAULT_MAX_ATTEMPTS),
     backoffMs: Number(process.env.CMM_PUBLISH_BACKOFF_MS ?? DEFAULT_BACKOFF_MS),
+    coverageGate: runPublicationCoverageGate,
   }).catch((error) => {
     console.error(`PUBLISH_MAIN_BLOCKED: ${error.message}`);
     process.exitCode = 1;
