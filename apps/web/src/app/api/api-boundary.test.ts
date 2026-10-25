@@ -181,15 +181,37 @@ function extractLocalFunctionBodies(source: string): Map<string, string> {
   return functions;
 }
 
-function collectIdentifierUsages(source: string): Set<string> {
+function collectFunctionBindings(source: string): Set<string> {
+  const bindings = new Set(extractLocalFunctionBodies(source).keys());
   const sourceFile = ts.createSourceFile(
-    "api-boundary-expression.ts",
+    "api-boundary-bindings.ts",
     source,
     ts.ScriptTarget.Latest,
     true,
     ts.ScriptKind.TS,
   );
-  const usages = new Set<string>();
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement)) continue;
+    const clause = statement.importClause;
+    if (!clause || clause.isTypeOnly) continue;
+    if (clause.name) bindings.add(clause.name.text);
+    if (clause.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+      for (const element of clause.namedBindings.elements) {
+        bindings.add(element.name.text);
+      }
+    }
+    if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings)) {
+      bindings.add(clause.namedBindings.name.text);
+    }
+  }
+  return bindings;
+}
+
+function collectIdentifierReferencesFromNode(
+  node: ts.Node,
+  excludeNonExecutablePropertyNames = false,
+): Set<string> {
+  const references = new Set<string>();
   const visit = (node: ts.Node) => {
     if (ts.isIdentifier(node)) {
       const parent = node.parent;
@@ -198,24 +220,129 @@ function collectIdentifierUsages(source: string): Set<string> {
         (ts.isFunctionDeclaration(parent) && parent.name === node) ||
         (ts.isParameter(parent) && parent.name === node) ||
         (ts.isImportClause(parent) && parent.name === node) ||
-        (ts.isImportSpecifier(parent) && (parent.name === node || parent.propertyName === node));
-      if (!isDeclaration) usages.add(node.text);
+        (ts.isImportSpecifier(parent) &&
+          (parent.name === node || parent.propertyName === node));
+      const isNonExecutablePropertyName =
+        (ts.isPropertyAccessExpression(parent) && parent.name === node) ||
+        (ts.isPropertyAssignment(parent) && parent.name === node) ||
+        (ts.isMethodDeclaration(parent) && parent.name === node) ||
+        (ts.isPropertySignature(parent) && parent.name === node);
+      if (
+        !isDeclaration &&
+        (!excludeNonExecutablePropertyNames || !isNonExecutablePropertyName)
+      ) {
+        references.add(node.text);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(node);
+  return references;
+}
+
+function collectIdentifierReferences(source: string): Set<string> {
+  const sourceFile = ts.createSourceFile(
+    "api-boundary-references.ts",
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  return collectIdentifierReferencesFromNode(sourceFile);
+}
+
+function collectCalledIdentifiers(
+  source: string,
+  includePropertyAccess = false,
+  includeCallbackArguments = false,
+): Set<string> {
+  const sourceFile = ts.createSourceFile(
+    "api-boundary-expression.ts",
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const calledIdentifiers = new Set<string>();
+  const callableAliases = new Map<string, Set<string>>();
+  const collectAliases = (node: ts.Node) => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer
+    ) {
+      callableAliases.set(
+        node.name.text,
+        collectIdentifierReferencesFromNode(node.initializer, true),
+      );
+    }
+    ts.forEachChild(node, collectAliases);
+  };
+  collectAliases(sourceFile);
+  const addCallableReference = (name: string, visited = new Set<string>()) => {
+    if (visited.has(name)) return;
+    visited.add(name);
+    calledIdentifiers.add(name);
+    for (const alias of callableAliases.get(name) ?? []) {
+      addCallableReference(alias, visited);
+    }
+  };
+  const getCalleeIdentifier = (expression: ts.Expression): string | null => {
+    let unwrapped = expression;
+    while (ts.isParenthesizedExpression(unwrapped)) {
+      unwrapped = unwrapped.expression;
+    }
+    if (ts.isIdentifier(unwrapped)) return unwrapped.text;
+    if (
+      includePropertyAccess &&
+      ts.isPropertyAccessExpression(unwrapped) &&
+      ts.isIdentifier(unwrapped.name)
+    ) {
+      return unwrapped.name.text;
+    }
+    return null;
+  };
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node)) {
+      const calleeIdentifier = getCalleeIdentifier(node.expression);
+      if (calleeIdentifier) addCallableReference(calleeIdentifier);
+      if (includeCallbackArguments) {
+        const directCallee =
+          ts.isIdentifier(node.expression) ||
+          (ts.isParenthesizedExpression(node.expression) &&
+            ts.isIdentifier(node.expression.expression));
+        for (const argument of node.arguments) {
+          let callback = argument;
+          while (ts.isParenthesizedExpression(callback)) {
+            callback = callback.expression;
+          }
+          if (ts.isIdentifier(callback)) {
+            addCallableReference(callback.text);
+          } else if (directCallee) {
+            for (const reference of collectIdentifierReferencesFromNode(argument, true)) {
+              addCallableReference(reference);
+            }
+          }
+        }
+      }
     }
     ts.forEachChild(node, visit);
   };
   ts.forEachChild(sourceFile, visit);
-  return usages;
+  return calledIdentifiers;
 }
 
 function hasEvidenceToken(
   source: string,
   token: string,
-  identifierUsages = collectIdentifierUsages(source),
+  calledIdentifiers = collectCalledIdentifiers(source, true),
+  callableBindings = new Set<string>(),
 ): boolean {
   const executableSource = withoutComments(source);
   if (!/^[A-Za-z_$][\w$]*$/.test(token)) return executableSource.includes(token);
+  if (callableBindings.has(token)) return calledIdentifiers.has(token);
   return (
-    identifierUsages.has(token) ||
+    collectIdentifierReferences(executableSource).has(token) ||
     (token.includes("_") && new RegExp(`["'\`]${token}["'\`]`).test(executableSource))
   );
 }
@@ -231,13 +358,13 @@ function collectReachableMethodSource(
 ): string {
   const reachableSources: string[] = [];
   const visitedFunctions = new Set<string>();
-  const identifierUsageCache = new Map<string, Set<string>>();
+  const calledIdentifierCache = new Map<string, Set<string>>();
   const usesIdentifier = (source: string, name: string) => {
-    const cached = identifierUsageCache.get(source);
+    const cached = calledIdentifierCache.get(source);
     if (cached) return cached.has(name);
-    const usages = collectIdentifierUsages(source);
-    identifierUsageCache.set(source, usages);
-    return usages.has(name);
+    const calledIdentifiers = collectCalledIdentifiers(source, false, true);
+    calledIdentifierCache.set(source, calledIdentifiers);
+    return calledIdentifiers.has(name);
   };
 
   const getImports = (modulePath: string) => {
@@ -296,12 +423,29 @@ function missingEvidence(
       ? routeEntry.methodEvidenceSources?.get(method) ?? routeEntry.source
       : methodSource;
   const executableEvidenceSource = withoutComments(evidenceSource ?? "");
-  const identifierUsages = collectIdentifierUsages(executableEvidenceSource);
+  const calledIdentifiers = collectCalledIdentifiers(
+    executableEvidenceSource,
+    true,
+    true,
+  );
+  const callableBindings = collectFunctionBindings(routeEntry.source);
   const missing = (entry.evidence ?? []).filter(
-    (token) => !hasEvidenceToken(executableEvidenceSource, token, identifierUsages),
+    (token) =>
+      !hasEvidenceToken(
+        executableEvidenceSource,
+        token,
+        calledIdentifiers,
+        callableBindings,
+      ),
   );
   const missingHandlerEvidence = (entry.handlerEvidence ?? []).filter(
-    (token) => !withoutComments(methodSource ?? "").includes(token),
+    (token) =>
+      !hasEvidenceToken(
+        methodSource ?? "",
+        token,
+        collectCalledIdentifiers(methodSource ?? "", true),
+        callableBindings,
+      ),
   );
   return [...missing, ...missingHandlerEvidence];
 }
@@ -562,6 +706,67 @@ describe("API security boundaries", () => {
     ]);
   });
 
+  it("does not follow an imported helper used only as a property key", () => {
+    const routeEntry = buildInlineRouteEntry(
+      `
+        import { checkPermission } from "./permissions";
+        export async function PATCH() {
+          return Response.json({ checkPermission: false });
+        }
+      `,
+      {
+        "permissions.ts": `
+          export function checkPermission() {
+            canEditValidatedImpact();
+            appendActionModerationAudit();
+          }
+        `,
+      },
+    );
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "validated impact correction and audit",
+      dimensions: ["validated impact correction", "audit"],
+      actual: "PATCH must not inherit a property key's helper body",
+      evidence: ["canEditValidatedImpact", "appendActionModerationAudit"],
+      evidenceScope: "module",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "PATCH")).toEqual([
+      "canEditValidatedImpact",
+      "appendActionModerationAudit",
+    ]);
+  });
+
+  it("does not follow an imported helper that is referenced but never called", () => {
+    const routeEntry = buildInlineRouteEntry(
+      `
+        import { checkPermission } from "./permissions";
+        export async function PATCH() {
+          const permission = checkPermission;
+          return Response.json({ permission });
+        }
+      `,
+      {
+        "permissions.ts": `
+          export function checkPermission() {
+            appendActionModerationAudit();
+          }
+        `,
+      },
+    );
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "audit",
+      dimensions: ["audit"],
+      actual: "PATCH must call the imported audit owner",
+      evidence: ["appendActionModerationAudit"],
+      evidenceScope: "module",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "PATCH")).toEqual([
+      "appendActionModerationAudit",
+    ]);
+  });
+
   it("recognizes a helper only when the HTTP method actually delegates to it", () => {
     const routeEntry = buildInlineRouteEntry(
       `
@@ -679,6 +884,65 @@ describe("API security boundaries", () => {
 
     expect(missingEvidence(entry, routeEntry, "PATCH")).toEqual([
       "canEditValidatedImpact",
+    ]);
+  });
+
+  it("requires handler evidence to be an invocation inside the inspected handler", () => {
+    const fixture = `
+      export async function POST() {
+        function requireActionRequestAccess() {}
+        return Response.json({ guard: "requireActionRequestAccess" });
+      }
+    `;
+    const routeEntry = {
+      source: fixture,
+      methods: extractRouteMethods(fixture),
+    };
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "authenticated access",
+      dimensions: ["authentication"],
+      actual: "POST must invoke its access guard",
+      handlerEvidence: ["requireActionRequestAccess"],
+      evidenceScope: "method",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "POST")).toEqual([
+      "requireActionRequestAccess",
+    ]);
+  });
+
+  it("does not let GET or POST evidence satisfy PATCH", () => {
+    const routeEntry = buildInlineRouteEntry(
+      `
+        import { getGuard, postAudit } from "./security";
+        export async function GET() {
+          return getGuard();
+        }
+        export async function POST() {
+          return postAudit();
+        }
+        export async function PATCH() {
+          return Response.json({ getGuard: false, postAudit: false });
+        }
+      `,
+      {
+        "security.ts": `
+          export function getGuard() { canEditValidatedImpact(); }
+          export function postAudit() { appendActionModerationAudit(); }
+        `,
+      },
+    );
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "PATCH security",
+      dimensions: ["validated impact correction", "audit"],
+      actual: "PATCH must have its own reachable security path",
+      evidence: ["canEditValidatedImpact", "appendActionModerationAudit"],
+      evidenceScope: "module",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "PATCH")).toEqual([
+      "canEditValidatedImpact",
+      "appendActionModerationAudit",
     ]);
   });
 });
