@@ -136,24 +136,36 @@ function parsePgProveSummary(output, expectedPlan) {
 export function parsePgTapOutput(output, expectedPlan) {
   if (expectedPlan === null) throw new Error("pgTAP source has no explicit plan() assertion");
 
-  const planMatch = output.match(/(?:^|\n)\s*1\.\.(\d+)\s*(?:\n|$)/m);
-  const assertions = [...output.matchAll(/(?:^|\n)\s*(ok|not ok)\s+(\d+)\b[^\n]*/gi)]
-    .map((match) => ({ status: match[1].toLowerCase(), number: Number(match[2]) }));
+  if (/^\s*Bail out!(?:\s|$)/im.test(output)) {
+    throw new Error("pgTAP output contains a Bail out! interruption");
+  }
+
+  const planMatches = [...output.matchAll(/(?:^|\n)\s*1\.\.(\d+)\s*(?:\n|$)/gm)];
+  if (planMatches.length > 1) throw new Error("pgTAP output contains multiple plans");
+  const assertions = [...output.matchAll(/(?:^|\n)\s*(ok|not ok)\s+(\d+)\b([^\n]*)/gi)]
+    .map((match) => {
+      const directive = match[3].match(/(?:^|\s)#\s*(skip|todo)(?:\s|$)/i);
+      return { status: match[1].toLowerCase(), number: Number(match[2]), directive: directive?.[1].toUpperCase() ?? null };
+    });
   const hasSummaryFields = /\b(?:Files|Tests)\s*=|\bResult\s*:/i.test(output);
 
   if (assertions.length === 0 && hasSummaryFields) {
-    if (planMatch) throw new Error("pgTAP output contains an incomplete TAP stream alongside a pg_prove summary");
+    if (planMatches.length > 0) throw new Error("pgTAP output contains an incomplete TAP stream alongside a pg_prove summary");
     return parsePgProveSummary(output, expectedPlan);
   }
   if (assertions.length === 0) throw new Error("pgTAP output contains neither a complete TAP stream nor a pg_prove summary");
 
   const failures = assertions.filter((assertion) => assertion.status === "not ok").length;
   const passed = assertions.filter((assertion) => assertion.status === "ok").length;
-  const actualPlan = planMatch ? Number(planMatch[1]) : null;
+  const actualPlan = planMatches.length === 1 ? Number(planMatches[0][1]) : null;
   if (actualPlan !== expectedPlan) throw new Error(`pgTAP output plan mismatch: expected ${expectedPlan}, received ${actualPlan ?? "missing"}`);
   const duplicateOrOutOfRange = assertions.find((assertion, index) => assertion.number !== index + 1 || assertion.number < 1 || assertion.number > expectedPlan);
   if (duplicateOrOutOfRange) {
     throw new Error(`pgTAP output assertion numbering is incomplete or inconsistent at assertion ${duplicateOrOutOfRange.number}`);
+  }
+  const directive = assertions.find((assertion) => assertion.directive !== null);
+  if (directive) {
+    throw new Error(`pgTAP output contains a ${directive.directive} assertion that was not executed`);
   }
   if (failures > 0) throw new Error(`pgTAP output contains ${failures} failing assertion(s)`);
   if (passed !== expectedPlan) throw new Error(`pgTAP output is incomplete: expected ${expectedPlan} passing assertions, received ${passed}`);

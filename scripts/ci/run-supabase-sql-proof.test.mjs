@@ -43,6 +43,23 @@ test("pgTAP parser accepts an exact complete plan", () => {
   });
 });
 
+test("pgTAP parser accepts an initial plan, ordinary words and diagnostics", () => {
+  assert.deepEqual(parsePgTapOutput([
+    "1..2",
+    "# diagnostic: skip and todo are ordinary words here",
+    "ok 1 - skip is part of the description",
+    "ok 2 - todo is part of the description",
+  ].join("\n"), 2), {
+    expectedPlan: 2,
+    actualPlan: 2,
+    planned: 2,
+    executed: 2,
+    passed: 2,
+    failures: 0,
+    verificationMode: "tap-detailed",
+  });
+});
+
 test("pgTAP parser accepts the real pg_prove summary and preserves its verification mode", () => {
   const output = [
     "/tmp/supabase/tests/example.pgtap.sql .. ok",
@@ -111,6 +128,14 @@ test("pgTAP parser rejects missing, failing, incomplete or ambiguous proof", () 
   assert.throws(() => parsePgTapOutput("Files=1, Tests=2, 0 Failed, 0 Ignored, 0 Todo, 2 Skipped\nResult: PASS\n", 2), /does not prove/);
   assert.throws(() => parsePgTapOutput("Files=1, Tests=2, 0 Failed, 0 Ignored, 0 Todo, 0 Skipped\nResult: PASS\nResult: PASS\n", 2), /ambiguous/);
   assert.throws(() => parsePgTapOutput("Files=1, Tests=2, 0 Failed, 1 Failed\nResult: PASS\n", 2), /ambiguous/);
+  assert.throws(() => parsePgTapOutput("1..2\nok 1 - first\nok 2 - second\n1..2\n", 2), /multiple plans/);
+  assert.throws(() => parsePgTapOutput("1..2\nok 1 - first\n1..3\nok 2 - second\n", 2), /multiple plans/);
+  assert.throws(() => parsePgTapOutput("1..2\nok 1 - first # SKIP environment missing\nok 2 - second\n", 2), /SKIP assertion/);
+  assert.throws(() => parsePgTapOutput("1..2\nok 1 - first # tOdO known defect\nok 2 - second\n", 2), /TODO assertion/);
+  assert.throws(() => parsePgTapOutput("1..2\nok 1 - first # sKiP environment missing\nok 2 - second\n", 2), /SKIP assertion/);
+  assert.throws(() => parsePgTapOutput("1..2\nok 1 - first\nBail out! Connection lost\n", 2), /Bail out/);
+  assert.throws(() => parsePgTapOutput("1..2\nok 1 - first\nok 2 - second\nBail out! Connection lost\n", 2), /Bail out/);
+  assert.throws(() => parsePgTapOutput("1..2\nok 1 - first\nok 2 - second\nBail out! Connection lost\nFiles=1, Tests=2, 0 Failed\nResult: PASS\n", 2), /Bail out/);
 });
 
 test("pgTAP parser rejects detailed and summary divergence", () => {
@@ -155,24 +180,36 @@ test("proof attestation maps verified and failed executions to explicit statuses
 
 test("rejected proof reaches the runner failure exit code", async () => {
   const rejectedRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };
-  let validationError;
   assert.throws(
     () => attestProofResult(
       rejectedRecord,
       { code: 0, output: "Files=1, Tests=2, 0 Failed, 0 Ignored, 1 Skipped\nResult: PASS\n" },
       (output) => parsePgTapOutput(output, 2),
     ),
-    (error) => {
-      validationError = error;
-      return /does not prove/.test(error.message);
-    },
+    (error) => /does not prove/.test(error.message),
   );
   assert.equal(rejectedRecord.status, "INTEGRATION_PROOF");
   assert.equal(rejectedRecord.outcome, "FAIL");
+
+  const bailedRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };
+  let bailError;
+  assert.throws(
+    () => attestProofResult(
+      bailedRecord,
+      { code: 0, output: "1..2\nok 1 - first\nok 2 - second\nBail out! Connection lost\n" },
+      (output) => parsePgTapOutput(output, 2),
+    ),
+    (error) => {
+      bailError = error;
+      return /Bail out/.test(error.message);
+    },
+  );
+  assert.equal(bailedRecord.status, "INTEGRATION_PROOF");
+  assert.equal(bailedRecord.outcome, "FAIL");
   const originalConsoleError = console.error;
   console.error = () => {};
   try {
-    assert.equal(await main(async () => { throw validationError; }), 1);
+    assert.equal(await main(async () => { throw bailError; }), 1);
   } finally {
     console.error = originalConsoleError;
   }
