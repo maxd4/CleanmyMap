@@ -119,9 +119,11 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   const mobileJob = extractJob(workflow, "mobile-validation");
   assert.match(mobileJob, /^    needs: scope$/m);
   assert.match(mobileJob, /if: needs\.scope\.outputs\.mobile_code_relevant == 'true'/);
-  for (const command of ["npm run mobile:security", "npm run mobile:typecheck", "npm run mobile:test", "npm run quality:mobile-coverage", "npm run mobile:lint"]) {
+  for (const command of ["npm run mobile:security", "npm run mobile:typecheck", "npm run mobile:coverage", "node scripts/checks/check-coverage.mjs --scope=mobile --from-existing-summary", "npm run mobile:lint"]) {
     assert.match(mobileJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
   }
+  assert.doesNotMatch(mobileJob, /npm run mobile:test/);
+  assert.doesNotMatch(mobileJob, /npm run quality:mobile-coverage/);
   assert.doesNotMatch(mobileJob, /npm run security:secrets/);
   assert.match(mobileJob, /npm run check:semgrep/);
   assert.match(mobileJob, /web_code_relevant != 'true'/);

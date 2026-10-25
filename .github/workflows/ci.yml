@@ -769,12 +769,12 @@ jobs:
       - name: Mobile typecheck
         run: npm run mobile:typecheck
 
-      - name: Mobile Vitest tests
-        run: npm run mobile:test
+      - name: Mobile Vitest tests + coverage
+        run: npm run mobile:coverage
 
-      - name: Mobile Vitest coverage comparison
+      - name: Mobile Vitest coverage comparison from existing evidence
         if: needs.scope.outputs.mobile_code_relevant == 'true' || (github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL')
-        run: npm run quality:mobile-coverage
+        run: node scripts/checks/check-coverage.mjs --scope=mobile --from-existing-summary
 
       - name: Mobile lint
         run: npm run mobile:lint
