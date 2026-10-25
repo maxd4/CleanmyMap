@@ -289,4 +289,56 @@ describe("POST /api/actions — création standard et pré-action", () => {
       }),
     );
   }, 15000);
+
+  it.each([
+    ["malformed JSON", "{", 400],
+    ["empty body", "", 400],
+    ["null JSON", "null", 422],
+    ["array JSON", "[]", 422],
+  ] as const)("rejects %s before creating an action", async (_label, body, status) => {
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost/api/actions", {
+      method: "POST",
+      body,
+    }));
+
+    expect(response.status).toBe(status);
+    expect(createActionMock).not.toHaveBeenCalled();
+    expect(resolveActionOrganizersMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it.each([
+    ["invalid date", { dates: { observedAt: "not-a-date" } }],
+    ["negative waste", { metadata: { wasteKg: -1 } }],
+    ["negative volunteer count", { metadata: { volunteersCount: -1 } }],
+    ["negative duration", { metadata: { durationMinutes: -1 } }],
+    ["empty location", { location: { label: " " } }],
+  ] as const)("rejects %s without persistence", async (_label, override) => {
+    const base = buildSubmitPayload();
+    const response = await postSubmitPayload({
+      ...base,
+      ...override,
+      ...(override.metadata ? { metadata: { ...base.metadata, ...override.metadata } } : {}),
+      ...(override.dates ? { dates: { ...base.dates, ...override.dates } } : {}),
+      ...(override.location ? { location: { ...base.location, ...override.location } } : {}),
+    });
+
+    expect(response.status).toBe(422);
+    expect(createActionMock).not.toHaveBeenCalled();
+    expect(resolveActionOrganizersMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("does not let a client-supplied creator id replace the authenticated actor", async () => {
+    const response = await postSubmitPayload({
+      ...buildSubmitPayload(),
+      createdByClerkId: "attacker-1",
+      userId: "attacker-1",
+    });
+
+    expect(response.status).toBe(201);
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ userId: "user-test-1" }),
+    );
+  }, 15000);
 });

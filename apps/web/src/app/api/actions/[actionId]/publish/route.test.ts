@@ -178,4 +178,61 @@ describe("POST /api/actions/:actionId/publish", () => {
     expect(body.formalityIds).toContain("paris-city-public-domain-aot");
     expect(supabase.from).not.toHaveBeenCalled();
   });
+
+  it("refuses an anonymous publication before loading the action", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: false, status: 401, error: "Unauthorized" });
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) });
+
+    expect(response.status).toBe(401);
+    expect(loadActionByIdMock).not.toHaveBeenCalled();
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it("returns not found without reading organizers or writing", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(null);
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost"), { params: Promise.resolve({ actionId: "missing" }) });
+
+    expect(response.status).toBe(404);
+    expect(loadActionOrganizerIdsForActionMock).not.toHaveBeenCalled();
+    expect(getSupabaseServerClientMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["empty id", "", 400],
+    ["already approved", "approved", 422],
+    ["already completed", "post_action_complete", 422],
+  ] as const)("refuses publication for %s before persistence", async (_label, state) => {
+    const { POST } = await import("./route");
+    const params = state === "" ? { actionId: "" } : { actionId: "action-1" };
+    if (state === "approved" || state === "post_action_complete") {
+      loadActionByIdMock.mockResolvedValueOnce({
+        id: "action-1",
+        created_by_clerk_id: "owner-1",
+        action_phase: state,
+        published_at: null,
+        status: "approved",
+      });
+    }
+
+    const response = await POST(new Request("http://localhost"), { params: Promise.resolve(params) });
+
+    expect(response.status).toBe(state === "" ? 400 : 422);
+    if (state === "") expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+    else expect(getSupabaseServerClientMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a lost publication update as a conflict and does not notify", async () => {
+    const supabase = createUpdateClient({ data: null, error: null });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) });
+
+    expect(response.status).toBe(409);
+    expect(emitAdministrativeRequirementNotificationsMock).not.toHaveBeenCalled();
+  });
 });

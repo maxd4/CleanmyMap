@@ -34,4 +34,18 @@ describe("resolveNextActionStatus", () => {
       }),
     ).toBe("pending");
   });
+
+  it.each([
+    ["pending", "pre_action", "pending"],
+    ["approved", "pre_action", "pending"],
+    ["rejected", "pre_action", "pending"],
+    ["cancelled", "pre_action", "pending"],
+    ["pending", "post_action_complete", "pending"],
+    ["rejected", "post_action_complete", "pending"],
+    ["cancelled", "post_action_draft", "cancelled"],
+    ["approved", "post_action_draft", "approved"],
+    ["pending", undefined, "pending"],
+  ] as const)("resolves %s + %s without using role as a status override", (currentStatus, actionPhase, expected) => {
+    expect(resolveNextActionStatus({ currentStatus, actionPhase })).toBe(expected);
+  });
 });

@@ -115,4 +115,57 @@ describe("POST /api/actions/:actionId/cancel", () => {
     const route = await import("./route");
     expect(route).not.toHaveProperty("DELETE");
   });
+
+  it.each([
+    ["invalid JSON", "{", "invalid_json"],
+    ["unknown field", JSON.stringify({ confirmPhrase: "CONFIRMER ANNULATION", extra: true }), "invalid_payload"],
+    ["missing confirmation", JSON.stringify({ reason: "weather" }), "invalid_payload"],
+  ] as const)("rejects cancellation %s before touching persistence", async (_label, body, code) => {
+    const { POST } = await import("./route");
+    const response = await POST(requestBody(body), { params: Promise.resolve({ actionId: "action-1" }) });
+    const payload = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(payload.code).toBe(code);
+    expect(cancelFutureActionMock).not.toHaveBeenCalled();
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("returns not found and audits a failed cancellation without a success audit", async () => {
+    const { ActionCancellationError } = await import("@/lib/actions/cancellation-contract");
+    cancelFutureActionMock.mockRejectedValueOnce(new ActionCancellationError("not_found", "not found"));
+    const { POST } = await import("./route");
+
+    const response = await POST(request({ confirmPhrase: "CONFIRMER ANNULATION", reason: "weather" }), {
+      params: Promise.resolve({ actionId: "action-1" }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(404);
+    expect(body.code).toBe("not_found");
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(expect.objectContaining({ outcome: "error" }));
+    expect(refreshActionImpactProgressionDependentsMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps an ineligible cancellation distinct from a state conflict", async () => {
+    const { ActionCancellationError } = await import("@/lib/actions/cancellation-contract");
+    cancelFutureActionMock.mockRejectedValueOnce(new ActionCancellationError("not_eligible", "not eligible"));
+    const { POST } = await import("./route");
+
+    const response = await POST(request({ confirmPhrase: "CONFIRMER ANNULATION", reason: "weather" }), {
+      params: Promise.resolve({ actionId: "action-1" }),
+    });
+
+    expect(response.status).toBe(422);
+    expect((await response.json()).code).toBe("invalid_payload");
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(expect.objectContaining({ outcome: "error" }));
+  });
 });
+
+function requestBody(body: string) {
+  return new Request("http://localhost/api/actions/action-1/cancel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+  });
+}

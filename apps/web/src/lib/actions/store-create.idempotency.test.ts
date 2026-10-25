@@ -184,4 +184,120 @@ describe("action creation idempotency", () => {
     })).rejects.toMatchObject({ code: "40001" });
     expect(harness.from).not.toHaveBeenCalled();
   });
+
+  it("sends a nullable retry identity when the caller did not provide one", async () => {
+    const harness = createSupabase({
+      data: [{ action_id: "action-without-key", replayed: false }],
+      error: null,
+    });
+    await expect(persistActionWithRelations(harness.client, {
+      userId: "creator-1",
+      baseInsert: { action_date: "2026-10-20", location_label: "Parc test" },
+      organizers: [],
+      manualParticipants: [],
+    })).resolves.toEqual({ id: "action-without-key" });
+
+    expect(harness.rpc).toHaveBeenCalledWith(
+      "create_action_with_relations",
+      expect.objectContaining({
+        p_client_request_id: null,
+        p_client_request_fingerprint: null,
+        p_organizer_required: true,
+      }),
+    );
+  });
+
+  it("keeps the caller's base insert immutable while adding the persistence key", async () => {
+    const harness = createSupabase({ data: [{ action_id: "action-1" }], error: null });
+    const baseInsert = { action_date: "2026-10-20", location_label: "Parc test" };
+    await persistActionWithRelations(harness.client, {
+      userId: "creator-1",
+      baseInsert,
+      organizers: [],
+      manualParticipants: [],
+      clientRequestId: "retry-key-123456",
+    });
+
+    expect(baseInsert).toEqual({ action_date: "2026-10-20", location_label: "Parc test" });
+    expect(harness.rpc.mock.calls[0]?.[1]).toMatchObject({
+      p_action: { ...baseInsert, client_request_id: "retry-key-123456" },
+    });
+  });
+
+  it("marks an organizer as required even when the explicit requirement is optional", async () => {
+    const harness = createSupabase({ data: [{ action_id: "action-1" }], error: null });
+    await persistActionWithRelations(harness.client, {
+      userId: "creator-1",
+      baseInsert: { action_date: "2026-10-20" },
+      organizers: [organizer],
+      organizerRequirement: "optional",
+      manualParticipants: [],
+    });
+
+    expect(harness.rpc).toHaveBeenCalledWith(
+      "create_action_with_relations",
+      expect.objectContaining({ p_organizer_required: true }),
+    );
+  });
+
+  it("keeps an optional empty organizer list optional", async () => {
+    const harness = createSupabase({ data: [{ action_id: "action-1" }], error: null });
+    await persistActionWithRelations(harness.client, {
+      userId: "creator-1",
+      baseInsert: { action_date: "2026-10-20" },
+      organizers: [],
+      organizerRequirement: "optional",
+      manualParticipants: [],
+    });
+
+    expect(harness.rpc).toHaveBeenCalledWith(
+      "create_action_with_relations",
+      expect.objectContaining({ p_organizer_required: false, p_organizers: [] }),
+    );
+  });
+
+  it("rejects a successful RPC envelope with an invalid action reference", async () => {
+    const harness = createSupabase({ data: [{ action_id: 42 }], error: null });
+    await expect(persistActionWithRelations(harness.client, {
+      userId: "creator-1",
+      baseInsert: { action_date: "2026-10-20" },
+      organizers: [],
+      manualParticipants: [],
+    })).rejects.toBeInstanceOf(ActionCreationPersistenceError);
+  });
+
+  it("uses the first row returned by the atomic RPC envelope", async () => {
+    const harness = createSupabase({
+      data: [{ action_id: "action-1" }, { action_id: "action-2" }],
+      error: null,
+    });
+    await expect(persistActionWithRelations(harness.client, {
+      userId: "creator-1",
+      baseInsert: { action_date: "2026-10-20" },
+      organizers: [],
+      manualParticipants: [],
+    })).resolves.toEqual({ id: "action-1" });
+  });
+
+  it("propagates an unrelated database error without attempting a fallback", async () => {
+    const harness = createSupabase({ data: null, error: { code: "23505", message: "duplicate" } });
+    await expect(persistActionWithRelations(harness.client, {
+      userId: "creator-1",
+      baseInsert: { action_date: "2026-10-20" },
+      organizers: [],
+      manualParticipants: [],
+    })).rejects.toMatchObject({ code: "23505" });
+    expect(harness.from).not.toHaveBeenCalled();
+  });
+
+  it("propagates an RPC transport rejection without inventing an action id", async () => {
+    const rpc = vi.fn().mockRejectedValue(new Error("connection reset"));
+    const harness = { rpc, from: vi.fn(), client: { rpc, from: vi.fn() } as unknown as SupabaseClient };
+    await expect(persistActionWithRelations(harness.client, {
+      userId: "creator-1",
+      baseInsert: { action_date: "2026-10-20" },
+      organizers: [],
+      manualParticipants: [],
+    })).rejects.toThrow("connection reset");
+  });
 });

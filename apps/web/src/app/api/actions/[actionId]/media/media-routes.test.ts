@@ -234,4 +234,105 @@ describe("Action media HTTP boundaries", () => {
       mediaId: "media-1",
     });
   });
+
+  it("refuses a forbidden listing before reading the media service", async () => {
+    requireActionRequestAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      error: "Forbidden",
+    });
+
+    const response = await listMedia(request("/api/actions/action-1/media"), { params });
+
+    expect(response.status).toBe(401);
+    expect(listActionMediaMock).not.toHaveBeenCalled();
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it("maps an absent action without leaking the storage lookup", async () => {
+    listActionMediaMock.mockRejectedValueOnce(new ActionMediaError("action secret", "not_found"));
+
+    const response = await listMedia(request("/api/actions/action-1/media"), { params });
+
+    expect(response.status).toBe(404);
+    expect(await response.text()).not.toContain("action secret");
+  });
+
+  it.each([
+    ["empty name", { originalName: "" }],
+    ["invalid width", { width: 0 }],
+    ["negative size", { sizeBytes: -1 }],
+    ["invalid order", { sortOrder: 3 }],
+    ["missing client key", { clientUploadId: "" }],
+  ] as const)("rejects %s before creating an upload intent", async (_label, patch) => {
+    const response = await createUploadIntent(
+      request("/api/actions/action-1/media/intents", {
+        method: "POST",
+        body: JSON.stringify({
+          originalName: "bilan.jpg",
+          mimeType: "image/jpeg",
+          sizeBytes: 1234,
+          width: 1200,
+          height: 800,
+          sortOrder: 0,
+          clientUploadId: "stable-client-upload-1",
+          ...patch,
+        }),
+      }),
+      { params },
+    );
+
+    expect(response.status).toBe(400);
+    expect(createActionMediaUploadIntentMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["not found", "not_found", 404],
+    ["quota", "limit_reached", 409],
+    ["storage missing", "storage_missing", 422],
+  ] as const)("maps %s during intent creation", async (_label, code, status) => {
+    createActionMediaUploadIntentMock.mockRejectedValueOnce(
+      new ActionMediaError("internal storage detail", code),
+    );
+
+    const response = await createUploadIntent(
+      request("/api/actions/action-1/media/intents", {
+        method: "POST",
+        body: JSON.stringify({
+          originalName: "bilan.jpg",
+          mimeType: "image/jpeg",
+          sizeBytes: 1234,
+          width: 1200,
+          height: 800,
+          sortOrder: 0,
+          clientUploadId: "stable-client-upload-1",
+        }),
+      }),
+      { params },
+    );
+
+    expect(response.status).toBe(status);
+    if (code === "not_found") expect(await response.text()).not.toContain("internal storage detail");
+    else expect((await response.json()).code).toBe(code);
+  });
+
+  it.each([
+    ["not found", "not_found", 404],
+    ["object missing", "storage_missing", 422],
+    ["object invalid", "storage_invalid", 422],
+  ] as const)("maps %s during finalization", async (_label, code, status) => {
+    finalizeActionMediaMock.mockRejectedValueOnce(
+      new ActionMediaError("private finalization detail", code),
+    );
+
+    const response = await finalizeMedia(
+      request("/api/actions/action-1/media/media-1/finalize", { method: "POST" }),
+      { params: Promise.resolve({ actionId: "action-1", mediaId: "media-1" }) },
+    );
+
+    expect(response.status).toBe(status);
+    if (code === "not_found") expect(await response.text()).not.toContain("private finalization detail");
+    else if (code === "storage_missing") expect((await response.json()).error).toContain("stockage");
+    else expect((await response.json()).code).toBe(code);
+  });
 });

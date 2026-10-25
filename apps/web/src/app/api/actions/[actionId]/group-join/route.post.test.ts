@@ -805,4 +805,75 @@ describe("POST /api/actions/:actionId/group-join post-action claims", () => {
       }),
     );
   });
+
+  it("keeps a post-action claim separate from an ordinary future registration", async () => {
+    const supabase = createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({
+        createdByClerkId: "user-1",
+        actionPhase: "post_action_complete",
+        actionDate: "2026-09-13",
+      }),
+      participants: [createPostActionClaimParticipant()],
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const response = await postActionGroupJoin({ participantId: "claim-1", decision: "reject", requestKind: "post_action_claim" });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.participationSource).toBe("post_action_claim");
+    expect(body.participationStatus).toBe("cancelled");
+    expect(body.participationSource).not.toBe("group_form");
+  });
+
+  it("refuses an outsider from reviewing an owner's post-action claim", async () => {
+    authMock.mockResolvedValueOnce({ userId: "outsider-1" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "benevole", activeRole: "benevole" });
+    const participants = [createPostActionClaimParticipant()];
+    seedApprovedActionParticipants(participants, {
+      createdByClerkId: "owner-1",
+      actionPhase: "post_action_complete",
+    });
+
+    const response = await postActionGroupJoin({ participantId: "claim-1", decision: "accept", requestKind: "post_action_claim" });
+
+    expect(response.status).toBe(403);
+    expect(participants[0]?.participation_status).toBe("pending");
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("does not review a claim after its action was rejected", async () => {
+    const participants = [createPostActionClaimParticipant()];
+    seedApprovedActionParticipants(participants, {
+      status: "rejected",
+      actionPhase: "post_action_complete",
+    });
+
+    const response = await postActionGroupJoin({ participantId: "claim-1", decision: "accept", requestKind: "post_action_claim" });
+
+    expect(response.status).toBe(404);
+    expect(participants[0]?.participation_status).toBe("pending");
+  });
+
+  it("keeps a repeated claim review idempotent while retaining its audit context", async () => {
+    const participant = createGroupJoinParticipant({
+      ...createPostActionClaimParticipant(),
+      participation_status: "confirmed",
+    });
+    seedApprovedActionParticipants([participant], {
+      createdByClerkId: "user-1",
+      actionPhase: "post_action_complete",
+    });
+
+    const response = await postActionGroupJoin({ participantId: "claim-1", decision: "accept", requestKind: "post_action_claim" });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.alreadyReviewed).toBe(true);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+      operation: "post_action_claim_review",
+      details: expect.objectContaining({ participationStatus: "confirmed" }),
+    }));
+  });
 });

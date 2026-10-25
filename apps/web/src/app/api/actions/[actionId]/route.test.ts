@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { patchAction } from "@/__tests__/support/action-route-helpers";
-import { appendActionModerationAuditMock, emitActionUpdateNotificationsMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, requireAuthenticatedAccessMock, resolveActionDepartmentForPersistenceMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, emitActionUpdateNotificationsMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualRegistrationIdsForActionMock, requireAuthenticatedAccessMock, resolveActionDepartmentForPersistenceMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   beforeEach(() => {
@@ -457,5 +457,98 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
       departmentCode: "2B",
       departmentName: "Haute-Corse",
     });
+  });
+
+  it("refuses an anonymous PATCH before loading or writing", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: false, status: 401, error: "Unauthorized" });
+
+    const response = await patchAction({ notes: "ne doit pas passer" });
+
+    expect(response.status).toBe(401);
+    expect(loadActionByIdMock).not.toHaveBeenCalled();
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed JSON before the authorization lookup", async () => {
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/actions/action-test-1", {
+      method: "PATCH",
+      body: "{",
+    }), { params: Promise.resolve({ actionId: "action-test-1" }) });
+
+    expect(response.status).toBe(400);
+    expect(loadActionByIdMock).not.toHaveBeenCalled();
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an empty action identifier without touching the database", async () => {
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/actions/", {
+      method: "PATCH",
+      body: JSON.stringify({ notes: "missing id" }),
+    }), { params: Promise.resolve({ actionId: "  " }) });
+
+    expect(response.status).toBe(400);
+    expect(loadActionByIdMock).not.toHaveBeenCalled();
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("returns not found before evaluating ownership", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(null);
+    const response = await patchAction({ notes: "missing" });
+
+    expect(response.status).toBe(404);
+    expect(loadActionOrganizerIdsForActionMock).not.toHaveBeenCalled();
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("allows the canonical action organizer even when the creator differs", async () => {
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      updated_at: "old-revision",
+      status: "pending",
+      action_phase: "pre_action",
+      preparation_data: {},
+      created_by_clerk_id: "creator-2",
+      notes: null,
+    });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["user-test-1"]);
+
+    const response = await patchAction({ notes: "édition du coorganisateur" });
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalled();
+  });
+
+  it("refuses a third-party GET projection without loading participants", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: true, userId: "other-user" });
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      created_by_clerk_id: "creator-2",
+      status: "pending",
+      action_phase: "pre_action",
+      preparation_data: {},
+    });
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/action-test-1"), {
+      params: Promise.resolve({ actionId: "action-test-1" }),
+    });
+
+    expect(response.status).toBe(403);
+    expect(loadManualRegistrationIdsForActionMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a database write error free of success notifications", async () => {
+    updateMock.mockImplementation(() => ({
+      eq: () => ({
+        select: () => ({
+          single: async () => ({ data: null, error: { message: "write failed" } }),
+        }),
+      }),
+    }));
+    const response = await patchAction({ notes: "write failure" });
+
+    expect(response.status).toBe(500);
+    expect(emitActionUpdateNotificationsMock).not.toHaveBeenCalled();
   });
 });

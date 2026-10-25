@@ -56,4 +56,68 @@ describe("action field roles contract", () => {
     await expect(respondToActionFieldRoleTransfer({ rpc } as never, { actionId: "action-1", proposalId: "t1", actorId: "user-2", decision: "accept", actorIsGlobalAdmin: false })).resolves.toEqual({ id: "t1", status: "accepted" });
     expect(rpc).toHaveBeenCalledWith("respond_action_field_role_transfer", expect.objectContaining({ p_action_id: "action-1", p_proposal_id: "t1", p_decision: "accept" }));
   });
+
+  it.each([
+    [[" group_lead ", "coorganizer", "group_lead"], ["group_lead", "coorganizer"]],
+    [["unknown", "admin", ""], []],
+    [["glass_bag_lead", "glass_bag_lead"], ["glass_bag_lead"]],
+    [["organizer_primary", "coorganizer", "recyclable_bag_lead"], ["organizer_primary", "coorganizer", "recyclable_bag_lead"]],
+    [[" household_waste_bag_lead "], ["household_waste_bag_lead"]],
+  ] as const)("normalizes role input case %j without granting unknown capabilities", (input, expected) => {
+    expect(normalizeActionFieldRoleCodes(input)).toEqual(expected);
+  });
+
+  it("propagates a transactional assignment failure instead of returning a partial list", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { message: "assignment conflict" } });
+
+    await expect(replaceActionFieldRoles({ rpc } as never, {
+      actionId: "action-1",
+      userId: "user-1",
+      roleCodes: ["group_lead"],
+      actorId: "admin-1",
+    })).rejects.toThrow("assignment conflict");
+  });
+
+  it("sends a null reason when a transfer is accepted without a justification", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [{ id: "t1", status: "accepted" }], error: null });
+
+    await respondToActionFieldRoleTransfer({ rpc } as never, {
+      actionId: "action-1",
+      proposalId: "t1",
+      actorId: "user-2",
+      decision: "accept",
+      actorIsGlobalAdmin: false,
+    });
+
+    expect(rpc).toHaveBeenCalledWith("respond_action_field_role_transfer", expect.objectContaining({ p_reason: null }));
+  });
+
+  it("passes a rejection reason and actor scope to the transfer RPC", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: { id: "t1", status: "rejected" }, error: null });
+
+    await expect(respondToActionFieldRoleTransfer({ rpc } as never, {
+      actionId: "action-1",
+      proposalId: "t1",
+      actorId: "admin-1",
+      decision: "reject",
+      actorIsGlobalAdmin: true,
+      reason: "Remplacement indisponible",
+    })).resolves.toMatchObject({ status: "rejected" });
+    expect(rpc).toHaveBeenCalledWith("respond_action_field_role_transfer", expect.objectContaining({
+      p_actor_is_global_admin: true,
+      p_reason: "Remplacement indisponible",
+    }));
+  });
+
+  it("propagates transfer proposal RPC failures", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { message: "proposal conflict" } });
+    const { proposeActionFieldRoleTransfer } = await import("./field-roles");
+
+    await expect(proposeActionFieldRoleTransfer({ rpc } as never, {
+      actionId: "action-1",
+      successorUserId: "user-2",
+      actorId: "user-1",
+      actorIsGlobalAdmin: false,
+    })).rejects.toThrow("proposal conflict");
+  });
 });
