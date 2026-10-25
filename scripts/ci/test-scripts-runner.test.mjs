@@ -8,6 +8,7 @@ const repositoryPackage = JSON.parse(
 const testScriptsCommand = repositoryPackage.scripts["test:scripts"];
 
 test("the canonical Node runner covers root and Web script tests", () => {
+  assert.match(testScriptsCommand, /node --test --test-concurrency=1 --test-timeout=300000/);
   assert.match(testScriptsCommand, /scripts\/\*\*\/\*\.test\.mjs/);
   assert.match(testScriptsCommand, /scripts\/\*\*\/\*\.test\.js/);
   assert.match(testScriptsCommand, /apps\/web\/scripts\/\*\*\/\*\.test\.mjs/);
