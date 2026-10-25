@@ -466,7 +466,7 @@ function createAuditExecutors({
         ? { result, readProvenance: "NOT_RUN" }
         : { result, readProvenance: "WORKTREE_LIVE", validate: isCycleResult };
     },
-    maintainability: () => ({ result: maintainabilityRunner({ root, complexityReport: complexityResult ?? null }), readProvenance: "WORKTREE_LIVE", validate: isMaintainabilityResult }),
+    maintainability: async () => ({ result: await maintainabilityRunner({ root, complexityReport: complexityResult ?? null }), readProvenance: "WORKTREE_LIVE", validate: isMaintainabilityResult }),
   };
 }
 

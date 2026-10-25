@@ -558,6 +558,20 @@ test("executeAudit attend la promesse de complexité et conserve ses métriques"
   }
 });
 
+test("executeAudit attend aussi la promesse de maintenabilité", async () => {
+  const root = tempRoot();
+  try {
+    const result = await executeAudit("maintainability", root, {
+      maintainabilityRunner: async () => fixtureResult("maintainability"),
+    });
+    assert.equal(result.status, "PASS");
+    assert.equal(result.readProvenance, "WORKTREE_LIVE");
+    assert.equal(result.kind, "quality-maintainability");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("executeAudit attend la promesse de cycles et conserve le gate et la comparaison", async () => {
   const root = tempRoot();
   try {
