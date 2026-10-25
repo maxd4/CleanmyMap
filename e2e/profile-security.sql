@@ -306,3 +306,9 @@ begin
   end if;
 end
 $$;
+
+do $$
+begin
+  raise notice 'EXECUTED_DB_CONTRACT: SECURITY-01 profile and notification boundary contract passed';
+end
+$$;

@@ -84,8 +84,10 @@ assert.match(e2eWorkflow, /stage-public-e2e-artifact\.mjs/);
 assert.match(e2eWorkflow, /check-public-e2e-artifact\.mjs/);
 assert.match(e2eWorkflow, /path:\s*artifacts\/ci-public-evidence\b/);
 assert.deepEqual(auditWorkflowContent(e2eWorkflow, ".github/workflows/e2e-supabase.yml"), []);
-assert.match(e2eWorkflow, /combined_sql="\$\(printf '%s\\n'/);
-assert.match(e2eWorkflow, /security_03_sql/);
+assert.match(e2eWorkflow, /Preflight canonical ephemeral PostgreSQL schema/);
+assert.match(e2eWorkflow, /Execute and attest all existing PostgreSQL proofs/);
+assert.match(e2eWorkflow, /scripts\/ci\/run-supabase-sql-proof\.mjs/);
+assert.doesNotMatch(e2eWorkflow, /combined_sql="\$\(printf '%s\\n'/);
 
 // Installation and CLI execution remain local and lockfile-controlled. These
 // assertions protect the S6505/S8543/S8541 contract without disabling scripts

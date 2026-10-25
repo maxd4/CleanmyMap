@@ -186,3 +186,8 @@ delete from public.action_participants where action_id = '11111111-1111-4111-811
 delete from public.actions where id = '11111111-1111-4111-8111-111111111111'::uuid;
 delete from public.app_notifications where user_id = 'role-attestation-contract-user' and payload ->> 'actionId' = '11111111-1111-4111-8111-111111111111';
 commit;
+
+do $$
+begin
+  raise notice 'EXECUTED_DB_CONTRACT: Action role attestation correction contract passed';
+end $$;

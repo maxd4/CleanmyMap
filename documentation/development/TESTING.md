@@ -78,6 +78,24 @@ conserver `DB_SEMANTICS_NOT_EXECUTED` et traiter explicitement la limite de
 preuve dans la décision de clôture, sans déployer ni appliquer une migration
 distante implicitement.
 
+La preuve PostgreSQL des contrats SQL existants est produite uniquement par la
+lane Supabase éphémère hébergée `.github/workflows/e2e-supabase.yml`, après
+rejeu des migrations canoniques et du seed. Le runner
+`scripts/ci/run-supabase-sql-proof.mjs` inventorie et trace séparément les
+fichiers pgTAP, les scripts SQL contractuels et les scénarios multi-sessions
+existants. Il exige un plan pgTAP complet ou un marqueur de fin contractuel ;
+un fichier présent, une commande interrompue, une sortie incomplète ou une
+preuve d'un autre SHA ne produit jamais `INTEGRATION_PROOF`.
+
+Le rapport porte le SHA exact du checkout CI et distingue
+`INTEGRATION_PROOF` (exécution PostgreSQL observée), `NOT_RUN` (preuve non
+atteinte ou volontairement non déclenchée) et `DB_SEMANTICS_NOT_EXECUTED`
+(protocole absent ou environnement incapable d'exécuter la sémantique DB).
+Une nouvelle extension `.sql` non enregistrée fait échouer le runner plutôt
+que de devenir silencieusement une preuve. Les contrats non pgTAP ne sont pas
+convertis en pgTAP : chacun conserve son protocole, et les scénarios de
+concurrence restent exécutés par leurs scripts multi-sessions existants.
+
 ## Gouvernance des preuves pour les changements sensibles
 
 Avant toute modification substantielle ou sensible, le lot doit identifier

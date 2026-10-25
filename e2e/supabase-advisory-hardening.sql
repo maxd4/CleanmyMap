@@ -170,4 +170,10 @@ end
 $$;
 reset role;
 
+do $$
+begin
+  raise notice 'EXECUTED_DB_CONTRACT: Supabase advisory hardening contract passed';
+end;
+$$;
+
 rollback;

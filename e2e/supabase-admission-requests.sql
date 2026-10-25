@@ -312,4 +312,10 @@ begin
 end;
 $$;
 
+do $$
+begin
+  raise notice 'EXECUTED_DB_CONTRACT: SPOGOMI admission request contract passed';
+end;
+$$;
+
 rollback;

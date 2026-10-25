@@ -182,4 +182,10 @@ begin
 end;
 $$;
 
+do $$
+begin
+  raise notice 'EXECUTED_DB_CONTRACT: SPOGOMI mixed-division closure and replay contract passed';
+end;
+$$;
+
 rollback;

@@ -114,6 +114,28 @@ Les commandes `supabase start`, `supabase status`, `supabase db reset` et
 `supabase stop` sont donc réservées à cette CI éphémère explicitement dédiée au
 replay ; elles ne font pas partie du workflow local.
 
+### Contrats PostgreSQL existants et pgTAP
+
+La même lane est l'unique owner de la preuve SQL exécutée. Après les migrations
+canoniques et `seed.sql`, `scripts/ci/run-supabase-sql-proof.mjs` dérive son
+inventaire des fichiers présents sous `apps/web/supabase/tests/` et `e2e/` :
+
+- les fichiers `*.pgtap.sql` passent par `supabase test db --local` et leur
+  plan, le nombre d'assertions et l'absence de `not ok` sont contrôlés ;
+- les scripts SQL contractuels sont exécutés avec `supabase db query --local`
+  selon leur protocole propre et doivent émettre leur marqueur de fin ;
+- les scripts multi-sessions/concurrence existants sont lancés séparément et
+  doivent produire leur propre marqueur de fin.
+
+L'ajout d'un fichier de preuve sans protocole enregistré fait échouer la lane.
+Le rapport JSON `supabase-sql-evidence.json`, copié dans l'artefact public
+allowlisté `evidence/supabase-sql.json`, contient le SHA exact testé, les
+catégories, le résultat et la raison de toute non-exécution ; il ne contient
+pas les sorties SQL brutes. Les statuts sont `INTEGRATION_PROOF`, `NOT_RUN` ou
+`DB_SEMANTICS_NOT_EXECUTED`. Une CI déclenchée par `push` sur `main` vérifie le
+commit déjà publié : elle fournit une vérification post-publication et ne
+constitue pas une protection serveur préalable à l'admission du push.
+
 Ou via le script PowerShell :
 
 ```bash

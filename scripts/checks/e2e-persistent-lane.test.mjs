@@ -50,6 +50,13 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.doesNotMatch(workflow, /run-github-actions-persistent\.mjs require-clerk/);
   assert.match(workflow, /apps\/web\/supabase\/migrations/);
   assert.match(workflow, /apps\/web\/supabase\/seed\.sql/);
+  assert.match(workflow, /push:\s*\n\s+branches:\s*\n\s+- main/);
+  assert.match(workflow, /apps\/web\/supabase\/tests\/\*\*/);
+  assert.match(workflow, /e2e\/\*\.sql/);
+  assert.match(workflow, /Execute and attest all existing PostgreSQL proofs/);
+  assert.match(workflow, /node scripts\/ci\/run-supabase-sql-proof\.mjs/);
+  assert.match(workflow, /grep -q "Preflight passed:/);
+  assert.match(workflow, /CMM_SUPABASE_CANDIDATE_SHA:/);
   assert.doesNotMatch(workflow, /mgvmuambbxmmkrjjlryo\.supabase\.co/);
   assert.doesNotMatch(workflow, /https:\/\/[^\s]+\.supabase\.co/);
   assert.doesNotMatch(workflow, /CLERK_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY/);
@@ -58,6 +65,15 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   const preflightPosition = workflow.indexOf("Preflight canonical ephemeral PostgreSQL schema");
   const browserPosition = workflow.indexOf("Install Playwright browser");
   assert.ok(preflightPosition >= 0 && browserPosition > preflightPosition, "browser installation must follow the PostgreSQL preflight");
+});
+
+test("SQL evidence is staged as a safe public report and never raw database output", () => {
+  const staging = read("scripts/checks/stage-public-e2e-artifact.mjs");
+  const validator = read("scripts/checks/check-public-e2e-artifact.mjs");
+  assert.match(staging, /supabase-sql-evidence\.json/);
+  assert.match(staging, /evidence\/supabase-sql\.json/);
+  assert.match(validator, /evidence\\\//);
+  assert.match(validator, /\.json/);
 });
 
 test("Supabase status readers use the apps/web CLI project workdir", () => {

@@ -134,4 +134,10 @@ begin
 end
 $$;
 
+do $$
+begin
+  raise notice 'EXECUTED_DB_CONTRACT: SECURITY-03 bug-report boundary contract passed';
+end
+$$;
+
 rollback;

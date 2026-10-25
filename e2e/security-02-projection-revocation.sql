@@ -156,4 +156,10 @@ exception when insufficient_privilege then
 end
 $$;
 
+do $$
+begin
+  raise notice 'EXECUTED_DB_CONTRACT: SECURITY-02 projection revocation contract passed';
+end
+$$;
+
 rollback;

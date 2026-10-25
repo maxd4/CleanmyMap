@@ -8,6 +8,22 @@ concurrency:
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "e2e/*.sql"
+      - "e2e/*-concurrency.mjs"
+      - "e2e/security-02-two-sessions.mjs"
+      - "apps/web/supabase/config.toml"
+      - "apps/web/supabase/migrations/**"
+      - "apps/web/supabase/seed.sql"
+      - "apps/web/supabase/tests/**"
+      - "scripts/ci/run-supabase-sql-proof.mjs"
+      - "scripts/ci/run-supabase-sql-proof.test.mjs"
+      - ".github/workflows/e2e-supabase.yml"
+      - "package.json"
+      - "package-lock.json"
   pull_request:
     branches:
       - main
@@ -27,13 +43,18 @@ on:
       - "e2e/security-02-projection-revocation.sql"
       - "e2e/security-02-two-sessions.mjs"
       - "e2e/security-03-bug-report.sql"
+      - "e2e/*.sql"
+      - "e2e/*-concurrency.mjs"
       - "scripts/ci/diagnose-supabase-start.mjs"
       - "scripts/ci/diagnose-supabase-start.test.mjs"
+      - "scripts/ci/run-supabase-sql-proof.mjs"
+      - "scripts/ci/run-supabase-sql-proof.test.mjs"
       - "scripts/checks/spogomi-concurrency-destination.test.mjs"
       - "apps/web/src/lib/spogomi/**"
       - "apps/web/src/app/api/spogomi/**"
       - "apps/web/supabase/config.toml"
       - "apps/web/supabase/migrations/**"
+      - "apps/web/supabase/tests/**"
       - "apps/web/supabase/tests/spogomi-mixed-division-smoke.sql"
       - "apps/web/supabase/tests/spogomi-transactional-contract.sql"
       - "apps/web/supabase/tests/action-role-attestation-correction.sql"
@@ -177,43 +198,14 @@ jobs:
           $$;
           SQL
           )"
-          echo "Running SECURITY-01 PostgreSQL role and column privilege contract"
-          profile_security_sql="$(cat e2e/profile-security.sql)"
-          supabase_advisory_sql="$(cat e2e/supabase-advisory-hardening.sql)"
-          supabase_admission_sql="$(cat e2e/supabase-admission-requests.sql)"
-          security_02_sql="$(cat e2e/security-02-projection-revocation.sql)"
-          security_03_sql="$(cat e2e/security-03-bug-report.sql)"
-          combined_sql="$(printf '%s\n' "$preflight_sql" "$profile_security_sql" "$supabase_advisory_sql" "$supabase_admission_sql" "$security_02_sql" "$security_03_sql")"
-          ./node_modules/.bin/supabase db query --workdir apps/web --local "$combined_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
+          echo "Running canonical PostgreSQL schema preflight"
+          ./node_modules/.bin/supabase db query --workdir apps/web --local "$preflight_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
+          grep -q "Preflight passed: canonical config, PostgreSQL schema, migrations and seed fixture are present" artifacts/ci/supabase-preflight.log
 
-      - name: Execute SPOGOMI mixed-division PostgreSQL contract
-        run: |
-          set -o pipefail
-          ./node_modules/.bin/supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/spogomi-mixed-division-smoke.sql)" 2>&1 | tee artifacts/ci/spogomi-mixed-division-smoke.log
-
-      - name: Execute SPOGOMI transactional PostgreSQL contract
-        run: |
-          set -o pipefail
-          contract_log="artifacts/ci/spogomi-transactional-contract.log"
-          ./node_modules/.bin/supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/spogomi-transactional-contract.sql)" 2>&1 | tee "$contract_log"
-          grep -q "EXECUTED_DB_CONTRACT: SPOGOMI RLS, lock triggers and atomic A-B-A consolidation contract passed" "$contract_log"
-
-      - name: Execute role attestation correction PostgreSQL contract
-        run: |
-          set -o pipefail
-          ./node_modules/.bin/supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/action-role-attestation-correction.sql)" 2>&1 | tee artifacts/ci/action-role-attestation-correction.log
-          node e2e/action-role-attestation-concurrency.mjs 2>&1 | tee -a artifacts/ci/action-role-attestation-correction.log
-
-          echo "Running SECURITY-02 PostgreSQL two-session contract"
-          node e2e/security-02-two-sessions.mjs 2>&1 | tee -a artifacts/ci/supabase-preflight.log
-
-      - name: Execute Reports persistent PostgreSQL contract
-        run: |
-          set -o pipefail
-          contract_log="artifacts/ci/reports-persistent-contract.log"
-          ./node_modules/.bin/supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/reports-persistent-contract.sql)" 2>&1 | tee "$contract_log"
-          grep -q "EXECUTED_DB_CONTRACT: Reports persistence, RLS, snapshots, quota, PDF artifacts, shares, publications and action_media contract passed" "$contract_log"
-          node e2e/reports-postgres-concurrency.mjs 2>&1 | tee -a "$contract_log"
+      - name: Execute and attest all existing PostgreSQL proofs
+        env:
+          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/ci/run-supabase-sql-proof.mjs
 
       - name: Synchronize PostgREST schema after PostgreSQL proof
         run: |
@@ -229,9 +221,6 @@ jobs:
             src/lib/spogomi/preparation-migration.contract.test.ts \
             src/lib/spogomi/composition-lock-routes.contract.test.ts \
             src/lib/spogomi/preparation-service.preview.test.ts
-
-      - name: Run SPOGOMI PostgreSQL two-session concurrency tests
-        run: node e2e/spogomi-concurrency.mjs
 
       - name: Verify persistent Playwright projects are listable
         run: |
@@ -273,6 +262,7 @@ jobs:
         if: always()
         env:
           E2E_OUTCOME: ${{ steps.persistent_e2e.outcome }}
+          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: node scripts/checks/stage-public-e2e-artifact.mjs
 
       - name: Validate safe public E2E evidence
