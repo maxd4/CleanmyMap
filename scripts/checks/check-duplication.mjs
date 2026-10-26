@@ -10,6 +10,7 @@ import {
   buildJscpdArguments,
   compareDuplicationMetrics,
   DUPLICATION_SCOPES,
+  DUPLICATION_TOOL_VERSION,
   nativeBaselineFingerprintCount,
   readJscpdFingerprints,
   readJscpdMetrics,
@@ -23,6 +24,7 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const metricsBaselinePath = path.join(repositoryRoot, "scripts", "checks", "duplication-metrics-baseline.json");
 const nativeBaselineDirectory = path.join(repositoryRoot, "scripts", "checks");
 const justificationsPath = path.join(nativeBaselineDirectory, "duplication-justifications.json");
+const jscpdRunnerPath = path.join(repositoryRoot, "node_modules", "jscpd", "run-jscpd.js");
 
 function git(args) {
   return execFileSync(gitExecutable(), args, { cwd: repositoryRoot, encoding: "utf8" }).trim();
@@ -39,6 +41,42 @@ function assertBaselineFresh(baseline) {
   }
 }
 
+export function parseExecutedJscpdVersion(output) {
+  const match = String(output ?? "").match(/^\s*jscpd\s+(\d+\.\d+\.\d+)\s*$/m);
+  if (!match) {
+    throw new Error("DUPLICATION_TOOL_VERSION_INVALID: jscpd --version did not return a semantic version.");
+  }
+  return match[1];
+}
+
+export function verifyExecutedJscpdVersion({
+  runnerPath = jscpdRunnerPath,
+  fileExists = fs.existsSync,
+  execute = execFileSync,
+} = {}) {
+  if (!fileExists(runnerPath)) {
+    throw new Error(`HOST_ENVIRONMENT: jscpd executable missing at ${runnerPath}; expected jscpd ${DUPLICATION_TOOL_VERSION}.`);
+  }
+
+  let output;
+  try {
+    output = execute(process.execPath, [runnerPath, "--version"], {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+      windowsHide: true,
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`HOST_ENVIRONMENT: unable to execute jscpd --version from ${runnerPath}: ${detail}`);
+  }
+
+  const actual = parseExecutedJscpdVersion(output);
+  if (actual !== DUPLICATION_TOOL_VERSION) {
+    throw new Error(`DUPLICATION_TOOL_VERSION_MISMATCH: expected jscpd ${DUPLICATION_TOOL_VERSION}, executed ${actual}.`);
+  }
+  return { expected: DUPLICATION_TOOL_VERSION, actual, runnerPath };
+}
+
 function runScope(scopeName, baseline) {
   const baselineFileName = scopeName === "fixtures/data" ? "duplication-data-baseline.json" : `duplication-${scopeName}-baseline.json`;
   const nativeBaselinePath = path.join(nativeBaselineDirectory, baselineFileName);
@@ -48,9 +86,7 @@ function runScope(scopeName, baseline) {
 
   const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-jscpd-"));
   try {
-    const runner = path.join(repositoryRoot, "node_modules", "jscpd", "run-jscpd.js");
-    if (!fs.existsSync(runner)) throw new Error("HOST_ENVIRONMENT: jscpd 5.3.0 is not installed.");
-    const result = spawnSync(process.execPath, [runner, ...buildJscpdArguments(scopeName, nativeBaselinePath, outputDirectory, "json,sarif")], {
+    const result = spawnSync(process.execPath, [jscpdRunnerPath, ...buildJscpdArguments(scopeName, nativeBaselinePath, outputDirectory, "json,sarif")], {
       cwd: repositoryRoot,
       encoding: "utf8",
       windowsHide: true,
@@ -90,6 +126,7 @@ function runScope(scopeName, baseline) {
 export function runDuplicationPolicy() {
   const baseline = JSON.parse(fs.readFileSync(metricsBaselinePath, "utf8"));
   assertBaselineFresh(baseline);
+  const toolVersion = verifyExecutedJscpdVersion();
   const auditedSha = git(["rev-parse", "HEAD"]);
   const results = Object.keys(DUPLICATION_SCOPES).map((scopeName) => runScope(scopeName, baseline));
   if (!fs.existsSync(justificationsPath)) {
@@ -126,11 +163,12 @@ export function runDuplicationPolicy() {
     };
     result.comparison = compareDuplicationMetrics(result.metrics, scopeBaseline, result.scopeName);
   }
-  return { baseline, results, justificationReport };
+  return { baseline, results, justificationReport, toolVersion };
 }
 
-export function formatDuplicationReport({ results, justificationReport = null }) {
+export function formatDuplicationReport({ results, justificationReport = null, toolVersion = null }) {
   const lines = [];
+  if (toolVersion) lines.push(`JSCPD_VERSION: ${toolVersion.actual} (expected ${toolVersion.expected})`);
   for (const result of results) {
     const { scopeName, metrics, comparison } = result;
     lines.push(`${scopeName}: ${metrics.clones} clones, ${metrics.duplicatedLines}/${metrics.lines} lines (${metrics.percentage.toFixed(2)}%), ${metrics.duplicatedTokens}/${metrics.tokens} tokens.`);
@@ -190,7 +228,7 @@ async function main() {
           toolVersion: report.baseline.toolVersion,
           policyFingerprint: report.baseline.policyFingerprint,
         },
-        details: { failures: comparison.failures },
+        details: { failures: comparison.failures, toolVersion: report.toolVersion },
       });
     }
     console.log(formatDuplicationReport(report));

@@ -19,7 +19,7 @@ import {
   validateDuplicationJustificationsRegistry,
   validateDuplicationMetricsBaseline,
 } from "./duplication-policy.mjs";
-import { formatDuplicationReport } from "./check-duplication.mjs";
+import { formatDuplicationReport, parseExecutedJscpdVersion, verifyExecutedJscpdVersion } from "./check-duplication.mjs";
 
 const BASELINE = {
   schemaVersion: 2,
@@ -205,6 +205,23 @@ test("duplication reporting exposes status, fingerprints, and deltas by scope", 
   assert.match(output, /TOKEN_PERCENTAGE_POINT_DELTA: 0\.010000/);
 });
 
+test("the executed jscpd version is accepted only when it matches the canonical version", () => {
+  assert.deepEqual(
+    verifyExecutedJscpdVersion({
+      runnerPath: "C:/repo/node_modules/jscpd/run-jscpd.js",
+      fileExists: () => true,
+      execute: () => "jscpd 5.3.0\n",
+    }),
+    { expected: "5.3.0", actual: "5.3.0", runnerPath: "C:/repo/node_modules/jscpd/run-jscpd.js" },
+  );
+  assert.throws(() => verifyExecutedJscpdVersion({ fileExists: () => true, execute: () => "jscpd 5.4.1\n" }), /DUPLICATION_TOOL_VERSION_MISMATCH.*expected jscpd 5\.3\.0.*executed 5\.4\.1/);
+});
+
+test("version diagnostics distinguish an absent executable and an invalid version report", () => {
+  assert.throws(() => verifyExecutedJscpdVersion({ runnerPath: "C:/missing/jscpd.js", fileExists: () => false }), /HOST_ENVIRONMENT: jscpd executable missing/);
+  assert.throws(() => parseExecutedJscpdVersion("jscpd unknown\n"), /DUPLICATION_TOOL_VERSION_INVALID/);
+});
+
 test("malformed or stale duplication baselines fail explicitly", () => {
   assert.throws(() => validateDuplicationMetricsBaseline({ ...BASELINE, toolVersion: "5.2.0" }), /tool version/);
   assert.throws(() => validateDuplicationMetricsBaseline({ ...BASELINE, scopes: { runtime: BASELINE.scopes.runtime } }), /missing tests/);
@@ -214,6 +231,11 @@ test("jscpd report metrics are read from the canonical total", () => {
   assert.deepEqual(readJscpdMetrics({ statistics: { total: { sources: 2, lines: 100, tokens: 200, clones: 1, duplicatedLines: 5, duplicatedTokens: 10, percentage: 5, percentageTokens: 5, newClones: 0 } } }), {
     files: 2, lines: 100, tokens: 200, clones: 1, duplicatedLines: 5, duplicatedTokens: 10, percentage: 5, percentageTokens: 5, newClones: 0,
   });
+});
+
+test("malformed jscpd reports fail before any ratchet comparison", () => {
+  assert.throws(() => readJscpdMetrics({ statistics: {} }), /jscpd report malformed/);
+  assert.throws(() => readJscpdFingerprints({ runs: [{}] }), /jscpd SARIF report malformed/);
 });
 
 test("SARIF fingerprints use the native jscpd partial fingerprint", () => {
