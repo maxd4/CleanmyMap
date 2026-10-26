@@ -46,22 +46,23 @@ function normalizePath(value) {
   return String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
 }
 
-function normalizeSourcePath(rawPath, { root, sourceRoot }) {
+function normalizeSourcePath(rawPath, { root, sourceRoot, sourceRootDirectory = root, sourceFsApi = fs }) {
   const raw = normalizePath(rawPath);
   if (!raw) throw new Error("LCOV contains an empty SF path.");
   const isAbsolute = path.isAbsolute(raw) || path.win32.isAbsolute(raw);
-  const absolute = isAbsolute ? path.resolve(raw) : path.resolve(root, ...raw.split("/"));
-  const rootRelative = path.relative(root, absolute).replaceAll("\\", "/");
+  const sourceRootPath = path.resolve(sourceRootDirectory);
+  const absolute = isAbsolute ? path.resolve(raw) : path.resolve(sourceRootPath, ...raw.split("/"));
+  const rootRelative = path.relative(sourceRootPath, absolute).replaceAll("\\", "/");
   const sourcePrefix = sourceRoot === "." ? "" : `${sourceRoot}/`;
   const candidate = isAbsolute ? rootRelative : raw.startsWith(sourcePrefix) ? raw : `${sourcePrefix}${raw}`;
   const normalized = normalizePath(candidate);
   if (rootRelative.startsWith("..") || path.isAbsolute(rootRelative) || (sourceRoot !== "." && !normalized.startsWith(sourcePrefix))) {
     throw new Error(`LCOV SF path escapes the checked-out source root: ${rawPath}`);
   }
-  const target = repositoryFile(root, normalized);
+  const target = repositoryFile(sourceRootPath, normalized);
   let targetStat;
   try {
-    targetStat = fs.statSync(target, { throwIfNoEntry: false });
+    targetStat = sourceFsApi.statSync(target, { throwIfNoEntry: false });
   } catch (error) {
     const code = error?.code;
     if (code === "EACCES" || code === "EPERM") {
@@ -93,7 +94,7 @@ function xmlAttribute(attributes, name) {
   return match ? decodeXmlAttribute(match[1]) : null;
 }
 
-function parseCobertura(content, definition, root) {
+function parseCobertura(content, definition, root, validationContext = {}) {
   const text = String(content);
   const classRecords = [];
   let offset = 0;
@@ -113,7 +114,7 @@ function parseCobertura(content, definition, root) {
     const attributes = text.slice(markerEnd, openEnd);
     const filename = xmlAttribute(attributes, "filename");
     if (!filename) throw new Error(`${definition.scope} coverage XML contains a class without filename.`);
-    const source = normalizeSourcePath(filename, { root, sourceRoot: definition.sourceRoot });
+    const source = normalizeSourcePath(filename, { root, sourceRoot: definition.sourceRoot, ...validationContext });
     const body = text.slice(openEnd + 1, closeStart);
     const lines = [];
     let lineCursor = 0;
@@ -156,7 +157,7 @@ function parseMetric(value, label) {
   return parsed;
 }
 
-function parseLcov(content, definition, root) {
+function parseLcov(content, definition, root, validationContext = {}) {
   const lines = String(content).split(/\r?\n/);
   const records = [];
   let current = null;
@@ -170,7 +171,7 @@ function parseLcov(content, definition, root) {
   for (const line of lines) {
     if (line.startsWith("SF:")) {
       finish();
-      const source = normalizeSourcePath(line.slice(3), { root, sourceRoot: definition.sourceRoot });
+      const source = normalizeSourcePath(line.slice(3), { root, sourceRoot: definition.sourceRoot, ...validationContext });
       current = { source, lines: { total: 0, covered: 0 }, branches: { total: 0, covered: 0 }, functions: { total: 0, covered: 0 }, hasMetric: false };
       normalizedLines.push(`SF:${source}`);
       continue;
@@ -210,14 +211,14 @@ function parseLcov(content, definition, root) {
   return { records, normalizedContent: `${normalized.slice(0, contentEnd)}\n` };
 }
 
-function summarySources(summary, definition, root) {
+function summarySources(summary, definition, root, validationContext = {}) {
   if (!summary?.total || typeof summary.total !== "object") throw new Error(`${definition.scope} coverage summary has no total metrics.`);
-  return new Set(Object.keys(summary).filter((key) => key !== "total").map((key) => normalizeSourcePath(key, { root, sourceRoot: definition.sourceRoot })));
+  return new Set(Object.keys(summary).filter((key) => key !== "total").map((key) => normalizeSourcePath(key, { root, sourceRoot: definition.sourceRoot, ...validationContext })));
 }
 
-function assertMetricsMatchSummary(records, summary, definition, root) {
+function assertMetricsMatchSummary(records, summary, definition, root, validationContext = {}) {
   const lcovSources = new Set(records.map((record) => record.source));
-  const summarySourceSet = summarySources(summary, definition, root);
+  const summarySourceSet = summarySources(summary, definition, root, validationContext);
   if (lcovSources.size !== summarySourceSet.size || [...lcovSources].some((source) => !summarySourceSet.has(source))) {
     throw new Error(`${definition.scope} LCOV sources do not match coverage-summary.json.`);
   }
@@ -237,42 +238,48 @@ function assertMetricsMatchSummary(records, summary, definition, root) {
   return totals;
 }
 
-function validateReport(definition, { root, write }) {
+function validateReport({ definition, root, write, fsApi = fs, sourceFsApi = fs, sourceRootDirectory = root }) {
   if (definition.format === "cobertura") {
     const coverageFile = repositoryFile(root, definition.coveragePath);
     let content;
     try {
-      content = fs.readFileSync(coverageFile, "utf8");
+      content = fsApi.readFileSync(coverageFile, "utf8");
     } catch (error) {
       if (error?.code === "ENOENT") throw new Error(`${definition.scope} coverage report is missing: ${definition.coveragePath}`);
       throw error;
     }
     if (content.length === 0) throw new Error(`${definition.scope} coverage report is empty: ${definition.coveragePath}`);
-    const parsed = parseCobertura(content, definition, root);
+    const parsed = parseCobertura(content, definition, root, { sourceRootDirectory, sourceFsApi });
     return { scope: definition.scope, path: definition.coveragePath, files: parsed.files, totals: parsed.totals, normalized: false };
   }
   const lcovFile = repositoryFile(root, definition.lcovPath);
   const summaryFile = repositoryFile(root, definition.summaryPath);
-  let lcovDescriptor;
+  let lcovDescriptor = null;
+  let content;
   try {
-    lcovDescriptor = fs.openSync(lcovFile, write ? "r+" : "r");
+    if (write) {
+      lcovDescriptor = fs.openSync(lcovFile, "r+");
+      content = fs.readFileSync(lcovDescriptor, "utf8");
+    } else {
+      content = fsApi.readFileSync(lcovFile, "utf8");
+    }
   } catch (error) {
     if (error?.code === "ENOENT") throw new Error(`${definition.scope} LCOV report is missing: ${definition.lcovPath}`);
     throw error;
   }
   try {
-    const content = fs.readFileSync(lcovDescriptor, "utf8");
     if (content.length === 0) throw new Error(`${definition.scope} LCOV report is empty: ${definition.lcovPath}`);
     let summaryContent;
     try {
-      summaryContent = fs.readFileSync(summaryFile, "utf8");
+      summaryContent = fsApi.readFileSync(summaryFile, "utf8");
     } catch (error) {
       if (error?.code === "ENOENT") throw new Error(`${definition.scope} coverage summary is missing: ${definition.summaryPath}`);
       throw error;
     }
     const summary = JSON.parse(summaryContent);
-    const parsed = parseLcov(content, definition, root);
-    const totals = assertMetricsMatchSummary(parsed.records, summary, definition, root);
+    const validationContext = { sourceRootDirectory, sourceFsApi };
+    const parsed = parseLcov(content, definition, root, validationContext);
+    const totals = assertMetricsMatchSummary(parsed.records, summary, definition, root, validationContext);
     if (write && parsed.normalizedContent !== content) {
       const normalized = Buffer.from(parsed.normalizedContent, "utf8");
       fs.writeSync(lcovDescriptor, normalized, 0, normalized.length, 0);
@@ -280,16 +287,16 @@ function validateReport(definition, { root, write }) {
     }
     return { scope: definition.scope, path: definition.lcovPath, files: parsed.records.length, totals, normalized: parsed.normalizedContent !== content };
   } finally {
-    fs.closeSync(lcovDescriptor);
+    if (lcovDescriptor !== null) fs.closeSync(lcovDescriptor);
   }
 }
 
-export function validateSonarCoverageReports({ root = process.cwd(), reports = REPORT_DEFINITIONS, write = true, mode = "STRICT" } = {}) {
-  if (mode === "STRICT") return reports.map((definition) => validateReport(definition, { root, write }));
+export function validateSonarCoverageReports({ root = process.cwd(), reports = REPORT_DEFINITIONS, write = true, mode = "STRICT", fsApi = fs, sourceFsApi = fs, sourceRootDirectory = root } = {}) {
+  if (mode === "STRICT") return reports.map((definition) => validateReport({ definition, root, write, fsApi, sourceFsApi, sourceRootDirectory }));
   if (mode !== "SONAR_PARTIAL") throw new Error(`Unknown SonarQube coverage validation mode: ${mode}`);
   return reports.map((definition) => {
     try {
-      return { ...validateReport(definition, { root, write }), status: "VALID", imported: true, reason: null };
+      return { ...validateReport({ definition, root, write, fsApi, sourceFsApi, sourceRootDirectory }), status: "VALID", imported: true, reason: null };
     } catch (error) {
       return {
         scope: definition.scope,
@@ -311,7 +318,7 @@ function safeOutputPath(outputRoot, relativePath) {
 
 export function stageSonarCoverageReport({ root = process.cwd(), scope, outputRoot, reports = REPORT_DEFINITIONS } = {}) {
   const definition = reportDefinition(scope, reports);
-  const validated = validateReport(definition, { root, write: true });
+  const validated = validateReport({ definition, root, write: true });
   const relativePaths = definition.format === "cobertura"
     ? [definition.coveragePath]
     : [definition.lcovPath, definition.summaryPath];
@@ -521,7 +528,7 @@ export function prepareSonarPartialCoverage({
       return { scope: definition.scope, producerStatus: producerResult.producer.status, validatorStatus: producerResult.validator.status, imported: false, reason: producerResult.reason };
     }
     try {
-      const validated = validateReport(definition, { root, write: false });
+      const validated = validateReport({ definition, root, write: false });
       return { ...validated, producerStatus: "PASS", validatorStatus: "PASS", imported: true, reason: null };
     } catch (error) {
       return {

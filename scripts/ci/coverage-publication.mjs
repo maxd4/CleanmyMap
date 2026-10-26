@@ -162,14 +162,14 @@ function sha256(file) {
   return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 }
 
-function proofRoot(repositoryRoot, candidateSha, scope) {
-  const configured = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+function proofRoot(repositoryRoot, candidateSha, scope, publicationRoot = null) {
+  const configured = publicationRoot ?? process.env.CMM_COVERAGE_PUBLICATION_ROOT;
   const root = configured ? path.resolve(configured) : path.join(repositoryRoot, PUBLICATION_ROOT);
   return path.join(root, candidateSha, scope);
 }
 
-function proofPath(repositoryRoot, candidateSha, scope) {
-  return path.join(proofRoot(repositoryRoot, candidateSha, scope), "coverage-publication-proof.json");
+function proofPath(repositoryRoot, candidateSha, scope, publicationRoot = null) {
+  return path.join(proofRoot(repositoryRoot, candidateSha, scope, publicationRoot), "coverage-publication-proof.json");
 }
 
 function assertSafeRelativePath(value) {
@@ -180,8 +180,8 @@ function assertSafeRelativePath(value) {
   return normalized;
 }
 
-function readProof(repositoryRoot, candidateSha, scope) {
-  const file = proofPath(repositoryRoot, candidateSha, scope);
+function readProof(repositoryRoot, candidateSha, scope, publicationRoot = null) {
+  const file = proofPath(repositoryRoot, candidateSha, scope, publicationRoot);
   let proof;
   try {
     proof = JSON.parse(fs.readFileSync(file, "utf8"));
@@ -197,7 +197,7 @@ function readProof(repositoryRoot, candidateSha, scope) {
   if (!Array.isArray(proof.reports) || proof.reports.length === 0) {
     throw new Error(`Coverage proof has no reports for ${scope}/${candidateSha}.`);
   }
-  return { proof, root: proofRoot(repositoryRoot, candidateSha, scope) };
+  return { proof, root: proofRoot(repositoryRoot, candidateSha, scope, publicationRoot) };
 }
 
 function validateReportHashes(root, proof) {
@@ -220,10 +220,11 @@ export function validateCoveragePublicationProof({
   repositoryRoot = process.cwd(),
   candidateSha,
   scope,
+  publicationRoot = null,
 } = {}) {
   if (!SHA_PATTERN.test(String(candidateSha ?? ""))) throw new Error(`Invalid coverage candidate SHA: ${candidateSha ?? "<missing>"}.`);
   if (gitSha(repositoryRoot, candidateSha) !== candidateSha) throw new Error(`Coverage candidate SHA cannot be resolved: ${candidateSha}.`);
-  const { proof, root } = readProof(repositoryRoot, candidateSha, scope);
+  const { proof, root } = readProof(repositoryRoot, candidateSha, scope, publicationRoot);
   validateReportHashes(root, proof);
   if (!["WORKTREE", "DYNAMIC_CANDIDATE", "CI_CANDIDATE"].includes(proof.candidateScope)) {
     throw new Error(`Coverage proof has an unsupported candidate scope: ${proof.candidateScope}.`);

@@ -6,7 +6,7 @@
 
 ## Résumé exécutif
 
-Web et Node disposent de rapports CI au SHA exact. Mobile dispose d'une exécution au même SHA mais l'artefact conservé est `WORKTREE_LIVE/PRESENT_NOT_ATTESTED`. Python a été exécuté localement dans l'environnement déclaré, mais aucune preuve CI du SHA courant n'a été publiée. Les preuves PostgreSQL, RLS, RPC, concurrence, Clerk réel et device natif ne sont pas exécutées par cette photographie.
+Cette photographie conserve les compteurs historiques produits au SHA mesuré. Les libellés `CI_EXACT_SHA` du tableau sont historiques et ne constituent pas une nouvelle attestation : le générateur actuel exige une preuve de publication CI et la cohérence des rapports consommés avant de reprendre ce statut. La preuve Node conservée dans le JSON porte `candidateScope=WORKTREE`; elle doit donc être lue comme non attestée pour toute vérification actuelle. Mobile et Python restent `WORKTREE_LIVE/PRESENT_NOT_ATTESTED`. Les preuves PostgreSQL, RLS, RPC, concurrence, Clerk réel et device natif ne sont pas exécutées par cette photographie.
 
 Aucun seuil n'est activé : toutes les familles restent `OBSERVE`. Les domaines sans cible canonique restent `NO_TARGET_DEFINED` ou `RISK_CLASSIFICATION_REQUIRED`.
 
@@ -15,7 +15,7 @@ Aucun seuil n'est activé : toutes les familles restent `OBSERVE`. Les domaines 
 | Scope | Provenance | Statements | Branches | Functions | Lines | Verdict de mesure |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
 | web | CI_EXACT_SHA | 50660/68789 — 73.65 % | 44762/71247 — 62.83 % | 13616/18728 — 72.70 % | 46916/61601 — 76.16 % | MEASURED |
-| node | CI_EXACT_SHA | 37175/59263 — 62.73 % | 9521/12207 — 78.00 % | 1748/2264 — 77.21 % | 37175/59263 — 62.73 % | MEASURED |
+| node | PRESENT_NOT_ATTESTED (snapshot historique `WORKTREE`) | 37175/59263 — 62.73 % | 9521/12207 — 78.00 % | 1748/2264 — 77.21 % | 37175/59263 — 62.73 % | MEASURED historique |
 | mobile | WORKTREE_LIVE/PRESENT_NOT_ATTESTED | 1767/1940 — 91.08 % | 1146/1336 — 85.78 % | 555/656 — 84.60 % | 1498/1555 — 96.33 % | MEASURED |
 | python | WORKTREE_LIVE/PRESENT_NOT_ATTESTED | NOT_MEASURED | 562/766 — 73.37 % | NOT_MEASURED | 2451/2883 — 85.02 % | MEASURED |
 
@@ -250,9 +250,9 @@ Les lignes ci-dessous sont des points de branchement instrumentés non couverts 
 
 | Producteur | Commande | Résultat | Niveau de preuve | Limite |
 | --- | --- | --- | --- | --- |
-| Web | `npm run test:coverage` puis `npm run quality:coverage` | PASS CI | EXECUTED_BEHAVIOR + rapport CI SHA exact | preuve candidate marquée WORKTREE par le producteur ; pas une preuve DB/E2E |
+| Web | `npm run test:coverage` puis `npm run quality:coverage` | PASS CI historique | EXECUTED_BEHAVIOR / provenance non réattestée par le générateur actuel | pas une preuve DB/E2E ; le snapshot conserve les compteurs |
 | Mobile | `npm run quality:mobile-coverage` | PASS CI | EXECUTED_BEHAVIOR / PRESENT_NOT_ATTESTED | pas d'artefact CI téléchargeable par fichier ; checkout local dirty |
-| Node/scripts | `npm run test:coverage:node` | PASS CI | EXECUTED_BEHAVIOR + rapport CI SHA exact | pas de cible canonique ; le rapport couvre le périmètre réel du producteur, y compris ses chemins instrumentés |
+| Node/scripts | `npm run test:coverage:node` | PASS CI historique | EXECUTED_BEHAVIOR / PRESENT_NOT_ATTESTED (`WORKTREE`) | pas de cible canonique ; le rapport couvre le périmètre réel du producteur, mais n'est pas une preuve CI exacte actuelle |
 | Python | `npm run test:coverage:python` | PASS local, 137 tests | WORKTREE_LIVE / PRESENT_NOT_ATTESTED | job CI Python SKIPPED au SHA courant ; pas de preuve publiée exacte |
 | PostgreSQL/Supabase | workflow `e2e-supabase-ephemeral` | NOT_EXECUTED | DB_SEMANTICS_NOT_EXECUTED | démarrage éphémère en échec (`SUPABASE_START_START_TIMEOUT`) |
 | E2E/natif/Clerk réel | workflows et appareils | NOT_MEASURED | NOT_MEASURED | non requis pour produire les rapports de couverture code |
@@ -271,7 +271,7 @@ Les lignes ci-dessous sont des points de branchement instrumentés non couverts 
 
 ## Méthode, limites et verdict
 
-Les rapports CI Web/Node ont été téléchargés depuis le run `40360964042` au SHA exact. Les compteurs par fichier sont conservés dans `coverage-reference-2026-10-26.json`, avec empreintes des rapports sources, classification primaire et déficits calculés. Les comparaisons M0 ne sont pas présentées comme un gain avant/après : SHA, configuration et périmètres diffèrent. La seule comparaison comparable conservée est la comparaison historique `route-calculs` du checker CI, `PASS_WITH_GRACE`.
+Les rapports CI Web/Node ont été téléchargés depuis le run `40360964042` au SHA exact. Les compteurs par fichier sont conservés dans `coverage-reference-2026-10-26.json`, avec empreintes des rapports sources, classification primaire et déficits calculés. Cette photographie historique n'est pas régénérée dans ce correctif, car les artefacts vérifiés nécessaires à une nouvelle attestation ne sont pas tous conservés ; aucun champ de métrique n'est réécrit ni promu artificiellement. La méthode actuelle vérifie, dans cet ordre, le SHA candidat résolvable, la preuve de publication `CI_CANDIDATE`, les empreintes des rapports copiés dans la preuve et des rapports consommés, l'evidence Web et les validateurs canoniques Sonar/LCOV/Cobertura. Une preuve absente, mal formée, périmée, `WORKTREE`/dynamique, ou un rapport remplacé/incohérent produit `EVIDENCE_UNVERIFIED` ou `STALE_EVIDENCE`; il ne produit jamais `CI_EXACT_SHA`. Les comparaisons M0 ne sont pas présentées comme un gain avant/après : SHA, configuration et périmètres diffèrent. La seule comparaison comparable conservée est la comparaison historique `route-calculs` du checker CI, `PASS_WITH_GRACE`.
 
 **STOP CONDITION : PARTIELLE.** Les périmètres Web et Node mesurés sont inventoriés ; Mobile et Python ont une preuve limitée ; les preuves PostgreSQL et les intégrations externes restent manquantes. Aucun faux PASS ni changement de baseline, seuil, exclusion ou politique n'a été introduit.
 

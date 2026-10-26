@@ -6,6 +6,9 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 import { buildCoverageInsightsReport } from "../checks/check-coverage-insights.mjs";
+import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
+import { validateSonarCoverageReports } from "../checks/prepare-sonarqube-coverage.mjs";
+import { validateCoveragePublicationProof } from "../ci/coverage-publication.mjs";
 import {
   COVERAGE_ENFORCEMENT_POLICY,
   COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT,
@@ -40,7 +43,7 @@ function hashFile(file) {
 }
 
 function readJson(file) {
-  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
+  return file && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
 }
 
 function normalizeCiReport(value, scope) {
@@ -52,7 +55,7 @@ function reportFsApi(scope, summaryFile, lcovFile) {
   return {
     readFileSync(file, encoding) {
       const normalized = String(file).replaceAll("\\", "/");
-      if (normalized.endsWith("coverage-summary.json")) {
+      if (summaryFile && normalized.endsWith("coverage-summary.json")) {
         const summary = JSON.parse(fs.readFileSync(summaryFile, "utf8"));
         const transformed = Object.fromEntries(Object.entries(summary).map(([key, value]) => [
           key === "total" ? key : normalizeCiReport(key, scope),
@@ -60,7 +63,7 @@ function reportFsApi(scope, summaryFile, lcovFile) {
         ]));
         return encoding === "utf8" ? JSON.stringify(transformed) : Buffer.from(JSON.stringify(transformed));
       }
-      if (normalized.endsWith("lcov.info")) {
+      if (lcovFile && normalized.endsWith("lcov.info")) {
         let content = fs.readFileSync(lcovFile, "utf8");
         content = content.replaceAll(CI_SOURCE_PREFIX, "");
         return encoding === "utf8" ? content : Buffer.from(content);
@@ -68,6 +71,92 @@ function reportFsApi(scope, summaryFile, lcovFile) {
       return fs.readFileSync(file, encoding);
     },
   };
+}
+
+function reportPaths(definition) {
+  return definition.format === "cobertura"
+    ? [definition.coveragePath]
+    : [definition.summaryPath, definition.lcovPath];
+}
+
+function safeRelativeReportPath(value) {
+  const normalized = String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
+  if (!normalized || normalized.startsWith("/") || normalized.split("/").includes("..")) {
+    throw new Error(`Coverage proof contains an unsafe report path: ${value}`);
+  }
+  return normalized;
+}
+
+function assertConsumedReportsMatchProof(reportRoot, proof, definition) {
+  const proofReports = new Map((proof?.reports ?? []).map((report) => [report.source, report]));
+  const consumed = {};
+  for (const source of reportPaths(definition)) {
+    const report = proofReports.get(source);
+    if (!report || report.path !== source || typeof report.sha256 !== "string") {
+      throw new Error(`Coverage proof does not attest the consumed ${definition.scope} report: ${source}.`);
+    }
+    const normalized = safeRelativeReportPath(source);
+    const file = path.join(reportRoot, ...normalized.split("/"));
+    const hash = hashFile(file);
+    if (!hash || hash !== report.sha256) {
+      throw new Error(`Consumed ${definition.scope} report differs from the publication proof: ${source}.`);
+    }
+    consumed[source] = hash;
+  }
+  return consumed;
+}
+
+function classifyProvenanceFailure(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  const stale = /candidate mismatch|audited SHA|attached to the analyzed|expected .*SHA|candidate SHA/i.test(message);
+  return {
+    state: stale ? "STALE_EVIDENCE" : "EVIDENCE_UNVERIFIED",
+    diagnostics: [{ code: stale ? "STALE_COVERAGE_EVIDENCE" : "COVERAGE_EVIDENCE_UNVERIFIED", message }],
+    error: message,
+  };
+}
+
+function validateAttestedProvenance({ repositoryRoot, reportRoot, publicationRoot, auditedSha, scope, definition }) {
+  try {
+    const publication = validateCoveragePublicationProof({
+      repositoryRoot,
+      candidateSha: auditedSha,
+      scope,
+      publicationRoot,
+    });
+    if (publication.proof.candidateScope !== "CI_CANDIDATE") {
+      throw new Error(`Coverage ${publication.proof.candidateScope} proof cannot be promoted to CI_EXACT_SHA.`);
+    }
+    const consumedReportHashes = assertConsumedReportsMatchProof(reportRoot, publication.proof, definition);
+    let evidence = null;
+    if (scope === "web") {
+      evidence = validateCoverageEvidence({
+        repositoryRoot,
+        scope,
+        expectedCandidateSha: auditedSha,
+        reportRoot,
+        candidateRef: auditedSha,
+        validateCandidateFingerprint: false,
+      });
+    }
+    return {
+      state: "CI_EXACT_SHA",
+      proof: publication.proof,
+      proofRoot: publication.root,
+      evidence,
+      consumedReportHashes,
+      diagnostics: [],
+      error: null,
+    };
+  } catch (error) {
+    return {
+      ...classifyProvenanceFailure(error),
+      proof: null,
+      proofRoot: null,
+      evidence: null,
+      consumedReportHashes: {},
+    };
+  }
 }
 
 export function metricDeficit(metric, threshold) {
@@ -139,28 +228,68 @@ function fileRow(file, scope) {
   };
 }
 
-function buildScope({ scope, root, summaryFile, lcovFile, definition, auditedSha, proofState }) {
+function buildScope({ scope, root, repositoryRoot, summaryFile, lcovFile, definition, auditedSha, proofState, publicationRoot = null, attest = false }) {
   if (!fs.existsSync(lcovFile) || (definition.format !== "cobertura" && !fs.existsSync(summaryFile))) {
     throw new Error(`${scope} coverage input is missing; refusing to emit a partial reference.`);
   }
+  const provenance = attest
+    ? validateAttestedProvenance({ repositoryRoot, reportRoot: root, publicationRoot, auditedSha, scope, definition })
+    : {
+      state: proofState,
+      proof: null,
+      proofRoot: null,
+      evidence: null,
+      consumedReportHashes: {},
+      diagnostics: [{ code: "PRESENT_NOT_ATTESTED", message: `${scope} report is present but no exact candidate publication proof is claimed.` }],
+      error: null,
+    };
+  const validationFsApi = reportFsApi(scope, summaryFile, lcovFile);
   const report = buildCoverageInsightsReport({
     root,
     auditedSha,
     reports: [definition],
-    fsApi: reportFsApi(scope, summaryFile, lcovFile),
-    validateEvidence: () => ({}),
-    validatePublicationProof: () => ({}),
-    validateSonar: () => [{ status: "VALID" }],
+    fsApi: validationFsApi,
+    validateEvidence: () => {
+      if (scope !== "web" || provenance.state === "CI_EXACT_SHA") return provenance.evidence ?? {};
+      throw new Error(provenance.error ?? "Web coverage evidence is not attested.");
+    },
+    validatePublicationProof: () => {
+      if (provenance.state === "CI_EXACT_SHA") return provenance.proof ?? {};
+      throw new Error(provenance.error ?? `${scope} coverage is not attested.`);
+    },
+    validateSonar: ({ root: validationRoot, reports }) => validateSonarCoverageReports({
+      root: validationRoot,
+      reports,
+      write: false,
+      mode: "SONAR_PARTIAL",
+      fsApi: validationFsApi,
+      sourceFsApi: fs,
+      sourceRootDirectory: repositoryRoot,
+    }),
   });
   const source = report.scopes[0];
-  const files = source.files.map((file) => ({ ...fileRow(file, scope), proofState }));
+  const reportValidationFailed = source.diagnostics.some((diagnostic) => [
+    "COVERAGE_VALIDATION_FAILED",
+    "COVERAGE_MEASUREMENT_FAILED",
+    "COVERAGE_EVIDENCE_UNAVAILABLE",
+  ].includes(diagnostic.code));
+  const finalState = reportValidationFailed ? "EVIDENCE_UNVERIFIED" : provenance.state;
+  const finalProvenance = finalState === provenance.state
+    ? provenance
+    : {
+      ...provenance,
+      state: finalState,
+      diagnostics: [...provenance.diagnostics, { code: "COVERAGE_REPORT_UNVERIFIED", message: "Coverage report validation failed; metrics are not attested." }],
+    };
+  const files = source.files.map((file) => ({ ...fileRow(file, scope), proofState: finalState }));
   return {
     scope,
-    state: files.length > 0 ? "MEASURED" : "NOT_MEASURED",
-    proofState,
+    state: files.length > 0 ? finalState : (reportValidationFailed ? "EVIDENCE_UNVERIFIED" : finalState),
+    proofState: finalState,
     metrics: aggregateFiles(files),
     files,
-    diagnostics: source.diagnostics,
+    diagnostics: [...source.diagnostics, ...finalProvenance.diagnostics],
+    provenance: finalProvenance,
   };
 }
 
@@ -211,17 +340,31 @@ function familyAggregates(files) {
   }));
 }
 
-function readProvenance(file, scope, reportFiles) {
+function readProvenance(file, scope, reportFiles, validation = null) {
   const data = readJson(file);
   return {
     scope,
     file: file ? path.relative(process.cwd(), file).replaceAll("\\", "/") : null,
     data,
     reportHashes: Object.fromEntries(Object.entries(reportFiles).map(([name, value]) => [name, hashFile(value)])),
+    validation: validation ? {
+      state: validation.state,
+      diagnostics: validation.diagnostics,
+      consumedReportHashes: validation.consumedReportHashes,
+    } : { state: "NOT_MEASURED", diagnostics: [], consumedReportHashes: {} },
   };
 }
 
 function markdown(reference) {
+  const scopeByName = new Map(reference.scopes.map((scope) => [scope.scope, scope]));
+  const web = scopeByName.get("web");
+  const mobile = scopeByName.get("mobile");
+  const node = scopeByName.get("node");
+  const python = scopeByName.get("python");
+  const provenanceSummary = [web, node, mobile, python]
+    .filter(Boolean)
+    .map((scope) => `${scope.scope}=${scope.proofState}`)
+    .join(", ");
   const lines = [
     `# Audit global de couverture — référence ${reference.date}`,
     "",
@@ -231,7 +374,7 @@ function markdown(reference) {
     "",
     "## Résumé exécutif",
     "",
-    "Web et Node disposent de rapports CI au SHA exact. Mobile dispose d'une exécution au même SHA mais l'artefact conservé est `WORKTREE_LIVE/PRESENT_NOT_ATTESTED`. Python a été exécuté localement dans l'environnement déclaré, mais aucune preuve CI du SHA courant n'a été publiée. Les preuves PostgreSQL, RLS, RPC, concurrence, Clerk réel et device natif ne sont pas exécutées par cette photographie.",
+    `États de provenance vérifiés par le générateur : ${provenanceSummary || "aucun scope"}. Un scope n'est marqué 'CI_EXACT_SHA' qu'après validation de la preuve de publication CI, de l'identité du candidat, des empreintes des rapports consommés et des validateurs canoniques. Les preuves PostgreSQL, RLS, RPC, concurrence, Clerk réel et device natif ne sont pas exécutées par cette photographie.`,
     "",
     "Aucun seuil n'est activé : toutes les familles restent `OBSERVE`. Les domaines sans cible canonique restent `NO_TARGET_DEFINED` ou `RISK_CLASSIFICATION_REQUIRED`.",
     "",
@@ -261,7 +404,6 @@ function markdown(reference) {
     "| Famille | Fichiers | Statements | Branches | Functions | Lines | Écart S/B/F/L (pp) | Unités S/B/F/L | Objectif | Verdict |",
     "| --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- |",
   );
-  const web = reference.scopes.find((scope) => scope.scope === "web");
   for (const [domain, family] of Object.entries(COVERAGE_RISK_FAMILIES)) {
     const files = web.files.filter((file) => file.family === domain);
     const m = aggregateFiles(files);
@@ -298,10 +440,10 @@ function markdown(reference) {
     "",
     "| Producteur | Commande | Résultat | Niveau de preuve | Limite |",
     "| --- | --- | --- | --- | --- |",
-    "| Web | `npm run test:coverage` puis `npm run quality:coverage` | PASS CI | EXECUTED_BEHAVIOR + rapport CI SHA exact | preuve candidate marquée WORKTREE par le producteur ; pas une preuve DB/E2E |",
-    "| Mobile | `npm run quality:mobile-coverage` | PASS CI | EXECUTED_BEHAVIOR / PRESENT_NOT_ATTESTED | pas d'artefact CI téléchargeable par fichier ; checkout local dirty |",
-    "| Node/scripts | `npm run test:coverage:node` | PASS CI | EXECUTED_BEHAVIOR + rapport CI SHA exact | pas de cible canonique ; le rapport couvre le périmètre réel du producteur, y compris ses chemins instrumentés |",
-    "| Python | `npm run test:coverage:python` | PASS local, 137 tests | WORKTREE_LIVE / PRESENT_NOT_ATTESTED | job CI Python SKIPPED au SHA courant ; pas de preuve publiée exacte |",
+    `| Web | \`npm run test:coverage\` puis \`npm run quality:coverage\` | ${web?.state ?? "NOT_MEASURED"} | EXECUTED_BEHAVIOR / ${web?.proofState ?? "NOT_MEASURED"} | publication et rapports consommés vérifiés lorsque l'état est CI_EXACT_SHA |`,
+    `| Mobile | \`npm run quality:mobile-coverage\` | ${mobile?.state ?? "NOT_MEASURED"} | EXECUTED_BEHAVIOR / ${mobile?.proofState ?? "NOT_MEASURED"} | preuve d'intégration absente si le scope reste non attesté |`,
+    `| Node/scripts | \`npm run test:coverage:node\` | ${node?.state ?? "NOT_MEASURED"} | EXECUTED_BEHAVIOR / ${node?.proofState ?? "NOT_MEASURED"} | pas de cible canonique ; le rapport couvre le périmètre réel du producteur |`,
+    `| Python | \`npm run test:coverage:python\` | ${python?.state ?? "NOT_MEASURED"} | WORKTREE_LIVE / ${python?.proofState ?? "NOT_MEASURED"} | aucune preuve CI exacte si le scope reste non attesté |`,
     "| PostgreSQL/Supabase | workflow `e2e-supabase-ephemeral` | NOT_EXECUTED | DB_SEMANTICS_NOT_EXECUTED | démarrage éphémère en échec (`SUPABASE_START_START_TIMEOUT`) |",
     "| E2E/natif/Clerk réel | workflows et appareils | NOT_MEASURED | NOT_MEASURED | non requis pour produire les rapports de couverture code |",
     "",
@@ -328,36 +470,52 @@ function markdown(reference) {
   return `${lines.join("\n")}\n`;
 }
 
+function publicationRootFor(scopeRoot, proofFile = null) {
+  if (proofFile) {
+    const absolute = path.resolve(proofFile);
+    return path.dirname(path.dirname(path.dirname(absolute)));
+  }
+  return path.join(scopeRoot, "artifacts", "coverage-publication");
+}
+
 export function buildReference({ args = parseArgs(process.argv), now = new Date() } = {}) {
   const auditedSha = args.sha;
   if (!auditedSha) throw new Error("Missing required argument --sha.");
+  const repositoryRoot = args["repository-root"] ? path.resolve(args["repository-root"]) : process.cwd();
   const webRoot = required(args, "web-root");
   const nodeRoot = required(args, "node-root");
   const mobileRoot = args["mobile-root"] ? path.resolve(args["mobile-root"]) : null;
   const pythonRoot = args["python-root"] ? path.resolve(args["python-root"]) : null;
+  const webEvidenceFile = args["web-evidence"] ? path.resolve(args["web-evidence"]) : path.join(webRoot, "apps/web/coverage/coverage-evidence.json");
+  const nodeProofFile = args["node-proof"] ? path.resolve(args["node-proof"]) : path.join(nodeRoot, "artifacts/coverage-publication", auditedSha, "node", "coverage-publication-proof.json");
   const webSummary = path.join(webRoot, "apps/web/coverage/coverage-summary.json");
   const webLcov = path.join(webRoot, "apps/web/coverage/lcov.info");
   const nodeSummary = path.join(nodeRoot, "scripts/coverage/coverage-summary.json");
   const nodeLcov = path.join(nodeRoot, "scripts/coverage/lcov.info");
   const scopes = [buildScope({
-    scope: "web", root: webRoot, summaryFile: webSummary, lcovFile: webLcov, auditedSha,
+    scope: "web", root: webRoot, repositoryRoot, summaryFile: webSummary, lcovFile: webLcov, auditedSha,
     proofState: "CI_EXACT_SHA",
+    publicationRoot: publicationRootFor(webRoot),
+    attest: true,
     definition: { scope: "web", lcovPath: "apps/web/coverage/lcov.info", summaryPath: "apps/web/coverage/coverage-summary.json", sourceRoot: "apps/web" },
   }), buildScope({
-    scope: "node", root: nodeRoot, summaryFile: nodeSummary, lcovFile: nodeLcov, auditedSha,
+    scope: "node", root: nodeRoot, repositoryRoot, summaryFile: nodeSummary, lcovFile: nodeLcov, auditedSha,
     proofState: "CI_EXACT_SHA",
+    publicationRoot: publicationRootFor(nodeRoot, args["node-proof"] ? nodeProofFile : null),
+    attest: true,
     definition: { scope: "node", lcovPath: "scripts/coverage/lcov.info", summaryPath: "scripts/coverage/coverage-summary.json", sourceRoot: "." },
   })];
   if (mobileRoot) scopes.push(buildScope({
-    scope: "mobile", root: mobileRoot, summaryFile: path.join(mobileRoot, "apps/mobile/coverage/coverage-summary.json"), lcovFile: path.join(mobileRoot, "apps/mobile/coverage/lcov.info"), auditedSha,
+    scope: "mobile", root: mobileRoot, repositoryRoot, summaryFile: path.join(mobileRoot, "apps/mobile/coverage/coverage-summary.json"), lcovFile: path.join(mobileRoot, "apps/mobile/coverage/lcov.info"), auditedSha,
     proofState: "WORKTREE_LIVE/PRESENT_NOT_ATTESTED",
     definition: { scope: "mobile", lcovPath: "apps/mobile/coverage/lcov.info", summaryPath: "apps/mobile/coverage/coverage-summary.json", sourceRoot: "apps/mobile" },
   }));
   if (pythonRoot) scopes.push(buildScope({
-    scope: "python", root: pythonRoot, summaryFile: null, lcovFile: path.join(pythonRoot, "maintenance/python/coverage.xml"), auditedSha,
+    scope: "python", root: pythonRoot, repositoryRoot, summaryFile: null, lcovFile: path.join(pythonRoot, "maintenance/python/coverage.xml"), auditedSha,
     proofState: "WORKTREE_LIVE/PRESENT_NOT_ATTESTED",
     definition: { scope: "python", format: "cobertura", coveragePath: "maintenance/python/coverage.xml", sourceRoot: "maintenance/python" },
   }));
+  const scopeByName = new Map(scopes.map((scope) => [scope.scope, scope]));
   const reference = {
     schemaVersion: 1,
     kind: "cleanmymap-coverage-reference",
@@ -371,10 +529,10 @@ export function buildReference({ args = parseArgs(process.argv), now = new Date(
     },
     rankings: { topDelta: topDelta(scopes.flatMap((scope) => scope.files)), topAbsoluteDeficit: topAbsoluteDeficit(scopes.find((scope) => scope.scope === "web")?.files ?? []) },
     provenance: {
-      web: readProvenance(args["web-evidence"] ? path.resolve(args["web-evidence"]) : null, "web", { summary: webSummary, lcov: webLcov }),
-      node: readProvenance(args["node-proof"] ? path.resolve(args["node-proof"]) : null, "node", { summary: nodeSummary, lcov: nodeLcov }),
-      mobile: readProvenance(args["mobile-evidence"] ? path.resolve(args["mobile-evidence"]) : null, "mobile", { summary: mobileRoot ? path.join(mobileRoot, "apps/mobile/coverage/coverage-summary.json") : null, lcov: mobileRoot ? path.join(mobileRoot, "apps/mobile/coverage/lcov.info") : null }),
-      python: { scope: "python", report: pythonRoot ? path.relative(process.cwd(), path.join(pythonRoot, "maintenance/python/coverage.xml")).replaceAll("\\", "/") : null, reportSha256: pythonRoot ? hashFile(path.join(pythonRoot, "maintenance/python/coverage.xml")) : null },
+      web: readProvenance(webEvidenceFile, "web", { summary: webSummary, lcov: webLcov }, scopeByName.get("web")?.provenance),
+      node: readProvenance(nodeProofFile, "node", { summary: nodeSummary, lcov: nodeLcov }, scopeByName.get("node")?.provenance),
+      mobile: readProvenance(args["mobile-evidence"] ? path.resolve(args["mobile-evidence"]) : null, "mobile", { summary: mobileRoot ? path.join(mobileRoot, "apps/mobile/coverage/coverage-summary.json") : null, lcov: mobileRoot ? path.join(mobileRoot, "apps/mobile/coverage/lcov.info") : null }, scopeByName.get("mobile")?.provenance),
+      python: { scope: "python", report: pythonRoot ? path.relative(process.cwd(), path.join(pythonRoot, "maintenance/python/coverage.xml")).replaceAll("\\", "/") : null, reportSha256: pythonRoot ? hashFile(path.join(pythonRoot, "maintenance/python/coverage.xml")) : null, validation: scopeByName.get("python")?.provenance ? { state: scopeByName.get("python").provenance.state, diagnostics: scopeByName.get("python").provenance.diagnostics } : { state: "NOT_MEASURED", diagnostics: [] } },
     },
     limits: ["DB_SEMANTICS_NOT_EXECUTED", "NO_TARGET_DEFINED for mobile/node/python", "RISK_CLASSIFICATION_REQUIRED for Web unclassified", "no Web new-code-non-critical prefix is currently qualified"],
   };
