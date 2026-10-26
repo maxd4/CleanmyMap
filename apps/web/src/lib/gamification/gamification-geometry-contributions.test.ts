@@ -25,4 +25,22 @@ describe("cartography progression facts", () => {
     expect(fact?.xpAwarded).toBe(1);
     expect(fact?.metadata).toMatchObject({ noXpPerFile: true, noXpPerKilometer: true });
   });
+
+  it("chooses the earliest accepted observation independently of import order", () => {
+    const rows = [
+      { id: 20, action_id: "action-2", observed_at: "2026-10-02T10:00:00Z" },
+      { id: 12, action_id: "action-1", observed_at: "2026-10-01T11:00:00Z" },
+      { id: 11, action_id: "action-1", observed_at: "2026-10-01T10:00:00Z" },
+      { id: 21, action_id: "action-2", observed_at: "2026-10-02T09:00:00Z" },
+    ];
+
+    const forward = buildGeometryContributionFacts(rows);
+    const reversed = buildGeometryContributionFacts([...rows].reverse());
+
+    expect(reversed).toEqual(forward);
+    expect(forward.map((fact) => [fact.sourceId, fact.occurredOn])).toEqual([
+      ["action-1", "2026-10-01"],
+      ["action-2", "2026-10-02"],
+    ]);
+  });
 });

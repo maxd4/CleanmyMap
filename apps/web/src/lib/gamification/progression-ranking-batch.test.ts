@@ -321,4 +321,48 @@ describe("batch user leaderboard source", () => {
       call.filters.some((filter) => filter.kind === "eq" && filter.column === "participation_status" && filter.value === "confirmed"),
     )).toBe(true);
   });
+
+  it("returns an empty batch for profiles without usable ids and ignores malformed related rows", async () => {
+    const empty = emptyFixture();
+    empty.profiles = [{
+      id: "",
+      display_name: null,
+      display_name_mode: null,
+      handle: null,
+      leaderboard_public_opt_in: true,
+    }];
+    const emptyResult = await loadLeaderboardBatchData(buildBatchSupabase(empty).supabase as never);
+    expect(emptyResult.profiles).toEqual([]);
+    expect(emptyResult.progressions.size).toBe(0);
+
+    const fixture = emptyFixture();
+    fixture.profiles = [buildProfile("user-1")];
+    fixture.actions = [
+      { ...buildAction("not-spontaneous", "user-1", "2026-01-01", "Association", "association"), notes: "notes structurées" },
+    ];
+    fixture.action_organizers = [
+      { id: "missing-organizer", action_id: "missing-action", organizer_clerk_id: "user-1" },
+      { id: "blank-organizer", action_id: null, organizer_clerk_id: null },
+    ];
+    fixture.forms = [{ action_id: null, status: "validated", validated_by_admin: true, is_duplicate: false, is_deleted: false, is_test: false }];
+    fixture.progression_events = [
+      { user_id: "user-1", event_type: null, source_table: "x", source_id: "x", status_phase: "validated" },
+      { user_id: "user-1", event_type: "action_declare_validation", source_table: "x", source_id: "x", status_phase: "validated" },
+    ];
+    fixture.action_participants = [{ user_id: null, action_id: "x", participation_status: "confirmed" }];
+    fixture.user_visited_places = [{ user_id: null, place_label: "x" }];
+    fixture.quiz_type_progress = [{ user_id: null, question_type: "x", correct_count: 1 }];
+    fixture.trash_spotter_spots = [
+      { user_id: "user-1", id: "spot-1", spot_type: "other", status: "validated" },
+      { user_id: null, id: "spot-2", spot_type: "clean_place", status: "validated" },
+    ];
+    fixture.action_geometry_contributions = [
+      { contributor_clerk_id: null, action_id: "x", validation_state: "accepted" },
+    ];
+    fixture.community_bug_reports = [
+      { submitted_by_user_id: null, id: "feedback-1", qualification_status: "accepted" },
+    ];
+    const batch = await loadLeaderboardBatchData(buildBatchSupabase(fixture).supabase as never);
+    expect(batch.badgeCounts.get("user-1")).toEqual({ badgeTotal: 0, gradeCount: 0, oneShotCount: 0 });
+  });
 });

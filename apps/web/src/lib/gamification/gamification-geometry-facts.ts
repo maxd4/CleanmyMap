@@ -6,27 +6,34 @@ import type { GamificationSourceFact } from "./gamification-reconstruction";
 type GeometryContributionRow = {
   action_id?: string;
   observed_at?: string | null;
+  id?: string | number | null;
 };
 
 export function buildGeometryContributionFacts(
   rows: readonly GeometryContributionRow[],
 ): GamificationSourceFact[] {
-  const firstAcceptedObservationByAction = new Map<string, string>();
+  const firstAcceptedObservationByAction = new Map<string, { occurredOn: string; tieBreaker: string }>();
   for (const row of rows) {
-    if (!row.action_id || firstAcceptedObservationByAction.has(row.action_id)) continue;
-    firstAcceptedObservationByAction.set(
-      row.action_id,
-      occurredOnFrom(row.observed_at),
-    );
+    if (!row.action_id) continue;
+    const candidate = {
+      occurredOn: occurredOnFrom(row.observed_at),
+      tieBreaker: String(row.id ?? ""),
+    };
+    const current = firstAcceptedObservationByAction.get(row.action_id);
+    if (!current || `${candidate.occurredOn}:${candidate.tieBreaker}` < `${current.occurredOn}:${current.tieBreaker}`) {
+      firstAcceptedObservationByAction.set(row.action_id, candidate);
+    }
   }
 
-  return [...firstAcceptedObservationByAction.entries()].map(([actionId, occurredOn]) =>
+  return [...firstAcceptedObservationByAction.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([actionId, observation]) =>
     sourceFact({
       mechanicId: "cartography",
       eventType: "verified_geometry_contribution",
       sourceTable: "action_geometry_contributions",
       sourceId: actionId,
-      occurredOn,
+      occurredOn: observation.occurredOn,
       xpAwarded: 1,
       metadata: {
         actionId,

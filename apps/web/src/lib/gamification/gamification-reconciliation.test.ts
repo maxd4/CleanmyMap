@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import { reconcileUserGamification } from "./gamification-reconciliation";
 import { facts, rules } from "./__tests__/reconciliation-fixtures";
 
-function createSupabase(options: { conflictCount?: number; blockFirstRpc?: boolean } = {}) {
+function createSupabase(options: {
+  conflictCount?: number;
+  blockFirstRpc?: boolean;
+  rpcOutcome?: "error" | "invalid";
+} = {}) {
   const rows: Array<Record<string, unknown>> = [];
   const notifications: Array<Record<string, unknown>> = [];
   let nextId = 1;
@@ -25,11 +29,17 @@ function createSupabase(options: { conflictCount?: number; blockFirstRpc?: boole
         signalFirstRpc();
         await firstRpcStarted;
       }
+      if (options.rpcOutcome === "error") {
+        return { data: null, error: { message: "rpc unavailable" } };
+      }
       if (conflictsRemaining > 0) {
         conflictsRemaining -= 1;
         return { data: { status: "conflict" }, error: null };
       }
       const userId = String(args.p_user_id);
+      if (options.rpcOutcome === "invalid") {
+        return { data: { status: "unexpected" }, error: null };
+      }
       const userRows = rows.filter((row) => row.user_id === userId);
       const snapshot = rows
         .filter((row) => row.user_id === userId)
@@ -244,5 +254,27 @@ describe("reconcileUserGamification", () => {
     expect(first.inserted).toBe(1);
     expect(second.inserted).toBe(1);
     expect(fixture.rows.map((row) => row.user_id).sort()).toEqual(["user-1", "user-2"]);
+  });
+
+  it("fails closed on RPC transport errors and invalid producer responses", async () => {
+    await expect(reconcileUserGamification(createSupabase({ rpcOutcome: "error" }).supabase, "user-1", {
+      facts,
+      rules: rules("v1", "XP_MILESTONE", 1, "mechanic-a"),
+      refreshProfile: false,
+    })).rejects.toThrow("rpc unavailable");
+
+    await expect(reconcileUserGamification(createSupabase({ rpcOutcome: "invalid" }).supabase, "user-1", {
+      facts,
+      rules: rules("v1", "XP_MILESTONE", 1, "mechanic-a"),
+      refreshProfile: false,
+    })).rejects.toThrow("réponse invalide");
+  });
+
+  it("does not hide a third conflict after the bounded retry budget", async () => {
+    await expect(reconcileUserGamification(createSupabase({ conflictCount: 3 }).supabase, "user-1", {
+      facts,
+      rules: rules("v1", "XP_MILESTONE", 1, "mechanic-a"),
+      refreshProfile: false,
+    })).rejects.toThrow("révision concurrente");
   });
 });

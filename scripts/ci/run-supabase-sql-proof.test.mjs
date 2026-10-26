@@ -17,6 +17,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "apps/web/supabase/tests/action-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/chat-message-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/community-event-server-boundary.pgtap.sql",
+    "apps/web/supabase/tests/gamification-progression-boundary.pgtap.sql",
     "apps/web/supabase/tests/gps-point-lifecycle-boundary.pgtap.sql",
     "apps/web/supabase/tests/newsletter-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/notifications-decision-boundary.pgtap.sql",
@@ -25,6 +26,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   assert.equal(inventory.contracts.length, 9);
   assert.deepEqual(inventory.multisession, [
     "e2e/action-role-attestation-concurrency.mjs",
+    "e2e/gamification-reconciliation-concurrency.mjs",
     "e2e/reports-postgres-concurrency.mjs",
     "e2e/security-02-two-sessions.mjs",
     "e2e/spogomi-concurrency.mjs",

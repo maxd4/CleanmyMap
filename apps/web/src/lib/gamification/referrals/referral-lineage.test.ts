@@ -108,4 +108,36 @@ describe("referral lineage", () => {
 
     await expect(loadReferralLineageView(supabase, "child")).rejects.toThrow("rpc failed");
   });
+
+  it("returns null for an unknown or empty remote lineage", async () => {
+    expect(buildReferralLineageView("missing", profiles)).toBeNull();
+    await expect(loadReferralLineageView({
+      rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
+    } as unknown as SupabaseClient, "missing")).resolves.toBeNull();
+    await expect(loadReferralLineageView({
+      rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+    } as unknown as SupabaseClient, "missing")).resolves.toBeNull();
+  });
+
+  it("breaks cycles safely and keeps deterministic ordering for incomplete profiles", () => {
+    const cyclic = [
+      {
+        id: "a", display_name: " ", referral_code: " ", referred_by_profile_id: "b", referred_at: null, created_at: null,
+      },
+      {
+        id: "b", display_name: null, referral_code: null, referred_by_profile_id: "a", referred_at: null, created_at: null,
+      },
+      {
+        id: "orphan", display_name: null, referral_code: null, referred_by_profile_id: "not-present", referred_at: null, created_at: null,
+      },
+    ];
+    const view = buildReferralLineageView("a", cyclic);
+    expect(view?.focus.displayName).toBe("a");
+    expect(view?.hasReferralCode).toBe(false);
+    expect(view?.hasInvitedBy).toBe(true);
+    expect(view?.descendantsCount).toBe(2);
+    expect(view?.maxDepth).toBe(2);
+    expect(buildReferralLineageLeaderboard(cyclic, 0)).toEqual([]);
+    expect(buildReferralLineageLeaderboard(cyclic, 10)[0]?.profile.displayName).toBe("a");
+  });
 });

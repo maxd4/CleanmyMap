@@ -161,4 +161,152 @@ describe("CURRENT action one-shot milestones", () => {
     expect(actionMilestoneSourceId("mobilisateur")).toBe(actionMilestoneSourceId("mobilisateur"));
     expect(actionMilestoneSourceId("mobilisateur")).not.toBe(actionMilestoneSourceId("boucle_bouclee"));
   });
+
+  it("treats an omitted participant snapshot as having no confirmed co-participant", () => {
+    const assessments = assessActionMilestones({
+      action: buildAction(),
+      userId: "user-1",
+      canonicalOrganizerIds: ["user-1"],
+      validationQualityGrade: "A",
+    });
+
+    expect(assessments.find((assessment) => assessment.id === "mobilisateur")?.qualified).toBe(false);
+  });
+
+  it("requires an exploitable geometry provenance and valid route workflow", () => {
+    expect(assessmentMap(buildAction({
+      geometry_source: "routed",
+      preparation_data: { routeGeometryMode: "network", routeGeometryProvider: "osrm" },
+    })).get("parcours_documente")?.qualified).toBe(true);
+    expect(assessmentMap(buildAction({
+      geometry_source: "routed",
+      preparation_data: { routeGeometryMode: "network", routeGeometryProvider: "none" },
+    })).get("parcours_documente")?.qualified).toBe(false);
+    expect(assessmentMap(buildAction({
+      geometry_source: "gpx_import",
+      preparation_data: { gpxImport: { source: "manual" } } as never,
+    })).get("parcours_documente")?.qualified).toBe(false);
+    expect(assessmentMap(buildAction({
+      geometry_source: "reference",
+      preparation_data: {},
+    })).get("parcours_documente")?.qualified).toBe(true);
+  });
+
+  it("distinguishes measured waste facts from unknown methods and incomplete formalities", () => {
+    expect(assessmentMap(buildAction({
+      waste_kg: null,
+      notes: appendActionMetadataToNotes("Action", {
+        wasteMeasurementMethod: "balance_suspendue",
+        wasteBreakdown: { recyclablesKg: 1 },
+      }),
+    })).get("mesure_tracable")?.qualified).toBe(true);
+    expect(assessmentMap(buildAction({
+      notes: appendActionMetadataToNotes("Action", { wasteMeasurementMethod: "inconnue" }),
+    })).get("mesure_tracable")?.qualified).toBe(false);
+
+    expect(assessmentMap(buildAction({
+      preparation_data: { formalitiesWorkflow: { trace: null, progress: [] } as never },
+    })).get("formalites_preparees")?.qualified).toBe(false);
+    expect(assessmentMap(buildAction({
+      preparation_data: {
+        formalitiesWorkflow: {
+          trace: { formalities: [{ id: "required", requirementStatus: "required" }] },
+          progress: [{ formalityId: "required", active: false, validForQualification: true, userStatus: "sent" }],
+        } as never,
+      },
+    })).get("formalites_preparees")?.qualified).toBe(false);
+    expect(assessmentMap(buildAction({
+      notes: appendActionMetadataToNotes("Action", {
+        wasteMeasurementMethod: "balance_suspendue",
+        wasteBreakdown: { recyclablesKg: 0, glassKg: 0 },
+      }),
+    })).get("tri_documente")?.qualified).toBe(false);
+    expect(assessmentMap(buildAction({
+      geometry_source: "manual",
+      preparation_data: {},
+    })).get("parcours_documente")?.qualified).toBe(true);
+    expect(assessmentMap(buildAction({
+      preparation_data: { formalitiesWorkflow: { trace: { formalities: [] } } as never },
+    })).get("formalites_preparees")?.qualified).toBe(false);
+  });
+
+  it("requires an actual measured value or trusted cigarette-butt provenance", () => {
+    expect(assessmentMap(buildAction({
+      waste_kg: null,
+      notes: appendActionMetadataToNotes("Action", {
+        wasteMeasurementMethod: "balance_suspendue",
+      }),
+    })).get("mesure_tracable")?.qualified).toBe(false);
+
+    expect(assessmentMap(buildAction({
+      waste_kg: null,
+      notes: appendActionMetadataToNotes("Action", {
+        wasteMeasurementMethod: "balance_suspendue",
+        cigaretteButtsMeasurements: {
+          cigaretteButtsCount: 12,
+          cigaretteButtsMassKg: null,
+          cigaretteButtsVolumeLiters: null,
+          cigaretteButtsCondition: "propre",
+          cigaretteButtsCountProvenance: "estimated",
+          cigaretteButtsMassProvenance: "unknown",
+          cigaretteButtsVolumeProvenance: "unknown",
+          cigaretteButtsConversionFormulaVersion: null,
+        },
+      }),
+    })).get("mesure_tracable")?.qualified).toBe(false);
+
+    expect(assessmentMap(buildAction({
+      waste_kg: null,
+      notes: appendActionMetadataToNotes("Action", {
+        wasteMeasurementMethod: "balance_suspendue",
+        cigaretteButtsMeasurements: {
+          cigaretteButtsCount: 12,
+          cigaretteButtsMassKg: null,
+          cigaretteButtsVolumeLiters: null,
+          cigaretteButtsCondition: "propre",
+          cigaretteButtsCountProvenance: "counted",
+          cigaretteButtsMassProvenance: "unknown",
+          cigaretteButtsVolumeProvenance: "unknown",
+          cigaretteButtsConversionFormulaVersion: null,
+        },
+      }),
+    })).get("mesure_tracable")?.qualified).toBe(true);
+  });
+
+  it("uses the persisted notes drawing only when derived geometry is absent", () => {
+    const drawingNotes = [
+      "Action",
+      '[DRAWING_GEOJSON]{"kind":"polyline","coordinates":[[48.85,2.35],[48.851,2.351]]}',
+    ].join("\n");
+
+    expect(assessmentMap(buildAction({
+      geometry_source: "manual",
+      derived_geometry_geojson: null,
+      derived_geometry_kind: null,
+      notes: drawingNotes,
+    })).get("parcours_documente")?.qualified).toBe(true);
+
+    expect(assessmentMap(buildAction({
+      geometry_source: "manual",
+      derived_geometry_geojson: null,
+      derived_geometry_kind: null,
+      notes: "Action sans géométrie",
+    })).get("parcours_documente")?.qualified).toBe(false);
+  });
+
+  it("requires every required formality to be active, valid, and sent", () => {
+    for (const change of [
+      { active: true, validForQualification: false, userStatus: "sent" },
+      { active: true, validForQualification: true, userStatus: "draft" },
+    ]) {
+      expect(assessmentMap(buildAction({
+        preparation_data: {
+          formalitiesWorkflow: {
+            trace: { formalities: [{ id: "required", requirementStatus: "required" }] } as never,
+            progress: [{ formalityId: "required", ...change }],
+          } as never,
+        },
+      })).get("formalites_preparees")?.qualified).toBe(false);
+    }
+  });
 });

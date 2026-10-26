@@ -98,4 +98,110 @@ describe("gamification reconciliation plan", () => {
     expect(plan.levelBefore).toBe(1);
     expect(plan.levelAfter).toBe(1);
   });
+
+  it("adds missing CURRENT events and preserves a mixed legacy/current version inventory", () => {
+    const currentRules = rules("v2", "XP_MILESTONE", 2);
+    const expected = computeExpectedGamificationState("user-1", facts, currentRules);
+    const plan = buildGamificationReconciliationPlan({
+      userId: "user-1",
+      rules: currentRules,
+      expected,
+      persisted: [
+        ...persisted("v1", 1),
+        {
+          ...persisted("v0", 1)[0],
+          id: 2,
+          metadata: { rulesVersion: "v0", gamificationEngine: "CURRENT_RECONCILABLE", logicalId: "unrelated-current" },
+        },
+      ],
+      profile: { xp_total: 2, xp_validated: 2, current_level: 1, potential_level: 1, current_applied_rules_revision: 1 },
+      stats: null,
+    });
+
+    expect(plan.rulesVersionBefore).toBe("mixed");
+    expect(plan.eventsToAdd).toHaveLength(0);
+    expect(plan.eventsToRemove.map((event) => event.logicalId)).toContain("unrelated-current");
+    expect(plan.levelBefore).toBe(1);
+    expect(plan.levelAfter).toBe(1);
+  });
+
+  it("removes duplicate identities deterministically and exposes badge/milestone additions", () => {
+    const currentRules = rules("v5", "XP_MILESTONE", 1);
+    const expected = computeExpectedGamificationState("user-1", facts, currentRules);
+    const existing = persisted("v5", 1)[0];
+    const duplicate = { ...existing, id: 77 };
+    const emptyPlan = buildGamificationReconciliationPlan({
+      userId: "user-1",
+      rules: currentRules,
+      expected,
+      persisted: [],
+      stats: null,
+    });
+    expect(emptyPlan.eventsToAdd).toHaveLength(1);
+    expect(emptyPlan.badgesAdded).toEqual(["badge-a"]);
+    expect(emptyPlan.milestonesAdded).toEqual(["milestone-a"]);
+
+    const duplicatePlan = buildGamificationReconciliationPlan({
+      userId: "user-1",
+      rules: currentRules,
+      expected,
+      persisted: [existing, duplicate],
+      profile: null,
+      stats: null,
+    });
+    expect(duplicatePlan.eventsToRemove).toHaveLength(1);
+    expect(duplicatePlan.eventsToRemove[0]?.id).toBe(77);
+  });
+
+  it("handles opaque metadata, stale fields and nullable profile levels without losing CURRENT ownership", () => {
+    const currentRules = rules("v6", "XP_MILESTONE", 1);
+    const expected = computeExpectedGamificationState("user-1", facts, currentRules);
+    const first = expected.events[0]!;
+    const stale = {
+      ...persisted("legacy-version", 0)[0],
+      id: 5,
+      event_type: first.eventType as "action_declare_validation",
+      source_table: first.sourceTable,
+      source_id: first.sourceId,
+      occurred_on: "2020-01-01",
+      xp_base: 0,
+      xp_awarded: 0,
+      metadata: {
+        ...first.metadata,
+        logicalId: first.logicalId,
+        rulesVersion: undefined,
+        badgeId: "badge-a",
+        milestoneId: undefined,
+      },
+    };
+    const legacyOpaque = {
+      ...stale,
+      id: 6,
+      event_type: "sensitive_zone_milestone" as const,
+      source_table: "sensitive_zone_progression",
+      source_id: "legacy",
+      metadata: ["opaque"],
+    };
+    const plan = buildGamificationReconciliationPlan({
+      userId: "user-1",
+      rules: currentRules,
+      expected,
+      persisted: [stale, legacyOpaque],
+      profile: {
+        xp_total: null,
+        xp_validated: null,
+        current_level: null,
+        potential_level: null,
+      },
+    });
+
+    expect(plan.rulesVersionBefore).toBe(null);
+    expect(plan.eventsToUpdate).toHaveLength(1);
+    expect(plan.eventsToUpdate[0]?.id).toBe(5);
+    expect(plan.legacyEventCountPreserved).toBe(1);
+    expect(plan.levelBefore).toBe(1);
+    expect(plan.levelAfter).toBe(1);
+    expect(plan.badgesRemoved).toEqual([]);
+    expect(plan.milestonesRemoved).toEqual([]);
+  });
 });

@@ -46,6 +46,24 @@ function dependencies(overrides: Partial<Parameters<typeof runGamificationReconc
 }
 
 describe("gamification reconcile runner", () => {
+  it("rejects ambiguous, incomplete and unsafe command lines", () => {
+    for (const argv of [
+      [],
+      ["--user", "u", "--all", "--dry-run"],
+      ["--user", "u", "--dry-run", "--apply"],
+      ["--all", "--dry-run", "--resume", "checkpoint.json"],
+      ["--all", "--apply", "--batch-size", "0"],
+      ["--all", "--apply", "--batch-size", "501"],
+      ["--all", "--apply", "--unknown"],
+      ["--user", "   ", "--dry-run"],
+    ]) {
+      expect(() => parseGamificationReconcileArgs(argv)).toThrow();
+    }
+    expect(parseGamificationReconcileArgs(["--all", "--apply", "--run-id", "stable"])).toMatchObject({
+      mode: "apply", target: "all", batchSize: 50, runId: "stable",
+    });
+  });
+
   it("keeps dry-run read-only and reports no-data users as zero diff", async () => {
     let applied = 0;
     let checkpoints = 0;
@@ -122,5 +140,33 @@ describe("gamification reconcile runner", () => {
 
     expect(applied).toEqual(["user-1", "user-2", "user-2", "user-3"]);
     expect(checkpoints.at(-1)?.status).toBe("completed");
+  });
+
+  it("continues a dry-run batch after a user error and ignores blank ids", async () => {
+    const checkpoints: string[] = [];
+    const previewed: string[] = [];
+    let firstPage = true;
+    const result = await runGamificationReconcile(
+      parseGamificationReconcileArgs(["--all", "--dry-run", "--batch-size", "3"]),
+      dependencies({
+        listUsers: async () => {
+          if (firstPage) {
+            firstPage = false;
+            return [" ", "user-1", "user-2"];
+          }
+          return [];
+        },
+        previewUser: async (userId: string) => {
+          previewed.push(userId);
+          if (userId === "user-1") throw new Error("preview unavailable");
+          return plan(userId, -1);
+        },
+        writeCheckpoint: async (checkpoint: { status: string }) => { checkpoints.push(checkpoint.status); },
+      }),
+    );
+    expect(previewed).toEqual(["user-1", "user-2"]);
+    expect(result.aggregate.accountsInspected).toBe(1);
+    expect(result.aggregate.errors).toEqual([{ userId: "user-1", message: "preview unavailable" }]);
+    expect(checkpoints).toEqual([]);
   });
 });

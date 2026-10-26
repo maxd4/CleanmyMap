@@ -99,7 +99,10 @@ function buildActionMilestoneFacts(
   confirmedParticipantIdsByAction: Map<string, string[]>,
 ): GamificationSourceFact[] {
   const actionMilestoneFacts = new Map<string, GamificationSourceFact>();
-  for (const action of validatedActions) {
+  const canonicalActions = [...validatedActions].sort((left, right) =>
+    `${dateOf(left)}:${left.id}`.localeCompare(`${dateOf(right)}:${right.id}`),
+  );
+  for (const action of canonicalActions) {
     if (!(canonicalOrganizerIds.get(action.id) ?? []).includes(userId)) continue;
     const quality = evaluateActionQualityScore(action).grade;
     for (const assessment of assessActionMilestones({

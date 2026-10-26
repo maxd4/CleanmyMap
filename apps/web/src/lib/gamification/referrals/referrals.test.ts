@@ -6,6 +6,7 @@ import {
   claimReferralInviteForUser,
   ensureReferralInviteForUser,
   loadReferralSummary,
+  removeReferralAwardForRejectedContribution,
 } from "./referrals";
 import * as referralTestHelpers from "./__tests__/referral-test-helpers";
 
@@ -136,6 +137,7 @@ function createReferralAwardsQuery(
 it("builds a referral url with the code in query string", () => {
   const url = buildReferralInviteUrl("ab12cd34ef");
   expect(url).toContain("/sign-up?ref=AB12CD34EF");
+  expect(buildReferralInviteUrl("  ")).toContain("ref=");
 });
 
 it("loads a referral summary from profiles", async () => {
@@ -415,4 +417,112 @@ it("awards the inviter only on the invitee's first useful contribution", async (
   expect(refreshProgressionProfileMock).toHaveBeenCalledTimes(1);
   expect(auditXpAttributionMock).toHaveBeenCalledTimes(1);
   expect(broadcastGamificationAnnouncementMock).toHaveBeenCalledTimes(1);
+});
+
+it("keeps malformed or non-positive referral awards from unlocking a badge", async () => {
+  const profile = {
+    id: "user-1",
+    display_name: null,
+    referral_code: null,
+    referred_by_profile_id: null,
+    referred_at: null,
+  };
+  const query = {
+    eq: vi.fn(),
+    maybeSingle: vi.fn(),
+    limit: vi.fn(),
+  };
+  query.eq.mockImplementation(() => query);
+  query.maybeSingle.mockResolvedValue({ data: profile, error: null });
+  query.limit.mockResolvedValue({ data: [
+    { xp_awarded: 2 },
+    { xp_awarded: -3 },
+    { xp_awarded: null },
+    { xp_awarded: "not-a-number" },
+    null,
+  ], error: null });
+  const supabaseMock = {
+    from: vi.fn((table: string) => {
+      if (table === "profiles") {
+        return { select: vi.fn((_columns: string, options?: { head?: boolean }) => {
+          if (options?.head) return { eq: vi.fn().mockResolvedValue({ data: null, count: 0, error: null }) };
+          return query;
+        }) };
+      }
+      return { select: vi.fn(() => query) };
+    }),
+  } as unknown as SupabaseClient;
+
+  const summary = await loadReferralSummary(supabaseMock, "user-1");
+  expect(summary.invitedBy).toBeNull();
+  expect(summary.referralCode).toBeNull();
+  expect(summary.badgeUnlocked).toBe(true);
+  expect(summary.referralAwardedXp).toBe(2);
+});
+
+it("refuses empty, self, already claimed and unknown referral codes without mutation", async () => {
+  const empty = await claimReferralInviteForUser({} as SupabaseClient, { userId: "user-1", code: "  " });
+  expect(empty).toEqual({ claimed: false, inviterUserId: null, inviterDisplayName: null });
+
+  function createClaimSupabase(params: {
+    profile: { id: string; referred_by_profile_id: string | null } | null;
+    inviter: { id: string; display_name: string | null } | null;
+  }) {
+    const update = vi.fn(() => ({
+      eq: vi.fn(() => ({
+        is: vi.fn().mockResolvedValue({ error: null }),
+      })),
+    }));
+    return {
+      update,
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn((field: string) => ({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: field === "id" ? params.profile : params.inviter,
+              error: null,
+            }),
+          })),
+        })),
+        update,
+      })),
+    } as unknown as SupabaseClient;
+  }
+
+  const self = await claimReferralInviteForUser(createClaimSupabase({
+    profile: { id: "user-1", referred_by_profile_id: null },
+    inviter: { id: "user-1", display_name: null },
+  }), { userId: "user-1", code: "SELF" });
+  expect(self.claimed).toBe(false);
+
+  const alreadyClaimed = await claimReferralInviteForUser(createClaimSupabase({
+    profile: { id: "user-2", referred_by_profile_id: "inviter-1" },
+    inviter: { id: "inviter-1", display_name: null },
+  }), { userId: "user-2", code: "ABC" });
+  expect(alreadyClaimed).toEqual({ claimed: false, inviterUserId: "inviter-1", inviterDisplayName: "inviter-1" });
+  expect((await claimReferralInviteForUser(createClaimSupabase({
+    profile: { id: "user-2", referred_by_profile_id: null }, inviter: null,
+  }), { userId: "user-2", code: "MISSING" })).claimed).toBe(false);
+});
+
+it("does not create or remove an award when the invitee has no valid inviter", async () => {
+  const profiles = new Map<string, ReferralProfileRow>([
+    ["unreferred", buildReferralProfile({ id: "unreferred", referred_by_profile_id: null })],
+    ["missing", buildReferralProfile({ id: "missing", referred_by_profile_id: null })],
+  ]);
+  const supabase = createReferralReconciliationSupabase([], profiles);
+  await expect(awardReferralForUsefulContribution(supabase, {
+    inviteeUserId: "unreferred",
+    contributionSourceTable: "actions",
+    contributionSourceId: "action-1",
+  })).resolves.toMatchObject({ awarded: false, inviterUserId: null });
+  await expect(removeReferralAwardForRejectedContribution(supabase, "missing")).resolves.toBeNull();
+  expect(auditXpAttributionMock).not.toHaveBeenCalled();
+});
+
+it("fails explicitly when a profile is unavailable for invite-link creation", async () => {
+  const supabase = {
+    from: vi.fn(() => createProfileMaybeSingleSelect(null)),
+  } as unknown as SupabaseClient;
+  await expect(ensureReferralInviteForUser(supabase, "missing")).rejects.toThrow("Profil introuvable");
 });

@@ -77,6 +77,7 @@ function amountFor(rule: GamificationRule, fact: GamificationSourceFact): number
 
 function factMatchesRule(fact: GamificationSourceFact, rule: GamificationRule): boolean {
   if (rule.category === "NON_GAMIFIED" || rule.eventType === null) return false;
+  if (fact.statusPhase !== undefined && fact.statusPhase !== "validated") return false;
   if (fact.mechanicId !== rule.mechanicId) return false;
   if (fact.eventType && fact.eventType !== rule.eventType) return false;
   return fact.eligible !== false;
@@ -140,9 +141,10 @@ export function computeExpectedGamificationState(
     ...(facts.progressionCounters ?? {}),
   };
   const applicableMechanicIds = resolveApplicableMechanicIds(facts, rules);
+  const applicableMechanicSet = new Set(applicableMechanicIds);
 
   for (const rule of rules.mechanics) {
-    if (rule.category === "NON_GAMIFIED") continue;
+    if (rule.category === "NON_GAMIFIED" || !applicableMechanicSet.has(rule.mechanicId)) continue;
     for (const fact of facts.sourceFacts) {
       if (!factMatchesRule(fact, rule)) continue;
       const logicalId = `${userId}:${sourceIdentity(fact, rule)}`;

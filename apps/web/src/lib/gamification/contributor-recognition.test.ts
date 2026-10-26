@@ -153,3 +153,106 @@ it("builds verified contributor cards with zone, regularity and mentor status", 
   expect(recognition.currentContributor?.badges).toContain("Mentor local");
   expect(recognition.currentContributor?.badges).toContain("Coordination vérifiée");
 });
+
+it("covers the remaining recognition families, empty inputs and privacy-safe fallbacks", () => {
+  const rows = [
+    createRow({
+      id: "terrain-1",
+      created_by_clerk_id: "user-terrain",
+      actor_name: "",
+      action_date: "2026-01-01",
+      location_label: "Une très longue zone de contribution qui doit être tronquée, Paris",
+      notes: "association: Action spontanée",
+      volunteers_count: 1,
+    }),
+    createRow({
+      id: "mentor-1",
+      created_by_clerk_id: "user-mentor",
+      actor_name: "Mentor",
+      action_date: "2026-02-01",
+      location_label: "Lille",
+      notes: "association: Action spontanée\nformation et bonnes pratiques",
+      waste_kg: 20,
+      cigarette_butts: 80,
+      volunteers_count: 2,
+      duration_minutes: 180,
+    }),
+    createRow({
+      id: "mentor-2",
+      created_by_clerk_id: "user-mentor",
+      actor_name: "Mentor",
+      action_date: "2026-03-01",
+      location_label: "Lille",
+      notes: "association: Action spontanée\nréférent guide",
+      waste_kg: 20,
+      cigarette_butts: 80,
+      volunteers_count: 2,
+      duration_minutes: 180,
+    }),
+    createRow({
+      id: "mentor-3",
+      created_by_clerk_id: "user-mentor",
+      actor_name: "Mentor",
+      action_date: "2026-04-01",
+      location_label: "Lille",
+      notes: "association: Action spontanée\nmentor",
+      waste_kg: 20,
+      cigarette_butts: 80,
+      volunteers_count: 2,
+      duration_minutes: 180,
+    }),
+    createRow({
+      id: "excluded-1",
+      created_by_clerk_id: "user-excluded",
+      action_date: "2026-05-01",
+      location_label: "Nantes",
+      notes: "Action spontanée",
+      status: "pending",
+    }),
+  ];
+
+  const recognition = buildContributorRecognitionIndex(rows);
+  expect(recognition.currentContributor).toBeNull();
+  expect(recognition.cardsByUserId.has("user-excluded")).toBe(false);
+  expect(recognition.cardsByUserId.get("user-terrain")).toEqual(expect.objectContaining({
+    associationName: "Action spontanée",
+    contributionType: "terrain",
+    regularityLabel: "Ponctuel",
+  }));
+  expect(recognition.cardsByUserId.get("user-mentor")).toEqual(expect.objectContaining({
+    associationName: "Action spontanée",
+    contributionType: "mentorat",
+  }));
+  expect(buildContributorRecognitionIndex([], "")).toMatchObject({
+    topContributors: [],
+    currentContributor: null,
+  });
+});
+
+it("keeps regularity thresholds and zone normalization deterministic across larger histories", () => {
+  const veryRegular = Array.from({ length: 12 }, (_, index) => createRow({
+    id: `very-${index}`,
+    created_by_clerk_id: "user-very",
+    actor_name: "Très régulier",
+    action_date: `2026-${String(index + 1).padStart(2, "0")}-01`,
+    location_label: index === 0 ? "" : "Bordeaux",
+    notes: "association: Action spontanée\nmentor formation",
+    waste_kg: 20,
+    cigarette_butts: 80,
+    volunteers_count: 2,
+    duration_minutes: 180,
+  }));
+  const continuous = [
+    createRow({ id: "continuous-1", created_by_clerk_id: "user-continuous", action_date: "2026-01-01", location_label: "Nice", notes: "association: Action spontanée" }),
+    createRow({ id: "continuous-2", created_by_clerk_id: "user-continuous", action_date: "2026-02-01", location_label: "Nice", notes: "association: Action spontanée" }),
+    createRow({ id: "continuous-3", created_by_clerk_id: "user-continuous", action_date: "2026-02-15", location_label: "Nice", notes: "association: Action spontanée" }),
+  ];
+
+  const recognition = buildContributorRecognitionIndex([...veryRegular, ...continuous], "user-continuous");
+  expect(recognition.cardsByUserId.get("user-very")).toEqual(expect.objectContaining({
+    regularityLabel: "Très régulier",
+    activeMonths: 12,
+    topZone: "Bordeaux",
+  }));
+  expect(recognition.currentContributor).toEqual(expect.objectContaining({ regularityLabel: "En continuité" }));
+});

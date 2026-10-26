@@ -121,6 +121,53 @@ describe("computeExpectedGamificationState", () => {
     expect(state.expectedBadges).toEqual([]);
   });
 
+  it.each(["pending", "rejected"] as const)(
+    "does not project a %s source fact into CURRENT progression",
+    (statusPhase) => {
+      const state = computeExpectedGamificationState("user-1", {
+        ...facts,
+        sourceFacts: [{ ...facts.sourceFacts[0]!, statusPhase }],
+      }, rules({ version: "v1", category: "XP_MILESTONE", amount: 1 }));
+
+      expect(state.events).toEqual([]);
+      expect(state.expectedBadges).toEqual([]);
+    },
+  );
+
+  it("does not project a fact for a mechanic outside the applicable scope", () => {
+    const state = computeExpectedGamificationState("user-1", {
+      ...facts,
+      applicableMechanicIds: [],
+    }, rules({ version: "v1", category: "XP_MILESTONE", amount: 1 }));
+
+    expect(state.applicableMechanicIds).toEqual([]);
+    expect(state.events).toEqual([]);
+    expect(state.expectedBadges).toEqual([]);
+  });
+
+  it("deduplicates a repeated source fact and stays independent of fact import order", () => {
+    const secondFact = {
+      mechanicId: "mechanic-a",
+      eventType: "action_declare_validation" as const,
+      sourceTable: "actions",
+      sourceId: "action-2",
+      occurredOn: "2026-09-29",
+      xpAwarded: 2,
+      metadata: { actionId: "action-2" },
+    };
+    const ruleset = rules({ version: "v1", category: "XP_MILESTONE", amount: 1 });
+    const sourceFacts = [facts.sourceFacts[0]!, secondFact, { ...facts.sourceFacts[0]! }];
+    const first = computeExpectedGamificationState("user-1", { ...facts, sourceFacts }, ruleset);
+    const replayedInAnotherOrder = computeExpectedGamificationState(
+      "user-1",
+      { ...facts, sourceFacts: [secondFact, { ...facts.sourceFacts[0]! }, facts.sourceFacts[0]!] },
+      ruleset,
+    );
+
+    expect(first.events).toHaveLength(2);
+    expect(first).toEqual(replayedInAnotherOrder);
+  });
+
   it("represents the first certified referee as one CURRENT +1 XP event", () => {
     const state = computeExpectedGamificationState("user-1", {
       userId: "user-1",
