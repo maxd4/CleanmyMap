@@ -173,22 +173,28 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
       role: "admin",
       activeRole: "admin",
     });
-    seedApprovedActionParticipants();
+    const participants = seedApprovedActionParticipants();
 
-    const response = await postActionGroupJoin({
+    const { response, body } = await postActionGroupJoinJson<GroupJoinModerationBody>({
       participantUserId: "user-2",
       reason: "Ajout administratif justifié.",
     });
-    const { body } = await postActionGroupJoinJson<GroupJoinModerationBody>({
-      participantId: "participant-pending-action",
-      decision: "accept",
-    });
 
     expect(response.status).toBe(200);
+    expect(body.status).toBe("ok");
+    expect(body.participantUserId).toBe("user-2");
     expect(body).toMatchObject({
       participationStatus: "confirmed",
       participationSource: "admin_override",
     });
+    expect(body.participantsCount).toBe(1);
+    expect(participants).toHaveLength(1);
+    expect(participants[0]).toMatchObject({
+      user_id: "user-2",
+      participation_status: "confirmed",
+      participation_source: "admin_override",
+    });
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
     expect(auditFor("admin_add_participant")).toMatchObject({
         actorUserId: "admin-1",
         targetActionId: "action-1",

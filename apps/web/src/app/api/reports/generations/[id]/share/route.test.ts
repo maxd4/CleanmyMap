@@ -129,7 +129,50 @@ describe("historical report PDF sharing", () => {
     expect(response.status).toBe(200);
     expect(body.preview).toMatchObject({ generationId, artifactReady: true });
     expect(body.preview.communicatedContent).toContain("PDF");
-    expect(body.shares[0]).toMatchObject({ id: share.id, theme: "impact" });
+    expect(body.shares).toHaveLength(1);
+    expect(body.shares).toEqual([{
+      id: share.id,
+      theme: share.theme,
+      rendererVersion: share.rendererVersion,
+      expiresAt: share.expiresAt,
+      revokedAt: share.revokedAt,
+      createdAt: share.createdAt,
+    }]);
+    expect(JSON.stringify(body)).not.toContain("a".repeat(43));
+  });
+
+  it("preserves the complete share projection and its cardinality", async () => {
+    const secondShare = {
+      ...share,
+      id: "44444444-4444-4444-8444-444444444444",
+      theme: "scientific" as const,
+      expiresAt: "2026-10-20T00:00:00.000Z",
+    };
+    listMock.mockResolvedValueOnce([share, secondShare]);
+
+    const response = await GET(request(), { params: Promise.resolve({ id: generationId }) });
+    const body = previewResponseSchema.parse(await response.json());
+
+    expect(response.status).toBe(200);
+    expect(body.shares).toHaveLength(2);
+    expect(body.shares).toEqual([
+      {
+        id: share.id,
+        theme: share.theme,
+        rendererVersion: share.rendererVersion,
+        expiresAt: share.expiresAt,
+        revokedAt: share.revokedAt,
+        createdAt: share.createdAt,
+      },
+      {
+        id: secondShare.id,
+        theme: secondShare.theme,
+        rendererVersion: secondShare.rendererVersion,
+        expiresAt: secondShare.expiresAt,
+        revokedAt: secondShare.revokedAt,
+        createdAt: secondShare.createdAt,
+      },
+    ]);
     expect(JSON.stringify(body)).not.toContain("a".repeat(43));
   });
 
