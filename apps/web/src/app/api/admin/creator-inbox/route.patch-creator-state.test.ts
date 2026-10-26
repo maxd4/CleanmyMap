@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { appendAdminOperationAuditMock, auditCalls, getCommunityBugReportByIdMock, getCurrentUserIdentityMock, makeRequest, requireCreatorAccessMock, resetCreatorInboxMocks, updateCommunityBugReportCreatorStateMock, updateCommunityBugReportStatusMock } from "./route.test.helpers";
+import { appendAdminOperationAuditMock, auditCalls, getCommunityBugReportByIdMock, getCurrentUserIdentityMock, makeRequest, requireCreatorAccessMock, resetCreatorInboxMocks, updateCommunityBugReportCreatorStateMock, updateCommunityBugReportStatusMock } from "@/__tests__/support/creator-inbox-route";
 
 describe("PATCH /api/admin/creator-inbox — creator-state mutations", () => {
   beforeEach(() => {

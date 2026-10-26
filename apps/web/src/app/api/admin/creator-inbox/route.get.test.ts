@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { canUseSupabaseServerPersistenceMock, getCurrentUserIdentityMock, loadCreatorInboxPageMock, makeGetRequest, resetCreatorInboxMocks } from "./route.test.helpers";
+import { canUseSupabaseServerPersistenceMock, getCurrentUserIdentityMock, loadCreatorInboxPageMock, makeGetRequest, resetCreatorInboxMocks } from "@/__tests__/support/creator-inbox-route";
 
 const feedbackMetricsPage = {
   items: [{ id: "feedback-1" }],

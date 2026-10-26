@@ -188,6 +188,28 @@ const readyMedia = {
 };
 
 const ownerIdentity = { userId: "user-1", role: "benevole" as const, activeRole: "benevole" as const };
+type UploadParams = Parameters<typeof createActionMediaUploadIntent>[1];
+type FinalizeParams = Parameters<typeof finalizeActionMedia>[1];
+
+function uploadParams(overrides: Partial<UploadParams> = {}): UploadParams {
+  return {
+    ...ownerIdentity,
+    identity: ownerIdentity,
+    actionId: action.id,
+    originalName: readyMedia.original_name,
+    mimeType: readyMedia.mime_type,
+    sizeBytes: readyMedia.size_bytes,
+    width: readyMedia.width,
+    height: readyMedia.height,
+    sortOrder: readyMedia.sort_order,
+    clientUploadId: readyMedia.client_upload_id,
+    ...overrides,
+  };
+}
+
+function finalizeParams(overrides: Partial<FinalizeParams> = {}): FinalizeParams {
+  return { ...ownerIdentity, identity: ownerIdentity, actionId: action.id, mediaId: readyMedia.id, ...overrides };
+}
 
 describe("action media contract", () => {
   it("validates the restricted image contract before persistence", () => {
@@ -207,15 +229,12 @@ describe("action media contract", () => {
 
   it("creates an upload intent for the owner and uses the dedicated bucket", async () => {
     const supabase = makeSupabase({ action, activeCount: 0, insertedMedia: { ...readyMedia, upload_state: "pending" } });
-    const intent = await createActionMediaUploadIntent(supabase as never, {
-      ...ownerIdentity,
-      identity: ownerIdentity,
-      actionId: action.id,
+    const intent = await createActionMediaUploadIntent(supabase as never, uploadParams({
       originalName: "bilan.jpg",
       mimeType: "image/jpeg",
       sizeBytes: 1234,
       clientUploadId: "stable-client-id",
-    });
+    }));
     expect(intent).toMatchObject({ bucket: ACTION_MEDIA_BUCKET, uploadState: "pending" });
     expect(supabase.from).toHaveBeenCalledWith("actions");
     expect(supabase.from).toHaveBeenCalledWith("action_media");
@@ -224,34 +243,24 @@ describe("action media contract", () => {
   });
 
   it("rejects a missing, non-admissible or unrelated action", async () => {
-    await expect(createActionMediaUploadIntent(makeSupabase({ action: null }) as never, {
-      ...ownerIdentity, identity: ownerIdentity, actionId: action.id, originalName: "bilan.jpg", mimeType: "image/jpeg", sizeBytes: 1000, clientUploadId: "client-1",
-    })).rejects.toMatchObject({ code: "not_found" });
-    await expect(createActionMediaUploadIntent(makeSupabase({ action: { ...action, action_phase: "pre_action" } }) as never, {
-      ...ownerIdentity, identity: ownerIdentity, actionId: action.id, originalName: "bilan.jpg", mimeType: "image/jpeg", sizeBytes: 1000, clientUploadId: "client-2",
-    })).rejects.toMatchObject({ code: "not_admissible" });
+    await expect(createActionMediaUploadIntent(makeSupabase({ action: null }) as never, uploadParams({ originalName: "bilan.jpg", mimeType: "image/jpeg", sizeBytes: 1000, clientUploadId: "client-1" }))).rejects.toMatchObject({ code: "not_found" });
+    await expect(createActionMediaUploadIntent(makeSupabase({ action: { ...action, action_phase: "pre_action" } }) as never, uploadParams({ originalName: "bilan.jpg", mimeType: "image/jpeg", sizeBytes: 1000, clientUploadId: "client-2" }))).rejects.toMatchObject({ code: "not_admissible" });
     await expect(listActionMedia(makeSupabase({ action }) as never, {
       actionId: action.id, userId: "other-user", identity: { userId: "other-user", role: "benevole", activeRole: "benevole" },
     })).rejects.toMatchObject({ code: "forbidden" });
   });
 
   it("rejects a fourth active intent, including the quota boundary", async () => {
-    await expect(createActionMediaUploadIntent(makeSupabase({ action, activeCount: ACTION_MEDIA_MAX_MEDIA }) as never, {
-      ...ownerIdentity, identity: ownerIdentity, actionId: action.id, originalName: "bilan.jpg", mimeType: "image/jpeg", sizeBytes: 1000, clientUploadId: "client-4",
-    })).rejects.toMatchObject({ code: "limit_reached" });
+    await expect(createActionMediaUploadIntent(makeSupabase({ action, activeCount: ACTION_MEDIA_MAX_MEDIA }) as never, uploadParams({ originalName: "bilan.jpg", mimeType: "image/jpeg", sizeBytes: 1000, clientUploadId: "client-4" }))).rejects.toMatchObject({ code: "limit_reached" });
   });
 
   it("does not finalize before the object exists and is idempotent once ready", async () => {
-    await expect(finalizeActionMedia(makeSupabase({ action, existingMedia: { ...readyMedia, upload_state: "pending" } }) as never, {
-      ...ownerIdentity, identity: ownerIdentity, actionId: action.id, mediaId: readyMedia.id,
-    })).rejects.toMatchObject({ code: "storage_missing" });
+    await expect(finalizeActionMedia(makeSupabase({ action, existingMedia: { ...readyMedia, upload_state: "pending" } }) as never, finalizeParams())).rejects.toMatchObject({ code: "storage_missing" });
     const result = await finalizeActionMedia(makeSupabase({
       action,
       existingMedia: readyMedia,
       objectInfo: { metadata: { size: readyMedia.size_bytes, mimetype: readyMedia.mime_type } },
-    }) as never, {
-      ...ownerIdentity, identity: ownerIdentity, actionId: action.id, mediaId: readyMedia.id,
-    });
+    }) as never, finalizeParams());
     expect(result.alreadyReady).toBe(true);
   });
 
@@ -260,10 +269,7 @@ describe("action media contract", () => {
       action,
       existingMedia: { ...readyMedia, upload_state: "failed" },
     });
-    await expect(createActionMediaUploadIntent(supabase as never, {
-      ...ownerIdentity,
-      identity: ownerIdentity,
-      actionId: action.id,
+    await expect(createActionMediaUploadIntent(supabase as never, uploadParams({
       originalName: "bilan.webp",
       mimeType: "image/webp",
       sizeBytes: 1234,
@@ -271,7 +277,7 @@ describe("action media contract", () => {
       height: 800,
       sortOrder: 0,
       clientUploadId: readyMedia.client_upload_id,
-    })).rejects.toMatchObject({ code: "conflict" });
+    }))).rejects.toMatchObject({ code: "conflict" });
     expect(supabase.__queries.mediaQuery.update).not.toHaveBeenCalled();
   });
 
@@ -282,18 +288,7 @@ describe("action media contract", () => {
       updatedMedia: { ...readyMedia, upload_state: "ready" },
       objectInfo: { metadata: { size: readyMedia.size_bytes, mimetype: readyMedia.mime_type } },
     });
-    const intent = await createActionMediaUploadIntent(supabase as never, {
-      ...ownerIdentity,
-      identity: ownerIdentity,
-      actionId: action.id,
-      originalName: readyMedia.original_name,
-      mimeType: readyMedia.mime_type,
-      sizeBytes: readyMedia.size_bytes,
-      width: readyMedia.width,
-      height: readyMedia.height,
-      sortOrder: readyMedia.sort_order,
-      clientUploadId: readyMedia.client_upload_id,
-    });
+    const intent = await createActionMediaUploadIntent(supabase as never, uploadParams());
     expect(intent).toEqual({ mediaId: readyMedia.id, uploadState: "ready" });
     expect(supabase.__storageUpload).not.toHaveBeenCalled();
   });
@@ -311,18 +306,7 @@ describe("action media contract", () => {
         return { data: { metadata: { size: readyMedia.size_bytes, mimetype: readyMedia.mime_type } }, error: null };
       },
     });
-    const params = {
-      ...ownerIdentity,
-      identity: ownerIdentity,
-      actionId: action.id,
-      originalName: readyMedia.original_name,
-      mimeType: readyMedia.mime_type,
-      sizeBytes: readyMedia.size_bytes,
-      width: readyMedia.width,
-      height: readyMedia.height,
-      sortOrder: readyMedia.sort_order,
-      clientUploadId: readyMedia.client_upload_id,
-    };
+    const params = uploadParams();
     const first = createActionMediaUploadIntent(supabase as never, params);
     const second = createActionMediaUploadIntent(supabase as never, params);
     while (checks < 2) await Promise.resolve();
@@ -341,17 +325,13 @@ describe("action media contract", () => {
       action,
       existingMedia: { ...readyMedia, upload_state: "pending" },
       objectInfo: { metadata: { size: readyMedia.size_bytes + 1, mimetype: readyMedia.mime_type } },
-    }) as never, {
-      ...ownerIdentity, identity: ownerIdentity, actionId: action.id, mediaId: readyMedia.id,
-    })).rejects.toMatchObject({ code: "storage_invalid" });
+    }) as never, finalizeParams())).rejects.toMatchObject({ code: "storage_invalid" });
 
     await expect(finalizeActionMedia(makeSupabase({
       action,
       existingMedia: { ...readyMedia, upload_state: "pending" },
       objectInfo: { metadata: { size: readyMedia.size_bytes, mimetype: "image/webp" } },
-    }) as never, {
-      ...ownerIdentity, identity: ownerIdentity, actionId: action.id, mediaId: readyMedia.id,
-    })).rejects.toMatchObject({ code: "storage_invalid" });
+    }) as never, finalizeParams())).rejects.toMatchObject({ code: "storage_invalid" });
   });
 
   it("does not issue a new upload token for a ready proof after a delayed retry", async () => {
@@ -360,18 +340,7 @@ describe("action media contract", () => {
       existingMedia: readyMedia,
       objectInfo: { metadata: { size: readyMedia.size_bytes, mimetype: readyMedia.mime_type } },
     });
-    const result = await createActionMediaUploadIntent(supabase as never, {
-      ...ownerIdentity,
-      identity: ownerIdentity,
-      actionId: action.id,
-      originalName: readyMedia.original_name,
-      mimeType: readyMedia.mime_type,
-      sizeBytes: readyMedia.size_bytes,
-      width: readyMedia.width,
-      height: readyMedia.height,
-      sortOrder: readyMedia.sort_order,
-      clientUploadId: readyMedia.client_upload_id,
-    });
+    const result = await createActionMediaUploadIntent(supabase as never, uploadParams());
     expect(result).toEqual({ mediaId: readyMedia.id, uploadState: "ready" });
     expect(supabase.__storageUpload).not.toHaveBeenCalled();
   });
@@ -382,18 +351,7 @@ describe("action media contract", () => {
       existingMedia: readyMedia,
       objectInfo: { metadata: { size: readyMedia.size_bytes, mimetype: "image/webp" } },
     });
-    await expect(createActionMediaUploadIntent(supabase as never, {
-      ...ownerIdentity,
-      identity: ownerIdentity,
-      actionId: action.id,
-      originalName: readyMedia.original_name,
-      mimeType: readyMedia.mime_type,
-      sizeBytes: readyMedia.size_bytes,
-      width: readyMedia.width,
-      height: readyMedia.height,
-      sortOrder: readyMedia.sort_order,
-      clientUploadId: readyMedia.client_upload_id,
-    })).rejects.toMatchObject({ code: "storage_invalid" });
+    await expect(createActionMediaUploadIntent(supabase as never, uploadParams())).rejects.toMatchObject({ code: "storage_invalid" });
     expect(supabase.__storageUpload).not.toHaveBeenCalled();
   });
 
@@ -418,7 +376,7 @@ describe("action media contract", () => {
         return { data: { metadata: { size: readyMedia.size_bytes, mimetype: readyMedia.mime_type } }, error: null };
       },
     });
-    const params = { ...ownerIdentity, identity: ownerIdentity, actionId: action.id, mediaId: readyMedia.id };
+    const params = finalizeParams();
     const first = finalizeActionMedia(supabase as never, params);
     const second = finalizeActionMedia(supabase as never, params);
     while (checks < 2) await Promise.resolve();
@@ -446,18 +404,7 @@ describe("action media contract", () => {
         if (payload.upload_state === "pending") sharedRow.upload_state = "ready";
       },
     });
-    const result = await createActionMediaUploadIntent(supabase as never, {
-      ...ownerIdentity,
-      identity: ownerIdentity,
-      actionId: action.id,
-      originalName: readyMedia.original_name,
-      mimeType: readyMedia.mime_type,
-      sizeBytes: readyMedia.size_bytes,
-      width: readyMedia.width,
-      height: readyMedia.height,
-      sortOrder: readyMedia.sort_order,
-      clientUploadId: readyMedia.client_upload_id,
-    });
+    const result = await createActionMediaUploadIntent(supabase as never, uploadParams());
 
     expect(result).toEqual({ mediaId: readyMedia.id, uploadState: "ready" });
     expect(supabase.__storageUpload).not.toHaveBeenCalled();
@@ -485,18 +432,7 @@ describe("action media contract", () => {
         return uploadResult;
       },
     });
-    const intentPromise = createActionMediaUploadIntent(supabase as never, {
-      ...ownerIdentity,
-      identity: ownerIdentity,
-      actionId: action.id,
-      originalName: readyMedia.original_name,
-      mimeType: readyMedia.mime_type,
-      sizeBytes: readyMedia.size_bytes,
-      width: readyMedia.width,
-      height: readyMedia.height,
-      sortOrder: readyMedia.sort_order,
-      clientUploadId: readyMedia.client_upload_id,
-    });
+    const intentPromise = createActionMediaUploadIntent(supabase as never, uploadParams());
     await uploadStarted;
     supabase.__state.row = { ...supabase.__state.row, upload_state: "ready" };
     rejectUpload(new Error("late signed URL failure"));
@@ -523,12 +459,7 @@ describe("action media contract", () => {
       },
     });
 
-    const result = await finalizeActionMedia(supabase as never, {
-      ...ownerIdentity,
-      identity: ownerIdentity,
-      actionId: action.id,
-      mediaId: readyMedia.id,
-    });
+    const result = await finalizeActionMedia(supabase as never, finalizeParams());
 
     expect(result.alreadyReady).toBe(true);
     expect(sharedRow.upload_state).toBe("ready");
@@ -541,12 +472,7 @@ describe("action media contract", () => {
       existingMedia: { ...readyMedia, upload_state: "pending" },
       storageError: { status: 503 },
     });
-    await expect(finalizeActionMedia(supabase as never, {
-      ...ownerIdentity,
-      identity: ownerIdentity,
-      actionId: action.id,
-      mediaId: readyMedia.id,
-    })).rejects.toMatchObject({ code: "storage_error" });
+    await expect(finalizeActionMedia(supabase as never, finalizeParams())).rejects.toMatchObject({ code: "storage_error" });
     expect(supabase.__queries.mediaQuery.update).not.toHaveBeenCalled();
   });
 });

@@ -35,6 +35,14 @@ vi.mock("@/lib/http/auth-responses", () => ({
 const auditRequest = (query = "") =>
   new Request(`http://localhost/api/actions/action-1/audit${query}`);
 
+async function invokeAudit(query = "") {
+  const { GET } = await import("./route");
+  return GET(
+    auditRequest(query),
+    { params: Promise.resolve({ actionId: "action-1" }) },
+  );
+}
+
 describe("GET /api/actions/:actionId/audit", () => {
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
@@ -68,11 +76,7 @@ describe("GET /api/actions/:actionId/audit", () => {
       created_by_clerk_id: "user-1",
     });
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      auditRequest("?limit=8"),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeAudit("?limit=8");
 
     const body = (await response.json()) as { status?: string; count?: number; items?: unknown[] };
     expect(response.status).toBe(200);
@@ -89,11 +93,7 @@ describe("GET /api/actions/:actionId/audit", () => {
       created_by_clerk_id: "user-2",
     });
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      auditRequest(),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeAudit();
 
     expect(response.status).toBe(403);
     expect(listAdminOperationAuditMock).not.toHaveBeenCalled();
@@ -105,11 +105,7 @@ describe("GET /api/actions/:actionId/audit", () => {
     });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["user-1"]);
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      auditRequest(),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeAudit();
 
     expect(response.status).toBe(200);
     expect(listAdminOperationAuditMock).toHaveBeenCalledWith(12, "action-1");
@@ -125,11 +121,7 @@ describe("GET /api/actions/:actionId/audit", () => {
     });
     getCurrentUserIdentityMock.mockResolvedValueOnce({ activeRole: "max" });
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      auditRequest(),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeAudit();
 
     expect(response.status).toBe(200);
     expect(loadActionOrganizerIdsForActionMock).not.toHaveBeenCalled();
@@ -151,11 +143,7 @@ describe("GET /api/actions/:actionId/audit", () => {
       activeRole: "admin",
     });
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      auditRequest(),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeAudit();
 
     expect(response.status).toBe(200);
     expect(loadActionOrganizerIdsForActionMock).not.toHaveBeenCalled();
@@ -189,11 +177,7 @@ describe("GET /api/actions/:actionId/audit", () => {
       created_by_clerk_id: "user-2",
     });
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      auditRequest(),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeAudit();
 
     expect(response.status).toBe(403);
     expect(listAdminOperationAuditMock).not.toHaveBeenCalled();
@@ -213,11 +197,7 @@ describe("GET /api/actions/:actionId/audit", () => {
       created_by_clerk_id: "user-2",
     });
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      auditRequest(),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeAudit();
     const body = (await response.json()) as { items?: unknown[] };
 
     expect(response.status).toBe(200);
@@ -256,15 +236,8 @@ describe("GET /api/actions/:actionId/audit", () => {
       created_by_clerk_id: "user-2",
     });
 
-    const { GET } = await import("./route");
-    const firstResponse = await GET(
-      auditRequest(),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
-    const secondResponse = await GET(
-      auditRequest(),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const firstResponse = await invokeAudit();
+    const secondResponse = await invokeAudit();
 
     expect(firstResponse.status).toBe(200);
     expect(secondResponse.status).toBe(403);
@@ -274,11 +247,7 @@ describe("GET /api/actions/:actionId/audit", () => {
   it("rejects anonymous users before reading the audit journal", async () => {
     requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: false });
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      auditRequest(),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeAudit();
 
     expect(response.status).toBe(401);
     expect(runSingleActionQueryMock).not.toHaveBeenCalled();

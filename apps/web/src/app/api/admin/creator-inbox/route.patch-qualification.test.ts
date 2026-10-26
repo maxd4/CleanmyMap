@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { appendAdminOperationAuditMock, getCurrentUserIdentityMock, makeRequest, qualifyCommunityBugReportMock, resetCreatorInboxMocks } from "./route.test.helpers";
+import { appendAdminOperationAuditMock, getCurrentUserIdentityMock, makeRequest, qualifyCommunityBugReportMock, resetCreatorInboxMocks } from "@/__tests__/support/creator-inbox-route";
 
 describe("PATCH /api/admin/creator-inbox — qualification", () => {
   beforeEach(() => {

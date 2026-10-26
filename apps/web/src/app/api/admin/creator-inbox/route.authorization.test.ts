@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { getCommunityBugReportByIdMock, getCurrentUserIdentityMock, loadCreatorInboxPageMock, makeGetRequest, makeRequest, qualifyCommunityBugReportMock, requireCreatorAccessMock, resetCreatorInboxMocks, updateCommunityBugReportTrackingMock } from "./route.test.helpers";
+import { getCommunityBugReportByIdMock, getCurrentUserIdentityMock, loadCreatorInboxPageMock, makeGetRequest, makeRequest, qualifyCommunityBugReportMock, requireCreatorAccessMock, resetCreatorInboxMocks, updateCommunityBugReportTrackingMock } from "@/__tests__/support/creator-inbox-route";
 
 describe("Creator inbox authorization", () => {
   beforeEach(() => {

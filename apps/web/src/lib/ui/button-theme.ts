@@ -17,6 +17,83 @@ type ButtonThemeTokens = {
   tertiary: ButtonSurfaceTheme;
 };
 
+const PINK_SECONDARY: ButtonSurfaceTheme = {
+  bgStart: "#fdf2f8",
+  bgEnd: "#fbcfe8",
+  hoverStart: "#fce7f3",
+  hoverEnd: "#f9a8d4",
+  border: "rgba(236, 72, 153, 0.20)",
+  borderHover: "rgba(236, 72, 153, 0.32)",
+  text: "#831843",
+  ring: "rgba(236, 72, 153, 0.24)",
+};
+
+const PINK_TERTIARY: ButtonSurfaceTheme = {
+  bgStart: "rgba(253, 242, 248, 0.58)",
+  bgEnd: "rgba(251, 207, 232, 0.34)",
+  hoverStart: "rgba(252, 231, 243, 0.72)",
+  hoverEnd: "rgba(244, 114, 182, 0.42)",
+  border: "rgba(236, 72, 153, 0.20)",
+  borderHover: "rgba(236, 72, 153, 0.30)",
+  text: "#831843",
+  ring: "rgba(236, 72, 153, 0.22)",
+};
+
+const INDIGO_SECONDARY: ButtonSurfaceTheme = {
+  bgStart: "#eef2ff",
+  bgEnd: "#c7d2fe",
+  hoverStart: "#e0e7ff",
+  hoverEnd: "#a5b4fc",
+  border: "rgba(99, 102, 241, 0.20)",
+  borderHover: "rgba(99, 102, 241, 0.32)",
+  text: "#312e81",
+  ring: "rgba(99, 102, 241, 0.24)",
+};
+
+const INDIGO_TERTIARY: ButtonSurfaceTheme = {
+  bgStart: "rgba(238, 242, 255, 0.58)",
+  bgEnd: "rgba(199, 210, 254, 0.34)",
+  hoverStart: "rgba(224, 231, 255, 0.72)",
+  hoverEnd: "rgba(165, 180, 252, 0.42)",
+  border: "rgba(99, 102, 241, 0.20)",
+  borderHover: "rgba(99, 102, 241, 0.30)",
+  text: "#312e81",
+  ring: "rgba(99, 102, 241, 0.22)",
+};
+
+const SLATE_SECONDARY: ButtonSurfaceTheme = {
+  bgStart: "#f8fafc",
+  bgEnd: "#e2e8f0",
+  hoverStart: "#f1f5f9",
+  hoverEnd: "#cbd5e1",
+  border: "rgba(148, 163, 184, 0.20)",
+  borderHover: "rgba(148, 163, 184, 0.32)",
+  text: "#1e293b",
+  ring: "rgba(148, 163, 184, 0.24)",
+};
+
+const SLATE_TERTIARY: ButtonSurfaceTheme = {
+  bgStart: "rgba(248, 250, 252, 0.58)",
+  bgEnd: "rgba(226, 232, 240, 0.34)",
+  hoverStart: "rgba(241, 245, 249, 0.72)",
+  hoverEnd: "rgba(203, 213, 225, 0.42)",
+  border: "rgba(148, 163, 184, 0.20)",
+  borderHover: "rgba(148, 163, 184, 0.30)",
+  text: "#1e293b",
+  ring: "rgba(148, 163, 184, 0.22)",
+};
+
+const BLUE_PRIMARY: ButtonSurfaceTheme = {
+  bgStart: "#dbeafe",
+  bgEnd: "#7dd3fc",
+  hoverStart: "#bfdbfe",
+  hoverEnd: "#38bdf8",
+  border: "rgba(14, 165, 233, 0.24)",
+  borderHover: "rgba(14, 165, 233, 0.36)",
+  text: "#0f172a",
+  ring: "rgba(14, 165, 233, 0.28)",
+};
+
 const BUTTON_THEME_TOKENS: Record<BackdropToneKey, ButtonThemeTokens> = {
   home: {
     primary: {
@@ -222,24 +299,10 @@ const BUTTON_THEME_TOKENS: Record<BackdropToneKey, ButtonThemeTokens> = {
       ring: "rgba(236, 72, 153, 0.28)",
     },
     secondary: {
-      bgStart: "#fdf2f8",
-      bgEnd: "#fbcfe8",
-      hoverStart: "#fce7f3",
-      hoverEnd: "#f9a8d4",
-      border: "rgba(236, 72, 153, 0.20)",
-      borderHover: "rgba(236, 72, 153, 0.32)",
-      text: "#831843",
-      ring: "rgba(236, 72, 153, 0.24)",
+      ...PINK_SECONDARY,
     },
     tertiary: {
-      bgStart: "rgba(253, 242, 248, 0.58)",
-      bgEnd: "rgba(251, 207, 232, 0.34)",
-      hoverStart: "rgba(252, 231, 243, 0.72)",
-      hoverEnd: "rgba(244, 114, 182, 0.42)",
-      border: "rgba(236, 72, 153, 0.20)",
-      borderHover: "rgba(236, 72, 153, 0.30)",
-      text: "#831843",
-      ring: "rgba(236, 72, 153, 0.22)",
+      ...PINK_TERTIARY,
     },
   },
   pink: {
@@ -254,24 +317,10 @@ const BUTTON_THEME_TOKENS: Record<BackdropToneKey, ButtonThemeTokens> = {
       ring: "rgba(236, 72, 153, 0.28)",
     },
     secondary: {
-      bgStart: "#fdf2f8",
-      bgEnd: "#fbcfe8",
-      hoverStart: "#fce7f3",
-      hoverEnd: "#f9a8d4",
-      border: "rgba(236, 72, 153, 0.20)",
-      borderHover: "rgba(236, 72, 153, 0.32)",
-      text: "#831843",
-      ring: "rgba(236, 72, 153, 0.24)",
+      ...PINK_SECONDARY,
     },
     tertiary: {
-      bgStart: "rgba(253, 242, 248, 0.58)",
-      bgEnd: "rgba(251, 207, 232, 0.34)",
-      hoverStart: "rgba(252, 231, 243, 0.72)",
-      hoverEnd: "rgba(244, 114, 182, 0.42)",
-      border: "rgba(236, 72, 153, 0.20)",
-      borderHover: "rgba(236, 72, 153, 0.30)",
-      text: "#831843",
-      ring: "rgba(236, 72, 153, 0.22)",
+      ...PINK_TERTIARY,
     },
   },
   yellow: {
@@ -318,24 +367,10 @@ const BUTTON_THEME_TOKENS: Record<BackdropToneKey, ButtonThemeTokens> = {
       ring: "rgba(99, 102, 241, 0.28)",
     },
     secondary: {
-      bgStart: "#eef2ff",
-      bgEnd: "#c7d2fe",
-      hoverStart: "#e0e7ff",
-      hoverEnd: "#a5b4fc",
-      border: "rgba(99, 102, 241, 0.20)",
-      borderHover: "rgba(99, 102, 241, 0.32)",
-      text: "#312e81",
-      ring: "rgba(99, 102, 241, 0.24)",
+      ...INDIGO_SECONDARY,
     },
     tertiary: {
-      bgStart: "rgba(238, 242, 255, 0.58)",
-      bgEnd: "rgba(199, 210, 254, 0.34)",
-      hoverStart: "rgba(224, 231, 255, 0.72)",
-      hoverEnd: "rgba(165, 180, 252, 0.42)",
-      border: "rgba(99, 102, 241, 0.20)",
-      borderHover: "rgba(99, 102, 241, 0.30)",
-      text: "#312e81",
-      ring: "rgba(99, 102, 241, 0.22)",
+      ...INDIGO_TERTIARY,
     },
   },
   slate: {
@@ -350,24 +385,10 @@ const BUTTON_THEME_TOKENS: Record<BackdropToneKey, ButtonThemeTokens> = {
       ring: "rgba(14, 165, 233, 0.28)",
     },
     secondary: {
-      bgStart: "#f8fafc",
-      bgEnd: "#e2e8f0",
-      hoverStart: "#f1f5f9",
-      hoverEnd: "#cbd5e1",
-      border: "rgba(148, 163, 184, 0.20)",
-      borderHover: "rgba(148, 163, 184, 0.32)",
-      text: "#1e293b",
-      ring: "rgba(148, 163, 184, 0.24)",
+      ...SLATE_SECONDARY,
     },
     tertiary: {
-      bgStart: "rgba(248, 250, 252, 0.58)",
-      bgEnd: "rgba(226, 232, 240, 0.34)",
-      hoverStart: "rgba(241, 245, 249, 0.72)",
-      hoverEnd: "rgba(203, 213, 225, 0.42)",
-      border: "rgba(148, 163, 184, 0.20)",
-      borderHover: "rgba(148, 163, 184, 0.30)",
-      text: "#1e293b",
-      ring: "rgba(148, 163, 184, 0.22)",
+      ...SLATE_TERTIARY,
     },
   },
   auth: {
@@ -382,24 +403,10 @@ const BUTTON_THEME_TOKENS: Record<BackdropToneKey, ButtonThemeTokens> = {
       ring: "rgba(180, 83, 9, 0.28)",
     },
     secondary: {
-      bgStart: "#eef2ff",
-      bgEnd: "#c7d2fe",
-      hoverStart: "#e0e7ff",
-      hoverEnd: "#a5b4fc",
-      border: "rgba(99, 102, 241, 0.20)",
-      borderHover: "rgba(99, 102, 241, 0.32)",
-      text: "#312e81",
-      ring: "rgba(99, 102, 241, 0.24)",
+      ...INDIGO_SECONDARY,
     },
     tertiary: {
-      bgStart: "rgba(238, 242, 255, 0.58)",
-      bgEnd: "rgba(199, 210, 254, 0.34)",
-      hoverStart: "rgba(224, 231, 255, 0.72)",
-      hoverEnd: "rgba(165, 180, 252, 0.42)",
-      border: "rgba(99, 102, 241, 0.20)",
-      borderHover: "rgba(99, 102, 241, 0.30)",
-      text: "#312e81",
-      ring: "rgba(99, 102, 241, 0.22)",
+      ...INDIGO_TERTIARY,
     },
   },
   legal: {
@@ -414,24 +421,10 @@ const BUTTON_THEME_TOKENS: Record<BackdropToneKey, ButtonThemeTokens> = {
       ring: "rgba(14, 165, 233, 0.28)",
     },
     secondary: {
-      bgStart: "#f8fafc",
-      bgEnd: "#e2e8f0",
-      hoverStart: "#f1f5f9",
-      hoverEnd: "#cbd5e1",
-      border: "rgba(148, 163, 184, 0.20)",
-      borderHover: "rgba(148, 163, 184, 0.32)",
-      text: "#1e293b",
-      ring: "rgba(148, 163, 184, 0.24)",
+      ...SLATE_SECONDARY,
     },
     tertiary: {
-      bgStart: "rgba(248, 250, 252, 0.58)",
-      bgEnd: "rgba(226, 232, 240, 0.34)",
-      hoverStart: "rgba(241, 245, 249, 0.72)",
-      hoverEnd: "rgba(203, 213, 225, 0.42)",
-      border: "rgba(148, 163, 184, 0.20)",
-      borderHover: "rgba(148, 163, 184, 0.30)",
-      text: "#1e293b",
-      ring: "rgba(148, 163, 184, 0.22)",
+      ...SLATE_TERTIARY,
     },
   },
   system: {
@@ -467,16 +460,7 @@ const BUTTON_THEME_TOKENS: Record<BackdropToneKey, ButtonThemeTokens> = {
     },
   },
   state429: {
-    primary: {
-      bgStart: "#dbeafe",
-      bgEnd: "#7dd3fc",
-      hoverStart: "#bfdbfe",
-      hoverEnd: "#38bdf8",
-      border: "rgba(14, 165, 233, 0.24)",
-      borderHover: "rgba(14, 165, 233, 0.36)",
-      text: "#0f172a",
-      ring: "rgba(14, 165, 233, 0.28)",
-    },
+    primary: { ...BLUE_PRIMARY },
     secondary: {
       bgStart: "#fff7ed",
       bgEnd: "#ffedd5",
@@ -531,16 +515,7 @@ const BUTTON_THEME_TOKENS: Record<BackdropToneKey, ButtonThemeTokens> = {
     },
   },
   print: {
-    primary: {
-      bgStart: "#dbeafe",
-      bgEnd: "#7dd3fc",
-      hoverStart: "#bfdbfe",
-      hoverEnd: "#38bdf8",
-      border: "rgba(14, 165, 233, 0.24)",
-      borderHover: "rgba(14, 165, 233, 0.36)",
-      text: "#0f172a",
-      ring: "rgba(14, 165, 233, 0.28)",
-    },
+    primary: { ...BLUE_PRIMARY },
     secondary: {
       bgStart: "#f8fafc",
       bgEnd: "#e2e8f0",

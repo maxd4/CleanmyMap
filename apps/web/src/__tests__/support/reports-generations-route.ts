@@ -5,7 +5,7 @@ import {
   mockRejectedRateLimit,
   rateLimitMocks,
 } from "@/app/api/test-helpers";
-import { multiInput, validSnapshotPayload } from "./route.test.fixtures";
+import { multiInput, validSnapshotPayload } from "@/__tests__/support/reports-generations-fixtures";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const persistReportGenerationMock = vi.hoisted(() => vi.fn());

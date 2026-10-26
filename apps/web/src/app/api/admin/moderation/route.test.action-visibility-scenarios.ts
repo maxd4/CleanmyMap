@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { createActionSupabaseHarness } from "./route.test.helpers";
+import { createActionSupabaseHarness } from "@/__tests__/support/admin-moderation-route";
 
 export type ModerationScenarioMocks = Record<string, ReturnType<typeof vi.fn>>;
 

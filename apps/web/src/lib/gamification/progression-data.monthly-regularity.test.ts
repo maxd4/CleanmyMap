@@ -9,7 +9,7 @@ import {
   createRecordingProgressionSupabase,
   createNoopLedgerTable,
   type ProgressionTestActionRow as ActionRow,
-} from "./progression-data.test.helpers";
+} from "@/__tests__/support/progression-data";
 
 function buildAction(
   id: string,

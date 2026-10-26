@@ -10,7 +10,7 @@ import {
   rebuildUserGamificationBadgesMock,
   refreshProgressionProfileMock,
   requireAuthenticatedAccessMock,
-} from "./route.test.helpers";
+} from "@/__tests__/support/group-join-action-route";
 
 async function postGroupJoin(actionId: string) {
   const { POST } = await import("./route");

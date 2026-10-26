@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { awardActionMilestonesForUser } from "./progression-data";
-import { createOrganizerChain } from "./progression-data.test.helpers";
+import { createOrganizerChain } from "@/__tests__/support/progression-data";
 import type { ActionRow } from "./progression-types";
 
 function buildAction(id = "action-1", status: ActionRow["status"] = "approved"): ActionRow {

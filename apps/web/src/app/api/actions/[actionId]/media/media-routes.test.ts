@@ -56,6 +56,26 @@ function request(url: string, init?: RequestInit) {
   return new Request(`http://localhost${url}`, init);
 }
 
+function uploadIntentRequest(overrides: Record<string, unknown> = {}) {
+  return request("/api/actions/action-1/media/intents", {
+    method: "POST",
+    body: JSON.stringify({
+      originalName: "bilan.jpg",
+      mimeType: "image/jpeg",
+      sizeBytes: 1234,
+      width: 1200,
+      height: 800,
+      sortOrder: 0,
+      clientUploadId: "stable-client-upload-1",
+      ...overrides,
+    }),
+  });
+}
+
+function finalizeRequest() {
+  return request("/api/actions/action-1/media/media-1/finalize", { method: "POST" });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   requireActionRequestAccessMock.mockResolvedValue({ ok: true, userId: "owner-1" });
@@ -155,21 +175,7 @@ describe("Action media HTTP boundaries", () => {
       token: "signed-upload-token",
     });
 
-    const response = await createUploadIntent(
-      request("/api/actions/action-1/media/intents", {
-        method: "POST",
-        body: JSON.stringify({
-          originalName: "bilan.jpg",
-          mimeType: "image/jpeg",
-          sizeBytes: 1234,
-          width: 1200,
-          height: 800,
-          sortOrder: 0,
-          clientUploadId: "stable-client-upload-1",
-        }),
-      }),
-      { params },
-    );
+    const response = await createUploadIntent(uploadIntentRequest(), { params });
 
     expect(response.status).toBe(201);
     expect(createActionMediaUploadIntentMock).toHaveBeenCalledWith(supabase, {
@@ -191,21 +197,7 @@ describe("Action media HTTP boundaries", () => {
       new ActionMediaError("private storage detail", "not_admissible"),
     );
 
-    const response = await createUploadIntent(
-      request("/api/actions/action-1/media/intents", {
-        method: "POST",
-        body: JSON.stringify({
-          originalName: "bilan.jpg",
-          mimeType: "image/jpeg",
-          sizeBytes: 1234,
-          width: 1200,
-          height: 800,
-          sortOrder: 0,
-          clientUploadId: "stable-client-upload-1",
-        }),
-      }),
-      { params },
-    );
+    const response = await createUploadIntent(uploadIntentRequest(), { params });
 
     expect(response.status).toBe(409);
     const body = await response.json();
@@ -218,10 +210,9 @@ describe("Action media HTTP boundaries", () => {
       new ActionMediaError("private storage detail", "not_admissible"),
     );
 
-    const response = await finalizeMedia(
-      request("/api/actions/action-1/media/media-1/finalize", { method: "POST" }),
-      { params: Promise.resolve({ actionId: "action-1", mediaId: "media-1" }) },
-    );
+    const response = await finalizeMedia(finalizeRequest(), {
+      params: Promise.resolve({ actionId: "action-1", mediaId: "media-1" }),
+    });
 
     expect(response.status).toBe(409);
     const body = await response.json();
@@ -265,22 +256,7 @@ describe("Action media HTTP boundaries", () => {
     ["invalid order", { sortOrder: 3 }],
     ["missing client key", { clientUploadId: "" }],
   ] as const)("rejects %s before creating an upload intent", async (_label, patch) => {
-    const response = await createUploadIntent(
-      request("/api/actions/action-1/media/intents", {
-        method: "POST",
-        body: JSON.stringify({
-          originalName: "bilan.jpg",
-          mimeType: "image/jpeg",
-          sizeBytes: 1234,
-          width: 1200,
-          height: 800,
-          sortOrder: 0,
-          clientUploadId: "stable-client-upload-1",
-          ...patch,
-        }),
-      }),
-      { params },
-    );
+    const response = await createUploadIntent(uploadIntentRequest(patch), { params });
 
     expect(response.status).toBe(400);
     expect(createActionMediaUploadIntentMock).not.toHaveBeenCalled();
@@ -295,21 +271,7 @@ describe("Action media HTTP boundaries", () => {
       new ActionMediaError("internal storage detail", code),
     );
 
-    const response = await createUploadIntent(
-      request("/api/actions/action-1/media/intents", {
-        method: "POST",
-        body: JSON.stringify({
-          originalName: "bilan.jpg",
-          mimeType: "image/jpeg",
-          sizeBytes: 1234,
-          width: 1200,
-          height: 800,
-          sortOrder: 0,
-          clientUploadId: "stable-client-upload-1",
-        }),
-      }),
-      { params },
-    );
+    const response = await createUploadIntent(uploadIntentRequest(), { params });
 
     expect(response.status).toBe(status);
     if (code === "not_found") expect(await response.text()).not.toContain("internal storage detail");
@@ -325,10 +287,9 @@ describe("Action media HTTP boundaries", () => {
       new ActionMediaError("private finalization detail", code),
     );
 
-    const response = await finalizeMedia(
-      request("/api/actions/action-1/media/media-1/finalize", { method: "POST" }),
-      { params: Promise.resolve({ actionId: "action-1", mediaId: "media-1" }) },
-    );
+    const response = await finalizeMedia(finalizeRequest(), {
+      params: Promise.resolve({ actionId: "action-1", mediaId: "media-1" }),
+    });
 
     expect(response.status).toBe(status);
     if (code === "not_found") expect(await response.text()).not.toContain("private finalization detail");

@@ -45,6 +45,7 @@ import {
 } from "./multi-action-report";
 
 type PdfData = ReturnType<typeof import("@/lib/reports/report-pdf-data").buildPdfData>;
+type ReportSourceData = Awaited<ReturnType<typeof import("@/lib/reports/page-data").loadReportsGenerationData>>;
 
 const reportModelFixture = (): ReportModel => ({
   generatedAt: "2026-08-31T12:00:00.000Z",
@@ -126,6 +127,22 @@ function makeContract(id: string, overrides: Record<string, unknown> = {}) {
     moderationVisibility: "visible",
     ...overrides,
   });
+}
+
+function sourceData(
+  contracts: ReportSourceData["contracts"],
+  overrides: Partial<ReportSourceData> = {},
+): ReportSourceData {
+  return {
+    contracts,
+    isTruncated: false,
+    sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
+    communityEvents: [],
+    communityEventsAvailability: "available",
+    actionMediaReadyCountByActionId: {},
+    actionMediaAvailability: "available",
+    ...overrides,
+  };
 }
 
 describe("multi-action report server resolver", () => {
@@ -296,15 +313,7 @@ describe("multi-action report server resolver", () => {
     ["draft", { actionPhase: "post_action_draft" }],
     ["hidden", { moderationVisibility: "hidden" }],
   ] as const)("excludes %s actions from the public completed corpus", async (_label, overrides) => {
-    mocks.loadReportsGenerationData.mockResolvedValueOnce({
-      contracts: [makeContract("ineligible", overrides)],
-      isTruncated: false,
-      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
-      communityEvents: [],
-      communityEventsAvailability: "available",
-      actionMediaReadyCountByActionId: {},
-      actionMediaAvailability: "available",
-    });
+    mocks.loadReportsGenerationData.mockResolvedValueOnce(sourceData([makeContract("ineligible", overrides)]));
 
     await expect(buildMultiActionReportGenerationInput({
       request: { type: "multi_action", period: { id: "six_months" }, scope: { kind: "global" } },
@@ -318,20 +327,12 @@ describe("multi-action report server resolver", () => {
     ["account", "user-1"],
     ["arrondissement", "1"],
   ] as const)("selects the canonical corpus for a %s scope", async (kind, value) => {
-    mocks.loadReportsGenerationData.mockResolvedValueOnce({
-      contracts: [
+    mocks.loadReportsGenerationData.mockResolvedValueOnce(sourceData([
         makeContract("included"),
         kind === "account"
           ? makeContract("other-account", { createdByClerkId: "user-2" })
           : makeContract("other-arrondissement", { locationLabel: "Paris 2e" }),
-      ],
-      isTruncated: false,
-      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
-      communityEvents: [],
-      communityEventsAvailability: "available",
-      actionMediaReadyCountByActionId: {},
-      actionMediaAvailability: "available",
-    });
+      ]));
     const result = await buildMultiActionReportGenerationInput({
       request: {
         type: "multi_action",
@@ -369,15 +370,10 @@ describe("multi-action report server resolver", () => {
   });
 
   it("keeps source, empty-window and truncation states explicit", async () => {
-    mocks.loadReportsGenerationData.mockResolvedValueOnce({
-      contracts: [],
-      isTruncated: false,
+    mocks.loadReportsGenerationData.mockResolvedValueOnce(sourceData([], {
       sourceHealth: { partial: true, failedSources: ["actions"], availableSources: [], warnings: ["down"] },
-      communityEvents: [],
       communityEventsAvailability: "unavailable",
-      actionMediaReadyCountByActionId: {},
-      actionMediaAvailability: "available",
-    });
+    }));
     await expect(buildMultiActionReportGenerationInput({
       request: { type: "multi_action", period: { id: "six_months" }, scope: { kind: "global" } },
       detailLevel: "default",
@@ -385,15 +381,9 @@ describe("multi-action report server resolver", () => {
       now,
     })).rejects.toBeInstanceOf(MultiActionReportSourceUnavailableError);
 
-    mocks.loadReportsGenerationData.mockResolvedValueOnce({
-      contracts: [makeContract("old", { observedAt: "2020-01-01T00:00:00.000Z" })],
-      isTruncated: false,
-      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
-      communityEvents: [],
-      communityEventsAvailability: "available",
-      actionMediaReadyCountByActionId: {},
-      actionMediaAvailability: "available",
-    });
+    mocks.loadReportsGenerationData.mockResolvedValueOnce(sourceData([
+      makeContract("old", { observedAt: "2020-01-01T00:00:00.000Z" }),
+    ]));
     await expect(buildMultiActionReportGenerationInput({
       request: { type: "multi_action", period: { id: "thirty_days" }, scope: { kind: "global" } },
       detailLevel: "default",
@@ -413,15 +403,7 @@ describe("multi-action report server resolver", () => {
       makeContract("draft", { actionPhase: "post_action_draft" }),
       makeContract("rejected", { status: "rejected" }),
     ];
-    mocks.loadReportsGenerationData.mockResolvedValueOnce({
-      contracts: [...candidates].reverse(),
-      isTruncated: false,
-      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
-      communityEvents: [],
-      communityEventsAvailability: "available",
-      actionMediaReadyCountByActionId: {},
-      actionMediaAvailability: "available",
-    });
+    mocks.loadReportsGenerationData.mockResolvedValueOnce(sourceData([...candidates].reverse()));
 
     const filters = {
       ...{
@@ -478,19 +460,11 @@ describe("multi-action report server resolver", () => {
   });
 
   it("computes multi-action waste coverage from structured rows without counting missing breakdowns", async () => {
-    mocks.loadReportsGenerationData.mockResolvedValueOnce({
-      contracts: [
+    mocks.loadReportsGenerationData.mockResolvedValueOnce(sourceData([
         makeContract("a", { wasteBreakdown: { megotsKg: 2, plastiqueKg: 1 } }),
         makeContract("b", { wasteBreakdown: { megotsKg: 0, verreKg: 3 } }),
         makeContract("missing", { wasteBreakdown: null }),
-      ],
-      isTruncated: false,
-      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
-      communityEvents: [],
-      communityEventsAvailability: "available",
-      actionMediaReadyCountByActionId: {},
-      actionMediaAvailability: "available",
-    });
+      ]));
 
     await buildMultiActionReportGenerationInput({
       request: { type: "multi_action", period: { id: "full_history" }, scope: { kind: "global" } },
@@ -514,15 +488,12 @@ describe("multi-action report server resolver", () => {
   });
 
   it("keeps an entirely unknown waste profile and impact proxy unavailable", async () => {
-    mocks.loadReportsGenerationData.mockResolvedValueOnce({
-      contracts: [makeContract("unknown", { wasteKg: 0, volunteersCount: null, wasteBreakdown: null })],
-      isTruncated: false,
+    mocks.loadReportsGenerationData.mockResolvedValueOnce(sourceData([
+      makeContract("unknown", { wasteKg: 0, volunteersCount: null, wasteBreakdown: null }),
+    ], {
       sourceHealth: { partial: true, failedSources: [], availableSources: ["actions"], warnings: ["events unavailable"] },
-      communityEvents: [],
       communityEventsAvailability: "unavailable",
-      actionMediaReadyCountByActionId: {},
-      actionMediaAvailability: "available",
-    });
+    }));
     mocks.computeReportModel.mockReturnValueOnce({
       ...reportModelFixture(),
       generatedAt: now.toISOString(),
@@ -559,19 +530,11 @@ describe("multi-action report server resolver", () => {
   });
 
   it("uses action counts as the deterministic tie-breaker for equal waste categories", async () => {
-    mocks.loadReportsGenerationData.mockResolvedValueOnce({
-      contracts: [
+    mocks.loadReportsGenerationData.mockResolvedValueOnce(sourceData([
         makeContract("plastic", { wasteBreakdown: { plastiqueKg: 2 } }),
         makeContract("glass-1", { wasteBreakdown: { verreKg: 1 } }),
         makeContract("glass-2", { id: "glass-2", wasteBreakdown: { verreKg: 1 } }),
-      ],
-      isTruncated: false,
-      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
-      communityEvents: [],
-      communityEventsAvailability: "available",
-      actionMediaReadyCountByActionId: {},
-      actionMediaAvailability: "available",
-    });
+      ]));
 
     await buildMultiActionReportGenerationInput({
       request: { type: "multi_action", period: { id: "full_history" }, scope: { kind: "global" } },

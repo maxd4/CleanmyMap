@@ -12,6 +12,7 @@ import {
   type ActionMediaReadItem,
 } from "./action-media-contract";
 import { verifyActionMediaStorageObject } from "./action-media-storage";
+import { mapCommonMediaRecord } from "../media/media-record-mapper";
 import { validateMediaUploadInput } from "../media/media-upload-validation";
 import {
   markActionMediaFailedIfCurrent,
@@ -96,20 +97,8 @@ export function buildActionMediaPath(
 
 function toRecord(row: ActionMediaRow): ActionMediaRecord {
   return {
-    id: row.id,
+    ...mapCommonMediaRecord(row),
     actionId: row.action_id,
-    createdAt: row.created_at,
-    createdByClerkId: row.created_by_clerk_id,
-    clientUploadId: row.client_upload_id,
-    storageBucket: row.storage_bucket,
-    storagePath: row.storage_path,
-    originalName: row.original_name,
-    mimeType: row.mime_type,
-    sizeBytes: row.size_bytes,
-    width: row.width,
-    height: row.height,
-    sortOrder: row.sort_order,
-    uploadState: row.upload_state,
   };
 }
 

@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
-import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  BugReportScreenshotError,
   cleanupBugReportScreenshotAttempt,
   deleteBugReportScreenshot,
   getBugReportScreenshot,
 } from "@/lib/community/bug-report-screenshot";
+import { bugReportScreenshotErrorResponse } from "./route-error";
 
 export const runtime = "nodejs";
 // Justification Vercel: la lecture et la suppression de la capture privée relisent l'état Storage/feedback à chaque requête et ne doivent pas être pré-rendues.
@@ -18,19 +18,6 @@ export const dynamic = "force-dynamic";
 const cleanupSchema = z.object({
   attemptId: z.string().uuid(),
 }).strict();
-
-function errorResponse(error: unknown) {
-  if (error instanceof BugReportScreenshotError) {
-    if (error.code === "forbidden") return forbiddenJsonResponse();
-    if (error.code === "not_found") {
-      return NextResponse.json({ error: "Capture introuvable." }, { status: 404 });
-    }
-    if (error.code === "validation") {
-      return validationErrorResponse({ screenshot: [error.message] });
-    }
-  }
-  return handleApiError(error, "community-bug-report-screenshot");
-}
 
 export async function GET(
   request: Request,
@@ -51,7 +38,7 @@ export async function GET(
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
-    return errorResponse(error);
+    return bugReportScreenshotErrorResponse(error, "read-write");
   }
 }
 
@@ -89,6 +76,6 @@ export async function DELETE(
     }
     return NextResponse.json({ status: "ok" });
   } catch (error) {
-    return errorResponse(error);
+    return bugReportScreenshotErrorResponse(error, "read-write");
   }
 }

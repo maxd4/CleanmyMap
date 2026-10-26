@@ -29,11 +29,11 @@ ce gate. Ils sont donc `OUT_OF_INSTRUMENTATION`, pas `0 %`.
 
 | Élément | Valeur |
 | --- | --- |
-| SHA mesuré | `db53d6b4294241ea04c551f5d03172a055b3b32d` |
+| SHA mesuré | `504d6082ab58a84487a9af7fcf7265e2b74ca4c3` (`HEAD`, lecture du worktree courant) |
 | Branche | `main` |
-| Provenance de lecture | `WORKTREE_LIVE` ; `HEAD` correspondait exactement au SHA mesuré et le checkout était propre |
-| Mesure duplication | `2026-10-26T16:23:21.728Z` (`audit:quality -- duplication`) |
-| Run d'audit | `a85cc011-db4c-4fd5-a424-040c030d8463` |
+| Provenance de lecture | `WORKTREE_LIVE` ; le worktree contenait les changements non committés de ce lot, conservés séparément des chemins étrangers |
+| Mesure duplication | `2026-10-26T19:54:35.896Z` (`audit:quality -- duplication`) |
+| Run d'audit | `b6c07bc4-f6b0-4c21-a4c3-7327bfeeee1f` |
 | Projection quality-index du SHA final | `NOT_RUN_POLICY` — le lot demandait uniquement l'audit duplication |
 | Outil déclaré par la politique et les baselines | `jscpd 5.3.0` |
 | Outil installé et exécuté | `jscpd 5.3.0` (`npm ls jscpd`, `node node_modules/jscpd/run-jscpd.js --version`) |
@@ -53,10 +53,10 @@ Les artefacts exhaustifs reproductibles générés par les producteurs canonique
 sont :
 
 ```text
-artifacts/quality-audits/db53d6b4294241ea04c551f5d03172a055b3b32d/
-  duplication--a85cc011-db4c-4fd5-a424-040c030d8463--report.json
-  duplication--a85cc011-db4c-4fd5-a424-040c030d8463--manifest.json
-  duplication--a85cc011-db4c-4fd5-a424-040c030d8463--summary.md
+artifacts/quality-audits/504d6082ab58a84487a9af7fcf7265e2b74ca4c3/
+  duplication--b6c07bc4-f6b0-4c21-a4c3-7327bfeeee1f--report.json
+  duplication--b6c07bc4-f6b0-4c21-a4c3-7327bfeeee1f--manifest.json
+  duplication--b6c07bc4-f6b0-4c21-a4c3-7327bfeeee1f--summary.md
 ```
 
 Le rapport duplication conserve tous les fingerprints et toutes les paires
@@ -77,8 +77,8 @@ dénominateurs.
 
 | Scope | Fichiers | Lignes totales | Lignes dupliquées | Taux lignes | Tokens totaux | Tokens dupliqués | Taux tokens | Delta 3 % lignes / tokens | Excès théorique lignes / tokens | Gate historique |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `runtime` | 2 354 | 332 557 | 2 011 | 0,604708 % | 1 954 015 | 14 834 | 0,759155 % | 0 / 0 pp | 0 / 0 | `FAIL` — 134 nouveaux fingerprints ; marges dépassées |
-| `tests` | 1 466 | 192 524 | 6 837 | 3,551246 % | 1 301 493 | 48 620 | 3,735710 % | 0,551246 / 0,735710 pp | 1 062 / 9 576 | `FAIL` — 448 nouveaux fingerprints ; marges dépassées |
+| `runtime` | 2 370 | 333 706 | 1 917 | 0,574458 % | 1 962 850 | 14 527 | 0,740098 % | 0 / 0 pp | 0 / 0 | `FAIL` — 135 nouveaux fingerprints ; marges dépassées |
+| `tests` | 1 470 | 191 264 | 6 037 | 3,156371 % | 1 294 285 | 43 939 | 3,394847 % | 0,156371 / 0,394847 pp | 300 / 5 111 | `FAIL` — 397 nouveaux fingerprints ; marges dépassées |
 | `fixtures/data` | 12 | 1 992 | 0 | 0 % | 8 863 | 0 | 0 % | 0 / 0 pp | 0 / 0 | `PASS` |
 
 La cible documentaire est donc atteinte pour `runtime` et `fixtures/data`, et
@@ -90,15 +90,17 @@ les scopes sous 3 %, ni autorisation de créer de nouvelles duplications.
 | Contrôle | Résultat | Détails observés |
 | --- | --- | --- |
 | `npm run quality:duplication` | `FAIL` | runtime et tests en échec ; fixtures/data `PASS` |
-| `npm run audit:quality -- duplication` | `FAIL`, `attention=true` | 228 clones runtime, 718 tests, 0 fixtures/data |
+| `npm run audit:quality -- duplication` | `FAIL`, `attention=true` | 225 clones runtime, 650 tests, 0 fixtures/data |
 | `npm run audit:quality -- all` sur le SHA final | `NOT_RUN_POLICY` | hors périmètre de ce lot ; aucune projection `all` n'est utilisée |
 | Fingerprints qualifiés nouveaux | informatif | runtime 21 ; tests 22 |
-| Justifications présentes | informatif | `KEEP_INTENTIONAL=180`, `NO_ACTION_NOISE=140` |
-| Justifications périmées | `FAIL` du gate | 8 `STALE_KEEP_INTENTIONAL`, 2 `STALE_NO_ACTION_NOISE` |
+| Justifications présentes | informatif | `KEEP_INTENTIONAL=164`, `NO_ACTION_NOISE=133` |
+| Justifications périmées | `PASS` | `STALE_KEEP_INTENTIONAL=0`, `STALE_NO_ACTION_NOISE=0` ; les dix entrées obsolètes ont été retirées |
 
-Les deltas historiques bruts homogènes sont : runtime `+658` lignes / `+6 541`
-tokens / `+0,132107` pp / `+0,216896` pp tokens ; tests `+3 814` lignes /
-`+30 282` tokens / `+1,149847` pp / `+1,341290` pp tokens.
+Les deltas historiques bruts homogènes sont : runtime `+564` lignes / `+6 234`
+tokens / `+0,101857` pp / `+0,197838` pp tokens ; tests `+3 014` lignes /
+`+25 601` tokens / `+0,754972` pp / `+1,000427` pp tokens. Le gate reste donc
+intentionnellement en échec : la réduction est mesurée, mais ne suffit pas à
+faire disparaître les fingerprints nouveaux ni les dépassements de marges.
 
 ## 4. Matrice des clones prioritaires
 
@@ -242,19 +244,12 @@ géographiques de sémantiques différentes (`d2d5b18d4caaf2a7`,
 ### Clones non examinés ou stale
 
 Les autres fingerprints doivent rester dans l'inventaire et ne sont pas
-implicitement justifiés. Les dix entrées stale actuelles sont :
+implicitement justifiés. La mesure courante ne signale plus de justification
+stale : les dix entrées obsolètes ont été retirées après relecture de leur
+provenance.
 
-```text
-tests:97b05916b3f99675  tests:07cd699689832252
-tests:1b65aae4a0b93759  tests:3278df9b81908f97
-tests:a5fbd5e8c0ecd5ad  tests:038e03572586a7e1
-tests:8f47a55c919f4117  tests:10579554ae107da9
-tests:e6ab6517e5320834  tests:af9b56af09f2f0de
-```
-
-Ils ne doivent pas être promus en `KEEP` sans relecture des occurrences
-CURRENT. Une qualification ne peut ni modifier la baseline, ni relever un
-seuil, ni élargir une exclusion.
+Une qualification ne peut ni modifier la baseline, ni relever un seuil, ni
+élargir une exclusion.
 
 ## 7. Plan de réduction priorisé
 

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   reportGenerationMocks,
   setupGetReportGenerationDefaults,
-} from "./route.test.helpers";
+} from "@/__tests__/support/reports-generations-route";
 import { GET } from "./route";
 
 const {

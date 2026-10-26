@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { buildSupabaseMock, type ChatMessageRow } from "./route.test.helpers";
+import { buildSupabaseMock, type ChatMessageRow } from "@/__tests__/support/chat-route";
 import { GET, POST } from "./route";
 
 vi.mock("server-only", () => ({}));

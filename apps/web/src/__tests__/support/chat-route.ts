@@ -15,7 +15,7 @@ export type ChatMessageRow = {
 };
 
 export async function postChatPayload(payload: Record<string, unknown>) {
-  const { POST } = await import("./route");
+  const { POST } = await import("@/app/api/chat/route");
   return POST(new Request("http://localhost/api/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }));
 }
 

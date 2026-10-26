@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
-import { unauthorizedJsonResponse, forbiddenJsonResponse } from "@/lib/http/auth-responses";
-import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  BugReportScreenshotError,
   createBugReportScreenshotUploadIntent,
 } from "@/lib/community/bug-report-screenshot";
+import { bugReportScreenshotErrorResponse } from "../route-error";
 
 export const runtime = "nodejs";
 // Justification Vercel: l'intention d'upload dépend de l'identité Clerk, de l'état du feedback et d'un chemin Storage immuable généré à la demande.
@@ -20,19 +20,6 @@ const intentSchema = z.object({
   width: z.number().int().positive().max(10000).nullable().optional(),
   height: z.number().int().positive().max(10000).nullable().optional(),
 });
-
-function errorResponse(error: unknown) {
-  if (error instanceof BugReportScreenshotError) {
-    if (error.code === "validation") {
-      return validationErrorResponse({ screenshot: [error.message] });
-    }
-    if (error.code === "forbidden") return forbiddenJsonResponse();
-    if (error.code === "not_found") {
-      return NextResponse.json({ error: "Feedback introuvable." }, { status: 404 });
-    }
-  }
-  return handleApiError(error, "community-bug-report-screenshot-intent");
-}
 
 export async function POST(
   request: Request,
@@ -60,6 +47,6 @@ export async function POST(
     );
     return NextResponse.json({ status: "ok", intent }, { status: 201 });
   } catch (error) {
-    return errorResponse(error);
+    return bugReportScreenshotErrorResponse(error, "intent");
   }
 }

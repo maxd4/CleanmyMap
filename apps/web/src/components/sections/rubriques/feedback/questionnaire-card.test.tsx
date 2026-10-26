@@ -80,6 +80,30 @@ function validBugValues() {
   };
 }
 
+type Questionnaire = (typeof QUESTIONNAIRES)[number];
+
+function questionnaire(id: Questionnaire["id"]): Questionnaire {
+  return QUESTIONNAIRES.find((candidate) => candidate.id === id)!;
+}
+
+function renderQuestionnaireCard(
+  selectedQuestionnaire: Questionnaire,
+  initialValues?: Record<string, string>,
+): ReactTestRenderer {
+  let renderer!: ReactTestRenderer;
+  act(() => {
+    renderer = create(
+      <QuestionnaireCard
+        questionnaire={selectedQuestionnaire}
+        pagePath="/sections/feedback"
+        source="feedback_section"
+        initialValues={initialValues}
+      />,
+    );
+  });
+  return renderer;
+}
+
 class CardSpeechRecognition {
   static instances: CardSpeechRecognition[] = [];
 
@@ -138,17 +162,7 @@ describe("QuestionnaireCard serialized description validation", () => {
     const { questionnaire, values } = valuesForDescriptionLength(
       FEEDBACK_DESCRIPTION_MAX_LENGTH,
     );
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <QuestionnaireCard
-          questionnaire={questionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-          initialValues={values}
-        />,
-      );
-    });
+    const renderer = renderQuestionnaireCard(questionnaire, values);
 
     expect(submitButton(renderer)?.props.disabled).toBe(false);
   });
@@ -158,17 +172,7 @@ describe("QuestionnaireCard serialized description validation", () => {
     const revokeObjectURL = vi.fn();
     vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
     const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
-    let renderer!: ReactTestRenderer;
-
-    act(() => {
-      renderer = create(
-        <QuestionnaireCard
-          questionnaire={questionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-        />,
-      );
-    });
+    const renderer = renderQuestionnaireCard(questionnaire);
 
     const fileInput = renderer.root.findAllByType("input").map((input) => propsOf<InputProps>(input)).find(
       (input) => input.type === "file",
@@ -197,17 +201,7 @@ describe("QuestionnaireCard serialized description validation", () => {
     const { questionnaire, values } = valuesForDescriptionLength(
       FEEDBACK_DESCRIPTION_MAX_LENGTH + 1,
     );
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <QuestionnaireCard
-          questionnaire={questionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-          initialValues={values}
-        />,
-      );
-    });
+    const renderer = renderQuestionnaireCard(questionnaire, values);
 
     expect(submitButton(renderer)?.props.disabled).toBe(true);
     expect(JSON.stringify(renderer.toJSON())).toContain(
@@ -216,36 +210,9 @@ describe("QuestionnaireCard serialized description validation", () => {
   });
 
   it("shows the optional private screenshot control only for Bug", () => {
-    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
-    const ideaQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "idea")!;
-    const collaborationQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "collaboration")!;
-    let bugRenderer!: ReactTestRenderer;
-    let ideaRenderer!: ReactTestRenderer;
-    let collaborationRenderer!: ReactTestRenderer;
-
-    act(() => {
-      bugRenderer = create(
-        <QuestionnaireCard
-          questionnaire={bugQuestionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-        />,
-      );
-      ideaRenderer = create(
-        <QuestionnaireCard
-          questionnaire={ideaQuestionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-        />,
-      );
-      collaborationRenderer = create(
-        <QuestionnaireCard
-          questionnaire={collaborationQuestionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-        />,
-      );
-    });
+    const bugRenderer = renderQuestionnaireCard(questionnaire("bug"));
+    const ideaRenderer = renderQuestionnaireCard(questionnaire("idea"));
+    const collaborationRenderer = renderQuestionnaireCard(questionnaire("collaboration"));
 
     expect(JSON.stringify(bugRenderer.toJSON())).toContain("Capture d'écran (facultatif)");
     expect(bugRenderer.root.findByProps({ type: "file" }).props.accept).toBe(
@@ -258,27 +225,8 @@ describe("QuestionnaireCard serialized description validation", () => {
   });
 
   it("explains product-feedback recognition only on eligible questionnaires", () => {
-    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
-    const collaborationQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "collaboration")!;
-    let bugRenderer!: ReactTestRenderer;
-    let collaborationRenderer!: ReactTestRenderer;
-
-    act(() => {
-      bugRenderer = create(
-        <QuestionnaireCard
-          questionnaire={bugQuestionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-        />,
-      );
-      collaborationRenderer = create(
-        <QuestionnaireCard
-          questionnaire={collaborationQuestionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-        />,
-      );
-    });
+    const bugRenderer = renderQuestionnaireCard(questionnaire("bug"));
+    const collaborationRenderer = renderQuestionnaireCard(questionnaire("collaboration"));
 
     expect(JSON.stringify(bugRenderer.toJSON())).toContain("Votre contribution peut être récompensée");
     expect(JSON.stringify(bugRenderer.toJSON())).toContain("Découvrir les badges");
@@ -296,22 +244,10 @@ describe("QuestionnaireCard serialized description validation", () => {
       ok: true,
       json: async () => ({ requestId: "feedback-1" }),
     })));
-    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
-    let renderer!: ReactTestRenderer;
-
-    act(() => {
-      renderer = create(
-        <QuestionnaireCard
-          questionnaire={bugQuestionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-          initialValues={{
-            context: "J'ouvrais la carte",
-            steps: "La carte ne s'affichait pas",
-            expected: "La carte devait s'afficher",
-          }}
-        />,
-      );
+    const renderer = renderQuestionnaireCard(questionnaire("bug"), {
+      context: "J'ouvrais la carte",
+      steps: "La carte ne s'affichait pas",
+      expected: "La carte devait s'afficher",
     });
 
     await act(async () => {
@@ -336,19 +272,7 @@ describe("QuestionnaireCard serialized description validation", () => {
       )
       .mockImplementationOnce(() => new Promise((resolve) => { resolveRetry = resolve; }));
     vi.stubGlobal("fetch", fetchMock);
-    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
-    let renderer!: ReactTestRenderer;
-
-    act(() => {
-      renderer = create(
-        <QuestionnaireCard
-          questionnaire={bugQuestionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-          initialValues={validBugValues()}
-        />,
-      );
-    });
+    const renderer = renderQuestionnaireCard(questionnaire("bug"), validBugValues());
 
     await act(async () => {
       await formProps(renderer).onSubmit({ preventDefault: () => undefined });
@@ -380,19 +304,7 @@ describe("QuestionnaireCard serialized description validation", () => {
     let resolveFetch!: (response: Response) => void;
     const fetchMock = vi.fn(() => new Promise<Response>((resolve) => { resolveFetch = resolve; }));
     vi.stubGlobal("fetch", fetchMock);
-    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
-    let renderer!: ReactTestRenderer;
-
-    act(() => {
-      renderer = create(
-        <QuestionnaireCard
-          questionnaire={bugQuestionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-          initialValues={validBugValues()}
-        />,
-      );
-    });
+    const renderer = renderQuestionnaireCard(questionnaire("bug"), validBugValues());
 
     let firstSubmission!: Promise<void>;
     let secondSubmission!: Promise<void>;
@@ -423,19 +335,7 @@ describe("QuestionnaireCard serialized description validation", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ requestId: "capture-42" }), { status: 201 }),
     ));
-    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
-    let renderer!: ReactTestRenderer;
-
-    act(() => {
-      renderer = create(
-        <QuestionnaireCard
-          questionnaire={bugQuestionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-          initialValues={validBugValues()}
-        />,
-      );
-    });
+    const renderer = renderQuestionnaireCard(questionnaire("bug"), validBugValues());
     act(() => {
       renderer.root.findAllByType("input").map((input) => propsOf<InputProps>(input)).find((input) => input.type === "file")?.onChange({
         target: { files: [new File(["png"], "capture.png", { type: "image/png" })] },
@@ -482,22 +382,10 @@ describe("QuestionnaireCard serialized description validation", () => {
     });
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
-    let renderer!: ReactTestRenderer;
-
-    act(() => {
-      renderer = create(
-        <QuestionnaireCard
-          questionnaire={bugQuestionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-          initialValues={{
-            context: "J'ouvrais la carte",
-            steps: "Texte déjà saisi",
-            expected: "La carte devait s'afficher",
-          }}
-        />,
-      );
+    const renderer = renderQuestionnaireCard(questionnaire("bug"), {
+      context: "J'ouvrais la carte",
+      steps: "Texte déjà saisi",
+      expected: "La carte devait s'afficher",
     });
 
     const dictateButton = renderer.root.findAllByType("button").map((button) => propsOf<ButtonProps>(button)).find(
@@ -544,21 +432,10 @@ describe("QuestionnaireCard serialized description validation", () => {
     vi.stubGlobal("fetch", vi.fn(() => new Promise((resolve) => {
       resolveFetch = resolve;
     })));
-    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <QuestionnaireCard
-          questionnaire={bugQuestionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-          initialValues={{
-            context: "J'ouvrais la carte",
-            steps: "Texte déjà saisi",
-            expected: "La carte devait s'afficher",
-          }}
-        />,
-      );
+    const renderer = renderQuestionnaireCard(questionnaire("bug"), {
+      context: "J'ouvrais la carte",
+      steps: "Texte déjà saisi",
+      expected: "La carte devait s'afficher",
     });
 
     act(() => {
@@ -604,21 +481,12 @@ describe("QuestionnaireCard serialized description validation", () => {
         hasMore: false,
       }),
     ));
-    const bugQuestionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
-    let renderer!: ReactTestRenderer;
+    const renderer = renderQuestionnaireCard(questionnaire("bug"), {
+      context: "J'ouvrais la carte des déchets",
+      steps: "La carte des déchets reste vide au chargement",
+      expected: "La carte devrait afficher les lieux",
+    });
     await act(async () => {
-      renderer = create(
-        <QuestionnaireCard
-          questionnaire={bugQuestionnaire}
-          pagePath="/sections/feedback"
-          source="feedback_section"
-          initialValues={{
-            context: "J'ouvrais la carte des déchets",
-            steps: "La carte des déchets reste vide au chargement",
-            expected: "La carte devrait afficher les lieux",
-          }}
-        />,
-      );
       await Promise.resolve();
     });
 

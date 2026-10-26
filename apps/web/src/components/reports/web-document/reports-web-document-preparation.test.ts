@@ -152,6 +152,33 @@ const reportModel = {
   hasError: false,
 };
 
+function renderPreparation(
+  props: ReportsWebDocumentPreparationProps = preparationProps,
+): string {
+  return renderToStaticMarkup(React.createElement(ReportsWebDocumentPreparation, props));
+}
+
+function preparationElements(
+  props: ReportsWebDocumentPreparationProps = preparationProps,
+) {
+  return collectDomElements(React.createElement(ReportsWebDocumentPreparation, props));
+}
+
+function mockIdlePdfExport() {
+  mocks.usePdfExport.mockReturnValue({
+    state: "idle",
+    message: null,
+    copy: { pendingLabel: "Génération en cours" },
+    hasData: true,
+    isDisabled: false,
+    exportRubriquePdf: vi.fn(),
+  });
+}
+
+function renderReportDocument(props: ReportsWebDocumentProps): string {
+  return renderToStaticMarkup(React.createElement(ReportsWebDocument, props));
+}
+
 describe("ReportsWebDocumentPreparation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -213,9 +240,7 @@ describe("ReportsWebDocumentPreparation", () => {
       onScopeChange: vi.fn(),
       onModuleToggle: vi.fn(),
     };
-    const elements = collectDomElements(
-      React.createElement(ReportsWebDocumentPreparation, props),
-    );
+    const elements = preparationElements(props);
     const selects = elements.filter((element) => element.type === "select");
     const moduleInputs = elements.filter(
       (element) => element.type === "input" && element.props.type === "checkbox",
@@ -243,14 +268,7 @@ describe("ReportsWebDocumentPreparation", () => {
 
   it("prefills the shared generator from a historical configuration and explains relative dates", () => {
     mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
-    mocks.usePdfExport.mockReturnValue({
-      state: "idle",
-      message: null,
-      copy: { pendingLabel: "Génération en cours" },
-      hasData: true,
-      isDisabled: false,
-      exportRubriquePdf: vi.fn(),
-    });
+    mockIdlePdfExport();
 
     const markup = renderToStaticMarkup(React.createElement(ReportsWebDocument, {
       contracts: [],
@@ -286,14 +304,7 @@ describe("ReportsWebDocumentPreparation", () => {
 
   it("blocks generation and requires a new selection when the resumed scope is unavailable", () => {
     mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
-    mocks.usePdfExport.mockReturnValue({
-      state: "idle",
-      message: null,
-      copy: { pendingLabel: "Génération en cours" },
-      hasData: true,
-      isDisabled: false,
-      exportRubriquePdf: vi.fn(),
-    });
+    mockIdlePdfExport();
 
     const markup = renderToStaticMarkup(React.createElement(ReportsWebDocument, {
       contracts: [],
@@ -318,9 +329,7 @@ describe("ReportsWebDocumentPreparation", () => {
   });
 
   it("does not advertise a retired history cap", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(ReportsWebDocumentPreparation, preparationProps),
-    );
+    const markup = renderPreparation();
 
     expect(markup).toContain("Configuration");
     expect(markup).not.toContain("plafonné à");
@@ -328,9 +337,7 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(markup).toContain("Périmètre du rapport");
     expect(markup).toContain("Niveau de détail");
     expect(markup).toContain("Composition de référence");
-    const detailSelect = collectDomElements(
-      React.createElement(ReportsWebDocumentPreparation, preparationProps),
-    ).find(
+    const detailSelect = preparationElements().find(
       (element) =>
         (element.props as { id?: string }).id === "reports-web-document-detail-level",
     );
@@ -358,12 +365,8 @@ describe("ReportsWebDocumentPreparation", () => {
   it("keeps advanced filters closed until explicitly opened", () => {
     const onAdvancedFiltersToggle = vi.fn();
     const props = { ...preparationProps, onAdvancedFiltersToggle };
-    const markup = renderToStaticMarkup(
-      React.createElement(ReportsWebDocumentPreparation, props),
-    );
-    const elements = collectDomElements(
-      React.createElement(ReportsWebDocumentPreparation, props),
-    );
+    const markup = renderPreparation(props);
+    const elements = preparationElements(props);
     const toggle = elements.find((element) => element.type === "button" && (element.props as Record<string, unknown>)["aria-controls"] === "reports-advanced-filters");
 
     expect(markup).toContain("Filtres avancés");
@@ -374,21 +377,14 @@ describe("ReportsWebDocumentPreparation", () => {
   });
 
   it("locks the period and scope to the server-resolved action", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(ReportsWebDocumentPreparation, {
+    const props = {
         ...preparationProps,
         period: "full_history",
         singleAction: { actionId: "action-1", scopeLabel: "Action terrain canonique" },
-      }),
-    );
+      } satisfies ReportsWebDocumentPreparationProps;
+    const markup = renderPreparation(props);
 
-    const elements = collectDomElements(
-      React.createElement(ReportsWebDocumentPreparation, {
-        ...preparationProps,
-        period: "full_history",
-        singleAction: { actionId: "action-1", scopeLabel: "Action terrain canonique" },
-      }),
-    );
+    const elements = preparationElements(props);
 
     expect(markup).toContain("Historique complet · action sélectionnée");
     expect(markup).toContain("Action terrain canonique");
@@ -400,14 +396,7 @@ describe("ReportsWebDocumentPreparation", () => {
 
   it("propagates the final payload to history after a successful PDF generation", async () => {
     mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
-    mocks.usePdfExport.mockReturnValue({
-      state: "idle",
-      message: null,
-      copy: { pendingLabel: "Génération en cours" },
-      hasData: true,
-      isDisabled: false,
-      exportRubriquePdf: vi.fn(),
-    });
+    mockIdlePdfExport();
 
     const approvedContract = {
       id: "approved-1",
@@ -425,7 +414,7 @@ describe("ReportsWebDocumentPreparation", () => {
       communityEvents: [],
     } as unknown as ReportsWebDocumentProps;
 
-    const markup = renderToStaticMarkup(React.createElement(ReportsWebDocument, props));
+    const markup = renderReportDocument(props);
 
     expect(mocks.useReportsWebDocumentModel).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -541,14 +530,7 @@ describe("ReportsWebDocumentPreparation", () => {
 
   it("sends only the typed single-action request and opens the server snapshot", async () => {
     mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
-    mocks.usePdfExport.mockReturnValue({
-      state: "idle",
-      message: null,
-      copy: { pendingLabel: "Génération en cours" },
-      hasData: true,
-      isDisabled: false,
-      exportRubriquePdf: vi.fn(),
-    });
+    mockIdlePdfExport();
 
     renderToStaticMarkup(
       React.createElement(ReportsWebDocument, {
@@ -618,18 +600,11 @@ describe("ReportsWebDocumentPreparation", () => {
 
   it("keeps the history surface in Mes fichiers instead of the generator", () => {
     mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
-    mocks.usePdfExport.mockReturnValue({
-      state: "idle",
-      message: null,
-      copy: { pendingLabel: "Génération en cours" },
-      hasData: true,
-      isDisabled: false,
-      exportRubriquePdf: vi.fn(),
-    });
-    renderToStaticMarkup(React.createElement(ReportsWebDocument, {
+    mockIdlePdfExport();
+    renderReportDocument({
       contracts: [],
       communityEvents: [],
-    }));
+    });
     expect(mocks.deliveryHistory).not.toHaveBeenCalled();
   });
 
@@ -670,14 +645,7 @@ describe("ReportsWebDocumentPreparation", () => {
 
   it("surfaces a render failure after persistence without pretending the report opened", async () => {
     mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
-    mocks.usePdfExport.mockReturnValue({
-      state: "idle",
-      message: null,
-      copy: { pendingLabel: "Génération en cours" },
-      hasData: true,
-      isDisabled: false,
-      exportRubriquePdf: vi.fn(),
-    });
+    mockIdlePdfExport();
     mocks.openPrintableReport.mockReturnValue("blocked");
 
     renderToStaticMarkup(

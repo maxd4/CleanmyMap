@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   buildSupabaseMock,
   type ChatMessageRow,
-} from "./route.test.helpers";
+} from "@/__tests__/support/chat-route";
 import {
   getSupabaseClerkRlsClientMock,
   getSupabaseServerClientMock,

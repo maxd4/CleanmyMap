@@ -79,6 +79,27 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+function signedIn(userId: string) {
+  return { isLoaded: true, isSignedIn: true, user: { id: userId } };
+}
+
+function renderFeedbackHistorySync() {
+  let renderer!: ReactTestRenderer;
+  act(() => {
+    renderer = create(<FeedbackHistory locale="fr" />);
+  });
+  return renderer;
+}
+
+async function renderFeedbackHistory() {
+  let renderer!: ReactTestRenderer;
+  await act(async () => {
+    renderer = create(<FeedbackHistory locale="fr" />);
+    await Promise.resolve();
+  });
+  return renderer;
+}
+
 describe("FeedbackHistory", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -87,10 +108,7 @@ describe("FeedbackHistory", () => {
   });
 
   it("shows the sign-in state without querying personal data anonymously", () => {
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(<FeedbackHistory locale="fr" />);
-    });
+    const renderer = renderFeedbackHistorySync();
 
     expect(textOf(renderer)).toContain("Mes retours");
     expect(textOf(renderer)).toContain("Connectez-vous pour consulter vos retours.");
@@ -98,11 +116,7 @@ describe("FeedbackHistory", () => {
   });
 
   it("loads persisted statuses and requests the next page with the returned cursor", async () => {
-    useUserMock.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      user: { id: "owner-1" },
-    });
+    useUserMock.mockReturnValue(signedIn("owner-1"));
     const fetchMock = vi.mocked(fetch);
     fetchMock
       .mockResolvedValueOnce(Response.json(page))
@@ -125,11 +139,7 @@ describe("FeedbackHistory", () => {
         }),
       );
 
-    let renderer!: ReactTestRenderer;
-    await act(async () => {
-      renderer = create(<FeedbackHistory locale="fr" />);
-      await Promise.resolve();
-    });
+    const renderer = await renderFeedbackHistory();
 
     expect(textOf(renderer)).toContain("Répondu");
     expect(textOf(renderer)).toContain("Contribution reconnue pour la progression Amélioration du produit.");
@@ -154,21 +164,13 @@ describe("FeedbackHistory", () => {
   });
 
   it("renders an empty state and a safe error state", async () => {
-    useUserMock.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      user: { id: "owner-1" },
-    });
+    useUserMock.mockReturnValue(signedIn("owner-1"));
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(
       Response.json({ status: "ok", items: [], nextCursor: null, hasMore: false }),
     );
 
-    let renderer!: ReactTestRenderer;
-    await act(async () => {
-      renderer = create(<FeedbackHistory locale="fr" />);
-      await Promise.resolve();
-    });
+    let renderer = await renderFeedbackHistory();
     expect(textOf(renderer)).toContain("Aucun retour envoyé pour le moment.");
 
     fetchMock.mockRejectedValueOnce(new Error("private storage provider detail"));
@@ -182,11 +184,7 @@ describe("FeedbackHistory", () => {
   });
 
   it("does not present collaboration as product-feedback recognition", async () => {
-    useUserMock.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      user: { id: "owner-1" },
-    });
+    useUserMock.mockReturnValue(signedIn("owner-1"));
     vi.mocked(fetch).mockResolvedValueOnce(
       Response.json({
         status: "ok",
@@ -204,11 +202,7 @@ describe("FeedbackHistory", () => {
       }),
     );
 
-    let renderer!: ReactTestRenderer;
-    await act(async () => {
-      renderer = create(<FeedbackHistory locale="fr" />);
-      await Promise.resolve();
-    });
+    const renderer = await renderFeedbackHistory();
 
     expect(textOf(renderer)).toContain("Pertinent");
     expect(textOf(renderer)).not.toContain("Contribution reconnue pour la progression Amélioration du produit.");
@@ -217,26 +211,15 @@ describe("FeedbackHistory", () => {
   it("does not render a previous owner's history while identities change", async () => {
     const ownerARequest = deferred<Response>();
     const ownerBRequest = deferred<Response>();
-    useUserMock.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      user: { id: "owner-a" },
-    });
+    useUserMock.mockReturnValue(signedIn("owner-a"));
     const fetchMock = vi.mocked(fetch);
     fetchMock
       .mockReturnValueOnce(ownerARequest.promise)
       .mockReturnValueOnce(ownerBRequest.promise);
 
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(<FeedbackHistory locale="fr" />);
-    });
+    const renderer = renderFeedbackHistorySync();
 
-    useUserMock.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      user: { id: "owner-b" },
-    });
+    useUserMock.mockReturnValue(signedIn("owner-b"));
     act(() => {
       renderer.update(<FeedbackHistory locale="fr" />);
     });
@@ -259,18 +242,11 @@ describe("FeedbackHistory", () => {
 
   it("hides personal data immediately on sign-out and ignores its late response", async () => {
     const ownerRequest = deferred<Response>();
-    useUserMock.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      user: { id: "owner-a" },
-    });
+    useUserMock.mockReturnValue(signedIn("owner-a"));
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockReturnValueOnce(ownerRequest.promise);
 
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(<FeedbackHistory locale="fr" />);
-    });
+    const renderer = renderFeedbackHistorySync();
 
     useUserMock.mockReturnValue({ isLoaded: true, isSignedIn: false, user: null });
     act(() => {
@@ -289,11 +265,7 @@ describe("FeedbackHistory", () => {
 
   it("does not append a late pagination response from the previous owner", async () => {
     const ownerAPageTwo = deferred<Response>();
-    useUserMock.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      user: { id: "owner-a" },
-    });
+    useUserMock.mockReturnValue(signedIn("owner-a"));
     const fetchMock = vi.mocked(fetch);
     fetchMock
       .mockResolvedValueOnce(Response.json(page))
@@ -317,11 +289,7 @@ describe("FeedbackHistory", () => {
         }),
       );
 
-    let renderer!: ReactTestRenderer;
-    await act(async () => {
-      renderer = create(<FeedbackHistory locale="fr" />);
-      await Promise.resolve();
-    });
+    const renderer = await renderFeedbackHistory();
     const loadMore = renderer.root.findAllByType("button").find((button) =>
       String(button.props.children).includes("Voir plus"),
     );
@@ -332,11 +300,7 @@ describe("FeedbackHistory", () => {
       await Promise.resolve();
     });
 
-    useUserMock.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      user: { id: "owner-b" },
-    });
+    useUserMock.mockReturnValue(signedIn("owner-b"));
     act(() => {
       renderer.update(<FeedbackHistory locale="fr" />);
     });
@@ -373,11 +337,7 @@ describe("FeedbackHistory", () => {
   });
 
   it("shows product delivery proof separately and keeps needs-info in the owner DM", async () => {
-    useUserMock.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      user: { id: "owner-1" },
-    });
+    useUserMock.mockReturnValue(signedIn("owner-1"));
     vi.mocked(fetch).mockResolvedValueOnce(
       Response.json({
         status: "ok",
@@ -418,11 +378,7 @@ describe("FeedbackHistory", () => {
       }),
     );
 
-    let renderer!: ReactTestRenderer;
-    await act(async () => {
-      renderer = create(<FeedbackHistory locale="fr" />);
-      await Promise.resolve();
-    });
+    const renderer = await renderFeedbackHistory();
 
     expect(textOf(renderer)).toContain("Suivi produit");
     expect(textOf(renderer)).toContain("Livré");

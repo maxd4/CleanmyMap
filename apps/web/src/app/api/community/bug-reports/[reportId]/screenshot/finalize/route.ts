@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
-import { unauthorizedJsonResponse, forbiddenJsonResponse } from "@/lib/http/auth-responses";
-import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  BugReportScreenshotError,
   finalizeBugReportScreenshot,
 } from "@/lib/community/bug-report-screenshot";
+import { bugReportScreenshotErrorResponse } from "../route-error";
 
 export const runtime = "nodejs";
 // Justification Vercel: la finalisation vérifie les octets privés dans Storage et effectue une transition conditionnelle du feedback à chaque appel.
@@ -16,22 +16,6 @@ export const dynamic = "force-dynamic";
 const finalizeSchema = z.object({
   attemptId: z.string().uuid(),
 }).strict();
-
-function errorResponse(error: unknown) {
-  if (error instanceof BugReportScreenshotError) {
-    if (error.code === "forbidden") return forbiddenJsonResponse();
-    if (error.code === "not_found") {
-      return NextResponse.json({ error: "Capture introuvable." }, { status: 404 });
-    }
-    if (error.code === "validation") {
-      return validationErrorResponse({ screenshot: [error.message] });
-    }
-    if (error.code === "storage_missing" || error.code === "storage_invalid") {
-      return NextResponse.json({ error: error.message }, { status: 422 });
-    }
-  }
-  return handleApiError(error, "community-bug-report-screenshot-finalize");
-}
 
 export async function POST(
   request: Request,
@@ -60,6 +44,6 @@ export async function POST(
     });
     return NextResponse.json({ status: "ok", ...result });
   } catch (error) {
-    return errorResponse(error);
+    return bugReportScreenshotErrorResponse(error, "finalize");
   }
 }

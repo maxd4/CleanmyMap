@@ -186,38 +186,6 @@
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
-      "scope": "runtime",
-      "fingerprint": "4c125945d94d76ae",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les tokens pink répétés appartiennent à des variantes de thème distinctes ; les valeurs proches sont des choix de palette et non une primitive de produit à centraliser.",
-      "evidence": "apps/web/src/lib/ui/button-theme.ts:218-244 et apps/web/src/lib/ui/button-theme.ts:250-276 ; les objets de thème restent séparés par leur contexte d’usage.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "758014e00b166d11",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les tokens indigo répétés sont des variantes de palette locales ; un alias partagé ne réduirait pas une connaissance métier ou un contrat visuel unique.",
-      "evidence": "apps/web/src/lib/ui/button-theme.ts:318-340 et apps/web/src/lib/ui/button-theme.ts:382-404 ; les thèmes conservent leurs contextes et accents propres.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "4eb3bce3d36b1111",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La proximité des tokens slate/cyan dans deux thèmes ne démontre pas un owner de présentation commun ; les palettes sont intentionnellement définies au niveau du thème.",
-      "evidence": "apps/web/src/lib/ui/button-theme.ts:348-372 et apps/web/src/lib/ui/button-theme.ts:412-436 ; chaque thème conserve son identité d’accent.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "8a5b404769320ecd",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les tokens de boutons neutres sont répétés entre deux thèmes dont les hover et accents divergent ; les fusionner créerait une abstraction de palette sans contrat produit partagé.",
-      "evidence": "apps/web/src/lib/ui/button-theme.ts:410-427 et apps/web/src/lib/ui/button-theme.ts:538-555 ; les valeurs voisines servent des thèmes distincts.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
       "scope": "tests",
       "fingerprint": "4b0a206b5f9f4486",
       "classification": "NO_ACTION_NOISE",
@@ -263,14 +231,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/actions/[actionId]/audit/route.test.ts:163-175 et app/api/actions/[actionId]/audit/route.test.ts:223-235 vérifient des décisions d'accès (propriétaire, organisateur, rôle actif) et des projections du journal d'audit ; les attentes restent séparées pour conserver la preuve AuthN/AuthZ lisible.",
       "evidence": "app/api/actions/[actionId]/audit/route.test.ts:163-175 et app/api/actions/[actionId]/audit/route.test.ts:223-235 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "97b05916b3f99675",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:194-201 et app/api/actions/[actionId]/formalities/route.test.ts:308-315 couvrent des branches de territoire, qualification et workflow des formalités ; les valeurs répétées sont le contexte de preuve et les attentes métier restent explicites dans chaque scénario.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:194-201 et app/api/actions/[actionId]/formalities/route.test.ts:308-315 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
@@ -1107,14 +1067,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "9c3222bbf67752da",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/chat/action-share-route.test.ts:2-8 et app/api/chat/share-destinations/route.test.ts:1-7 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/chat/action-share-route.test.ts:2-8 et app/api/chat/share-destinations/route.test.ts:1-7 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "2bb95980d64b724a",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT app/api/chat/action-share-route.test.ts:11-16 et app/api/chat/contact-requests/route.test.ts:5-10 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
@@ -1207,30 +1159,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/chat/route.test.ts:54-67 ; symboles: actorUserId, spoofed, browser, actor et app/api/chat/route.test.ts:150-162 ; symboles: content, participe, message, ChatMessageRow restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
       "evidence": "app/api/chat/route.test.ts:54-67 et app/api/chat/route.test.ts:150-162 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "07cd699689832252",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/chat/search/route.test.ts:188-194 ; symboles: chat, search, channelType, community et app/api/chat/search/route.test.ts:225-231 ; symboles: results, toHaveLength restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "app/api/chat/search/route.test.ts:188-194 et app/api/chat/search/route.test.ts:225-231 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "1b65aae4a0b93759",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/chat/search/route.test.ts:277-288 ; symboles: chat, search, channelType, recipientId et app/api/chat/search/route.test.ts:314-325 ; symboles: chat, search, channelType, bug_report restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "app/api/chat/search/route.test.ts:277-288 et app/api/chat/search/route.test.ts:314-325 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "3278df9b81908f97",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/chat/search/route.test.ts:277-283 ; symboles: chat, search, channelType, recipientId et app/api/chat/search/route.test.ts:359-365 ; symboles: results, result, messageId restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "app/api/chat/search/route.test.ts:277-283 et app/api/chat/search/route.test.ts:359-365 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
@@ -1575,14 +1503,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT components/sections/rubriques/community/ics.test.ts:18-28 et lib/reports/report-model/analytics.test.ts:133-143 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
       "evidence": "components/sections/rubriques/community/ics.test.ts:18-28 et lib/reports/report-model/analytics.test.ts:133-143 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "7d5518c4247f8e9b",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT components/sections/rubriques/rejoindre-une-action.past-actions.test.tsx:51-60 ; symboles: expose, anonyme, vers, flux et components/sections/rubriques/rejoindre-une-action.past-actions.test.tsx:68-76 ; symboles: affiche, canonique, demande, existante restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "components/sections/rubriques/rejoindre-une-action.past-actions.test.tsx:51-60 et components/sections/rubriques/rejoindre-une-action.past-actions.test.tsx:68-76 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
@@ -2051,94 +1971,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "56233920440898b0",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/audit/route.test.ts:89-98 et app/api/actions/[actionId]/audit/route.test.ts:151-160 vérifient des décisions d'accès (propriétaire, organisateur, rôle actif) et des projections du journal d'audit ; les attentes restent séparées pour conserver la preuve AuthN/AuthZ lisible.",
-      "evidence": "app/api/actions/[actionId]/audit/route.test.ts:89-98 et app/api/actions/[actionId]/audit/route.test.ts:151-160 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "4ab701baca4bac8c",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/audit/route.test.ts:90-98 et app/api/actions/[actionId]/audit/route.test.ts:126-134 vérifient des décisions d'accès (propriétaire, organisateur, rôle actif) et des projections du journal d'audit ; les attentes restent séparées pour conserver la preuve AuthN/AuthZ lisible.",
-      "evidence": "app/api/actions/[actionId]/audit/route.test.ts:90-98 et app/api/actions/[actionId]/audit/route.test.ts:126-134 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "f1a3d38087de085d",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/audit/route.test.ts:90-98 et app/api/actions/[actionId]/audit/route.test.ts:275-283 vérifient des décisions d'accès (propriétaire, organisateur, rôle actif) et des projections du journal d'audit ; les attentes restent séparées pour conserver la preuve AuthN/AuthZ lisible.",
-      "evidence": "app/api/actions/[actionId]/audit/route.test.ts:90-98 et app/api/actions/[actionId]/audit/route.test.ts:275-283 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "532c53be7fb459de",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/audit/route.test.ts:106-115 et app/api/actions/[actionId]/audit/route.test.ts:126-135 vérifient des décisions d'accès (propriétaire, organisateur, rôle actif) et des projections du journal d'audit ; les attentes restent séparées pour conserver la preuve AuthN/AuthZ lisible.",
-      "evidence": "app/api/actions/[actionId]/audit/route.test.ts:106-115 et app/api/actions/[actionId]/audit/route.test.ts:126-135 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "e588245baabd5699",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/audit/route.test.ts:106-115 et app/api/actions/[actionId]/audit/route.test.ts:152-161 vérifient des décisions d'accès (propriétaire, organisateur, rôle actif) et des projections du journal d'audit ; les attentes restent séparées pour conserver la preuve AuthN/AuthZ lisible.",
-      "evidence": "app/api/actions/[actionId]/audit/route.test.ts:106-115 et app/api/actions/[actionId]/audit/route.test.ts:152-161 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "9b03597f73eaf26d",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/audit/route.test.ts:128-138 et app/api/actions/[actionId]/audit/route.test.ts:154-164 vérifient des décisions d'accès (propriétaire, organisateur, rôle actif) et des projections du journal d'audit ; les attentes restent séparées pour conserver la preuve AuthN/AuthZ lisible.",
-      "evidence": "app/api/actions/[actionId]/audit/route.test.ts:128-138 et app/api/actions/[actionId]/audit/route.test.ts:154-164 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "ad5528ce7390a743",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/audit/route.test.ts:186-196 et app/api/actions/[actionId]/audit/route.test.ts:210-220 vérifient des décisions d'accès (propriétaire, organisateur, rôle actif) et des projections du journal d'audit ; les attentes restent séparées pour conserver la preuve AuthN/AuthZ lisible.",
-      "evidence": "app/api/actions/[actionId]/audit/route.test.ts:186-196 et app/api/actions/[actionId]/audit/route.test.ts:210-220 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "a5fbd5e8c0ecd5ad",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:147-155 et app/api/actions/[actionId]/formalities/route.test.ts:191-199 couvrent des branches de territoire, qualification et workflow des formalités ; les valeurs répétées sont le contexte de preuve et les attentes métier restent explicites dans chaque scénario.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:147-155 et app/api/actions/[actionId]/formalities/route.test.ts:191-199 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "038e03572586a7e1",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:190-199 et app/api/actions/[actionId]/formalities/route.test.ts:239-248 couvrent des branches de territoire, qualification et workflow des formalités ; les valeurs répétées sont le contexte de preuve et les attentes métier restent explicites dans chaque scénario.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:190-199 et app/api/actions/[actionId]/formalities/route.test.ts:239-248 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "8f47a55c919f4117",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:190-199 et app/api/actions/[actionId]/formalities/route.test.ts:363-372 couvrent des branches de territoire, qualification et workflow des formalités ; les valeurs répétées sont le contexte de preuve et les attentes métier restent explicites dans chaque scénario.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:190-199 et app/api/actions/[actionId]/formalities/route.test.ts:363-372 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "10579554ae107da9",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:237-248 et app/api/actions/[actionId]/formalities/route.test.ts:302-313 couvrent des branches de territoire, qualification et workflow des formalités ; les valeurs répétées sont le contexte de preuve et les attentes métier restent explicites dans chaque scénario.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:237-248 et app/api/actions/[actionId]/formalities/route.test.ts:302-313 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "0f08dd22374b1d88",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/actions/[actionId]/route.active-role.test.ts:179-186 et app/api/actions/[actionId]/route.impact-override.test.ts:28-35 vérifient des frontières AuthZ et des snapshots d'audit d'override ; les raisons, rôles et champs protégés restent spécifiques au scénario.",
@@ -2207,22 +2039,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT lib/auth/sync.test.ts:296-306 et lib/auth/sync.test.ts:429-439 couvrent des projections Clerk distinctes (rôle, handle, préférence d'affichage et avatar) ; chaque expectation protège un invariant de synchronisation différent.",
       "evidence": "lib/auth/sync.test.ts:297-307 et lib/auth/sync.test.ts:427-437 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "e6ab6517e5320834",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les imports et mocks statiques se ressemblent entre les tests de formalités et de version de route, mais ils alimentent deux frontières API et deux contrats métier distincts ; un harness partagé masquerait les dépendances propres à chaque route.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:8-13 et app/api/actions/[actionId]/route-version/route.test.ts:5-10 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "af9b56af09f2f0de",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Le setup statique partagé par les tests de formalités et de contrôle des exclusions est une coïncidence de mocks de frontière ; les handlers protègent des parcours et des décisions d'accès différents, sans owner technique commun démontré.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:8-13 et app/api/chat/action-exclusions/route.test.ts:1-6 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {

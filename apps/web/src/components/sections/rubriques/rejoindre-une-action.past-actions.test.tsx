@@ -29,6 +29,26 @@ function communityEvent(canEditOwnOps: boolean): CommunityEventItem {
   };
 }
 
+function pastAction(overrides: Record<string, unknown> = {}): ActionListItem {
+  return {
+    id: "past-action",
+    created_at: "2026-08-01T10:00:00.000Z",
+    action_date: "2026-08-01",
+    location_label: "Quai de Seine",
+    contract: { geometry: { coordinates: [] }, metadata: { actionPhase: "post_action_complete" } },
+    ...overrides,
+  } as unknown as ActionListItem;
+}
+
+function participationHistory(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "past-action",
+    participationSource: "post_action_claim",
+    participantsCount: 3,
+    ...overrides,
+  } as unknown as import("@/lib/actions/participation/group-participation").JoinableActionHistoryItem;
+}
+
 describe("PastActionsPanel", () => {
   it("transmet le suivi historique au propriétaire et le masque aux autres utilisateurs", () => {
     const getOpsDraft = () => ({ attendanceCount: "4", postMortem: "Retour" });
@@ -138,13 +158,7 @@ describe("PastActionsPanel", () => {
   });
 
   it("expose le CTA anonyme vers le flux d'authentification canonique", () => {
-    const item = {
-      id: "past-action",
-      created_at: "2026-08-01T10:00:00.000Z",
-      action_date: "2026-08-01",
-      location_label: "Quai de Seine",
-      contract: { geometry: { coordinates: [] }, metadata: { actionPhase: "post_action_complete" } },
-    } as unknown as ActionListItem;
+    const item = pastAction();
 
     const markup = renderToStaticMarkup(
       <PastActionsPanel items={[item]} loading={false} error={null} fr authenticated={false} />,
@@ -155,19 +169,8 @@ describe("PastActionsPanel", () => {
   });
 
   it("affiche l'état canonique d'une demande existante au lieu du CTA", () => {
-    const item = {
-      id: "past-action",
-      created_at: "2026-08-01T10:00:00.000Z",
-      action_date: "2026-08-01",
-      location_label: "Quai de Seine",
-      contract: { geometry: { coordinates: [] }, metadata: { actionPhase: "post_action_complete" } },
-    } as unknown as ActionListItem;
-    const historyItem = {
-      id: "past-action",
-      participationStatus: "pending",
-      participationSource: "post_action_claim",
-      participantsCount: 2,
-    } as unknown as import("@/lib/actions/participation/group-participation").JoinableActionHistoryItem;
+    const item = pastAction();
+    const historyItem = participationHistory({ participationStatus: "pending", participantsCount: 2 });
 
     const markup = renderToStaticMarkup(
       <PastActionsPanel items={[item]} loading={false} error={null} fr authenticated historyItems={[historyItem]} />,
@@ -179,20 +182,9 @@ describe("PastActionsPanel", () => {
   });
 
   it("affiche la projection canonique et la provenance de chaque métrique", () => {
-    const item = {
-      id: "past-action",
-      created_at: "2026-08-01T10:00:00.000Z",
-      action_date: "2026-08-01",
-      location_label: "Quai de Seine",
-      waste_kg: 9,
-      cigarette_butts: 12,
-      contract: { geometry: { coordinates: [] }, metadata: { actionPhase: "post_action_complete" } },
-    } as unknown as ActionListItem;
-    const historyItem = {
-      id: "past-action",
+    const item = pastAction({ waste_kg: 9, cigarette_butts: 12 });
+    const historyItem = participationHistory({
       participationStatus: "confirmed",
-      participationSource: "post_action_claim",
-      participantsCount: 3,
       personalImpactAttribution: {
         wasteKg: 10,
         wasteKind: "individual",
@@ -207,7 +199,7 @@ describe("PastActionsPanel", () => {
         wasteMohsEligible: true,
         cigaretteButtsMohsEligible: true,
       },
-    } as unknown as import("@/lib/actions/participation/group-participation").JoinableActionHistoryItem;
+    });
 
     const markup = renderToStaticMarkup(
       <PastActionsPanel items={[item]} loading={false} error={null} fr authenticated historyItems={[historyItem]} />,
@@ -227,18 +219,9 @@ describe("PastActionsPanel", () => {
   });
 
   it("affiche l’indisponibilité sans inventer une mesure", () => {
-    const item = {
-      id: "past-action",
-      created_at: "2026-08-01T10:00:00.000Z",
-      action_date: "2026-08-01",
-      location_label: "Quai de Seine",
-      contract: { geometry: { coordinates: [] }, metadata: { actionPhase: "post_action_complete" } },
-    } as unknown as ActionListItem;
-    const historyItem = {
-      id: "past-action",
+    const item = pastAction();
+    const historyItem = participationHistory({
       participationStatus: "confirmed",
-      participationSource: "post_action_claim",
-      participantsCount: 3,
       personalImpactAttribution: {
         wasteKg: null,
         wasteKind: "unavailable",
@@ -253,7 +236,7 @@ describe("PastActionsPanel", () => {
         wasteMohsEligible: false,
         cigaretteButtsMohsEligible: false,
       },
-    } as unknown as import("@/lib/actions/participation/group-participation").JoinableActionHistoryItem;
+    });
 
     const markup = renderToStaticMarkup(
       <PastActionsPanel items={[item]} loading={false} error={null} fr authenticated historyItems={[historyItem]} />,
@@ -267,20 +250,11 @@ describe("PastActionsPanel", () => {
   });
 
   it("n’affiche aucune attribution pour une participation annulée", () => {
-    const item = {
-      id: "past-action",
-      created_at: "2026-08-01T10:00:00.000Z",
-      action_date: "2026-08-01",
-      location_label: "Quai de Seine",
-      contract: { geometry: { coordinates: [] }, metadata: { actionPhase: "post_action_complete" } },
-    } as unknown as ActionListItem;
-    const historyItem = {
-      id: "past-action",
+    const item = pastAction();
+    const historyItem = participationHistory({
       participationStatus: "cancelled",
-      participationSource: "post_action_claim",
-      participantsCount: 3,
       personalImpactAttribution: null,
-    } as unknown as import("@/lib/actions/participation/group-participation").JoinableActionHistoryItem;
+    });
 
     const markup = renderToStaticMarkup(
       <PastActionsPanel items={[item]} loading={false} error={null} fr authenticated historyItems={[historyItem]} />,

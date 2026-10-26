@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildSupabaseMock } from "./route.test.helpers";
+import { buildSupabaseMock } from "@/__tests__/support/chat-route";
 
 const authMock = vi.hoisted(() => vi.fn());
 const identityMock = vi.hoisted(() => vi.fn());

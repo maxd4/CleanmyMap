@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { validPayload, validSnapshotPayload } from "./route.test.fixtures";
+import { validPayload, validSnapshotPayload } from "@/__tests__/support/reports-generations-fixtures";
 import {
   reportGenerationMocks,
   setupPostReportGenerationDefaults,
-} from "./route.test.helpers";
+} from "@/__tests__/support/reports-generations-route";
 import { POST } from "./route";
 
 const {

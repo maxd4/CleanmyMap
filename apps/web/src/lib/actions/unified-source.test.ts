@@ -117,6 +117,17 @@ function createSupabase(canonicalRows: unknown[]) {
   };
 }
 
+async function fetchUnified(
+  canonicalRows: unknown[] = [],
+  overrides: Partial<TestParams> = {},
+) {
+  const { fetchUnifiedActionContracts } = await import("./unified-source");
+  return fetchUnifiedActionContracts(
+    createSupabase(canonicalRows) as never,
+    params(overrides),
+  );
+}
+
 describe("unified action source", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -127,11 +138,7 @@ describe("unified action source", () => {
   });
 
   it("returns one canonical contract for one canonical signalement", async () => {
-    const { fetchUnifiedActionContracts } = await import("./unified-source");
-    const result = await fetchUnifiedActionContracts(
-      createSupabase([canonicalSpot()]) as never,
-      params(),
-    );
+    const result = await fetchUnified([canonicalSpot()]);
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({
@@ -142,13 +149,9 @@ describe("unified action source", () => {
   });
 
   it("reads structured Trash Spotter categories from the transient notes marker", async () => {
-    const { fetchUnifiedActionContracts } = await import("./unified-source");
-    const result = await fetchUnifiedActionContracts(
-      createSupabase([
-        canonicalSpot({ notes: "Contexte\n[cmm-waste:plastic,broken_glass,invalid]" }),
-      ]) as never,
-      params(),
-    );
+    const result = await fetchUnified([
+      canonicalSpot({ notes: "Contexte\n[cmm-waste:plastic,broken_glass,invalid]" }),
+    ]);
 
     expect(result.items[0]?.metadata.wasteCategories).toEqual([
       "plastic",
@@ -158,11 +161,7 @@ describe("unified action source", () => {
   });
 
   it("keeps a canonical clean place as a clean_place contract", async () => {
-    const { fetchUnifiedActionContracts } = await import("./unified-source");
-    const result = await fetchUnifiedActionContracts(
-      createSupabase([canonicalSpot({ spot_type: "clean_place" })]) as never,
-      params(),
-    );
+    const result = await fetchUnified([canonicalSpot({ spot_type: "clean_place" })]);
 
     expect(result.items[0]?.type).toBe("clean_place");
     expect(result.items[0]?.source).toBe("trash_spotter_spots");
@@ -170,10 +169,9 @@ describe("unified action source", () => {
 
   it("maps pending consistently for actions and canonical Trash Spotter new records", async () => {
     fetchActionsMock.mockResolvedValue([remoteAction("action-pending", "pending")]);
-    const { fetchUnifiedActionContracts } = await import("./unified-source");
-    const result = await fetchUnifiedActionContracts(
-      createSupabase([canonicalSpot({ id: "spot-new", status: "new" })]) as never,
-      params({ status: "pending" }),
+    const result = await fetchUnified(
+      [canonicalSpot({ id: "spot-new", status: "new" })],
+      { status: "pending" },
     );
 
     expect(fetchActionsMock).toHaveBeenCalledWith(
@@ -194,16 +192,10 @@ describe("unified action source", () => {
   });
 
   it("never exposes Trash Spotter categories for a canonical clean place", async () => {
-    const { fetchUnifiedActionContracts } = await import("./unified-source");
-    const result = await fetchUnifiedActionContracts(
-      createSupabase([
-        canonicalSpot({
-          spot_type: "clean_place",
-          notes: "Référence\n[cmm-waste:plastic]",
-        }),
-      ]) as never,
-      params(),
-    );
+    const result = await fetchUnified([canonicalSpot({
+      spot_type: "clean_place",
+      notes: "Référence\n[cmm-waste:plastic]",
+    })]);
 
     expect(result.items[0]?.type).toBe("clean_place");
     expect(result.items[0]?.metadata.wasteCategories).toEqual([]);

@@ -17,6 +17,7 @@ import {
   parseActionSupabaseResult,
 } from "../query";
 import { SignalementMediaError } from "./signalement-media-error";
+import { mapCommonMediaRecord } from "../media/media-record-mapper";
 
 export { SIGNALEMENT_EVIDENCE_BUCKET, SIGNALEMENT_EVIDENCE_MAX_MEDIA } from "./signalement-media-contract";
 export type { SignalementEvidenceMimeType } from "./signalement-media-contract";
@@ -158,20 +159,8 @@ export function buildSignalementEvidencePath(
 
 function toRecord(row: SignalementMediaRow): SignalementMediaRecord {
   return {
-    id: row.id,
+    ...mapCommonMediaRecord(row),
     signalementId: row.signalement_id,
-    createdAt: row.created_at,
-    createdByClerkId: row.created_by_clerk_id,
-    clientUploadId: row.client_upload_id,
-    storageBucket: row.storage_bucket,
-    storagePath: row.storage_path,
-    originalName: row.original_name,
-    mimeType: row.mime_type,
-    sizeBytes: row.size_bytes,
-    width: row.width,
-    height: row.height,
-    sortOrder: row.sort_order,
-    uploadState: row.upload_state,
   };
 }
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createGroupJoinAction, createGroupJoinParticipant, createGroupJoinProfile, createGroupJoinSupabaseMock, groupJoinMocks, invokeGroupJoinRoute, seedGroupJoinTestDefaults, type GroupJoinParticipantRow } from "./route.test.helpers";
+import { createGroupJoinAction, createGroupJoinParticipant, createGroupJoinProfile, createGroupJoinSupabaseMock, groupJoinMocks, postActionGroupJoin, seedApprovedActionParticipants, seedGroupJoinTestDefaults, type GroupJoinParticipantRow } from "@/__tests__/support/group-join-action-id-route";
 
 const captureActionParticipantImpactSnapshotMock = vi.hoisted(() => vi.fn());
 
@@ -8,39 +8,6 @@ vi.mock("@/lib/actions/action-participant-impact-notifications", () => ({
   emitActionParticipantImpactNotifications: vi.fn(),
 }));
 const { authMock, getCurrentUserIdentityMock, getSupabaseServerClientMock, appendActionModerationAuditMock, rebuildUserGamificationBadgesMock, refreshProgressionProfileMock } = groupJoinMocks;
-
-async function postActionGroupJoin(
-  payload: Record<string, unknown> | string,
-  options: { requestActionId?: string; paramsActionId?: string } = {},
-) {
-  return invokeGroupJoinRoute("POST", { ...options, body: payload });
-}
-
-function seedApprovedActionParticipants(
-  participants: GroupJoinParticipantRow[] = [],
-  options: {
-    createdByClerkId?: string;
-    status?: "pending" | "approved" | "rejected" | "cancelled";
-    actionPhase?: "pre_action" | "post_action_draft" | "post_action_complete";
-    profiles?: ReturnType<typeof createGroupJoinProfile>[];
-    errors?: Parameters<typeof createGroupJoinSupabaseMock>[0]["errors"];
-  } = {},
-): GroupJoinParticipantRow[] {
-  getSupabaseServerClientMock.mockReturnValue(
-    createGroupJoinSupabaseMock({
-      action: createGroupJoinAction({
-        createdByClerkId: options.createdByClerkId ?? "user-owner",
-        status: options.status ?? "approved",
-        actionPhase: options.actionPhase,
-        groupJoinEnabled: true,
-      }),
-      participants,
-      profiles: options.profiles,
-      errors: options.errors,
-    }),
-  );
-  return participants;
-}
 
 function createPendingParticipant(
   id = "participant-1",

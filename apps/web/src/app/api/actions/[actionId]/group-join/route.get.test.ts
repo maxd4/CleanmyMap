@@ -8,7 +8,7 @@ import {
   invokeGroupJoinRoute,
   invokeGroupJoinRouteJson,
   seedGroupJoinTestDefaults,
-} from "./route.test.helpers";
+} from "@/__tests__/support/group-join-action-id-route";
 
 const {
   authMock,

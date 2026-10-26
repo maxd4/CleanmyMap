@@ -8,7 +8,7 @@ import {
   getSupabaseServerClientMock,
   makeVisibleGroupAction,
   refreshProgressionProfileMock,
-} from "./route.test.helpers";
+} from "@/__tests__/support/group-join-action-route";
 
 describe("GET /api/actions/group-join", () => {
   beforeEach(() => {

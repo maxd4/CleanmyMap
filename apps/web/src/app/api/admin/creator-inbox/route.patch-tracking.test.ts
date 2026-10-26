@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { getCurrentUserIdentityMock, makeRequest, resetCreatorInboxMocks, updateCommunityBugReportTrackingMock } from "./route.test.helpers";
+import { getCurrentUserIdentityMock, makeRequest, resetCreatorInboxMocks, updateCommunityBugReportTrackingMock } from "@/__tests__/support/creator-inbox-route";
 
 describe("PATCH /api/admin/creator-inbox — product tracking", () => {
   beforeEach(() => {

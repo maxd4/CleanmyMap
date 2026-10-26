@@ -23,6 +23,18 @@ function attemptPath(attemptId: string): string {
   return `feedback/${feedbackId}/screenshot/${attemptId}`;
 }
 
+function screenshotRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+    screenshot_storage_path: attemptPath(attemptA),
+    screenshot_original_name: "capture.png",
+    screenshot_mime_type: "image/png",
+    screenshot_size_bytes: 8,
+    screenshot_upload_state: "pending",
+    ...overrides,
+  };
+}
+
 type ScreenshotUpdate = {
   payload: Record<string, unknown>;
   filters: readonly { type: "eq" | "is"; column: string; value: unknown }[];
@@ -223,14 +235,12 @@ describe("bug report screenshot security contract", () => {
   it("uses a new immutable path after a failed attempt and removes the old object", async () => {
     const oldPath = attemptPath(attemptA);
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+      row: screenshotRow({
         screenshot_storage_path: oldPath,
         screenshot_original_name: "old.png",
-        screenshot_mime_type: "image/png",
         screenshot_size_bytes: 100,
         screenshot_upload_state: "failed",
-      },
+      }),
     });
     const intent = await createBugReportScreenshotUploadIntent(supabase as never, {
       userId: "owner-1",
@@ -250,14 +260,11 @@ describe("bug report screenshot security contract", () => {
 
   it("rejects content whose bytes do not match the declared image type and cleans it up", async () => {
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
-        screenshot_storage_path: attemptPath(attemptA),
+      row: screenshotRow({
         screenshot_original_name: "capture.jpg",
         screenshot_mime_type: "image/jpeg",
         screenshot_size_bytes: 4,
-        screenshot_upload_state: "pending",
-      },
+      }),
       info: { size: 4 },
       download: new Blob(["text"]),
     });
@@ -272,14 +279,7 @@ describe("bug report screenshot security contract", () => {
   it("finalizes valid PNG bytes and lets only the owner or admin obtain a short-lived URL", async () => {
     const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
-        screenshot_storage_path: attemptPath(attemptA),
-        screenshot_original_name: "capture.png",
-        screenshot_mime_type: "image/png",
-        screenshot_size_bytes: png.byteLength,
-        screenshot_upload_state: "pending",
-      },
+      row: screenshotRow({ screenshot_size_bytes: png.byteLength }),
       info: { size: png.byteLength },
       download: new Blob([png]),
     });
@@ -323,14 +323,7 @@ describe("bug report screenshot concurrency contract", () => {
     const releaseFailedUpdate = deferred<void>();
     let failedUpdateObserved = false;
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
-        screenshot_storage_path: attemptPath(attemptA),
-        screenshot_original_name: "capture.png",
-        screenshot_mime_type: "image/png",
-        screenshot_size_bytes: png.byteLength,
-        screenshot_upload_state: "pending",
-      },
+      row: screenshotRow({ screenshot_size_bytes: png.byteLength }),
       info: { size: png.byteLength },
       download: new Blob([png]),
       beforeUpdate: async ({ payload }) => {
@@ -368,14 +361,7 @@ describe("bug report screenshot concurrency contract", () => {
     const releaseFailedUpdate = deferred<void>();
     let failedUpdateObserved = false;
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
-        screenshot_storage_path: attemptPath(attemptA),
-        screenshot_original_name: "capture.png",
-        screenshot_mime_type: "image/png",
-        screenshot_size_bytes: 8,
-        screenshot_upload_state: "pending",
-      },
+      row: screenshotRow(),
       afterUpdate: async ({ payload }) => {
         if (payload.screenshot_upload_state === "failed" && !failedUpdateObserved) {
           failedUpdateObserved = true;
@@ -412,14 +398,7 @@ describe("bug report screenshot concurrency contract", () => {
     let failedUpdateObserved = false;
     let readyUpdateObserved = false;
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
-        screenshot_storage_path: attemptPath(attemptA),
-        screenshot_original_name: "capture.png",
-        screenshot_mime_type: "image/png",
-        screenshot_size_bytes: png.byteLength,
-        screenshot_upload_state: "pending",
-      },
+      row: screenshotRow({ screenshot_size_bytes: png.byteLength }),
       info: { size: png.byteLength },
       download: new Blob([png]),
       beforeUpdate: async ({ payload }) => {
@@ -472,14 +451,11 @@ describe("bug report screenshot concurrency contract", () => {
     const oldPath = attemptPath(attemptA);
     const newPath = attemptPath(attemptB);
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+      row: screenshotRow({
         screenshot_storage_path: oldPath,
         screenshot_original_name: "old.png",
-        screenshot_mime_type: "image/png",
         screenshot_size_bytes: png.byteLength,
-        screenshot_upload_state: "pending",
-      },
+      }),
       info: { size: png.byteLength },
       download: new Blob([png]),
     });
@@ -506,14 +482,11 @@ describe("bug report screenshot concurrency contract", () => {
 
   it("ignores a late finalization for A while B is pending", async () => {
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+      row: screenshotRow({
         screenshot_storage_path: attemptPath(attemptB),
         screenshot_original_name: "b.png",
-        screenshot_mime_type: "image/png",
         screenshot_size_bytes: 12,
-        screenshot_upload_state: "pending",
-      },
+      }),
     });
 
     await expect(finalizeBugReportScreenshot(supabase as never, {
@@ -533,14 +506,12 @@ describe("bug report screenshot concurrency contract", () => {
 
   it("ignores a late finalization for A after B is ready", async () => {
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+      row: screenshotRow({
         screenshot_storage_path: attemptPath(attemptB),
         screenshot_original_name: "b.png",
-        screenshot_mime_type: "image/png",
         screenshot_size_bytes: 12,
         screenshot_upload_state: "ready",
-      },
+      }),
     });
 
     await expect(finalizeBugReportScreenshot(supabase as never, {
@@ -560,14 +531,12 @@ describe("bug report screenshot concurrency contract", () => {
 
   it("cleans a failed attempt only when its path is still current", async () => {
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+      row: screenshotRow({
         screenshot_storage_path: attemptPath(attemptA),
         screenshot_original_name: "a.png",
-        screenshot_mime_type: "image/png",
         screenshot_size_bytes: 12,
         screenshot_upload_state: "failed",
-      },
+      }),
     });
 
     await expect(cleanupBugReportScreenshotAttempt(supabase as never, {
@@ -583,14 +552,12 @@ describe("bug report screenshot concurrency contract", () => {
   it("does not let late cleanup for A touch pending or ready B", async () => {
     for (const state of ["pending", "ready"] as const) {
       const supabase = makeSupabase({
-        row: {
-          screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+        row: screenshotRow({
           screenshot_storage_path: attemptPath(attemptB),
           screenshot_original_name: "b.png",
-          screenshot_mime_type: "image/png",
           screenshot_size_bytes: 12,
           screenshot_upload_state: state,
-        },
+        }),
       });
 
       await expect(cleanupBugReportScreenshotAttempt(supabase as never, {
@@ -614,14 +581,11 @@ describe("bug report screenshot concurrency contract", () => {
     const releaseFailedUpdate = deferred<void>();
     let failedUpdateObserved = false;
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+      row: screenshotRow({
         screenshot_storage_path: oldPath,
         screenshot_original_name: "a.png",
-        screenshot_mime_type: "image/png",
         screenshot_size_bytes: 8,
-        screenshot_upload_state: "pending",
-      },
+      }),
       afterUpdate: async ({ payload }) => {
         if (payload.screenshot_upload_state === "failed" && !failedUpdateObserved) {
           failedUpdateObserved = true;
@@ -669,14 +633,9 @@ describe("bug report screenshot concurrency contract", () => {
   it("keeps a failed state explicit when Storage cleanup fails", async () => {
     const path = attemptPath(attemptA);
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+      row: screenshotRow({
         screenshot_storage_path: path,
-        screenshot_original_name: "capture.png",
-        screenshot_mime_type: "image/png",
-        screenshot_size_bytes: 8,
-        screenshot_upload_state: "pending",
-      },
+      }),
     });
     supabase.storageApi.remove.mockImplementation(async () => ({
       data: null,
@@ -696,10 +655,9 @@ describe("bug report screenshot concurrency contract", () => {
 
   it("rejects absent or malformed attempt identifiers before Storage access", async () => {
     const supabase = makeSupabase({
-      row: {
+      row: screenshotRow({
         screenshot_storage_path: attemptPath(attemptB),
-        screenshot_upload_state: "pending",
-      },
+      }),
     });
     await expect(finalizeBugReportScreenshot(supabase as never, {
       userId: "owner-1",
@@ -717,14 +675,10 @@ describe("bug report screenshot concurrency contract", () => {
 
   it("removes the Storage object before clearing the attachment reference", async () => {
     const supabase = makeSupabase({
-      row: {
-        screenshot_storage_bucket: BUG_REPORT_SCREENSHOT_BUCKET,
+      row: screenshotRow({
         screenshot_storage_path: attemptPath(attemptA),
-        screenshot_original_name: "capture.png",
-        screenshot_mime_type: "image/png",
-        screenshot_size_bytes: 8,
         screenshot_upload_state: "ready",
-      },
+      }),
     });
     await deleteBugReportScreenshot(supabase as never, { userId: "owner-1", feedbackId });
     expect(supabase.state.row.screenshot_storage_path).toBeNull();
@@ -735,10 +689,10 @@ describe("bug report screenshot concurrency contract", () => {
   it("cleans orphaned attempt objects when the feedback is deleted", async () => {
     const orphanPath = attemptPath(attemptB);
     const supabase = makeSupabase({
-      row: {
+      row: screenshotRow({
         screenshot_storage_path: orphanPath,
         screenshot_upload_state: "failed",
-      },
+      }),
     });
     await expect(
       (await import("./bug-report-screenshot")).removeBugReportScreenshotForDeletedReport(

@@ -86,6 +86,21 @@ function SpeechHarness({
   );
 }
 
+function enableSpeechRecognition(property: "SpeechRecognition" | "webkitSpeechRecognition" = "SpeechRecognition") {
+  Object.assign(globalThis.window, { [property]: FakeSpeechRecognition });
+}
+
+function renderSpeech(
+  locale: "fr" | "en" = "fr",
+  onFinalTranscript: (fieldKey: string, transcript: string) => void = () => undefined,
+): ReactTestRenderer {
+  let renderer!: ReactTestRenderer;
+  act(() => {
+    renderer = create(<SpeechHarness locale={locale} onFinalTranscript={onFinalTranscript} />);
+  });
+  return renderer;
+}
+
 function output(renderer: ReactTestRenderer, testId: string): string {
   return renderer.root.findByProps({ "data-testid": testId }).children.join("");
 }
@@ -109,10 +124,7 @@ afterEach(() => {
 
 describe("useSpeechRecognition", () => {
   it("reports unsupported browsers without starting a session", () => {
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(<SpeechHarness locale="fr" onFinalTranscript={() => undefined} />);
-    });
+    const renderer = renderSpeech();
 
     expect(output(renderer, "known")).toBe("true");
     expect(output(renderer, "supported")).toBe("false");
@@ -120,17 +132,9 @@ describe("useSpeechRecognition", () => {
   });
 
   it("uses the site language, exposes interim text, deduplicates final results and stops", () => {
-    Object.assign(globalThis.window, { SpeechRecognition: FakeSpeechRecognition });
+    enableSpeechRecognition();
     const transcripts: Array<[string, string]> = [];
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <SpeechHarness
-          locale="fr"
-          onFinalTranscript={(fieldKey, transcript) => transcripts.push([fieldKey, transcript])}
-        />,
-      );
-    });
+    const renderer = renderSpeech("fr", (fieldKey, transcript) => transcripts.push([fieldKey, transcript]));
 
     act(() => {
       clickButton(renderer, "start");
@@ -165,17 +169,9 @@ describe("useSpeechRecognition", () => {
   });
 
   it("keeps the final result emitted between a manual stop and end", () => {
-    Object.assign(globalThis.window, { SpeechRecognition: FakeSpeechRecognition });
+    enableSpeechRecognition();
     const transcripts: string[] = [];
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <SpeechHarness
-          locale="fr"
-          onFinalTranscript={(_, transcript) => transcripts.push(transcript)}
-        />,
-      );
-    });
+    const renderer = renderSpeech("fr", (_, transcript) => transcripts.push(transcript));
 
     act(() => {
       clickButton(renderer, "start");
@@ -198,11 +194,8 @@ describe("useSpeechRecognition", () => {
   });
 
   it("uses en-US and exposes a permission error without submitting anything", () => {
-    Object.assign(globalThis.window, { webkitSpeechRecognition: FakeSpeechRecognition });
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(<SpeechHarness locale="en" onFinalTranscript={() => undefined} />);
-    });
+    enableSpeechRecognition("webkitSpeechRecognition");
+    const renderer = renderSpeech("en");
     act(() => {
       clickButton(renderer, "start");
     });
@@ -218,11 +211,8 @@ describe("useSpeechRecognition", () => {
   });
 
   it("stops the active recognition when its component is unmounted", () => {
-    Object.assign(globalThis.window, { SpeechRecognition: FakeSpeechRecognition });
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(<SpeechHarness locale="fr" onFinalTranscript={() => undefined} />);
-    });
+    enableSpeechRecognition();
+    const renderer = renderSpeech();
     act(() => {
       clickButton(renderer, "start");
     });
@@ -235,11 +225,8 @@ describe("useSpeechRecognition", () => {
   });
 
   it("stops the active recognition when focus moves to another field", () => {
-    Object.assign(globalThis.window, { SpeechRecognition: FakeSpeechRecognition });
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(<SpeechHarness locale="fr" onFinalTranscript={() => undefined} />);
-    });
+    enableSpeechRecognition();
+    const renderer = renderSpeech();
     act(() => {
       clickButton(renderer, "start");
     });
@@ -254,17 +241,9 @@ describe("useSpeechRecognition", () => {
   });
 
   it("ignores a late result after unmount", () => {
-    Object.assign(globalThis.window, { SpeechRecognition: FakeSpeechRecognition });
+    enableSpeechRecognition();
     const transcripts: string[] = [];
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <SpeechHarness
-          locale="fr"
-          onFinalTranscript={(_, transcript) => transcripts.push(transcript)}
-        />,
-      );
-    });
+    const renderer = renderSpeech("fr", (_, transcript) => transcripts.push(transcript));
     act(() => {
       clickButton(renderer, "start");
     });
@@ -279,17 +258,9 @@ describe("useSpeechRecognition", () => {
   });
 
   it("allows a replacement session only after the previous session is canceled", () => {
-    Object.assign(globalThis.window, { SpeechRecognition: FakeSpeechRecognition });
+    enableSpeechRecognition();
     const transcripts: string[] = [];
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <SpeechHarness
-          locale="fr"
-          onFinalTranscript={(_, transcript) => transcripts.push(transcript)}
-        />,
-      );
-    });
+    const renderer = renderSpeech("fr", (_, transcript) => transcripts.push(transcript));
 
     act(() => {
       clickButton(renderer, "start");
@@ -310,11 +281,8 @@ describe("useSpeechRecognition", () => {
   });
 
   it("does not start twice while a manual stop is finalizing", () => {
-    Object.assign(globalThis.window, { SpeechRecognition: FakeSpeechRecognition });
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(<SpeechHarness locale="fr" onFinalTranscript={() => undefined} />);
-    });
+    enableSpeechRecognition();
+    const renderer = renderSpeech();
     act(() => {
       clickButton(renderer, "start");
       clickButton(renderer, "stop");
@@ -330,17 +298,9 @@ describe("useSpeechRecognition", () => {
   });
 
   it("accepts identical words from distinct final result indexes", () => {
-    Object.assign(globalThis.window, { SpeechRecognition: FakeSpeechRecognition });
+    enableSpeechRecognition();
     const transcripts: string[] = [];
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <SpeechHarness
-          locale="fr"
-          onFinalTranscript={(_, transcript) => transcripts.push(transcript)}
-        />,
-      );
-    });
+    const renderer = renderSpeech("fr", (_, transcript) => transcripts.push(transcript));
     act(() => {
       clickButton(renderer, "start");
       FakeSpeechRecognition.instances[0].emitResult([

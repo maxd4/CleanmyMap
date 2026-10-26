@@ -69,7 +69,7 @@ export async function invokeGroupJoinRoute(
         },
   );
   const context = { params: Promise.resolve({ actionId: paramsActionId }) };
-  const route = await import("./route");
+  const route = await import("@/app/api/actions/[actionId]/group-join/route");
   switch (method) {
     case "DELETE":
       return callDelete(route, request, context);
@@ -90,19 +90,19 @@ export async function invokeGroupJoinRouteJson<T>(
   return { response, body: (await response.json()) as T };
 }
 
-function callDelete(route: typeof import("./route"), request: Request, context: { params: Promise<{ actionId: string }> }) {
+function callDelete(route: typeof import("@/app/api/actions/[actionId]/group-join/route"), request: Request, context: { params: Promise<{ actionId: string }> }) {
   return route.DELETE(request, context);
 }
 
-function callGet(route: typeof import("./route"), request: Request, context: { params: Promise<{ actionId: string }> }) {
+function callGet(route: typeof import("@/app/api/actions/[actionId]/group-join/route"), request: Request, context: { params: Promise<{ actionId: string }> }) {
   return route.GET(request, context);
 }
 
-function callPatch(route: typeof import("./route"), request: Request, context: { params: Promise<{ actionId: string }> }) {
+function callPatch(route: typeof import("@/app/api/actions/[actionId]/group-join/route"), request: Request, context: { params: Promise<{ actionId: string }> }) {
   return route.PATCH(request, context);
 }
 
-function callPost(route: typeof import("./route"), request: Request, context: { params: Promise<{ actionId: string }> }) {
+function callPost(route: typeof import("@/app/api/actions/[actionId]/group-join/route"), request: Request, context: { params: Promise<{ actionId: string }> }) {
   return route.POST(request, context);
 }
 
@@ -186,6 +186,40 @@ export function seedGroupJoinTestDefaults() {
   loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-1"]);
   refreshProgressionProfileMock.mockResolvedValue(undefined);
 }
+
+export async function postActionGroupJoin(
+  payload: Record<string, unknown> | string,
+  options: { requestActionId?: string; paramsActionId?: string } = {},
+) {
+  return invokeGroupJoinRoute("POST", { ...options, body: payload });
+}
+
+export function seedApprovedActionParticipants(
+  participants: GroupJoinParticipantRow[] = [],
+  options: {
+    createdByClerkId?: string;
+    status?: "pending" | "approved" | "rejected" | "cancelled";
+    actionPhase?: "pre_action" | "post_action_draft" | "post_action_complete";
+    profiles?: ReturnType<typeof createGroupJoinProfile>[];
+    errors?: Parameters<typeof createGroupJoinSupabaseMock>[0]["errors"];
+  } = {},
+): GroupJoinParticipantRow[] {
+  getSupabaseServerClientMock.mockReturnValue(
+    createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({
+        createdByClerkId: options.createdByClerkId ?? "user-owner",
+        status: options.status ?? "approved",
+        actionPhase: options.actionPhase,
+        groupJoinEnabled: true,
+      }),
+      participants,
+      profiles: options.profiles,
+      errors: options.errors,
+    }),
+  );
+  return participants;
+}
+
 function createActionsChain(
   action: GroupJoinActionRow,
   errors?: GroupJoinSupabaseErrors,

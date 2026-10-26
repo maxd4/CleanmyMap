@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { appendAdminOperationAuditMock, auditCalls, deleteCommunityBugReportMock, deletePartnerOnboardingRequestMock, getCommunityBugReportByIdMock, getPartnerOnboardingRequestByIdMock, getPromotionRequestByIdMock, makeRequest, partnerRecord, resetCreatorInboxMocks, updatePartnerOnboardingRequestCreatorStateMock, updatePromotionRequestCreatorStateMock } from "./route.test.helpers";
+import { appendAdminOperationAuditMock, auditCalls, deleteCommunityBugReportMock, deletePartnerOnboardingRequestMock, getCommunityBugReportByIdMock, getPartnerOnboardingRequestByIdMock, getPromotionRequestByIdMock, makeRequest, partnerRecord, resetCreatorInboxMocks, updatePartnerOnboardingRequestCreatorStateMock, updatePromotionRequestCreatorStateMock } from "@/__tests__/support/creator-inbox-route";
 
 describe("PATCH /api/admin/creator-inbox — suppression", () => {
   beforeEach(() => {

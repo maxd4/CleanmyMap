@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { buildSupabaseMock, type ChatMessageRow } from "./route.test.helpers";
+import { buildSupabaseMock, type ChatMessageRow } from "@/__tests__/support/chat-route";
 import { createChatNotificationsForMessageMock, createServerRateLimitResponseMock, getSupabaseClerkRlsClientMock, getSupabaseServerClientMock, loadActionByIdMock, reserveDiscussionMessageSlotMock, resolveActionDiscussionAccessMock, verifyRateLimitMock, resetChatRouteMocks } from "./route.test.mocks";
 
 describe("POST /api/chat — publication et canaux", () => {

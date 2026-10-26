@@ -6,7 +6,7 @@ import {
   createOrganizerChain,
   createRecordingProgressionSupabase,
   type ProgressionTestActionRow as ActionRow,
-} from "./progression-data.test.helpers";
+} from "@/__tests__/support/progression-data";
 
 function buildAction(status: "pending" | "approved" | "rejected"): ActionRow {
   return {

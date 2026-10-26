@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { multiInput, validPayload, validSnapshotPayload } from "./route.test.fixtures";
-import { reportGenerationMocks, setupPostReportGenerationDefaults } from "./route.test.helpers";
+import { multiInput, validPayload, validSnapshotPayload } from "@/__tests__/support/reports-generations-fixtures";
+import { reportGenerationMocks, setupPostReportGenerationDefaults } from "@/__tests__/support/reports-generations-route";
 
 const {
   requireAuthenticatedAccessMock,
@@ -25,6 +25,14 @@ const {
 
 import { POST } from "./route";
 
+function postRequest(body: unknown = validPayload, headers?: HeadersInit) {
+  return new Request("http://localhost/api/reports/generations", {
+    method: "POST",
+    ...(headers ? { headers } : {}),
+    body: JSON.stringify(body),
+  });
+}
+
 describe("POST /api/reports/generations", () => {
   beforeEach(() => {
     setupPostReportGenerationDefaults();
@@ -37,12 +45,7 @@ describe("POST /api/reports/generations", () => {
       error: "Unauthorized",
     });
 
-    const response = await POST(
-      new Request("http://localhost/api/reports/generations", {
-        method: "POST",
-        body: JSON.stringify(validPayload),
-      }),
-    );
+    const response = await POST(postRequest());
 
     expect(response.status).toBe(401);
     expect(rateLimitMocks.verifyRateLimit).not.toHaveBeenCalled();
@@ -53,13 +56,7 @@ describe("POST /api/reports/generations", () => {
   });
 
   it("persists one validated snapshot with the Clerk actor", async () => {
-    const response = await POST(
-      new Request("http://localhost/api/reports/generations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validPayload),
-      }),
-    );
+    const response = await POST(postRequest(validPayload, { "Content-Type": "application/json" }));
 
     expect(response.status).toBe(200);
     expect(persistReportGenerationMock).toHaveBeenCalledWith({
@@ -106,21 +103,16 @@ describe("POST /api/reports/generations", () => {
   });
 
   it("rejects forged browser KPI or snapshot data on the multi-action contract", async () => {
-    const response = await POST(
-      new Request("http://localhost/api/reports/generations", {
-        method: "POST",
-        body: JSON.stringify({
-          ...validPayload,
-          payload: {
-            title: "KPI forgé",
-            rubrique: "reporting",
-            periode: "six_months",
-            organizationType: "Global",
-            data: { generatedAt: "2026-08-27T10:30:00.000Z", stats: [{ label: "Actions", value: 999999 }] },
-          },
-        }),
-      }),
-    );
+    const response = await POST(postRequest({
+      ...validPayload,
+      payload: {
+        title: "KPI forgé",
+        rubrique: "reporting",
+        periode: "six_months",
+        organizationType: "Global",
+        data: { generatedAt: "2026-08-27T10:30:00.000Z", stats: [{ label: "Actions", value: 999999 }] },
+      },
+    }));
 
     expect(response.status).toBe(400);
     expect(buildMultiActionReportGenerationInputMock).not.toHaveBeenCalled();
@@ -136,12 +128,7 @@ describe("POST /api/reports/generations", () => {
   ] as const)("maps a multi-action %s failure before quota", async (_label, ErrorType, status) => {
     buildMultiActionReportGenerationInputMock.mockRejectedValueOnce(new ErrorType());
 
-    const response = await POST(
-      new Request("http://localhost/api/reports/generations", {
-        method: "POST",
-        body: JSON.stringify(validPayload),
-      }),
-    );
+    const response = await POST(postRequest());
 
     expect(response.status).toBe(status);
     expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
@@ -153,12 +140,7 @@ describe("POST /api/reports/generations", () => {
       new ReportAdvancedFilterSourceUnavailableErrorMock(),
     );
 
-    const response = await POST(
-      new Request("http://localhost/api/reports/generations", {
-        method: "POST",
-        body: JSON.stringify(validPayload),
-      }),
-    );
+    const response = await POST(postRequest());
 
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toMatchObject({
@@ -178,13 +160,10 @@ describe("POST /api/reports/generations", () => {
   it("maps an unexpected single-action source failure without consuming quota", async () => {
     resolveSingleActionReportContractMock.mockRejectedValueOnce(new Error("source unavailable"));
 
-    const response = await POST(new Request("http://localhost/api/reports/generations", {
-      method: "POST",
-      body: JSON.stringify({
-        input: { type: "single_action", actionId: "11111111-1111-4111-8111-111111111111" },
-        detailLevel: "default",
-        modules: validPayload.modules,
-      }),
+    const response = await POST(postRequest({
+      input: { type: "single_action", actionId: "11111111-1111-4111-8111-111111111111" },
+      detailLevel: "default",
+      modules: validPayload.modules,
     }));
 
     expect(response.status).toBe(503);
@@ -198,12 +177,7 @@ describe("POST /api/reports/generations", () => {
   it("maps an unexpected multi-action source failure without consuming quota", async () => {
     buildMultiActionReportGenerationInputMock.mockRejectedValueOnce(new Error("source unavailable"));
 
-    const response = await POST(
-      new Request("http://localhost/api/reports/generations", {
-        method: "POST",
-        body: JSON.stringify(validPayload),
-      }),
-    );
+    const response = await POST(postRequest());
 
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toMatchObject({
@@ -217,12 +191,7 @@ describe("POST /api/reports/generations", () => {
   });
 
   it("rejects a legacy payload without resolving or reserving it", async () => {
-    const response = await POST(
-      new Request("http://localhost/api/reports/generations", {
-        method: "POST",
-        body: JSON.stringify({ payload: validSnapshotPayload }),
-      }),
-    );
+    const response = await POST(postRequest({ payload: validSnapshotPayload }));
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
@@ -236,12 +205,7 @@ describe("POST /api/reports/generations", () => {
   });
 
   it("rejects a body without a typed selector before quota", async () => {
-    const response = await POST(
-      new Request("http://localhost/api/reports/generations", {
-        method: "POST",
-        body: JSON.stringify({ detailLevel: "default", modules: validPayload.modules }),
-      }),
-    );
+    const response = await POST(postRequest({ detailLevel: "default", modules: validPayload.modules }));
 
     expect(response.status).toBe(400);
     expect(getReportExportAvailabilityMock).not.toHaveBeenCalled();
@@ -254,12 +218,7 @@ describe("POST /api/reports/generations", () => {
   it("returns an explicit 503 when the final quota reservation fails", async () => {
     reserveReportExportSlotMock.mockRejectedValueOnce(new Error("quota rpc unavailable"));
 
-    const response = await POST(
-      new Request("http://localhost/api/reports/generations", {
-        method: "POST",
-        body: JSON.stringify(validPayload),
-      }),
-    );
+    const response = await POST(postRequest());
 
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toMatchObject({

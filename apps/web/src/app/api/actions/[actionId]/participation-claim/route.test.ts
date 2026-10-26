@@ -5,7 +5,7 @@ import {
   createGroupJoinSupabaseMock,
   groupJoinMocks,
   seedGroupJoinTestDefaults,
-} from "../group-join/route.test.helpers";
+} from "@/__tests__/support/group-join-action-id-route";
 
 const {
   getSupabaseServerClientMock,
