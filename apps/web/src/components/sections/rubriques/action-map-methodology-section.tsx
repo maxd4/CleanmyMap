@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, MapPin } from "lucide-react";
 import {
   ACTION_POLLUTION_COLOR_STOPS,
   resolveDynamicColor,
@@ -26,6 +26,16 @@ export type OpenSourceDoc = {
     href: string;
     label: { fr: string; en: string };
   };
+};
+
+export const ACTION_MAP_DOC: OpenSourceDoc = {
+  id: "action-map-methodology",
+  title: { fr: "Méthodologie de la carte d’actions", en: "Action map methodology" },
+  desc: { fr: "Distinction entre mémoire des actions, pollution constatée, pollution projetée et signalements Trash Spotter observés.", en: "Distinction between action history, observed pollution, projected pollution, and observed Trash Spotter reports." },
+  href: "/docs/product/methodologie-carte-actions.md",
+  icon: <MapPin className="h-6 w-6" />,
+  isPdf: false,
+  secondaryAction: { href: "#methodologie-carte-actions", label: { fr: "Voir la section sur cette page", en: "View this page section" } },
 };
 
 export function ReferenceDocCard({

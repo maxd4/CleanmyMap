@@ -37,6 +37,8 @@ export type StorageUsageChartPoint = {
 export type StorageUsageViewModel = {
   chartData: StorageUsageChartPoint[];
   comparisonData: StorageUsageMonthComparison;
+  statusTone: "text-rose-400" | "text-amber-300" | "text-emerald-300";
+  currentStateLabel: "Dépassé" | "Vigilance" | "Stable";
 };
 
 const BYTES_PER_GB = 1024 * 1024 * 1024;
@@ -86,11 +88,24 @@ export function normalizeStorageUsageComparison(
 export function buildStorageUsageViewModel(
   response: StorageUsageResponse | undefined,
 ): StorageUsageViewModel {
+  const usagePercent = response?.current.usagePercent ?? 0;
+  const statusTone = usagePercent >= 100
+    ? "text-rose-400"
+    : usagePercent >= 80
+      ? "text-amber-300"
+      : "text-emerald-300";
+  const currentStateLabel = usagePercent >= 100
+    ? "Dépassé"
+    : usagePercent >= 80
+      ? "Vigilance"
+      : "Stable";
   return {
     chartData: buildStorageUsageChartData(
       response?.history,
       response?.current.quotaBytes,
     ),
     comparisonData: normalizeStorageUsageComparison(response?.comparison),
+    statusTone,
+    currentStateLabel,
   };
 }

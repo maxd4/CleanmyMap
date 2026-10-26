@@ -64,6 +64,8 @@ describe("storage usage view model", () => {
         bucketGrowth: [],
         extensionGrowth: [],
       },
+      statusTone: "text-emerald-300",
+      currentStateLabel: "Stable",
     });
   });
 });

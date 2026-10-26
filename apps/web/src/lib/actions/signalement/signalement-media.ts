@@ -16,9 +16,11 @@ import {
   isActionRecord,
   parseActionSupabaseResult,
 } from "../query";
+import { SignalementMediaError } from "./signalement-media-error";
 
 export { SIGNALEMENT_EVIDENCE_BUCKET, SIGNALEMENT_EVIDENCE_MAX_MEDIA } from "./signalement-media-contract";
 export type { SignalementEvidenceMimeType } from "./signalement-media-contract";
+export { SignalementMediaError } from "./signalement-media-error";
 
 export type SignalementMediaUploadIntent = {
   mediaId: string;
@@ -101,23 +103,6 @@ function hasSignalementMediaDimensions(value: Record<string, unknown>): boolean 
 function isSignalementMediaRow(value: unknown): value is SignalementMediaRow {
   return isActionRecord(value) && hasSignalementMediaIdentity(value) &&
     hasSignalementMediaStorage(value) && hasSignalementMediaDimensions(value);
-}
-
-export class SignalementMediaError extends Error {
-  constructor(
-    message: string,
-    public readonly code:
-      | "validation"
-      | "unauthorized"
-      | "forbidden"
-      | "not_found"
-      | "limit_reached"
-      | "storage_missing"
-      | "storage_error",
-  ) {
-    super(message);
-    this.name = "SignalementMediaError";
-  }
 }
 
 type SignalementMediaUploadInput = {

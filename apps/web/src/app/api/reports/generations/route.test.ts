@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createRateLimitModule, mockAllowedRateLimit, mockRejectedRateLimit, rateLimitMocks } from "@/app/api/test-helpers";
+import { multiInput, validPayload, validSnapshotPayload } from "./route.test.fixtures";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const persistReportGenerationMock = vi.hoisted(() => vi.fn());
@@ -77,36 +78,6 @@ vi.mock("@/lib/reports/report-advanced-filters", async () => ({
 vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
 
 import { GET, POST } from "./route";
-
-const validSnapshotPayload = {
-    title: "Rapport d'impact - Paris - Par défaut",
-    rubrique: "reporting",
-    periode: "six_months",
-    organizationType: "Global",
-    data: { generatedAt: "2026-08-27T10:30:00.000Z", summary: ["Résumé"] },
-};
-const multiInput = {
-  payload: validSnapshotPayload,
-  scopeKind: "global" as const,
-  scopeValue: "",
-  scopeLabel: "Global",
-  detailLevel: "default",
-  modules: {
-    dataAndCartography: true,
-    transparencyAndMethods: true,
-    rawData: false,
-    detailedFiles: true,
-  },
-};
-const validPayload = {
-  input: {
-    type: "multi_action" as const,
-    period: { id: "six_months" as const },
-    scope: { kind: "global" as const, value: null },
-  },
-  detailLevel: "default" as const,
-  modules: multiInput.modules,
-};
 
 describe("POST /api/reports/generations", () => {
   beforeEach(() => {

@@ -64,6 +64,11 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | `apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts` | EXTRACTED_PURE_CONTRACT | CURRENT | préserver les modifications utilisateur, le premier identifiant persistant et la publication toujours explicite | nouvelle responsabilité autonome réintroduite dans le workflow ou couplage qui compromet la reprise et la publication explicite |
 | `apps/web/src/lib/spogomi/preparation-service.ts` | COHESIVE_SINGLE_FILE | NONE | préserver les contrats d'import de roster et de composition, les verrous de reprise et les RPC transactionnelles | nouveau consommateur indépendant d'import ou de composition, ou persistance d'un des deux workflows déplacée vers un owner dédié |
 | `apps/web/src/lib/reports/report-generation-history-store.ts` | COHESIVE_SINGLE_FILE | NONE | préserver la cohérence snapshot/métadonnées, l'ownership Clerk et les résolutions direct/derived | nouveau contrat de lecture ou de persistance indépendant, ou divergence entre historique et snapshot |
+| `apps/web/src/app/api/api-boundary.test.ts` | ALREADY_MODULARIZED | NONE | séparer l'inventaire des routes de l'analyse d'évidence sans perdre les mêmes helpers canoniques | nouvelle famille de contrat d'évidence ou nouvelle dépendance de parcours HTTP indépendante |
+| `apps/web/src/app/api/reports/generations/route.test.ts` | ALREADY_MODULARIZED | NONE | préserver l'ordre AuthN → quota → source → persistance et les assertions d'incertitude | nouveau flux de rapport indépendant ou fixture qui porte un contrat métier autonome |
+| `apps/web/src/lib/auth/api-authorization-contract.actions.ts` | ALREADY_MODULARIZED | NONE | conserver une seule façade d'assemblage et les clés sans collision | nouveau domaine d'autorisation indépendant consommé hors de la façade actions |
+| `apps/web/src/lib/spogomi/results-projection.ts` | ALREADY_MODULARIZED | NONE | préserver la façade projection/export et la validation publique fail-closed | nouveau contrat de projection ou parser public consommé indépendamment |
+| `apps/web/src/lib/actions/signalement/signalement-media.ts` | ALREADY_MODULARIZED | NONE | préserver AuthZ, validation média, états d'upload et contrats de stockage | nouveau workflow média indépendant ou divergence entre validation et persistance |
 
 ### Décisions établies — grille détaillée
 
@@ -729,4 +734,89 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | COUPLING | le workflow conserve l'identité de mutation et le contrat de reprise ; l'owner de conversions n'a que des dépendances de modèle, préparation, topologie et draft initial |
 | NATURAL_EXTRACTION_BOUNDARY | `before-action-form-conversions.ts` porte les valeurs initiales et les conversions action → `FormState` ; le workflow porte les hooks, effets et publication sans second moteur de formulaire |
 | RATIONALE | les conversions étaient pures, cohésives et séparables sans déplacer les hooks ni la séquence d'effets ; l'extraction ramène le workflow à 399 lignes et conserve les preuves de reprise, de persistance et de publication explicite |
+
+#### `apps/web/src/app/api/api-boundary.test.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | inventaire des méthodes API, assemblage des contrats et analyse statique d'évidence de handlers |
+| PUBLIC_CONTRACTS | tests Vitest du contrat `API_AUTHORIZATION_CONTRACT` et helpers d'analyse importés par la suite d'évidence |
+| SIDE_EFFECTS | lecture du tree API et analyse TypeScript en mémoire ; aucun appel réseau ni effet métier |
+| MAIN_CONSUMERS | suite d'inventaire et `api-boundary.evidence.test.ts` |
+| TEST_BOUNDARY | tests d'inventaire des routes d'un côté ; scénarios d'invocation, alias et callbacks de l'autre |
+| COUPLING | les scénarios partagent le même analyseur de portée et de délégation ; la séparation porte sur les contrats testés |
+| NATURAL_EXTRACTION_BOUNDARY | l'analyse d'évidence est portée par la suite dédiée ; l'inventaire et ses helpers restent la façade canonique |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | la nouvelle suite séparée couvre les comportements d'évidence sans découpage arbitraire ; la façade d'inventaire conserve les propriétaires et les imports existants |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | séparer l'inventaire des routes de l'analyse d'évidence sans perdre les mêmes helpers canoniques |
+| NEXT_TRIGGER | nouvelle famille de contrat d'évidence ou nouvelle dépendance de parcours HTTP indépendante |
+
+#### `apps/web/src/app/api/reports/generations/route.test.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | tests des frontières AuthN, quota, sources typées, persistance, reprise incertaine et historique |
+| PUBLIC_CONTRACTS | scénarios GET/POST de `/api/reports/generations` et fixtures de payloads validés |
+| SIDE_EFFECTS | mocks contrôlés des owners de quota, sources, audit et persistance |
+| MAIN_CONSUMERS | route de génération de rapports et ses consommateurs de reprise/historique |
+| TEST_BOUNDARY | le fichier conserve les flux HTTP ; les fixtures stables sont isolées pour éviter une suite structurellement top-heavy |
+| COUPLING | l'ordre observable des gardes, réservations et écritures reste testé dans la suite HTTP |
+| NATURAL_EXTRACTION_BOUNDARY | fixtures de contrat d'un côté ; scénarios d'exécution et refus de l'autre |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | l'extraction des fixtures réduit la taille sans déplacer les assertions métier ni fragmenter artificiellement les scénarios |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver l'ordre AuthN → quota → source → persistance et les assertions d'incertitude |
+| NEXT_TRIGGER | nouveau flux de rapport indépendant ou fixture qui porte un contrat métier autonome |
+
+#### `apps/web/src/lib/auth/api-authorization-contract.actions.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | façade d'assemblage des contrats d'autorisation des routes actions |
+| PUBLIC_CONTRACTS | `actionsAuthorizationContract` et ses clés consommées par l'assemblage et le contrôle d'évidence |
+| SIDE_EFFECTS | aucun ; contrat statique |
+| MAIN_CONSUMERS | assemblage `API_AUTHORIZATION_CONTRACT`, contrôle de collisions et tests de frontière API |
+| TEST_BOUNDARY | contrats d'autorisation actions, invitations, médias et attestations de rôles |
+| COUPLING | les fragments doivent rester compatibles avec `ApiAuthorizationContract` et sans clé dupliquée |
+| NATURAL_EXTRACTION_BOUNDARY | le fragment role-attestations est indépendant ; la façade conserve l'ordre et l'unicité de l'assemblage |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | le contrat de rôle-attestation forme une famille cohésive et sa sortie est réassemblée par l'owner canonique sans modifier les clés publiques |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | conserver une seule façade d'assemblage et les clés sans collision |
+| NEXT_TRIGGER | nouveau domaine d'autorisation indépendant consommé hors de la façade actions |
+
+#### `apps/web/src/lib/spogomi/results-projection.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | types de projection, calcul de projection publique/export et façade des projections de divisions |
+| PUBLIC_CONTRACTS | `buildSpogomiResultsProjection`, `getSpogomiDivisionProjections`, `parseSpogomiPublicResults` et types publics |
+| SIDE_EFFECTS | aucun ; projection pure et cache de divisions borné à la projection |
+| MAIN_CONSUMERS | service de publication Spogomi, route de rankings et composant public des résultats |
+| TEST_BOUNDARY | tests de projection, parser public et consumers de résultats |
+| COUPLING | le parser dépend du DTO public ; le calcul conserve les règles de clôture, ranking et snapshot |
+| NATURAL_EXTRACTION_BOUNDARY | parser `unknown` → DTO d'un côté ; calcul/export et façade de l'autre |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | l'extraction du parser conserve la validation fail-closed et libère la façade de calcul sans changer le DTO ni les consommateurs |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver la façade projection/export et la validation publique fail-closed |
+| NEXT_TRIGGER | nouveau contrat de projection ou parser public consommé indépendamment |
+
+#### `apps/web/src/lib/actions/signalement/signalement-media.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | orchestration upload/finalisation/lecture des preuves, ownership et persistance Supabase |
+| PUBLIC_CONTRACTS | `createSignalementMediaUploadIntent`, `finalizeSignalementMedia`, `listSignalementMedia`, validation et erreur publique |
+| SIDE_EFFECTS | lectures/écritures Supabase, storage upload/finalisation et URLs signées |
+| MAIN_CONSUMERS | routes API des intentions, finalisation et lecture des médias de signalement |
+| TEST_BOUNDARY | validation et chemins de média dans la suite signalement ; l'erreur reste un type public partagé |
+| COUPLING | validation, état d'upload, ownership et storage partagent le même contrat de preuve |
+| NATURAL_EXTRACTION_BOUNDARY | type d'erreur et contrat d'état d'un côté ; orchestration de persistance et storage de l'autre |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | l'erreur typée est isolée sans déplacer les gardes AuthZ, les transitions d'état ou les effets storage ; la façade publique reste inchangée |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver AuthZ, validation média, états d'upload et contrats de stockage |
+| NEXT_TRIGGER | nouveau workflow média indépendant ou divergence entre validation et persistance |
 <!-- RADAR:HUMAN_DECISIONS:END -->

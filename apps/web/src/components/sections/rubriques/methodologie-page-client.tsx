@@ -1,6 +1,6 @@
 "use client";
 
-import { Beaker, MapPin, Scaling, Sparkles } from "lucide-react";
+import { Beaker, Scaling, Sparkles } from "lucide-react";
 import { buildActionImpactMethodology } from "@/lib/actions/impact-calculators";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import type { AppProfile } from "@/lib/profiles";
@@ -19,6 +19,7 @@ import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats
 import type { PublicLandingActionAggregation } from "@/lib/accueil/action-participant-aggregation";
 import {
   ActionMapMethodologySection as ActionMapMethodologySectionImpl,
+  ACTION_MAP_DOC,
   type OpenSourceDoc,
 } from "./action-map-methodology-section";
 import {
@@ -69,16 +70,6 @@ const QUOTA_SERVICES_DOC: OpenSourceDoc = {
   icon: <Sparkles className="h-6 w-6" />,
   isPdf: false,
   secondaryAction: { href: "#impact-services", label: { fr: "Voir le bloc", en: "View block" } },
-};
-
-const ACTION_MAP_DOC: OpenSourceDoc = {
-  id: "action-map-methodology",
-  title: { fr: "Méthodologie de la carte d’actions", en: "Action map methodology" },
-  desc: { fr: "Distinction entre mémoire des actions, pollution constatée, pollution projetée et signalements Trash Spotter observés.", en: "Distinction between action history, observed pollution, projected pollution, and observed Trash Spotter reports." },
-  href: "/docs/product/methodologie-carte-actions.md",
-  icon: <MapPin className="h-6 w-6" />,
-  isPdf: false,
-  secondaryAction: { href: "#methodologie-carte-actions", label: { fr: "Voir la section sur cette page", en: "View this page section" } },
 };
 
 export function ActionMapMethodologySection({ isFrench }: { isFrench: boolean }) {

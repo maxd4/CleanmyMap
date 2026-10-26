@@ -10,6 +10,7 @@ import {
   VOLUNTEER_ACTION_EUROS_PER_HOUR,
   WATER_LITERS_PER_CIGARETTE_BUTT,
 } from "./impact-terrain-2026-constants";
+import { IMPACT_TERRAIN_2026_SEMANTIC_LAYERS } from "./impact-terrain-2026-semantic-layers";
 
 export {
   CO2_GRAMS_PER_CAR_KILOMETER,
@@ -206,17 +207,6 @@ const text = (
   fr: string,
   en: string,
 ): ImpactTerrain2026LocalizedText => ({ fr, en });
-
-const IMPACT_TERRAIN_2026_SEMANTIC_LAYERS = [
-  text(
-    "Donnée terrain mesurée ou déclarée",
-    "Measured or declared field data",
-  ),
-  text("Agrégat", "Aggregate"),
-  text("Proxy d’impact", "Impact proxy"),
-  text("Conversion pédagogique", "Pedagogical conversion"),
-  text("Référence méthodologique", "Methodological reference"),
-] as const;
 
 export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodology {
   const { factors, sources, version } = IMPACT_PROXY_CONFIG;

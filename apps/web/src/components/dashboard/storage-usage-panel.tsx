@@ -25,22 +25,10 @@ export function StorageUsagePanel() {
   const isLoading = usage.isLoading;
   const isRefreshing = usage.isValidating;
   const hasError = Boolean(usage.error);
-  const { chartData, comparisonData } = buildStorageUsageViewModel(usage.data);
+  const { chartData, comparisonData, statusTone, currentStateLabel } = buildStorageUsageViewModel(usage.data);
   const current = usage.data?.current ?? null;
   const cron = usage.data?.cron ?? null;
   const warnings = usage.data?.warnings ?? [];
-  const statusTone =
-    current && current.usagePercent >= 100
-      ? "text-rose-400"
-      : current && current.usagePercent >= 80
-        ? "text-amber-300"
-        : "text-emerald-300";
-  const currentStateLabel =
-    current && current.usagePercent >= 100
-      ? "Dépassé"
-      : current && current.usagePercent >= 80
-        ? "Vigilance"
-        : "Stable";
   const refresh = () => void usage.mutate().catch(() => undefined);
 
   return (
