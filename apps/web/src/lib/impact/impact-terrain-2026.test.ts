@@ -3,6 +3,8 @@ import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
   buildImpactTerrain2026Methodology,
+  computeButtsCount,
+  estimateButtsWeightKg,
   computeImpactTerrain2026Co2Conversions,
   computeImpactTerrain2026WaterConversions,
   CO2_GRAMS_PER_CAR_KILOMETER,
@@ -114,5 +116,26 @@ describe("Impact terrain 2026 methodology domain", () => {
         durationMinutes: 0,
       }).upperBoundEuros,
     ).toBe(0);
+  });
+
+  it("keeps malformed butt weights unavailable as a safe zero and preserves condition factors", () => {
+    expect(computeButtsCount(Number.NaN, "propre")).toBe(0);
+    expect(computeButtsCount(Number.POSITIVE_INFINITY, "propre")).toBe(0);
+    expect(computeButtsCount(1, "unknown" as never)).toBe(0);
+    expect(computeButtsCount(1, "humide")).toBe(1_750);
+    expect(estimateButtsWeightKg(1_750, "humide")).toBeCloseTo(1, 10);
+    expect(estimateButtsWeightKg(1_000, "unknown" as never)).toBeCloseTo(0.4, 10);
+  });
+
+  it("keeps proxy conversion outputs finite and non-negative for ordinary extreme inputs", () => {
+    const co2 = computeImpactTerrain2026Co2Conversions(1_000_000);
+    const water = computeImpactTerrain2026WaterConversions(1_000_000);
+
+    expect(co2.co2eKg).toBe(1_200_000);
+    expect(co2.co2eGrams).toBe(1_200_000_000);
+    expect(Object.values(co2).every((value) => Number.isFinite(value) && value >= 0)).toBe(true);
+    expect(Object.values(water).every((value) => Number.isFinite(value) && value >= 0)).toBe(true);
+    expect(computeImpactTerrain2026Co2Conversions(-10).co2eKg).toBe(0);
+    expect(computeImpactTerrain2026WaterConversions(Number.NaN).waterLiters).toBe(0);
   });
 });

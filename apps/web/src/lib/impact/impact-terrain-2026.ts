@@ -53,6 +53,10 @@ export function computeButtsCount(
   weightKg: number,
   condition: ActionMegotsCondition,
 ): number {
+  if (!Number.isFinite(weightKg) || !MEGOTS_CONDITIONS.includes(condition)) {
+    return 0;
+  }
+
   return Math.round(
     Math.max(0, weightKg) *
       BUTTS_PER_KG_REFERENCE *
@@ -68,7 +72,9 @@ export function estimateButtsWeightKg(
     return 0;
   }
 
-  const factor = condition ? CONDITION_WEIGHT_FACTORS[condition] : 1;
+  const factor = condition && MEGOTS_CONDITIONS.includes(condition)
+    ? CONDITION_WEIGHT_FACTORS[condition]
+    : 1;
   return count / (BUTTS_PER_KG_REFERENCE * factor);
 }
 

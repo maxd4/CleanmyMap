@@ -188,6 +188,28 @@ describe("individual action impact attribution", () => {
     expect(result.get("b")).toMatchObject({ wasteKg: null, wasteKind: "unavailable" });
   });
 
+  it("also prevents a negative cigarette-butt remainder when exact counts exceed the collective total", () => {
+    const result = allocateActionParticipantImpact({
+      totalWasteKg: null,
+      totalCigaretteButts: 10,
+      participants: [
+        participant("a", toIndividualImpactMeasurement({ individual_cigarette_butts_count: 20 })),
+        participant("b"),
+      ],
+    });
+
+    expect(result.get("a")).toMatchObject({
+      cigaretteButts: 20,
+      cigaretteButtsInconsistent: true,
+      cigaretteButtsMohsEligible: false,
+    });
+    expect(result.get("b")).toMatchObject({
+      cigaretteButts: null,
+      cigaretteButtsKind: "unavailable",
+    });
+    expect([...result.values()].some((value) => (value.cigaretteButts ?? 0) < 0)).toBe(false);
+  });
+
   it("excludes non-confirmed participants", () => {
     const result = allocateActionParticipantImpact({
       totalWasteKg: 10,

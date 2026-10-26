@@ -71,6 +71,24 @@ describe("action pollution projection", () => {
     expect(measured.projectedPollutionScore).toBe(18);
   });
 
+  it("does not classify a negative post-action score as an observed measurement", () => {
+    const result = presentActionPollutionProjection(60, actionDateAt(0), NOW, {
+      postActionScore: -1,
+    });
+
+    expect(result.postActionScore).toBe(0);
+    expect(result.postActionScoreSource).toBe("model_baseline");
+    expect(result.isEstimate).toBe(true);
+  });
+
+  it("rejects malformed custom T80 values and keeps the canonical fallback", () => {
+    const fallback = resolveActionT80Days(50);
+
+    for (const t80Days of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(resolveActionT80Days(50, { t80Days })).toBe(fallback);
+    }
+  });
+
   it("does not add a second temporal malus and supports local T80 calibration", () => {
     const result = projectedPollutionScore(50, 10, {
       calibration: { t80Days: 10 },

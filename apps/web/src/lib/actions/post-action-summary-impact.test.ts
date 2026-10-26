@@ -50,4 +50,21 @@ describe("buildPostActionImpactMetrics", () => {
     expect(buttsOnly[1].value).not.toBeNull();
     expect(buttsOnly[2].value).toBeNull();
   });
+
+  it.each([
+    { wasteKg: -1, cigaretteButts: 3, durationMinutes: 20, operationalVolunteerUnits: 2 },
+    { wasteKg: Number.NaN, cigaretteButts: 3, durationMinutes: 20, operationalVolunteerUnits: 2 },
+    { wasteKg: 10, cigaretteButts: Number.POSITIVE_INFINITY, durationMinutes: 20, operationalVolunteerUnits: 2 },
+    { wasteKg: 10, cigaretteButts: 3, durationMinutes: Number.NaN, operationalVolunteerUnits: 2 },
+    { wasteKg: 10, cigaretteButts: 3, durationMinutes: 20, operationalVolunteerUnits: -1 },
+  ])("does not publish invalid inputs as physical proxy values (%j)", (input) => {
+    const metrics = buildPostActionImpactMetrics({ ...input, qualityScore: 50 });
+    const invalidMetric = input.wasteKg < 0 || Number.isNaN(input.wasteKg)
+      ? metrics.find((metric) => metric.id === "co2")
+      : input.cigaretteButts === Number.POSITIVE_INFINITY
+        ? metrics.find((metric) => metric.id === "water")
+        : metrics.find((metric) => metric.id === "surface");
+
+    expect(invalidMetric?.value).toBeNull();
+  });
 });

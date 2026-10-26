@@ -22,6 +22,10 @@ function round(value: number, digits = 1): number {
   return Math.round(value * factor) / factor;
 }
 
+function finiteNonNegativeOrNull(value: number | null): number | null {
+  return value !== null && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
 export function buildPostActionImpactMetrics({
   wasteKg,
   cigaretteButts,
@@ -30,12 +34,21 @@ export function buildPostActionImpactMetrics({
   qualityScore,
 }: BuildPostActionImpactMetricsInput): PostActionImpactMetric[] {
   const factors = IMPACT_PROXY_CONFIG.factors;
+  const normalizedWasteKg = finiteNonNegativeOrNull(wasteKg);
+  const normalizedCigaretteButts = finiteNonNegativeOrNull(cigaretteButts);
+  const normalizedDurationMinutes = finiteNonNegativeOrNull(durationMinutes);
+  const normalizedOperationalVolunteerUnits = finiteNonNegativeOrNull(
+    operationalVolunteerUnits,
+  );
 
   return [
     {
       id: "co2",
       label: "CO₂e évité",
-      value: wasteKg === null ? null : round(wasteKg * factors.co2KgPerWasteKg),
+      value:
+        normalizedWasteKg === null
+          ? null
+          : round(normalizedWasteKg * factors.co2KgPerWasteKg),
       unit: "kg CO₂e",
       method: `Proxy ${IMPACT_PROXY_CONFIG.version} · déchets enregistrés × ${factors.co2KgPerWasteKg} kg CO₂e/kg`,
       confidence: qualityScore,
@@ -44,9 +57,11 @@ export function buildPostActionImpactMetrics({
       id: "water",
       label: "Eau protégée",
       value:
-        cigaretteButts === null
+        normalizedCigaretteButts === null
           ? null
-          : Math.round(cigaretteButts * factors.waterLitersPerCigaretteButt),
+          : Math.round(
+              normalizedCigaretteButts * factors.waterLitersPerCigaretteButt,
+            ),
       unit: "L",
       method: `Proxy ${IMPACT_PROXY_CONFIG.version} · mégots enregistrés × ${factors.waterLitersPerCigaretteButt} L/mégot`,
       confidence: qualityScore,
@@ -55,13 +70,13 @@ export function buildPostActionImpactMetrics({
       id: "surface",
       label: "Surface nettoyée",
       value:
-        wasteKg === null ||
-        durationMinutes === null ||
-        operationalVolunteerUnits === null
+        normalizedWasteKg === null ||
+        normalizedDurationMinutes === null ||
+        normalizedOperationalVolunteerUnits === null
           ? null
           : round(
-              wasteKg * factors.surfaceM2PerWasteKg +
-                durationMinutes * operationalVolunteerUnits *
+              normalizedWasteKg * factors.surfaceM2PerWasteKg +
+                normalizedDurationMinutes * normalizedOperationalVolunteerUnits *
                   factors.surfaceM2PerVolunteerMinute,
             ),
       unit: "m²",

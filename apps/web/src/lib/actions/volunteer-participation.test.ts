@@ -80,4 +80,33 @@ describe("volunteer participation contract", () => {
     })).toBe(8);
     expect(resolveEffectiveVolunteerUnits(participation)).toBe(6);
   });
+
+  it.each([
+    { childrenCount: -1, adultCount: 1, retiredCount: 0 },
+    { childrenCount: Number.NaN, adultCount: 1, retiredCount: 0 },
+    { childrenCount: Number.POSITIVE_INFINITY, adultCount: 1, retiredCount: 0 },
+  ])("keeps malformed category sources unavailable instead of imputing them", (input) => {
+    const result = normalizeVolunteerParticipation(input);
+
+    expect(result.participantsCount).toBeNull();
+    expect(result.effectiveVolunteerUnits).toBeNull();
+    expect(result.effectiveVolunteerUnitsFormulaVersion).toBeNull();
+  });
+
+  it("truncates fractional category observations only after validating them", () => {
+    const result = normalizeVolunteerParticipation({
+      childrenCount: 1.9,
+      adultCount: 2.9,
+      retiredCount: 0,
+    });
+
+    expect(result).toMatchObject({
+      childrenCount: 1,
+      adultCount: 2,
+      retiredCount: 0,
+      participantsCount: 3,
+      effectiveVolunteerUnits: 2.5,
+      effectiveVolunteerUnitsFormulaVersion: EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
+    });
+  });
 });

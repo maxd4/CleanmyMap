@@ -105,4 +105,46 @@ describe("Impact terrain 2026 public results", () => {
       }).estimatedButtsWeightKg,
     ).toBeNull();
   });
+
+  it("keeps an observed zero distinct from absent aggregate data", () => {
+    const observedZero = buildImpactTerrain2026PublicResultsFromAggregate({
+      wasteKg: 0,
+      wasteKnownActions: 1,
+      wasteActionCount: 1,
+      cigaretteButts: 0,
+      buttsByCondition: [],
+    });
+    const absent = buildImpactTerrain2026PublicResultsFromAggregate({
+      wasteKg: null,
+      wasteKnownActions: 0,
+      wasteActionCount: 1,
+      cigaretteButts: null,
+      buttsByCondition: null,
+    });
+
+    expect(observedZero.wasteKg).toBe(0);
+    expect(observedZero.wasteKnownActions).toBe(1);
+    expect(observedZero.wasteCoverageRate).toBe(100);
+    expect(absent.wasteKg).toBe(0);
+    expect(absent.wasteKnownActions).toBe(0);
+    expect(absent.wasteCoverageRate).toBe(0);
+    expect(absent.estimatedButtsWeightKg).toBe(0);
+  });
+
+  it("clamps malformed and excessive condition totals without negative unqualified data", () => {
+    const result = buildImpactTerrain2026PublicResultsFromAggregate({
+      wasteKg: Number.NaN,
+      wasteKnownActions: -1,
+      wasteActionCount: Number.POSITIVE_INFINITY,
+      cigaretteButts: 10,
+      buttsByCondition: [{ condition: "propre", count: 20 }],
+    });
+
+    expect(result.wasteKg).toBe(0);
+    expect(result.wasteKnownActions).toBe(0);
+    expect(result.wasteCoverageRate).toBe(0);
+    expect(result.qualifiedButtsTotal).toBe(10);
+    expect(result.unqualifiedButtsTotal).toBe(0);
+    expect(result.unqualifiedButtsTotal).toBeGreaterThanOrEqual(0);
+  });
 });

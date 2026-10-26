@@ -123,4 +123,39 @@ describe("pollution score V2", () => {
       severityScore: null,
     });
   });
+
+  it.each([
+    { wasteKg: -1 },
+    { wasteKg: Number.NaN },
+    { wasteKg: Number.POSITIVE_INFINITY },
+    { cigaretteButts: -1 },
+    { cigaretteButts: Number.NaN },
+    { cigaretteButts: Number.POSITIVE_INFINITY },
+  ])("does not turn an invalid component into a measured zero (%j)", (input) => {
+    const result = score(input);
+
+    expect(result.wasteScore).toBe(
+      Object.prototype.hasOwnProperty.call(input, "wasteKg") ? null : result.wasteScore,
+    );
+    expect(result.buttsScore).toBe(
+      Object.prototype.hasOwnProperty.call(input, "cigaretteButts") ? null : result.buttsScore,
+    );
+  });
+
+  it("matches an independent normalization oracle across denominators and components", () => {
+    const oracle = (amount: number, volunteers: number, reference: number) =>
+      Math.max(0, Math.min(100, Math.round((100 * amount) / Math.max(1, Math.trunc(volunteers)) / reference)));
+
+    for (const volunteersCount of [0, 1, 2, 7]) {
+      for (const wasteKg of [0, 1, 20, 80]) {
+        const result = score({ wasteKg, volunteersCount });
+        expect(result.wasteScore).toBe(oracle(wasteKg, volunteersCount, references.wastePerVolunteer!));
+      }
+    }
+  });
+
+  it("saturates positive arithmetic overflow at the upper score bound", () => {
+    expect(score({ wasteKg: Number.MAX_VALUE }).wasteScore).toBe(100);
+    expect(score({ cigaretteButts: Number.MAX_VALUE }).buttsScore).toBe(100);
+  });
 });
