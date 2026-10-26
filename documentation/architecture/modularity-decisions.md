@@ -929,4 +929,89 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | PRIORITY | NONE |
 | DEPENDENCY_OR_BLOCKER | préserver les exports UI, les tokens visuels et les contrats des cartes admin |
 | NEXT_TRIGGER | nouvelle famille de panneau autonome ou état propre réintroduit dans la façade |
+
+#### `apps/web/src/app/api/api-boundary-analysis.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | parcours de l'inventaire API, extraction des méthodes, résolution des modules locaux et construction des entrées de contrat |
+| PUBLIC_CONTRACTS | helpers d'analyse importés par `api-boundary.test.ts` et `api-boundary.evidence.test.ts` |
+| SIDE_EFFECTS | lecture du tree local et analyse TypeScript en mémoire uniquement |
+| MAIN_CONSUMERS | suites de contrôle des frontières API |
+| TEST_BOUNDARY | méthodes, imports locaux et contrats d'inventaire sont vérifiés par les suites API |
+| COUPLING | primitives partagées par inventaire et evidence, sans dépendance runtime |
+| NATURAL_EXTRACTION_BOUNDARY | owner test-only des primitives d'analyse ; les assertions restent dans les suites par contrat |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | extraction cohésive des primitives communes pour éloigner la façade d'inventaire du seuil sans déplacer une assertion de sécurité |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | conserver l'analyse locale des méthodes, imports et délégations comme owner partagé des suites API |
+| NEXT_TRIGGER | nouvelle analyse indépendante qui ne relève plus de l'inventaire ou de l'évidence |
+
+#### `apps/web/src/app/api/reports/generations/route.test.helpers.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | mocks des frontières AuthN, quota, sources, audit et persistance ; defaults de setup par méthode |
+| PUBLIC_CONTRACTS | `reportGenerationMocks`, `setupPostReportGenerationDefaults`, `setupGetReportGenerationDefaults` |
+| SIDE_EFFECTS | aucun effet externe ; mocks Vitest contrôlés |
+| MAIN_CONSUMERS | suites GET, POST courant et reprise de persistance |
+| TEST_BOUNDARY | le harness ne contient pas d'assertion métier ; les suites spécialisées portent les scénarios |
+| COUPLING | partage explicite des mêmes mocks afin de prouver le même ordre de frontière HTTP |
+| NATURAL_EXTRACTION_BOUNDARY | setup/mocks d'un côté, assertions par flux observable de l'autre |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | harness partagé pour éviter la duplication de mocks lors du découpage des contrats GET/POST |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver les mocks de frontières et les defaults par méthode |
+| NEXT_TRIGGER | nouveau owner de mock ou nouvelle frontière de route indépendante |
+
+#### `apps/web/src/app/api/reports/generations/route.get.test.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | lecture historique owner-scoped, filtres invalides et erreur du store |
+| PUBLIC_CONTRACTS | GET `/api/reports/generations` |
+| SIDE_EFFECTS | mocks du store historique et de l'authentification |
+| MAIN_CONSUMERS | route de génération et page historique des rapports |
+| TEST_BOUNDARY | lecture seule ; les quotas et mutations restent explicitement absents |
+| COUPLING | partage du harness sans dépendre des assertions POST |
+| NATURAL_EXTRACTION_BOUNDARY | famille GET autonome par méthode HTTP et absence d'effets de quota |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | séparation par contrat de lecture pour ramener le fichier principal sous la cible sans couper des scénarios |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver l'ownership, les filtres et l'absence d'accès quota en lecture |
+| NEXT_TRIGGER | nouvelle famille de lecture historique indépendante |
+
+#### `apps/web/src/app/api/reports/generations/route.persistence.test.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | reprise après réponse de persistance perdue, incertitude, audit post-écriture et quota dupliqué |
+| PUBLIC_CONTRACTS | POST `/api/reports/generations` et ses réponses d'incertitude |
+| SIDE_EFFECTS | mocks de persistance, réservation/libération de quota et audit |
+| MAIN_CONSUMERS | route de génération et owner de reprise directe |
+| TEST_BOUNDARY | erreurs de persistance et d'audit ; flux nominaux et validation restent dans la suite POST principale |
+| COUPLING | même harness et même route, avec invariants de non-réinsertion et de conservation du quota |
+| NATURAL_EXTRACTION_BOUNDARY | famille de récupération d'écriture autonome par contrat d'erreur |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | extraction des scénarios de persistance sans déplacer l'ordre AuthN → quota → source → écriture |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver la reprise d'insertion, l'audit et la conservation du quota |
+| NEXT_TRIGGER | nouveau contrat de persistance non partagé avec POST |
+
+#### `apps/web/src/app/api/actions/[actionId]/group-join/route.post.test.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | modération admin et mutations ordinaires de participation group-join |
+| PUBLIC_CONTRACTS | POST `/api/actions/:actionId/group-join` hors revendications post-action |
+| SIDE_EFFECTS | mocks des participants, audit, progression et persistance |
+| MAIN_CONSUMERS | route dynamique group-join et file de modération |
+| TEST_BOUNDARY | comportements admin et ordinaires ; les revendications post-action ont leur suite dédiée |
+| COUPLING | partage du harness canonique et des mêmes garde-fous d'identité |
+| NATURAL_EXTRACTION_BOUNDARY | séparation par `requestKind` et ownership métier, pas par longueur de fichier |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | la famille post-action extraite laisse la modération et la participation ordinaire dans une suite cohésive sous 800 lignes |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver la modération admin et les mutations ordinaires de participation |
+| NEXT_TRIGGER | nouveau flux POST indépendant des décisions de modération |
 <!-- RADAR:HUMAN_DECISIONS:END -->
