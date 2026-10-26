@@ -146,15 +146,16 @@ test.describe("desktop central navigation ribbon variants", () => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
       await dismissCookies(page);
-      const desktopRibbon = page.locator('nav[aria-label="Navigation par blocs"]');
       const summary = page.getByRole("button", { name: "Sommaire" });
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.getBoundingClientRect().width);
 
       expect(overflow, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(1);
       if (width < 1280) {
+        const desktopRibbon = page.locator('nav[aria-label="Navigation par blocs"]');
         await expect(desktopRibbon).toBeHidden();
         await expect(summary).toBeVisible();
       } else {
+        const desktopRibbon = await waitForRibbon(page);
         await expect(desktopRibbon).toBeVisible();
         await expect(summary).toBeHidden();
       }
