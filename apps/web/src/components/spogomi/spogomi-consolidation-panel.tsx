@@ -21,22 +21,75 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item): item is string => typeof item === "string");
 }
 
+function parseExcludedMeasures(value: unknown): SpogomiConsolidationPreview["projection"]["excludedMeasures"] | null {
+  if (!Array.isArray(value)) return null;
+  const excludedMeasures = value.filter((measure): measure is { teamId: string; categoryCode: string; reason: string } =>
+    isRecord(measure) && typeof measure.teamId === "string" && typeof measure.categoryCode === "string" && typeof measure.reason === "string");
+  return excludedMeasures.length === value.length ? excludedMeasures : null;
+}
+
+function parseOrganizer(value: unknown): SpogomiConsolidationPreview["projection"]["organizer"] | null {
+  if (value === null) return null;
+  return isRecord(value) && typeof value.name === "string" && typeof value.organizerType === "string"
+    ? { name: value.name, organizerType: value.organizerType }
+    : null;
+}
+
+function parseOfficialRoute(value: unknown): SpogomiConsolidationPreview["projection"]["officialRoute"] | null {
+  if (value === null) return null;
+  return isRecord(value) && typeof value.fileName === "string" && typeof value.referenceDistanceKm === "number"
+    ? { fileName: value.fileName, referenceDistanceKm: value.referenceDistanceKm }
+    : null;
+}
+
+function parseCurrentProjection(value: unknown): SpogomiConsolidationPreview["currentProjection"] | null {
+  if (value === null) return null;
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.projectionRevision !== "number" ||
+    typeof value.sourceHash !== "string" || typeof value.status !== "string") return null;
+  return {
+    id: value.id,
+    projectionRevision: value.projectionRevision,
+    sourceHash: value.sourceHash,
+    status: value.status,
+  };
+}
+
+function parseConsolidationProjection(value: Record<string, unknown>): SpogomiConsolidationPreview["projection"] | null {
+  if (typeof value.readyForPublication !== "boolean" || typeof value.sourceHash !== "string" ||
+    typeof value.actionId !== "string" || typeof value.projectionVersion !== "string" ||
+    typeof value.teamsIncluded !== "number" || typeof value.participantsPresent !== "number" ||
+    !(value.totalWasteMassGrams === null || typeof value.totalWasteMassGrams === "number") ||
+    !(value.cigaretteButtsMassGrams === null || typeof value.cigaretteButtsMassGrams === "number") ||
+    !(value.cigaretteButtsCount === null || typeof value.cigaretteButtsCount === "number") ||
+    !isStringArray(value.categoriesWithoutMapping)) return null;
+  const excludedMeasures = parseExcludedMeasures(value.excludedMeasures);
+  const organizer = parseOrganizer(value.organizer);
+  const officialRoute = parseOfficialRoute(value.officialRoute);
+  if (!excludedMeasures || (value.organizer !== null && organizer === null) ||
+    (value.officialRoute !== null && officialRoute === null)) return null;
+  return {
+    readyForPublication: value.readyForPublication,
+    sourceHash: value.sourceHash,
+    actionId: value.actionId,
+    projectionVersion: value.projectionVersion,
+    teamsIncluded: value.teamsIncluded,
+    participantsPresent: value.participantsPresent,
+    totalWasteMassGrams: value.totalWasteMassGrams,
+    cigaretteButtsMassGrams: value.cigaretteButtsMassGrams,
+    cigaretteButtsCount: value.cigaretteButtsCount,
+    categoriesWithoutMapping: value.categoriesWithoutMapping,
+    excludedMeasures,
+    officialRoute,
+    organizer,
+  };
+}
+
 function parseConsolidationPreview(value: unknown): SpogomiConsolidationPreview | null {
   if (!isRecord(value) || !isRecord(value.projection)) return null;
-  const projection = value.projection;
-  if (typeof projection.readyForPublication !== "boolean" || typeof projection.sourceHash !== "string" || typeof projection.actionId !== "string" || typeof projection.projectionVersion !== "string" || typeof projection.teamsIncluded !== "number" || typeof projection.participantsPresent !== "number" || !(projection.totalWasteMassGrams === null || typeof projection.totalWasteMassGrams === "number") || !(projection.cigaretteButtsMassGrams === null || typeof projection.cigaretteButtsMassGrams === "number") || !(projection.cigaretteButtsCount === null || typeof projection.cigaretteButtsCount === "number") || !isStringArray(projection.categoriesWithoutMapping) || !Array.isArray(projection.excludedMeasures)) return null;
-  const excludedMeasures = projection.excludedMeasures.filter((measure): measure is { teamId: string; categoryCode: string; reason: string } => isRecord(measure) && typeof measure.teamId === "string" && typeof measure.categoryCode === "string" && typeof measure.reason === "string");
-  if (excludedMeasures.length !== projection.excludedMeasures.length) return null;
-  const organizer = projection.organizer === null ? null : isRecord(projection.organizer) && typeof projection.organizer.name === "string" && typeof projection.organizer.organizerType === "string" ? { name: projection.organizer.name, organizerType: projection.organizer.organizerType } : null;
-  if (projection.organizer !== null && organizer === null) return null;
-  const officialRoute = projection.officialRoute === null ? null : isRecord(projection.officialRoute) && typeof projection.officialRoute.fileName === "string" && typeof projection.officialRoute.referenceDistanceKm === "number" ? { fileName: projection.officialRoute.fileName, referenceDistanceKm: projection.officialRoute.referenceDistanceKm } : null;
-  if (projection.officialRoute !== null && officialRoute === null) return null;
-  let currentProjection: SpogomiConsolidationPreview["currentProjection"] = null;
-  if (value.currentProjection !== null) {
-    if (!isRecord(value.currentProjection) || typeof value.currentProjection.id !== "string" || typeof value.currentProjection.projectionRevision !== "number" || typeof value.currentProjection.sourceHash !== "string" || typeof value.currentProjection.status !== "string") return null;
-    currentProjection = { id: value.currentProjection.id, projectionRevision: value.currentProjection.projectionRevision, sourceHash: value.currentProjection.sourceHash, status: value.currentProjection.status };
-  }
-  return { currentProjection, projection: { readyForPublication: projection.readyForPublication, sourceHash: projection.sourceHash, actionId: projection.actionId, projectionVersion: projection.projectionVersion, teamsIncluded: projection.teamsIncluded, participantsPresent: projection.participantsPresent, totalWasteMassGrams: projection.totalWasteMassGrams, cigaretteButtsMassGrams: projection.cigaretteButtsMassGrams, cigaretteButtsCount: projection.cigaretteButtsCount, categoriesWithoutMapping: projection.categoriesWithoutMapping, excludedMeasures, officialRoute, organizer } };
+  const projection = parseConsolidationProjection(value.projection);
+  const currentProjection = parseCurrentProjection(value.currentProjection);
+  if (!projection || (value.currentProjection !== null && currentProjection === null)) return null;
+  return { currentProjection, projection };
 }
 
 function errorMessage(value: unknown, fallback: string): string {

@@ -184,17 +184,15 @@ async function loadReferralProfile(
   return (data as typeof data) ?? null;
 }
 
-export async function loadReferralSummary(
+async function loadReferralSummaryData(
   supabase: SupabaseClient,
   userId: string,
-): Promise<ReferralSummary> {
-  const profile = await loadReferralProfile(supabase, userId);
-
+  profile: Awaited<ReturnType<typeof loadReferralProfile>>,
+) {
   const invitedUsersPromise = supabase
     .from("profiles")
     .select("id", { count: "exact", head: true })
     .eq("referred_by_profile_id", userId);
-
   const inviterPromise = profile?.referred_by_profile_id
     ? supabase
         .from("profiles")
@@ -216,16 +214,19 @@ export async function loadReferralSummary(
     inviterPromise,
     referralAwardsPromise,
   ]);
+  if (invitedUsersResult.error) throw invitedUsersResult.error;
+  if (inviterResult.error) throw inviterResult.error;
+  if (referralAwardsResult.error) throw referralAwardsResult.error;
+  return { invitedUsersResult, inviterResult, referralAwardsResult };
+}
 
-  if (invitedUsersResult.error) {
-    throw invitedUsersResult.error;
-  }
-  if (inviterResult.error) {
-    throw inviterResult.error;
-  }
-  if (referralAwardsResult.error) {
-    throw referralAwardsResult.error;
-  }
+export async function loadReferralSummary(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ReferralSummary> {
+  const profile = await loadReferralProfile(supabase, userId);
+  const { invitedUsersResult, inviterResult, referralAwardsResult } =
+    await loadReferralSummaryData(supabase, userId, profile);
 
   const referralCode = normalizeReferralCode(profile?.referral_code);
   const awards = Array.isArray(referralAwardsResult.data)
@@ -341,25 +342,11 @@ export async function claimReferralInviteForUser(
     };
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("id, referred_by_profile_id")
-    .eq("id", params.userId)
-    .maybeSingle();
-
-  if (profileError) {
-    throw profileError;
-  }
-
-  const { data: inviter, error: inviterError } = await supabase
-    .from("profiles")
-    .select("id, display_name")
-    .eq("referral_code", referralCode)
-    .maybeSingle();
-
-  if (inviterError) {
-    throw inviterError;
-  }
+  const { profile, inviter } = await loadReferralClaimProfiles(
+    supabase,
+    params.userId,
+    referralCode,
+  );
   const parsedInviter = isInviterProfile(inviter) ? inviter : null;
   if (!parsedInviter || parsedInviter.id === params.userId) {
     return {
@@ -396,5 +383,33 @@ export async function claimReferralInviteForUser(
     claimed: true,
     inviterUserId: parsedInviter.id,
     inviterDisplayName: parsedInviter.display_name || parsedInviter.id,
+  };
+}
+
+async function loadReferralClaimProfiles(
+  supabase: SupabaseClient,
+  userId: string,
+  referralCode: string,
+): Promise<{
+  profile: { id: string; referred_by_profile_id: string | null } | null;
+  inviter: unknown;
+}> {
+  const [profileResult, inviterResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, referred_by_profile_id")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("id, display_name")
+      .eq("referral_code", referralCode)
+      .maybeSingle(),
+  ]);
+  if (profileResult.error) throw profileResult.error;
+  if (inviterResult.error) throw inviterResult.error;
+  return {
+    profile: profileResult.data,
+    inviter: inviterResult.data,
   };
 }

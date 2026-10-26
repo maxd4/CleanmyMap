@@ -5,28 +5,33 @@ export const MAX_ROUTE_GEOMETRY_COORDINATES = 10_000;
 export const MAX_ROUTE_GEOMETRY_LEGS = 500;
 export const MAX_PLANNER_TECHNICAL_STOPS = 200;
 
-export function isRouteGeometry(value: unknown): value is RouteGeometry {
-  if (!value || typeof value !== "object") return false;
-  const geometry = value as Partial<RouteGeometry>;
-  const hasValidFields = (
-    geometry.isLoop === true &&
-    (geometry.origin === null || isCoordinate(geometry.origin)) &&
-    Array.isArray(geometry.coordinates) &&
-    geometry.coordinates.length <= MAX_ROUTE_GEOMETRY_COORDINATES &&
-    geometry.coordinates.every(isCoordinate) &&
-    finiteNonNegative(geometry.distanceKm) &&
-    finiteNonNegative(geometry.durationMinutes) &&
-    Array.isArray(geometry.legs) &&
-    geometry.legs.length <= MAX_ROUTE_GEOMETRY_LEGS &&
-    geometry.legs.every(isRouteGeometryLeg) &&
+function hasValidRouteGeometryCollections(geometry: Partial<RouteGeometry>): boolean {
+  if (!Array.isArray(geometry.coordinates) || geometry.coordinates.length > MAX_ROUTE_GEOMETRY_COORDINATES) return false;
+  if (!geometry.coordinates.every(isCoordinate)) return false;
+  if (!Array.isArray(geometry.legs) || geometry.legs.length > MAX_ROUTE_GEOMETRY_LEGS) return false;
+  return geometry.legs.every(isRouteGeometryLeg);
+}
+
+function hasValidRouteGeometryMeasures(geometry: Partial<RouteGeometry>): boolean {
+  return finiteNonNegative(geometry.distanceKm) && finiteNonNegative(geometry.durationMinutes);
+}
+
+function hasValidRouteGeometryMetadata(geometry: Partial<RouteGeometry>): boolean {
+  if (geometry.origin !== null && !isCoordinate(geometry.origin)) return false;
+  return (
     ["osrm", "fossgis-osrm", "none"].includes(geometry.provider ?? "") &&
     (geometry.profile === null || geometry.profile === "foot") &&
     ["network", "fallback"].includes(geometry.mode ?? "") &&
     typeof geometry.estimated === "boolean" &&
     (geometry.returnLeg === null || isRouteGeometryLeg(geometry.returnLeg))
   );
+}
 
-  if (!hasValidFields) return false;
+export function isRouteGeometry(value: unknown): value is RouteGeometry {
+  if (!value || typeof value !== "object") return false;
+  const geometry = value as Partial<RouteGeometry>;
+  if (geometry.isLoop !== true || !hasValidRouteGeometryCollections(geometry) ||
+    !hasValidRouteGeometryMeasures(geometry) || !hasValidRouteGeometryMetadata(geometry)) return false;
   if (geometry.coordinates!.length === 0) {
     return isEmptyRouteGeometryPlaceholder(geometry);
   }

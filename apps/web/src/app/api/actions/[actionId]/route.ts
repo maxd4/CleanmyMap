@@ -257,6 +257,14 @@ export async function PATCH(
   const access = await requireActionRequestAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
 
+  return executePatchAfterAuthentication(request, ctx, access);
+}
+
+async function executePatchAfterAuthentication(
+  request: Request,
+  ctx: { params: Promise<{ actionId: string }> },
+  access: Awaited<ReturnType<typeof requireActionRequestAccess>> & { ok: true },
+): Promise<Response> {
   // Authorization is enforced by loadAuthorizedPatchAction via canManageAction;
   // preparePatchMutation applies canEditValidatedImpact and canManageActionsGlobally
   // to their respective privileged paths, while the execution owner audits failures.

@@ -216,6 +216,25 @@ describe("signalement media contract", () => {
     expect(intent).toMatchObject({ bucket: SIGNALEMENT_EVIDENCE_BUCKET, uploadState: "pending" });
   });
 
+  it("reopens a failed idempotency row without consuming another media slot", async () => {
+    const supabase = makeSupabase({
+      parent,
+      existingMedia: { ...readyMedia, upload_state: "failed" },
+      activeCount: SIGNALEMENT_EVIDENCE_MAX_MEDIA,
+      updatedMedia: { ...readyMedia, upload_state: "pending", original_name: "nouvelle-preuve.jpg" },
+    });
+    const intent = await createSignalementMediaUploadIntent(supabase as never, {
+      userId: "user-1",
+      signalementId: "signalement-1",
+      originalName: "nouvelle-preuve.jpg",
+      mimeType: "image/jpeg",
+      sizeBytes: 1234,
+      clientUploadId: "client-1",
+    });
+    expect(intent).toMatchObject({ mediaId: "media-1", uploadState: "pending" });
+    expect(supabase.__queries.mediaQuery.insert).not.toHaveBeenCalled();
+  });
+
   it("rejects a non-owner when admin access is not available", async () => {
     const supabase = makeSupabase({ parent, activeCount: 0 });
     await expect(

@@ -170,6 +170,57 @@ function isClosedCoordinates(coordinates: [number, number][]): boolean {
   return coordinates.length >= 2 && areCoordinatesClose(coordinates[0], coordinates.at(-1), 1e-6);
 }
 
+function parseOsrmStep(step: OsrmStep) {
+  if (!isMeasuredStep(step)) return null;
+  const maneuverType = typeof step.maneuver?.type === "string" ? step.maneuver.type : null;
+  const maneuverModifier = typeof step.maneuver?.modifier === "string" ? step.maneuver.modifier : null;
+  const geometry = normalizeCoordinates(step.geometry?.coordinates);
+  return {
+    name: typeof step.name === "string" && step.name.length > 0 ? step.name : null,
+    distanceKm: Number((step.distance / 1000).toFixed(2)),
+    durationMinutes: Math.max(0, Math.round(step.duration / 60)),
+    maneuver: maneuverType && maneuverModifier
+      ? `${maneuverType} ${maneuverModifier}`
+      : maneuverType ?? maneuverModifier,
+    ...(geometry ? { geometry } : {}),
+  };
+}
+
+function parseOsrmLeg(rawLeg: OsrmLeg, index: number): RouteGeometryLeg | null {
+  if (!isFiniteNumber(rawLeg.distance) || !isFiniteNumber(rawLeg.duration)) return null;
+  const rawSteps = isOsrmStepArray(rawLeg.steps) ? rawLeg.steps : undefined;
+  const steps = rawSteps
+    ?.map(parseOsrmStep)
+    .filter((step): step is NonNullable<typeof step> => step !== null);
+  return {
+    fromStopIndex: index,
+    toStopIndex: index + 1,
+    distanceKm: Number((rawLeg.distance / 1000).toFixed(2)),
+    estimatedMinutes: Math.max(0, Math.round(rawLeg.duration / 60)),
+    ...(steps ? { steps } : {}),
+  };
+}
+
+function parseOsrmLegs(
+  route: OsrmRoute,
+  expectedStopCount: number,
+  isLoop: boolean,
+): RouteGeometryLeg[] | null {
+  const hasCompleteLegs =
+    Array.isArray(route.legs) && route.legs.length === expectedStopCount - 1;
+  if (!hasCompleteLegs) return isLoop ? null : [];
+  const rawLegs = isOsrmLegArray(route.legs) ? route.legs : [];
+  const parsedLegs: RouteGeometryLeg[] = [];
+  for (const [index, rawLeg] of rawLegs.entries()) {
+    const parsedLeg = parseOsrmLeg(rawLeg, index);
+    if (!parsedLeg) return isLoop ? null : [];
+    parsedLegs.push(parsedLeg);
+  }
+  return isLoop && parsedLegs.length !== expectedStopCount - 1
+    ? null
+    : parsedLegs;
+}
+
 export function buildOsrmRouteUrl(
   coordinates: [number, number][],
   options: Pick<RoutePolylineOptions, "baseUrl" | "profileSegment"> = {},
@@ -238,88 +289,69 @@ function parseNetworkRoute(
     return null;
   }
 
-  const normalizedCoordinates = normalizeCoordinates(route.geometry?.coordinates);
-  if (
-    !normalizedCoordinates ||
-    !isFiniteNumber(route.distance) ||
-    route.distance < 0 ||
-    !isFiniteNumber(route.duration) ||
-    route.duration < 0
-  ) {
-    return null;
-  }
+  const parsedRoute = parseOsrmRouteCoordinates(route);
+  if (!parsedRoute) return null;
 
   const isLoop = isClosedCoordinates(requestedCoordinates);
-  const hasCompleteLegs =
-    Array.isArray(route.legs) && route.legs.length === expectedStopCount - 1;
   // A closed route must expose every leg so the return cost remains explicit.
   // An incomplete provider payload is therefore degraded to the deterministic
   // closed fallback instead of being presented as a measured loop.
-  if (isLoop && !hasCompleteLegs) return null;
+  if (!hasRequiredOsrmLegs(route, expectedStopCount, isLoop)) return null;
 
-  const coordinates = normalizedCoordinates.map((coordinate, index) => {
-    if (index === 0) return requestedCoordinates[0] ?? coordinate;
-    if (index === normalizedCoordinates.length - 1 && isLoop) {
-      return requestedCoordinates.at(-1) ?? coordinate;
-    }
-    return coordinate;
-  });
+  const coordinates = reconcileOsrmRouteCoordinates(
+    parsedRoute.coordinates,
+    requestedCoordinates,
+    isLoop,
+  );
 
-  let legs: RouteGeometryLeg[] = [];
-  if (hasCompleteLegs) {
-    const parsedLegs: RouteGeometryLeg[] = [];
-    const rawLegs = isOsrmLegArray(route.legs) ? route.legs : [];
-    for (const [index, rawLeg] of rawLegs.entries()) {
-      if (!isFiniteNumber(rawLeg.distance) || !isFiniteNumber(rawLeg.duration)) {
-        parsedLegs.length = 0;
-        break;
-      }
-      const rawSteps = isOsrmStepArray(rawLeg.steps)
-        ? rawLeg.steps
-        : undefined;
-      const steps = rawSteps
-        ?.filter(isMeasuredStep)
-        .map((step) => {
-          const distance = step.distance;
-          const duration = step.duration;
-          const maneuverType = typeof step.maneuver?.type === "string" ? step.maneuver.type : null;
-          const maneuverModifier = typeof step.maneuver?.modifier === "string" ? step.maneuver.modifier : null;
-          const geometry = normalizeCoordinates(step.geometry?.coordinates);
-          return {
-            name: typeof step.name === "string" && step.name.length > 0 ? step.name : null,
-            distanceKm: Number((distance / 1000).toFixed(2)),
-            durationMinutes: Math.max(0, Math.round(duration / 60)),
-            maneuver: maneuverType && maneuverModifier
-              ? `${maneuverType} ${maneuverModifier}`
-              : maneuverType ?? maneuverModifier,
-            ...(geometry ? { geometry } : {}),
-          };
-        });
-      parsedLegs.push({
-        fromStopIndex: index,
-        toStopIndex: index + 1,
-        distanceKm: Number((rawLeg.distance / 1000).toFixed(2)),
-        estimatedMinutes: Math.max(0, Math.round(rawLeg.duration / 60)),
-        ...(steps ? { steps } : {}),
-      });
-    }
-    legs = parsedLegs;
-    if (isLoop && legs.length !== expectedStopCount - 1) return null;
-  }
+  const legs = parseOsrmLegs(route, expectedStopCount, isLoop);
+  if (legs === null) return null;
 
   return {
     isLoop,
     origin: coordinates[0] ?? null,
     returnLeg: isLoop ? parsedReturnLeg(legs) : null,
     coordinates,
-    distanceKm: Number((route.distance / 1000).toFixed(2)),
-    durationMinutes: Math.max(0, Math.round(route.duration / 60)),
+    distanceKm: Number((parsedRoute.distance / 1000).toFixed(2)),
+    durationMinutes: Math.max(0, Math.round(parsedRoute.duration / 60)),
     legs,
     provider,
     profile,
     mode: "network",
     estimated: false,
   };
+}
+
+function parseOsrmRouteCoordinates(
+  route: OsrmRoute,
+): { coordinates: [number, number][]; distance: number; duration: number } | null {
+  const coordinates = normalizeCoordinates(route.geometry?.coordinates);
+  return coordinates && isFiniteNumber(route.distance) && route.distance >= 0 &&
+    isFiniteNumber(route.duration) && route.duration >= 0
+    ? { coordinates, distance: route.distance, duration: route.duration }
+    : null;
+}
+
+function hasRequiredOsrmLegs(
+  route: OsrmRoute,
+  expectedStopCount: number,
+  isLoop: boolean,
+): boolean {
+  return !isLoop || (Array.isArray(route.legs) && route.legs.length === expectedStopCount - 1);
+}
+
+function reconcileOsrmRouteCoordinates(
+  coordinates: [number, number][],
+  requestedCoordinates: [number, number][],
+  isLoop: boolean,
+): [number, number][] {
+  return coordinates.map((coordinate, index) => {
+    if (index === 0) return requestedCoordinates[0] ?? coordinate;
+    if (index === coordinates.length - 1 && isLoop) {
+      return requestedCoordinates.at(-1) ?? coordinate;
+    }
+    return coordinate;
+  });
 }
 
 function parsedReturnLeg(legs: RouteGeometryLeg[]): RouteGeometryLeg | null {

@@ -33,32 +33,35 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function hasProgressionScalars(value: Record<string, unknown>): boolean {
+  return typeof value.userId === "string" &&
+    ["xpTotal", "xpValidated", "xpPending", "currentLevel", "potentialLevel"].every((key) => typeof value[key] === "number");
+}
+
+function hasProgressionCollections(value: Record<string, unknown>): boolean {
+  return isRecord(value.nextLevel) && Array.isArray(value.badges) &&
+    value.badges.every((badge) => typeof badge === "string") &&
+    Array.isArray(value.badgeCatalog) && value.badgeCatalog.every(isRecord);
+}
+
+function hasProgressionSections(value: Record<string, unknown>): boolean {
+  return isRecord(value.summary) && isRecord(value.engagementStatus) &&
+    isRecord(value.impact) && isRecord(value.impactMethodology) &&
+    isRecord(value.dynamicRanking) && isRecord(value.monthlyMilestone) &&
+    isRecord(value.recognition) && isRecord(value.annualRecognition) &&
+    isRecord(value.yearToDateImpact);
+}
+
+function hasProgressionHistory(value: Record<string, unknown>): boolean {
+  return isRecord(value.history) && Array.isArray(value.history.timeline) &&
+    value.history.timeline.every(isRecord) && Array.isArray(value.history.mapPoints) &&
+    value.history.mapPoints.every(isRecord);
+}
+
 function isUserProgressionResponse(value: unknown): value is UserProgressionResponse {
-  if (!isRecord(value)
-    || typeof value.userId !== "string"
-    || !["xpTotal", "xpValidated", "xpPending", "currentLevel", "potentialLevel"].every((key) => typeof value[key] === "number")
-    || !isRecord(value.nextLevel)
-    || !Array.isArray(value.badges)
-    || !value.badges.every((badge) => typeof badge === "string")
-    || !Array.isArray(value.badgeCatalog)
-    || !value.badgeCatalog.every(isRecord)
-    || !isRecord(value.summary)
-    || !isRecord(value.engagementStatus)
-    || !isRecord(value.impact)
-    || !isRecord(value.impactMethodology)
-    || !isRecord(value.dynamicRanking)
-    || !isRecord(value.history)
-    || !Array.isArray(value.history.timeline)
-    || !value.history.timeline.every(isRecord)
-    || !Array.isArray(value.history.mapPoints)
-    || !value.history.mapPoints.every(isRecord)
-    || !isRecord(value.monthlyMilestone)
-    || !isRecord(value.recognition)
-    || !isRecord(value.annualRecognition)
-    || !isRecord(value.yearToDateImpact)) {
-    return false;
-  }
-  return true;
+  return isRecord(value) && hasProgressionScalars(value) &&
+    hasProgressionCollections(value) && hasProgressionSections(value) &&
+    hasProgressionHistory(value);
 }
 
 function isMeResponse(value: unknown): value is MeResponse {

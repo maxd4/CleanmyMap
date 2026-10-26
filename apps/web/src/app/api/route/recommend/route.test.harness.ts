@@ -180,6 +180,32 @@ export function plannerAudit(stops: ReturnType<typeof plannedStop>[]): RoutePlan
   };
 }
 
+function createEmptyPredictionSummary(): RoutePredictionSummary {
+  return {
+    status: "unavailable",
+    source: "urban-pressure-model",
+    modelVersion: null,
+    snapshot: null,
+    riskFocus: "all",
+    zonesConsidered: 0,
+    candidatesConsidered: 0,
+    admitted: 0,
+    selected: 0,
+    selectedCandidateIds: [],
+    passedToPlanner: 0,
+    excludedByPreselection: 0,
+    excludedByPlannerBudget: 0,
+    admittedCandidateIds: [],
+    preselectionExcludedCandidateIds: [],
+    preselectionExclusionReasons: {},
+    excludedByFinalRoutingBudget: 0,
+    finalRoutingBudgetExcludedCandidateIds: [],
+    excludedByCorridor: 0,
+    deduplicated: 0,
+    warnings: [],
+  };
+}
+
 export function resetRouteRecommendMocks() {
   vi.unstubAllGlobals();
   vi.resetModules();
@@ -209,29 +235,7 @@ export function resetRouteRecommendMocks() {
   defaultRouteRecommendationFloorDateMock.mockReturnValue("2026-01-01");
   loadParisPressureSnapshotMock.mockReturnValue(null);
   applyParisPressureToCandidatesMock.mockImplementation((values) => values);
-  const emptyPredictionSummary = {
-    status: "unavailable",
-    source: "urban-pressure-model",
-    modelVersion: null,
-    snapshot: null,
-    riskFocus: "all",
-    zonesConsidered: 0,
-    candidatesConsidered: 0,
-    admitted: 0,
-    selected: 0,
-    selectedCandidateIds: [],
-    passedToPlanner: 0,
-    excludedByPreselection: 0,
-    excludedByPlannerBudget: 0,
-    admittedCandidateIds: [],
-    preselectionExcludedCandidateIds: [],
-    preselectionExclusionReasons: {},
-    excludedByFinalRoutingBudget: 0,
-    finalRoutingBudgetExcludedCandidateIds: [],
-    excludedByCorridor: 0,
-    deduplicated: 0,
-    warnings: [],
-  } satisfies RoutePredictionSummary;
+  const emptyPredictionSummary = createEmptyPredictionSummary();
   buildPredictedRouteCandidatesMock.mockReturnValue({ candidates: [], summary: emptyPredictionSummary });
   buildRoutePlannerCandidatePoolMock.mockImplementation(({ observedCandidates, predictedCandidates, maxCandidates, effectiveRiskFocus }) => {
     const candidates = [...observedCandidates, ...predictedCandidates].slice(0, maxCandidates);

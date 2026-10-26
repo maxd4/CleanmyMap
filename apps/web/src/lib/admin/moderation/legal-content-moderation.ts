@@ -42,6 +42,84 @@ function normalizeContentType(value: string | null): string {
   return value?.trim().toLowerCase() ?? "";
 }
 
+function emptyLegalContentMutationResult(
+  supported: boolean,
+): LegalContentMutationResult {
+  return {
+    supported,
+    found: false,
+    beforeState: {},
+    afterState: {},
+    authorEmail: null,
+  };
+}
+
+function buildLegalContentSnapshot(
+  row: LegalContentActionRow,
+): LegalContentMutationSnapshot {
+  return {
+    source: "actions",
+    status: row.status,
+    moderationVisibility: row.moderation_visibility ?? "visible",
+    authorUserId: row.created_by_clerk_id,
+  };
+}
+
+async function readCanonicalLegalContentAction(
+  supabase: ReturnType<typeof getSupabaseAdminClient>,
+  contentId: string,
+): Promise<LegalContentActionRow | null> {
+  const current = await supabase
+    .from("actions")
+    .select("status, moderation_visibility, created_by_clerk_id")
+    .eq("id", contentId)
+    .maybeSingle();
+  if (current.error) throw new Error("Canonical action moderation read failed");
+  const currentData: unknown = current.data;
+  if (currentData === null || currentData === undefined) return null;
+  if (!isLegalContentActionRow(currentData)) {
+    throw new Error("Canonical action moderation read returned invalid data");
+  }
+  return currentData;
+}
+
+async function persistCanonicalLegalContentAction({
+  supabase,
+  contentId,
+  action,
+  actorUserId,
+  reason,
+}: {
+  supabase: ReturnType<typeof getSupabaseAdminClient>;
+  contentId: string;
+  action: Extract<LegalContentReportDecisionAction, "content_restricted" | "content_removed">;
+  actorUserId: string;
+  reason: string;
+}): Promise<LegalContentActionRow | null> {
+  const now = new Date().toISOString();
+  const update = action === "content_restricted"
+    ? {
+        moderation_visibility: "hidden",
+        hidden_at: now,
+        hidden_by_clerk_id: actorUserId,
+        hidden_reason: reason,
+      }
+    : { status: "rejected" };
+  const updated = await supabase
+    .from("actions")
+    .update(update)
+    .eq("id", contentId)
+    .select("status, moderation_visibility, created_by_clerk_id")
+    .maybeSingle();
+  if (updated.error) throw new Error("Canonical action moderation update failed");
+  const updatedData: unknown = updated.data;
+  if (updatedData === null || updatedData === undefined) return null;
+  if (!isLegalContentActionRow(updatedData)) {
+    throw new Error("Canonical action moderation update returned invalid data");
+  }
+  return updatedData;
+}
+
 /**
  * Reuses the existing action moderation fields. Other report content types
  * deliberately remain decision-only until a canonical mutation service exists.
@@ -57,66 +135,21 @@ export async function applyCanonicalLegalContentMutation(params: {
     !["action", "actions"].includes(normalizeContentType(params.contentType)) ||
     !params.contentId
   ) {
-    return {
-      supported: false,
-      found: false,
-      beforeState: {},
-      afterState: {},
-      authorEmail: null,
-    };
+    return emptyLegalContentMutationResult(false);
   }
 
   const supabase = getSupabaseAdminClient();
-  const current = await supabase
-    .from("actions")
-    .select("status, moderation_visibility, created_by_clerk_id")
-    .eq("id", params.contentId)
-    .maybeSingle();
-
-  if (current.error) throw new Error("Canonical action moderation read failed");
-  const currentData: unknown = current.data;
-  if (currentData === null || currentData === undefined) {
-    return {
-      supported: true,
-      found: false,
-      beforeState: {},
-      afterState: {},
-      authorEmail: null,
-    };
-  }
-  if (!isLegalContentActionRow(currentData)) {
-    throw new Error("Canonical action moderation read returned invalid data");
-  }
-
-  const beforeState = {
-    source: "actions",
-    status: currentData.status,
-    moderationVisibility: currentData.moderation_visibility ?? "visible",
-    authorUserId: currentData.created_by_clerk_id,
-  } satisfies LegalContentMutationSnapshot;
-
-  const now = new Date().toISOString();
-  const update =
-    params.action === "content_restricted"
-      ? {
-          moderation_visibility: "hidden",
-          hidden_at: now,
-          hidden_by_clerk_id: params.actorUserId,
-          hidden_reason: params.reason,
-        }
-      : {
-          status: "rejected",
-        };
-  const updated = await supabase
-    .from("actions")
-    .update(update)
-    .eq("id", params.contentId)
-    .select("status, moderation_visibility, created_by_clerk_id")
-    .maybeSingle();
-
-  if (updated.error) throw new Error("Canonical action moderation update failed");
-  const updatedData: unknown = updated.data;
-  if (updatedData === null || updatedData === undefined) {
+  const currentData = await readCanonicalLegalContentAction(supabase, params.contentId);
+  if (!currentData) return emptyLegalContentMutationResult(true);
+  const beforeState = buildLegalContentSnapshot(currentData);
+  const updatedData = await persistCanonicalLegalContentAction({
+    supabase,
+    contentId: params.contentId,
+    action: params.action,
+    actorUserId: params.actorUserId,
+    reason: params.reason,
+  });
+  if (!updatedData) {
     return {
       supported: true,
       found: false,
@@ -125,20 +158,12 @@ export async function applyCanonicalLegalContentMutation(params: {
       authorEmail: null,
     };
   }
-  if (!isLegalContentActionRow(updatedData)) {
-    throw new Error("Canonical action moderation update returned invalid data");
-  }
 
   return {
     supported: true,
     found: true,
     beforeState,
-    afterState: {
-      source: "actions",
-      status: updatedData.status,
-      moderationVisibility: updatedData.moderation_visibility ?? "visible",
-      authorUserId: updatedData.created_by_clerk_id,
-    } satisfies LegalContentMutationSnapshot,
+    afterState: buildLegalContentSnapshot(updatedData),
     authorEmail: await resolveAuthorEmail(updatedData.created_by_clerk_id),
   };
 }

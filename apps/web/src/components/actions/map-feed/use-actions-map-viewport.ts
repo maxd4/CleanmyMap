@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import {
   createActionsMapViewport,
@@ -87,12 +87,246 @@ export function shouldApplyAutomaticViewport(params: {
   );
 }
 
+type AutomaticViewportResolution = {
+  viewport: MapViewportState | null | undefined;
+  hasPublicActions: boolean;
+  error: Error | null;
+};
+
+async function resolveAutomaticViewport(params: {
+  reference: MapReferencePoint | null;
+  stableFallback: MapViewportState | null | undefined;
+  fallbackViewport: MapViewportState | undefined;
+  useRemoteFallback: boolean;
+}): Promise<AutomaticViewportResolution> {
+  let nextViewport = params.stableFallback;
+  let hasPublicActions = params.fallbackViewport !== undefined && !params.reference;
+  let resolutionError: Error | null = null;
+  if (!params.useRemoteFallback && params.fallbackViewport !== undefined && !params.reference) {
+    // Homepage previews intentionally keep their supplied stable viewport
+    // when geolocation is unavailable; the public map uses the action
+    // resolver because it has no neutral viewport fallback.
+  } else {
+    try {
+      const resolution = await resolveInitialPublicMapViewport({
+        reference: params.reference,
+      });
+      nextViewport = resolution.viewport;
+      hasPublicActions = resolution.cityItems.length > 0;
+    } catch (error) {
+      const failure = resolveInitialViewportFailure({
+        stableFallback: params.stableFallback ?? (params.useRemoteFallback ? null : params.fallbackViewport),
+        error,
+      });
+      nextViewport = failure.viewport;
+      hasPublicActions = failure.hasPublicActions;
+      resolutionError = failure.error;
+    }
+  }
+  return { viewport: nextViewport, hasPublicActions, error: resolutionError };
+}
+
+function useActionsMapInitialGeolocation(params: {
+  fallbackViewport: MapViewportState | undefined;
+  useRemoteFallback: boolean;
+  resolutionAttempt: number;
+  isMountedRef: MutableRefObject<boolean>;
+  hasManualViewportChangeRef: MutableRefObject<boolean>;
+  hasStartedInitialResolutionRef: MutableRefObject<boolean>;
+  queueFallbackViewport: () => void;
+  applyAutomaticViewport: (
+    reference: MapReferencePoint | null,
+    stableFallback: MapViewportState | null | undefined,
+  ) => Promise<void>;
+}): void {
+  const {
+    fallbackViewport,
+    useRemoteFallback,
+    resolutionAttempt,
+    isMountedRef,
+    hasManualViewportChangeRef,
+    hasStartedInitialResolutionRef,
+    queueFallbackViewport,
+    applyAutomaticViewport,
+  } = params;
+  useEffect(() => {
+    isMountedRef.current = true;
+    if (hasStartedInitialResolutionRef.current) {
+      return () => {
+        isMountedRef.current = false;
+      };
+    }
+    hasStartedInitialResolutionRef.current = true;
+
+    const cleanup = () => {
+      isMountedRef.current = false;
+    };
+
+    const handleGeolocationFailure = () => {
+      if (hasManualViewportChangeRef.current) return;
+      if (useRemoteFallback) {
+        queueFallbackViewport();
+      } else {
+        void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyAutomaticViewport(null, fallbackViewport).catch(() => undefined);
+      }
+    };
+
+    if (!canRequestGeolocation() || typeof navigator === "undefined" || !navigator.geolocation) {
+      handleGeolocationFailure();
+      return cleanup;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (!isMountedRef.current || hasManualViewportChangeRef.current) return;
+        const gpsReference = {
+          latitude: Number(position.coords.latitude.toFixed(6)),
+          longitude: Number(position.coords.longitude.toFixed(6)),
+        };
+        const reference = selectMapReferencePoint(gpsReference, null);
+        if (reference) {
+          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyAutomaticViewport(
+            reference,
+            createActionsMapViewport([reference.latitude, reference.longitude], 12),
+          ).catch(() => undefined);
+        }
+      },
+      handleGeolocationFailure,
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 300000 },
+    );
+
+    return cleanup;
+  }, [
+    applyAutomaticViewport,
+    fallbackViewport,
+    hasManualViewportChangeRef,
+    hasStartedInitialResolutionRef,
+    isMountedRef,
+    queueFallbackViewport,
+    resolutionAttempt,
+    useRemoteFallback,
+  ]);
+}
+
+function useActionsMapFallbackViewport(params: {
+  fallbackViewport: MapViewportState | undefined;
+  isMountedRef: MutableRefObject<boolean>;
+  hasManualViewportChangeRef: MutableRefObject<boolean>;
+  hasAutomaticViewportAppliedRef: MutableRefObject<boolean>;
+  applyAutomaticViewport: (
+    reference: MapReferencePoint | null,
+    stableFallback: MapViewportState | null | undefined,
+  ) => Promise<void>;
+}): () => void {
+  const loadFallbackViewport = useCallback(async (): Promise<FallbackPayload | null> => {
+    try {
+      const response = await fetch("/api/users/map-viewport-fallback", {
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) return null;
+      return (await response.json()) as FallbackPayload;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  return useCallback(() => {
+    queueMicrotask(() => {
+      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ (async () => {
+        const payload = await loadFallbackViewport();
+        if (
+          !params.isMountedRef.current ||
+          params.hasManualViewportChangeRef.current ||
+          params.hasAutomaticViewportAppliedRef.current
+        ) return;
+
+        if (!payload) {
+          await params.applyAutomaticViewport(null, params.fallbackViewport);
+          return;
+        }
+        if (payload.reference) {
+          const residenceReference = selectMapReferencePoint(null, payload.reference);
+          if (residenceReference) {
+            await params.applyAutomaticViewport(
+              residenceReference,
+              payload.viewport ?? createActionsMapViewport(
+                [residenceReference.latitude, residenceReference.longitude],
+                12,
+              ),
+            );
+          }
+          return;
+        }
+        if (payload.viewport) {
+          await params.applyAutomaticViewport(
+            {
+              latitude: payload.viewport.center[0],
+              longitude: payload.viewport.center[1],
+            },
+            payload.viewport,
+          );
+          return;
+        }
+        await params.applyAutomaticViewport(null, params.fallbackViewport);
+      })().catch(() => undefined);
+    });
+  }, [loadFallbackViewport, params]);
+}
+
+function useActionsMapViewportChangeHandler(params: {
+  onViewportChange?: (viewport: MapViewportState) => void;
+  viewport: MapViewportState | null;
+  setViewport: (viewport: MapViewportState) => void;
+  hasReceivedInitialViewportReportRef: MutableRefObject<boolean>;
+  hasManualViewportChangeRef: MutableRefObject<boolean>;
+  pendingProgrammaticViewportRef: MutableRefObject<MapViewportState | null>;
+}): (nextViewport: MapViewportState) => void {
+  const {
+    onViewportChange,
+    viewport,
+    setViewport,
+    hasReceivedInitialViewportReportRef,
+    hasManualViewportChangeRef,
+    pendingProgrammaticViewportRef,
+  } = params;
+  return useCallback((nextViewport: MapViewportState) => {
+    const isProgrammaticViewport = sameViewportPosition(
+      nextViewport,
+      pendingProgrammaticViewportRef.current,
+    );
+    const isAlreadySelectedViewport = sameViewport(viewport, nextViewport);
+
+    if (!hasReceivedInitialViewportReportRef.current) {
+      hasReceivedInitialViewportReportRef.current = true;
+      if (isProgrammaticViewport) pendingProgrammaticViewportRef.current = null;
+      if (!isAlreadySelectedViewport) setViewport(nextViewport);
+      onViewportChange?.(nextViewport);
+      return;
+    }
+    if (isProgrammaticViewport) {
+      pendingProgrammaticViewportRef.current = null;
+      if (!isAlreadySelectedViewport) setViewport(nextViewport);
+      onViewportChange?.(nextViewport);
+      return;
+    }
+    hasManualViewportChangeRef.current = true;
+    if (!isAlreadySelectedViewport) setViewport(nextViewport);
+    onViewportChange?.(nextViewport);
+  }, [
+    hasManualViewportChangeRef,
+    hasReceivedInitialViewportReportRef,
+    onViewportChange,
+    pendingProgrammaticViewportRef,
+    setViewport,
+    viewport,
+  ]);
+}
+
 export function useActionsMapViewport(
   onViewportChange?: (viewport: MapViewportState) => void,
   options: ActionsMapViewportOptions = {},
 ) {
-  const fallbackViewport = options.fallbackViewport;
-  const useRemoteFallback = options.useRemoteFallback ?? true;
+  const fallbackViewport = options.fallbackViewport; const useRemoteFallback = options.useRemoteFallback ?? true;
   const [viewport, setViewport] = useState<MapViewportState | null>(
     fallbackViewport ?? null,
   );
@@ -125,45 +359,12 @@ export function useActionsMapViewport(
         return;
       }
 
-      let nextViewport = stableFallback;
-      let hasPublicActions = fallbackViewport !== undefined && !reference;
-      let resolutionError: Error | null = null;
-      if (!useRemoteFallback && fallbackViewport !== undefined && !reference) {
-        // Homepage previews intentionally keep their supplied stable viewport
-        // when geolocation is unavailable; the public map uses the action
-        // resolver because it has no neutral viewport fallback.
-      } else if (reference) {
-        try {
-          const resolution = await resolveInitialPublicMapViewport({
-            reference,
-          });
-          nextViewport = resolution.viewport;
-          hasPublicActions = resolution.cityItems.length > 0;
-        } catch (error) {
-          // Keep a useful location fallback when the bounded public resolution
-          // fails; do not fall back to the neutral world viewport.
-          const failure = resolveInitialViewportFailure({
-            stableFallback: stableFallback ?? (useRemoteFallback ? null : fallbackViewport),
-            error,
-          });
-          nextViewport = failure.viewport;
-          hasPublicActions = failure.hasPublicActions;
-          resolutionError = failure.error;
-        }
-      } else {
-        try {
-          const resolution = await resolveInitialPublicMapViewport({
-            reference: null,
-          });
-          nextViewport = resolution.viewport;
-          hasPublicActions = resolution.cityItems.length > 0;
-        } catch (error) {
-          const failure = resolveInitialViewportFailure({ stableFallback, error });
-          nextViewport = failure.viewport;
-          hasPublicActions = failure.hasPublicActions;
-          resolutionError = failure.error;
-        }
-      }
+      const resolution = await resolveAutomaticViewport({
+        reference,
+        stableFallback,
+        fallbackViewport,
+        useRemoteFallback,
+      });
 
       if (
         !isMountedRef.current ||
@@ -174,15 +375,15 @@ export function useActionsMapViewport(
       }
 
       hasAutomaticViewportAppliedRef.current = true;
-      setInitialViewportError(resolutionError);
-      setHasInitialPublicActions(hasPublicActions);
+      setInitialViewportError(resolution.error);
+      setHasInitialPublicActions(resolution.hasPublicActions);
       setIsInitialViewportResolved(true);
-      if (nextViewport) {
-        pendingProgrammaticViewportRef.current = nextViewport;
-        setRecenterViewport(nextViewport);
-        setViewportRequest(nextViewport);
+      if (resolution.viewport) {
+        pendingProgrammaticViewportRef.current = resolution.viewport;
+        setRecenterViewport(resolution.viewport);
+        setViewportRequest(resolution.viewport);
         setViewportRequestKey((current) => current + 1);
-        setViewport(nextViewport);
+        setViewport(resolution.viewport);
       }
     },
     [fallbackViewport, useRemoteFallback],
@@ -203,128 +404,24 @@ export function useActionsMapViewport(
     setResolutionAttempt((current) => current + 1);
   }, []);
 
-  const loadFallbackViewport = useCallback(async (): Promise<FallbackPayload | null> => {
-    try {
-      const response = await fetch("/api/users/map-viewport-fallback", {
-        headers: {
-          Accept: "application/json",
-        },
-      });
+  const queueFallbackViewport = useActionsMapFallbackViewport({
+    fallbackViewport,
+    isMountedRef,
+    hasManualViewportChangeRef,
+    hasAutomaticViewportAppliedRef,
+    applyAutomaticViewport,
+  });
 
-      if (!response.ok) {
-        return null;
-      }
-
-      return (await response.json()) as FallbackPayload;
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const queueFallbackViewport = useCallback(() => {
-    queueMicrotask(() => {
-      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ (async () => {
-        const payload = await loadFallbackViewport();
-        if (
-          !isMountedRef.current ||
-          hasManualViewportChangeRef.current ||
-          hasAutomaticViewportAppliedRef.current
-        ) {
-          return;
-        }
-
-        if (!payload) {
-          await applyAutomaticViewport(null, fallbackViewport);
-          return;
-        }
-
-        if (payload.reference) {
-          const residenceReference = selectMapReferencePoint(null, payload.reference);
-          if (residenceReference) {
-            await applyAutomaticViewport(
-              residenceReference,
-              payload.viewport ??
-                createActionsMapViewport(
-                  [residenceReference.latitude, residenceReference.longitude],
-                  12,
-                ),
-            );
-          }
-          return;
-        }
-
-        if (payload.viewport) {
-          await applyAutomaticViewport(
-            {
-              latitude: payload.viewport.center[0],
-              longitude: payload.viewport.center[1],
-            },
-            payload.viewport,
-          );
-          return;
-        }
-
-        await applyAutomaticViewport(null, fallbackViewport);
-      })().catch(() => undefined);
-    });
-  }, [applyAutomaticViewport, fallbackViewport, loadFallbackViewport]);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    if (hasStartedInitialResolutionRef.current) {
-      return () => {
-        isMountedRef.current = false;
-      };
-    }
-    hasStartedInitialResolutionRef.current = true;
-
-    const cleanup = () => {
-      isMountedRef.current = false;
-    };
-
-    const handleGeolocationFailure = () => {
-      if (!hasManualViewportChangeRef.current) {
-        if (useRemoteFallback) {
-          queueFallbackViewport();
-        } else {
-          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyAutomaticViewport(null, fallbackViewport).catch(() => undefined);
-        }
-      }
-    };
-
-    if (!canRequestGeolocation() || typeof navigator === "undefined" || !navigator.geolocation) {
-      handleGeolocationFailure();
-      return cleanup;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        if (!isMountedRef.current || hasManualViewportChangeRef.current) {
-          return;
-        }
-
-        const gpsReference = {
-          latitude: Number(position.coords.latitude.toFixed(6)),
-          longitude: Number(position.coords.longitude.toFixed(6)),
-        };
-        const reference = selectMapReferencePoint(gpsReference, null);
-        if (reference) {
-          void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyAutomaticViewport(
-            reference,
-            createActionsMapViewport([reference.latitude, reference.longitude], 12),
-          ).catch(() => undefined);
-        }
-      },
-      handleGeolocationFailure,
-      {
-        enableHighAccuracy: true,
-        timeout: 6000,
-        maximumAge: 300000,
-      },
-    );
-
-    return cleanup;
-  }, [applyAutomaticViewport, fallbackViewport, queueFallbackViewport, resolutionAttempt, useRemoteFallback]);
+  useActionsMapInitialGeolocation({
+    fallbackViewport,
+    useRemoteFallback,
+    resolutionAttempt,
+    isMountedRef,
+    hasManualViewportChangeRef,
+    hasStartedInitialResolutionRef,
+    queueFallbackViewport,
+    applyAutomaticViewport,
+  });
 
   const handleManualViewportInteraction = useCallback(() => {
     if (pendingProgrammaticViewportRef.current) {
@@ -334,43 +431,14 @@ export function useActionsMapViewport(
     pendingProgrammaticViewportRef.current = null;
   }, []);
 
-  const handleViewportChange = useCallback(
-    (nextViewport: MapViewportState) => {
-      const isProgrammaticViewport = sameViewportPosition(
-        nextViewport,
-        pendingProgrammaticViewportRef.current,
-      );
-      const isAlreadySelectedViewport = sameViewport(viewport, nextViewport);
-
-      if (!hasReceivedInitialViewportReportRef.current) {
-        hasReceivedInitialViewportReportRef.current = true;
-        if (isProgrammaticViewport) {
-          pendingProgrammaticViewportRef.current = null;
-        }
-        if (!isAlreadySelectedViewport) {
-          setViewport(nextViewport);
-        }
-        onViewportChange?.(nextViewport);
-        return;
-      }
-
-      if (isProgrammaticViewport) {
-        pendingProgrammaticViewportRef.current = null;
-        if (!isAlreadySelectedViewport) {
-          setViewport(nextViewport);
-        }
-        onViewportChange?.(nextViewport);
-        return;
-      }
-
-      hasManualViewportChangeRef.current = true;
-      if (!isAlreadySelectedViewport) {
-        setViewport(nextViewport);
-      }
-      onViewportChange?.(nextViewport);
-    },
-    [onViewportChange, viewport],
-  );
+  const handleViewportChange = useActionsMapViewportChangeHandler({
+    onViewportChange,
+    viewport,
+    setViewport,
+    hasReceivedInitialViewportReportRef,
+    hasManualViewportChangeRef,
+    pendingProgrammaticViewportRef,
+  });
 
   return {
     viewport,

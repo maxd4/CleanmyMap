@@ -37,16 +37,56 @@ type ResultsEventRow = {
   updated_at: string;
 };
 
+type ResultsEventIdentity = Record<string, unknown> & {
+  id: string;
+  action_id: string;
+  name: string;
+  location_label: string;
+  state: string;
+  starts_at: string;
+  ends_at: string | null;
+  official_timezone: string | null;
+};
+
+type ResultsEventRegulation = Record<string, unknown> & {
+  regulation_version: string;
+  regulation_status: "incomplete" | "complete";
+  regulation_source_reference: string | null;
+};
+
+type ResultsEventVisibility = Record<string, unknown> & {
+  mode: ResultsEventRow["mode"];
+  public_visibility: "private" | "published";
+  public_results_visibility: ResultsEventRow["public_results_visibility"];
+  updated_at: string;
+};
+
+function isResultsEventIdentity(value: Record<string, unknown>): value is ResultsEventIdentity {
+  return typeof value.id === "string" &&
+    typeof value.action_id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.location_label === "string" &&
+    typeof value.state === "string" &&
+    typeof value.starts_at === "string" &&
+    (value.ends_at === null || typeof value.ends_at === "string") &&
+    (value.official_timezone === null || typeof value.official_timezone === "string");
+}
+
+function isResultsEventRegulation(value: Record<string, unknown>): value is ResultsEventRegulation {
+  return typeof value.regulation_version === "string" &&
+    (value.regulation_status === "incomplete" || value.regulation_status === "complete") &&
+    (value.regulation_source_reference === null || typeof value.regulation_source_reference === "string");
+}
+
+function isResultsEventVisibility(value: Record<string, unknown>): value is ResultsEventVisibility {
+  return (value.mode === "casual" || value.mode === "world_cup" || value.mode === "mixed") &&
+    (value.public_visibility === "private" || value.public_visibility === "published") &&
+    (value.public_results_visibility === "hidden" || value.public_results_visibility === "provisional" || value.public_results_visibility === "certified") &&
+    typeof value.updated_at === "string";
+}
+
 function parseResultsEvent(value: unknown): ResultsEventRow | null {
-  if (!isRecord(value) || typeof value.id !== "string" || typeof value.action_id !== "string" || typeof value.name !== "string" ||
-    typeof value.location_label !== "string" || (value.mode !== "casual" && value.mode !== "world_cup" && value.mode !== "mixed") ||
-    typeof value.state !== "string" || typeof value.starts_at !== "string" || (value.ends_at !== null && typeof value.ends_at !== "string") ||
-    (value.official_timezone !== null && typeof value.official_timezone !== "string") || typeof value.regulation_version !== "string" ||
-    (value.regulation_status !== "incomplete" && value.regulation_status !== "complete") ||
-    (value.regulation_source_reference !== null && typeof value.regulation_source_reference !== "string") ||
-    (value.public_visibility !== "private" && value.public_visibility !== "published") ||
-    (value.public_results_visibility !== "hidden" && value.public_results_visibility !== "provisional" && value.public_results_visibility !== "certified") ||
-    typeof value.updated_at !== "string") return null;
+  if (!isRecord(value) || !isResultsEventIdentity(value) || !isResultsEventRegulation(value) || !isResultsEventVisibility(value)) return null;
   return {
     id: value.id,
     action_id: value.action_id,

@@ -33,15 +33,50 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+type EventAccessIdentity = Record<string, unknown> & {
+  id: string;
+  action_id: string;
+  created_by_clerk_id: string;
+  name: string;
+  event_slug: string | null;
+  state: string;
+};
+
+type EventAccessSchedule = Record<string, unknown> & {
+  starts_at: string;
+  ends_at: string | null;
+  official_timezone: string;
+};
+
+type EventAccessVisibility = Record<string, unknown> & {
+  mode: SpogomiEventAccessDecision["event"]["mode"];
+  public_visibility: "private" | "published";
+  public_results_visibility: "hidden" | "provisional" | "certified";
+};
+
+function isEventAccessIdentity(value: Record<string, unknown>): value is EventAccessIdentity {
+  return typeof value.id === "string" &&
+    typeof value.action_id === "string" &&
+    typeof value.created_by_clerk_id === "string" &&
+    typeof value.name === "string" &&
+    (value.event_slug === null || typeof value.event_slug === "string") &&
+    typeof value.state === "string";
+}
+
+function isEventAccessSchedule(value: Record<string, unknown>): value is EventAccessSchedule {
+  return typeof value.starts_at === "string" &&
+    (value.ends_at === null || typeof value.ends_at === "string") &&
+    typeof value.official_timezone === "string";
+}
+
+function isEventAccessVisibility(value: Record<string, unknown>): value is EventAccessVisibility {
+  return (value.mode === "casual" || value.mode === "world_cup" || value.mode === "mixed") &&
+    (value.public_visibility === "private" || value.public_visibility === "published") &&
+    (value.public_results_visibility === "hidden" || value.public_results_visibility === "provisional" || value.public_results_visibility === "certified");
+}
+
 function parseEventAccessRow(value: unknown): SpogomiEventAccessDecision["event"] | null {
-  if (!isRecord(value) || typeof value.id !== "string" || typeof value.action_id !== "string" ||
-    typeof value.created_by_clerk_id !== "string" || typeof value.name !== "string" ||
-    (value.event_slug !== null && typeof value.event_slug !== "string") ||
-    (value.mode !== "casual" && value.mode !== "world_cup" && value.mode !== "mixed") || typeof value.state !== "string" ||
-    typeof value.starts_at !== "string" || (value.ends_at !== null && typeof value.ends_at !== "string") ||
-    typeof value.official_timezone !== "string" ||
-    (value.public_visibility !== "private" && value.public_visibility !== "published") ||
-    (value.public_results_visibility !== "hidden" && value.public_results_visibility !== "provisional" && value.public_results_visibility !== "certified")) {
+  if (!isRecord(value) || !isEventAccessIdentity(value) || !isEventAccessSchedule(value) || !isEventAccessVisibility(value)) {
     return null;
   }
   return {

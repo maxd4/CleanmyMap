@@ -8,12 +8,17 @@ export function registerActionVisibilityScenarios({
 }: {
   mocks: ModerationScenarioMocks;
 }) {
-  const {
+  registerHideScenario(mocks);
+  registerCombinedEditScenario(mocks);
+  registerRestoreScenario(mocks);
+  registerApprovedRestoreScenario(mocks);
+  registerInvalidProjectionScenario(mocks);
+}
+
+function registerHideScenario({
     getSupabaseAdminClientMock,
     appendAdminOperationAuditMock,
-    copyValidatedActionToLocalStoreMock,
-    trackActionValidationBonusMock,
-  } = mocks;
+}: ModerationScenarioMocks) {
 
   it("hides an action through moderation visibility with reason and audit", async () => {
     let currentAction = {
@@ -132,8 +137,12 @@ export function registerActionVisibilityScenarios({
       }),
     );
   });
+}
 
-
+function registerCombinedEditScenario({
+  getSupabaseAdminClientMock,
+  appendAdminOperationAuditMock,
+}: ModerationScenarioMocks) {
   it("keeps visibility and impact changes together in one allowlisted snapshot", async () => {
     const harness = createActionSupabaseHarness();
     getSupabaseAdminClientMock.mockReturnValue({ from: harness.from });
@@ -201,8 +210,12 @@ export function registerActionVisibilityScenarios({
     expect(serializedDetails).not.toContain("Lieu interne");
     expect(serializedDetails).not.toContain("Auteur interne");
   });
+}
 
-
+function registerRestoreScenario({
+  getSupabaseAdminClientMock,
+  appendAdminOperationAuditMock,
+}: ModerationScenarioMocks) {
   it("restores moderation visibility without bypassing the action status", async () => {
     let currentAction = {
       status: "pending",
@@ -326,8 +339,14 @@ export function registerActionVisibilityScenarios({
       }),
     );
   });
+}
 
-
+function registerApprovedRestoreScenario({
+  getSupabaseAdminClientMock,
+  copyValidatedActionToLocalStoreMock,
+  trackActionValidationBonusMock,
+  appendAdminOperationAuditMock,
+}: ModerationScenarioMocks) {
   it("restores an approved action without replaying validation rewards", async () => {
     const updateMock = vi.fn((updates: Record<string, unknown>) => ({
       eq: vi.fn(() => ({
@@ -405,7 +424,11 @@ export function registerActionVisibilityScenarios({
       }),
     );
   });
+}
 
+function registerInvalidProjectionScenario({
+  getSupabaseAdminClientMock,
+}: ModerationScenarioMocks) {
   it("sanitizes an invalid visibility projection returned by Supabase", async () => {
     const selectMock = vi.fn((columns: string) => ({
       eq: vi.fn(() => ({
@@ -468,5 +491,4 @@ export function registerActionVisibilityScenarios({
     });
     expect(JSON.stringify(body)).not.toContain("leaked");
   });
-
 }

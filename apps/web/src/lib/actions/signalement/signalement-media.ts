@@ -80,22 +80,27 @@ function isSignalementParent(value: unknown): value is SignalementParent {
     (value.spot_type === "spot" || value.spot_type === "clean_place");
 }
 
+function hasSignalementMediaIdentity(value: Record<string, unknown>): boolean {
+  return typeof value.id === "string" && typeof value.signalement_id === "string" &&
+    typeof value.created_at === "string" && typeof value.created_by_clerk_id === "string" &&
+    typeof value.client_upload_id === "string";
+}
+
+function hasSignalementMediaStorage(value: Record<string, unknown>): boolean {
+  return value.storage_bucket === SIGNALEMENT_EVIDENCE_BUCKET &&
+    typeof value.storage_path === "string" && typeof value.original_name === "string" &&
+    isSignalementEvidenceMimeType(value.mime_type) && isSignalementMediaUploadState(value.upload_state);
+}
+
+function hasSignalementMediaDimensions(value: Record<string, unknown>): boolean {
+  return typeof value.size_bytes === "number" && Number.isFinite(value.size_bytes) &&
+    isNullableFiniteNumber(value.width) && isNullableFiniteNumber(value.height) &&
+    typeof value.sort_order === "number" && Number.isFinite(value.sort_order);
+}
+
 function isSignalementMediaRow(value: unknown): value is SignalementMediaRow {
-  return isActionRecord(value) &&
-    typeof value.id === "string" &&
-    typeof value.signalement_id === "string" &&
-    typeof value.created_at === "string" &&
-    typeof value.created_by_clerk_id === "string" &&
-    typeof value.client_upload_id === "string" &&
-    value.storage_bucket === SIGNALEMENT_EVIDENCE_BUCKET &&
-    typeof value.storage_path === "string" &&
-    typeof value.original_name === "string" &&
-    isSignalementEvidenceMimeType(value.mime_type) &&
-    typeof value.size_bytes === "number" && Number.isFinite(value.size_bytes) &&
-    isNullableFiniteNumber(value.width) &&
-    isNullableFiniteNumber(value.height) &&
-    typeof value.sort_order === "number" && Number.isFinite(value.sort_order) &&
-    isSignalementMediaUploadState(value.upload_state);
+  return isActionRecord(value) && hasSignalementMediaIdentity(value) &&
+    hasSignalementMediaStorage(value) && hasSignalementMediaDimensions(value);
 }
 
 export class SignalementMediaError extends Error {
@@ -115,7 +120,7 @@ export class SignalementMediaError extends Error {
   }
 }
 
-export function validateSignalementMediaInput(input: {
+type SignalementMediaUploadInput = {
   originalName: string;
   mimeType: string;
   sizeBytes: number;
@@ -123,7 +128,18 @@ export function validateSignalementMediaInput(input: {
   height?: number | null;
   sortOrder?: number;
   clientUploadId: string;
-}): asserts input is {
+};
+
+type SignalementMediaUploadParams = SignalementMediaUploadInput & {
+  userId: string;
+  signalementId: string;
+};
+
+type ValidatedSignalementMediaUploadParams = Omit<SignalementMediaUploadParams, "mimeType"> & {
+  mimeType: SignalementEvidenceMimeType;
+};
+
+export function validateSignalementMediaInput<T extends SignalementMediaUploadInput>(input: T): T & {
   originalName: string;
   mimeType: SignalementEvidenceMimeType;
   sizeBytes: number;
@@ -137,6 +153,10 @@ export function validateSignalementMediaInput(input: {
     maxSizeBytes: SIGNALEMENT_EVIDENCE_MAX_SIZE_BYTES,
     createError: (message) => new SignalementMediaError(message, "validation"),
   });
+  if (!isSignalementEvidenceMimeType(input.mimeType)) {
+    throw new SignalementMediaError("Le type MIME de la preuve est invalide.", "validation");
+  }
+  return input;
 }
 
 function extensionForMimeType(mimeType: SignalementEvidenceMimeType): string {
@@ -211,24 +231,107 @@ function normalizeStorageError(message: string): SignalementMediaError {
   return new SignalementMediaError(message, "storage_error");
 }
 
-export async function createSignalementMediaUploadIntent(
+async function retryFailedSignalementMediaRow(
   supabase: SupabaseClient,
-  params: {
-    userId: string;
-    signalementId: string;
-    originalName: string;
-    mimeType: string;
-    sizeBytes: number;
-    width?: number | null;
-    height?: number | null;
-    sortOrder?: number;
-    clientUploadId: string;
-  },
-): Promise<SignalementMediaUploadIntent | { mediaId: string; uploadState: "ready" }> {
-  validateSignalementMediaInput(params);
-  const parent = await getParent(supabase, params.signalementId);
-  await assertOwnerOrAdmin(params.userId, parent);
+  params: ValidatedSignalementMediaUploadParams,
+  row: SignalementMediaRow,
+): Promise<SignalementMediaRow> {
+  const rawUpdateResult: unknown = await supabase
+    .from("signalement_media")
+    .update({
+      upload_state: "pending",
+      failure_reason: null,
+      original_name: params.originalName.trim(),
+      mime_type: params.mimeType,
+      size_bytes: params.sizeBytes,
+      width: params.width ?? null,
+      height: params.height ?? null,
+      sort_order: params.sortOrder ?? row.sort_order,
+    })
+    .eq("id", row.id)
+    .select("*")
+    .single();
+  const updateResult = parseActionSupabaseResult(rawUpdateResult);
+  if (updateResult.error || !isSignalementMediaRow(updateResult.data)) {
+    throw normalizeStorageError("La nouvelle tentative photo ne peut pas être préparée.");
+  }
+  return updateResult.data;
+}
 
+async function resolveExistingSignalementMediaRow(
+  supabase: SupabaseClient,
+  params: ValidatedSignalementMediaUploadParams,
+  value: unknown,
+): Promise<{ row: SignalementMediaRow; alreadyReady: boolean }> {
+  if (!isSignalementMediaRow(value)) {
+    throw normalizeStorageError("La preuve photo ne peut pas être vérifiée.");
+  }
+  if (value.upload_state === "ready") return { row: value, alreadyReady: true };
+  if (value.upload_state === "failed") {
+    return { row: await retryFailedSignalementMediaRow(supabase, params, value), alreadyReady: false };
+  }
+  return { row: value, alreadyReady: false };
+}
+
+async function ensureSignalementMediaCapacity(
+  supabase: SupabaseClient,
+  signalementId: string,
+): Promise<void> {
+  const rawActiveResult: unknown = await supabase
+    .from("signalement_media")
+    .select("id", { count: "exact", head: true })
+    .eq("signalement_id", signalementId)
+    .in("upload_state", ["pending", "ready"]);
+  const activeResult = parseActionSupabaseResult(rawActiveResult);
+  if (activeResult.error) {
+    throw normalizeStorageError("Le nombre de preuves existantes ne peut pas être vérifié.");
+  }
+  if ((activeResult.count ?? 0) >= SIGNALEMENT_EVIDENCE_MAX_MEDIA) {
+    throw new SignalementMediaError(
+      "Ce signalement contient déjà le nombre maximal de preuves photo.",
+      "limit_reached",
+    );
+  }
+}
+
+async function insertSignalementMediaRow(
+  supabase: SupabaseClient,
+  params: ValidatedSignalementMediaUploadParams,
+): Promise<SignalementMediaRow> {
+  const mediaId = globalThis.crypto?.randomUUID?.();
+  if (!mediaId) {
+    throw normalizeStorageError("Impossible de générer l'identifiant de preuve.");
+  }
+  const rawInsertResult: unknown = await supabase
+    .from("signalement_media")
+    .insert({
+      id: mediaId,
+      signalement_id: params.signalementId,
+      created_by_clerk_id: params.userId,
+      client_upload_id: params.clientUploadId.trim(),
+      storage_bucket: SIGNALEMENT_EVIDENCE_BUCKET,
+      storage_path: buildSignalementEvidencePath(params.signalementId, mediaId, params.mimeType),
+      original_name: params.originalName.trim(),
+      mime_type: params.mimeType,
+      size_bytes: params.sizeBytes,
+      width: params.width ?? null,
+      height: params.height ?? null,
+      sort_order: params.sortOrder ?? 0,
+      upload_state: "pending",
+    })
+    .select("*")
+    .single();
+  const insertResult = parseActionSupabaseResult(rawInsertResult);
+  if (insertResult.error || !isSignalementMediaRow(insertResult.data)) {
+    throw normalizeStorageError("La preuve photo ne peut pas être enregistrée.");
+  }
+  return insertResult.data;
+}
+
+async function loadOrCreateSignalementMediaRow(
+  supabase: SupabaseClient,
+  params: ValidatedSignalementMediaUploadParams,
+): Promise<{ row: SignalementMediaRow; alreadyReady: boolean }> {
   const rawExistingResult: unknown = await supabase
     .from("signalement_media")
     .select("*")
@@ -240,85 +343,22 @@ export async function createSignalementMediaUploadIntent(
   if (existingResult.error) {
     throw normalizeStorageError("La preuve photo ne peut pas être préparée.");
   }
-
-  let row: SignalementMediaRow;
   if (existingResult.data) {
-    if (!isSignalementMediaRow(existingResult.data)) {
-      throw normalizeStorageError("La preuve photo ne peut pas être vérifiée.");
-    }
-    row = existingResult.data;
-    if (row.upload_state === "ready") {
-      return { mediaId: row.id, uploadState: "ready" };
-    }
-    if (row.upload_state === "failed") {
-      const rawUpdateResult: unknown = await supabase
-        .from("signalement_media")
-        .update({
-          upload_state: "pending",
-          failure_reason: null,
-          original_name: params.originalName.trim(),
-          mime_type: params.mimeType,
-          size_bytes: params.sizeBytes,
-          width: params.width ?? null,
-          height: params.height ?? null,
-          sort_order: params.sortOrder ?? row.sort_order,
-        })
-        .eq("id", row.id)
-        .select("*")
-        .single();
-      const updateResult = parseActionSupabaseResult(rawUpdateResult);
-      if (updateResult.error || !isSignalementMediaRow(updateResult.data)) {
-        throw normalizeStorageError("La nouvelle tentative photo ne peut pas être préparée.");
-      }
-      row = updateResult.data;
-    }
-  } else {
-    const rawActiveResult: unknown = await supabase
-      .from("signalement_media")
-      .select("id", { count: "exact", head: true })
-      .eq("signalement_id", params.signalementId)
-      .in("upload_state", ["pending", "ready"]);
-    const activeResult = parseActionSupabaseResult(rawActiveResult);
-    if (activeResult.error) {
-      throw normalizeStorageError("Le nombre de preuves existantes ne peut pas être vérifié.");
-    }
-    if ((activeResult.count ?? 0) >= SIGNALEMENT_EVIDENCE_MAX_MEDIA) {
-      throw new SignalementMediaError(
-        "Ce signalement contient déjà le nombre maximal de preuves photo.",
-        "limit_reached",
-      );
-    }
-
-    const mediaId = globalThis.crypto?.randomUUID?.();
-    if (!mediaId) {
-      throw normalizeStorageError("Impossible de générer l'identifiant de preuve.");
-    }
-    const mimeType = params.mimeType;
-    const rawInsertResult: unknown = await supabase
-      .from("signalement_media")
-      .insert({
-        id: mediaId,
-        signalement_id: params.signalementId,
-        created_by_clerk_id: params.userId,
-        client_upload_id: params.clientUploadId.trim(),
-        storage_bucket: SIGNALEMENT_EVIDENCE_BUCKET,
-        storage_path: buildSignalementEvidencePath(params.signalementId, mediaId, mimeType),
-        original_name: params.originalName.trim(),
-        mime_type: mimeType,
-        size_bytes: params.sizeBytes,
-        width: params.width ?? null,
-        height: params.height ?? null,
-        sort_order: params.sortOrder ?? 0,
-        upload_state: "pending",
-      })
-      .select("*")
-      .single();
-    const insertResult = parseActionSupabaseResult(rawInsertResult);
-    if (insertResult.error || !isSignalementMediaRow(insertResult.data)) {
-      throw normalizeStorageError("La preuve photo ne peut pas être enregistrée.");
-    }
-    row = insertResult.data;
+    return resolveExistingSignalementMediaRow(supabase, params, existingResult.data);
   }
+  await ensureSignalementMediaCapacity(supabase, params.signalementId);
+  return { row: await insertSignalementMediaRow(supabase, params), alreadyReady: false };
+}
+
+export async function createSignalementMediaUploadIntent(
+  supabase: SupabaseClient,
+  params: SignalementMediaUploadParams,
+): Promise<SignalementMediaUploadIntent | { mediaId: string; uploadState: "ready" }> {
+  const validatedParams = validateSignalementMediaInput(params);
+  const parent = await getParent(supabase, validatedParams.signalementId);
+  await assertOwnerOrAdmin(validatedParams.userId, parent);
+  const { row, alreadyReady } = await loadOrCreateSignalementMediaRow(supabase, validatedParams);
+  if (alreadyReady) return { mediaId: row.id, uploadState: "ready" };
 
   const signedUpload = await supabase.storage
     .from(SIGNALEMENT_EVIDENCE_BUCKET)
@@ -402,49 +442,66 @@ export async function finalizeSignalementMedia(
   return { media: toRecord(updated.data), alreadyReady: false };
 }
 
+async function assertCanReadSignalementMedia(
+  parent: SignalementParent,
+  userId: string | null,
+): Promise<void> {
+  const isPubliclyReadable = parent.status === "validated" || parent.status === "cleaned";
+  if (isPubliclyReadable || userId === null) {
+    if (isPubliclyReadable) return;
+    throw new SignalementMediaError("Les preuves de ce signalement ne sont pas publiques.", "forbidden");
+  }
+  if (parent.created_by_clerk_id === userId || parent.user_id === userId) return;
+  const adminAccess = await requireAdminAccess();
+  if (!adminAccess.ok) {
+    throw new SignalementMediaError("Les preuves de ce signalement ne sont pas publiques.", "forbidden");
+  }
+}
+
+async function loadReadySignalementMediaRows(
+  supabase: SupabaseClient,
+  signalementId: string,
+): Promise<SignalementMediaRow[]> {
+  const rawMediaResult: unknown = await supabase
+    .from("signalement_media")
+    .select("*")
+    .eq("signalement_id", signalementId)
+    .eq("upload_state", "ready")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  const mediaResult = parseActionSupabaseResult(rawMediaResult);
+  if (mediaResult.error) throw normalizeStorageError("Les preuves photo ne peuvent pas être chargées.");
+  if (mediaResult.data === null) return [];
+  if (!Array.isArray(mediaResult.data) || !mediaResult.data.every(isSignalementMediaRow)) {
+    throw normalizeStorageError("Les preuves photo reçues sont invalides.");
+  }
+  return mediaResult.data;
+}
+
+async function signSignalementMediaRows(
+  supabase: SupabaseClient,
+  rows: SignalementMediaRow[],
+): Promise<SignalementMediaReadItem[]> {
+  const items: SignalementMediaReadItem[] = [];
+  for (const row of rows) {
+    const record = toRecord(row);
+    const signed = await supabase.storage
+      .from(SIGNALEMENT_EVIDENCE_BUCKET)
+      .createSignedUrl(record.storagePath, SIGNALEMENT_EVIDENCE_SIGNED_URL_TTL_SECONDS);
+    if (signed.error || !signed.data?.signedUrl) {
+      throw normalizeStorageError("Une URL de preuve ne peut pas être générée.");
+    }
+    items.push({ ...record, signedUrl: signed.data.signedUrl });
+  }
+  return items;
+}
+
 export async function listSignalementMedia(
   supabase: SupabaseClient,
   params: { signalementId: string; userId: string | null },
 ): Promise<SignalementMediaReadItem[]> {
   const parent = await getParent(supabase, params.signalementId);
-  const isPubliclyReadable = parent.status === "validated" || parent.status === "cleaned";
-  let canRead = isPubliclyReadable;
-  if (params.userId && (parent.created_by_clerk_id === params.userId || parent.user_id === params.userId)) {
-    canRead = true;
-  } else if (params.userId && !canRead) {
-    const adminAccess = await requireAdminAccess();
-    canRead = adminAccess.ok;
-  }
-  if (!canRead) {
-    throw new SignalementMediaError("Les preuves de ce signalement ne sont pas publiques.", "forbidden");
-  }
-
-  const rawMediaResult: unknown = await supabase
-    .from("signalement_media")
-    .select("*")
-    .eq("signalement_id", params.signalementId)
-    .eq("upload_state", "ready")
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
-  const mediaResult = parseActionSupabaseResult(rawMediaResult);
-  if (mediaResult.error) {
-    throw normalizeStorageError("Les preuves photo ne peuvent pas être chargées.");
-  }
-
-  const items: SignalementMediaReadItem[] = [];
-  if (mediaResult.data === null) return items;
-  if (!Array.isArray(mediaResult.data) || !mediaResult.data.every(isSignalementMediaRow)) {
-    throw normalizeStorageError("Les preuves photo reçues sont invalides.");
-  }
-  for (const rawRow of mediaResult.data) {
-    const row = toRecord(rawRow);
-    const signed = await supabase.storage
-      .from(SIGNALEMENT_EVIDENCE_BUCKET)
-      .createSignedUrl(row.storagePath, SIGNALEMENT_EVIDENCE_SIGNED_URL_TTL_SECONDS);
-    if (signed.error || !signed.data?.signedUrl) {
-      throw normalizeStorageError("Une URL de preuve ne peut pas être générée.");
-    }
-    items.push({ ...row, signedUrl: signed.data.signedUrl });
-  }
-  return items;
+  await assertCanReadSignalementMedia(parent, params.userId);
+  const rows = await loadReadySignalementMediaRows(supabase, params.signalementId);
+  return signSignalementMediaRows(supabase, rows);
 }

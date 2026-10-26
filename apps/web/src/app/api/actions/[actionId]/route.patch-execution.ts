@@ -126,6 +126,169 @@ async function runPreparedActionPostProcessing({
   });
 }
 
+type PreparedActionExecution = {
+  scalarUpdateData: Record<string, unknown>;
+  hasGeometryContribution: boolean;
+  previousImpactSnapshot: Awaited<ReturnType<typeof captureActionUpdateParticipantImpactSnapshot>>;
+  organizersAlreadySynced: boolean;
+};
+
+async function prepareActionExecution({
+  supabase,
+  actionId,
+  userId,
+  current,
+  body,
+  updateData,
+  identity,
+}: {
+  supabase: Parameters<typeof ensureGpxGeometryContributionEligible>[0]["supabase"];
+  actionId: string;
+  userId: string;
+  current: EditableAction;
+  body: PreparedActionUpdate["body"];
+  updateData: Record<string, unknown>;
+  identity: Parameters<typeof syncUpdatedOrganizers>[0]["identity"];
+}): Promise<PreparedActionExecution | Response> {
+  const hasGeometryContribution = hasGpxGeometryContribution(updateData);
+  const eligibilityResponse = await ensureGpxGeometryContributionEligible({
+    supabase,
+    actionId,
+    userId,
+    updateData,
+  });
+  if (eligibilityResponse) return eligibilityResponse;
+
+  const scalarUpdateData = hasGeometryContribution
+    ? stripObservedGeometryProjectionFields(updateData)
+    : updateData;
+  const previousImpactSnapshot = await captureActionUpdateParticipantImpactSnapshot({
+    supabase,
+    actionId,
+    current,
+    body,
+  });
+  const organizersAlreadySynced = shouldSyncOrganizersBeforeFinalization({
+    body,
+    current,
+    updateData: scalarUpdateData,
+  });
+  if (organizersAlreadySynced) {
+    await syncUpdatedOrganizers({ supabase, actionId, body, userId, identity });
+  }
+
+  return {
+    scalarUpdateData,
+    hasGeometryContribution,
+    previousImpactSnapshot,
+    organizersAlreadySynced,
+  };
+}
+
+async function persistPreparedActionExecution({
+  supabase,
+  actionId,
+  userId,
+  current,
+  updateData,
+  hasGeometryContribution,
+  state,
+}: {
+  supabase: Parameters<typeof ensureGpxGeometryContributionEligible>[0]["supabase"];
+  actionId: string;
+  userId: string;
+  current: EditableAction;
+  updateData: Record<string, unknown>;
+  hasGeometryContribution: boolean;
+  state: PatchExecutionState;
+}): Promise<Response | boolean> {
+  state.adminErrorStage = "action_update";
+  await persistScalarActionUpdate({
+    supabase,
+    actionId,
+    userId,
+    current,
+    updateData,
+    state,
+  });
+
+  state.adminErrorStage = hasGeometryContribution
+    ? "geometry_contribution"
+    : state.adminErrorStage;
+  const geometryAccepted = hasGeometryContribution
+    ? await persistGeometryContribution({
+      supabase,
+      actionId,
+      userId,
+      updateData,
+      state,
+    })
+    : false;
+  if (geometryAccepted instanceof Response) return geometryAccepted;
+  return geometryAccepted;
+}
+
+async function finalizePreparedActionExecution({
+  state,
+  supabase,
+  actionId,
+  userId,
+  updateData,
+  body,
+  identity,
+  shouldAuditModeration,
+  previousImpactSnapshot,
+  adminAuditActorUserId,
+  adminAuditTargetUserId,
+  moderationOperation,
+  moderationReason,
+  organizersAlreadySynced,
+  appendAdminAuditOnce,
+  geometryAccepted,
+}: {
+  state: PatchExecutionState;
+  supabase: Parameters<typeof ensureGpxGeometryContributionEligible>[0]["supabase"];
+  actionId: string;
+  userId: string;
+  updateData: Record<string, unknown>;
+  body: PreparedActionUpdate["body"];
+  identity: Parameters<typeof syncUpdatedOrganizers>[0]["identity"];
+  shouldAuditModeration: boolean;
+  previousImpactSnapshot: Awaited<ReturnType<typeof captureActionUpdateParticipantImpactSnapshot>>;
+  adminAuditActorUserId: string;
+  adminAuditTargetUserId: string | null;
+  moderationOperation: string;
+  moderationReason: string | null;
+  organizersAlreadySynced: boolean;
+  appendAdminAuditOnce: AppendAdminAuditOnce;
+  geometryAccepted: boolean;
+}): Promise<void> {
+  await reconcileGeometryContributionProgressionIfNeeded({
+    accepted: geometryAccepted,
+    supabase,
+    actionId,
+    userId,
+  });
+  await runPreparedActionPostProcessing({
+    state,
+    supabase,
+    actionId,
+    updateData,
+    body,
+    userId,
+    identity,
+    shouldAuditModeration,
+    previousImpactSnapshot,
+    persistedActionRevision: state.persistedActionRevision,
+    adminAuditActorUserId,
+    adminAuditTargetUserId,
+    moderationOperation,
+    moderationReason,
+    organizersAlreadySynced,
+    appendAdminAuditOnce,
+  });
+}
+
 export async function executePreparedActionUpdate({
   supabase,
   actionId,
@@ -159,80 +322,44 @@ export async function executePreparedActionUpdate({
   state.auditSnapshots = shouldAuditModeration
     ? buildActionAuditSnapshots(current, body, currentMetadata)
     : null;
-
-  const hasGeometryContribution = hasGpxGeometryContribution(updateData);
-  const eligibilityResponse = await ensureGpxGeometryContributionEligible({
+  const execution = await prepareActionExecution({
     supabase,
     actionId,
     userId,
+    current,
+    body,
     updateData,
+    identity,
   });
-  if (eligibilityResponse) return eligibilityResponse;
+  if (execution instanceof Response) return execution;
 
-  const scalarUpdateData = hasGeometryContribution
-    ? stripObservedGeometryProjectionFields(updateData)
-    : updateData;
-  const previousImpactSnapshot = await captureActionUpdateParticipantImpactSnapshot({
-    supabase,
-    actionId,
-    current,
-    body,
-  });
-  const organizersAlreadySynced = shouldSyncOrganizersBeforeFinalization({
-    body,
-    current,
-    updateData: scalarUpdateData,
-  });
-  if (organizersAlreadySynced) {
-    await syncUpdatedOrganizers({ supabase, actionId, body, userId, identity });
-  }
-
-  state.adminErrorStage = "action_update";
-  await persistScalarActionUpdate({
+  const geometryAccepted = await persistPreparedActionExecution({
     supabase,
     actionId,
     userId,
     current,
-    updateData: scalarUpdateData,
+    updateData: execution.scalarUpdateData,
+    hasGeometryContribution: execution.hasGeometryContribution,
     state,
   });
-
-  state.adminErrorStage = hasGeometryContribution
-    ? "geometry_contribution"
-    : state.adminErrorStage;
-  const geometryAccepted = hasGeometryContribution
-    ? await persistGeometryContribution({
-      supabase,
-      actionId,
-      userId,
-      updateData,
-      state,
-    })
-    : false;
   if (geometryAccepted instanceof Response) return geometryAccepted;
-  await reconcileGeometryContributionProgressionIfNeeded({
-    accepted: geometryAccepted,
-    supabase,
-    actionId,
-    userId,
-  });
-  await runPreparedActionPostProcessing({
+  await finalizePreparedActionExecution({
     state,
     supabase,
     actionId,
-    updateData: scalarUpdateData,
-    body,
     userId,
+    updateData: execution.scalarUpdateData,
+    body,
     identity,
     shouldAuditModeration,
-    previousImpactSnapshot,
-    persistedActionRevision: state.persistedActionRevision,
+    previousImpactSnapshot: execution.previousImpactSnapshot,
     adminAuditActorUserId,
     adminAuditTargetUserId,
     moderationOperation,
     moderationReason,
-    organizersAlreadySynced,
+    organizersAlreadySynced: execution.organizersAlreadySynced,
     appendAdminAuditOnce,
+    geometryAccepted,
   });
   return body;
 }

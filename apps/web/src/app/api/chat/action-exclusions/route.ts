@@ -114,67 +114,137 @@ async function mutateExclusion(request: Request, exclude: boolean) {
     if (!context.identity || !context.action || !context.supabase) {
       return NextResponse.json({ error: "Vous n'êtes pas autorisé à modérer cette discussion." }, { status: 403 });
     }
-    if (exclude && parsed.data.userId === context.action.created_by_clerk_id && context.identity.activeRole !== "admin" && context.identity.activeRole !== "max") {
-      return NextResponse.json({ error: "Le créateur principal ne peut pas être exclu par un organisateur secondaire." }, { status: 403 });
-    }
+    const targetGuard = validateExclusionTarget({
+      exclude,
+      targetUserId: parsed.data.userId,
+      creatorUserId: context.action.created_by_clerk_id,
+      activeRole: context.identity.activeRole,
+    });
+    if (targetGuard) return targetGuard;
 
     const conversationId = await resolveConversationId(context.supabase, parsed.data.actionId);
     if (!conversationId) return NextResponse.json({ error: "Discussion introuvable." }, { status: 404 });
 
     if (exclude) {
-      const excludedAt = new Date().toISOString();
-      const rawResult: unknown = await context.supabase.from("action_conversation_exclusions").upsert({
-        conversation_id: conversationId,
-        user_id: parsed.data.userId,
-        excluded_by_user_id: userId,
-        excluded_at: excludedAt,
-        reason: parsed.data.reason ?? null,
-        active: true,
-        reinstated_at: null,
-        reinstated_by_user_id: null,
-      }, { onConflict: "conversation_id,user_id" }).select().single();
-      const result = parseChatSupabaseResult(rawResult);
-      if (result.error) throw result.error;
-      const exclusion = parseChatSingleRow(result.data, isChatActionExclusionRuntimeRow);
-      if (!exclusion) throw new Error("La réponse de l'exclusion de discussion est invalide.");
-      await appendActionModerationAudit({
-        operationId: `action-conversation-exclude:${conversationId}:${parsed.data.userId}:${excludedAt}`,
-        actorUserId: userId,
-        targetActionId: parsed.data.actionId,
-        operation: "exclude_action_conversation_user",
-        outcome: "success",
-        reason: parsed.data.reason ?? null,
-        newValue: { active: true },
+      return excludeConversationUser({
+        supabase: context.supabase,
+        conversationId,
+        actionId: parsed.data.actionId,
         targetUserId: parsed.data.userId,
-        details: { conversationId },
+        actorUserId: userId,
+        reason: parsed.data.reason ?? null,
       });
-      return NextResponse.json({ exclusion }, { status: 201 });
     }
 
-    const reinstatedAt = new Date().toISOString();
-    const rawResult: unknown = await context.supabase.from("action_conversation_exclusions").update({
-      active: false,
-      reinstated_at: reinstatedAt,
-      reinstated_by_user_id: userId,
-    }).eq("conversation_id", conversationId).eq("user_id", parsed.data.userId).select().maybeSingle();
-    const result = parseChatSupabaseResult(rawResult);
-    if (result.error) throw result.error;
-    const exclusion = parseChatSingleRow(result.data, isChatActionExclusionRuntimeRow);
-    if (!exclusion) return NextResponse.json({ error: "Exclusion introuvable." }, { status: 404 });
-    await appendActionModerationAudit({
-      operationId: `action-conversation-reinstate:${conversationId}:${parsed.data.userId}:${reinstatedAt}`,
-      actorUserId: userId,
-      targetActionId: parsed.data.actionId,
-      operation: "reinstate_action_conversation_user",
-      outcome: "success",
-      reason: parsed.data.reason ?? null,
-      previousValue: { active: true },
-      newValue: { active: false, reinstatedAt },
+    return reinstateConversationUser({
+      supabase: context.supabase,
+      conversationId,
+      actionId: parsed.data.actionId,
       targetUserId: parsed.data.userId,
-      details: { conversationId },
+      actorUserId: userId,
+      reason: parsed.data.reason ?? null,
     });
-    return NextResponse.json({ exclusion });
   } catch (error) {
     return handleApiError(error, `${exclude ? "POST" : "PATCH"} /api/chat/action-exclusions`);
   }
+}
+
+function validateExclusionTarget(params: {
+  exclude: boolean;
+  targetUserId: string;
+  creatorUserId: string;
+  activeRole: string | null | undefined;
+}): Response | null {
+  if (
+    params.exclude &&
+    params.targetUserId === params.creatorUserId &&
+    params.activeRole !== "admin" &&
+    params.activeRole !== "max"
+  ) {
+    return NextResponse.json(
+      { error: "Le créateur principal ne peut pas être exclu par un organisateur secondaire." },
+      { status: 403 },
+    );
+  }
+  return null;
+}
+
+async function excludeConversationUser(params: {
+  supabase: ReturnType<typeof getSupabaseServerClient>;
+  conversationId: string;
+  actionId: string;
+  targetUserId: string;
+  actorUserId: string;
+  reason: string | null;
+}): Promise<Response> {
+  const excludedAt = new Date().toISOString();
+  const rawResult: unknown = await params.supabase
+    .from("action_conversation_exclusions")
+    .upsert({
+      conversation_id: params.conversationId,
+      user_id: params.targetUserId,
+      excluded_by_user_id: params.actorUserId,
+      excluded_at: excludedAt,
+      reason: params.reason,
+      active: true,
+      reinstated_at: null,
+      reinstated_by_user_id: null,
+    }, { onConflict: "conversation_id,user_id" })
+    .select()
+    .single();
+  const result = parseChatSupabaseResult(rawResult);
+  if (result.error) throw result.error;
+  const exclusion = parseChatSingleRow(result.data, isChatActionExclusionRuntimeRow);
+  if (!exclusion) throw new Error("La réponse de l'exclusion de discussion est invalide.");
+  await appendActionModerationAudit({
+    operationId: `action-conversation-exclude:${params.conversationId}:${params.targetUserId}:${excludedAt}`,
+    actorUserId: params.actorUserId,
+    targetActionId: params.actionId,
+    operation: "exclude_action_conversation_user",
+    outcome: "success",
+    reason: params.reason,
+    newValue: { active: true },
+    targetUserId: params.targetUserId,
+    details: { conversationId: params.conversationId },
+  });
+  return NextResponse.json({ exclusion }, { status: 201 });
+}
+
+async function reinstateConversationUser(params: {
+  supabase: ReturnType<typeof getSupabaseServerClient>;
+  conversationId: string;
+  actionId: string;
+  targetUserId: string;
+  actorUserId: string;
+  reason: string | null;
+}): Promise<Response> {
+  const reinstatedAt = new Date().toISOString();
+  const rawResult: unknown = await params.supabase
+    .from("action_conversation_exclusions")
+    .update({
+      active: false,
+      reinstated_at: reinstatedAt,
+      reinstated_by_user_id: params.actorUserId,
+    })
+    .eq("conversation_id", params.conversationId)
+    .eq("user_id", params.targetUserId)
+    .select()
+    .maybeSingle();
+  const result = parseChatSupabaseResult(rawResult);
+  if (result.error) throw result.error;
+  const exclusion = parseChatSingleRow(result.data, isChatActionExclusionRuntimeRow);
+  if (!exclusion) return NextResponse.json({ error: "Exclusion introuvable." }, { status: 404 });
+  await appendActionModerationAudit({
+    operationId: `action-conversation-reinstate:${params.conversationId}:${params.targetUserId}:${reinstatedAt}`,
+    actorUserId: params.actorUserId,
+    targetActionId: params.actionId,
+    operation: "reinstate_action_conversation_user",
+    outcome: "success",
+    reason: params.reason,
+    previousValue: { active: true },
+    newValue: { active: false, reinstatedAt },
+    targetUserId: params.targetUserId,
+    details: { conversationId: params.conversationId },
+  });
+  return NextResponse.json({ exclusion });
 }

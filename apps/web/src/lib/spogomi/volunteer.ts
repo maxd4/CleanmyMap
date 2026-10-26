@@ -93,52 +93,116 @@ function isVolunteerMissionKind(value: unknown): value is SpogomiRecognitionKind
   return value === "collector" || value === "referee" || value === "organizer" || value === "finish_control" || value === "field_safety" || value === "weighing_sorting" || value === "logistics_support";
 }
 
-function parseVolunteerSourceSnapshot(value: unknown): SpogomiVolunteerCertificate["sourceSnapshot"] {
-  if (!isRecord(value) || !isRecord(value.event) || !Array.isArray(value.missions)) throw new Error("La source du certificat bénévole SPOGOMI est invalide.");
-  const event = value.event;
-  if (typeof event.eventId !== "string" || (event.divisionId !== undefined && event.divisionId !== null && typeof event.divisionId !== "string") ||
-    typeof event.eventName !== "string" || (event.eventSlug !== null && typeof event.eventSlug !== "string") || typeof event.eventPublic !== "boolean" ||
-    typeof event.locationLabel !== "string" || typeof event.eventDate !== "string" || typeof event.eventState !== "string" ||
-    (event.participantId !== null && typeof event.participantId !== "string") || typeof event.identityVerified !== "boolean" ||
-    (event.attendanceStatus !== null && event.attendanceStatus !== "unknown" && event.attendanceStatus !== "present" && event.attendanceStatus !== "absent") ||
-    typeof event.actionParticipationConfirmed !== "boolean") throw new Error("La source du certificat bénévole SPOGOMI est invalide.");
-  const missions = value.missions.map((mission): SpogomiVolunteerMission => {
-    if (!isRecord(mission) || typeof mission.id !== "string" || typeof mission.eventId !== "string" ||
-      (mission.divisionId !== undefined && typeof mission.divisionId !== "string") || typeof mission.eventName !== "string" ||
-      typeof mission.locationLabel !== "string" || typeof mission.eventDate !== "string" ||
-      !isVolunteerMissionKind(mission.kind) ||
-      (mission.status !== "certified" && mission.status !== "revoked") ||
-      (mission.certifiedAt !== null && typeof mission.certifiedAt !== "string") || typeof mission.evidenceReference !== "string" ||
-      typeof mission.certificationVersion !== "string") throw new Error("La source du certificat bénévole SPOGOMI est invalide.");
-    return {
-      id: mission.id,
-      eventId: mission.eventId,
-      ...(typeof mission.divisionId === "string" ? { divisionId: mission.divisionId } : {}),
-      eventName: mission.eventName,
-      locationLabel: mission.locationLabel,
-      eventDate: mission.eventDate,
-      kind: mission.kind,
-      status: mission.status,
-      certifiedAt: mission.certifiedAt,
-      evidenceReference: mission.evidenceReference,
-      certificationVersion: mission.certificationVersion,
-    };
-  });
+function invalidVolunteerSource(): never {
+  throw new Error("La source du certificat bénévole SPOGOMI est invalide.");
+}
+
+type VolunteerEventSnapshotIdentity = Row & {
+  eventId: string;
+  divisionId?: string | null;
+  eventName: string;
+  eventSlug: string | null;
+  eventPublic: boolean;
+  locationLabel: string;
+  eventDate: string;
+  eventState: string;
+};
+
+type VolunteerEventSnapshotParticipation = Row & {
+  participantId: string | null;
+  identityVerified: boolean;
+  attendanceStatus: "unknown" | "present" | "absent" | null;
+  actionParticipationConfirmed: boolean;
+};
+
+function hasVolunteerEventSnapshotIdentity(value: Row): value is VolunteerEventSnapshotIdentity {
+  return typeof value.eventId === "string" &&
+    (value.divisionId === undefined || value.divisionId === null || typeof value.divisionId === "string") &&
+    typeof value.eventName === "string" &&
+    (value.eventSlug === null || typeof value.eventSlug === "string") &&
+    typeof value.eventPublic === "boolean" && typeof value.locationLabel === "string" &&
+    typeof value.eventDate === "string" && typeof value.eventState === "string";
+}
+
+function hasVolunteerEventSnapshotParticipation(value: Row): value is VolunteerEventSnapshotParticipation {
+  return (value.participantId === null || typeof value.participantId === "string") &&
+    typeof value.identityVerified === "boolean" &&
+    (value.attendanceStatus === null || value.attendanceStatus === "unknown" || value.attendanceStatus === "present" || value.attendanceStatus === "absent") &&
+    typeof value.actionParticipationConfirmed === "boolean";
+}
+
+function parseVolunteerEventSnapshot(value: unknown): Omit<SpogomiVolunteerEvent, "missions"> {
+  if (!isRecord(value) || !hasVolunteerEventSnapshotIdentity(value) || !hasVolunteerEventSnapshotParticipation(value)) return invalidVolunteerSource();
   return {
-    event: {
-      eventId: event.eventId,
-      divisionId: event.divisionId,
-      eventName: event.eventName,
-      eventSlug: event.eventSlug,
-      eventPublic: event.eventPublic,
-      locationLabel: event.locationLabel,
-      eventDate: event.eventDate,
-      eventState: event.eventState,
-      participantId: event.participantId,
-      identityVerified: event.identityVerified,
-      attendanceStatus: event.attendanceStatus,
-      actionParticipationConfirmed: event.actionParticipationConfirmed,
-    },
+    eventId: value.eventId,
+    divisionId: value.divisionId,
+    eventName: value.eventName,
+    eventSlug: value.eventSlug,
+    eventPublic: value.eventPublic,
+    locationLabel: value.locationLabel,
+    eventDate: value.eventDate,
+    eventState: value.eventState,
+    participantId: value.participantId,
+    identityVerified: value.identityVerified,
+    attendanceStatus: value.attendanceStatus,
+    actionParticipationConfirmed: value.actionParticipationConfirmed,
+  };
+}
+
+type VolunteerMissionIdentity = Row & {
+  id: string;
+  eventId: string;
+  divisionId?: string;
+  eventName: string;
+  locationLabel: string;
+  eventDate: string;
+  evidenceReference: string;
+  certificationVersion: string;
+};
+
+type VolunteerMissionState = Row & {
+  kind: SpogomiRecognitionKind;
+  status: "certified" | "revoked";
+  certifiedAt: string | null;
+};
+
+function hasVolunteerMissionIdentity(value: Row): value is VolunteerMissionIdentity {
+  return typeof value.id === "string" && typeof value.eventId === "string" &&
+    (value.divisionId === undefined || typeof value.divisionId === "string") &&
+    typeof value.eventName === "string" && typeof value.locationLabel === "string" &&
+    typeof value.eventDate === "string" && typeof value.evidenceReference === "string" &&
+    typeof value.certificationVersion === "string";
+}
+
+function hasVolunteerMissionState(value: Row): value is VolunteerMissionState {
+  return isVolunteerMissionKind(value.kind) &&
+    (value.status === "certified" || value.status === "revoked") &&
+    (value.certifiedAt === null || typeof value.certifiedAt === "string");
+}
+
+function parseVolunteerMission(value: unknown): SpogomiVolunteerMission {
+  if (!isRecord(value) || !hasVolunteerMissionIdentity(value) || !hasVolunteerMissionState(value)) return invalidVolunteerSource();
+  return {
+    id: value.id,
+    eventId: value.eventId,
+    ...(typeof value.divisionId === "string" ? { divisionId: value.divisionId } : {}),
+    eventName: value.eventName,
+    locationLabel: value.locationLabel,
+    eventDate: value.eventDate,
+    kind: value.kind,
+    status: value.status,
+    certifiedAt: value.certifiedAt,
+    evidenceReference: value.evidenceReference,
+    certificationVersion: value.certificationVersion,
+  };
+}
+
+function parseVolunteerSourceSnapshot(value: unknown): SpogomiVolunteerCertificate["sourceSnapshot"] {
+  if (!isRecord(value) || !isRecord(value.event) || !Array.isArray(value.missions)) return invalidVolunteerSource();
+  const event = parseVolunteerEventSnapshot(value.event);
+  const missions = value.missions.map(parseVolunteerMission);
+  return {
+    event,
     missions,
   };
 }
@@ -245,11 +309,41 @@ export async function loadSpogomiVolunteerSummaryForUser(supabase: SupabaseClien
   };
 }
 
+type CertificateRow = {
+  id: string;
+  certificate_reference: string;
+  user_id: string;
+  event_id: string;
+  division_id: string | null;
+  source_fingerprint: string;
+  source_snapshot: unknown;
+  status: "active" | "revoked" | "replaced";
+  issued_at: string;
+  revoked_at: string | null;
+  revocation_reason: string | null;
+};
+
+function isCertificateRow(value: unknown): value is CertificateRow {
+  if (!isRecord(value)) return false;
+  return hasCertificateIdentity(value) && hasCertificateLifecycle(value);
+}
+
+function hasCertificateIdentity(value: Row): boolean {
+  return typeof value.id === "string" && typeof value.certificate_reference === "string" &&
+    typeof value.user_id === "string" && typeof value.event_id === "string" &&
+    (value.division_id === null || typeof value.division_id === "string") &&
+    typeof value.source_fingerprint === "string";
+}
+
+function hasCertificateLifecycle(value: Row): boolean {
+  return (value.status === "active" || value.status === "revoked" || value.status === "replaced") &&
+    typeof value.issued_at === "string" &&
+    (value.revoked_at === null || typeof value.revoked_at === "string") &&
+    (value.revocation_reason === null || typeof value.revocation_reason === "string");
+}
+
 function mapCertificate(value: unknown): SpogomiVolunteerCertificate {
-  if (!isRecord(value) || typeof value.id !== "string" || typeof value.certificate_reference !== "string" || typeof value.user_id !== "string" ||
-    typeof value.event_id !== "string" || (value.division_id !== null && typeof value.division_id !== "string") || typeof value.source_fingerprint !== "string" ||
-    (value.status !== "active" && value.status !== "revoked" && value.status !== "replaced") || typeof value.issued_at !== "string" ||
-    (value.revoked_at !== null && typeof value.revoked_at !== "string") || (value.revocation_reason !== null && typeof value.revocation_reason !== "string")) {
+  if (!isCertificateRow(value)) {
     throw new Error("La réponse de certificat bénévole SPOGOMI est invalide.");
   }
   return {
