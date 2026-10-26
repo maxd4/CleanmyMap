@@ -69,8 +69,9 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | `apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts` | EXTRACTED_PURE_CONTRACT | CURRENT | préserver les modifications utilisateur, le premier identifiant persistant et la publication toujours explicite | nouvelle responsabilité autonome réintroduite dans le workflow ou couplage qui compromet la reprise et la publication explicite |
 | `apps/web/src/lib/spogomi/preparation-service.ts` | COHESIVE_SINGLE_FILE | NONE | préserver les contrats d'import de roster et de composition, les verrous de reprise et les RPC transactionnelles | nouveau consommateur indépendant d'import ou de composition, ou persistance d'un des deux workflows déplacée vers un owner dédié |
 | `apps/web/src/lib/reports/report-generation-history-store.ts` | COHESIVE_SINGLE_FILE | NONE | préserver la cohérence snapshot/métadonnées, l'ownership Clerk et les résolutions direct/derived | nouveau contrat de lecture ou de persistance indépendant, ou divergence entre historique et snapshot |
-| `apps/web/src/app/api/api-boundary.test.ts` | ALREADY_MODULARIZED | NONE | séparer l'inventaire des routes de l'analyse d'évidence sans perdre les mêmes helpers canoniques | nouvelle famille de contrat d'évidence ou nouvelle dépendance de parcours HTTP indépendante |
-| `apps/web/src/app/api/api-boundary-analysis.ts` | ALREADY_MODULARIZED | NONE | conserver l'analyse locale des méthodes, imports et délégations comme owner partagé des suites API | nouvelle analyse indépendante qui ne relève plus de l'inventaire ou de l'évidence |
+| `apps/web/src/app/api/api-boundary.test.ts` | ALREADY_MODULARIZED | NONE | conserver les assertions d'inventaire, d'assemblage et de contrat d'autorisation sans importer une suite de tests | nouvelle famille de contrat d'inventaire ou nouvelle dépendance de parcours HTTP indépendante |
+| `apps/web/src/app/api/api-boundary-analysis.ts` | ALREADY_MODULARIZED | NONE | conserver les primitives d'inventaire et d'extraction des méthodes comme owner partagé, sans absorber l'analyse d'évidence | nouvelle analyse de parcours ou de méthodes qui ne relève plus de l'inventaire partagé |
+| `apps/web/src/app/api/api-boundary-evidence-analysis.ts` | ALREADY_MODULARIZED | NONE | conserver l'owner neutre de résolution des imports, analyse AST, délégations et preuves d'invocation | nouvelle famille de preuve ou dépendance aux déclarations Vitest dans l'analyseur |
 | `apps/web/src/app/api/reports/generations/route.test.ts` | ALREADY_MODULARIZED | NONE | préserver l'ordre AuthN → quota → source → persistance et les assertions d'incertitude | nouveau flux de rapport indépendant ou fixture qui porte un contrat métier autonome |
 | `apps/web/src/app/api/reports/generations/route.test.helpers.ts` | ALREADY_MODULARIZED | NONE | préserver les mocks de frontières et les defaults par méthode | nouveau owner de mock ou nouvelle frontière de route indépendante |
 | `apps/web/src/app/api/reports/generations/route.get.test.ts` | ALREADY_MODULARIZED | NONE | préserver l'ownership, les filtres et l'absence d'accès quota en lecture | nouvelle famille de lecture historique indépendante |
@@ -750,18 +751,18 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 
 | Champ | Valeur |
 | --- | --- |
-| RESPONSIBILITIES | inventaire des méthodes API, assemblage des contrats et analyse statique d'évidence de handlers |
-| PUBLIC_CONTRACTS | tests Vitest du contrat `API_AUTHORIZATION_CONTRACT` et helpers d'analyse importés par la suite d'évidence |
+| RESPONSIBILITIES | tests du contrat d'inventaire des méthodes API et de l'assemblage des contrats d'autorisation |
+| PUBLIC_CONTRACTS | assertions Vitest du contrat `API_AUTHORIZATION_CONTRACT` et des collisions de clés |
 | SIDE_EFFECTS | lecture du tree API et analyse TypeScript en mémoire ; aucun appel réseau ni effet métier |
-| MAIN_CONSUMERS | suite d'inventaire et `api-boundary.evidence.test.ts` |
-| TEST_BOUNDARY | tests d'inventaire des routes d'un côté ; scénarios d'invocation, alias et callbacks de l'autre |
-| COUPLING | les scénarios partagent le même analyseur de portée et de délégation ; la séparation porte sur les contrats testés |
-| NATURAL_EXTRACTION_BOUNDARY | `api-boundary-analysis.ts` porte les primitives communes de parcours et d'analyse ; la façade d'inventaire et la suite d'évidence restent séparées par contrat |
+| MAIN_CONSUMERS | suite `api-boundary.test.ts` et ses modules d'analyse non-test |
+| TEST_BOUNDARY | inventaire exhaustif, collisions et présence des décisions d'autorisation dans cette suite ; l'invocation, les alias et les callbacks sont vérifiés par la suite d'évidence |
+| COUPLING | la suite consomme des primitives neutres, sans importer `api-boundary.evidence.test.ts` ni porter son analyseur |
+| NATURAL_EXTRACTION_BOUNDARY | `api-boundary-analysis.ts` porte l'inventaire et les méthodes ; `api-boundary-evidence-analysis.ts` porte la résolution et l'analyse d'évidence |
 | ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
-| RATIONALE | l'analyse partagée est sortie dans un owner test-only cohésif ; la façade conserve les propriétaires et les imports existants, tandis que les scénarios d'évidence restent dans leur suite dédiée |
+| RATIONALE | les deux contrats de sécurité sont isolés par suite ; toutes les primitives d'analyse sont dans des modules TypeScript neutres, ce qui garantit 10 tests d'inventaire et 10 scénarios d'évidence sans double collecte |
 | PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | séparer l'inventaire des routes de l'analyse d'évidence sans perdre les mêmes helpers canoniques |
-| NEXT_TRIGGER | nouvelle famille de contrat d'évidence ou nouvelle dépendance de parcours HTTP indépendante |
+| DEPENDENCY_OR_BLOCKER | conserver les assertions d'inventaire, d'assemblage et de contrat d'autorisation sans importer une suite de tests |
+| NEXT_TRIGGER | nouvelle famille de contrat d'inventaire ou nouvelle dépendance de parcours HTTP indépendante |
 
 #### `apps/web/src/app/api/reports/generations/route.test.ts`
 
@@ -934,18 +935,35 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 
 | Champ | Valeur |
 | --- | --- |
-| RESPONSIBILITIES | parcours de l'inventaire API, extraction des méthodes, résolution des modules locaux et construction des entrées de contrat |
-| PUBLIC_CONTRACTS | helpers d'analyse importés par `api-boundary.test.ts` et `api-boundary.evidence.test.ts` |
+| RESPONSIBILITIES | parcours de l'inventaire API, extraction des méthodes et résolution des chemins locaux nécessaires aux modules d'analyse |
+| PUBLIC_CONTRACTS | `apiRoot`, `contractedApiFamilies`, `walk`, `extractRouteMethods`, `withoutComments`, `resolveLocalModulePath`, `LocalModuleSources` et `contractEntries` |
 | SIDE_EFFECTS | lecture du tree local et analyse TypeScript en mémoire uniquement |
-| MAIN_CONSUMERS | suites de contrôle des frontières API |
-| TEST_BOUNDARY | méthodes, imports locaux et contrats d'inventaire sont vérifiés par les suites API |
-| COUPLING | primitives partagées par inventaire et evidence, sans dépendance runtime |
-| NATURAL_EXTRACTION_BOUNDARY | owner test-only des primitives d'analyse ; les assertions restent dans les suites par contrat |
+| MAIN_CONSUMERS | `api-boundary.test.ts`, `api-boundary.evidence.test.ts`, `api-boundary-route-analysis.ts` et `api-boundary-evidence-analysis.ts` |
+| TEST_BOUNDARY | l'inventaire et les méthodes sont exercés par les deux suites ; les preuves d'invocation et de délégation restent dans leur owner dédié |
+| COUPLING | primitives neutres partagées par les suites, sans déclaration Vitest et sans analyse de preuve spécifique |
+| NATURAL_EXTRACTION_BOUNDARY | `api-boundary-evidence-analysis.ts` porte la résolution des imports, l'AST, les alias, les délégations et la construction des preuves |
 | ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
-| RATIONALE | extraction cohésive des primitives communes pour éloigner la façade d'inventaire du seuil sans déplacer une assertion de sécurité |
+| RATIONALE | l'inventaire et l'analyse d'évidence ont des owners distincts ; ce module conserve seulement les primitives de parcours réellement communes, tandis que les assertions restent dans les suites indépendantes |
 | PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | conserver l'analyse locale des méthodes, imports et délégations comme owner partagé des suites API |
-| NEXT_TRIGGER | nouvelle analyse indépendante qui ne relève plus de l'inventaire ou de l'évidence |
+| DEPENDENCY_OR_BLOCKER | conserver les primitives d'inventaire et d'extraction des méthodes comme owner partagé, sans absorber l'analyse d'évidence |
+| NEXT_TRIGGER | nouvelle analyse de parcours ou de méthodes qui ne relève plus de l'inventaire partagé |
+
+#### `apps/web/src/app/api/api-boundary-evidence-analysis.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | résolution des imports locaux, analyse AST des références et appels, parcours des alias/délégations et construction des entrées d'évidence |
+| PUBLIC_CONTRACTS | `collectLocalModuleSources`, `missingEvidence` et `buildInlineRouteEntry` pour les deux suites de sécurité API |
+| SIDE_EFFECTS | lecture des sources locales et analyse TypeScript en mémoire uniquement ; aucune déclaration Vitest ni effet métier |
+| MAIN_CONSUMERS | `api-boundary.test.ts` et `api-boundary.evidence.test.ts` |
+| TEST_BOUNDARY | l'analyseur reste neutre ; les assertions d'inventaire et les 10 scénarios d'évidence restent dans leurs suites respectives |
+| COUPLING | dépend des primitives d'inventaire de `api-boundary-analysis.ts`, sans importer de fichier `*.test.ts` |
+| NATURAL_EXTRACTION_BOUNDARY | l'inventaire/méthodes restent dans `api-boundary-analysis.ts` ; les preuves d'invocation, alias, propriétés, callbacks et délégations restent ici |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | l'extraction supprime le double enregistrement Vitest et fournit une source canonique unique pour l'analyse d'évidence sans dupliquer les assertions de sécurité |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | conserver l'owner neutre de résolution des imports, analyse AST, délégations et preuves d'invocation |
+| NEXT_TRIGGER | nouvelle famille de preuve ou dépendance aux déclarations Vitest dans l'analyseur |
 
 #### `apps/web/src/app/api/reports/generations/route.test.helpers.ts`
 
