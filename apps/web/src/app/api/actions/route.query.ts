@@ -18,7 +18,7 @@ import { isActionStartInFuture } from "@/lib/actions/temporal";
 const QUALITY_GRADES = ["A", "B", "C"] as const;
 const IMPACT_LEVELS = ["faible", "moyen", "fort", "critique"] as const;
 
-export type ActionsReadPolicy = {
+type ActionsReadPolicy = {
   status: ActionStatus | null;
   usePublicSurfaceSnapshot: boolean;
 };
@@ -81,7 +81,7 @@ function resolveActionListFilters(url: URL) {
   };
 }
 
-export function resolveActionsReadPolicy(rawStatus: string | null): ActionsReadPolicy {
+function resolveActionsReadPolicy(rawStatus: string | null): ActionsReadPolicy {
   const requestedStatus = parseStatusParam(rawStatus);
   const includesNonPublicState =
     rawStatus?.trim() === "all" ||

@@ -55,7 +55,7 @@ const WEB_COVERAGE_CONTROL_FILES = Object.freeze(new Set([
   "scripts/ci/pre_push_guard.ps1",
 ]));
 
-export function isWebCoverageControlFile(file) {
+function isWebCoverageControlFile(file) {
   const normalized = normalizePath(file);
   return WEB_COVERAGE_CONTROL_FILES.has(normalized)
     || normalized.startsWith("scripts/ci/coverage-")

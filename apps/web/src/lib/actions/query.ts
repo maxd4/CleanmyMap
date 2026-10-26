@@ -40,7 +40,7 @@ export type ActionInvitationRow = {
   location_label?: string | null;
 };
 
-export function isActionInvitationRow(value: unknown): value is ActionInvitationRow {
+function isActionInvitationRow(value: unknown): value is ActionInvitationRow {
   if (!isActionRecord(value)
     || typeof value.registration_id !== "string"
     || typeof value.action_id !== "string") {

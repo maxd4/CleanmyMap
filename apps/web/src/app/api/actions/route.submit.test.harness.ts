@@ -177,7 +177,6 @@ export {
   resolveActionParticipantsMock,
   resolveDefaultActionOrganizerIdsMock,
   trackServerEventMock,
-  requireMobileAuthenticatedAccessMock,
 };
 
 export function resetSubmitRouteMocks() {

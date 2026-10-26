@@ -99,7 +99,7 @@ export const COVERAGE_ENFORCEMENT_POLICY = Object.freeze({
 // The first matching rule owns a file. A file may match more than one rule for
 // compatibility reasons (for example, an account API route), but risk metrics
 // are aggregated through this primary selection exactly once per file.
-export const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
+const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
   Object.freeze({
     domain: "security",
     patterns: Object.freeze([
@@ -521,7 +521,7 @@ const APP_ROUTER_ENTRYPOINTS = new Set([
   "default",
 ]);
 
-export function isInstrumentableCoveragePath(file, { scope = "web" } = {}) {
+function isInstrumentableCoveragePath(file, { scope = "web" } = {}) {
   const normalized = normalizeCoveragePath(file, scope);
   if (!/\.(?:js|jsx|ts|tsx)$/.test(normalized)) return false;
   if (scope === "web") {
@@ -589,7 +589,7 @@ function verifyGitRevision(repositoryRoot, revision, label) {
   }
 }
 
-export function getChangedLinesFromGit({ repositoryRoot = process.cwd(), baseRef, currentRef = "HEAD", scope = "web" } = {}) {
+function getChangedLinesFromGit({ repositoryRoot = process.cwd(), baseRef, currentRef = "HEAD", scope = "web" } = {}) {
   const baseCommit = verifyGitRevision(repositoryRoot, baseRef, "baseRef");
   const currentCommit = verifyGitRevision(repositoryRoot, currentRef, "currentRef");
   const scopeRoot = getCoverageScope(scope).root;
@@ -609,7 +609,7 @@ export function getChangedLinesFromGit({ repositoryRoot = process.cwd(), baseRef
   };
 }
 
-export function parseLcovLineCoverage(content, { scope = "web" } = {}) {
+function parseLcovLineCoverage(content, { scope = "web" } = {}) {
   const records = new Map();
   let currentPath = null;
   for (const rawLine of String(content ?? "").split(/\r?\n/)) {

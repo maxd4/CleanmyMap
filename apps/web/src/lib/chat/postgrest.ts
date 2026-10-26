@@ -2,7 +2,7 @@ export function escapePostgrestLikePattern(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
 
-export class ChatSupabaseError extends Error {
+class ChatSupabaseError extends Error {
   readonly code?: string;
   readonly details?: string;
   readonly hint?: string;

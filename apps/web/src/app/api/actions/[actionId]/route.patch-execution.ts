@@ -29,7 +29,7 @@ import {
 import { shouldSyncOrganizersBeforeFinalization, type PreparedPatchMutation } from "./route.patch-preparation";
 import type { EditableAction } from "./route.types";
 
-export const PATCH_ATOMICITY = "PARTIAL_ALLOWED" as const;
+const PATCH_ATOMICITY = "PARTIAL_ALLOWED" as const;
 
 export type PatchExecutionState = {
   auditSnapshots: ReturnType<typeof buildActionAuditSnapshots> | null;

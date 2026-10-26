@@ -455,6 +455,26 @@
       "specifier": null,
       "id": "93ec55274af96d9f268beec4",
       "classification": "historical-debt"
+    },
+    {
+      "type": "files",
+      "file": "e2e/gamification-reconciliation-concurrency.mjs",
+      "name": "e2e/gamification-reconciliation-concurrency.mjs",
+      "namespace": null,
+      "kind": null,
+      "specifier": null,
+      "id": "3325caa513fc243d75e1a086",
+      "classification": "historical-debt"
+    },
+    {
+      "type": "files",
+      "file": "e2e/reports-postgres-concurrency.mjs",
+      "name": "e2e/reports-postgres-concurrency.mjs",
+      "namespace": null,
+      "kind": null,
+      "specifier": null,
+      "id": "d18b9998cf578e604f04dfbf",
+      "classification": "historical-debt"
     }
   ]
 }

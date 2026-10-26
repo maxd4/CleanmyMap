@@ -47,7 +47,7 @@ function createLinkedAbortController(parentSignal?: AbortSignal) {
   };
 }
 
-export async function resolveWeatherLocationFromLabel(
+async function resolveWeatherLocationFromLabel(
   label: string,
   subtitle: string | null,
   parentSignal?: AbortSignal,
@@ -89,7 +89,7 @@ export async function resolveWeatherLocationFromLabel(
   return fallback;
 }
 
-export async function resolveWeatherLocationFromPreference(
+async function resolveWeatherLocationFromPreference(
   preference: TerritoryLocationPreference,
   parentSignal?: AbortSignal,
 ): Promise<WeatherLocation> {
@@ -111,7 +111,7 @@ export async function resolveWeatherLocationFromPreference(
   );
 }
 
-export async function resolveGeolocationWeatherLocation(
+async function resolveGeolocationWeatherLocation(
   parentSignal?: AbortSignal,
   geolocationAvailable = true,
 ): Promise<WeatherLocation | null> {
