@@ -8,25 +8,12 @@ export const MAX_PLANNER_TECHNICAL_STOPS = 200;
 export function isRouteGeometry(value: unknown): value is RouteGeometry {
   if (!value || typeof value !== "object") return false;
   const geometry = value as Partial<RouteGeometry>;
-  const hasUsableLoopCoordinates =
-    geometry.coordinates !== undefined &&
-    Array.isArray(geometry.coordinates) &&
-    (geometry.coordinates.length === 0 || (
-      geometry.coordinates.length >= 2 &&
-      isCoordinate(geometry.origin) &&
-      areCoordinatesClose(geometry.coordinates[0], geometry.origin) &&
-      areCoordinatesClose(geometry.coordinates[0], geometry.coordinates.at(-1)) &&
-      geometry.returnLeg !== null &&
-      geometry.returnLeg !== undefined
-    ));
-
-  return (
+  const hasValidFields = (
     geometry.isLoop === true &&
     (geometry.origin === null || isCoordinate(geometry.origin)) &&
     Array.isArray(geometry.coordinates) &&
     geometry.coordinates.length <= MAX_ROUTE_GEOMETRY_COORDINATES &&
     geometry.coordinates.every(isCoordinate) &&
-    hasUsableLoopCoordinates &&
     finiteNonNegative(geometry.distanceKm) &&
     finiteNonNegative(geometry.durationMinutes) &&
     Array.isArray(geometry.legs) &&
@@ -37,6 +24,63 @@ export function isRouteGeometry(value: unknown): value is RouteGeometry {
     ["network", "fallback"].includes(geometry.mode ?? "") &&
     typeof geometry.estimated === "boolean" &&
     (geometry.returnLeg === null || isRouteGeometryLeg(geometry.returnLeg))
+  );
+
+  if (!hasValidFields) return false;
+  if (geometry.coordinates!.length === 0) {
+    return isEmptyRouteGeometryPlaceholder(geometry);
+  }
+
+  return isClosedRouteGeometry(geometry);
+}
+
+function isEmptyRouteGeometryPlaceholder(
+  geometry: Partial<RouteGeometry>,
+): boolean {
+  return (
+    geometry.origin === null &&
+    geometry.returnLeg === null &&
+    geometry.distanceKm === 0 &&
+    geometry.durationMinutes === 0 &&
+    geometry.legs!.length === 0 &&
+    geometry.provider === "none" &&
+    geometry.profile === null &&
+    geometry.mode === "fallback" &&
+    geometry.estimated === true
+  );
+}
+
+function isClosedRouteGeometry(geometry: Partial<RouteGeometry>): boolean {
+  const coordinates = geometry.coordinates!;
+  const returnLeg = geometry.returnLeg;
+  const legs = geometry.legs!;
+  const lastLeg = legs.at(-1);
+
+  return (
+    coordinates.length >= 2 &&
+    isCoordinate(geometry.origin) &&
+    areCoordinatesClose(coordinates[0], geometry.origin) &&
+    areCoordinatesClose(coordinates[0], coordinates.at(-1)) &&
+    returnLeg !== null &&
+    returnLeg !== undefined &&
+    legs.length > 0 &&
+    isRouteGeometryLeg(lastLeg) &&
+    hasSameRouteLegCore(lastLeg, returnLeg) &&
+    returnLeg.toStopIndex === returnLeg.fromStopIndex + 1 &&
+    geometry.distanceKm! + 1e-9 >= returnLeg.distanceKm &&
+    geometry.durationMinutes! + 1e-9 >= returnLeg.estimatedMinutes
+  );
+}
+
+function hasSameRouteLegCore(
+  left: RouteGeometryLeg,
+  right: RouteGeometryLeg,
+): boolean {
+  return (
+    left.fromStopIndex === right.fromStopIndex &&
+    left.toStopIndex === right.toStopIndex &&
+    left.distanceKm === right.distanceKm &&
+    left.estimatedMinutes === right.estimatedMinutes
   );
 }
 

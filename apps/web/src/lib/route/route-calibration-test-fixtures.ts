@@ -1,19 +1,38 @@
 import type { RouteGeometry } from "./route-contract";
 
 function routeGeometry(distanceKm: number): RouteGeometry {
+  if (distanceKm === 0) {
+    return {
+      isLoop: true,
+      origin: null,
+      returnLeg: null,
+      coordinates: [],
+      distanceKm: 0,
+      durationMinutes: 0,
+      legs: [],
+      provider: "none",
+      profile: null,
+      mode: "fallback",
+      estimated: true,
+    };
+  }
+
+  const origin: [number, number] = [48.85, 2.35];
+  const stop: [number, number] = [48.851, 2.351];
+  const legDistanceKm = distanceKm / 2;
+  const legs = [
+    { fromStopIndex: 0, toStopIndex: 1, distanceKm: legDistanceKm, estimatedMinutes: 10 },
+    { fromStopIndex: 1, toStopIndex: 2, distanceKm: legDistanceKm, estimatedMinutes: 10 },
+  ];
+
   return {
     isLoop: true,
-    origin: [48.85, 2.35],
-    returnLeg: {
-      fromStopIndex: 0,
-      toStopIndex: 0,
-      distanceKm: 0,
-      estimatedMinutes: 0,
-    },
-    coordinates: [[48.85, 2.35], [48.85, 2.35]],
+    origin,
+    returnLeg: legs.at(-1)!,
+    coordinates: [origin, stop, origin],
     distanceKm,
-    durationMinutes: distanceKm === 0 ? 0 : 20,
-    legs: [],
+    durationMinutes: 20,
+    legs,
     provider: "none",
     profile: null,
     mode: "fallback",

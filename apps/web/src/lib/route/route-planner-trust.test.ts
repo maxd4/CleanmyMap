@@ -31,7 +31,7 @@ const workload = {
 
 const geometry = {
   isLoop: true as const,
-  origin: [48.85, 2.35] as [number, number],
+  origin: null,
   returnLeg: null,
   coordinates: [],
   distanceKm: 0,

@@ -47,10 +47,7 @@ function snapshot(
   const input = createRoutePlannerSnapshotInput(distanceKm);
   const volunteers = options.volunteers ?? input.volunteers;
   const groupCount = options.groupCount ?? input.groupCount;
-  const geometry = {
-    ...input.routeGeometry,
-    coordinates: [[48.85, 2.35], [48.851, 2.351]] as [number, number][],
-  };
+  const geometry = input.routeGeometry;
   const baseGroup = input.groups[0]!;
   const quotient = Math.floor(volunteers / groupCount);
   const remainder = volunteers % groupCount;
