@@ -70,6 +70,14 @@ le contenu immédiatement visible et désactivent le reveal.
 de ces helpers aux modes d’affichage sont portées par
 `apps/web/src/styles/display-modes.css`.
 
+La navigation centrale desktop conserve un seul flux de données et de menus
+pour ses variantes visuelles. Le sélecteur typé
+`apps/web/src/components/navigation/app-navigation-ribbon-variant.ts` garde
+`classic` comme valeur par défaut ; `meniscus` ne déplace que l’indicateur de
+rubrique active et la présentation de son icône. L’indicateur reste dérivé de
+la route, jamais du survol, et demeure statique en mode `sobre` ou lorsque
+`prefers-reduced-motion` est actif.
+
 Maps, data-viz, gamification et animations métier spécialisées restent hors de
 cette normalisation générale. Le legacy Motion restant sera traité dans le
 lot suivant.

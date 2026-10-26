@@ -21,6 +21,7 @@ import { trackNavigationClick } from "@/lib/analytics/navigation-client";
 import { cn } from "@/lib/utils";
 import { GlobalSearch } from "./global-search";
 import { useAdaptiveRibbonChrome } from "./app-navigation-ribbon-theme";
+import { APP_NAVIGATION_RIBBON_VARIANT } from "./app-navigation-ribbon-variant";
 import { AppNavigationBlockDropdown } from "./app-navigation-block-dropdown";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
@@ -41,7 +42,26 @@ type AppNavigationRibbonShellProps = AppNavigationRibbonProps & {
 };
 
 function RibbonDesktopSpaceNavigation({ spaces, activeSpaceId, locale, onTrackNavigation, pathname, openSpaceId, onOpenChange }: { spaces: NavigationSpace[]; activeSpaceId: NavigationSpace["id"] | null; locale: Parameters<typeof AppNavigationBlockDropdown>[0]["locale"]; onTrackNavigation: Parameters<typeof AppNavigationBlockDropdown>[0]["onTrackNavigation"]; pathname: string; openSpaceId: NavigationSpace["id"] | null; onOpenChange: (spaceId: NavigationSpace["id"], open: boolean) => void }) {
-  return <div className="hidden items-center justify-center xl:col-start-2 xl:flex"><nav aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"} className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)]">{spaces.map((space) => <AppNavigationBlockDropdown key={space.id} activeSpaceId={activeSpaceId} locale={locale} onTrackNavigation={onTrackNavigation} onOpenChange={onOpenChange} open={openSpaceId === space.id} pathname={pathname} space={space} />)}</nav></div>;
+  const activeSpaceIndex = activeSpaceId === null
+    ? -1
+    : spaces.findIndex((space) => space.id === activeSpaceId);
+
+  return <div className="hidden items-center justify-center xl:col-start-2 xl:flex"><nav data-navigation-ribbon data-navigation-ribbon-variant={APP_NAVIGATION_RIBBON_VARIANT} aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"} className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)] cmm-navigation-ribbon-dock">
+    {activeSpaceIndex >= 0 ? (
+      <span
+        aria-hidden="true"
+        className="cmm-navigation-meniscus-indicator"
+        style={{ left: `calc(50% - 114px + ${activeSpaceIndex * 38}px)` }}
+      >
+        <svg aria-hidden="true" viewBox="0 0 76 40" focusable="false">
+          <path className="cmm-navigation-meniscus-curve" d="M0 39 C14 39 12 7 29 7" />
+          <path className="cmm-navigation-meniscus-curve" d="M47 7 C64 7 62 39 76 39" />
+        </svg>
+        <span className="cmm-navigation-meniscus-circle" />
+      </span>
+    ) : null}
+    {spaces.map((space) => <AppNavigationBlockDropdown key={space.id} activeSpaceId={activeSpaceId} locale={locale} onTrackNavigation={onTrackNavigation} onOpenChange={onOpenChange} open={openSpaceId === space.id} pathname={pathname} space={space} />)}
+  </nav></div>;
 }
 
 function AppNavigationRibbonFrame({

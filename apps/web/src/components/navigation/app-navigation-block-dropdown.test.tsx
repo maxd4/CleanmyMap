@@ -75,6 +75,12 @@ describe("app navigation block dropdown contract", () => {
     expect(minimalHoverRule).not.toMatch(/(?:width|height|padding|transform|box-shadow)/u);
   });
 
+  it("marks route activity separately from open state for the optional indicator", () => {
+    expect(source).toContain('data-navigation-block-active={isActiveSpace ? "true" : "false"}');
+    expect(source).toContain("open={open}");
+    expect(source).toContain('<span className="cmm-navigation-block-icon">');
+  });
+
   it("isolates hover/open illumination and keeps only one block open", () => {
     const activeState = getNavigationBlockTriggerStateClassName({
       isActiveSpace: true,
@@ -123,6 +129,8 @@ describe("app navigation block dropdown contract", () => {
     );
     expect(displayModes).not.toContain("outline: 2px solid var(--text-inverse);");
     expect(displayModes).toContain("box-shadow: none !important;");
+    expect(displayModes).toContain(".cmm-navigation-meniscus-indicator");
+    expect(displayModes).toContain(".cmm-navigation-block-icon");
   });
 
   it("uses one neutral focus ring instead of a blue trigger contour", () => {

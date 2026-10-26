@@ -43,5 +43,10 @@
     transition: none !important;
     transform: none !important;
   }
+
+  [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-indicator,
+  [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-block-icon {
+    transition: none !important;
+  }
 }
 }

@@ -48,6 +48,21 @@ describe("desktop ribbon control geometry", () => {
     expect(source).not.toContain("hover:scale");
   });
 
+  it("keeps the desktop ribbon variant selector and geometry independent from the five triggers", () => {
+    const shellSource = readSource("app-navigation-ribbon-shell.tsx");
+    const variantSource = readSource("app-navigation-ribbon-variant.ts");
+
+    expect(variantSource).toContain('["classic", "meniscus"] as const');
+    expect(variantSource).toContain('= "classic"');
+    expect(shellSource).toContain("APP_NAVIGATION_RIBBON_VARIANT");
+    expect(shellSource).toContain("data-navigation-ribbon-variant");
+    expect(shellSource).toContain("activeSpaceIndex");
+    expect(shellSource).toContain("activeSpaceIndex >= 0");
+    expect(shellSource).toContain('w-[15rem]');
+    expect(shellSource).toContain('gap-0.5');
+    expect(shellSource).toContain('style={{ left: `calc(50% - 114px + ${activeSpaceIndex * 38}px)` }}');
+  });
+
   it("aligns first-level menus, notification, profile and account controls only on desktop", () => {
     const menusSource = readSource("app-navigation-ribbon-menus.tsx");
     const notificationSource = readSource("notification-bell.tsx");

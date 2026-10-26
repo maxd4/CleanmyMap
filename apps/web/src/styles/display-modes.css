@@ -107,6 +107,18 @@
   border-color: var(--navigation-block-accent);
 }
 
+/* Meniscus keeps the route-selected indicator but removes its extra lighting
+   in minimal mode and shortens the useful positional transition. */
+[data-display-mode="minimaliste"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-indicator,
+[data-display-mode="minimaliste"] .cmm-navigation-block-icon {
+  transition-duration: 180ms;
+}
+
+[data-display-mode="minimaliste"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-circle {
+  background: #0a162a;
+  box-shadow: none;
+}
+
 [data-display-mode="sobre"] .cmm-navigation-dropdown-surface {
   background: var(--background) !important;
   box-shadow: none !important;
@@ -131,6 +143,26 @@
 [data-display-mode="sobre"] [data-navigation-block-trigger]:focus-visible {
   background-color: color-mix(in srgb, var(--bg-elevated) 24%, transparent);
   box-shadow: none !important;
+}
+
+[data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-indicator,
+[data-display-mode="sobre"] .cmm-navigation-block-icon {
+  transition: none !important;
+}
+
+[data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] {
+  background: var(--background) !important;
+  box-shadow: none !important;
+}
+
+[data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-circle {
+  background: var(--background);
+  border-color: var(--border-strong);
+  box-shadow: none;
+}
+
+[data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-curve {
+  stroke: var(--background);
 }
 
 /* Les helpers Motion canoniques restent plats en mode minimaliste. */

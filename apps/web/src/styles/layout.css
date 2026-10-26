@@ -13,6 +13,96 @@
   line-height: var(--leading-tight);
 }
 
+/* Optional desktop central-ribbon treatment. The classic dock keeps the
+   existing surface because every rule below is scoped to the meniscus marker. */
+.cmm-navigation-ribbon-dock {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+}
+
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] {
+  background: rgba(4, 10, 24, 0.92);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 18px 36px -28px rgba(2, 6, 23, 0.94),
+    0 0 0 1px rgba(125, 211, 252, 0.08) inset;
+}
+
+.cmm-navigation-meniscus-indicator {
+  position: absolute;
+  top: 50%;
+  z-index: 0;
+  width: 4.75rem;
+  height: 2.5rem;
+  margin-top: -1.25rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(0);
+  transition:
+    left 260ms cubic-bezier(0.22, 0.8, 0.28, 1),
+    opacity 180ms ease-out,
+    transform 260ms cubic-bezier(0.22, 0.8, 0.28, 1);
+}
+
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-indicator {
+  opacity: 1;
+  transform: translateY(-0.125rem);
+}
+
+.cmm-navigation-meniscus-indicator > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.cmm-navigation-meniscus-curve {
+  fill: none;
+  stroke: rgba(10, 22, 42, 0.96);
+  stroke-linecap: round;
+  stroke-width: 12;
+}
+
+.cmm-navigation-meniscus-circle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgba(186, 230, 253, 0.22);
+  border-radius: 9999px;
+  background: radial-gradient(circle at 34% 22%, rgba(56, 189, 248, 0.24), rgba(10, 22, 42, 0.98) 66%);
+  box-shadow:
+    0 8px 18px -10px rgba(2, 6, 23, 0.96),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  transform: translateX(-50%);
+}
+
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] {
+  position: relative;
+  z-index: 1;
+  background-color: transparent !important;
+}
+
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"][aria-expanded="true"],
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"]:focus-visible {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.cmm-navigation-block-icon {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  transition: transform 260ms cubic-bezier(0.22, 0.8, 0.28, 1);
+}
+
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] .cmm-navigation-block-icon {
+  transform: translateY(-0.125rem) scale(1.04);
+}
+
 .cmm-home-map-preview {
   height: var(--cmm-home-map-preview-height);
 }

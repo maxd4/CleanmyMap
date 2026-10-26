@@ -88,6 +88,7 @@ export function AppNavigationBlockDropdown({
         <button
           {...triggerProps}
           data-navigation-block-trigger
+          data-navigation-block-active={isActiveSpace ? "true" : "false"}
           aria-label={getLocalizedText(space.label, locale, space.id)}
           style={buildNavigationBlockTriggerStyle(space.id)}
           className={cn(
@@ -95,7 +96,9 @@ export function AppNavigationBlockDropdown({
             getNavigationBlockTriggerStateClassName({ isActiveSpace, isOpen: open }),
           )}
         >
-          <CmmIcon icon={getNavigationBlockIcon(space.id)} size="lg" />
+          <span className="cmm-navigation-block-icon">
+            <CmmIcon icon={getNavigationBlockIcon(space.id)} size="lg" />
+          </span>
           <span className="sr-only">{getLocalizedText(space.label, locale, space.id)}</span>
         </button>
       )}
