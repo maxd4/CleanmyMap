@@ -57,12 +57,12 @@ describe("desktop ribbon control geometry", () => {
     expect(shellSource).toContain("APP_NAVIGATION_RIBBON_VARIANT");
     expect(shellSource).toContain("data-navigation-ribbon-variant");
     expect(shellSource).toContain("activeSpaceIndex");
-    expect(shellSource).toContain("activeSpaceIndex >= 0");
+    expect(shellSource).toContain("getNavigationRibbonIndicatorLeft(activeSpaceIndex, spaces.length)");
+    expect(shellSource).not.toContain("activeSpaceIndex * 38");
     expect(shellSource).toContain('w-[15rem]');
     expect(shellSource).toContain('gap-0.5');
     expect(shellSource).toContain('viewBox="0 0 76 48"');
     expect(shellSource).toContain('className="cmm-navigation-meniscus-bridge"');
-    expect(shellSource).toContain('style={{ left: `calc(50% - 114px + ${activeSpaceIndex * 38}px)` }}');
   });
 
   it("aligns first-level menus, notification, profile and account controls only on desktop", () => {

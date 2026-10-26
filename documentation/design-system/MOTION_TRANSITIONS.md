@@ -76,7 +76,8 @@ pour ses variantes visuelles. Le sélecteur typé
 `classic` comme valeur par défaut ; `meniscus` ne déplace que l’indicateur de
 rubrique active et la présentation de son icône. L’indicateur reste dérivé de
 la route, jamais du survol, et demeure statique en mode `sobre` ou lorsque
-`prefers-reduced-motion` est actif.
+`prefers-reduced-motion` est actif. La géométrie et le contrat de responsive
+sont détaillés dans [`NAVIGATION_RIBBON_VARIANTS.md`](./NAVIGATION_RIBBON_VARIANTS.md).
 
 Maps, data-viz, gamification et animations métier spécialisées restent hors de
 cette normalisation générale. Le legacy Motion restant sera traité dans le

@@ -10,6 +10,7 @@ expérimentales. Un README oriente ; il ne remplace pas un contrat spécialisé.
 | Couleurs par famille | `BLOC_COLOR_SYSTEM_PREMIUM.md` | Tokens CSS et configuration |
 | Modes d'affichage | `DISPLAY_MODES_CANONICAL.md` | `apps/web/src/lib/ui/preferences.ts`, `display-modes.css` |
 | Layout et densité | `LAYOUT_SPACING.md` | Shell et CSS layout |
+| Variantes du ruban de navigation | `NAVIGATION_RIBBON_VARIANTS.md` | Shell, géométrie et dropdowns |
 | Titres de page | `PAGE_HEADER.md` | Composant PageHeader |
 | Mouvement | `MOTION_TRANSITIONS.md` | `motion.css` et préférences |
 | Contraste | `theme-visibility-rules.md` | CSS et états réels |
@@ -27,6 +28,8 @@ Les états `PLAN`, `COMPATIBILITY`, `HISTORY` et `EXPERIMENTATION` n'impliquent 
 - [`DISPLAY_MODES_CANONICAL.md`](./DISPLAY_MODES_CANONICAL.md) — modes
   d’affichage réellement disponibles et leurs limites.
 - [`MOTION_TRANSITIONS.md`](./MOTION_TRANSITIONS.md) — motion et transitions.
+- [`NAVIGATION_RIBBON_VARIANTS.md`](./NAVIGATION_RIBBON_VARIANTS.md) — contrat
+  du ruban central desktop et de ses variantes visuelles.
 - [`SURFACES_CARDS.md`](./SURFACES_CARDS.md) — cartes et surfaces.
 - [`STATES_FEEDBACK.md`](./STATES_FEEDBACK.md) — états, chargements et retours.
 - [`PAGE_HEADER.md`](./PAGE_HEADER.md) — titres principaux et sous-titres.

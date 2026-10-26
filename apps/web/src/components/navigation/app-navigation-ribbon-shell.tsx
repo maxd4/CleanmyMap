@@ -33,6 +33,7 @@ import {
 import { useRibbonActivityStatus } from "./app-navigation-ribbon-activity";
 import { RibbonMenus } from "./app-navigation-ribbon-menus";
 import { resolveOpenNavigationSpaceId } from "./navigation-block-trigger-state";
+import { getNavigationRibbonIndicatorLeft } from "./app-navigation-ribbon-geometry";
 
 type AppNavigationRibbonShellProps = AppNavigationRibbonProps & {
   pathname: string;
@@ -45,13 +46,16 @@ function RibbonDesktopSpaceNavigation({ spaces, activeSpaceId, locale, onTrackNa
   const activeSpaceIndex = activeSpaceId === null
     ? -1
     : spaces.findIndex((space) => space.id === activeSpaceId);
+  const indicatorLeft = getNavigationRibbonIndicatorLeft(activeSpaceIndex, spaces.length);
 
   return <div className="hidden items-center justify-center xl:col-start-2 xl:flex"><nav data-navigation-ribbon data-navigation-ribbon-variant={APP_NAVIGATION_RIBBON_VARIANT} aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"} className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)] cmm-navigation-ribbon-dock">
-    {activeSpaceIndex >= 0 ? (
+    {indicatorLeft ? (
       <span
         aria-hidden="true"
         className="cmm-navigation-meniscus-indicator"
-        style={{ left: `calc(50% - 114px + ${activeSpaceIndex * 38}px)` }}
+        style={{
+          left: indicatorLeft,
+        }}
       >
         <svg aria-hidden="true" viewBox="0 0 76 48" focusable="false">
           <path className="cmm-navigation-meniscus-bridge" d="M0 48 C14 48 12 14 28 14 C31 14 32 8 38 8 C44 8 45 14 48 14 C64 14 62 48 76 48 Z" />

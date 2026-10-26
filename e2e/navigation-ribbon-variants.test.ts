@@ -109,15 +109,13 @@ test.describe("desktop central navigation ribbon variants", () => {
     const panel = page.locator(`#${panelId}`);
     await expect(panel).toBeVisible();
 
-    const firstLink = panel.getByRole("link").first();
-    const href = await firstLink.getAttribute("href");
-    expect(href).toBeTruthy();
-    await firstLink.click();
-    const expectedPath = new URL(href!, page.url()).pathname;
-    await expect.poll(() => new URL(page.url()).pathname).not.toBe("/sections/route");
-    expect([expectedPath, "/actions/new"]).toContain(new URL(page.url()).pathname);
+    const routeLink = panel.getByRole("link", { name: "Méthodologie" });
+    await expect(routeLink).toHaveAttribute("href", "/methodologie");
+    await Promise.all([
+      page.waitForURL((url) => url.pathname === "/methodologie"),
+      routeLink.click(),
+    ]);
 
-    await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
     const keyboardRibbon = await waitForRibbon(page);
     await keyboardRibbon.evaluate((element) => element.setAttribute("data-navigation-ribbon-variant", "meniscus"));
     const keyboardTrigger = keyboardRibbon.getByRole("button", { name: "Cartographie & Impact" });
