@@ -354,6 +354,21 @@ test("An unrelated JavaScript CI script does not select Python coverage", () => 
   assert.equal(scope.scope.nodeCoverageRelevant, true);
 });
 
+test("Changes to the Python lane selector itself select Python validation", () => {
+  const { baseSha, candidateSha } = currentRepositoryShas();
+  const scope = resolveCiScope({
+    repositoryRoot: REPOSITORY_ROOT,
+    eventName: "push",
+    eventBefore: baseSha,
+    eventSha: candidateSha,
+    changedFiles: ["scripts/ci/detect-scope.mjs"],
+  });
+
+  assert.equal(scope.scope.pythonCoverageRelevant, true);
+  assert.equal(scope.scope.nodeCoverageRelevant, true);
+  assert.equal(scope.scope.webCoverageRelevant, true);
+});
+
 test("CI consumes the Python scope signal for the exact candidate checkout", () => {
   const workflow = fs.readFileSync(join(REPOSITORY_ROOT, ".github", "workflows", "ci.yml"), "utf8");
   assert.match(workflow, /python_coverage_relevant:\s*\$\{\{\s*steps\.detect-scope\.outputs\.python_coverage_relevant\s*\}\}/);
