@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { ApiAuthorizationContractEntry } from "@/lib/auth/api-authorization-contract";
 import {
   buildInlineRouteEntry,
-  extractRouteMethods,
   missingEvidence,
-} from "./api-boundary.test";
+} from "./api-boundary-evidence-analysis";
+import { extractRouteMethods } from "./api-boundary-analysis";
 
 describe("API security evidence analysis", () => {
   it("does not let an import or a different HTTP method satisfy method evidence", () => {
