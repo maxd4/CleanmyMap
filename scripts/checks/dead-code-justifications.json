@@ -63,20 +63,6 @@
       "reason": "contrat public CURRENT — ReportModerationAvailability est exposé avec le modèle et protégé par le contrôle de frontière du Report Model.",
       "evidence": "scripts/checks/check-report-model-boundary.mjs:expectedPublicIndex ; apps/web/src/lib/reports/report-model/types.ts:ReportModerationAvailability",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "id": "3325caa513fc243d75e1a086",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "point d'entrée E2E légitime pour la preuve PostgreSQL multi-session Gamification ; il est inventorié et exécuté par le runner CI dédié, sans import applicatif attendu.",
-      "evidence": "scripts/ci/run-supabase-sql-proof.mjs:MULTISESSION_PROOFS ; scripts/ci/run-supabase-sql-proof.test.mjs:inventaire des preuves ; .github/workflows/e2e-supabase.yml:paths et exécution CI",
-      "reviewedRef": "9a6ddee74676e2168a447a2b7a20519e5fece741"
-    },
-    {
-      "id": "d18b9998cf578e604f04dfbf",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "point d'entrée E2E légitime pour la preuve PostgreSQL multi-session des rapports ; il est explicitement déclenché par le workflow et le runner CI, sans import applicatif attendu.",
-      "evidence": "scripts/ci/run-supabase-sql-proof.mjs:MULTISESSION_PROOFS ; scripts/ci/run-supabase-sql-proof.test.mjs:inventaire des preuves ; .github/workflows/e2e-supabase.yml:reports-postgres-concurrency.mjs",
-      "reviewedRef": "9a6ddee74676e2168a447a2b7a20519e5fece741"
     }
   ]
 }

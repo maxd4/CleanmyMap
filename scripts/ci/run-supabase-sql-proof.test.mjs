@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   extractPlan,
@@ -31,6 +32,17 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "e2e/security-02-two-sessions.mjs",
     "e2e/spogomi-concurrency.mjs",
   ]);
+});
+
+test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints", () => {
+  const knipConfig = JSON.parse(readFileSync(new URL("../knip.json", import.meta.url), "utf8"));
+  const entries = new Set(knipConfig.workspaces["."].entry);
+  for (const entrypoint of [
+    "e2e/gamification-reconciliation-concurrency.mjs",
+    "e2e/reports-postgres-concurrency.mjs",
+  ]) {
+    assert.equal(entries.has(entrypoint), true, `missing Knip entrypoint: ${entrypoint}`);
+  }
 });
 
 test("pgTAP parser accepts an exact complete plan", () => {
