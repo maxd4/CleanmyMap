@@ -1,4 +1,4 @@
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { PublicLeaderboardResponseDto } from "@/lib/gamification/progression-types";
@@ -27,6 +27,12 @@ type MockSwrState = {
   isLoading: boolean;
 };
 
+type ButtonProps = { children?: React.ReactNode; onClick?: () => void | Promise<void> };
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
+
 describe("LeaderboardPanel", () => {
   it("loads each selected view through the recent-view cache contract", async () => {
     swrCalls.length = 0;
@@ -37,10 +43,10 @@ describe("LeaderboardPanel", () => {
       renderer = create(<LeaderboardPanel />);
     });
 
-    const structureButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).includes("Structures"));
-    const userButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).includes("Utilisateurs"));
-    await act(() => structureButton?.props.onClick());
-    await act(() => userButton?.props.onClick());
+    const structureButton = renderer.root.findAllByType("button").find((button) => String(propsOf<ButtonProps>(button).children).includes("Structures"));
+    const userButton = renderer.root.findAllByType("button").find((button) => String(propsOf<ButtonProps>(button).children).includes("Utilisateurs"));
+    await act(async () => { await propsOf<ButtonProps>(structureButton!).onClick?.(); });
+    await act(async () => { await propsOf<ButtonProps>(userButton!).onClick?.(); });
 
     expect(swrCalls.map(({ key }) => key)).toEqual([
       "/api/gamification/leaderboard/public?scope=user&metric=level",
