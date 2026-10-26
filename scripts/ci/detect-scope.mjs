@@ -67,7 +67,8 @@ function isDocumentationFile(file) {
 function isPythonCoverageRelevantFile(file) {
   return (
     /^maintenance\/python\/(src|scripts)\/.*\.py$/.test(file) ||
-    PYTHON_DEPENDENCY_MANIFESTS.has(file)
+    PYTHON_DEPENDENCY_MANIFESTS.has(file) ||
+    file === "scripts/ci/run-python-coverage.mjs"
   );
 }
 

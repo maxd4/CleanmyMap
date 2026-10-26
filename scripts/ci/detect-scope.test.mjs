@@ -312,6 +312,48 @@ test("Python dependency selection is identical for Git diff and explicit file li
   }
 });
 
+test("Python coverage producer selection is identical for explicit files and a real Git range", () => {
+  const fixture = createScopeGitFixture();
+  try {
+    const producerPath = join(
+      fixture.repositoryRoot,
+      "scripts",
+      "ci",
+      "run-python-coverage.mjs",
+    );
+    fs.writeFileSync(producerPath, "export const pythonCoverageProducer = true;\n", "utf8");
+    const producerSha = commitFixture(fixture.repositoryRoot, "fixture Python coverage producer");
+    const producer = resolveGitRangeScope(
+      fixture.repositoryRoot,
+      fixture.codeSha,
+      producerSha,
+    );
+
+    assert.deepEqual(producer.changedFiles, ["scripts/ci/run-python-coverage.mjs"]);
+    assert.equal(producer.result.scope.pythonCoverageRelevant, true);
+    assert.equal(producer.result.scope.nodeCoverageRelevant, true);
+    assert.equal(producer.result.scope.webCoverageRelevant, false);
+    assert.equal(producer.result.scope.webCodeRelevant, false);
+    assert.equal(producer.result.scope.mobileCodeRelevant, false);
+  } finally {
+    fs.rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+  }
+});
+
+test("An unrelated JavaScript CI script does not select Python coverage", () => {
+  const { baseSha, candidateSha } = currentRepositoryShas();
+  const scope = resolveCiScope({
+    repositoryRoot: REPOSITORY_ROOT,
+    eventName: "push",
+    eventBefore: baseSha,
+    eventSha: candidateSha,
+    changedFiles: ["scripts/ci/unrelated-node-helper.mjs"],
+  });
+
+  assert.equal(scope.scope.pythonCoverageRelevant, false);
+  assert.equal(scope.scope.nodeCoverageRelevant, true);
+});
+
 test("CI consumes the Python scope signal for the exact candidate checkout", () => {
   const workflow = fs.readFileSync(join(REPOSITORY_ROOT, ".github", "workflows", "ci.yml"), "utf8");
   assert.match(workflow, /python_coverage_relevant:\s*\$\{\{\s*steps\.detect-scope\.outputs\.python_coverage_relevant\s*\}\}/);
