@@ -1671,8 +1671,8 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/learning/quiz/quiz-bank-admin.ts",
-      "line": 332,
+      "path": "apps/web/src/lib/learning/quiz/quiz-bank-admin-snapshot.ts",
+      "line": 145,
       "category": "métier/domain pur",
       "ceiling": 19,
       "status": "LEGACY",
@@ -4272,8 +4272,8 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/environmental-impact-estimator/codex-usage-store.ts",
-      "line": 417,
+      "path": "apps/web/src/lib/environmental-impact-estimator/codex-usage-estimation.ts",
+      "line": 122,
       "category": "runtime/services/orchestration",
       "ceiling": 41,
       "status": "IMPROVED",
@@ -4551,8 +4551,8 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/learning/quiz/quiz-bank-admin.ts",
-      "line": 320,
+      "path": "apps/web/src/lib/learning/quiz/quiz-bank-admin-snapshot.ts",
+      "line": 136,
       "category": "métier/domain pur",
       "ceiling": 147,
       "status": "LEGACY",
@@ -4560,8 +4560,8 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/learning/quiz/quiz-bank-admin.ts",
-      "line": 332,
+      "path": "apps/web/src/lib/learning/quiz/quiz-bank-admin-snapshot.ts",
+      "line": 145,
       "category": "métier/domain pur",
       "ceiling": 93,
       "status": "LEGACY",

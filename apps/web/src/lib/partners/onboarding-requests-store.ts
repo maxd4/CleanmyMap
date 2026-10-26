@@ -16,12 +16,16 @@ import {
   writeLocalRecordStore,
 } from "@/lib/persistence/local-record-store";
 import {
-  normalizePartnerAvailability,
-  normalizePartnerCoverage,
-  normalizeEngagementTypes,
-  normalizePublicWebUrl,
   type PartnerOnboardingRequestInput,
 } from "./onboarding-types";
+import {
+  normalizePartnerOnboardingSupabaseRow,
+  normalizeStoredPartnerOnboardingRequest,
+} from "./onboarding-requests-normalization";
+import type { PartnerOnboardingRequestRecord } from "./onboarding-requests-normalization";
+
+export type { PartnerOnboardingRequestRecord } from "./onboarding-requests-normalization";
+export { normalizeStoredPartnerOnboardingRequest } from "./onboarding-requests-normalization";
 import {
   appendPublishedPartnerAnnuaireEntry,
   buildPublishedPartnerAnnuaireEntry,
@@ -44,17 +48,6 @@ const STORE_FILE = join(
 const SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS =
   "id, created_at, submitted_by_user_id, submitted_by_email, idempotency_key, organization_name, organization_type, partner_scope, legal_identity, coverage, contribution_types, engagement_types, relay_actions, availability, contact_name, contact_channel, contact_details, motivation, public_website_url, public_website_consent, status, creator_state";
 
-export type PartnerOnboardingRequestRecord = Omit<PartnerOnboardingRequestInput, "publicWebsiteConsent"> & {
-  id: string;
-  createdAt: string;
-  submittedByUserId: string;
-  submittedByEmail: string | null;
-  idempotencyKey?: string;
-  publicWebsiteConsent: boolean;
-  status: "pending_admin_review" | "accepted" | "rejected";
-  creatorState: "new" | "pending" | "responded" | "treated" | "archived" | "accepted" | "rejected";
-};
-
 type StorePayload = {
   updatedAt: string;
   records: PartnerOnboardingRequestRecord[];
@@ -62,156 +55,6 @@ type StorePayload = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isUnknownArray(value: unknown): value is readonly unknown[] {
-  return Array.isArray(value);
-}
-
-function readStringField(record: Record<string, unknown>, key: string): string {
-  return typeof record[key] === "string" ? record[key] : "";
-}
-
-function readOptionalStringField(record: Record<string, unknown>, key: string): string | null {
-  const value = readStringField(record, key);
-  return value.trim().length > 0 ? value : null;
-}
-
-function isOrganizationType(
-  value: unknown,
-): value is PartnerOnboardingRequestInput["organizationType"] {
-  return value === "association" || value === "commerce" || value === "entreprise" || value === "collectif";
-}
-
-function isContributionType(
-  value: unknown,
-): value is PartnerOnboardingRequestInput["contributionTypes"][number] {
-  return (
-    value === "materiel" ||
-    value === "logistique" ||
-    value === "accueil" ||
-    value === "financement" ||
-    value === "communication"
-  );
-}
-
-function normalizeContributionTypes(
-  rawValue: unknown,
-): PartnerOnboardingRequestInput["contributionTypes"] {
-  if (!Array.isArray(rawValue)) {
-    return [];
-  }
-  return rawValue.filter(isContributionType);
-}
-
-function normalizeCreatorState(
-  rawValue: unknown,
-  status: "pending_admin_review" | "accepted" | "rejected",
-): PartnerOnboardingRequestRecord["creatorState"] {
-  if (
-    rawValue === "pending" ||
-    rawValue === "responded" ||
-    rawValue === "treated" ||
-    rawValue === "archived" ||
-    rawValue === "accepted" ||
-    rawValue === "rejected"
-  ) {
-    return rawValue;
-  }
-  return status === "accepted" ? "accepted" : status === "rejected" ? "rejected" : "new";
-}
-
-export function normalizeStoredPartnerOnboardingRequest(
-  record: Record<string, unknown>,
-): PartnerOnboardingRequestRecord | null {
-  const id = readStringField(record, "id");
-  const createdAt = readStringField(record, "createdAt");
-  const submittedByUserId = readStringField(record, "submittedByUserId");
-  const submittedByEmail = readOptionalStringField(record, "submittedByEmail");
-  const idempotencyKey = readOptionalStringField(record, "idempotencyKey") ?? undefined;
-  const status =
-    record["status"] === "accepted" || record["status"] === "rejected"
-      ? record["status"]
-      : "pending_admin_review";
-  const creatorState = normalizeCreatorState(record["creatorState"], status);
-  const organizationName = readStringField(record, "organizationName");
-  const organizationType = record["organizationType"];
-  const partnerScope =
-    record["partnerScope"] === "national" || record["partnerScope"] === "france"
-      ? record["partnerScope"]
-      : "local";
-  const legalIdentity = readStringField(record, "legalIdentity");
-  const contributionTypes = normalizeContributionTypes(record["contributionTypes"]);
-  const engagementTypes = normalizeEngagementTypes(record["engagementTypes"]);
-
-  if (
-    !id ||
-    !createdAt ||
-    !submittedByUserId ||
-    !organizationName ||
-    !legalIdentity ||
-    !isOrganizationType(organizationType) ||
-    contributionTypes.length === 0
-  ) {
-    return null;
-  }
-
-  const coverage = normalizePartnerCoverage(record["coverage"]);
-  const availability = normalizePartnerAvailability(record["availability"]);
-
-  return {
-    id,
-    createdAt,
-    submittedByUserId,
-    submittedByEmail,
-    idempotencyKey,
-    status,
-    organizationName,
-    organizationType,
-    partnerScope,
-    legalIdentity,
-    coverage,
-    contributionTypes,
-    engagementTypes,
-    relayActions: readStringField(record, "relayActions"),
-    availability,
-    contactName: readStringField(record, "contactName"),
-    contactChannel: readStringField(record, "contactChannel"),
-    contactDetails: readStringField(record, "contactDetails"),
-    motivation: readStringField(record, "motivation"),
-    publicWebsiteUrl: normalizePublicWebUrl(record["publicWebsiteUrl"]) ?? undefined,
-    publicWebsiteConsent: record["publicWebsiteConsent"] === true,
-    creatorState,
-  };
-}
-
-function fromSupabaseRow(
-  row: Record<string, unknown>,
-): PartnerOnboardingRequestRecord | null {
-  return normalizeStoredPartnerOnboardingRequest({
-    id: row.id,
-    createdAt: row.created_at,
-    submittedByUserId: row.submitted_by_user_id,
-    submittedByEmail: row.submitted_by_email,
-    idempotencyKey: row.idempotency_key,
-    organizationName: row.organization_name,
-    organizationType: row.organization_type,
-    partnerScope: row.partner_scope,
-    legalIdentity: row.legal_identity,
-    coverage: row.coverage,
-    contributionTypes: row.contribution_types,
-    engagementTypes: row.engagement_types,
-    relayActions: row.relay_actions,
-    availability: row.availability,
-    contactName: row.contact_name,
-    contactChannel: row.contact_channel,
-    contactDetails: row.contact_details,
-    motivation: row.motivation,
-    publicWebsiteUrl: row.public_website_url,
-    publicWebsiteConsent: row.public_website_consent === true,
-    status: row.status,
-    creatorState: row.creator_state,
-  });
 }
 
 async function readStore(): Promise<StorePayload> {
@@ -282,7 +125,7 @@ export async function appendPartnerOnboardingRequest(params: {
     );
     if (!isRecord(rawResult) || !("data" in rawResult) || !("error" in rawResult)) throw new Error("Supabase returned an invalid partner onboarding response.");
     if (rawResult.error) throw new Error(isRecord(rawResult.error) && typeof rawResult.error.message === "string" ? rawResult.error.message : "Partner onboarding RPC failed.");
-    const rpcRow = isUnknownArray(rawResult.data) ? rawResult.data[0] : rawResult.data;
+    const rpcRow = Array.isArray(rawResult.data) ? rawResult.data[0] : rawResult.data;
     if (!isRecord(rpcRow) || typeof rpcRow.request_id !== "string") {
       throw new Error("Supabase returned no partner onboarding request.");
     }
@@ -292,7 +135,7 @@ export async function appendPartnerOnboardingRequest(params: {
         .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
         .eq("id", rpcRow.request_id)
         .single(),
-      fromSupabaseRow,
+      normalizePartnerOnboardingSupabaseRow,
       "Supabase returned an invalid partner onboarding request.",
     );
   } else {
@@ -341,7 +184,7 @@ export async function listPartnerOnboardingRequests(
         `created_at.lt.${beforeCursor.createdAt},and(created_at.eq.${beforeCursor.createdAt},id.lt.${beforeCursor.id})`,
       );
     }
-    return readSupabaseRecords(query.limit(normalizedLimit), fromSupabaseRow);
+    return readSupabaseRecords(query.limit(normalizedLimit), normalizePartnerOnboardingSupabaseRow);
   }
 
   const store = await readStore();
@@ -377,7 +220,7 @@ export async function getPartnerOnboardingRequestById(
         .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
         .eq("id", requestId)
         .maybeSingle(),
-      fromSupabaseRow,
+      normalizePartnerOnboardingSupabaseRow,
     );
   }
 
@@ -422,7 +265,7 @@ export async function updatePartnerOnboardingRequestStatus(params: {
         .eq("id", params.requestId)
         .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
         .maybeSingle(),
-      fromSupabaseRow,
+      normalizePartnerOnboardingSupabaseRow,
     );
   }
 
@@ -468,7 +311,7 @@ export async function updatePartnerOnboardingRequestCreatorState(params: {
         .eq("id", params.requestId)
         .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
         .maybeSingle(),
-      fromSupabaseRow,
+      normalizePartnerOnboardingSupabaseRow,
     );
   }
 

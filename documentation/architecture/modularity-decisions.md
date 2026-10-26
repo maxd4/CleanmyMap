@@ -13,6 +13,11 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 <!-- RADAR:HUMAN_DECISIONS:BEGIN -->
 | PATH | ARCHITECTURE_DECISION | PRIORITY | DEPENDENCY_OR_BLOCKER | NEXT_TRIGGER |
 | --- | --- | --- | --- | --- |
+| `apps/web/src/lib/partners/onboarding-requests-store.ts` | ALREADY_MODULARIZED | NONE | préserver les normalisations fail-closed, l'idempotence et les chemins Supabase/fichier | nouveau contrat de persistance ou de normalisation consommé indépendamment |
+| `apps/web/src/lib/environmental-impact-estimator/codex-usage-store.ts` | ALREADY_MODULARIZED | NONE | préserver la persistance, les fallbacks et les contrats de snapshots hebdomadaires | nouveau contrat de projection mensuelle ou de stockage indépendant |
+| `apps/web/src/lib/actions/map/map-http.ts` | ALREADY_MODULARIZED | NONE | préserver le fast path HTTP, le fallback Supabase, les scopes et les contrats géométriques | nouvelle source cartographique ou projection autonome |
+| `apps/web/src/lib/learning/quiz/quiz-bank-admin.ts` | ALREADY_MODULARIZED | NONE | préserver les contrats de filtrage et la façade publique du snapshot d'administration | nouveau consommateur indépendant du rapport d'audit ou du catalogue |
+| `apps/web/src/components/admin/admin-dashboard-ui.tsx` | ALREADY_MODULARIZED | NONE | préserver les exports UI, les tokens visuels et les contrats des cartes admin | nouvelle famille de panneau autonome ou état propre réintroduit dans la façade |
 | `apps/web/src/components/sections/rubriques/partners-network-directory.tsx` | ALREADY_MODULARIZED | NONE | préserver le contrat de l'annuaire, les filtres et les résultats | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/chat/chat-shell.tsx` | ALREADY_MODULARIZED | NONE | aucun ; les frontières client restent séparées et les effets existants sont préservés | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 | `apps/web/src/components/sections/rubriques/elus-section.tsx` | ALREADY_MODULARIZED | NONE | conserver l'orchestration overview/navigation/panels | nouvelle responsabilité autonome réintroduite dans la façade |
@@ -65,7 +70,13 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | `apps/web/src/lib/spogomi/preparation-service.ts` | COHESIVE_SINGLE_FILE | NONE | préserver les contrats d'import de roster et de composition, les verrous de reprise et les RPC transactionnelles | nouveau consommateur indépendant d'import ou de composition, ou persistance d'un des deux workflows déplacée vers un owner dédié |
 | `apps/web/src/lib/reports/report-generation-history-store.ts` | COHESIVE_SINGLE_FILE | NONE | préserver la cohérence snapshot/métadonnées, l'ownership Clerk et les résolutions direct/derived | nouveau contrat de lecture ou de persistance indépendant, ou divergence entre historique et snapshot |
 | `apps/web/src/app/api/api-boundary.test.ts` | ALREADY_MODULARIZED | NONE | séparer l'inventaire des routes de l'analyse d'évidence sans perdre les mêmes helpers canoniques | nouvelle famille de contrat d'évidence ou nouvelle dépendance de parcours HTTP indépendante |
+| `apps/web/src/app/api/api-boundary-analysis.ts` | ALREADY_MODULARIZED | NONE | conserver l'analyse locale des méthodes, imports et délégations comme owner partagé des suites API | nouvelle analyse indépendante qui ne relève plus de l'inventaire ou de l'évidence |
 | `apps/web/src/app/api/reports/generations/route.test.ts` | ALREADY_MODULARIZED | NONE | préserver l'ordre AuthN → quota → source → persistance et les assertions d'incertitude | nouveau flux de rapport indépendant ou fixture qui porte un contrat métier autonome |
+| `apps/web/src/app/api/reports/generations/route.test.helpers.ts` | ALREADY_MODULARIZED | NONE | préserver les mocks de frontières et les defaults par méthode | nouveau owner de mock ou nouvelle frontière de route indépendante |
+| `apps/web/src/app/api/reports/generations/route.get.test.ts` | ALREADY_MODULARIZED | NONE | préserver l'ownership, les filtres et l'absence d'accès quota en lecture | nouvelle famille de lecture historique indépendante |
+| `apps/web/src/app/api/reports/generations/route.persistence.test.ts` | ALREADY_MODULARIZED | NONE | préserver la reprise d'insertion, l'audit et la conservation du quota | nouveau contrat de persistance non partagé avec POST |
+| `apps/web/src/app/api/actions/[actionId]/group-join/route.post.test.ts` | ALREADY_MODULARIZED | NONE | préserver la modération admin et les mutations ordinaires de participation | nouveau flux POST indépendant des décisions de modération |
+| `apps/web/src/app/api/actions/[actionId]/group-join/route.post-action-claims.test.ts` | ALREADY_MODULARIZED | NONE | préserver l'ownership, l'idempotence et la séparation des revendications post-action | nouveau type de revendication ou changement de frontière d'autorisation |
 | `apps/web/src/lib/auth/api-authorization-contract.actions.ts` | ALREADY_MODULARIZED | NONE | conserver une seule façade d'assemblage et les clés sans collision | nouveau domaine d'autorisation indépendant consommé hors de la façade actions |
 | `apps/web/src/lib/spogomi/results-projection.ts` | ALREADY_MODULARIZED | NONE | préserver la façade projection/export et la validation publique fail-closed | nouveau contrat de projection ou parser public consommé indépendamment |
 | `apps/web/src/lib/actions/signalement/signalement-media.ts` | ALREADY_MODULARIZED | NONE | préserver AuthZ, validation média, états d'upload et contrats de stockage | nouveau workflow média indépendant ou divergence entre validation et persistance |
@@ -745,9 +756,9 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | MAIN_CONSUMERS | suite d'inventaire et `api-boundary.evidence.test.ts` |
 | TEST_BOUNDARY | tests d'inventaire des routes d'un côté ; scénarios d'invocation, alias et callbacks de l'autre |
 | COUPLING | les scénarios partagent le même analyseur de portée et de délégation ; la séparation porte sur les contrats testés |
-| NATURAL_EXTRACTION_BOUNDARY | l'analyse d'évidence est portée par la suite dédiée ; l'inventaire et ses helpers restent la façade canonique |
+| NATURAL_EXTRACTION_BOUNDARY | `api-boundary-analysis.ts` porte les primitives communes de parcours et d'analyse ; la façade d'inventaire et la suite d'évidence restent séparées par contrat |
 | ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
-| RATIONALE | la nouvelle suite séparée couvre les comportements d'évidence sans découpage arbitraire ; la façade d'inventaire conserve les propriétaires et les imports existants |
+| RATIONALE | l'analyse partagée est sortie dans un owner test-only cohésif ; la façade conserve les propriétaires et les imports existants, tandis que les scénarios d'évidence restent dans leur suite dédiée |
 | PRIORITY | NONE |
 | DEPENDENCY_OR_BLOCKER | séparer l'inventaire des routes de l'analyse d'évidence sans perdre les mêmes helpers canoniques |
 | NEXT_TRIGGER | nouvelle famille de contrat d'évidence ou nouvelle dépendance de parcours HTTP indépendante |
@@ -760,14 +771,28 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | PUBLIC_CONTRACTS | scénarios GET/POST de `/api/reports/generations` et fixtures de payloads validés |
 | SIDE_EFFECTS | mocks contrôlés des owners de quota, sources, audit et persistance |
 | MAIN_CONSUMERS | route de génération de rapports et ses consommateurs de reprise/historique |
-| TEST_BOUNDARY | le fichier conserve les flux HTTP ; les fixtures stables sont isolées pour éviter une suite structurellement top-heavy |
+| TEST_BOUNDARY | `route.test.ts` conserve les flux POST principaux ; `route.get.test.ts` porte la lecture historique ; `route.persistence.test.ts` porte la récupération d'insertion et d'audit ; les fixtures et mocks stables sont isolés |
 | COUPLING | l'ordre observable des gardes, réservations et écritures reste testé dans la suite HTTP |
-| NATURAL_EXTRACTION_BOUNDARY | fixtures de contrat d'un côté ; scénarios d'exécution et refus de l'autre |
+| NATURAL_EXTRACTION_BOUNDARY | defaults/mocks dans `route.test.helpers.ts` ; lecture historique dans `route.get.test.ts` ; reprise de persistance dans `route.persistence.test.ts` ; flux POST courant dans la suite principale |
 | ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
-| RATIONALE | l'extraction des fixtures réduit la taille sans déplacer les assertions métier ni fragmenter artificiellement les scénarios |
+| RATIONALE | le harness partagé évite la duplication de mocks ; les suites sont séparées par contrats HTTP observables et ramènent chaque propriétaire sous la cible structurelle sans déplacer les assertions métier |
 | PRIORITY | NONE |
 | DEPENDENCY_OR_BLOCKER | préserver l'ordre AuthN → quota → source → persistance et les assertions d'incertitude |
 | NEXT_TRIGGER | nouveau flux de rapport indépendant ou fixture qui porte un contrat métier autonome |
+
+#### `apps/web/src/app/api/actions/[actionId]/group-join/route.post-action-claims.test.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | décisions accept/reject des revendications post-action, ownership, idempotence et séparation de la participation ordinaire |
+| PUBLIC_CONTRACTS | POST `/api/actions/:actionId/group-join` avec `requestKind=post_action_claim` |
+| SIDE_EFFECTS | mocks contrôlés des participants, audit, RPC et progression/gamification |
+| MAIN_CONSUMERS | route dynamique group-join et ses propriétaires de revue post-action |
+| TEST_BOUNDARY | propriétaire de revendication dans cette suite ; modération admin et mutations ordinaires conservées dans `route.post.test.ts` |
+| COUPLING | partage uniquement le harness de route et les frontières canoniques ; aucun ordre d'autorisation ou effet métier n'est déplacé |
+| NATURAL_EXTRACTION_BOUNDARY | les scénarios de revendication forment une famille autonome par type de requête et par effets autorisés |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | extraction par contrat post-action cohésif ; aucune assertion n'a été supprimée et les tests restent exécutés contre la même route |
 
 #### `apps/web/src/lib/auth/api-authorization-contract.actions.ts`
 
@@ -819,4 +844,89 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | PRIORITY | NONE |
 | DEPENDENCY_OR_BLOCKER | préserver AuthZ, validation média, états d'upload et contrats de stockage |
 | NEXT_TRIGGER | nouveau workflow média indépendant ou divergence entre validation et persistance |
+
+#### `apps/web/src/lib/partners/onboarding-requests-store.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | façade de persistance locale/Supabase, idempotence, lecture paginée et mutations de statut |
+| PUBLIC_CONTRACTS | exports de persistance et types `PartnerOnboardingRequestRecord` conservés |
+| SIDE_EFFECTS | lecture/écriture du store local, RPC et tables Supabase, projection annuaire |
+| MAIN_CONSUMERS | onboarding partenaires, creator inbox, routes admin et tests de persistance |
+| TEST_BOUNDARY | tests du store et contrats creator inbox ; les données malformées restent couvertes par l'owner de normalisation |
+| COUPLING | normalisation des lignes et écriture partagent le type record mais pas les responsabilités d'exécution |
+| NATURAL_EXTRACTION_BOUNDARY | conversion des entrées legacy/Supabase vers le record d'un côté ; persistence/idempotence de l'autre |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | `onboarding-requests-normalization.ts` porte les validations de forme et la projection de colonnes ; le store reste une façade courte qui conserve les chemins Supabase/fichier et les effets dans leur ordre historique |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver les normalisations fail-closed, l'idempotence et les chemins Supabase/fichier |
+| NEXT_TRIGGER | nouveau contrat de persistance ou de normalisation consommé indépendamment |
+
+#### `apps/web/src/lib/environmental-impact-estimator/codex-usage-store.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | persistance et lecture des snapshots hebdomadaires Codex, fallback local et projection Supabase |
+| PUBLIC_CONTRACTS | `buildCodexUsageWeeklySnapshot`, lectures/écriture hebdomadaires et façade de compatibilité mensuelle |
+| SIDE_EFFECTS | accès Supabase et store local avec fallback conditionnel |
+| MAIN_CONSUMERS | estimateur d'impact, signaux projet, dashboard et tests d'usage Codex |
+| TEST_BOUNDARY | tests de snapshots hebdomadaires et estimations mensuelles |
+| COUPLING | persistance et projection partageaient les records mais pas les règles de fenêtrage, d'agrégation et de confiance |
+| NATURAL_EXTRACTION_BOUNDARY | `codex-usage-estimation.ts` porte agrégation, équivalent mensuel et notes ; le store porte les effets de persistance |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | l'extraction sépare le calcul pur de projection sans déplacer le contrat public ni les fallbacks de persistance |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver la persistance, les fallbacks et les contrats de snapshots hebdomadaires |
+| NEXT_TRIGGER | nouveau contrat de projection mensuelle ou de stockage indépendant |
+
+#### `apps/web/src/lib/actions/map/map-http.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | façade de requête HTTP cartographique, fallback Supabase et assemblage de réponse |
+| PUBLIC_CONTRACTS | `buildMapActionsQueryString`, `fetchMapActions`, `FetchMapActionsParams` |
+| SIDE_EFFECTS | fetch navigateur, RPC Supabase et lecture des références de pollution |
+| MAIN_CONSUMERS | cartes d'actions, couches de rendu et consommateurs du feed public |
+| TEST_BOUNDARY | tests de query string, contrats de feed et réponses cartographiques |
+| COUPLING | normalisation de lignes, filtrage par scope, mapping de contrats et effets réseau étaient mêlés dans la façade |
+| NATURAL_EXTRACTION_BOUNDARY | `map-http-contracts.ts` porte les types de ligne, normalisation, mapping et assemblage pur ; la façade conserve le réseau et le fallback |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | le découpage conserve le fast path HTTP et le fallback RPC tout en isolant le contrat canonique d'un item cartographique |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver le fast path HTTP, le fallback Supabase, les scopes et les contrats géométriques |
+| NEXT_TRIGGER | nouvelle source cartographique ou projection autonome |
+
+#### `apps/web/src/lib/learning/quiz/quiz-bank-admin.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | contrats de filtre et façade du snapshot d'administration du quiz |
+| PUBLIC_CONTRACTS | `QuizBankAdminFilters`, `QuizBankAdminQuestion`, `QuizBankAdminSnapshot`, `filterQuizBankAdminQuestions`, `buildQuizBankAdminSnapshot` |
+| SIDE_EFFECTS | aucun effet externe ; agrégation des rapports d'audit fournis par les owners quiz |
+| MAIN_CONSUMERS | écran d'administration du quiz et tests de catalogue/audit |
+| TEST_BOUNDARY | tests de filtrage et de construction du snapshot ; la projection de métadonnées est testée par l'owner dédié |
+| COUPLING | types de filtre et projection d'audit partageaient un fichier mais avaient des évolutions différentes |
+| NATURAL_EXTRACTION_BOUNDARY | `quiz-bank-admin-snapshot.ts` porte la projection audit/source/priority ; la façade conserve types et filtrage |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | les critères de qualité, sources, suggestions et priorités forment une projection autonome ; l'API de filtre reste stable et légère |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver les contrats de filtrage et la façade publique du snapshot d'administration |
+| NEXT_TRIGGER | nouveau consommateur indépendant du rapport d'audit ou du catalogue |
+
+#### `apps/web/src/components/admin/admin-dashboard-ui.tsx`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | primitives de navigation, actions, métriques et façade des composants du dashboard admin |
+| PUBLIC_CONTRACTS | exports `AdminHeroStrip`, `AdminPillLink`, `AdminSectionHeader`, `AdminOperationalMetricGrid`, `AdminActionGrid`, `AdminInfoBanner`, `AdminProfileSwitchStrip` |
+| SIDE_EFFECTS | navigation Link uniquement ; aucun accès de données ou effet admin dans ces composants de présentation |
+| MAIN_CONSUMERS | pages et sections du dashboard admin |
+| TEST_BOUNDARY | tests UI admin et contrats de rendu des métriques/actions |
+| COUPLING | les cartes d'action/métriques et les bandeaux d'identité partageaient des tokens mais pas le même contrat de rendu |
+| NATURAL_EXTRACTION_BOUNDARY | `admin-dashboard-banners.tsx` porte les bandeaux, l'icône et les tokens associés ; la façade conserve actions, métriques et navigation |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | le split retire une famille UI autonome sans modifier les exports historiques ni dupliquer les tokens visuels |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver les exports UI, les tokens visuels et les contrats des cartes admin |
+| NEXT_TRIGGER | nouvelle famille de panneau autonome ou état propre réintroduit dans la façade |
 <!-- RADAR:HUMAN_DECISIONS:END -->
