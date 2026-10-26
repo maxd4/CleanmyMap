@@ -254,6 +254,36 @@ Pour tout changement fonctionnel, Codex ajoute ou adapte les tests nécessaires
 avant publication et respecte la politique canonique de couverture de
 `documentation/development/testing-quality-coverage.md`.
 
+### Tests massifs et couverture approfondie — obligatoire
+
+Tous les lots Codex, y compris les corrections de bugs, refactorisations,
+évolutions fonctionnelles, chantiers d'architecture et campagnes de qualité,
+exigent une campagne de tests large sur l'intégralité du périmètre autorisé.
+Quelques tests ciblés ne suffisent jamais à clôturer un lot.
+
+**TESTS MASSIFS OBLIGATOIRES :** enrichir largement et méthodiquement les
+suites de tests du périmètre traité. Explorer les branches et comportements
+importants, ajouter de nombreuses régressions et vérifier les consommateurs
+directs. Ne pas considérer quelques tests ciblés comme suffisants. Conserver
+les contrats existants, mesurer les progrès et signaler explicitement toute
+propriété importante non prouvée.
+
+La campagne doit examiner les fonctions, services, routes, composants,
+dépendances directes et consommateurs concernés, puis couvrir autant que le
+risque l'exige les scénarios nominaux, limites, invalides, adversariaux,
+erreurs, transitions d'état, concurrence, reprises et régressions historiques.
+Les tests comportementaux et les preuves d'intégration, API, UI, PostgreSQL ou
+E2E sont privilégiés lorsque les invariants ne sont pas prouvables par des
+tests unitaires et que l'environnement autorisé est disponible. Pour chaque
+invariant, établir une matrice propriétaire → tests existants → lacunes →
+nouvelles preuves, et mesurer les quatre métriques de couverture avant/après
+lorsqu'elles sont comparables.
+
+Cette exigence ne justifie jamais une règle métier modifiée, un seuil abaissé,
+une métrique manipulée, un test artificiel ou une extension hors périmètre.
+Les tests restent déterministes, maintenables et proportionnés au risque ; les
+propriétés importantes non prouvées restent explicitement signalées.
+
 `npm run checks:full` / `FULL` **uniquement** sur demande explicite dédiée ou
 préparation immédiate, explicitement demandée, d'un déploiement Vercel. Ne
 jamais en faire la STOP CONDITION d'un lot ordinaire ; hors de ces cas, renvoyer
