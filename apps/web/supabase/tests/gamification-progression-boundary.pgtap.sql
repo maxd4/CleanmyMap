@@ -1,6 +1,6 @@
 begin;
 
-select plan(45);
+select plan(56);
 
 -- The projection is server-owned. The assertions below verify the effective
 -- grants first, then use the real reconciliation RPC for producer behavior.
@@ -30,7 +30,12 @@ select is((select count(*)::integer from public.progression_events where user_id
 select is(
   (public.apply_gamification_reconciliation(
     'm7c-owner-a',
-    '[]'::jsonb,
+    (select coalesce(jsonb_agg(jsonb_build_object(
+      'id', id, 'event_type', event_type, 'source_table', source_table,
+      'source_id', source_id, 'status_phase', status_phase, 'weight', weight,
+      'xp_base', xp_base, 'xp_awarded', xp_awarded, 'occurred_on', occurred_on,
+      'metadata', metadata
+    ) order by id), '[]'::jsonb) from public.progression_events where user_id = 'm7c-owner-a'),
     '[{"event_type":"action_declare_validation","source_table":"actions","source_id":"m7c-current-action","status_phase":"validated","weight":1,"xp_base":1,"xp_awarded":1,"occurred_on":"2026-10-26","metadata":{"gamificationEngine":"CURRENT_RECONCILABLE","logicalId":"m7c-owner-a:organisation:actions:m7c-current-action::validated","mechanicId":"organisation","rulesVersion":"gamification-2026.10-v1"}}]'::jsonb,
     '[]'::jsonb,
     '{}'::bigint[],
@@ -42,29 +47,39 @@ select is(
   'applied',
   'the real reconciliation RPC applies a CURRENT projection'
 );
-select is(
-  (public.apply_gamification_reconciliation(
-    'm7c-owner-a',
-    '[]'::jsonb,
-    '[{"event_type":"action_declare_validation","source_table":"actions","source_id":"m7c-current-action","status_phase":"validated","weight":1,"xp_base":1,"xp_awarded":1,"occurred_on":"2026-10-26","metadata":{"gamificationEngine":"CURRENT_RECONCILABLE","logicalId":"m7c-owner-a:organisation:actions:m7c-current-action::validated","mechanicId":"organisation","rulesVersion":"gamification-2026.10-v1"}}]'::jsonb,
-    '[]'::jsonb,
-    '{}'::bigint[],
-    null,
-    '{"xp_total":5,"xp_pending":0,"xp_validated":5,"current_level":1,"potential_level":3,"current_applied_rules_revision":16}'::jsonb,
-    '{"reconciliationId":"m7c-reconciliation-a","occurredAt":"2026-10-26T12:00:00Z","hasUserVisibleChanges":true}'::jsonb,
-    null
-  ) ->> 'status'),
-  'applied',
-  'a producer retry remains an applied no-op rather than failing'
-);
+select is((select count(*)::integer from public.progression_events where user_id = 'm7c-owner-a'), 2, 'the first CURRENT apply retains the LEGACY and CURRENT rows');
+select is((select count(*)::integer from public.progression_events where user_id = 'm7c-owner-a' and source_id = 'm7c-legacy-1' and xp_awarded = 4), 1, 'the LEGACY event remains a distinct 4 XP fact');
+select is((select count(*)::integer from public.progression_events where user_id = 'm7c-owner-a' and source_id = 'm7c-current-action' and xp_awarded = 1), 1, 'the CURRENT event remains a distinct 1 XP fact');
 select is((select count(*)::integer from public.progression_events where user_id = 'm7c-owner-a' and source_id = 'm7c-current-action'), 1, 'the CURRENT event is persisted exactly once');
-select is((select count(*)::integer from public.progression_events where user_id = 'm7c-owner-a'), 2, 'the CURRENT projection does not replace the LEGACY fact');
-select is((select count(*)::integer from public.progression_events where user_id = 'm7c-owner-a' and status_phase = 'validated' and xp_awarded = 5), 1, 'the persisted ledger carries the exact validated XP total');
+select is((select coalesce(sum(xp_awarded), 0)::integer from public.progression_events where user_id = 'm7c-owner-a' and status_phase = 'validated'), 5, 'the persisted ledger sum carries 4 LEGACY plus 1 CURRENT validated XP');
 select is((select xp_total::integer from public.progression_profiles where user_id = 'm7c-owner-a'), 5, 'the profile total is synchronized with legacy plus CURRENT XP');
 select is((select xp_validated::integer from public.progression_profiles where user_id = 'm7c-owner-a'), 5, 'the profile validated total is persisted');
 select is((select current_applied_rules_revision from public.progression_profiles where user_id = 'm7c-owner-a'), 16, 'the applied rules revision is persisted');
 select is((select count(*)::integer from public.app_notifications where user_id = 'm7c-owner-a' and type = 'gamification_reconciliation'), 1, 'one visible reconciliation produces one receipt');
 select is((select payload ->> 'reconciliationId' from public.app_notifications where user_id = 'm7c-owner-a' and type = 'gamification_reconciliation'), 'm7c-reconciliation-a', 'the receipt keeps its deterministic identity');
+
+-- A retry carrying the pre-apply ledger snapshot must conflict before any
+-- attempted event, profile update or receipt can be persisted.
+select is(public.apply_gamification_reconciliation(
+  'm7c-owner-a',
+  (select jsonb_build_array(jsonb_build_object(
+    'id', id, 'event_type', event_type, 'source_table', source_table,
+    'source_id', source_id, 'status_phase', status_phase, 'weight', weight,
+    'xp_base', xp_base, 'xp_awarded', xp_awarded, 'occurred_on', occurred_on,
+    'metadata', metadata
+  )) from public.progression_events where user_id = 'm7c-owner-a' and source_id = 'm7c-legacy-1'),
+  '[{"event_type":"action_declare_validation","source_table":"actions","source_id":"m7c-stale-retry-event","status_phase":"validated","weight":1,"xp_base":1,"xp_awarded":1,"occurred_on":"2026-10-26","metadata":{}}]'::jsonb,
+  '[]'::jsonb, '{}'::bigint[],
+  (select updated_at from public.progression_profiles where user_id = 'm7c-owner-a'),
+  '{"xp_total":5,"xp_pending":0,"xp_validated":5,"current_level":1,"potential_level":3,"current_applied_rules_revision":16}'::jsonb,
+  '{"reconciliationId":"m7c-stale-retry","occurredAt":"2026-10-26T12:01:00Z","hasUserVisibleChanges":true}'::jsonb,
+  null
+) ->> 'status'), 'conflict', 'a retry with the obsolete LEGACY-only snapshot conflicts');
+select is((select count(*)::integer from public.progression_events where user_id = 'm7c-owner-a' and source_id = 'm7c-stale-retry-event'), 0, 'the obsolete retry writes no new ledger event');
+select is((select count(*)::integer from public.app_notifications where user_id = 'm7c-owner-a' and type = 'gamification_reconciliation'), 1, 'the obsolete retry writes no receipt');
+
+-- A replay with the complete current snapshot and current profile revision is
+-- applied with zero ledger deltas and keeps the deterministic receipt unique.
 select is((public.apply_gamification_reconciliation(
   'm7c-owner-a',
   (select coalesce(jsonb_agg(jsonb_build_object(
@@ -78,8 +93,49 @@ select is((public.apply_gamification_reconciliation(
   '{"xp_total":5,"xp_pending":0,"xp_validated":5,"current_level":1,"potential_level":3,"current_applied_rules_revision":16}'::jsonb,
   '{"reconciliationId":"m7c-reconciliation-a","occurredAt":"2026-10-26T12:00:00Z","hasUserVisibleChanges":true}'::jsonb,
   null
-) ->> 'inserted')::integer, 0, 'an exact retry modifies zero ledger rows');
-select is((select count(*)::integer from public.app_notifications where user_id = 'm7c-owner-a' and type = 'gamification_reconciliation'), 1, 'an exact retry does not duplicate the receipt');
+), '{"status":"applied","inserted":0,"updated":0,"removed":0}'::jsonb, 'a current-snapshot replay is applied with zero ledger deltas');
+select is((public.apply_gamification_reconciliation(
+  'm7c-owner-a',
+  (select coalesce(jsonb_agg(jsonb_build_object(
+    'id', id, 'event_type', event_type, 'source_table', source_table,
+    'source_id', source_id, 'status_phase', status_phase, 'weight', weight,
+    'xp_base', xp_base, 'xp_awarded', xp_awarded, 'occurred_on', occurred_on,
+    'metadata', metadata
+  ) order by id), '[]'::jsonb) from public.progression_events where user_id = 'm7c-owner-a'),
+  '[]'::jsonb, '[]'::jsonb, '{}'::bigint[],
+  (select updated_at from public.progression_profiles where user_id = 'm7c-owner-a'),
+  '{"xp_total":5,"xp_pending":0,"xp_validated":5,"current_level":1,"potential_level":3,"current_applied_rules_revision":16}'::jsonb,
+  '{"reconciliationId":"m7c-reconciliation-a","occurredAt":"2026-10-26T12:00:00Z","hasUserVisibleChanges":true}'::jsonb,
+  null
+) ->> 'updated')::integer, 0, 'a current-snapshot replay updates no ledger rows');
+select is((select count(*)::integer from public.progression_events where user_id = 'm7c-owner-a'), 2, 'a current-snapshot replay preserves both source facts');
+select is((select count(*)::integer from public.app_notifications where user_id = 'm7c-owner-a' and type = 'gamification_reconciliation'), 1, 'a current-snapshot replay does not duplicate the receipt');
+
+-- Level-up notifications use their own deterministic reconciliation identity.
+select is((public.apply_gamification_reconciliation(
+  'm7c-owner-a',
+  (select coalesce(jsonb_agg(jsonb_build_object(
+    'id', id, 'event_type', event_type, 'source_table', source_table,
+    'source_id', source_id, 'status_phase', status_phase, 'weight', weight,
+    'xp_base', xp_base, 'xp_awarded', xp_awarded, 'occurred_on', occurred_on,
+    'metadata', metadata
+  ) order by id), '[]'::jsonb) from public.progression_events where user_id = 'm7c-owner-a'),
+  '[]'::jsonb, '[]'::jsonb, '{}'::bigint[], null, null, null,
+  '{"oldLevel":1,"newLevel":2,"reconciliationId":"m7c-level-up"}'::jsonb
+) ->> 'status'), 'applied', 'a level-up notification can be produced independently');
+select is((select count(*)::integer from public.app_notifications where user_id = 'm7c-owner-a' and type = 'system' and payload ->> 'reconciliationId' = 'm7c-level-up'), 1, 'one level-up reconciliation creates one notification');
+select is((public.apply_gamification_reconciliation(
+  'm7c-owner-a',
+  (select coalesce(jsonb_agg(jsonb_build_object(
+    'id', id, 'event_type', event_type, 'source_table', source_table,
+    'source_id', source_id, 'status_phase', status_phase, 'weight', weight,
+    'xp_base', xp_base, 'xp_awarded', xp_awarded, 'occurred_on', occurred_on,
+    'metadata', metadata
+  ) order by id), '[]'::jsonb) from public.progression_events where user_id = 'm7c-owner-a'),
+  '[]'::jsonb, '[]'::jsonb, '{}'::bigint[], null, null, null,
+  '{"oldLevel":1,"newLevel":2,"reconciliationId":"m7c-level-up"}'::jsonb
+) ->> 'status'), 'applied', 'a level-up replay remains applied');
+select is((select count(*)::integer from public.app_notifications where user_id = 'm7c-owner-a' and type = 'system' and payload ->> 'reconciliationId' = 'm7c-level-up'), 1, 'a level-up replay does not duplicate its notification');
 
 select is((public.apply_gamification_reconciliation(
   'm7c-owner-b', '[]'::jsonb,
@@ -193,6 +249,12 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":""}', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 select throws_ok($$select public.apply_gamification_reconciliation('m7c-owner-b', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '{}'::bigint[], null, null, null, null)$$, '42501', null, 'a session without a subject cannot invoke reconciliation');
+
+reset role;
+set local role anon;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+select set_config('request.jwt.claim.role', 'anon', true);
+select throws_ok($$select public.apply_gamification_reconciliation('m7c-owner-a', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '{}'::bigint[], null, null, null, null)$$, '42501', null, 'anon cannot invoke reconciliation');
 
 select * from finish();
 rollback;
