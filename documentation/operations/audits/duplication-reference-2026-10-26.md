@@ -29,41 +29,43 @@ ce gate. Ils sont donc `OUT_OF_INSTRUMENTATION`, pas `0 %`.
 
 | Élément | Valeur |
 | --- | --- |
-| SHA mesuré | `e12bcd7c601969265ace2a89c1f8be4056081a57` |
+| SHA mesuré | `db53d6b4294241ea04c551f5d03172a055b3b32d` |
 | Branche | `main` |
-| Provenance de lecture | `WORKTREE_LIVE` ; le checkout contenait des modifications étrangères au lot |
-| Mesure duplication | `2026-10-26T16:03:16Z` (`audit:quality -- duplication`) |
-| Projection quality-index du SHA final | `NOT_RUN` — hors périmètre demandé après évolution concurrente |
+| Provenance de lecture | `WORKTREE_LIVE` ; `HEAD` correspondait exactement au SHA mesuré et le checkout était propre |
+| Mesure duplication | `2026-10-26T16:23:21.728Z` (`audit:quality -- duplication`) |
+| Run d'audit | `a85cc011-db4c-4fd5-a424-040c030d8463` |
+| Projection quality-index du SHA final | `NOT_RUN_POLICY` — le lot demandait uniquement l'audit duplication |
 | Outil déclaré par la politique et les baselines | `jscpd 5.3.0` |
-| Outil installé et verrouillé | `jscpd 5.4.1` (`npm ls jscpd`, `npx --no-install jscpd --version`) |
+| Outil installé et exécuté | `jscpd 5.3.0` (`npm ls jscpd`, `node node_modules/jscpd/run-jscpd.js --version`) |
 | Seuil de détection | `minLines=5`, `minTokens=50` |
 | Fingerprint de politique | `93c9f907e5320ec229f6df6e7aad86b37b0f4ef5273530b2875a49c3b8945783` |
 | Source des baselines natives | `b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2` |
-| Version package/lockfile | `package.json` et `package-lock.json` déclarent `5.4.1` |
+| Version package/lockfile | `package.json` et `package-lock.json` déclarent exactement `5.3.0` |
 
-La divergence `5.3.0` / `5.4.1` rend la comparaison historique avec les
-baselines **partielle**. Les compteurs du run courant sont conservés comme
-mesure observée ; les deltas historiques et le verdict de ratchet ne doivent
-pas être interprétés comme une comparaison strictement homogène tant que la
-politique, les baselines et la version installée n'ont pas été réalignées dans
-un lot dédié. Aucune de ces sources n'a été modifiée par cet audit.
+La comparaison avec les baselines est désormais **homogène** : le package, le
+lockfile et le runner réellement exécuté annoncent tous `jscpd 5.3.0`. Le
+contrôle vérifie `jscpd --version` sur le même runner avant toute mesure et
+échoue explicitement si l'exécutable est absent, si sa sortie est invalide ou
+si sa version diverge. Les baselines natives, fingerprints, seuils, marges et
+exclusions n'ont pas été modifiés.
 
 Les artefacts exhaustifs reproductibles générés par les producteurs canoniques
 sont :
 
 ```text
-artifacts/quality-audits/e12bcd7c601969265ace2a89c1f8be4056081a57/
-  duplication--a825f0a4-d36f-4b48-ba69-13e67e104918--report.json
-  duplication--a825f0a4-d36f-4b48-ba69-13e67e104918--manifest.json
+artifacts/quality-audits/db53d6b4294241ea04c551f5d03172a055b3b32d/
+  duplication--a85cc011-db4c-4fd5-a424-040c030d8463--report.json
+  duplication--a85cc011-db4c-4fd5-a424-040c030d8463--manifest.json
+  duplication--a85cc011-db4c-4fd5-a424-040c030d8463--summary.md
 ```
 
 Le rapport duplication conserve tous les fingerprints et toutes les paires
-d'occurrences et constitue la matrice exhaustive de ce lot. Une projection
-quality-index `all` avait été produite lors de la première observation, mais
-elle est antérieure à l'évolution concurrente de `HEAD` et n'est pas utilisée
-comme preuve du SHA final. Les artefacts sous `artifacts/` sont générés et
-ignorés par Git ; ce document enregistre le rapport canonique courant, mais ne
-constitue pas un second moteur ni un registre miroir.
+d'occurrences et constitue la matrice exhaustive de ce lot. Aucune projection
+quality-index `all` n'a été produite dans ce lot : elle est `NOT_RUN_POLICY` et
+ne constitue donc pas une preuve manquante reclassée en succès. Les artefacts
+sous `artifacts/` sont générés et ignorés par Git ; ce document enregistre le
+rapport canonique courant, mais ne constitue pas un second moteur ni un registre
+miroir.
 
 ## 3. Tableau global
 
@@ -75,8 +77,8 @@ dénominateurs.
 
 | Scope | Fichiers | Lignes totales | Lignes dupliquées | Taux lignes | Tokens totaux | Tokens dupliqués | Taux tokens | Delta 3 % lignes / tokens | Excès théorique lignes / tokens | Gate historique |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `runtime` | 2 354 | 332 557 | 2 239 | 0,673268 % | 1 954 015 | 14 834 | 0,759155 % | 0 / 0 pp | 0 / 0 | `FAIL` — 134 nouveaux fingerprints ; marges dépassées |
-| `tests` | 1 466 | 192 524 | 7 555 | 3,924186 % | 1 301 493 | 48 620 | 3,735710 % | 0,924186 / 0,735710 pp | 1 780 / 9 576 | `FAIL` — 448 nouveaux fingerprints ; marges dépassées |
+| `runtime` | 2 354 | 332 557 | 2 011 | 0,604708 % | 1 954 015 | 14 834 | 0,759155 % | 0 / 0 pp | 0 / 0 | `FAIL` — 134 nouveaux fingerprints ; marges dépassées |
+| `tests` | 1 466 | 192 524 | 6 837 | 3,551246 % | 1 301 493 | 48 620 | 3,735710 % | 0,551246 / 0,735710 pp | 1 062 / 9 576 | `FAIL` — 448 nouveaux fingerprints ; marges dépassées |
 | `fixtures/data` | 12 | 1 992 | 0 | 0 % | 8 863 | 0 | 0 % | 0 / 0 pp | 0 / 0 | `PASS` |
 
 La cible documentaire est donc atteinte pour `runtime` et `fixtures/data`, et
@@ -89,16 +91,14 @@ les scopes sous 3 %, ni autorisation de créer de nouvelles duplications.
 | --- | --- | --- |
 | `npm run quality:duplication` | `FAIL` | runtime et tests en échec ; fixtures/data `PASS` |
 | `npm run audit:quality -- duplication` | `FAIL`, `attention=true` | 228 clones runtime, 718 tests, 0 fixtures/data |
-| `npm run audit:quality -- all` sur le SHA final | `NOT_RUN_POLICY` | explicitement non rejoué après l'évolution concurrente ; la projection précédente n'est pas utilisée |
+| `npm run audit:quality -- all` sur le SHA final | `NOT_RUN_POLICY` | hors périmètre de ce lot ; aucune projection `all` n'est utilisée |
 | Fingerprints qualifiés nouveaux | informatif | runtime 21 ; tests 22 |
 | Justifications présentes | informatif | `KEEP_INTENTIONAL=180`, `NO_ACTION_NOISE=140` |
 | Justifications périmées | `FAIL` du gate | 8 `STALE_KEEP_INTENTIONAL`, 2 `STALE_NO_ACTION_NOISE` |
 
-Les deltas historiques bruts sont : runtime `+886` lignes / `+6 541`
-tokens / `+0,200667` pp / `+0,216896` pp tokens ; tests `+4 532` lignes /
-`+30 282` tokens / `+1,522788` pp / `+1,341290` pp tokens. Ils restent
-partiellement comparables à cause de la divergence de version signalée
-ci-dessus.
+Les deltas historiques bruts homogènes sont : runtime `+658` lignes / `+6 541`
+tokens / `+0,132107` pp / `+0,216896` pp tokens ; tests `+3 814` lignes /
+`+30 282` tokens / `+1,149847` pp / `+1,341290` pp tokens.
 
 ## 4. Matrice des clones prioritaires
 
@@ -292,24 +292,23 @@ faire baisser un score si leur abstraction augmente le couplage.
   ils prouvent le run local identifié, pas un état de production.
 - Aucun PostgreSQL, RLS, service SMTP, Clerk réel, navigateur ou E2E n'a été
   exécuté pour cet audit de duplication.
-- La version jscpd non alignée empêche un `PASS` de comparabilité historique.
+- La version jscpd est alignée et vérifiée avant exécution ; un runner absent,
+  invalide ou divergent rend désormais la mesure explicitement non valide.
 
 ## 9. Verdict et actions recommandées
 
-La photographie est **PARTIELLE** au sens du chantier : les trois scopes ont
-été mesurés, les occurrences et classements sont disponibles, mais la
-comparaison historique n'est pas strictement homogène (`jscpd 5.3.0` déclaré
-contre `5.4.1` installé) et le gate courant reste `FAIL`. La cible 3 % est
-dépassée uniquement par le scope tests ; les violations de ratchet et les
-justifications stale restent les premiers signaux opérationnels.
+La photographie est **HOMOGÈNE** au sens de la mesure : les trois scopes ont
+été mesurés avec `jscpd 5.3.0` déclaré, installé et exécuté sur le SHA exact,
+et le gate courant reste `FAIL` pour les clones nouveaux, les marges dépassées
+et les justifications stale. La cible 3 % est dépassée uniquement par le scope
+tests ; aucune correction de clone métier, baseline ou fingerprint n'a été
+effectuée dans ce lot.
 
 Actions recommandées avant un lot de réduction :
 
-1. décider explicitement l'alignement de la politique et de la version jscpd,
-   sans réécrire la baseline pour rendre le chiffre vert ;
-2. requalifier ou retirer les dix justifications stale après relecture des
+1. requalifier ou retirer les dix justifications stale après relecture des
    occurrences CURRENT ;
-3. préparer les lots P0 AuthN/AuthZ/média/participation avec une matrice
+2. préparer les lots P0 AuthN/AuthZ/média/participation avec une matrice
    owner → invariant → tests → preuve d'intégration ;
-4. mesurer à nouveau sur le SHA exact du lot suivant et conserver le même
+3. mesurer à nouveau sur le SHA exact du lot suivant et conserver le même
    protocole de projection.

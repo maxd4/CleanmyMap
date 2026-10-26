@@ -19,6 +19,11 @@ métrique dans `scripts/checks/duplication-metrics-baseline.json`. Cette derniè
 contient le fingerprint SHA-256 de la politique courante. Toute modification de
 l'outil, de sa version, des seuils, des scopes, des patterns ou des exclusions
 rend la baseline métrique stale ; son évolution doit être ratifiée explicitement.
+Avant chaque mesure, `quality:duplication` exécute `--version` sur le même
+runner local que celui utilisé pour jscpd et compare la version observée à
+`DUPLICATION_TOOL_VERSION`. Un exécutable absent, une sortie de version
+invalide ou une divergence produit un échec explicite ; aucune métrique ni
+comparaison de ratchet n'est alors présentée comme acquise.
 Les snapshots, fichiers générés, vendors et duplications de fixtures
 volontairement répétitives ne sont pas traités comme de la dette runtime. Les
 baselines natives jscpd sont des ratchets versionnés : elles représentent
