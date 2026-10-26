@@ -42,4 +42,38 @@ describe("GET /api/chat/share-destinations", () => {
     expect(response.status).toBe(200);
     expect(body.shareKind).toBe("result");
   });
+
+  it("rejects anonymous callers before loading identities or private destinations", async () => {
+    authMock.mockResolvedValue({ userId: null });
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/chat/share-destinations?actionId=action-1"));
+
+    expect(response.status).toBe(401);
+    expect(identityMock).not.toHaveBeenCalled();
+    expect(rlsMock).not.toHaveBeenCalled();
+    expect(loadActionMock).not.toHaveBeenCalled();
+  });
+
+  it("does not reveal whether an action can be shared when the action is private or absent", async () => {
+    loadActionMock.mockResolvedValue(null);
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/chat/share-destinations?actionId=private-action"));
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body).toEqual({ error: "Action non partageable" });
+    expect(rlsMock).toHaveBeenCalledOnce();
+    expect(profileMock).not.toHaveBeenCalled();
+  });
+
+  it("requires an action identifier before opening an RLS-backed destination query", async () => {
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/chat/share-destinations"));
+
+    expect(response.status).toBe(400);
+    expect(rlsMock).not.toHaveBeenCalled();
+    expect(loadActionMock).not.toHaveBeenCalled();
+  });
 });
