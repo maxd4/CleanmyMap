@@ -38,7 +38,7 @@ export function hasUsageInput(
     return false;
   }
 
-  return Object.values(input).some((value) => value !== null && value !== undefined);
+  return Object.values(input).some((value) => hasNumericInput(value));
 }
 
 export function hasScopeSignalInput(

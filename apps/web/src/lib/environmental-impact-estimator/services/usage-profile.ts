@@ -38,7 +38,7 @@ function resolveMonthlyPageViewsMetric(
   userPageViews: number,
 ): number {
   const hasTrafficSignals =
-    ctx.siteInput?.pageViews != null || ctx.userInput?.pageViews != null;
+    hasNumericInput(ctx.siteInput?.pageViews) || hasNumericInput(ctx.userInput?.pageViews);
   const fallbackPageViews = hasTrafficSignals
     ? Math.max(0, sitePageViews + userPageViews)
     : 60_000;
@@ -85,7 +85,7 @@ function resolveMonthlyPdfExportsMetric(
   ctx: UsageProfileContext,
   monthlyPageViews: number,
 ): number {
-  const hasSitePdfExports = ctx.siteInput?.pdfExports != null;
+  const hasSitePdfExports = hasNumericInput(ctx.siteInput?.pdfExports);
   return resolveUsageField(
     ctx,
     "monthlyPdfExports",
@@ -100,7 +100,7 @@ function resolveMonthlyMapViewsMetric(
   ctx: UsageProfileContext,
   monthlyPageViews: number,
 ): number {
-  const hasSiteMaps = ctx.siteInput?.maps != null;
+  const hasSiteMaps = hasNumericInput(ctx.siteInput?.maps);
   return resolveUsageField(
     ctx,
     "monthlyMapViews",
@@ -115,7 +115,7 @@ function resolveMonthlyAiCallsMetric(
   ctx: UsageProfileContext,
   monthlyPageViews: number,
 ): number {
-  const hasSiteAiCalls = ctx.siteInput?.aiCalls != null;
+  const hasSiteAiCalls = hasNumericInput(ctx.siteInput?.aiCalls);
   return resolveUsageField(
     ctx,
     "monthlyAiCalls",
@@ -128,7 +128,7 @@ function resolveMonthlyAiCallsMetric(
 }
 function resolveMonthlyChatgptConversationHoursMetric(ctx: UsageProfileContext): number | null {
   const value = ctx.usageInput?.monthlyChatgptConversationHours;
-  if (value === null || value === undefined) {
+  if (!hasNumericInput(value)) {
     return null;
   }
 
@@ -160,7 +160,7 @@ function buildUsageTrafficMetrics(ctx: UsageProfileContext, sitePageViews: numbe
 }
 function buildUsageCodexMetrics(ctx: UsageProfileContext) {
   const resolveCodexMetric = (key: string, label: string, value: number | null | undefined) => {
-    if (value === null || value === undefined) {
+    if (!hasNumericInput(value)) {
       return null;
     }
 
@@ -237,13 +237,13 @@ export function buildUsageProfileEstimate(
     monthlyElectricityKwh: resolveNumber(usageInput?.monthlyElectricityKwh, 0) ||
       (usageInput?.monthlyElectricityKwh === 0 ? 0 : null),
     monthlyDirectWaterConsumptionLiters:
-      usageInput?.monthlyDirectWaterConsumptionLiters == null
-        ? null
-        : resolveNumber(usageInput.monthlyDirectWaterConsumptionLiters, 0),
+      hasNumericInput(usageInput?.monthlyDirectWaterConsumptionLiters)
+        ? usageInput.monthlyDirectWaterConsumptionLiters
+        : null,
     monthlyEvaporatedWaterLiters:
-      usageInput?.monthlyEvaporatedWaterLiters == null
-        ? null
-        : resolveNumber(usageInput.monthlyEvaporatedWaterLiters, 0),
+      hasNumericInput(usageInput?.monthlyEvaporatedWaterLiters)
+        ? usageInput.monthlyEvaporatedWaterLiters
+        : null,
     ...trafficMetrics,
     ...codexMetrics,
     ...operationsMetrics,

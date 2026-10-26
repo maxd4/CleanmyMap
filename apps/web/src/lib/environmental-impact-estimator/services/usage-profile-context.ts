@@ -4,7 +4,7 @@ import type {
   EnvironmentalImpactUsageProvenanceItem,
   EnvironmentalImpactUsageProvenanceSource,
 } from "../types";
-import { resolveNumber } from "./utils";
+import { hasNumericInput, resolveNumber } from "./utils";
 
 export interface UsageProfileContext {
   infrastructureInput: EnvironmentalImpactInfrastructureInput | null | undefined;
@@ -23,7 +23,7 @@ export function resolveUsageField(
   detail: string,
   source: EnvironmentalImpactUsageProvenanceSource,
 ): number {
-  const hasInput = inputValue !== null && inputValue !== undefined;
+  const hasInput = hasNumericInput(inputValue);
   const value = resolveNumber(inputValue, fallbackValue);
   ctx.pushProvenance({
     key,

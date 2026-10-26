@@ -1,4 +1,4 @@
-import { getTrafficSignalDetail, resolveNumber, round6 } from "./utils";
+import { getTrafficSignalDetail, hasNumericInput, resolveNumber, round6 } from "./utils";
 import type {
   EnvironmentalImpactScopeInput,
   EnvironmentalImpactUsageProvenanceSource,
@@ -27,9 +27,9 @@ function appendDerivedSource(target: string[], hasSource: boolean, source: strin
 
 function resolveMonthlyStorageGbMonthsMetric(ctx: UsageProfileContext): number {
   const hasStorageSignals =
-    ctx.siteInput?.storageGbMonths != null ||
-    ctx.siteInput?.storedImages != null ||
-    ctx.userInput?.storageGbMonths != null;
+    hasNumericInput(ctx.siteInput?.storageGbMonths) ||
+    hasNumericInput(ctx.siteInput?.storedImages) ||
+    hasNumericInput(ctx.userInput?.storageGbMonths);
 
   return resolveUsageField(
     ctx,
@@ -54,7 +54,7 @@ function resolveMonthlyApiRequestsMetric(
   monthlySessions: number,
   monthlyPdfExports: number,
 ): number {
-  const hasSiteApiRequests = ctx.siteInput?.apiRequests != null;
+  const hasSiteApiRequests = hasNumericInput(ctx.siteInput?.apiRequests);
 
   return resolveUsageField(
     ctx,
@@ -280,12 +280,14 @@ export function buildUsageDerivedFrom(
     return [];
   }
   const derivedFrom: string[] = [];
-  appendDerivedSource(derivedFrom, siteInput?.pageViews != null, "site.pageViews");
-  appendDerivedSource(derivedFrom, siteInput?.apiRequests != null, "site.apiRequests");
-  appendDerivedSource(derivedFrom, siteInput?.pdfExports != null, "site.pdfExports");
-  appendDerivedSource(derivedFrom, siteInput?.maps != null, "site.maps");
-  appendDerivedSource(derivedFrom, siteInput?.storageGbMonths != null, "site.storageGbMonths");
-  appendDerivedSource(derivedFrom, siteInput?.aiCalls != null, "site.aiCalls");
-  appendDerivedSource(derivedFrom, userInput?.pageViews != null, "user.pageViews");
+  appendDerivedSource(derivedFrom, hasNumericInput(siteInput?.pageViews), "site.pageViews");
+  appendDerivedSource(derivedFrom, hasNumericInput(siteInput?.apiRequests), "site.apiRequests");
+  appendDerivedSource(derivedFrom, hasNumericInput(siteInput?.pdfExports), "site.pdfExports");
+  appendDerivedSource(derivedFrom, hasNumericInput(siteInput?.maps), "site.maps");
+  appendDerivedSource(derivedFrom, hasNumericInput(siteInput?.storageGbMonths), "site.storageGbMonths");
+  appendDerivedSource(derivedFrom, hasNumericInput(siteInput?.storedImages), "site.storedImages");
+  appendDerivedSource(derivedFrom, hasNumericInput(siteInput?.aiCalls), "site.aiCalls");
+  appendDerivedSource(derivedFrom, hasNumericInput(userInput?.pageViews), "user.pageViews");
+  appendDerivedSource(derivedFrom, hasNumericInput(userInput?.storageGbMonths), "user.storageGbMonths");
   return derivedFrom;
 }
