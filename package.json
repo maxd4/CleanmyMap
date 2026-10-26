@@ -202,7 +202,7 @@
     "stream-json": "file:apps/mobile/vendor/stream-json",
     "supabase": "^2.116.0",
     "typescript-eslint": "8.71.2",
-    "vite": "8.1.6"
+    "vite": "8.3.5"
   },
   "optionalDependencies": {
     "@rolldown/binding-linux-x64-gnu": "1.2.14",
@@ -238,7 +238,7 @@
     },
     "moment": "2.31.0",
     "js-cookie": "3.0.8",
-    "vite": "8.1.6",
+    "vite": "8.3.5",
     "vitest": "4.1.12",
     "ws": "8.21.0",
     "uuid": "11.1.1",
