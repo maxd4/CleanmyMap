@@ -15,12 +15,18 @@ async function readPreferencesResponse(response: Response): Promise<Notification
   if (!response.ok) {
     throw new Error("Les préférences de notification sont indisponibles.");
   }
+  const mutedInformationActionIds = new Set<string>();
+  if (Array.isArray(payload?.mutedInformationActionIds)) {
+    for (const id of payload.mutedInformationActionIds) {
+      if (typeof id !== "string") continue;
+      const normalizedId = id.trim();
+      if (normalizedId) mutedInformationActionIds.add(normalizedId);
+    }
+  }
   return {
     informationalEnabled: payload?.informationalEnabled !== false,
     actionRemindersEnabled: payload?.actionRemindersEnabled !== false,
-    mutedInformationActionIds: Array.isArray(payload?.mutedInformationActionIds)
-      ? payload.mutedInformationActionIds.filter((id): id is string => typeof id === "string")
-      : [],
+    mutedInformationActionIds: [...mutedInformationActionIds],
   };
 }
 

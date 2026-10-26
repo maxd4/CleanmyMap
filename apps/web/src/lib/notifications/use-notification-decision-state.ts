@@ -135,6 +135,7 @@ export function useNotificationDecisionState(params: {
   const [decisionErrors, setDecisionErrors] = useState<Record<string, string>>({});
   const [busyDecisionIds, setBusyDecisionIds] = useState<Set<string>>(new Set());
   const [decisionStateError, setDecisionStateError] = useState(false);
+  const inFlightDecisionIdsRef = useRef<Set<string>>(new Set());
 
   const setPendingRequests = useCallback((requests: PendingDecisionRequest[]) => {
     pendingDecisionRequestsRef.current = requests;
@@ -155,8 +156,12 @@ export function useNotificationDecisionState(params: {
   const handleDecision = useCallback(async (notification: AppNotification, decision: NotificationDecision) => {
     const descriptor = getNotificationDecisionDescriptor(notification.payload);
     const request = getRequest();
-    if (!descriptor || !request.userId || busyDecisionIds.has(notification.id)) return;
+    if (!descriptor || !request.userId || inFlightDecisionIdsRef.current.has(notification.id)) return;
 
+    // React state updates are batched. A second click can therefore enter this
+    // callback before `busyDecisionIds` has re-rendered; the ref closes that
+    // synchronous race before any refresh or mutation is started.
+    inFlightDecisionIdsRef.current.add(notification.id);
     setBusyDecisionIds((previous) => new Set(previous).add(notification.id));
     setDecisionErrors((previous) => {
       const next = { ...previous };
@@ -195,6 +200,7 @@ export function useNotificationDecisionState(params: {
         logFailure(scope, "Decision failed", error, { id: notification.id });
       }
     } finally {
+      inFlightDecisionIdsRef.current.delete(notification.id);
       if (isCurrentRequest(request)) {
         setBusyDecisionIds((previous) => {
           const next = new Set(previous);
@@ -203,7 +209,7 @@ export function useNotificationDecisionState(params: {
         });
       }
     }
-  }, [busyDecisionIds, getRequest, isCurrentRequest, refreshDecisionState, scope, setPendingRequests]);
+  }, [getRequest, isCurrentRequest, refreshDecisionState, scope, setPendingRequests]);
 
   return {
     pendingRequestIds,
