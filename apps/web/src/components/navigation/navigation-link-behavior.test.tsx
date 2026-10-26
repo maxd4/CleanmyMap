@@ -1,5 +1,5 @@
 import React from "react";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { House } from "lucide-react";
 import type { NavigationItem, NavigationSpace } from "@/lib/navigation";
@@ -38,6 +38,12 @@ vi.mock("framer-motion", () => ({
 }));
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+
+type AnchorProps = { onClick: (event: React.MouseEvent<HTMLAnchorElement>) => void };
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
 
 const item: NavigationItem = {
   id: "funding",
@@ -139,7 +145,7 @@ describe("navigation link activation", () => {
       const renderer = renderDesktopCard(track);
       const event = clickEvent(modifier);
 
-      anchor(renderer).props.onClick(event);
+      propsOf<AnchorProps>(anchor(renderer)).onClick(event);
 
       expect(event.preventDefault).not.toHaveBeenCalled();
       expect(mocks.router.push).not.toHaveBeenCalled();
@@ -152,7 +158,7 @@ describe("navigation link activation", () => {
       const renderer = renderMobileTree(track);
       const event = clickEvent(modifier);
 
-      anchor(renderer).props.onClick(event);
+      propsOf<AnchorProps>(anchor(renderer)).onClick(event);
 
       expect(event.preventDefault).not.toHaveBeenCalled();
       expect(mocks.router.push).not.toHaveBeenCalled();
@@ -166,9 +172,7 @@ describe("navigation link activation", () => {
     const renderer = renderMobileTree(track);
     const event = clickEvent();
 
-    act(() => {
-      anchor(renderer).props.onClick(event);
-    });
+    act(() => { propsOf<AnchorProps>(anchor(renderer)).onClick(event); });
 
     expect(event.preventDefault).toHaveBeenCalledTimes(1);
     expect(mocks.router.push).toHaveBeenCalledTimes(1);
@@ -183,7 +187,7 @@ describe("navigation link activation", () => {
     const renderer = renderDesktopCard(track);
     const event = clickEvent({ detail: 0 });
 
-    anchor(renderer).props.onClick(event);
+    propsOf<AnchorProps>(anchor(renderer)).onClick(event);
 
     expect(event.preventDefault).toHaveBeenCalledTimes(1);
     expect(mocks.router.push).toHaveBeenCalledWith("/sections/funding");
@@ -197,7 +201,7 @@ describe("navigation link activation", () => {
 
     for (const overrides of [{ defaultPrevented: true }, { button: 1 }]) {
       const event = clickEvent(overrides);
-      anchor(renderer).props.onClick(event);
+      propsOf<AnchorProps>(anchor(renderer)).onClick(event);
       expect(event.preventDefault).not.toHaveBeenCalled();
     }
 

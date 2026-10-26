@@ -25,12 +25,18 @@ function textNode(renderer: TestRenderer.ReactTestRenderer, expected: string): T
 }
 
 function styleRecord(value: unknown): Record<string, unknown> {
-  const values: unknown[] = Array.isArray(value) ? [...value] : [value]
+  const values: unknown[] = Array.isArray(value) ? Array.from(value) : [value]
   const result: Record<string, unknown> = {}
   for (const item of values) {
     if (typeof item === 'object' && item !== null) Object.assign(result, item)
   }
   return result
+}
+
+type ReturnButtonProps = { accessibilityRole?: string; onPress: () => void }
+
+function propsOf<Props>(node: TestRenderer.ReactTestInstance): Props {
+  return node.props as unknown as Props
 }
 
 function mission(overrides: Partial<Mission> = {}): Mission {
@@ -110,9 +116,10 @@ describe('real mission finalization screens', () => {
     expect(textContent(renderer.root)).toContain('1.5 km')
 
     const returnButton = renderer.root.findByProps({ accessibilityLabel: 'Revenir à l’accueil' })
-    expect(returnButton.props.accessibilityRole).toBe('button')
+    const returnButtonProps = propsOf<ReturnButtonProps>(returnButton)
+    expect(returnButtonProps.accessibilityRole).toBe('button')
     act(() => {
-      returnButton.props.onPress()
+      returnButtonProps.onPress()
     })
     expect(onReturnHome).toHaveBeenCalledTimes(1)
     expect(onReturnHome).toHaveBeenCalledWith()

@@ -1,10 +1,17 @@
 import * as React from "react";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
 import { describe, expect, it, vi } from "vitest";
 import { RoleManagementPanelView, type RoleActionState } from "./role-management-panel-view";
 import type { RoleAccountRecord } from "@/lib/admin/role-management";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+
+type ButtonProps = { children?: React.ReactNode; disabled?: boolean; onClick?: () => void };
+type TextareaProps = { "aria-invalid"?: string; "aria-describedby"?: string; onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void };
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
 
 function account(userId: string, roleLabel: RoleAccountRecord["roleLabel"], displayName = userId): RoleAccountRecord {
   return { userId, displayName, handle: displayName.toLowerCase().replaceAll(" ", "-"), avatarUrl: null, roleLabel, parisArrondissement: null, updatedAt: null };
@@ -53,10 +60,11 @@ describe("RoleManagementPanelView", () => {
     expect(text.join(" ")).toContain("Vous");
     expect(text.join(" ")).toContain("Protection");
     const reason = renderer.root.findByType("textarea");
-    expect(reason.props["aria-invalid"]).toBe("true");
-    expect(reason.props["aria-describedby"]).toBe("role-change-reason-error");
-    expect(buttons(renderer).map((button) => button.props.children).flat().join(" ")).toContain("Attribuer admin");
-    expect(buttons(renderer).filter((button) => button.props.children === "Révoquer").length).toBe(2);
+    const reasonProps = propsOf<TextareaProps>(reason);
+    expect(reasonProps["aria-invalid"]).toBe("true");
+    expect(reasonProps["aria-describedby"]).toBe("role-change-reason-error");
+    expect(buttons(renderer).map((button) => propsOf<ButtonProps>(button).children).flat().join(" ")).toContain("Attribuer admin");
+    expect(buttons(renderer).filter((button) => propsOf<ButtonProps>(button).children === "Révoquer").length).toBe(2);
   });
 
   it("renders empty state, search result state, pending buttons and English labels", async () => {
@@ -75,12 +83,12 @@ describe("RoleManagementPanelView", () => {
     expect(rendered).toContain("Search results");
     expect(rendered).toContain("Searching...");
     expect(rendered).toContain("Revoking...");
-    const search = buttons(renderer).find((item) => item.props.children === "Searching...");
+    const search = buttons(renderer).find((item) => propsOf<ButtonProps>(item).children === "Searching...");
     expect(search).toBeDefined();
-    expect(search?.props.disabled).toBe(true);
-    const clear = buttons(renderer).find((button) => button.props.children === "Clear");
+    expect(propsOf<ButtonProps>(search!).disabled).toBe(true);
+    const clear = buttons(renderer).find((button) => propsOf<ButtonProps>(button).children === "Clear");
     expect(clear).toBeDefined();
-    await act(() => clear?.props.onClick());
+    await act(async () => { propsOf<ButtonProps>(clear!).onClick?.(); });
     expect(callbacks.onClearSearch).toHaveBeenCalledOnce();
   });
 
@@ -90,15 +98,15 @@ describe("RoleManagementPanelView", () => {
       reason: "Valid reason",
       searchResults: [account("other", "benevole", "Other")],
     });
-    const assignAdmin = buttons(renderer).find((button) => button.props.children === "Attribuer admin");
-    const assignElected = buttons(renderer).find((button) => button.props.children === "Attribuer élu");
+    const assignAdmin = buttons(renderer).find((button) => propsOf<ButtonProps>(button).children === "Attribuer admin");
+    const assignElected = buttons(renderer).find((button) => propsOf<ButtonProps>(button).children === "Attribuer élu");
     expect(assignAdmin).toBeDefined();
     expect(assignElected).toBeDefined();
-    await act(() => assignAdmin?.props.onClick());
-    await act(() => assignElected?.props.onClick());
+    await act(async () => { propsOf<ButtonProps>(assignAdmin!).onClick?.(); });
+    await act(async () => { propsOf<ButtonProps>(assignElected!).onClick?.(); });
     expect(callbacks.onRoleChange).toHaveBeenNthCalledWith(1, "other", "assign", "admin");
     expect(callbacks.onRoleChange).toHaveBeenNthCalledWith(2, "other", "assign", "elu");
-    await act(() => renderer.root.findByType("textarea").props.onChange({ target: { value: "Updated reason" } }));
+    await act(async () => { propsOf<TextareaProps>(renderer.root.findByType("textarea")).onChange?.({ target: { value: "Updated reason" } } as React.ChangeEvent<HTMLTextAreaElement>); });
     expect(callbacks.onReasonChange).toHaveBeenCalledWith("Updated reason");
   });
 });

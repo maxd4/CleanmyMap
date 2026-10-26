@@ -1,6 +1,6 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpogomiPublicResults as SpogomiPublicResultsData } from "@/lib/spogomi/results-projection";
 import type { SpogomiPublicGalleryPhoto } from "@/lib/spogomi/photo-gallery";
@@ -27,6 +27,13 @@ vi.mock("@/components/ui/cmm-field", () => ({ CmmField: ({ children, label }: Re
 vi.stubGlobal("fetch", fetchMock);
 vi.stubGlobal("window", { addEventListener: vi.fn(), removeEventListener: vi.fn(), setTimeout, clearTimeout });
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
+
+type ButtonProps = { onClick: () => void | Promise<void> };
+type InputProps = { onChange: (event: React.ChangeEvent<HTMLInputElement>) => void };
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
 
 import { SpogomiAdmissionRequestCard } from "./spogomi-admission-request-card";
 import { SpogomiAdmissionRequestsPanel } from "./spogomi-admission-requests-panel";
@@ -120,13 +127,13 @@ describe("SPOGOMI consumer components", () => {
     expect(published).not.toContain("requesterClerkId");
   });
 
-  it("covers gallery navigation and a share fallback without personal data", () => {
+  it("covers gallery navigation and a share fallback without personal data", async () => {
     let renderer!: ReturnType<typeof create>;
     act(() => { renderer = create(<SpogomiPhotoGallery photos={[photo("one"), photo("two")]} />); });
     const thumbnails = renderer.root.findAll((node) => node.type === "button");
     expect(thumbnails).toHaveLength(2);
     expect(renderer.root.findAll((node) => node.type === "img")).toHaveLength(2);
-    act(() => { thumbnails[0]?.props.onClick(); });
+    await act(async () => { await propsOf<ButtonProps>(thumbnails[0]!).onClick(); });
     expect(renderer.root.findByProps({ role: "dialog" })).toBeTruthy();
     expect(renderer.root.findAll((node) => node.type === "img")).toHaveLength(3);
     expect(renderer.root.findAll((node) => node.props["aria-label"] === "Photo suivante")).toHaveLength(1);
@@ -136,27 +143,25 @@ describe("SPOGOMI consumer components", () => {
     Object.assign(navigator, { clipboard, share: undefined });
     let shareRenderer!: ReturnType<typeof create>;
     act(() => { shareRenderer = create(<SpogomiVolunteerShareButton eventName="Paris" eventDate="2026-06-01" mission="Arbitrage" eventHref="/spogomi/paris-2026" />); });
-    act(() => { shareRenderer.root.findByType("button").props.onClick(); });
-    return Promise.resolve().then(() => {
-      expect(clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining("Contribution SPOGOMI certifiée"));
-      expect(clipboard.writeText.mock.calls[0]?.[0]).not.toContain("email");
-      shareRenderer.unmount();
-    });
+    await act(async () => { await propsOf<ButtonProps>(shareRenderer.root.findByType("button")).onClick(); });
+    expect(clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining("Contribution SPOGOMI certifiée"));
+    expect(clipboard.writeText.mock.calls[0]?.[0]).not.toContain("email");
+    shareRenderer.unmount();
   });
 
   it("exercises reviewer and team access mutations with scoped endpoints", async () => {
     let reviewer!: ReturnType<typeof create>;
     act(() => { reviewer = create(<SpogomiReviewerManagement eventId="event-1" />); });
     const reviewerInput = reviewer.root.findByType("input");
-    act(() => { reviewerInput.props.onChange({ target: { value: "user_referee" } }); });
-    await act(async () => { reviewer.root.findAllByType("button")[0]?.props.onClick(); });
+    act(() => { propsOf<InputProps>(reviewerInput).onChange({ target: { value: "user_referee" } } as React.ChangeEvent<HTMLInputElement>); });
+    await act(async () => { await propsOf<ButtonProps>(reviewer.root.findAllByType("button")[0]!).onClick(); });
     expect(fetchMock).toHaveBeenCalledWith("/api/spogomi/events/event-1/reviewers", expect.objectContaining({ method: "POST" }));
     expect(reviewer.root.findByProps({ role: "status" }).props.children).toContain("habilité");
     reviewer.unmount();
 
     let links!: ReturnType<typeof create>;
     act(() => { links = create(<SpogomiTeamAccessLinks eventId="event-1" teams={[{ id: "team-1", team_number: 1, public_name: "Alpha" }]} />); });
-    await act(async () => { links.root.findByType("button").props.onClick(); });
+    await act(async () => { await propsOf<ButtonProps>(links.root.findByType("button")).onClick(); });
     expect(fetchMock).toHaveBeenCalledWith("/api/spogomi/events/event-1/teams/team-1/access", expect.objectContaining({ method: "POST" }));
     expect(links.root.findAll((node) => node.type === "textarea" && node.props.value === "https://example.test/team-access")).toHaveLength(1);
     links.unmount();

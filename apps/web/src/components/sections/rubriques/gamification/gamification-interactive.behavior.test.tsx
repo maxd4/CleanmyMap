@@ -1,4 +1,4 @@
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PendingGamificationReconciliation } from "@/lib/gamification/gamification-reconciliation-notice";
 import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
@@ -7,6 +7,13 @@ import { GamificationReconciliationNotice } from "./gamification-reconciliation-
 import { GamificationRulesMigrationNotice } from "./gamification-rules-migration-notice";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
+
+type ButtonProps = { children?: unknown; onClick: () => void | Promise<void> };
+type AlertProps = { children?: unknown };
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
 
 const progression = {
   summary: {
@@ -57,7 +64,7 @@ function deferred<T>() {
 }
 
 function findButton(renderer: ReturnType<typeof create>, label: string) {
-  return renderer.root.findAllByType("button").find((node) => node.props.children === label)!;
+  return renderer.root.findAllByType("button").find((node) => propsOf<ButtonProps>(node).children === label)!;
 }
 
 describe("Gamification interactive behavior", () => {
@@ -85,9 +92,9 @@ describe("Gamification interactive behavior", () => {
     });
 
     const acknowledge = findButton(renderer, "Compris");
-    act(() => {
-      acknowledge.props.onClick();
-      acknowledge.props.onClick();
+    await act(async () => {
+      await propsOf<ButtonProps>(acknowledge).onClick();
+      await propsOf<ButtonProps>(acknowledge).onClick();
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith("/api/gamification/me/acknowledge-reconciliation", expect.objectContaining({
@@ -120,8 +127,8 @@ describe("Gamification interactive behavior", () => {
       );
     });
 
-    await act(async () => { findButton(renderer, "Compris").props.onClick(); await Promise.resolve(); });
-    expect(renderer.root.findByProps({ role: "alert" }).props.children).toBe("Service indisponible");
+    await act(async () => { await propsOf<ButtonProps>(findButton(renderer, "Compris")).onClick(); await Promise.resolve(); });
+    expect(propsOf<AlertProps>(renderer.root.findByProps({ role: "alert" })).children).toBe("Service indisponible");
     expect(findButton(renderer, "Compris")).toBeTruthy();
     renderer.unmount();
   });
@@ -185,9 +192,9 @@ describe("Gamification interactive behavior", () => {
     });
     const acknowledge = findButton(renderer, "J’ai vu les nouveautés");
 
-    act(() => {
-      acknowledge.props.onClick();
-      acknowledge.props.onClick();
+    await act(async () => {
+      await propsOf<ButtonProps>(acknowledge).onClick();
+      await propsOf<ButtonProps>(acknowledge).onClick();
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith("/api/gamification/me/acknowledge-rules-migration", expect.objectContaining({ method: "POST" }));
@@ -210,10 +217,10 @@ describe("Gamification interactive behavior", () => {
     });
 
     await act(async () => {
-      findButton(renderer, "J’ai vu les nouveautés").props.onClick();
+      await propsOf<ButtonProps>(findButton(renderer, "J’ai vu les nouveautés")).onClick();
       await Promise.resolve();
     });
-    expect(renderer.root.findByProps({ role: "alert" }).props.children).toBe("Service indisponible");
+    expect(propsOf<AlertProps>(renderer.root.findByProps({ role: "alert" })).children).toBe("Service indisponible");
     expect(findButton(renderer, "J’ai vu les nouveautés")).toBeTruthy();
     renderer.unmount();
   });

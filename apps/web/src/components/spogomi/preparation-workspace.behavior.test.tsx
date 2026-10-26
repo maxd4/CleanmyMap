@@ -1,5 +1,5 @@
 import * as React from "react";
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const fetchMock = vi.hoisted(() => vi.fn());
@@ -21,6 +21,23 @@ vi.mock("./spogomi-attendance-panel", () => ({ SpogomiAttendancePanel: () => Rea
 vi.mock("./spogomi-day-readiness-checklist", () => ({ SpogomiDayReadinessChecklist: () => React.createElement("div", { "data-child": "readiness" }) }));
 vi.stubGlobal("fetch", fetchMock);
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
+
+type ButtonProps = { children?: unknown; disabled?: boolean; onClick?: () => void | Promise<void> };
+type FileInputProps = { type?: string; accept?: string; onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void };
+type TabProps = { children?: React.ReactNode; onClick?: () => void };
+type FetchCall = [RequestInfo | URL, RequestInit | undefined];
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
+
+function fetchCalls(): FetchCall[] {
+  return fetchMock.mock.calls as unknown as FetchCall[];
+}
+
+function jsonBody(call: FetchCall | undefined): Record<string, unknown> {
+  return JSON.parse(String(call?.[1]?.body ?? "")) as Record<string, unknown>;
+}
 
 import { SpogomiPreparationWorkspace } from "./spogomi-preparation-workspace";
 
@@ -81,13 +98,13 @@ describe("SPOGOMI preparation workspace", () => {
     const file = new File(["ticket,name\nTICKET-1,Participant synthétique"], "synthetic-roster.csv", { type: "text/csv" });
     const fileInput = renderer.root.findAllByType("input").find((input) => input.props.type === "file" && String(input.props.accept).includes("csv"));
     expect(fileInput).toBeTruthy();
-    await act(async () => { fileInput?.props.onChange({ target: { files: [file] } }); await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); });
+    await act(async () => { propsOf<FileInputProps>(fileInput!).onChange?.({ target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>); await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); });
     const rendered = JSON.stringify(renderer.toJSON());
     expect(rendered).toContain("Place sans occupant");
     expect(renderer.root.findAllByType("button").find((button) => button.props.children === "Confirmer la sélection")?.props.disabled).toBe(false);
 
     const confirm = renderer.root.findAllByType("button").find((button) => button.props.children === "Confirmer la sélection");
-    await act(async () => { confirm?.props.onClick(); await Promise.resolve(); });
+    await act(async () => { await propsOf<ButtonProps>(confirm!).onClick?.(); await Promise.resolve(); });
     const confirmCall = calls.find(([input, init]) => String(input).includes("/imports/confirm") && init?.method === "POST");
     expect(confirmCall).toBeTruthy();
     expect(confirmCall?.[1]?.body).toBeInstanceOf(FormData);
@@ -111,16 +128,16 @@ describe("SPOGOMI preparation workspace", () => {
     act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); });
     const previewButton = renderer.root.findAllByType("button").find((button) => button.props.children === "Prévisualiser ou régénérer");
-    await act(async () => { previewButton?.props.onClick(); await Promise.resolve(); });
+    await act(async () => { await propsOf<ButtonProps>(previewButton!).onClick?.(); await Promise.resolve(); });
     expect(renderer.root.findByProps({ children: "Composition déterministe" })).toBeTruthy();
     const confirmButton = renderer.root.findAllByType("button").find((button) => button.props.children === "Confirmer cette proposition");
-    await act(async () => { confirmButton?.props.onClick(); await Promise.resolve(); });
-    const confirmCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/teams/auto") && String(call[1]?.body).includes('"confirm":true'));
-    expect(JSON.parse(confirmCall?.[1]?.body as string)).toEqual(expect.objectContaining({ expectedRevision: 2, proposalFingerprint: "proposal-a" }));
+    await act(async () => { await propsOf<ButtonProps>(confirmButton!).onClick?.(); await Promise.resolve(); });
+    const confirmCall = fetchCalls().find((call) => String(call[0]).includes("/teams/auto") && String(call[1]?.body).includes('"confirm":true'));
+    expect(jsonBody(confirmCall)).toEqual(expect.objectContaining({ expectedRevision: 2, proposalFingerprint: "proposal-a" }));
     const lockButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).startsWith("Verrouiller"));
-    await act(async () => { lockButton?.props.onClick(); await Promise.resolve(); });
-    const lockCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/teams/lock"));
-    expect(JSON.parse(lockCall?.[1]?.body as string)).toEqual({ divisionId: "division-casual", expectedRevision: 2 });
+    await act(async () => { await propsOf<ButtonProps>(lockButton!).onClick?.(); await Promise.resolve(); });
+    const lockCall = fetchCalls().find((call) => String(call[0]).includes("/teams/lock"));
+    expect(jsonBody(lockCall)).toEqual({ divisionId: "division-casual", expectedRevision: 2 });
     renderer.unmount();
   });
 
@@ -143,7 +160,7 @@ describe("SPOGOMI preparation workspace", () => {
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     const worldTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "World Cup");
     expect(worldTab).toBeTruthy();
-    act(() => { worldTab?.props.onClick(); });
+    act(() => { propsOf<TabProps>(worldTab!).onClick?.(); });
     await act(async () => { resolveWorld(new Response(JSON.stringify(worldBody), { status: 200 })); await Promise.resolve(); });
     await act(async () => { resolveCasual(new Response(JSON.stringify(casualBody), { status: 200 })); await Promise.resolve(); });
 
@@ -191,16 +208,16 @@ describe("SPOGOMI preparation workspace", () => {
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     const casualPreviewButton = renderer.root.findAllByType("button").find((button) => button.props.children === "Prévisualiser ou régénérer");
     expect(casualPreviewButton?.props.disabled).toBe(false);
-    await act(async () => { casualPreviewButton?.props.onClick(); await Promise.resolve(); });
+    await act(async () => { await propsOf<ButtonProps>(casualPreviewButton!).onClick?.(); await Promise.resolve(); });
 
     const worldTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "World Cup");
     expect(worldTab).toBeTruthy();
-    act(() => { worldTab?.props.onClick(); });
+    act(() => { propsOf<TabProps>(worldTab!).onClick?.(); });
     await act(async () => { resolveWorldProjection(new Response(JSON.stringify(worldBody), { status: 200 })); await Promise.resolve(); });
 
     const worldPreviewButton = renderer.root.findAllByType("button").find((button) => button.props.children === "Prévisualiser ou régénérer");
     expect(worldPreviewButton?.props.disabled).toBe(false);
-    await act(async () => { worldPreviewButton?.props.onClick(); await Promise.resolve(); });
+    await act(async () => { await propsOf<ButtonProps>(worldPreviewButton!).onClick?.(); await Promise.resolve(); });
     expect(renderer.root.findAllByType("button").find((button) => button.props.children === "Prévisualiser ou régénérer")?.props.disabled).toBe(true);
 
     await act(async () => { resolveCasualOperation(new Response(JSON.stringify(casualPreview), { status: 200 })); await Promise.resolve(); });

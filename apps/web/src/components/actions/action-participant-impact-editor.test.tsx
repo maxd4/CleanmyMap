@@ -1,10 +1,18 @@
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ActionParticipationReviewItem } from "@/lib/actions/participation/group-participation";
 import type { IndividualImpactMeasurement } from "@/lib/actions/participation/individual-impact";
 import { ActionParticipantImpactEditor } from "./action-participant-impact-editor";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
+
+type ButtonProps = { children?: React.ReactNode; disabled?: boolean; onClick?: () => void };
+type InputProps = { onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void; value?: string };
+type AlertProps = { children?: React.ReactNode };
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
 
 function measurement(
   overrides: Partial<IndividualImpactMeasurement> = {},
@@ -117,19 +125,13 @@ describe("ActionParticipantImpactEditor behavior", () => {
       );
     });
 
-    await act(async () => {
-      findButton(renderer, "Saisir une mesure")?.props.onClick();
-    });
+    await act(async () => { propsOf<ButtonProps>(findButton(renderer, "Saisir une mesure")!).onClick?.(); });
     const wasteInput = renderer.root.findAllByType("input")[0];
-    act(() => {
-      wasteInput?.props.onChange({ target: { value: "not-a-number" } });
-    });
-    await act(async () => {
-      findButton(renderer, "Enregistrer la mesure")?.props.onClick();
-    });
+    await act(async () => { propsOf<InputProps>(wasteInput!).onChange?.({ target: { value: "not-a-number" } } as React.ChangeEvent<HTMLInputElement>); });
+    await act(async () => { propsOf<ButtonProps>(findButton(renderer, "Enregistrer la mesure")!).onClick?.(); });
 
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(renderer.root.findByProps({ role: "alert" }).props.children).toContain("numériques");
+    expect(propsOf<AlertProps>(renderer.root.findByProps({ role: "alert" })).children).toContain("numériques");
     renderer.unmount();
   });
 
@@ -151,21 +153,19 @@ describe("ActionParticipantImpactEditor behavior", () => {
       );
     });
 
-    await act(async () => {
-      findButton(renderer, "Saisir une mesure")?.props.onClick();
-    });
+    await act(async () => { propsOf<ButtonProps>(findButton(renderer, "Saisir une mesure")!).onClick?.(); });
     const inputs = renderer.root.findAllByType("input");
-    act(() => {
-      inputs[0]?.props.onChange({ target: { value: "2.5" } });
-      inputs[1]?.props.onChange({ target: { value: "17" } });
+    await act(async () => {
+      propsOf<InputProps>(inputs[0]!).onChange?.({ target: { value: "2.5" } } as React.ChangeEvent<HTMLInputElement>);
+      propsOf<InputProps>(inputs[1]!).onChange?.({ target: { value: "17" } } as React.ChangeEvent<HTMLInputElement>);
     });
     await act(async () => {
-      findButton(renderer, "Enregistrer la mesure")?.props.onClick();
+      propsOf<ButtonProps>(findButton(renderer, "Enregistrer la mesure")!).onClick?.();
       await Promise.resolve();
     });
 
     const saveButton = findButton(renderer, "Enregistrer la mesure");
-    expect(saveButton?.props.disabled).toBe(true);
+    expect(propsOf<ButtonProps>(saveButton!).disabled).toBe(true);
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/actions/action-1/participant-impact",
       expect.objectContaining({ method: "PATCH" }),
@@ -182,7 +182,7 @@ describe("ActionParticipantImpactEditor behavior", () => {
       await Promise.resolve();
     });
     expect(onSaved).toHaveBeenCalledTimes(1);
-    expect(findButton(renderer, "Enregistrer la mesure")?.props.disabled).toBe(false);
+    expect(propsOf<ButtonProps>(findButton(renderer, "Enregistrer la mesure")!).disabled).toBe(false);
     renderer.unmount();
   });
 
@@ -201,13 +201,13 @@ describe("ActionParticipantImpactEditor behavior", () => {
       );
     });
 
-    await act(async () => { findButton(renderer, "Saisir une mesure")?.props.onClick(); });
+    await act(async () => { propsOf<ButtonProps>(findButton(renderer, "Saisir une mesure")!).onClick?.(); });
     const wasteInput = renderer.root.findAllByType("input")[0];
-    act(() => { wasteInput?.props.onChange({ target: { value: "1.5" } }); });
-    await act(async () => { findButton(renderer, "Enregistrer la mesure")?.props.onClick(); });
+    await act(async () => { propsOf<InputProps>(wasteInput!).onChange?.({ target: { value: "1.5" } } as React.ChangeEvent<HTMLInputElement>); });
+    await act(async () => { propsOf<ButtonProps>(findButton(renderer, "Enregistrer la mesure")!).onClick?.(); });
 
-    expect(renderer.root.findByProps({ role: "alert" }).props.children).toBe("Mesure refusée.");
-    expect(renderer.root.findAllByType("input")[0]?.props.value).toBe("1.5");
+    expect(propsOf<AlertProps>(renderer.root.findByProps({ role: "alert" })).children).toBe("Mesure refusée.");
+    expect(propsOf<InputProps>(renderer.root.findAllByType("input")[0]!).value).toBe("1.5");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     renderer.unmount();
   });
@@ -228,7 +228,7 @@ describe("ActionParticipantImpactEditor behavior", () => {
       );
     });
 
-    await act(async () => { findButton(renderer, "Repasser en quote-part")?.props.onClick(); });
+    await act(async () => { propsOf<ButtonProps>(findButton(renderer, "Repasser en quote-part")!).onClick?.(); });
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
       participantId: "participant-1",
       waste: null,

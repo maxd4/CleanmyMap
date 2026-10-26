@@ -1,11 +1,20 @@
 import * as React from "react";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
 import { describe, expect, it, vi } from "vitest";
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 import { RoleManagementPanel } from "./role-management-panel";
 import type { RoleAccountRecord } from "@/lib/admin/role-management";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+
+type ButtonProps = { children?: React.ReactNode; disabled?: boolean; onClick?: () => void };
+type InputProps = { onChange: (event: React.ChangeEvent<HTMLInputElement>) => void };
+type TextareaProps = { onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void };
+type FormProps = { onSubmit: (event: React.FormEvent<HTMLFormElement>) => void | Promise<void> };
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
 
 function account(userId: string, roleLabel: RoleAccountRecord["roleLabel"]): RoleAccountRecord {
   return { userId, displayName: userId, handle: userId, avatarUrl: null, roleLabel, parisArrondissement: null, updatedAt: null };
@@ -30,7 +39,7 @@ function renderPanel(locale: "fr" | "en" = "fr") {
 }
 
 function button(renderer: ReactTestRenderer, label: string) {
-  return renderer.root.findAllByType("button").find((item) => item.props.children === label);
+  return renderer.root.findAllByType("button").find((item) => propsOf<ButtonProps>(item).children === label);
 }
 
 function textContent(renderer: ReactTestRenderer) {
@@ -42,11 +51,11 @@ describe("RoleManagementPanel controller", () => {
     const renderer = renderPanel();
     const input = renderer.root.findByType("input");
     const form = renderer.root.findByType("form");
-    await act(() => input.props.onChange({ target: { value: "x" } }));
-    await act(async () => form.props.onSubmit({ preventDefault: vi.fn() }));
+    await act(async () => { propsOf<InputProps>(input).onChange({ target: { value: "x" } } as React.ChangeEvent<HTMLInputElement>); });
+    await act(async () => { await propsOf<FormProps>(form).onSubmit({ preventDefault: vi.fn() } as unknown as React.FormEvent<HTMLFormElement>); });
     expect(textContent(renderer)).toContain("Tape au moins 2 caractères");
     const assign = button(renderer, "Attribuer admin");
-    await act(async () => assign?.props.onClick());
+    await act(async () => { propsOf<ButtonProps>(assign!).onClick?.(); });
     expect(textContent(renderer)).toContain("Indiquez la raison");
   });
 
@@ -56,14 +65,14 @@ describe("RoleManagementPanel controller", () => {
     const form = renderer.root.findByType("form");
     const response = { ok: true, json: async () => ({ accounts: [account("found", "elu")] }) };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(response));
-    await act(() => input.props.onChange({ target: { value: "found" } }));
-    await act(async () => form.props.onSubmit({ preventDefault: vi.fn() }));
+    await act(async () => { propsOf<InputProps>(input).onChange({ target: { value: "found" } } as React.ChangeEvent<HTMLInputElement>); });
+    await act(async () => { await propsOf<FormProps>(form).onSubmit({ preventDefault: vi.fn() } as unknown as React.FormEvent<HTMLFormElement>); });
     expect(textContent(renderer)).toContain("1 résultat(s)");
     vi.mocked(fetch).mockResolvedValueOnce({ ok: false, json: async () => ({ error: "Recherche refusée" }) } as Response);
-    await act(async () => form.props.onSubmit({ preventDefault: vi.fn() }));
+    await act(async () => { await propsOf<FormProps>(form).onSubmit({ preventDefault: vi.fn() } as unknown as React.FormEvent<HTMLFormElement>); });
     expect(textContent(renderer)).toContain("Recherche refusée");
     const clear = button(renderer, "Effacer");
-    await act(() => clear?.props.onClick());
+    await act(async () => { if (clear) propsOf<ButtonProps>(clear).onClick?.(); });
     expect(renderer.root.findAllByType("table").length).toBe(1);
   });
 
@@ -71,19 +80,19 @@ describe("RoleManagementPanel controller", () => {
     const pending = deferred<Response>();
     const renderer = renderPanel("en");
     const reason = renderer.root.findByType("textarea");
-    await act(() => reason.props.onChange({ target: { value: "Valid role change reason" } }));
+    await act(async () => { propsOf<TextareaProps>(reason).onChange({ target: { value: "Valid role change reason" } } as React.ChangeEvent<HTMLTextAreaElement>); });
     vi.stubGlobal("fetch", vi.fn().mockReturnValueOnce(pending.promise));
     const assign = button(renderer, "Assign admin");
-    await act(() => assign?.props.onClick());
-    expect(assign?.props.disabled).toBe(true);
+    await act(async () => { propsOf<ButtonProps>(assign!).onClick?.(); });
+    expect(propsOf<ButtonProps>(assign!).disabled).toBe(true);
     pending.resolve({ ok: true, json: async () => ({ account: account("other", "admin") }) } as Response);
     await act(async () => { await pending.promise; });
     expect(textContent(renderer)).toContain("Administrator");
 
     vi.mocked(fetch).mockRejectedValueOnce("network failure");
-    await act(() => renderer.root.findByType("textarea").props.onChange({ target: { value: "Another valid reason" } }));
+    await act(async () => { propsOf<TextareaProps>(renderer.root.findByType("textarea")).onChange({ target: { value: "Another valid reason" } } as React.ChangeEvent<HTMLTextAreaElement>); });
     const revoke = button(renderer, "Revoke");
-    await act(async () => { revoke?.props.onClick(); await Promise.resolve(); });
+    await act(async () => { propsOf<ButtonProps>(revoke!).onClick?.(); await Promise.resolve(); });
     expect(textContent(renderer)).toContain("An unexpected error occurred.");
   });
 });

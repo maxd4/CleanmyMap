@@ -1,10 +1,21 @@
 import { createRef } from "react";
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatComposer } from "./chat-composer";
 import { handleChatComposerFileSelection } from "./chat-composer-input";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
+
+type ButtonProps = { onClick: () => void; disabled?: boolean; children?: React.ReactNode };
+type TextareaProps = { onKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void; value?: string; disabled?: boolean; placeholder?: string };
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
+
+function childrenText(node: ReactTestInstance): string {
+  return String(propsOf<{ children?: React.ReactNode }>(node).children ?? "");
+}
 
 function renderComposer(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {}) {
   const props: React.ComponentProps<typeof ChatComposer> = {
@@ -37,22 +48,23 @@ function renderComposer(overrides: Partial<React.ComponentProps<typeof ChatCompo
 describe("ChatComposer interactive behavior", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("keeps the draft, submits with Enter and exposes the send action by name", () => {
+  it("keeps the draft, submits with Enter and exposes the send action by name", async () => {
     const renderer = renderComposer();
     const textarea = renderer.root.findByType("textarea");
     const requestSubmit = vi.fn();
     const preventDefault = vi.fn();
 
-    act(() => {
-      textarea.props.onKeyDown({
+    const textareaProps = propsOf<TextareaProps>(textarea);
+    await act(async () => {
+      textareaProps.onKeyDown({
         key: "Enter",
         shiftKey: false,
         preventDefault,
         currentTarget: { form: { requestSubmit } },
-      });
+      } as unknown as React.KeyboardEvent<HTMLTextAreaElement>);
     });
 
-    expect(textarea.props.value).toBe("Brouillon conservé");
+    expect(textareaProps.value).toBe("Brouillon conservé");
     expect(preventDefault).toHaveBeenCalledOnce();
     expect(requestSubmit).toHaveBeenCalledOnce();
     expect(renderer.root.findByProps({ "aria-label": "Envoyer le message" })).toBeTruthy();
@@ -87,7 +99,7 @@ describe("ChatComposer interactive behavior", () => {
     act(() => renderer.unmount());
   });
 
-  it("opens the keyboard-reachable tools and changes mode without losing the draft", () => {
+  it("opens the keyboard-reachable tools and changes mode without losing the draft", async () => {
     const onComposerModeChange = vi.fn();
     const renderer = renderComposer({
       showModeTabs: true,
@@ -96,15 +108,15 @@ describe("ChatComposer interactive behavior", () => {
     });
     const toolsButton = renderer.root.findByProps({ "aria-label": "Options d’écriture" });
 
-    act(() => toolsButton.props.onClick());
+    await act(async () => { propsOf<ButtonProps>(toolsButton).onClick(); });
     const pollButton = renderer.root.findAll(
-      (node) => node.type === "button" && node.props.children?.toString().includes("Sondage"),
+      (node) => node.type === "button" && childrenText(node).includes("Sondage"),
     )[0];
     expect(pollButton).toBeTruthy();
 
-    act(() => pollButton.props.onClick());
+    await act(async () => { propsOf<ButtonProps>(pollButton).onClick(); });
     expect(onComposerModeChange).toHaveBeenCalledWith("poll");
-    expect(renderer.root.findByType("textarea").props.value).toBe("Brouillon conservé");
+    expect(propsOf<TextareaProps>(renderer.root.findByType("textarea")).value).toBe("Brouillon conservé");
     act(() => renderer.unmount());
   });
 
@@ -126,7 +138,7 @@ describe("ChatComposer interactive behavior", () => {
     expect(onFileChange).toHaveBeenNthCalledWith(3, document);
   });
 
-  it("renders attachment removal, mention insertion and poll option limits as real controls", () => {
+  it("renders attachment removal, mention insertion and poll option limits as real controls", async () => {
     const onFileChange = vi.fn();
     const onInsertMention = vi.fn();
     const onPollOptionsChange = vi.fn();
@@ -138,10 +150,10 @@ describe("ChatComposer interactive behavior", () => {
       onInsertMention,
     });
 
-    const removeAttachment = renderer.root.findAll((node) => node.type === "button" && node.props.children?.toString().includes("Retirer"))[0];
-    act(() => removeAttachment.props.onClick());
+    const removeAttachment = renderer.root.findAll((node) => node.type === "button" && childrenText(node).includes("Retirer"))[0];
+    await act(async () => { propsOf<ButtonProps>(removeAttachment).onClick(); });
     const mention = renderer.root.findAllByType("button").find((node) => node.findAllByType("p").some((paragraph) => paragraph.props.children === "Alice"))!;
-    act(() => mention.props.onClick());
+    await act(async () => { propsOf<ButtonProps>(mention).onClick(); });
     expect(onFileChange).toHaveBeenCalledWith(null);
     expect(onInsertMention).toHaveBeenCalledWith("alice");
 
@@ -153,22 +165,22 @@ describe("ChatComposer interactive behavior", () => {
       onPollOptionsChange,
       canSubmit: false,
     });
-    const addOption = pollRenderer.root.findAll((node) => node.type === "button" && node.props.children?.toString().includes("Ajouter une option"))[0];
-    act(() => addOption.props.onClick());
+    const addOption = pollRenderer.root.findAll((node) => node.type === "button" && childrenText(node).includes("Ajouter une option"))[0];
+    await act(async () => { propsOf<ButtonProps>(addOption).onClick(); });
     expect(onPollOptionsChange).toHaveBeenCalledWith(["Oui", "Non", ""]);
     expect(pollRenderer.root.findByProps({ "aria-label": "Option 1" })).toBeTruthy();
     expect(pollRenderer.root.findByProps({ "aria-label": "Supprimer l'option 1" }).props.disabled).toBe(true);
     act(() => pollRenderer.unmount());
   });
 
-  it("keeps guest controls read-only and does not expose authenticated tools", () => {
+  it("keeps guest controls read-only and does not expose authenticated tools", async () => {
     const renderer = renderComposer({ userId: undefined, canSubmit: true, showMentions: false });
     const toolsButton = renderer.root.findByProps({ "aria-label": "Options d’écriture" });
-    act(() => toolsButton.props.onClick());
+    await act(async () => { propsOf<ButtonProps>(toolsButton).onClick(); });
 
     expect(renderer.root.findAllByType("a").some((link) => link.props.children === "Connectez-vous")).toBe(true);
     expect(renderer.root.findAllByProps({ children: "Pièce jointe" })).toHaveLength(0);
-    expect(renderer.root.findByType("textarea").props.placeholder).toBe("Connectez-vous pour participer à la discussion");
+    expect(propsOf<TextareaProps>(renderer.root.findByType("textarea")).placeholder).toBe("Connectez-vous pour participer à la discussion");
     act(() => renderer.unmount());
   });
 });

@@ -1,9 +1,15 @@
 import * as React from "react";
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppNotification } from "@/lib/notifications/client";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
+
+type ClickProps = { onClick: () => void | Promise<void> };
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
 
 const authState = vi.hoisted(() => ({
   getToken: vi.fn(async () => "token"),
@@ -132,11 +138,11 @@ describe("NotificationBell behavior", () => {
 
     const trigger = renderer.root.findByProps({ "aria-label": "Notifications (0 à traiter)" });
     await act(async () => {
-      trigger.props.onClick();
+      await propsOf<ClickProps>(trigger).onClick();
       await flush();
     });
     const itemButton = renderer.root.findByProps({ "data-notification-id": "private-1" });
-    await act(async () => { itemButton.props.onClick(); await Promise.resolve(); });
+    await act(async () => { await propsOf<ClickProps>(itemButton).onClick(); await Promise.resolve(); });
     expect(markReadMock).toHaveBeenCalledWith("user-1", "private-1", authState.getToken);
     expect(router.push).toHaveBeenCalledWith("/notifications/private-1");
     renderer.unmount();
@@ -180,7 +186,7 @@ describe("NotificationBell behavior", () => {
     await flush();
     const trigger = renderer.root.findByProps({ "aria-label": "Notifications (0 à traiter)" });
     await act(async () => {
-      trigger.props.onClick();
+      await propsOf<ClickProps>(trigger).onClick();
       await flush();
     });
     expect(renderer.root.findAllByProps({ "data-notification-id": "old" })).toHaveLength(0);
@@ -193,7 +199,7 @@ describe("NotificationBell behavior", () => {
     const renderer = renderBell();
     await flush();
     const trigger = renderer.root.findByProps({ "aria-label": "Notifications (0 à traiter)" });
-    await act(() => trigger.props.onClick());
+    await act(async () => { await propsOf<ClickProps>(trigger).onClick(); });
     expect(renderer.root.findAllByProps({ "data-notification-id": "private-1" })).toHaveLength(0);
     renderer.unmount();
   });

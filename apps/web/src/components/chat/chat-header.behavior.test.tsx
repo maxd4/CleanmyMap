@@ -1,11 +1,18 @@
 import * as React from "react";
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { describe, expect, it, vi } from "vitest";
 import { MessageSquare } from "lucide-react";
 import type { ChatSearchResult } from "@/lib/chat/chat-search";
 import type { ChatUser } from "./chat-types";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
+
+type ButtonProps = { onClick: () => void; disabled?: boolean; children?: React.ReactNode };
+type InputProps = { onChange: (event: React.ChangeEvent<HTMLInputElement>) => void; value?: string };
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
 
 vi.mock("./chat-search-panel", () => ({
   ChatSearchPanel: (props: {
@@ -83,19 +90,19 @@ describe("ChatHeader behavior", () => {
     expect(JSON.stringify(renderer.toJSON())).toContain("Conversation avec");
 
     const graph = renderer.root.findByProps({ "aria-label": "Afficher le graphe" });
-    await act(() => graph.props.onClick());
+    await act(async () => { propsOf<ButtonProps>(graph).onClick(); });
     expect(onViewModeChange).toHaveBeenCalledWith("graph");
 
     const handleButton = renderer.root.findByProps({ "aria-label": "Modifier le pseudo" });
-    await act(() => handleButton.props.onClick());
+    await act(async () => { propsOf<ButtonProps>(handleButton).onClick(); });
     expect(onToggleHandleEditor).toHaveBeenCalledTimes(1);
 
     const metadataButton = renderer.root.findByProps({ "aria-label": "Afficher les métadonnées" });
-    await act(() => metadataButton.props.onClick());
+    await act(async () => { propsOf<ButtonProps>(metadataButton).onClick(); });
     expect(renderer.root.findByProps({ children: "Zone" })).toBeTruthy();
 
     const backButton = renderer.root.findByProps({ "aria-label": "Retour aux conversations" });
-    await act(() => backButton.props.onClick());
+    await act(async () => { propsOf<ButtonProps>(backButton).onClick(); });
     expect(onBack).toHaveBeenCalledTimes(1);
 
     act(() => renderer.update(<ChatHeader
@@ -115,9 +122,9 @@ describe("ChatHeader behavior", () => {
       onConfirmHandle={onConfirmHandle}
     />));
     const input = renderer.root.findByProps({ "aria-label": "Votre pseudo unique" });
-    await act(() => input.props.onChange({ target: { value: "nouveau-2" } }));
+    await act(async () => { propsOf<InputProps>(input).onChange({ target: { value: "nouveau-2" } } as React.ChangeEvent<HTMLInputElement>); });
     expect(onHandleChange).toHaveBeenCalledWith("nouveau-2");
-    await act(async () => { await renderer.root.findByProps({ children: "Confirmer" }).props.onClick(); });
+    await act(async () => { propsOf<ButtonProps>(renderer.root.findByProps({ children: "Confirmer" })).onClick(); });
     expect(onConfirmHandle).toHaveBeenCalledTimes(1);
     renderer.unmount();
   });
@@ -153,6 +160,25 @@ describe("ChatHeader behavior", () => {
     renderer.unmount();
   });
 
+  it("waits for one deferred identity confirmation without dispatching a second action", async () => {
+    let resolveConfirmation!: () => void;
+    const confirmation = new Promise<void>((resolve) => { resolveConfirmation = resolve; });
+    const onConfirmHandle = vi.fn(() => confirmation);
+    const renderer = renderHeader({ isEditingHandle: true, onConfirmHandle });
+    const confirm = renderer.root.findByProps({ children: "Confirmer" });
+
+    await act(async () => {
+      propsOf<ButtonProps>(confirm).onClick();
+      await Promise.resolve();
+    });
+    expect(onConfirmHandle).toHaveBeenCalledOnce();
+
+    resolveConfirmation();
+    await act(async () => { await confirmation; });
+    expect(onConfirmHandle).toHaveBeenCalledOnce();
+    renderer.unmount();
+  });
+
   it("wires search controls only when the complete search contract is present", async () => {
     const callbacks = {
       onToggleSearch: vi.fn(),
@@ -168,13 +194,13 @@ describe("ChatHeader behavior", () => {
       searchResults: [searchResult],
       ...callbacks,
     });
-    await act(() => renderer.root.findByProps({ "aria-label": "Fermer la recherche" }).props.onClick());
+    await act(async () => { propsOf<ButtonProps>(renderer.root.findByProps({ "aria-label": "Fermer la recherche" })).onClick(); });
     expect(callbacks.onToggleSearch).toHaveBeenCalledTimes(1);
-    await act(() => renderer.root.findByProps({ "aria-label": "recherche de messages" }).props.onChange({ target: { value: "maps" } }));
+    await act(async () => { propsOf<InputProps>(renderer.root.findByProps({ "aria-label": "recherche de messages" })).onChange({ target: { value: "maps" } } as React.ChangeEvent<HTMLInputElement>); });
     expect(callbacks.onSearchQueryChange).toHaveBeenCalledWith("maps");
-    await act(() => renderer.root.findByProps({ children: "Sélectionner résultat" }).props.onClick());
+    await act(async () => { propsOf<ButtonProps>(renderer.root.findByProps({ children: "Sélectionner résultat" })).onClick(); });
     expect(callbacks.onSelectSearchResult).toHaveBeenCalledWith(searchResult);
-    await act(() => renderer.root.findByProps({ children: "Charger recherche" }).props.onClick());
+    await act(async () => { propsOf<ButtonProps>(renderer.root.findByProps({ children: "Charger recherche" })).onClick(); });
     expect(callbacks.onLoadMoreSearch).toHaveBeenCalledTimes(1);
     renderer.unmount();
   });

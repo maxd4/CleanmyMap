@@ -1,9 +1,16 @@
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { describe, expect, it, vi } from "vitest";
 import type { AppNotification } from "@/lib/notifications/client";
 import { NotificationListItem } from "./notification-list-item";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+
+type DecisionButtonProps = { onClick: () => void; disabled?: boolean };
+type MuteButtonProps = { onClick: (event: React.MouseEvent<HTMLButtonElement>) => void };
+
+function propsOf<Props>(node: ReactTestInstance): Props {
+  return node.props as unknown as Props;
+}
 
 const notification: AppNotification = {
   id: "notification-action-1",
@@ -16,7 +23,7 @@ const notification: AppNotification = {
 };
 
 describe("NotificationListItem interactive behavior", () => {
-  it("routes each explicit answer and keeps the notification opener separate", () => {
+  it("routes each explicit answer and keeps the notification opener separate", async () => {
     const onDecision = vi.fn();
     const onClick = vi.fn();
     let renderer!: ReturnType<typeof create>;
@@ -34,8 +41,8 @@ describe("NotificationListItem interactive behavior", () => {
 
     const claim = renderer.root.findByProps({ "aria-label": "Indiquer que j'ai participé" });
     const decline = renderer.root.findByProps({ "aria-label": "Indiquer que je n'ai pas participé" });
-    act(() => claim.props.onClick());
-    act(() => decline.props.onClick());
+    await act(async () => { propsOf<DecisionButtonProps>(claim).onClick(); });
+    await act(async () => { propsOf<DecisionButtonProps>(decline).onClick(); });
 
     expect(onDecision).toHaveBeenNthCalledWith(1, "claim");
     expect(onDecision).toHaveBeenNthCalledWith(2, "not_participated");
@@ -71,7 +78,7 @@ describe("NotificationListItem interactive behavior", () => {
     renderer.unmount();
   });
 
-  it("offers the optional-information mute action without hijacking notification navigation", () => {
+  it("offers the optional-information mute action without hijacking notification navigation", async () => {
     const onMuteAction = vi.fn();
     const onClick = vi.fn();
     let renderer!: ReturnType<typeof create>;
@@ -92,9 +99,11 @@ describe("NotificationListItem interactive behavior", () => {
     });
 
     const mute = renderer.root.findByProps({ children: "Masquer les informations de cette action" });
-    act(() => mute.props.onClick({ stopPropagation: vi.fn() }));
+    const stopPropagation = vi.fn();
+    await act(async () => { propsOf<MuteButtonProps>(mute).onClick({ stopPropagation } as unknown as React.MouseEvent<HTMLButtonElement>); });
 
     expect(onMuteAction).toHaveBeenCalledWith("action-1");
+    expect(stopPropagation).toHaveBeenCalledOnce();
     expect(onClick).not.toHaveBeenCalled();
     renderer.unmount();
   });
