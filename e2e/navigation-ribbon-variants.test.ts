@@ -8,6 +8,7 @@ async function dismissCookies(page: Page): Promise<void> {
 }
 
 async function waitForRibbon(page: Page) {
+  await page.waitForLoadState("load");
   const ribbon = page.locator('nav[aria-label="Navigation par blocs"]');
   await expect(ribbon).toBeVisible();
   await expect(ribbon.locator("[data-navigation-block-trigger]")).toHaveCount(5);
@@ -15,21 +16,32 @@ async function waitForRibbon(page: Page) {
   return ribbon;
 }
 
-async function indicatorGeometry(page: Page) {
-  return page.evaluate(() => {
+async function indicatorGeometry(page: Page, displayMode?: "exhaustif" | "minimaliste" | "sobre") {
+  return page.evaluate((nextDisplayMode) => {
+    if (nextDisplayMode) {
+      document.documentElement.setAttribute("data-display-mode", nextDisplayMode);
+    }
+
     const ribbon = document.querySelector<HTMLElement>("[data-navigation-ribbon]");
     const indicator = ribbon?.querySelector<HTMLElement>(".cmm-navigation-meniscus-indicator");
+    const circle = ribbon?.querySelector<HTMLElement>(".cmm-navigation-meniscus-circle");
     const active = ribbon?.querySelector<HTMLElement>('[data-navigation-block-active="true"]');
     if (!ribbon || !indicator || !active) {
       throw new Error("Missing ribbon indicator geometry");
     }
 
     const indicatorRect = indicator.getBoundingClientRect();
+    const circleRect = circle?.getBoundingClientRect();
     const activeRect = active.getBoundingClientRect();
     const indicatorStyle = getComputedStyle(indicator);
     return {
       activeCenter: activeRect.left + activeRect.width / 2,
       indicatorCenter: indicatorRect.left + indicatorRect.width / 2,
+      circleCenter: circleRect ? circleRect.left + circleRect.width / 2 : null,
+      circleTop: circleRect?.top ?? null,
+      ribbonTop: ribbon.getBoundingClientRect().top,
+      circleHeight: circleRect?.height ?? null,
+      bridgeCount: ribbon.querySelectorAll(".cmm-navigation-meniscus-bridge").length,
       indicatorPointerEvents: indicatorStyle.pointerEvents,
       indicatorTransitionProperty: indicatorStyle.transitionProperty,
       indicatorTransitionDuration: indicatorStyle.transitionDuration,
@@ -37,7 +49,7 @@ async function indicatorGeometry(page: Page) {
       scrollWidth: document.documentElement.scrollWidth,
       viewportWidth: document.documentElement.getBoundingClientRect().width,
     };
-  });
+  }, displayMode);
 }
 
 test.describe("desktop central navigation ribbon variants", () => {
@@ -58,6 +70,10 @@ test.describe("desktop central navigation ribbon variants", () => {
     await expect(meniscusIndicator).toHaveCSS("opacity", "1");
     const meniscus = await indicatorGeometry(page);
     expect(Math.abs(meniscus.indicatorCenter - meniscus.activeCenter)).toBeLessThanOrEqual(2);
+    expect(Math.abs(meniscus.circleCenter! - meniscus.activeCenter)).toBeLessThanOrEqual(2);
+    expect(meniscus.circleHeight).toBe(44);
+    expect(meniscus.circleTop!).toBeLessThan(meniscus.ribbonTop);
+    expect(meniscus.bridgeCount).toBe(1);
     expect(meniscus.indicatorPointerEvents).toBe("none");
     expect(meniscus.indicatorTransitionProperty).toContain("left");
     expect(meniscus.activeIconTransform).not.toBe("none");
@@ -84,10 +100,10 @@ test.describe("desktop central navigation ribbon variants", () => {
     await dismissCookies(page);
     const ribbon = await waitForRibbon(page);
     await ribbon.evaluate((element) => element.setAttribute("data-navigation-ribbon-variant", "meniscus"));
+    await page.waitForTimeout(350);
 
     const nonActiveTrigger = ribbon.getByRole("button", { name: "Cartographie & Impact" });
-    await nonActiveTrigger.focus();
-    await page.keyboard.press("Enter");
+    await nonActiveTrigger.press("Enter");
     await expect(nonActiveTrigger).toHaveAttribute("aria-expanded", "true");
     const panelId = await nonActiveTrigger.getAttribute("aria-controls");
     const panel = page.locator(`#${panelId}`);
@@ -105,16 +121,14 @@ test.describe("desktop central navigation ribbon variants", () => {
     const keyboardRibbon = await waitForRibbon(page);
     await keyboardRibbon.evaluate((element) => element.setAttribute("data-navigation-ribbon-variant", "meniscus"));
     const keyboardTrigger = keyboardRibbon.getByRole("button", { name: "Cartographie & Impact" });
-    await keyboardTrigger.focus();
-    await page.keyboard.press("Enter");
+    await keyboardTrigger.press("Enter");
     await expect(keyboardTrigger).toHaveAttribute("aria-expanded", "true");
     await page.keyboard.press("Escape");
     await expect(keyboardTrigger).toHaveAttribute("aria-expanded", "false");
     await expect(keyboardTrigger).toBeFocused();
 
     for (const mode of ["exhaustif", "minimaliste", "sobre"] as const) {
-      await page.evaluate((displayMode) => document.documentElement.setAttribute("data-display-mode", displayMode), mode);
-      const geometry = await indicatorGeometry(page);
+      const geometry = await indicatorGeometry(page, mode);
       if (mode === "exhaustif") {
         expect(geometry.indicatorTransitionDuration).toContain("0.26s");
       } else if (mode === "minimaliste") {

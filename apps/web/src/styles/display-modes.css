@@ -115,7 +115,8 @@
 }
 
 [data-display-mode="minimaliste"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-circle {
-  background: #0a162a;
+  background: var(--cmm-navigation-meniscus-surface);
+  border-color: var(--cmm-navigation-meniscus-edge);
   box-shadow: none;
 }
 
@@ -163,6 +164,10 @@
 
 [data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-curve {
   stroke: var(--background);
+}
+
+[data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-bridge {
+  fill: var(--background);
 }
 
 /* Les helpers Motion canoniques restent plats en mode minimaliste. */

@@ -53,9 +53,10 @@ function RibbonDesktopSpaceNavigation({ spaces, activeSpaceId, locale, onTrackNa
         className="cmm-navigation-meniscus-indicator"
         style={{ left: `calc(50% - 114px + ${activeSpaceIndex * 38}px)` }}
       >
-        <svg aria-hidden="true" viewBox="0 0 76 40" focusable="false">
-          <path className="cmm-navigation-meniscus-curve" d="M0 39 C14 39 12 7 29 7" />
-          <path className="cmm-navigation-meniscus-curve" d="M47 7 C64 7 62 39 76 39" />
+        <svg aria-hidden="true" viewBox="0 0 76 48" focusable="false">
+          <path className="cmm-navigation-meniscus-bridge" d="M0 48 C14 48 12 14 28 14 C31 14 32 8 38 8 C44 8 45 14 48 14 C64 14 62 48 76 48 Z" />
+          <path className="cmm-navigation-meniscus-curve" d="M0 48 C14 48 12 14 28 14" />
+          <path className="cmm-navigation-meniscus-curve" d="M48 14 C64 14 62 48 76 48" />
         </svg>
         <span className="cmm-navigation-meniscus-circle" />
       </span>
