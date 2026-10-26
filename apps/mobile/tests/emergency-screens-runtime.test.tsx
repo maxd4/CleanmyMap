@@ -60,23 +60,6 @@ vi.mock('../lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => null),
   getClerkUserId: vi.fn(async () => null),
 }))
-vi.mock('../lib/emergency-contact', () => ({
-  getDialablePhone: (phone: string) => {
-    const trimmed = phone.trim()
-    return `${trimmed.startsWith('+') ? '+' : ''}${trimmed.replace(/\D/g, '')}`
-  },
-  hasEmergencyContact: (contact: { name?: string; relation?: string; phone?: string } | null) => contact !== null && Object.keys({
-    ...(!contact.name?.trim() ? { name: true } : {}),
-    ...(!contact.relation?.trim() ? { relation: true } : {}),
-    ...(!contact.phone?.trim() ? { phone: true } : {}),
-  }).length === 0,
-  validateEmergencyContact: (contact: { name: string; relation: string; phone: string }) => ({
-    ...(!contact.name.trim() ? { name: 'Nom requis.' } : {}),
-    ...(!contact.relation.trim() ? { relation: 'Relation requise.' } : {}),
-    ...(!contact.phone.trim() ? { phone: 'Numéro requis.' } : {}),
-  }),
-}))
-
 import { EmergencyCallActions } from '../screens/emergency-call-actions'
 import { EmergencyContactPanel } from '../screens/emergency-contact'
 
@@ -272,7 +255,7 @@ describe('mobile emergency screens', () => {
     const actions = state.alert.mock.calls.at(-1)?.[2] as Array<{ text: string; onPress?: () => void }>
     expect(state.openURL).not.toHaveBeenCalled()
     await act(async () => { await actions.find((action) => action.text === 'Appeler')?.onPress?.(); await Promise.resolve() })
-    expect(state.openURL).toHaveBeenCalledWith('tel:+330612345678')
+    expect(state.openURL).toHaveBeenCalledWith('tel:+33612345678')
   })
 
   it('keeps the emergency number available when opening the dialer fails', async () => {
@@ -290,6 +273,17 @@ describe('mobile emergency screens', () => {
     expect(state.alert).toHaveBeenCalledWith('Appel impossible', expect.any(String))
   })
 
+  it('shows only the 112 action when no private contact is stored', async () => {
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<EmergencyCallActions />)
+      await settleEffect()
+    })
+
+    expect(renderer.root.findAll((node) => node.props.accessibilityLabel === 'Appeler le contact d’urgence')).toHaveLength(0)
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Appeler le 112' })).toBeDefined()
+  })
+
   it('renders the compact contact action only when a valid stored contact exists', async () => {
     state.secureValues.set('cmm_emergency_contact', JSON.stringify({ name: '', relation: 'amie', phone: '0612345678' }))
     let renderer!: TestRenderer.ReactTestRenderer
@@ -301,5 +295,33 @@ describe('mobile emergency screens', () => {
 
     expect(renderer.root.findAll((node) => node.props.accessibilityLabel === 'Appeler le contact d’urgence')).toHaveLength(0)
     expect(renderer.root.findByProps({ accessibilityLabel: 'Appeler le 112' })).toBeDefined()
+  })
+
+  it('does not open the dialer when confirmation is refused', async () => {
+    state.secureValues.set('cmm_emergency_contact', JSON.stringify({ name: 'Ada', relation: 'amie', phone: '0612345678' }))
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<EmergencyCallActions />)
+      await settleEffect()
+    })
+
+    await act(async () => { await callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Appeler mon contact d’urgence' }), 'onPress') })
+    const actions = state.alert.mock.calls.at(-1)?.[2] as Array<{ text: string; onPress?: () => void }>
+    await act(async () => { await actions.find((action) => action.text === 'Annuler')?.onPress?.(); await Promise.resolve() })
+
+    expect(state.openURL).not.toHaveBeenCalled()
+  })
+
+  it('does not expose or dial a corrupted private contact', async () => {
+    state.secureValues.set('cmm_emergency_contact', JSON.stringify({ name: 'Ada', relation: 'amie', phone: '+33 (0)6 12 34' }))
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<EmergencyCallActions compact />)
+      await settleEffect()
+    })
+
+    expect(renderer.root.findAll((node) => node.props.accessibilityLabel === 'Appeler le contact d’urgence')).toHaveLength(0)
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Appeler le 112' })).toBeDefined()
+    expect(state.openURL).not.toHaveBeenCalled()
   })
 })

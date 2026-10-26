@@ -36,8 +36,14 @@ export function EmergencyCallActions({ compact = false }: { compact?: boolean })
   }
 
   async function openPhone(phone: string) {
+    const dialablePhone = getDialablePhone(phone)
+    if (!dialablePhone) {
+      Alert.alert('Appel impossible', 'Le numéro du contact d’urgence est invalide.')
+      return
+    }
+
     try {
-      await Linking.openURL(`tel:${getDialablePhone(phone)}`)
+      await Linking.openURL(`tel:${dialablePhone}`)
     } catch {
       Alert.alert('Appel impossible', 'L’application Téléphone ne peut pas être ouverte sur cet appareil.')
     }
