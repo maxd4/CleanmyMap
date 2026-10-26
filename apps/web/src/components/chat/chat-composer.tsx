@@ -127,7 +127,7 @@ export const ChatComposer = memo(function ChatComposer({
   const selectComposerMode = (mode: ChatComposerMode) => selectChatComposerMode(mode, onComposerModeChange, () => setIsToolsOpen(false));
 
   return <form onSubmit={onSubmit} className={`p-6 border-t backdrop-blur-xl ${isLight ? "border-rose-100/70 bg-white/80" : "border-white/5 bg-white/5"}`}>
-    {sendError ? <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-400 animate-in fade-in zoom-in-95">{sendError}</div> : null}
+    {sendError ? <div role="alert" className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-400 animate-in fade-in zoom-in-95">{sendError}</div> : null}
     {showMentions ? <ChatComposerMentions isLight={isLight} mentionSuggestions={mentionSuggestions} onInsertMention={onInsertMention} /> : null}
     {composerMode !== "poll" && file ? <ChatComposerAttachmentPreview file={file} isLight={isLight} onRemove={() => onFileChange(null)} /> : null}
     <ChatComposerModePanels isLight={isLight} showModeTabs={showModeTabs} composerModes={composerModes} composerMode={composerMode} pollOptions={pollOptions} onPollOptionsChange={onPollOptionsChange} announcementTemplate={announcementTemplate} onAnnouncementTemplateChange={onAnnouncementTemplateChange} relatedEvent={relatedEvent} announcementEventRequested={announcementEventRequested} announcementEventLoading={announcementEventLoading} announcementEventError={announcementEventError} />

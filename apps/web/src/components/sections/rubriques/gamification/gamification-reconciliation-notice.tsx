@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { PendingGamificationReconciliation } from "@/lib/gamification/gamification-reconciliation-notice";
@@ -23,8 +23,11 @@ function useReconciliationAcknowledgement(
 ) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const submittingRef = useRef(false);
 
   async function acknowledge() {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     setError(null);
     try {
@@ -39,6 +42,7 @@ function useReconciliationAcknowledgement(
     } catch (acknowledgementError) {
       setError(acknowledgementError instanceof Error ? acknowledgementError.message : (fr ? "Erreur inattendue." : "Unexpected error."));
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   }

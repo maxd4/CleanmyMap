@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
 
@@ -15,6 +15,7 @@ export function GamificationRulesMigrationNotice({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const submittingRef = useRef(false);
   const fr = locale === "fr";
   if (!summary?.rulesMigration.hasUnacknowledgedChanges) return null;
 
@@ -22,6 +23,8 @@ export function GamificationRulesMigrationNotice({
   const newMilestones = summary.milestones.filter((item) => item.isNewSinceLastRulesMigration).length;
 
   async function acknowledge() {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     setError(null);
     try {
@@ -34,6 +37,7 @@ export function GamificationRulesMigrationNotice({
     } catch (acknowledgementError) {
       setError(acknowledgementError instanceof Error ? acknowledgementError.message : "Erreur inattendue.");
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   }
