@@ -79,8 +79,9 @@ function parseLcov(content, definition, root) {
     } else if (rawLine.startsWith("BRDA:")) {
       const [line, block, branch, taken] = rawLine.slice(5).split(",");
       const lineNumber = Number(line);
-      if (!Number.isInteger(lineNumber) || !block || !branch || (taken !== "-" && (!/^\d+$/.test(taken) || Number(taken) < 0))) throw new Error(`${definition.scope} LCOV branch metric is invalid`);
-      current.branches.push({ line: lineNumber, block, branch, counter: taken === "-" ? 0 : Number(taken), taken, covered: taken !== "-" && Number(taken) > 0 });
+      const normalizedTaken = taken === "-" || taken === "-1" ? 0 : Number(taken);
+      if (!Number.isInteger(lineNumber) || !block || !branch || (taken !== "-" && !/^-?\d+$/.test(taken ?? "")) || normalizedTaken < 0) throw new Error(`${definition.scope} LCOV branch metric is invalid`);
+      current.branches.push({ line: lineNumber, block, branch, counter: normalizedTaken, taken, covered: normalizedTaken > 0 });
     } else if (rawLine.startsWith("FNDA:")) {
       const [count, ...nameParts] = rawLine.slice(5).split(",");
       const value = Number(count);

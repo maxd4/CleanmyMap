@@ -79,6 +79,13 @@ d'entrée App Router (`page`, `layout`, `loading`, `error`, `not-found`,
 explicitement listés. Un fichier n'est jamais exclu pour cause de faible
 couverture.
 
+La photographie exhaustive la plus récente, générée depuis les rapports
+validés et conservant les limites de provenance, est publiée dans l'[audit de
+référence de couverture du 26 octobre 2026](../operations/audits/coverage-reference-2026-10-26.md),
+avec sa [matrice structurée par fichier](../operations/audits/coverage-reference-2026-10-26.json).
+Cet audit est un `SNAPSHOT` descriptif : il ne remplace ni cette politique, ni
+les baselines, ni une décision d'activation `ENFORCE`.
+
 Cette évolution incrémente l'empreinte de classification risque. Les rapports
 Web existants deviennent donc incompatibles jusqu'à une nouvelle mesure fiable,
 tandis que les baselines historiques et leurs domaines de compatibilité restent

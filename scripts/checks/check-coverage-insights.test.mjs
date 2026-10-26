@@ -111,6 +111,33 @@ test("80% de couverture et 3% de duplication ne déclenchent aucune alerte", () 
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
+test("accepte la convention V8 BRDA -1 comme branche non exécutée", () => {
+  const root = tempRoot();
+  try {
+    fixture(root, { branchCovered: 1, branchTotal: 2, pct: 50 });
+    const lcovPath = path.join(root, "apps", "web", "coverage", "lcov.info");
+    fs.writeFileSync(lcovPath, [
+      "TN:",
+      "SF:src/fixture.ts",
+      "DA:1,1",
+      "BRDA:2,0,0,-1",
+      "BRDA:2,0,1,1",
+      "end_of_record",
+      "",
+    ].join("\n"));
+    const result = buildCoverageInsightsReport({
+      root,
+      auditedSha: sha,
+      reports: [definition],
+      validateSonar: () => [{ status: "VALID" }],
+      validateEvidence: () => ({ gitHead: sha }),
+    });
+    assert.equal(result.scopes[0].metrics.branches.covered, 1);
+    assert.deepEqual(result.scopes[0].files[0].uncoveredBranchLines, [2]);
+    assert.equal(result.scopes[0].decisionPoints.find((point) => point.taken === "-1")?.covered, false);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
 test("une évidence absente est signalée sans fabriquer un warning de seuil", () => {
   const root = tempRoot();
   try {
