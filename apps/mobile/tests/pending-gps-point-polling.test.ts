@@ -1,8 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import React, { useEffect } from 'react'
+import TestRenderer, { act } from 'react-test-renderer'
 import {
   createPendingGpsPointPoller,
   PENDING_GPS_POINT_POLL_INTERVAL_MS,
+  usePendingGpsPointCountPolling,
 } from '../lib/pending-gps-point-polling'
+
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 describe('pending GPS point polling', () => {
   beforeEach(() => {
@@ -164,5 +169,84 @@ describe('pending GPS point polling', () => {
     expect(readCount).not.toHaveBeenCalled()
     expect(onCount).not.toHaveBeenCalled()
     expect(poller.isRunning()).toBe(false)
+  })
+
+  it('starts and stops the hook poller with visibility and exposes an explicit refresh', async () => {
+    const readCount = vi.fn(async () => 11)
+    const onCount = vi.fn()
+    let refresh!: () => Promise<void>
+    function Harness({ visible }: { visible: boolean }) {
+      refresh = usePendingGpsPointCountPolling({ isVisible: visible, readCount, onCount })
+      return React.createElement('Harness', { visible })
+    }
+
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(React.createElement(Harness, { visible: true }))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    const callsAfterStart = readCount.mock.calls.length
+    expect(callsAfterStart).toBeGreaterThanOrEqual(1)
+    expect(onCount).toHaveBeenLastCalledWith(11)
+
+    await act(async () => { renderer.update(React.createElement(Harness, { visible: false })) })
+    await vi.advanceTimersByTimeAsync(PENDING_GPS_POINT_POLL_INTERVAL_MS)
+    expect(readCount).toHaveBeenCalledTimes(callsAfterStart)
+
+    await act(async () => { await refresh() })
+    expect(readCount).toHaveBeenCalledTimes(2)
+    expect(onCount).toHaveBeenLastCalledWith(11)
+    renderer.unmount()
+  })
+
+  it('disposes the hook poller on unmount and ignores a late storage result', async () => {
+    let resolveRead!: (count: number) => void
+    const readCount = vi.fn(() => new Promise<number>((resolve) => { resolveRead = resolve }))
+    const onCount = vi.fn()
+    function Harness() {
+      usePendingGpsPointCountPolling({ isVisible: true, readCount, onCount })
+      useEffect(() => undefined, [])
+      return React.createElement('Harness')
+    }
+
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => { renderer = TestRenderer.create(React.createElement(Harness)) })
+    expect(readCount).toHaveBeenCalledOnce()
+    await act(async () => { renderer.unmount() })
+    resolveRead(12)
+    await act(async () => { await Promise.resolve() })
+    expect(onCount).not.toHaveBeenCalled()
+  })
+
+  it('keeps the newest hook refresh result when visibility changes during an in-flight read', async () => {
+    let releaseFirst!: (count: number) => void
+    let releaseSecond!: (count: number) => void
+    const readCount = vi.fn()
+      .mockImplementationOnce(() => new Promise<number>((resolve) => { releaseFirst = resolve }))
+      .mockImplementationOnce(() => new Promise<number>((resolve) => { releaseSecond = resolve }))
+    const onCount = vi.fn()
+    function Harness({ visible }: { visible: boolean }) {
+      usePendingGpsPointCountPolling({ isVisible: visible, readCount, onCount })
+      return React.createElement('Harness', { visible })
+    }
+
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => { renderer = TestRenderer.create(React.createElement(Harness, { visible: true })) })
+    await act(async () => {
+      renderer.update(React.createElement(Harness, { visible: false }))
+      await Promise.resolve()
+    })
+    await act(async () => {
+      renderer.update(React.createElement(Harness, { visible: true }))
+      await Promise.resolve()
+    })
+    releaseSecond(14)
+    await act(async () => { await Promise.resolve() })
+    releaseFirst(13)
+    await act(async () => { await Promise.resolve() })
+
+    expect(onCount).toHaveBeenCalledWith(14)
+    expect(onCount).not.toHaveBeenCalledWith(13)
+    renderer.unmount()
   })
 })

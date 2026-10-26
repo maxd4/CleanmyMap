@@ -146,4 +146,60 @@ describe('mobile signalement runtime', () => {
     expect(expired).toHaveBeenCalledOnce()
     expect(second.renderer.root.findAll((node) => textContent(node).includes('Observation existante'))).toHaveLength(0)
   })
+
+  it('keeps the form editable after a server rejection and exposes a generic non-Error failure', async () => {
+    state.createMobileSignalement.mockRejectedValueOnce(new Error('service indisponible')).mockRejectedValueOnce('unknown failure')
+    const { renderer } = await renderScreen()
+    const label = renderer.root.findByProps({ accessibilityLabel: 'Lieu ou repère' })
+    const latitude = renderer.root.findByProps({ accessibilityLabel: 'Latitude' })
+    const longitude = renderer.root.findByProps({ accessibilityLabel: 'Longitude' })
+    await act(async () => {
+      callTestHandler(label, 'onChangeText', 'Parc central')
+      callTestHandler(latitude, 'onChangeText', '48.8566')
+      callTestHandler(longitude, 'onChangeText', '2.3522')
+    })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Transmettre le signalement'), 'onPress'); await settle() })
+    expect(textContent(renderer.root)).toContain('service indisponible')
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Lieu ou repère' }).props.value).toBe('Parc central')
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Transmettre le signalement'), 'onPress'); await settle() })
+    expect(textContent(renderer.root)).toContain('Le signalement n’a pas abouti.')
+  })
+
+  it('expires the session instead of claiming a created observation after a 401', async () => {
+    state.createMobileSignalement.mockRejectedValueOnce({ status: 401 })
+    const onSessionExpired = vi.fn()
+    const { renderer } = await renderScreen(onSessionExpired)
+    await act(async () => {
+      callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Lieu ou repère' }), 'onChangeText', 'Parc')
+      callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Latitude' }), 'onChangeText', '48.8566')
+      callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Longitude' }), 'onChangeText', '2.3522')
+    })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Transmettre le signalement'), 'onPress'); await settle() })
+
+    expect(onSessionExpired).toHaveBeenCalledOnce()
+    expect(textContent(renderer.root)).not.toContain('Signalement transmis et confirmé par le serveur.')
+  })
+
+  it('renders a neutral position error when the native location provider rejects a non-Error value', async () => {
+    state.permission = 'granted'
+    const location = await import('expo-location')
+    vi.mocked(location.getCurrentPositionAsync).mockRejectedValueOnce('gps failure')
+    const { renderer } = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Utiliser ma position actuelle'), 'onPress'); await settle() })
+    expect(textContent(renderer.root)).toContain('La position actuelle est indisponible.')
+  })
+
+  it('keeps an empty evidence result distinct from a failed evidence read', async () => {
+    state.loadMyMobileSignalements.mockResolvedValue({ status: 'ok', items: [{ id: 'spot-3', label: 'Place', type: 'spot', createdAt: '2026-10-20T10:00:00.000Z', status: 'new' }] })
+    state.loadSignalementMedia.mockResolvedValueOnce([]).mockRejectedValueOnce('media failure')
+    const { renderer } = await renderScreen()
+    const evidenceButton = findButton(renderer, 'Voir les preuves photo')
+    await act(async () => { await callTestHandler(evidenceButton, 'onPress'); await settle() })
+    expect(textContent(renderer.root)).toContain('Aucune preuve photo accessible.')
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Voir les preuves photo'), 'onPress'); await settle() })
+    expect(textContent(renderer.root)).toContain('Les preuves photo sont indisponibles.')
+  })
 })
