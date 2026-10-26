@@ -144,36 +144,47 @@ function collectFunctionBindings(source: string): Set<string> {
   return bindings;
 }
 
-function collectIdentifierReferencesFromNode(
+function isIdentifierDeclaration(node: ts.Identifier): boolean {
+  const parent = node.parent;
+  return (
+    (ts.isVariableDeclaration(parent) && parent.name === node) ||
+    (ts.isFunctionDeclaration(parent) && parent.name === node) ||
+    (ts.isParameter(parent) && parent.name === node) ||
+    (ts.isImportClause(parent) && parent.name === node) ||
+    (ts.isImportSpecifier(parent) && (parent.name === node || parent.propertyName === node))
+  );
+}
+
+function isNonExecutablePropertyName(node: ts.Identifier): boolean {
+  const parent = node.parent;
+  return (
+    (ts.isPropertyAccessExpression(parent) && parent.name === node) ||
+    (ts.isPropertyAssignment(parent) && parent.name === node) ||
+    (ts.isMethodDeclaration(parent) && parent.name === node) ||
+    (ts.isPropertySignature(parent) && parent.name === node)
+  );
+}
+
+function visitIdentifierReferences(
   node: ts.Node,
-  excludeNonExecutablePropertyNames = false,
-): Set<string> {
-  const references = new Set<string>();
-  const visit = (node: ts.Node) => {
-    if (ts.isIdentifier(node)) {
-      const parent = node.parent;
-      const isDeclaration =
-        (ts.isVariableDeclaration(parent) && parent.name === node) ||
-        (ts.isFunctionDeclaration(parent) && parent.name === node) ||
-        (ts.isParameter(parent) && parent.name === node) ||
-        (ts.isImportClause(parent) && parent.name === node) ||
-        (ts.isImportSpecifier(parent) &&
-          (parent.name === node || parent.propertyName === node));
-      const isNonExecutablePropertyName =
-        (ts.isPropertyAccessExpression(parent) && parent.name === node) ||
-        (ts.isPropertyAssignment(parent) && parent.name === node) ||
-        (ts.isMethodDeclaration(parent) && parent.name === node) ||
-        (ts.isPropertySignature(parent) && parent.name === node);
-      if (
-        !isDeclaration &&
-        (!excludeNonExecutablePropertyNames || !isNonExecutablePropertyName)
-      ) {
-        references.add(node.text);
-      }
+  references: Set<string>,
+  excludeNonExecutablePropertyNames: boolean,
+): void {
+  if (ts.isIdentifier(node) && !isIdentifierDeclaration(node)) {
+    if (!excludeNonExecutablePropertyNames || !isNonExecutablePropertyName(node)) {
+      references.add(node.text);
     }
-    ts.forEachChild(node, visit);
-  };
-  visit(node);
+  }
+  ts.forEachChild(node, (child) => visitIdentifierReferences(
+    child,
+    references,
+    excludeNonExecutablePropertyNames,
+  ));
+}
+
+function collectIdentifierReferencesFromNode(node: ts.Node, excludeNonExecutablePropertyNames = false): Set<string> {
+  const references = new Set<string>();
+  visitIdentifierReferences(node, references, excludeNonExecutablePropertyNames);
   return references;
 }
 

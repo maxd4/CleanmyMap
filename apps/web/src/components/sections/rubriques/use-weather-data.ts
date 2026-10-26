@@ -188,6 +188,7 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
     const storedLocation = canApplyDraftWeatherLocation(draftLocationLabel, false)
       ? null
       : readStoredWeatherLocation();
+    const geolocationAvailable = isLoaded && canRequestGeolocation();
     const source = selectAutomaticWeatherLocationSource({
       contextReady,
       hasCanonicalActionLocation,
@@ -197,7 +198,7 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
       hasResolvedInitialLocation: hasResolvedInitialLocationRef.current,
       hasStoredLocation: Boolean(storedLocation),
       hasPreference: isLoaded && Boolean(locationPreference),
-      geolocationAvailable: isLoaded && canRequestGeolocation(),
+      geolocationAvailable,
     });
     if (!source) {
       return;
@@ -210,6 +211,7 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
       draftLocationLabel,
       storedLocation,
       preference: locationPreference,
+      geolocationAvailable,
       signal: controller.signal,
     }).then((location) => {
       if (isCancelled || controller.signal.aborted || !location) return;

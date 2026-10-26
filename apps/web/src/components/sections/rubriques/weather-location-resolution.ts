@@ -2,7 +2,6 @@ import {
   getLocalGeoAddressSuggestions,
   type GeoAddressSuggestion,
 } from "@/lib/geo/address-suggestions";
-import { canRequestGeolocation } from "@/lib/browser/geolocation";
 import { TERRITORY_CENTER } from "@/lib/geo/territory";
 import { extractTerritoryLocationPreferenceFromMetadata } from "@/lib/user-location-preference";
 import {
@@ -114,8 +113,9 @@ export async function resolveWeatherLocationFromPreference(
 
 export async function resolveGeolocationWeatherLocation(
   parentSignal?: AbortSignal,
+  geolocationAvailable = true,
 ): Promise<WeatherLocation | null> {
-  if (!canRequestGeolocation() || parentSignal?.aborted) {
+  if (!geolocationAvailable || parentSignal?.aborted) {
     return null;
   }
 
@@ -170,6 +170,7 @@ export type WeatherLocationResolutionRequest = {
   draftLocationLabel: string;
   storedLocation: { label: string; subtitle: string } | null;
   preference: TerritoryLocationPreference | null;
+  geolocationAvailable: boolean;
   signal: AbortSignal;
 };
 
@@ -178,6 +179,7 @@ export async function resolveWeatherLocationRequest({
   draftLocationLabel,
   storedLocation,
   preference,
+  geolocationAvailable,
   signal,
 }: WeatherLocationResolutionRequest): Promise<WeatherLocation | null> {
   switch (source) {
@@ -190,6 +192,6 @@ export async function resolveWeatherLocationRequest({
     case "preference":
       return preference ? resolveWeatherLocationFromPreference(preference, signal) : null;
     case "geolocation":
-      return resolveGeolocationWeatherLocation(signal);
+      return resolveGeolocationWeatherLocation(signal, geolocationAvailable);
   }
 }

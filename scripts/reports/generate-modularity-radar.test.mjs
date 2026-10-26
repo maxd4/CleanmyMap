@@ -35,6 +35,62 @@ const HUMAN_FIELDS = [
   "NEXT_TRIGGER",
 ];
 
+// Stable protection for the decisions present at the historical migration
+// reference. New decisions may be appended without changing this fixture.
+const HISTORICAL_DECISION_REFERENCE = Object.freeze([
+  ["apps/web/src/components/sections/rubriques/partners-network-directory.tsx", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/chat/chat-shell.tsx", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/sections/rubriques/elus-section.tsx", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/account/greater-paris-select.tsx", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/community/bug-report-screenshot.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/community/bug-reports-store.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/sections/rubriques/feedback/questionnaire-card.tsx", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/app/learn/ressources/learn-ressources-client.data.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/components/sections/rubriques/methodologie-page-client.tsx", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/app/docs/[...segments]/route.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/validation/action.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/pdf-export/simple-pdf.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/actions/pollution/current-place-state.ts", "DEFERRED_SPLIT", "LATER"],
+  ["apps/web/src/lib/actions/pollution/local-repollution-calibration.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/route/route-predicted-targets.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/sections/rubriques/route/route-section.tsx", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/reports/web-document/reports-web-document.shared.tsx", "EXTRACTED_PURE_CONTRACT", "CURRENT"],
+  ["apps/web/src/app/(app)/reports/page.tsx", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/pdf-export/report-pdf-theme.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/lib/route/route-trace.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/components/accueil/accueil-community-credibility.tsx", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/ui/button-theme.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/lib/supabase/storage-usage.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/actions/actions-history-list.tsx", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/actions/action-declaration/payload.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/route/route-group-partition.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/lib/learning/quiz/quiz-quality-audit.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/actions/action-declaration/before/sections.tsx", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/app/api/route/recommend/route.response.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/actions/participation/group-participation-review.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/actions/pollution/corridor-history.ts", "EXTRACTED_PURE_CONTRACT", "CURRENT"],
+  ["apps/web/src/lib/actions/http.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/geo/municipal-cleaning-serviceability.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/app/api/chat/route.post.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/impact/impact-terrain-2026.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/components/chat/discussion-guidance.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/lib/actions/exports/export-form-media.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/app/api/reports/elus-dossier/route.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/sections/rubriques/weather-section.conditions.tsx", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/lib/pdf-export/official-report-html.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/lib/auth/sync.ts", "ALREADY_MODULARIZED", "NONE"],
+  ["apps/web/src/components/actions/action-creation-shell.tsx", "DEFERRED_SPLIT", "AFTER_ACTIVE_CHANGES"],
+  ["apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts", "EXTRACTED_PURE_CONTRACT", "CURRENT"],
+  ["apps/web/src/lib/spogomi/preparation-service.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/lib/reports/report-generation-history-store.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+].map(([file, ARCHITECTURE_DECISION, PRIORITY]) => ({ file, ARCHITECTURE_DECISION, PRIORITY })));
+
 function canonicalRegistry({ file = "src/current.ts", decision = "COHESIVE_SINGLE_FILE", priority = "NONE", detailDecision = decision, detailPriority = priority, dependency = "aucun", nextTrigger = "nouveau contrat" } = {}) {
   const values = {
     RESPONSIBILITIES: "responsabilité",
@@ -66,6 +122,16 @@ function canonicalRegistry({ file = "src/current.ts", decision = "COHESIVE_SINGL
     details,
     "<!-- RADAR:HUMAN_DECISIONS:END -->",
   ].join("\n");
+}
+
+function assertHistoricalDecisionsPreserved(decisions) {
+  const decisionsByFile = new Map(decisions.map((entry) => [entry.file, entry]));
+  const actual = HISTORICAL_DECISION_REFERENCE.map(({ file, ARCHITECTURE_DECISION, PRIORITY }) => {
+    const decision = decisionsByFile.get(file);
+    assert.ok(decision, `décision historique absente pour ${file}`);
+    return { file, ARCHITECTURE_DECISION: decision.ARCHITECTURE_DECISION, PRIORITY: decision.PRIORITY };
+  });
+  assert.deepEqual(actual, HISTORICAL_DECISION_REFERENCE);
 }
 
 function row(file, kind = "runtime") {
@@ -136,7 +202,6 @@ test("the migrated registry preserves every human decision and manual field", ()
     "TEST_BOUNDARY",
     "file",
   ].sort();
-  assert.equal(decisions.length, 51);
   assert.ok(decisions.every((entry) => JSON.stringify(Object.keys(entry).sort()) === JSON.stringify(expectedKeys)));
   assert.ok(decisions.every((entry) => entry.file && entry.ARCHITECTURE_DECISION && entry.PRIORITY));
   const view = {
@@ -145,18 +210,18 @@ test("the migrated registry preserves every human decision and manual field", ()
   };
   const result = readHumanDecisionsFromView(view, { requireRegistry: true });
   assert.equal(result.legacy, false);
-  assert.equal(result.decisions.length, 51);
-  const summaryRows = extractHumanDecisions(registry)
-    .split(/\r?\n/)
-    .filter((line) => /^\| `[^`]+` \|/.test(line));
-  assert.equal(summaryRows.length, 51);
+  const humanBlock = extractHumanDecisions(registry);
+  const summaryEntries = parseDecisionSummary(humanBlock);
+  const summaryFiles = summaryEntries.map((entry) => entry.file);
+  const detailFiles = [...humanBlock.matchAll(/^#### `([^`]+)`\s*$/gm)].map(([, file]) => file);
+  const parsedFiles = result.decisions.map((entry) => entry.file);
+  assert.deepEqual([...new Set(summaryFiles)].sort(), [...new Set(detailFiles)].sort());
+  assert.deepEqual([...new Set(summaryFiles)].sort(), [...new Set(parsedFiles)].sort());
+  assert.equal(result.decisions.length, summaryEntries.length);
+  assertHistoricalDecisionsPreserved(result.decisions);
+
   const decisionsByFile = new Map(result.decisions.map((entry) => [entry.file, entry]));
-  for (const row of summaryRows) {
-    const [fileCell, architectureDecision, priority, dependency, nextTrigger] = row
-      .slice(1, -1)
-      .split("|")
-      .map((cell) => cell.trim());
-    const file = fileCell.slice(1, -1);
+  for (const { file, decision: architectureDecision, priority, dependency, nextTrigger } of summaryEntries) {
     const decision = decisionsByFile.get(file);
     assert.ok(decision, `decision absente pour ${file}`);
     assert.equal(decision.ARCHITECTURE_DECISION, architectureDecision, file);
@@ -164,6 +229,23 @@ test("the migrated registry preserves every human decision and manual field", ()
     assert.equal(decision.DEPENDENCY_OR_BLOCKER, dependency, file);
     assert.equal(decision.NEXT_TRIGGER, nextTrigger, file);
   }
+});
+
+test("the stable historical reference rejects a removed decision without fixing the current total", () => {
+  const historical = HISTORICAL_DECISION_REFERENCE[0];
+  const reduced = canonicalRegistry({
+    file: historical.file,
+    decision: historical.ARCHITECTURE_DECISION,
+    priority: historical.PRIORITY,
+    detailDecision: historical.ARCHITECTURE_DECISION,
+    detailPriority: historical.PRIORITY,
+  });
+  const view = {
+    isFile: (file) => file === "documentation/architecture/modularity-decisions.md",
+    readText: () => reduced,
+  };
+  const result = readHumanDecisionsFromView(view, { requireRegistry: true });
+  assert.throws(() => assertHistoricalDecisionsPreserved(result.decisions), /décision historique absente/);
 });
 
 test("a compact registry preserves all twelve resolved decision fields", () => {
