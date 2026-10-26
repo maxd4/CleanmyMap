@@ -443,7 +443,7 @@ test("accepts an absolute LCOV source and rejects invalid or incoherent counters
     write: false,
   })[0].files, 1);
 
-  for (const metric of ["DA:-1,1", "DA:1,-1", "BRDA:1,0,0,-1", "FNDA:-1,fn"]) {
+  for (const metric of ["DA:-1,1", "DA:1,-1", "BRDA:1,0,0,-2", "BRDA:1,0,0,1.5", "BRDA:1,0,0,NaN", "BRDA:1,0,0,", "FNDA:-1,fn"]) {
     fs.writeFileSync(lcovPath, `SF:src/feature.ts\n${metric}\nend_of_record\n`);
     assert.throws(() => validateSonarCoverageReports({
       root,
@@ -461,6 +461,31 @@ test("accepts an absolute LCOV source and rejects invalid or incoherent counters
     reports: [{ scope: "web", lcovPath: "apps/web/coverage/lcov.info", summaryPath: "apps/web/coverage/coverage-summary.json", sourceRoot: "apps/web" }],
     write: false,
   }), /totals do not match/);
+});
+
+test("applique la sémantique V8 des compteurs BRDA sans assouplir les autres métriques", () => {
+  const root = fixtureRoot();
+  const lcovPath = path.join(root, "apps/web/coverage/lcov.info");
+  const summaryPath = path.join(root, "apps/web/coverage/coverage-summary.json");
+  for (const [taken, expectedCovered] of [["-", 0], ["-1", 0], ["0", 0], ["1", 1], ["7", 1]]) {
+    fs.writeFileSync(lcovPath, [
+      "SF:src/feature.ts",
+      "DA:1,1",
+      `BRDA:1,0,0,${taken}`,
+      "end_of_record",
+    ].join("\n"));
+    const summary = {
+      total: { lines: { total: 1, covered: 1 }, branches: { total: 1, covered: expectedCovered }, functions: { total: 0, covered: 0 } },
+      "src/feature.ts": { lines: { total: 1, covered: 1 }, branches: { total: 1, covered: expectedCovered }, functions: { total: 0, covered: 0 } },
+    };
+    fs.writeFileSync(summaryPath, JSON.stringify(summary));
+    const result = validateSonarCoverageReports({
+      root,
+      reports: [{ scope: "web", lcovPath: "apps/web/coverage/lcov.info", summaryPath: "apps/web/coverage/coverage-summary.json", sourceRoot: "apps/web" }],
+      write: false,
+    });
+    assert.deepEqual(result[0].totals.branches, { total: 1, covered: expectedCovered });
+  }
 });
 
 test("rejects mismatched LCOV sources and malformed Cobertura measurements", () => {

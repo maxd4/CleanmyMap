@@ -86,7 +86,7 @@ function lcovFor(definition, { ciPaths = false } = {}) {
     "DA:1,1",
     "DA:2,0",
     "BRDA:1,0,0,1",
-    "BRDA:2,0,1,-",
+    "BRDA:2,0,1,-1",
     "BRF:2",
     "BRH:1",
     "LF:2",
@@ -332,7 +332,7 @@ test("ne promeut ni DYNAMIC_CANDIDATE ni WORKTREE en CI_EXACT_SHA", () => {
   }
 });
 
-test("conserve les chemins d'artefacts CI et le sentinel BRDA -1 sans les réécrire", () => {
+test("atteste les chemins d'artefacts CI et le sentinel V8 BRDA -1 sans les réécrire", () => {
   const fixture = createFixture({ ciPaths: true });
   const reference = buildReference({ args: fixture.args });
   const web = reference.scopes.find((scope) => scope.scope === "web");
@@ -340,22 +340,30 @@ test("conserve les chemins d'artefacts CI et le sentinel BRDA -1 sans les rééc
   assert.equal(web.files[0].path, "apps/web/src/app/page.tsx");
   assert.equal(web.metrics.branches.total, 2);
   assert.equal(web.metrics.branches.covered, 1);
-  assert.match(fs.readFileSync(path.join(fixture.webRoot, "apps/web/coverage/lcov.info"), "utf8"), /BRDA:2,0,1,-/);
+  assert.match(fs.readFileSync(path.join(fixture.webRoot, "apps/web/coverage/lcov.info"), "utf8"), /BRDA:2,0,1,-1/);
 });
 
-test("ne transforme pas un sentinel BRDA -1 invalide en preuve attested", () => {
+test("ne transforme pas un compteur BRDA négatif invalide en preuve attested", () => {
   const fixture = createFixture();
   const lcovFiles = [
     path.join(fixture.webRoot, "apps/web/coverage/lcov.info"),
     path.join(fixture.webProof.proofRoot, "apps/web/coverage/lcov.info"),
   ];
-  for (const file of lcovFiles) fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("BRDA:2,0,1,-", "BRDA:2,0,1,-1"), "utf8");
+  for (const file of lcovFiles) fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("BRDA:2,0,1,-1", "BRDA:2,0,1,-2"), "utf8");
+  for (const [index, file] of [
+    path.join(fixture.webRoot, "apps/web/coverage/coverage-evidence.json"),
+    path.join(fixture.webProof.proofRoot, "apps/web/coverage/coverage-evidence.json"),
+  ].entries()) {
+    const evidence = JSON.parse(fs.readFileSync(file, "utf8"));
+    evidence.lcovSha256 = sha256(lcovFiles[index]);
+    fs.writeFileSync(file, JSON.stringify(evidence), "utf8");
+  }
   const proof = JSON.parse(fs.readFileSync(fixture.webProof.proofPath, "utf8"));
   proof.reports.find((report) => report.source === "apps/web/coverage/lcov.info").sha256 = sha256(lcovFiles[1]);
   fs.writeFileSync(fixture.webProof.proofPath, JSON.stringify(proof), "utf8");
   const reference = buildReference({ args: fixture.args });
   assert.equal(reference.scopes.find((scope) => scope.scope === "web").state, "EVIDENCE_UNVERIFIED");
-  assert.match(fs.readFileSync(lcovFiles[0], "utf8"), /BRDA:2,0,1,-1/);
+  assert.match(fs.readFileSync(lcovFiles[0], "utf8"), /BRDA:2,0,1,-2/);
 });
 
 test("laisse Mobile et Python PRESENT_NOT_ATTESTED et expose les limites Cobertura", () => {

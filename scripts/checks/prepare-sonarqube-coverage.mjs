@@ -157,6 +157,15 @@ function parseMetric(value, label) {
   return parsed;
 }
 
+function parseBranchHitCount(value) {
+  // V8 emits both "-" and "-1" for an unexecuted branch. Neither sentinel
+  // contributes to the covered count; every other counter keeps the strict
+  // non-negative integer contract used by the remaining LCOV metrics.
+  if (value === "-" || value === "-1") return 0;
+  if (!/^\d+$/.test(value ?? "")) throw new Error(`Invalid LCOV branch hit count: ${value}`);
+  return parseMetric(value, "branch hit count");
+}
+
 function parseLcov(content, definition, root, validationContext = {}) {
   const lines = String(content).split(/\r?\n/);
   const records = [];
@@ -192,8 +201,9 @@ function parseLcov(content, definition, root, validationContext = {}) {
       current.hasMetric = true;
     } else if (line.startsWith("BRDA:")) {
       const taken = line.slice(5).split(",")[3];
+      const covered = parseBranchHitCount(taken);
       current.branches.total += 1;
-      current.branches.covered += taken !== "-" && parseMetric(taken, "branch hit count") > 0 ? 1 : 0;
+      current.branches.covered += covered > 0 ? 1 : 0;
       current.hasMetric = true;
     } else if (line.startsWith("FN:")) {
       current.functions.total += 1;
