@@ -65,6 +65,9 @@ et `display-modes.css`; `CmmIcon` reste la primitive canonique pour les glyphes.
   [`MOTION_TRANSITIONS.md`](./MOTION_TRANSITIONS.md).
 - [`TERRAINK_MAP_CARDS.md`](./TERRAINK_MAP_CARDS.md) — expérimentation actuelle
   non canonique.
+- [`MATRICE_ASTUCES_UI_UX_CLEANMYMAP.md`](./MATRICE_ASTUCES_UI_UX_CLEANMYMAP.md) — inventaire
+  `AUDIT / PLAN` non normatif, avec niveaux de preuve et contre-indications ;
+  les contrats spécialisés restent les sources normatives.
 - [`display-modes-chartes.md`](./display-modes-chartes.md) et
   [`charte-ui-pro-moderne-futuriste.md`](./charte-ui-pro-moderne-futuriste.md)
   — façades `COMPATIBILITY` conservées pour les anciens liens.
