@@ -253,6 +253,40 @@ function collectIdentifierReferences(source: string): Set<string> {
 
 const callableBindingsCache = new WeakMap<object, Set<string>>();
 
+// Only these language/platform callback contracts establish execution of an
+// identifier passed as an argument. An arbitrary function cannot be assumed
+// to invoke a reference it receives, especially when that reference is a
+// security guard or audit helper.
+const callbackInvokingMethods = new Set([
+  "catch",
+  "every",
+  "filter",
+  "find",
+  "findIndex",
+  "findLast",
+  "findLastIndex",
+  "flatMap",
+  "forEach",
+  "map",
+  "reduce",
+  "reduceRight",
+  "some",
+  "sort",
+  "then",
+]);
+const callbackInvokingFunctions = new Set([
+  // These local route coordinators explicitly invoke the callbacks supplied
+  // in their context object. Unknown application functions remain opaque.
+  "handleGroupJoinQueue",
+  "handleGroupJoinReview",
+  "handleGroupJoinToggle",
+  "handleCreatorInboxFeedback",
+  "handleCreatorInboxPartner",
+  "handleCreatorInboxPromotion",
+  "runDecisionWorkflow",
+  "applyRoleAccountMutation",
+]);
+
 function collectCalledIdentifiers(
   source: string,
   includePropertyAccess = false,
@@ -304,15 +338,23 @@ function collectCalledIdentifiers(
     }
     return null;
   };
+  const invokesCallbackArgument = (expression: ts.Expression): boolean => {
+    let unwrapped = expression;
+    while (ts.isParenthesizedExpression(unwrapped)) {
+      unwrapped = unwrapped.expression;
+    }
+    return (
+      (ts.isIdentifier(unwrapped) && callbackInvokingFunctions.has(unwrapped.text)) ||
+      (ts.isPropertyAccessExpression(unwrapped) &&
+        ts.isIdentifier(unwrapped.name) &&
+        callbackInvokingMethods.has(unwrapped.name.text))
+    );
+  };
   const visit = (node: ts.Node) => {
     if (ts.isCallExpression(node)) {
       const calleeIdentifier = getCalleeIdentifier(node.expression);
       if (calleeIdentifier) addCallableReference(calleeIdentifier);
-      if (includeCallbackArguments) {
-        const directCallee =
-          ts.isIdentifier(node.expression) ||
-          (ts.isParenthesizedExpression(node.expression) &&
-            ts.isIdentifier(node.expression.expression));
+      if (includeCallbackArguments && invokesCallbackArgument(node.expression)) {
         for (const argument of node.arguments) {
           let callback = argument;
           while (ts.isParenthesizedExpression(callback)) {
@@ -320,7 +362,7 @@ function collectCalledIdentifiers(
           }
           if (ts.isIdentifier(callback)) {
             addCallableReference(callback.text);
-          } else if (directCallee) {
+          } else {
             for (const reference of collectIdentifierReferencesFromNode(argument, true)) {
               addCallableReference(reference);
             }
@@ -778,6 +820,175 @@ describe("API security boundaries", () => {
     expect(missingEvidence(entry, routeEntry, "PATCH")).toEqual([
       "appendActionModerationAudit",
     ]);
+  });
+
+  it("does not follow a helper passed to Promise.resolve as a value", () => {
+    const routeEntry = buildInlineRouteEntry(
+      `
+        import { checkPermission } from "./permissions";
+        export async function PATCH() {
+          return Response.json({
+            reference: String(Promise.resolve(checkPermission)),
+          });
+        }
+      `,
+      {
+        "permissions.ts": `
+          export function checkPermission() {
+            canEditValidatedImpact();
+            appendActionModerationAudit();
+          }
+        `,
+      },
+    );
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "validated impact correction and audit",
+      dimensions: ["validated impact correction", "audit"],
+      actual: "PATCH must not treat a serialized helper reference as execution",
+      evidence: ["canEditValidatedImpact", "appendActionModerationAudit"],
+      evidenceScope: "module",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "PATCH")).toEqual([
+      "canEditValidatedImpact",
+      "appendActionModerationAudit",
+    ]);
+    expect(routeEntry.methodEvidenceSources?.get("PATCH")).not.toContain(
+      "canEditValidatedImpact",
+    );
+  });
+
+  it("does not follow a helper passed to an unknown function", () => {
+    const routeEntry = buildInlineRouteEntry(
+      `
+        import { checkPermission } from "./permissions";
+        declare function register(reference: unknown): void;
+        export async function PATCH() {
+          register(checkPermission);
+          return Response.json({ ok: true });
+        }
+      `,
+      {
+        "permissions.ts": `
+          export function checkPermission() {
+            canEditValidatedImpact();
+            appendActionModerationAudit();
+          }
+        `,
+      },
+    );
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "validated impact correction and audit",
+      dimensions: ["validated impact correction", "audit"],
+      actual: "PATCH must not infer callback execution from an unknown callee",
+      evidence: ["canEditValidatedImpact", "appendActionModerationAudit"],
+      evidenceScope: "module",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "PATCH")).toEqual([
+      "canEditValidatedImpact",
+      "appendActionModerationAudit",
+    ]);
+    expect(routeEntry.methodEvidenceSources?.get("PATCH")).not.toContain(
+      "appendActionModerationAudit",
+    );
+  });
+
+  it("does not follow a helper stored as a property without an invocation", () => {
+    const routeEntry = buildInlineRouteEntry(
+      `
+        import { checkPermission } from "./permissions";
+        export async function PATCH() {
+          const callbacks = { checkPermission };
+          return Response.json({ callbacks });
+        }
+      `,
+      {
+        "permissions.ts": `
+          export function checkPermission() {
+            appendActionModerationAudit();
+          }
+        `,
+      },
+    );
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "audit",
+      dimensions: ["audit"],
+      actual: "PATCH must execute the audit owner rather than store it",
+      evidence: ["appendActionModerationAudit"],
+      evidenceScope: "module",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "PATCH")).toEqual([
+      "appendActionModerationAudit",
+    ]);
+    expect(routeEntry.methodEvidenceSources?.get("PATCH")).not.toContain(
+      "appendActionModerationAudit",
+    );
+  });
+
+  it("recognizes an alias that is actually invoked", () => {
+    const routeEntry = buildInlineRouteEntry(
+      `
+        import { checkPermission } from "./permissions";
+        export async function PATCH() {
+          const guard = checkPermission;
+          return guard();
+        }
+      `,
+      {
+        "permissions.ts": `
+          export function checkPermission() {
+            canEditValidatedImpact();
+            appendActionModerationAudit();
+          }
+        `,
+      },
+    );
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "validated impact correction and audit",
+      dimensions: ["validated impact correction", "audit"],
+      actual: "PATCH invokes the aliased permission owner",
+      evidence: ["canEditValidatedImpact", "appendActionModerationAudit"],
+      evidenceScope: "module",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "PATCH")).toEqual([]);
+    expect(routeEntry.methodEvidenceSources?.get("PATCH")).toContain(
+      "canEditValidatedImpact",
+    );
+  });
+
+  it("recognizes a callback passed to a known callback-invoking method", () => {
+    const routeEntry = buildInlineRouteEntry(
+      `
+        import { checkPermission } from "./permissions";
+        export async function PATCH() {
+          [checkPermission].forEach(checkPermission);
+          return Response.json({ ok: true });
+        }
+      `,
+      {
+        "permissions.ts": `
+          export function checkPermission() {
+            canEditValidatedImpact();
+            appendActionModerationAudit();
+          }
+        `,
+      },
+    );
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "validated impact correction and audit",
+      dimensions: ["validated impact correction", "audit"],
+      actual: "PATCH uses a callback contract that invokes the permission owner",
+      evidence: ["canEditValidatedImpact", "appendActionModerationAudit"],
+      evidenceScope: "module",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "PATCH")).toEqual([]);
+    expect(routeEntry.methodEvidenceSources?.get("PATCH")).toContain(
+      "appendActionModerationAudit",
+    );
   });
 
   it("recognizes a helper only when the HTTP method actually delegates to it", () => {
