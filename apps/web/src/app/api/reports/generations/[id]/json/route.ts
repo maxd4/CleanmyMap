@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { buildReportScientificExport } from "@/lib/reports/report-scientific-export";
-import { buildReportScientificExportFilename } from "@/lib/reports/report-scientific-csv";
-import { executeReportGenerationRoute, requireReportGenerationAccess } from "../route-helpers";
+import {
+  buildReportGenerationExportHeaders,
+  executeReportGenerationRoute,
+  requireReportGenerationAccess,
+} from "../route-helpers";
 
 export const runtime = "nodejs";
 
@@ -16,12 +19,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
     const exportData = buildReportScientificExport(generation);
     return new NextResponse(JSON.stringify(exportData, null, 2), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${buildReportScientificExportFilename(generation.filename, "json")}"`,
-        // Cache justification: this export contains private owner-scoped report data.
-        "Cache-Control": "private, no-store",
-      },
+      headers: buildReportGenerationExportHeaders(generation, "json"),
     });
   });
 }

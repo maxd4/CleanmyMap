@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { requireSpogomiResponse as requireResponse, spogomiEventParams } from "@/__tests__/support/spogomi-route";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserActiveRoleMock = vi.hoisted(() => vi.fn());
@@ -35,11 +36,6 @@ function request() {
   return new Request("http://localhost/api/spogomi/events/11111111-1111-4111-8111-111111111111/admission-requests/review");
 }
 
-function requireResponse(response: Response | undefined): Response {
-  if (!response) throw new Error("Expected a response");
-  return response;
-}
-
 describe("GET /api/spogomi/events/:eventId/admission-requests/review", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -55,7 +51,7 @@ describe("GET /api/spogomi/events/:eventId/admission-requests/review", () => {
   it("denies an organizer or coorganizer without active admin|max", async () => {
     getCurrentUserActiveRoleMock.mockResolvedValue("organizer");
     const { GET } = await import("./route");
-    const response = await GET(request(), { params: Promise.resolve({ eventId: "11111111-1111-4111-8111-111111111111" }) });
+    const response = await GET(request(), spogomiEventParams("11111111-1111-4111-8111-111111111111"));
     if (!response) throw new Error("Expected a response");
 
     expect(response.status).toBe(403);

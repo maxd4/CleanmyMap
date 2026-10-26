@@ -2,6 +2,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { requireAccountPatchBody } from "@/lib/auth/account-request";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import {
   createLocationPreferencesMetadata,
@@ -10,9 +11,8 @@ import {
 } from "@/lib/user-location-preference";
 import type { ParisArrondissement } from "@/lib/geo/paris-arrondissements";
 import { buildClerkMetadataPatch } from "@/lib/auth/clerk-metadata-patch";
-import { syncClerkUserToSupabase } from "@/lib/auth/sync";
-import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
-import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { syncClerkUserToSupabase, trySyncClerkUserToSupabase } from "@/lib/auth/sync";
+import { handleApiError } from "@/lib/http/api-errors";
 import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 
 const selectionSchema = z.object({
@@ -33,18 +33,13 @@ const locationsSchema = z.object({
 );
 
 export async function PATCH(request: Request) {
-  const access = await requireActionRequestAccess(request);
-  if (!access.ok) return unauthorizedJsonResponse();
-
-  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(
+  const access = await requireAccountPatchBody(
     request,
-    access.userId,
-    { limit: 12, window: 60 },
+    locationsSchema,
+    (guardRequest) => requireActionRequestAccess(guardRequest),
+    (rateLimitRequest, userId, options) => enforceServerRateLimitForAuthenticatedUser(rateLimitRequest, userId, options),
   );
-  if (rateLimitResponse) return rateLimitResponse;
-
-  const parsed = locationsSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
+  if (access instanceof Response) return access;
 
   try {
     const client = await clerkClient();
@@ -52,8 +47,8 @@ export async function PATCH(request: Request) {
     const currentUnsafeMetadata = (currentUser.unsafeMetadata ?? {}) as Record<string, unknown>;
     const currentLocations = extractLocationPreferencesFromMetadata(currentUnsafeMetadata);
     const nextLocations = {
-      residence: parsed.data.residence === undefined ? currentLocations.residence : parsed.data.residence,
-      work: parsed.data.work === undefined ? currentLocations.work : parsed.data.work,
+      residence: access.data.residence === undefined ? currentLocations.residence : access.data.residence,
+      work: access.data.work === undefined ? currentLocations.work : access.data.work,
     };
     const nextUnsafeMetadata = {
       ...currentUnsafeMetadata,
@@ -64,12 +59,7 @@ export async function PATCH(request: Request) {
       ? await client.users.updateUserMetadata(access.userId, { unsafeMetadata: metadataPatch })
       : currentUser;
 
-    let syncedProfile: Awaited<ReturnType<typeof syncClerkUserToSupabase>> = null;
-    try {
-      syncedProfile = await syncClerkUserToSupabase(updatedUser);
-    } catch {
-      syncedProfile = null;
-    }
+    const syncedProfile = await trySyncClerkUserToSupabase(updatedUser, (user) => syncClerkUserToSupabase(user));
     if (!syncedProfile) {
       return NextResponse.json(
         {

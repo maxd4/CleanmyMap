@@ -9,6 +9,18 @@ import { InvalidReportGenerationSnapshotError } from "@/lib/reports/report-gener
 
 type ReportGeneration = Awaited<ReturnType<typeof getReportGenerationSnapshotById>>;
 
+export function buildReportGenerationExportHeaders(
+  generation: NonNullable<ReportGeneration>,
+  format: "csv" | "json",
+): Record<string, string> {
+  const contentType = format === "csv" ? "text/csv" : "application/json";
+  return {
+    "Content-Type": `${contentType}; charset=utf-8`,
+    "Content-Disposition": `attachment; filename="${generation.filename.replace(/\.pdf$/i, `.${format}`)}"`,
+    "Cache-Control": "private, no-store",
+  };
+}
+
 export async function requireReportGenerationAccess(): Promise<
   { ok: true; userId: string } | Response
 > {

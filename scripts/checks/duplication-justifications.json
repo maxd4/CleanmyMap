@@ -459,14 +459,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "2abcf2d22136995c",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/community/events/route.test.ts:178-187 ; symboles: userId, user, clerkReachable, state et app/api/community/events/route.test.ts:211-220 ; symboles: userId, organizer, clerkReachable, state restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "app/api/community/events/route.test.ts:178-187 et app/api/community/events/route.test.ts:211-220 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "2e0086a860f7d201",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT app/api/route/recommend/route.response.test.ts:61-78 et app/api/route/recommend/route.test.ts:303-320 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
@@ -699,14 +691,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "4820caf1cc3f6b73",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT lib/supabase/clerk-rls.test.ts:4-17 ; symboles: createClientMock, hoisted, clerk, nextjs et lib/supabase/client.test.ts:14-27 ; symboles: clerk, nextjs, server, auth appartiennent à des consumers distincts ; chacune protège le scénario ou le contrat de sa suite, et leur séparation conserve une preuve locale sans façade de test ou d’exécution transverse.",
-      "evidence": "lib/supabase/clerk-rls.test.ts:4-17 et lib/supabase/client.test.ts:14-27 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "0419a62e5bf358ee",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT lib/supabase/migration-contracts/landing-summary-migration.test.ts:15-27 ; symboles: migration, toContain, security, invoker et lib/supabase/migration-contracts/public-landing-action-aggregation-migration.test.ts:30-42 ; symboles: migration, toContain, association_name, security appartiennent à des consumers distincts ; chacune protège le scénario ou le contrat de sa suite, et leur séparation conserve une preuve locale sans façade de test ou d’exécution transverse.",
@@ -791,14 +775,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT components/actions/map/layers/map-layers-point-markers.tsx:151-170 ; symboles: renderStyle, pointOpacity, isFallbackPoint, Popup et components/actions/map/layers/map-layers-point-markers.tsx:243-262 ; symboles: opacity, Popup, className, glass restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
       "evidence": "apps/web/src/components/actions/map/layers/map-layers-point-markers.tsx:151-170 et apps/web/src/components/actions/map/layers/map-layers-point-markers.tsx:243-262 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "70dc1bab1f74fdce",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/actions/map/popup/action-popup-content.helpers.ts:40-52 ; symboles: export, formatObservedDate, value, Date et components/actions/map/selection/actions-map-selected-card.utils.ts:66-78 ; symboles: formatObservedDate, value, Date, renseign reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/actions/map/popup/action-popup-content.helpers.ts:40-52 et apps/web/src/components/actions/map/selection/actions-map-selected-card.utils.ts:66-78 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
@@ -2247,22 +2223,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Le boilerplate de route est commun à deux contrats d'actions indépendants ; un helper transversal rendrait les mocks moins explicites sans réduire un risque réel.",
       "evidence": "app/api/actions/[actionId]/administrative-requirements/route.test.ts:1-6 et app/api/actions/[actionId]/publish/route.test.ts:4-9 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "d340e447a12b485d",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les imports et mocks communs des routes day et duplicate restent propres à deux tests de contrat API ; aucune fixture métier partagée n'est identifiée.",
-      "evidence": "app/api/actions/[actionId]/day/route.test.ts:3-10 et app/api/actions/[actionId]/duplicate/route.test.ts:2-9 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "73bf56dcecba798b",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les deux tests de route ont un contexte de requête similaire mais des assertions métier séparées ; mutualiser ce fragment créerait une façade de test sans owner.",
-      "evidence": "app/api/actions/[actionId]/day/route.test.ts:10-17 et app/api/actions/[actionId]/duplicate/route.test.ts:8-15 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {

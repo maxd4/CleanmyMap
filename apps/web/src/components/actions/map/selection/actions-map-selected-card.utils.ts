@@ -14,6 +14,11 @@ import {
   formatGeometryPointCount,
 } from "../layers/actions-map-geometry-render";
 import { resolveActionMapGeometryViewModel } from "../layers/actions-map-geometry.utils";
+import {
+  formatObservedDate,
+  formatRecordType,
+  formatStatusLabel,
+} from "../popup/action-popup-content.helpers";
 
 export type SelectedActionCardModel = {
   id: string;
@@ -38,47 +43,6 @@ export type SelectedActionCardModel = {
   placeTypeLabel: string;
   notes: string | null;
 };
-
-function formatStatusLabel(status: string | undefined): string {
-  switch (status) {
-    case "approved":
-      return "Validée";
-    case "pending":
-      return "En attente";
-    case "rejected":
-      return "Rejetée";
-    default:
-      return "Statut inconnu";
-  }
-}
-
-function formatRecordType(item: ActionMapItem): string {
-  switch (item.contract?.type ?? item.record_type ?? "action") {
-    case "clean_place":
-      return "Lieu propre";
-    case "spot":
-      return "Signalement";
-    default:
-      return "Action terrain";
-  }
-}
-
-function formatObservedDate(value: string | null | undefined): string {
-  if (!value) {
-    return "Date non renseignée";
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(parsed);
-}
 
 function formatCoordinatesLabel(
   latitude: number | null,
@@ -106,7 +70,7 @@ export function buildSelectedActionCardModel(
     title: mapItemLocationLabel(item),
     subtitle: formatRecordType(item),
     recordTypeLabel: formatRecordType(item),
-    statusLabel: formatStatusLabel(contract?.status ?? item.status),
+    statusLabel: formatStatusLabel(contract?.status ?? item.status, { pendingLabel: "En attente" }),
     geometryLabel: geometry.label,
     geometryModeLabel: formatGeometryModeLabel(geometry.kind, geometry.presentation),
     geometryPointLabel: formatGeometryPointCount(geometry.pointCount),
@@ -120,7 +84,7 @@ export function buildSelectedActionCardModel(
     durationLabel: `${operational.durationMinutes} min`,
     impactLabel: item.impact_level ?? "Indisponible",
     qualityLabel: item.quality_grade ?? "Non évalué",
-    dateLabel: formatObservedDate(contract?.dates.observedAt ?? mapItemObservedAt(item)),
+    dateLabel: formatObservedDate(contract?.dates.observedAt ?? mapItemObservedAt(item), { month: "long" }),
     sourceLabel: formatActionSourceLabel(
       contract?.source ?? item.source ?? "n/a",
       "fr",

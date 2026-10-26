@@ -1,6 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appendAdminOperationAuditMock, auditCalls, getCommunityBugReportByIdMock, getCurrentUserIdentityMock, makeRequest, requireCreatorAccessMock, resetCreatorInboxMocks, updateCommunityBugReportCreatorStateMock, updateCommunityBugReportStatusMock } from "@/__tests__/support/creator-inbox-route";
 
+async function patchFeedbackArchive(reason = "Archivage demandé") {
+  const { PATCH } = await import("./route");
+  return PATCH(makeRequest({
+    source: "feedback",
+    itemId: "feedback-1",
+    action: "archive",
+    reason,
+  }));
+}
+
 describe("PATCH /api/admin/creator-inbox — creator-state mutations", () => {
   beforeEach(() => {
     resetCreatorInboxMocks();
@@ -144,15 +154,7 @@ describe("PATCH /api/admin/creator-inbox — creator-state mutations", () => {
     });
 
     it("archives feedback with one canonical status mutation", async () => {
-      const { PATCH } = await import("./route");
-      const response = await PATCH(
-        makeRequest({
-          source: "feedback",
-          itemId: "feedback-1",
-          action: "archive",
-          reason: "Archivage demandé",
-        }),
-      );
+      const response = await patchFeedbackArchive();
 
       expect(response.status).toBe(200);
       expect(updateCommunityBugReportStatusMock).toHaveBeenCalledTimes(1);
@@ -183,15 +185,7 @@ describe("PATCH /api/admin/creator-inbox — creator-state mutations", () => {
     it("audits feedback archive persistence failure without claiming a partial mutation", async () => {
       const statusError = "status persistence detail";
       updateCommunityBugReportStatusMock.mockRejectedValueOnce(new Error(statusError));
-      const { PATCH } = await import("./route");
-      const response = await PATCH(
-        makeRequest({
-          source: "feedback",
-          itemId: "feedback-1",
-          action: "archive",
-          reason: "Archivage demandé",
-        }),
-      );
+      const response = await patchFeedbackArchive();
 
       expect(response.status).toBe(500);
       expect(updateCommunityBugReportCreatorStateMock).not.toHaveBeenCalled();
@@ -210,15 +204,7 @@ describe("PATCH /api/admin/creator-inbox — creator-state mutations", () => {
 
     it("does not claim feedback archive success when the canonical mutation returns no record", async () => {
       updateCommunityBugReportStatusMock.mockResolvedValueOnce(null);
-      const { PATCH } = await import("./route");
-      const response = await PATCH(
-        makeRequest({
-          source: "feedback",
-          itemId: "feedback-1",
-          action: "archive",
-          reason: "Archivage demandé",
-        }),
-      );
+      const response = await patchFeedbackArchive();
 
       expect(response.status).toBe(500);
       expect(updateCommunityBugReportCreatorStateMock).not.toHaveBeenCalled();

@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   getSnapshotMock,
-  InvalidReportGenerationIdErrorMock,
-  InvalidReportGenerationSnapshotErrorMock,
   requireAuthenticatedAccessMock,
   resetReportGenerationExportMocks,
+  defineReportGenerationErrorTests,
 } from "@/__tests__/support/report-generation-export-route";
 
 import { GET } from "./route";
@@ -47,16 +46,5 @@ describe("GET historical scientific CSV", () => {
     await expect(response.json()).resolves.toEqual({ error: "Rapport historique introuvable." });
   });
 
-  it.each([
-    ["invalid id", new InvalidReportGenerationIdErrorMock(), 400, "Identifiant de rapport invalide."],
-    ["incompatible snapshot", new InvalidReportGenerationSnapshotErrorMock(), 422, "Le snapshot historique est invalide ou incompatible."],
-    ["store failure", new Error("database unavailable"), 503, "Impossible d'exporter le rapport historique."],
-  ])("maps %s without returning an export", async (_label, error, status, message) => {
-    getSnapshotMock.mockRejectedValueOnce(error);
-
-    const response = await invoke();
-
-    expect(response.status).toBe(status);
-    await expect(response.json()).resolves.toEqual({ error: message });
-  });
+  defineReportGenerationErrorTests(invoke);
 });

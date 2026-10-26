@@ -9,6 +9,7 @@ import type {
   TrashSpotterSpotRow,
 } from "./contracts";
 import { mapActionStatusToSpotStatuses } from "./contracts";
+import { readBoundedPages } from "../pagination";
 
 const CANONICAL_SPOT_PAGE_SIZE = 1000;
 
@@ -95,45 +96,15 @@ async function loadPaginatedCanonicalSpots(
   params: UnifiedActionContractsParams,
   requestedLimit: number | null,
 ): Promise<TrashSpotterSpotRow[]> {
-  const rows: TrashSpotterSpotRow[] = [];
-  let offset = 0;
-  let terminated = false;
-  const maxPages = 10_000;
-  for (let pageNumber = 0; pageNumber < maxPages; pageNumber += 1) {
-    const remaining = requestedLimit === null
-      ? CANONICAL_SPOT_PAGE_SIZE
-      : Math.min(CANONICAL_SPOT_PAGE_SIZE, requestedLimit - rows.length);
-    if (remaining <= 0) {
-      terminated = true;
-      break;
-    }
-    const query = buildCanonicalSpotsQuery(
-      supabase,
-      params,
-      remaining,
-      { from: offset, to: offset + remaining - 1 },
-    );
-    if (!query) {
-      terminated = true;
-      break;
-    }
-    const page = await fetchCanonicalSpotPage(query);
-    if (page.length === 0) {
-      terminated = true;
-      break;
-    }
-    rows.push(...page);
-    offset += page.length;
-    if (requestedLimit !== null && rows.length >= requestedLimit) {
-      terminated = true;
-      break;
-    }
-  }
-
-  if (!terminated) {
-    throw new Error("Trash Spotter source pagination exceeded its safety bound.");
-  }
-  return requestedLimit === null ? rows : rows.slice(0, requestedLimit);
+  return readBoundedPages({
+    requestedLimit,
+    pageSize: CANONICAL_SPOT_PAGE_SIZE,
+    loadPage: async ({ limit, from, to }) => {
+      const query = buildCanonicalSpotsQuery(supabase, params, limit, { from, to });
+      return query ? fetchCanonicalSpotPage(query) : [];
+    },
+    safetyError: "Trash Spotter source pagination exceeded its safety bound.",
+  });
 }
 
 function canUseLocalActionFallback(

@@ -45,4 +45,22 @@ describe("selected action card utils", () => {
     expect(summary.impactLabel).toBe("Indisponible");
     expect(summary.qualityLabel).toBe("Non évalué");
   });
+
+  it("keeps the selected-card labels compatible with its compact presentation", () => {
+    const item = toActionMapItem(buildActionDataContract({
+      id: "pending-selected",
+      type: "action",
+      status: "pending",
+      source: "actions",
+      observedAt: "2026-04-12",
+      locationLabel: "Rue de test",
+      latitude: 48.8566,
+      longitude: 2.3522,
+    }));
+
+    const summary = buildSelectedActionCardModel(item);
+
+    expect(summary.statusLabel).toBe("En attente");
+    expect(summary.dateLabel).toMatch(/avril/);
+  });
 });

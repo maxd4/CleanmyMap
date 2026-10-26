@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { requireSpogomiResponse as requireResponse } from "@/__tests__/support/spogomi-route";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const enforceRateLimitMock = vi.hoisted(() => vi.fn());
@@ -51,11 +52,6 @@ vi.mock("@/lib/http/api-errors", () => ({
   handleApiError: () => new Response(JSON.stringify({ error: "Internal error" }), { status: 500 }),
   validationErrorResponse: (details: unknown) => new Response(JSON.stringify({ error: details }), { status: 400 }),
 }));
-
-function requireResponse(response: Response | undefined): Response {
-  if (!response) throw new Error("Expected a response");
-  return response;
-}
 
 describe("SPOGOMI identity-link recovery route", () => {
   beforeEach(() => {

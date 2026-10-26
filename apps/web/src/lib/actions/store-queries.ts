@@ -11,6 +11,7 @@ import {
   isMissingActionColumnError,
 } from "./store-selects";
 import { normalizeStoredAction } from "./store-normalization";
+import { readBoundedPages } from "./pagination";
 
 const ACTION_RESUME_SELECT_FIELDS = [
   "id",
@@ -135,47 +136,14 @@ async function fetchActionRowsWithSelect(
     );
   }
 
-  const requestedLimit = params.limit;
-  const rows: ActionRow[] = [];
-  let offset = 0;
-  let terminated = false;
-  const maxPages = 10_000;
-
-  for (let pageNumber = 0; pageNumber < maxPages; pageNumber += 1) {
-    const remaining = requestedLimit === null
-      ? PUBLIC_ACTION_PAGE_SIZE
-      : Math.min(PUBLIC_ACTION_PAGE_SIZE, requestedLimit - rows.length);
-    if (remaining <= 0) {
-      terminated = true;
-      break;
-    }
-
-    const page = await runActionQuery<ActionRow>(supabase, (query) =>
-      buildActionListQuery(
-        query,
-        { ...params, limit: remaining },
-        selectFields,
-        { from: offset, to: offset + remaining - 1 },
-      ),
-    );
-    if (page.length === 0) {
-      terminated = true;
-      break;
-    }
-
-    rows.push(...page);
-    offset += page.length;
-    if (requestedLimit !== null && rows.length >= requestedLimit) {
-      terminated = true;
-      break;
-    }
-  }
-
-  if (!terminated) {
-    throw new Error("Action source pagination exceeded its safety bound.");
-  }
-
-  return requestedLimit === null ? rows : rows.slice(0, requestedLimit);
+  return readBoundedPages({
+    requestedLimit: params.limit,
+    pageSize: PUBLIC_ACTION_PAGE_SIZE,
+    loadPage: ({ limit, from, to }) => runActionQuery<ActionRow>(supabase, (query) =>
+      buildActionListQuery(query, { ...params, limit }, selectFields, { from, to }),
+    ),
+    safetyError: "Action source pagination exceeded its safety bound.",
+  });
 }
 
 export async function fetchActionRows(

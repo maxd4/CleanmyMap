@@ -263,13 +263,8 @@ export async function PATCH(request: Request) {
       }
     }
 
-    const { syncClerkUserToSupabase } = await import("@/lib/auth/sync");
-    let syncedProfile: Awaited<ReturnType<typeof syncClerkUserToSupabase>> = null;
-    try {
-      syncedProfile = await syncClerkUserToSupabase(updatedUser);
-    } catch {
-      syncedProfile = null;
-    }
+    const { syncClerkUserToSupabase, trySyncClerkUserToSupabase } = await import("@/lib/auth/sync");
+    const syncedProfile = await trySyncClerkUserToSupabase(updatedUser, (user) => syncClerkUserToSupabase(user));
     if (!syncedProfile) {
       return NextResponse.json(
         {

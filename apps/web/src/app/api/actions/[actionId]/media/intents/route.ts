@@ -4,32 +4,16 @@ import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createActionMediaUploadIntent,
-  ActionMediaError,
 } from "@/lib/actions/action-media/action-media";
-import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
-import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { validationErrorResponse } from "@/lib/http/api-errors";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { mediaUploadIntentSchema } from "@/lib/actions/media/media-upload-intent-schema";
+import { actionMediaErrorResponse } from "@/lib/actions/action-media/action-media-route-error";
 
 export const runtime = "nodejs";
 // Vercel justification: authenticated owner-scoped upload intents must not be
 // statically cached or replayed across action owners.
 export const dynamic = "force-dynamic";
-
-const NOT_ADMISSIBLE_MEDIA_MESSAGE = "Les photos de bilan ne sont pas admissibles dans l'état actuel de l'action.";
-
-function errorResponse(error: unknown) {
-  if (error instanceof ActionMediaError) {
-    if (error.code === "validation") return validationErrorResponse({ media: [error.message] });
-    if (error.code === "forbidden") return forbiddenJsonResponse();
-    if (error.code === "not_found") return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
-    if (error.code === "not_admissible") return NextResponse.json({ error: NOT_ADMISSIBLE_MEDIA_MESSAGE, code: error.code }, { status: 409 });
-    if (error.code === "limit_reached") return NextResponse.json({ error: error.message, code: error.code }, { status: 409 });
-    if (error.code === "conflict") return NextResponse.json({ error: error.message, code: error.code }, { status: 409 });
-    if (error.code === "storage_missing") return NextResponse.json({ error: error.message, code: error.code }, { status: 422 });
-    if (error.code === "storage_invalid") return NextResponse.json({ error: error.message, code: error.code }, { status: 422 });
-  }
-  return handleApiError(error, "action-media-intent");
-}
 
 export async function POST(
   request: Request,
@@ -57,6 +41,6 @@ export async function POST(
     });
     return NextResponse.json({ status: "ok", intent }, { status: 201 });
   } catch (error) {
-    return errorResponse(error);
+    return actionMediaErrorResponse(error, "intent");
   }
 }

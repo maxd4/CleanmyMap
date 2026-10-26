@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createBugReportScreenshotUploadIntent,
 } from "@/lib/community/bug-report-screenshot";
-import { bugReportScreenshotErrorResponse } from "../route-error";
+import { bugReportScreenshotErrorResponse, parseScreenshotJsonBody } from "../route-error";
 
 export const runtime = "nodejs";
 // Justification Vercel: l'intention d'upload dépend de l'identité Clerk, de l'état du feedback et d'un chemin Storage immuable généré à la demande.
@@ -28,22 +27,14 @@ export async function POST(
   const access = await requireActionRequestAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return validationErrorResponse({ body: ["Le contenu de la requête est invalide."] });
-  }
-  const parsed = intentSchema.safeParse(body);
-  if (!parsed.success) {
-    return validationErrorResponse({ screenshot: ["Les métadonnées de capture sont invalides."] });
-  }
+  const parsed = await parseScreenshotJsonBody(request, intentSchema, "screenshot", "Les métadonnées de capture sont invalides.");
+  if (parsed instanceof Response) return parsed;
 
   try {
     const { reportId } = await context.params;
     const intent = await createBugReportScreenshotUploadIntent(
       getSupabaseServerClient(true),
-      { ...parsed.data, userId: access.userId, feedbackId: reportId },
+      { ...parsed, userId: access.userId, feedbackId: reportId },
     );
     return NextResponse.json({ status: "ok", intent }, { status: 201 });
   } catch (error) {

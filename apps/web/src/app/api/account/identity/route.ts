@@ -2,10 +2,10 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { requireAccountPatchBody } from "@/lib/auth/account-request";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
-import { syncClerkUserToSupabase } from "@/lib/auth/sync";
-import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
-import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { syncClerkUserToSupabase, trySyncClerkUserToSupabase } from "@/lib/auth/sync";
+import { handleApiError } from "@/lib/http/api-errors";
 import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 
 const identitySchema = z.object({
@@ -14,32 +14,22 @@ const identitySchema = z.object({
 }).strict();
 
 export async function PATCH(request: Request) {
-  const access = await requireActionRequestAccess(request);
-  if (!access.ok) return unauthorizedJsonResponse();
-
-  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(
+  const access = await requireAccountPatchBody(
     request,
-    access.userId,
-    { limit: 12, window: 60 },
+    identitySchema,
+    (guardRequest) => requireActionRequestAccess(guardRequest),
+    (rateLimitRequest, userId, options) => enforceServerRateLimitForAuthenticatedUser(rateLimitRequest, userId, options),
   );
-  if (rateLimitResponse) return rateLimitResponse;
-
-  const parsed = identitySchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
+  if (access instanceof Response) return access;
 
   try {
     const client = await clerkClient();
     const updatedUser = await client.users.updateUser(access.userId, {
-      firstName: parsed.data.firstName,
-      lastName: parsed.data.lastName,
+      firstName: access.data.firstName,
+      lastName: access.data.lastName,
     });
 
-    let syncedProfile: Awaited<ReturnType<typeof syncClerkUserToSupabase>> = null;
-    try {
-      syncedProfile = await syncClerkUserToSupabase(updatedUser);
-    } catch {
-      syncedProfile = null;
-    }
+    const syncedProfile = await trySyncClerkUserToSupabase(updatedUser, (user) => syncClerkUserToSupabase(user));
     if (!syncedProfile) {
       return NextResponse.json(
         {

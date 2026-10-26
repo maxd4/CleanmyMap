@@ -37,7 +37,10 @@ export function resolveActionTitle(item: ActionMapItem): string {
   return actionTitle || mapItemLocationLabel(item);
 }
 
-export function formatObservedDate(value: string | null | undefined): string {
+export function formatObservedDate(
+  value: string | null | undefined,
+  options: { month?: "2-digit" | "long" } = {},
+): string {
   if (!value) {
     return "Date non renseignée";
   }
@@ -49,13 +52,13 @@ export function formatObservedDate(value: string | null | undefined): string {
 
   return new Intl.DateTimeFormat("fr-FR", {
     day: "2-digit",
-    month: "2-digit",
+    month: options.month ?? "2-digit",
     year: "numeric",
   }).format(parsed);
 }
 
 export function formatRecordType(item: ActionMapItem): string {
-  const type = item.contract?.type ?? "action";
+  const type = item.contract?.type ?? item.record_type ?? "action";
 
   switch (type) {
     case "action":
@@ -69,12 +72,15 @@ export function formatRecordType(item: ActionMapItem): string {
   }
 }
 
-export function formatStatusLabel(status: string | undefined): string {
+export function formatStatusLabel(
+  status: string | undefined,
+  options: { pendingLabel?: string } = {},
+): string {
   switch (status) {
     case "approved":
       return "Validée";
     case "pending":
-      return "En attente de validation";
+      return options.pendingLabel ?? "En attente de validation";
     case "rejected":
       return "Rejetée";
     case "cleaned":

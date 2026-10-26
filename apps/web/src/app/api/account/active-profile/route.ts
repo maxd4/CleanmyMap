@@ -7,7 +7,7 @@ import {
 } from "@/lib/authz";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { getDevAuthBypassSession } from "@/lib/authz-identity";
-import { syncClerkUserToSupabase } from "@/lib/auth/sync";
+import { syncClerkUserToSupabase, trySyncClerkUserToSupabase } from "@/lib/auth/sync";
 import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 import {
   getProfileEntryPath,
@@ -94,12 +94,7 @@ export async function POST(request: Request) {
     },
   });
 
-  let syncedProfile: Awaited<ReturnType<typeof syncClerkUserToSupabase>> = null;
-  try {
-    syncedProfile = await syncClerkUserToSupabase(updatedUser);
-  } catch {
-    syncedProfile = null;
-  }
+  const syncedProfile = await trySyncClerkUserToSupabase(updatedUser, (user) => syncClerkUserToSupabase(user));
   if (!syncedProfile) {
     return NextResponse.json(
       {

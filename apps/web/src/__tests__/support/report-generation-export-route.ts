@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccess: vi.fn(),
@@ -25,4 +25,19 @@ export function resetReportGenerationExportMocks(generation: unknown): void {
   vi.clearAllMocks();
   requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
   getSnapshotMock.mockResolvedValue(generation);
+}
+
+export function defineReportGenerationErrorTests(
+  invoke: () => Promise<Response>,
+): void {
+  it.each([
+    ["invalid id", new InvalidReportGenerationIdErrorMock(), 400, "Identifiant de rapport invalide."],
+    ["incompatible snapshot", new InvalidReportGenerationSnapshotErrorMock(), 422, "Le snapshot historique est invalide ou incompatible."],
+    ["store failure", new Error("database unavailable"), 503, "Impossible d'exporter le rapport historique."],
+  ])("maps %s without returning an export", async (_label, error, status, message) => {
+    getSnapshotMock.mockRejectedValueOnce(error);
+    const response = await invoke();
+    expect(response.status).toBe(status);
+    await expect(response.json()).resolves.toEqual({ error: message });
+  });
 }

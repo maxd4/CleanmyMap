@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { requireSpogomiResponse as requireResponse } from "@/__tests__/support/spogomi-route";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const enforceRateLimitMock = vi.hoisted(() => vi.fn());
@@ -35,11 +36,6 @@ vi.mock("@/lib/http/auth-responses", () => ({
   unauthorizedJsonResponse: () => new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }),
 }));
 vi.mock("@/lib/http/api-errors", () => ({ handleApiError: () => new Response(JSON.stringify({ error: "Internal" }), { status: 500 }) }));
-
-function requireResponse(response: Response | undefined): Response {
-  if (!response) throw new Error("route did not return a response");
-  return response;
-}
 
 describe("SPOGOMI public team join request", () => {
   const params = { eventId: "00000000-0000-4000-8000-000000000001", teamId: "00000000-0000-4000-8000-000000000002" };

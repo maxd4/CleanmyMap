@@ -248,7 +248,10 @@ async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> 
   }
 }
 
-export function useActionDeclarationSubmission({
+export function useActionDeclarationSubmission(
+  params: UseActionDeclarationSubmissionParams,
+) {
+  const {
   form,
   declarationMode,
   isAuthenticated,
@@ -273,7 +276,7 @@ export function useActionDeclarationSubmission({
   creationRequestId,
   setLoadedActionPhase,
   setHasAttemptedSubmit,
-}: UseActionDeclarationSubmissionParams) {
+  } = params;
   const hasTrackedStartRef = useRef<boolean>(false);
   const [submissionState, setSubmissionState] =
     useState<SubmissionState>("idle");

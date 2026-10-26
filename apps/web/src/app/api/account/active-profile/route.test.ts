@@ -17,7 +17,7 @@ vi.mock("@/lib/auth/action-request-access", () => ({
 }));
 vi.mock("@/lib/authz-identity", () => ({ getDevAuthBypassSession: devBypassMock }));
 vi.mock("@clerk/nextjs/server", () => ({ clerkClient: clerkClientMock }));
-vi.mock("@/lib/auth/sync", () => ({ syncClerkUserToSupabase: syncMock }));
+vi.mock("@/lib/auth/sync", () => ({ syncClerkUserToSupabase: syncMock, trySyncClerkUserToSupabase: syncMock }));
 vi.mock("@/lib/rate-limit/server", () => ({
   enforceServerRateLimitForAuthenticatedUser: enforceServerRateLimitForAuthenticatedUserMock,
 }));

@@ -2,27 +2,14 @@ import { NextResponse } from "next/server";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { listActionMedia, ActionMediaError } from "@/lib/actions/action-media/action-media";
-import { handleApiError } from "@/lib/http/api-errors";
-import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { listActionMedia } from "@/lib/actions/action-media/action-media";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { actionMediaErrorResponse } from "@/lib/actions/action-media/action-media-route-error";
 
 export const runtime = "nodejs";
 // Vercel justification: authenticated owner-scoped media listings must not be
 // statically cached or replayed across action owners.
 export const dynamic = "force-dynamic";
-
-const NOT_ADMISSIBLE_MEDIA_MESSAGE = "Les photos de bilan ne sont pas admissibles dans l'état actuel de l'action.";
-
-function errorResponse(error: unknown) {
-  if (error instanceof ActionMediaError && error.code === "forbidden") return forbiddenJsonResponse();
-  if (error instanceof ActionMediaError && error.code === "not_found") {
-    return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
-  }
-  if (error instanceof ActionMediaError && error.code === "not_admissible") {
-    return NextResponse.json({ error: NOT_ADMISSIBLE_MEDIA_MESSAGE }, { status: 409 });
-  }
-  return handleApiError(error, "action-media-read");
-}
 
 export async function GET(
   request: Request,
@@ -40,6 +27,6 @@ export async function GET(
     });
     return NextResponse.json({ status: "ok", items });
   } catch (error) {
-    return errorResponse(error);
+    return actionMediaErrorResponse(error, "read");
   }
 }

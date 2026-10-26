@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { requireSpogomiResponse as requireResponse, spogomiEventParams } from "@/__tests__/support/spogomi-route";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const enforceRateLimitMock = vi.hoisted(() => vi.fn());
@@ -37,11 +38,6 @@ function jsonRequest(method: string, body: unknown) {
   });
 }
 
-function requireResponse(response: Response | undefined): Response {
-  if (!response) throw new Error("Expected a response");
-  return response;
-}
-
 describe("GET /api/spogomi/events/:eventId/admission-requests", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -74,7 +70,7 @@ describe("GET /api/spogomi/events/:eventId/admission-requests", () => {
 
   it("keeps the personal read authenticated and requester-scoped", async () => {
     const { GET } = await import("./route");
-    const response = requireResponse(await GET(request(), { params: Promise.resolve({ eventId: "11111111-1111-4111-8111-111111111111" }) }));
+    const response = requireResponse(await GET(request(), spogomiEventParams("11111111-1111-4111-8111-111111111111")));
     if (!response) throw new Error("Expected a response");
     const body = await response.json();
 
@@ -91,7 +87,7 @@ describe("GET /api/spogomi/events/:eventId/admission-requests", () => {
   it("rejects unauthenticated reads before touching the requester projection", async () => {
     requireAuthenticatedAccessMock.mockResolvedValue({ ok: false, status: 401, error: "Unauthorized" });
     const { GET } = await import("./route");
-    const response = requireResponse(await GET(request(), { params: Promise.resolve({ eventId: "11111111-1111-4111-8111-111111111111" }) }));
+    const response = requireResponse(await GET(request(), spogomiEventParams("11111111-1111-4111-8111-111111111111")));
     if (!response) throw new Error("Expected a response");
 
     expect(response.status).toBe(401);

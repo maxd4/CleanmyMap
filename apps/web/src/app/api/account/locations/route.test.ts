@@ -7,7 +7,7 @@ const rateLimitMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/auth/action-request-access", () => ({ requireActionRequestAccess: accessMock }));
 vi.mock("@clerk/nextjs/server", () => ({ clerkClient: clerkClientMock }));
-vi.mock("@/lib/auth/sync", () => ({ syncClerkUserToSupabase: syncMock }));
+vi.mock("@/lib/auth/sync", () => ({ syncClerkUserToSupabase: syncMock, trySyncClerkUserToSupabase: syncMock }));
 vi.mock("@/lib/rate-limit/server", () => ({ enforceServerRateLimitForAuthenticatedUser: rateLimitMock }));
 
 const paris = {

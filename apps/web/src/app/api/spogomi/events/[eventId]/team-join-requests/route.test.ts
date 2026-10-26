@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { requireSpogomiResponse as requireResponse } from "@/__tests__/support/spogomi-route";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserActiveRoleMock = vi.hoisted(() => vi.fn());
@@ -30,11 +31,6 @@ vi.mock("@/lib/http/api-errors", () => ({
   handleApiError: () => new Response(JSON.stringify({ error: "Internal" }), { status: 500 }),
   validationErrorResponse: () => new Response(JSON.stringify({ error: "Invalid" }), { status: 400 }),
 }));
-
-function requireResponse(response: Response | undefined): Response {
-  if (!response) throw new Error("route did not return a response");
-  return response;
-}
 
 describe("SPOGOMI team join admin queue", () => {
   const eventId = "00000000-0000-4000-8000-000000000001";

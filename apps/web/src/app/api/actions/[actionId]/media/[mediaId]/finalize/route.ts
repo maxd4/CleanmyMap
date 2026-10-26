@@ -2,27 +2,14 @@ import { NextResponse } from "next/server";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { finalizeActionMedia, ActionMediaError } from "@/lib/actions/action-media/action-media";
-import { handleApiError } from "@/lib/http/api-errors";
-import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { finalizeActionMedia } from "@/lib/actions/action-media/action-media";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { actionMediaErrorResponse } from "@/lib/actions/action-media/action-media-route-error";
 
 export const runtime = "nodejs";
 // Vercel justification: authenticated owner-scoped media finalization must not
 // be statically cached or replayed across action owners.
 export const dynamic = "force-dynamic";
-
-const NOT_ADMISSIBLE_MEDIA_MESSAGE = "Les photos de bilan ne sont pas admissibles dans l'état actuel de l'action.";
-
-function errorResponse(error: unknown) {
-  if (error instanceof ActionMediaError) {
-    if (error.code === "forbidden") return forbiddenJsonResponse();
-    if (error.code === "not_found") return NextResponse.json({ error: "Photo introuvable." }, { status: 404 });
-    if (error.code === "not_admissible") return NextResponse.json({ error: NOT_ADMISSIBLE_MEDIA_MESSAGE, code: error.code }, { status: 409 });
-    if (error.code === "storage_missing") return NextResponse.json({ error: "La photo n'a pas été reçue par le stockage." }, { status: 422 });
-    if (error.code === "storage_invalid") return NextResponse.json({ error: error.message, code: error.code }, { status: 422 });
-  }
-  return handleApiError(error, "action-media-finalize");
-}
 
 export async function POST(
   request: Request,
@@ -41,6 +28,6 @@ export async function POST(
     });
     return NextResponse.json({ status: "ok", ...result });
   } catch (error) {
-    return errorResponse(error);
+    return actionMediaErrorResponse(error, "finalize");
   }
 }

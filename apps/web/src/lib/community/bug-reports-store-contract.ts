@@ -1,3 +1,5 @@
+import { compareCreatorInboxRecordCursors } from "./creator-inbox-pagination";
+
 export const FEEDBACK_QUALIFICATION_STATUSES = [
   "pending",
   "needs_info",
@@ -102,7 +104,6 @@ export function clampCommunityBugReportsHistoryLimit(
     Math.max(1, Math.trunc(value)),
   );
 }
-
 export function parseCommunityBugReportHistoryCursor(
   value: string | null | undefined,
 ): CommunityBugReportHistoryCursor | null {
@@ -132,15 +133,7 @@ export function compareHistoryKeys(
   left: CommunityBugReportHistoryCursor,
   right: CommunityBugReportHistoryCursor,
 ): number {
-  const leftTime = Date.parse(left.createdAt);
-  const rightTime = Date.parse(right.createdAt);
-  if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) {
-    return leftTime - rightTime;
-  }
-  if (left.createdAt !== right.createdAt) {
-    return left.createdAt.localeCompare(right.createdAt);
-  }
-  return left.id.localeCompare(right.id);
+  return compareCreatorInboxRecordCursors(left, right);
 }
 
 export function toHistoryPage(
