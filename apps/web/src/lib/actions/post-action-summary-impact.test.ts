@@ -67,4 +67,44 @@ describe("buildPostActionImpactMetrics", () => {
 
     expect(invalidMetric?.value).toBeNull();
   });
+
+  it("keeps overflow unavailable per component without contaminating valid metrics", () => {
+    const extremeWaste = buildPostActionImpactMetrics({
+      wasteKg: Number.MAX_VALUE,
+      cigaretteButts: 3,
+      durationMinutes: 20,
+      operationalVolunteerUnits: 2,
+      qualityScore: 50,
+    });
+    const extremeButts = buildPostActionImpactMetrics({
+      wasteKg: 10,
+      cigaretteButts: Number.MAX_VALUE,
+      durationMinutes: 20,
+      operationalVolunteerUnits: 2,
+      qualityScore: 50,
+    });
+    const extremeDuration = buildPostActionImpactMetrics({
+      wasteKg: 10,
+      cigaretteButts: 3,
+      durationMinutes: Number.MAX_VALUE,
+      operationalVolunteerUnits: 2,
+      qualityScore: 50,
+    });
+
+    expect(extremeWaste.find((metric) => metric.id === "co2")?.value).toBeNull();
+    expect(extremeWaste.find((metric) => metric.id === "water")?.value).toBe(1500);
+    expect(extremeWaste.find((metric) => metric.id === "surface")?.value).toBeNull();
+
+    expect(extremeButts.find((metric) => metric.id === "co2")?.value).toBe(12);
+    expect(extremeButts.find((metric) => metric.id === "water")?.value).toBeNull();
+    expect(extremeButts.find((metric) => metric.id === "surface")?.value).toBe(29.8);
+
+    expect(extremeDuration.find((metric) => metric.id === "co2")?.value).toBe(12);
+    expect(extremeDuration.find((metric) => metric.id === "water")?.value).toBe(1500);
+    expect(extremeDuration.find((metric) => metric.id === "surface")?.value).toBeNull();
+
+    for (const metric of [...extremeWaste, ...extremeButts, ...extremeDuration]) {
+      expect(metric.value === null || Number.isFinite(metric.value)).toBe(true);
+    }
+  });
 });

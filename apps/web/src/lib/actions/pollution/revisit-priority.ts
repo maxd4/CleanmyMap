@@ -172,7 +172,8 @@ export function presentActionPollutionProjection(
   const hasMeasuredPostActionScore =
     typeof measuredPostActionScore === "number" &&
     Number.isFinite(measuredPostActionScore) &&
-    measuredPostActionScore >= 0;
+    measuredPostActionScore >= 0 &&
+    measuredPostActionScore <= ACTION_POLLUTION_PROJECTION_CONSTANTS.maxScore;
   const postActionScore = clampScore(
     hasMeasuredPostActionScore ? measuredPostActionScore : 0,
   );

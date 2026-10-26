@@ -19,7 +19,17 @@ type BuildPostActionImpactMetricsInput = {
 
 function round(value: number, digits = 1): number {
   const factor = 10 ** digits;
-  return Math.round(value * factor) / factor;
+  const scaled = value * factor;
+  return Number.isFinite(scaled) ? Math.round(scaled) / factor : value;
+}
+
+function finiteRoundedOrNull(value: number, digits = 1): number | null {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  const rounded = round(value, digits);
+  return Number.isFinite(rounded) ? rounded : null;
 }
 
 function finiteNonNegativeOrNull(value: number | null): number | null {
@@ -48,7 +58,7 @@ export function buildPostActionImpactMetrics({
       value:
         normalizedWasteKg === null
           ? null
-          : round(normalizedWasteKg * factors.co2KgPerWasteKg),
+          : finiteRoundedOrNull(normalizedWasteKg * factors.co2KgPerWasteKg),
       unit: "kg CO₂e",
       method: `Proxy ${IMPACT_PROXY_CONFIG.version} · déchets enregistrés × ${factors.co2KgPerWasteKg} kg CO₂e/kg`,
       confidence: qualityScore,
@@ -59,8 +69,9 @@ export function buildPostActionImpactMetrics({
       value:
         normalizedCigaretteButts === null
           ? null
-          : Math.round(
+          : finiteRoundedOrNull(
               normalizedCigaretteButts * factors.waterLitersPerCigaretteButt,
+              0,
             ),
       unit: "L",
       method: `Proxy ${IMPACT_PROXY_CONFIG.version} · mégots enregistrés × ${factors.waterLitersPerCigaretteButt} L/mégot`,
@@ -74,7 +85,7 @@ export function buildPostActionImpactMetrics({
         normalizedDurationMinutes === null ||
         normalizedOperationalVolunteerUnits === null
           ? null
-          : round(
+          : finiteRoundedOrNull(
               normalizedWasteKg * factors.surfaceM2PerWasteKg +
                 normalizedDurationMinutes * normalizedOperationalVolunteerUnits *
                   factors.surfaceM2PerVolunteerMinute,

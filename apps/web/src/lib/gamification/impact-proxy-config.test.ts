@@ -59,4 +59,25 @@ describe("impact proxy configuration", () => {
       surfaceM2PerVolunteerMinute: 0,
     });
   });
+
+  it("preserves an explicit zero factor through the proxy calculation", async () => {
+    process.env.IMPACT_PROXY_CO2_KG_PER_WASTE_KG = "0";
+    vi.resetModules();
+
+    const { IMPACT_PROXY_CONFIG } = await import("./impact-proxy-config");
+    const { buildPostActionImpactMetrics } = await import(
+      "../actions/post-action-summary-impact",
+    );
+
+    expect(IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg).toBe(0);
+    expect(
+      buildPostActionImpactMetrics({
+        wasteKg: 10,
+        cigaretteButts: null,
+        durationMinutes: null,
+        operationalVolunteerUnits: null,
+        qualityScore: 50,
+      }).find((metric) => metric.id === "co2")?.value,
+    ).toBe(0);
+  });
 });

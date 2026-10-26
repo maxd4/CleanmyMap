@@ -117,4 +117,41 @@ describe("buildPostActionSummary", () => {
     expect(positive.action.wasteKg).toBe(2.5);
     expect(positive.impact.find((metric) => metric.id === "co2")?.value).toBe(3);
   });
+
+  it("keeps extreme finite source values finite while nulling only overflowing proxies", () => {
+    const extremeWaste = buildPostActionSummary({
+      ...action,
+      wasteKg: Number.MAX_VALUE,
+      cigaretteButts: 10,
+      durationMinutes: 30,
+      volunteersCount: 2,
+    });
+    const extremeButts = buildPostActionSummary({
+      ...action,
+      wasteKg: 4,
+      cigaretteButts: Number.MAX_VALUE,
+      durationMinutes: 30,
+      volunteersCount: 2,
+    });
+    const extremeDuration = buildPostActionSummary({
+      ...action,
+      wasteKg: 4,
+      cigaretteButts: 10,
+      durationMinutes: Number.MAX_VALUE,
+      volunteersCount: 2,
+    });
+
+    expect(Number.isFinite(extremeWaste.action.wasteKg)).toBe(true);
+    expect(extremeWaste.impact.find((metric) => metric.id === "co2")?.value).toBeNull();
+    expect(extremeWaste.impact.find((metric) => metric.id === "water")?.value).toBe(5000);
+    expect(extremeWaste.impact.find((metric) => metric.id === "surface")?.value).toBeNull();
+
+    expect(extremeButts.impact.find((metric) => metric.id === "co2")?.value).toBe(4.8);
+    expect(extremeButts.impact.find((metric) => metric.id === "water")?.value).toBeNull();
+    expect(extremeButts.impact.find((metric) => metric.id === "surface")?.value).toBe(17.2);
+
+    expect(extremeDuration.impact.find((metric) => metric.id === "co2")?.value).toBe(4.8);
+    expect(extremeDuration.impact.find((metric) => metric.id === "water")?.value).toBe(5000);
+    expect(extremeDuration.impact.find((metric) => metric.id === "surface")?.value).toBeNull();
+  });
 });

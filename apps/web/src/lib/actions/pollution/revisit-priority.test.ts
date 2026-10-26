@@ -71,15 +71,29 @@ describe("action pollution projection", () => {
     expect(measured.projectedPollutionScore).toBe(18);
   });
 
-  it("does not classify a negative post-action score as an observed measurement", () => {
-    const result = presentActionPollutionProjection(60, actionDateAt(0), NOW, {
-      postActionScore: -1,
-    });
+  it.each([
+    ["negative", -1, 0, "model_baseline", true],
+    ["zero", 0, 0, "measured", false],
+    ["nominal", 50, 50, "measured", false],
+    ["upper bound", 100, 100, "measured", false],
+    ["just above upper bound", 100.01, 0, "model_baseline", true],
+    ["far above upper bound", 150, 0, "model_baseline", true],
+    ["NaN", Number.NaN, 0, "model_baseline", true],
+    ["Infinity", Number.POSITIVE_INFINITY, 0, "model_baseline", true],
+    ["null", null, 0, "model_baseline", true],
+  ] as const)(
+    "qualifies %s post-action scores before using them as measurements",
+    (_label, input, expectedScore, expectedSource, expectedEstimate) => {
+      const result = presentActionPollutionProjection(60, actionDateAt(0), NOW, {
+        postActionScore: input,
+      });
 
-    expect(result.postActionScore).toBe(0);
-    expect(result.postActionScoreSource).toBe("model_baseline");
-    expect(result.isEstimate).toBe(true);
-  });
+      expect(result.postActionScore).toBe(expectedScore);
+      expect(result.postActionScoreSource).toBe(expectedSource);
+      expect(result.isEstimate).toBe(expectedEstimate);
+      expect(result.projectedPollutionScore).toBe(expectedScore);
+    },
+  );
 
   it("rejects malformed custom T80 values and keeps the canonical fallback", () => {
     const fallback = resolveActionT80Days(50);

@@ -35,7 +35,8 @@ export type PostActionSummary = {
 
 function round(value: number, digits = 1): number {
   const factor = 10 ** digits;
-  return Math.round(value * factor) / factor;
+  const scaled = value * factor;
+  return Number.isFinite(scaled) ? Math.round(scaled) / factor : value;
 }
 
 function roundNullable(value: number | null, digits = 1): number | null {
