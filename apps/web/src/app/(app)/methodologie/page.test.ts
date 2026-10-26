@@ -72,6 +72,8 @@ describe("/methodologie public page", () => {
 
   it("maps the latest public snapshot into the existing page props", async () => {
     const snapshot = {
+      snapshotDate: "2026-06-26",
+      monthlyKgCo2eProxy: 1.2,
       version: "snapshot-version",
       model: {
         generatedAt: "2026-06-26T08:00:00.000Z",
@@ -116,7 +118,15 @@ describe("/methodologie public page", () => {
       totalKgCo2eProxy: 2.4,
       generatedAt: "2026-06-26T08:00:00.000Z",
     });
-    expect(props.impactSnapshots).toEqual([snapshot]);
+    expect(props.impactSnapshots).toEqual([{
+      snapshotDate: "2026-06-26",
+      monthlyKgCo2eProxy: 1.2,
+    }]);
+    expect(props.impactSnapshots).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ model: expect.anything(), signals: expect.anything() }),
+      ]),
+    );
     expect(props.impactGeneratedAt).toBe("2026-06-26T08:00:00.000Z");
     expect(props.impactLaunchedAt).toBe("2026-01-01T00:00:00.000Z");
     expect(props.impactTerrainResults).toBe(monthlyImpactSnapshot.payload.kpis);

@@ -1,7 +1,7 @@
 import type {
   EnvironmentalImpactElectricityEstimate,
   EnvironmentalImpactInfrastructureServiceEstimate,
-  EnvironmentalImpactSnapshotRecord,
+  EnvironmentalImpactPublicSnapshotPoint,
   EnvironmentalImpactWaterEstimate,
 } from "@/lib/environmental-impact-estimator/types";
 import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
@@ -15,7 +15,7 @@ type Props = {
   githubStats: GitHubRepositoryStats | null;
   impactGeneratedAt: string | null;
   impactLaunchedAt: string | null;
-  impactSnapshots: EnvironmentalImpactSnapshotRecord[];
+  impactSnapshots: EnvironmentalImpactPublicSnapshotPoint[];
   impactTotals: {
     monthlyKgCo2eProxy: number | null;
     annualKgCo2eProxy: number | null;

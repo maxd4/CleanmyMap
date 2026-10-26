@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { EnvironmentalImpactElectricityEstimate, EnvironmentalImpactInfrastructureServiceEstimate, EnvironmentalImpactSnapshotRecord, EnvironmentalImpactWaterEstimate } from "@/lib/environmental-impact-estimator/types";
+import type { EnvironmentalImpactElectricityEstimate, EnvironmentalImpactInfrastructureServiceEstimate, EnvironmentalImpactPublicSnapshotPoint, EnvironmentalImpactWaterEstimate } from "@/lib/environmental-impact-estimator/types";
 import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import type { PublicLandingActionAggregation } from "@/lib/accueil/action-participant-aggregation";
 import { ImpactTerrain2026MethodologySection } from "./impact-terrain-2026-methodology-section";
@@ -69,7 +69,7 @@ type ReportProps = {
   impactDoc: OpenSourceDoc;
   impactGeneratedAt: string | null;
   impactLaunchedAt: string | null;
-  impactSnapshots: EnvironmentalImpactSnapshotRecord[];
+  impactSnapshots: EnvironmentalImpactPublicSnapshotPoint[];
   impactTotals: ImpactTotals;
   includeReportsContent: boolean;
   isFrench: boolean;

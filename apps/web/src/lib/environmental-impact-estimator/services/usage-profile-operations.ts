@@ -36,14 +36,13 @@ function resolveMonthlyStorageGbMonthsMetric(ctx: UsageProfileContext): number {
     "monthlyStorageGbMonths",
     "Stockage GB-mois",
     ctx.usageInput?.monthlyStorageGbMonths,
-    Math.max(
-      0.1,
-      round6(
-        resolveNumber(ctx.siteInput?.storageGbMonths, 0) +
-          resolveNumber(ctx.siteInput?.storedImages, 0) * 0.0025 +
-          resolveNumber(ctx.userInput?.storageGbMonths, 0) * 0.35,
-      ),
-    ),
+    hasStorageSignals
+      ? round6(
+          resolveNumber(ctx.siteInput?.storageGbMonths, 0) +
+            resolveNumber(ctx.siteInput?.storedImages, 0) * 0.0025 +
+            resolveNumber(ctx.userInput?.storageGbMonths, 0) * 0.35,
+        )
+      : 0.1,
     getStorageDetail(hasStorageSignals),
     getStorageSource(hasStorageSignals),
   );
@@ -62,14 +61,16 @@ function resolveMonthlyApiRequestsMetric(
     "monthlyApiRequests",
     "Requêtes API",
     ctx.usageInput?.monthlyApiRequests,
-    Math.max(
-      1,
-      Math.round(
-        resolveNumber(ctx.siteInput?.apiRequests, monthlyPageViews * 0.32) +
-          monthlySessions * 0.12 +
-          monthlyPdfExports * 2,
+    hasSiteApiRequests
+      ? Math.max(0, Math.round(resolveNumber(ctx.siteInput?.apiRequests, 0)))
+      : Math.max(
+        1,
+        Math.round(
+          monthlyPageViews * 0.32 +
+            monthlySessions * 0.12 +
+            monthlyPdfExports * 2,
+        ),
       ),
-    ),
     hasSiteApiRequests ? getTrafficSignalDetail("apiRequests") : "Dérivé des pages vues, sessions et exports",
     "derived",
   );

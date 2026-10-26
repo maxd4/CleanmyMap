@@ -37,14 +37,17 @@ function resolveMonthlyPageViewsMetric(
   sitePageViews: number,
   userPageViews: number,
 ): number {
-  const hasTrafficSignals = sitePageViews > 0 || userPageViews > 0;
-  const fallbackPageViews = Math.max(1, sitePageViews + userPageViews);
+  const hasTrafficSignals =
+    ctx.siteInput?.pageViews != null || ctx.userInput?.pageViews != null;
+  const fallbackPageViews = hasTrafficSignals
+    ? Math.max(0, sitePageViews + userPageViews)
+    : 60_000;
   return resolveUsageField(
     ctx,
     "monthlyPageViews",
     "Pages vues",
     ctx.usageInput?.monthlyPageViews,
-    fallbackPageViews > 1 ? fallbackPageViews : 60_000,
+    fallbackPageViews,
     getTrafficPageViewsDetail(hasTrafficSignals),
     getTrafficPageViewsSource(hasTrafficSignals),
   );

@@ -8,6 +8,7 @@ export type {
   EnvironmentalImpactInfrastructureMetricKey,
   EnvironmentalImpactInfrastructureServiceEstimate,
   EnvironmentalImpactProjectSignals,
+  EnvironmentalImpactPublicSnapshotPoint,
   EnvironmentalImpactSnapshotRecord,
 } from "./types";
 export {

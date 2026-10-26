@@ -179,6 +179,12 @@ export type EnvironmentalImpactSnapshotRecord = {
   signals: EnvironmentalImpactProjectSignals;
 };
 
+/** Public history projection; private model and signal payloads stay server-side. */
+export type EnvironmentalImpactPublicSnapshotPoint = Pick<
+  EnvironmentalImpactSnapshotRecord,
+  "snapshotDate" | "monthlyKgCo2eProxy"
+>;
+
 export type EnvironmentalImpactDashboardResponse = {
   model: EnvironmentalImpactEstimateModel;
   snapshots: EnvironmentalImpactSnapshotRecord[];

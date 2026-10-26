@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import type {
   EnvironmentalImpactElectricityEstimate,
   EnvironmentalImpactInfrastructureServiceEstimate,
-  EnvironmentalImpactSnapshotRecord,
+  EnvironmentalImpactPublicSnapshotPoint,
   EnvironmentalImpactWaterEstimate,
 } from "@/lib/environmental-impact-estimator/types";
 import { buildWaterEstimate } from "@/lib/environmental-impact-estimator/services/water";
@@ -36,7 +36,7 @@ export type MethodologiePageClientProps = {
     totalKgCo2eProxy: number | null;
     generatedAt: string | null;
   };
-  impactSnapshots: EnvironmentalImpactSnapshotRecord[];
+  impactSnapshots: EnvironmentalImpactPublicSnapshotPoint[];
   impactGeneratedAt: string | null;
   impactLaunchedAt: string | null;
   githubStats: GitHubRepositoryStats | null;

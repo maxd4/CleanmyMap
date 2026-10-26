@@ -1,10 +1,10 @@
 "use client";
 
-import type { EnvironmentalImpactSnapshotRecord } from "@/lib/environmental-impact-estimator";
+import type { EnvironmentalImpactPublicSnapshotPoint } from "@/lib/environmental-impact-estimator";
 import { cn } from "@/lib/utils";
 
 type MonthlyImpactHistoryChartProps = {
-  snapshots: EnvironmentalImpactSnapshotRecord[];
+  snapshots: EnvironmentalImpactPublicSnapshotPoint[];
   launchedAt: string | null;
   generatedAt: string | null;
   className?: string;
@@ -81,7 +81,7 @@ function buildMonthRange(start: Date, end: Date): Date[] {
 }
 
 function buildPoints(
-  snapshots: EnvironmentalImpactSnapshotRecord[],
+  snapshots: EnvironmentalImpactPublicSnapshotPoint[],
   launchedAt: string | null,
   generatedAt: string | null,
 ): MonthlyPoint[] {
@@ -93,7 +93,7 @@ function buildPoints(
     return leftTime - rightTime;
   });
 
-  const monthlySnapshotMap = new Map<string, EnvironmentalImpactSnapshotRecord>();
+  const monthlySnapshotMap = new Map<string, EnvironmentalImpactPublicSnapshotPoint>();
   for (const snapshot of chronologicalSnapshots) {
     const monthKey = snapshot.snapshotDate.slice(0, 7);
     monthlySnapshotMap.set(monthKey, snapshot);

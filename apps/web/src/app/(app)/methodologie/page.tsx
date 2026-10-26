@@ -6,7 +6,7 @@ import { loadGitHubRepositoryStats } from "@/lib/github/github-repository-stats"
 import { MethodologiePageClient } from "@/components/sections/rubriques/methodologie-page-composition";
 import type {
   EnvironmentalImpactInfrastructureServiceEstimate,
-  EnvironmentalImpactSnapshotRecord,
+  EnvironmentalImpactPublicSnapshotPoint,
 } from "@/lib/environmental-impact-estimator/types";
 import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import type { PublicLandingActionAggregation } from "@/lib/accueil/action-participant-aggregation";
@@ -35,7 +35,7 @@ export const revalidate = 86400;
 
 export default async function MethodologiePage() {
   let freePlanServices: EnvironmentalImpactInfrastructureServiceEstimate[] = [];
-  let impactSnapshots: EnvironmentalImpactSnapshotRecord[] = [];
+  let impactSnapshots: EnvironmentalImpactPublicSnapshotPoint[] = [];
   let githubStats: GitHubRepositoryStats | null = null;
   let impactTotals = {
     monthlyKgCo2eProxy: null as number | null,
@@ -73,7 +73,10 @@ export default async function MethodologiePage() {
       };
       impactElectricity = dashboard.model.methodology?.electricity ?? impactElectricity;
       impactWater = dashboard.model.methodology?.water ?? dashboard.model.infrastructure?.water ?? impactWater;
-      impactSnapshots = dashboard.snapshots;
+      impactSnapshots = dashboard.snapshots.map(({ snapshotDate, monthlyKgCo2eProxy }) => ({
+        snapshotDate,
+        monthlyKgCo2eProxy,
+      }));
       impactGeneratedAt = dashboard.model.infrastructure.generatedAt ?? dashboard.signals.generatedAt;
       impactLaunchedAt = dashboard.model.infrastructure.launchedAt ?? dashboard.signals.launchedAt;
     }
