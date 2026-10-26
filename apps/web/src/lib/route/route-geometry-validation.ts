@@ -8,12 +8,25 @@ export const MAX_PLANNER_TECHNICAL_STOPS = 200;
 export function isRouteGeometry(value: unknown): value is RouteGeometry {
   if (!value || typeof value !== "object") return false;
   const geometry = value as Partial<RouteGeometry>;
+  const hasUsableLoopCoordinates =
+    geometry.coordinates !== undefined &&
+    Array.isArray(geometry.coordinates) &&
+    (geometry.coordinates.length === 0 || (
+      geometry.coordinates.length >= 2 &&
+      isCoordinate(geometry.origin) &&
+      areCoordinatesClose(geometry.coordinates[0], geometry.origin) &&
+      areCoordinatesClose(geometry.coordinates[0], geometry.coordinates.at(-1)) &&
+      geometry.returnLeg !== null &&
+      geometry.returnLeg !== undefined
+    ));
+
   return (
     geometry.isLoop === true &&
     (geometry.origin === null || isCoordinate(geometry.origin)) &&
     Array.isArray(geometry.coordinates) &&
     geometry.coordinates.length <= MAX_ROUTE_GEOMETRY_COORDINATES &&
     geometry.coordinates.every(isCoordinate) &&
+    hasUsableLoopCoordinates &&
     finiteNonNegative(geometry.distanceKm) &&
     finiteNonNegative(geometry.durationMinutes) &&
     Array.isArray(geometry.legs) &&
@@ -25,6 +38,16 @@ export function isRouteGeometry(value: unknown): value is RouteGeometry {
     typeof geometry.estimated === "boolean" &&
     (geometry.returnLeg === null || isRouteGeometryLeg(geometry.returnLeg))
   );
+}
+
+function areCoordinatesClose(
+  left: unknown,
+  right: unknown,
+  tolerance = 1e-6,
+): boolean {
+  return isCoordinate(left) && isCoordinate(right) &&
+    Math.abs(left[0] - right[0]) <= tolerance &&
+    Math.abs(left[1] - right[1]) <= tolerance;
 }
 
 function isRouteGeometryLeg(value: unknown): value is RouteGeometryLeg {

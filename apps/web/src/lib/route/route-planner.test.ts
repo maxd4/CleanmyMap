@@ -531,6 +531,50 @@ describe("route planner V1", () => {
     expect(result.stops).toHaveLength(0);
     expect(result.diagnostics.excludedUnsafe).toBe(1);
   });
+
+  it("keeps every selected loop within budget and deterministic across candidate order", () => {
+    const candidates = Array.from({ length: 12 }, (_, index) =>
+      candidate(
+        `grid-${String(index).padStart(2, "0")}`,
+        0.001 + (index % 4) * 0.002,
+        (Math.floor(index / 4) - 1) * 0.002,
+        50 + (index % 5) * 10,
+      ),
+    );
+    const input = plannerInput({
+      candidates,
+      travelBudgetMinutes: 20,
+      maxStops: 6,
+      priorityVsTravel: 55,
+    });
+
+    const first = planRoute(input);
+    const reversed = planRoute({ ...input, candidates: [...candidates].reverse() });
+
+    expect(first.stops.map(({ candidate: item }) => item.id)).toEqual(
+      reversed.stops.map(({ candidate: item }) => item.id),
+    );
+    expect(first.stops.length).toBeLessThanOrEqual(input.maxStops);
+    expect(new Set(first.stops.map(({ candidate: item }) => item.id)).size).toBe(
+      first.stops.length,
+    );
+    for (const stop of first.stops) {
+      expect(stop.returnTravelMinutes).toBeGreaterThanOrEqual(0);
+      expect(stop.loopTravelMinutes).toBeLessThanOrEqual(input.travelBudgetMinutes);
+      expect(stop.cumulativeTravelMinutes + stop.returnTravelMinutes)
+        .toBeLessThanOrEqual(input.travelBudgetMinutes + 1e-9);
+    }
+  });
+
+  it("does not call a provider while evaluating a pure planner input", () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    try {
+      planRoute(plannerInput({ candidates: [candidate("pure", 0.001, 0, 80)] }));
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
 });
 
 describe("route planner closed-loop fallback helper", () => {

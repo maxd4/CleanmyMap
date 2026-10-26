@@ -214,4 +214,77 @@ describe("OSRM routing capability", () => {
     expect(transport).not.toHaveBeenCalled();
   });
 
+  it("does not bridge a malformed coordinate into a plausible fallback route", async () => {
+    const transport = vi.fn(async () => new Response("unexpected", { status: 200 }));
+    const malformed = await routePolylineThroughStreetNetwork([
+      stops[0]!,
+      [Number.NaN, stops[1]![1]],
+      stops[0]!,
+    ], { transport });
+
+    expect(transport).not.toHaveBeenCalled();
+    expect(malformed).toMatchObject({
+      coordinates: [],
+      origin: null,
+      isLoop: false,
+      mode: "fallback",
+      estimated: true,
+    });
+    expect(malformed.distanceKm).toBe(0);
+    expect(malformed.durationMinutes).toBe(0);
+  });
+
+  it("keeps zero-length legs and closure explicit for duplicate GPS waypoints", async () => {
+    const duplicateLoop: [number, number][] = [stops[0]!, stops[0]!, stops[0]!];
+    const result = await routePolylineThroughStreetNetwork(duplicateLoop, {
+      transport: vi.fn(async () => new Response(JSON.stringify({
+        code: "Ok",
+        routes: [{
+          distance: 0,
+          duration: 0,
+          geometry: { coordinates: duplicateLoop.map(([latitude, longitude]) => [longitude, latitude]) },
+          legs: [
+            { distance: 0, duration: 0 },
+            { distance: 0, duration: 0 },
+          ],
+        }],
+      }), { status: 200 })),
+    });
+
+    expect(result).toMatchObject({
+      isLoop: true,
+      distanceKm: 0,
+      durationMinutes: 0,
+      mode: "network",
+      estimated: false,
+    });
+    expect(result.returnLeg).toMatchObject({ distanceKm: 0, estimatedMinutes: 0 });
+  });
+
+  it("falls back when a closed provider response omits the return leg", async () => {
+    const result = await routePolylineThroughStreetNetwork(
+      [stops[0]!, stops[1]!, stops[0]!],
+      {
+        transport: vi.fn(async () => new Response(JSON.stringify({
+          code: "Ok",
+          routes: [{
+            distance: 100,
+            duration: 60,
+            geometry: { coordinates: [
+              [stops[0]![1], stops[0]![0]],
+              [stops[1]![1], stops[1]![0]],
+              [stops[0]![1], stops[0]![0]],
+            ] },
+            legs: [{ distance: 100, duration: 60 }],
+          }],
+        }), { status: 200 })),
+      },
+    );
+
+    expect(result.mode).toBe("fallback");
+    expect(result.isLoop).toBe(true);
+    expect(result.coordinates[0]).toEqual(result.coordinates.at(-1));
+    expect(result.returnLeg).not.toBeNull();
+  });
+
 });

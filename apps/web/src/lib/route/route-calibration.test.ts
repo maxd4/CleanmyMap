@@ -558,8 +558,13 @@ function routeGeometry(distanceKm: number) {
   return {
     isLoop: true,
     origin: [48.85, 2.35] as [number, number],
-    returnLeg: null,
-    coordinates: [[48.85, 2.35]] as [number, number][],
+    returnLeg: {
+      fromStopIndex: 0,
+      toStopIndex: 0,
+      distanceKm: 0,
+      estimatedMinutes: 0,
+    },
+    coordinates: [[48.85, 2.35], [48.85, 2.35]] as [number, number][],
     distanceKm,
     durationMinutes: 20,
     legs: [],

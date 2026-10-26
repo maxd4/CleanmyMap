@@ -186,7 +186,11 @@ export function buildOsrmRouteUrl(
 export function createFallbackRouteGeometry(
   coordinates: [number, number][],
 ): RouteGeometry {
-  const normalizedCoordinates = coordinates.filter(isCoordinate);
+  // A malformed point must not be dropped and silently bridged. That would
+  // turn a corrupt/discontinuous input into an apparently usable route.
+  const normalizedCoordinates = coordinates.every(isCoordinate)
+    ? coordinates
+    : [];
   const legs: RouteGeometryLeg[] = normalizedCoordinates.flatMap((point, index) => {
     const previous = normalizedCoordinates[index - 1];
     if (!previous) return [];
