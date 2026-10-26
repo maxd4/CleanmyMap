@@ -286,6 +286,14 @@ function markdown(reference) {
   if (critical.length === 0) lines.push("- Aucune branche critique mesurable dans les rapports retenus.");
   lines.push(
     "",
+    "## Instrumentation et artefacts",
+    "",
+    "- Web : Vitest `4.1.12` avec `@vitest/coverage-v8` `4.1.12` (V8), résumé JSON et LCOV.",
+    "- Mobile : Vitest `4.1.12` avec `@vitest/coverage-v8` `4.1.12` (V8), résumé JSON et LCOV.",
+    "- Node/scripts : `c8` `12.0.0`, résumé JSON et LCOV.",
+    "- Python : `coverage.py` `7.16.2` et `pytest` `9.1.1`, rapport Cobertura ; statements/functions ne sont pas exposés par ce producteur.",
+    "- Les empreintes des rapports source et des preuves sont conservées dans l'artefact JSON ; elles ne valent pas à elles seules une preuve d'intégration externe.",
+    "",
     "## Producteurs et preuves",
     "",
     "| Producteur | Commande | Résultat | Niveau de preuve | Limite |",
