@@ -4,6 +4,15 @@
 
 ## Duplication et cycles
 
+La cible documentaire de suivi est `DUPLICATION_TARGET = 3 %` pour chacun des
+scopes mesurés (`runtime`, `tests`, `fixtures/data`), en lignes comme en
+tokens. Cette cible est informative : elle ne remplace ni ne relève les
+ratchets bloquants existants. Un scope à `<= 3 %` est `TARGET_MET`, mais peut
+encore contenir des clones actionnables ; un scope au-dessus de 3 % expose un
+écart de suivi, pas un nouveau gate automatique. La photographie de référence
+la plus récente est
+[`duplication-reference-2026-10-26.md`](../operations/audits/duplication-reference-2026-10-26.md).
+
 La duplication est mesurée par `jscpd` 5.3.0 avec des baselines natives
 séparées pour le runtime, les tests et les data/fixtures, ainsi qu'une baseline
 métrique dans `scripts/checks/duplication-metrics-baseline.json`. Cette dernière
