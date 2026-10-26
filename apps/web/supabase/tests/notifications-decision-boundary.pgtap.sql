@@ -1,6 +1,6 @@
 begin;
 
-select plan(73);
+select plan(74);
 
 -- This proof deliberately separates database boundary checks from producer
 -- checks. Direct service_role inserts are used only for the receipt/RLS
@@ -22,6 +22,8 @@ select ok(to_regclass('public.app_notifications_gamification_reconciliation_id_i
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"system"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+select set_config('request.jwt.claim.sub', 'system', true);
 
 -- A direct row is a fixture for the RLS and receipt-state assertions only.
 -- It is not evidence that a producer RPC or a concurrent transaction works.
@@ -207,6 +209,8 @@ select is((select count(*)::integer from public.app_notifications where user_id 
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"m7b-notification-owner-a"}', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claim.sub', 'm7b-notification-owner-a', true);
 select is((select count(*)::integer from public.app_notifications), 1, 'recipient A reads only its private fixture');
 select is((select count(*)::integer from public.app_notifications where user_id = 'm7b-notification-owner-b'), 0, 'recipient A cannot read recipient B notifications');
 select is(
@@ -242,12 +246,16 @@ select throws_ok($$select * from public.apply_gamification_reconciliation('m7b-n
 reset role;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"system"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+select set_config('request.jwt.claim.sub', 'system', true);
 select is((select count(*)::integer from public.app_notifications where id = '70000000-0000-4000-8000-000000000101'::uuid and read_at is not null and seen_at is not null and acknowledged_at is not null), 1, 'privileged read proves recipient A receipt state persisted');
 select is((select count(*)::integer from public.app_notifications where id = '70000000-0000-4000-8000-000000000101'::uuid and title = 'M7B receipt A' and content = 'Receipt fixture A' and payload = '{"kind":"m7b_receipt_fixture"}'::jsonb), 1, 'privileged read proves recipient A content stayed server-owned');
 select is((select count(*)::integer from public.app_notifications where id = '70000000-0000-4000-8000-000000000102'::uuid and read_at is null and seen_at is null and acknowledged_at is null), 1, 'privileged read proves recipient B was not mutated by recipient A');
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"m7b-notification-owner-b"}', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claim.sub', 'm7b-notification-owner-b', true);
 select is((select count(*)::integer from public.app_notifications), 1, 'recipient B has an independent private inbox');
 select is((select count(*)::integer from public.app_notifications where user_id = 'm7b-notification-owner-a'), 0, 'recipient B cannot read recipient A notifications');
 select is(
@@ -264,15 +272,46 @@ select is(
 reset role;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"system"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+select set_config('request.jwt.claim.sub', 'system', true);
 select is((select count(*)::integer from public.app_notifications where id = '70000000-0000-4000-8000-000000000102'::uuid and acknowledged_at is not null and read_at is null and seen_at is null), 1, 'privileged read proves recipient B acknowledgement persisted independently');
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":""}', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claim.sub', '', true);
 select is((select count(*)::integer from public.app_notifications), 0, 'authenticated session without a Clerk subject sees no notifications');
-select throws_ok($$select count(*) from public.app_notifications$$, '42501', null, 'session without a subject cannot bypass the private boundary');
+select is(
+  (with changed as (
+    update public.app_notifications
+       set read_at = timezone('utc', now())
+     where id = '70000000-0000-4000-8000-000000000102'::uuid
+     returning id
+  ) select count(*)::integer from changed),
+  0,
+  'authenticated session without a Clerk subject cannot mutate a private receipt'
+);
+
+reset role;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"system"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+select set_config('request.jwt.claim.sub', 'system', true);
+select is(
+  (select count(*)::integer
+     from public.app_notifications
+    where id = '70000000-0000-4000-8000-000000000102'::uuid
+      and acknowledged_at is not null
+      and read_at is null),
+  1,
+  'service_role verifies the subjectless mutation left the other receipt unchanged'
+);
 
 reset role;
 set local role anon;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+select set_config('request.jwt.claim.role', 'anon', true);
+select set_config('request.jwt.claim.sub', '', true);
 select throws_ok($$select count(*) from public.app_notifications$$, '42501', null, 'anon cannot select private notifications');
 
 select * from finish();
