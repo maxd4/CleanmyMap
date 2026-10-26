@@ -39,7 +39,7 @@ function fetchStaticDataset(url: string): Promise<PlasticOriginsDataset> {
 }
 
 export function usePlasticOriginsData(enabled: boolean): PlasticOriginsDataState {
-  const { data, error, isLoading, mutate } = useSWRImmutable<PlasticOriginsDataset>(
+  const { data, error, isLoading, mutate } = useSWRImmutable<PlasticOriginsDataset, Error>(
     enabled ? PLASTIC_ORIGINS_DATA_URL : null,
     fetchStaticDataset,
     {

@@ -4,7 +4,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { requireMobileAuthenticatedAccess } from "@/lib/auth/mobile-bearer";
-import { parseActionSupabaseResult } from "@/lib/actions/query";
+import { parseActionInvitationRows, parseActionSupabaseResult } from "@/lib/actions/query";
 
 export const runtime = "nodejs";
 // Justification Vercel: invitation state is authenticated, private and changes after each decision.
@@ -19,6 +19,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isUnknownArray(value: unknown): value is readonly unknown[] {
+  return Array.isArray(value);
+}
+
 export async function GET(request: Request) {
   const access = await requireMobileAuthenticatedAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
@@ -29,11 +33,12 @@ export async function GET(request: Request) {
     );
     const result = parseActionSupabaseResult(rawResult);
     if (result.error) throw result.error;
-    if (!Array.isArray(result.data)) {
+    const invitations = parseActionInvitationRows(result.data);
+    if (!invitations) {
       return NextResponse.json({ error: "Réponse d’invitations invalide." }, { status: 502 });
     }
     // Justification Vercel: private invitations must not be served from a shared cache.
-    return NextResponse.json({ invitations: result.data ?? [] }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ invitations }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return handleApiError(error, "GET /api/mobile/actions/invitations");
   }
@@ -52,7 +57,7 @@ export async function PATCH(request: Request) {
     });
     const result = parseActionSupabaseResult(rawResult);
     if (result.error) throw result.error;
-    const candidate = Array.isArray(result.data) ? result.data[0] : null;
+    const candidate = isUnknownArray(result.data) ? result.data[0] : null;
     const row = isRecord(candidate) ? candidate : null;
     const status = row && typeof row.status === "string" ? row.status : null;
     if (!row || !status || !["accepted", "rejected", "unavailable"].includes(status)) {

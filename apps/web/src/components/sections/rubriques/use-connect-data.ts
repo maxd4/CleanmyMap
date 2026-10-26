@@ -241,7 +241,7 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
     data: eventReferenceData,
     error: eventReferenceError,
     isLoading: isAnnouncementEventLoading,
-  } = useSWR<CommunityEventReferenceResponse>(
+  } = useSWR<CommunityEventReferenceResponse, Error>(
     eventReferenceKey,
     fetchCommunityEventReference,
   );

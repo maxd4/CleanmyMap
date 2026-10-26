@@ -166,7 +166,7 @@ export function planOperationalStreetCorridors(input: {
   for (const pass of orderedPasses) {
     const key = operationalKey(pass);
     const street = streetByKey.get(key)!;
-    const counts = usedByStreet.get(key) ?? new Map();
+    const counts = usedByStreet.get(key) ?? new Map<StreetCleaningOperationalCorridorId, number>();
     usedByStreet.set(key, counts);
     const routeStreetKey = `${pass.routeId}:${key}`;
     const previous = lastCorridorByRouteStreet.get(routeStreetKey);

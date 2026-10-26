@@ -4,6 +4,7 @@ import type {
   LeaderboardMetric,
   PublicStructureLeaderboardItem,
 } from "@/lib/gamification/progression-types";
+import { isOrganizerType } from "@/lib/actions/organizer-type";
 
 export type { LeaderboardMetric } from "@/lib/gamification/progression-types";
 
@@ -15,6 +16,37 @@ export type PublicLeaderboardItem = PublicIndividualLeaderboardItem | PublicColl
 export type GamificationLeaderboardResponse = LeaderboardResponseDto & {
   status: "ok";
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isLeaderboardItem(value: unknown): value is PublicLeaderboardItem {
+  if (!isRecord(value)
+    || typeof value.rank !== "number"
+    || typeof value.publicLabel !== "string"
+    || typeof value.level !== "number"
+    || typeof value.xpValidated !== "number"
+    || typeof value.badgeTotal !== "number"
+    || typeof value.gradeCount !== "number"
+    || typeof value.oneShotCount !== "number") {
+    return false;
+  }
+  return !Object.hasOwn(value, "structureType") || isOrganizerType(value.structureType);
+}
+
+function isGamificationLeaderboardResponse(value: unknown): value is GamificationLeaderboardResponse {
+  return isRecord(value)
+    && value.status === "ok"
+    && (value.scope === "individual" || value.scope === "collective")
+    && typeof value.generatedAt === "string"
+    && Array.isArray(value.items)
+    && value.items.every(isLeaderboardItem)
+    && isRecord(value.recognition)
+    && Array.isArray(value.recognition.topContributors)
+    && value.recognition.topContributors.length === 0
+    && value.recognition.currentContributor === null;
+}
 
 export function buildLeaderboardUrl(
   scope: LeaderboardScope,
@@ -36,15 +68,18 @@ export async function fetchGamificationLeaderboard(
   url: string,
 ): Promise<GamificationLeaderboardResponse> {
   const response = await fetch(url);
-  const body = await response.json().catch(() => null);
+  const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const message =
       body && typeof body === "object" && "error" in body
-        ? String((body as { error: unknown }).error)
+        ? String(isRecord(body) && typeof body.error === "string" ? body.error : "Classement indisponible.")
         : "Classement indisponible.";
     throw new Error(message);
   }
-  return body as GamificationLeaderboardResponse;
+  if (!isGamificationLeaderboardResponse(body)) {
+    throw new Error("Classement invalide.");
+  }
+  return body;
 }
 
 export function filterLeaderboardItems(

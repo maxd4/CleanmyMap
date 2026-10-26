@@ -23,16 +23,40 @@ export type ImpactPageProgression = {
 
 type GamificationMeResponse = { status: "ok"; progression: ImpactPageProgression | null };
 
-async function fetchJson<T>(url: string): Promise<T> {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isGamificationMeResponse(value: unknown): value is GamificationMeResponse {
+  if (!isRecord(value) || value.status !== "ok") return false;
+  if (value.progression === null) return true;
+  if (!isRecord(value.progression) || typeof value.progression.currentLevel !== "number") {
+    return false;
+  }
+  const history = value.progression.history;
+  return history === undefined
+    || (isRecord(history)
+      && Array.isArray(history.timeline)
+      && history.timeline.every((item) => isRecord(item)
+        && typeof item.id === "string"
+        && typeof item.actionDate === "string"
+        && typeof item.locationLabel === "string"
+        && Array.isArray(item.validatedRoleCodes)
+        && item.validatedRoleCodes.every((code) => typeof code === "string")));
+}
+
+async function fetchJson<T>(url: string, guard: (value: unknown) => value is T): Promise<T> {
   const response = await fetch(url);
   if (!response.ok) throw new Error("API Error");
-  return response.json();
+  const body: unknown = await response.json();
+  if (!guard(body)) throw new Error("Réponse API invalide.");
+  return body;
 }
 
 export default function ImpactProfilePage() {
   const [currentAccountIdentity, setCurrentAccountIdentity] = useState<CurrentAccountIdentity | null>(null);
   const classes = getBlockClasses("impact");
-  const { data: meData, isLoading } = useSWR<GamificationMeResponse>("gamification-me", () => fetchJson<GamificationMeResponse>("/api/gamification/me"));
+  const { data: meData, isLoading } = useSWR<GamificationMeResponse, Error>("gamification-me", () => fetchJson("/api/gamification/me", isGamificationMeResponse));
 
   useEffect(() => {
     let cancelled = false;

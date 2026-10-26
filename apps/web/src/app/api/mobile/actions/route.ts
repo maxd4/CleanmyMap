@@ -14,6 +14,7 @@ import { isActionStartInFuture } from "@/lib/actions/temporal";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
 import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { parseActionInvitationRows, parseActionSupabaseResult } from "@/lib/actions/query";
 
 export const runtime = "nodejs";
 // Justification Vercel: mobile action data is authenticated, private and mutable during participation workflows.
@@ -90,19 +91,26 @@ export async function GET(request: Request) {
         userId: access.userId,
         limit: parsed.data.historyLimit,
       }),
-      supabase.rpc("list_pending_action_invitations_for_recipient", {
-        p_recipient_id: access.userId,
-      }),
+      (async () => {
+        const rawResult: unknown = await supabase.rpc("list_pending_action_invitations_for_recipient", {
+          p_recipient_id: access.userId,
+        });
+        return parseActionSupabaseResult(rawResult);
+      })(),
     ]);
 
     if (invitations.error) throw invitations.error;
+    const invitationRows = parseActionInvitationRows(invitations.data);
+    if (!invitationRows) {
+      return NextResponse.json({ error: "Réponse d’invitations invalide." }, { status: 502 });
+    }
     // Justification Vercel: private mobile action data must not be served from a shared cache.
     return NextResponse.json({
       status: "ok",
       future: future.filter((item) => matchesSearch(item, parsed.data.q)),
       past: past.filter((item) => matchesSearch(item, parsed.data.q)),
       history,
-      invitations: invitations.data ?? [],
+      invitations: invitationRows,
     }, {
       // Justification Vercel: this private projection must not be served from a shared cache.
       headers: { "Cache-Control": "private, no-store" },

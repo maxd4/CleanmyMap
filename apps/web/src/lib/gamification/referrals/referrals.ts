@@ -360,7 +360,8 @@ export async function claimReferralInviteForUser(
   if (inviterError) {
     throw inviterError;
   }
-  if (!inviter || inviter.id === params.userId) {
+  const parsedInviter = isInviterProfile(inviter) ? inviter : null;
+  if (!parsedInviter || parsedInviter.id === params.userId) {
     return {
       claimed: false,
       inviterUserId: null,
@@ -371,15 +372,15 @@ export async function claimReferralInviteForUser(
   if (profile?.referred_by_profile_id) {
     return {
       claimed: false,
-      inviterUserId: inviter.id,
-      inviterDisplayName: inviter.display_name || inviter.id,
+      inviterUserId: parsedInviter.id,
+      inviterDisplayName: parsedInviter.display_name || parsedInviter.id,
     };
   }
 
   const { error: updateError } = await supabase
     .from("profiles")
     .update({
-      referred_by_profile_id: inviter.id,
+      referred_by_profile_id: parsedInviter.id,
       referred_at: new Date().toISOString(),
     })
     .eq("id", params.userId)
@@ -393,7 +394,7 @@ export async function claimReferralInviteForUser(
 
   return {
     claimed: true,
-    inviterUserId: inviter.id,
-    inviterDisplayName: inviter.display_name || inviter.id,
+    inviterUserId: parsedInviter.id,
+    inviterDisplayName: parsedInviter.display_name || parsedInviter.id,
   };
 }

@@ -58,6 +58,14 @@ describe("gamification leaderboard contract", () => {
     expect((responseBody.items[0] as PublicIndividualLeaderboardItem).publicLabel).toBe("Alice");
   });
 
+  it("rejects a malformed server projection instead of exposing partial rows", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ status: "ok", scope: "individual", generatedAt: "now", items: [{}], recognition: { topContributors: [], currentContributor: null } }), { status: 200 }),
+    ));
+
+    await expect(fetchGamificationLeaderboard("/api/gamification/leaderboard")).rejects.toThrow("Classement invalide.");
+  });
+
   it("keeps only the supported scope and metric dimensions in the URL", () => {
     expect(buildLeaderboardUrl("individual", "badges")).toContain("scope=individual&metric=badges");
     expect(buildLeaderboardUrl("collective")).toContain("scope=collective&metric=level");

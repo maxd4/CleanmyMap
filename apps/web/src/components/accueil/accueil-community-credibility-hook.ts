@@ -36,7 +36,7 @@ export function useHomeCommunityCredibility({
     [visibilityRef],
   );
   const { data: refreshedActivity, error: refreshError } =
-    useSWR<HomeCommunityActivityResponse>(
+    useSWR<HomeCommunityActivityResponse, Error>(
       isNearViewport ? HOMEPAGE_ACTIVITY_ENDPOINT : null,
       fetchHomepageActivity,
       {

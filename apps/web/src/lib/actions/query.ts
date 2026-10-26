@@ -32,6 +32,31 @@ export type ActionSupabaseResult = {
   count: number | null;
 };
 
+export type ActionInvitationRow = {
+  registration_id: string;
+  action_id: string;
+  action_title?: string | null;
+  action_date?: string | null;
+  location_label?: string | null;
+};
+
+export function isActionInvitationRow(value: unknown): value is ActionInvitationRow {
+  if (!isActionRecord(value)
+    || typeof value.registration_id !== "string"
+    || typeof value.action_id !== "string") {
+    return false;
+  }
+  return ["action_title", "action_date", "location_label"].every((key) =>
+    value[key] === undefined || value[key] === null || typeof value[key] === "string",
+  );
+}
+
+export function parseActionInvitationRows(value: unknown): ActionInvitationRow[] | null {
+  if (!Array.isArray(value)) return null;
+  const rows: unknown[] = value;
+  return rows.every(isActionInvitationRow) ? rows.filter(isActionInvitationRow) : null;
+}
+
 export function isActionRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }

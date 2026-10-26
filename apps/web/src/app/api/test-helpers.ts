@@ -4,9 +4,26 @@ type MockFunction = {
   mockReturnThis?: () => unknown;
 };
 
+type RateLimitMockResult = {
+  allowed: boolean;
+  retryAfter?: number | null;
+  [key: string]: unknown;
+};
+
+type VerifyRateLimitMock = (
+  request: Request,
+  options: { limit?: number; window?: number },
+) => Promise<RateLimitMockResult | null>;
+
+type CreateRateLimitResponseMock = (
+  allowed: boolean,
+  retryAfter: number | null | undefined,
+  result: RateLimitMockResult,
+) => Response | null;
+
 export const rateLimitMocks = {
-  verifyRateLimit: vi.fn(),
-  createServerRateLimitResponse: vi.fn(),
+  verifyRateLimit: vi.fn<VerifyRateLimitMock>(),
+  createServerRateLimitResponse: vi.fn<CreateRateLimitResponseMock>(),
 };
 
 export const authenticatedRouteMocks = {
@@ -70,7 +87,7 @@ export function createRateLimitModule() {
   const enforceServerRateLimit = async (
     request: Request,
     options: { limit?: number; window?: number } = {},
-  ) => {
+  ): Promise<Response | null> => {
     const result = (await rateLimitMocks.verifyRateLimit(request, options)) ?? {
       allowed: true,
       retryAfter: undefined,

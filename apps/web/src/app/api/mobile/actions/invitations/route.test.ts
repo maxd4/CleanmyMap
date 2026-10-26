@@ -28,4 +28,13 @@ describe("/api/mobile/actions/invitations", () => {
       p_decision: "accept",
     });
   });
+
+  it("fails closed when the invitation RPC returns a malformed row", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: [{ registration_id: 42, action_id: "action-1" }], error: null });
+
+    const response = await GET(new Request("https://cleanmymap.test/api/mobile/actions/invitations"));
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({ error: "Réponse d’invitations invalide." });
+  });
 });

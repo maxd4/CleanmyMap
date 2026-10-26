@@ -19,6 +19,7 @@ import {
   WhyGamification,
 } from "./gamification-panels";
 import type { MeResponse } from "./gamification-types";
+import type { UserProgressionResponse } from "@/lib/gamification/progression-types";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { GamificationCatalogPanel } from "./gamification-catalog-panel";
 import { GamificationRulesMigrationNotice } from "./gamification-rules-migration-notice";
@@ -28,9 +29,51 @@ import { GamificationReconciliationNotice } from "./gamification-reconciliation-
 import { GamificationReconciliationHistory } from "./gamification-reconciliation-history";
 import { GamificationSpogomiCollection } from "./gamification-spogomi-collection";
 
-async function fetchJson<T>(url: string): Promise<T> {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isUserProgressionResponse(value: unknown): value is UserProgressionResponse {
+  if (!isRecord(value)
+    || typeof value.userId !== "string"
+    || !["xpTotal", "xpValidated", "xpPending", "currentLevel", "potentialLevel"].every((key) => typeof value[key] === "number")
+    || !isRecord(value.nextLevel)
+    || !Array.isArray(value.badges)
+    || !value.badges.every((badge) => typeof badge === "string")
+    || !Array.isArray(value.badgeCatalog)
+    || !value.badgeCatalog.every(isRecord)
+    || !isRecord(value.summary)
+    || !isRecord(value.engagementStatus)
+    || !isRecord(value.impact)
+    || !isRecord(value.impactMethodology)
+    || !isRecord(value.dynamicRanking)
+    || !isRecord(value.history)
+    || !Array.isArray(value.history.timeline)
+    || !value.history.timeline.every(isRecord)
+    || !Array.isArray(value.history.mapPoints)
+    || !value.history.mapPoints.every(isRecord)
+    || !isRecord(value.monthlyMilestone)
+    || !isRecord(value.recognition)
+    || !isRecord(value.annualRecognition)
+    || !isRecord(value.yearToDateImpact)) {
+    return false;
+  }
+  return true;
+}
+
+function isMeResponse(value: unknown): value is MeResponse {
+  return isRecord(value)
+    && value.status === "ok"
+    && isUserProgressionResponse(value.progression)
+    && (value.reconciliation === null || isRecord(value.reconciliation))
+    && Array.isArray(value.reconciliationHistory)
+    && value.reconciliationHistory.every(isRecord)
+    && (value.reconciliationTarget === null || isRecord(value.reconciliationTarget));
+}
+
+async function fetchJson<T>(url: string, guard: (value: unknown) => value is T): Promise<T> {
   const response = await fetch(url, { method: "GET", cache: "no-store" });
-  const body = await response.json().catch(() => null);
+  const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const message =
       body && typeof body === "object" && "error" in body
@@ -38,7 +81,8 @@ async function fetchJson<T>(url: string): Promise<T> {
         : "Requête API impossible.";
     throw new Error(message);
   }
-  return body as T;
+  if (!guard(body)) throw new Error("Réponse API invalide.");
+  return body;
 }
 export function GamificationSection() {
   const { locale, theme, displayMode, setDisplayMode, toggleTheme } = useSitePreferences();
@@ -53,9 +97,9 @@ export function GamificationSection() {
     mutate: mutateMe,
   } = useSWR<MeResponse, unknown>(
     ["gamification-me", receiptId],
-    () => fetchJson<MeResponse>(receiptId
+    () => fetchJson(receiptId
       ? `/api/gamification/me?receipt=${encodeURIComponent(receiptId)}`
-      : "/api/gamification/me"),
+      : "/api/gamification/me", isMeResponse),
     swrRecentViewOptions,
   );
 

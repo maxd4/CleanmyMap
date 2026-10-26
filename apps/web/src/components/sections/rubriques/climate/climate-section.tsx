@@ -24,7 +24,7 @@ export function ClimateSection({
   const fr = locale === "fr";
   const [periodDays, setPeriodDays] = useState<30 | 90 | 365>(30);
   
-  const { data, isLoading, error, mutate } = useSWR<PublicSectionActionListResponse>(
+  const { data, isLoading, error, mutate } = useSWR<PublicSectionActionListResponse, Error>(
     ["section-climate-v2"],
     () => fetchActions({ status: "approved", limit: 500 }),
     { fallbackData: initialData?.actions ?? undefined },

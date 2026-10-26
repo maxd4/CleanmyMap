@@ -145,7 +145,7 @@ export function useRouteData() {
     writeRouteDraftOptions(readRouteDraftStorage(), options);
   }, [options, isDraftHydrated]);
 
-  const { data, isLoading, error } = useSWR<RouteResponse>(
+  const { data, isLoading, error } = useSWR<RouteResponse, Error>(
     recommendationRequest
       ? ["section-route", recommendationRequest]
       : null,

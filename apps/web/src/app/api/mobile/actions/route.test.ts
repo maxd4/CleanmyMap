@@ -43,7 +43,7 @@ describe("/api/mobile/actions", () => {
     mocks.loadJoinable.mockResolvedValue([future]);
     mocks.loadHistory.mockResolvedValue([]);
     mocks.fetchUnified.mockResolvedValue({ items: [] });
-    mocks.rpc.mockResolvedValue({ data: [{ registration_id: "registration-1" }], error: null });
+    mocks.rpc.mockResolvedValue({ data: [{ registration_id: "registration-1", action_id: "action-1" }], error: null });
     mocks.join.mockResolvedValue({ participationStatus: "pending", joinedAt: "now", participantsCount: 1 });
     mocks.rebuildBadges.mockResolvedValue(undefined);
     mocks.refreshProgression.mockResolvedValue(undefined);
@@ -64,6 +64,15 @@ describe("/api/mobile/actions", () => {
       invitations: [{ registration_id: "registration-1" }],
     });
     expect(mocks.loadJoinable).toHaveBeenCalledWith(expect.anything(), { limit: 12, userId: "user-mobile" });
+  });
+
+  it("fails closed when the private invitation projection is malformed", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: [{ registration_id: "registration-1", action_id: null }], error: null });
+
+    const response = await GET(request("/api/mobile/actions"));
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({ error: "Réponse d’invitations invalide." });
   });
 
   it("projects completed actions through the past view and search filter", async () => {

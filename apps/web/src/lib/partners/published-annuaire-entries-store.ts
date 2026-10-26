@@ -261,10 +261,10 @@ function normalizeAssociationProfile(value: unknown): AssociationProfile | undef
     ? value.usefulResources.filter(isAssociationResource).filter((resource) => {
         return !/^contact direct$/i.test(resource.label.trim()) && !/^(mailto:|tel:)/i.test((resource.url ?? "").trim());
       })
-    : value.usefulResources;
+    : [];
   return {
     ...value,
-    ...(Array.isArray(resources) ? { usefulResources: resources } : {}),
+    usefulResources: resources,
   } as AssociationProfile;
 }
 
@@ -387,7 +387,7 @@ export async function updatePublishedPartnerAnnuaireEntryPublicationStatus(param
     );
     if (!isRecord(rawResult) || !("data" in rawResult) || !("error" in rawResult)) throw new Error("Supabase returned an invalid partner review response.");
     if (rawResult.error) throw new Error(isRecord(rawResult.error) && typeof rawResult.error.message === "string" ? rawResult.error.message : "Partner review RPC failed.");
-    const row = Array.isArray(rawResult.data) ? rawResult.data[0] : rawResult.data;
+    const row = isUnknownArray(rawResult.data) ? rawResult.data[0] : rawResult.data;
     return isRecord(row) ? fromSupabaseRow(row) : null;
   }
 

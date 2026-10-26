@@ -26,6 +26,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isUnknownArray(value: unknown): value is readonly unknown[] {
+  return Array.isArray(value);
+}
+
 function parseTerritoryPart(value: unknown): ResolvedTerritoryPart | null {
   if (!isRecord(value)) {
     return null;
@@ -41,7 +45,7 @@ function parseCommuneTerritoryPayload(value: unknown): {
   departmentCode: string | null;
   regionCode: string | null;
 } | null {
-  if (!Array.isArray(value) || value.length === 0) {
+  if (!isUnknownArray(value) || value.length === 0) {
     return null;
   }
 
@@ -50,12 +54,8 @@ function parseCommuneTerritoryPayload(value: unknown): {
     return null;
   }
 
-  const record = first as {
-    code?: unknown;
-    nom?: unknown;
-    codeDepartement?: unknown;
-    codeRegion?: unknown;
-  };
+  const record = isRecord(first) ? first : null;
+  if (!record) return null;
   const communeCode = readStringField(record.code);
   const communeName = readStringField(record.nom);
   if (!communeCode || !communeName) {

@@ -115,7 +115,7 @@ export async function fetchPersonalFeedbackPage(
   const response = await fetch(`/api/community/bug-reports${search}`, {
     cache: "no-store",
   });
-  const payload = await response.json().catch(() => null);
+  const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     throw new Error(
       isRecord(payload) && typeof payload.error === "string"
