@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RouteRecommendationResponse } from "@/lib/route/route-response-contract";
+import type { RoutePredictionSummary } from "@/lib/route/route-predicted-targets";
+import type {
+  applyRoutePredictionPoolAudit,
+  applyRoutePredictionPlannerBudgetAudit,
+  applyRoutePredictionFinalRoutingBudgetAudit,
+} from "@/lib/route/route-predicted-targets";
+import type { applyOriginRouteGeometryLegs } from "@/lib/route/route-contract";
 import {
   availableSourceHealth,
   candidate,
@@ -26,7 +33,7 @@ const buildTrashSpotterActionableCandidatesMock = vi.hoisted(() => vi.fn());
 const getCurrentUserLocationPreferenceMock = vi.hoisted(() => vi.fn());
 const trackRouteRecommendationUseMock = vi.hoisted(() => vi.fn());
 const buildTrashSpotterRouteCandidatesMock = vi.hoisted(() => vi.fn());
-const applyOriginRouteGeometryLegsMock = vi.hoisted(() => vi.fn());
+const applyOriginRouteGeometryLegsMock = vi.hoisted(() => vi.fn<typeof applyOriginRouteGeometryLegs>());
 const createFallbackRouteGeometryMock = vi.hoisted(() => vi.fn());
 const routePolylineThroughFossgisFootMock = vi.hoisted(() => vi.fn());
 const buildHotspotsMock = vi.hoisted(() => vi.fn());
@@ -41,11 +48,13 @@ const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
 const loadParisPressureSnapshotMock = vi.hoisted(() => vi.fn());
 const loadMunicipalCleaningServiceabilitySnapshotMock = vi.hoisted(() => vi.fn());
 const applyParisPressureToCandidatesMock = vi.hoisted(() => vi.fn());
-const buildPredictedRouteCandidatesMock = vi.hoisted(() => vi.fn());
+const buildPredictedRouteCandidatesMock = vi.hoisted(() => vi.fn<(
+  input: { effectiveRiskFocus: RoutePredictionSummary["riskFocus"] },
+) => { candidates: unknown[]; summary: RoutePredictionSummary }>());
 const buildRoutePlannerCandidatePoolMock = vi.hoisted(() => vi.fn());
-const applyRoutePredictionPoolAuditMock = vi.hoisted(() => vi.fn());
-const applyRoutePredictionPlannerBudgetAuditMock = vi.hoisted(() => vi.fn());
-const applyRoutePredictionFinalRoutingBudgetAuditMock = vi.hoisted(() => vi.fn());
+const applyRoutePredictionPoolAuditMock = vi.hoisted(() => vi.fn<typeof applyRoutePredictionPoolAudit>());
+const applyRoutePredictionPlannerBudgetAuditMock = vi.hoisted(() => vi.fn<typeof applyRoutePredictionPlannerBudgetAudit>());
+const applyRoutePredictionFinalRoutingBudgetAuditMock = vi.hoisted(() => vi.fn<typeof applyRoutePredictionFinalRoutingBudgetAudit>());
 const resolveRouteDataStatusMock = vi.hoisted(() => vi.fn());
 const resolveRouteDataLayersMock = vi.hoisted(() => vi.fn());
 const routeEventSignalContextMock = vi.hoisted(() => vi.fn());
@@ -199,14 +208,28 @@ describe("POST /api/route/recommend", () => {
     defaultRouteRecommendationFloorDateMock.mockReturnValue("2026-01-01");
     loadParisPressureSnapshotMock.mockReturnValue(null);
     applyParisPressureToCandidatesMock.mockImplementation((values: RouteTestCandidate[]) => values);
-    const emptyPredictionSummary = {
+    const emptyPredictionSummary: RoutePredictionSummary = {
       status: "unavailable",
+      source: "urban-pressure-model",
+      modelVersion: null,
+      snapshot: null,
+      riskFocus: "all",
+      zonesConsidered: 0,
+      candidatesConsidered: 0,
+      admitted: 0,
+      passedToPlanner: 0,
+      excludedByPreselection: 0,
+      excludedByPlannerBudget: 0,
+      excludedByFinalRoutingBudget: 0,
       selected: 0,
       selectedCandidateIds: [],
       admittedCandidateIds: [],
       preselectionExcludedCandidateIds: [],
-      excludedByFinalRoutingBudget: 0,
+      preselectionExclusionReasons: {},
       finalRoutingBudgetExcludedCandidateIds: [],
+      excludedByCorridor: 0,
+      deduplicated: 0,
+      warnings: [],
     };
     buildPredictedRouteCandidatesMock.mockReturnValue({ candidates: [], summary: emptyPredictionSummary });
     buildRoutePlannerCandidatePoolMock.mockImplementation(({ observedCandidates, predictedCandidates, maxCandidates }: { observedCandidates: RouteTestCandidate[]; predictedCandidates: RouteTestCandidate[]; maxCandidates: number }) => {
@@ -222,10 +245,10 @@ describe("POST /api/route/recommend", () => {
     });
     applyRoutePredictionPoolAuditMock.mockImplementation((summary) => summary);
     applyRoutePredictionPlannerBudgetAuditMock.mockImplementation((summary) => summary);
-    applyRoutePredictionFinalRoutingBudgetAuditMock.mockImplementation((summary: typeof emptyPredictionSummary, excludedIds: string[]) => ({
+    applyRoutePredictionFinalRoutingBudgetAuditMock.mockImplementation((summary, excludedIds) => ({
       ...summary,
       excludedByFinalRoutingBudget: excludedIds.length,
-      finalRoutingBudgetExcludedCandidateIds: excludedIds,
+      finalRoutingBudgetExcludedCandidateIds: [...excludedIds],
     }));
     resolveRouteDataStatusMock.mockImplementation(({ candidateCount, isTruncated, sourceHealth }: RouteTestObservedLayer) => {
       if (sourceHealth.failedSources.length > 0 || sourceHealth.availableSources.length === 0) return "unavailable";
@@ -349,14 +372,14 @@ describe("POST /api/route/recommend", () => {
       pickupPreference: "cigarette_butts",
       riskFocus: "waste",
     }));
-    const wastePayload = await wasteResponse.json();
-    const cigarettePayload = await cigaretteResponse.json();
+    const wastePayload = await readRouteResponse(wasteResponse);
+    const cigarettePayload = await readRouteResponse(cigaretteResponse);
 
     expect(wastePayload.prediction.riskFocus).toBe("waste");
-    expect(wastePayload.trace.prediction.riskFocus).toBe("waste");
+    expect(wastePayload.trace.prediction?.riskFocus).toBe("waste");
     expect(wastePayload.trace.parameters.effectiveRiskFocus).toBe("waste");
     expect(cigarettePayload.prediction.riskFocus).toBe("cigaretteButts");
-    expect(cigarettePayload.trace.prediction.riskFocus).toBe("cigaretteButts");
+    expect(cigarettePayload.trace.prediction?.riskFocus).toBe("cigaretteButts");
     expect(cigarettePayload.trace.parameters.effectiveRiskFocus).toBe("cigaretteButts");
     expect(buildPredictedRouteCandidatesMock).toHaveBeenNthCalledWith(
       1,
@@ -493,18 +516,18 @@ describe("POST /api/route/recommend", () => {
     }));
     const payload = await readRouteResponse(response);
 
-    expect(payload).toEqual(expect.objectContaining({
+    expect(payload).toMatchObject({
       status: "degraded",
       origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
-      travelDistanceKm: expect.any(Number),
-      travelMinutes: expect.any(Number),
       travelBudgetMinutes: 10,
       withinBudget: true,
       serviceMinutesEstimate: null,
       totalMinutesEstimate: null,
       engineVersion: "route-planner-v2",
-      generatedAt: expect.any(String),
-    }));
+    });
+    expect(typeof payload.travelDistanceKm).toBe("number");
+    expect(typeof payload.travelMinutes).toBe("number");
+    expect(typeof payload.generatedAt).toBe("string");
     expect(payload.diagnostics).toEqual(expect.objectContaining({
       loaded: 0,
       eligible: 1,
@@ -522,7 +545,7 @@ describe("POST /api/route/recommend", () => {
     const { POST } = await import("./route");
 
     const emptyResponse = await POST(request());
-    expect((await emptyResponse.json())).toEqual(
+    expect((await readRouteResponse(emptyResponse))).toEqual(
       expect.objectContaining({ status: "empty", dataStatus: "empty" }),
     );
 
@@ -533,7 +556,7 @@ describe("POST /api/route/recommend", () => {
     });
     buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
     const partialResponse = await POST(request());
-    const partialPayload = await partialResponse.json();
+    const partialPayload = await readRouteResponse(partialResponse);
     expect(partialPayload.status).toBe("degraded");
     expect(partialPayload.dataStatus).toBe("partial");
     expect(partialPayload.isTruncated).toBe(true);
@@ -550,7 +573,7 @@ describe("POST /api/route/recommend", () => {
     });
     buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([]);
     const unavailableResponse = await POST(request());
-    const unavailablePayload = await unavailableResponse.json();
+    const unavailablePayload = await readRouteResponse(unavailableResponse);
     expect(unavailablePayload.status).toBe("degraded");
     expect(unavailablePayload.dataStatus).toBe("unavailable");
     expect(unavailablePayload.sourceHealth.failedSources).toEqual(["spots"]);

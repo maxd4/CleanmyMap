@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { multiInput, validPayload, validSnapshotPayload } from "@/__tests__/support/reports-generations-fixtures";
+import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
 import { reportGenerationMocks, setupPostReportGenerationDefaults } from "@/__tests__/support/reports-generations-route";
 
 const {
@@ -33,6 +34,14 @@ function postRequest(body: unknown = validPayload, headers?: HeadersInit) {
   });
 }
 
+function lastAudit() {
+  return appendAdminOperationAuditMock.mock.calls.at(-1)?.[0];
+}
+
+function expectLastAuditDetails(expected: Record<string, unknown>) {
+  expect(lastAudit()?.details).toMatchObject(expected);
+}
+
 describe("POST /api/reports/generations", () => {
   beforeEach(() => {
     setupPostReportGenerationDefaults();
@@ -59,9 +68,9 @@ describe("POST /api/reports/generations", () => {
     const response = await POST(postRequest(validPayload, { "Content-Type": "application/json" }));
 
     expect(response.status).toBe(200);
-    expect(persistReportGenerationMock).toHaveBeenCalledWith({
+    expect(persistReportGenerationMock.mock.calls[0]?.[0]).toMatchObject({
       createdByClerkId: "user-1",
-      input: expect.objectContaining({ ...multiInput, theme: "impact" }),
+      input: { ...multiInput, theme: "impact" },
     });
     expect(reserveReportExportSlotMock).toHaveBeenCalledWith("user-1");
     expect(reserveReportExportSlotMock.mock.invocationCallOrder[0]).toBeLessThan(
@@ -93,13 +102,11 @@ describe("POST /api/reports/generations", () => {
     expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0]?.[0])).not.toContain(
       "Paris",
     );
-    expect(buildMultiActionReportGenerationInputMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        request: validPayload.input,
-        detailLevel: validPayload.detailLevel,
-        modules: validPayload.modules,
-      }),
-    );
+    expect(buildMultiActionReportGenerationInputMock.mock.calls[0]?.[0]).toMatchObject({
+      request: validPayload.input,
+      detailLevel: validPayload.detailLevel,
+      modules: validPayload.modules,
+    });
   });
 
   it("rejects forged browser KPI or snapshot data on the multi-action contract", async () => {
@@ -148,13 +155,8 @@ describe("POST /api/reports/generations", () => {
     });
     expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
-      outcome: "error",
-      details: expect.objectContaining({
-        stage: "source",
-        code: "action_media_filter_source_unavailable",
-      }),
-    }));
+    expect(lastAudit()).toMatchObject({ outcome: "error" });
+    expectLastAuditDetails({ stage: "source", code: "action_media_filter_source_unavailable" });
   });
 
   it("maps an unexpected single-action source failure without consuming quota", async () => {
@@ -169,9 +171,7 @@ describe("POST /api/reports/generations", () => {
     expect(response.status).toBe(503);
     expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
-      details: expect.objectContaining({ stage: "source", code: "action_resolution_failed" }),
-    }));
+    expectLastAuditDetails({ stage: "source", code: "action_resolution_failed" });
   });
 
   it("maps an unexpected multi-action source failure without consuming quota", async () => {
@@ -185,9 +185,7 @@ describe("POST /api/reports/generations", () => {
     });
     expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
-      details: expect.objectContaining({ stage: "source", code: "multi_action_resolution_failed" }),
-    }));
+    expectLastAuditDetails({ stage: "source", code: "multi_action_resolution_failed" });
   });
 
   it("rejects a legacy payload without resolving or reserving it", async () => {
@@ -199,9 +197,7 @@ describe("POST /api/reports/generations", () => {
     });
     expect(getReportExportAvailabilityMock).not.toHaveBeenCalled();
     expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
-      details: expect.objectContaining({ stage: "validation", code: "legacy_payload_rejected" }),
-    }));
+    expectLastAuditDetails({ stage: "validation", code: "legacy_payload_rejected" });
   });
 
   it("rejects a body without a typed selector before quota", async () => {
@@ -210,9 +206,7 @@ describe("POST /api/reports/generations", () => {
     expect(response.status).toBe(400);
     expect(getReportExportAvailabilityMock).not.toHaveBeenCalled();
     expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
-      details: expect.objectContaining({ stage: "validation", code: "invalid_typed_input" }),
-    }));
+    expectLastAuditDetails({ stage: "validation", code: "invalid_typed_input" });
   });
 
   it("returns an explicit 503 when the final quota reservation fails", async () => {
@@ -226,9 +220,7 @@ describe("POST /api/reports/generations", () => {
     });
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
     expect(releaseReportExportSlotMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
-      details: expect.objectContaining({ stage: "quota", code: "quota_unavailable" }),
-    }));
+    expectLastAuditDetails({ stage: "quota", code: "quota_unavailable" });
   });
 
   it("returns 429 before reading a costly snapshot when rate limited", async () => {
@@ -351,15 +343,10 @@ describe("POST /api/reports/generations", () => {
     expect(response.status).toBe(413);
     expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        outcome: "error",
-        details: expect.objectContaining({
-          stage: "validation",
-          code: "payload_too_large",
-        }),
-      }),
-    );
+    expect(lastAudit()).toMatchObject({
+      outcome: "error",
+      details: { stage: "validation", code: "payload_too_large" },
+    });
   });
 
   it("audits persistence failures without exposing the report", async () => {
@@ -422,7 +409,7 @@ describe("POST /api/reports/generations", () => {
   });
 
   it("resolves and persists only the typed single-action scope", async () => {
-    const singleInput = {
+    const singleInput: ReportGenerationHistoryInput = {
       payload: {
         ...validSnapshotPayload,
         title: "Rapport d'impact - Action canonique - Par défaut",
@@ -464,13 +451,13 @@ describe("POST /api/reports/generations", () => {
 
     expect(response.status).toBe(200);
     expect(resolveSingleActionReportContractMock).toHaveBeenCalledWith(singleInput.scopeValue);
-    expect(buildSingleActionReportGenerationInputMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(buildSingleActionReportGenerationInputMock.mock.calls.at(-1)?.[0]).toMatchObject({
       request: { type: "single_action", actionId: singleInput.scopeValue },
       detailLevel: "default",
-    }));
-    expect(persistReportGenerationMock).toHaveBeenCalledWith({
+    });
+    expect(persistReportGenerationMock.mock.calls.at(-1)?.[0]).toMatchObject({
       createdByClerkId: "user-1",
-      input: expect.objectContaining({ ...singleInput, theme: "impact" }),
+      input: { ...singleInput, theme: "impact" },
     });
   });
 
@@ -543,13 +530,10 @@ describe("POST /api/reports/generations", () => {
     expect(resolveSingleActionReportContractMock).not.toHaveBeenCalled();
     expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
     expect(persistReportGenerationMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(lastAudit()).toMatchObject({
       outcome: "error",
-      details: expect.objectContaining({
-        stage: "validation",
-        code: "invalid_typed_input",
-      }),
-    }));
+      details: { stage: "validation", code: "invalid_typed_input" },
+    });
   });
 
   it.each([
@@ -596,10 +580,10 @@ describe("POST /api/reports/generations", () => {
     }));
 
     expect(response.status).toBe(200);
-    expect(buildMultiActionReportGenerationInputMock).toHaveBeenCalledWith(expect.objectContaining({ modules }));
-    expect(persistReportGenerationMock).toHaveBeenCalledWith({
+    expect(buildMultiActionReportGenerationInputMock.mock.calls.at(-1)?.[0]).toMatchObject({ modules });
+    expect(persistReportGenerationMock.mock.calls.at(-1)?.[0]).toMatchObject({
       createdByClerkId: "user-1",
-      input: expect.objectContaining({ theme: "impact" }),
+      input: { theme: "impact" },
     });
   });
 
@@ -630,6 +614,6 @@ describe("POST /api/reports/generations", () => {
     }));
 
     expect(response.status).toBe(200);
-    expect(persistReportGenerationMock).toHaveBeenCalledWith(expect.objectContaining({ createdByClerkId: "user-1" }));
+    expect(persistReportGenerationMock.mock.calls.at(-1)?.[0]).toMatchObject({ createdByClerkId: "user-1" });
   });
 });

@@ -1,17 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { requireAdminAccess } from "@/lib/authz";
+import type { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
+import type { getLegalContentReportById, updateLegalContentReportState } from "@/lib/legal-content-report/legal-content-report-store";
+import type {
+  appendLegalContentReportDecision,
+  updateLegalContentReportDecisionStates,
+  updateLegalContentReportDecisionNotifications,
+} from "@/lib/legal-content-report/legal-content-report-decisions-store";
+import type { applyCanonicalLegalContentMutation } from "@/lib/admin/moderation/legal-content-moderation";
+import type { sendLegalContentReportDecisionToNotifier, sendLegalContentReportDecisionToAuthor } from "@/lib/legal-content-report/legal-content-report-service";
+import type { LegalContentReportDecisionRecord, LegalContentReportRecord } from "@/lib/legal-content-report/legal-content-report";
 
-const requireAdminAccessMock = vi.hoisted(() => vi.fn());
-const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
-const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
-const getLegalContentReportByIdMock = vi.hoisted(() => vi.fn());
-const updateLegalContentReportStateMock = vi.hoisted(() => vi.fn());
-const appendDecisionMock = vi.hoisted(() => vi.fn());
-const updateDecisionStatesMock = vi.hoisted(() => vi.fn());
-const updateDecisionNotificationsMock = vi.hoisted(() => vi.fn());
-const applyCanonicalLegalContentMutationMock = vi.hoisted(() => vi.fn());
-const sendNotifierMock = vi.hoisted(() => vi.fn());
-const sendAuthorMock = vi.hoisted(() => vi.fn());
-const buildInboxItemMock = vi.hoisted(() => vi.fn((record) => ({
+const requireAdminAccessMock = vi.hoisted(() => vi.fn<typeof requireAdminAccess>());
+const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn<() => Promise<{ userId: string }>>());
+const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn<typeof appendAdminOperationAudit>());
+const getLegalContentReportByIdMock = vi.hoisted(() => vi.fn<typeof getLegalContentReportById>());
+const updateLegalContentReportStateMock = vi.hoisted(() => vi.fn<typeof updateLegalContentReportState>());
+const appendDecisionMock = vi.hoisted(() => vi.fn<typeof appendLegalContentReportDecision>());
+const updateDecisionStatesMock = vi.hoisted(() => vi.fn<typeof updateLegalContentReportDecisionStates>());
+const updateDecisionNotificationsMock = vi.hoisted(() => vi.fn<typeof updateLegalContentReportDecisionNotifications>());
+const applyCanonicalLegalContentMutationMock = vi.hoisted(() => vi.fn<typeof applyCanonicalLegalContentMutation>());
+const sendNotifierMock = vi.hoisted(() => vi.fn<typeof sendLegalContentReportDecisionToNotifier>());
+const sendAuthorMock = vi.hoisted(() => vi.fn<typeof sendLegalContentReportDecisionToAuthor>());
+const buildInboxItemMock = vi.hoisted(() => vi.fn((record: LegalContentReportRecord) => ({
   id: "legal-content-report-" + record.id,
   source: "legal_content_report",
   sourceRecordId: record.id,
@@ -64,7 +75,32 @@ const baseReport = {
   creatorState: "new" as const,
 };
 
-let currentDecision: Record<string, unknown>;
+let currentDecision: LegalContentReportDecisionRecord;
+
+function makeDecisionRecord(): LegalContentReportDecisionRecord {
+  return {
+    id: "decision-1",
+    reportId: baseReport.id,
+    createdAt: "2026-08-27T10:01:00.000Z",
+    actorAdminUserId: "admin-1",
+    action: "reviewing",
+    origin: "received_notification",
+    reason: "Examen administratif engagé.",
+    automatedMeansUsed: false,
+    legalBasis: null,
+    termsBasis: null,
+    contentUrl: baseReport.contentUrl,
+    contentId: baseReport.contentId,
+    beforeState: {},
+    afterState: {},
+    executionStatus: "not_applicable",
+    executionErrorCode: null,
+    auditOperationId: "operation-1",
+    notifierNotificationStatus: "not_requested",
+    authorNotificationStatus: "not_requested",
+    notificationError: null,
+  };
+}
 
 function request(body: unknown): Request {
   return new Request("http://localhost/api/admin/legal-content-reports/decision", {
@@ -87,7 +123,7 @@ function validBody(overrides: Record<string, unknown> = {}) {
 
 function lastAuditDetails(): Record<string, unknown> {
   const call = appendAdminOperationAuditMock.mock.calls.at(-1)?.[0];
-  return call?.details as Record<string, unknown>;
+  return call?.details ?? {};
 }
 
 function expectInvariantAuditContext(
@@ -111,12 +147,9 @@ function expectLastAudit(
   outcome: "success" | "error",
   details: Record<string, unknown>,
 ) {
-  expect(appendAdminOperationAuditMock).toHaveBeenLastCalledWith(
-    expect.objectContaining({
-      outcome,
-      details: expect.objectContaining(details),
-    }),
-  );
+  const entry = appendAdminOperationAuditMock.mock.calls.at(-1)?.[0];
+  expect(entry?.outcome).toBe(outcome);
+  expect(entry?.details).toMatchObject(details);
 }
 
 function expectContentMutationAudit(
@@ -159,34 +192,27 @@ function mockSuccessfulContentMutation(authorEmail: string | null) {
 describe("POST /api/admin/legal-content-reports/decision", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    currentDecision = {};
+    currentDecision = makeDecisionRecord();
     requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
     getCurrentUserIdentityMock.mockResolvedValue({ userId: "admin-1" });
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
     getLegalContentReportByIdMock.mockResolvedValue(baseReport);
     updateLegalContentReportStateMock.mockImplementation(
-      async ({ creatorState }: { creatorState: string }) => ({
+      async ({ creatorState }: { creatorState: LegalContentReportRecord["creatorState"] }) => ({
         ...baseReport,
         creatorState,
         status: creatorState === "closed" ? "archived" : creatorState === "reviewing" ? "open" : "treated",
       }),
     );
     appendDecisionMock.mockImplementation(async (input) => {
-      currentDecision = {
-        id: "decision-1",
-        createdAt: "2026-08-27T10:01:00.000Z",
-        ...input,
-        notifierNotificationStatus: "not_requested",
-        authorNotificationStatus: "not_requested",
-        notificationError: null,
-      };
+      currentDecision = { ...makeDecisionRecord(), ...input };
       return currentDecision;
     });
     updateDecisionStatesMock.mockImplementation(async (input) => {
       currentDecision = { ...currentDecision, ...input };
       return currentDecision;
     });
-    updateDecisionNotificationsMock.mockResolvedValue(undefined);
+    updateDecisionNotificationsMock.mockResolvedValue(null);
     applyCanonicalLegalContentMutationMock.mockResolvedValue({
       supported: true,
       found: true,
@@ -194,8 +220,8 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
       afterState: { source: "actions", status: "approved", moderationVisibility: "hidden" },
       authorEmail: null,
     });
-    sendNotifierMock.mockResolvedValue({ status: "sent" });
-    sendAuthorMock.mockResolvedValue({ status: "sent" });
+    sendNotifierMock.mockResolvedValue({ id: "notification-1", status: "sent" });
+    sendAuthorMock.mockResolvedValue({ id: "notification-1", status: "sent" });
   });
 
   it("requires a clear reason and rejects ambiguous bases", async () => {
@@ -257,33 +283,33 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
       reportId: "report-1",
       creatorState: "reviewing",
     });
-    expect(updateDecisionStatesMock).toHaveBeenCalledWith({
+    const decisionStateCall = updateDecisionStatesMock.mock.calls.at(-1)?.[0];
+    expect(decisionStateCall).toMatchObject({
       decisionId: "decision-1",
-      beforeState: expect.objectContaining({ creatorState: "new" }),
-      afterState: expect.objectContaining({ creatorState: "reviewing" }),
+      beforeState: { creatorState: "new" },
+      afterState: { creatorState: "reviewing" },
       executionStatus: "not_applicable",
       executionErrorCode: null,
     });
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        operationId: expect.any(String),
-        actorUserId: "admin-1",
-        operationType: "moderation",
-        outcome: "success",
-        targetId: "report-1",
-        details: expect.objectContaining({
-          action: "reviewing",
-          origin: "received_notification",
-          automatedMeansUsed: false,
-          beforeState: expect.objectContaining({ creatorState: "new" }),
-          afterState: expect.objectContaining({ creatorState: "reviewing" }),
-          executionStatus: "not_applicable",
-          executionErrorCode: null,
-          partialMutation: false,
-        }),
-      }),
-    );
+    const audit = appendAdminOperationAuditMock.mock.calls.at(-1)?.[0];
+    expect(audit).toMatchObject({
+      actorUserId: "admin-1",
+      operationType: "moderation",
+      outcome: "success",
+      targetId: "report-1",
+      details: {
+        action: "reviewing",
+        origin: "received_notification",
+        automatedMeansUsed: false,
+        beforeState: { creatorState: "new" },
+        afterState: { creatorState: "reviewing" },
+        executionStatus: "not_applicable",
+        executionErrorCode: null,
+        partialMutation: false,
+      },
+    });
+    expect(typeof audit?.operationId).toBe("string");
     expect(sendNotifierMock).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: "admin-1" }));
     expect(sendAuthorMock).not.toHaveBeenCalled();
   });
@@ -298,14 +324,12 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
     expect(updateLegalContentReportStateMock).toHaveBeenCalledWith(
       expect.objectContaining({ creatorState: "reviewing" }),
     );
-    expect(updateDecisionStatesMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        beforeState: expect.objectContaining({ creatorState: "new" }),
-        afterState: expect.objectContaining({ creatorState: "reviewing" }),
-        executionStatus: "not_applicable",
-        executionErrorCode: null,
-      }),
-    );
+    expect(updateDecisionStatesMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      beforeState: { creatorState: "new" },
+      afterState: { creatorState: "reviewing" },
+      executionStatus: "not_applicable",
+      executionErrorCode: null,
+    });
     expectLastAudit("error", {
       stage: "decision_projection",
       beforeState: expect.objectContaining({ creatorState: "new" }),

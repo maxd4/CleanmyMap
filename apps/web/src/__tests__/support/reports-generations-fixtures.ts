@@ -1,12 +1,15 @@
+import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
+import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
+
 export const validSnapshotPayload = {
   title: "Rapport d'impact - Paris - Par défaut",
   rubrique: "reporting",
   periode: "six_months",
   organizationType: "Global",
   data: { generatedAt: "2026-08-27T10:30:00.000Z", summary: ["Résumé"] },
-};
+} satisfies PdfReportPayload;
 
-export const multiInput = {
+export const multiInput: ReportGenerationHistoryInput = {
   payload: validSnapshotPayload,
   scopeKind: "global" as const,
   scopeValue: "",

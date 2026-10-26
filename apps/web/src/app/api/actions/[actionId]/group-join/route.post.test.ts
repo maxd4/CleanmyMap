@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { createGroupJoinAction, createGroupJoinParticipant, createGroupJoinProfile, createGroupJoinSupabaseMock, groupJoinMocks, postActionGroupJoin, seedApprovedActionParticipants, seedGroupJoinTestDefaults, type GroupJoinParticipantRow } from "@/__tests__/support/group-join-action-id-route";
 
 const captureActionParticipantImpactSnapshotMock = vi.hoisted(() => vi.fn());
@@ -38,17 +39,41 @@ function createAliceProfile() {
 }
 
 type GroupJoinModerationBody = {
+  status?: string;
   participationStatus?: string;
   participationSource?: string;
   participantId?: string;
+  participantUserId?: string;
+  participantsCount?: number;
+  details?: Record<string, string[]>;
 };
+
+const groupJoinModerationBodySchema = z.object({
+  status: z.string().optional(),
+  participationStatus: z.string().optional(),
+  participationSource: z.string().optional(),
+  participantId: z.string().optional(),
+  participantUserId: z.string().optional(),
+  participantsCount: z.number().optional(),
+  details: z.record(z.string(), z.array(z.string())).optional(),
+}).passthrough();
 
 async function postActionGroupJoinJson<T>(
   payload: Record<string, unknown> | string,
   options: { requestActionId?: string; paramsActionId?: string } = {},
 ) {
   const response = await postActionGroupJoin(payload, options);
-  return { response, body: (await response.json()) as T };
+  return { response, body: groupJoinModerationBodySchema.parse(await response.json()) as T };
+}
+
+function lastAudit() {
+  return appendActionModerationAuditMock.mock.calls.at(-1)?.[0];
+}
+
+function auditFor(operation: string) {
+  return appendActionModerationAuditMock.mock.calls
+    .map(([entry]) => entry)
+    .find((entry) => entry?.operation === operation);
 }
 
 function expectAcceptedGroupJoin(
@@ -106,8 +131,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     expect(body.participantsCount).toBe(1);
     expect(participants[0]?.user_id).toBe("user-2");
     expect(participants[0]?.participation_status).toBe("confirmed");
-    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
+    expect(auditFor("admin_add_participant")).toMatchObject({
         actorUserId: "admin-1",
         targetActionId: "action-1",
         operation: "admin_add_participant",
@@ -115,12 +139,11 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
         reason: "Ajout direct demandé par le référent.",
         targetUserId: "user-2",
         previousValue: null,
-        newValue: expect.objectContaining({
+        newValue: {
           participationStatus: "confirmed",
           participationSource: "admin_override",
-        }),
-      }),
-    );
+        },
+    });
   }, 15000);
 
   it("rejects an elected account while ACTIVE_ROLE=elu from a global participant override", async () => {
@@ -156,15 +179,17 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
       participantUserId: "user-2",
       reason: "Ajout administratif justifié.",
     });
-    const body = await response.json();
+    const { body } = await postActionGroupJoinJson<GroupJoinModerationBody>({
+      participantId: "participant-pending-action",
+      decision: "accept",
+    });
 
     expect(response.status).toBe(200);
     expect(body).toMatchObject({
       participationStatus: "confirmed",
       participationSource: "admin_override",
     });
-    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
+    expect(auditFor("admin_add_participant")).toMatchObject({
         actorUserId: "admin-1",
         targetActionId: "action-1",
         targetUserId: "user-2",
@@ -172,12 +197,11 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
         outcome: "success",
         reason: "Ajout administratif justifié.",
         previousValue: null,
-        newValue: expect.objectContaining({
+        newValue: {
           participationStatus: "confirmed",
           participationSource: "admin_override",
-        }),
-      }),
-    );
+        },
+    });
   }, 15000);
 
   it("excludes an accepted participant through moderation", async () => {
@@ -197,40 +221,32 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
       profiles: [createAliceProfile()],
     });
 
-    const response = await postActionGroupJoin({
+    const { response, body } = await postActionGroupJoinJson<GroupJoinModerationBody>({
       participantId: "participant-1",
       decision: "reject",
       reason: "Participant indisponible confirmé.",
     });
-
-    const body = (await response.json()) as {
-      status?: string;
-      participationStatus?: string;
-      participantsCount?: number;
-    };
 
     expect(response.status).toBe(200);
     expect(body.status).toBe("ok");
     expect(body.participationStatus).toBe("cancelled");
     expect(body.participantsCount).toBe(0);
     expect(participants[0]?.participation_status).toBe("cancelled");
-    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
+    expect(lastAudit()).toMatchObject({
         actorUserId: "admin-1",
         targetActionId: "action-1",
         operation: "admin_remove_participant",
         outcome: "success",
         reason: "Participant indisponible confirmé.",
-        previousValue: expect.objectContaining({
+        previousValue: {
           participationStatus: "confirmed",
           participationSource: "group_form",
-        }),
-        newValue: expect.objectContaining({
+        },
+        newValue: {
           participationStatus: "cancelled",
           participationSource: "group_form",
-        }),
-      }),
-    );
+        },
+    });
   }, 15000);
 
   it("rejects admin direct participant add without a valid reason", async () => {
@@ -430,13 +446,13 @@ describe("POST /api/actions/:actionId/group-join", () => {
       actionPhase: "pre_action",
     });
 
-    const response = await postActionGroupJoin({
+    const { response, body } = await postActionGroupJoinJson<GroupJoinModerationBody>({
       participantId: "participant-pending-action",
       decision: "accept",
     });
 
     expect(response.status).toBe(200);
-    expect((await response.json()).participationStatus).toBe("confirmed");
+    expect(body.participationStatus).toBe("confirmed");
   }, 15000);
 
   it("does not let an organizer accept a pending manual invitation", async () => {
@@ -462,11 +478,10 @@ describe("POST /api/actions/:actionId/group-join", () => {
       profiles: [createGroupJoinProfile({ id: "invitee-1", display_name: "Alice", handle: "alice" })],
     });
 
-    const response = await postActionGroupJoin({
+    const { response, body } = await postActionGroupJoinJson<GroupJoinModerationBody>({
       participantId: "manual-invitation-1",
       decision: "accept",
     });
-    const body = await response.json();
 
     expect(response.status).toBe(422);
     expect(body.details?.participantId?.[0]).toContain("destinataire");
@@ -488,11 +503,10 @@ describe("POST /api/actions/:actionId/group-join", () => {
     ];
     seedApprovedActionParticipants(participants);
 
-    const response = await postActionGroupJoin({
+    const { response, body } = await postActionGroupJoinJson<GroupJoinModerationBody>({
       participantId: "participant-confirmed",
       decision: "accept",
     });
-    const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.participationStatus).toBe("confirmed");
@@ -512,11 +526,10 @@ describe("POST /api/actions/:actionId/group-join", () => {
     ];
     seedApprovedActionParticipants(participants);
 
-    const response = await postActionGroupJoin({
+    const { response, body } = await postActionGroupJoinJson<GroupJoinModerationBody>({
       participantUserId: "user-2",
       reason: "Déjà ajouté par le référent.",
     });
-    const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.participationStatus).toBe("confirmed");
@@ -552,11 +565,7 @@ describe("POST /api/actions/:actionId/group-join", () => {
 
     const response = await postActionGroupJoin({ participantUserId: "user-2" });
 
-    const body = (await response.json()) as {
-      participantUserId?: string;
-      participationStatus?: string;
-      participantsCount?: number;
-    };
+    const body = groupJoinModerationBodySchema.parse(await response.json());
 
     expect(response.status).toBe(200);
     expect(body.participantUserId).toBe("user-2");

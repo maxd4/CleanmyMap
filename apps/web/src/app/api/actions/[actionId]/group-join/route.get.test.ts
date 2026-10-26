@@ -137,8 +137,7 @@ describe("GET /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const response = await invokeGroupJoinRoute("GET");
-    const body = await response.json();
+    const { response, body } = await invokeGroupJoinRouteJson<GroupJoinListingBody>("GET");
 
     expect(response.status).toBe(200);
     expect(body.pendingRequests).toEqual([]);
@@ -408,10 +407,9 @@ describe("GET /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const response = await invokeGroupJoinRoute("GET");
-
+    const { response, body } = await invokeGroupJoinRouteJson<GroupJoinListingBody>("GET");
     expect(response.status).toBe(200);
-    expect((await response.json()).canReview).toBe(false);
+    expect(body.canReview).toBe(false);
   }, 15000);
 
   it("rejects a queue for a cancelled action", async () => {

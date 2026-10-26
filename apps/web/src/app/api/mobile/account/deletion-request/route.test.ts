@@ -1,15 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { createPublicValidationModule, createServerRateLimitModule } from "@/app/api/test-route-setup";
+
+type RateLimitResult = { allowed: boolean; retryAfter?: number };
+type ContactRequestInput = { requestType: "erasure"; pagePath: string };
+type ContactRequestRecord = { submittedByUserId: string; input: ContactRequestInput };
+type NotificationRecord = { actorUserId: string };
 
 const mocks = vi.hoisted(() => ({
   access: vi.fn(),
   clerkClient: vi.fn(),
-  append: vi.fn(),
-  update: vi.fn(),
-  email: vi.fn(),
-  verifyRateLimit: vi.fn(),
-  rateResponse: vi.fn(),
+  append: vi.fn<(record: ContactRequestRecord) => Promise<{ id: string; status: string }>>(),
+  update: vi.fn<(record: { requestId: string; status: string }) => Promise<unknown>>(),
+  email: vi.fn<(record: NotificationRecord) => Promise<boolean>>(),
+  verifyRateLimit: vi.fn<(request: Request, options: { limit?: number; window?: number }) => Promise<RateLimitResult>>(),
+  rateResponse: vi.fn<(allowed: boolean, retryAfter: number | null | undefined, result: unknown) => Response | null>(),
 }));
+
+const deletionResponseSchema = z.object({
+  status: z.enum(["queued", "failed"]),
+  requestId: z.string(),
+  notificationStatus: z.enum(["sent", "failed"]),
+  deletionProcessed: z.literal(false),
+});
 
 vi.mock("@/lib/auth/mobile-bearer", () => ({ requireMobileAuthenticatedAccess: mocks.access }));
 vi.mock("@clerk/nextjs/server", () => ({ clerkClient: mocks.clerkClient }));
@@ -83,20 +96,23 @@ describe("POST /api/mobile/account/deletion-request", () => {
   it("returns the request id and keeps deletion explicitly unprocessed", async () => {
     const { POST } = await import("./route");
     const response = await POST(authenticatedDeletionRequest());
-    const body = await response.json();
+    const body = deletionResponseSchema.parse(await response.json());
     expect(response.status).toBe(201);
     expect(body).toMatchObject({ status: "queued", requestId: "request-1", notificationStatus: "sent", deletionProcessed: false });
-    expect(mocks.append).toHaveBeenCalledWith(expect.objectContaining({ submittedByUserId: "user_a", input: expect.objectContaining({ requestType: "erasure", pagePath: "/compte/suppression" }) }));
-    expect(mocks.email).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: "user_a" }));
+    expect(mocks.append.mock.calls.at(-1)?.[0]).toMatchObject({
+      submittedByUserId: "user_a",
+      input: { requestType: "erasure", pagePath: "/compte/suppression" },
+    });
+    expect(mocks.email.mock.calls.at(-1)?.[0]).toMatchObject({ actorUserId: "user_a" });
   });
 
   it("reports notification failure without presenting a fake deletion success", async () => {
     mocks.email.mockRejectedValueOnce(new Error("Resend unavailable"));
     const { POST } = await import("./route");
     const response = await POST(authenticatedDeletionRequest());
-    const body = await response.json();
+    const body = deletionResponseSchema.parse(await response.json());
     expect(response.status).toBe(201);
     expect(body).toMatchObject({ requestId: "request-1", notificationStatus: "failed", deletionProcessed: false });
-    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ requestId: "request-1", status: "failed" }));
+    expect(mocks.update.mock.calls.at(-1)?.[0]).toMatchObject({ requestId: "request-1", status: "failed" });
   });
 });

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 const authMock = vi.hoisted(() => vi.fn());
 const rateLimitMock = vi.hoisted(() => vi.fn());
@@ -38,6 +39,17 @@ vi.mock("@/lib/admin/audit/operation-audit", () => ({ appendAdminOperationAudit:
 vi.mock("@/lib/app-url.mjs", () => ({ resolvePublicAppUrl: () => "https://cleanmymap.test" }));
 
 import { GET, POST } from "./route";
+
+const previewResponseSchema = z.object({
+  preview: z.object({
+    generationId: z.string(),
+    artifactReady: z.boolean(),
+    communicatedContent: z.string(),
+  }).passthrough(),
+  shares: z.array(z.object({ id: z.string(), theme: z.string() }).passthrough()),
+}).passthrough();
+const shareCreatedResponseSchema = z.object({ shareUrl: z.string() }).passthrough();
+const shareAuditWarningResponseSchema = z.object({ auditWarning: z.boolean() }).passthrough();
 
 const generationId = "11111111-1111-4111-8111-111111111111";
 const artifact = {
@@ -112,11 +124,12 @@ describe("historical report PDF sharing", () => {
 
   it("returns a preview without exposing a token and lists only share metadata", async () => {
     const response = await GET(request(), { params: Promise.resolve({ id: generationId }) });
-    const body = await response.json();
+    const body = previewResponseSchema.parse(await response.json());
 
     expect(response.status).toBe(200);
-    expect(body.preview).toMatchObject({ generationId, artifactReady: true, communicatedContent: expect.stringContaining("PDF") });
-    expect(body.shares).toEqual([expect.objectContaining({ id: share.id, theme: "impact" })]);
+    expect(body.preview).toMatchObject({ generationId, artifactReady: true });
+    expect(body.preview.communicatedContent).toContain("PDF");
+    expect(body.shares[0]).toMatchObject({ id: share.id, theme: "impact" });
     expect(JSON.stringify(body)).not.toContain("a".repeat(43));
   });
 
@@ -134,7 +147,7 @@ describe("historical report PDF sharing", () => {
 
   it("creates one expiring link for the ready exact variant without quota work", async () => {
     const response = await POST(request({ theme: "impact", expiresInSeconds: 24 * 60 * 60 }), { params: Promise.resolve({ id: generationId }) });
-    const body = await response.json();
+    const body = shareCreatedResponseSchema.parse(await response.json());
 
     expect(response.status).toBe(201);
     expect(body.shareUrl).toBe(`https://cleanmymap.test/api/reports/shared/${"a".repeat(43)}`);
@@ -147,7 +160,7 @@ describe("historical report PDF sharing", () => {
     auditMock.mockRejectedValueOnce(new Error("audit unavailable"));
 
     const response = await POST(request({ theme: "impact", expiresInSeconds: 3600 }), { params: Promise.resolve({ id: generationId }) });
-    const body = await response.json();
+    const body = shareAuditWarningResponseSchema.parse(await response.json());
 
     expect(response.status).toBe(201);
     expect(body.auditWarning).toBe(true);

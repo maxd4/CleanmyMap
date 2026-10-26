@@ -1,7 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const getTokenMock = vi.hoisted(() => vi.fn());
-const createClientMock = vi.hoisted(() => vi.fn());
+type RlsClientOptions = {
+  auth: {
+    persistSession: boolean;
+    autoRefreshToken: boolean;
+    detectSessionInUrl: boolean;
+  };
+  accessToken: () => Promise<string | null>;
+};
+
+const getTokenMock = vi.hoisted(() => vi.fn<() => Promise<string | null>>());
+const createClientMock = vi.hoisted(() => vi.fn<(
+  url: string,
+  key: string,
+  options: RlsClientOptions,
+) => unknown>());
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: vi.fn().mockResolvedValue({
@@ -41,17 +54,20 @@ describe("getSupabaseClerkRlsClient", () => {
     });
     expect(createClientMock).toHaveBeenCalledTimes(1);
 
-    const [, , options] = createClientMock.mock.calls[0] ?? [];
+    const call = createClientMock.mock.calls[0];
+    expect(call).toBeDefined();
+    if (!call) throw new Error("Supabase client creation call is missing.");
+    const options = call[2];
     expect(options).toEqual(
       expect.objectContaining({
-        auth: expect.objectContaining({
+        auth: {
           persistSession: false,
           autoRefreshToken: false,
           detectSessionInUrl: false,
-        }),
-        accessToken: expect.any(Function),
+        },
       }),
     );
+    expect(typeof options.accessToken).toBe("function");
     await expect(options.accessToken()).resolves.toBe("native-session-token");
   });
 

@@ -6,19 +6,38 @@ import {
   rateLimitMocks,
 } from "@/app/api/test-helpers";
 import { multiInput, validSnapshotPayload } from "@/__tests__/support/reports-generations-fixtures";
+import type { requireAuthenticatedAccess } from "@/lib/authz";
+import type {
+  persistReportGeneration,
+  listReportGenerationHistoryPage,
+  resolveDirectReportGenerationPersistence,
+} from "@/lib/reports/report-generation-history-store";
+import type {
+  appendAdminOperationAudit,
+} from "@/lib/admin/audit/operation-audit";
+import type {
+  getReportExportAvailability,
+  getReportExportQuotaDay,
+  reserveReportExportSlot,
+  releaseReportExportSlot,
+} from "@/lib/reports/report-export-quota";
+import type {
+  buildSingleActionReportGenerationInput,
+} from "@/lib/reports/single-action-report";
+import type { buildMultiActionReportGenerationInput } from "@/lib/reports/multi-action-report";
 
-const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
-const persistReportGenerationMock = vi.hoisted(() => vi.fn());
-const listReportGenerationHistoryPageMock = vi.hoisted(() => vi.fn());
-const resolveDirectReportGenerationPersistenceMock = vi.hoisted(() => vi.fn());
-const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
-const getReportExportAvailabilityMock = vi.hoisted(() => vi.fn());
-const getReportExportQuotaDayMock = vi.hoisted(() => vi.fn());
-const reserveReportExportSlotMock = vi.hoisted(() => vi.fn());
-const releaseReportExportSlotMock = vi.hoisted(() => vi.fn());
-const resolveSingleActionReportContractMock = vi.hoisted(() => vi.fn());
-const buildSingleActionReportGenerationInputMock = vi.hoisted(() => vi.fn());
-const buildMultiActionReportGenerationInputMock = vi.hoisted(() => vi.fn());
+const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn<typeof requireAuthenticatedAccess>());
+const persistReportGenerationMock = vi.hoisted(() => vi.fn<typeof persistReportGeneration>());
+const listReportGenerationHistoryPageMock = vi.hoisted(() => vi.fn<typeof listReportGenerationHistoryPage>());
+const resolveDirectReportGenerationPersistenceMock = vi.hoisted(() => vi.fn<typeof resolveDirectReportGenerationPersistence>());
+const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn<typeof appendAdminOperationAudit>());
+const getReportExportAvailabilityMock = vi.hoisted(() => vi.fn<typeof getReportExportAvailability>());
+const getReportExportQuotaDayMock = vi.hoisted(() => vi.fn<typeof getReportExportQuotaDay>());
+const reserveReportExportSlotMock = vi.hoisted(() => vi.fn<typeof reserveReportExportSlot>());
+const releaseReportExportSlotMock = vi.hoisted(() => vi.fn<typeof releaseReportExportSlot>());
+const resolveSingleActionReportContractMock = vi.hoisted(() => vi.fn<(actionId: string) => Promise<unknown>>());
+const buildSingleActionReportGenerationInputMock = vi.hoisted(() => vi.fn<typeof buildSingleActionReportGenerationInput>());
+const buildMultiActionReportGenerationInputMock = vi.hoisted(() => vi.fn<typeof buildMultiActionReportGenerationInput>());
 const SingleActionReportTargetUnavailableErrorMock = vi.hoisted(() =>
   class SingleActionReportTargetUnavailableError extends Error {},
 );

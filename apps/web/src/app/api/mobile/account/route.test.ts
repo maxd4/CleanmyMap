@@ -1,8 +1,38 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { z } from "zod";
+
+type ClerkUserMock = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  unsafeMetadata: Record<string, unknown>;
+};
+type ClerkMethod<Args extends unknown[], Result> = Mock<(...args: Args) => Promise<Result>>;
+
+type ClerkClientMock = {
+  users: {
+    getUser: ClerkMethod<[userId: string], ClerkUserMock>;
+    updateUser: ClerkMethod<[userId: string, input: { firstName?: string; lastName?: string }], ClerkUserMock>;
+    updateUserMetadata: ClerkMethod<[userId: string, input: { unsafeMetadata: Record<string, unknown> }], ClerkUserMock>;
+  };
+};
+
+const accountResponseSchema = z.object({
+  identity: z.object({ grantedRole: z.string(), activeRole: z.string(), currentLevel: z.number() }).passthrough(),
+  onboarding: z.object({ completed: z.boolean() }).passthrough(),
+  counts: z.object({
+    registrations: z.number(),
+    confirmedParticipations: z.number(),
+    missions: z.number(),
+    createdActions: z.number(),
+  }),
+}).passthrough();
+
+const syncPendingResponseSchema = z.object({ status: z.literal("clerk_updated_supabase_sync_pending") }).passthrough();
 
 const mobileAccessMock = vi.hoisted(() => vi.fn());
 const identityMock = vi.hoisted(() => vi.fn());
-const clerkClientMock = vi.hoisted(() => vi.fn());
+const clerkClientMock = vi.hoisted(() => vi.fn<() => Promise<ClerkClientMock>>());
 const serverClientMock = vi.hoisted(() => vi.fn());
 const historyMock = vi.hoisted(() => vi.fn());
 const progressionMock = vi.hoisted(() => vi.fn());
@@ -70,19 +100,19 @@ describe("/api/mobile/account", () => {
     serverClientMock.mockReturnValue(makeSupabase());
     clerkClientMock.mockResolvedValue({
       users: {
-        getUser: vi.fn().mockResolvedValue({
+        getUser: vi.fn<ClerkClientMock["users"]["getUser"]>().mockResolvedValue({
           id: "user-1",
           firstName: "Ada",
           lastName: "Curie",
           unsafeMetadata: { profileSetupCompleted: false },
         }),
-        updateUser: vi.fn().mockResolvedValue({
+        updateUser: vi.fn<ClerkClientMock["users"]["updateUser"]>().mockResolvedValue({
           id: "user-1",
           firstName: "Ada",
           lastName: "Curie",
           unsafeMetadata: { profileSetupCompleted: true },
         }),
-        updateUserMetadata: vi.fn().mockImplementation(async (_id, patch) => ({
+        updateUserMetadata: vi.fn<ClerkClientMock["users"]["updateUserMetadata"]>().mockImplementation(async (_id, patch) => ({
           id: "user-1",
           firstName: "Ada",
           lastName: "Lovelace",
@@ -106,7 +136,7 @@ describe("/api/mobile/account", () => {
   it("projects the canonical identity and server-owned account data", async () => {
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/mobile/account", { headers: { Authorization: "Bearer clerk" } }));
-    const payload = await response.json();
+    const payload = accountResponseSchema.parse(await response.json());
     expect(response.status).toBe(200);
     expect(payload.identity).toMatchObject({ grantedRole: "benevole", activeRole: "benevole", currentLevel: 2 });
     expect(payload.onboarding.completed).toBe(false);
@@ -125,14 +155,14 @@ describe("/api/mobile/account", () => {
       firstName: "Ada",
       lastName: "Lovelace",
     });
-    expect(clerk.users.updateUserMetadata).toHaveBeenCalledWith("user-1", {
-      unsafeMetadata: expect.objectContaining({
-        profileSetupCompleted: true,
-        territoryPreferences: expect.objectContaining({
-          residence: expect.objectContaining({ label: "Paris", country: "France" }),
-          work: null,
-        }),
-      }),
+    const metadataCall = clerk.users.updateUserMetadata.mock.calls.at(-1);
+    expect(metadataCall?.[0]).toBe("user-1");
+    expect(metadataCall?.[1].unsafeMetadata).toMatchObject({
+      profileSetupCompleted: true,
+      territoryPreferences: {
+        residence: { label: "Paris", country: "France" },
+        work: null,
+      },
     });
     expect(syncMock).toHaveBeenCalledTimes(1);
   });
@@ -161,7 +191,7 @@ describe("/api/mobile/account", () => {
       headers: { Authorization: "Bearer clerk" },
       body: JSON.stringify({ firstName: "Ada" }),
     }));
-    const body = await response.json();
+    const body = syncPendingResponseSchema.parse(await response.json());
 
     expect(response.status).toBe(503);
     expect(body.status).toBe("clerk_updated_supabase_sync_pending");

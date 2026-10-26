@@ -1,14 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { publicAction } from "@/fixtures/public-action";
 import { PLANNER_WEATHER_SNAPSHOT_VERSION } from "@/lib/weather/planner-weather";
+import type { requireAuthenticatedAccess } from "@/lib/authz";
+import type { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import type { readActionRegistrationRecord } from "@/lib/actions/participation/registration-records";
+import type { canManageAction } from "@/lib/actions/permissions";
 
-const loadActionByIdMock = vi.hoisted(() => vi.fn());
-const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
-const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
-const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
-const loadCanonicalActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
-const readActionRegistrationRecordMock = vi.hoisted(() => vi.fn());
-const canManageActionMock = vi.hoisted(() => vi.fn());
+const loadActionByIdMock = vi.hoisted(() => vi.fn<() => Promise<unknown>>());
+const getSupabaseServerClientMock = vi.hoisted(() => vi.fn<() => object>());
+const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn<typeof requireAuthenticatedAccess>());
+const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn<() => Promise<{ userId: string; role: "benevole"; activeRole: "benevole" }>>());
+const loadCanonicalActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn<typeof loadCanonicalActionOrganizerIdsForAction>());
+const readActionRegistrationRecordMock = vi.hoisted(() => vi.fn<typeof readActionRegistrationRecord>());
+const canManageActionMock = vi.hoisted(() => vi.fn<typeof canManageAction>());
 
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionByIdMock }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: getSupabaseServerClientMock }));
@@ -17,11 +22,30 @@ vi.mock("@/lib/actions/participation/organizers", () => ({ loadCanonicalActionOr
 vi.mock("@/lib/actions/participation/registration-records", () => ({ readActionRegistrationRecord: readActionRegistrationRecordMock }));
 vi.mock("@/lib/actions/permissions", () => ({ canManageAction: canManageActionMock }));
 
+const dayResponseSchema = z.object({
+  access: z.enum(["organizer", "confirmed_volunteer"]),
+  action: z.object({
+    meetingPoint: z.string().nullable(),
+    meetingTime: z.string().nullable(),
+    safetyInstructions: z.string().nullable(),
+    equipmentProvided: z.array(z.string()),
+    equipmentNotProvided: z.array(z.string()),
+    refreshmentsProvided: z.array(z.string()),
+    volunteerChecklist: z.unknown(),
+  }).passthrough(),
+}).passthrough();
+
+async function readDayResponse(response: Response) {
+  const parsed = dayResponseSchema.safeParse(await response.json());
+  if (!parsed.success) throw new Error(parsed.error.message);
+  return parsed.data;
+}
+
 describe("GET /api/actions/[actionId]/day", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "owner-1" });
-    getCurrentUserIdentityMock.mockResolvedValue({ userId: "owner-1", role: "member", activeRole: "member" });
+    getCurrentUserIdentityMock.mockResolvedValue({ userId: "owner-1", role: "benevole", activeRole: "benevole" });
     getSupabaseServerClientMock.mockReturnValue({});
     loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValue([]);
     canManageActionMock.mockReturnValue(true);
@@ -61,7 +85,7 @@ describe("GET /api/actions/[actionId]/day", () => {
     });
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/actions/a/day"), { params: Promise.resolve({ actionId: publicAction.id }) });
-    const body = await response.json();
+    const body = await readDayResponse(response);
     expect(response.status).toBe(200);
     expect(body.access).toBe("organizer");
     expect(body.action).toMatchObject({ meetingPoint: "Entrée nord", meetingTime: "09:45", safetyInstructions: "Rester avec le groupe." });
@@ -86,7 +110,16 @@ describe("GET /api/actions/[actionId]/day", () => {
   it("denies an authenticated requester whose future registration is only pending", async () => {
     loadActionByIdMock.mockResolvedValue(publicAction);
     canManageActionMock.mockReturnValue(false);
-    readActionRegistrationRecordMock.mockResolvedValue({ registration_status: "pending" });
+    readActionRegistrationRecordMock.mockResolvedValue({
+      action_id: publicAction.id,
+      created_at: "2026-10-19T08:00:00.000Z",
+      registered_at: "2026-10-19T08:00:00.000Z",
+      updated_at: "2026-10-19T08:00:00.000Z",
+      registration_status: "pending",
+      registration_source: "invite_link",
+      registration_cancellation_reason: null,
+      manual_invitation_version: 1,
+    });
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/actions/a/day"), { params: Promise.resolve({ actionId: publicAction.id }) });
     expect(response.status).toBe(403);
@@ -104,10 +137,19 @@ describe("GET /api/actions/[actionId]/day", () => {
       },
     });
     canManageActionMock.mockReturnValue(false);
-    readActionRegistrationRecordMock.mockResolvedValue({ registration_status: "confirmed" });
+    readActionRegistrationRecordMock.mockResolvedValue({
+      action_id: publicAction.id,
+      created_at: "2026-10-19T08:00:00.000Z",
+      registered_at: "2026-10-19T08:00:00.000Z",
+      updated_at: "2026-10-19T08:00:00.000Z",
+      registration_status: "confirmed",
+      registration_source: "invite_link",
+      registration_cancellation_reason: null,
+      manual_invitation_version: 1,
+    });
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/actions/private/day"), { params: Promise.resolve({ actionId: publicAction.id }) });
-    const body = await response.json();
+    const body = await readDayResponse(response);
     expect(response.status).toBe(200);
     expect(body.access).toBe("confirmed_volunteer");
     expect(body.action.participantMessage).toBe("Rendez-vous sur place.");
@@ -123,7 +165,16 @@ describe("GET /api/actions/[actionId]/day", () => {
   it("does not let a private actionId bypass a pending registration", async () => {
     loadActionByIdMock.mockResolvedValue({ ...publicAction, access_mode: "invite_link" });
     canManageActionMock.mockReturnValue(false);
-    readActionRegistrationRecordMock.mockResolvedValue({ registration_status: "pending" });
+    readActionRegistrationRecordMock.mockResolvedValue({
+      action_id: publicAction.id,
+      created_at: "2026-10-19T08:00:00.000Z",
+      registered_at: "2026-10-19T08:00:00.000Z",
+      updated_at: "2026-10-19T08:00:00.000Z",
+      registration_status: "pending",
+      registration_source: "invite_link",
+      registration_cancellation_reason: null,
+      manual_invitation_version: 1,
+    });
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/actions/private/day"), { params: Promise.resolve({ actionId: publicAction.id }) });
     expect(response.status).toBe(403);

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getSnapshotMock = vi.hoisted(() => vi.fn());
@@ -31,6 +32,16 @@ import { POST } from "./route";
 import { InvalidReportGenerationIdError } from "@/lib/reports/report-generation-history-store";
 import { InvalidReportGenerationSnapshotError } from "@/lib/reports/report-generation-payload";
 import { REPORT_ADVANCED_FILTER_DEFAULTS } from "@/lib/reports/report-advanced-filters";
+
+const persistenceErrorSchema = z.object({
+  code: z.string(),
+  persisted: z.union([z.literal(true), z.literal(false), z.literal("unknown")]).optional(),
+  generationId: z.string().optional(),
+}).passthrough();
+
+function lastAudit() {
+  return auditMock.mock.calls.at(-1)?.[0];
+}
 
 const sourceId = "11111111-1111-4111-8111-111111111111";
 const source = {
@@ -103,21 +114,22 @@ describe("POST /api/reports/generations/[id]", () => {
     expect(response.status).toBe(200);
     expect(source).toEqual(sourceBefore);
     expect(getSnapshotMock).toHaveBeenCalledWith(sourceId, "user-1");
-    expect(persistDerivedMock).toHaveBeenCalledWith(expect.objectContaining({
+    const persistCall = persistDerivedMock.mock.calls.at(-1)?.[0];
+    expect(persistCall).toMatchObject({
       createdByClerkId: "user-1",
       source,
-      generationId: expect.stringMatching(/^[0-9a-f-]{36}$/),
-      generatedAt: expect.any(String),
-    }));
+    });
+    expect(persistCall?.generationId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(typeof persistCall?.generatedAt).toBe("string");
     expect(reserveQuotaMock).toHaveBeenCalledWith("user-1");
     await expect(response.json()).resolves.toMatchObject({ item, generation: { snapshot: {
       snapshotMetadata: { sourceGenerationId: sourceId },
     } } });
-    expect(auditMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(lastAudit()).toMatchObject({
       outcome: "success",
       targetId: item.id,
-      details: expect.objectContaining({ sourceGenerationId: sourceId }),
-    }));
+      details: { sourceGenerationId: sourceId },
+    });
     expect(releaseQuotaMock).not.toHaveBeenCalled();
   });
 
@@ -212,10 +224,11 @@ describe("POST /api/reports/generations/[id]", () => {
     persistDerivedMock.mockRejectedValueOnce(new Error("db failure"));
     expect((await POST(request(), { params: Promise.resolve({ id: sourceId }) })).status).toBe(503);
     expect(releaseQuotaMock).toHaveBeenCalledWith({ userId: "user-1", quotaDay: "2026-10-17" });
-    expect(resolvePersistenceMock).toHaveBeenCalledWith(expect.objectContaining({
-      generationId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+    const persistenceCall = resolvePersistenceMock.mock.calls.at(-1)?.[0];
+    expect(persistenceCall).toMatchObject({
       sourceGenerationId: sourceId,
-    }));
+    });
+    expect(persistenceCall?.generationId).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   it("maps a quota RPC failure before attempting derived persistence", async () => {
@@ -229,9 +242,7 @@ describe("POST /api/reports/generations/[id]", () => {
     });
     expect(persistDerivedMock).not.toHaveBeenCalled();
     expect(releaseQuotaMock).not.toHaveBeenCalled();
-    expect(auditMock).toHaveBeenCalledWith(expect.objectContaining({
-      details: expect.objectContaining({ stage: "quota", code: "quota_unavailable" }),
-    }));
+    expect(lastAudit()?.details).toMatchObject({ stage: "quota", code: "quota_unavailable" });
   });
 
   it("reconciles a lost derived insert response without releasing quota", async () => {
@@ -275,11 +286,12 @@ describe("POST /api/reports/generations/[id]", () => {
     const response = await POST(request(), { params: Promise.resolve({ id: sourceId }) });
 
     expect(response.status).toBe(503);
-    await expect(response.json()).resolves.toMatchObject({
+    const body = persistenceErrorSchema.parse(await response.json());
+    expect(body).toMatchObject({
       code: "audit_failed_after_persistence",
       persisted: true,
-      generationId: expect.any(String),
     });
+    expect(typeof body.generationId).toBe("string");
     expect(persistDerivedMock).toHaveBeenCalledTimes(1);
     expect(resolvePersistenceMock).not.toHaveBeenCalled();
     expect(releaseQuotaMock).not.toHaveBeenCalled();
@@ -287,10 +299,10 @@ describe("POST /api/reports/generations/[id]", () => {
     expect(auditMock.mock.calls[1]?.[0]).toMatchObject({
       outcome: "error",
       targetId: item.id,
-      details: expect.objectContaining({
+      details: {
         stage: "audit",
         code: "audit_failed_after_persistence",
-      }),
+      },
     });
   });
 
@@ -306,11 +318,10 @@ describe("POST /api/reports/generations/[id]", () => {
       persisted: "unknown",
     });
     expect(releaseQuotaMock).not.toHaveBeenCalled();
-    expect(auditMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(lastAudit()).toMatchObject({
       outcome: "error",
-      targetId: expect.any(String),
-      details: expect.objectContaining({ code: "persistence_uncertain" }),
-    }));
+      details: { code: "persistence_uncertain" },
+    });
   });
 
   it("keeps persistence uncertainty when its audit cannot be recorded", async () => {
@@ -414,7 +425,7 @@ describe("POST /api/reports/generations/[id]", () => {
 
     expect(response.status).toBe(200);
     expect(getSnapshotMock).toHaveBeenCalledWith(sourceId, "owner-2");
-    expect(persistDerivedMock).toHaveBeenCalledWith(expect.objectContaining({ createdByClerkId: "owner-2" }));
+    expect(persistDerivedMock.mock.calls.at(-1)?.[0]).toMatchObject({ createdByClerkId: "owner-2" });
     expect(reserveQuotaMock).toHaveBeenCalledWith("owner-2");
   });
 });

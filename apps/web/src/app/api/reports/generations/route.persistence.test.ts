@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { validPayload, validSnapshotPayload } from "@/__tests__/support/reports-generations-fixtures";
 import {
   reportGenerationMocks,
@@ -15,6 +16,16 @@ const {
   getReportExportAvailabilityMock,
   buildMultiActionReportGenerationInputMock,
 } = reportGenerationMocks;
+
+const persistenceResponseSchema = z.object({
+  code: z.string(),
+  persisted: z.union([z.literal(true), z.literal(false), z.literal("unknown")]),
+  generationId: z.string().optional(),
+}).passthrough();
+
+function lastAudit() {
+  return appendAdminOperationAuditMock.mock.calls.at(-1)?.[0];
+}
 
 describe("POST /api/reports/generations persistence recovery", () => {
   beforeEach(() => {
@@ -35,11 +46,9 @@ describe("POST /api/reports/generations persistence recovery", () => {
     );
 
     expect(response.status).toBe(503);
-    await expect(response.json()).resolves.toMatchObject({
-      code: "persistence_uncertain",
-      persisted: "unknown",
-      generationId: expect.any(String),
-    });
+    const body = persistenceResponseSchema.parse(await response.json());
+    expect(body).toMatchObject({ code: "persistence_uncertain", persisted: "unknown" });
+    expect(typeof body.generationId).toBe("string");
     expect(releaseReportExportSlotMock).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
@@ -69,16 +78,15 @@ describe("POST /api/reports/generations persistence recovery", () => {
 
     expect(response.status).toBe(200);
     expect(persistReportGenerationMock).toHaveBeenCalledTimes(1);
-    expect(resolveDirectReportGenerationPersistenceMock).toHaveBeenCalledWith({
-      createdByClerkId: "user-1",
-      generationId: expect.stringMatching(/^[0-9a-f-]{36}$/),
-    });
+    const persistenceCall = resolveDirectReportGenerationPersistenceMock.mock.calls.at(-1)?.[0];
+    expect(persistenceCall).toMatchObject({ createdByClerkId: "user-1" });
+    expect(persistenceCall?.generationId).toMatch(/^[0-9a-f-]{36}$/);
     expect(releaseReportExportSlotMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(lastAudit()).toMatchObject({
       outcome: "success",
       targetId: reconciledItem.id,
-      details: expect.objectContaining({ persistenceReconciled: true }),
-    }));
+      details: { persistenceReconciled: true },
+    });
   });
 
   it("keeps quota and exposes an unknown persistence result when the owner-scoped reread is uncertain", async () => {
@@ -93,17 +101,15 @@ describe("POST /api/reports/generations persistence recovery", () => {
     );
 
     expect(response.status).toBe(503);
-    await expect(response.json()).resolves.toMatchObject({
-      code: "persistence_uncertain",
-      persisted: "unknown",
-      generationId: expect.any(String),
-    });
+    const body = persistenceResponseSchema.parse(await response.json());
+    expect(body).toMatchObject({ code: "persistence_uncertain", persisted: "unknown" });
+    expect(typeof body.generationId).toBe("string");
     expect(persistReportGenerationMock).toHaveBeenCalledTimes(1);
     expect(releaseReportExportSlotMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(lastAudit()).toMatchObject({
       outcome: "error",
-      details: expect.objectContaining({ code: "persistence_uncertain" }),
-    }));
+      details: { code: "persistence_uncertain" },
+    });
   });
 
   it("keeps quota and reports persisted state when the post-insertion audit fails", async () => {

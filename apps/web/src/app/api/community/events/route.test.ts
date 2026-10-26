@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 const authMock = vi.hoisted(() => vi.fn());
 const getSafeAuthSessionMock = vi.hoisted(() => vi.fn());
@@ -39,6 +40,30 @@ vi.mock("@/lib/community/event-cache-invalidation", () => ({
 }));
 
 import { GET, POST } from "./route";
+
+const communityEventSchema = z.object({
+  id: z.string(),
+  location: z.object({
+    label: z.string().nullable(),
+    latitude: z.number().nullable(),
+    longitude: z.number().nullable(),
+    source: z.string().nullable(),
+  }).passthrough(),
+  rsvpCounts: z.object({ yes: z.number(), maybe: z.number(), no: z.number(), total: z.number() }),
+  myRsvpStatus: z.string().nullable(),
+  canEditOwnOps: z.boolean(),
+  organizerClerkId: z.string().nullable(),
+  organizer: z.object({ userId: z.string().nullable() }).passthrough(),
+}).passthrough();
+
+const communityEventsResponseSchema = z.object({ items: z.array(communityEventSchema) }).passthrough();
+const communityErrorResponseSchema = z.object({ error: z.string() }).passthrough();
+
+async function readCommunityEventsResponse(response: Response) {
+  const parsed = communityEventsResponseSchema.safeParse(await response.json());
+  if (!parsed.success) throw new Error(parsed.error.message);
+  return parsed.data;
+}
 
 const event = {
   id: "event-1",
@@ -114,7 +139,7 @@ describe("GET /api/community/events", () => {
 
   it("returns the public event projection anonymously with no personal RSVP status", async () => {
     const response = await GET(makeGetRequest());
-    const body = await response.json();
+    const body = await readCommunityEventsResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.items).toHaveLength(1);
@@ -175,7 +200,7 @@ describe("GET /api/community/events", () => {
     });
 
     const response = await GET(new Request("http://localhost/api/community/events?limit=2"));
-    const body = await response.json();
+    const body = await readCommunityEventsResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.items.map((item: { id: string }) => item.id)).toEqual(["event-future", "event-past"]);
@@ -191,7 +216,7 @@ describe("GET /api/community/events", () => {
     });
 
     const response = await GET(makeGetRequest());
-    const body = await response.json();
+    const body = await readCommunityEventsResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.items[0].myRsvpStatus).toBe("yes");
@@ -212,7 +237,7 @@ describe("GET /api/community/events", () => {
     );
 
     expect(response.status).toBe(200);
-    expect((await response.json()).items).toHaveLength(1);
+    expect((await readCommunityEventsResponse(response)).items).toHaveLength(1);
     expect(unstableCacheMock).not.toHaveBeenCalled();
   });
 
@@ -234,7 +259,7 @@ describe("GET /api/community/events", () => {
     });
 
     const response = await GET(makeGetRequest());
-    const body = await response.json();
+    const body = await readCommunityEventsResponse(response);
 
     expect(response.status).toBe(200);
     expect(body.items[0].canEditOwnOps).toBe(true);
@@ -262,7 +287,8 @@ describe("POST /api/community/events", () => {
     const response = await POST();
 
     expect(response.status).toBe(410);
-    expect((await response.json()).error).toContain("/actions/new");
+    const body = communityErrorResponseSchema.parse(await response.json());
+    expect(body.error).toContain("/actions/new");
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 });

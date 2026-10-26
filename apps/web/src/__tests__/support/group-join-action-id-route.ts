@@ -7,7 +7,20 @@ const getSupabaseServerClientMock=vi.hoisted(()=>vi.fn());
 const loadActionOrganizerIdsForActionMock=vi.hoisted(()=>vi.fn());
 const rebuildUserGamificationBadgesMock = vi.hoisted(()=>vi.fn(async()=>({inserted:0})));
 const refreshProgressionProfileMock=vi.hoisted(()=>vi.fn());
-const appendActionModerationAuditMock=vi.hoisted(()=>vi.fn());
+export type GroupJoinAuditEntry = {
+  operation?: string;
+  actorUserId?: string;
+  targetActionId?: string;
+  targetUserId?: string;
+  outcome?: string;
+  reason?: string;
+  details?: Record<string, unknown>;
+  previousValue?: Record<string, unknown> | null;
+  newValue?: Record<string, unknown> | null;
+};
+const appendActionModerationAuditMock = vi.hoisted(() =>
+  vi.fn<(entry: GroupJoinAuditEntry) => Promise<void>>(),
+);
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
 }));

@@ -91,16 +91,15 @@ describe("predicted route targets", () => {
         ["safe-zone", { status: "safe", suitability: 1, confidence: 1 }],
       ]),
     });
-    expect(built.candidates[0]).toEqual(expect.objectContaining({
-      volunteerSafety: expect.objectContaining({ status: "safe" }),
-      pollutionPriority: expect.any(Number),
-      finalPlannerContribution: expect.any(Number),
-    }));
-    expect(built.candidates[0]?.evidence).toEqual(expect.objectContaining({
-      pollutionPriority: expect.any(Number),
-      finalPlannerContribution: expect.any(Number),
-      volunteerAdditionality: expect.any(Number),
-    }));
+    const safeCandidate = built.candidates[0];
+    expect(safeCandidate).toBeDefined();
+    if (!safeCandidate) throw new Error("La prédiction sûre attendue est absente.");
+    expect(safeCandidate.volunteerSafety?.status).toBe("safe");
+    expect(typeof safeCandidate.pollutionPriority).toBe("number");
+    expect(typeof safeCandidate.finalPlannerContribution).toBe("number");
+    expect(typeof safeCandidate.evidence.pollutionPriority).toBe("number");
+    expect(typeof safeCandidate.evidence.finalPlannerContribution).toBe("number");
+    expect(typeof safeCandidate.evidence.volunteerAdditionality).toBe("number");
   });
 
   it("keeps the family predicted and preserves zone geometry/evidence", () => {
@@ -112,23 +111,21 @@ describe("predicted route targets", () => {
       travelBudgetMinutes: 60,
     });
 
-    expect(result.candidates[0]).toEqual(expect.objectContaining({
-      family: "predicted",
-      id: "predicted:near",
-      evidence: expect.objectContaining({
-        family: "predicted",
-        source: "urban-pressure-model",
-        zoneId: "near",
-        radiusKm: expect.any(Number),
-        distanceToCorridorKm: expect.any(Number),
-        contributions: expect.objectContaining({ waste: expect.any(Array), cigaretteButts: expect.any(Array) }),
-        urbanMorphologyPrior: expect.objectContaining({
-          waste: expect.objectContaining({ status: "unavailable" }),
-          cigaretteButts: expect.objectContaining({ status: "unavailable" }),
-        }),
-      }),
-    }));
-    expect(result.candidates[0]?.label).toContain("Zone prédite");
+    const predictedCandidate = result.candidates[0];
+    expect(predictedCandidate).toBeDefined();
+    if (!predictedCandidate) throw new Error("La prédiction proche attendue est absente.");
+    expect(predictedCandidate.family).toBe("predicted");
+    expect(predictedCandidate.id).toBe("predicted:near");
+    expect(predictedCandidate.evidence.family).toBe("predicted");
+    expect(predictedCandidate.evidence.source).toBe("urban-pressure-model");
+    expect(predictedCandidate.evidence.zoneId).toBe("near");
+    expect(typeof predictedCandidate.evidence.radiusKm).toBe("number");
+    expect(typeof predictedCandidate.evidence.distanceToCorridorKm).toBe("number");
+    expect(Array.isArray(predictedCandidate.evidence.contributions.waste)).toBe(true);
+    expect(Array.isArray(predictedCandidate.evidence.contributions.cigaretteButts)).toBe(true);
+    expect(predictedCandidate.evidence.urbanMorphologyPrior.waste.status).toBe("unavailable");
+    expect(predictedCandidate.evidence.urbanMorphologyPrior.cigaretteButts.status).toBe("unavailable");
+    expect(predictedCandidate.label).toContain("Zone prédite");
   });
 
   it("admet une zone forte proche, mais borne l'opportunité hors corridor", () => {
@@ -379,12 +376,13 @@ describe("predicted route targets", () => {
       observedCandidates: [{ latitude: 48.8566, longitude: 2.3622 }],
       travelBudgetMinutes: 60,
     });
-    expect(result.candidates[0]?.evidence.planningCorridor).toEqual({
+    const corridor = result.candidates[0]?.evidence.planningCorridor;
+    expect(corridor).toMatchObject({
       source: "origin_only",
       pointCount: 1,
       isNetworkGeometry: false,
-      note: expect.stringContaining("origine uniquement"),
     });
+    expect(corridor?.note).toContain("origine uniquement");
     expect(result.candidates[0]?.evidence.distanceToCorridorKm).toBeGreaterThan(0);
   });
 

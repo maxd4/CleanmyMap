@@ -3,6 +3,8 @@ import type { RouteRecommendationResponse } from "@/lib/route/route-response-con
 import type { RouteGroupPartitionResult } from "@/lib/route/route-group-partition";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
+import type { resolveRouteDataLayers } from "@/lib/route/route-data-status";
+import type { applyOriginRouteGeometryLegs } from "@/lib/route/route-contract";
 import { buildRouteRecommendationResponse } from "./route.response";
 import {
   buildEmptyRouteResponsePayload,
@@ -13,8 +15,8 @@ import {
   buildRouteProofContext,
 } from "./route.response.builders";
 
-const resolveRouteDataLayersMock = vi.hoisted(() => vi.fn());
-const applyOriginRouteGeometryLegsMock = vi.hoisted(() => vi.fn());
+const resolveRouteDataLayersMock = vi.hoisted(() => vi.fn<typeof resolveRouteDataLayers>());
+const applyOriginRouteGeometryLegsMock = vi.hoisted(() => vi.fn<typeof applyOriginRouteGeometryLegs>());
 const buildHotspotsMock = vi.hoisted(() => vi.fn());
 const buildProactiveAssistantMock = vi.hoisted(() => vi.fn());
 const defaultRouteAssistantPayloadMock = vi.hoisted(() => vi.fn());

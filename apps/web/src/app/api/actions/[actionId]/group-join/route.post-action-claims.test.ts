@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import {
   createGroupJoinAction,
   createGroupJoinParticipant,
@@ -8,9 +9,20 @@ import {
   seedGroupJoinTestDefaults,
   seedApprovedActionParticipants,
   type GroupJoinParticipantRow,
+  type GroupJoinAuditEntry,
 } from "@/__tests__/support/group-join-action-id-route";
 
 const captureActionParticipantImpactSnapshotMock = vi.hoisted(() => vi.fn());
+
+const claimResponseSchema = z.object({
+  participationStatus: z.string(),
+  participationSource: z.string(),
+  alreadyReviewed: z.boolean().optional(),
+}).passthrough();
+
+function lastAudit(): GroupJoinAuditEntry | undefined {
+  return appendActionModerationAuditMock.mock.calls.at(-1)?.[0];
+}
 
 vi.mock("@/lib/actions/action-participant-impact-notifications", () => ({
   captureActionParticipantImpactSnapshot: captureActionParticipantImpactSnapshotMock,
@@ -65,7 +77,7 @@ describe("POST /api/actions/:actionId/group-join post-action claims", () => {
     getSupabaseServerClientMock.mockReturnValue(supabase);
 
     const response = await postActionGroupJoin({ participantId: "claim-1", decision });
-    const body = await response.json();
+    const body = claimResponseSchema.parse(await response.json());
 
     expect(response.status).toBe(200);
     expect(body).toMatchObject({
@@ -80,14 +92,12 @@ describe("POST /api/actions/:actionId/group-join post-action claims", () => {
       expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
       expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
     }
-    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        operation: "post_action_claim_review",
-        actorUserId: "user-1",
-        targetUserId: "user-2",
-        details: expect.objectContaining({ decision }),
-      }),
-    );
+    expect(lastAudit()).toMatchObject({
+      operation: "post_action_claim_review",
+      actorUserId: "user-1",
+      targetUserId: "user-2",
+      details: { decision },
+    });
   });
 
   it("keeps a post-action claim separate from an ordinary future registration", async () => {
@@ -106,7 +116,7 @@ describe("POST /api/actions/:actionId/group-join post-action claims", () => {
       decision: "reject",
       requestKind: "post_action_claim",
     });
-    const body = await response.json();
+    const body = claimResponseSchema.parse(await response.json());
 
     expect(response.status).toBe(200);
     expect(body.participationSource).toBe("post_action_claim");
@@ -166,16 +176,14 @@ describe("POST /api/actions/:actionId/group-join post-action claims", () => {
       decision: "accept",
       requestKind: "post_action_claim",
     });
-    const body = await response.json();
+    const body = claimResponseSchema.parse(await response.json());
 
     expect(response.status).toBe(200);
     expect(body.alreadyReviewed).toBe(true);
     expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
-    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        operation: "post_action_claim_review",
-        details: expect.objectContaining({ participationStatus: "confirmed" }),
-      }),
-    );
+    expect(lastAudit()).toMatchObject({
+      operation: "post_action_claim_review",
+      details: { participationStatus: "confirmed" },
+    });
   });
 });

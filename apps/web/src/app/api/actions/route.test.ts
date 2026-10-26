@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
+import type { filterActionContractsByScope } from "@/lib/reports/scope";
 
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const fetchUnifiedActionContractsMock = vi.hoisted(() => vi.fn());
@@ -7,9 +9,19 @@ const buildActionInsightsMock = vi.hoisted(() => vi.fn());
 const toActionListItemMock = vi.hoisted(() => vi.fn());
 const toPublicActionListItemMock = vi.hoisted(() => vi.fn());
 const toPublicActionListResponseMock = vi.hoisted(() => vi.fn());
-const filterActionContractsByScopeMock = vi.hoisted(() => vi.fn());
+const filterActionContractsByScopeMock = vi.hoisted(() => vi.fn<typeof filterActionContractsByScope>());
 const resolveReportQueryMock = vi.hoisted(() => vi.fn());
-const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
+type SnapshotRequest = {
+  snapshotKey: string;
+  title: string;
+  version: string;
+  ttlMinutes: number;
+  buildPayload: () => Promise<unknown>;
+  meta?: Record<string, unknown>;
+};
+const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn<(
+  params: SnapshotRequest,
+) => Promise<{ payload: unknown }>>());
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserActiveRoleMock = vi.hoisted(() => vi.fn());
 const canModerateActionsGloballyMock = vi.hoisted(() => vi.fn());
@@ -61,6 +73,22 @@ vi.mock("@/lib/http/api-errors", () => ({
   handleApiError: (error: unknown) =>
     new Response(error instanceof Error ? error.message : "error", { status: 500 }),
 }));
+
+const actionsResponseSchema = z.object({
+  status: z.literal("ok"),
+  count: z.number(),
+  items: z.array(z.object({
+    id: z.string(),
+    status: z.string(),
+    contract: z.object({ createdByClerkId: z.string() }).passthrough().optional(),
+  }).passthrough()),
+}).passthrough();
+
+async function readActionsResponse(response: Response) {
+  const parsed = actionsResponseSchema.safeParse(await response.json());
+  if (!parsed.success) throw new Error(parsed.error.message);
+  return parsed.data;
+}
 
 describe("GET /api/actions", () => {
   beforeEach(() => {
@@ -221,7 +249,7 @@ describe("GET /api/actions", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({
+    expect(await readActionsResponse(response)).toMatchObject({
       status: "ok",
       count: 3,
     });
@@ -240,7 +268,7 @@ describe("GET /api/actions", () => {
     const { GET } = await import("./route");
 
     const response = await GET(new Request("http://localhost/api/actions"));
-    const payload = await response.json();
+    const payload = await readActionsResponse(response);
 
     expect(response.status).toBe(200);
     expect(fetchUnifiedActionContractsMock).toHaveBeenCalledWith(
@@ -270,7 +298,7 @@ describe("GET /api/actions", () => {
     const response = await GET(
       new Request("http://localhost/api/actions?status=approved"),
     );
-    const payload = await response.json();
+    const payload = await readActionsResponse(response);
 
     expect(response.status).toBe(200);
     expect(payload.items).toEqual(
@@ -287,7 +315,7 @@ describe("GET /api/actions", () => {
     const response = await GET(
       new Request("http://localhost/api/actions?view=future&limit=10"),
     );
-    const payload = await response.json();
+    const payload = await readActionsResponse(response);
 
     expect(response.status).toBe(200);
     expect(fetchUnifiedActionContractsMock).toHaveBeenCalledWith(
@@ -414,7 +442,7 @@ describe("GET /api/actions", () => {
       const response = await GET(
         new Request("http://localhost/api/actions?status=pending"),
       );
-      const payload = await response.json();
+      const payload = await readActionsResponse(response);
 
       expect(response.status).toBe(200);
       expect(payload.items).toEqual(
@@ -445,7 +473,7 @@ describe("GET /api/actions", () => {
     const response = await GET(
       new Request("http://localhost/api/actions?status=all"),
     );
-    const payload = await response.json();
+    const payload = await readActionsResponse(response);
 
     expect(response.status).toBe(200);
     expect(payload.items).toEqual(

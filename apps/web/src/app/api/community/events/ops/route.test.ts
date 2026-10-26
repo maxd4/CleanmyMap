@@ -6,7 +6,21 @@ import {
 
 const authMock = vi.hoisted(() => vi.fn());
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
-const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
+type CommunityOpsAuditEntry = {
+  outcome?: string;
+  actorUserId?: string;
+  targetId?: string;
+  details?: {
+    operation?: string;
+    targetUserId?: string;
+    stage?: string;
+    previousValue?: { capacityTarget?: number };
+    newValue?: { capacityTarget?: number };
+  };
+};
+const appendAdminOperationAuditMock = vi.hoisted(() =>
+  vi.fn<(entry: CommunityOpsAuditEntry) => Promise<void>>(),
+);
 const trackCommunityOpsUpdateMock = vi.hoisted(() => vi.fn());
 const loadCommunityEventRsvpSummariesMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -293,20 +307,19 @@ describe("POST /api/community/events/ops", () => {
 
     expect(response.status).toBe(500);
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        outcome: "error",
-        actorUserId: "admin-1",
-        targetId: "event-1",
-        details: expect.objectContaining({
-          operation: "update_community_event_ops_admin_override",
-          targetUserId: "organizer-1",
-          stage: "event_update",
-          previousValue: expect.objectContaining({ capacityTarget: 10 }),
-          newValue: expect.objectContaining({ capacityTarget: 20 }),
-        }),
-      }),
-    );
+    const audit = appendAdminOperationAuditMock.mock.calls[0]?.[0];
+    expect(audit).toMatchObject({
+      outcome: "error",
+      actorUserId: "admin-1",
+      targetId: "event-1",
+      details: {
+        operation: "update_community_event_ops_admin_override",
+        targetUserId: "organizer-1",
+        stage: "event_update",
+        previousValue: { capacityTarget: 10 },
+        newValue: { capacityTarget: 20 },
+      },
+    });
     expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0]?.[0])).not.toContain(
       "sensitive Supabase error",
     );
