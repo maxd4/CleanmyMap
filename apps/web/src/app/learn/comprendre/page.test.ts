@@ -76,6 +76,18 @@ describe("LearnVulgarisationPage", () => {
     journeyCalls.length = 0;
   });
 
+  it("publishes stable metadata and an ISR window for the public guide", async () => {
+    const page = await import("./page");
+
+    expect(page.revalidate).toBe(86400);
+    expect(page.metadata).toMatchObject({
+      title: "Vulgarisation",
+      description:
+        "Repères scientifiques, ordres de grandeur et méthodologie pour comprendre l'impact environnemental avant d'agir.",
+      robots: { index: true, follow: true },
+    });
+  });
+
   it("keeps the reading flow in the expected order", () => {
     const markup = renderToStaticMarkup(React.createElement(Page));
 

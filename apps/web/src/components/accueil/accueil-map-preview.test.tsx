@@ -46,13 +46,22 @@ describe("homepage map preview", () => {
     expect(source).toContain("isNearViewport ? (");
   });
 
-  it("mounts the feed once the preview is near the viewport", () => {
+  it("keeps the map feed out of the initial bundle and provides a loading fallback", () => {
+    expect(source).toContain("const DeferredHomeMapFeed = dynamic(");
+    expect(source).toContain('import("@/components/actions/map-feed/actions-map-feed")');
+    expect(source).toContain("ssr: false");
+    expect(source).toContain('aria-label="Chargement de la carte"');
+    expect(source).not.toContain('import { ActionsMapFeed }');
+  });
+
+  it("shows the accessible chunk-loading fallback once the preview is near the viewport", () => {
     state.isNearViewport = true;
 
     const rendered = renderToStaticMarkup(
       React.createElement(HomeMapPreview),
     );
 
-    expect(rendered).toContain('data-testid="actions-map-feed"');
+    expect(rendered).toContain('role="status"');
+    expect(rendered).toContain('aria-label="Chargement de la carte"');
   });
 });

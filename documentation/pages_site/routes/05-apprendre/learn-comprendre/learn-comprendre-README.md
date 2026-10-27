@@ -5,6 +5,7 @@
 - **Route** : `/learn/comprendre`
 - **Fichier(s) source(s)** :
 - `apps/web/src/app/learn/comprendre/page.tsx`
+- `apps/web/src/app/learn/comprendre/client.tsx`
 - **Type fonctionnel** : page éducative
 - **Famille / bloc fonctionnel** : Apprendre (bloc)
 - **Statut** : public
@@ -13,6 +14,7 @@
 - **Action principale attendue** : Lire les cartes de vulgarisation, consulter la méthodologie et ouvrir le quiz.
 - **Palette attendue** : yellow
 - **Scope** : page de vulgarisation avec introduction visuelle, cartes pédagogiques, ressources différées, lien vers `/learn/sentrainer` et méthodologie.
+- **Performance** : wrapper serveur avec metadata de route et ISR à 24 h ; les interactions lourdes restent chargées à l'approche de leur section via `next/dynamic` et `use-in-view-once`.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : yellow — canvas #fef9c3, halo rgba(234, 179, 8, 0.30)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

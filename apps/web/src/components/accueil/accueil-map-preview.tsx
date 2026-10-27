@@ -1,11 +1,28 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
-import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
 import {
   ACTIONS_MAP_PUBLIC_FEED_DEFAULTS,
   getActionsMapCurrentYearDays,
 } from "@/components/actions/map/filters/actions-map-filters.utils";
+
+const DeferredHomeMapFeed = dynamic(
+  () =>
+    import("@/components/actions/map-feed/actions-map-feed").then(
+      (module) => module.ActionsMapFeed,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="h-full min-h-[18rem] w-full animate-pulse motion-reduce:animate-none"
+        role="status"
+        aria-label="Chargement de la carte"
+      />
+    ),
+  },
+);
 
 export function HomeMapPreview() {
   const { ref: mapPreviewRef, isInView: isNearViewport } =
@@ -30,7 +47,7 @@ export function HomeMapPreview() {
         }}
       >
         {isNearViewport ? (
-          <ActionsMapFeed
+          <DeferredHomeMapFeed
             days={getActionsMapCurrentYearDays()}
             dateScope={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.dateScope}
             statusFilter={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.statusFilter}
