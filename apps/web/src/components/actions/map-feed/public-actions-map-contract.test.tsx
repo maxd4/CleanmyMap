@@ -49,7 +49,10 @@ function buildComparableAction(): ActionMapItem {
 
 describe("public actions map contract", () => {
   it("uses the same public feed defaults and provider boundary on both surfaces", () => {
-    expect(HOMEPAGE_SOURCE).toContain("<ActionsMapFeed");
+    expect(HOMEPAGE_SOURCE).toContain("<DeferredHomeMapFeed");
+    expect(HOMEPAGE_SOURCE).toContain(
+      'import("@/components/actions/map-feed/actions-map-feed")',
+    );
     expect(HOMEPAGE_SOURCE).toContain("presentation=\"homepage-preview\"");
     expect(HOMEPAGE_SOURCE).toContain("ACTIONS_MAP_PUBLIC_FEED_DEFAULTS");
     expect(MAP_PAGE_SOURCE).toContain("<ActionPollutionScoreReferencesProvider>");
