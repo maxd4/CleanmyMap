@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { deriveActionFormalitiesFacts } from "@/lib/actions/formalities-facts";
 import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
 import { buildFormalitiesWorkflowState } from "@/lib/actions/formalities-workflow";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
@@ -46,6 +47,10 @@ function createUpdateClient(result: { data: unknown; error: unknown }) {
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 describe("POST /api/actions/:actionId/publish", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -63,20 +68,19 @@ describe("POST /api/actions/:actionId/publish", () => {
   });
 
   it("publishes a private pre-action without changing moderation status", async () => {
-    getSupabaseServerClientMock.mockReturnValue(
-      createUpdateClient({ data: { id: "action-1", published_at: "2026-09-14T10:00:00.000Z" }, error: null }),
-    );
+    const supabase = createUpdateClient({ data: { id: "action-1", published_at: "2026-09-14T10:00:00.000Z" }, error: null });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
     const { POST } = await import("./route");
     const response = await POST(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) });
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
     expect(response.status).toBe(200);
-    expect(body.status).toBe("published");
-    expect(body.alreadyPublished).toBe(false);
-    expect(emitAdministrativeRequirementNotificationsMock).toHaveBeenCalledWith({
-      supabase: expect.anything(),
+    expect(body).toMatchObject({ status: "published", alreadyPublished: false });
+    const notificationCall: unknown = emitAdministrativeRequirementNotificationsMock.mock.calls[0]?.[0];
+    expect(notificationCall).toMatchObject({
+      supabase,
       actionId: "action-1",
     });
-    expect(getSupabaseServerClientMock().from).not.toHaveBeenCalledWith("action_participants");
+    expect(supabase.from).not.toHaveBeenCalledWith("action_participants");
   });
 
   it("refuses publication by a third party", async () => {
@@ -96,9 +100,9 @@ describe("POST /api/actions/:actionId/publish", () => {
     });
     const { POST } = await import("./route");
     const response = await POST(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) });
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
     expect(response.status).toBe(200);
-    expect(body.alreadyPublished).toBe(true);
+    expect(body).toMatchObject({ alreadyPublished: true });
     expect(emitAdministrativeRequirementNotificationsMock).not.toHaveBeenCalled();
   });
 
@@ -172,9 +176,12 @@ describe("POST /api/actions/:actionId/publish", () => {
     const { POST } = await import("./route");
 
     const response = await POST(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) });
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
     expect(response.status).toBe(422);
-    expect(body.code).toBe("required_formality_not_ready");
+    expect(body).toMatchObject({ code: "required_formality_not_ready" });
+    if (!isRecord(body) || !Array.isArray(body.formalityIds)) {
+      throw new Error("Expected required formality identifiers in the error response");
+    }
     expect(body.formalityIds).toContain("paris-city-public-domain-aot");
     expect(supabase.from).not.toHaveBeenCalled();
   });

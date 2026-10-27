@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const getSupabaseAdminClientMock = vi.hoisted(() => vi.fn());
@@ -56,9 +57,9 @@ describe("POST /api/actions/:actionId/cancel", () => {
     const response = await POST(request({ confirmPhrase: "oui", reason: "weather" }), {
       params: Promise.resolve({ actionId: "action-1" }),
     });
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
     expect(response.status).toBe(409);
-    expect(body.code).toBe("confirmation_required");
+    expect(body).toMatchObject({ code: "confirmation_required" });
     expect(cancelFutureActionMock).not.toHaveBeenCalled();
   });
 
@@ -77,11 +78,11 @@ describe("POST /api/actions/:actionId/cancel", () => {
       request({ confirmPhrase: "CONFIRMER ANNULATION", reason: "weather" }),
       { params: Promise.resolve({ actionId: "action-1" }) },
     );
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
 
     expect(response.status).toBe(409);
-    expect(body.code).toBe("state_conflict");
-    expect(body.code).not.toBe("confirmation_required");
+    expect(body).toMatchObject({ code: "state_conflict" });
+    expect(body).not.toMatchObject({ code: "confirmation_required" });
   });
 
   it("cancels through the dedicated operation and audits the tombstone", async () => {
@@ -90,10 +91,10 @@ describe("POST /api/actions/:actionId/cancel", () => {
       request({ confirmPhrase: "confirmer annulation", reason: "weather" }),
       { params: Promise.resolve({ actionId: "action-1" }) },
     );
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
 
     expect(response.status).toBe(200);
-    expect(body.status).toBe("cancelled");
+    expect(body).toMatchObject({ status: "cancelled" });
     expect(cancelFutureActionMock).toHaveBeenCalledWith(expect.anything(), {
       actionId: "action-1",
       actorUserId: "admin-1",
@@ -103,12 +104,13 @@ describe("POST /api/actions/:actionId/cancel", () => {
       expect.anything(),
       { actionId: "action-1", creatorUserId: null },
     );
-    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+    const moderationAuditCall: unknown = appendActionModerationAuditMock.mock.calls[0]?.[0];
+    expect(moderationAuditCall).toMatchObject({
       operation: "cancel_action",
       targetActionId: "action-1",
       previousValue: { status: "approved" },
-      newValue: expect.objectContaining({ status: "cancelled" }),
-    }));
+      newValue: { status: "cancelled" },
+    });
   });
 
   it("exposes no physical delete operation", async () => {
@@ -123,10 +125,10 @@ describe("POST /api/actions/:actionId/cancel", () => {
   ] as const)("rejects cancellation %s before touching persistence", async (_label, body, code) => {
     const { POST } = await import("./route");
     const response = await POST(requestBody(body), { params: Promise.resolve({ actionId: "action-1" }) });
-    const payload = await response.json();
+    const payload = await parseJsonSafely(response);
 
     expect(response.status).toBe(400);
-    expect(payload.code).toBe(code);
+    expect(payload).toMatchObject({ code });
     expect(cancelFutureActionMock).not.toHaveBeenCalled();
     expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
   });
@@ -139,10 +141,10 @@ describe("POST /api/actions/:actionId/cancel", () => {
     const response = await POST(request({ confirmPhrase: "CONFIRMER ANNULATION", reason: "weather" }), {
       params: Promise.resolve({ actionId: "action-1" }),
     });
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
 
     expect(response.status).toBe(404);
-    expect(body.code).toBe("not_found");
+    expect(body).toMatchObject({ code: "not_found" });
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(expect.objectContaining({ outcome: "error" }));
     expect(refreshActionImpactProgressionDependentsMock).not.toHaveBeenCalled();
   });
@@ -157,7 +159,7 @@ describe("POST /api/actions/:actionId/cancel", () => {
     });
 
     expect(response.status).toBe(422);
-    expect((await response.json()).code).toBe("invalid_payload");
+    expect(await parseJsonSafely(response)).toMatchObject({ code: "invalid_payload" });
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(expect.objectContaining({ outcome: "error" }));
   });
 });

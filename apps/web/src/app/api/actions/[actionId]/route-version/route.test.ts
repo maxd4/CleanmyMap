@@ -3,6 +3,7 @@ import { buildRoutePlannerSnapshot } from "@/lib/route/route-calibration";
 import { createRoutePlannerSnapshotInput } from "@/lib/route/route-calibration-test-fixtures";
 import { createOperationalRouteFromRecommendation } from "@/lib/route/route-operational";
 import { createRoutePlannerProof } from "@/lib/route/route-planner-proof";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const authMock = vi.hoisted(() => vi.fn());
 const identityMock = vi.hoisted(() => vi.fn());
@@ -78,6 +79,14 @@ function operationalRouteForSnapshot(currentSnapshot: ReturnType<typeof snapshot
       stops: [],
     })),
   });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function firstMockArgument(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
+  return mock.mock.calls[0]?.[0];
 }
 
 function actionWithSnapshot(
@@ -263,21 +272,27 @@ describe("POST /api/actions/:actionId/route-version", () => {
     const { current, supabase } = preparePostScenario(currentSnapshot);
     const nextOperationalRoute = operationalRouteForSnapshot(nextSnapshot);
     const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
     expect(response.status).toBe(200);
-    expect(body.status).toBe("applied");
-    expect(body.actionId).toBe("action-1");
-    expect(body.activeRouteVersion.appliedByUserId).toBe("owner-1");
-    expect(body.history).toHaveLength(1);
-    expect(supabase.chain.update).toHaveBeenCalledWith(expect.objectContaining({
-      preparation_data: expect.objectContaining({
+    expect(body).toMatchObject({
+      status: "applied",
+      actionId: "action-1",
+      activeRouteVersion: { appliedByUserId: "owner-1" },
+      history: [expect.anything()],
+    });
+    const updateCall = firstMockArgument(supabase.chain.update);
+    expect(updateCall).toMatchObject({
+      preparation_data: {
         routeCalibrationContext: current.preparation_data.routeCalibrationContext,
         operationalRoute: nextOperationalRoute,
         customPreparationKey: "preserve-me",
-        routeVersioning: expect.objectContaining({ history: expect.any(Array) }),
-      }),
+      },
       geometry_source: "routed",
-    }));
+    });
+    if (!isRecord(updateCall) || !isRecord(updateCall.preparation_data) || !isRecord(updateCall.preparation_data.routeVersioning)) {
+      throw new Error("Expected route versioning data in the update payload");
+    }
+    expect(Array.isArray(updateCall.preparation_data.routeVersioning.history)).toBe(true);
     expect(supabase.chain.eq).toHaveBeenCalledWith("updated_at", current.updated_at);
   });
 
@@ -288,7 +303,7 @@ describe("POST /api/actions/:actionId/route-version", () => {
     const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
 
     expect(response.status).toBe(200);
-    expect((await response.json()).status).toBe("applied");
+    expect(await parseJsonSafely(response)).toMatchObject({ status: "applied" });
   });
 
   it("rejects a forged volunteer count that differs from the current server count", async () => {
@@ -373,7 +388,7 @@ describe("POST /api/actions/:actionId/route-version", () => {
     const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
 
     expect(response.status).toBe(409);
-    expect((await response.json()).code).toBe("state_conflict");
+    expect(await parseJsonSafely(response)).toMatchObject({ code: "state_conflict" });
   });
 
   it("returns an internal error when persistence fails", async () => {
@@ -409,10 +424,10 @@ describe("POST /api/actions/:actionId/route-version", () => {
     const supabase = { from: vi.fn() };
     supabaseMock.mockReturnValue(supabase);
     const response = await postRouteVersion(routeVersionPayload(currentSnapshot));
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
 
     expect(response.status).toBe(200);
-    expect(body.status).toBe("unchanged");
+    expect(body).toMatchObject({ status: "unchanged" });
     expect(supabase.from).not.toHaveBeenCalled();
   });
 
@@ -445,13 +460,15 @@ describe("POST /api/actions/:actionId/route-version", () => {
     const response = await GET(new Request("http://localhost", { method: "GET" }), {
       params: Promise.resolve({ actionId: "action-1" }),
     });
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
 
     expect(response.status).toBe(200);
-    expect(body.signals).toMatchObject({
-      participants: { used: 3, confirmed: 5 },
-      recommended: true,
-      reasons: ["participants_changed"],
+    expect(body).toMatchObject({
+      signals: {
+        participants: { used: 3, confirmed: 5 },
+        recommended: true,
+        reasons: ["participants_changed"],
+      },
     });
     expect(freshnessMock).toHaveBeenCalledOnce();
   });
