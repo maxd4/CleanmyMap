@@ -231,6 +231,11 @@ export function MissionActiveMap({
 
   const polylineCoordinates = track.map(({ latitude, longitude }) => ({ latitude, longitude }))
   const liveDistance = calculateTrackDistanceMeters(track)
+  const syncStatus = pendingGpsPointCount > 0
+    ? `${pendingGpsPointCount} point(s) à synchroniser`
+    : syncMessage || errorMsg
+      ? 'Synchronisation indisponible'
+      : 'Synchronisation à jour'
 
   return (
     <View style={styles.container}>
@@ -265,13 +270,9 @@ export function MissionActiveMap({
           <Metric label="Durée" value={duration} />
           <Metric label="Distance live indicative" value={formatDistance(liveDistance)} />
         </View>
-        <Text style={styles.statusText}>
-          {pendingGpsPointCount > 0
-            ? `${pendingGpsPointCount} point(s) à synchroniser`
-            : 'Synchronisation à jour'}
-        </Text>
-        {syncMessage ? <Text style={styles.syncText}>{syncMessage}</Text> : null}
-        {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+        <Text accessibilityLiveRegion="polite" style={styles.statusText}>{syncStatus}</Text>
+        {syncMessage ? <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.syncText}>{syncMessage}</Text> : null}
+        {errorMsg ? <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.errorText}>{errorMsg}</Text> : null}
       </View>
 
       <View style={[styles.actionOverlay, { bottom: Math.max(insets.bottom + 12, 12) }]}>

@@ -250,10 +250,13 @@ describe('MissionActiveMap runtime', () => {
     state.serverResult = { ok: false, error: 'Réseau indisponible' }
     const localRenderer = await renderMap()
     expect(textValues(localRenderer)).toContain('Réseau indisponible — tracé local conservé.')
+    expect(textValues(localRenderer)).not.toContain('Synchronisation à jour')
 
     state.localTrack = []
     const emptyRenderer = await renderMap()
     expect(textValues(emptyRenderer)).toContain('Réseau indisponible')
+    expect(textValues(emptyRenderer)).toContain('Synchronisation indisponible')
+    expect(textValues(emptyRenderer)).not.toContain('Synchronisation à jour')
   })
 
   it('stops and resumes the foreground subscription across AppState transitions', async () => {

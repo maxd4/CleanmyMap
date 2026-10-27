@@ -134,6 +134,17 @@ describe('mobile mission finalization', () => {
     expect(state.sequence).toEqual(['stop', 'restart'])
   })
 
+  it('keeps the active mission and resumes tracking when the session disappears before finalization', async () => {
+    state.client = null
+
+    const result = await stopTracking('mission-1')
+
+    expect(result).toEqual({ ok: false, error: 'Connexion Clerk requise pour accéder à cette mission.' })
+    expect(state.storedMissionId).toBe('mission-1')
+    expect(state.sequence).toEqual(['stop', 'restart'])
+    expect(Location.startLocationUpdatesAsync).toHaveBeenCalledOnce()
+  })
+
   it('keeps the active mission and resumes tracking when server finalization fails', async () => {
     state.missionError = new Error('offline')
     const client = state.client

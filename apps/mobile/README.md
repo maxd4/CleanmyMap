@@ -84,7 +84,11 @@ cinq destinations primaires sans accès secondaire explicite.
   active restaure les `gps_points` owner-scoped, fusionne son tracé UX local et
   reprend le suivi foreground au retour au premier plan et relance le replay du
   buffer local dès que la session Clerk est disponible. Ce suivi ne réécrit pas
-  les points ni les métriques dans Supabase. `mission_actions` reste hors
+  les points ni les métriques dans Supabase. Si la session ou le réseau manque
+  pendant une finalisation, la mission reste active, le suivi est repris et
+  l'interface distingue l'indisponibilité de la synchronisation d'un état à
+  jour ; aucune mission terminée n'est annoncée avant l'accusé serveur.
+  `mission_actions` reste hors
   runtime ; une activité GPS peut seulement être reliée à une action éligible
   via `createLinkedMission` et sa réconciliation serveur ;
 - `Rejoindre une action` est natif et passe par la frontière HTTP mobile

@@ -303,7 +303,7 @@ export async function stopTracking(
 
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
-    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+    return resumeAfterFailure(CLERK_SESSION_REQUIRED_ERROR);
   }
 
   onStageChange?.('synchronizing');
@@ -352,7 +352,8 @@ async function stopRegisteredTracking(): Promise<string | null> {
 async function resumeAfterFailure(message: string): Promise<ServiceResult<never>> {
   const resumeResult = await restartBackgroundTracking();
   const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
-  return { ok: false, error: `${message}.${resumeSuffix}` };
+  const normalizedMessage = /[.!?]$/.test(message) ? message : `${message}.`;
+  return { ok: false, error: `${normalizedMessage}${resumeSuffix}` };
 }
 
 async function reconcileCompletedMission(mission: Mission, ownerId: string): Promise<void> {
