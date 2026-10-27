@@ -201,6 +201,7 @@ const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
       "src/lib/periodic/",
       "src/lib/dashboard/",
       "src/lib/governance/",
+      "src/lib/community/events-pagination.ts",
       "src/lib/community/report-events.ts",
       "src/lib/legal-content-report/",
       "src/lib/weather/",

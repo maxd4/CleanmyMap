@@ -65,9 +65,9 @@ la gestion des rôles d'administration, le langage d'autorisation serveur, la
 préparation métier SPOGOMI et la transition de modération. Les primitives
 `src/lib/time/civil-date.ts` et `src/lib/time/utc-runtime.ts` relèvent du
 métier ; le répertoire `src/lib/time/` n'est donc pas qualifié globalement en
-UI. Les services communautaires de lecture et de similarité sont attribués
-respectivement à `api-persistence` et `business` selon leurs responsabilités
-exécutées.
+UI. Les services communautaires de pagination et de lecture sont attribués à
+`api-persistence`, tandis que la similarité relève de `business` selon leurs
+responsabilités exécutées.
 
 Les fichiers instrumentables non reconnus par une règle explicite sont
 comptabilisés dans `unclassified`, avec une attribution

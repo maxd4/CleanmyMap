@@ -123,6 +123,7 @@ export function SpogomiPhotoGallery({ photos }: { photos: SpogomiPublicGalleryPh
         ariaLabelledBy={dialogTitleId}
         initialFocusRef={closeButtonRef}
         size="xl"
+        className="z-[60]"
         panelClassName="border border-slate-700 bg-slate-950 p-4 text-white shadow-2xl sm:p-6"
       >
         {activePhoto ? (

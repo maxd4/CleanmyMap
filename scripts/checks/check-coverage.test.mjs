@@ -390,6 +390,7 @@ test("les owners P2-A démontrés reçoivent une famille primaire", () => {
   const expected = new Map([
     ["src/lib/domain-language.ts", "security"],
     ["src/lib/time/civil-date.ts", "business"],
+    ["src/lib/community/events-pagination.ts", "api-persistence"],
     ["src/lib/community/report-events.ts", "api-persistence"],
     ["src/lib/community/feedback-similarity.ts", "business"],
   ]);
