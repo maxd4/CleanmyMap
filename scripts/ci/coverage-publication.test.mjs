@@ -367,9 +367,9 @@ test("coverage proof provenance distinguishes CI, dynamic and local candidates",
   );
 });
 
-test("Web evidence rejects a summary or configuration fingerprint mismatch", () => {
+test("Web evidence rejects summary, configuration, or environment fingerprint mismatch", () => {
   const sha = candidateSha();
-  for (const mismatch of ["summarySha256", "configurationFingerprint"]) {
+  for (const mismatch of ["summarySha256", "configurationFingerprint", "environmentFingerprint"]) {
     const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-evidence-mismatch-"));
     const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
     process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;

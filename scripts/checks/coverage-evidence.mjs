@@ -128,21 +128,26 @@ export function computeConfigurationFingerprint({ repositoryRoot = process.cwd()
   return hash.digest("hex");
 }
 
-function environmentDescriptor() {
+function environmentDescriptor({
+  nodeVersion = process.version,
+  platform = process.platform,
+  arch = process.arch,
+  environment = process.env,
+} = {}) {
   return {
-    node: process.version,
-    platform: process.platform,
-    arch: process.arch,
+    node: nodeVersion,
+    platform,
+    arch,
     values: Object.fromEntries(
       RELEVANT_ENVIRONMENT_KEYS
-        .filter((key) => process.env[key] !== undefined)
-        .map((key) => [key, createHash("sha256").update(String(process.env[key])).digest("hex")]),
+        .filter((key) => environment[key] !== undefined)
+        .map((key) => [key, createHash("sha256").update(String(environment[key])).digest("hex")]),
     ),
   };
 }
 
-export function computeCoverageEnvironmentFingerprint() {
-  return hashJson(environmentDescriptor());
+export function computeCoverageEnvironmentFingerprint(options = {}) {
+  return hashJson(environmentDescriptor(options));
 }
 
 function canonicalSummary(summary, repositoryRoot) {

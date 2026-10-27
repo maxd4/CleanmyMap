@@ -34,9 +34,12 @@ export function validateNodeVersionContract({
   const issues = [];
   const actual = parseVersion(actualNodeVersion);
   const contract = String(contractContent).trim();
+  let contractVersion = null;
 
-  if (contract !== NODE_FAMILY) {
-    issues.push(`apps/web/.nvmrc must contain exactly ${NODE_FAMILY}; found ${JSON.stringify(contract)}`);
+  try {
+    contractVersion = parseVersion(contract);
+  } catch {
+    issues.push(`apps/web/.nvmrc must pin an exact Node version; found ${JSON.stringify(contract)}`);
   }
 
   const workflowNodeFile = workflowContent.split(/\r?\n/).find((line) => line.trimStart().startsWith("NODE_VERSION_FILE:"))?.split(":", 2)[1]?.trim().split("#", 1)[0].trim();
@@ -53,6 +56,9 @@ export function validateNodeVersionContract({
     issues.push("CI must not declare a divergent Node version or a >=24 range");
   }
 
+  if (contractVersion && (contractVersion.major !== MINIMUM_NODE.major || !isAtLeast(contractVersion, MINIMUM_NODE))) {
+    issues.push(`apps/web/.nvmrc ${contract} must satisfy ^24.3.0`);
+  }
   if (actual.major !== MINIMUM_NODE.major || !isAtLeast(actual, MINIMUM_NODE)) {
     issues.push(`effective Node ${actualNodeVersion} must satisfy ^24.3.0`);
   }

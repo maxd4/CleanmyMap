@@ -30,7 +30,7 @@ test("accepts the canonical Node 24 contract and supported runtime", () => {
   const result = validateNodeVersionContract({
     workflowContent: validWorkflow,
     actualNodeVersion: "24.14.0",
-    contractContent: "24.x\n",
+    contractContent: "24.22.1\n",
     lockfile: validLockfile,
     webPackage: {},
   });
@@ -38,7 +38,7 @@ test("accepts the canonical Node 24 contract and supported runtime", () => {
   assert.deepEqual(result.issues, []);
 });
 
-test("rejects a divergent CI version and a runtime below ^24.3.0", () => {
+test("rejects a floating contract and a runtime below ^24.3.0", () => {
   const result = validateNodeVersionContract({
     workflowContent: validWorkflow
       .replace("apps/web/.nvmrc", "24.x")
@@ -49,8 +49,8 @@ test("rejects a divergent CI version and a runtime below ^24.3.0", () => {
     webPackage: {},
   });
 
-  assert.equal(result.issues.length, 3);
-  assert.match(result.issues.join("\n"), /centralize Node/);
+  assert.equal(result.issues.length, 4);
+  assert.match(result.issues.join("\n"), /pin an exact Node version/);
   assert.match(result.issues.join("\n"), /setup-node/);
   assert.match(result.issues.join("\n"), /satisfy \^24\.3\.0/);
 });

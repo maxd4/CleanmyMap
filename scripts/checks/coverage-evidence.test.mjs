@@ -11,6 +11,7 @@ import {
   MOBILE_COVERAGE_EVIDENCE_RELATIVE_PATH,
   MOBILE_COVERAGE_LCOV_RELATIVE_PATH,
   MOBILE_COVERAGE_SUMMARY_RELATIVE_PATH,
+  computeCoverageEnvironmentFingerprint,
   validateCoverageEvidence,
   writeCoverageEvidence,
 } from "./coverage-evidence.mjs";
@@ -129,6 +130,36 @@ test("missing coverage evidence cannot be treated as checker-only proof", () => 
   const root = fixture();
   try {
     assert.throws(() => validateCoverageEvidence({ repositoryRoot: root }), /evidence incomplete or unreadable/);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("coverage evidence accepts a compatible producer and rejects a different consumer runtime", () => {
+  const root = fixture();
+  try {
+    writeCoverageEvidence({ repositoryRoot: root });
+    assert.doesNotThrow(() => validateCoverageEvidence({ repositoryRoot: root }));
+    const evidencePath = path.join(root, ..."apps/web/coverage/coverage-evidence.json".split("/"));
+    const evidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+    const producerEnvironment = {
+      nodeVersion: "v24.22.1",
+      environment: { ...process.env, TZ: "UTC" },
+    };
+    const consumerEnvironment = {
+      nodeVersion: "v24.21.0",
+      environment: { ...process.env, TZ: "Europe/Paris" },
+    };
+    const producerFingerprint = computeCoverageEnvironmentFingerprint(producerEnvironment);
+    const consumerFingerprint = computeCoverageEnvironmentFingerprint(consumerEnvironment);
+    assert.notEqual(producerFingerprint, consumerFingerprint);
+    evidence.environmentFingerprint = producerFingerprint;
+    fs.writeFileSync(evidencePath, `${JSON.stringify(evidence)}\n`, "utf8");
+
+    assert.throws(
+      () => validateCoverageEvidence({ repositoryRoot: root }),
+      /environmentFingerprint/,
+    );
   } finally {
     cleanup(root);
   }
