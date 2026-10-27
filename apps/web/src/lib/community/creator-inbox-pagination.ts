@@ -9,12 +9,11 @@ export function compareCreatorInboxRecordCursors(
 ): number {
   const leftTime = Date.parse(left.createdAt);
   const rightTime = Date.parse(right.createdAt);
-  if (
-    Number.isFinite(leftTime) &&
-    Number.isFinite(rightTime) &&
-    leftTime !== rightTime
-  ) {
-    return leftTime - rightTime;
+  if (Number.isFinite(leftTime) && Number.isFinite(rightTime)) {
+    if (leftTime !== rightTime) {
+      return leftTime - rightTime;
+    }
+    return left.id.localeCompare(right.id);
   }
   if (left.createdAt !== right.createdAt) {
     return left.createdAt.localeCompare(right.createdAt);

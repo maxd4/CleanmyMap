@@ -1,0 +1,105 @@
+import { describe, expect, it } from "vitest";
+import {
+  compareCreatorInboxRecordCursors,
+  isCreatorInboxRecordCursor,
+  type CreatorInboxRecordCursor,
+} from "./creator-inbox-pagination";
+
+function cursor(createdAt: string, id: string): CreatorInboxRecordCursor {
+  return { createdAt, id };
+}
+
+describe("creator inbox cursor contract", () => {
+  it("orders valid timestamps before the id tie-breaker", () => {
+    expect(
+      compareCreatorInboxRecordCursors(
+        cursor("2026-10-27T10:00:00.000Z", "later"),
+        cursor("2026-10-27T09:59:59.999Z", "earlier"),
+      ),
+    ).toBeGreaterThan(0);
+    expect(
+      compareCreatorInboxRecordCursors(
+        cursor("2026-10-27T10:00:00.000Z", "a"),
+        cursor("2026-10-27T10:00:00.000Z", "b"),
+      ),
+    ).toBeLessThan(0);
+    expect(
+      compareCreatorInboxRecordCursors(
+        cursor("2026-10-27T10:00:00.000Z", "same"),
+        cursor("2026-10-27T10:00:00.000Z", "same"),
+      ),
+    ).toBe(0);
+  });
+
+  it("compares equivalent timezone representations by id", () => {
+    expect(
+      compareCreatorInboxRecordCursors(
+        cursor("2026-10-27T12:00:00+02:00", "a"),
+        cursor("2026-10-27T10:00:00.000Z", "b"),
+      ),
+    ).toBeLessThan(0);
+    expect(
+      compareCreatorInboxRecordCursors(
+        cursor("2026-10-27T10:00:00.000Z", "b"),
+        cursor("2026-10-27T12:00:00+02:00", "a"),
+      ),
+    ).toBeGreaterThan(0);
+  });
+
+  it("falls back lexicographically for invalid dates and still uses id ties", () => {
+    expect(
+      compareCreatorInboxRecordCursors(
+        cursor("not-a-date-b", "a"),
+        cursor("not-a-date-a", "z"),
+      ),
+    ).toBeGreaterThan(0);
+    expect(
+      compareCreatorInboxRecordCursors(
+        cursor("not-a-date", "a"),
+        cursor("not-a-date", "b"),
+      ),
+    ).toBeLessThan(0);
+    expect(
+      compareCreatorInboxRecordCursors(
+        cursor("not-a-date", "same"),
+        cursor("not-a-date", "same"),
+      ),
+    ).toBe(0);
+  });
+
+  it("defines an antisymmetric total order for mixed cursor keys", () => {
+    const values = [
+      cursor("2026-10-27T10:00:00.000Z", "z"),
+      cursor("2026-10-27T10:00:00.000Z", "a"),
+      cursor("2026-10-27T09:00:00.000Z", "x"),
+      cursor("invalid", "x"),
+      cursor("invalid", "y"),
+    ];
+
+    for (const left of values) {
+      for (const right of values) {
+        const forward = Math.sign(compareCreatorInboxRecordCursors(left, right));
+        const reverse = Math.sign(compareCreatorInboxRecordCursors(right, left));
+        expect(forward === 0 ? reverse : forward).toBe(forward === 0 ? 0 : -reverse);
+      }
+    }
+    expect([...values].sort(compareCreatorInboxRecordCursors)).toEqual([
+      cursor("2026-10-27T09:00:00.000Z", "x"),
+      cursor("2026-10-27T10:00:00.000Z", "a"),
+      cursor("2026-10-27T10:00:00.000Z", "z"),
+      cursor("invalid", "x"),
+      cursor("invalid", "y"),
+    ]);
+  });
+
+  it("validates finite dates and bounded non-empty ids", () => {
+    expect(isCreatorInboxRecordCursor(cursor("2026-10-27T10:00:00.000Z", "id"))).toBe(true);
+    expect(isCreatorInboxRecordCursor(cursor("2026-10-27T10:00:00+02:00", "id"))).toBe(true);
+    expect(isCreatorInboxRecordCursor(cursor("invalid", "id"))).toBe(false);
+    expect(isCreatorInboxRecordCursor(cursor("2026-10-27T10:00:00.000Z", ""))).toBe(false);
+    expect(isCreatorInboxRecordCursor(cursor("2026-10-27T10:00:00.000Z", " "))).toBe(false);
+    expect(isCreatorInboxRecordCursor(cursor("2026-10-27T10:00:00.000Z", "x".repeat(129)))).toBe(false);
+    expect(isCreatorInboxRecordCursor(null)).toBe(false);
+    expect(isCreatorInboxRecordCursor({ createdAt: "2026-10-27T10:00:00.000Z" })).toBe(false);
+  });
+});

@@ -13,7 +13,6 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { removeBugReportScreenshotForDeletedReport } from "./bug-report-screenshot";
 import {
   clampCommunityBugReportsHistoryLimit,
-  compareHistoryKeys,
   toHistoryPage,
   type BugReportInput,
   type BugReportRecord,
@@ -268,14 +267,14 @@ export async function listCommunityBugReportsForUser(params: {
     .filter((record) => record.submittedByUserId === submittedByUserId)
     .filter((record) =>
       params.beforeCursor
-        ? compareHistoryKeys(
+        ? compareCreatorInboxRecordCursors(
             { createdAt: record.createdAt, id: record.id },
             params.beforeCursor,
           ) < 0
         : true,
     )
     .sort((left, right) =>
-      compareHistoryKeys(
+      compareCreatorInboxRecordCursors(
         { createdAt: right.createdAt, id: right.id },
         { createdAt: left.createdAt, id: left.id },
       ),

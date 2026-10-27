@@ -136,4 +136,46 @@ describe("creator inbox server pagination", () => {
 
     expect(page.items.map((item) => item.source)).toEqual(["feedback", "promotion"]);
   });
+
+  it("rejects malformed, versioned and oversized public cursors", async () => {
+    const { parseCreatorInboxPageCursor } = await import("./creator-inbox-loader");
+    expect(parseCreatorInboxPageCursor("not-base64-json")).toBeNull();
+    expect(
+      parseCreatorInboxPageCursor(
+        Buffer.from(JSON.stringify({ version: 2, sources: {} }), "utf8").toString("base64url"),
+      ),
+    ).toBeNull();
+    expect(
+      parseCreatorInboxPageCursor(
+        Buffer.from(
+          JSON.stringify({
+            version: 1,
+            sources: {
+              feedback: { createdAt: "invalid", id: "feedback-1" },
+            },
+          }),
+          "utf8",
+        ).toString("base64url"),
+      ),
+    ).toBeNull();
+    expect(parseCreatorInboxPageCursor("x".repeat(8193))).toBeNull();
+    expect(parseCreatorInboxPageCursor(null)).toEqual({
+      feedback: null,
+      promotion: null,
+      partner: null,
+      legal_content_report: null,
+      event: null,
+    });
+  });
+
+  it("clamps a zero page size to one item without changing source ownership", async () => {
+    listBugReportsMock.mockResolvedValue([feedback("only", "2026-08-27T12:00:00.000Z")]);
+    const { loadCreatorInboxPage } = await import("./creator-inbox-loader");
+
+    const page = await loadCreatorInboxPage({ limit: 0 });
+
+    expect(page.items.map((item) => item.sourceRecordId)).toEqual(["only"]);
+    expect(page.hasMore).toBe(false);
+    expect(listBugReportsMock).toHaveBeenCalledWith(2, null);
+  });
 });

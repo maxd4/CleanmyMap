@@ -1,4 +1,4 @@
-import { compareCreatorInboxRecordCursors } from "./creator-inbox-pagination";
+import type { CreatorInboxRecordCursor } from "./creator-inbox-pagination";
 
 export const FEEDBACK_QUALIFICATION_STATUSES = [
   "pending",
@@ -69,10 +69,7 @@ export type BugReportRecord = BugReportInput & {
 const COMMUNITY_BUG_REPORTS_HISTORY_DEFAULT_LIMIT = 20;
 const COMMUNITY_BUG_REPORTS_HISTORY_MAX_LIMIT = 50;
 
-export type CommunityBugReportHistoryCursor = {
-  createdAt: string;
-  id: string;
-};
+export type CommunityBugReportHistoryCursor = CreatorInboxRecordCursor;
 
 export type CommunityBugReportHistoryPage = {
   items: BugReportRecord[];
@@ -127,13 +124,6 @@ export function buildCommunityBugReportHistoryCursor(
   cursor: CommunityBugReportHistoryCursor,
 ): string {
   return `${cursor.createdAt}|${cursor.id}`;
-}
-
-export function compareHistoryKeys(
-  left: CommunityBugReportHistoryCursor,
-  right: CommunityBugReportHistoryCursor,
-): number {
-  return compareCreatorInboxRecordCursors(left, right);
 }
 
 export function toHistoryPage(
