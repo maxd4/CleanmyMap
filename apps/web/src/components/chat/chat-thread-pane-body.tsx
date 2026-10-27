@@ -29,6 +29,7 @@ export type ChatThreadPaneBodyProps = Pick<ChatThreadPaneProps,
   | "onRetryMessages"
   | "userId"
   | "onPollVote"
+  | "onPollVoteRetry"
   | "pollVoteStates"
   | "highlightedMessageId"
   | "emptyState"
@@ -84,6 +85,7 @@ export function ChatThreadPaneBody({
   onRetryMessages,
   userId,
   onPollVote,
+  onPollVoteRetry,
   pollVoteStates,
   highlightedMessageId,
   emptyState,
@@ -161,6 +163,7 @@ export function ChatThreadPaneBody({
         locale={locale}
         tone={tone}
         onPollVote={onPollVote}
+        onPollVoteRetry={onPollVoteRetry}
         pollVoteStates={pollVoteStates}
         highlightedMessageId={highlightedMessageId}
         emptyState={emptyState}

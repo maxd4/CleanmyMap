@@ -293,6 +293,7 @@ export function useChatData({
   );
 
   return {
+    messagesKey,
     messages,
     messagesData,
     messagesError,

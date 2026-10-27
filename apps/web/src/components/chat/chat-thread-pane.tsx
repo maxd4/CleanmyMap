@@ -67,6 +67,7 @@ export type ChatThreadPaneProps = {
   onRetryMessages: () => void;
   userId?: string;
   onPollVote: (messageId: string, optionId: string | null) => void;
+  onPollVoteRetry: (messageId: string) => void;
   pollVoteStates: Record<string, PollVoteState>;
   highlightedMessageId: string | null;
   emptyState: ChatEmptyStateCopy;

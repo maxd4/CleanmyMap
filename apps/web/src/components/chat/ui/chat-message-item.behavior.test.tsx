@@ -134,6 +134,23 @@ describe("ChatMessageItem behavior", () => {
     zeroVoteRenderer.unmount();
   });
 
+  it("exposes an accessible retry action after a failed vote", () => {
+    const onPollVoteRetry = vi.fn();
+    const renderer = renderMessage(
+      {
+        message_kind: "poll",
+        poll_options: [{ id: "a", position: 1, label: "Oui", voteCount: 0 }],
+      },
+      { onPollVote: vi.fn(), onPollVoteRetry, pollVoteError: "Vote indisponible" },
+    );
+
+    const retry = renderer.root.findByProps({ children: "Réessayer" });
+    expect(retry.props.type).toBe("button");
+    act(() => retry.props.onClick());
+    expect(onPollVoteRetry).toHaveBeenCalledWith("message-1");
+    renderer.unmount();
+  });
+
   it("renders structured announcements and action references without inventing cards", () => {
     const renderer = renderMessage({
       message_kind: "announcement",

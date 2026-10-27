@@ -16,6 +16,7 @@ La page `Messagerie` sert aux échanges publics thématiques et directs entre me
 - une action `Prendre une photo` distincte de `Pièce jointe`, fondée sur l’input photo natif (`accept="image/*"`, `capture="environment"`) et partageant le pipeline image/Storage existant ; le fallback desktop ouvre la sélection d’image. Les vidéos ne sont pas prises en charge et aucune vidéo n’est prévisualisée ou stockée dans Chat.
 - une composition `Sondage` dans `community`, `admin_elu`, `territory`, `action` ou `dm`, avec une question et 2 à 6 options éditables ; la publication conserve le contexte canonique du canal et réinitialise uniquement le formulaire
 - un vote réel dans chaque sondage : choix, changement ou retrait, compteurs par option et proportions agrégées, sans exposer l'identité des votants
+- un état de vote optimiste borné au scope du fil : état `pending`, réconciliation sur la réponse serveur, rollback prudent après refus/timeout et réessai explicite de la dernière intention ; une réponse tardive d'un autre canal est ignorée
 - pour `admin_elu`, une audience limitée à `admin`, `max` et `elu`, avec un topic facultatif ; en DM, seuls les deux participants peuvent lire ou voter ; pour `territory` et `action`, les mêmes règles d'accès que les messages du canal s'appliquent ; la visibilité du message, des options, du vote et des agrégats reste décidée par la RLS
 - un contexte d'événement minimal lorsqu'une annonce est liée à un cleanup existant
 - des états de chargement, d'accès et de participation
@@ -41,6 +42,7 @@ La page `Messagerie` sert aux échanges publics thématiques et directs entre me
 - laisser `Communauté globale` et `Territoire global` afficher les messages non classés ; un groupe sélectionné filtre sur les `topic_id` persistés qui le composent, tandis que le fil territorial reste zone-driven et conserve les messages legacy/non classés
 - afficher sobrement le topic porté par un message dans une vue agrégée
 - conserver les annonces dans `app_messages` avec leur `message_kind` et ne publier un contexte événementiel qu'après résolution d'un `community_events.id` canonique
+- conserver le vote comme seule mutation légère optimiste du domaine : ne pas ajouter d'accusé de lecture ou de réaction sans source serveur, droits, anti-doublon et contrat de réconciliation correspondants
 - conserver les URLs uniquement dans `app_messages.content` ; interdire les protocoles non autorisés et tout HTML utilisateur, sans crawler, proxy, metadata distante ni nouvelle persistance
 - préserver les deep-links de relais `template`, `topicId` et `eventId` sans faire de l’URL une source de vérité pour le titre, la date ou le lieu
 - préserver les deep-links DM `tab=dm`, `recipientId`, `recipientLabel`, `recipientHandle` et `messageId` ; une recherche sélectionnée réutilise le même ancrage que les notifications

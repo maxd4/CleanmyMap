@@ -32,6 +32,7 @@ export type ChatMessageFeedProps = {
   locale: Locale;
   tone: "light" | "dark";
   onPollVote: (messageId: string, optionId: string | null) => void;
+  onPollVoteRetry: (messageId: string) => void;
   pollVoteStates: Record<string, PollVoteState>;
   highlightedMessageId: string | null;
   emptyState: ChatEmptyStateCopy;
@@ -56,6 +57,7 @@ export function ChatMessageFeed({
   locale,
   tone,
   onPollVote,
+  onPollVoteRetry,
   pollVoteStates,
   highlightedMessageId,
   emptyState,
@@ -121,6 +123,7 @@ export function ChatMessageFeed({
           userId={userId}
           tone={tone}
           onPollVote={onPollVote}
+          onPollVoteRetry={onPollVoteRetry}
           pollVotePending={pollVoteStates[message.id]?.pending}
           pollVoteError={pollVoteStates[message.id]?.error}
           isHighlighted={highlightedMessageId === message.id}

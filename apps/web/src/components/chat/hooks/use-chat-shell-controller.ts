@@ -54,6 +54,7 @@ export function useChatShellController({
     user,
     userId,
     messages,
+    messagesKey,
     mutateMessages,
     sendChatMessageWithInboxRefresh,
     feedbackIdForSubmit,
@@ -88,7 +89,7 @@ export function useChatShellController({
     relatedEvent,
     setPollOptions,
   } = composer;
-  const pollVoting = useChatShellPollVoting({ messages, mutateMessages });
+  const pollVoting = useChatShellPollVoting({ messages, messagesKey, mutateMessages });
   const submit = useChatSubmit({
     submitLockRef,
     userId,

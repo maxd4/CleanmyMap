@@ -166,6 +166,7 @@ describe("Chat message presentation", () => {
           locale: scenario.locale,
           tone: "dark",
           onPollVote: vi.fn(),
+          onPollVoteRetry: vi.fn(),
           pollVoteStates: {},
           highlightedMessageId: null,
           emptyState,

@@ -143,6 +143,7 @@ export function buildChatShellThreadProps({
     onRetryMessages: () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ context.mutateMessages(); },
     userId: context.userId,
     onPollVote: (messageId, optionId) => { void /* fire-and-forget -- the poll view owns pending and error state. */ pollVoting.handlePollVote(messageId, optionId); },
+    onPollVoteRetry: (messageId) => { void /* fire-and-forget -- retry reuses the last requested option and reconciles the scope. */ pollVoting.retryPollVote(messageId); },
     pollVoteStates: pollVoting.pollVoteStates,
     highlightedMessageId: presentation.highlightedMessageId,
     emptyState: activeChannelPresentation.discussionGuidance,

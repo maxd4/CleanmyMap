@@ -27,6 +27,7 @@ type ChatMessageItemProps = {
   userId?: string;
   tone?: "light" | "dark";
   onPollVote?: (messageId: string, optionId: string | null) => void;
+  onPollVoteRetry?: (messageId: string) => void;
   pollVotePending?: boolean;
   pollVoteError?: string | null;
   isHighlighted?: boolean;
@@ -58,6 +59,7 @@ export function ChatMessageItem({
   userId,
   tone = "dark",
   onPollVote,
+  onPollVoteRetry,
   pollVotePending = false,
   pollVoteError = null,
   isHighlighted = false,
@@ -288,9 +290,21 @@ export function ChatMessageItem({
                 </button>
               ) : null}
               {pollVoteError ? (
-                <p className="mt-2 cmm-text-caption font-bold text-rose-600" role="alert">
-                  {pollVoteError}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <p className="cmm-text-caption font-bold text-rose-600" role="alert">
+                    {pollVoteError}
+                  </p>
+                  {onPollVoteRetry ? (
+                    <button
+                      type="button"
+                      disabled={pollVotePending}
+                      onClick={() => onPollVoteRetry(message.id)}
+                      className="cmm-text-caption font-semibold text-pink-700 underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
+                    >
+                      Réessayer
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
             </div>
           ) : null}
