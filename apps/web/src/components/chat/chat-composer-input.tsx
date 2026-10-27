@@ -12,6 +12,39 @@ import { ChatShareLinkAction } from "./ui/chat-share-link-action";
 
 type ChatComposerMode = "message" | "announcement" | "poll";
 
+export function getChatComposerAvailability({
+  activeChannelType,
+  canSubmit,
+  placeholder,
+  selectedRecipient,
+  userId,
+  isSending,
+  isUploading,
+}: {
+  activeChannelType: string;
+  canSubmit: boolean;
+  placeholder: string;
+  selectedRecipient: ChatUser | null;
+  userId?: string;
+  isSending: boolean;
+  isUploading: boolean;
+}) {
+  const isBusy = isSending || isUploading;
+  const isDmWithoutRecipient = activeChannelType === "dm" && !selectedRecipient;
+  const isGuest = !userId;
+  return {
+    isInputDisabled: isGuest || isBusy || isDmWithoutRecipient,
+    isSubmitDisabled: !canSubmit || isGuest || isBusy || isDmWithoutRecipient,
+    placeholder: isGuest
+      ? activeChannelType === "dm"
+        ? "Connectez-vous pour envoyer un message"
+        : "Connectez-vous pour participer à la discussion"
+      : isDmWithoutRecipient
+        ? "Sélectionnez une conversation"
+        : placeholder,
+  };
+}
+
 export function handleChatComposerFileSelection({
   event,
   onFileChange,
@@ -110,11 +143,21 @@ export function ChatComposerInputBar({
   userId?: string;
   canSubmit: boolean;
 }) {
+  const availability = getChatComposerAvailability({
+    activeChannelType,
+    canSubmit,
+    placeholder,
+    selectedRecipient,
+    userId,
+    isSending,
+    isUploading,
+  });
+
   return <div className={`relative flex items-end gap-3 rounded-3xl p-3 border transition-[border-color,background-color,box-shadow] duration-300 shadow-inner ${isLight ? "border-rose-100 bg-white/90 focus-within:border-rose-300 focus-within:bg-white" : "border-white/5 bg-white/5 focus-within:border-violet-500/30 focus-within:bg-white/10"}`}>
     <input type="file" ref={fileInputRef} hidden accept={CHAT_ATTACHMENT_ACCEPT} onChange={onFileSelection} />
     <button type="button" aria-label="Options d’écriture" aria-expanded={isToolsOpen} aria-controls="chat-composer-options" onClick={onToggleTools} className={`p-3 rounded-2xl transition-[color,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "text-slate-400 hover:text-rose-500 hover:bg-rose-50" : "text-slate-400 hover:text-violet-400 hover:bg-white/5"}`}><Plus size={20} aria-hidden="true" /></button>
-    <textarea rows={1} value={message} onChange={onMessageChange} onKeyDown={onKeyDown} disabled={!userId || isSending || isUploading || (activeChannelType === "dm" && !selectedRecipient)} className={`flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium py-3 px-1 max-h-40 resize-none ${isLight ? "text-slate-900 placeholder:text-slate-400" : "text-white placeholder:text-slate-500"}`} placeholder={!userId ? activeChannelType === "dm" ? "Connectez-vous pour envoyer un message" : "Connectez-vous pour participer à la discussion" : activeChannelType === "dm" && !selectedRecipient ? "Sélectionnez une conversation" : placeholder} />
-    <CmmButton disabled={!canSubmit || !userId || isSending || isUploading || (activeChannelType === "dm" && !selectedRecipient)} loading={isSending || isUploading} type="submit" ariaLabel={composerMode === "poll" ? "Publier le sondage" : "Envoyer le message"} tone={isLight ? "primary" : "important"} className={`w-12 h-12 text-white rounded-2xl shadow-xl disabled:opacity-30 disabled:grayscale ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-violet-600 shadow-violet-600/30"}`}><Send size={20} aria-hidden="true" /></CmmButton>
+    <textarea rows={1} value={message} onChange={onMessageChange} onKeyDown={onKeyDown} disabled={availability.isInputDisabled} className={`flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium py-3 px-1 max-h-40 resize-none ${isLight ? "text-slate-900 placeholder:text-slate-400" : "text-white placeholder:text-slate-500"}`} placeholder={availability.placeholder} />
+    <CmmButton disabled={availability.isSubmitDisabled} loading={isSending || isUploading} type="submit" ariaLabel={composerMode === "poll" ? "Publier le sondage" : "Envoyer le message"} tone={isLight ? "primary" : "important"} className={`w-12 h-12 text-white rounded-2xl shadow-xl disabled:opacity-30 disabled:grayscale ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-violet-600 shadow-violet-600/30"}`}><Send size={20} aria-hidden="true" /></CmmButton>
     <ChatComposerTools isOpen={isToolsOpen} isLight={isLight} canAttach={canAttach} canChooseAnnouncement={canChooseAnnouncement} canChoosePoll={canChoosePoll} composerMode={composerMode} onClose={onToggleTools} onOpenFileInput={onOpenFileInput} onSelectMode={onSelectMode} onInsertLink={onInsertLink} userId={userId} />
   </div>;
 }

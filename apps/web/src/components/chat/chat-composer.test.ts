@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
+import { getChatComposerAvailability } from "./chat-composer-input";
 import {
   getCurrentChatShareLink,
   selectChatComposerMode,
@@ -21,6 +22,38 @@ const photoCaptureSource = readFileSync(
 );
 
 describe("ChatComposer progressive disclosure", () => {
+  it("derives guest, busy and DM availability without relaxing send guards", () => {
+    const base = {
+      activeChannelType: "community",
+      canSubmit: true,
+      placeholder: "Écrire",
+      selectedRecipient: null,
+      userId: "user-1",
+      isSending: false,
+      isUploading: false,
+    };
+
+    expect(getChatComposerAvailability(base)).toEqual({
+      isInputDisabled: false,
+      isSubmitDisabled: false,
+      placeholder: "Écrire",
+    });
+    expect(getChatComposerAvailability({ ...base, userId: undefined })).toMatchObject({
+      isInputDisabled: true,
+      isSubmitDisabled: true,
+      placeholder: "Connectez-vous pour participer à la discussion",
+    });
+    expect(getChatComposerAvailability({ ...base, activeChannelType: "dm" })).toMatchObject({
+      isInputDisabled: true,
+      isSubmitDisabled: true,
+      placeholder: "Sélectionnez une conversation",
+    });
+    expect(getChatComposerAvailability({ ...base, isUploading: true })).toMatchObject({
+      isInputDisabled: true,
+      isSubmitDisabled: true,
+    });
+  });
+
   it("keeps the default composer focused on writing and sending", () => {
     expect(source).toContain('aria-label="Options d’écriture"');
     expect(source).toContain("aria-controls=\"chat-composer-options\"");

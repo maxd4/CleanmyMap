@@ -2,7 +2,6 @@
 
 import type { ChangeEvent, FormEvent, RefObject } from "react";
 import type { LucideIcon } from "lucide-react";
-import { FeedbackSection } from "@/components/sections/rubriques/feedback-section";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { Locale } from "@/lib/ui/preferences";
 import type {
@@ -14,10 +13,7 @@ import type { ChatFeedState } from "./chat-feed-state";
 import type { ChatEmptyStateCopy, ChatMetaItem } from "./chat-shell.utils";
 import type { ChatMessage, ChatUser } from "./chat-types";
 import { ChatHeader } from "./chat-header";
-import { ChatActionModeration } from "./chat-action-moderation";
-import { TopicNetworkGraph } from "./topic-network-graph";
-import { ChatComposer } from "./chat-composer";
-import { ChatMessageFeed } from "./ui/chat-message-feed";
+import { ChatThreadPaneBody } from "./chat-thread-pane-body";
 
 type PollVoteState = { pending: boolean; error: string | null };
 
@@ -104,208 +100,48 @@ export type ChatThreadPaneProps = {
   canSubmit: boolean;
 };
 
-export function ChatThreadPane({
-  pagePath,
-  tone,
-  messagerieMode,
-  showThreadOnMobile,
-  activeChannelType,
-  activeChannelLabel,
-  activeChannelDescription,
-  activeChannelIcon,
-  metaItems,
-  viewMode,
-  isBugReportChannel,
-  selectedRecipient,
-  isEditingHandle,
-  newHandle,
-  onViewModeChange,
-  onToggleHandleEditor,
-  onHandleChange,
-  onConfirmHandle,
-  isLive,
-  onBackToDmInbox,
-  onBackToContextList,
-  showSearch,
-  isSearchOpen,
-  searchQuery,
-  searchResults,
-  searchIsLoading,
-  searchError,
-  searchHasMore,
-  searchIsLoadingMore,
-  searchLoadMoreError,
-  onToggleSearch,
-  onSearchQueryChange,
-  onCloseSearch,
-  onSelectSearchResult,
-  onLoadMoreSearch,
-  selectedActionId,
-  messages,
-  locale,
-  scrollRef,
-  hasMoreMessages,
-  isLoadingPrevious,
-  loadPreviousError,
-  onLoadPreviousMessages,
-  targetMessageId,
-  targetStatus,
-  feedState,
-  onRetryMessages,
-  userId,
-  onPollVote,
-  pollVoteStates,
-  highlightedMessageId,
-  emptyState,
-  selectedRecipientId,
-  onStarterPrompt,
-  isAuthenticated,
-  composerPlaceholder,
-  composerMode,
-  onComposerModeChange,
-  announcementTemplate,
-  onAnnouncementTemplateChange,
-  relatedEvent,
-  announcementEventRequested,
-  announcementEventLoading,
-  announcementEventError,
-  pollOptions,
-  onPollOptionsChange,
-  userMessage,
-  onMessageChange,
-  file,
-  onFileChange,
-  fileInputRef,
-  isSending,
-  isUploading,
-  sendError,
-  showMentions,
-  mentionSuggestions,
-  onInsertMention,
-  onInsertLink,
-  onSubmit,
-  canSubmit,
-}: ChatThreadPaneProps) {
+export function ChatThreadPane(props: ChatThreadPaneProps) {
+  const { tone, messagerieMode, showThreadOnMobile } = props;
   const isLight = tone === "light";
 
   return (
     <div className={`min-h-0 min-w-0 flex-1 flex-col relative ${messagerieMode && !showThreadOnMobile ? "hidden md:flex" : "flex"} ${isLight ? "bg-white/60" : "bg-white/5 dark:bg-slate-950/20"}`}>
       <ChatHeader
-        activeChannelType={activeChannelType}
-        activeChannelLabel={activeChannelLabel}
-        activeChannelDescription={activeChannelDescription}
-        activeChannelIcon={activeChannelIcon}
-        metaItems={metaItems}
-        viewMode={viewMode}
-        isBugReportChannel={isBugReportChannel}
-        selectedRecipient={selectedRecipient}
-        isEditingHandle={isEditingHandle}
-        newHandle={newHandle}
-        onViewModeChange={onViewModeChange}
-        onToggleHandleEditor={onToggleHandleEditor}
-        onHandleChange={onHandleChange}
-        onConfirmHandle={onConfirmHandle}
+        activeChannelType={props.activeChannelType}
+        activeChannelLabel={props.activeChannelLabel}
+        activeChannelDescription={props.activeChannelDescription}
+        activeChannelIcon={props.activeChannelIcon}
+        metaItems={props.metaItems}
+        viewMode={props.viewMode}
+        isBugReportChannel={props.isBugReportChannel}
+        selectedRecipient={props.selectedRecipient}
+        isEditingHandle={props.isEditingHandle}
+        newHandle={props.newHandle}
+        onViewModeChange={props.onViewModeChange}
+        onToggleHandleEditor={props.onToggleHandleEditor}
+        onHandleChange={props.onHandleChange}
+        onConfirmHandle={props.onConfirmHandle}
         tone={tone}
         showControls={!isLight}
-        isLive={isLive}
-        onBackToDmInbox={onBackToDmInbox}
-        onBackToContextList={onBackToContextList}
-        showSearch={showSearch}
-        isSearchOpen={isSearchOpen}
-        searchQuery={searchQuery}
-        searchResults={searchResults}
-        searchIsLoading={searchIsLoading}
-        searchError={searchError}
-        searchHasMore={searchHasMore}
-        searchIsLoadingMore={searchIsLoadingMore}
-        searchLoadMoreError={searchLoadMoreError}
-        onToggleSearch={onToggleSearch}
-        onSearchQueryChange={onSearchQueryChange}
-        onCloseSearch={onCloseSearch}
-        onSelectSearchResult={onSelectSearchResult}
-        onLoadMoreSearch={onLoadMoreSearch}
+        isLive={props.isLive}
+        onBackToDmInbox={props.onBackToDmInbox}
+        onBackToContextList={props.onBackToContextList}
+        showSearch={props.showSearch}
+        isSearchOpen={props.isSearchOpen}
+        searchQuery={props.searchQuery}
+        searchResults={props.searchResults}
+        searchIsLoading={props.searchIsLoading}
+        searchError={props.searchError}
+        searchHasMore={props.searchHasMore}
+        searchIsLoadingMore={props.searchIsLoadingMore}
+        searchLoadMoreError={props.searchLoadMoreError}
+        onToggleSearch={props.onToggleSearch}
+        onSearchQueryChange={props.onSearchQueryChange}
+        onCloseSearch={props.onCloseSearch}
+        onSelectSearchResult={props.onSelectSearchResult}
+        onLoadMoreSearch={props.onLoadMoreSearch}
       />
-
-      {activeChannelType === "action" && selectedActionId && messagerieMode ? (
-        <ChatActionModeration actionId={selectedActionId} tone={tone} />
-      ) : null}
-
-      {isBugReportChannel ? (
-        <div className={`flex-1 overflow-y-auto p-6 custom-scrollbar ${isLight ? "bg-white/40" : ""}`}>
-          <FeedbackSection pagePath={pagePath} source="feedback_discussion" />
-        </div>
-      ) : viewMode === "graph" ? (
-        <div className="flex-1 overflow-hidden">
-          <TopicNetworkGraph />
-        </div>
-      ) : (
-        <>
-          <ChatMessageFeed
-            scrollRef={scrollRef}
-            hasMoreMessages={hasMoreMessages}
-            isLoadingPrevious={isLoadingPrevious}
-            loadPreviousError={loadPreviousError}
-            onLoadPreviousMessages={onLoadPreviousMessages}
-            targetMessageId={targetMessageId}
-            targetStatus={targetStatus}
-            feedState={feedState}
-            onRetryMessages={onRetryMessages}
-            messages={messages}
-            userId={userId}
-            locale={locale}
-            tone={tone}
-            onPollVote={onPollVote}
-            pollVoteStates={pollVoteStates}
-            highlightedMessageId={highlightedMessageId}
-            emptyState={emptyState}
-            activeChannelType={activeChannelType}
-            selectedRecipientId={selectedRecipientId}
-            onStarterPrompt={onStarterPrompt}
-            isAuthenticated={isAuthenticated}
-          />
-          <ChatComposer
-            activeChannelType={activeChannelType}
-            composerPlaceholder={composerPlaceholder}
-            tone={tone}
-            composerMode={composerMode}
-            onComposerModeChange={onComposerModeChange}
-            announcementTemplate={announcementTemplate}
-            onAnnouncementTemplateChange={onAnnouncementTemplateChange}
-            relatedEvent={relatedEvent}
-            announcementEventRequested={announcementEventRequested}
-            announcementEventLoading={announcementEventLoading}
-            announcementEventError={announcementEventError}
-            pollOptions={pollOptions}
-            onPollOptionsChange={onPollOptionsChange}
-            showModeTabs={activeChannelType !== "bug_report"}
-            composerModes={
-              activeChannelType === "community"
-                ? ["message", "announcement", "poll"]
-                : activeChannelType === "admin_elu"
-                  ? ["message", "poll"]
-                  : activeChannelType === "bug_report"
-                    ? ["message"]
-                    : ["message", "poll"]
-            }
-            userId={userId}
-            message={userMessage}
-            onMessageChange={onMessageChange}
-            file={file}
-            onFileChange={onFileChange}
-            fileInputRef={fileInputRef}
-            isSending={isSending}
-            isUploading={isUploading}
-            sendError={sendError}
-            selectedRecipient={selectedRecipient}
-            showMentions={showMentions}
-            mentionSuggestions={mentionSuggestions}
-            onInsertMention={onInsertMention}
-            onInsertLink={onInsertLink}
-            onSubmit={onSubmit}
-            canSubmit={canSubmit}
-          />
-        </>
-      )}
+      <ChatThreadPaneBody {...props} />
     </div>
   );
 }
