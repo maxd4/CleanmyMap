@@ -111,6 +111,25 @@ async function meniscusGeometry(page: Page, displayMode?: "exhaustif" | "minimal
   }, displayMode);
 }
 
+async function waitForMeniscusAlignment(page: Page): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const geometry = await meniscusGeometry(page);
+        return Math.max(
+          Math.abs(geometry.indicatorCenter - geometry.beadCenter),
+          Math.abs(geometry.beadCenter - geometry.activeCenter),
+        );
+      },
+      {
+        intervals: [50, 100, 200],
+        timeout: 1_000,
+        message: "the meniscus indicator must converge to the route-active trigger",
+      },
+    )
+    .toBeLessThanOrEqual(1);
+}
+
 test.describe("desktop central navigation ribbon variants", () => {
   test("uses the code-selected variant and keeps the meniscus silhouette emergent", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -318,6 +337,7 @@ test.describe("desktop central navigation ribbon variants", () => {
     await expect(page).toHaveURL(/\/methodologie$/);
 
     await expect(ribbon.locator('[data-navigation-block-active="true"]')).toHaveCount(1);
+    await waitForMeniscusAlignment(page);
     const rapidFinal = await meniscusGeometry(page);
     expect(Math.abs(rapidFinal.indicatorCenter - rapidFinal.beadCenter)).toBeLessThanOrEqual(1);
     expect(Math.abs(rapidFinal.beadCenter - rapidFinal.activeCenter)).toBeLessThanOrEqual(1);
