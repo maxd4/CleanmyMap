@@ -152,7 +152,15 @@ describe("POST /api/actions/organizers", () => {
         organizerType: "association",
       },
     });
-    expect(body).toHaveProperty("organizer.id");
+    expect(
+      typeof body === "object"
+      && body !== null
+      && "organizer" in body
+      && typeof body.organizer === "object"
+      && body.organizer !== null
+      && "id" in body.organizer
+      && typeof body.organizer.id === "string",
+    ).toBe(true);
   });
 
   it("inserts an unknown name only through the explicit command", async () => {
