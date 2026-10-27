@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -39,6 +40,10 @@ function postRequest(body: unknown) {
   });
 }
 
+function firstMockArgument(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
+  return mock.mock.calls[0]?.[0];
+}
+
 const phaseBody = { action: "phase", divisionId, phase: "collection", at: "2026-10-15T10:00:00.000Z", reason: "Ouverture", provenance: "ordre-1" };
 
 describe("SPOGOMI field operations API boundary", () => {
@@ -66,16 +71,18 @@ describe("SPOGOMI field operations API boundary", () => {
     const { GET } = await import("./route");
     const organizerResponse = await GET(getRequest(), context());
     expect(organizerResponse.status).toBe(200);
-    expect(await organizerResponse.json()).toEqual(expect.objectContaining({ incidents: [{ id: incidentId }], measurements: [{ id: measurementId }] }));
+    expect(await parseJsonSafely(organizerResponse)).toEqual(expect.objectContaining({ incidents: [{ id: incidentId }], measurements: [{ id: measurementId }] }));
 
     loadAccessMock.mockResolvedValue({ isOrganizer: false, capabilities: new Set(["arrival"]) });
     const restrictedResponse = await GET(getRequest(), context());
-    const restrictedBody = await restrictedResponse.json();
+    const restrictedBody = await parseJsonSafely(restrictedResponse);
     expect(restrictedResponse.status).toBe(200);
-    expect(restrictedBody.incidents).toEqual([]);
-    expect(restrictedBody.measurements).toEqual([]);
-    expect(restrictedBody.categories).toEqual([]);
-    expect(restrictedBody.teams).toEqual([{ id: teamId }]);
+    expect(restrictedBody).toMatchObject({
+      incidents: [],
+      measurements: [],
+      categories: [],
+      teams: [{ id: teamId }],
+    });
   });
 
   it("rejects missing access and malformed mutations without invoking persistence", async () => {
@@ -101,7 +108,15 @@ describe("SPOGOMI field operations API boundary", () => {
     const response = await POST(postRequest(body), context());
 
     expect(response.status).toBe(201);
-    expect(callOperationMock).toHaveBeenCalledWith(expect.objectContaining({ rpc: expectedRpc, args: expect.objectContaining({ p_event_id: eventId, p_division_id: divisionId, p_actor_clerk_id: "organizer-1" }) }));
+    const operationCall = firstMockArgument(callOperationMock);
+    expect(operationCall).toMatchObject({
+      rpc: expectedRpc,
+      args: {
+        p_event_id: eventId,
+        p_division_id: divisionId,
+        p_actor_clerk_id: "organizer-1",
+      },
+    });
     if (capability) expect(assertCapabilityMock).toHaveBeenCalledWith(expect.anything(), capability);
   });
 
@@ -114,6 +129,6 @@ describe("SPOGOMI field operations API boundary", () => {
     callOperationMock.mockRejectedValue(new Error("provider failure"));
     const failedResponse = await POST(postRequest(phaseBody), context());
     expect(failedResponse.status).toBe(500);
-    expect(JSON.stringify(await failedResponse.json())).not.toContain("provider failure");
+    expect(JSON.stringify(await parseJsonSafely(failedResponse))).not.toContain("provider failure");
   });
 });

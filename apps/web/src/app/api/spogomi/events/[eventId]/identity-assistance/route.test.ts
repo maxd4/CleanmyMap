@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const enforceRateLimitMock = vi.hoisted(() => vi.fn());
@@ -61,7 +62,7 @@ describe("SPOGOMI identity assistance requester route", () => {
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ eventId: "event-1" }) });
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
     expect(body).toEqual({
       status: "ok",
       request: {
@@ -71,16 +72,16 @@ describe("SPOGOMI identity assistance requester route", () => {
         createdAt: "2026-10-15T09:00:00.000Z",
       },
     });
-    expect(body.request).not.toHaveProperty("matchedParticipantId");
-    expect(body.request).not.toHaveProperty("verificationNote");
-    expect(body.request).not.toHaveProperty("resolutionNote");
+    expect(body).not.toHaveProperty("request.matchedParticipantId");
+    expect(body).not.toHaveProperty("request.verificationNote");
+    expect(body).not.toHaveProperty("request.resolutionNote");
   });
 
   it("projects the cancellation response instead of returning organizer fields", async () => {
     const { DELETE } = await import("./route");
     const response = await DELETE(new Request("http://localhost", { method: "DELETE" }), { params: Promise.resolve({ eventId: "event-1" }) });
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
     expect(body).toEqual({
       status: "ok",
       request: {
@@ -96,9 +97,9 @@ describe("SPOGOMI identity assistance requester route", () => {
       actorClerkId: "user-1",
       targetStatus: "cancelled",
     }));
-    expect(body.request).not.toHaveProperty("matchedParticipantId");
-    expect(body.request).not.toHaveProperty("verificationNote");
-    expect(body.request).not.toHaveProperty("resolutionNote");
+    expect(body).not.toHaveProperty("request.matchedParticipantId");
+    expect(body).not.toHaveProperty("request.verificationNote");
+    expect(body).not.toHaveProperty("request.resolutionNote");
   });
 
   it("denies anonymous reads before loading the requester record", async () => {

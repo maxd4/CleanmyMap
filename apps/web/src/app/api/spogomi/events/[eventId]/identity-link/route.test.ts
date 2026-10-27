@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { requireSpogomiResponse as requireResponse } from "@/__tests__/support/spogomi-route";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const enforceRateLimitMock = vi.hoisted(() => vi.fn());
@@ -163,16 +164,18 @@ describe("SPOGOMI identity-link recovery route", () => {
     );
     if (!response) throw new Error("GET route did not return a response");
     expect(response.status).toBe(200);
-    const body = await response.json();
-    expect(body.assistance).toEqual({
-      id: "request-1",
-      providedContext: "Contexte fourni par le demandeur.",
-      status: "treated",
-      createdAt: "2026-10-15T09:00:00.000Z",
+    const body = await parseJsonSafely(response);
+    expect(body).toMatchObject({
+      assistance: {
+        id: "request-1",
+        providedContext: "Contexte fourni par le demandeur.",
+        status: "treated",
+        createdAt: "2026-10-15T09:00:00.000Z",
+      },
     });
-    expect(body.assistance).not.toHaveProperty("matchedParticipantId");
-    expect(body.assistance).not.toHaveProperty("verificationNote");
-    expect(body.assistance).not.toHaveProperty("resolutionNote");
+    expect(body).not.toHaveProperty("assistance.matchedParticipantId");
+    expect(body).not.toHaveProperty("assistance.verificationNote");
+    expect(body).not.toHaveProperty("assistance.resolutionNote");
   });
 
   it("submits assistance without claiming identity or resuming participation", async () => {
@@ -186,7 +189,7 @@ describe("SPOGOMI identity-link recovery route", () => {
     );
     if (!response) throw new Error("POST route did not return a response");
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({ assistance: { id: "request-1", status: "pending" } });
+    await expect(parseJsonSafely(response)).resolves.toMatchObject({ assistance: { id: "request-1", status: "pending" } });
     expect(createAssistanceRequestMock).toHaveBeenCalledWith(expect.objectContaining({
       eventId: "event-1",
       requesterClerkId: "user-1",
