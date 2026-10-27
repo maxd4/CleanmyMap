@@ -160,21 +160,12 @@ describe("ChatHeader behavior", () => {
     renderer.unmount();
   });
 
-  it("waits for one deferred identity confirmation without dispatching a second action", async () => {
-    let resolveConfirmation!: () => void;
-    const confirmation = new Promise<void>((resolve) => { resolveConfirmation = resolve; });
-    const onConfirmHandle = vi.fn(() => confirmation);
+  it("delegates one identity confirmation to the stateful owner", () => {
+    const onConfirmHandle = vi.fn();
     const renderer = renderHeader({ isEditingHandle: true, onConfirmHandle });
     const confirm = renderer.root.findByProps({ children: "Confirmer" });
 
-    await act(async () => {
-      propsOf<ButtonProps>(confirm).onClick();
-      await Promise.resolve();
-    });
-    expect(onConfirmHandle).toHaveBeenCalledOnce();
-
-    resolveConfirmation();
-    await act(async () => { await confirmation; });
+    act(() => { propsOf<ButtonProps>(confirm).onClick(); });
     expect(onConfirmHandle).toHaveBeenCalledOnce();
     renderer.unmount();
   });

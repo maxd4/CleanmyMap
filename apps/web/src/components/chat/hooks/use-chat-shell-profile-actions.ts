@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useRef, type Dispatch, type SetStateAction } from "react";
 
 import { readAppErrorResponse } from "@/lib/errors/app-errors";
 import { logFailure } from "@/lib/logging/failure-log";
@@ -14,8 +14,11 @@ export function useChatShellProfileActions({
   newHandle,
   setIsEditingHandle,
 }: UseChatShellProfileActionsParams) {
+  const confirmationInFlight = useRef(false);
+
   return useCallback(async () => {
-    if (!newHandle.trim()) return;
+    if (!newHandle.trim() || confirmationInFlight.current) return;
+    confirmationInFlight.current = true;
     try {
       const res = await fetch("/api/users/profile/handle", {
         method: "PATCH",
@@ -36,6 +39,8 @@ export function useChatShellProfileActions({
       logFailure("ChatShell", "Handle update failed", err, {
         handle: newHandle,
       });
+    } finally {
+      confirmationInFlight.current = false;
     }
   }, [newHandle, setIsEditingHandle]);
 }
