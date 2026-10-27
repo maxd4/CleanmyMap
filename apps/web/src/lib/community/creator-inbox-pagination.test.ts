@@ -83,6 +83,21 @@ describe("creator inbox cursor contract", () => {
     ).toBe(0);
   });
 
+  it("provides the descending source sequence consumed by paginated stores", () => {
+    const values = [
+      cursor("invalid-a", "invalid-a"),
+      cursor("2026-10-27T13:00:00.000Z", "valid"),
+      cursor("invalid-c", "invalid-c"),
+      cursor("invalid-b", "invalid-b"),
+    ];
+
+    expect(
+      [...values]
+        .sort((left, right) => compareCreatorInboxRecordCursors(right, left))
+        .map((value) => value.id),
+    ).toEqual(["valid", "invalid-c", "invalid-b", "invalid-a"]);
+  });
+
   it("defines a deterministic antisymmetric and transitive total order", () => {
     const values = [
       cursor("2026-10-27T10:00:00.000Z", "z"),

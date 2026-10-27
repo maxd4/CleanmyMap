@@ -15,6 +15,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getClerkService } from "@/lib/services/clerk";
 import type { CommunityEventRow } from "@/types/database";
 import {
+  compareCreatorInboxRecordCursors,
   createCreatorInboxContinuationCursor,
   isCreatorInboxHistoricalRecordCursor,
   isCreatorInboxRecordCursor,
@@ -105,20 +106,32 @@ type InboxCandidate = {
 };
 
 function compareInboxCandidates(left: InboxCandidate, right: InboxCandidate): number {
+  const leftCursor = {
+    createdAt: left.item.createdAt,
+    id: left.item.sourceRecordId,
+  };
+  const rightCursor = {
+    createdAt: right.item.createdAt,
+    id: right.item.sourceRecordId,
+  };
   const leftTime = Date.parse(left.item.createdAt);
   const rightTime = Date.parse(right.item.createdAt);
-  if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) {
-    return rightTime - leftTime;
-  }
-  if (left.item.createdAt !== right.item.createdAt) {
-    return right.item.createdAt.localeCompare(left.item.createdAt);
+  const sameDateOrderKey =
+    Number.isFinite(leftTime) && Number.isFinite(rightTime)
+      ? leftTime === rightTime
+      : !Number.isFinite(leftTime) &&
+          !Number.isFinite(rightTime) &&
+          left.item.createdAt === right.item.createdAt;
+  const sourceCursorOrder = compareCreatorInboxRecordCursors(leftCursor, rightCursor);
+  if (!sameDateOrderKey) {
+    return -sourceCursorOrder;
   }
   const sourceOrder =
     CREATOR_INBOX_SOURCES.indexOf(left.source) - CREATOR_INBOX_SOURCES.indexOf(right.source);
   if (sourceOrder !== 0) {
     return sourceOrder;
   }
-  return right.item.sourceRecordId.localeCompare(left.item.sourceRecordId);
+  return -sourceCursorOrder;
 }
 
 function clampPageSize(value: number | null | undefined): number {
