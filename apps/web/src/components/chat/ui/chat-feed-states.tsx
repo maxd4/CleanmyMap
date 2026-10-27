@@ -1,4 +1,6 @@
 import { MessageSquare } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import type { ChatEmptyStateCopy } from "../chat-shell.utils";
 import type { ChatChannelType } from "@/lib/chat/channels";
 
@@ -10,13 +12,28 @@ type ChatLoadingStateProps = {
 export function ChatLoadingState({ count = 3, tone = "dark" }: ChatLoadingStateProps) {
   const isLight = tone === "light";
   return (
-    <div className="space-y-8 p-4">
+    <div
+      className="space-y-8 p-4"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label={isLight ? "Chargement des messages" : "Loading messages"}
+    >
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="flex items-start gap-4 animate-pulse">
-          <div className={`h-10 w-10 rounded-2xl ${isLight ? "bg-rose-100" : "bg-pink-100 dark:bg-slate-800"}`} />
+        <div key={i} className="flex items-start gap-4">
+          <CmmSkeleton
+            variant="circular"
+            className={`h-10 w-10 rounded-2xl ${isLight ? "bg-rose-100" : "bg-pink-100 dark:bg-slate-800"}`}
+          />
           <div className="flex-1 space-y-3">
-            <div className={`h-3 w-32 rounded-full ${isLight ? "bg-rose-100" : "bg-pink-100 dark:bg-slate-800"}`} />
-            <div className={`h-12 w-full rounded-[1.5rem] ${isLight ? "bg-white border border-rose-100" : "bg-pink-50 dark:bg-slate-900"}`} />
+            <CmmSkeleton
+              variant="text"
+              className={`h-3 w-32 rounded-full ${isLight ? "bg-rose-100" : "bg-pink-100 dark:bg-slate-800"}`}
+            />
+            <CmmSkeleton
+              variant="rectangular"
+              className={`h-12 w-full rounded-[1.5rem] ${isLight ? "border border-rose-100 bg-white" : "bg-pink-50 dark:bg-slate-900"}`}
+            />
           </div>
         </div>
       ))}
@@ -40,13 +57,15 @@ export function ChatDegradedState({ onRetry, tone = "dark" }: ChatDegradedStateP
         <p className={`mt-2 cmm-text-small ${isLight ? "text-rose-600" : "text-rose-600 dark:text-rose-400"}`}>
           Réessayez pour actualiser cette conversation.
         </p>
-        <button
+        <CmmButton
           type="button"
+          tone="primary"
+          variant="pill"
           onClick={onRetry}
-          className={`mt-4 inline-flex items-center rounded-full px-4 py-2 cmm-text-small font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 ${isLight ? "bg-rose-600 hover:bg-rose-700" : "bg-rose-700 hover:bg-rose-800"}`}
+          className={`mt-4 text-white ${isLight ? "bg-rose-600 hover:bg-rose-700" : "bg-rose-700 hover:bg-rose-800"}`}
         >
           Réessayer
-        </button>
+        </CmmButton>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { ChatEmptyStateCopy } from "./chat-shell.utils";
-import { ChatDegradedState, ChatEmptyState } from "./ui/chat-feed-states";
+import { ChatDegradedState, ChatEmptyState, ChatLoadingState } from "./ui/chat-feed-states";
 import { ChatMessageContent } from "./ui/chat-message-content";
 
 const messageItemSource = readFileSync(
@@ -120,6 +120,19 @@ describe("Chat message presentation", () => {
     expect(markup).not.toContain("F12");
     expect(markup).not.toContain("migration");
     expect(markup).not.toContain("Erreur de Flux");
+    expect(markup).toContain('class="cmm-button');
+  });
+
+  it("announces chat loading once through the canonical loading region", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ChatLoadingState, { count: 2, tone: "light" }),
+    );
+
+    expect(markup).toContain('role="status"');
+    expect(markup).toContain('aria-live="polite"');
+    expect(markup).toContain('aria-busy="true"');
+    expect(markup).toContain('aria-label="Chargement des messages"');
+    expect(markup).toContain('data-skeleton-variant="circular"');
   });
 
   it("uses a user-facing light deferred state", () => {

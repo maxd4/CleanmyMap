@@ -6,6 +6,8 @@ import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
 import { NotificationListItem } from "@/components/notifications/notification-list-item";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { logFailure } from "@/lib/logging/failure-log";
 import {
@@ -360,11 +362,11 @@ function DashboardNotificationContent({
 }
 
 function DashboardNotificationsLoading({ locale }: { locale: "fr" | "en" }) {
-  return <div className="space-y-3 pt-5" role="status"><div className="h-14 animate-pulse rounded-2xl bg-amber-950/35" /><div className="h-14 animate-pulse rounded-2xl bg-amber-950/35" /><span className="sr-only">{locale === "fr" ? "Chargement des notifications" : "Loading notifications"}</span></div>;
+  return <div className="space-y-3 pt-5" role="status" aria-live="polite" aria-busy="true" aria-label={locale === "fr" ? "Chargement des notifications" : "Loading notifications"}><CmmSkeleton className="h-14 rounded-2xl bg-amber-950/35" /><CmmSkeleton className="h-14 rounded-2xl bg-amber-950/35" /></div>;
 }
 
 function DashboardLoadMoreButton({ loadingMore, onLoadMore }: { loadingMore: boolean; onLoadMore: () => Promise<void> }) {
-  return <button type="button" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onLoadMore(); }} disabled={loadingMore} aria-busy={loadingMore} className="mt-5 w-full rounded-2xl border border-amber-200/24 bg-amber-100/[0.08] px-4 py-3 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80 disabled:cursor-wait disabled:opacity-70">{loadingMore ? "Chargement…" : "Afficher plus"}</button>;
+  return <CmmButton type="button" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onLoadMore(); }} loading={loadingMore} tone="tertiary" width="wide" className="mt-5 w-full border-amber-200/24 bg-amber-100/[0.08] text-amber-50 hover:bg-amber-100/[0.14]">{loadingMore ? "Chargement…" : "Afficher plus"}</CmmButton>;
 }
 
 function CheckMark() {

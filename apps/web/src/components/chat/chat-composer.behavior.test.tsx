@@ -85,6 +85,9 @@ describe("ChatComposer interactive behavior", () => {
       const sendButton = renderer.root.findByProps({ type: "submit" });
       expect(textarea.props.disabled).toBe(textareaDisabled);
       expect(sendButton.props.disabled).toBe(true);
+      if (scenario.isSending || scenario.isUploading) {
+        expect(sendButton.props.loading).toBe(true);
+      }
       act(() => renderer.unmount());
     }
   });

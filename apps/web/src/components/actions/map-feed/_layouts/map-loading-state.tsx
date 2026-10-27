@@ -26,6 +26,7 @@ export function MapLoadingState({
         .join(" ")}
       aria-busy="true"
       aria-live="polite"
+      role="status"
       aria-label="Chargement de la carte des actions"
     >
       <div

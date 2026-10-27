@@ -11,7 +11,7 @@ et conserver leur logique métier, leurs textes et leurs actions.
 | `SystemState` | État bloquant, plein écran ou plein bloc ; état vide important | Utiliser `SystemStateLayout` avec un `variant` parmi `error`, `warning`, `empty`, `loading`, `forbidden` ou `offline`. |
 | `CmmFeedback` | Succès, erreur, avertissement ou information inline | Utiliser `tone="info"`, `"success"`, `"warning"` ou `"error"`. Les tones `warning` et `error` exposent `role="alert"`; les autres exposent `role="status"`. |
 | `CmmToast` | Notification flottante temporaire | Utiliser le shell présentational pour un message court, ses actions et sa fermeture ; le host conserve le lifecycle et le placement. |
-| `CmmSkeleton` | Chargement structurel dont la géométrie doit rester visible | Conserver les variants existants et choisir l’animation selon le mode d’affichage. |
+| `CmmSkeleton` | Chargement structurel dont la géométrie doit rester visible | Conserver les variants existants et choisir l’animation selon le mode d’affichage ; le conteneur de chargement expose `role="status"`, `aria-live="polite"` et `aria-busy="true"` lorsqu’il annonce une attente en cours. |
 | `CmmField` `error` | Erreur attachée à un champ de formulaire | Utiliser `CmmField` pour l’association `aria-describedby` et `aria-invalid`; ne pas remplacer cette erreur par `CmmFeedback`. |
 
 En résumé :
@@ -39,6 +39,7 @@ retrouver.
 
 - un état bloquant, plein écran ou plein bloc utilise `SystemState` ;
 - un chargement structurel utilise `CmmSkeleton` ;
+- un conteneur de chargement annoncé expose `role="status"`, `aria-live="polite"` et `aria-busy="true"` ; le skeleton lui-même ne devient pas une annonce répétée ;
 - un retour inline utilise `CmmFeedback` ;
 - un état vide important utilise `SystemState variant="empty"` ;
 - les textes, données, conditions, handlers et actions existants restent

@@ -240,7 +240,7 @@ export function ActionsMapFeedContent({
       )}
 
       {feedData.isLoading && !compact ? (
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="status" aria-live="polite" aria-busy="true" aria-label="Chargement des actions cartographiques">
           <div className="cmm-surface-muted space-y-3 rounded-2xl p-4">
             <CmmSkeleton variant="text" className="w-32" />
             <CmmSkeleton variant="title" className="w-48" />

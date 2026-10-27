@@ -1,4 +1,5 @@
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import type { ActionListItem, ActionMapItem, ActionQualityGrade } from "@/lib/actions/types";
 import { mapItemCigaretteButts, mapItemWasteKg } from "@/lib/actions/data-contract";
@@ -55,7 +56,13 @@ export function ActionsHistoryListTable({
 }: ActionsHistoryListTableProps) {
   if (isLoading) {
     return (
-      <div className="mt-5 space-y-3">
+      <div
+        className="mt-5 space-y-3"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        aria-label="Chargement de l’historique des actions"
+      >
         <div className="flex gap-4 border-b border-slate-200 px-2 pb-3">
           <CmmSkeleton className="h-4 w-16" />
           <CmmSkeleton className="h-4 w-24" />
@@ -80,11 +87,11 @@ export function ActionsHistoryListTable({
 
   if (error) {
     return (
-      <p className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 cmm-text-small text-rose-700">
+      <CmmFeedback tone="error" className="mt-5">
         {error instanceof Error
           ? error.message
           : "Impossible de charger l'historique des actions. Veuillez vérifier votre connexion ou rafraîchir la page."}
-      </p>
+      </CmmFeedback>
     );
   }
 
@@ -182,7 +189,7 @@ export function ActionsHistoryListTable({
                             type="button"
                             tone="primary"
                             variant="pill"
-                            disabled={groupJoinActionId === item.id}
+                            loading={groupJoinActionId === item.id}
                             onClick={() =>
                               onToggleGroupJoin(
                                 item,
@@ -191,14 +198,11 @@ export function ActionsHistoryListTable({
                             }
                             className="h-9 px-3 text-[10px] font-black uppercase tracking-[0.16em]"
                           >
-                            {groupJoinActionId === item.id ? (
-                              <>
-                                <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                                {item.contract?.metadata.groupJoinEnabled === false
-                                  ? "Rouverture..."
-                                  : "Fermeture..."}
-                              </>
-                            ) : item.contract?.metadata.groupJoinEnabled === false ? (
+                            {groupJoinActionId === item.id
+                              ? item.contract?.metadata.groupJoinEnabled === false
+                                ? "Réouverture…"
+                                : "Fermeture…"
+                              : item.contract?.metadata.groupJoinEnabled === false ? (
                               "Rouvrir"
                             ) : (
                               "Fermer"
@@ -219,24 +223,20 @@ export function ActionsHistoryListTable({
 
       {filteredItems.length >= limit ? (
         <div className="mt-6 flex justify-center border-t border-slate-100 pt-6">
-          <button
+          <CmmButton
             type="button"
             onClick={onLoadMore}
-            disabled={isValidating}
-            className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 cmm-text-small font-bold cmm-text-secondary shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 active:translate-y-0 disabled:opacity-50"
+            loading={isValidating}
+            tone="secondary"
+            className="group mt-6 flex items-center gap-2 px-5 py-2.5 cmm-text-small font-bold cmm-text-secondary hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
           >
-            {isValidating ? (
-              <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-emerald-600" />
-                Actualisation...
-              </>
-            ) : (
+            {isValidating ? "Actualisation…" : (
               <>
                 <span>Afficher 25 de plus</span>
-                <span className="text-slate-300 group-hover:text-emerald-400">↓</span>
+                <span aria-hidden="true" className="text-slate-300 group-hover:text-emerald-400">↓</span>
               </>
             )}
-          </button>
+          </CmmButton>
         </div>
       ) : null}
 

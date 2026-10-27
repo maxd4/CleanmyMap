@@ -28,9 +28,12 @@ doivent pas être remplacés par des classes de couleur locales.
 
 Les contrats de navigation et d'accessibilité existants (`href`, `prefetch`,
 `onClick`, `disabled`, `asChild`, `ariaLabel`, `title` et `type`) restent
-disponibles. `loading` expose `aria-busy`, conserve le libellé et bloque aussi
-les liens. `disabled` bloque également les liens via `aria-disabled`, le
-clavier et l'activation.
+disponibles. `loading` expose `aria-busy`, conserve le libellé, retire le
+contrôle de l’ordre de tabulation et bloque aussi les liens. `disabled` bloque
+également les liens via `aria-disabled`, le clavier et l'activation. Un host
+qui affiche un état d’attente distinct doit utiliser `loading` sur l’action et
+réserver `role="status"`/`aria-live="polite"` à l’annonce de l’opération, pas à
+chaque icône ou skeleton individuel.
 
 ## Intentions et dimensions
 
