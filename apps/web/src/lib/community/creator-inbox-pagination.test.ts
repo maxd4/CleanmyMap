@@ -46,6 +46,19 @@ describe("creator inbox cursor contract", () => {
     ).toBeGreaterThan(0);
   });
 
+  it("keeps the valid-date and invalid-date boundary transitive", () => {
+    const a = cursor("2026-10-27T10:00:00.000Z", "z");
+    const b = cursor("2026-10-27T12:00:00+02:00", "a");
+    const c = cursor("2026-10-27T11:00:00-invalid", "x");
+
+    expect(compareCreatorInboxRecordCursors(a, b)).toBeGreaterThan(0);
+    expect(compareCreatorInboxRecordCursors(a, c)).toBeGreaterThan(0);
+    expect(compareCreatorInboxRecordCursors(b, c)).toBeGreaterThan(0);
+    expect(compareCreatorInboxRecordCursors(c, b)).toBeLessThan(0);
+    // A > B and B > C must imply A > C for this cursor order.
+    expect(compareCreatorInboxRecordCursors(a, c)).toBeGreaterThan(0);
+  });
+
   it("falls back lexicographically for invalid dates and still uses id ties", () => {
     expect(
       compareCreatorInboxRecordCursors(
@@ -67,13 +80,15 @@ describe("creator inbox cursor contract", () => {
     ).toBe(0);
   });
 
-  it("defines an antisymmetric total order for mixed cursor keys", () => {
+  it("defines a deterministic antisymmetric and transitive total order", () => {
     const values = [
       cursor("2026-10-27T10:00:00.000Z", "z"),
       cursor("2026-10-27T10:00:00.000Z", "a"),
+      cursor("2026-10-27T12:00:00+02:00", "m"),
       cursor("2026-10-27T09:00:00.000Z", "x"),
       cursor("invalid", "x"),
       cursor("invalid", "y"),
+      cursor("invalid-later", "z"),
     ];
 
     for (const left of values) {
@@ -83,13 +98,34 @@ describe("creator inbox cursor contract", () => {
         expect(forward === 0 ? reverse : forward).toBe(forward === 0 ? 0 : -reverse);
       }
     }
-    expect([...values].sort(compareCreatorInboxRecordCursors)).toEqual([
-      cursor("2026-10-27T09:00:00.000Z", "x"),
-      cursor("2026-10-27T10:00:00.000Z", "a"),
-      cursor("2026-10-27T10:00:00.000Z", "z"),
+
+    for (const left of values) {
+      for (const middle of values) {
+        for (const right of values) {
+          const leftToMiddle = compareCreatorInboxRecordCursors(left, middle);
+          const middleToRight = compareCreatorInboxRecordCursors(middle, right);
+          if (leftToMiddle > 0 && middleToRight > 0) {
+            expect(compareCreatorInboxRecordCursors(left, right)).toBeGreaterThan(0);
+          }
+          if (leftToMiddle < 0 && middleToRight < 0) {
+            expect(compareCreatorInboxRecordCursors(left, right)).toBeLessThan(0);
+          }
+        }
+      }
+    }
+
+    const expected = [
       cursor("invalid", "x"),
       cursor("invalid", "y"),
-    ]);
+      cursor("invalid-later", "z"),
+      cursor("2026-10-27T09:00:00.000Z", "x"),
+      cursor("2026-10-27T10:00:00.000Z", "a"),
+      cursor("2026-10-27T12:00:00+02:00", "m"),
+      cursor("2026-10-27T10:00:00.000Z", "z"),
+    ];
+    expect([...values].sort(compareCreatorInboxRecordCursors)).toEqual(expected);
+    expect([...values].reverse().sort(compareCreatorInboxRecordCursors)).toEqual(expected);
+    expect([...values].sort(compareCreatorInboxRecordCursors).sort(compareCreatorInboxRecordCursors)).toEqual(expected);
   });
 
   it("validates finite dates and bounded non-empty ids", () => {

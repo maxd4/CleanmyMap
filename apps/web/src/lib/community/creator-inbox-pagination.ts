@@ -9,7 +9,12 @@ export function compareCreatorInboxRecordCursors(
 ): number {
   const leftTime = Date.parse(left.createdAt);
   const rightTime = Date.parse(right.createdAt);
-  if (Number.isFinite(leftTime) && Number.isFinite(rightTime)) {
+  const leftIsValid = Number.isFinite(leftTime);
+  const rightIsValid = Number.isFinite(rightTime);
+  if (leftIsValid !== rightIsValid) {
+    return leftIsValid ? 1 : -1;
+  }
+  if (leftIsValid && rightIsValid) {
     if (leftTime !== rightTime) {
       return leftTime - rightTime;
     }

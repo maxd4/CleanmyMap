@@ -107,6 +107,73 @@ describe("community bug report personal history", () => {
     expect(secondPage.hasMore).toBe(false);
   });
 
+  it("keeps valid records first across pages without leaking malformed records from another owner", async () => {
+    const equivalentAndMalformed = [
+      {
+        ...ownerRecords[0],
+        id: "valid-z",
+        createdAt: "2026-10-27T10:00:00.000Z",
+        submittedByUserId: "owner-1",
+      },
+      {
+        ...ownerRecords[0],
+        id: "valid-a",
+        createdAt: "2026-10-27T12:00:00+02:00",
+        submittedByUserId: "owner-1",
+      },
+      {
+        ...ownerRecords[0],
+        id: "invalid-x",
+        createdAt: "2026-10-27T11:00:00-invalid",
+        submittedByUserId: "owner-1",
+      },
+      {
+        ...ownerRecords[0],
+        id: "valid-old",
+        createdAt: "2026-10-27T09:00:00.000Z",
+        submittedByUserId: "owner-1",
+      },
+      {
+        ...ownerRecords[0],
+        id: "other-owner-newer",
+        createdAt: "2026-10-27T13:00:00.000Z",
+        submittedByUserId: "owner-2",
+      },
+    ];
+    readLocalRecordStoreMock.mockResolvedValue({
+      updatedAt: "2026-10-27T13:00:00.000Z",
+      records: equivalentAndMalformed,
+    });
+
+    const firstPage = await listCommunityBugReportsForUser({
+      submittedByUserId: "owner-1",
+      limit: 2,
+    });
+
+    expect(firstPage.items.map((item) => item.id)).toEqual(["valid-z", "valid-a"]);
+    expect(firstPage.hasMore).toBe(true);
+    expect(firstPage.nextCursor).toEqual({
+      createdAt: "2026-10-27T12:00:00+02:00",
+      id: "valid-a",
+    });
+
+    const secondPage = await listCommunityBugReportsForUser({
+      submittedByUserId: "owner-1",
+      limit: 2,
+      beforeCursor: firstPage.nextCursor,
+    });
+
+    expect(secondPage.items.map((item) => item.id)).toEqual(["valid-old", "invalid-x"]);
+    expect(secondPage.hasMore).toBe(false);
+    expect([...firstPage.items, ...secondPage.items].map((item) => item.id)).toEqual([
+      "valid-z",
+      "valid-a",
+      "valid-old",
+      "invalid-x",
+    ]);
+    expect([...firstPage.items, ...secondPage.items].map((item) => item.id)).toHaveLength(4);
+  });
+
   it("returns an empty page when the owner has no remaining reports", async () => {
     readLocalRecordStoreMock.mockResolvedValueOnce({
       updatedAt: "2026-08-27T12:00:00.000Z",
@@ -123,6 +190,9 @@ describe("community bug report personal history", () => {
       parseCommunityBugReportHistoryCursor(
         "2026-08-27T10:00:00.000Z|id.or(submitted_by_user_id.eq.other-user)",
       ),
+    ).toBeNull();
+    expect(
+      parseCommunityBugReportHistoryCursor("2026-10-27T11:00:00-invalid|id"),
     ).toBeNull();
   });
 
