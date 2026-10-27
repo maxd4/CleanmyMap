@@ -82,8 +82,10 @@ export function useChatUserSearch({
     dmSearchAbortRef.current?.abort();
   }, []);
   useEffect(() => {
-    if (!mentionUsersKey && !dmUsersKey) {
+    if (!mentionUsersKey) {
       mentionSearchAbortRef.current?.abort();
+    }
+    if (!dmUsersKey) {
       dmSearchAbortRef.current?.abort();
     }
   }, [dmUsersKey, mentionUsersKey]);

@@ -117,6 +117,9 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
   );
   const { locationSuggestions, locationSuggestionsError } =
     useWeatherLocationSuggestions(locationQuery);
+  const currentLocationSuggestions = locationSuggestions.data?.query === locationQuery.trim()
+    ? locationSuggestions.data.items
+    : [];
   const locationPreference = useMemo(
     () => extractTerritoryLocationPreferenceFromMetadata(user?.unsafeMetadata)
       ?? extractTerritoryLocationPreferenceFromMetadata(user?.publicMetadata),
@@ -267,7 +270,7 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
     setSelectedLocation,
     locationQuery,
     setLocationQuery,
-    locationSuggestions: locationSuggestions.data?.items ?? [],
+    locationSuggestions: currentLocationSuggestions,
     isLocationSuggestionsLoading: locationSuggestions.isLoading,
     locationSuggestionsError,
     selectLocation,

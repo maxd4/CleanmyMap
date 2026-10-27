@@ -109,6 +109,24 @@ beforeEach(() => {
 });
 
 describe("useWeatherData asynchronous location lifecycle", () => {
+  it("does not expose suggestions belonging to another location query", () => {
+    mocks.useSuggestions.mockReturnValue({
+      locationSuggestions: {
+        data: {
+          query: "Ancienne recherche",
+          items: [suggestion("Ancienne recherche", 48.8)],
+        },
+        isLoading: false,
+      },
+      locationSuggestionsError: null,
+    });
+
+    const hook = renderHook({ contextReady: true });
+
+    expect(hook.current.locationQuery).toBe("");
+    expect(hook.current.locationSuggestions).toEqual([]);
+  });
+
   it("resolves a draft location before Clerk is loaded", async () => {
     mocks.useUser.mockReturnValue({ isLoaded: false, user: null });
     const request = deferred<Response>();

@@ -80,4 +80,90 @@ describe("useChatUserSearch request lifecycle", () => {
       vi.unstubAllGlobals();
     }
   });
+
+  it("cancels only the mention search when its key becomes inactive", async () => {
+    const mention = deferred<Response>();
+    const dm = deferred<Response>();
+    const fetchMock = vi.fn()
+      .mockReturnValueOnce(mention.promise)
+      .mockReturnValueOnce(dm.promise);
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReactTestRenderer;
+
+    try {
+      act(() => {
+        renderer = create(
+          <SWRConfig value={{ provider: () => new Map() }}>
+            <Probe
+              mentionUsersKey="/api/chat/users?q=al"
+              dmUsersKey="/api/chat/users?q=bo"
+            />
+          </SWRConfig>,
+        );
+      });
+      await flushPromises();
+
+      act(() => {
+        renderer.update(
+          <SWRConfig value={{ provider: () => new Map() }}>
+            <Probe mentionUsersKey={null} dmUsersKey="/api/chat/users?q=bo" />
+          </SWRConfig>,
+        );
+      });
+
+      expect((fetchMock.mock.calls[0]?.[1] as RequestInit).signal?.aborted).toBe(true);
+      expect((fetchMock.mock.calls[1]?.[1] as RequestInit).signal?.aborted).toBe(false);
+
+      await act(async () => {
+        dm.resolve(new Response(JSON.stringify({ users: [] }), { status: 200 }));
+        await flushPromises();
+      });
+    } finally {
+      renderer?.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("cancels only the DM search when its key becomes inactive", async () => {
+    const mention = deferred<Response>();
+    const dm = deferred<Response>();
+    const fetchMock = vi.fn()
+      .mockReturnValueOnce(mention.promise)
+      .mockReturnValueOnce(dm.promise);
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReactTestRenderer;
+
+    try {
+      act(() => {
+        renderer = create(
+          <SWRConfig value={{ provider: () => new Map() }}>
+            <Probe
+              mentionUsersKey="/api/chat/users?q=al"
+              dmUsersKey="/api/chat/users?q=bo"
+            />
+          </SWRConfig>,
+        );
+      });
+      await flushPromises();
+
+      act(() => {
+        renderer.update(
+          <SWRConfig value={{ provider: () => new Map() }}>
+            <Probe mentionUsersKey="/api/chat/users?q=al" dmUsersKey={null} />
+          </SWRConfig>,
+        );
+      });
+
+      expect((fetchMock.mock.calls[0]?.[1] as RequestInit).signal?.aborted).toBe(false);
+      expect((fetchMock.mock.calls[1]?.[1] as RequestInit).signal?.aborted).toBe(true);
+
+      await act(async () => {
+        mention.resolve(new Response(JSON.stringify({ users: [] }), { status: 200 }));
+        await flushPromises();
+      });
+    } finally {
+      renderer?.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
 });

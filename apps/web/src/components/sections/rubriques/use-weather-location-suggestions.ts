@@ -11,6 +11,10 @@ import { swrRecentViewOptions } from "@/lib/swr-config";
 
 export const WEATHER_LOCATION_SUGGESTION_DEBOUNCE_MS = 220;
 
+function createAbortError(): DOMException {
+  return new DOMException("La requête a été annulée.", "AbortError");
+}
+
 type AddressSuggestionsResponse = {
   status: string;
   query: string;
@@ -19,9 +23,12 @@ type AddressSuggestionsResponse = {
 
 export function useWeatherLocationSuggestions(locationQuery: string) {
   const locationSuggestionsAbortRef = useRef<AbortController | null>(null);
+  const locationQueryGenerationRef = useRef(0);
   const [debouncedLocationQuery, setDebouncedLocationQuery] = useState(locationQuery.trim());
 
   useEffect(() => {
+    locationQueryGenerationRef.current += 1;
+    locationSuggestionsAbortRef.current?.abort();
     const timer = window.setTimeout(() => {
       setDebouncedLocationQuery(locationQuery.trim());
     }, WEATHER_LOCATION_SUGGESTION_DEBOUNCE_MS);
@@ -37,8 +44,12 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
       locationSuggestionsAbortRef.current?.abort();
       const controller = new AbortController();
       locationSuggestionsAbortRef.current = controller;
+      const requestQueryGeneration = locationQueryGenerationRef.current;
       const timeout = window.setTimeout(() => controller.abort(), 8_000);
       const localSuggestions = getLocalGeoAddressSuggestions(debouncedLocationQuery, 6);
+
+      const isStaleRequest = () => controller.signal.aborted
+        || requestQueryGeneration !== locationQueryGenerationRef.current;
 
       if (localSuggestions.length >= 6) {
         window.clearTimeout(timeout);
@@ -64,16 +75,17 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
         }
 
         const remote = (await response.json()) as AddressSuggestionsResponse;
-        if (controller.signal.aborted) {
-          throw new DOMException("La requête a été annulée.", "AbortError");
+        if (isStaleRequest()) {
+          throw createAbortError();
         }
         return {
           ...remote,
+          query: debouncedLocationQuery,
           items: mergeGeoAddressSuggestions(localSuggestions, remote.items ?? [], 6),
         };
       } catch (error) {
-        if (controller.signal.aborted) {
-          throw error;
+        if (isStaleRequest()) {
+          throw createAbortError();
         }
         if (localSuggestions.length > 0) {
           return { status: "ok", query: debouncedLocationQuery, items: localSuggestions };
@@ -96,9 +108,18 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
     }
   }, [debouncedLocationQuery]);
 
+  const normalizedLocationQuery = locationQuery.trim();
+  const hasCurrentSuggestions = locationSuggestions.data?.query === normalizedLocationQuery;
+  const isAbortError = locationSuggestions.error?.name === "AbortError";
+
   return {
-    locationSuggestions,
-    locationSuggestionsError: locationSuggestions.error
+    locationSuggestions: {
+      ...locationSuggestions,
+      data: hasCurrentSuggestions ? locationSuggestions.data : undefined,
+    },
+    locationSuggestionsError: debouncedLocationQuery === normalizedLocationQuery
+      && locationSuggestions.error
+      && !isAbortError
       ? "location_suggestions_unavailable"
       : null,
   };
