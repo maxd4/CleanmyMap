@@ -551,6 +551,92 @@ describe("useCommunityEvents inactive-tab contract", () => {
     act(() => renderer?.unmount());
   });
 
+  it.each(["upcoming", "past"] as const)("blocks the previous cursor after a failed %s reconciliation", async (phase) => {
+    const eventDate = phase === "upcoming" ? "2099-09-10" : "2020-09-10";
+    const first = makeEvent(`${phase}-1`, eventDate);
+    const firstUpdated = makeEvent(`${phase}-1`, eventDate, { myRsvpStatus: "maybe", isFollowing: true });
+    const oldSecond = makeEvent(`${phase}-old-2`, phase === "upcoming" ? "2099-09-11" : "2020-09-11");
+    const oldThird = makeEvent(`${phase}-old-3`, phase === "upcoming" ? "2099-09-12" : "2020-09-12");
+    const newSecond = makeEvent(`${phase}-new-2`, phase === "upcoming" ? "2099-09-11" : "2020-09-11");
+    const newThird = makeEvent(`${phase}-new-3`, phase === "upcoming" ? "2099-09-12" : "2020-09-12");
+    const newFourth = makeEvent(`${phase}-new-4`, phase === "upcoming" ? "2099-09-13" : "2020-09-13");
+    const emptyPhase = { status: "ok", count: 0, items: [], hasMore: false, nextCursor: null };
+    let phaseData: unknown = { status: "ok", count: 1, items: [first], hasMore: true, nextCursor: `cursor-${phase}-old-1` };
+    const configure = () => configurePhaseData({
+      upcoming: phase === "upcoming" ? phaseData : emptyPhase,
+      past: phase === "past" ? phaseData : emptyPhase,
+    });
+    configure();
+    fetchCommunityEventsMock
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [oldSecond], hasMore: true, nextCursor: `cursor-${phase}-old-2` })
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [oldThird], hasMore: false, nextCursor: null });
+
+    let result!: ReturnType<typeof useCommunityEvents>;
+    function Harness() { result = useCommunityEvents(true); return null; }
+    let renderer: ReturnType<typeof create> | undefined;
+    act(() => { renderer = create(React.createElement(Harness)); });
+    await act(async () => { await result.loadMoreEvents(phase); });
+    await act(async () => { await result.loadMoreEvents(phase); });
+    const callsBeforeReconciliation = fetchCommunityEventsMock.mock.calls.length;
+
+    const failedReconciliation = deferred<unknown>();
+    phaseData = { status: "ok", count: 1, items: [firstUpdated], hasMore: true, nextCursor: `cursor-${phase}-new-1` };
+    fetchCommunityEventsMock.mockReturnValueOnce(failedReconciliation.promise);
+    await act(async () => {
+      configure();
+      renderer?.update(React.createElement(Harness));
+      await flushHookEffects();
+    });
+    expect(fetchCommunityEventsMock).toHaveBeenLastCalledWith({ limit: 120, phase, cursor: `cursor-${phase}-new-1` });
+
+    failedReconciliation.reject(new Error(`${phase} reconciliation failed`));
+    await act(async () => { await flushHookEffects(); });
+    expect(result.eventsLoadErrorByPhase[phase]?.message).toContain(`${phase} reconciliation failed`);
+    expect(result.hasMoreByPhase[phase]).toBe(false);
+    expect(result.loadingMoreByPhase[phase]).toBe(false);
+    expect(result[phase === "upcoming" ? "upcomingEvents" : "pastEvents"].map((event) => event.id)).toContain(`${phase}-old-2`);
+
+    const callsAfterFailedReconciliation = fetchCommunityEventsMock.mock.calls.length;
+    await act(async () => { await result.loadMoreEvents(phase); });
+    expect(fetchCommunityEventsMock.mock.calls).toHaveLength(callsAfterFailedReconciliation);
+
+    fetchCommunityEventsMock.mockRejectedValueOnce(new Error(`${phase} reconciliation retry failed`));
+    await act(async () => { await result.retryEvents(phase); });
+    expect(result.eventsLoadErrorByPhase[phase]?.message).toContain(`${phase} reconciliation retry failed`);
+    expect(result.hasMoreByPhase[phase]).toBe(false);
+    const callsAfterFailedRetry = fetchCommunityEventsMock.mock.calls.length;
+    await act(async () => { await result.loadMoreEvents(phase); });
+    expect(fetchCommunityEventsMock.mock.calls).toHaveLength(callsAfterFailedRetry);
+
+    fetchCommunityEventsMock
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [newSecond], hasMore: true, nextCursor: `cursor-${phase}-new-2` })
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [newThird], hasMore: true, nextCursor: `cursor-${phase}-new-3` });
+    await act(async () => { await result.retryEvents(phase); });
+    expect(result.eventsLoadErrorByPhase[phase]).toBeNull();
+    expect(result.hasMoreByPhase[phase]).toBe(true);
+    expect(result[phase === "upcoming" ? "upcomingEvents" : "pastEvents"].map((event) => event.id)).toEqual(
+      phase === "upcoming"
+        ? [`${phase}-1`, `${phase}-new-2`, `${phase}-new-3`]
+        : [`${phase}-new-3`, `${phase}-new-2`, `${phase}-1`],
+    );
+    expect(fetchCommunityEventsMock.mock.calls.slice(-2)).toEqual([
+      [{ limit: 120, phase, cursor: `cursor-${phase}-new-1` }],
+      [{ limit: 120, phase, cursor: `cursor-${phase}-new-2` }],
+    ]);
+
+    fetchCommunityEventsMock.mockResolvedValueOnce({ status: "ok", count: 1, items: [newFourth], hasMore: false, nextCursor: null });
+    await act(async () => { await result.loadMoreEvents(phase); });
+    expect(fetchCommunityEventsMock).toHaveBeenLastCalledWith({ limit: 120, phase, cursor: `cursor-${phase}-new-3` });
+    expect(result[phase === "upcoming" ? "upcomingEvents" : "pastEvents"].map((event) => event.id)).toEqual(
+      phase === "upcoming"
+        ? [`${phase}-1`, `${phase}-new-2`, `${phase}-new-3`, `${phase}-new-4`]
+        : [`${phase}-new-4`, `${phase}-new-3`, `${phase}-new-2`, `${phase}-1`],
+    );
+    expect(result[phase === "upcoming" ? "upcomingEvents" : "pastEvents"].find((event) => event.id === `${phase}-1`)).toMatchObject({ myRsvpStatus: "maybe", isFollowing: true });
+    expect(fetchCommunityEventsMock.mock.calls.slice(callsBeforeReconciliation).some(([params]) => params.cursor === `cursor-${phase}-old-2`)).toBe(false);
+    act(() => renderer?.unmount());
+  });
+
   it("ignores a late continuation response after a newer base revalidation", async () => {
     const first = makeEvent("future-1", "2099-09-10");
     const replacement = makeEvent("future-new", "2099-09-09");

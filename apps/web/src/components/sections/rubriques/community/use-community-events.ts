@@ -174,6 +174,7 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
           error,
           failedCursor: retryCursor,
           failedOperation: "reconciliation",
+          nextCursor: null,
           loadingMore: false,
         }));
       }
@@ -204,7 +205,7 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
     async (phase: EventPhase = "upcoming", cursorOverride: string | null = null) => {
       const current = paginationRef.current[phase];
       const requestCursor = cursorOverride ?? current.nextCursor;
-      if (!enabled || loadingMoreRef.current[phase] || !requestCursor) return;
+      if (!enabled || loadingMoreRef.current[phase] || current.failedOperation === "reconciliation" || !requestCursor) return;
       const generation = ++generationRef.current[phase];
       loadingMoreRef.current[phase] = true;
       updatePhaseState(phase, (state) => ({
