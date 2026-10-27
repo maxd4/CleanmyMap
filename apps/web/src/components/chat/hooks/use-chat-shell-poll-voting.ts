@@ -32,12 +32,13 @@ export function useChatShellPollVoting({
     Record<string, ChatShellPollVoteState>
   >({});
   const scopeKeyRef = useRef(messagesKey);
-  const requestVersionRef = useRef<Record<string, number>>({});
-  const pendingRequestRef = useRef<Record<string, boolean>>({});
+  const requestIdentityRef = useRef(0);
+  const activeRequestRef = useRef<Record<string, number>>({});
+  const pendingRequestRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     scopeKeyRef.current = messagesKey;
-    requestVersionRef.current = {};
+    activeRequestRef.current = {};
     pendingRequestRef.current = {};
     setPollVoteStates({});
   }, [messagesKey]);
@@ -55,12 +56,12 @@ export function useChatShellPollVoting({
       }
 
       const requestedScopeKey = messagesKey;
-      const requestVersion = (requestVersionRef.current[messageId] ?? 0) + 1;
-      requestVersionRef.current[messageId] = requestVersion;
-      pendingRequestRef.current[messageId] = true;
+      const requestIdentity = ++requestIdentityRef.current;
+      activeRequestRef.current[messageId] = requestIdentity;
+      pendingRequestRef.current[messageId] = requestIdentity;
       const isCurrentRequest = () =>
         scopeKeyRef.current === requestedScopeKey &&
-        requestVersionRef.current[messageId] === requestVersion;
+        activeRequestRef.current[messageId] === requestIdentity;
       const previousOptionId = currentMessage.selectedOptionId ?? null;
 
       setPollVoteStates((states) => ({
@@ -69,17 +70,22 @@ export function useChatShellPollVoting({
       }));
 
       try {
+        if (!isCurrentRequest()) return;
         await mutateMessages(
-          (data) => ({
-            ...(data ?? { previousCursor: null, hasMore: false }),
-            messages: (data?.messages ?? []).map((message) =>
-              message.id === messageId
-                ? applyOptimisticChatPollVote(message, optionId)
-                : message,
-            ),
-          }),
+          (data) => {
+            if (!isCurrentRequest()) return data;
+            return {
+              ...(data ?? { previousCursor: null, hasMore: false }),
+              messages: (data?.messages ?? []).map((message) =>
+                message.id === messageId
+                  ? applyOptimisticChatPollVote(message, optionId)
+                  : message,
+              ),
+            };
+          },
           { revalidate: false },
         );
+        if (!isCurrentRequest()) return;
         const response = await fetch(`/api/chat/polls/${encodeURIComponent(messageId)}/vote`, {
           method: optionId ? "PUT" : "DELETE",
           headers: optionId ? { "Content-Type": "application/json" } : undefined,
@@ -101,21 +107,28 @@ export function useChatShellPollVoting({
         if (!summary) {
           throw new Error("La réponse du sondage est invalide.");
         }
+        if (summary.messageId !== messageId) {
+          throw new Error("La réponse du sondage ne correspond pas au sondage demandé.");
+        }
 
         if (!isCurrentRequest()) {
           return;
         }
         await mutateMessages(
-          (data) => ({
-            ...(data ?? { previousCursor: null, hasMore: false }),
-            messages: (data?.messages ?? []).map((message) =>
-              message.id === messageId
-                ? applyChatPollVoteSummary(message, summary)
-                : message,
-            ),
-          }),
+          (data) => {
+            if (!isCurrentRequest()) return data;
+            return {
+              ...(data ?? { previousCursor: null, hasMore: false }),
+              messages: (data?.messages ?? []).map((message) =>
+                message.id === messageId
+                  ? applyChatPollVoteSummary(message, summary)
+                  : message,
+              ),
+            };
+          },
           { revalidate: false },
         );
+        if (!isCurrentRequest()) return;
         setPollVoteStates((states) => ({
           ...states,
           [messageId]: { pending: false, error: null, retryOptionId: null },
@@ -128,6 +141,7 @@ export function useChatShellPollVoting({
         // A timeout may mean that the server committed the idempotent vote.
         // Revalidate first; only inverse the optimistic transition if the
         // current cache still exposes the optimistic selection.
+        if (!isCurrentRequest()) return;
         let reconciledData: ChatMessagesResponse | undefined;
         try {
           reconciledData = await mutateMessages(undefined, { revalidate: true });
@@ -151,18 +165,22 @@ export function useChatShellPollVoting({
         }
 
         await mutateMessages(
-          (data) => ({
-            ...(data ?? { previousCursor: null, hasMore: false }),
-            messages: (data?.messages ?? []).map((message) =>
-              message.id === messageId &&
-              message.selectedOptionId === optionId &&
-              reconciledData?.messages.find((candidate) => candidate.id === messageId)?.selectedOptionId !== optionId
-                ? applyOptimisticChatPollVote(message, previousOptionId)
-                : message,
-            ),
-          }),
+          (data) => {
+            if (!isCurrentRequest()) return data;
+            return {
+              ...(data ?? { previousCursor: null, hasMore: false }),
+              messages: (data?.messages ?? []).map((message) =>
+                message.id === messageId &&
+                message.selectedOptionId === optionId &&
+                reconciledData?.messages.find((candidate) => candidate.id === messageId)?.selectedOptionId !== optionId
+                  ? applyOptimisticChatPollVote(message, previousOptionId)
+                  : message,
+              ),
+            };
+          },
           { revalidate: false },
         );
+        if (!isCurrentRequest()) return;
         setPollVoteStates((states) => ({
           ...states,
           [messageId]: {
@@ -172,7 +190,9 @@ export function useChatShellPollVoting({
           },
         }));
       } finally {
-        pendingRequestRef.current[messageId] = false;
+        if (activeRequestRef.current[messageId] === requestIdentity) {
+          delete pendingRequestRef.current[messageId];
+        }
       }
     },
     [messages, messagesKey, mutateMessages, pollVoteStates],

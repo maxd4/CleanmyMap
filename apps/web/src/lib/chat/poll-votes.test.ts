@@ -124,4 +124,19 @@ describe("chat poll vote summaries", () => {
       selectedOptionId: "option-1",
     });
   });
+
+  it("rejects a response with an incomplete aggregate contract", () => {
+    expect(normalizeChatPollVoteResponse({
+      messageId: "poll-1",
+      options: [{ optionId: "option-1", voteCount: "not-a-count" }],
+      totalVotes: 1,
+      selectedOptionId: "option-1",
+    })).toBeNull();
+    expect(normalizeChatPollVoteResponse({
+      messageId: "poll-1",
+      options: [],
+      totalVotes: 0,
+      selectedOptionId: null,
+    })).toBeNull();
+  });
 });

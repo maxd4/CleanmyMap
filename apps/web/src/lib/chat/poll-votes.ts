@@ -77,16 +77,32 @@ export function normalizeChatPollVoteResponse(
   }
 
   const response = payload as Partial<ChatPollVoteResponse>;
-  if (typeof response.messageId !== "string" || !Array.isArray(response.options)) {
+  if (
+    typeof response.messageId !== "string" ||
+    response.messageId.trim().length === 0 ||
+    !Array.isArray(response.options) ||
+    response.options.length === 0 ||
+    typeof response.totalVotes !== "number" ||
+    !Number.isFinite(response.totalVotes) ||
+    response.totalVotes < 0 ||
+    (response.selectedOptionId !== null &&
+      (typeof response.selectedOptionId !== "string" || response.selectedOptionId.trim().length === 0))
+  ) {
+    return null;
+  }
+
+  if (response.options.some((option) => {
+    if (!option || typeof option !== "object" || typeof option.optionId !== "string" || option.optionId.trim().length === 0) {
+      return true;
+    }
+    return typeof option.voteCount !== "number" || !Number.isFinite(option.voteCount) || option.voteCount < 0;
+  })) {
     return null;
   }
 
   return {
     messageId: response.messageId,
     options: response.options.flatMap((option) => {
-      if (!option || typeof option !== "object" || typeof option.optionId !== "string") {
-        return [];
-      }
       return [{
         optionId: option.optionId,
         voteCount: toNonNegativeCount(option.voteCount),

@@ -29,8 +29,12 @@ function poll(overrides: Partial<ChatMessage> = {}): ChatMessage {
   };
 }
 
+function responseMessages(messages: ChatMessage[]): ChatMessagesResponse {
+  return { messages, previousCursor: null, hasMore: false };
+}
+
 function response(message: ChatMessage): ChatMessagesResponse {
-  return { messages: [message], previousCursor: null, hasMore: false };
+  return responseMessages([message]);
 }
 
 function jsonResponse(payload: unknown, ok = true, status = 200): Response {
@@ -50,7 +54,7 @@ function deferred<T>() {
 function renderVoting(initialMessages = [poll()], initialMessagesKey = "scope-a") {
   let currentMessages = initialMessages;
   let currentMessagesKey = initialMessagesKey;
-  let cache: ChatMessagesResponse = response(initialMessages[0]!);
+  let cache: ChatMessagesResponse = responseMessages(initialMessages);
   let revalidatedCache: ChatMessagesResponse | undefined;
   let latest!: ReturnType<typeof useChatShellPollVoting>;
   let renderer!: ReturnType<typeof create>;
@@ -211,6 +215,140 @@ describe("useChatShellPollVoting behavior", () => {
 
     expect(voting.cache).toBe(cacheBeforeLateResponse);
     expect(voting.latest.pollVoteStates).toEqual({});
+    voting.unmount();
+  });
+
+  it("keeps the newest A intent authoritative after an A to B to A return", async () => {
+    const otherMessage = poll({ id: "poll-2", content: "Autre sondage" });
+    const voting = renderVoting([poll(), otherMessage]);
+    const oldResponse = deferred<Response>();
+    const newResponse = deferred<Response>();
+    const fetchMock = vi.fn()
+      .mockReturnValueOnce(oldResponse.promise)
+      .mockReturnValueOnce(newResponse.promise);
+    vi.stubGlobal("fetch", fetchMock);
+
+    let oldRequest!: Promise<unknown>;
+    await act(async () => {
+      oldRequest = voting.latest.handlePollVote("poll-1", "yes");
+      await Promise.resolve();
+    });
+    voting.rerender([poll({ content: "Canal B" }), otherMessage], "scope-b");
+    voting.rerender([poll(), otherMessage], "scope-a");
+
+    let newRequest!: Promise<unknown>;
+    await act(async () => {
+      newRequest = voting.latest.handlePollVote("poll-1", "no");
+      await Promise.resolve();
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(voting.latest.pollVoteStates["poll-1"]?.pending).toBe(true);
+    const cacheBeforeOldResponse = voting.cache;
+
+    await act(async () => {
+      oldResponse.resolve(jsonResponse({
+        messageId: "poll-1",
+        options: [{ optionId: "yes", voteCount: 9 }, { optionId: "no", voteCount: 0 }],
+        totalVotes: 9,
+        selectedOptionId: "yes",
+      }));
+      await oldRequest;
+    });
+
+    expect(voting.cache).toBe(cacheBeforeOldResponse);
+    expect(voting.cache.messages.find((message) => message.id === "poll-1")?.selectedOptionId).toBe("no");
+    expect(voting.cache.messages.find((message) => message.id === "poll-2")?.selectedOptionId).toBeNull();
+
+    await act(async () => {
+      await voting.latest.handlePollVote("poll-1", "no");
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      newResponse.resolve(jsonResponse({
+        messageId: "poll-1",
+        options: [{ optionId: "yes", voteCount: 0 }, { optionId: "no", voteCount: 1 }],
+        totalVotes: 1,
+        selectedOptionId: "no",
+      }));
+      await newRequest;
+    });
+
+    expect(voting.cache.messages.find((message) => message.id === "poll-1")?.selectedOptionId).toBe("no");
+    expect(voting.latest.pollVoteStates["poll-1"]).toEqual({ pending: false, error: null, retryOptionId: null });
+    voting.unmount();
+  });
+
+  it("ignores an old error and finally after a newer A intent starts", async () => {
+    const voting = renderVoting();
+    const oldResponse = deferred<Response>();
+    const newResponse = deferred<Response>();
+    const fetchMock = vi.fn()
+      .mockReturnValueOnce(oldResponse.promise)
+      .mockReturnValueOnce(newResponse.promise);
+    vi.stubGlobal("fetch", fetchMock);
+
+    let oldRequest!: Promise<unknown>;
+    await act(async () => {
+      oldRequest = voting.latest.handlePollVote("poll-1", "yes");
+      await Promise.resolve();
+    });
+    voting.rerender([poll({ content: "Canal B" })], "scope-b");
+    voting.rerender([poll()], "scope-a");
+
+    let newRequest!: Promise<unknown>;
+    await act(async () => {
+      newRequest = voting.latest.handlePollVote("poll-1", "no");
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      oldResponse.reject(new Error("Ancienne erreur"));
+      await oldRequest;
+    });
+
+    expect(voting.latest.pollVoteStates["poll-1"]).toMatchObject({ pending: true, error: null });
+    await act(async () => {
+      await voting.latest.handlePollVote("poll-1", "no");
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      newResponse.resolve(jsonResponse({
+        messageId: "poll-1",
+        options: [{ optionId: "yes", voteCount: 0 }, { optionId: "no", voteCount: 1 }],
+        totalVotes: 1,
+        selectedOptionId: "no",
+      }));
+      await newRequest;
+    });
+
+    expect(voting.latest.pollVoteStates["poll-1"]).toEqual({ pending: false, error: null, retryOptionId: null });
+    voting.unmount();
+  });
+
+  it("rejects a successful response belonging to another poll and keeps retry recovery", async () => {
+    const voting = renderVoting();
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
+      messageId: "poll-foreign",
+      options: [{ optionId: "yes", voteCount: 12 }],
+      totalVotes: 12,
+      selectedOptionId: "yes",
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    voting.setRevalidatedCache(response(poll()));
+
+    await act(async () => {
+      await voting.latest.handlePollVote("poll-1", "yes");
+    });
+
+    expect(voting.cache.messages[0]?.selectedOptionId).toBeNull();
+    expect(voting.latest.pollVoteStates["poll-1"]).toEqual({
+      pending: false,
+      error: "La réponse du sondage ne correspond pas au sondage demandé.",
+      retryOptionId: "yes",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     voting.unmount();
   });
 });
