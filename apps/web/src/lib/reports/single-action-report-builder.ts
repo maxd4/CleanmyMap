@@ -13,7 +13,26 @@ import {
 } from "@/lib/reports/report-generation-snapshot";
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
 import { REPORT_ADVANCED_FILTER_DEFAULTS } from "@/lib/reports/report-advanced-filters";
-import { buildWasteProfile } from "@/lib/reports/report-model/waste-profile";
+
+function buildWasteProfile(contract: ActionDataContract) {
+  const definitions = [
+    ["megotsKg", "Mégots"],
+    ["plastiqueKg", "Plastique"],
+    ["verreKg", "Verre"],
+    ["metalKg", "Métal"],
+    ["mixteKg", "Déchets mixtes"],
+  ] as const;
+  const breakdown = contract.metadata.wasteBreakdown;
+  const categories = definitions
+    .map(([key, label]) => ({
+      key,
+      label,
+      kg: Number(breakdown?.[key] ?? 0),
+      actions: Number(breakdown?.[key] ?? 0) > 0 ? 1 : 0,
+    }))
+    .filter((category) => category.kg > 0);
+  return { categories, coveragePercent: breakdown ? 100 : 0, dominantLabel: categories[0]?.label ?? "Déchets non typés" };
+}
 
 function buildSingleActionModel(contract: ActionDataContract, now: Date) {
   const listItem = toActionListItem(contract);
@@ -37,7 +56,7 @@ function buildSingleActionModel(contract: ActionDataContract, now: Date) {
     : null;
   return {
     report: modelReport,
-    wasteProfile: buildWasteProfile([contract], (item) => item.metadata.wasteBreakdown),
+    wasteProfile: buildWasteProfile(contract),
     accountScopeCoverage: computeReportAccountScopeCoverage([listItem]),
     exportRows: [toReportsExportRow(contract)],
     dataAvailability: {

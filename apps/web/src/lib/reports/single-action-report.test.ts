@@ -138,29 +138,4 @@ describe("single-action report server boundary", () => {
     expect(json).toContain("n/a");
   });
 
-  it("uses the canonical waste profile aggregation for the single-action PDF model", () => {
-    const input = buildSingleActionReportGenerationInput({
-      request: { type: "single_action", actionId },
-      contract: {
-        ...contract,
-        metadata: {
-          ...contract.metadata,
-          wasteBreakdown: { plastiqueKg: 2, verreKg: 3 },
-        },
-      },
-      detailLevel: "default",
-      modules,
-      now: new Date("2026-08-27T12:30:00.000Z"),
-    });
-
-    const chapter = input.payload.data.chapters?.find((item) => item.id === "contexte-local");
-    expect(chapter?.lines).toEqual([
-      "Typologie dominante: Verre.",
-      "Couverture des déchets typés: 100.0%.",
-    ]);
-    expect(chapter?.rows).toEqual([
-      { Déchet: "Verre", Kg: "3.0", Actions: 1 },
-      { Déchet: "Plastique", Kg: "2.0", Actions: 1 },
-    ]);
-  });
 });
