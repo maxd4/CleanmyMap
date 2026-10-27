@@ -242,19 +242,59 @@ function normalizeProgressSnapshots(snapshots) {
     }));
 }
 
-function readProgressSnapshots(progressFile) {
-  if (!progressFile) return [];
+function isIncompleteJsonLine(line) {
+  const text = line.trim();
+  if (!/^[{[]/.test(text)) return false;
+
+  const stack = [];
+  let inString = false;
+  let escaped = false;
+  for (const character of text) {
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (character === "\\") {
+        escaped = true;
+      } else if (character === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (character === '"') {
+      inString = true;
+    } else if (character === "{" || character === "[") {
+      stack.push(character);
+    } else if (character === "}" || character === "]") {
+      const opening = stack.pop();
+      if ((character === "}" && opening !== "{") || (character === "]" && opening !== "[")) return false;
+    }
+  }
+  return inString || stack.length > 0;
+}
+
+export function readProgressSnapshots(progressFile) {
+  if (!progressFile) return { snapshots: [], partial: false };
   try {
-    return readFileSync(progressFile, "utf8")
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map((line) => JSON.parse(line));
+    const lines = readFileSync(progressFile, "utf8").split(/\r?\n/);
+    const lastNonEmptyLine = lines.reduce((lastIndex, line, index) => line.trim() ? index : lastIndex, -1);
+    const snapshots = [];
+    let partial = false;
+    for (const [index, line] of lines.entries()) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+      try {
+        snapshots.push(JSON.parse(trimmedLine));
+      } catch {
+        partial ||= index === lastNonEmptyLine && isIncompleteJsonLine(trimmedLine);
+      }
+    }
+    return { snapshots, partial };
   } catch {
-    return [];
+    return { snapshots: [], partial: false };
   }
 }
 
-export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = null, root = process.cwd(), probeCommand = probe, startProgressSnapshots = [] }) {
+export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = null, root = process.cwd(), probeCommand = probe, startProgressSnapshots = [], startProgressPartial = false }) {
   const dockerVersion = probeCommand("docker", ["--version"]);
   const dockerDaemon = probeCommand("docker", ["info", "--format", "{{.ServerVersion}}"]);
   const dockerInfo = probeCommand("docker", ["info", "--format", "{{json .}}"]);
@@ -325,6 +365,7 @@ export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = n
   if (Number.isFinite(durationSeconds) && durationSeconds >= 80) evidenceCodes.push("START_DURATION_OVER_80_SECONDS");
   if (evidence.startPhase === "UNKNOWN") evidenceCodes.push("START_PHASE_UNOBSERVED");
   evidenceCodes.push(progressSnapshots.length > 0 ? "START_PROGRESS_OBSERVED" : "START_PROGRESS_UNOBSERVED");
+  if (startProgressPartial) evidenceCodes.push("START_PROGRESS_PARTIAL");
   if (evidence.failureService) evidenceCodes.push("FAILED_SERVICE_IDENTIFIED");
   const category = classifySupabaseStartFailure({ log, exitCode, evidence });
   evidenceCodes.push(category === SUPABASE_START_CATEGORIES.UNCLASSIFIED ? "NO_CLASSIFIABLE_START_LOG_SIGNAL" : category === SUPABASE_START_CATEGORIES.START_SUCCEEDED ? "START_SUCCEEDED" : `LOG_SIGNAL_${category}`);
@@ -416,7 +457,8 @@ function main() {
   const durationSeconds = durationValue === undefined ? null : Number.parseInt(durationValue, 10);
   if (!logFile || !Number.isInteger(exitCode) || exitCode < 0 || (durationValue !== undefined && (!Number.isInteger(durationSeconds) || durationSeconds < 0))) throw new Error("Supabase start diagnostic requires --log-file and a non-negative --exit-code.");
   const log = readFileSync(logFile, "utf8");
-  const evidence = collectBoundedStartEvidence({ log, exitCode, durationSeconds, startProgressSnapshots: readProgressSnapshots(progressFile) });
+  const progress = readProgressSnapshots(progressFile);
+  const evidence = collectBoundedStartEvidence({ log, exitCode, durationSeconds, startProgressSnapshots: progress.snapshots, startProgressPartial: progress.partial });
   const category = classifySupabaseStartFailure({ log, exitCode, dockerCommandAvailable: evidence.dockerCommandAvailable, dockerDaemonAvailable: evidence.dockerDaemonAvailable, supabaseCliAvailable: evidence.supabaseCliAvailable, evidence });
   process.stdout.write(renderSupabaseStartDiagnostic({ category, exitCode, dockerVersion: evidence.dockerServerVersion, supabaseCliVersion: evidence.supabaseCliVersion, dockerDaemonAvailable: evidence.dockerDaemonAvailable, evidence }) + "\n");
 }

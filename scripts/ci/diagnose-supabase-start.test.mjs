@@ -9,6 +9,7 @@ import {
   classifySupabaseStartFailure,
   collectBoundedStartEvidence,
   collectStartProgressSnapshot,
+  readProgressSnapshots,
   renderSupabaseStartDiagnostic,
   SUPABASE_START_CATEGORIES,
 } from "./diagnose-supabase-start.mjs";
@@ -227,6 +228,86 @@ test("renders the bounded startup observation timeline without publishing raw sn
   assert.match(diagnostic, /start_observation_count=2/);
   assert.match(diagnostic, /start_observation_timeline=0:DOCKER_READY,5:NETWORK_OBSERVED/);
   assert.doesNotMatch(diagnostic, /private-token|DockerRootDir|supabase_db_web/);
+});
+
+test("reads a complete NDJSON progress file without changing observation order", async () => {
+  const root = await mkdtemp(resolve(tmpdir(), "diagnose-supabase-start-progress-valid-"));
+  const progressFile = resolve(root, "progress.ndjson");
+  const snapshots = [
+    { schemaVersion: 1, elapsedSeconds: 0, observationState: "DOCKER_READY" },
+    { schemaVersion: 1, elapsedSeconds: 5, observationState: "CONTAINERS_OBSERVED" },
+  ];
+  try {
+    await writeFile(progressFile, `${snapshots.map((snapshot) => JSON.stringify(snapshot)).join("\n")}\n`);
+    assert.deepEqual(readProgressSnapshots(progressFile), { snapshots, partial: false });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("keeps valid observations when the final NDJSON line is truncated", async () => {
+  const root = await mkdtemp(resolve(tmpdir(), "diagnose-supabase-start-progress-partial-"));
+  const progressFile = resolve(root, "progress.ndjson");
+  const snapshots = [
+    { schemaVersion: 1, elapsedSeconds: 0, observationState: "DOCKER_READY" },
+    { schemaVersion: 1, elapsedSeconds: 5, observationState: "CONTAINERS_OBSERVED" },
+  ];
+  const truncatedLine = '{"schemaVersion":1,"elapsedSeconds":10,"observationState":"CONTAINERS_OBSERVED","privateToken":"private-token","container":"supabase_db_web"';
+  try {
+    await writeFile(progressFile, `${snapshots.map((snapshot) => JSON.stringify(snapshot)).join("\n")}\n${truncatedLine}`);
+    const progress = readProgressSnapshots(progressFile);
+    assert.deepEqual(progress.snapshots, snapshots);
+    assert.equal(progress.partial, true);
+
+    const evidence = collectBoundedStartEvidence({
+      log: "opaque startup failure",
+      exitCode: 1,
+      durationSeconds: 75,
+      startProgressSnapshots: progress.snapshots,
+      startProgressPartial: progress.partial,
+      probeCommand: createProbeCommand(),
+    });
+    const diagnostic = renderSupabaseStartDiagnostic({
+      category: SUPABASE_START_CATEGORIES.UNCLASSIFIED,
+      exitCode: 1,
+      dockerVersion: evidence.dockerServerVersion,
+      supabaseCliVersion: evidence.supabaseCliVersion,
+      dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+      evidence,
+    });
+
+    assert.equal(evidence.startObservationCount, 2);
+    assert.equal(evidence.startObservationTimeline, "0:DOCKER_READY,5:CONTAINERS_OBSERVED");
+    assert.ok(evidence.evidenceCodes.includes("START_PROGRESS_PARTIAL"));
+    assert.match(diagnostic, /evidence_codes=.*START_PROGRESS_PARTIAL/);
+    assert.doesNotMatch(diagnostic, /private-token|supabase_db_web|truncated/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("ignores an invalid first NDJSON line while retaining later valid observations", async () => {
+  const root = await mkdtemp(resolve(tmpdir(), "diagnose-supabase-start-progress-invalid-"));
+  const progressFile = resolve(root, "progress.ndjson");
+  const snapshot = { schemaVersion: 1, elapsedSeconds: 5, observationState: "NETWORK_OBSERVED" };
+  try {
+    await writeFile(progressFile, `not-json\n${JSON.stringify(snapshot)}\n`);
+    assert.deepEqual(readProgressSnapshots(progressFile), { snapshots: [snapshot], partial: false });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("returns an empty non-partial result for absent or unreadable progress files", async () => {
+  const root = await mkdtemp(resolve(tmpdir(), "diagnose-supabase-start-progress-unavailable-"));
+  try {
+    assert.deepEqual(readProgressSnapshots(resolve(root, "missing.ndjson")), { snapshots: [], partial: false });
+    const directoryPath = resolve(root, "directory");
+    await mkdir(directoryPath);
+    assert.deepEqual(readProgressSnapshots(directoryPath), { snapshots: [], partial: false });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("confirms zero containers only when docker ps succeeds", () => {
