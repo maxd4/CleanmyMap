@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { publicAction } from "@/fixtures/public-action";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -42,14 +43,14 @@ describe("GET /api/actions/[actionId]/duplicate", () => {
     });
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/actions/a/duplicate"), { params: Promise.resolve({ actionId: publicAction.id }) });
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
     expect(response.status).toBe(200);
-    expect(body.prefill).toMatchObject({ title: "Régulière", meetingPoint: "Entrée nord", participantMessage: "Prendre de l'eau" });
-    expect(body.prefill).not.toHaveProperty("actionId");
-    expect(body.prefill).not.toHaveProperty("actionDate");
-    expect(body.prefill).not.toHaveProperty("notes");
-    expect(body.prefill).not.toHaveProperty("volunteerParticipation");
-    expect(body.prefill).not.toHaveProperty("groupJoinEnabled");
+    expect(body).toMatchObject({ prefill: { title: "Régulière", meetingPoint: "Entrée nord", participantMessage: "Prendre de l'eau" } });
+    expect(body).not.toHaveProperty("prefill.actionId");
+    expect(body).not.toHaveProperty("prefill.actionDate");
+    expect(body).not.toHaveProperty("prefill.notes");
+    expect(body).not.toHaveProperty("prefill.volunteerParticipation");
+    expect(body).not.toHaveProperty("prefill.groupJoinEnabled");
   });
 
   it("denies a public action when the requester has no management capability", async () => {

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hashInvitationToken } from "@/lib/actions/private-invitation";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const mocks = vi.hoisted(() => ({
   access: vi.fn(),
@@ -119,12 +120,12 @@ describe("private invitation route boundaries", () => {
     const response = await GET(buildRequest(`/api/actions/invite/${token}`), {
       params: Promise.resolve({ token }),
     });
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
 
     expect(response.status).toBe(200);
-    expect(body.action.title).toBe("Action privée");
+    expect(body).toMatchObject({ action: { title: "Action privée" } });
     expect(JSON.stringify(body)).not.toContain("NE DOIT PAS SORTIR");
-    expect(body.action).not.toHaveProperty("logisticsNotes");
+    expect(body).not.toHaveProperty("action.logisticsNotes");
   });
 
   it("rejects invalid or revoked tokens and requires Clerk for registration", async () => {
@@ -159,7 +160,7 @@ describe("private invitation route boundaries", () => {
     const response = await POST(buildRequest(`/api/actions/invite/${token}`, { method: "POST" }), {
       params: Promise.resolve({ token }),
     });
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
 
     expect(response.status).toBe(200);
     expect(body).toMatchObject({ flow: "pre_action", registrationStatus: "confirmed", registrationSource: "invite_link" });
@@ -208,7 +209,7 @@ describe("private invitation route boundaries", () => {
     });
 
     expect(response.status).toBe(status);
-    await expect(response.json()).resolves.toMatchObject(expected);
+    await expect(parseJsonSafely(response)).resolves.toMatchObject(expected);
   });
 
   it("exposes an awaiting-finalization state without opening registration", async () => {
@@ -217,9 +218,9 @@ describe("private invitation route boundaries", () => {
     mocks.from.mockReturnValue(invitationFrom({ action_id: action.id, revoked_at: null, expires_at: "2027-01-18T10:00:00Z" }));
     const { GET, POST } = await import("./[token]/route");
     const getResponse = await GET(buildRequest(`/api/actions/invite/${token}`), { params: Promise.resolve({ token }) });
-    const getBody = await getResponse.json();
+    const getBody = await parseJsonSafely(getResponse);
     expect(getResponse.status).toBe(200);
-    expect(getBody.action.invitationState).toBe("awaiting_finalization");
+    expect(getBody).toMatchObject({ action: { invitationState: "awaiting_finalization" } });
 
     const postResponse = await POST(buildRequest(`/api/actions/invite/${token}`, { method: "POST" }), { params: Promise.resolve({ token }) });
     expect(postResponse.status).toBe(409);
@@ -244,7 +245,7 @@ describe("private invitation route boundaries", () => {
     });
     const { POST } = await import("./[token]/route");
     const response = await POST(buildRequest(`/api/actions/invite/${token}`, { method: "POST" }), { params: Promise.resolve({ token }) });
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
 
     expect(response.status).toBe(200);
     expect(body).toMatchObject({ flow: "post_action_claim", participationStatus: "pending", participationSource: "post_action_claim" });

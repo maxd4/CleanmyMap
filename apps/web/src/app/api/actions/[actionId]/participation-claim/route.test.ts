@@ -6,6 +6,7 @@ import {
   groupJoinMocks,
   seedGroupJoinTestDefaults,
 } from "@/__tests__/support/group-join-action-id-route";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const {
   getSupabaseServerClientMock,
@@ -17,6 +18,10 @@ const rateLimitMocks = vi.hoisted(() => ({
   verifyRateLimit: vi.fn(),
   createServerRateLimitResponse: vi.fn(),
 }));
+
+function firstMockArgument(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
+  return mock.mock.calls[0]?.[0];
+}
 
 vi.mock("@/lib/rate-limit/server", () => rateLimitMocks);
 
@@ -65,7 +70,7 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
       }),
       context,
     );
-    const firstBody = await firstResponse.json();
+    const firstBody = await parseJsonSafely(firstResponse);
 
     expect(firstResponse.status).toBe(200);
     expect(firstBody).toMatchObject({
@@ -95,7 +100,7 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
       }),
       context,
     );
-    const secondBody = await secondResponse.json();
+    const secondBody = await parseJsonSafely(secondResponse);
 
     expect(secondResponse.status).toBe(200);
     expect(secondBody).toMatchObject({
@@ -105,19 +110,18 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
     });
     expect(participants).toHaveLength(1);
     expect(registrations).toHaveLength(1);
-    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
+    const auditCall = firstMockArgument(appendActionModerationAuditMock);
+    expect(auditCall).toMatchObject({
         operation: "post_action_claim",
         actorUserId: "user-2",
         targetActionId: "action-1",
         targetUserId: "user-2",
         previousValue: null,
-        newValue: expect.objectContaining({
+        newValue: {
           participationStatus: "pending",
           participationSource: "post_action_claim",
-        }),
-      }),
-    );
+        },
+      });
   });
 
   it.each([
@@ -147,7 +151,7 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
     );
 
     expect(response.status).toBe(200);
-    expect((await response.json()).participationStatus).toBe("pending");
+    expect(await parseJsonSafely(response)).toMatchObject({ participationStatus: "pending" });
     expect(participants).toHaveLength(1);
     expect(participants[0]).toMatchObject({
       user_id: userId,
@@ -211,7 +215,7 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
     );
 
     expect(response.status).toBe(422);
-    expect((await response.json()).details.actionId).toEqual([expect.any(String)]);
+    expect(await parseJsonSafely(response)).toMatchObject({ details: { actionId: [expect.any(String)] } });
     expect(participants).toHaveLength(1);
     expect(participants[0]?.participation_status).toBe("cancelled");
   });
