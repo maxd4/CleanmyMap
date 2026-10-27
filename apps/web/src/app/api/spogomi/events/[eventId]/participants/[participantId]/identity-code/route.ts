@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { unauthorizedJsonResponse, forbiddenJsonResponse } from "@/lib/http/auth-responses";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
 import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
 import { issueSpogomiIdentityCode, SpogomiIdentityLinkError } from "@/lib/spogomi/identity-link";
+import { loadAuthorizedSpogomiEvent } from "@/lib/spogomi/route-auth";
 
 export const runtime = "nodejs";
 // Justification Vercel: identity codes are private event credentials and require fresh authorization.
@@ -21,10 +20,8 @@ export async function POST(request: Request, context: RouteContext) {
 
   try {
     const { eventId, participantId } = await context.params;
-    const supabase = getSupabaseServerClient(true);
-    const event = await loadSpogomiEventForOrganizer(supabase, eventId, access.userId);
-    if (event === false) return forbiddenJsonResponse();
-    if (!event) return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
+    const { supabase, authorized } = await loadAuthorizedSpogomiEvent(eventId, access.userId);
+    if ("response" in authorized) return authorized.response;
 
     const issued = await issueSpogomiIdentityCode(supabase, {
       eventId,

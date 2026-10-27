@@ -4,7 +4,7 @@ import { ClipboardList } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmField, CmmTextarea } from "@/components/ui/cmm-field";
 import { PLACE_TYPE_FORM_OPTIONS } from "@/lib/actions/place-type-options";
-import { normalizeVolunteerParticipationFromForm } from "@/lib/actions/volunteer-participation";
+import { getVolunteerParticipationDisclosureDetail } from "@/lib/actions/volunteer-participation";
 import type { BaseSectionProps } from "./section-contract";
 import { SelectField, VolunteerForecast } from "./planned-action-volunteer-section";
 import { ExpectedWasteSection } from "./planned-action-waste-section";
@@ -17,14 +17,7 @@ export function PreparationPlanningFields({
   validationIssueFields,
   embedded = false,
 }: BaseSectionProps & { embedded?: boolean }) {
-  const volunteerParticipation = normalizeVolunteerParticipationFromForm(form);
-  const hasVolunteerCategoryInput = [form.childrenCount, form.adultCount, form.retiredCount]
-    .some((value) => value.trim() !== "");
-  const splitDetail = hasVolunteerCategoryInput
-    ? volunteerParticipation.participantsCount === null
-      ? "à compléter"
-      : `${volunteerParticipation.participantsCount} répartis`
-    : "facultatif";
+  const splitDetail = getVolunteerParticipationDisclosureDetail(form);
 
   const content = (
     <div className="space-y-5">

@@ -10,11 +10,29 @@ export const runtime = "nodejs";
 // Justification Vercel: team access grants are short-lived credentials and require fresh authorization.
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request, context: { params: Promise<{ eventId: string; teamId: string }> }) {
+type AuthenticatedAccess = Extract<
+  Awaited<ReturnType<typeof requireAuthenticatedAccess>>,
+  { ok: true }
+>;
+
+type TeamAccessAuthentication =
+  | { access: AuthenticatedAccess }
+  | { response: Response };
+
+async function authorizeTeamAccessRequest(
+  request: Request,
+): Promise<TeamAccessAuthentication> {
   const access = await requireAuthenticatedAccess();
-  if (!access.ok) return unauthorizedJsonResponse();
+  if (!access.ok) return { response: unauthorizedJsonResponse() };
   const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(request, access.userId, { limit: 30, window: 60 });
-  if (rateLimitResponse) return rateLimitResponse;
+  if (rateLimitResponse) return { response: rateLimitResponse };
+  return { access };
+}
+
+export async function POST(request: Request, context: { params: Promise<{ eventId: string; teamId: string }> }) {
+  const authentication = await authorizeTeamAccessRequest(request);
+  if ("response" in authentication) return authentication.response;
+  const { access } = authentication;
   try {
     const { eventId, teamId } = await context.params;
     const { supabase, authorized } = await loadAuthorizedSpogomiEvent(eventId, access.userId);
@@ -30,10 +48,9 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
 }
 
 export async function DELETE(request: Request, context: { params: Promise<{ eventId: string; teamId: string }> }) {
-  const access = await requireAuthenticatedAccess();
-  if (!access.ok) return unauthorizedJsonResponse();
-  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(request, access.userId, { limit: 30, window: 60 });
-  if (rateLimitResponse) return rateLimitResponse;
+  const authentication = await authorizeTeamAccessRequest(request);
+  if ("response" in authentication) return authentication.response;
+  const { access } = authentication;
   try {
     const { eventId, teamId } = await context.params;
     const { supabase, authorized } = await loadAuthorizedSpogomiEvent(eventId, access.userId);

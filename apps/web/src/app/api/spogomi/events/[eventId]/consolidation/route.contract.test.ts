@@ -6,7 +6,7 @@ const route = readFileSync(new URL("./route.ts", import.meta.url), "utf8");
 describe("SPOGOMI consolidation route STATIC_CONTRACT", () => {
   it("requires authenticated organizer access and applies endpoint rate limits", () => {
     expect(route).toContain("requireAuthenticatedAccess");
-    expect(route).toContain("loadSpogomiEventForOrganizer");
+    expect(route).toContain("loadAuthorizedSpogomiEvent");
     expect(route).toContain("enforceServerRateLimitForAuthenticatedUser");
   });
 

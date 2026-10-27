@@ -1,12 +1,30 @@
 import { describe, expect, it } from "vitest";
 import {
   EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
+  getVolunteerParticipationDisclosureDetail,
   normalizeVolunteerParticipation,
   resolveEffectiveVolunteerUnits,
   resolveParticipantsCount,
 } from "./volunteer-participation";
 
 describe("volunteer participation contract", () => {
+  it.each([
+    {
+      input: { childrenCount: "", adultCount: "", retiredCount: "" },
+      detail: "facultatif",
+    },
+    {
+      input: { childrenCount: "2", adultCount: "4", retiredCount: "2" },
+      detail: "8 répartis",
+    },
+    {
+      input: { childrenCount: "", adultCount: "4", retiredCount: "2" },
+      detail: "à compléter",
+    },
+  ])("derives the disclosure detail from category sources", ({ input, detail }) => {
+    expect(getVolunteerParticipationDisclosureDetail(input)).toBe(detail);
+  });
+
   it("keeps children in the physical participantsCount for statistics", () => {
     const result = normalizeVolunteerParticipation({
       childrenCount: 2,

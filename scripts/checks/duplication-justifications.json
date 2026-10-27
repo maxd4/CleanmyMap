@@ -2035,14 +2035,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "8a354b26a79cc9b6",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Deux branches du handler de consolidation construisent des réponses d'erreur avec des statuts différents ; leur fusion n'apporterait aucun owner commun.",
-      "evidence": "app/api/spogomi/events/[eventId]/consolidation/route.ts:29-35 et app/api/spogomi/events/[eventId]/consolidation/route.ts:47-52 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "91e8597ea18faf09",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Export XLSX et rankings exposent deux DTO distincts et conservent volontairement leur propre réponse d'erreur côté route.",
@@ -2099,34 +2091,10 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "9a1c8ad8b7d4e9a5",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les routes participant et équipe ont des ressources et des messages d'erreur différents ; conserver leur validation locale évite de coupler deux contrats publics.",
-      "evidence": "app/api/spogomi/events/[eventId]/participants/[participantId]/identity-code/route.ts:23-29 et app/api/spogomi/events/[eventId]/teams/[teamId]/route.ts:23-28 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "4c6ef0055c136d33",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Rankings et réconciliation utilisent des lectures et autorisations distinctes ; leur gestion d'erreur doit rester identifiable dans chaque endpoint.",
       "evidence": "app/api/spogomi/events/[eventId]/rankings/route.ts:11-19 et app/api/spogomi/events/[eventId]/recognition/reconcile/route.ts:8-16 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "a5b8363f965e7923",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "POST et DELETE sur l'accès d'équipe ont des effets et validations opposés ; la duplication de réponse conserve la lisibilité de chaque mutation.",
-      "evidence": "app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts:13-21 et app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts:32-40 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "ba1792793f8428a4",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les mutations POST et DELETE partagent une forme d'erreur mais pas la sémantique d'accès ; une extraction réduirait la visibilité de la permission concernée.",
-      "evidence": "app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts:14-22 et app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts:33-41 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
@@ -2159,14 +2127,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Localisation et bénévolat exposent des champs métier différents ; la ressemblance est du bruit de composition de formulaire.",
       "evidence": "components/actions/action-declaration/before/planned-action-location-section.tsx:62-71 et components/actions/action-declaration/before/planned-action-volunteer-section.tsx:41-50 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "337ec3c6c51d1e9e",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les composants de bénévolat et de préparation partagent une forme de champ mais pas une règle ou un owner de domaine commun.",
-      "evidence": "components/actions/action-declaration/before/planned-action-volunteer-section.tsx:15-22 et components/actions/action-declaration/before/preparation-planning-fields.tsx:19-27 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {

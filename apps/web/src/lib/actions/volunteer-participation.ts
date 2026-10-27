@@ -22,6 +22,12 @@ export type VolunteerParticipationInput = {
   retiredCount?: number | null;
 };
 
+export type VolunteerParticipationFormInput = {
+  childrenCount: string;
+  adultCount: string;
+  retiredCount: string;
+};
+
 export type VolunteerForecastValidationInput = {
   volunteersExpected?: number | null;
   volunteerParticipation?: VolunteerParticipationInput | null;
@@ -143,17 +149,31 @@ export function normalizeVolunteerParticipation(
   };
 }
 
-export function normalizeVolunteerParticipationFromForm(input: {
-  childrenCount: string;
-  adultCount: string;
-  retiredCount: string;
-}): ActionVolunteerParticipation {
+export function normalizeVolunteerParticipationFromForm(
+  input: VolunteerParticipationFormInput,
+): ActionVolunteerParticipation {
   const toCount = (value: string) => value.trim() === "" ? null : Number(value);
   return normalizeVolunteerParticipation({
     childrenCount: toCount(input.childrenCount),
     adultCount: toCount(input.adultCount),
     retiredCount: toCount(input.retiredCount),
   });
+}
+
+export function getVolunteerParticipationDisclosureDetail(
+  input: VolunteerParticipationFormInput,
+): string {
+  const hasVolunteerCategoryInput = [
+    input.childrenCount,
+    input.adultCount,
+    input.retiredCount,
+  ].some((value) => value.trim() !== "");
+  if (!hasVolunteerCategoryInput) return "facultatif";
+
+  const participation = normalizeVolunteerParticipationFromForm(input);
+  return participation.participantsCount === null
+    ? "à compléter"
+    : `${participation.participantsCount} répartis`;
 }
 
 export function resolveParticipantsCount(params: {

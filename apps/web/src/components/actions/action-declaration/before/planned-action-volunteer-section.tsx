@@ -1,7 +1,7 @@
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { CmmField, CmmInput, CmmSelect, CmmTextarea } from "@/components/ui/cmm-field";
 import { PLACE_TYPE_FORM_OPTIONS } from "@/lib/actions/place-type-options";
-import { normalizeVolunteerParticipationFromForm } from "@/lib/actions/volunteer-participation";
+import { getVolunteerParticipationDisclosureDetail } from "@/lib/actions/volunteer-participation";
 import type { FormState } from "../model";
 import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
 import { DIFFICULTY_OPTIONS, PLANNED_OBJECTIVE_OPTIONS } from "./model";
@@ -13,13 +13,7 @@ export function PlannedActionVolunteerSection({
   updateField,
   validationIssueFields,
 }: BaseSectionProps) {
-  const volunteerParticipation = normalizeVolunteerParticipationFromForm(form);
-  const hasVolunteerCategoryInput = [form.childrenCount, form.adultCount, form.retiredCount].some((value) => value.trim() !== "");
-  const splitDetail = hasVolunteerCategoryInput
-    ? volunteerParticipation.participantsCount === null
-      ? "à compléter"
-      : `${volunteerParticipation.participantsCount} répartis`
-    : "facultatif";
+  const splitDetail = getVolunteerParticipationDisclosureDetail(form);
 
   return (
     <section aria-labelledby="before-action-practical" className="space-y-3">

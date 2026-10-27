@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, parseJsonBodyWithValidation } from "@/lib/http/api-errors";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
 import { renameSpogomiTeam } from "@/lib/spogomi/team-name-service";
+import { loadAuthorizedSpogomiEvent } from "@/lib/spogomi/route-auth";
 
 export const runtime = "nodejs";
 // Justification Vercel: team pseudonym changes are authenticated mutable state and must be resolved dynamically.
@@ -21,15 +20,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ event
   if (!access.ok) return unauthorizedJsonResponse();
   try {
     const { eventId, teamId } = await context.params;
-    const supabase = getSupabaseServerClient(true);
-    const event = await loadSpogomiEventForOrganizer(supabase, eventId, access.userId);
-    if (event === false) return forbiddenJsonResponse();
-    if (!event) return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
+    const { supabase, authorized } = await loadAuthorizedSpogomiEvent(eventId, access.userId);
+    if ("response" in authorized) return authorized.response;
     const parsed = await parseJsonBodyWithValidation(request, renameSchema);
     if (!parsed.ok) return parsed.response;
     const team = await renameSpogomiTeam({
       supabase,
-      eventId: event.id,
+      eventId: authorized.event.id,
       teamId,
       expectedPublicName: parsed.data.expectedPublicName,
       publicName: parsed.data.publicName,
