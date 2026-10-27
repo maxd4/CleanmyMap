@@ -2,17 +2,18 @@
 
 > **Statut : `AUDIT / PLAN`, non normatif.** Inventaire documenté et pistes conditionnelles : aucune ligne n’impose à elle seule un changement produit.
 >
-> **Référence auditée :** [`maxd4/CleanmyMap`](https://github.com/maxd4/CleanmyMap), branche `main`, SHA `fcdf22380eb3d14a9e32341cf8cbd7803725562a`, lecture des sources les 26 et 27 octobre 2026.
+> **Référence auditée :** [`maxd4/CleanmyMap`](https://github.com/maxd4/CleanmyMap), branche `main`, SHA [`7839eef5be070fc6ae80cfb767577d4201abe176`](https://github.com/maxd4/CleanmyMap/commit/7839eef5be070fc6ae80cfb767577d4201abe176), rapprochement final effectué le 27 octobre 2026.
 >
 > **Cible d’intégration :** `documentation/design-system/MATRICE_ASTUCES_UI_UX_CLEANMYMAP.md`.
 >
 > **Périmètre :** composants et parcours sélectionnés d’`apps/web` et `apps/mobile` ; 20 techniques provenant de la vidéo fournie et 28 techniques additionnelles identifiées dans le dépôt.
-> **Preuve :** inspection statique ciblée de fichiers publiés sur GitHub. Aucun lancement local, test, mesure de performance, interaction navigateur, validation PostgreSQL ou observation de production n’a été effectué pour cette V2.
+> **Preuve V2 conservée :** inspection statique ciblée des sources publiées. **Preuve finale :** les lots 01 à 11 publiés, leurs tests et leurs documents propriétaires ont été rapprochés ci-dessous ; cette matrice ne transforme pas ces preuves ciblées en preuve globale du produit, de PostgreSQL, d’un appareil natif ou de la production.
 
 ## Lecture et niveaux de preuve
 
 - **CONFIRMÉ (source)** : mécanisme et au moins un usage ou propriétaire reconnaissable dans le code. **Ne signifie pas** « vérifié à l’exécution » ou « généralisé au site ».
 - **PARTIEL** : une partie du pattern existe, mais pas l’effet complet ou sa preuve. **NON PROUVÉ** : aucune implémentation explicite trouvée dans les recherches ciblées, **pas** démonstration d’absence exhaustive.
+- **Statuts finaux du lot 12** : `IMPLEMENTED_AND_TESTED` signifie que le périmètre concerné a été modifié et exécuté avec une régression ; `EXISTING_VERIFIED` signifie que l’owner et le comportement local sont présents sans nouveau changement nécessaire ; `NOT_APPLICABLE` signifie que la contre-indication ou l’absence de besoin démontré clôt l’opportunité actuelle ; `PARTIEL` signifie que seul un sous-périmètre ou une preuve limitée est établi ; `BLOCKED` est réservé à une dépendance ou une preuve indispensable manquante.
 - **Utilisé** : chemins observés, représentatifs et non inventaire de tous les consommateurs. Dans les tableaux, `components/`, `app/`, `lib/` et `styles/` désignent par défaut `apps/web/src/` ; les préfixes `apps/web/`, `apps/mobile/` et `documentation/` sont relatifs à la racine du dépôt. Cette convention vaut seulement pour les chemins, pas pour les URLs de route comme `/reports`.
 - **Pertinent ailleurs** : candidats de réutilisation **à confirmer sur parcours réel**. **Où ne pas implémenter** : exclusion étayée, contre-indication contextuelle ou garde-fou ; ce n’est pas nécessairement une interdiction absolue de la technique.
 - **Priorité indicative** : `P1` sécurité/accessibilité/cohérence ou valeur probable élevée sous réserve de besoin ; `P2` opportunité ciblée ; `P3` expérimentation facultative. Les priorités ne prouvent pas l’existence d’un bug ni ne prescrivent un chantier.
@@ -80,7 +81,84 @@ Les numéros 21 à 40 proviennent de l’inventaire précédent. Les lignes 41 �
 | 47 | **Sélection synchronisée carte et tableau** : maintenir le même objet actif entre deux vues. | CONFIRMÉ (coordination source) | `apps/web/src/app/(app)/actions/map/page-client.tsx` transmet `selectedActionId` à la carte et à `ActionsMapTable` ; `components/actions/actions-map-table.tsx` conserve/affiche la ligne sélectionnée et `onSelectAction`. | Annuaire carte/liste et autres vues duales uniquement lorsqu’elles partagent un identifiant canonique et un parcours de sélection clair. | Pages sans vue duale, scroll forcé pendant édition, cartes filtrées où la ligne sélectionnée n’est plus présente ; éviter des sélections divergentes. | P2 |
 | 48 | **Divulgation progressive de l’aide** : afficher les explications détaillées sur demande. | CONFIRMÉ (composant source) | `apps/web/src/components/actions/action-declaration/before/ui.tsx` : bouton aide, `aria-expanded`, `aria-controls`, `onToggleHelp` ; contrat `documentation/design-system/DISCLOSURE_ACCORDIONS.md`. | Aides aux coefficients, descriptions longues de formulaires et filtres experts, si une info secondaire surcharge réellement l’écran. | Consignes indispensables, erreurs, risques, mentions de sécurité ou informations nécessaires avant validation ; ne pas cacher l’essentiel. | P2 |
 
-## C. Corrections de l’analyse initiale et limites importantes
+## C. Rapprochement final des 48 IDs
+
+Cette section est la décision documentaire finale du lot 12. Les tableaux A et B
+conservent l’analyse V2 et ses contre-indications ; le statut ci-dessous prévaut
+pour l’état publié au SHA de référence. Les décisions restent bornées aux
+consommateurs observés : elles ne déclarent pas l’adoption de chaque technique
+sur toutes les pages.
+
+**Clés de preuve publiées :**
+
+- `L01` : [lot 01](https://github.com/maxd4/CleanmyMap/commit/d0a3b2a71) et contrats `STATES_FEEDBACK.md` / `ACTIONS_BUTTONS.md`.
+- `L03` : [lot 03](https://github.com/maxd4/CleanmyMap/commit/ab8030b9b) et fiches CURRENT recherche, météo et rapports.
+- `L04` : [lot 04](https://github.com/maxd4/CleanmyMap/commit/1634f6ea2) et contrat de pagination des événements.
+- `L06` : [lot 06](https://github.com/maxd4/CleanmyMap/commit/48bff7c0e), tests d’Undo et de progression, formulaires et divulgation.
+- `L07` : [lot 07](https://github.com/maxd4/CleanmyMap/commit/a90d4e637) avec le [socle optimiste](https://github.com/maxd4/CleanmyMap/commit/789e4f647), votes et chat.
+- `L08` : [lot 08](https://github.com/maxd4/CleanmyMap/commit/635d21bb8), overlays, identité et consentement.
+- `L09` : [lot 09](https://github.com/maxd4/CleanMyMap/commit/648567f6f) et [pré-rendu/différé](https://github.com/maxd4/CleanmyMap/commit/b18fca711).
+- `L10` : [lot 10](https://github.com/maxd4/CleanMyMap/commit/c107e0cab), galerie clavier et focus.
+- `L11` : [lot 11](https://github.com/maxd4/CleanMyMap/commit/7839eef5b), reprise mobile et état de synchronisation.
+
+| ID | Statut final | Où utilisé / preuve déterminante | Décision de clôture |
+|---:|---|---|---|
+| 1 | `IMPLEMENTED_AND_TESTED` | États de listes, carte et chat ; `L01`, tests de loading/empty/error et owners `CmmSkeleton`/`SystemState`. | Périmètre retenu couvert ; pas d’extension automatique aux listes non observées. |
+| 2 | `IMPLEMENTED_AND_TESTED` | Réactions/votes du chat ; `L07`, tests de succès, refus, rollback, retry, ordre obsolète et concurrence locale. | Optimisme limité aux mutations réconciliables ; aucune extension aux mutations sensibles. |
+| 3 | `PARTIEL` | `GlobalSearch` permet recherche/navigation et `Ctrl/Cmd+K`, sans moteur de commandes général. | Le moteur général reste hors périmètre ; aucune seconde palette créée. |
+| 4 | `EXISTING_VERIFIED` | Indices clavier réels de `GlobalSearch` (`Ctrl/Cmd+K`, flèches, Entrée, Échap). | Les raccourcis non implémentés restent exclus. |
+| 5 | `IMPLEMENTED_AND_TESTED` | Undo local du tracé, commande Leaflet et toast externe ; `L06`, tests de restauration exacte et d’obsolescence. | Annulation locale réversible uniquement ; aucune annulation serveur revendiquée. |
+| 6 | `PARTIEL` | SWR et invalidations des consommateurs ciblés ; `L03`, tests de recherche et rapports. | La fraîcheur globale et toutes les surfaces proposées ne sont pas démontrées. |
+| 7 | `IMPLEMENTED_AND_TESTED` | Guide public pré-rendu et carte différée ; `L09`, tests SSR/fallback/contrat de chargement. | Pré-rendu limité aux contenus publics stables ; coût de production non mesuré. |
+| 8 | `NOT_APPLICABLE` | Aucun pipeline BlurHash/miniature fiable n’est présent ; aucun gain mesuré ne justifie une chaîne d’assets. | Opportunité P3 clôturée sans ajout artificiel. |
+| 9 | `NOT_APPLICABLE` | Aucune API View Transitions ni friction de continuité démontrée sur les parcours retenus. | Fallback statique et motion contract conservés. |
+| 10 | `NOT_APPLICABLE` | Aucun vrai composant sheet nécessitant ce geste n’est identifié ; les panneaux gardent leurs alternatives accessibles. | Pas de geste exclusif ajouté. |
+| 11 | `PARTIEL` | Contrat motion et préférences `reduced-motion` présents ; animation interrompable du dock non démontrée. | Aucun changement global sans incident reproductible. |
+| 12 | `NOT_APPLICABLE` | Aucun stack natif/API predictive back sûr et utilisé dans le shell mobile actuel. | Retour standard conservé ; pas de simulation web. |
+| 13 | `PARTIEL` | Cibles larges web/mobile observées, mais pas de contrat `hitSlop` natif ni de preuve appareil. | Les cibles existantes sont conservées ; pas de zones invisibles ajoutées. |
+| 14 | `PARTIEL` | `SafeAreaView`/`useSafeAreaInsets` et tests mobiles ; `L11`. | Code et comportement harness vérifiés, appareil réel non exécuté. |
+| 15 | `PARTIEL` | `autoComplete="one-time-code"` sur le champ SPOGOMI. | L’autofill dépend du fournisseur, du navigateur et de la plateforme ; aucun OTP Clerk personnalisé créé. |
+| 16 | `EXISTING_VERIFIED` | Tokens `tabular-nums`, countdown SPOGOMI et data display. | Extension limitée aux valeurs alignées ; pas de style narratif forcé. |
+| 17 | `EXISTING_VERIFIED` | Token `text-wrap: balance` et contrat `PAGE_HEADER`. | Utilisation conditionnelle des titres longs, sans réécriture de contenu. |
+| 18 | `NOT_APPLICABLE` | Aucun token/primitif continuous-corners et aucun bénéfice mesuré. | Pas de géométrie par page ni de nouvelle primitive. |
+| 19 | `PARTIEL` | Clés d’idempotence Actions, SPOGOMI, partenaires et mobile ; contrats/tests présents. | Concurrence DB/RLS et absence de doublon en production non exécutées ici. |
+| 20 | `PARTIEL` | `CmmDropdown` dispose d’un délai et d’un pont ; aucun triangle directionnel ni incident reproduit. | Le mécanisme existant suffit au périmètre observé. |
+| 21 | `IMPLEMENTED_AND_TESTED` | Toasts contextualisés, retry/refresh et feedback de chat ; `L01`. | Les succès restent conditionnés à la confirmation serveur. |
+| 22 | `IMPLEMENTED_AND_TESTED` | États loading/empty/error/access/refetch sur les surfaces retenues ; `L01`. | Pas de conversion silencieuse d’une erreur en liste vide. |
+| 23 | `IMPLEMENTED_AND_TESTED` | `CmmButton` pending/disabled/`aria-busy` et usages de soumission ; `L01`. | Le pending client ne remplace pas l’idempotence serveur. |
+| 24 | `EXISTING_VERIFIED` | `CmmDropdown` : clavier, Échap, clic extérieur et restitution du focus. | `CmmDialog` reste owner des modales. |
+| 25 | `EXISTING_VERIFIED` | `use-dropdown-placement` et `SiteTooltips` adaptent les overlays au viewport. | Aucun nouveau repositionnement sans consommateur. |
+| 26 | `EXISTING_VERIFIED` | Ruban desktop/mobile et registre de navigation existants. | Aucun second registre ni variante concurrente. |
+| 27 | `EXISTING_VERIFIED` | `aria-current` sur navigation/onglets et état route actif. | Route active, menu ouvert et survol restent distincts. |
+| 28 | `EXISTING_VERIFIED` | Préférences d’affichage, modes `exhaustif`/`minimaliste`/`sobre`, thème et langue. | Les préférences ne modifient ni contenu métier ni droits. |
+| 29 | `EXISTING_VERIFIED` | `MOTION_TRANSITIONS.md`, CSS motion et `MotionConfig`. | Les animations nouvelles restent soumises à `reduced-motion`. |
+| 30 | `IMPLEMENTED_AND_TESTED` | Chargement différé du guide et de la carte ; `L09`, tests de fallback et de contrat. | JS secondaire différé sans masquer le contenu essentiel. |
+| 31 | `IMPLEMENTED_AND_TESTED` | `use-in-view-once` et consommateurs guide/carte/rapports ; `L09`. | Lazy mounting limité aux sections secondaires. |
+| 32 | `IMPLEMENTED_AND_TESTED` | Suggestions chat, adresse et météo ; `L03`, timers et tests de frappe. | Aucun debounce sur sélection locale instantanée. |
+| 33 | `IMPLEMENTED_AND_TESTED` | `AbortController`/réponses obsolètes des recherches ; `L03`, tests A→B→A. | Les soumissions persistantes ne sont pas présentées comme annulées par HTTP. |
+| 34 | `EXISTING_VERIFIED` | `SiteTooltips`, découverte et placement adaptatif. | Toute information indispensable conserve une alternative non-hover. |
+| 35 | `EXISTING_VERIFIED` | Galeries de preuves et médias signalement en `loading="lazy"`. | Les visuels critiques ne sont pas retardés par défaut. |
+| 36 | `IMPLEMENTED_AND_TESTED` | Galerie photo SPOGOMI : Échap, flèches, focus et alternative tactile ; `L10`. | Pas de seconde galerie générique. |
+| 37 | `IMPLEMENTED_AND_TESTED` | Pagination serveur stable des événements ; `L04`, tests de curseurs, pages, déduplication et filtres. | Le contrat ne confond pas fenêtre affichée et export complet. |
+| 38 | `IMPLEMENTED_AND_TESTED` | `aria-live`/`role=status`/`aria-busy`, messages de résultat et carte mobile ; `L01` et `L11`. | Fréquences d’annonce limitées ; pas de répétition inutile. |
+| 39 | `EXISTING_VERIFIED` | Thème du ruban, mesure du fond et `ResizeObserver`. | Un seul owner de calcul du chrome. |
+| 40 | `IMPLEMENTED_AND_TESTED` | Undo à la source pour géométrie et restauration via toast ; `L06`. | Restauration locale, provenance conservée, aucune persistance serveur annulée. |
+| 41 | `EXISTING_VERIFIED` | `CmmField` relie label, erreur, `aria-invalid` et `aria-describedby`. | Les formulaires hors primitive restent à migrer seulement sur preuve de lacune. |
+| 42 | `IMPLEMENTED_AND_TESTED` | `WorkflowStepper`, statuts, `aria-current="step"` et progression accessible ; `L06`. | Progression et transitions existantes conservées. |
+| 43 | `IMPLEMENTED_AND_TESTED` | `CmmDialog`, QR/dialogue de partage et focus ; `L08`. | Les dropdowns et tooltips restent non modaux. |
+| 44 | `PARTIEL` | `ClerkRequiredGate` et registre PUBLIC/HYBRID/PRIVATE ; `L08`. | La source UI est vérifiée, mais aucune preuve RLS/production n’est déduite d’un soft gate. |
+| 45 | `IMPLEMENTED_AND_TESTED` | GPS mobile, buffer owner-scoped, finalisation et statut sync ; `L11`. | Tests applicatifs et bundle Metro passés ; appareil réel et production non prouvés. |
+| 46 | `IMPLEMENTED_AND_TESTED` | Bandeau consentement, préférences analytics et consentement mineur ; `L08`. | Aucun nouveau traceur ajouté par le plan. |
+| 47 | `EXISTING_VERIFIED` | `selectedActionId` partagé entre carte et tableau. | Extension annuaire carte/liste seulement si un identifiant canonique existe. |
+| 48 | `EXISTING_VERIFIED` | Aide progressive du pré-formulaire, `aria-expanded`/`aria-controls` et contrat de divulgation. | Les consignes, erreurs et risques restent visibles. |
+
+Les statuts `PARTIEL` des IDs 6, 11, 13, 14, 15, 19, 20 et 44 sont des
+limites de périmètre ou de preuve, pas des échecs silencieux. Aucun ID ne
+nécessite ici `BLOCKED` : les opportunités restantes ont soit un owner
+existant, soit une contre-indication ou une preuve explicitement suffisante
+pour ne pas ajouter de fonctionnalité.
+
+## D. Corrections de l’analyse initiale et limites importantes
 
 1. **Cache SWR (#6)** : `useSWR` et `mutate` sont observés. La stratégie exacte de conservation des données, leurs invalidations après mutation et l’absence de fuite inter-utilisateur **ne sont pas auditées** sur toutes les surfaces proposées.
 2. **Pré-rendu (#7)** : `revalidate` et `generateStaticParams` existent, mais le cache effectif, le coût de génération et le comportement en production **ne sont pas mesurés**. Les noms de configuration ne sont pas une preuve d’amélioration de performance.
@@ -93,7 +171,7 @@ Les numéros 21 à 40 proviennent de l’inventaire précédent. Les lignes 41 �
 9. **BlurHash, View Transitions, swipe, predictive back, continuous corners (#8, #9, #10, #12, #18)** : aucune implémentation explicite démontrée par l’exploration ciblée. Ne pas promouvoir ces options en priorité sans friction utilisateur ou gain visuel mesurable.
 10. **Limite de couverture** : « confirmé » signifie que le code contient une implémentation localisée. Cela ne prouve ni l’adoption sur toutes les pages, ni l’absence de défauts, ni l’exhaustivité du monorepo.
 
-## D. Arbitrages par domaine, sans chantier automatique
+## E. Arbitrages par domaine, sans chantier automatique
 
 | Domaine | Techniques utiles à évaluer | Conditions de décision | À exclure tant que non justifié |
 |---|---|---|---|
@@ -105,14 +183,14 @@ Les numéros 21 à 40 proviennent de l’inventaire précédent. Les lignes 41 �
 | **Surfaces sensibles / identité** | #19, #23, #41, #43, #44, #46 | Appliquer AuthN/AuthZ côté serveur, ownership, consentement valide, trace de mutation et état de chargement | Flou de données réellement privées ; cache partagé ; confirmation visuelle avant succès serveur |
 | **Finitions visuelles** | #8, #9, #16, #17, #18, #35 | Mesurer une amélioration réelle de lisibilité ou de perception et le coût du rendu | Animation décorative systématique, ralentissement du LCP, mode `sobre` altéré |
 
-## E. Maintenance et structure
+## F. Maintenance et structure
 
 - **Une seule matrice** tant que les deux tableaux sont facilement consultables ; ne pas créer de document par astuce. Une scission future n’est pertinente que si une famille acquiert des responsables distincts, des mises à jour indépendantes ou une densité qui gêne réellement la lecture. Le fichier racine devra alors rester un index avec liens, et non dupliquer les tableaux.
 - Avant de qualifier une extension de « manque », vérifier code courant, callers, consommateurs, tests et impact concret. Les recommandations conditionnelles ne sont **pas** un backlog d’implémentation validé.
-- Lors d’une mise à jour, conserver les numéros, les termes source et le statut `AUDIT / PLAN`. Relire `main` publié, noter la date et le SHA et ne modifier que les lignes affectées. Ne pas ajouter de chiffres variables inutiles aux documents `CURRENT` du design system.
+- Lors d’une mise à jour, conserver les numéros, les termes source et le statut `AUDIT / PLAN`. Relire `main` publié, noter la date et le SHA et ne modifier que les lignes affectées. La section C porte les statuts finaux du lot 12 ; ne pas ajouter de chiffres variables inutiles aux documents `CURRENT` du design system.
 - Conserver les chemins relatifs à la racine du dépôt selon la convention de lecture ; si un chemin disparaît, vérifier son remplaçant avant de reporter la preuve. Les routes citées sont des destinations indicatives, jamais des assertions sur leur contenu actuel.
 - Les changements fonctionnels futurs sont documentés dans leur contrat propriétaire et dans les fiches `CURRENT` réellement affectées, **pas** en recopiant ici la logique métier, l’AuthZ ou le SQL.
-- Vérifications minimales pour un changement **uniquement documentaire** : intégrité Markdown, 48 lignes numérotées sans doublon, liens documentaires internes, maintien des 20 techniques de la vidéo, statut non normatif, cohérence avec la documentation canonique et diff ciblé. Aucun test du runtime ne peut être déclaré passé sans exécution.
+- Vérifications minimales pour un changement **uniquement documentaire** : intégrité Markdown, 48 lignes numérotées sans doublon dans A/B et C, liens documentaires internes, maintien des 20 techniques de la vidéo, statut non normatif, cohérence avec la documentation canonique et diff ciblé. Aucun test du runtime ne peut être déclaré passé sans exécution.
 
 ### Sources principales relues pour cette V2
 
