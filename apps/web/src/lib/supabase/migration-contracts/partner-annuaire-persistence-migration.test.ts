@@ -15,6 +15,13 @@ const publicWebsiteMigration = readFileSync(
   ),
   "utf8",
 ).replace(/\s+/g, " ").trim().toLowerCase();
+const idempotencyConflictMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261027000000_partner_onboarding_idempotency_conflict.sql",
+    import.meta.url,
+  ),
+  "utf8",
+).replace(/\s+/g, " ").trim().toLowerCase();
 
 describe("partner annuaire persistence migration", () => {
   it("defines a server-only public projection with private contact data", () => {
@@ -58,5 +65,15 @@ describe("partner annuaire persistence migration", () => {
     expect(publicWebsiteMigration).toContain("if v_inserted_count = 0 then");
     expect(publicWebsiteMigration).not.toContain("drop function public.create_partner_onboarding_request_with_annuaire");
     expect(publicWebsiteMigration).not.toContain("publicwebsiteconsent'::jsonb");
+  });
+
+  it("refuses a contradictory replay before returning the original request", () => {
+    expect(idempotencyConflictMigration).toContain("create or replace function public.create_partner_onboarding_request_with_annuaire");
+    expect(idempotencyConflictMigration).toContain("from public.partner_onboarding_requests r where r.submitted_by_user_id = p_submitted_by_user_id and r.idempotency_key = p_idempotency_key for update");
+    expect(idempotencyConflictMigration).toContain("partner onboarding idempotency conflict");
+    expect(idempotencyConflictMigration).toContain("perform pg_advisory_xact_lock(hashtext(p_idempotency_key))");
+    expect(idempotencyConflictMigration).toContain("r.public_website_consent is distinct from v_public_website_consent");
+    expect(idempotencyConflictMigration).toContain("grant execute on function public.create_partner_onboarding_request_with_annuaire");
+    expect(idempotencyConflictMigration).not.toContain("drop function public.create_partner_onboarding_request_with_annuaire");
   });
 });

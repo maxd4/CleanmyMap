@@ -70,6 +70,14 @@ la demande dans `partner_onboarding_requests`. La fiche liée est créée dans
 `partner_annuaire_entries` par une RPC server-only idempotente ; une création
 ne vaut jamais validation administrative.
 
+La soumission accepte une clé `Idempotency-Key` stable (16 à 160 caractères)
+pour une même intention ; à défaut, l'ancien `submittedAt` reste accepté pour
+compatibilité. La clé est bornée par l'identité Clerk côté serveur. Un replay
+du même payload retourne la demande existante sans renvoyer les notifications
+administratives (`200`), tandis qu'une réutilisation avec payload, email
+d'acteur, périmètre ou consentement différent est refusée (`409`) avant toute
+nouvelle écriture. Une création initiale retourne `201`.
+
 `POST /api/admin/partners/published-directory` exige `requireAdminAccess`, un
 motif et la confirmation explicite existante. La RPC de revue synchronise la
 demande source, la fiche et `admin_operations_audit` dans une transaction.

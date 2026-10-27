@@ -1,5 +1,4 @@
 import { auth } from"@clerk/nextjs/server";
-import { randomUUID } from"node:crypto";
 import { NextResponse } from"next/server";
 import { z } from"zod";
 import { requireCreatorAccess } from"@/lib/authz";
@@ -16,9 +15,10 @@ import {
  WEEKDAY_OPTIONS,
 } from"@/lib/partners/onboarding-types";
 import {
- appendPartnerOnboardingRequest,
+ appendPartnerOnboardingRequestWithResult,
  countPartnerOnboardingRequests,
  listPartnerOnboardingRequests,
+ PartnerOnboardingIdempotencyConflictError,
 } from"@/lib/partners/onboarding-requests-store";
 import { getCurrentUserIdentity } from"@/lib/authz";
 import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
@@ -33,6 +33,9 @@ import {
 import { escapeHtml } from "@/lib/security/html-escape";
 
 export const runtime ="nodejs";
+
+const IDEMPOTENCY_KEY_MIN_LENGTH = 16;
+const IDEMPOTENCY_KEY_MAX_LENGTH = 160;
 
 const WEEKDAY_VALUES = WEEKDAY_OPTIONS.map((option) => option.value) as [
  (typeof WEEKDAY_OPTIONS)[number]["value"],
@@ -179,6 +182,28 @@ export async function POST(request: Request) {
  const abuseResponse = rejectPublicFormAbuse(parsed.data);
  if (abuseResponse) return abuseResponse;
 
+ const headerIdempotencyKey = request.headers.get("Idempotency-Key")?.trim();
+ if (headerIdempotencyKey && (
+  headerIdempotencyKey.length < IDEMPOTENCY_KEY_MIN_LENGTH ||
+  headerIdempotencyKey.length > IDEMPOTENCY_KEY_MAX_LENGTH
+ )) {
+  return NextResponse.json(
+   { error: "invalid_idempotency_key", message: "La clé d'idempotence doit contenir entre 16 et 160 caractères." },
+   { status: 422 },
+  );
+ }
+ const idempotencyKey = headerIdempotencyKey || (
+  typeof parsed.data.submittedAt === "number"
+   ? `${userId}:${parsed.data.submittedAt}`
+   : null
+ );
+ if (!idempotencyKey) {
+  return NextResponse.json(
+   { error: "missing_idempotency_key", message: "Une clé stable est requise pour enregistrer la demande." },
+   { status: 422 },
+  );
+ }
+
  const persistedInput = {
   organizationName: parsed.data.organizationName,
   organizationType: parsed.data.organizationType,
@@ -196,46 +221,60 @@ export async function POST(request: Request) {
   publicWebsiteUrl: normalizePublicWebUrl(parsed.data.publicWebsiteUrl) ?? undefined,
   publicWebsiteConsent: parsed.data.publicWebsiteConsent,
  };
- const created = await appendPartnerOnboardingRequest({
-  submittedByUserId: userId,
-  submittedByEmail: identity?.email ?? null,
-  input: persistedInput,
-  idempotencyKey: `${userId}:${parsed.data.submittedAt ?? randomUUID()}`,
- });
-
+ let appendResult;
  try {
-  await ensureEmailQuotaAvailable(userId, 2);
-  await tryNotifyAdmins(parsed.data, userId);
-  await sendCreatorInboxEmail({
-   actorUserId: userId,
-   subject: `[CleanMyMap] Nouvelle demande partenaire - ${parsed.data.organizationName}`,
-   title: "Nouvelle demande partenaire",
-   intro: "Une demande d'onboarding partenaire vient d'arriver dans la file créateur.",
-  lines: [
-    { label: "Organisation", value: parsed.data.organizationName },
-    { label: "Type", value: parsed.data.organizationType },
-    { label: "Portée", value: formatPartnerScopeLabel(parsed.data.partnerScope) },
-    { label: "Identité", value: parsed.data.legalIdentity },
-    { label: "Source", value: "Formulaire partenaires" },
-    { label: "Zone", value: parsed.data.partnerScope === "local" ? formatCoverageSummary(parsed.data.coverage) : formatPartnerScopeLabel(parsed.data.partnerScope) },
-    { label: "Contributions", value: parsed.data.contributionTypes.join(", ") },
-    { label: "Domaines déclarés", value: parsed.data.engagementTypes.length > 0 ? parsed.data.engagementTypes.join(", ") : "Aucun" },
-    { label: "Actions de relais", value: parsed.data.relayActions },
-    { label: "Disponibilité", value: formatAvailabilitySummary(parsed.data.availability) },
-    { label: "Contact", value: `${parsed.data.contactName} - ${parsed.data.contactChannel} (${parsed.data.contactDetails})` },
-    { label: "Motivation", value: parsed.data.motivation },
-    { label: "Statut", value: created.status },
-   ],
-   footer: "La demande est synchronisée avec la revue annuaire partenaire.",
-   extraRecipients: ["partenaires@cleanmymap.fr"],
+  appendResult = await appendPartnerOnboardingRequestWithResult({
+   submittedByUserId: userId,
+   submittedByEmail: identity?.email ?? null,
+   input: persistedInput,
+   idempotencyKey,
   });
  } catch (error) {
-  console.warn("Partner onboarding admin notification failed", error);
+  if (error instanceof PartnerOnboardingIdempotencyConflictError) {
+   return NextResponse.json(
+    { error: "idempotency_conflict", message: "Cette clé a déjà été utilisée pour une demande différente." },
+    { status: 409 },
+   );
+  }
+  throw error;
+ }
+ const { record: created, replayed } = appendResult;
+
+ if (!replayed) {
+  try {
+   await ensureEmailQuotaAvailable(userId, 2);
+   await tryNotifyAdmins(parsed.data, userId);
+   await sendCreatorInboxEmail({
+    actorUserId: userId,
+    subject: `[CleanMyMap] Nouvelle demande partenaire - ${parsed.data.organizationName}`,
+    title: "Nouvelle demande partenaire",
+    intro: "Une demande d'onboarding partenaire vient d'arriver dans la file créateur.",
+   lines: [
+     { label: "Organisation", value: parsed.data.organizationName },
+     { label: "Type", value: parsed.data.organizationType },
+     { label: "Portée", value: formatPartnerScopeLabel(parsed.data.partnerScope) },
+     { label: "Identité", value: parsed.data.legalIdentity },
+     { label: "Source", value: "Formulaire partenaires" },
+     { label: "Zone", value: parsed.data.partnerScope === "local" ? formatCoverageSummary(parsed.data.coverage) : formatPartnerScopeLabel(parsed.data.partnerScope) },
+     { label: "Contributions", value: parsed.data.contributionTypes.join(", ") },
+     { label: "Domaines déclarés", value: parsed.data.engagementTypes.length > 0 ? parsed.data.engagementTypes.join(", ") : "Aucun" },
+     { label: "Actions de relais", value: parsed.data.relayActions },
+     { label: "Disponibilité", value: formatAvailabilitySummary(parsed.data.availability) },
+     { label: "Contact", value: `${parsed.data.contactName} - ${parsed.data.contactChannel} (${parsed.data.contactDetails})` },
+     { label: "Motivation", value: parsed.data.motivation },
+     { label: "Statut", value: created.status },
+    ],
+    footer: "La demande est synchronisée avec la revue annuaire partenaire.",
+    extraRecipients: ["partenaires@cleanmymap.fr"],
+   });
+  } catch (error) {
+   console.warn("Partner onboarding admin notification failed", error);
+  }
  }
 
  return NextResponse.json(
- { status:"queued", requestId: created.id, item: created },
- { status: 201 },
+ { status:"queued", replayed, requestId: created.id, item: created },
+ { status: replayed ? 200 : 201 },
  );
  });
 }

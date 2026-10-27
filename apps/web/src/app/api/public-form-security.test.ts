@@ -39,9 +39,12 @@ const getSupabaseServerClientMock = vi.hoisted(() => vi.fn(() => ({
 const sendCreatorInboxEmailMock = vi.hoisted(() => vi.fn(async () => true));
 const sendEmailMock = vi.hoisted(() => vi.fn(async () => ({ id: "mock", status: "mocked" })));
 const ensureEmailQuotaAvailableMock = vi.hoisted(() => vi.fn(async () => undefined));
-const appendPartnerOnboardingRequestMock = vi.hoisted(() => vi.fn(async () => ({
-  id: "partner-request-mock",
-  status: "pending_admin_review",
+const appendPartnerOnboardingRequestWithResultMock = vi.hoisted(() => vi.fn(async () => ({
+  record: {
+    id: "partner-request-mock",
+    status: "pending_admin_review",
+  },
+  replayed: false,
 })));
 const appendPromotionRequestMock = vi.hoisted(() => vi.fn(async () => ({
   id: "promotion-request-mock",
@@ -79,7 +82,7 @@ vi.mock("@/lib/community/creator-inbox-email", () => ({
 }));
 
 vi.mock("@/lib/partners/onboarding-requests-store", () => ({
-  appendPartnerOnboardingRequest: appendPartnerOnboardingRequestMock,
+  appendPartnerOnboardingRequestWithResult: appendPartnerOnboardingRequestWithResultMock,
   countPartnerOnboardingRequests: vi.fn(async () => 0),
   listPartnerOnboardingRequests: vi.fn(async () => []),
 }));
@@ -128,7 +131,10 @@ describe("public form security guardrails", () => {
     const response = await POST(
       new Request("http://localhost/api/partners/onboarding-requests", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "Idempotency-Key": "partner-onboarding-security-1",
+        },
         body: JSON.stringify({
           organizationName: "Bas Belleville Atelier",
           organizationType: "commerce",
@@ -225,7 +231,10 @@ describe("public form security guardrails", () => {
     const response = await onboarding.POST(
       new Request("http://localhost/api/partners/onboarding-requests", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "Idempotency-Key": "partner-onboarding-security-xss",
+        },
         body: JSON.stringify({
           organizationName: '<img src=x onerror="alert(1)">',
           organizationType: "commerce",
@@ -253,7 +262,7 @@ describe("public form security guardrails", () => {
 
   it("requires explicit consent for a public website and persists only the normalized public field", async () => {
     authMock.mockResolvedValue({ userId: "user-website" });
-    appendPartnerOnboardingRequestMock.mockClear();
+    appendPartnerOnboardingRequestWithResultMock.mockClear();
     const onboarding = await import("./partners/onboarding-requests/route");
     const basePayload = {
       organizationName: "Structure publique test",
@@ -282,7 +291,7 @@ describe("public form security guardrails", () => {
       }),
     );
     expect(withoutConsent.status).toBe(400);
-    expect(appendPartnerOnboardingRequestMock).not.toHaveBeenCalled();
+    expect(appendPartnerOnboardingRequestWithResultMock).not.toHaveBeenCalled();
 
     const invalidUrl = await onboarding.POST(
       new Request("http://localhost/api/partners/onboarding-requests", {
@@ -296,12 +305,15 @@ describe("public form security guardrails", () => {
       }),
     );
     expect(invalidUrl.status).toBe(400);
-    expect(appendPartnerOnboardingRequestMock).not.toHaveBeenCalled();
+    expect(appendPartnerOnboardingRequestWithResultMock).not.toHaveBeenCalled();
 
     const accepted = await onboarding.POST(
       new Request("http://localhost/api/partners/onboarding-requests", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "Idempotency-Key": "partner-onboarding-security-2",
+        },
         body: JSON.stringify({
           ...basePayload,
           publicWebsiteUrl: "  https://structure.example.test  ",
@@ -310,7 +322,7 @@ describe("public form security guardrails", () => {
       }),
     );
     expect(accepted.status).toBe(201);
-    expect(appendPartnerOnboardingRequestMock).toHaveBeenCalledWith(
+    expect(appendPartnerOnboardingRequestWithResultMock).toHaveBeenCalledWith(
       expect.objectContaining({
         input: expect.objectContaining({
           publicWebsiteUrl: "https://structure.example.test",

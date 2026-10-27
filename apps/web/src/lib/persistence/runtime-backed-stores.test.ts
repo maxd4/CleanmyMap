@@ -106,6 +106,22 @@ const partnerRow = {
   creator_state: "pending",
 };
 
+const partnerInput = {
+  organizationName: "Partenaire test",
+  organizationType: "association" as const,
+  partnerScope: "local" as const,
+  legalIdentity: "Partenaire Test Association",
+  coverage: { arrondissements: [11], quartiers: [] },
+  contributionTypes: ["communication" as const],
+  engagementTypes: [],
+  relayActions: "Relais de test.",
+  availability: { slots: [] },
+  contactName: "Contact test",
+  contactChannel: "email",
+  contactDetails: "partner@example.com",
+  motivation: "Motivation partenaire de test.",
+};
+
 describe("runtime-backed request stores", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -213,5 +229,102 @@ describe("runtime-backed request stores", () => {
     expect(readFileMock).toHaveBeenCalledTimes(1);
     expect(writeFileMock).toHaveBeenCalledTimes(1);
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it("replays the same local intent without writing a second request", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(false);
+    isVercelRuntimeMock.mockReturnValue(false);
+    readFileMock.mockResolvedValue(JSON.stringify({
+      updatedAt: "2026-09-01T09:00:00.000Z",
+      records: [{
+        id: "partner-existing",
+        createdAt: "2026-09-01T09:00:00.000Z",
+        submittedByUserId: "user-1",
+        submittedByEmail: "partner@example.com",
+        idempotencyKey: "partner-onboarding-retry-1",
+        status: "pending_admin_review",
+        creatorState: "pending",
+        ...partnerInput,
+        publicWebsiteConsent: false,
+      }],
+    }));
+
+    const { appendPartnerOnboardingRequestWithResult } = await import("@/lib/partners/onboarding-requests-store");
+    await expect(appendPartnerOnboardingRequestWithResult({
+      submittedByUserId: "user-1",
+      submittedByEmail: "partner@example.com",
+      input: partnerInput,
+      idempotencyKey: "partner-onboarding-retry-1",
+    })).resolves.toMatchObject({ replayed: true, record: { id: "partner-existing" } });
+
+    expect(writeFileMock).not.toHaveBeenCalled();
+    expect(appendPublishedPartnerAnnuaireEntryMock).toHaveBeenCalledOnce();
+  });
+
+  it("rejects a local same-key payload change before any reconciliation write", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(false);
+    isVercelRuntimeMock.mockReturnValue(false);
+    readFileMock.mockResolvedValue(JSON.stringify({
+      updatedAt: "2026-09-01T09:00:00.000Z",
+      records: [{
+        id: "partner-existing",
+        createdAt: "2026-09-01T09:00:00.000Z",
+        submittedByUserId: "user-1",
+        submittedByEmail: "partner@example.com",
+        idempotencyKey: "partner-onboarding-retry-1",
+        status: "pending_admin_review",
+        creatorState: "pending",
+        ...partnerInput,
+        publicWebsiteConsent: false,
+      }],
+    }));
+
+    const { appendPartnerOnboardingRequestWithResult, PartnerOnboardingIdempotencyConflictError } = await import("@/lib/partners/onboarding-requests-store");
+    await expect(appendPartnerOnboardingRequestWithResult({
+      submittedByUserId: "user-1",
+      submittedByEmail: "partner@example.com",
+      input: { ...partnerInput, organizationName: "Autre organisation" },
+      idempotencyKey: "partner-onboarding-retry-1",
+    })).rejects.toBeInstanceOf(PartnerOnboardingIdempotencyConflictError);
+
+    expect(writeFileMock).not.toHaveBeenCalled();
+    expect(appendPublishedPartnerAnnuaireEntryMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects the same key for another actor and accepts a new key", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(false);
+    isVercelRuntimeMock.mockReturnValue(false);
+    readFileMock.mockResolvedValue(JSON.stringify({
+      updatedAt: "2026-09-01T09:00:00.000Z",
+      records: [{
+        id: "partner-existing",
+        createdAt: "2026-09-01T09:00:00.000Z",
+        submittedByUserId: "user-1",
+        submittedByEmail: "partner@example.com",
+        idempotencyKey: "partner-onboarding-retry-1",
+        status: "pending_admin_review",
+        creatorState: "pending",
+        ...partnerInput,
+        publicWebsiteConsent: false,
+      }],
+    }));
+
+    const { appendPartnerOnboardingRequestWithResult } = await import("@/lib/partners/onboarding-requests-store");
+    await expect(appendPartnerOnboardingRequestWithResult({
+      submittedByUserId: "user-2",
+      submittedByEmail: "other@example.com",
+      input: partnerInput,
+      idempotencyKey: "partner-onboarding-retry-1",
+    })).rejects.toMatchObject({ code: "partner_onboarding_idempotency_conflict" });
+
+    await expect(appendPartnerOnboardingRequestWithResult({
+      submittedByUserId: "user-2",
+      submittedByEmail: "other@example.com",
+      input: partnerInput,
+      idempotencyKey: "partner-onboarding-retry-2",
+    })).resolves.toMatchObject({ replayed: false, record: { submittedByUserId: "user-2" } });
+
+    expect(writeFileMock).toHaveBeenCalledOnce();
+    expect(appendPublishedPartnerAnnuaireEntryMock).toHaveBeenCalledOnce();
   });
 });

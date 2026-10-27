@@ -127,7 +127,10 @@ export function usePartnerOnboardingSubmit({
       const submittedAt = getFormStartedAt() ?? Date.now();
       const response = await fetch("/api/partners/onboarding-requests", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": `partner-onboarding-${submittedAt}`,
+        },
         body: JSON.stringify({
           organizationName,
           organizationType,

@@ -48,6 +48,20 @@ const STORE_FILE = join(
 const SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS =
   "id, created_at, submitted_by_user_id, submitted_by_email, idempotency_key, organization_name, organization_type, partner_scope, legal_identity, coverage, contribution_types, engagement_types, relay_actions, availability, contact_name, contact_channel, contact_details, motivation, public_website_url, public_website_consent, status, creator_state";
 
+export class PartnerOnboardingIdempotencyConflictError extends Error {
+  readonly code = "partner_onboarding_idempotency_conflict" as const;
+
+  constructor() {
+    super("The partner onboarding idempotency key was reused with a different payload.");
+    this.name = "PartnerOnboardingIdempotencyConflictError";
+  }
+}
+
+export type PartnerOnboardingAppendResult = {
+  record: PartnerOnboardingRequestRecord;
+  replayed: boolean;
+};
+
 type StorePayload = {
   updatedAt: string;
   records: PartnerOnboardingRequestRecord[];
@@ -65,12 +79,48 @@ async function writeStore(store: StorePayload): Promise<void> {
   await writeLocalRecordStore(STORE_FILE, store.records);
 }
 
-export async function appendPartnerOnboardingRequest(params: {
+function canonicalizePartnerOnboardingRecord(
+  record: Pick<PartnerOnboardingRequestRecord, "submittedByUserId" | "submittedByEmail" | "organizationName" | "organizationType" | "partnerScope" | "legalIdentity" | "coverage" | "contributionTypes" | "engagementTypes" | "relayActions" | "availability" | "contactName" | "contactChannel" | "contactDetails" | "motivation" | "publicWebsiteUrl" | "publicWebsiteConsent">,
+): string {
+  return JSON.stringify({
+    submittedByUserId: record.submittedByUserId,
+    submittedByEmail: record.submittedByEmail?.trim() || null,
+    organizationName: record.organizationName.trim(),
+    organizationType: record.organizationType,
+    partnerScope: record.partnerScope,
+    legalIdentity: record.legalIdentity.trim(),
+    coverage: record.coverage,
+    contributionTypes: record.contributionTypes,
+    engagementTypes: record.engagementTypes ?? [],
+    relayActions: record.relayActions.trim(),
+    availability: record.availability,
+    contactName: record.contactName.trim(),
+    contactChannel: record.contactChannel.trim(),
+    contactDetails: record.contactDetails.trim(),
+    motivation: record.motivation.trim(),
+    publicWebsiteUrl: record.publicWebsiteUrl ?? null,
+    publicWebsiteConsent: record.publicWebsiteConsent === true,
+  });
+}
+
+function assertSamePartnerOnboardingPayload(
+  existing: PartnerOnboardingRequestRecord,
+  candidate: PartnerOnboardingRequestRecord,
+): void {
+  if (
+    canonicalizePartnerOnboardingRecord(existing) !==
+    canonicalizePartnerOnboardingRecord(candidate)
+  ) {
+    throw new PartnerOnboardingIdempotencyConflictError();
+  }
+}
+
+export async function appendPartnerOnboardingRequestWithResult(params: {
   submittedByUserId: string;
   submittedByEmail?: string | null;
   input: PartnerOnboardingRequestInput;
   idempotencyKey?: string;
-}): Promise<PartnerOnboardingRequestRecord> {
+}): Promise<PartnerOnboardingAppendResult> {
   assertPersistenceAvailable("partner_onboarding_requests");
 
   const idempotencyKey = params.idempotencyKey?.trim() || `${params.submittedByUserId}:${randomUUID()}`;
@@ -124,12 +174,20 @@ export async function appendPartnerOnboardingRequest(params: {
       },
     );
     if (!isRecord(rawResult) || !("data" in rawResult) || !("error" in rawResult)) throw new Error("Supabase returned an invalid partner onboarding response.");
-    if (rawResult.error) throw new Error(isRecord(rawResult.error) && typeof rawResult.error.message === "string" ? rawResult.error.message : "Partner onboarding RPC failed.");
+    if (rawResult.error) {
+      const message = isRecord(rawResult.error) && typeof rawResult.error.message === "string"
+        ? rawResult.error.message
+        : "Partner onboarding RPC failed.";
+      if (message.toLowerCase().includes("partner onboarding idempotency conflict")) {
+        throw new PartnerOnboardingIdempotencyConflictError();
+      }
+      throw new Error(message);
+    }
     const rpcRow = Array.isArray(rawResult.data) ? rawResult.data[0] : rawResult.data;
     if (!isRecord(rpcRow) || typeof rpcRow.request_id !== "string") {
       throw new Error("Supabase returned no partner onboarding request.");
     }
-    return persistSupabaseRecord(
+    const persisted = await persistSupabaseRecord(
       getSupabaseServerClient(true)
         .from("partner_onboarding_requests")
         .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
@@ -138,19 +196,26 @@ export async function appendPartnerOnboardingRequest(params: {
       normalizePartnerOnboardingSupabaseRow,
       "Supabase returned an invalid partner onboarding request.",
     );
+    return {
+      record: persisted,
+      replayed: rpcRow.request_id !== record.id,
+    };
   } else {
     const store = await readStore();
     const existing = store.records.find(
       (candidate) =>
-        candidate.submittedByUserId === record.submittedByUserId &&
         candidate.idempotencyKey === record.idempotencyKey,
     );
     if (existing) {
+      if (existing.submittedByUserId !== record.submittedByUserId) {
+        throw new PartnerOnboardingIdempotencyConflictError();
+      }
+      assertSamePartnerOnboardingPayload(existing, record);
       await appendPublishedPartnerAnnuaireEntry({
         requestId: existing.id,
         request: existing,
       });
-      return existing;
+      return { record: existing, replayed: true };
     }
     const records = [record, ...store.records].slice(0, 2000);
     await writeStore({ updatedAt: new Date().toISOString(), records });
@@ -162,7 +227,16 @@ export async function appendPartnerOnboardingRequest(params: {
     });
   }
 
-  return record;
+  return { record, replayed: false };
+}
+
+export async function appendPartnerOnboardingRequest(params: {
+  submittedByUserId: string;
+  submittedByEmail?: string | null;
+  input: PartnerOnboardingRequestInput;
+  idempotencyKey?: string;
+}): Promise<PartnerOnboardingRequestRecord> {
+  return (await appendPartnerOnboardingRequestWithResult(params)).record;
 }
 
 export async function listPartnerOnboardingRequests(

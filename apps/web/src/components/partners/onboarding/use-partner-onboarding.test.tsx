@@ -127,7 +127,10 @@ describe("usePartnerOnboarding", () => {
     await act(async () => { await hook.result.handleSubmit(event()); });
     expect(fetchMock).toHaveBeenCalledWith("/api/partners/onboarding-requests", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": "partner-onboarding-1700000000000",
+      },
       body: JSON.stringify({
         organizationName: "  CleanMyMap  ",
         organizationType: "association",
