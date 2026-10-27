@@ -53,7 +53,7 @@ describe("desktop ribbon control geometry", () => {
     const variantSource = readSource("app-navigation-ribbon-variant.ts");
 
     expect(variantSource).toContain('["classic", "meniscus"] as const');
-    expect(variantSource).toContain('= "classic"');
+    expect(variantSource).toContain('? "meniscus" : "classic"');
     expect(shellSource).toContain("APP_NAVIGATION_RIBBON_VARIANT");
     expect(shellSource).toContain("data-navigation-ribbon-variant");
     expect(shellSource).toContain("activeSpaceIndex");
@@ -61,8 +61,8 @@ describe("desktop ribbon control geometry", () => {
     expect(shellSource).not.toContain("activeSpaceIndex * 38");
     expect(shellSource).toContain('w-[15rem]');
     expect(shellSource).toContain('gap-0.5');
-    expect(shellSource).toContain('viewBox="0 0 76 48"');
-    expect(shellSource).toContain('className="cmm-navigation-meniscus-bridge"');
+    expect(shellSource).toContain('viewBox={`0 0 ${NAVIGATION_RIBBON_INDICATOR_WIDTH_PX} ${NAVIGATION_RIBBON_MENISCUS_INDICATOR_HEIGHT_PX}`}');
+    expect(shellSource).toContain('className="cmm-navigation-meniscus-surface"');
   });
 
   it("aligns first-level menus, notification, profile and account controls only on desktop", () => {

@@ -99,6 +99,9 @@ export function AppNavigationBlockDropdown({
           <span className="cmm-navigation-block-icon">
             <CmmIcon icon={getNavigationBlockIcon(space.id)} size="lg" />
           </span>
+          <span className="cmm-navigation-block-label" aria-hidden="true">
+            {getLocalizedText(space.label, locale, space.id)}
+          </span>
           <span className="sr-only">{getLocalizedText(space.label, locale, space.id)}</span>
         </button>
       )}

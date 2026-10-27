@@ -107,16 +107,14 @@
   border-color: var(--navigation-block-accent);
 }
 
-/* Meniscus keeps the route-selected indicator but removes its extra lighting
-   in minimal mode and shortens the useful positional transition. */
+/* Meniscus keeps the route-selected circle but removes its extra lighting in
+   minimal mode and shortens the useful positional transition. */
 [data-display-mode="minimaliste"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-indicator,
 [data-display-mode="minimaliste"] .cmm-navigation-block-icon {
   transition-duration: 180ms;
 }
 
-[data-display-mode="minimaliste"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-circle {
-  background: var(--cmm-navigation-meniscus-surface);
-  border-color: var(--cmm-navigation-meniscus-edge);
+[data-display-mode="minimaliste"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] {
   box-shadow: none;
 }
 
@@ -156,18 +154,15 @@
   box-shadow: none !important;
 }
 
-[data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-circle {
-  background: var(--background);
-  border-color: var(--border-strong);
+[data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] {
+  background: var(--cmm-navigation-meniscus-accent) !important;
+  border-color: var(--border-strong) !important;
   box-shadow: none;
 }
 
-[data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-curve {
-  stroke: var(--background);
-}
-
-[data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-bridge {
+[data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-surface {
   fill: var(--background);
+  stroke: var(--border-strong);
 }
 
 /* Les helpers Motion canoniques restent plats en mode minimaliste. */

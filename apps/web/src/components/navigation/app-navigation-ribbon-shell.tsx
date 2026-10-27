@@ -33,7 +33,11 @@ import {
 import { useRibbonActivityStatus } from "./app-navigation-ribbon-activity";
 import { RibbonMenus } from "./app-navigation-ribbon-menus";
 import { resolveOpenNavigationSpaceId } from "./navigation-block-trigger-state";
-import { getNavigationRibbonIndicatorLeft } from "./app-navigation-ribbon-geometry";
+import {
+  getNavigationRibbonIndicatorLeft,
+  NAVIGATION_RIBBON_INDICATOR_WIDTH_PX,
+  NAVIGATION_RIBBON_MENISCUS_INDICATOR_HEIGHT_PX,
+} from "./app-navigation-ribbon-geometry";
 
 type AppNavigationRibbonShellProps = AppNavigationRibbonProps & {
   pathname: string;
@@ -57,12 +61,16 @@ function RibbonDesktopSpaceNavigation({ spaces, activeSpaceId, locale, onTrackNa
           left: indicatorLeft,
         }}
       >
-        <svg aria-hidden="true" viewBox="0 0 76 48" focusable="false">
-          <path className="cmm-navigation-meniscus-bridge" d="M0 48 C14 48 12 14 28 14 C31 14 32 8 38 8 C44 8 45 14 48 14 C64 14 62 48 76 48 Z" />
-          <path className="cmm-navigation-meniscus-curve" d="M0 48 C14 48 12 14 28 14" />
-          <path className="cmm-navigation-meniscus-curve" d="M48 14 C64 14 62 48 76 48" />
+        <svg
+          aria-hidden="true"
+          viewBox={`0 0 ${NAVIGATION_RIBBON_INDICATOR_WIDTH_PX} ${NAVIGATION_RIBBON_MENISCUS_INDICATOR_HEIGHT_PX}`}
+          focusable="false"
+        >
+          <path
+            className="cmm-navigation-meniscus-surface"
+            d="M0 64V30H18C25 30 24 22 30 19C34 17 36 12 44 12C52 12 54 17 58 19C64 22 63 30 70 30H88V64Z"
+          />
         </svg>
-        <span className="cmm-navigation-meniscus-circle" />
       </span>
     ) : null}
     {spaces.map((space) => <AppNavigationBlockDropdown key={space.id} activeSpaceId={activeSpaceId} locale={locale} onTrackNavigation={onTrackNavigation} onOpenChange={onOpenChange} open={openSpaceId === space.id} pathname={pathname} space={space} />)}

@@ -2,13 +2,25 @@
  * Geometry shared by the desktop ribbon indicator and its contract tests.
  *
  * The dock keeps a fixed 15rem width. Triggers are 36px wide with a 2px gap;
- * the indicator is 76px wide so its 44px circle can sit above the selected
- * trigger without changing the ribbon layout.
+ * the meniscus surface is wider than the active trigger so its concave
+ * shoulders can meet the dock without changing the ribbon layout.
  */
 export const NAVIGATION_RIBBON_DOCK_WIDTH_PX = 240;
 export const NAVIGATION_RIBBON_TRIGGER_WIDTH_PX = 36;
 export const NAVIGATION_RIBBON_TRIGGER_GAP_PX = 2;
-export const NAVIGATION_RIBBON_INDICATOR_WIDTH_PX = 76;
+export const NAVIGATION_RIBBON_INDICATOR_WIDTH_PX = 88;
+export const NAVIGATION_RIBBON_MENISCUS_INDICATOR_HEIGHT_PX = 64;
+export const NAVIGATION_RIBBON_MENISCUS_CIRCLE_SIZE_PX = 44;
+export const NAVIGATION_RIBBON_MENISCUS_CIRCLE_CENTER_Y_PX = 12;
+
+export function getNavigationRibbonMeniscusCircleBounds() {
+  const radius = NAVIGATION_RIBBON_MENISCUS_CIRCLE_SIZE_PX / 2;
+
+  return {
+    top: NAVIGATION_RIBBON_MENISCUS_CIRCLE_CENTER_Y_PX - radius,
+    bottom: NAVIGATION_RIBBON_MENISCUS_CIRCLE_CENTER_Y_PX + radius,
+  };
+}
 
 export function getNavigationRibbonIndicatorLeft(
   activeSpaceIndex: number,

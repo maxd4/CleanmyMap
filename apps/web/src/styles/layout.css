@@ -14,7 +14,7 @@
 }
 
 /* Optional desktop central-ribbon treatment. The classic dock keeps the
-   existing surface because every rule below is scoped to the meniscus marker. */
+   existing surface because every rule below is scoped to meniscus. */
 .cmm-navigation-ribbon-dock {
   position: relative;
   isolation: isolate;
@@ -22,36 +22,36 @@
 }
 
 [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] {
-  --cmm-navigation-meniscus-surface: #0a162a;
-  --cmm-navigation-meniscus-edge: color-mix(in srgb, var(--accent-vibrant) 58%, transparent);
-  --cmm-navigation-meniscus-accent: color-mix(in srgb, var(--accent-vibrant) 38%, var(--cmm-navigation-meniscus-surface));
-  background: rgba(4, 10, 24, 0.94);
-  border-color: rgba(186, 230, 253, 0.22);
+  --cmm-navigation-meniscus-surface: #10111f;
+  --cmm-navigation-meniscus-edge: rgba(224, 231, 255, 0.34);
+  --cmm-navigation-meniscus-accent: #f6a11a;
+  --cmm-navigation-meniscus-accent-edge: #ffd071;
+  --cmm-navigation-meniscus-ink: #241508;
+  background: var(--cmm-navigation-meniscus-surface);
+  border-top-color: transparent;
+  border-inline-color: rgba(224, 231, 255, 0.24);
+  border-bottom-color: rgba(224, 231, 255, 0.2);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.08) inset,
     0 14px 28px -24px rgba(2, 6, 23, 0.96),
-    0 0 0 1px rgba(125, 211, 252, 0.06) inset;
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
 }
 
 .cmm-navigation-meniscus-indicator {
   position: absolute;
-  top: 50%;
+  top: -1.875rem;
   z-index: 0;
-  width: 4.75rem;
-  height: 3rem;
-  margin-top: -1.5rem;
+  width: 5.5rem;
+  height: 4rem;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(0);
   transition:
     left 260ms cubic-bezier(0.22, 0.8, 0.28, 1),
-    opacity 180ms ease-out,
-    transform 260ms cubic-bezier(0.22, 0.8, 0.28, 1);
+    opacity 180ms ease-out;
 }
 
 [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-indicator {
   opacity: 1;
-  transform: translateY(-0.125rem);
 }
 
 .cmm-navigation-meniscus-indicator > svg {
@@ -62,42 +62,40 @@
   overflow: visible;
 }
 
-.cmm-navigation-meniscus-bridge {
-  fill: var(--cmm-navigation-meniscus-surface, rgba(10, 22, 42, 0.98));
-}
-
-.cmm-navigation-meniscus-curve {
-  fill: none;
-  stroke: var(--cmm-navigation-meniscus-edge, rgba(125, 211, 252, 0.22));
-  stroke-linecap: round;
+.cmm-navigation-meniscus-surface {
+  fill: var(--cmm-navigation-meniscus-surface, #10111f);
+  stroke: var(--cmm-navigation-meniscus-edge, rgba(224, 231, 255, 0.34));
+  stroke-linejoin: round;
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
-.cmm-navigation-meniscus-circle {
-  position: absolute;
-  top: 0.125rem;
-  left: 50%;
-  width: 2.75rem;
-  height: 2.75rem;
-  border: 1px solid var(--cmm-navigation-meniscus-edge, rgba(186, 230, 253, 0.48));
-  border-radius: 9999px;
-  background: radial-gradient(circle at 34% 22%, var(--cmm-navigation-meniscus-accent, rgba(125, 211, 252, 0.42)), var(--cmm-navigation-meniscus-surface, rgba(10, 22, 42, 0.98)) 68%);
-  box-shadow:
-    0 8px 16px -10px rgba(2, 6, 23, 0.98),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-  transform: translateX(-50%);
-}
-
 [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] {
   position: relative;
-  z-index: 1;
-  background-color: transparent !important;
+  z-index: 3;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: -0.375rem -0.25rem;
+  border: 1px solid var(--cmm-navigation-meniscus-accent-edge) !important;
+  border-radius: 9999px;
+  background: var(--cmm-navigation-meniscus-accent) !important;
+  color: var(--cmm-navigation-meniscus-ink) !important;
+  transform: translateY(-0.375rem);
+  box-shadow:
+    0 8px 14px -8px rgba(2, 6, 23, 0.85),
+    0 0 0 2px rgba(255, 255, 255, 0.08) inset;
 }
 
 [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"][aria-expanded="true"],
 [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"]:focus-visible {
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  background: var(--cmm-navigation-meniscus-accent) !important;
+}
+
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"]:focus-visible {
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.78),
+    0 8px 14px -8px rgba(2, 6, 23, 0.85),
+    0 0 0 2px rgba(255, 255, 255, 0.08) inset;
 }
 
 .cmm-navigation-block-icon {
@@ -107,8 +105,31 @@
   transition: transform 260ms cubic-bezier(0.22, 0.8, 0.28, 1);
 }
 
+.cmm-navigation-block-label {
+  display: none;
+}
+
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger]:hover .cmm-navigation-block-label,
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger]:focus-visible .cmm-navigation-block-label,
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] .cmm-navigation-block-label {
+  position: absolute;
+  top: calc(100% + 0.125rem);
+  left: 50%;
+  z-index: 4;
+  display: block;
+  color: var(--cmm-navigation-meniscus-accent);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(2, 6, 23, 0.86);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
 [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] .cmm-navigation-block-icon {
-  transform: translateY(-0.125rem) scale(1.04);
+  color: var(--cmm-navigation-meniscus-ink);
+  transform: scale(1.04);
 }
 
 .cmm-home-map-preview {
