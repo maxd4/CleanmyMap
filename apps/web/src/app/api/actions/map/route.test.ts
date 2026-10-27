@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApiErrorModule, createPublicSnapshotModule } from "@/app/api/test-helpers";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const buildMapActionsRouteResultMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
@@ -63,7 +64,7 @@ describe("GET /api/actions/map persistence boundary", () => {
       );
 
       expect(response.status).toBe(200);
-      expect(await response.json()).toMatchObject({ status: "ok" });
+      expect(await parseJsonSafely(response)).toMatchObject({ status: "ok" });
       expect(buildMapActionsRouteResultMock).toHaveBeenCalledTimes(1);
       expect(loadOrRefreshPublicSurfaceSnapshotMock).not.toHaveBeenCalled();
     },
@@ -106,9 +107,10 @@ describe("GET /api/actions/map persistence boundary", () => {
         "http://localhost/api/actions/map?south=12.34&west=56.78&north=12.35&east=56.79&zoom=15",
       ),
     );
-    const payload = await response.json();
+    const payload = await parseJsonSafely(response);
 
     expect(payload).toMatchObject({ isTruncated: true, partialSource: false });
+    if (!isRecord(payload) || !Array.isArray(payload.items)) throw new Error("Expected public map items");
     expect(payload.items[0]).not.toHaveProperty("created_by_clerk_id");
     expect(response.headers.get("x-data-warning")).toBeNull();
   });
@@ -145,13 +147,12 @@ describe("GET /api/actions/map persistence boundary", () => {
     const { GET } = await import("./route");
     await GET(new Request("http://localhost/api/actions/map?days=30"));
 
-    expect(loadOrRefreshPublicSurfaceSnapshotMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        snapshotKey: expect.not.stringContaining("12.34"),
-      }),
-    );
-    const snapshotKey = loadOrRefreshPublicSurfaceSnapshotMock.mock.calls[0][0]
-      .snapshotKey as string;
+    const snapshotInput = firstMockArgument(loadOrRefreshPublicSurfaceSnapshotMock);
+    if (!isRecord(snapshotInput) || typeof snapshotInput.snapshotKey !== "string") {
+      throw new Error("Expected a public map snapshot key");
+    }
+    expect(snapshotInput.snapshotKey).not.toContain("12.34");
+    const snapshotKey = snapshotInput.snapshotKey;
     expect(JSON.parse(snapshotKey)).toMatchObject({ viewport: "global" });
   });
 
@@ -164,11 +165,14 @@ describe("GET /api/actions/map persistence boundary", () => {
       );
 
       expect(response.status).toBe(200);
-      const payload = await response.json();
+      const payload = await parseJsonSafely(response);
       expect(payload).toMatchObject({
         count: 1,
         items: [{ id: "approved", status: "approved" }],
       });
+      if (!isRecord(payload) || !Array.isArray(payload.items) || !isRecord(payload.items[0])) {
+        throw new Error("Expected a public map item");
+      }
       expect(payload.items[0]).not.toHaveProperty("created_by_clerk_id");
       expect(payload.items[0].contract).not.toHaveProperty("createdByClerkId");
     },
@@ -179,9 +183,8 @@ describe("GET /api/actions/map persistence boundary", () => {
 
     await GET(new Request("http://localhost/api/actions/map?days=30"));
 
-    expect(loadOrRefreshPublicSurfaceSnapshotMock.mock.calls[0][0].version).toBe(
-      "public-map-actions-v4",
-    );
+    const snapshotInput = firstMockArgument(loadOrRefreshPublicSurfaceSnapshotMock);
+    expect(snapshotInput).toMatchObject({ version: "public-map-actions-v4" });
   });
 
   it("keeps explicit public type filters in the snapshot key", async () => {
@@ -190,8 +193,18 @@ describe("GET /api/actions/map persistence boundary", () => {
 
     await GET(new Request("http://localhost/api/actions/map?types=action"));
 
-    expect(loadOrRefreshPublicSurfaceSnapshotMock.mock.calls[0][0].snapshotKey).toContain(
-      '"types":"action"',
-    );
+    const snapshotInput = firstMockArgument(loadOrRefreshPublicSurfaceSnapshotMock);
+    if (!isRecord(snapshotInput) || typeof snapshotInput.snapshotKey !== "string") {
+      throw new Error("Expected a public map snapshot key");
+    }
+    expect(snapshotInput.snapshotKey).toContain('"types":"action"');
   });
 });
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function firstMockArgument(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
+  return mock.mock.calls[0]?.[0];
+}

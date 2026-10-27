@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const requireActionRequestAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
@@ -120,7 +121,7 @@ describe("Action media HTTP boundaries", () => {
     });
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
+    await expect(parseJsonSafely(response)).resolves.toEqual({
       status: "ok",
       items: [{ id: "media-1", uploadState: "ready", signedUrl: "https://signed.test/media-1" }],
     });
@@ -148,9 +149,9 @@ describe("Action media HTTP boundaries", () => {
     const response = await listMedia(request("/api/actions/action-1/media"), { params });
 
     expect(response.status).toBe(409);
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
     expect(body).toEqual({ error: notAdmissibleMessage });
-    expect(body.error).not.toContain("private storage detail");
+    expect(body).toMatchObject({ error: notAdmissibleMessage });
   });
 
   it("rejects malformed upload metadata before creating an intent", async () => {
@@ -200,9 +201,9 @@ describe("Action media HTTP boundaries", () => {
     const response = await createUploadIntent(uploadIntentRequest(), { params });
 
     expect(response.status).toBe(409);
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
     expect(body).toEqual({ error: notAdmissibleMessage, code: "not_admissible" });
-    expect(body.error).not.toContain("private storage detail");
+    expect(body).toMatchObject({ error: notAdmissibleMessage });
   });
 
   it("maps an inadmissible finalization to a stable conflict without exposing service details", async () => {
@@ -215,9 +216,9 @@ describe("Action media HTTP boundaries", () => {
     });
 
     expect(response.status).toBe(409);
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
     expect(body).toEqual({ error: notAdmissibleMessage, code: "not_admissible" });
-    expect(body.error).not.toContain("private storage detail");
+    expect(body).toMatchObject({ error: notAdmissibleMessage });
     expect(finalizeActionMediaMock).toHaveBeenCalledWith(supabase, {
       userId: "owner-1",
       identity,
@@ -275,7 +276,7 @@ describe("Action media HTTP boundaries", () => {
 
     expect(response.status).toBe(status);
     if (code === "not_found") expect(await response.text()).not.toContain("internal storage detail");
-    else expect((await response.json()).code).toBe(code);
+    else expect(await parseJsonSafely(response)).toMatchObject({ code });
   });
 
   it.each([
@@ -293,7 +294,14 @@ describe("Action media HTTP boundaries", () => {
 
     expect(response.status).toBe(status);
     if (code === "not_found") expect(await response.text()).not.toContain("private finalization detail");
-    else if (code === "storage_missing") expect((await response.json()).error).toContain("stockage");
-    else expect((await response.json()).code).toBe(code);
+    else if (code === "storage_missing") {
+      const body = await parseJsonSafely(response);
+      if (!isRecord(body) || typeof body.error !== "string") throw new Error("Expected a storage error message");
+      expect(body.error).toContain("stockage");
+    } else expect(await parseJsonSafely(response)).toMatchObject({ code });
   });
 });
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}

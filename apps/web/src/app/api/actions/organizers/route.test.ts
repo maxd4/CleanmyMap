@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 import { GET, POST } from "./route";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
@@ -34,9 +35,9 @@ describe("GET /api/actions/organizers", () => {
         select: selectMock.mockImplementation((projection: string) => {
           expect(projection).toBe("id, name, normalized_name, organizer_type");
           expect(projection).not.toContain("created_by_clerk_id");
-          return {
-            eq() { return this; },
-            order() { return this; },
+          const query = {
+            eq: () => query,
+            order: () => query,
             limit: async () => ({
               data: [{
                 id: "persisted-1",
@@ -48,6 +49,7 @@ describe("GET /api/actions/organizers", () => {
                 error: null,
               }),
           };
+          return query;
         }),
       }),
     });
@@ -55,7 +57,7 @@ describe("GET /api/actions/organizers", () => {
 
   it("returns only the public organizer projection", async () => {
     const response = await GET(new Request("http://localhost/api/actions/organizers?type=collective&q=rivière"));
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
 
     expect(response.status).toBe(200);
     expect(body).toEqual({
@@ -120,7 +122,7 @@ describe("POST /api/actions/organizers", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: "Collectif Rivière", organizerType: "association" }),
     }));
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
 
     expect(response.status).toBe(200);
     expect(body).toEqual({
@@ -141,20 +143,22 @@ describe("POST /api/actions/organizers", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: "World Cleanup Day France", organizerType: "association" }),
     }));
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
 
     expect(response.status).toBe(200);
-    expect(body.organizer).toMatchObject({
-      id: expect.any(String),
-      name: "World Cleanup Day France",
-      organizerType: "association",
+    expect(body).toMatchObject({
+      organizer: {
+        name: "World Cleanup Day France",
+        organizerType: "association",
+      },
     });
+    expect(body).toHaveProperty("organizer.id");
   });
 
   it("inserts an unknown name only through the explicit command", async () => {
     const insertMock = vi.fn();
-    insertMock.mockReturnValue({
-      select() { return this; },
+    const insertQuery = {
+      select: () => insertQuery,
       single: async () => ({
         data: {
           id: "created-unknown",
@@ -164,14 +168,16 @@ describe("POST /api/actions/organizers", () => {
         },
         error: null,
       }),
-    });
+    };
+    insertMock.mockReturnValue(insertQuery);
+    const organizerQuery = {
+      select: () => organizerQuery,
+      eq: () => organizerQuery,
+      maybeSingle: async () => ({ data: null, error: null }),
+      insert: insertMock,
+    };
     getSupabaseServerClientMock.mockReturnValue({
-      from: () => ({
-        select() { return this; },
-        eq() { return this; },
-        maybeSingle: async () => ({ data: null, error: null }),
-        insert: insertMock,
-      }),
+      from: () => organizerQuery,
     });
 
     const response = await POST(new Request("http://localhost/api/actions/organizers", {

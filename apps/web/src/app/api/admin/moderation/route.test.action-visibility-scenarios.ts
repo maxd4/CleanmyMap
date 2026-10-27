@@ -1,7 +1,16 @@
 import { expect, it, vi } from "vitest";
 import { createActionSupabaseHarness } from "@/__tests__/support/admin-moderation-route";
+import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 export type ModerationScenarioMocks = Record<string, ReturnType<typeof vi.fn>>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function firstMockArgument(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
+  return mock.mock.calls[0]?.[0];
+}
 
 export function registerActionVisibilityScenarios({
   mocks,
@@ -108,14 +117,14 @@ function registerHideScenario({
         hidden_reason: "Contenu à vérifier avant publication.",
       }),
     );
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
+    const audit = firstMockArgument(appendAdminOperationAuditMock);
+    expect(audit).toMatchObject({
         outcome: "success",
         targetId: "action-1",
-        details: expect.objectContaining({
+        details: {
           operation: "hide_action",
           reason: "Contenu à vérifier avant publication.",
-          previousValue: expect.objectContaining({
+          previousValue: {
             moderationVisibility: "visible",
             status: "pending",
             wasteKg: 1,
@@ -123,8 +132,8 @@ function registerHideScenario({
             volunteersCount: 3,
             durationMinutes: 30,
             wasteBreakdownPresent: false,
-          }),
-          newValue: expect.objectContaining({
+          },
+          newValue: {
             moderationVisibility: "hidden",
             status: "pending",
             wasteKg: 1,
@@ -132,10 +141,9 @@ function registerHideScenario({
             volunteersCount: 3,
             durationMinutes: 30,
             wasteBreakdownPresent: false,
-          }),
-        }),
-      }),
-    );
+          },
+        },
+      });
   });
 }
 
@@ -177,7 +185,8 @@ function registerCombinedEditScenario({
     expect(response.status).toBe(200);
     expect(harness.updateMock).toHaveBeenCalledTimes(2);
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
-    const audit = appendAdminOperationAuditMock.mock.calls[0]?.[0];
+    const audit = firstMockArgument(appendAdminOperationAuditMock);
+    if (!isRecord(audit) || !isRecord(audit.details)) throw new Error("Expected an audited moderation operation");
     expect(audit.details.previousValue).toEqual({
       status: "pending",
       moderationVisibility: "visible",
@@ -310,14 +319,14 @@ function registerRestoreScenario({
         hidden_reason: null,
       }),
     );
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
+    const audit = firstMockArgument(appendAdminOperationAuditMock);
+    expect(audit).toMatchObject({
         outcome: "success",
         targetId: "action-1",
-        details: expect.objectContaining({
+        details: {
           operation: "restore_after_sanction",
           reason: "Restauration après vérification.",
-          previousValue: expect.objectContaining({
+          previousValue: {
             moderationVisibility: "hidden",
             status: "pending",
             wasteKg: 5,
@@ -325,8 +334,8 @@ function registerRestoreScenario({
             volunteersCount: 7,
             durationMinutes: 45,
             wasteBreakdownPresent: false,
-          }),
-          newValue: expect.objectContaining({
+          },
+          newValue: {
             moderationVisibility: "visible",
             status: "pending",
             wasteKg: 5,
@@ -334,10 +343,9 @@ function registerRestoreScenario({
             volunteersCount: 7,
             durationMinutes: 45,
             wasteBreakdownPresent: false,
-          }),
-        }),
-      }),
-    );
+          },
+        },
+      });
   });
 }
 
@@ -414,15 +422,14 @@ function registerApprovedRestoreScenario({
     );
     expect(copyValidatedActionToLocalStoreMock).not.toHaveBeenCalled();
     expect(trackActionValidationBonusMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
+    const audit = firstMockArgument(appendAdminOperationAuditMock);
+    expect(audit).toMatchObject({
         outcome: "success",
-        details: expect.objectContaining({
+        details: {
           operation: "restore_after_sanction",
           copiedToLocalValidatedStore: false,
-        }),
-      }),
-    );
+        },
+      });
   });
 }
 
@@ -484,7 +491,7 @@ function registerInvalidProjectionScenario({
     );
 
     expect(response.status).toBe(500);
-    const body = await response.json();
+    const body = await parseJsonSafely(response);
     expect(body).toMatchObject({
       error: "La modération a échoué.",
       code: "server_error",
