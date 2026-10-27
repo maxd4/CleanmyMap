@@ -6,6 +6,7 @@ const callFieldOperationMock = vi.hoisted(() => vi.fn());
 vi.mock("server-only", () => ({}));
 vi.mock("./preparation-import-workbook", () => ({
   normalizeValue: (value: unknown) => String(value ?? "").trim(),
+  sha256Hex: vi.fn(async () => "measurement-content-hash"),
   workbookRows: workbookRowsMock,
 }));
 vi.mock("./field-operations-service", () => ({ callSpogomiFieldOperation: callFieldOperationMock }));

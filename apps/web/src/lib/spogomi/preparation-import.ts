@@ -9,7 +9,7 @@ import type {
   SpogomiRosterRowError,
   SpogomiRosterSheetCandidate,
 } from "./types";
-import { normalizeValue, workbookRows } from "./preparation-import-workbook";
+import { normalizeValue, sha256Hex, workbookRows } from "./preparation-import-workbook";
 import { decodeDelimitedText, detectDelimiter, parseDelimited } from "./preparation-import-delimited";
 import { buildPreviewContent } from "./preparation-import-preview";
 import { classifyCachanTicketDeletion, classifyCachanTicketStatus } from "./ticket-status";
@@ -71,11 +71,6 @@ function fingerprint(row: Pick<SpogomiRosterRow, "name" | "groupPreference" | "e
     hash = Math.imul(hash, 16777619);
   }
   return (hash >>> 0).toString(16).padStart(8, "0");
-}
-
-async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes as BufferSource);
-  return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
 }
 
 function levenshtein(left: string, right: string): number {

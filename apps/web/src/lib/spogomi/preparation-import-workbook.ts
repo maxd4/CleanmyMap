@@ -13,6 +13,11 @@ export function normalizeValue(value: unknown): string {
   return withoutNullCharacters.trim().replace(/\s+/g, " ");
 }
 
+export async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", bytes as BufferSource);
+  return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
 function readLittleEndian16(bytes: Uint8Array, offset: number): number {
   return bytes[offset] | (bytes[offset + 1] << 8);
 }

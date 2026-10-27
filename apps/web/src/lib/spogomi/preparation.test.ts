@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 import { zipSync } from "fflate";
 import { readFileSync } from "node:fs";
 import { assertArchiveSafe } from "./preparation-import";
-import { normalizeValue } from "./preparation-import-workbook";
+import { normalizeValue, sha256Hex } from "./preparation-import-workbook";
 import { buildDeterministicTeamFormation, previewRosterFile, validateProposedTeamFormation } from "./preparation";
 
 function worldCupParticipants(count: number) {
@@ -11,6 +11,10 @@ function worldCupParticipants(count: number) {
 }
 
 describe("SPOGOMI preparation", () => {
+  it("uses one deterministic SHA-256 representation for import bytes", async () => {
+    await expect(sha256Hex(new TextEncoder().encode("hello"))).resolves.toBe("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824");
+  });
+
   it("forms deterministic world cup teams of three and leaves an incomplete tail unassigned", () => {
     const result = buildDeterministicTeamFormation({
       mode: "world_cup",

@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { normalizeValue, workbookRows } from "./preparation-import-workbook";
+import { normalizeValue, sha256Hex, workbookRows } from "./preparation-import-workbook";
 import type { SpogomiImportFormat } from "./types";
 import { callSpogomiFieldOperation } from "./field-operations-service";
 
@@ -15,11 +15,6 @@ function formatFromFileName(fileName: string): SpogomiImportFormat {
   const extension = fileName.toLowerCase().split(".").pop() as SpogomiImportFormat | undefined;
   if (!extension || !FORMAT_EXTENSIONS.includes(extension)) throw new Error("Format refusé : utilisez CSV, TSV, XLSX, XLS ou ODS.");
   return extension;
-}
-
-async function sha256(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes as BufferSource);
-  return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
 }
 
 function columnIndex(headers: string[], names: string[]): number {
@@ -115,7 +110,7 @@ export async function previewSpogomiMeasurementWorkbook(params: { supabase: Supa
   const bytes = new Uint8Array(await params.file.arrayBuffer());
   if (!bytes.length || bytes.byteLength > MAX_FILE_BYTES) throw new Error("Classeur refusé : taille absente ou supérieure à 5 Mo.");
   const format = formatFromFileName(params.file.name);
-  const contentHash = await sha256(bytes);
+  const contentHash = await sha256Hex(bytes);
   const workbook = workbookRows(bytes, format);
   const selectedSheet = params.sheetName ? workbook.sheets.find((sheet) => sheet.name === params.sheetName) : workbook.sheets[0];
   if (!selectedSheet) throw new Error("La feuille demandée est introuvable.");
