@@ -2087,7 +2087,7 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Preview et route GPX conservent des contrôles d'accès explicites pour deux ressources SPOGOMI différentes ; la duplication est une preuve locale de frontière serveur.",
       "evidence": "app/api/spogomi/events/[eventId]/imports/preview/route.ts:7-21 et app/api/spogomi/events/[eventId]/route-gpx/route.ts:5-19 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "reviewedRef": "1aa66dc7e0c133fc0974ed019d6abc34dbc1715e"
     },
     {
       "scope": "runtime",
