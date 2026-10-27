@@ -126,4 +126,38 @@ describe("GPX create-action priority", () => {
     expect(row.preparation_data.operationalRoute).toBeUndefined();
     expect(row.geometry_source).toBe("gpx_import");
   });
+
+  it("reconstructs a bounded fallback route when no active drawing exists", async () => {
+    routeProviderMock.mockResolvedValue({
+      mode: "fallback",
+      provider: "none",
+      isLoop: true,
+      coordinates: [[48.85, 2.35], [48.851, 2.351], [48.85, 2.35]],
+      distanceKm: 0.2,
+      legs: [],
+    });
+    const result = await resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      latitude: 48.85,
+      longitude: 2.35,
+      preparationData: { routeTopology: "loop", routeTargetDistanceKm: 1 },
+    }));
+    expect(result).toMatchObject({ geometrySource: "estimated_route", origin: [48.85, 2.35] });
+    expect(result.drawing?.coordinates).toHaveLength(3);
+  });
+
+  it("keeps persistence explicit when route reconstruction has no usable origin", async () => {
+    routeProviderMock.mockClear();
+    const result = await resolveCreateActionDrawing({
+      ...buildGpxPayload(),
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      locationLabel: "",
+      departureLocationLabel: undefined,
+      preparationData: { routeTopology: "loop" },
+    });
+    expect(result).toEqual({ drawing: null, geometrySource: null, routeGeometry: null, origin: null });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
 });

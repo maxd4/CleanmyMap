@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import {
+  autoComposeTeams,
   confirmSpogomiTeams,
   previewRosterImportChanges,
   previewSpogomiTeams,
@@ -396,5 +397,100 @@ describe("SPOGOMI preparation service previews", () => {
         { participantId: "world-3", teamNumber: 1, divisionId: "division-world" },
       ],
     }));
+  });
+
+  it("fails closed on malformed or unavailable composition reads", async () => {
+    const event = spogomiPreparationEvent({ composition_revision: 3 });
+    await expect(previewSpogomiTeams(readOnlySupabase({
+      spogomi_participants: { data: [], error: new Error("participants unavailable") },
+    }), event)).rejects.toThrow("participants unavailable");
+
+    await expect(previewSpogomiTeams(readOnlySupabase({
+      spogomi_participants: { data: { id: "not-a-list" }, error: null },
+    }), event)).rejects.toThrow(/liste de participants invalide/i);
+
+    await expect(previewSpogomiTeams(readOnlySupabase({
+      spogomi_participants: { data: [], error: null },
+      spogomi_teams: { data: [], error: new Error("teams unavailable") },
+    }), event)).rejects.toThrow("teams unavailable");
+
+    await expect(previewSpogomiTeams(readOnlySupabase({
+      spogomi_participants: { data: [], error: null },
+      spogomi_teams: { data: { id: "not-a-list" }, error: null },
+    }), event)).rejects.toThrow(/liste d.équipes invalide/i);
+
+    await expect(previewSpogomiTeams(readOnlySupabase({
+      spogomi_participants: { data: [], error: null },
+      spogomi_teams: { data: [{ id: "team-1", team_number: "1", composition_state: "draft" }], error: null },
+    }), event)).rejects.toThrow(/équipe invalide/i);
+  });
+
+  it("validates an explicit formation and rejects malformed confirmation responses", async () => {
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: { revision: 4 }, error: null })
+      .mockResolvedValueOnce({ data: null, error: null });
+    const supabase = readOnlySupabase({
+      spogomi_participants: {
+        data: [
+          { id: "p-1", group_preference: null, source_row_number: 1, team_id: null, registration_status: "registered", source_system: "manual_roster", ticket_status: null, ticket_deleted: false },
+          { id: "p-2", group_preference: null, source_row_number: 2, team_id: null, registration_status: "registered", source_system: "manual_roster", ticket_status: null, ticket_deleted: false },
+          { id: "p-3", group_preference: null, source_row_number: 3, team_id: null, registration_status: "registered", source_system: "manual_roster", ticket_status: null, ticket_deleted: false },
+        ],
+        error: null,
+      },
+      spogomi_teams: { data: [], error: null },
+    }, rpc);
+    const event = spogomiPreparationEvent({ mode: "world_cup", composition_revision: 3 });
+    const proposed = await previewSpogomiTeams(supabase, event);
+
+    await expect(confirmSpogomiTeams({
+      supabase,
+      event,
+      expectedRevision: proposed.expectedRevision,
+      proposalFingerprint: proposed.proposalFingerprint,
+      actorClerkId: "organizer-1",
+      formation: {
+        ...proposed.formation,
+        teams: [{ ...proposed.formation.teams[0]!, teamNumber: 1, participantIds: ["p-1", "p-2", "p-3"] }],
+        unassignedParticipantIds: [],
+      },
+    })).resolves.toMatchObject({ confirmed: true });
+
+    await expect(confirmSpogomiTeams({
+      supabase,
+      event,
+      expectedRevision: proposed.expectedRevision,
+      proposalFingerprint: proposed.proposalFingerprint,
+      actorClerkId: "organizer-1",
+      formation: {
+        ...proposed.formation,
+        teams: [{ ...proposed.formation.teams[0]!, teamNumber: 1, participantIds: ["unknown-participant"] }],
+        unassignedParticipantIds: [],
+      },
+    })).rejects.toThrow(/place inconnue/i);
+
+    await expect(confirmSpogomiTeams({
+      supabase,
+      event,
+      expectedRevision: proposed.expectedRevision,
+      proposalFingerprint: proposed.proposalFingerprint,
+      actorClerkId: "organizer-1",
+    })).rejects.toThrow(/confirmation de composition.*invalide/i);
+  });
+
+  it("uses preview mode when auto-composition has no confirmation and confirmation mode otherwise", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: { revision: 4 }, error: null });
+    const supabase = readOnlySupabase({
+      spogomi_participants: { data: [], error: null },
+      spogomi_teams: { data: [], error: null },
+    }, rpc);
+    const event = spogomiPreparationEvent({ composition_revision: 3 });
+    await expect(autoComposeTeams(supabase, event)).resolves.not.toHaveProperty("confirmed");
+    const proposed = await previewSpogomiTeams(supabase, event);
+    await expect(autoComposeTeams(supabase, event, {
+      expectedRevision: proposed.expectedRevision,
+      proposalFingerprint: proposed.proposalFingerprint,
+      actorClerkId: "organizer-1",
+    })).resolves.toMatchObject({ confirmed: true });
   });
 });

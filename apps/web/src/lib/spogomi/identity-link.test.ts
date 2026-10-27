@@ -11,6 +11,7 @@ import {
   generateSpogomiIdentityCode,
   hashSpogomiIdentityCode,
   normalizeSpogomiIdentityCode,
+  SpogomiIdentityLinkError,
 } from "./identity-link";
 
 const migration = readFileSync(
@@ -88,6 +89,61 @@ describe("SPOGOMI identity link", () => {
     await expect(claimSpogomiIdentityLink(invalidSupabase, { eventId: "event-1", code: generateSpogomiIdentityCode(), clerkId: "user_1" })).rejects.toMatchObject({ kind: "invalid_code" });
     const conflictSupabase = { rpc: vi.fn().mockResolvedValue({ data: null, error: { code: "23505" } }) } as never;
     await expect(claimSpogomiIdentityLink(conflictSupabase, { eventId: "event-1", code: generateSpogomiIdentityCode(), clerkId: "user_2" })).rejects.toMatchObject({ kind: "already_linked" });
+  });
+
+  it("rejects malformed identity codes and malformed or unavailable RPC envelopes", async () => {
+    expect(() => hashSpogomiIdentityCode("too-short")).toThrow(SpogomiIdentityLinkError);
+    const { issueSpogomiIdentityCode, claimSpogomiIdentityLink } = await import("./identity-link");
+    await expect(issueSpogomiIdentityCode({ rpc: vi.fn().mockResolvedValue({ data: null, error: null }) } as never, {
+      eventId: "event-1", participantId: "participant-1", organizerId: "organizer-1", now: new Date("2026-10-01T00:00:00Z"),
+    })).rejects.toMatchObject({ kind: "validation" });
+    await expect(claimSpogomiIdentityLink({ rpc: vi.fn().mockResolvedValue({ data: [{ link_status: "linked" }], error: null }) } as never, {
+      eventId: "event-1", code: generateSpogomiIdentityCode(), clerkId: "user-1",
+    })).rejects.toMatchObject({ kind: "validation" });
+    await expect(issueSpogomiIdentityCode({ rpc: vi.fn().mockResolvedValue({ data: null, error: { code: "P0002" } }) } as never, {
+      eventId: "event-1", participantId: "participant-1", organizerId: "organizer-1",
+    })).rejects.toMatchObject({ kind: "not_found" });
+  });
+
+  it("maps participation dependency validation to unavailable while propagating transport failures", async () => {
+    const { requestCleanMyMapParticipation } = await import("./identity-link");
+    const notFound = Object.assign(new Error("not found"), { name: "NotFoundError" });
+    joinActionParticipationMock.mockRejectedValueOnce(notFound);
+    await expect(requestCleanMyMapParticipation({} as never, { actionId: "action-1", clerkId: "user-1", actionPhase: "pre_action" }))
+      .resolves.toEqual({ status: "unavailable", store: "action_registrations" });
+    const validation = Object.assign(new Error("invalid"), { name: "ValidationError" });
+    claimFinishedActionParticipationMock.mockRejectedValueOnce(validation);
+    await expect(requestCleanMyMapParticipation({} as never, { actionId: "action-1", clerkId: "user-1", actionPhase: "post_action_complete" }))
+      .resolves.toEqual({ status: "unavailable", store: "action_participants" });
+    joinActionParticipationMock.mockRejectedValueOnce(new Error("dependency down"));
+    await expect(requestCleanMyMapParticipation({} as never, { actionId: "action-1", clerkId: "user-1", actionPhase: "pre_action" })).rejects.toThrow("dependency down");
+  });
+
+  it("fails closed when verified identity reads or the team projection are malformed", async () => {
+    const { loadSpogomiIdentityState } = await import("./identity-link");
+    const readErrorFrom = vi.fn((table: string) => {
+      const chain = {} as Record<string, ReturnType<typeof vi.fn>>;
+      chain.select = vi.fn(() => chain);
+      chain.eq = vi.fn(() => chain);
+      chain.limit = vi.fn(async () => ({ data: null, error: { message: "participant read failed" } }));
+      chain.maybeSingle = vi.fn(async () => ({ data: { action_id: "action-1" }, error: null }));
+      if (table === "spogomi_events") chain.maybeSingle = vi.fn(async () => ({ data: { action_id: "action-1" }, error: null }));
+      return chain;
+    });
+    await expect(loadSpogomiIdentityState({ from: readErrorFrom } as never, { eventId: "event-1", clerkId: "user-1" })).rejects.toThrow("participant read failed");
+
+    const malformedTeam = (table: string) => {
+      const chain = {} as Record<string, ReturnType<typeof vi.fn>>;
+      chain.select = vi.fn(() => chain);
+      chain.eq = vi.fn(() => chain);
+      chain.limit = vi.fn(async () => ({ data: table === "spogomi_participants" ? [{ id: "participant-1", team_id: "team-1", account_link_status: "verified" }] : null, error: null }));
+      chain.maybeSingle = vi.fn(async () => ({ data: table === "spogomi_events" ? { action_id: "action-1" } : table === "actions" ? { action_phase: "pre_action" } : table === "spogomi_teams" ? { id: "team-1", division_id: "division-1" } : table === "spogomi_divisions" ? { division_type: "casual" } : null, error: null }));
+      return chain;
+    };
+    await expect(loadSpogomiIdentityState({ from: vi.fn(malformedTeam) } as never, { eventId: "event-1", clerkId: "user-1" })).resolves.toMatchObject({
+      state: "identity_verified",
+      team: { divisionType: "casual", publishedResults: null },
+    });
   });
 
   it("keeps proof, uniqueness, audit and private access in the database contract", () => {

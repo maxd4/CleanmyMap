@@ -9,7 +9,11 @@ import {
 
 type Row = Record<string, unknown>;
 
-function supabaseFor(overrides: Record<string, unknown> = {}, rpcResult: { data?: unknown; error?: Row | null } = {}) {
+function supabaseFor(
+  overrides: Record<string, unknown> = {},
+  rpcResult: { data?: unknown; error?: Row | null } = {},
+  errors: Record<string, Row | null> = {},
+) {
   const tables: Record<string, unknown> = {
     spogomi_events: [{ id: "event-1", action_id: "action-1", name: "Edition", location_label: "Paris", starts_at: "2026-10-12T09:00:00Z", ends_at: null, state: "certified", environmental_mapping_version: "v1", updated_at: "event-updated" }],
     actions: [{ updated_at: "action-updated", organizer_id: null, organizer_name: null, organizer_type: null }],
@@ -27,9 +31,10 @@ function supabaseFor(overrides: Record<string, unknown> = {}, rpcResult: { data?
     const query: Record<string, unknown> = {};
     for (const method of ["select", "eq", "order", "range", "update", "insert"]) query[method] = vi.fn(() => query);
     const data = tables[table] ?? [];
-    query.maybeSingle = vi.fn(async () => ({ data: Array.isArray(data) ? data[0] ?? null : data, error: null }));
-    query.single = vi.fn(async () => ({ data: Array.isArray(data) ? data[0] ?? null : data, error: null }));
-    query.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve({ data, error: null, count: Array.isArray(data) ? data.length : null }).then(resolve, reject);
+    const error = errors[table] ?? null;
+    query.maybeSingle = vi.fn(async () => ({ data: error ? null : Array.isArray(data) ? data[0] ?? null : data, error }));
+    query.single = vi.fn(async () => ({ data: error ? null : Array.isArray(data) ? data[0] ?? null : data, error }));
+    query.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve({ data: error ? null : data, error, count: Array.isArray(data) ? data.length : null }).then(resolve, reject);
     return query;
   });
   const rpc = vi.fn(async () => rpcResult);
@@ -61,6 +66,17 @@ describe("SPOGOMI consolidation service", () => {
     const preview = await buildSpogomiConsolidationPreview({ supabase: fixture.supabase, eventId: "event-1" });
     expect(preview.projection).toMatchObject({ readyForPublication: false, teamsIncluded: 0, totalWasteMassGrams: null, officialRoute: null });
     expect(preview.projection.excludedMeasures).toEqual([expect.objectContaining({ reason: "team_not_certified" })]);
+  });
+
+  it.each([
+    { source: "observed", file_name: "route.gpx", point_count: 2, reference_distance_km: 1, inferred_topology: "loop", geometry_geojson: { type: "LineString", coordinates: [[2.3, 48.8]] } },
+    { source: "official_reference", file_name: 42, point_count: 2, reference_distance_km: 1, inferred_topology: "loop", geometry_geojson: { type: "LineString", coordinates: [[2.3, 48.8], [2.4, 48.9]] } },
+    { source: "official_reference", file_name: "route.gpx", point_count: 2, reference_distance_km: 1, inferred_topology: "unsupported", geometry_geojson: { type: "LineString", coordinates: [[2.3, 48.8], [2.4, 48.9]] } },
+    { source: "official_reference", file_name: "route.gpx", point_count: 2, reference_distance_km: 1, inferred_topology: "loop", geometry_geojson: { type: "Polygon", coordinates: [[2.3, 48.8], [2.4, 48.9]] } },
+  ])("does not accept malformed official route metadata: $source", async (route) => {
+    const fixture = supabaseFor({ spogomi_event_routes: [route] });
+    const preview = await buildSpogomiConsolidationPreview({ supabase: fixture.supabase, eventId: "event-1" });
+    expect(preview.projection.officialRoute).toBeNull();
   });
 
   it("publishes only the exact preview hash and forwards the canonical projection to the RPC", async () => {
@@ -120,6 +136,28 @@ describe("SPOGOMI consolidation service", () => {
     const fixture = supabaseFor({ spogomi_events: [] });
 
     await expect(buildSpogomiConsolidationPreview({ supabase: fixture.supabase, eventId: "missing-event" })).rejects.toThrow("event not found");
+  });
+
+  it("fails closed when a source dependency or the current projection cannot be read", async () => {
+    await expect(buildSpogomiConsolidationPreview({
+      supabase: supabaseFor({}, {}, { spogomi_events: { message: "event read failed" } }).supabase,
+      eventId: "event-1",
+    })).rejects.toThrow("event read failed");
+
+    await expect(buildSpogomiConsolidationPreview({
+      supabase: supabaseFor({}, {}, { actions: { message: "action read failed" } }).supabase,
+      eventId: "event-1",
+    })).rejects.toThrow("action read failed");
+
+    await expect(buildSpogomiConsolidationPreview({
+      supabase: supabaseFor({}, {}, { spogomi_event_routes: { message: "route read failed" } }).supabase,
+      eventId: "event-1",
+    })).rejects.toThrow("route read failed");
+
+    await expect(buildSpogomiConsolidationPreview({
+      supabase: supabaseFor({}, {}, { spogomi_action_consolidations: { message: "projection read failed" } }).supabase,
+      eventId: "event-1",
+    })).rejects.toThrow("projection read failed");
   });
 
   it.each([
