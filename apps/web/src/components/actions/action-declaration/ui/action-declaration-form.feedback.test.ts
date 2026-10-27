@@ -37,20 +37,26 @@ const recordedAction: ActionEditorRecord = {
   recordType: "action",
 };
 
+const baseFeedbackProps: React.ComponentProps<typeof ActionDeclarationFormFeedback> = {
+  submissionState: "success",
+  createdId: "action-123",
+  errorMessage: null,
+  hasAttemptedSubmit: false,
+  validationIssues: [],
+  retentionLoop: null,
+  groupJoinHref: "/sections/rejoindre-une-action?actionId=action-123",
+  showGroupInvite: true,
+};
+
+function renderFeedback(overrides: Partial<React.ComponentProps<typeof ActionDeclarationFormFeedback>> = {}) {
+  return renderToStaticMarkup(
+    React.createElement(ActionDeclarationFormFeedback, { ...baseFeedbackProps, ...overrides }),
+  );
+}
+
 describe("ActionDeclarationFormFeedback", () => {
   it("renders the post-submit group invite block when a join href is provided", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(ActionDeclarationFormFeedback, {
-        submissionState: "success",
-        createdId: "action-123",
-        errorMessage: null,
-        hasAttemptedSubmit: false,
-        validationIssues: [],
-        retentionLoop: null,
-        groupJoinHref: "/sections/rejoindre-une-action?actionId=action-123",
-        showGroupInvite: true,
-      }),
-    );
+    const markup = renderFeedback();
 
     expect(markup).toContain("Créer un formulaire");
     expect(markup).toContain("Cette action pourra être rejointe après validation.");
@@ -60,18 +66,7 @@ describe("ActionDeclarationFormFeedback", () => {
   });
 
   it("keeps the group invite in the normal validation flow", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(ActionDeclarationFormFeedback, {
-        submissionState: "success",
-        createdId: "action-123",
-        errorMessage: null,
-        hasAttemptedSubmit: false,
-        validationIssues: [],
-        retentionLoop: null,
-        groupJoinHref: "/sections/rejoindre-une-action?actionId=action-123",
-        showGroupInvite: true,
-      }),
-    );
+    const markup = renderFeedback();
 
     expect(markup).toContain("En attente de validation par un administrateur.");
     expect(markup).toContain("Prêt à partager");

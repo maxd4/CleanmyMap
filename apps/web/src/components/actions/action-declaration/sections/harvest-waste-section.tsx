@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, TrendingUp, TrendingDown, Minus, ChevronDown } from "lucide-react";
+import { Trash2, ChevronDown } from "lucide-react";
 import { VolumeSliderWidget } from "../ui/VolumeSliderWidget";
 import { TrashBinGauge } from "../ui/harvest-gauges";
-import { formatKg, formatSignedPercent } from "../utils/harvest-utils";
 import { cn } from "@/lib/utils";
 import type { FormState } from "../model";
+import { HarvestBenchmarkSummary } from "./harvest-benchmark-summary";
 import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
 import {
   ACTION_WASTE_MASS_RESOLUTION_KG,
@@ -81,7 +81,6 @@ export function HarvestWasteSection({
     householdWasteKg: parseKg(wasteHouseholdKg),
     otherWasteKg: parseKg(wasteOtherKg),
   });
-  const TrendIcon = delta > 5 ? TrendingUp : delta < -5 ? TrendingDown : Minus;
   const trendColor = delta > 5 ? "text-emerald-600" : delta < -5 ? "text-orange-500" : "text-slate-400";
 
   return (
@@ -153,25 +152,14 @@ export function HarvestWasteSection({
       {/* Gauge */}
       <TrashBinGauge value={wasteKgClamped} comparisonValue={Math.min(100, wasteBenchmarkKg)} />
 
-      {/* Benchmark */}
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-        <div>
-          <p className="text-xs font-medium text-slate-500">Par bénévole</p>
-          <p className="text-sm font-semibold text-slate-900">
-            {formatKg(wasteCurrentPerVolunteer)} kg
-            <span className="ml-1 text-xs text-slate-400">vs {formatKg(wasteBenchmarkPerVolunteer)} kg moyen</span>
-          </p>
-        </div>
-        <div className={cn("flex items-center gap-1 text-sm font-bold", trendColor)}>
-          <TrendIcon size={15} />
-          {formatSignedPercent(delta)}
-        </div>
-      </div>
-
-      {/* Source */}
-      <p className="text-xs text-slate-400 text-right">
-        {sourceLabel}{confidenceLabel ? ` · ${confidenceLabel}` : ""}
-      </p>
+      <HarvestBenchmarkSummary
+        currentPerVolunteer={wasteCurrentPerVolunteer}
+        benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
+        deltaPercent={delta}
+        trendColor={trendColor}
+        sourceLabel={sourceLabel}
+        confidenceLabel={confidenceLabel}
+      />
 
       <div className="border-t border-slate-100 pt-4">
         <WasteCategorySelector

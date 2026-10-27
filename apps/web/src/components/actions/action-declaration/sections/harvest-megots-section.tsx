@@ -1,12 +1,12 @@
 "use client";
 
-import { Cigarette, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Cigarette } from "lucide-react";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { ProgressGauge } from "../ui/harvest-gauges";
-import { formatCount, formatKg, formatSignedPercent } from "../utils/harvest-utils";
-import { cn } from "@/lib/utils";
+import { formatCount, formatKg } from "../utils/harvest-utils";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
+import { HarvestBenchmarkSummary } from "./harvest-benchmark-summary";
 
 type HarvestMegotsSectionProps = {
   wasteMegotsKg: string;
@@ -54,7 +54,6 @@ export function HarvestMegotsSection({
   hidePrimaryMeasurements = false,
 }: HarvestMegotsSectionProps) {
   const delta = megotsDeltaPercent;
-  const TrendIcon = delta > 5 ? TrendingUp : delta < -5 ? TrendingDown : Minus;
   const trendColor = comparisonTone === "orange" ? "text-orange-500" : "text-emerald-600";
 
   return (
@@ -190,24 +189,14 @@ export function HarvestMegotsSection({
         comparisonLabel="Référence moyenne"
       />
 
-      {/* Benchmark */}
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-        <div>
-          <p className="text-xs font-medium text-slate-500">Par bénévole</p>
-          <p className="text-sm font-semibold text-slate-900">
-            {formatKg(megotsCurrentPerVolunteer)} kg
-            <span className="ml-1 text-xs text-slate-400">vs {formatKg(wasteBenchmarkPerVolunteer)} kg moyen</span>
-          </p>
-        </div>
-        <div className={cn("flex items-center gap-1 text-sm font-bold", trendColor)}>
-          <TrendIcon size={15} />
-          {formatSignedPercent(delta)}
-        </div>
-      </div>
-
-      <p className="text-xs text-slate-400 text-right">
-        {sourceLabel}{confidenceLabel ? ` · ${confidenceLabel}` : ""}
-      </p>
+      <HarvestBenchmarkSummary
+        currentPerVolunteer={megotsCurrentPerVolunteer}
+        benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
+        deltaPercent={delta}
+        trendColor={trendColor}
+        sourceLabel={sourceLabel}
+        confidenceLabel={confidenceLabel}
+      />
     </section>
   );
 }
