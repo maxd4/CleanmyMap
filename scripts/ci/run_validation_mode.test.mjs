@@ -439,6 +439,10 @@ test("FULL evidence remains bound to the SHA captured before main advances", asy
     ));
     assert.equal(evidence.candidateSha, candidateSha);
     assert.equal(evidence.completionSha, completionSha);
+    assert.notEqual(evidence.completionFingerprint, evidence.candidateFingerprint);
+    assert.equal(evidence.checkoutStable, false);
+    assert.equal(evidence.attestationStatus, "NOT_ATTESTED_CHECKOUT_CHANGED");
+    assert.equal(evidence.releaseReady, false);
     assert.equal(fs.existsSync(path.join(root, "artifacts", "validation", "full", `${completionSha}.json`)), false);
     assert.ok(lines.includes(`CANDIDATE_SHA: ${candidateSha}`));
     assert.ok(lines.includes(`HEAD_AT_COMPLETION: ${completionSha}`));

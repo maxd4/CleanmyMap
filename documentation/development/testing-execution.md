@@ -240,6 +240,22 @@ la preuve sont conservés sous ce SHA immuable. Si `main` avance pendant la
 campagne, le SHA observé à la fin est signalé séparément et ne remplace jamais
 le candidat auquel le résultat est attribué.
 
+Le verrou `artifacts/validation/full/running.json` est fail-closed pendant son
+initialisation : un fichier vide, partiel, illisible ou d'identité incertaine
+reste en place et ne peut pas être récupéré automatiquement. Un verrou valide
+dont le propriétaire est absent est réclamé par renommage atomique vers un
+chemin privé de récupération ; un seul récupérateur peut donc devenir
+propriétaire et la libération reste conditionnée à l'identifiant exact du
+processus qui l'a acquis.
+
+La preuve FULL distingue l'observation de l'attestation. Elle conserve
+`candidateSha` et `completionSha`, compare l'empreinte du checkout au début et
+à la fin via `candidateFingerprint` et `completionFingerprint`, et publie
+`checkoutStable`/`attestationStatus`. Une évolution de `HEAD` ou du checkout
+rend la preuve `NOT_ATTESTED_CHECKOUT_CHANGED` et force
+`RELEASE_READY: NO`. Un checkout `WORKTREE` mouvant n'est jamais présenté
+comme `COMMITTED_SNAPSHOT`.
+
 ### Orchestration et progression de `checks:full`
 
 Le runner affiche dès le démarrage le SHA observé, le scope, le mode, le

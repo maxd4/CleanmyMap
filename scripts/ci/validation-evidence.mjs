@@ -177,10 +177,55 @@ function isProcessAlive(pid) {
 
 function readFullValidationLock(lockPath) {
   try {
-    return JSON.parse(fs.readFileSync(lockPath, "utf8"));
+    const document = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+    if (
+      !document
+      || document.version !== VALIDATION_EVIDENCE_VERSION
+      || typeof document.executionId !== "string"
+      || document.executionId.length === 0
+      || !Number.isSafeInteger(document.pid)
+      || document.pid <= 0
+      || typeof document.candidateSha !== "string"
+      || document.candidateSha.length === 0
+      || typeof document.startedAt !== "string"
+      || !Number.isFinite(Date.parse(document.startedAt))
+    ) {
+      return null;
+    }
+    return document;
   } catch {
     return null;
   }
+}
+
+function fullValidationRecoveryPath(lockPath) {
+  return `${lockPath}.${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}.recovery`;
+}
+
+function reclaimStaleFullValidationLock(lockPath, expected) {
+  const recoveryPath = fullValidationRecoveryPath(lockPath);
+  try {
+    fs.renameSync(lockPath, recoveryPath);
+  } catch (error) {
+    if (error?.code === "ENOENT") return false;
+    throw new Error(`Impossible de réclamer atomiquement le verrou FULL existant: ${error?.message ?? String(error)}`);
+  }
+
+  const claimed = readFullValidationLock(recoveryPath);
+  if (
+    !claimed
+    || claimed.executionId !== expected.executionId
+    || claimed.pid !== expected.pid
+    || claimed.candidateSha !== expected.candidateSha
+  ) {
+    throw new Error("Verrou FULL déplacé avec une identité incertaine; récupération refusée.");
+  }
+  if (isProcessAlive(claimed.pid)) {
+    throw new Error("Le propriétaire du verrou FULL est redevenu actif; récupération refusée.");
+  }
+
+  removePathWithRetry(recoveryPath);
+  return true;
 }
 
 export function acquireFullValidationLock({
@@ -199,7 +244,7 @@ export function acquireFullValidationLock({
     startedAt: new Date().toISOString(),
   };
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
     try {
       const descriptor = fs.openSync(lockPath, "wx");
       try {
@@ -209,27 +254,32 @@ export function acquireFullValidationLock({
       }
       return () => {
         const current = readFullValidationLock(lockPath);
-        if (current?.executionId === executionId) removePathWithRetry(lockPath);
+        if (current?.executionId === executionId && current.pid === process.pid) removePathWithRetry(lockPath);
       };
     } catch (error) {
       if (error?.code !== "EEXIST") throw error;
       const current = readFullValidationLock(lockPath);
+      if (!current) {
+        if (!fs.existsSync(lockPath)) continue;
+        throw new Error("Verrou FULL existant mais vide, partiel ou illisible; récupération automatique refusée.");
+      }
       if (isProcessAlive(Number(current?.pid))) {
         throw new Error(
           `Un seul FULL est autorisé par exécution : un FULL est déjà actif (candidate=${current?.candidateSha ?? "unknown"}, pid=${current.pid}).`,
         );
       }
-      removePathWithRetry(lockPath);
+      reclaimStaleFullValidationLock(lockPath, current);
     }
   }
 
-  throw new Error("Impossible d'acquérir le verrou FULL après récupération d'un verrou périmé.");
+  throw new Error("Impossible d'acquérir le verrou FULL après une récupération concurrente.");
 }
 
 export function writeFullValidationEvidence({
   repositoryRoot = process.cwd(),
   candidateSha,
   completionSha,
+  completionFingerprint,
   candidateFingerprint,
   plan,
   passed = [],
@@ -243,13 +293,17 @@ export function writeFullValidationEvidence({
   if (!candidateSha || candidateSha === "NO_GIT_HEAD") return;
   const root = path.join(repositoryRoot, FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT);
   fs.mkdirSync(root, { recursive: true });
+  const checkoutStable = completionSha === candidateSha && completionFingerprint === candidateFingerprint;
   fs.writeFileSync(
     fullEvidencePath(repositoryRoot, candidateSha),
     `${JSON.stringify({
       version: VALIDATION_EVIDENCE_VERSION,
       candidateSha,
       completionSha,
+      completionFingerprint,
       candidateFingerprint,
+      checkoutStable,
+      attestationStatus: checkoutStable ? "ATTESTED_CANDIDATE" : "NOT_ATTESTED_CHECKOUT_CHANGED",
       generatedAt: new Date().toISOString(),
       mode: plan?.mode,
       candidateScope: plan?.candidateScope,
@@ -260,7 +314,11 @@ export function writeFullValidationEvidence({
       reused,
       preexisting,
       verdict,
-      releaseReady: verdict === "PASS" && failed.length === 0 && blocked.length === 0 && notRun.length === 0,
+      releaseReady: checkoutStable
+        && verdict === "PASS"
+        && failed.length === 0
+        && blocked.length === 0
+        && notRun.length === 0,
     }, null, 2)}\n`,
     "utf8",
   );

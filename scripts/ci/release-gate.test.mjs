@@ -8,6 +8,11 @@ const otherSha = "b".repeat(40);
 const evidence = {
   version: 2,
   candidateSha: sha,
+  completionSha: sha,
+  candidateFingerprint: "candidate-fingerprint",
+  completionFingerprint: "candidate-fingerprint",
+  checkoutStable: true,
+  attestationStatus: "ATTESTED_CANDIDATE",
   candidateScope: "WORKTREE",
   mode: "FULL",
   verdict: "PASS",
@@ -180,4 +185,24 @@ test("release gate accepts checks supplied through reused evidence and rejects a
   });
   assert.equal(invalid.ready, false);
   assert.match(invalid.reasons.join("\n"), /FULL evidence does not match/);
+});
+
+test("release gate rejects a FULL proof whose checkout changed before completion", () => {
+  const result = evaluateReleaseGate({
+    evidence: {
+      ...evidence,
+      completionSha: otherSha,
+      completionFingerprint: "different-fingerprint",
+      checkoutStable: false,
+      attestationStatus: "NOT_ATTESTED_CHECKOUT_CHANGED",
+    },
+    current: sha,
+    clean: true,
+    deploymentEnabled,
+    provenance,
+    requiredChecks,
+  });
+
+  assert.equal(result.ready, false);
+  assert.match(result.reasons.join("\n"), /FULL evidence does not match|FULL evidence is not green/);
 });

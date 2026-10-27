@@ -61,12 +61,17 @@ export function evaluateReleaseGate({
     evidence
       && validSha(current)
       && validSha(evidence.candidateSha)
+      && validSha(evidence.completionSha)
       && evidence.candidateSha === current
+      && evidence.completionSha === evidence.candidateSha
       && evidence.candidateSha === deploymentEnabled?.sha,
   );
   const fullGreen = Boolean(evidence?.mode === "FULL" && evidence.verdict === "PASS" && evidence.releaseReady === true
     && evidence.version === 2
     && evidence.candidateScope === "WORKTREE"
+    && evidence.checkoutStable === true
+    && evidence.attestationStatus === "ATTESTED_CANDIDATE"
+    && evidence.completionFingerprint === evidence.candidateFingerprint
     && Array.isArray(evidence.passed)
     && Array.isArray(evidence.reused)
     && Array.isArray(evidence.failed) && evidence.failed.length === 0

@@ -506,6 +506,19 @@ export async function runValidationMode(
 
     const elapsedSeconds = (performance.now() - startedAt) / 1000;
     const completionSha = getCandidateSha(repositoryRoot);
+    const completionChangedFiles = plan.mode === "FULL"
+      ? getCandidateFiles(plan.candidateScope, repositoryRoot)
+      : [];
+    const completionFingerprint = plan.mode === "FULL"
+      ? createCandidateFingerprint({
+        repositoryRoot,
+        candidateScope: plan.candidateScope,
+        changedFiles: completionChangedFiles,
+        candidateSha,
+      })
+      : undefined;
+    const checkoutStable = plan.mode !== "FULL"
+      || (completionSha === candidateSha && completionFingerprint === candidateFingerprint);
     const verdict = printReport({
       plan,
       elapsedSeconds,
@@ -527,6 +540,7 @@ export async function runValidationMode(
         repositoryRoot,
         candidateSha,
         completionSha,
+        completionFingerprint,
         candidateFingerprint,
         plan,
         passed,
@@ -539,7 +553,9 @@ export async function runValidationMode(
       });
       log(`CANDIDATE_SHA: ${candidateSha}`);
       if (completionSha !== candidateSha) log(`HEAD_AT_COMPLETION: ${completionSha}`);
-      log(`RELEASE_READY: ${verdict === "PASS" && candidateSha !== "NO_GIT_HEAD" ? "YES" : "NO"}`);
+      if (completionFingerprint !== candidateFingerprint) log("CHECKOUT_AT_COMPLETION: CHANGED");
+      log(`FULL_ATTESTATION: ${checkoutStable ? "ATTESTED_CANDIDATE" : "NOT_ATTESTED_CHECKOUT_CHANGED"}`);
+      log(`RELEASE_READY: ${verdict === "PASS" && candidateSha !== "NO_GIT_HEAD" && checkoutStable ? "YES" : "NO"}`);
     }
     return verdict === "PASS" ? 0 : verdict === "INCOMPLETE" ? 2 : 1;
   } finally {
