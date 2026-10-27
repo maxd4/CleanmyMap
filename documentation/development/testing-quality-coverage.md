@@ -52,15 +52,22 @@ sécurité. La projection historique `persistence` conserve son préfixe API pou
 ne pas invalider la baseline actuelle ; elle reste une vue informative de
 compatibilité et ne doit pas être additionnée aux familles de risque.
 La vue historique `actions` peut conserver son préfixe large
-`src/components/actions/` pour la compatibilité des baselines ; ce préfixe ne
-gouverne plus l'attribution primaire ni les seuils de risque.
+`src/components/actions/` pour la compatibilité des baselines. Dans le moteur
+de risque, ce préfixe qualifie explicitement les composants du workflow métier
+des actions ; cette qualification est une attribution de responsabilité par
+préfixe, pas une preuve détaillée indépendante pour chaque fichier. Les règles
+plus spécifiques et l'ordre de priorité restent la source de l'attribution
+primaire.
 
 Les propriétaires sensibles connus sont explicitement qualifiés dans le moteur,
 notamment le fournisseur de jetons Clerk/Supabase, les contrats runtime Chat,
-la gestion des rôles d'administration, la préparation métier SPOGOMI et la
-transition de modération. Le préfixe large `src/components/actions/` n'est
-plus assimilé au métier : seuls les sous-chemins de calcul ou de préparation
-explicitement identifiés le sont ; les autres restent à qualifier.
+la gestion des rôles d'administration, le langage d'autorisation serveur, la
+préparation métier SPOGOMI et la transition de modération. Les primitives
+`src/lib/time/civil-date.ts` et `src/lib/time/utc-runtime.ts` relèvent du
+métier ; le répertoire `src/lib/time/` n'est donc pas qualifié globalement en
+UI. Les services communautaires de lecture et de similarité sont attribués
+respectivement à `api-persistence` et `business` selon leurs responsabilités
+exécutées.
 
 Les fichiers instrumentables non reconnus par une règle explicite sont
 comptabilisés dans `unclassified`, avec une attribution
@@ -102,28 +109,25 @@ reclassification est :
 
 | Famille primaire | Fichiers après reclassification | Origine principalement qualifiée |
 | --- | ---: | --- |
-| `security` | 355 | chat, notifications, identité/account, admin, analytics et observabilité |
-| `api-persistence` | 365 | services serveur, adapters externes, stores et modules de données |
-| `business` | 1 436 | actions, gamification, learning, SPOGOMI, rapports, pilotage et rubriques métier |
-| `ui-presentational` | 168 | navigation, contenu, formatage, documentation et surfaces sans effet métier |
-| `unclassified` | 2 | décisions conservées avec `RISK_CLASSIFICATION_REQUIRED` |
+| `security` | 356 | chat, notifications, identité/account, admin, analytics, observabilité et langage d'autorisation |
+| `api-persistence` | 366 | services serveur, adapters externes, stores, modules de données et lecture des rapports communautaires |
+| `business` | 1 439 | actions, gamification, learning, SPOGOMI, rapports, pilotage, rubriques métier, dates et similarité |
+| `ui-presentational` | 165 | navigation, contenu, formatage, documentation et surfaces sans effet métier |
+| `unclassified` | 0 | aucune décision résiduelle dans ce snapshot |
 
-Ainsi, 1 443 des 1 445 fichiers initialement non classifiés reçoivent une
-famille primaire ; les deux autres restent visibles et portent une raison
-explicite dans `coverage-policy.mjs` :
+Les 1 445 fichiers initialement non classifiés reçoivent désormais une famille
+primaire ; aucun fichier n'est supprimé du corpus instrumentable et aucun
+fichier n'est compté dans deux familles. Les quatre décisions démontrées sont
+`domain-language.ts` → `security`, `civil-date.ts` → `business`,
+`report-events.ts` → `api-persistence` et `feedback-similarity.ts` →
+`business`.
 
-- `apps/web/src/lib/community/report-events.ts` — les consommateurs relèvent
-  de plusieurs owners de workflows communautaires ;
-- `apps/web/src/lib/community/feedback-similarity.ts` — la décision de
-  similarité traverse les owners feedback et modération.
-
-Cette reclassification change l'attribution et l'empreinte (`c6e716d8ccab81cf7cfc85c07755fa509ffc89fdfa6f68d05ddcee051c93527e`) ; elle
+Cette reclassification change l'attribution et l'empreinte
+(`c2d642cada7e134c4096e42eab69984c0ad414e6cbc52f0f15ca5a04c0ed4f6b`) ; elle
 ne constitue pas un gain de couverture. Le snapshot historique du 26 octobre
-reste inchangé. La régénération d'un rapport de couverture complet n'est pas
-attestée dans ce checkout : les rapports Web complets et leur preuve de
-publication ne sont pas présents, et le résumé local ne contient que deux
-fichiers. Il faudra relancer la mesure Web canonique avant toute comparaison de
-métriques ou promotion de cette matrice en preuve d'intégration.
+reste inchangé. Une couverture Web complète doit être régénérée sur le SHA
+exact du candidat après cette évolution de l'empreinte ; un rapport WORKTREE
+ou antérieur à cette reclassification ne constitue pas cette preuve.
 
 Les métriques globales Web, mobile, Node et Python restent des indicateurs de
 suivi ; cette politique ne crée aucun objectif global obligatoire de 70 % ou

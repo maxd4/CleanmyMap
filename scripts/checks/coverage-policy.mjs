@@ -136,6 +136,7 @@ const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
       "src/lib/errors/",
       "src/lib/observability/",
       "src/lib/feature-flags.ts",
+      "src/lib/domain-language.ts",
       "src/hooks/use-submission-lock.ts",
       "src/components/auth/",
       "src/components/account/",
@@ -200,6 +201,7 @@ const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
       "src/lib/periodic/",
       "src/lib/dashboard/",
       "src/lib/governance/",
+      "src/lib/community/report-events.ts",
       "src/lib/legal-content-report/",
       "src/lib/weather/",
       "src/lib/community/feedback-screenshot-client.ts",
@@ -217,6 +219,8 @@ const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
       "src/lib/maps/",
       "src/lib/recycling/",
       "src/lib/route/",
+      "src/lib/time/civil-date.ts",
+      "src/lib/time/utc-runtime.ts",
       "src/lib/spogomi/",
       "src/lib/waste/",
       "src/components/environmental-impact-estimator/",
@@ -257,6 +261,7 @@ const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
       "src/lib/pdf-export/",
       "src/components/sections/rubriques/",
       "src/lib/admin/moderation/",
+      "src/lib/community/feedback-similarity.ts",
       "src/app/(app)/actions/",
       "src/app/(app)/reports/",
       "src/app/(app)/signalement/",
@@ -289,9 +294,7 @@ const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
       "src/locales/",
       "src/lib/animations/",
       "src/lib/utils.ts",
-      "src/lib/time/",
       "src/lib/time-scopes.ts",
-      "src/lib/domain-language.ts",
       "src/lib/browser/",
       "src/lib/swr-config.ts",
       "src/lib/documentation/",
@@ -311,13 +314,9 @@ const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
   }),
 ]);
 
-// These are deliberately not assigned to a family by filename alone. Their
-// consumers span community reporting and similarity/deduplication concerns;
-// keep the decision visible until a single canonical owner is ratified.
-export const COVERAGE_RISK_CLASSIFICATION_REQUIRED_REASONS = Object.freeze({
-  "src/lib/community/report-events.ts": "community event reporting is consumed by more than one workflow owner",
-  "src/lib/community/feedback-similarity.ts": "similarity decisions cross feedback and moderation owners",
-});
+// Unmatched instrumentable files remain visible through the generic
+// `requires-risk-qualification` attribution in classifyCoverageFile().
+export const COVERAGE_RISK_CLASSIFICATION_REQUIRED_REASONS = Object.freeze({});
 
 const COVERAGE_RISK_POLICY_VERSION = 2;
 export const COVERAGE_UNCLASSIFIED_RISK_DOMAIN = "unclassified";
