@@ -128,6 +128,23 @@ describe("GET/POST /api/admin/role-accounts", () => {
     expect(listManagedRoleAccountsMock).toHaveBeenCalledTimes(1);
   });
 
+  it("rejects a non-IMU identity before reading managed accounts", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-2",
+      displayName: "Admin",
+      role: "admin",
+      activeRole: "admin",
+      activeProfile: "admin",
+    });
+    const { GET } = await import("./route");
+
+    const response = await GET(roleAccountsGetRequest());
+
+    expect(response.status).toBe(403);
+    expect(listManagedRoleAccountsMock).not.toHaveBeenCalled();
+    expect(searchManagedRoleAccountsMock).not.toHaveBeenCalled();
+  });
+
   it("fails closed before listing when distributed abuse protection is unavailable", async () => {
     enforceServerRateLimitForAuthenticatedUserMock.mockResolvedValue(
       new Response(JSON.stringify({ code: "RATE_LIMIT_UNAVAILABLE" }), { status: 503 }),

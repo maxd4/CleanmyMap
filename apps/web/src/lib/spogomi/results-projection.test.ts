@@ -53,6 +53,73 @@ describe("SPOGOMI public results projection", () => {
     expect(projection.results.butts.entries.find((entry) => entry.teamNumber === 3)).toMatchObject({ rank: 1, numerator: 4, denominator: 1 });
   });
 
+  it("keeps hidden publication genuinely empty and does not expose environmental data", () => {
+    const candidate = source();
+    candidate.event.publicResultsVisibility = "hidden";
+
+    const projection = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+
+    expect(projection.results.sport).toEqual({ status: "hidden", reason: "Les résultats sportifs ne sont pas publiés.", entries: [] });
+    expect(projection.results.butts).toEqual({ status: "hidden", reason: "Les résultats ne sont pas publiés.", entries: [] });
+    expect(projection.results.environmental).toMatchObject({ status: "unavailable" });
+  });
+
+  it("publishes only finite environmental measurements and preserves unavailable values", () => {
+    const candidate = source();
+    candidate.actionIsPublished = true;
+    candidate.consolidation = {
+      published_at: "2026-10-12T12:00:00Z",
+      projection: {
+        totalWasteMassGrams: "1000",
+        cigaretteButtsMassGrams: 10,
+        cigaretteButtsCount: "not-a-number",
+        participantsPresent: "4",
+        projectionVersion: "projection-v1",
+        sourceHash: 123,
+      },
+    };
+
+    const projection = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+
+    expect(projection.results.environmental).toEqual({
+      status: "available",
+      totalWasteMassGrams: 1000,
+      cigaretteButtsMassGrams: 10,
+      cigaretteButtsCount: null,
+      participantsPresent: 4,
+      projectionVersion: "projection-v1",
+      sourceHash: null,
+    });
+  });
+
+  it("withholds the sporting ranking when the regulation is incomplete", () => {
+    const candidate = source();
+    candidate.event.regulationStatus = "incomplete";
+    candidate.categories = candidate.categories.map((category) => ({ ...category, is_complete: false }));
+
+    const projection = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+
+    expect(projection.results.regulationComplete).toBe(false);
+    expect(projection.results.sport).toMatchObject({
+      status: "unavailable",
+      reason: "Règlement incomplet : aucun classement sportif officiel calculé.",
+    });
+    expect(projection.results.sport.entries.every((entry) => entry.score === undefined)).toBe(true);
+  });
+
+  it("marks a team without a published submission unavailable instead of ranking it", () => {
+    const candidate = source();
+    candidate.submissions = candidate.submissions.filter((submission) => submission.team_id !== "team-3");
+    candidate.items = candidate.items.filter((item) => item.submission_id !== "submission-3");
+    candidate.participants = candidate.participants.filter((participant) => participant.team_id !== "team-3");
+
+    const projection = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+    const missing = projection.results.sport.entries.find((entry) => entry.teamNumber === 3);
+
+    expect(missing).toMatchObject({ status: "unavailable", rank: null, eligible: false, reason: "Équipe non éligible : result_missing." });
+    expect(projection.results.sport.entries.filter((entry) => entry.status !== "unavailable")).toHaveLength(2);
+  });
+
   it("calculates mixed edition rankings inside each division only", () => {
     const candidate = source();
     candidate.event.mode = "mixed";
