@@ -151,6 +151,60 @@ Préférer : contrat actuel → extension cohésive → nouveau module justifié
 compatibilité bornée → exception locale indispensable. Une règle durable possède
 un seul owner ; une façade de compatibilité ne devient pas une seconde vérité.
 
+### Invariants de développement applicables à tout lot
+
+Ces invariants complètent les sections spécialisées et s'appliquent à tout
+développement, macro-lot, correction, refactorisation ou campagne de qualité :
+
+1. **Un seul owner par comportement.** Avant toute écriture, identifier le
+   propriétaire canonique du comportement, de l'état, du calcul et de la source
+   de données. Réutiliser et étendre les primitives, hooks, services, contrats
+   et documents canoniques existants. Ne pas créer une seconde vérité, un
+   second registre, un second calcul ou un second mécanisme d'état. Si aucun
+   owner sûr n'est identifiable, arrêter la mutation concernée avec `STOP`.
+2. **Aucun changement silencieux de contrat sensible.** Un lot UI, UX,
+   performance, qualité ou refactorisation n'autorise aucune modification
+   implicite d'AuthN/AuthZ, RLS, ownership, scope, privilège, donnée personnelle,
+   SEO, consentement ou logique métier. Une évolution nécessaire doit être
+   explicitement bornée, attribuée à son owner, testée sur ses scénarios
+   positifs et négatifs, documentée dans le même lot et signalée dans le bilan.
+3. **Campagne substantielle et preuves typées.** Chaque macro-lot exige une
+   campagne de tests couvrant l'intégralité de son périmètre autorisé, ses
+   consommateurs directs et, selon le risque, les cas nominaux, limites,
+   invalides, adversariaux, erreurs, transitions, concurrence, reprises et
+   régressions. Le bilan distingue obligatoirement `STATIC_CONTRACT`,
+   `EXECUTED_BEHAVIOR` et `INTEGRATION_PROOF`. Mesurer statements, branches,
+   functions et lines avant/après à périmètre, méthode et environnement
+   comparables lorsque c'est possible ; sinon déclarer `NOT_MEASURED` avec la
+   cause. Aucun seuil, baseline, exclusion ou test artificiel ne peut être
+   modifié pour améliorer le résultat.
+4. **Matrice UI/UX gelée pendant les lots 01 à 11.** Dans le plan
+   `PLAN_MACRO_LOTS_UI_UX_CODEX.md`, les lots 01 à 11 ne doivent ni créer,
+   modifier, régénérer ni synchroniser
+   `documentation/design-system/MATRICE_ASTUCES_UI_UX_CLEANMYMAP.md` ou une
+   copie concurrente. Seul le lot 12 peut mettre à jour la matrice, après
+   rapprochement du runtime publié et des preuves finales. Une modification
+   nécessaire avant ce lot impose `STOP` et un classement explicite hors lot.
+5. **Documentation canonique dans le même lot.** Tout comportement, contrat,
+   route, règle ou procédure durablement modifié impose la mise à jour dans le
+   même lot des sources canoniques spécialisées et des fiches `CURRENT`
+   réellement concernées. Une fiche protégée devenue fausse doit être signalée
+   `DOCUMENTATION_DRIFT`; elle ne peut être laissée obsolète ni compensée par
+   une copie ou une note de session.
+6. **STOP CONDITION et publication obligatoires.** Chaque lot fixe sa
+   `STOP CONDITION` avant intégration et ne peut être déclaré terminé tant
+   qu'elle n'est pas satisfaite ou qu'un blocage n'est pas explicitement
+   classé. Le workflow normal reste : validation → commit isolé → push → fetch
+   et vérification de convergence (`HEAD = origin/main`, ahead/behind `0/0`).
+   Un mode sans push ou une exception doit être explicitement demandé ou
+   gouverné ; il ne peut pas être déduit d'une difficulté locale.
+7. **Une possibilité n'est pas une implémentation.** Les formulations
+   « éventuellement », « pourrait » et « à envisager » désignent une cible à
+   examiner, jamais une fonctionnalité livrée. Déclarer une amélioration
+   implémentée exige le code réel, le comportement exécuté et les preuves
+   documentées correspondantes ; à défaut, la classer `EXISTING_VERIFIED`,
+   `NOT_APPLICABLE`, `PARTIEL` ou `BLOCKED` selon le cas.
+
 Exports privés par défaut. Un export, `index.ts`, barrel ou re-export exige un
 consommateur actuel ou un contrat public/legacy vérifié. Migrer les consommateurs
 avant de fermer un alias. Ne pas ajouter de service, dépendance, cache, table,

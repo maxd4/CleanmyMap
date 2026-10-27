@@ -104,6 +104,13 @@ Documenter uniquement une connaissance durable pertinente :
 Modifier la source spécialisée réellement concernée. Préférer un lien à une
 copie.
 
+Lorsqu'un lot modifie durablement un comportement, un contrat, une route, une
+règle ou une procédure, les documents canoniques spécialisés et les fiches
+`CURRENT` réellement concernées doivent être mis à jour dans le même lot. Une
+documentation protégée qui deviendrait fausse doit être signalée
+`DOCUMENTATION_DRIFT`; ne pas créer une copie de session, un snapshot ou un
+document parallèle pour contourner cette obligation.
+
 ## Information dérivable et métriques CURRENT
 
 Une information entièrement dérivable du runtime, du code ou d'un registre
