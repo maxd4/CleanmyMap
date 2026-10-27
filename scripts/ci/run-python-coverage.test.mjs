@@ -58,3 +58,51 @@ test("Python coverage runs both reports before publication", () => {
     { executable: "node-test", args: ["scripts/checks/write-coverage-publication-proof.mjs", "--scope=python"] },
   ]);
 });
+
+test("Python coverage stops before XML and publication when pytest fails", () => {
+  const calls = [];
+  const spawn = (executable, args) => {
+    calls.push({ executable, args });
+    return { status: 3 };
+  };
+
+  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "python-test", nodeExecutable: "node-test" }), 3);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0], {
+    executable: "python-test",
+    args: pythonCoverageCommands({ pythonExecutable: "python-test" })[0].args,
+  });
+});
+
+test("Python coverage reports a missing interpreter without publishing partial evidence", () => {
+  const calls = [];
+  const spawn = (executable, args) => {
+    calls.push({ executable, args });
+    return { status: null, error: new Error("interpreter unavailable") };
+  };
+
+  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "missing-python", nodeExecutable: "node-test" }), 1);
+  assert.equal(calls.length, 1);
+});
+
+test("Python coverage stops before publication when XML generation fails", () => {
+  const calls = [];
+  const spawn = (executable, args) => {
+    calls.push({ executable, args });
+    return { status: calls.length === 1 ? 0 : 4 };
+  };
+
+  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "python-test", nodeExecutable: "node-test" }), 4);
+  assert.equal(calls.length, 2);
+});
+
+test("Python coverage propagates a publication failure", () => {
+  const calls = [];
+  const spawn = (executable, args) => {
+    calls.push({ executable, args });
+    return { status: calls.length === 3 ? 7 : 0 };
+  };
+
+  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "python-test", nodeExecutable: "node-test" }), 7);
+  assert.equal(calls.length, 3);
+});
