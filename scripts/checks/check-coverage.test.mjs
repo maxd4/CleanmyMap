@@ -378,17 +378,63 @@ test("les propriétaires sensibles connus sont qualifiés par le moteur canoniqu
 });
 
 test("un chemin non reconnu reste visible et ne devient pas non critique par défaut", () => {
-  const result = classifyCoverageFile("src/lib/notifications/server.ts");
+  const result = classifyCoverageFile("src/lib/undocumented-owner/server.ts");
   assert.equal(result.domain, COVERAGE_UNCLASSIFIED_RISK_DOMAIN);
   assert.equal(result.attribution, "requires-risk-qualification");
   assert.equal(result.classificationStatus, "UNCLASSIFIED");
+  assert.match(result.qualificationReason, /No single canonical owner/);
   assert.deepEqual(result.matches, []);
 });
 
-test("le préfixe large des actions ne transforme pas toute l'UI en métier critique", () => {
-  assert.equal(classifyCoverageFile("src/components/actions/action-creation-shell.tsx").domain, COVERAGE_UNCLASSIFIED_RISK_DOMAIN);
+test("les deux décisions P2-A restantes portent une raison explicite", () => {
+  for (const file of [
+    "src/lib/community/report-events.ts",
+    "src/lib/community/feedback-similarity.ts",
+  ]) {
+    const result = classifyCoverageFile(file);
+    assert.equal(result.domain, COVERAGE_UNCLASSIFIED_RISK_DOMAIN, file);
+    assert.equal(result.classificationStatus, "UNCLASSIFIED", file);
+    assert.ok(result.qualificationReason.length > 20, file);
+  }
+});
+
+test("les composants d'actions relèvent du owner métier lorsqu'ils portent le workflow", () => {
+  assert.equal(classifyCoverageFile("src/components/actions/action-creation-shell.tsx").domain, "business");
   assert.equal(classifyCoverageFile("src/components/actions/action-drawing-map.geometry.ts").domain, "business");
   assert.equal(classifyCoverageFile("src/components/ui/button.tsx").domain, "ui-presentational");
+});
+
+test("les owners P2-A sont qualifiés sans contourner la priorité des familles", () => {
+  const expected = new Map([
+    ["src/lib/gamification/progression.ts", "business"],
+    ["src/components/spogomi/spogomi-event-cockpit.tsx", "business"],
+    ["src/components/learn/learn-rubric-shell.tsx", "business"],
+    ["src/lib/notifications/server.ts", "security"],
+    ["src/components/chat/chat-shell.layout.tsx", "security"],
+    ["src/lib/services/registry.ts", "api-persistence"],
+    ["src/lib/public-surface-snapshot-service.ts", "api-persistence"],
+    ["src/components/sections/rubriques/route/route-section.tsx", "business"],
+    ["src/components/navigation/global-search.tsx", "ui-presentational"],
+  ]);
+  for (const [file, domain] of expected) {
+    const result = classifyCoverageFile(file);
+    assert.equal(result.domain, domain, file);
+    assert.equal(result.classificationStatus, "QUALIFIED", file);
+    assert.equal(new Set(result.matches.map(({ domain: matchDomain }) => matchDomain)).size, 1, file);
+  }
+});
+
+test("les collisions P2-A respectent l'ordre security > api-persistence > business > UI", () => {
+  const collisions = [
+    ["src/app/api/account/route.ts", "security", ["security", "api-persistence"]],
+    ["src/components/reports/admin-workflow/overview.tsx", "security", ["security", "business"]],
+    ["src/components/sections/rubriques/feedback/feedback.tsx", "security", ["security", "business"]],
+  ];
+  for (const [file, primary, orderedDomains] of collisions) {
+    const result = classifyCoverageFile(file);
+    assert.equal(result.domain, primary, file);
+    assert.deepEqual(result.matches.map(({ domain }) => domain), orderedDomains, file);
+  }
 });
 
 test("l'agrégation de risque compte chaque fichier instrumenté une seule fois", () => {
@@ -404,7 +450,7 @@ test("l'agrégation de risque compte chaque fichier instrumenté une seule fois"
 
 test("l'agrégation conserve les fichiers non qualifiés sans double comptage", () => {
   const currentSummary = summary();
-  currentSummary["C:\\repo\\apps\\web\\src\\lib\\notifications\\server.ts"] = currentSummary["C:\\repo\\apps\\web\\src\\lib\\auth\\auth.ts"];
+  currentSummary["C:\\repo\\apps\\web\\src\\lib\\community\\report-events.ts"] = currentSummary["C:\\repo\\apps\\web\\src\\lib\\auth\\auth.ts"];
   const current = aggregateCoverage(currentSummary);
   const riskFiles = Object.values(current.riskDomains).reduce((total, domain) => total + domain.files, 0);
   assert.equal(current.files, 6);
@@ -691,9 +737,9 @@ test("les lignes ajoutées non instrumentables ou sans LCOV sont NOT_MEASURED, p
 
 test("les lignes d'un fichier non qualifié restent mesurées mais sans seuil non critique", () => {
   const result = measureChangedLineCoverage({
-    changedLines: [{ path: "apps/web/src/lib/notifications/server.ts", lines: [1, 2] }],
+    changedLines: [{ path: "apps/web/src/lib/community/report-events.ts", lines: [1, 2] }],
     lcovContent: [
-      "SF:apps/web/src/lib/notifications/server.ts",
+      "SF:apps/web/src/lib/community/report-events.ts",
       "DA:1,1",
       "DA:2,0",
       "end_of_record",
@@ -710,7 +756,7 @@ test("une classification non qualifiée ne peut pas assouplir un domaine ENFORCE
   const currentSummary = summary();
   const securityFile = "C:\\repo\\apps\\web\\src\\lib\\auth\\auth.ts";
   for (const metricName of COVERAGE_METRICS) setSummaryRowMetric(currentSummary, securityFile, metricName, 100);
-  currentSummary["C:\\repo\\apps\\web\\src\\lib\\notifications\\server.ts"] = currentSummary[securityFile];
+  currentSummary["C:\\repo\\apps\\web\\src\\lib\\community\\report-events.ts"] = currentSummary[securityFile];
 
   const result = evaluateCoveragePolicy(aggregateCoverage(currentSummary), { policy: enforcedPolicy() });
   assert.equal(result.status, "FAIL");

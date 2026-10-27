@@ -91,6 +91,40 @@ Web existants deviennent donc incompatibles jusqu'à une nouvelle mesure fiable,
 tandis que les baselines historiques et leurs domaines de compatibilité restent
 inchangés ; aucune baseline n'est relevée ou remplacée par ce correctif.
 
+### Classification P2-A — photographie du 27 octobre 2026
+
+La campagne P2-A a rejoué le classificateur canonique sur les 2 326 fichiers
+Web du snapshot `coverage-reference-2026-10-26.json`, dont 1 445 étaient
+`unclassified`. Les owners démontrés par les matrices de traçabilité, les
+contrats sécurité et les modules runtime ont été ajoutés dans l'ordre
+`security > api-persistence > business > ui-presentational`. Le résultat de la
+reclassification est :
+
+| Famille primaire | Fichiers après reclassification | Origine principalement qualifiée |
+| --- | ---: | --- |
+| `security` | 355 | chat, notifications, identité/account, admin, analytics et observabilité |
+| `api-persistence` | 365 | services serveur, adapters externes, stores et modules de données |
+| `business` | 1 436 | actions, gamification, learning, SPOGOMI, rapports, pilotage et rubriques métier |
+| `ui-presentational` | 168 | navigation, contenu, formatage, documentation et surfaces sans effet métier |
+| `unclassified` | 2 | décisions conservées avec `RISK_CLASSIFICATION_REQUIRED` |
+
+Ainsi, 1 443 des 1 445 fichiers initialement non classifiés reçoivent une
+famille primaire ; les deux autres restent visibles et portent une raison
+explicite dans `coverage-policy.mjs` :
+
+- `apps/web/src/lib/community/report-events.ts` — les consommateurs relèvent
+  de plusieurs owners de workflows communautaires ;
+- `apps/web/src/lib/community/feedback-similarity.ts` — la décision de
+  similarité traverse les owners feedback et modération.
+
+Cette reclassification change l'attribution et l'empreinte (`c6e716d8ccab81cf7cfc85c07755fa509ffc89fdfa6f68d05ddcee051c93527e`) ; elle
+ne constitue pas un gain de couverture. Le snapshot historique du 26 octobre
+reste inchangé. La régénération d'un rapport de couverture complet n'est pas
+attestée dans ce checkout : les rapports Web complets et leur preuve de
+publication ne sont pas présents, et le résumé local ne contient que deux
+fichiers. Il faudra relancer la mesure Web canonique avant toute comparaison de
+métriques ou promotion de cette matrice en preuve d'intégration.
+
 Les métriques globales Web, mobile, Node et Python restent des indicateurs de
 suivi ; cette politique ne crée aucun objectif global obligatoire de 70 % ou
 80 %, et ne remplace aucune baseline sans nouvelle mesure fiable ratifiée.
