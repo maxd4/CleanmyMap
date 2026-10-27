@@ -261,6 +261,57 @@ describe("useWeatherLocationSuggestions request lifecycle", () => {
     hook.renderer.unmount();
   });
 
+  it("restarts A after B became active without revalidating B", async () => {
+    const requests: Array<{ query: string; request: Deferred<Response>; signal: AbortSignal }> = [];
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      const query = new URL(url, "https://cleanmymap.test").searchParams.get("q") ?? "";
+      const request = deferred<Response>();
+      requests.push({ query, request, signal: init?.signal as AbortSignal });
+      return request.promise;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const hook = renderHook("");
+    hook.render("recherche A active");
+    await act(async () => { vi.advanceTimersByTime(220); });
+    expect(requests.map(({ query }) => query)).toEqual(["recherche A active"]);
+
+    hook.render("recherche B active");
+    await act(async () => { vi.advanceTimersByTime(220); });
+    expect(requests.map(({ query }) => query)).toEqual(["recherche A active", "recherche B active"]);
+    expect(requests[0]?.signal.aborted).toBe(true);
+
+    hook.render("recherche A active");
+    await act(async () => { vi.advanceTimersByTime(220); });
+    expect(requests.map(({ query }) => query)).toEqual([
+      "recherche A active",
+      "recherche B active",
+      "recherche A active",
+    ]);
+    expect(requests[1]?.signal.aborted).toBe(true);
+    expect(requests[2]?.signal.aborted).toBe(false);
+    expect(hook.current.locationSuggestions.isLoading).toBe(true);
+
+    await act(async () => {
+      requests[0]?.request.resolve(response("ancienne réponse A"));
+      requests[1]?.request.resolve(response("ancienne réponse B"));
+      await flushPromises();
+    });
+    expect(hook.current.locationSuggestions.data).toBeUndefined();
+    expect(hook.current.locationSuggestionsError).toBeNull();
+
+    await act(async () => {
+      requests[2]?.request.resolve(response("recherche A valide"));
+      await flushPromises();
+    });
+    expect(hook.current.locationSuggestions.data?.items.map((item) => item.label)).toEqual([
+      "recherche A valide",
+    ]);
+    expect(hook.current.locationSuggestions.isLoading).toBe(false);
+    expect(hook.current.locationSuggestionsError).toBeNull();
+    hook.renderer.unmount();
+  });
+
   it("does not abort or restart a request when only trailing whitespace changes", async () => {
     const request = deferred<Response>();
     const fetchMock = vi.fn((...args: [string, RequestInit?]) => {

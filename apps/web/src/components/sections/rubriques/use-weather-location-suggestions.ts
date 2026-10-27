@@ -29,6 +29,7 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
   const normalizedLocationQuery = locationQuery.trim();
   const lastNormalizedLocationQueryRef = useRef(normalizedLocationQuery);
   const [debouncedLocationQuery, setDebouncedLocationQuery] = useState(normalizedLocationQuery);
+  const [pendingRevalidationQuery, setPendingRevalidationQuery] = useState<string | null>(null);
 
   const abortActiveLocationRequest = useCallback(() => {
     const controller = locationSuggestionsAbortRef.current;
@@ -110,6 +111,22 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
   const { mutate: revalidateLocationSuggestions } = locationSuggestions;
 
   useEffect(() => {
+    if (
+      pendingRevalidationQuery === null
+      || pendingRevalidationQuery !== debouncedLocationQuery
+      || !abortedQueryRef.current.has(pendingRevalidationQuery)
+    ) {
+      return;
+    }
+
+    // This effect runs after SWR has rendered the target key, so the bound
+    // mutate cannot revalidate the key that was just superseded.
+    abortedQueryRef.current.delete(pendingRevalidationQuery);
+    setPendingRevalidationQuery(null);
+    void revalidateLocationSuggestions().catch(() => undefined);
+  }, [debouncedLocationQuery, pendingRevalidationQuery, revalidateLocationSuggestions]);
+
+  useEffect(() => {
     const queryChanged = lastNormalizedLocationQueryRef.current !== normalizedLocationQuery;
     if (queryChanged) {
       lastNormalizedLocationQueryRef.current = normalizedLocationQuery;
@@ -119,13 +136,13 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
 
     const timer = window.setTimeout(() => {
       setDebouncedLocationQuery(normalizedLocationQuery);
-      if (abortedQueryRef.current.delete(normalizedLocationQuery)) {
-        void revalidateLocationSuggestions().catch(() => undefined);
+      if (abortedQueryRef.current.has(normalizedLocationQuery)) {
+        setPendingRevalidationQuery(normalizedLocationQuery);
       }
     }, WEATHER_LOCATION_SUGGESTION_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [abortActiveLocationRequest, normalizedLocationQuery, revalidateLocationSuggestions]);
+  }, [abortActiveLocationRequest, normalizedLocationQuery]);
 
   useEffect(() => () => locationSuggestionsAbortRef.current?.abort(), []);
   useEffect(() => {
