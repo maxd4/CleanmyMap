@@ -161,4 +161,63 @@ describe("/api/chat/action-exclusions audit contract", () => {
       details: { conversationId: "conversation-1" },
     }));
   });
+
+  it("fails closed for anonymous, malformed and unavailable moderation requests", async () => {
+    const { GET, POST } = await import("./route");
+    authMock.mockResolvedValueOnce({ userId: null });
+    expect((await GET(new Request("http://localhost/api/chat/action-exclusions?actionId=action-1"))).status).toBe(401);
+
+    authMock.mockResolvedValue({ userId: "moderator-1" });
+    expect((await POST(new Request("http://localhost/api/chat/action-exclusions", { method: "POST", body: "not-json" }))).status).toBe(422);
+
+    identityMock.mockResolvedValue(null);
+    serverMock.mockReturnValue(buildSupabaseMock());
+    const unavailable = await POST(new Request("http://localhost/api/chat/action-exclusions", {
+      method: "POST",
+      body: JSON.stringify({ actionId: "action-1", userId: "target-1" }),
+    }));
+    expect(unavailable.status).toBe(403);
+    expect(appendAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("protects the action creator from a secondary organizer and avoids mutation", async () => {
+    identityMock.mockResolvedValue({ userId: "moderator-1", activeRole: "benevole" });
+    serverMock.mockReturnValue(buildSupabaseMock());
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost/api/chat/action-exclusions", {
+      method: "POST",
+      body: JSON.stringify({ actionId: "action-1", userId: "moderator-1" }),
+    }));
+    expect(response.status).toBe(403);
+    expect(appendAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("returns a 404 for an absent conversation and does not write an exclusion", async () => {
+    const supabase = buildSupabaseMock();
+    const originalFrom = supabase.from;
+    supabase.from = vi.fn((table: string) => table === "action_conversations"
+      ? { select: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) })) })) }
+      : originalFrom(table)) as typeof supabase.from;
+    serverMock.mockReturnValue(supabase);
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost/api/chat/action-exclusions", {
+      method: "POST",
+      body: JSON.stringify({ actionId: "action-1", userId: "target-1" }),
+    }));
+    expect(response.status).toBe(404);
+    expect(appendAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed persisted rows without emitting an audit", async () => {
+    const supabase = buildSupabaseMock();
+    const originalFrom = supabase.from;
+    supabase.from = vi.fn((table: string) => table === "action_conversation_exclusions"
+      ? { select: vi.fn(() => ({ eq: vi.fn(() => ({ order: vi.fn().mockResolvedValue({ data: [{ active: "yes" }], error: null }) })) })) }
+      : originalFrom(table)) as typeof supabase.from;
+    serverMock.mockReturnValue(supabase);
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/chat/action-exclusions?actionId=action-1"));
+    expect(response.status).toBe(422);
+    expect(appendAuditMock).not.toHaveBeenCalled();
+  });
 });

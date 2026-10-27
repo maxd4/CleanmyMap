@@ -25,6 +25,7 @@ vi.mock("@/lib/persistence/runtime-store", () => ({
 }));
 
 import {
+  listGovernanceMonthlyReports,
   loadGovernanceMonthlyReport,
   upsertGovernanceMonthlyReport,
 } from "./governance-monthly-report-store";
@@ -191,5 +192,80 @@ describe("governance monthly report store", () => {
       currentSharePercent: 0,
       deltaPercent: null,
     });
+
+    const fallback = normalizeStoragePayload({
+      quotaBytes: null,
+      quotaLabel: null,
+      totalBytes: null,
+      totalLabel: null,
+      remainingBytes: null,
+      remainingLabel: null,
+      usagePercent: null,
+      objectCount: null,
+      snapshotCount: null,
+      latestSnapshotMonth: undefined,
+      deltaBytes: null,
+      deltaPercent: undefined,
+      topBucketLabel: undefined,
+      topBucketBytes: null,
+      topExtensionLabel: undefined,
+      topExtensionBytes: null,
+      topContributionLabel: undefined,
+      topContributionBytes: null,
+      topContributionSharePercent: null,
+      topContributionDeltaBytes: null,
+      topContributionDeltaPercent: undefined,
+      fastestGrowingLabel: undefined,
+      fastestGrowingBytes: null,
+      fastestGrowingDeltaBytes: null,
+      fastestGrowingDeltaPercent: undefined,
+      growthHighlights: null,
+      contributionHighlights: null,
+      businessContributions: {
+        previousSnapshotMonth: undefined,
+        historyMonths: null,
+        alerts: null,
+        items: [{
+          id: "fallback",
+          label: "Fallback",
+          description: "Fallback",
+          currentBytes: 0,
+          currentCount: 0,
+          currentAverageBytes: null,
+          currentSharePercent: null,
+          previousBytes: null,
+          previousCount: null,
+          deltaBytes: null,
+          deltaPercent: undefined,
+          deltaCount: null,
+          cumulative3MonthBytes: null,
+          cumulative3MonthPercent: undefined,
+          accelerationBytes: null,
+          accelerationPercent: undefined,
+          history: null,
+          topFiles: null,
+          mimeSubtypes: null,
+          alerts: null,
+        }],
+      },
+    } as never);
+    expect(fallback).toMatchObject({ quotaBytes: 0, usagePercent: 0, businessContributions: { previousSnapshotMonth: null, historyMonths: [], alerts: [] } });
+    expect(fallback.businessContributions.items[0]).toMatchObject({ currentAverageBytes: 0, previousBytes: 0, deltaPercent: null, history: [], topFiles: [], mimeSubtypes: [], alerts: [] });
+  });
+
+  it("fails closed on Supabase read failures and does not manufacture a report", async () => {
+    const failingQuery = makeQueryBuilder([]);
+    failingQuery.limit.mockResolvedValue({ data: [] as never, error: { message: "governance read failed" } as never });
+    mockSupabaseClient(failingQuery);
+    await expect(loadGovernanceMonthlyReport()).resolves.toBeNull();
+    await expect(listGovernanceMonthlyReports()).resolves.toEqual([]);
+
+    const failingUpsert = vi.fn(async () => ({ error: { message: "governance write failed" } }));
+    mockSupabaseClient(makeQueryBuilder([]), failingUpsert);
+    await expect(upsertGovernanceMonthlyReport({ ...governanceReportRow, id: "report-1", reportKey: "cleanmymap-governance", reportMonth: "2026-05-01", generatedAt: "2026-05-20T12:00:00.000Z", version: "v1", title: "test", payload: {} as never } as never)).resolves.toBeUndefined();
+    expect(failingUpsert).toHaveBeenCalled();
+
+    getSupabaseServerClientMock.mockImplementation(() => { throw new Error("client unavailable"); });
+    await expect(loadGovernanceMonthlyReport()).resolves.toBeNull();
   });
 });

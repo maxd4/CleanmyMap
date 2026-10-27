@@ -7,6 +7,7 @@ import {
   buildPlannerWeatherRequest,
   fetchPlannerWeatherContext,
   isPlannerWeatherContextCompatible,
+  plannerWeatherOperationalAssessment,
   PLANNER_WEATHER_FORECAST_DAYS,
 } from "./planner-weather";
 
@@ -239,5 +240,32 @@ describe("planner weather context", () => {
 
     expect(providerError).toMatchObject({ status: "unavailable", unavailableReason: "provider_error" });
     expect(timeout).toMatchObject({ status: "unavailable", unavailableReason: "timeout" });
+  });
+
+  it("rejects malformed coordinates and civil windows before contacting the provider", () => {
+    for (const input of [
+      { latitude: 91, longitude: 2, actionDate: "2026-09-15", scheduledStartTime: "10:00", scheduledEndTime: "11:00" },
+      { latitude: "bad", longitude: 2, actionDate: "2026-09-15", scheduledStartTime: "10:00", scheduledEndTime: "11:00" },
+      { latitude: 48, longitude: -181, actionDate: "2026-09-15", scheduledStartTime: "10:00", scheduledEndTime: "11:00" },
+    ]) {
+      expect(buildPlannerWeatherRequest(input)).toBeNull();
+    }
+    expect(buildPlannerWeatherRequest({ latitude: 48, longitude: 2, actionDate: "2026-09-15", scheduledStartTime: "11:00", scheduledEndTime: "10:00" })).toMatchObject({ scheduledStartAt: "2026-09-15T11:00", scheduledEndAt: "2026-09-15T10:00" });
+  });
+
+  it("distinguishes missing, invalid and incomplete forecast windows", async () => {
+    const fetcher = vi.fn(async () => response(forecast({ time: ["2026-09-15T10:00"] })));
+    await expect(fetchPlannerWeatherContext({ latitude: 48, longitude: 2, now: NOW, client: { fetcher } })).resolves.toMatchObject({ unavailableReason: "missing_window" });
+    await expect(fetchPlannerWeatherContext({ latitude: 48, longitude: 2, scheduledStartAt: "bad", scheduledEndAt: "2026-09-15T11:00", now: NOW, client: { fetcher } })).resolves.toMatchObject({ unavailableReason: "invalid_window" });
+    await expect(fetchPlannerWeatherContext({ latitude: 48, longitude: 2, scheduledStartAt: "2026-09-15T10:00", scheduledEndAt: "2026-09-15T12:00", now: NOW, client: { fetcher } })).resolves.toMatchObject({ unavailableReason: "coverage_gap" });
+  });
+
+  it("does not accept malformed stored contexts or stale/incomplete operational data", async () => {
+    expect(plannerWeatherOperationalAssessment(null)).toBeNull();
+    expect(plannerWeatherOperationalAssessment({ status: "unavailable", unavailableReason: undefined } as never)).toMatchObject({ status: "fallback", riskLevel: null });
+    const context = await fetchPlannerWeatherContext({ latitude: 48.8566, longitude: 2.3522, scheduledStartAt: "2026-09-15T10:00", scheduledEndAt: "2026-09-15T12:00", now: NOW, client: { fetcher: async () => response(forecast()) } });
+    expect(isPlannerWeatherContextCompatible({ ...context, version: "bad" } as never, buildPlannerWeatherRequest({ latitude: 48.8566, longitude: 2.3522, actionDate: "2026-09-15", scheduledStartTime: "10:00", scheduledEndTime: "12:00", now: NOW }))).toBe(false);
+    expect(isPlannerWeatherContextCompatible(context, null)).toBe(false);
+    expect(isPlannerWeatherContextCompatible({ ...context, fetchedAt: "invalid" }, buildPlannerWeatherRequest({ latitude: 48.8566, longitude: 2.3522, actionDate: "2026-09-15", scheduledStartTime: "10:00", scheduledEndTime: "12:00", now: NOW }))).toBe(false);
   });
 });

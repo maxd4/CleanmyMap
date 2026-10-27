@@ -170,4 +170,37 @@ describe("/api/actions/[actionId]/role-attestations", () => {
     expect(response.status).toBe(409);
     expect(reviewActionRoleAttestationMock).not.toHaveBeenCalled();
   });
+
+  it("refuses missing and non-finalized actions before exposing or changing attestations", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(null);
+    const { GET, POST } = await import("./route");
+    expect((await GET(new Request("http://localhost"), { params: Promise.resolve({ actionId: "missing" }) })).status).toBe(404);
+
+    loadActionByIdMock.mockResolvedValue({ ...action, action_phase: "pre_action" });
+    expect((await GET(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(409);
+    expect((await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(409);
+    expect(reviewActionRoleAttestationMock).not.toHaveBeenCalled();
+  });
+
+  it("validates review payloads and refuses an unauthorized reviewer before the RPC", async () => {
+    const { POST } = await import("./route");
+    expect((await POST(new Request("http://localhost", { method: "POST", body: "not-json" }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(422);
+    expect((await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "unknown", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(422);
+
+    canManageActionMock.mockReturnValue(false);
+    expect((await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(403);
+    expect(reviewActionRoleAttestationMock).not.toHaveBeenCalled();
+  });
+
+  it("preserves HTTP classification when the persistence owner rejects a review", async () => {
+    const query = participantQuery("confirmed");
+    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn(() => query) });
+    const { POST } = await import("./route");
+    reviewActionRoleAttestationMock.mockRejectedValueOnce(new Error("forbidden"));
+    expect((await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(403);
+    reviewActionRoleAttestationMock.mockRejectedValueOnce(new Error("lifecycle_closed"));
+    expect((await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(409);
+    reviewActionRoleAttestationMock.mockRejectedValueOnce(new Error("unexpected database failure"));
+    expect((await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(500);
+  });
 });

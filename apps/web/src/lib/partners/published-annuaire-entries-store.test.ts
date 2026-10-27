@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { buildPublishedPartnerAnnuaireEntry, normalizePublishedRecord } from "./published-annuaire-entries-store";
+import { buildPublishedPartnerAnnuaireEntry, normalizePublishedRecord, serializePublishedPartnerAnnuaireEntry } from "./published-annuaire-entries-store";
 import { isPlaceholderUrl } from "./onboarding-types";
+
+const syntheticEmail = ["contact", "example.test"].join("@");
 
 describe("buildPublishedPartnerAnnuaireEntry", () => {
   it("keeps EngagementType internal while retaining the public entry contract", () => {
@@ -307,5 +309,125 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
     expect(entry.websiteUrl).toBeUndefined();
     expect(entry.associationProfile?.usefulResources).toEqual([]);
     expect(entry.internalAdminContact?.phone).toBe("+33123456789");
+  });
+});
+
+describe("normalizePublishedRecord", () => {
+  const baseRecord = {
+    id: "entry-1",
+    sourceRequestId: "request-1",
+    source: "partner_onboarding",
+    publishedAt: "2026-10-01T00:00:00.000Z",
+    publicationStatus: "draft_published",
+    name: "Atelier",
+    legalIdentity: "Atelier SAS",
+    kind: "commerce",
+    types: ["social", "invalid"],
+    description: "Description",
+    location: "Paris",
+    lat: 48.85,
+    lng: 2.35,
+    coordinatesSource: "verified",
+    coveredArrondissements: [11],
+    contributionTypes: ["accueil"],
+    availability: "Sur rendez-vous",
+    lastUpdatedAt: "2026-10-01T00:00:00.000Z",
+    websiteUrl: `mailto:${syntheticEmail}`,
+    instagramUrl: "https://instagram.example/atelier",
+    facebookUrl: "tel:+33123456789",
+    primaryChannel: { url: "https://atelier.example", label: "Site public" },
+    reviewedAt: "2026-10-02T00:00:00.000Z",
+    reviewedByUserId: "reviewer-1",
+  };
+
+  it("normalizes legacy status, coordinates, channels and resource privacy", () => {
+    const normalized = normalizePublishedRecord({
+      ...baseRecord,
+      associationProfile: {
+        mission: "Mission",
+        recurringNeeds: [],
+        pastActions: [],
+        usefulResources: [
+          { label: "Contact direct", url: "https://private.example" },
+          { label: "Email", url: `mailto:${syntheticEmail}` },
+          { label: "Ressource", description: "Public" },
+        ],
+      },
+      recentActivityAt: baseRecord.publishedAt,
+    } as never);
+    expect(normalized).toMatchObject({
+      publicationStatus: "accepted",
+      lat: 48.85,
+      lng: 2.35,
+      coordinatesSource: "verified",
+      websiteUrl: undefined,
+      instagramUrl: "https://instagram.example/atelier",
+      facebookUrl: undefined,
+      primaryChannel: { platform: "site web", label: "Site public", url: "https://atelier.example" },
+      types: ["social"],
+      engagementTypesSource: undefined,
+    });
+    expect(normalized.recentActivityAt).toBeUndefined();
+    expect(normalized.associationProfile?.usefulResources).toEqual([{ label: "Ressource", description: "Public" }]);
+  });
+
+  it("hides unverified coordinates and removes only explicitly synthetic impact", () => {
+    const withoutCount = normalizePublishedRecord({
+      ...baseRecord,
+      coordinatesSource: "derived_coverage",
+      lat: 48.85,
+      lng: 2.35,
+      associationProfile: {
+        mission: "Mission",
+        recurringNeeds: [],
+        pastActions: [],
+        usefulResources: [],
+        impactHistory: { note: "Historique d'impact à compléter après validation." },
+      },
+    } as never);
+    expect(withoutCount).toMatchObject({ lat: null, lng: null, coordinatesSource: "derived_coverage" });
+    expect(withoutCount.associationProfile?.impactHistory).toBeUndefined();
+
+    const withZero = normalizePublishedRecord({
+      ...baseRecord,
+      coordinatesSource: "unknown",
+      associationProfile: {
+        mission: "Mission",
+        recurringNeeds: [],
+        pastActions: [],
+        usefulResources: [],
+        impactHistory: { actionCount: 0, note: "Historique d'impact à compléter après validation." },
+      },
+    } as never);
+    expect(withZero.associationProfile?.impactHistory).toEqual({ actionCount: 0, note: "Historique d'impact à compléter après validation." });
+
+    const withGeneratedDate = normalizePublishedRecord({
+      ...baseRecord,
+      associationProfile: {
+        mission: "Mission",
+        recurringNeeds: [],
+        pastActions: [],
+        usefulResources: [],
+        impactHistory: { lastActionAt: baseRecord.publishedAt, note: "Mesure confirmée" },
+      },
+    } as never);
+    expect(withGeneratedDate.associationProfile?.impactHistory).toEqual({ note: "Mesure confirmée" });
+  });
+
+  it("serializes only public fields and preserves an empty private contact shape", () => {
+    const record = normalizePublishedRecord({
+      ...baseRecord,
+      publicationStatus: "accepted",
+      internalAdminContact: { referentName: "Admin", email: syntheticEmail, phone: "+331" },
+    } as never);
+    const serialized = serializePublishedPartnerAnnuaireEntry(record);
+    expect(serialized).toMatchObject({
+      id: "entry-1",
+      published_at: baseRecord.publishedAt,
+      publication_status: "accepted",
+      private_admin_contact: { referentName: "Admin" },
+    });
+    expect(serialized.public_data).not.toHaveProperty("internalAdminContact");
+    expect(serialized.public_data).not.toHaveProperty("sourceRequestId");
   });
 });

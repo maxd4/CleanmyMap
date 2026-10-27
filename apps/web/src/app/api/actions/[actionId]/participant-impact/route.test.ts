@@ -139,4 +139,51 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     expect(participants[0]).not.toHaveProperty("individual_waste_kg");
     expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
   });
+
+  it("rejects unauthenticated, malformed and empty measurement payloads before persistence", async () => {
+    authMock.mockResolvedValueOnce({ userId: null });
+    const unauthenticated = await patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 1, condition: "sec", measurementMethod: "balance_au_sol" },
+    });
+    expect(unauthenticated.status).toBe(401);
+
+    authMock.mockResolvedValue({ userId: "user-1" });
+    const malformed = await patchParticipantImpact("{" as unknown as Record<string, unknown>);
+    expect(malformed.status).toBe(422);
+    const empty = await patchParticipantImpact({ participantId: "participant-1" });
+    expect(empty.status).toBe(422);
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["missing action", { action: createGroupJoinAction({ status: "pending" }), participants: [] }, 404],
+    ["missing participant", { action: createGroupJoinAction({ status: "approved" }), participants: [] }, 404],
+  ])("refuses a %s without mutation", async (_label, fixture, status) => {
+    authMock.mockResolvedValue({ userId: "user-1" });
+    getCurrentUserIdentityMock.mockResolvedValue(null);
+    loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-1"]);
+    getSupabaseServerClientMock.mockReturnValue(createGroupJoinSupabaseMock(fixture));
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 1, condition: "sec", measurementMethod: "balance_au_sol" },
+    });
+    expect(response.status).toBe(status);
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("maps a persistence failure to an error response and leaves audit absent", async () => {
+    const participants = [createParticipantWithStatus("confirmed")];
+    getSupabaseServerClientMock.mockReturnValue(createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({ status: "approved", actionPhase: "post_action_complete" }),
+      participants,
+      errors: { participantUpdate: "write failed" },
+    }));
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 1, condition: "sec", measurementMethod: "balance_au_sol" },
+    });
+    expect(response.status).toBe(500);
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
 });

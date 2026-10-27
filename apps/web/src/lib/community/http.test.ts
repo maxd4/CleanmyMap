@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildCommunityEventsQueryString, updateCommunityEventOps } from "./http";
+import { buildCommunityEventsQueryString, fetchCommunityEvents, updateCommunityEventOps, upsertCommunityRsvp } from "./http";
 
 describe("buildCommunityEventsQueryString", () => {
   it("uses defaults when params are missing", () => {
@@ -64,5 +64,43 @@ describe("updateCommunityEventOps", () => {
 
     await expect(updateCommunityEventOps({ eventId: "event-1", attendanceCount: null, postMortem: null }))
       .rejects.toMatchObject({ status: 401, kind: "permission" });
+  });
+
+  it("maps network, validation, missing and server errors without hiding the HTTP contract", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+    await expect(fetchCommunityEvents()).rejects.toMatchObject({ kind: "network", code: "network_error", retryable: true });
+
+    for (const [status, kind] of [[400, "validation"], [403, "permission"], [404, "server"], [500, "server"]] as const) {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: `e-${status}` }), { status })));
+      await expect(fetchCommunityEvents()).rejects.toMatchObject({ status, kind, message: `e-${status}` });
+    }
+  });
+
+  it("validates event response payloads and tolerates malformed JSON as an error", async () => {
+    const valid = { status: "ok", count: 0, items: [], hasMore: false, nextCursor: null };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(valid), { status: 200 })));
+    await expect(fetchCommunityEvents({ limit: Number.NaN, eventId: "  ", cursor: "  " })).resolves.toEqual(valid);
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "bad", count: "0", items: {}, hasMore: false, nextCursor: 3 }), { status: 200 })));
+    await expect(fetchCommunityEvents()).rejects.toMatchObject({ kind: "server", code: "server_error" });
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not-json", { status: 200 })));
+    await expect(fetchCommunityEvents()).rejects.toMatchObject({ kind: "server", code: "server_error" });
+  });
+
+  it("rejects malformed mutation responses and accepts a valid RSVP projection", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "wrong", item: {} }), { status: 200 })));
+    await expect(updateCommunityEventOps({ eventId: "event-1" })).rejects.toMatchObject({ code: "server_error" });
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "ok" }), { status: 200 })));
+    await expect(updateCommunityEventOps({ eventId: "event-1" })).rejects.toMatchObject({ code: "server_error" });
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "ok", item: { eventId: "event-1", participantClerkId: "user-1", rsvpStatus: "maybe", updatedAt: "2026-10-27T10:00:00.000Z" } }), { status: 200 })));
+    await expect(upsertCommunityRsvp({ eventId: "event-1", status: "maybe" })).resolves.toMatchObject({ rsvpStatus: "maybe" });
+
+    for (const item of [null, { eventId: "event-1", participantClerkId: "user-1", rsvpStatus: "invalid", updatedAt: "now" }, { eventId: "event-1" }]) {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "ok", item }), { status: 200 })));
+      await expect(upsertCommunityRsvp({ eventId: "event-1", status: "yes" })).rejects.toMatchObject({ code: "server_error" });
+    }
   });
 });

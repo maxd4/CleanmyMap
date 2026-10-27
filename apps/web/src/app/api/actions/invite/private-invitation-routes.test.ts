@@ -266,4 +266,58 @@ describe("private invitation route boundaries", () => {
     expect(response.status).toBe(404);
     expect(mocks.loadAction).not.toHaveBeenCalled();
   });
+
+  it("does not load recipient data for an anonymous preview", async () => {
+    const token = "H".repeat(43);
+    mocks.access.mockResolvedValueOnce({ ok: false });
+    mocks.from.mockReturnValue(invitationFrom({ action_id: action.id, revoked_at: null, expires_at: "2027-01-18T10:00:00Z" }));
+    const { GET } = await import("./[token]/route");
+    const response = await GET(buildRequest(`/api/actions/invite/${token}`), { params: Promise.resolve({ token }) });
+    const body = await parseJsonSafely(response);
+    expect(response.status).toBe(200);
+    expect((body as { action?: unknown }).action).toMatchObject({ registrationStatus: null, participationStatus: null });
+    expect(mocks.access).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses malformed or closed invitation records without loading private action data", async () => {
+    const { GET } = await import("./[token]/route");
+    const malformedToken = "I".repeat(43);
+    mocks.from.mockReturnValue(invitationFrom({ action_id: 42, revoked_at: null, expires_at: "2027-01-18T10:00:00Z" }));
+    const malformed = await GET(buildRequest(`/api/actions/invite/${malformedToken}`), { params: Promise.resolve({ token: malformedToken }) });
+    expect(malformed.status).toBe(422);
+    expect(mocks.loadAction).not.toHaveBeenCalled();
+
+    const closedToken = "J".repeat(43);
+    mocks.from.mockReturnValue(invitationFrom({ action_id: action.id, revoked_at: null, expires_at: "2027-01-18T10:00:00Z" }));
+    mocks.loadAction.mockResolvedValueOnce({ ...action, status: "cancelled", action_phase: "pre_action" });
+    const closed = await GET(buildRequest(`/api/actions/invite/${closedToken}`), { params: Promise.resolve({ token: closedToken }) });
+    expect(closed.status).toBe(404);
+  });
+
+  it("rejects an invalid registration RPC projection without returning a success", async () => {
+    const token = "K".repeat(43);
+    mocks.from.mockReturnValue(invitationFrom({ action_id: action.id, revoked_at: null, expires_at: "2027-01-18T10:00:00Z" }));
+    mocks.rpc.mockResolvedValueOnce({ data: [{ registration_status: "not-a-status" }], error: null });
+    const { POST } = await import("./[token]/route");
+    const response = await POST(buildRequest(`/api/actions/invite/${token}`, { method: "POST" }), { params: Promise.resolve({ token }) });
+    expect(response.status).toBe(422);
+  });
+
+  it.each([
+    ["NotFoundError", 404],
+    ["ValidationError", 422],
+  ] as const)("maps post-action claim %s without leaking dependency details", async (name, status) => {
+    const token = `${name === "NotFoundError" ? "L" : "M"}`.repeat(43);
+    mocks.loadAction.mockResolvedValueOnce({ ...action, action_phase: "post_action_complete", status: "approved", published_at: "2026-10-10T10:00:00Z", action_date: "2026-10-01" });
+    mocks.from.mockReturnValue(invitationFrom({ action_id: action.id, revoked_at: null, expires_at: "2027-01-18T10:00:00Z" }));
+    const error = new Error(name === "NotFoundError" ? "private internal detail" : "raison interne");
+    error.name = name;
+    mocks.claim.mockRejectedValueOnce(error);
+    const { POST } = await import("./[token]/route");
+    const response = await POST(buildRequest(`/api/actions/invite/${token}`, { method: "POST" }), { params: Promise.resolve({ token }) });
+    expect(response.status).toBe(status);
+    const body = await parseJsonSafely(response);
+    expect(JSON.stringify(body)).not.toContain("private internal detail");
+    expect(mocks.audit).not.toHaveBeenCalled();
+  });
 });

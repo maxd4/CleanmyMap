@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import { buildGovernanceMonthlyReportLines, buildGovernanceMonthlyReportPayload } from "./governance-monthly-report";
 import { report } from "./governance-monthly-report.fixtures";
 import { highRiskEnvironmentalImpact, highRiskStorageUsage } from "./governance-monthly-report-high-risk.fixtures";
+import { computeGovernanceRiskScore, formatNumber, getGovernanceRiskLabel } from "./governance-monthly-report.model";
 
 it("builds a readable monthly report payload", () => {
     expect(report.reportMonth).toBe("2026-05-01");
@@ -203,4 +204,59 @@ it("builds a readable monthly report payload", () => {
     expect(payload.impact.topServiceLabel).toBeNull();
     expect(payload.impact.topServiceMonthlyKgCo2eProxy).toBeNull();
     expect(payload.summary[1]).toContain("aucune donnée");
+  });
+
+  it("keeps risk scoring bounded and preserves all severity branches", () => {
+    expect(computeGovernanceRiskScore({ usagePercent: -10, alerts: [] })).toBe(0);
+    expect(computeGovernanceRiskScore({ usagePercent: 150, alerts: [{ severity: "critical" }, { severity: "warning" }, { severity: "info" }] })).toBe(92);
+    expect(computeGovernanceRiskScore({ usagePercent: 10, alerts: [{ severity: "info" }] })).toBe(10);
+    expect(getGovernanceRiskLabel(80)).toBe("critique");
+    expect(getGovernanceRiskLabel(60)).toBe("vigilance");
+    expect(getGovernanceRiskLabel(30)).toBe("surveillance");
+    expect(getGovernanceRiskLabel(29)).toBe("stable");
+    expect(formatNumber(null)).toBe("—");
+    expect(formatNumber(1234.567, 1)).toBe("1 234,6");
+  });
+
+  it("keeps unknown generated dates and empty projections explicit", () => {
+    const emptyImpact = {
+      ...highRiskEnvironmentalImpact,
+      model: {
+        ...highRiskEnvironmentalImpact.model,
+        infrastructure: {
+          ...highRiskEnvironmentalImpact.model.infrastructure,
+          monthlyKgCo2eProxy: null,
+          confidencePercent: null,
+          services: [],
+        },
+      },
+      signals: {
+        ...highRiskEnvironmentalImpact.signals,
+        signalBreakdown: undefined,
+      },
+      snapshots: [],
+    } as unknown as typeof highRiskEnvironmentalImpact;
+    const emptyStorage = {
+      ...highRiskStorageUsage,
+      current: {
+        ...highRiskStorageUsage.current,
+        bucketBreakdown: [],
+        extensionBreakdown: [],
+        usagePercent: 0,
+      },
+      businessContributions: { ...highRiskStorageUsage.businessContributions, items: [], alerts: [] },
+      comparison: { ...highRiskStorageUsage.comparison, bucketGrowth: [], extensionGrowth: [] },
+    };
+    const payload = buildGovernanceMonthlyReportPayload({
+      generatedAt: "not-a-date",
+      environmentalImpact: emptyImpact,
+      storageUsage: emptyStorage,
+    });
+    expect(payload.reportMonth).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(payload.impact.topServiceLabel).toBeNull();
+    expect(payload.storage.topBucketLabel).toBeNull();
+    expect(payload.storage.topContributionLabel).toBeNull();
+    expect(payload.summary[1]).toContain("aucune donnée");
+    expect(payload.summary[2]).toContain("aucune donnée");
+    expect(payload.summary[3]).toContain("aucune alerte");
   });

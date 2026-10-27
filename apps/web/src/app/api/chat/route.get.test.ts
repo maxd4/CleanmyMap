@@ -4,8 +4,11 @@ import {
   type ChatMessageRow,
 } from "@/__tests__/support/chat-route";
 import {
+  authMock,
+  getCurrentUserIdentityMock,
   getSupabaseClerkRlsClientMock,
   getSupabaseServerClientMock,
+  resolveActionDiscussionAccessMock,
   resetChatRouteMocks,
 } from "./route.test.mocks";
 
@@ -342,5 +345,83 @@ describe("GET /api/chat", () => {
       attachment_url: expect.stringContaining("signed/community%2Fuser-2-document.pdf"),
     });
     expect(body.messages[0]).not.toHaveProperty("attachment_path");
+  }, 15000);
+
+  it.each([
+    ["", "Canal invalide"],
+    ["&beforeCreatedAt=not-a-date&beforeId=not-a-message-id", "Curseur invalide"],
+  ])("refuses malformed chat selectors before touching Supabase (%s)", async (suffix, error) => {
+    const { GET } = await import("./route");
+    const response = await GET(new Request(`http://localhost/api/chat?channelType=invalid${suffix}`));
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ error });
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+  });
+
+  it("requires a recipient for private channels and keeps action selectors isolated", async () => {
+    const { GET } = await import("./route");
+    const missingRecipient = await GET(new Request("http://localhost/api/chat?channelType=dm"));
+    expect(missingRecipient.status).toBe(400);
+
+    getSupabaseClerkRlsClientMock.mockClear();
+    const mixedSelector = await GET(new Request("http://localhost/api/chat?channelType=community&actionId=action-1"));
+    expect(mixedSelector.status).toBe(400);
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when authentication or the Clerk RLS client is unavailable", async () => {
+    authMock.mockResolvedValueOnce({ userId: null });
+    const { GET } = await import("./route");
+    expect((await GET(new Request("http://localhost/api/chat?channelType=community"))).status).toBe(401);
+
+    authMock.mockResolvedValue({ userId: "user-1" });
+    getSupabaseClerkRlsClientMock.mockResolvedValueOnce(null);
+    expect((await GET(new Request("http://localhost/api/chat?channelType=community"))).status).toBe(503);
+  });
+
+  it("uses the territory, admin-elu and bug-report scopes without crossing users", async () => {
+    const supabaseMock = buildSupabaseMock({
+      profile: { id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: 11, role_label: "member", metadata: null },
+      messages: [
+        { id: "territory-message", created_at: "2026-05-01T09:00:00.000Z", content: "Quartier", channel_type: "territory", sender_id: "user-2", recipient_id: null, arrondissement_id: 11, zone_name: "Paris 11e" },
+        { id: "bug-own", created_at: "2026-05-01T10:00:00.000Z", content: "Signalement", channel_type: "bug_report", sender_id: "user-1", recipient_id: null, arrondissement_id: null, zone_name: null },
+      ],
+      insertedMessage: { id: "inserted", created_at: "2026-05-01T11:00:00.000Z", content: "", channel_type: "community", sender_id: "user-1", recipient_id: null, arrondissement_id: null, zone_name: null },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
+    const { GET } = await import("./route");
+
+    const territory = await GET(new Request("http://localhost/api/chat?channelType=territory&arrondissementId=11"));
+    await expectChatMessages(territory, ["territory-message"]);
+    expect(supabaseMock.messagesQuery.in).toHaveBeenCalledWith("arrondissement_id", expect.arrayContaining([11]));
+
+    const bugReports = await GET(new Request("http://localhost/api/chat?channelType=bug_report"));
+    await expectChatMessages(bugReports, ["bug-own"]);
+    expect(supabaseMock.messagesQuery.eq).toHaveBeenCalledWith("sender_id", "user-1");
+
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "elu", activeRole: "elu" });
+    const admin = await GET(new Request("http://localhost/api/chat?channelType=admin_elu"));
+    expect(admin.status).toBe(200);
+    expect(supabaseMock.serviceAppMessagesTable.select).toHaveBeenCalled();
+  }, 15000);
+
+  it.each([
+    ["excluded", 403],
+    ["forbidden", 403],
+    ["unavailable", 404],
+  ] as const)("refuses action conversations when access is %s", async (state, status) => {
+    resolveActionDiscussionAccessMock.mockResolvedValueOnce({ state });
+    const supabaseMock = buildSupabaseMock({
+      profile: { id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null, role_label: "member", metadata: null },
+      messages: [],
+      insertedMessage: { id: "inserted", created_at: "2026-05-01T11:00:00.000Z", content: "", channel_type: "action", sender_id: "user-1", recipient_id: null, arrondissement_id: null, zone_name: null },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/chat?channelType=action&actionId=action-1"));
+    expect(response.status).toBe(status);
+    expect(supabaseMock.messagesQuery.limit).not.toHaveBeenCalled();
   }, 15000);
 });

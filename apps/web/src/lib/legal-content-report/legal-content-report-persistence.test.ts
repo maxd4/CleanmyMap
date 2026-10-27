@@ -267,4 +267,86 @@ describe("legal content report Supabase persistence routing", () => {
     expect(readFileMock).not.toHaveBeenCalled();
     expect(writeFileMock).not.toHaveBeenCalled();
   });
+
+  it("normalizes local report records, cursor pages and terminal state transitions", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(false);
+    allowLocalFileStoreFallbackMock.mockReturnValue(true);
+    const localReport = {
+      id: "valid-1",
+      createdAt: reportRow.created_at,
+      submittedByUserId: null,
+      notifierName: "Smoke reporter",
+      notifierEmail: "contact@cleanmymap.fr",
+      identityExceptionReason: null,
+      contentUrl: reportRow.content_url,
+      contentType: reportRow.content_type,
+      contentId: reportRow.content_id,
+      allegationReason: reportRow.allegation_reason,
+      goodFaithConfirmed: true,
+      status: "archived",
+      creatorState: "closed",
+    };
+    readFileMock.mockImplementation(async () => JSON.stringify({
+      updatedAt: reportRow.created_at,
+      records: [
+        { ...localReport, id: "invalid", contentUrl: "not-a-url", goodFaithConfirmed: false },
+        localReport,
+        { ...localReport, id: "valid-2", status: "unexpected", creatorState: "unexpected" },
+      ],
+    }));
+    const { listLegalContentReports, getLegalContentReportById, updateLegalContentReportState, deleteLegalContentReport } = await import("./legal-content-report-store");
+    await expect(listLegalContentReports(0)).resolves.toHaveLength(1);
+    await expect(listLegalContentReports(10)).resolves.toHaveLength(2);
+    await expect(listLegalContentReports(10, { createdAt: "2026-08-28T10:00:00.000Z", id: "valid-0" })).resolves.toHaveLength(0);
+    await expect(getLegalContentReportById("missing")).resolves.toBeNull();
+    await expect(updateLegalContentReportState({ reportId: "valid-1", creatorState: "treated" })).resolves.toMatchObject({ status: "treated" });
+    await expect(updateLegalContentReportState({ reportId: "valid-1", creatorState: "closed" })).resolves.toMatchObject({ status: "archived" });
+    await expect(updateLegalContentReportState({ reportId: "missing", creatorState: "new" })).resolves.toBeNull();
+    await expect(deleteLegalContentReport("missing")).resolves.toBe(false);
+  });
+
+  it("normalizes local decision snapshots, execution failures and notification states", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(false);
+    allowLocalFileStoreFallbackMock.mockReturnValue(true);
+    const longSnapshot = "x".repeat(5000);
+    const localDecision = {
+      id: "decision-valid",
+      reportId: "report-1",
+      createdAt: decisionRow.created_at,
+      actorAdminUserId: decisionRow.actor_admin_user_id,
+      action: "content_removed",
+      origin: decisionRow.decision_origin,
+      reason: decisionRow.reason,
+      automatedMeansUsed: false,
+      legalBasis: null,
+      termsBasis: null,
+      contentUrl: decisionRow.content_url,
+      contentId: decisionRow.content_id,
+      beforeState: longSnapshot,
+      afterState: [],
+      executionStatus: "not_applicable",
+      executionErrorCode: "invalid",
+      auditOperationId: decisionRow.audit_operation_id,
+      notifierNotificationStatus: "unknown",
+      authorNotificationStatus: "failed",
+    };
+    readFileMock.mockImplementation(async () => JSON.stringify({
+      updatedAt: decisionRow.created_at,
+      records: [
+        { ...localDecision, id: "invalid", action: "invalid" },
+        localDecision,
+      ],
+    }));
+    const {
+      listLegalContentReportDecisions,
+      getLatestLegalContentReportDecision,
+      updateLegalContentReportDecisionNotifications,
+      updateLegalContentReportDecisionStates,
+    } = await import("./legal-content-report-decisions-store");
+    await expect(listLegalContentReportDecisions("report-1")).resolves.toHaveLength(1);
+    await expect(getLatestLegalContentReportDecision("missing")).resolves.toBeNull();
+    await expect(updateLegalContentReportDecisionNotifications({ decisionId: "decision-valid", notifierNotificationStatus: "sent", authorNotificationStatus: "failed", notificationError: "  delivery failed  " })).resolves.toMatchObject({ notifierNotificationStatus: "sent", notificationError: "delivery failed" });
+    await expect(updateLegalContentReportDecisionStates({ decisionId: "decision-valid", beforeState: { before: true }, afterState: { after: true }, executionStatus: "failed" })).resolves.toMatchObject({ executionStatus: "failed" });
+    await expect(updateLegalContentReportDecisionStates({ decisionId: "missing", executionStatus: "succeeded" as never })).resolves.toBeNull();
+  });
 });

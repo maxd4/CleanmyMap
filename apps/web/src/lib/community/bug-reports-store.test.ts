@@ -195,6 +195,19 @@ describe("community bug report personal history", () => {
     expect(readLocalRecordStoreMock).not.toHaveBeenCalled();
   });
 
+  it("rejects malformed transactional qualification and tracking responses", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+    const rpcMock = vi.fn().mockResolvedValue({ data: { status: "unknown", item: null }, error: null });
+    getSupabaseServerClientMock.mockReturnValue({ rpc: rpcMock });
+    const { qualifyCommunityBugReport, updateCommunityBugReportTracking, listCommunityBugReportsForUser } = await import("./bug-reports-store");
+    await expect(qualifyCommunityBugReport({ reportId: "feedback-1", decision: "accepted", reason: null, duplicateFeedbackId: null, actorUserId: "admin", operationId: "operation-3" })).rejects.toThrow("Invalid feedback qualification result");
+    await expect(updateCommunityBugReportTracking({ reportId: "feedback-1", trackingStatus: "shipped", publicSummary: null, reference: null, shippedOn: null, actorUserId: "admin", operationId: "operation-4" })).rejects.toThrow("Invalid feedback tracking result");
+    rpcMock.mockResolvedValue({ data: null, error: { message: "rpc failed" } });
+    await expect(qualifyCommunityBugReport({ reportId: "feedback-1", decision: "rejected", reason: null, duplicateFeedbackId: null, actorUserId: "admin", operationId: "operation-5" })).rejects.toThrow("rpc failed");
+    await expect(updateCommunityBugReportTracking({ reportId: "feedback-1", trackingStatus: "not_planned", publicSummary: null, reference: null, shippedOn: null, actorUserId: "admin", operationId: "operation-6" })).rejects.toThrow("rpc failed");
+    await expect(listCommunityBugReportsForUser({ submittedByUserId: "   " })).rejects.toThrow("owner id is required");
+  });
+
   it("delegates product tracking to the transactional RPC without using the local store", async () => {
     canUseSupabaseServerPersistenceMock.mockReturnValue(true);
     const rpcMock = vi.fn().mockResolvedValue({
