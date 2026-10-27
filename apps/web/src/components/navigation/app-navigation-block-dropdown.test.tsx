@@ -4,6 +4,7 @@ import {
   getNavigationBlockTriggerStateClassName,
   resolveOpenNavigationSpaceId,
 } from "./navigation-block-trigger-state";
+import { getNavigationBlockIcon } from "./app-navigation-block-icon";
 
 const source = readFileSync(new URL("./app-navigation-block-dropdown.tsx", import.meta.url), "utf8");
 const iconSource = readFileSync(new URL("./app-navigation-block-icon.ts", import.meta.url), "utf8");
@@ -52,6 +53,13 @@ describe("app navigation block dropdown contract", () => {
     expect(iconSource).toContain("return Users");
     expect(iconSource).toContain("return MessageCircle");
     expect(iconSource).toContain("return BookOpen");
+  });
+
+  it("resolves one canonical icon for every navigation block", () => {
+    for (const spaceId of ["home", "act", "visualize", "impact", "network", "connect", "learn"] as const) {
+      expect(getNavigationBlockIcon(spaceId)).toBeDefined();
+    }
+    expect(getNavigationBlockIcon("unknown" as never)).toBeDefined();
   });
 
   it("keeps block hover accents local and reserves the trigger border", () => {
