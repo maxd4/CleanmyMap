@@ -154,6 +154,30 @@ export {
   reconcileGeometryContributionProgressionIfNeededMock,
 };
 
+export function createPatchAction(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "action-test-1",
+    updated_at: "old-revision",
+    status: "pending",
+    action_phase: "pre_action",
+    preparation_data: {},
+    created_by_clerk_id: "user-test-1",
+    notes: null,
+    ...overrides,
+  };
+}
+
+export function seedValidatedImpactAction() {
+  loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+    status: "approved",
+    action_phase: "post_action_complete",
+    waste_kg: 1,
+    cigarette_butts: 2,
+    volunteers_count: 3,
+    duration_minutes: 30,
+  }));
+}
+
 export function resetPatchRouteMocks() {
   vi.resetModules();
   vi.clearAllMocks();

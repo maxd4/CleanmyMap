@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { patchAction } from "@/__tests__/support/action-route-helpers";
-import { appendActionModerationAuditMock, emitActionUpdateNotificationsMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualRegistrationIdsForActionMock, requireAuthenticatedAccessMock, resolveActionDepartmentForPersistenceMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, createPatchAction, emitActionUpdateNotificationsMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualRegistrationIdsForActionMock, requireAuthenticatedAccessMock, resolveActionDepartmentForPersistenceMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   beforeEach(() => {
@@ -198,9 +198,7 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   });
 
   it("keeps an ordinary final declaration pending moderation", async () => {
-    loadActionByIdMock.mockResolvedValueOnce({
-      id: "action-test-1",
-      status: "pending",
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
       action_phase: "post_action_draft",
       preparation_data: {
         administrativeRequirements: {
@@ -209,9 +207,7 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
           validatedByUserId: "validator-1",
         },
       },
-      created_by_clerk_id: "user-test-1",
-      notes: null,
-    });
+    }));
     const response = await patchAction({ actionPhase: "post_action_complete" });
 
     expect(response.status).toBe(200);

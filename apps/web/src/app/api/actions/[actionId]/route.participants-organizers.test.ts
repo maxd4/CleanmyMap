@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { patchAction } from "@/__tests__/support/action-route-helpers";
-import { appendActionModerationAuditMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualInvitationStatusesForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, syncActionManualParticipantsMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, createPatchAction, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualInvitationStatusesForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, syncActionManualParticipantsMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — participants et organisateurs", () => {
   beforeEach(() => {
@@ -45,10 +45,7 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
       role: "admin",
       activeRole: "admin",
     });
-    loadActionByIdMock.mockResolvedValueOnce({
-      id: "action-test-1",
-      status: "pending",
-      action_phase: "pre_action",
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
       preparation_data: {
         administrativeRequirements: {
           status: "validated",
@@ -56,9 +53,7 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
           validatedByUserId: "validator-1",
         },
       },
-      created_by_clerk_id: "user-test-1",
-      notes: null,
-    });
+    }));
 
     const response = await patchAction({ actionPhase: "post_action_complete" });
 
@@ -120,10 +115,7 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
       activeRole: "admin",
     });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
-    loadActionByIdMock.mockResolvedValueOnce({
-      id: "action-test-1",
-      status: "pending",
-      action_phase: "pre_action",
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
       preparation_data: {
         administrativeRequirements: {
           status: "validated",
@@ -132,8 +124,7 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
         },
       },
       created_by_clerk_id: "user-test-2",
-      notes: null,
-    });
+    }));
 
     const { PATCH } = await import("./route");
 

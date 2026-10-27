@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { appendActionModerationAuditMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, requireAuthenticatedAccessMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, requireAuthenticatedAccessMock, seedValidatedImpactAction, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 const patchRequest = (body: unknown) =>
   new Request("http://localhost/api/actions/action-test-1", {
@@ -44,18 +44,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
       ok: true,
       userId: "admin-1",
     });
-    loadActionByIdMock.mockResolvedValueOnce({
-      id: "action-test-1",
-      status: "approved",
-      action_phase: "post_action_complete",
-      preparation_data: {},
-      created_by_clerk_id: "user-test-1",
-      waste_kg: 1,
-      cigarette_butts: 2,
-      volunteers_count: 3,
-      duration_minutes: 30,
-      notes: null,
-    });
+    seedValidatedImpactAction();
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
 
     const { PATCH } = await import("./route");
@@ -91,18 +80,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
       ok: true,
       userId: "max-1",
     });
-    loadActionByIdMock.mockResolvedValueOnce({
-      id: "action-test-1",
-      status: "approved",
-      action_phase: "post_action_complete",
-      preparation_data: {},
-      created_by_clerk_id: "user-test-1",
-      waste_kg: 1,
-      cigarette_butts: 2,
-      volunteers_count: 3,
-      duration_minutes: 30,
-      notes: null,
-    });
+    seedValidatedImpactAction();
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
 
     const { PATCH } = await import("./route");

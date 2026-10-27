@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   createGroupJoinAction,
   createGroupJoinParticipant,
@@ -14,27 +14,13 @@ const {
   authMock,
 } = groupJoinMocks;
 
-const rateLimitMocks = vi.hoisted(() => ({
-  verifyRateLimit: vi.fn(),
-  createServerRateLimitResponse: vi.fn(),
-}));
-
 function firstMockArgument(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
   return mock.mock.calls[0]?.[0];
 }
 
-vi.mock("@/lib/rate-limit/server", () => rateLimitMocks);
-
 describe("POST /api/actions/:actionId/participation-claim", () => {
   beforeEach(() => {
     seedGroupJoinTestDefaults();
-    rateLimitMocks.verifyRateLimit.mockResolvedValue({
-      allowed: true,
-      limit: 10,
-      remaining: 9,
-      reset: Math.floor(Date.now() / 1000) + 60,
-    });
-    rateLimitMocks.createServerRateLimitResponse.mockReturnValue(null);
     authMock.mockResolvedValue({ userId: "user-2" });
     appendActionModerationAuditMock.mockResolvedValue(undefined);
   });
@@ -231,6 +217,31 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
     );
 
     expect(response.status).toBe(401);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it("stops before authentication and persistence when the rate limit denies the request", async () => {
+    groupJoinMocks.verifyRateLimitMock.mockResolvedValueOnce({
+      allowed: false,
+      limit: 10,
+      remaining: 0,
+      reset: 60,
+      retryAfter: 17,
+    });
+    groupJoinMocks.createServerRateLimitResponseMock.mockReturnValueOnce(
+      new Response("Too many requests", { status: 429 }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/participation-claim", {
+        method: "POST",
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(429);
+    expect(authMock).not.toHaveBeenCalled();
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 });
