@@ -32,7 +32,9 @@ import {
 } from "./bug-reports-store-persistence";
 import {
   compareCreatorInboxRecordCursors,
-  type CreatorInboxRecordCursor,
+  isCreatorInboxHistoricalRecordCursor,
+  isCreatorInboxRecordCursor,
+  type CreatorInboxPaginationCursor,
 } from "./creator-inbox-pagination";
 
 export type {
@@ -52,6 +54,20 @@ export {
   parseCommunityBugReportHistoryCursor,
 } from "./bug-reports-store-contract";
 export { loadCommunityBugReportFollowUpMetrics } from "./bug-reports-store-metrics";
+
+function assertSqlPaginationRecords(records: BugReportRecord[]): void {
+  if (
+    records.some(
+      (record) =>
+        !isCreatorInboxRecordCursor({
+          createdAt: record.createdAt,
+          id: record.id,
+        }),
+    )
+  ) {
+    throw new Error("Supabase returned an invalid pagination timestamp.");
+  }
+}
 
 export type CommunityBugReportQualificationResult = {
   record: BugReportRecord | null;
@@ -199,12 +215,17 @@ export async function appendCommunityBugReport(params: {
 
 export async function listCommunityBugReports(
   limit = 100,
-  beforeCursor?: CreatorInboxRecordCursor | null,
+  beforeCursor?: CreatorInboxPaginationCursor | null,
 ): Promise<BugReportRecord[]> {
   assertPersistenceAvailable("community_bug_reports");
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
+    if (beforeCursor && isCreatorInboxHistoricalRecordCursor(beforeCursor)) {
+      throw new Error(
+        "Historical community feedback cursors are only supported by local persistence.",
+      );
+    }
     let query = getSupabaseServerClient(true)
       .from("community_bug_reports")
       .select(SUPABASE_BUG_REPORT_COLUMNS)
@@ -215,7 +236,9 @@ export async function listCommunityBugReports(
         `created_at.lt.${beforeCursor.createdAt},and(created_at.eq.${beforeCursor.createdAt},id.lt.${beforeCursor.id})`,
       );
     }
-    return readSupabaseRecords(query.limit(normalizedLimit), fromSupabaseRow);
+    const records = await readSupabaseRecords(query.limit(normalizedLimit), fromSupabaseRow);
+    assertSqlPaginationRecords(records);
+    return records;
   }
 
   const store = await readStore();
@@ -244,6 +267,14 @@ export async function listCommunityBugReportsForUser(params: {
 
   const limit = clampCommunityBugReportsHistoryLimit(params.limit);
   if (canUseSupabaseServerPersistence()) {
+    if (
+      params.beforeCursor &&
+      isCreatorInboxHistoricalRecordCursor(params.beforeCursor)
+    ) {
+      throw new Error(
+        "Historical community feedback cursors are only supported by local persistence.",
+      );
+    }
     let query = getSupabaseServerClient(true)
       .from("community_bug_reports")
       .select(SUPABASE_BUG_REPORT_COLUMNS)
@@ -256,10 +287,9 @@ export async function listCommunityBugReportsForUser(params: {
         `created_at.lt.${createdAt},and(created_at.eq.${createdAt},id.lt.${id})`,
       );
     }
-    return toHistoryPage(
-      await readSupabaseRecords(query.limit(limit + 1), fromSupabaseRow),
-      limit,
-    );
+    const records = await readSupabaseRecords(query.limit(limit + 1), fromSupabaseRow);
+    assertSqlPaginationRecords(records);
+    return toHistoryPage(records, limit);
   }
 
   const store = await readStore();

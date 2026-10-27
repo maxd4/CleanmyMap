@@ -15,7 +15,10 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getClerkService } from "@/lib/services/clerk";
 import type { CommunityEventRow } from "@/types/database";
 import {
+  createCreatorInboxContinuationCursor,
+  isCreatorInboxHistoricalRecordCursor,
   isCreatorInboxRecordCursor,
+  type CreatorInboxPaginationCursor,
   type CreatorInboxRecordCursor,
 } from "./creator-inbox-pagination";
 
@@ -29,10 +32,13 @@ const CREATOR_INBOX_SOURCES = [
 
 type CreatorInboxPageSource = (typeof CREATOR_INBOX_SOURCES)[number];
 
-type CreatorInboxPageCursor = Record<
-  CreatorInboxPageSource,
-  CreatorInboxRecordCursor | null
->;
+type CreatorInboxPageCursor = {
+  feedback: CreatorInboxPaginationCursor | null;
+  promotion: CreatorInboxRecordCursor | null;
+  partner: CreatorInboxRecordCursor | null;
+  legal_content_report: CreatorInboxRecordCursor | null;
+  event: CreatorInboxRecordCursor | null;
+};
 
 export type CreatorInboxPage = {
   items: CreatorInboxItem[];
@@ -79,10 +85,13 @@ export function parseCreatorInboxPageCursor(
     const cursor = emptyPageCursor();
     for (const source of CREATOR_INBOX_SOURCES) {
       const rawCursor = rawSources[source];
-      if (rawCursor !== null && !isCreatorInboxRecordCursor(rawCursor)) {
+      const isValidSourceCursor =
+        isCreatorInboxRecordCursor(rawCursor) ||
+        (source === "feedback" && isCreatorInboxHistoricalRecordCursor(rawCursor));
+      if (rawCursor !== null && !isValidSourceCursor) {
         return null;
       }
-      cursor[source] = rawCursor as CreatorInboxRecordCursor | null;
+      cursor[source] = rawCursor as CreatorInboxPaginationCursor | null;
     }
     return cursor;
   } catch {
@@ -163,9 +172,18 @@ export async function loadCreatorInboxPage(params?: {
 
   const nextCursor = { ...cursor };
   for (const candidate of candidates.slice(0, limit)) {
+    const candidateCursor =
+      candidate.source === "feedback"
+        ? createCreatorInboxContinuationCursor({
+            createdAt: candidate.item.createdAt,
+            id: candidate.item.sourceRecordId,
+          })
+        : {
+            createdAt: candidate.item.createdAt,
+            id: candidate.item.sourceRecordId,
+          };
     nextCursor[candidate.source] = {
-      createdAt: candidate.item.createdAt,
-      id: candidate.item.sourceRecordId,
+      ...candidateCursor,
     };
   }
 

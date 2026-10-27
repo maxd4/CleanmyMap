@@ -66,6 +66,7 @@ const ownerRecords = [
 
 const {
   listCommunityBugReportsForUser,
+  buildCommunityBugReportHistoryCursor,
   parseCommunityBugReportHistoryCursor,
 } = await import("./bug-reports-store");
 
@@ -194,6 +195,67 @@ describe("community bug report personal history", () => {
     expect(
       parseCommunityBugReportHistoryCursor("2026-10-27T11:00:00-invalid|id"),
     ).toBeNull();
+  });
+
+  it("continues local history through multiple malformed dates without omission or duplication", async () => {
+    const records = [
+      { ...ownerRecords[0], id: "valid", createdAt: "2026-10-27T13:00:00.000Z", submittedByUserId: "owner-1" },
+      { ...ownerRecords[0], id: "invalid-a", createdAt: "invalid-a", submittedByUserId: "owner-1" },
+      { ...ownerRecords[0], id: "invalid-b", createdAt: "invalid-b", submittedByUserId: "owner-1" },
+      { ...ownerRecords[0], id: "invalid-c", createdAt: "invalid-c", submittedByUserId: "owner-1" },
+      { ...ownerRecords[0], id: "other-owner", createdAt: "invalid-z", submittedByUserId: "owner-2" },
+    ];
+    readLocalRecordStoreMock.mockResolvedValue({
+      updatedAt: "2026-10-27T13:00:00.000Z",
+      records,
+    });
+
+    const seen: string[] = [];
+    let beforeCursor: Parameters<typeof listCommunityBugReportsForUser>[0]["beforeCursor"] = null;
+    const cursors: string[] = [];
+    for (let pageNumber = 0; pageNumber < 4; pageNumber += 1) {
+      const page = await listCommunityBugReportsForUser({
+        submittedByUserId: "owner-1",
+        limit: 1,
+        beforeCursor,
+      });
+      seen.push(...page.items.map((item) => item.id));
+      expect(page.items).toHaveLength(1);
+      expect(page.hasMore).toBe(pageNumber < 3);
+      if (page.nextCursor) {
+        const encoded = buildCommunityBugReportHistoryCursor(page.nextCursor);
+        cursors.push(encoded);
+        beforeCursor = parseCommunityBugReportHistoryCursor(encoded);
+      } else {
+        beforeCursor = null;
+      }
+    }
+
+    expect(seen).toEqual(["valid", "invalid-c", "invalid-b", "invalid-a"]);
+    expect(new Set(seen).size).toBe(seen.length);
+    expect(cursors[0]).toBe("2026-10-27T13:00:00.000Z|valid");
+    expect(parseCommunityBugReportHistoryCursor(cursors[1])).toMatchObject({
+      version: 1,
+      kind: "historical",
+      createdAt: "invalid-c",
+      id: "invalid-c",
+    });
+    expect(cursors).toHaveLength(3);
+  });
+
+  it("accepts only strict versioned historical cursors and preserves valid cursor compatibility", () => {
+    const historical = { version: 1 as const, kind: "historical" as const, createdAt: "invalid-c", id: "invalid-c" };
+    const encoded = buildCommunityBugReportHistoryCursor(historical);
+
+    expect(parseCommunityBugReportHistoryCursor(encoded)).toEqual(historical);
+    expect(parseCommunityBugReportHistoryCursor(`${encoded}x`)).toBeNull();
+    expect(parseCommunityBugReportHistoryCursor(
+      Buffer.from(JSON.stringify({ version: 2, kind: "historical", createdAt: "invalid-c", id: "invalid-c" }), "utf8").toString("base64url"),
+    )).toBeNull();
+    expect(parseCommunityBugReportHistoryCursor("2026-10-27T12:00:00+02:00|valid")).toEqual({
+      createdAt: "2026-10-27T10:00:00.000Z",
+      id: "valid",
+    });
   });
 
   it("delegates qualification to the transactional RPC with the actor and operation", async () => {
@@ -427,5 +489,51 @@ describe("community bug report personal history", () => {
     await expect(updateCommunityBugReportStatus({ reportId: "missing", status: "open" })).resolves.toBeNull();
     expect(query.or).toHaveBeenCalled();
     expect(query.limit).toHaveBeenCalledWith(1);
+  });
+
+  it("rejects a local historical cursor before constructing a Supabase filter", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+    const query = {
+      select: vi.fn(() => query),
+      order: vi.fn(() => query),
+      or: vi.fn(() => query),
+      limit: vi.fn(async () => ({ data: [], error: null })),
+    };
+    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn(() => query) });
+    const { listCommunityBugReports } = await import("./bug-reports-store");
+
+    await expect(
+      listCommunityBugReports(2, {
+        version: 1,
+        kind: "historical",
+        createdAt: "invalid-c",
+        id: "invalid-c",
+      }),
+    ).rejects.toThrow("only supported by local persistence");
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+    expect(query.or).not.toHaveBeenCalled();
+  });
+
+  it("accepts a historical cursor on the local creator-inbox branch", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(false);
+    readLocalRecordStoreMock.mockResolvedValue({
+      updatedAt: "2026-10-27T13:00:00.000Z",
+      records: [
+        { ...ownerRecords[0], id: "invalid-a", createdAt: "invalid-a", submittedByUserId: "owner-1" },
+        { ...ownerRecords[0], id: "invalid-b", createdAt: "invalid-b", submittedByUserId: "owner-1" },
+      ],
+    });
+    const { listCommunityBugReports } = await import("./bug-reports-store");
+
+    await expect(
+      listCommunityBugReports(2, {
+        version: 1,
+        kind: "historical",
+        createdAt: "invalid-b",
+        id: "invalid-b",
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({ id: "invalid-a", createdAt: "invalid-a" }),
+    ]);
   });
 });

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { encodeCreatorInboxHistoricalCursor } from "./creator-inbox-pagination";
 
 const listBugReportsMock = vi.hoisted(() => vi.fn());
 const loadMetricsMock = vi.hoisted(() => vi.fn());
@@ -111,6 +112,46 @@ describe("creator inbox server pagination", () => {
     });
   });
 
+  it("continues feedback pages after malformed historical dates without omission", async () => {
+    const records = [
+      feedback("invalid-c", "invalid-c"),
+      feedback("invalid-b", "invalid-b"),
+      feedback("invalid-a", "invalid-a"),
+      feedback("valid", "2026-10-27T13:00:00.000Z"),
+      feedback("other-owner", "invalid-z"),
+    ];
+    listBugReportsMock.mockImplementation(
+      async (_limit: number, cursor: { id: string } | null) => {
+        const start = cursor ? records.findIndex((record) => record.id === cursor.id) + 1 : 0;
+        return records.slice(start, start + 2).filter((record) => record.id !== "other-owner");
+      },
+    );
+
+    const { loadCreatorInboxPage, parseCreatorInboxPageCursor } = await import(
+      "./creator-inbox-loader"
+    );
+    const seen: string[] = [];
+    let cursor: NonNullable<Parameters<typeof loadCreatorInboxPage>[0]>["cursor"] = null;
+    for (let pageNumber = 0; pageNumber < 4; pageNumber += 1) {
+      const page = await loadCreatorInboxPage({ limit: 1, cursor });
+      seen.push(...page.items.map((item) => item.sourceRecordId));
+      expect(page.items).toHaveLength(1);
+      expect(page.hasMore).toBe(pageNumber < 3);
+      cursor = parseCreatorInboxPageCursor(page.nextCursor);
+      if (pageNumber === 1) {
+        expect(cursor?.feedback).toMatchObject({
+          version: 1,
+          kind: "historical",
+          createdAt: "invalid-b",
+          id: "invalid-b",
+        });
+      }
+    }
+
+    expect(seen).toEqual(["invalid-c", "invalid-b", "invalid-a", "valid"]);
+    expect(new Set(seen).size).toBe(seen.length);
+  });
+
   it("orders equal timestamps deterministically by source and record id", async () => {
     listBugReportsMock.mockResolvedValue([feedback("zeta", "2026-08-27T12:00:00.000Z")]);
     listPromotionRequestsMock.mockResolvedValue([
@@ -143,6 +184,36 @@ describe("creator inbox server pagination", () => {
     expect(
       parseCreatorInboxPageCursor(
         Buffer.from(JSON.stringify({ version: 2, sources: {} }), "utf8").toString("base64url"),
+      ),
+    ).toBeNull();
+    const historicalFeedback = encodeCreatorInboxHistoricalCursor({
+      version: 1,
+      kind: "historical",
+      createdAt: "invalid-c",
+      id: "invalid-c",
+    });
+    const parsedHistorical = parseCreatorInboxPageCursor(
+      Buffer.from(JSON.stringify({
+        version: 1,
+        sources: {
+          feedback: JSON.parse(Buffer.from(historicalFeedback.slice("historic-v1.".length), "base64url").toString("utf8")),
+          promotion: null,
+          partner: null,
+          legal_content_report: null,
+          event: null,
+        },
+      }), "utf8").toString("base64url"),
+    );
+    expect(parsedHistorical?.feedback).toMatchObject({ version: 1, kind: "historical" });
+    expect(
+      parseCreatorInboxPageCursor(
+        Buffer.from(JSON.stringify({
+          version: 1,
+          sources: {
+            feedback: null,
+            promotion: { version: 1, kind: "historical", createdAt: "invalid-c", id: "invalid-c" },
+          },
+        }), "utf8").toString("base64url"),
       ),
     ).toBeNull();
     expect(

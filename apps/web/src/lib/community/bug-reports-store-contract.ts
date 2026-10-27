@@ -1,4 +1,11 @@
-import type { CreatorInboxRecordCursor } from "./creator-inbox-pagination";
+import {
+  createCreatorInboxContinuationCursor,
+  encodeCreatorInboxHistoricalCursor,
+  isCreatorInboxHistoricalRecordCursor,
+  isCreatorInboxRecordCursor,
+  parseCreatorInboxHistoricalCursor,
+  type CreatorInboxPaginationCursor,
+} from "./creator-inbox-pagination";
 
 export const FEEDBACK_QUALIFICATION_STATUSES = [
   "pending",
@@ -69,7 +76,7 @@ export type BugReportRecord = BugReportInput & {
 const COMMUNITY_BUG_REPORTS_HISTORY_DEFAULT_LIMIT = 20;
 const COMMUNITY_BUG_REPORTS_HISTORY_MAX_LIMIT = 50;
 
-export type CommunityBugReportHistoryCursor = CreatorInboxRecordCursor;
+export type CommunityBugReportHistoryCursor = CreatorInboxPaginationCursor;
 
 export type CommunityBugReportHistoryPage = {
   items: BugReportRecord[];
@@ -105,6 +112,8 @@ export function parseCommunityBugReportHistoryCursor(
   value: string | null | undefined,
 ): CommunityBugReportHistoryCursor | null {
   if (!value) return null;
+  const historicalCursor = parseCreatorInboxHistoricalCursor(value);
+  if (historicalCursor) return historicalCursor;
   const separatorIndex = value.lastIndexOf("|");
   if (separatorIndex <= 0 || separatorIndex === value.length - 1) {
     return null;
@@ -123,6 +132,12 @@ export function parseCommunityBugReportHistoryCursor(
 export function buildCommunityBugReportHistoryCursor(
   cursor: CommunityBugReportHistoryCursor,
 ): string {
+  if (isCreatorInboxHistoricalRecordCursor(cursor)) {
+    return encodeCreatorInboxHistoricalCursor(cursor);
+  }
+  if (!isCreatorInboxRecordCursor(cursor)) {
+    throw new Error("Invalid community bug report history cursor.");
+  }
   return `${cursor.createdAt}|${cursor.id}`;
 }
 
@@ -137,7 +152,10 @@ export function toHistoryPage(
     items,
     nextCursor:
       hasMore && lastItem
-        ? { createdAt: lastItem.createdAt, id: lastItem.id }
+        ? createCreatorInboxContinuationCursor({
+            createdAt: lastItem.createdAt,
+            id: lastItem.id,
+          })
         : null,
     hasMore,
   };

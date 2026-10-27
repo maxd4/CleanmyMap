@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   compareCreatorInboxRecordCursors,
+  encodeCreatorInboxHistoricalCursor,
   isCreatorInboxRecordCursor,
+  isCreatorInboxHistoricalRecordCursor,
+  parseCreatorInboxHistoricalCursor,
   type CreatorInboxRecordCursor,
 } from "./creator-inbox-pagination";
 
@@ -137,5 +140,33 @@ describe("creator inbox cursor contract", () => {
     expect(isCreatorInboxRecordCursor(cursor("2026-10-27T10:00:00.000Z", "x".repeat(129)))).toBe(false);
     expect(isCreatorInboxRecordCursor(null)).toBe(false);
     expect(isCreatorInboxRecordCursor({ createdAt: "2026-10-27T10:00:00.000Z" })).toBe(false);
+  });
+
+  it("keeps malformed historical keys out of the SQL cursor contract", () => {
+    const historical = {
+      version: 1 as const,
+      kind: "historical" as const,
+      createdAt: "invalid-c",
+      id: "invalid-c",
+    };
+
+    expect(isCreatorInboxHistoricalRecordCursor(historical)).toBe(true);
+    expect(isCreatorInboxRecordCursor(historical)).toBe(false);
+    const encoded = encodeCreatorInboxHistoricalCursor(historical);
+    expect(parseCreatorInboxHistoricalCursor(encoded)).toEqual(historical);
+    expect(parseCreatorInboxHistoricalCursor(`${encoded}x`)).toBeNull();
+    const validDatePayload = Buffer.from(JSON.stringify({
+      version: 1,
+      kind: "historical",
+      createdAt: "2026-10-27T10:00:00.000Z",
+      id: "invalid-c",
+    }), "utf8").toString("base64url");
+    expect(parseCreatorInboxHistoricalCursor(`historic-v1.${validDatePayload}`)).toBeNull();
+    expect(isCreatorInboxHistoricalRecordCursor({
+      version: 1,
+      kind: "historical",
+      createdAt: "invalid-c",
+      id: "id.without.safe.shape",
+    })).toBe(false);
   });
 });
