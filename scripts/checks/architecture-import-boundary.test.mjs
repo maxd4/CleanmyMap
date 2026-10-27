@@ -115,19 +115,26 @@ test("client propagation follows runtime imports but stops at type-only and serv
   assert.equal(serverActionToInfrastructure?.uiToInfrastructure, false);
 });
 
-test("the real Learn Comprendre page propagates its client context to the local section module", () => {
+test("the real Learn Comprendre client entry propagates its context to the local section module", () => {
   const graph = buildArchitectureImportGraph({ source: "worktree" });
   const page = graph.nodes.find((candidate) => candidate.path === "apps/web/src/app/learn/comprendre/page.tsx");
+  const client = graph.nodes.find((candidate) => candidate.path === "apps/web/src/app/learn/comprendre/client.tsx");
   const sections = graph.nodes.find((candidate) => candidate.path === "apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx");
-  const pageToSections = edge(graph, "apps/web/src/app/learn/comprendre/page.tsx", "apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx");
+  const pageToClient = edge(graph, "apps/web/src/app/learn/comprendre/page.tsx", "apps/web/src/app/learn/comprendre/client.tsx");
+  const clientToSections = edge(graph, "apps/web/src/app/learn/comprendre/client.tsx", "apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx");
 
-  assert.equal(page?.layer, "ui");
-  assert.equal(page?.clientEntry, true);
+  assert.equal(page?.layer, "application");
+  assert.equal(page?.clientEntry, false);
+  assert.equal(client?.layer, "ui");
+  assert.equal(client?.clientEntry, true);
+  assert.equal(pageToClient?.kind, "runtime");
+  assert.equal(pageToClient?.toClientContext, true);
   assert.equal(sections?.layer, "application");
   assert.equal(sections?.clientReachable, true);
   assert.equal(sections?.effectiveLayer, "ui");
-  assert.equal(pageToSections?.kind, "runtime");
-  assert.equal(pageToSections?.toClientContext, true);
+  assert.equal(clientToSections?.kind, "runtime");
+  assert.equal(clientToSections?.fromClientContext, true);
+  assert.equal(clientToSections?.toClientContext, true);
 });
 
 test("comments and ordinary strings do not create a use-client directive", () => {
