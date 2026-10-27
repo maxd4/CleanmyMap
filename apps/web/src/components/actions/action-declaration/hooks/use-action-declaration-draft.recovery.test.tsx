@@ -174,4 +174,22 @@ describe("action declaration resumed draft durability", () => {
     expect(createActionMock).toHaveBeenLastCalledWith(expect.anything(), { idempotencyKey: creationRequestId });
     expect(store.has(ACTION_DECLARATION_DRAFT_KEY)).toBe(false);
   });
+
+  it("tracks repeated form-start calls only once", () => {
+    let latest!: HookHarnessValue;
+    const renderer = mountHarness((value) => { latest = value; });
+
+    act(() => {
+      latest.submission.trackFormStart();
+      latest.submission.trackFormStart();
+    });
+
+    expect(trackFunnelMock).toHaveBeenCalledTimes(1);
+    expect(trackFunnelMock).toHaveBeenCalledWith(
+      "start_form",
+      "complete",
+      expect.objectContaining({ source: "action_declaration_form" }),
+    );
+    renderer.unmount();
+  });
 });

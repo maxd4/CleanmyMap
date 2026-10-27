@@ -74,6 +74,26 @@ describe("ActionsHistoryListTable state contracts", () => {
     expect(markup).toContain("Historique indisponible");
   });
 
+  it("keeps navigation and quality visible for a normal approved action", () => {
+    const markup = renderTable();
+
+    expect(markup).toContain("Bénévole test");
+    expect(markup).toContain("A (90 %)");
+    expect(markup).toContain("/sections/rejoindre-une-action?actionId=action-1");
+    expect(markup).toContain("Fermer");
+  });
+
+  it("hides the group mutation for a non-owner without admin permission", () => {
+    const markup = renderTable({
+      currentUserId: "another-user",
+      isAdminLikeUser: false,
+    });
+
+    expect(markup).toContain("Rejoindre");
+    expect(markup).not.toContain("Fermer");
+    expect(markup).not.toContain("Rouvrir");
+  });
+
   it("blocks the group mutation and pagination controls while they are pending", () => {
     const markup = renderTable({
       groupJoinActionId: item.id,

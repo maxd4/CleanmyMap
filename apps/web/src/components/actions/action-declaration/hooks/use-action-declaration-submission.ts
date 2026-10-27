@@ -6,7 +6,6 @@ import {
   updateAction,
   type ActionEditorRecord,
 } from "@/lib/actions/http";
-import { trackFunnel } from "@/lib/analytics/funnel-client";
 import type {
   ActionDrawing,
   ActionGeometrySource,
@@ -15,6 +14,7 @@ import type {
   CreateActionPayload,
 } from "@/lib/actions/types";
 import { prepareCreateActionPayload } from "../payload";
+import { trackActionDeclarationFormStart } from "./action-declaration-submission-tracking";
 import {
   getActionDeclarationSubmissionIssues,
   normalizeActionDeclarationFormBeforeSubmit,
@@ -308,19 +308,13 @@ export function useActionDeclarationSubmission(
     });
   }
 
-  function trackFormStart() {
-    if (!hasTrackedStartRef.current) {
-      hasTrackedStartRef.current = true;
-      void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ trackFunnel("start_form", declarationMode, {
-        source: "action_declaration_form",
-        declarationMode,
-        recordType: form.recordType,
-        routePath: typeof window !== "undefined" ? window.location.pathname : null,
-        formVariant: "legacy",
-        linkedEventId: linkedEventId ?? null,
-      });
-    }
-  }
+  const trackFormStart = () =>
+    trackActionDeclarationFormStart({
+      hasTrackedStartRef,
+      declarationMode,
+      form,
+      linkedEventId,
+    });
 
   const handleConfirmSubmit = () => executeConfirmSubmit({
     form,
