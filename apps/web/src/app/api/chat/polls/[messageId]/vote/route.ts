@@ -97,6 +97,26 @@ async function loadVisiblePoll(
   return { options };
 }
 
+async function withVisiblePoll(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  messageId: string,
+  operation: (poll: { options: PollOptionRow[] }) => Promise<Response>,
+  errorContext: string,
+): Promise<Response> {
+  try {
+    const poll = await loadVisiblePoll(supabase, messageId);
+    if (!poll) {
+      return NextResponse.json(
+        { error: "Sondage introuvable ou inaccessible" },
+        { status: 404 },
+      );
+    }
+    return await operation(poll);
+  } catch (error) {
+    return handleApiError(error, errorContext);
+  }
+}
+
 async function loadPollVoteResponse(
   serviceSupabase: ReturnType<typeof getSupabaseServerClient>,
   userId: string,
@@ -169,15 +189,10 @@ async function upsertVote(request: Request, context: VoteRouteContext) {
   if (messageSupabaseResult instanceof Response) return messageSupabaseResult;
   const messageSupabase = messageSupabaseResult;
 
-  try {
-    const poll = await loadVisiblePoll(messageSupabase, messageId);
-    if (!poll) {
-      return NextResponse.json(
-        { error: "Sondage introuvable ou inaccessible" },
-        { status: 404 },
-      );
-    }
-
+  return withVisiblePoll(
+    messageSupabase,
+    messageId,
+    async (poll) => {
     if (!poll.options.some((option) => option.id === parsed.data.optionId)) {
       return NextResponse.json(
         { error: "Cette option n'appartient pas à ce sondage" },
@@ -194,13 +209,13 @@ async function upsertVote(request: Request, context: VoteRouteContext) {
       { onConflict: "message_id,user_id" },
     );
     if (error) {
-      return handleApiError(error, "PUT /api/chat/polls/[messageId]/vote");
+      throw error;
     }
 
     return await buildPollVoteResponse(userId, messageId, poll.options);
-  } catch (error) {
-    return handleApiError(error, "PUT /api/chat/polls/[messageId]/vote");
-  }
+    },
+    "PUT /api/chat/polls/[messageId]/vote",
+  );
 }
 
 export async function POST(request: Request, context: VoteRouteContext) {
@@ -221,26 +236,21 @@ export async function DELETE(_request: Request, context: VoteRouteContext) {
   if (messageSupabaseResult instanceof Response) return messageSupabaseResult;
   const messageSupabase = messageSupabaseResult;
 
-  try {
-    const poll = await loadVisiblePoll(messageSupabase, messageId);
-    if (!poll) {
-      return NextResponse.json(
-        { error: "Sondage introuvable ou inaccessible" },
-        { status: 404 },
-      );
-    }
-
+  return withVisiblePoll(
+    messageSupabase,
+    messageId,
+    async (poll) => {
     const { error } = await messageSupabase
       .from("chat_poll_votes")
       .delete()
       .eq("message_id", messageId)
       .eq("user_id", userId);
     if (error) {
-      return handleApiError(error, "DELETE /api/chat/polls/[messageId]/vote");
+      throw error;
     }
 
     return await buildPollVoteResponse(userId, messageId, poll.options);
-  } catch (error) {
-    return handleApiError(error, "DELETE /api/chat/polls/[messageId]/vote");
-  }
+    },
+    "DELETE /api/chat/polls/[messageId]/vote",
+  );
 }

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createClerkAuthModule, createRateLimitModule, createSupabaseClerkRlsModule, createSupabaseServerModule, mockAllowedRateLimit } from "@/app/api/test-helpers";
+import { buildChatPollVoteSupabaseMock } from "@/__tests__/support/chat-route";
 
 const authMock = vi.hoisted(() => vi.fn());
 const identityMock = vi.hoisted(() => vi.fn());
@@ -39,6 +40,16 @@ async function putVote(handler: VoteHandler, optionId: string) {
   );
 }
 
+async function postVote(handler: VoteHandler, optionId: string) {
+  return handler(
+    new Request("http://localhost/api/chat/polls/111/vote", {
+      method: "POST",
+      body: JSON.stringify({ optionId }),
+    }),
+    { params: Promise.resolve({ messageId: MESSAGE_ID }) },
+  );
+}
+
 async function deleteVote(handler: VoteHandler) {
   return handler(
     new Request("http://localhost/api/chat/polls/111/vote", { method: "DELETE" }),
@@ -46,97 +57,12 @@ async function deleteVote(handler: VoteHandler) {
   );
 }
 
-function buildSupabaseMock({
-  visible = true,
-  channelType = "community",
-}: {
-  visible?: boolean;
-  channelType?: "community" | "admin_elu" | "territory" | "action" | "dm";
-} = {}) {
-  const votes = new Map<string, string>();
-  const options = [
-    { id: OPTION_YES, position: 1, label: "Oui", message_id: MESSAGE_ID },
-    { id: OPTION_NO, position: 2, label: "Non", message_id: MESSAGE_ID },
-  ];
-
-  const appMessageQuery = {
-    select: vi.fn(() => appMessageQuery),
-    eq: vi.fn(() => appMessageQuery),
-    maybeSingle: vi.fn().mockResolvedValue({
-      data: visible
-        ? { id: MESSAGE_ID, message_kind: "poll", channel_type: channelType }
-        : null,
-      error: null,
-    }),
-  };
-  const optionsQuery = {
-    select: vi.fn(() => optionsQuery),
-    eq: vi.fn(() => optionsQuery),
-    order: vi.fn(() => optionsQuery),
-    then: (resolve: (value: unknown) => unknown, reject: (reason?: unknown) => unknown) =>
-      Promise.resolve({ data: options, error: null }).then(resolve, reject),
-  };
-  const voteTable = {
-    upsert: vi.fn(async (row: { message_id: string; option_id: string; user_id: string }) => {
-      votes.set(`${row.user_id}:${row.message_id}`, row.option_id);
-      return { error: null };
-    }),
-    delete: vi.fn(() => voteTable),
-    eq: vi.fn((field: string, value: string) => {
-      if (field === "user_id") {
-        votes.delete(`${value}:${MESSAGE_ID}`);
-      }
-      return voteTable;
-    }),
-  };
-
-  const summaryRpc = vi.fn().mockImplementation(
-    async (_name: string, args: { p_message_ids: string[]; p_user_id: string }) => {
-      const messageId = args.p_message_ids[0];
-      const selected = votes.get(`${args.p_user_id}:${messageId}`) ?? null;
-      return {
-        data: options.map((option) => ({
-          message_id: messageId,
-          option_id: option.id,
-          vote_count: [...votes.values()].filter((value) => value === option.id).length,
-          total_votes: votes.size,
-          selected_option_id: selected,
-        })),
-        error: null,
-      };
-    },
-  );
-
-  const supabase = {
-    from: vi.fn((table: string) => {
-      if (table === "app_messages") return appMessageQuery;
-      if (table === "chat_poll_options") return optionsQuery;
-      if (table === "chat_poll_votes") return voteTable;
-      throw new Error(`Unexpected table: ${table}`);
-    }),
-  };
-  const serviceSupabase = {
-    from: supabase.from,
-    rpc: summaryRpc,
-  };
-
-  return {
-    supabase,
-    serviceSupabase,
-    summaryRpc,
-    options,
-    votes,
-    setCurrentUserId: (userId: string) => {
-      authMock.mockResolvedValue({ userId });
-    },
-    appMessageQuery,
-    optionsQuery,
-    voteTable,
-  };
-}
-
 async function preparePollRoute(channelType?: "community" | "admin_elu" | "territory" | "action" | "dm") {
-  const mock = buildSupabaseMock({ channelType });
+  const mock = buildChatPollVoteSupabaseMock({
+    messageId: MESSAGE_ID,
+    optionIds: [OPTION_YES, OPTION_NO],
+    channelType,
+  });
   getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
   getSupabaseServerClientMock.mockReturnValue(mock.serviceSupabase);
   identityMock.mockResolvedValue({ activeRole: channelType === "admin_elu" ? "elu" : "benevole" });
@@ -173,6 +99,19 @@ describe("/api/chat/polls/[messageId]/vote", () => {
     expect(mock.summaryRpc).toHaveBeenCalledWith(
       "get_my_chat_poll_vote_summaries",
       { p_message_ids: [MESSAGE_ID], p_user_id: "user-1" },
+    );
+  });
+
+  it("keeps POST as an equivalent compatibility entry point for the vote transition", async () => {
+    const { mock, route: { POST } } = await preparePollRoute();
+
+    const response = await postVote(POST, OPTION_YES);
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).selectedOptionId).toBe(OPTION_YES);
+    expect(mock.voteTable.upsert).toHaveBeenCalledWith(
+      { message_id: MESSAGE_ID, option_id: OPTION_YES, user_id: "user-1" },
+      { onConflict: "message_id,user_id" },
     );
   });
 
@@ -217,6 +156,60 @@ describe("/api/chat/polls/[messageId]/vote", () => {
     expect(mock.voteTable.upsert).not.toHaveBeenCalled();
   });
 
+  it("returns the same inaccessible result for a non-poll message without writing", async () => {
+    const mock = buildChatPollVoteSupabaseMock({
+      messageId: MESSAGE_ID,
+      optionIds: [OPTION_YES, OPTION_NO],
+      messageKind: "message",
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(mock.serviceSupabase);
+    const { PUT, DELETE } = await import("./route");
+
+    const putResponse = await putVote(PUT, OPTION_YES);
+    const deleteResponse = await deleteVote(DELETE);
+
+    expect(putResponse.status).toBe(404);
+    expect(deleteResponse.status).toBe(404);
+    expect(mock.voteTable.upsert).not.toHaveBeenCalled();
+    expect(mock.summaryRpc).not.toHaveBeenCalled();
+  });
+
+  it("maps a transactional upsert error without returning a vote summary", async () => {
+    const { mock, route: { PUT } } = await preparePollRoute();
+    const failure = new Error("vote write unavailable");
+    mock.voteTable.upsert.mockResolvedValueOnce({ error: failure });
+
+    const response = await putVote(PUT, OPTION_YES);
+
+    expect(response.status).toBe(503);
+    expect(handleApiErrorMock).toHaveBeenCalledWith(
+      failure,
+      "PUT /api/chat/polls/[messageId]/vote",
+    );
+    expect(mock.summaryRpc).not.toHaveBeenCalled();
+  });
+
+  it("keeps concurrent votes scoped to their authenticated actors", async () => {
+    const { mock, route: { PUT } } = await preparePollRoute();
+    authMock.mockReset();
+    authMock
+      .mockResolvedValueOnce({ userId: "user-1" })
+      .mockResolvedValueOnce({ userId: "user-2" });
+
+    const [yesResponse, noResponse] = await Promise.all([
+      putVote(PUT, OPTION_YES),
+      putVote(PUT, OPTION_NO),
+    ]);
+
+    expect((await yesResponse.json()).selectedOptionId).toBe(OPTION_YES);
+    expect((await noResponse.json()).selectedOptionId).toBe(OPTION_NO);
+    expect(mock.votes).toEqual(new Map([
+      [`user-1:${MESSAGE_ID}`, OPTION_YES],
+      [`user-2:${MESSAGE_ID}`, OPTION_NO],
+    ]));
+  });
+
   it("routes a vote summary rejection through handleApiError", async () => {
     const { mock, route: { PUT } } = await preparePollRoute();
     const failure = new Error("vote summary unavailable");
@@ -246,7 +239,7 @@ describe("/api/chat/polls/[messageId]/vote", () => {
   });
 
   it("never returns individual voter identities and scopes the selected option to the current user", async () => {
-    const mock = buildSupabaseMock();
+    const mock = buildChatPollVoteSupabaseMock({ messageId: MESSAGE_ID, optionIds: [OPTION_YES, OPTION_NO] });
     getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
     getSupabaseServerClientMock.mockReturnValue(mock.serviceSupabase);
     const { PUT } = await import("./route");
@@ -258,7 +251,7 @@ describe("/api/chat/polls/[messageId]/vote", () => {
       }),
       { params: Promise.resolve({ messageId: MESSAGE_ID }) },
     );
-    mock.setCurrentUserId("user-2");
+    authMock.mockResolvedValue({ userId: "user-2" });
     const response = await PUT(
       new Request("http://localhost/api/chat/polls/111/vote", {
         method: "PUT",
@@ -276,7 +269,11 @@ describe("/api/chat/polls/[messageId]/vote", () => {
   });
 
   it("does not aggregate or write an invisible poll", async () => {
-    const mock = buildSupabaseMock({ visible: false });
+    const mock = buildChatPollVoteSupabaseMock({
+      messageId: MESSAGE_ID,
+      optionIds: [OPTION_YES, OPTION_NO],
+      visible: false,
+    });
     getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
     const { PUT } = await import("./route");
 

@@ -124,3 +124,79 @@ export function buildSupabaseMock(options: SupabaseMockOptions) {
   const serviceSupabase = { from: vi.fn((table: string) => table === "app_messages" ? serviceAppMessagesTable : from(table)), rpc: serviceRpc, storage: { from: vi.fn(() => serviceStorageBucket) } };
   return { supabase, ...staticQueries, ...messageHarness, serviceSupabase, serviceAppMessagesTable, serviceRpc, createSignedUrls };
 }
+
+export type ChatPollVoteSupabaseMockOptions = {
+  messageId: string;
+  optionIds?: readonly [string, string];
+  visible?: boolean;
+  messageKind?: string;
+  channelType?: "community" | "admin_elu" | "territory" | "action" | "dm";
+};
+
+export function buildChatPollVoteSupabaseMock({
+  messageId,
+  optionIds = ["option-yes", "option-no"],
+  visible = true,
+  messageKind = "poll",
+  channelType = "community",
+}: ChatPollVoteSupabaseMockOptions) {
+  const [yesOptionId, noOptionId] = optionIds;
+  const options = [
+    { id: yesOptionId, position: 1, label: "Oui", message_id: messageId },
+    { id: noOptionId, position: 2, label: "Non", message_id: messageId },
+  ];
+  const votes = new Map<string, string>();
+
+  const appMessageQuery = {
+    select: vi.fn(() => appMessageQuery),
+    eq: vi.fn(() => appMessageQuery),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: visible ? { id: messageId, message_kind: messageKind, channel_type: channelType } : null,
+      error: null,
+    }),
+  };
+  const optionsQuery = {
+    select: vi.fn(() => optionsQuery),
+    eq: vi.fn(() => optionsQuery),
+    order: vi.fn(() => optionsQuery),
+    then: (resolve: (value: unknown) => unknown, reject: (reason?: unknown) => unknown) =>
+      Promise.resolve({ data: options, error: null }).then(resolve, reject),
+  };
+  const voteTable = {
+    upsert: vi.fn(async (row: { message_id: string; option_id: string; user_id: string }): Promise<{ error: Error | null }> => {
+      votes.set(`${row.user_id}:${row.message_id}`, row.option_id);
+      return { error: null };
+    }),
+    delete: vi.fn(() => voteTable),
+    eq: vi.fn((field: string, value: string) => {
+      if (field === "user_id") votes.delete(`${value}:${messageId}`);
+      return voteTable;
+    }),
+  };
+  const summaryRpc = vi.fn().mockImplementation(
+    async (_name: string, args: { p_message_ids: string[]; p_user_id: string }) => {
+      const selected = votes.get(`${args.p_user_id}:${args.p_message_ids[0]}`) ?? null;
+      return {
+        data: options.map((option) => ({
+          message_id: args.p_message_ids[0],
+          option_id: option.id,
+          vote_count: [...votes.values()].filter((value) => value === option.id).length,
+          total_votes: votes.size,
+          selected_option_id: selected,
+        })),
+        error: null,
+      };
+    },
+  );
+  const supabase = {
+    from: vi.fn((table: string) => {
+      if (table === "app_messages") return appMessageQuery;
+      if (table === "chat_poll_options") return optionsQuery;
+      if (table === "chat_poll_votes") return voteTable;
+      throw new Error(`Unexpected table: ${table}`);
+    }),
+  };
+  const serviceSupabase = { from: supabase.from, rpc: summaryRpc };
+
+  return { supabase, serviceSupabase, summaryRpc, options, votes, appMessageQuery, optionsQuery, voteTable };
+}
