@@ -1,3 +1,5 @@
+/** @vitest-environment jsdom */
+
 import { act, create } from "react-test-renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QRCodeDialog } from "./qrcode-dialog";
@@ -8,7 +10,6 @@ afterEach(() => {
 
 function renderDialog(writeText: ReturnType<typeof vi.fn>) {
   vi.stubGlobal("navigator", { clipboard: { writeText } });
-  vi.stubGlobal("document", { body: { style: {} } });
   let renderer!: ReturnType<typeof create>;
   act(() => {
     renderer = create(
@@ -28,6 +29,9 @@ describe("QRCodeDialog clipboard feedback", () => {
     const writeText = vi.fn().mockRejectedValue(new Error("clipboard denied"));
     const renderer = renderDialog(writeText);
     const copyButton = renderer.root.findAllByType("button").find((button) => button.props.children === "Copier le lien");
+    const closeButton = renderer.root.findByProps({ "aria-label": "Fermer" });
+
+    expect(closeButton.props.type).toBe("button");
 
     await act(async () => {
       await copyButton?.props.onClick();

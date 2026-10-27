@@ -178,6 +178,7 @@ describe("SpogomiIdentityLinkCard behavior", () => {
     await settleTimers();
 
     const codeInput = findInput(renderer, "spogomi-identity-code");
+    expect(codeInput.props.autoComplete).toBe("one-time-code");
     expect(findButton(renderer, "Relier le compte").props.disabled).toBe(true);
     await act(() => codeInput.props.onChange({ target: { value: "SPOGOMI-1234567" } }));
     expect(findButton(renderer, "Relier le compte").props.disabled).toBe(true);

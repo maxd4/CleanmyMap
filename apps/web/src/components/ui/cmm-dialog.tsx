@@ -88,7 +88,7 @@ export function CmmDialog({
   }, [closeOnEscape, dismissible, onClose]);
 
   useEffect(() => {
-    if (!open) {
+    if (!open || typeof document === "undefined") {
       return undefined;
     }
 

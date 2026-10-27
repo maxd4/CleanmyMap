@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { RefObject } from "react";
 import { X } from "lucide-react";
+import { CmmDialog } from "@/components/ui/cmm-dialog";
 import { readAppErrorResponse } from "@/lib/errors/app-errors";
 import type { ShareDestination } from "@/lib/chat/action-sharing";
 import type { PublicActionShareKind } from "@/lib/chat/action-sharing";
@@ -20,8 +22,8 @@ function SharePreviewStep({ actionId, selectedDestination, message, setMessage, 
   return <div className="mt-5 space-y-4"><p className="text-sm text-slate-600">Aperçu vers <strong>{selectedDestination?.label}</strong>. La carte sera résolue depuis l’action courante.</p><textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={3} maxLength={2000} className="w-full rounded-xl border border-slate-200 p-3 text-sm text-slate-800 outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-200" aria-label="Message accompagnant le partage" /><ChatActionReferenceCard actionId={actionId} tone="light" /><div className="flex flex-wrap justify-between gap-2"><button type="button" onClick={onBack} className="rounded-full border border-slate-200 px-4 py-2 cmm-text-small font-semibold text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400">Retour</button><button type="button" disabled={sending || !selectedDestination} onClick={onConfirm} className="rounded-full bg-pink-600 px-4 py-2 cmm-text-small font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 disabled:cursor-wait disabled:opacity-50">{sending ? "Envoi…" : "Confirmer le partage"}</button></div></div>;
 }
 
-function ShareDialogHeader({ shareKind, onClose }: { shareKind: PublicActionShareKind; onClose: () => void }) {
-  return <div className="flex items-start justify-between gap-4"><div><p className="cmm-text-caption font-semibold text-pink-700">Messagerie</p><h2 id="share-action-title" className="mt-1 text-xl font-black text-slate-900">{shareKind === "result" ? "Partager un résultat" : "Partager une invitation"}</h2></div><button type="button" onClick={onClose} aria-label="Fermer" className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>;
+function ShareDialogHeader({ shareKind, onClose, closeButtonRef }: { shareKind: PublicActionShareKind; onClose: () => void; closeButtonRef: RefObject<HTMLButtonElement | null> }) {
+  return <div className="flex items-start justify-between gap-4"><div><p className="cmm-text-caption font-semibold text-pink-700">Messagerie</p><h2 id="share-action-title" className="mt-1 text-xl font-black text-slate-900">{shareKind === "result" ? "Partager un résultat" : "Partager une invitation"}</h2></div><button ref={closeButtonRef} type="button" onClick={onClose} aria-label="Fermer" className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>;
 }
 
 function ShareDoneStep({ requestPending, shareKind, destinationLabel, onClose }: { requestPending: boolean; shareKind: PublicActionShareKind; destinationLabel?: string; onClose: () => void }) {
@@ -71,6 +73,7 @@ export function ChatActionShareDialog({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -167,9 +170,16 @@ export function ChatActionShareDialog({
   const confirmShare = useShareConfirmation({ actionId, selectedDestination, selectedTerritoryZone, message, setSending, setError, setStep, setRequestPending, setMessage });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" role="dialog" aria-modal="true" aria-labelledby="share-action-title">
-      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-[1.75rem] border border-pink-100 bg-white p-5 shadow-2xl">
-        <ShareDialogHeader shareKind={shareKind} onClose={onClose} />
+    <CmmDialog
+      open
+      onClose={onClose}
+      ariaLabelledBy="share-action-title"
+      initialFocusRef={closeButtonRef}
+      size="lg"
+      className="z-50 bg-slate-950/45 p-4"
+      panelClassName="max-h-[90vh] rounded-[1.75rem] border border-pink-100 bg-white p-5 shadow-2xl"
+    >
+        <ShareDialogHeader shareKind={shareKind} onClose={onClose} closeButtonRef={closeButtonRef} />
 
         {step === "choose" ? <><>{loading ? <p className="mt-5 text-sm text-slate-500" role="status">Recherche des conversations autorisées…</p> : null}{!loading && destinations.length === 0 ? <p className="mt-5 rounded-xl border border-dashed border-slate-200 p-3 text-sm text-slate-600">Aucune conversation disponible pour ce partage.</p> : null}</><ShareChooseStep shareKind={shareKind} visibleDestinations={visibleDestinations} selectedDestinationId={selectedDestinationId} setSelectedDestinationId={setSelectedDestinationId} setSelectedTerritoryZone={setSelectedTerritoryZone} selectedDestination={selectedDestination} selectedTerritoryZone={selectedTerritoryZone} recipientQuery={recipientQuery} setRecipientQuery={setRecipientQuery} setRecipientLoading={setRecipientLoading} recipientLoading={recipientLoading} isRecipientSearchActive={isRecipientSearchActive} recipientSuggestions={recipientSuggestions} setFirstContactRecipient={setFirstContactRecipient} setRecipientSuggestions={setRecipientSuggestions} onPreview={() => setStep("preview")} /></> : null}
 
@@ -177,7 +187,6 @@ export function ChatActionShareDialog({
 
         {step === "done" ? <ShareDoneStep requestPending={requestPending} shareKind={shareKind} destinationLabel={selectedDestination?.label} onClose={onClose} /> : null}
         {error ? <p className="mt-4 text-sm font-semibold text-rose-700" role="alert">{error}</p> : null}
-      </div>
-    </div>
+    </CmmDialog>
   );
 }

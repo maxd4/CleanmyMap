@@ -186,6 +186,9 @@ describe("form labels reported by Sonar S6853", () => {
     expect(destinationInput?.props.type).toBe("radio");
     expect(destinationInput?.props.id).toBe(destinationLabel?.props.htmlFor);
     expect(destinationLabel?.props.htmlFor).toBe("share-destination-community-1");
+    const dialog = findJsonNodes(renderer.toJSON(), "div").find((node) => node.props.role === "dialog");
+    expect(dialog?.props["aria-modal"]).toBe("true");
+    expect(dialog?.props["aria-labelledby"]).toBe("share-action-title");
     renderer.unmount();
   });
 });

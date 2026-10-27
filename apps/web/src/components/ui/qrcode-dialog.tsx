@@ -1,9 +1,9 @@
 "use client";
 
-import { ModalFrame } from "@/components/ui/modal-frame";
+import { CmmDialog } from "@/components/ui/cmm-dialog";
 import { X, Download, Share2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 
 type QRCodeDialogProps = {
   isOpen: boolean;
@@ -16,17 +16,7 @@ type QRCodeDialogProps = {
 export function QRCodeDialog({ isOpen, onClose, value, title, description }: QRCodeDialogProps) {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isOpen]);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleCopy = async () => {
     setCopyError(false);
@@ -61,17 +51,21 @@ export function QRCodeDialog({ isOpen, onClose, value, title, description }: QRC
   };
 
   return (
-    <ModalFrame
-      isOpen={isOpen}
+    <CmmDialog
+      open={isOpen}
       onClose={onClose}
-      overlayClassName="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm"
-      panelInitial={{ opacity: 0, scale: 0.9, y: 20 }}
-      panelAnimate={{ opacity: 1, scale: 1, y: 0 }}
-      panelExit={{ opacity: 0, scale: 0.9, y: 20 }}
-      panelClassName="relative w-full max-w-sm overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-2xl pointer-events-auto sm:p-8"
+      ariaLabelledBy="cmm-qrcode-title"
+      ariaDescribedBy={description ? "cmm-qrcode-description" : undefined}
+      initialFocusRef={closeButtonRef}
+      size="sm"
+      className="z-[100] bg-slate-900/60 backdrop-blur-sm"
+      panelClassName="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-2xl sm:p-8"
     >
               <button
+                ref={closeButtonRef}
+                type="button"
                 onClick={onClose}
+                aria-label="Fermer"
                 className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200"
               >
                 <X size={18} />
@@ -82,11 +76,11 @@ export function QRCodeDialog({ isOpen, onClose, value, title, description }: QRC
                   <Share2 size={32} />
                 </div>
 
-                <h2 className="text-2xl font-black tracking-tight text-slate-900">
+                <h2 id="cmm-qrcode-title" className="text-2xl font-black tracking-tight text-slate-900">
                   {title}
                 </h2>
                 {description && (
-                  <p className="mt-2 text-sm font-medium text-slate-500">
+                  <p id="cmm-qrcode-description" className="mt-2 text-sm font-medium text-slate-500">
                     {description}
                   </p>
                 )}
@@ -125,6 +119,6 @@ export function QRCodeDialog({ isOpen, onClose, value, title, description }: QRC
                   CleanMyMap • V1 Launch
                 </p>
               </div>
-    </ModalFrame>
+    </CmmDialog>
   );
 }
