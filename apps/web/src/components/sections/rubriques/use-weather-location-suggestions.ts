@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import {
   getLocalGeoAddressSuggestions,
@@ -23,27 +23,32 @@ type AddressSuggestionsResponse = {
 
 export function useWeatherLocationSuggestions(locationQuery: string) {
   const locationSuggestionsAbortRef = useRef<AbortController | null>(null);
+  const activeRequestQueryRef = useRef<string | null>(null);
+  const abortedQueryRef = useRef<Set<string>>(new Set());
   const locationQueryGenerationRef = useRef(0);
-  const [debouncedLocationQuery, setDebouncedLocationQuery] = useState(locationQuery.trim());
+  const normalizedLocationQuery = locationQuery.trim();
+  const lastNormalizedLocationQueryRef = useRef(normalizedLocationQuery);
+  const [debouncedLocationQuery, setDebouncedLocationQuery] = useState(normalizedLocationQuery);
 
-  useEffect(() => {
-    locationQueryGenerationRef.current += 1;
-    locationSuggestionsAbortRef.current?.abort();
-    const timer = window.setTimeout(() => {
-      setDebouncedLocationQuery(locationQuery.trim());
-    }, WEATHER_LOCATION_SUGGESTION_DEBOUNCE_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [locationQuery]);
+  const abortActiveLocationRequest = useCallback(() => {
+    const controller = locationSuggestionsAbortRef.current;
+    if (!controller || controller.signal.aborted) return;
+    controller.abort();
+    if (activeRequestQueryRef.current) {
+      abortedQueryRef.current.add(activeRequestQueryRef.current);
+    }
+  }, []);
 
   const locationSuggestions = useSWR<AddressSuggestionsResponse>(
     debouncedLocationQuery.length >= 3
       ? ["section-weather-location-suggestions", debouncedLocationQuery]
       : null,
     async () => {
-      locationSuggestionsAbortRef.current?.abort();
+      abortActiveLocationRequest();
       const controller = new AbortController();
       locationSuggestionsAbortRef.current = controller;
+      activeRequestQueryRef.current = debouncedLocationQuery;
+      abortedQueryRef.current.delete(debouncedLocationQuery);
       const requestQueryGeneration = locationQueryGenerationRef.current;
       const timeout = window.setTimeout(() => controller.abort(), 8_000);
       const localSuggestions = getLocalGeoAddressSuggestions(debouncedLocationQuery, 6);
@@ -55,6 +60,7 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
         window.clearTimeout(timeout);
         if (locationSuggestionsAbortRef.current === controller) {
           locationSuggestionsAbortRef.current = null;
+          activeRequestQueryRef.current = null;
         }
         return { status: "ok", query: debouncedLocationQuery, items: localSuggestions };
       }
@@ -95,20 +101,39 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
         window.clearTimeout(timeout);
         if (locationSuggestionsAbortRef.current === controller) {
           locationSuggestionsAbortRef.current = null;
+          activeRequestQueryRef.current = null;
         }
       }
     },
     { ...swrRecentViewOptions, keepPreviousData: false },
   );
+  const { mutate: revalidateLocationSuggestions } = locationSuggestions;
+
+  useEffect(() => {
+    const queryChanged = lastNormalizedLocationQueryRef.current !== normalizedLocationQuery;
+    if (queryChanged) {
+      lastNormalizedLocationQueryRef.current = normalizedLocationQuery;
+      locationQueryGenerationRef.current += 1;
+      abortActiveLocationRequest();
+    }
+
+    const timer = window.setTimeout(() => {
+      setDebouncedLocationQuery(normalizedLocationQuery);
+      if (abortedQueryRef.current.delete(normalizedLocationQuery)) {
+        void revalidateLocationSuggestions().catch(() => undefined);
+      }
+    }, WEATHER_LOCATION_SUGGESTION_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [abortActiveLocationRequest, normalizedLocationQuery, revalidateLocationSuggestions]);
 
   useEffect(() => () => locationSuggestionsAbortRef.current?.abort(), []);
   useEffect(() => {
     if (debouncedLocationQuery.length < 3) {
-      locationSuggestionsAbortRef.current?.abort();
+      abortActiveLocationRequest();
     }
-  }, [debouncedLocationQuery]);
+  }, [abortActiveLocationRequest, debouncedLocationQuery]);
 
-  const normalizedLocationQuery = locationQuery.trim();
   const hasCurrentSuggestions = locationSuggestions.data?.query === normalizedLocationQuery;
   const isAbortError = locationSuggestions.error?.name === "AbortError";
 

@@ -198,10 +198,33 @@ describe("useWeatherLocationSuggestions request lifecycle", () => {
     hook.renderer.unmount();
   });
 
-  it("does not reuse an aborted response across a rapid A/B/A sequence", async () => {
-    const requests: Deferred<Response>[] = [];
+  it("aborts an active search on unmount without exposing an AbortError", async () => {
+    const request = deferred<Response>();
     const fetchMock = vi.fn((...args: [string, RequestInit?]) => {
       void args;
+      return request.promise;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const hook = renderHook("");
+    hook.render("recherche à démonter");
+    await act(async () => { vi.advanceTimersByTime(220); });
+    const requestSignal = (fetchMock.mock.calls[0]?.[1] as RequestInit).signal as AbortSignal;
+
+    act(() => { hook.renderer.unmount(); });
+    expect(requestSignal.aborted).toBe(true);
+
+    await act(async () => {
+      request.resolve(response("réponse tardive"));
+      await flushPromises();
+    });
+  });
+
+  it("restarts a returned A search after an aborted A/B/A sequence", async () => {
+    const requests: Deferred<Response>[] = [];
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      void url;
+      void init;
       const request = deferred<Response>();
       requests.push(request);
       return request.promise;
@@ -219,14 +242,48 @@ describe("useWeatherLocationSuggestions request lifecycle", () => {
     hook.render("recherche A");
     expect(hook.current.locationSuggestions.data).toBeUndefined();
     await act(async () => { vi.advanceTimersByTime(220); });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(hook.current.locationSuggestions.isLoading).toBe(true);
 
     await act(async () => {
       requests[0]?.resolve(response("ancienne réponse A"));
       await flushPromises();
     });
     expect(hook.current.locationSuggestions.data).toBeUndefined();
+    expect(hook.current.locationSuggestionsError).toBeNull();
 
+    await act(async () => {
+      requests[1]?.resolve(response("recherche A valide"));
+      await flushPromises();
+    });
+    expect(hook.current.locationSuggestions.data?.items.map((item) => item.label)).toEqual(["recherche A valide"]);
+    expect(hook.current.locationSuggestionsError).toBeNull();
+    hook.renderer.unmount();
+  });
+
+  it("does not abort or restart a request when only trailing whitespace changes", async () => {
+    const request = deferred<Response>();
+    const fetchMock = vi.fn((...args: [string, RequestInit?]) => {
+      void args;
+      return request.promise;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const hook = renderHook("");
+    hook.render("recherche A");
+    await act(async () => { vi.advanceTimersByTime(220); });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    hook.render("recherche A ");
+    expect((fetchMock.mock.calls[0]?.[1] as RequestInit).signal?.aborted).toBe(false);
+    await act(async () => { vi.advanceTimersByTime(220); });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      request.resolve(response("recherche A"));
+      await flushPromises();
+    });
+    expect(hook.current.locationSuggestions.data?.items.map((item) => item.label)).toEqual(["recherche A"]);
     expect(hook.current.locationSuggestionsError).toBeNull();
     hook.renderer.unmount();
   });
