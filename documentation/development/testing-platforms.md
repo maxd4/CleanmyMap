@@ -110,6 +110,16 @@ La classification du démarrage utilise le véritable code de sortie de
 n'émet aucun signal d'échec de journal. Les catégories d'échec, y compris
 `UNCLASSIFIED`, ne sont évaluées que pour un démarrage effectivement non nul.
 
+Pendant `supabase start`, la lane exécute en parallèle une sonde bornée toutes
+les cinq secondes. Elle conserve uniquement une chronologie NDJSON temporaire
+des états synthétiques (`DOCKER_READY`, `IMAGES_OBSERVED`,
+`NETWORK_OBSERVED`, `CONTAINERS_OBSERVED`, `SERVICES_READY` ou
+`DOCKER_UNAVAILABLE`), les nombres d'images/conteneurs et l'état du réseau et
+des services requis. Le fichier est supprimé avec le journal brut ; le rendu
+final ne publie que le nombre et la chronologie des observations. Cette
+chronologie apporte une preuve de sous-état sans transformer une observation en
+cause causale et sans prolonger le délai de `supabase start`.
+
 Les commandes `supabase start`, `supabase status`, `supabase db reset` et
 `supabase stop` sont donc réservées à cette CI éphémère explicitement dédiée au
 replay ; elles ne font pas partie du workflow local.

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { appendFileSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
@@ -36,6 +36,11 @@ const serviceAliases = Object.freeze([
   ["logflare", "logflare"], ["realtime", "realtime"], ["storage", "storage"], ["studio", "studio"],
   ["kong", "kong"], ["postgres", "db"], ["db", "db"],
 ]);
+
+const dockerContainersCommand = ["docker", "ps", "-a", "--filter", "name=supabase_", "--format", "{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"];
+const dockerImagesCommand = ["docker", "images", "--format", "{{.Repository}}\t{{.Tag}}"];
+const dockerNetworksCommand = ["docker", "network", "ls", "--format", "{{.Name}}\t{{.Driver}}"];
+const progressObservationStates = new Set(["DOCKER_READY", "IMAGES_OBSERVED", "NETWORK_OBSERVED", "CONTAINERS_OBSERVED", "SERVICES_READY", "DOCKER_UNAVAILABLE"]);
 
 export function classifySupabaseStartFailure({
   log,
@@ -181,7 +186,75 @@ function healthState(containerStates, requiredState) {
   return "pending";
 }
 
-export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = null, root = process.cwd(), probeCommand = probe }) {
+function progressObservationState({ dockerDaemonAvailable, dockerImages, networkState, dockerContainers, requiredServicesState }) {
+  if (!dockerDaemonAvailable) return "DOCKER_UNAVAILABLE";
+  if (networkState === "observed" && dockerContainers === 0) return "NETWORK_OBSERVED";
+  if (dockerContainers > 0 && requiredServicesState === "ready") return "SERVICES_READY";
+  if (dockerContainers > 0) return "CONTAINERS_OBSERVED";
+  if (dockerImages > 0) return "IMAGES_OBSERVED";
+  return "DOCKER_READY";
+}
+
+export function collectStartProgressSnapshot({ elapsedSeconds = 0, probeCommand = (command, args) => probe(command, args, 2_000) }) {
+  const dockerDaemon = probeCommand("docker", ["info", "--format", "{{.ServerVersion}}"]);
+  const dockerContainers = probeCommand(dockerContainersCommand[0], dockerContainersCommand.slice(1));
+  const dockerImages = probeCommand(dockerImagesCommand[0], dockerImagesCommand.slice(1));
+  const dockerNetworks = probeCommand(dockerNetworksCommand[0], dockerNetworksCommand.slice(1));
+  const containerInspectionAvailable = dockerContainers.available;
+  const containerServices = containerInspectionAvailable ? parseContainerServices(dockerContainers.output) : {};
+  const containerStates = containerInspectionAvailable ? classifyContainerStates(dockerContainers.output) : unavailableContainerStates();
+  const containerCount = containerInspectionAvailable ? Object.values(containerStates).reduce((total, count) => total + count, 0) : null;
+  const requiredServicesState = requiredServiceState(containerServices, containerCount);
+  const imageCount = dockerImages.available ? String(dockerImages.output).split(/\r?\n/).filter(Boolean).length : null;
+  const networkNames = dockerNetworks.available ? String(dockerNetworks.output).split(/\r?\n/).filter(Boolean) : null;
+  const networkState = networkNames === null ? "unobserved" : networkNames.some((line) => /supabase/i.test(line)) ? "observed" : "missing";
+  return {
+    schemaVersion: 1,
+    elapsedSeconds: Number.isFinite(elapsedSeconds) ? elapsedSeconds : null,
+    dockerDaemon: dockerDaemon.available ? "available" : "unavailable",
+    dockerImages: imageCount,
+    dockerContainers: containerCount,
+    dockerContainerStates: containerStates,
+    requiredServicesState,
+    networkState,
+    observationState: progressObservationState({
+      dockerDaemonAvailable: dockerDaemon.available,
+      dockerImages: imageCount,
+      networkState,
+      dockerContainers: containerCount,
+      requiredServicesState,
+    }),
+  };
+}
+
+function normalizeProgressSnapshots(snapshots) {
+  return (Array.isArray(snapshots) ? snapshots : [])
+    .filter((snapshot) => snapshot && typeof snapshot === "object" && snapshot.schemaVersion === 1)
+    .slice(0, 120)
+    .map((snapshot) => ({
+      elapsedSeconds: Number.isFinite(snapshot.elapsedSeconds) ? snapshot.elapsedSeconds : null,
+      observationState: progressObservationStates.has(snapshot.observationState) ? snapshot.observationState : "UNKNOWN",
+      dockerDaemon: snapshot.dockerDaemon === "available" ? "available" : "unavailable",
+      dockerImages: Number.isInteger(snapshot.dockerImages) ? snapshot.dockerImages : null,
+      dockerContainers: Number.isInteger(snapshot.dockerContainers) ? snapshot.dockerContainers : null,
+      requiredServicesState: typeof snapshot.requiredServicesState === "string" ? snapshot.requiredServicesState : "unobserved",
+      networkState: typeof snapshot.networkState === "string" ? snapshot.networkState : "unobserved",
+    }));
+}
+
+function readProgressSnapshots(progressFile) {
+  if (!progressFile) return [];
+  try {
+    return readFileSync(progressFile, "utf8")
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+  } catch {
+    return [];
+  }
+}
+
+export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = null, root = process.cwd(), probeCommand = probe, startProgressSnapshots = [] }) {
   const dockerVersion = probeCommand("docker", ["--version"]);
   const dockerDaemon = probeCommand("docker", ["info", "--format", "{{.ServerVersion}}"]);
   const dockerInfo = probeCommand("docker", ["info", "--format", "{{json .}}"]);
@@ -204,8 +277,9 @@ export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = n
   const imageCount = dockerImages.available ? String(dockerImages.output).split(/\r?\n/).filter(Boolean).length : null;
   const networkNames = dockerNetworks.available ? String(dockerNetworks.output).split(/\r?\n/).filter(Boolean) : null;
   const networkState = networkNames === null ? "unobserved" : networkNames.some((line) => /supabase/i.test(line)) ? "observed" : "missing";
+  const progressSnapshots = normalizeProgressSnapshots(startProgressSnapshots);
   const evidence = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     evidenceCodes: [],
     dockerCommandAvailable: dockerVersion.available,
     dockerDaemonAvailable: dockerDaemon.available,
@@ -230,6 +304,8 @@ export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = n
     startPhase: inferStartStep(log),
     failureService: inferFailureService(log),
     durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : null,
+    startObservationCount: progressSnapshots.length,
+    startObservationTimeline: progressSnapshots.map((snapshot) => `${snapshot.elapsedSeconds ?? "unknown"}:${snapshot.observationState}`).join(","),
   };
   const evidenceCodes = [
     dockerVersion.available ? "DOCKER_COMMAND_AVAILABLE" : "DOCKER_COMMAND_UNAVAILABLE",
@@ -248,6 +324,7 @@ export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = n
   if (exitCode !== 0) evidenceCodes.push("NONZERO_START_EXIT");
   if (Number.isFinite(durationSeconds) && durationSeconds >= 80) evidenceCodes.push("START_DURATION_OVER_80_SECONDS");
   if (evidence.startPhase === "UNKNOWN") evidenceCodes.push("START_PHASE_UNOBSERVED");
+  evidenceCodes.push(progressSnapshots.length > 0 ? "START_PROGRESS_OBSERVED" : "START_PROGRESS_UNOBSERVED");
   if (evidence.failureService) evidenceCodes.push("FAILED_SERVICE_IDENTIFIED");
   const category = classifySupabaseStartFailure({ log, exitCode, evidence });
   evidenceCodes.push(category === SUPABASE_START_CATEGORIES.UNCLASSIFIED ? "NO_CLASSIFIABLE_START_LOG_SIGNAL" : category === SUPABASE_START_CATEGORIES.START_SUCCEEDED ? "START_SUCCEEDED" : `LOG_SIGNAL_${category}`);
@@ -287,13 +364,29 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`config_contract=${evidence.configContract}`);
     lines.push(`configured_ports=${Object.entries(evidence.configuredPorts).map(([name, port]) => `${name}:${port}`).join(",") || "unavailable"}`);
     lines.push(`duration_seconds=${evidence.durationSeconds ?? "unavailable"}`);
+    lines.push(`start_observation_count=${evidence.startObservationCount ?? 0}`);
+    lines.push(`start_observation_timeline=${evidence.startObservationTimeline || "unavailable"}`);
   }
   return lines.join("\n");
 }
 
-function probe(command, args) {
-  const result = spawnSync(command, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 10_000, windowsHide: true });
+function probe(command, args, timeoutMs = 10_000) {
+  const result = spawnSync(command, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: timeoutMs, windowsHide: true });
   return { available: !result.error && result.status === 0, output: `${result.stdout ?? ""}\n${result.stderr ?? ""}` };
+}
+
+function sleepSync(milliseconds) {
+  const signal = new Int32Array(new SharedArrayBuffer(4));
+  Atomics.wait(signal, 0, 0, milliseconds);
+}
+
+function isProcessAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function readArgument(name) {
@@ -304,13 +397,26 @@ function readArgument(name) {
 
 function main() {
   const logFile = readArgument("--log-file");
+  const progressFile = readArgument("--progress-file");
+  const watchPidValue = readArgument("--watch-pid");
   const exitCodeValue = readArgument("--exit-code");
   const durationValue = readArgument("--duration-seconds");
+  if (watchPidValue !== undefined) {
+    const watchPid = Number.parseInt(watchPidValue, 10);
+    if (!progressFile || !Number.isInteger(watchPid) || watchPid <= 0) throw new Error("Supabase start progress monitor requires --progress-file and a positive --watch-pid.");
+    const startedAt = Date.now();
+    do {
+      appendFileSync(progressFile, `${JSON.stringify(collectStartProgressSnapshot({ elapsedSeconds: Math.floor((Date.now() - startedAt) / 1000) }))}\n`);
+      if (!isProcessAlive(watchPid)) break;
+      sleepSync(5_000);
+    } while (isProcessAlive(watchPid));
+    return;
+  }
   const exitCode = Number.parseInt(exitCodeValue ?? "", 10);
   const durationSeconds = durationValue === undefined ? null : Number.parseInt(durationValue, 10);
   if (!logFile || !Number.isInteger(exitCode) || exitCode < 0 || (durationValue !== undefined && (!Number.isInteger(durationSeconds) || durationSeconds < 0))) throw new Error("Supabase start diagnostic requires --log-file and a non-negative --exit-code.");
   const log = readFileSync(logFile, "utf8");
-  const evidence = collectBoundedStartEvidence({ log, exitCode, durationSeconds });
+  const evidence = collectBoundedStartEvidence({ log, exitCode, durationSeconds, startProgressSnapshots: readProgressSnapshots(progressFile) });
   const category = classifySupabaseStartFailure({ log, exitCode, dockerCommandAvailable: evidence.dockerCommandAvailable, dockerDaemonAvailable: evidence.dockerDaemonAvailable, supabaseCliAvailable: evidence.supabaseCliAvailable, evidence });
   process.stdout.write(renderSupabaseStartDiagnostic({ category, exitCode, dockerVersion: evidence.dockerServerVersion, supabaseCliVersion: evidence.supabaseCliVersion, dockerDaemonAvailable: evidence.dockerDaemonAvailable, evidence }) + "\n");
 }

@@ -8,6 +8,7 @@ import { resolve } from "node:path";
 import {
   classifySupabaseStartFailure,
   collectBoundedStartEvidence,
+  collectStartProgressSnapshot,
   renderSupabaseStartDiagnostic,
   SUPABASE_START_CATEGORIES,
 } from "./diagnose-supabase-start.mjs";
@@ -114,6 +115,7 @@ test("turns a long failed start with no containers into an actionable bounded co
     probeCommand: createProbeCommand(),
   });
 
+  assert.equal(evidence.schemaVersion, 3);
   assert.equal(
     classifySupabaseStartFailure({ log: "opaque startup failure", exitCode: 1, evidence }),
     SUPABASE_START_CATEGORIES.START_TIMEOUT,
@@ -121,6 +123,31 @@ test("turns a long failed start with no containers into an actionable bounded co
   assert.ok(evidence.evidenceCodes.includes("REQUIRED_SERVICES_MISSING"));
   assert.ok(evidence.evidenceCodes.includes("SUPABASE_NETWORK_MISSING"));
   assert.equal(evidence.startPhase, "UNKNOWN");
+});
+
+test("collects a public-safe startup progress snapshot without raw Docker output", () => {
+  const snapshot = collectStartProgressSnapshot({
+    elapsedSeconds: 10,
+    probeCommand: createProbeCommand({
+      dockerDaemon: { available: true, output: "28.0.4 DockerRootDir=/secret" },
+      dockerImages: { available: true, output: "private/image\tlatest\nsecond/image\tstable" },
+      dockerNetworks: { available: true, output: "supabase_network\tbridge" },
+      dockerContainers: { available: true, output: "supabase_db_web\tprivate/image\tUp 1 second\t" },
+    }),
+  });
+
+  assert.deepEqual(snapshot, {
+    schemaVersion: 1,
+    elapsedSeconds: 10,
+    dockerDaemon: "available",
+    dockerImages: 2,
+    dockerContainers: 1,
+    dockerContainerStates: { running: 1, exited: 0, created: 0, restarting: 0, other: 0 },
+    requiredServicesState: "incomplete",
+    networkState: "observed",
+    observationState: "CONTAINERS_OBSERVED",
+  });
+  assert.doesNotMatch(JSON.stringify(snapshot), /private\/image|DockerRootDir|supabase_db_web/);
 });
 
 test("classifies a delayed start with no Supabase network or containers as a timeout", () => {
@@ -173,6 +200,33 @@ test("emits bounded machine evidence without returning Docker or Supabase output
   assert.equal(evidence.healthState, "failed");
   assert.match(diagnostic, /evidence_codes=/);
   assert.doesNotMatch(diagnostic, /private-token|DockerRootDir|supabase_db/);
+});
+
+test("renders the bounded startup observation timeline without publishing raw snapshots", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "opaque startup failure private-token",
+    exitCode: 1,
+    durationSeconds: 12,
+    startProgressSnapshots: [
+      { schemaVersion: 1, elapsedSeconds: 0, observationState: "DOCKER_READY", dockerDaemon: "available", dockerImages: 0, dockerContainers: 0, requiredServicesState: "missing", networkState: "missing" },
+      { schemaVersion: 1, elapsedSeconds: 5, observationState: "NETWORK_OBSERVED", dockerDaemon: "available", dockerImages: 2, dockerContainers: 0, requiredServicesState: "missing", networkState: "observed" },
+    ],
+    probeCommand: createProbeCommand(),
+  });
+  const diagnostic = renderSupabaseStartDiagnostic({
+    category: SUPABASE_START_CATEGORIES.UNCLASSIFIED,
+    exitCode: 1,
+    dockerVersion: evidence.dockerServerVersion,
+    supabaseCliVersion: evidence.supabaseCliVersion,
+    dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+    evidence,
+  });
+
+  assert.equal(evidence.startObservationCount, 2);
+  assert.equal(evidence.startObservationTimeline, "0:DOCKER_READY,5:NETWORK_OBSERVED");
+  assert.match(diagnostic, /start_observation_count=2/);
+  assert.match(diagnostic, /start_observation_timeline=0:DOCKER_READY,5:NETWORK_OBSERVED/);
+  assert.doesNotMatch(diagnostic, /private-token|DockerRootDir|supabase_db_web/);
 });
 
 test("confirms zero containers only when docker ps succeeds", () => {
@@ -493,9 +547,12 @@ test("the workflow keeps startup failure blocking and never prints the raw log",
   assert.match(workflow, /set \+e[\s\S]*?start_exit_code=\$\?/);
   assert.match(workflow, /node scripts\/ci\/diagnose-supabase-start\.mjs/);
   assert.match(workflow, /--duration-seconds="\$start_duration_seconds"/);
+  assert.match(workflow, /--watch-pid="\$start_pid"/);
+  assert.match(workflow, /--progress-file="\$start_progress_file"/);
+  assert.match(workflow, /start_progress_file="artifacts\/ci\/supabase-start-progress\.ndjson"/);
   assert.match(workflow, /supabase start --workdir apps\/web --yes --output-format json/);
   assert.doesNotMatch(workflow, /--ignore-health-check/);
   assert.match(workflow, /if \[ "\$start_exit_code" -ne 0 \]; then\s+exit "\$start_exit_code"/);
-  assert.match(workflow, /trap 'rm -f "\$start_log"' EXIT/);
+  assert.match(workflow, /trap 'rm -f "\$start_log" "\$start_progress_file"' EXIT/);
   assert.doesNotMatch(workflow, /cat\s+[^\n]*supabase-start\.log/);
 });

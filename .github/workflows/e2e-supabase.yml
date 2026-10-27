@@ -112,14 +112,25 @@ jobs:
           set +e
           mkdir -p artifacts/ci
           start_log="artifacts/ci/supabase-start.log"
-          trap 'rm -f "$start_log"' EXIT
+          start_progress_file="artifacts/ci/supabase-start-progress.ndjson"
+          trap 'rm -f "$start_log" "$start_progress_file"' EXIT
+          : > "$start_progress_file"
           start_started_at="$(date +%s)"
-          ./node_modules/.bin/supabase start --workdir apps/web --yes --output-format json > "$start_log" 2>&1
+          ./node_modules/.bin/supabase start --workdir apps/web --yes --output-format json > "$start_log" 2>&1 &
+          start_pid=$!
+          node scripts/ci/diagnose-supabase-start.mjs \
+            --watch-pid="$start_pid" \
+            --progress-file="$start_progress_file" >/dev/null 2>&1 &
+          progress_pid=$!
+          wait "$start_pid"
           start_exit_code=$?
+          kill "$progress_pid" 2>/dev/null || true
+          wait "$progress_pid" 2>/dev/null || true
           start_duration_seconds=$(( $(date +%s) - start_started_at ))
           diagnostic_exit_code=0
           node scripts/ci/diagnose-supabase-start.mjs \
             --log-file="$start_log" \
+            --progress-file="$start_progress_file" \
             --exit-code="$start_exit_code" \
             --duration-seconds="$start_duration_seconds" || diagnostic_exit_code=$?
           if [ "$start_exit_code" -ne 0 ]; then
