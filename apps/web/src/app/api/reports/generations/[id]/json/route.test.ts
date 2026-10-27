@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getSnapshotMock,
   requireAuthenticatedAccessMock,
@@ -23,6 +23,18 @@ describe("GET historical scientific JSON", () => {
     requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: false, status: 401, error: "Unauthorized" });
     const response = await invoke();
     expect(response.status).toBe(401);
+    expect(getSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects before resolving route parameters or reading the snapshot", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: false, status: 401, error: "Unauthorized" });
+    const then = vi.fn();
+    const response = await GET(new Request("http://localhost"), {
+      params: { then } as unknown as Promise<{ id: string }>,
+    });
+
+    expect(response.status).toBe(401);
+    expect(then).not.toHaveBeenCalled();
     expect(getSnapshotMock).not.toHaveBeenCalled();
   });
 

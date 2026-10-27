@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getSnapshotMock,
   requireAuthenticatedAccessMock,
@@ -24,6 +24,25 @@ describe("GET historical scientific CSV", () => {
     const response = await invoke();
     expect(response.status).toBe(401);
     expect(getSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects before resolving route parameters or reading the snapshot", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: false, status: 401, error: "Unauthorized" });
+    const then = vi.fn();
+    const response = await GET(new Request("http://localhost"), {
+      params: { then } as unknown as Promise<{ id: string }>,
+    });
+
+    expect(response.status).toBe(401);
+    expect(then).not.toHaveBeenCalled();
+    expect(getSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the owner scope on the CSV projection", async () => {
+    const response = await invoke();
+
+    expect(response.status).toBe(200);
+    expect(getSnapshotMock).toHaveBeenCalledWith(HISTORICAL_REPORT_ID, "user-1");
   });
 
   it("returns CSV with explicit missing-data status and download headers", async () => {
