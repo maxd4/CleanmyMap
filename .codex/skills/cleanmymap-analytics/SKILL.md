@@ -1,35 +1,31 @@
 ---
 name: cleanmymap-analytics
-description: "Use this skill when a task touches analytics events, consent, funnels, tracking, or product metrics in CleanMyMap."
+description: "PostHog, analytics, consentement, funnels et métriques produit CleanMyMap, avec confidentialité et définition des événements."
 category: repository
 risk: medium
 source: local
-tags: "[analytics, posthog, consent, metrics, funnels]"
-date_added: "2026-05-24"
+tags: "[analytics]"
 ---
 
-# CleanMyMap — analytics et consentement
+# Analytics, consentement et métriques produit
 
-## Activer quand
+## Déclenchement
 
-Une modification concerne PostHog, pageviews, funnels, tracking de navigation, consentement ou mesures produit.
+Activer pour PostHog, événements analytics, funnel, tracking de navigation, métadonnées de campagne, consentement, KPI produit ou instrumentation.
 
-## Sources CURRENT
+## Sources
 
-- `apps/web/src/lib/analytics/sanitize-analytics-payload.ts` : allowlists et normalisation des routes, métadonnées et identifiants de session.
-- `apps/web/src/lib/posthog/client.ts` : configuration SDK, filtre `before_send`, capture automatique autorisée et persistance.
-- `apps/web/src/lib/analytics/funnel-client.ts` et `apps/web/src/app/api/analytics/funnel/route.ts` : frontière client/API, validation et ingestion.
-- `apps/web/src/lib/analytics-consent.ts` et contrôles des mineurs : décision de consentement applicable.
-- `documentation/security/README.md`, gouvernance des données et documentation légale pour les obligations transverses.
+- `apps/web/src/lib/analytics/sanitize-analytics-payload.ts`, `apps/web/src/lib/posthog/client.ts`, `apps/web/src/lib/analytics/funnel-client.ts` et l'API funnel : vérifier leur présence/consommateurs sur `main`.
+- `apps/web/src/lib/analytics-consent.ts`, documentation `security/`, `legal/`, `architecture/data-governance.md` et consommateurs mobiles si impact partagé.
 
-## Invariants
+## Procédure
 
-- Aucun événement, initialisation active ou stockage analytique sans consentement valide ; revérifier le consentement après chargement asynchrone du SDK.
-- Les routes dynamiques sont catégorisées : invitation, mission et route inconnue ne contiennent jamais token, UUID, paramètres ni fragment dans l'analytics.
-- Pas de PII, coordonnées précises, valeurs de formulaire, URL/referrer libre, identifiant utilisateur ou de session arbitraire dans les propriétés ; vérifier aussi les propriétés automatiques `$pathname`, `$referrer` et campagne.
-- Les catégories métiers autorisées et le comptage de funnel restent stables. Le script de normalisation est un owner unique, pas une fonction copiée dans chaque tracker.
-- Le filtrage côté client ne remplace pas la validation de l'API ni les restrictions de stockage local. Un test mocké n'est pas une preuve d'émission réseau réelle.
+1. Définir la question produit que la mesure doit répondre, l'événement canonique, son déclencheur et sa granularité ; éviter le tracking sans décision exploitable.
+2. Vérifier consentement valide **avant émission et persistance**, notamment après chargement asynchrone du SDK ; prévoir absence et révocation.
+3. Établir une allowlist de propriétés. Ne jamais émettre coordonnées précises, ID personnel arbitraire, token, valeur de formulaire, URL/referrer complet ni contenu privé.
+4. Normaliser les routes dynamiques et vérifier les propriétés automatiques du SDK ainsi que l'API d'ingestion ; un filtre navigateur seul est insuffisant.
+5. Définir déduplication/session, définition du numérateur/dénominateur, période, exclusions et événements tardifs ; ne pas confondre nombre d'événements et nombre d'utilisateurs.
 
 ## Validation
 
-Tester séparément consentement absent/révoqué, événements auto/explicites, routes dynamiques, clés privées, déduplication session et ingestion malformée, puis les parcours admissibles positifs. Exécuter les tests ciblés des modules affectés. Ne jamais considérer `capture_pageview` ou le seul `before_send` comme garantie exhaustive de confidentialité.
+Scénarios sans consentement, consentement révoqué, route dynamique secrète, événement valide, double émission, donnée malformée et ingestion serveur. Distinguer simulation, requête réseau effectivement interceptée et état PostHog distant réellement observé.

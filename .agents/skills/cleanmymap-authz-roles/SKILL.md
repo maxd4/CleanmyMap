@@ -1,34 +1,33 @@
 ---
 name: cleanmymap-authz-roles
-description: "Use this skill when a task touches Clerk auth, roles, permissions, protected routes, or authorization boundaries in CleanMyMap."
+description: "Clerk, rôle attribué ou actif, capability, scope, ownership et garde API CleanMyMap. Utiliser pour modifier ou auditer les droits réels des utilisateurs."
 category: repository
 risk: high
 source: local
-tags: "[authz, roles, clerk, permissions, protected-routes]"
-date_added: "2026-05-24"
+tags: "[authz, roles]"
 ---
 
-# CleanMyMap — AuthN, AuthZ, rôle et scope
+# Clerk, rôles et autorisations
 
-## Activer quand
+## Déclenchement
 
-Clerk, rôle, capability, garde API, propriété d'une ressource ou accès privé/administratif changent.
+Activer pour rôle attribué/actif, permissions, garde API, scope, ownership, profil, session Clerk, migration de rôle ou escalade de privilèges. Pour les vulnérabilités XSS, secrets et webhook, compléter avec `cleanmymap-security` plutôt que doubler son audit.
 
-## Sources
+## Contrats à examiner
 
-1. `documentation/security/authz-authn-regles.md` — **CURRENT** pour les frontières applicables.
-2. `documentation/security/authorization-capabilities.md` — **PLAN / TARGET** ; ne jamais lui attribuer un droit déjà implémenté.
-3. `apps/web/src/lib/auth/README.md`, `apps/web/src/lib/authz.ts`, contrat méthode/par route et tests.
-4. `documentation/security/admin-operation-audit.md` lorsqu'une mutation privilégiée produit un effet auditable.
+- `documentation/security/authz-authn-regles.md` pour **CURRENT** ; `documentation/security/authorization-capabilities.md` pour les capacités explicitement `TARGET`.
+- `apps/web/src/lib/authz.ts`, `apps/web/src/lib/auth/`, le handler concerné, sa projection Supabase, ses consommateurs et tests.
+- `apps/web/src/app/api/AGENTS.md` et le scoped applicable. La navigation produit n'est pas la permission.
 
-## Règles
+## Procédure
 
-- `publicMetadata.role` est l'entrée de rôle Clerk autoritative ; `activeRole` reste borné par le rôle obtenu ; `activeProfile` est une persona UX, pas une permission.
-- Ne jamais attribuer `admin` ou `max` depuis une adresse email, `privateMetadata`, un alias, un client ou un simple `service_role`.
-- Le handler/service serveur résout l'acteur, la capacité, le scope, l'ownership, l'état métier et la projection appropriée. Une session, un proxy, une visibilité UI ou un ID prévisible ne suffisent pas.
-- Les accès publics explicitement admis sont distincts des lectures privées et mutations ; ne pas imposer AuthN à toutes les routes par automatisme.
-- Refuser les contournements RLS, les garde-fous supprimés et les audits de succès émis avant l'effet réel.
+1. Identifier l'**acteur réel** côté serveur, la capability effectivement consommée, le scope, l'ownership/la relation canonique et l'état métier.
+2. Pour une ressource adressée par ID, tracer le filtrage côté serveur et le comportement après remplacement de l'identifiant par celui d'un tiers (IDOR).
+3. Distinguer `GRANTED_ROLE` (`role`), `ACTIVE_ROLE` (`activeRole`) et alias UX `activeProfile`. Le changement d'alias ou de persona n'attribue pas un rôle.
+4. Préserver la relation `action_organizers` pour les organisateurs ; ne pas en synthétiser une depuis une allowlist, `service_role` ou un rôle global.
+5. Protéger les projections publiques minimales sans fermer arbitrairement des lectures communautaires déjà autorisées.
+6. Tester anonyme, acteur autorisé, rôle insuffisant, non-propriétaire, scope hors territoire/organisation, transition d'état et projection de données.
 
-## Validation
+## Preuve et sortie
 
-Tester cas autorisé ET cas refusé (anonyme, autre propriétaire, mauvais scope/rôle, ressource inaccessible) au niveau du handler et du service concerné. Qualifier la différence entre contrat statique, tests mockés et preuve Supabase réellement exécutée. Consulter [références](references/authz-map.md) et [patterns](references/role-guard-patterns.md) seulement si nécessaires.
+Tableau ou diagnostic `acteur / capability / scope / ressource / décision / preuve`. Un test d'UI, un bypass local ou une assertion textuelle ne prouve pas une autorisation distante. Ne jamais promouvoir une capacité `TARGET` au rang de comportement livré.

@@ -1,7 +1,26 @@
 ---
 name: zoom-out
-description: Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture.
+description: "Obtenir une carte architecturale concise des modules, flux, dépendances et contrats CleanMyMap avant une décision."
+category: workflow
+risk: safe
+source: local
+tags: "[zoom, out]"
 disable-model-invocation: true
 ---
 
-I don't know this area of code well. Go up a layer of abstraction. Give me a map of all the relevant modules and callers, using the project's domain glossary vocabulary.
+# Revenir au niveau architectural du problème
+
+## Déclenchement
+
+Activer sur demande « zoom-out », pour comprendre une zone inconnue ou distinguer un symptôme local de sa frontière métier réelle.
+
+## Méthode
+
+1. Localiser le module dans `documentation/architecture/system-overview.md`, puis consulter `main` et le `AGENTS.md` scoped pertinent.
+2. Tracer **entrée → owner → contrats → consommateurs → données/effets → tests**. Réduire l'exploration aux voisins utiles.
+3. Distinguer responsabilité métier, UI, route/API, AuthN/AuthZ, stockage et services externes.
+4. Signaler les responsabilités réellement dupliquées et les dettes démontrées sans proposer un refactoring par défaut.
+
+## Sortie
+
+Carte concise des composants, flux, invariants, zones inconnues et prochaine décision à prendre. Aucun changement, publication ou diagnostic exhaustif par simple activation.

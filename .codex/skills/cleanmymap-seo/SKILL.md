@@ -1,29 +1,30 @@
 ---
 name: cleanmymap-seo
-description: "Utiliser quand une tâche CleanMyMap touche metadata Next.js, canonical, robots, sitemap, JSON-LD/schema.org, indexabilité ou contenu destiné aux moteurs de recherche."
+description: "Indexabilité, SEO, canonical, metadata, JSON-LD, sitemap, robots et routes publiques CleanMyMap."
 category: repository
 risk: medium
 source: local
-tags: "[seo, metadata, canonical, robots, sitemap, json-ld]"
+tags: "[seo]"
 ---
 
-# CleanMyMap — SEO
+# SEO des routes publiques
 
-## But
+## Déclenchement
 
-Faire évoluer les surfaces indexables sans créer des métadonnées ou données structurées incohérentes avec le contenu réel.
+Activer pour métadonnées Next.js, sitemap, robots, canonical, redirections, indexabilité, JSON-LD, SEO/AEO/GEO ou modification susceptible de changer le contenu visible d'une page indexable.
 
-## Règles
+## Sources
 
-- Identifier la route et sa fiche/documentation canonique avant de modifier son contrat SEO.
-- Utiliser les APIs metadata Next.js déjà propriétaires du domaine au lieu d'ajouter une seconde couche.
-- Un canonical doit représenter l'URL de référence réellement voulue.
-- `noindex`/robots est une décision de surface, pas une rustine pour masquer une page incohérente.
-- Le sitemap doit être dérivé de sources canoniques quand c'est possible ; éviter les inventaires manuels parallèles.
-- Le JSON-LD doit décrire du contenu réellement présent et vérifiable ; ne pas inventer note, organisation, événement ou métrique.
-- Ne pas dupliquer les mêmes métadonnées dans plusieurs owners.
-- Préserver les pages privées, admin et états non publics hors indexation selon le contrat existant.
+`documentation/seo/README.md`, `documentation/pages_site/INDEX.md` et fiche `CURRENT` de la route, `apps/web/src/lib/seo/indexability.ts`, `apps/web/src/app/sitemap.ts`, `robots.ts`, metadata/structured-data existants.
+
+## Procédure
+
+1. Classifier indépendamment `ACCESS` (`PUBLIC/HYBRID/PRIVATE`), `SEARCH` (`INDEX/NOINDEX`), `DISCOVERY` et `CANONICAL` selon la matrice courante.
+2. Pour une page `HYBRID`, distinguer contenu publiquement indexable et mutations/données privées toujours protégées.
+3. Déduire sitemap, robots, canonical et metadata de l'owner existant ; ne pas réintroduire un inventaire de routes parallèle.
+4. Le JSON-LD doit décrire du contenu effectivement visible et prouvé. Ne jamais inventer note, événement, FAQ, agrément ou organisation constituée.
+5. Ne pas indexer une route privée, un alias, un utilitaire ou une page provisoire par analogie avec des routes voisines.
 
 ## Validation
 
-Vérifier la metadata générée, canonical/robots, sitemap ou structured data directement concernés. Une chaîne « SEO optimale » générique ne remplace pas les conventions et checks du dépôt.
+Inspecter HTML/métadonnées réellement rendus, canonical, sitemap, robots et tests de l'owner. La configuration Git ne prouve pas l'indexation actuelle par Google ; une donnée Search Console doit être observée explicitement.

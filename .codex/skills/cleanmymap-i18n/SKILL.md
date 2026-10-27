@@ -1,28 +1,30 @@
 ---
 name: cleanmymap-i18n
-description: "Utiliser quand une tâche CleanMyMap touche locale, traduction, routage linguistique, formatage localisé ou catalogue de libellés multilingues réellement présent dans le dépôt."
+description: "Langue française, textes d interface, traductions, pluriels, nombres, dates et vocabulaire métier CleanMyMap."
 category: repository
 risk: medium
 source: local
-tags: "[i18n, locale, translation, formatting, nextjs]"
+tags: "[i18n]"
 ---
 
-# CleanMyMap — i18n et libellés
+# Langue, formatage et vocabulaire
 
-## But
+## Déclenchement
 
-Éviter la duplication de vocabulaire et préserver les contrats de locale existants sans créer une infrastructure multilingue artificielle.
+Activer pour contenu francophone, libellés, traduction, pluralisation, chiffres/dates/unités, locale URL ou catalogue de textes.
 
-## Règles
+## Contrats
 
-- Pour l'application web actuelle, respecter l'invariant de textes publics en français défini par `apps/web/AGENTS.md`.
-- N'introduire une traduction ou un nouveau locale que si le produit et les sources canoniques du domaine le prévoient réellement.
-- Réutiliser les identifiants métier stables ; les modules métier ne doivent pas devenir propriétaires de variantes de libellés.
-- Ne pas utiliser le texte affiché comme identifiant de rôle, statut ou catégorie.
-- Centraliser un libellé seulement lorsqu'un catalogue/owner canonique existe ou qu'une vraie réutilisation le justifie.
-- Préserver paramètres, pluriels, nombres, dates et unités via les primitives de formatage appropriées ; éviter la concaténation de fragments traduits.
-- Ne pas traduire les clés techniques, identifiants, valeurs d'enum ou contrats API sans migration explicite.
+`apps/web/AGENTS.md`, `apps/web/src/lib/domain-language.ts`, règles de navigation et propriétaires des catalogues existants. Les textes publics web restent en français selon la gouvernance courante, sauf décision produit explicite.
+
+## Méthode
+
+1. Chercher l'identifiant métier stable : statut, rôle, catégorie, badge et permission ne sont jamais dérivés du libellé visible.
+2. Identifier le propriétaire courant de l'affichage ; une variation locale ne justifie pas un moteur i18n ou un catalogue global supplémentaire.
+3. Préserver sens, unité, grammaire française, lisibilité des erreurs, accentuation, pluriels et valeurs inconnues.
+4. Pour nombre/date/unité, utiliser le formateur existant ; pour un score stocké de 0 à 100, afficher en `%` via l'owner du domaine, sans modifier la valeur.
+5. Ne pas transformer les clés API, enums persistées ou routes en chaînes traduites sans migration et consommateurs mis à jour.
 
 ## Validation
 
-Vérifier la route/locale réellement concernée et les fallbacks existants. Une modification purement française ne doit pas déclencher la création d'une architecture i18n supplémentaire.
+Vérifier le parcours public/privé réellement touché, les chaînes longues sur mobile, l'accessibilité et les fallbacks. Ne pas annoncer une internationalisation complète après une simple traduction de page.
