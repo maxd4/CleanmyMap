@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   allowLocalActionStoreInCurrentRuntime,
   canUseSupabaseServerPersistence,
+  prependBoundedRecord,
   deleteAndPersistRecord,
   deleteSupabaseRecordById,
   findRecordInList,
@@ -75,6 +76,19 @@ describe("runtime persistence guard", () => {
     expect(canUseSupabaseServerPersistence()).toBe(true);
   });
 
+  it("fails closed outside development when local persistence is not explicitly enabled", async () => {
+    const { allowLocalFileStoreFallback, assertPersistenceAvailable } = await import("./runtime-store");
+    expect(allowLocalFileStoreFallback()).toBe(false);
+    expect(() => assertPersistenceAvailable("audit_events")).toThrow(
+      "missing SUPABASE_SERVICE_ROLE_KEY and local fallback disabled",
+    );
+
+    vi.stubEnv("NODE_ENV", "production");
+    envMock.ALLOW_LOCAL_FILE_STORE_FALLBACK = true;
+    expect(allowLocalFileStoreFallback()).toBe(false);
+    expect(() => assertPersistenceAvailable("audit_events")).toThrow("Persistence unavailable");
+  });
+
   it("maps absent rows, rejects dependency errors, and requires persisted records", async () => {
     const parse = (row: Record<string, unknown>) => typeof row?.id === "string" ? row.id : null;
     await expect(readSupabaseRecords(Promise.resolve({
@@ -121,6 +135,16 @@ describe("runtime persistence guard", () => {
     expect(persist).toHaveBeenNthCalledWith(1, [{ id: "one", value: 3 }, records[1]]);
     expect(persist).toHaveBeenNthCalledWith(2, [records[0]]);
     expect(findRecordInList(records, (record) => record.id === "two")).toEqual(records[1]);
+  });
+
+  it("bounds prepends, preserves immutable inputs, and propagates persistence failures", async () => {
+    const records = [{ id: "one" }, { id: "two" }];
+    expect(prependBoundedRecord({ id: "new" }, records, 2)).toEqual([{ id: "new" }, { id: "one" }]);
+    expect(records).toEqual([{ id: "one" }, { id: "two" }]);
+
+    const persist = vi.fn().mockRejectedValue(new Error("write unavailable"));
+    await expect(replaceAndPersistRecord(records, (record) => record.id === "one", () => ({ id: "changed" }), persist)).rejects.toThrow("write unavailable");
+    await expect(deleteAndPersistRecord(records, (record) => record.id === "one", persist)).rejects.toThrow("write unavailable");
   });
 
   it("keeps local action persistence disabled on Vercel and allows the explicit production opt-in", async () => {
