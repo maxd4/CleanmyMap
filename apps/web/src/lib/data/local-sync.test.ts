@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const upsertLocalRecordsMock = vi.hoisted(() => vi.fn());
 const readSignalementForModerationMock = vi.hoisted(() => vi.fn());
+const runSingleActionQueryMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/data/local-store", () => ({
   LOCAL_DB_FILES: { validated: "validated.json" },
@@ -11,10 +12,125 @@ vi.mock("@/lib/data/local-store", () => ({
 vi.mock("@/lib/admin/moderation/signalement-moderation", () => ({
   readSignalementForModeration: readSignalementForModerationMock,
 }));
+vi.mock("@/lib/actions/query", () => ({
+  runSingleActionQuery: runSingleActionQueryMock,
+}));
 
 describe("validated signalement local sync", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("copies the canonical action projection with measured values and provenance", async () => {
+    runSingleActionQueryMock.mockResolvedValue({
+      id: "action-1",
+      created_at: "2026-08-25T10:00:00Z",
+      action_date: "2026-08-24",
+      actor_name: "Collectif test",
+      location_label: "Quai de test",
+      latitude: 48.85,
+      longitude: 2.35,
+      waste_kg: 4.5,
+      cigarette_butts: 20,
+      volunteers_count: 3,
+      duration_minutes: null,
+      notes: "note",
+      status: "cleaned",
+    });
+
+    const { copyValidatedActionToLocalStore } = await import("./local-sync");
+    await expect(copyValidatedActionToLocalStore({} as never, "action-1", "admin-1"))
+      .resolves.toEqual({ source: "actions", copied: true });
+
+    expect(upsertLocalRecordsMock).toHaveBeenCalledWith(
+      "validated.json",
+      [expect.objectContaining({
+        id: "validated-action-action-1",
+        status: "pending",
+        source: "admin_validation",
+        title: "Collectif test",
+        metrics: expect.objectContaining({ durationMinutes: 0 }),
+        map: { displayable: true, lat: 48.85, lon: 2.35 },
+        trace: expect.objectContaining({ externalId: "action-1", validatedBy: "admin-1" }),
+      })],
+    );
+  });
+
+  it("falls back to a legacy submission and refuses absent legacy records", async () => {
+    runSingleActionQueryMock.mockResolvedValue(null);
+    const legacyQuery = {
+      select: vi.fn(() => legacyQuery),
+      eq: vi.fn(() => legacyQuery),
+      maybeSingle: vi.fn(),
+    };
+    const supabase = { from: vi.fn(() => legacyQuery) };
+
+    legacyQuery.maybeSingle.mockResolvedValueOnce({
+      data: {
+        id: "legacy-1",
+        created_at: "2026-08-25T10:00:00Z",
+        nom: null,
+        adresse: "Rue legacy",
+        date: null,
+        lat: 48.8,
+        lon: null,
+        dechets_kg: null,
+        megots: null,
+        benevoles: null,
+        temps_min: null,
+        commentaire: null,
+        status: "pending",
+        est_propre: false,
+      },
+      error: null,
+    });
+    const { copyValidatedActionToLocalStore } = await import("./local-sync");
+    await expect(copyValidatedActionToLocalStore(supabase as never, "legacy-1", "admin-1"))
+      .resolves.toEqual({ source: "submissions", copied: true });
+    expect(upsertLocalRecordsMock).toHaveBeenCalledWith(
+      "validated.json",
+      [expect.objectContaining({
+        id: "validated-submission-legacy-1",
+        status: "pending",
+        map: { displayable: false, lat: null, lon: null },
+        metrics: expect.objectContaining({ volunteersCount: 0, durationMinutes: 0 }),
+      })],
+    );
+
+    legacyQuery.maybeSingle.mockResolvedValueOnce({ data: null, error: { message: "missing" } });
+    await expect(copyValidatedActionToLocalStore(supabase as never, "missing", "admin-1"))
+      .resolves.toEqual({ source: "submissions", copied: false });
+    expect(upsertLocalRecordsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not write a missing moderated spot and maps pending statuses", async () => {
+    const { copyValidatedSpotToLocalStore } = await import("./local-sync");
+    readSignalementForModerationMock.mockResolvedValueOnce(null);
+    await expect(copyValidatedSpotToLocalStore({} as never, "missing", "admin-1"))
+      .resolves.toBe(false);
+
+    readSignalementForModerationMock.mockResolvedValueOnce({
+      id: "spot-1",
+      label: "Spot en attente",
+      latitude: null,
+      longitude: null,
+      status: "pending",
+      spot_type: null,
+      notes: null,
+      sourceTable: "trash_spotter_spots",
+      validated_at: null,
+    });
+    await expect(copyValidatedSpotToLocalStore({} as never, "spot-1", "admin-1"))
+      .resolves.toBe(true);
+    expect(upsertLocalRecordsMock).toHaveBeenCalledWith(
+      "validated.json",
+      [expect.objectContaining({
+        id: "validated-spot-spot-1",
+        status: "pending",
+        recordType: "other",
+        map: { displayable: false, lat: null, lon: null },
+      })],
+    );
   });
 
   const canonicalRow = (spotType?: string | null) => ({

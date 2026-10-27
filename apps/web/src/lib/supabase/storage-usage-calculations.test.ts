@@ -55,4 +55,26 @@ describe("storage usage calculations", () => {
     expect(snapshot.largestFiles).toHaveLength(2);
     expect(snapshot.warnings).toEqual([]);
   });
+
+  it("covers exact unit boundaries, MIME mappings and quota warning thresholds", () => {
+    expect(formatStorageBytes(1024 ** 2)).toBe("1 MB");
+    expect(formatStorageBytes(10 * 1024 ** 2 + 512 * 1024)).toContain("MB");
+    expect(inferStorageFileTypeLabel("unknown", "application/vnd.ms-excel")).toBe("Document");
+    expect(inferStorageFileTypeLabel("unknown", "application/octet-stream")).toBe("UNKNOWN");
+    expect(inferStorageFileTypeLabel("doc", null)).toBe("Document");
+    expect(inferStorageFileTypeLabel("xlsx", null)).toBe("Données");
+
+    const atWarning = buildStorageUsageSnapshot([
+      { bucket_id: "documents", name: "report.pdf", metadata: { size: 80, mimetype: "application/pdf" } },
+    ], { bytes: 100, label: "100 B", source: "configured_bytes", configuredValue: "100" }, "2026-10-27T12:00:00.000Z");
+    expect(atWarning.warnings).toEqual(["Le quota Supabase Storage approche de la limite."]);
+    const exceeded = buildStorageUsageSnapshot([
+      { bucket_id: "documents", name: "report.pdf", metadata: { size: 100, mimetype: "application/pdf" } },
+    ], { bytes: 100, label: "100 B", source: "configured_bytes", configuredValue: "100" }, "2026-10-27T12:00:00.000Z");
+    expect(exceeded.warnings).toEqual([
+      "Le quota Supabase Storage approche de la limite.",
+      "Le quota Supabase Storage est dépassé.",
+    ]);
+    expect(exceeded.remainingLabel).toBe("0 B");
+  });
 });

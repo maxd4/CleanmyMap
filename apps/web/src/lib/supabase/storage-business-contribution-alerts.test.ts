@@ -134,4 +134,20 @@ describe("storage business contribution alert decisions", () => {
     pushStorageBusinessContributionAlert(alerts, alert);
     expect(alerts).toHaveLength(1);
   });
+
+  it("keeps sub-threshold, null-growth and unrelated-domain cases quiet", () => {
+    expect(buildStorageBusinessContributionAlerts(params({
+      history: [historyPoint({ deltaPercent: null, accelerationBytes: 0 })],
+      currentSharePercent: policy.shareWarningPercent - 0.01,
+    }))).toEqual([]);
+    expect(buildStorageBusinessContributionAlerts(params({
+      domainId: "actions_terrain",
+      currentBytes: policy.socleHeavyExportBytes,
+      topFiles: [topFile(policy.socleHeavyExportBytes - 1)],
+    })).some((alert) => alert.signal === "heavyExports")).toBe(false);
+    expect(buildStorageBusinessContributionAlerts(params({
+      domainId: "pieces_jointes_photo",
+      currentSharePercent: policy.photoDominanceSharePercent - 0.01,
+    })).some((alert) => alert.signal === "photoDominance")).toBe(false);
+  });
 });

@@ -294,6 +294,63 @@ describe("private invitation route boundaries", () => {
     expect(closed.status).toBe(404);
   });
 
+  it("fails closed on link and recipient dependency errors without exposing details", async () => {
+    const token = "N".repeat(43);
+    mocks.from.mockReturnValueOnce({
+      select: () => ({
+        eq: () => ({ maybeSingle: async () => ({ data: null, error: { message: "private database detail" } }) }),
+      }),
+    });
+    const { GET } = await import("./[token]/route");
+    const linkFailure = await GET(buildRequest(`/api/actions/invite/${token}`), { params: Promise.resolve({ token }) });
+    expect(linkFailure.status).toBe(500);
+    expect(JSON.stringify(await parseJsonSafely(linkFailure))).not.toContain("private database detail");
+
+    mocks.from.mockReturnValue(invitationFrom({
+      action_id: action.id,
+      revoked_at: null,
+      expires_at: "2027-01-18T10:00:00Z",
+      registration_status: "unexpected",
+    }));
+    const recipientFailure = await GET(buildRequest(`/api/actions/invite/${token}`), { params: Promise.resolve({ token }) });
+    expect(recipientFailure.status).toBe(422);
+    expect(JSON.stringify(await parseJsonSafely(recipientFailure))).not.toContain("unexpected");
+  });
+
+  it("projects authenticated post-action recipient state and uses fallback fields", async () => {
+    const token = "O".repeat(43);
+    mocks.loadAction.mockResolvedValue({
+      ...action,
+      action_phase: "post_action_complete",
+      status: "approved",
+      published_at: "2026-10-10T10:00:00Z",
+      action_date: "2026-10-01",
+      preparation_data: null,
+      event_start_time: null,
+    });
+    mocks.from.mockReturnValue(invitationFrom({
+      action_id: action.id,
+      revoked_at: null,
+      expires_at: "2027-01-18T10:00:00Z",
+      participation_status: "confirmed",
+      participation_source: "invite_link",
+    }));
+    const { GET } = await import("./[token]/route");
+    const response = await GET(buildRequest(`/api/actions/invite/${token}`), { params: Promise.resolve({ token }) });
+    const body = await parseJsonSafely(response);
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      action: {
+        title: action.location_label,
+        shortDescription: null,
+        meetingTime: null,
+        pointDeRendezVous: action.location_label,
+        participationStatus: "confirmed",
+        participationSource: "invite_link",
+      },
+    });
+  });
+
   it("rejects an invalid registration RPC projection without returning a success", async () => {
     const token = "K".repeat(43);
     mocks.from.mockReturnValue(invitationFrom({ action_id: action.id, revoked_at: null, expires_at: "2027-01-18T10:00:00Z" }));
@@ -301,6 +358,16 @@ describe("private invitation route boundaries", () => {
     const { POST } = await import("./[token]/route");
     const response = await POST(buildRequest(`/api/actions/invite/${token}`, { method: "POST" }), { params: Promise.resolve({ token }) });
     expect(response.status).toBe(422);
+  });
+
+  it("does not turn an unexpected registration dependency error into success", async () => {
+    const token = "P".repeat(43);
+    mocks.from.mockReturnValue(invitationFrom({ action_id: action.id, revoked_at: null, expires_at: "2027-01-18T10:00:00Z" }));
+    mocks.rpc.mockRejectedValueOnce(new Error("private registration internals"));
+    const { POST } = await import("./[token]/route");
+    const response = await POST(buildRequest(`/api/actions/invite/${token}`, { method: "POST" }), { params: Promise.resolve({ token }) });
+    expect(response.status).toBe(500);
+    expect(JSON.stringify(await parseJsonSafely(response))).not.toContain("private registration internals");
   });
 
   it.each([

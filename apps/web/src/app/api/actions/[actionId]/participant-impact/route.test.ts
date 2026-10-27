@@ -15,15 +15,15 @@ const {
   appendActionModerationAuditMock,
 } = groupJoinMocks;
 
-async function patchParticipantImpact(payload: Record<string, unknown>) {
+async function patchParticipantImpact(payload: Record<string, unknown>, rawBody?: string, actionId = "action-1") {
   const { PATCH } = await import("./route");
   return PATCH(
-    new Request("http://localhost/api/actions/action-1/participant-impact", {
+    new Request(`http://localhost/api/actions/${actionId}/participant-impact`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: rawBody ?? JSON.stringify(payload),
     }),
-    { params: Promise.resolve({ actionId: "action-1" }) },
+    { params: Promise.resolve({ actionId }) },
   );
 }
 
@@ -149,8 +149,9 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     expect(unauthenticated.status).toBe(401);
 
     authMock.mockResolvedValue({ userId: "user-1" });
-    const malformed = await patchParticipantImpact("{" as unknown as Record<string, unknown>);
-    expect(malformed.status).toBe(422);
+    const malformedJson = await patchParticipantImpact({}, "{");
+    expect(malformedJson.status).toBe(400);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
     const empty = await patchParticipantImpact({ participantId: "participant-1" });
     expect(empty.status).toBe(422);
     expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
@@ -184,6 +185,53 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
       waste: { kg: 1, condition: "sec", measurementMethod: "balance_au_sol" },
     });
     expect(response.status).toBe(500);
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an empty action identifier and preserves an existing measurement when only one measure changes", async () => {
+    await expect(patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 1, condition: "sec", measurementMethod: "balance_au_sol" },
+    }, undefined, "   ")).resolves.toMatchObject({ status: 422 });
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+
+    const participant = Object.assign(createParticipantWithStatus("confirmed"), {
+      individual_waste_kg: 8,
+      individual_waste_condition: "humide",
+      individual_waste_measurement_method: "balance_au_sol",
+      individual_cigarette_butts_count: 4,
+      individual_cigarette_butts_mass_kg: null,
+      individual_cigarette_butts_condition: "propre",
+    });
+    configureParticipantImpactSupabase([participant]);
+    const response = await patchParticipantImpact({ participantId: "participant-1", waste: null });
+    expect(response.status).toBe(200);
+    expect(participant).toMatchObject({
+      individual_waste_kg: null,
+      individual_cigarette_butts_count: 4,
+      individual_cigarette_butts_condition: "propre",
+    });
+  });
+
+  it("maps action and participant lookup dependency failures without auditing", async () => {
+    getSupabaseServerClientMock.mockReturnValue(createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({ status: "approved" }),
+      errors: { actionLookup: "action lookup failed" },
+    }));
+    await expect(patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 1, condition: "sec", measurementMethod: "balance_au_sol" },
+    })).resolves.toMatchObject({ status: 500 });
+
+    getSupabaseServerClientMock.mockReturnValue(createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({ status: "approved" }),
+      participants: [createParticipantWithStatus("confirmed")],
+      errors: { participantLookup: "participant lookup failed" },
+    }));
+    await expect(patchParticipantImpact({
+      participantId: "participant-1",
+      butts: { count: 1, condition: "propre" },
+    })).resolves.toMatchObject({ status: 500 });
     expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
   });
 });

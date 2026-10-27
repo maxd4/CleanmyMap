@@ -242,6 +242,26 @@ describe("GET /api/chat/search", () => {
     expect(cursorResponse.status).toBe(400);
   });
 
+  it("rejects missing channels, invalid topics and missing DM recipients", async () => {
+    expect((await GET(new Request("http://localhost/api/chat/search?q=message"))).status).toBe(400);
+    expect((await GET(new Request("http://localhost/api/chat/search?channelType=community&topicId=not-a-topic&q=message"))).status).toBe(400);
+
+    const supabaseMock = buildSupabaseMock({ rows: [] });
+    rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
+    const missingRecipient = await GET(new Request("http://localhost/api/chat/search?channelType=dm&q=message"));
+    expect(missingRecipient.status).toBe(400);
+    expect(supabaseMock.calls.ilike).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the identity or Clerk RLS client is unavailable", async () => {
+    identityMock.mockResolvedValueOnce(null);
+    expect((await GET(new Request("http://localhost/api/chat/search?channelType=community&q=message"))).status).toBe(401);
+
+    rlsClientMock.mockResolvedValueOnce(null);
+    expect((await GET(new Request("http://localhost/api/chat/search?channelType=community&q=message"))).status).toBe(503);
+  });
+
   it("searches only the selected community topic and returns compact metadata", async () => {
     const supabaseMock = buildSupabaseMock({
       rows: [

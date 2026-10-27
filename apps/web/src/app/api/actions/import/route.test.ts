@@ -12,6 +12,8 @@ const verifyDryRunProofMock = vi.hoisted(() => vi.fn<typeof import("@/lib/admin/
 const createDryRunProofMock = vi.hoisted(() => vi.fn<typeof import("@/lib/admin/import/dry-run-proof").createDryRunProof>());
 const hashImportPayloadMock = vi.hoisted(() => vi.fn<typeof import("@/lib/admin/import/dry-run-proof").hashImportPayload>());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn<typeof import("@/lib/admin/audit/operation-audit").appendAdminOperationAudit>());
+const acquireBackpressureMock = vi.hoisted(() => vi.fn(() => ({ allowed: true as const })));
+const releaseBackpressureMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAdminAccess: requireAdminAccessMock,
@@ -34,8 +36,8 @@ vi.mock("@/lib/admin/import/dry-run-proof", () => ({
   verifyDryRunProof: verifyDryRunProofMock,
 }));
 vi.mock("@/lib/backpressure", () => ({
-  acquireBackpressure: () => ({ allowed: true }),
-  releaseBackpressure: vi.fn(),
+  acquireBackpressure: acquireBackpressureMock,
+  releaseBackpressure: releaseBackpressureMock,
 }));
 
 const quality = (status: "ok" | "blocking"): ActionDataQualitySummary => ({
@@ -98,6 +100,7 @@ function payloadWithItems(count: number) {
 describe("POST /api/actions/import", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    acquireBackpressureMock.mockReturnValue({ allowed: true });
     requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
     hashImportPayloadMock.mockReturnValue("payload-hash");
     createDryRunProofMock.mockReturnValue({
@@ -123,6 +126,69 @@ describe("POST /api/actions/import", () => {
       },
       dataQuality: quality("ok"),
     }));
+  });
+
+  it("rejects backpressure and unauthenticated requests before parsing or mutating", async () => {
+    const { POST } = await import("./route");
+    acquireBackpressureMock.mockReturnValueOnce({ allowed: false, reason: "busy", retryAfter: 3, position: 2 } as never);
+    await expect(POST(new Request("http://localhost/api/actions/import", { method: "POST", body: "{}" })))
+      .resolves.toMatchObject({ status: 429 });
+    expect(requireAdminAccessMock).not.toHaveBeenCalled();
+
+    requireAdminAccessMock.mockResolvedValueOnce({ ok: false, status: 401, code: "unauthenticated", message: "Authentication required" } as never);
+    await expect(POST(new Request("http://localhost/api/actions/import", { method: "POST", body: "{}" })))
+      .resolves.toMatchObject({ status: 401 });
+    expect(releaseBackpressureMock).toHaveBeenCalled();
+    expect(createActionMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["invalid_json", "{", 400],
+    ["invalid_payload", JSON.stringify({ items: [] }), 400],
+  ])("audits malformed input (%s) and does not create actions", async (code, body, status) => {
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost/api/actions/import", { method: "POST", body }));
+    expect(response.status).toBe(status);
+    expect(createActionMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
+      operationType: "import_confirm",
+      outcome: "error",
+      details: { code },
+    }));
+  });
+
+  it("requires a proof and an exact confirmation before the write path", async () => {
+    const { POST } = await import("./route");
+    const missingProof = await POST(new Request("http://localhost/api/actions/import", {
+      method: "POST",
+      body: JSON.stringify({ ...payload(), confirmPhrase: "CONFIRMER IMPORT" }),
+    }));
+    expect(missingProof.status).toBe(409);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({ details: { code: "dry_run_required" } }));
+
+    const missingPhrase = await POST(new Request("http://localhost/api/actions/import", {
+      method: "POST",
+      body: JSON.stringify({ ...payload(), dryRunProof: "proof-token-123456789012345678" }),
+    }));
+    expect(missingPhrase.status).toBe(409);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({ details: { code: "confirmation_required" } }));
+    expect(createActionMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["expired", "dry_run_expired"],
+    ["mismatch", "dry_run_mismatch"],
+    ["invalid", "dry_run_required"],
+  ])("maps a rejected dry-run proof (%s) without mutation", async (verificationCode, expectedCode) => {
+    verifyDryRunProofMock.mockReturnValueOnce({ ok: false, code: verificationCode } as never);
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost/api/actions/import", {
+      method: "POST",
+      body: JSON.stringify({ ...payload(), dryRunProof: "proof-token-123456789012345678", confirmPhrase: "CONFIRMER IMPORT" }),
+    }));
+    expect(response.status).toBe(409);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({ details: { code: expectedCode } }));
+    expect(createActionMock).not.toHaveBeenCalled();
   });
 
   it("reports geolocation coverage during dry-run", async () => {

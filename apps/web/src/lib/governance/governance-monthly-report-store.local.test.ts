@@ -50,4 +50,29 @@ describe("governance report local fallback", () => {
     await expect(listGovernanceMonthlyReports()).resolves.toHaveLength(2);
     await expect(loadGovernanceMonthlyReport()).resolves.toMatchObject({ reportMonth: "2026-05-01" });
   });
+
+  it("falls back after a Supabase write error and keeps the local replacement deterministic", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+    const upsert = vi.fn(async () => ({ error: { message: "write unavailable" } }));
+    getSupabaseAdminClientMock.mockReturnValue({
+      from: vi.fn(() => ({ upsert })),
+    });
+
+    await expect(upsertGovernanceMonthlyReport(report("2026-05-01", "replacement-2")))
+      .resolves.toBeUndefined();
+    expect(writeLocalRecordStoreMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.arrayContaining([expect.objectContaining({ id: "replacement-2" })]),
+    );
+  });
+
+  it("returns empty or null when Supabase is unavailable and local fallback is forbidden", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+    allowLocalFileStoreFallbackMock.mockReturnValue(false);
+    getSupabaseAdminClientMock.mockImplementation(() => { throw new Error("client unavailable"); });
+
+    await expect(listGovernanceMonthlyReports()).resolves.toEqual([]);
+    await expect(loadGovernanceMonthlyReport("2026-05-01")).resolves.toBeNull();
+    expect(readLocalRecordStoreMock).not.toHaveBeenCalled();
+  });
 });

@@ -1,206 +1,179 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const requireActionRequestAccessMock = vi.hoisted(() => vi.fn());
-const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
-const canManageActionMock = vi.hoisted(() => vi.fn());
-const canManageActionsGloballyMock = vi.hoisted(() => vi.fn());
-const loadActionByIdMock = vi.hoisted(() => vi.fn());
-const loadActionOrganizerRowsMock = vi.hoisted(() => vi.fn());
-const loadActionParticipationReviewPageMock = vi.hoisted(() => vi.fn());
-const loadActionRoleAttestationStateMock = vi.hoisted(() => vi.fn());
-const reviewActionRoleAttestationMock = vi.hoisted(() => vi.fn());
-const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
+const mocks = vi.hoisted(() => ({
+  access: vi.fn(),
+  identity: vi.fn(),
+  loadAction: vi.fn(),
+  organizers: vi.fn(),
+  participation: vi.fn(),
+  state: vi.fn(),
+  review: vi.fn(),
+  canManage: vi.fn(),
+  canManageGlobal: vi.fn(),
+  finalized: vi.fn(),
+  policy: vi.fn(),
+  server: vi.fn(),
+}));
 
-vi.mock("@/lib/auth/action-request-access", () => ({ requireActionRequestAccess: requireActionRequestAccessMock }));
-vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: getCurrentUserIdentityMock }));
-vi.mock("@/lib/actions/permissions", () => ({ canManageAction: canManageActionMock, canManageActionsGlobally: canManageActionsGloballyMock }));
-vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionByIdMock }));
-vi.mock("@/lib/actions/participation/organizers", () => ({ loadActionOrganizerRowsForAction: loadActionOrganizerRowsMock }));
-vi.mock("@/lib/actions/participation/group-participation", () => ({ loadActionParticipationReviewPage: loadActionParticipationReviewPageMock }));
-vi.mock("@/lib/actions/role-attestations", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/actions/role-attestations")>("@/lib/actions/role-attestations");
-  return { ...actual, loadActionRoleAttestationState: loadActionRoleAttestationStateMock, reviewActionRoleAttestation: reviewActionRoleAttestationMock };
-});
-vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: getSupabaseServerClientMock }));
+vi.mock("@/lib/auth/action-request-access", () => ({ requireActionRequestAccess: mocks.access }));
+vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: mocks.identity }));
+vi.mock("@/lib/actions/store", () => ({ loadActionById: mocks.loadAction }));
+vi.mock("@/lib/actions/participation/organizers", () => ({ loadActionOrganizerRowsForAction: mocks.organizers }));
+vi.mock("@/lib/actions/participation/group-participation", () => ({ loadActionParticipationReviewPage: mocks.participation }));
+vi.mock("@/lib/actions/role-attestations", () => ({
+  isActionFinalizedForRoleAttestation: mocks.finalized,
+  loadActionRoleAttestationState: mocks.state,
+  reviewActionRoleAttestation: mocks.review,
+}));
+vi.mock("@/lib/actions/permissions", () => ({
+  canManageAction: mocks.canManage,
+  canManageActionsGlobally: mocks.canManageGlobal,
+}));
+vi.mock("@/lib/actions/role-attestation-policy", () => ({ evaluateRoleAttestationPolicy: mocks.policy }));
+vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: mocks.server }));
 
 const action = {
   id: "action-1",
-  status: "approved",
+  created_by_clerk_id: "owner-1",
   action_phase: "post_action_complete",
-  published_at: "2026-10-19T10:00:00.000Z",
-  moderation_visibility: "visible",
-  created_by_clerk_id: "creator-1",
+  status: "approved",
 };
 
-function participantQuery(status: string | null) {
-  const query = {
-    select: vi.fn(() => query),
-    eq: vi.fn(() => query),
-    maybeSingle: vi.fn().mockResolvedValue({ data: status ? { participation_status: status } : null, error: null }),
-  };
-  return query;
+const state = {
+  assignments: [{ user_id: "participant-1", role_code: "group_lead" }],
+  attestations: [{
+    user_id: "participant-1",
+    role_code: "group_lead",
+    verification_status: "pending",
+    reviewer_clerk_id: "reviewer-old",
+    provenance_snapshot: { source: "assignment" },
+    decision_reason: null,
+  }],
+};
+
+function request(path: string, init?: RequestInit) {
+  return new Request(`http://localhost${path}`, init);
 }
 
-describe("/api/actions/[actionId]/role-attestations", () => {
-  beforeEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
-    requireActionRequestAccessMock.mockResolvedValue({ ok: true, userId: "reviewer-1" });
-    getCurrentUserIdentityMock.mockResolvedValue({ role: "coordinateur", activeRole: "coordinateur" });
-    canManageActionMock.mockReturnValue(true);
-    canManageActionsGloballyMock.mockReturnValue(false);
-    loadActionByIdMock.mockResolvedValue(action);
-    loadActionOrganizerRowsMock.mockResolvedValue([{ organizer_clerk_id: "reviewer-1", organizer_label: "Reviewer", organizer_handle: null, is_primary: true }]);
-    loadActionParticipationReviewPageMock.mockResolvedValue({ items: [{ userId: "volunteer-1", displayName: "Volunteer", handle: null, participationStatus: "confirmed" }], hasMore: false, nextOffset: null });
-    loadActionRoleAttestationStateMock.mockResolvedValue({ assignments: [{ user_id: "volunteer-1", role_code: "group_lead" }], attestations: [] });
-    reviewActionRoleAttestationMock.mockResolvedValue({ id: "attestation-1", verification_status: "confirmed" });
-  });
+function context(actionId = "action-1") {
+  return { params: Promise.resolve({ actionId }) };
+}
 
-  it("requires authentication before reading the evidence", async () => {
-    requireActionRequestAccessMock.mockResolvedValue({ ok: false });
+function query(data: unknown = { participation_status: "confirmed" }, error: { message: string } | null = null) {
+  const chain = {
+    select: vi.fn(() => chain),
+    eq: vi.fn(() => chain),
+    maybeSingle: vi.fn(async () => ({ data, error })),
+  };
+  return chain;
+}
+
+beforeEach(() => {
+  vi.resetModules();
+  vi.clearAllMocks();
+  mocks.access.mockResolvedValue({ ok: true, userId: "reviewer-1" });
+  mocks.identity.mockResolvedValue({ userId: "reviewer-1", role: "admin", activeRole: "admin" });
+  mocks.loadAction.mockResolvedValue(action);
+  mocks.organizers.mockResolvedValue([{ organizer_clerk_id: "owner-1" }]);
+  mocks.canManage.mockReturnValue(true);
+  mocks.canManageGlobal.mockReturnValue(true);
+  mocks.finalized.mockReturnValue(true);
+  mocks.state.mockResolvedValue(state);
+  mocks.participation.mockResolvedValue({
+    items: [{ userId: "participant-1", displayName: "Participant", handle: "participant", participationStatus: "confirmed" }],
+    hasMore: false,
+    nextOffset: null,
+  });
+  mocks.policy.mockReturnValue({ allowed: true, status: "allowed" });
+  mocks.review.mockResolvedValue({ verification_status: "confirmed" });
+  mocks.server.mockReturnValue({ from: vi.fn(() => query()) });
+});
+
+describe("role attestation route boundaries", () => {
+  it("fails closed for unauthenticated, missing and non-finalized reads", async () => {
     const { GET } = await import("./route");
-    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) });
-    expect(response.status).toBe(401);
-    expect(loadActionByIdMock).not.toHaveBeenCalled();
+    mocks.access.mockResolvedValueOnce({ ok: false });
+    await expect(GET(request("/api/actions/action-1/role-attestations"), context())).resolves.toMatchObject({ status: 401 });
+
+    mocks.loadAction.mockResolvedValueOnce(null);
+    await expect(GET(request("/api/actions/action-1/role-attestations"), context())).resolves.toMatchObject({ status: 404 });
+
+    mocks.finalized.mockReturnValueOnce(false);
+    await expect(GET(request("/api/actions/action-1/role-attestations"), context())).resolves.toMatchObject({ status: 409 });
   });
 
-  it("does not expose pending or absent participants to a volunteer", async () => {
-    requireActionRequestAccessMock.mockResolvedValue({ ok: true, userId: "volunteer-1" });
-    canManageActionMock.mockReturnValue(false);
-    loadActionParticipationReviewPageMock.mockResolvedValue({ items: [], hasMore: false, nextOffset: null });
+  it("returns paginated manager evidence with private no-store headers", async () => {
     const { GET } = await import("./route");
-    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) });
-    expect(response.status).toBe(403);
-  });
-
-  it("returns a bounded reviewer page and its stable continuation", async () => {
-    loadActionParticipationReviewPageMock.mockResolvedValueOnce({
-      items: [{ userId: "volunteer-1", displayName: "Volunteer", handle: null, participationStatus: "confirmed" }],
-      hasMore: true,
-      nextOffset: 102,
+    const response = await GET(request("/api/actions/action-1/role-attestations?limit=0&offset=999999"), context());
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(body).toMatchObject({
+      canReview: true,
+      pagination: { hasMore: false, nextOffset: null },
+      participants: [{ userId: "participant-1", attestations: [{ reviewer_clerk_id: "reviewer-old" }] }],
     });
+    expect(mocks.participation).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ limit: 1, offset: 100000 }));
+  });
+
+  it("limits a participant read to its own confirmed evidence and redacts reviewer data", async () => {
+    mocks.canManage.mockReturnValue(false);
+    mocks.canManageGlobal.mockReturnValue(false);
+    mocks.access.mockResolvedValue({ ok: true, userId: "participant-1" });
+    mocks.identity.mockResolvedValue({ userId: "participant-1", role: "benevole", activeRole: "benevole" });
     const { GET } = await import("./route");
-    const response = await GET(new Request("http://localhost/api/actions/action-1/role-attestations?limit=2&offset=100"), { params: Promise.resolve({ actionId: "action-1" }) });
+    const response = await GET(request("/api/actions/action-1/role-attestations?limit=50&offset=2"), context());
+    const body = await response.json();
     expect(response.status).toBe(200);
-    expect(loadActionParticipationReviewPageMock).toHaveBeenCalledWith(undefined, expect.objectContaining({ limit: 2, offset: 100, userId: undefined }));
-    await expect(response.json()).resolves.toMatchObject({ pagination: { hasMore: true, nextOffset: 102 } });
+    expect(body.canReview).toBe(false);
+    expect(body.participants[0].attestations[0]).toMatchObject({ reviewer_clerk_id: null, provenance_snapshot: {} });
+    expect(mocks.participation).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ limit: 1, offset: 0, userId: "participant-1" }));
+
+    mocks.participation.mockResolvedValueOnce({ items: [], hasMore: false, nextOffset: null });
+    await expect(GET(request("/api/actions/action-1/role-attestations"), context())).resolves.toMatchObject({ status: 403 });
   });
 
-  it("forces a volunteer lookup to the authenticated participant identity", async () => {
-    requireActionRequestAccessMock.mockResolvedValue({ ok: true, userId: "volunteer-1" });
-    canManageActionMock.mockReturnValue(false);
-    loadActionParticipationReviewPageMock.mockResolvedValue({
-      items: [{ userId: "volunteer-1", displayName: "Volunteer", handle: null, participationStatus: "confirmed" }],
-      hasMore: false,
-      nextOffset: null,
-    });
-    const { GET } = await import("./route");
-    const response = await GET(new Request("http://localhost/api/actions/action-1/role-attestations?limit=100&offset=100"), { params: Promise.resolve({ actionId: "action-1" }) });
-    expect(response.status).toBe(200);
-    expect(loadActionParticipationReviewPageMock).toHaveBeenCalledWith(undefined, expect.objectContaining({ limit: 1, offset: 0, userId: "volunteer-1" }));
-  });
-
-  it("keeps self-review pending and delegates the transaction to the RPC", async () => {
-    requireActionRequestAccessMock.mockResolvedValue({ ok: true, userId: "volunteer-1" });
-    const query = participantQuery("confirmed");
-    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn(() => query) });
-    loadActionOrganizerRowsMock.mockResolvedValue([{ organizer_clerk_id: "volunteer-1", organizer_label: "Volunteer", organizer_handle: null, is_primary: true }]);
-    const pending = { id: "attestation-1", verification_status: "pending", revision: 1 };
-    reviewActionRoleAttestationMock.mockResolvedValue(pending);
+  it("rejects malformed POST payloads before calling the review service", async () => {
     const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) });
-    expect(response.status).toBe(200);
-    expect(reviewActionRoleAttestationMock).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({ userId: "volunteer-1", roleCode: "group_lead" }));
-    await expect(response.json()).resolves.toMatchObject({ attestation: { verification_status: "pending" } });
+    mocks.access.mockResolvedValueOnce({ ok: false });
+    await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: "{}" }), context())).resolves.toMatchObject({ status: 401 });
+    await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: "{" }), context())).resolves.toMatchObject({ status: 422 });
+    await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: JSON.stringify({ userId: "participant-1", roleCode: "unknown", decision: "confirm" }) }), context())).resolves.toMatchObject({ status: 422 });
+    expect(mocks.review).not.toHaveBeenCalled();
   });
 
-  it("allows an authorized reviewer to confirm only a final participant", async () => {
-    const query = participantQuery("confirmed");
-    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn(() => query) });
+  it("enforces reviewer, lifecycle, participation, reason and policy invariants", async () => {
     const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) });
-    expect(response.status).toBe(200);
-    expect(reviewActionRoleAttestationMock).toHaveBeenCalledTimes(1);
+    const body = { userId: "participant-1", roleCode: "group_lead", decision: "confirm" };
+
+    mocks.canManage.mockReturnValueOnce(false);
+    await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: JSON.stringify(body) }), context())).resolves.toMatchObject({ status: 403 });
+
+    mocks.finalized.mockReturnValueOnce(false);
+    await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: JSON.stringify(body) }), context())).resolves.toMatchObject({ status: 409 });
+
+    mocks.participation.mockResolvedValueOnce({ data: null, error: null });
+    mocks.state.mockResolvedValueOnce({ ...state, assignments: [], attestations: [] });
+    await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: JSON.stringify({ ...body, decision: "reject" }) }), context())).resolves.toMatchObject({ status: 422 });
+
+    mocks.policy.mockReturnValueOnce({ allowed: false, status: "denied" });
+    await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: JSON.stringify(body) }), context())).resolves.toMatchObject({ status: 409 });
+    expect(mocks.review).not.toHaveBeenCalled();
   });
 
-  it("passes an identical terminal confirmation retry to the idempotent RPC", async () => {
-    loadActionRoleAttestationStateMock.mockResolvedValue({
-      assignments: [{ user_id: "volunteer-1", role_code: "group_lead" }],
-      attestations: [{
-        id: "attestation-1",
-        user_id: "volunteer-1",
-        role_code: "group_lead",
-        verification_status: "confirmed",
-        reviewer_clerk_id: "reviewer-1",
-        decision_reason: null,
-      }],
-    });
-    reviewActionRoleAttestationMock.mockResolvedValue({ id: "attestation-1", verification_status: "confirmed", revision: 1 });
-    const query = participantQuery("confirmed");
-    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn(() => query) });
+  it("persists an allowed confirmation and maps dependency failures safely", async () => {
     const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", {
+    const response = await POST(request("/api/actions/action-1/role-attestations", {
       method: "POST",
-      body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }),
-    }), { params: Promise.resolve({ actionId: "action-1" }) });
+      body: JSON.stringify({ userId: "participant-1", roleCode: "group_lead", decision: "confirm", reason: "Confirmé" }),
+    }), context());
     expect(response.status).toBe(200);
-    expect(reviewActionRoleAttestationMock).toHaveBeenCalledTimes(1);
-    await expect(response.json()).resolves.toMatchObject({ attestation: { revision: 1, verification_status: "confirmed" } });
-  });
+    expect(await response.json()).toMatchObject({ status: "ok", attestation: { verification_status: "confirmed" } });
 
-  it("rejects a non-idempotent terminal correction without a reason before the RPC", async () => {
-    loadActionRoleAttestationStateMock.mockResolvedValue({
-      assignments: [{ user_id: "volunteer-1", role_code: "group_lead" }],
-      attestations: [{
-        id: "attestation-1",
-        user_id: "volunteer-1",
-        role_code: "group_lead",
-        verification_status: "confirmed",
-        reviewer_clerk_id: "reviewer-2",
-        decision_reason: null,
-      }],
-    });
-    const query = participantQuery("confirmed");
-    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn(() => query) });
-    const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", {
-      method: "POST",
-      body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }),
-    }), { params: Promise.resolve({ actionId: "action-1" }) });
-    expect(response.status).toBe(409);
-    expect(reviewActionRoleAttestationMock).not.toHaveBeenCalled();
-  });
+    mocks.review.mockRejectedValueOnce(new Error("lifecycle_closed"));
+    await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: JSON.stringify({ userId: "participant-1", roleCode: "group_lead", decision: "confirm" }) }), context())).resolves.toMatchObject({ status: 409 });
 
-  it("refuses missing and non-finalized actions before exposing or changing attestations", async () => {
-    loadActionByIdMock.mockResolvedValueOnce(null);
-    const { GET, POST } = await import("./route");
-    expect((await GET(new Request("http://localhost"), { params: Promise.resolve({ actionId: "missing" }) })).status).toBe(404);
-
-    loadActionByIdMock.mockResolvedValue({ ...action, action_phase: "pre_action" });
-    expect((await GET(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(409);
-    expect((await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(409);
-    expect(reviewActionRoleAttestationMock).not.toHaveBeenCalled();
-  });
-
-  it("validates review payloads and refuses an unauthorized reviewer before the RPC", async () => {
-    const { POST } = await import("./route");
-    expect((await POST(new Request("http://localhost", { method: "POST", body: "not-json" }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(422);
-    expect((await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "unknown", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(422);
-
-    canManageActionMock.mockReturnValue(false);
-    expect((await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(403);
-    expect(reviewActionRoleAttestationMock).not.toHaveBeenCalled();
-  });
-
-  it("preserves HTTP classification when the persistence owner rejects a review", async () => {
-    const query = participantQuery("confirmed");
-    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn(() => query) });
-    const { POST } = await import("./route");
-    reviewActionRoleAttestationMock.mockRejectedValueOnce(new Error("forbidden"));
-    expect((await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(403);
-    reviewActionRoleAttestationMock.mockRejectedValueOnce(new Error("lifecycle_closed"));
-    expect((await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(409);
-    reviewActionRoleAttestationMock.mockRejectedValueOnce(new Error("unexpected database failure"));
-    expect((await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ userId: "volunteer-1", roleCode: "group_lead", decision: "confirm" }) }), { params: Promise.resolve({ actionId: "action-1" }) })).status).toBe(500);
+    mocks.server.mockReturnValueOnce({ from: vi.fn(() => query(null, { message: "participant read failed" })) });
+    await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: JSON.stringify({ userId: "participant-1", roleCode: "group_lead", decision: "confirm" }) }), context())).resolves.toMatchObject({ status: 500 });
   });
 });

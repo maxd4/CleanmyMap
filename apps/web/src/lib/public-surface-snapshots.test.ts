@@ -173,6 +173,7 @@ beforeEach(() => {
 describe("public surface snapshots", () => {
   it("formats the snapshot date from the generation timestamp", () => {
     expect(getPublicSurfaceSnapshotDate("2026-06-27T10:15:00.000Z")).toBe("2026-06-27");
+    expect(getPublicSurfaceSnapshotDate("not-a-date")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it("detects freshness within the configured ttl", () => {
@@ -193,6 +194,9 @@ describe("public surface snapshots", () => {
         now,
       ),
     ).toBe(false);
+    expect(isPublicSurfaceSnapshotFresh(null, 15, now)).toBe(false);
+    expect(isPublicSurfaceSnapshotFresh({ generatedAt: "invalid" }, 15, now)).toBe(false);
+    expect(isPublicSurfaceSnapshotFresh({ generatedAt: "2026-06-27T10:40:00.000Z" }, 15, now)).toBe(false);
   });
 
   it("ignore une reconstruction plus ancienne après une écriture plus récente", async () => {
@@ -398,6 +402,107 @@ describe("public surface snapshots", () => {
       name: "PublicSurfaceSnapshotWriteConflictError",
       code: "PUBLIC_SURFACE_SNAPSHOT_WRITE_CONFLICT",
     });
+  });
+
+  it("refuses persistence and reads when no storage policy is available", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(false);
+    allowLocalFileStoreFallbackMock.mockReturnValue(false);
+    const snapshot = {
+      snapshotKey: "unavailable",
+      snapshotDate: "2026-10-13",
+      generatedAt: "2026-10-13T10:00:00.000Z",
+      version: "v1",
+      title: "Unavailable",
+      payload: {},
+      meta: {},
+    };
+
+    await expect(upsertPublicSurfaceSnapshot(snapshot)).rejects.toThrow(/persistence is unavailable/i);
+    await expect(readLatestPublicSurfaceSnapshot(snapshot.snapshotKey)).resolves.toBeNull();
+  });
+
+  it("uses the authorized local fallback for reads, writes and invalidation", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(false);
+    allowLocalFileStoreFallbackMock.mockReturnValue(true);
+    const records = [{
+      id: "local-1",
+      snapshotKey: JSON.stringify({ route: "api/actions", viewport: "global" }),
+      snapshotDate: "2026-10-13",
+      generatedAt: "2026-10-13T10:00:00.000Z",
+      version: "v1",
+      title: "Actions",
+      payload: { source: "local" },
+      meta: [],
+    }];
+    readLocalRecordStoreMock.mockResolvedValue({ records });
+    writeLocalRecordStoreMock.mockResolvedValue(undefined);
+
+    await expect(readLatestPublicSurfaceSnapshot("missing")).resolves.toBeNull();
+    await expect(upsertPublicSurfaceSnapshot({
+      snapshotKey: "local",
+      snapshotDate: "2026-10-13",
+      generatedAt: "2026-10-13T10:00:00.000Z",
+      version: "v1",
+      title: "Local",
+      payload: { source: "new" },
+      meta: {},
+    })).resolves.toBe("applied");
+    expect(writeLocalRecordStoreMock).toHaveBeenCalledOnce();
+
+    await invalidatePublicSurfaceSnapshotsByRoute([]);
+    await invalidatePublicSurfaceSnapshotsByRoute(["   "]);
+    expect(writeLocalRecordStoreMock).toHaveBeenCalledOnce();
+    await invalidatePublicSurfaceSnapshotsByRoute(["api/actions"]);
+    expect(revalidateUnifiedActionContractsCacheMock).toHaveBeenCalledOnce();
+    expect(writeLocalRecordStoreMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("fails closed on Supabase mutation errors and uses local fallback only when allowed", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+    allowLocalFileStoreFallbackMock.mockReturnValue(false);
+    const failedQuery = () => {
+      const query = {
+        eq: () => query,
+        neq: () => query,
+        lt: () => query,
+        order: () => query,
+        limit: () => query,
+        select: () => query,
+        maybeSingle: async () => ({ data: null, error: { message: "snapshot database unavailable" } }),
+        then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: [], error: { message: "snapshot database unavailable" } }).then(resolve),
+      };
+      return query;
+    };
+    getSupabaseServerClientMock.mockReturnValue({ from: () => ({
+      update: failedQuery,
+      upsert: failedQuery,
+      select: failedQuery,
+    }) });
+    await expect(upsertPublicSurfaceSnapshot({
+      snapshotKey: "strict-error",
+      snapshotDate: "2026-10-13",
+      generatedAt: "2026-10-13T10:00:00.000Z",
+      version: "v1",
+      title: "Strict",
+      payload: {},
+      meta: {},
+    })).rejects.toThrow("snapshot database unavailable");
+    await expect(readLatestPublicSurfaceSnapshot("strict-error")).resolves.toBeNull();
+
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+    allowLocalFileStoreFallbackMock.mockReturnValue(true);
+    readLocalRecordStoreMock.mockResolvedValue({ records: [] });
+    writeLocalRecordStoreMock.mockResolvedValue(undefined);
+    await expect(upsertPublicSurfaceSnapshot({
+      snapshotKey: "fallback-error",
+      snapshotDate: "2026-10-13",
+      generatedAt: "2026-10-13T10:00:00.000Z",
+      version: "v1",
+      title: "Fallback",
+      payload: {},
+      meta: {},
+    })).resolves.toBe("applied");
+    expect(writeLocalRecordStoreMock).toHaveBeenCalled();
   });
 });
 

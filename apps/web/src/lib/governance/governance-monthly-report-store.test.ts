@@ -253,6 +253,39 @@ describe("governance monthly report store", () => {
     expect(fallback.businessContributions.items[0]).toMatchObject({ currentAverageBytes: 0, previousBytes: 0, deltaPercent: null, history: [], topFiles: [], mimeSubtypes: [], alerts: [] });
   });
 
+  it("normalizes partial project, impact and artifact projections without inventing measurements", async () => {
+    const queryBuilder = makeQueryBuilder([{
+      ...governanceReportRow,
+      payload: {
+        projectSignals: {
+          traffic: { topRoutes: [{ path: "/", count: 0 }] },
+          community: { events: 0 },
+          communication: { pdfExports: 0 },
+        },
+        impact: null,
+        storage: null,
+        serviceThresholdAlerts: null,
+        artifacts: { pdfStoragePath: "reports/2026-05.pdf" },
+      },
+    }]);
+    mockSupabaseClient(queryBuilder);
+
+    const report = await loadGovernanceMonthlyReport();
+    expect(report?.payload.projectSignals).toEqual({
+      traffic: { pageViewEvents: 0, legacyPageViewEvents: 0, distinctRoutes: 0, topRoutes: [{ path: "/", count: 0 }] },
+      community: { events: 0, rsvps: 0, notifications: 0, unreadNotifications: 0 },
+      communication: { emailsSent: 0, pdfExports: 0 },
+    });
+    expect(report?.payload.impact).toMatchObject({
+      monthlyKgCo2eProxy: null,
+      snapshotCount: 0,
+      serviceBreakdown: [],
+      growthHighlights: [],
+    });
+    expect(report?.payload.storage).toMatchObject({ quotaBytes: 0, usagePercent: 0, businessContributions: { items: [] } });
+    expect(report?.payload.artifacts).toEqual({ pdfStoragePath: "reports/2026-05.pdf", pdfGeneratedAt: null });
+  });
+
   it("fails closed on Supabase read failures and does not manufacture a report", async () => {
     const failingQuery = makeQueryBuilder([]);
     failingQuery.limit.mockResolvedValue({ data: [] as never, error: { message: "governance read failed" } as never });

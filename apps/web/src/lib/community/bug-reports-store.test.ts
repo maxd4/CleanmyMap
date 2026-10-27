@@ -3,13 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const canUseSupabaseServerPersistenceMock = vi.hoisted(() => vi.fn());
 const readLocalRecordStoreMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
+const deleteAndPersistRecordMock = vi.hoisted(() => vi.fn());
+const findRecordInListMock = vi.hoisted(() => vi.fn());
+const writeLocalRecordStoreMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/persistence/runtime-store", () => ({
   assertPersistenceAvailable: vi.fn(),
   canUseSupabaseServerPersistence: canUseSupabaseServerPersistenceMock,
-  deleteAndPersistRecord: vi.fn(),
+  deleteAndPersistRecord: deleteAndPersistRecordMock,
   deleteSupabaseRecordById: vi.fn(),
-  findRecordInList: vi.fn(),
+  findRecordInList: findRecordInListMock,
   persistSupabaseRecord: vi.fn(),
   readSupabaseRecord: vi.fn(),
   readSupabaseRecords: vi.fn(),
@@ -17,7 +20,7 @@ vi.mock("@/lib/persistence/runtime-store", () => ({
 }));
 vi.mock("@/lib/persistence/local-record-store", () => ({
   readLocalRecordStore: readLocalRecordStoreMock,
-  writeLocalRecordStore: vi.fn(),
+  writeLocalRecordStore: writeLocalRecordStoreMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
@@ -286,5 +289,73 @@ describe("community bug report personal history", () => {
       period: "all_time",
       scope: "community_bug_reports",
     });
+  });
+
+  it("writes, lists, reads, updates and deletes local reports without leaking other owners", async () => {
+    const { appendCommunityBugReport, listCommunityBugReports, getCommunityBugReportById, updateCommunityBugReportStatus, deleteCommunityBugReport } = await import("./bug-reports-store");
+    readLocalRecordStoreMock.mockResolvedValue({ updatedAt: "2026-08-27T12:00:00.000Z", records: [...ownerRecords] });
+    writeLocalRecordStoreMock.mockResolvedValue(undefined);
+    deleteAndPersistRecordMock.mockImplementation(async (records, predicate, persist) => {
+      const remaining = records.filter((record: typeof ownerRecords[number]) => !predicate(record));
+      await persist(remaining);
+      return remaining.length !== records.length;
+    });
+
+    const created = await appendCommunityBugReport({
+      submittedByUserId: "owner-3",
+      input: {
+        reportType: "bug",
+        title: "Nouveau retour",
+        description: "Description suffisamment détaillée.",
+        pagePath: "/carte",
+      },
+    });
+    expect(created).toMatchObject({
+      submittedByUserId: "owner-3",
+      submittedByDisplayName: "owner-3",
+      submittedByEmail: null,
+      source: "discussion_form",
+      status: "open",
+      creatorState: "new",
+    });
+    expect(writeLocalRecordStoreMock).toHaveBeenCalled();
+
+    await expect(listCommunityBugReports(1, { createdAt: "2026-08-27T10:00:00.000Z", id: "treated" }))
+      .resolves.toEqual([ownerRecords[2]]);
+    findRecordInListMock.mockReturnValue(ownerRecords[0]);
+    await expect(getCommunityBugReportById("responded")).resolves.toEqual(ownerRecords[0]);
+
+    await expect(updateCommunityBugReportStatus({ reportId: "treated", status: "archived" }))
+      .resolves.toMatchObject({ id: "treated", status: "archived", creatorState: "archived" });
+    await expect(updateCommunityBugReportStatus({ reportId: "missing", status: "treated" })).resolves.toBeNull();
+    expect(writeLocalRecordStoreMock).toHaveBeenCalled();
+
+    await expect(deleteCommunityBugReport("treated")).resolves.toBe(true);
+    expect(deleteAndPersistRecordMock).toHaveBeenCalled();
+  });
+
+  it("uses the transactional Supabase branches for lists and status updates", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+    const readSupabaseRecords = vi.mocked((await import("@/lib/persistence/runtime-store")).readSupabaseRecords);
+    const readSupabaseRecord = vi.mocked((await import("@/lib/persistence/runtime-store")).readSupabaseRecord);
+    readSupabaseRecords.mockResolvedValue([]);
+    readSupabaseRecord.mockResolvedValue(null);
+    const query = {
+      select: vi.fn(() => query),
+      update: vi.fn(() => query),
+      order: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      or: vi.fn(() => query),
+      limit: vi.fn(async () => ({ data: [], error: null })),
+      maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+    };
+    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn(() => query) });
+    const { listCommunityBugReports, getCommunityBugReportById, updateCommunityBugReportStatus } = await import("./bug-reports-store");
+
+    await expect(listCommunityBugReports(0, { createdAt: "2026-08-27T10:00:00.000Z", id: "treated" })).resolves.toEqual([]);
+    await expect(getCommunityBugReportById("missing")).resolves.toBeNull();
+    await expect(updateCommunityBugReportStatus({ reportId: "missing", status: "open" })).resolves.toBeNull();
+    expect(query.or).toHaveBeenCalled();
+    expect(query.limit).toHaveBeenCalledWith(1);
   });
 });
