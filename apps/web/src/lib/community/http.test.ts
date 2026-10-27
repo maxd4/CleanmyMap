@@ -22,6 +22,10 @@ describe("buildCommunityEventsQueryString", () => {
       "limit=2&cursor=v1%7Cpast%7C2026-01-01%7C2026-01-01T00%253A00%253A00.000Z%7Cevent-1",
     );
   });
+
+  it("serializes an independent future or past pagination phase", () => {
+    expect(buildCommunityEventsQueryString({ limit: 120, phase: "past" })).toBe("limit=120&phase=past");
+  });
 });
 
 describe("updateCommunityEventOps", () => {

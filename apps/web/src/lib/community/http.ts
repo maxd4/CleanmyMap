@@ -3,6 +3,7 @@ import type {
   CommunityEventLocation,
   CommunityEventLocationInput,
 } from "./event-location";
+import type { CommunityEventsPagePhase } from "./events-pagination";
 
 export type CommunityRsvpStatus = "yes" | "maybe" | "no";
 
@@ -279,7 +280,12 @@ function parseCommunityRsvpPayload(payload: unknown): {
 }
 
 export function buildCommunityEventsQueryString(
-  params: { limit?: number; eventId?: string | null; cursor?: string | null } = {},
+  params: {
+    limit?: number;
+    eventId?: string | null;
+    cursor?: string | null;
+    phase?: CommunityEventsPagePhase | null;
+  } = {},
 ): string {
   const query = new URLSearchParams();
   query.set("limit", String(parsePositiveInteger(params.limit, 1, 300, 120)));
@@ -289,11 +295,19 @@ export function buildCommunityEventsQueryString(
   if (params.cursor?.trim()) {
     query.set("cursor", params.cursor.trim());
   }
+  if (params.phase) {
+    query.set("phase", params.phase);
+  }
   return query.toString();
 }
 
 export async function fetchCommunityEvents(
-  params: { limit?: number; eventId?: string | null; cursor?: string | null } = {},
+  params: {
+    limit?: number;
+    eventId?: string | null;
+    cursor?: string | null;
+    phase?: CommunityEventsPagePhase | null;
+  } = {},
 ): Promise<CommunityEventsResponse> {
   let response: Response;
   try {

@@ -47,6 +47,11 @@ Ce schéma décrit des **frontières logiques**, pas un ordre uniforme d'implém
   la source ; une page ciblée par identifiant reste distincte d'une fenêtre
   paginée. Le champ `count` conserve la sémantique déjà consommée par la route
   et ne devient pas silencieusement un total global.
+- Lorsqu'une même ressource expose plusieurs fenêtres ordonnées indépendantes,
+  la fenêtre demandée est explicite dans le contrat (`phase` pour les
+  événements communautaires) et le curseur doit lui correspondre. Chaque
+  fenêtre conserve son propre `hasMore` et `nextCursor` ; une fenêtre future ne
+  doit pas rendre une fenêtre passée inaccessible par un balayage implicite.
 
 ## Sécurité des données et opérations
 

@@ -273,12 +273,12 @@ export function PastActionsPanel({
   historyItems = [],
   onShareAction,
   communityPastEvents = [],
-  communityEventsLoading = false,
-  communityEventsError = null,
-  communityEventsRetry,
-  communityEventsHasMore = false,
-  communityEventsLoadingMore = false,
-  communityEventsLoadMore,
+  communityPastEventsLoading = false,
+  communityPastEventsError = null,
+  communityPastEventsRetry,
+  communityPastEventsHasMore = false,
+  communityPastEventsLoadingMore = false,
+  communityPastEventsLoadMore,
   focusCommunityEventId = null,
   communityMutationError = null,
   communitySuccessMessage = null,
@@ -296,12 +296,12 @@ export function PastActionsPanel({
   historyItems?: readonly JoinableActionHistoryItem[];
   onShareAction?: (actionId: string) => void;
   communityPastEvents?: import("@/lib/community/http").CommunityEventItem[];
-  communityEventsLoading?: boolean;
-  communityEventsError?: import("@/lib/errors/app-errors").AppError | null;
-  communityEventsRetry?: () => Promise<unknown> | void;
-  communityEventsHasMore?: boolean;
-  communityEventsLoadingMore?: boolean;
-  communityEventsLoadMore?: () => Promise<unknown> | void;
+  communityPastEventsLoading?: boolean;
+  communityPastEventsError?: import("@/lib/errors/app-errors").AppError | null;
+  communityPastEventsRetry?: () => Promise<unknown> | void;
+  communityPastEventsHasMore?: boolean;
+  communityPastEventsLoadingMore?: boolean;
+  communityPastEventsLoadMore?: () => Promise<unknown> | void;
   focusCommunityEventId?: string | null;
   communityMutationError?: import("@/lib/errors/app-errors").AppError | null;
   communitySuccessMessage?: string | null;
@@ -311,7 +311,7 @@ export function PastActionsPanel({
   onSaveEventOps?: (event: import("@/lib/community/http").CommunityEventItem) => Promise<void>;
 }) {
   const { claimOverrides, claimingActionId, claimErrors, historyByActionId, requestClaim } = usePastActionClaims(historyItems, fr);
-  usePastActionFocus(focusedActionId, loading, items.length, focusCommunityEventId, communityEventsLoading, communityPastEvents.length);
+  usePastActionFocus(focusedActionId, loading, items.length, focusCommunityEventId, communityPastEventsLoading, communityPastEvents.length);
 
   return (
     <section className="space-y-4 rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm md:p-5">
@@ -339,13 +339,13 @@ export function PastActionsPanel({
       <JoinCommunityEventsPanel
         fr={fr}
         events={communityPastEvents}
-        loading={communityEventsLoading}
-        error={communityEventsError}
+        loading={communityPastEventsLoading}
+        error={communityPastEventsError}
         focusedEventId={focusCommunityEventId}
-        onRetry={communityEventsRetry}
-        hasMore={communityEventsHasMore}
-        loadingMore={communityEventsLoadingMore}
-        onLoadMore={communityEventsLoadMore}
+        onRetry={communityPastEventsRetry}
+        hasMore={communityPastEventsHasMore}
+        loadingMore={communityPastEventsLoadingMore}
+        onLoadMore={communityPastEventsLoadMore}
         mutationError={communityMutationError}
         successMessage={communitySuccessMessage}
         tab="past"

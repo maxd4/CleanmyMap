@@ -40,6 +40,7 @@ vi.mock("@/lib/community/event-cache-invalidation", () => ({
 }));
 
 import { GET, POST } from "./route";
+import { fetchCommunityEvents } from "@/lib/community/http";
 
 const communityEventSchema = z.object({
   id: z.string(),
@@ -168,7 +169,7 @@ describe("GET /api/community/events", () => {
     expect(response.headers.get("vary")).toBe("Cookie");
     expect(unstableCacheMock).toHaveBeenCalledWith(
       expect.any(Function),
-      ["community-events", expect.stringMatching(/^limit:120:today:\d{4}-\d{2}-\d{2}:cursor:first$/)],
+      ["community-events", expect.stringMatching(/^limit:120:today:\d{4}-\d{2}-\d{2}:phase:combined:cursor:first$/)],
       expect.objectContaining({ tags: ["community-events"] }),
     );
   });
@@ -209,6 +210,108 @@ describe("GET /api/community/events", () => {
     expect(eventsQuery.lt).toHaveBeenCalledWith("event_date", expect.any(String));
   });
 
+  it("starts the past phase directly even when the future phase contains more than one window", async () => {
+    const futureEvents = Array.from({ length: 121 }, (_, index) => ({
+      ...event,
+      id: `future-${index}`,
+      event_date: `2099-09-${String((index % 28) + 1).padStart(2, "0")}`,
+    }));
+    const pastEvent = { ...event, id: "past-only", event_date: "2020-09-10" };
+    let range: "upcoming" | "past" | null = null;
+    const eventsQuery = {
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockImplementation(() => { range = "upcoming"; return eventsQuery; }),
+      lt: vi.fn().mockImplementation(() => { range = "past"; return eventsQuery; }),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockImplementation(async () => ({
+        data: range === "past" ? [pastEvent] : futureEvents,
+        error: null,
+      })),
+    };
+    getSupabaseServerClientMock.mockReturnValue({
+      from: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue(eventsQuery) }),
+    });
+
+    const response = await GET(new Request("http://localhost/api/community/events?limit=120&phase=past"));
+    const body = await readCommunityEventsResponse(response);
+
+    expect(response.status).toBe(200);
+    expect(body.items.map((item: { id: string }) => item.id)).toEqual(["past-only"]);
+    expect(eventsQuery.lt).toHaveBeenCalledWith("event_date", expect.any(String));
+    expect(eventsQuery.gte).not.toHaveBeenCalled();
+    expect(unstableCacheMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      ["community-events", expect.stringContaining(":phase:past:cursor:first")],
+      expect.objectContaining({ tags: ["community-events"] }),
+    );
+  });
+
+  it("serves both independent tabs through the real client HTTP boundary", async () => {
+    const futureEvent = { ...event, id: "future-client", event_date: "2099-09-10" };
+    const pastEvent = { ...event, id: "past-client", event_date: "2020-09-10" };
+    let range: "upcoming" | "past" | null = null;
+    const eventsQuery = {
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockImplementation(() => { range = "upcoming"; return eventsQuery; }),
+      lt: vi.fn().mockImplementation(() => { range = "past"; return eventsQuery; }),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockImplementation(async () => ({
+        data: range === "past" ? [pastEvent] : [futureEvent],
+        error: null,
+      })),
+    };
+    getSupabaseServerClientMock.mockReturnValue({
+      from: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue(eventsQuery) }),
+    });
+    const fetchMock = vi.fn(async (input: string) => GET(new Request(`http://localhost${input}`)));
+    vi.stubGlobal("fetch", fetchMock);
+
+    try {
+      const [future, past] = await Promise.all([
+        fetchCommunityEvents({ limit: 120, phase: "upcoming" }),
+        fetchCommunityEvents({ limit: 120, phase: "past" }),
+      ]);
+
+      expect(future.items.map((item) => item.id)).toEqual(["future-client"]);
+      expect(past.items.map((item) => item.id)).toEqual(["past-client"]);
+      expect(fetchMock).toHaveBeenCalledWith("/api/community/events?limit=120&phase=upcoming");
+      expect(fetchMock).toHaveBeenCalledWith("/api/community/events?limit=120&phase=past");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each([0, 1, 120, 121, 300])("bounds a %s-record future dataset without losing deterministic continuation", async (count) => {
+    const futureEvents = Array.from({ length: count }, (_, index) => ({
+      ...event,
+      id: `future-${index}`,
+      event_date: "2099-09-10",
+      created_at: "2099-01-01T08:00:00.000Z",
+    }));
+    const eventsQuery = {
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: futureEvents, error: null }),
+    };
+    getSupabaseServerClientMock.mockReturnValue({
+      from: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue(eventsQuery) }),
+    });
+
+    const response = await GET(new Request("http://localhost/api/community/events?limit=120&phase=upcoming"));
+    const body = await readCommunityEventsResponse(response);
+
+    expect(body.items).toHaveLength(Math.min(count, 120));
+    expect(body.hasMore).toBe(count > 120);
+    expect(new Set(body.items.map((item: { id: string }) => item.id)).size).toBe(Math.min(count, 120));
+    if (count > 120) expect(body.nextCursor).toEqual(expect.any(String));
+    else expect(body.nextCursor).toBeNull();
+  });
+
   it("keeps ownership false for another connected account", async () => {
     getSafeAuthSessionMock.mockResolvedValueOnce({
       userId: "user-1",
@@ -225,7 +328,7 @@ describe("GET /api/community/events", () => {
     expect(response.headers.get("cache-control")).toContain("private");
     expect(unstableCacheMock).toHaveBeenCalledWith(
       expect.any(Function),
-      ["community-events", expect.stringMatching(/^limit:120:today:\d{4}-\d{2}-\d{2}:cursor:first$/)],
+      ["community-events", expect.stringMatching(/^limit:120:today:\d{4}-\d{2}-\d{2}:phase:combined:cursor:first$/)],
       expect.objectContaining({ tags: ["community-events"] }),
     );
   });
@@ -290,6 +393,15 @@ describe("GET /api/community/events", () => {
       ["community-events", expect.stringContaining(":cursor:v1|past")],
       expect.objectContaining({ tags: ["community-events"] }),
     );
+  });
+
+  it("rejects a phase that does not match its versioned continuation cursor", async () => {
+    const cursor = "v1|past|2026-01-01|2026-01-01T00%3A00%3A00.000Z|event-1";
+    const response = await GET(new Request(`http://localhost/api/community/events?phase=upcoming&cursor=${cursor}`));
+
+    expect(response.status).toBe(400);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+    expect(unstableCacheMock).not.toHaveBeenCalled();
   });
 
   it("returns a stable first-page cursor when the upcoming window is larger than the requested page", async () => {

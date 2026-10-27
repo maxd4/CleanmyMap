@@ -24,6 +24,7 @@ import { parsePositiveInteger } from "@/lib/http/query-params";
 import {
  buildCommunityEventsPageCursor,
  parseCommunityEventsPageCursor,
+ type CommunityEventsPagePhase,
  type CommunityEventsPageCursor,
 } from "@/lib/community/events-pagination";
 
@@ -39,8 +40,9 @@ function buildCommunityEventsCacheKey(
  limit: number,
  todayIso: string,
  cursor: string | null,
+ phase: CommunityEventsPagePhase | null,
 ): string {
- return `limit:${limit}:today:${todayIso}:cursor:${cursor ?? "first"}`;
+ return `limit:${limit}:today:${todayIso}:phase:${phase ?? "combined"}:cursor:${cursor ?? "first"}`;
 }
 
 type CachedCommunityEventItem = {
@@ -100,6 +102,7 @@ async function loadCommunityEventRows(
   limit: number,
   eventId: string | null,
  cursor: CommunityEventsPageCursor | null,
+ requestedPhase: CommunityEventsPagePhase | null,
 ): Promise<CommunityEventsRowsPage> {
   const selectFields =
     "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description";
@@ -153,11 +156,30 @@ async function loadCommunityEventRows(
     return (result.data ?? []) as CommunityEventRow[];
   };
 
-  const phase = cursor?.phase ?? "upcoming";
-  const upcomingEvents = phase === "upcoming"
-    ? await loadPhase("upcoming", limit + 1, cursor)
-    : [];
-  if (phase === "upcoming" && upcomingEvents.length > limit) {
+ if (requestedPhase) {
+   const phase = requestedPhase;
+   const events = await loadPhase(phase, limit + 1, cursor);
+   const pageEvents = events.slice(0, limit);
+   const last = pageEvents.at(-1);
+   return {
+     events: pageEvents,
+     hasMore: events.length > limit,
+     nextCursor: events.length > limit && last
+       ? buildCommunityEventsPageCursor({
+           phase,
+           eventDate: last.event_date,
+           createdAt: last.created_at,
+           id: last.id,
+         })
+       : null,
+   };
+ }
+
+ const phase = cursor?.phase ?? "upcoming";
+ const upcomingEvents = phase === "upcoming"
+   ? await loadPhase("upcoming", limit + 1, cursor)
+   : [];
+ if (phase === "upcoming" && upcomingEvents.length > limit) {
     const events = upcomingEvents.slice(0, limit);
     const last = events.at(-1);
     return {
@@ -175,19 +197,19 @@ async function loadCommunityEventRows(
   }
 
   const remainingLimit = Math.max(0, limit - upcomingEvents.length);
-  const pastCursor = phase === "past" ? cursor : null;
+ const pastCursor = phase === "past" ? cursor : null;
   const pastEvents = await loadPhase(
     "past",
     phase === "past" ? limit + 1 : Math.max(1, remainingLimit + 1),
     pastCursor,
   );
-  const rawEvents = phase === "past"
-    ? pastEvents.slice(0, limit)
-    : [...upcomingEvents, ...pastEvents.slice(0, remainingLimit)].slice(0, limit);
+ const rawEvents = phase === "past"
+   ? pastEvents.slice(0, limit)
+   : [...upcomingEvents, ...pastEvents.slice(0, remainingLimit)].slice(0, limit);
   const events = Array.from(new Map(rawEvents.map((event) => [event.id, event])).values());
-  const hasMore = phase === "past"
-    ? pastEvents.length > limit
-    : upcomingEvents.length > limit || pastEvents.length > remainingLimit;
+ const hasMore = phase === "past"
+   ? pastEvents.length > limit
+   : upcomingEvents.length > limit || pastEvents.length > remainingLimit;
   const last = events.at(-1);
   return {
     events,
@@ -209,8 +231,9 @@ async function buildCachedCommunityEventsPayload(
   limit: number,
   eventId: string | null,
  cursor: CommunityEventsPageCursor | null,
+ requestedPhase: CommunityEventsPagePhase | null,
 ): Promise<CachedCommunityEventsPayload> {
-  const page = await loadCommunityEventRows(supabase, todayIso, limit, eventId, cursor);
+ const page = await loadCommunityEventRows(supabase, todayIso, limit, eventId, cursor, requestedPhase);
   const events = page.events;
   if (events.length === 0) {
     return {
@@ -251,6 +274,7 @@ async function loadCachedCommunityEvents(
  limit: number,
  eventId: string | null,
  cursor: CommunityEventsPageCursor | null,
+ requestedPhase: CommunityEventsPagePhase | null,
 ): Promise<CommunityEventsSuccessPayload> {
  const todayIso = new Date().toISOString().slice(0, 10);
  const load = async () => {
@@ -260,13 +284,14 @@ async function loadCachedCommunityEvents(
      limit,
      eventId,
      cursor,
+    requestedPhase,
    );
  };
  const cached = eventId
   ? load
   : unstable_cache(
     load,
-    ["community-events", buildCommunityEventsCacheKey(limit, todayIso, cursor ? buildCommunityEventsPageCursor(cursor) : null)],
+    ["community-events", buildCommunityEventsCacheKey(limit, todayIso, cursor ? buildCommunityEventsPageCursor(cursor) : null, requestedPhase)],
     {
      revalidate: COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS,
      tags: [COMMUNITY_EVENTS_CACHE_TAG],
@@ -348,9 +373,25 @@ export async function GET(request: Request) {
    { status: 400 },
   );
  }
+ const requestedPhaseValue = url.searchParams.get("phase")?.trim() || null;
+ const requestedPhase: CommunityEventsPagePhase | null = requestedPhaseValue === "upcoming" || requestedPhaseValue === "past"
+  ? requestedPhaseValue
+  : null;
+ if (requestedPhaseValue && !requestedPhase) {
+  return NextResponse.json(
+   { error: "Phase d'événement invalide" },
+   { status: 400 },
+  );
+ }
+ if (requestedPhase && cursor && cursor.phase !== requestedPhase) {
+  return NextResponse.json(
+   { error: "La phase ne correspond pas au curseur" },
+   { status: 400 },
+  );
+ }
 
  try {
- const payload = await loadCachedCommunityEvents(userId, limit, requestedEventId, cursor);
+ const payload = await loadCachedCommunityEvents(userId, limit, requestedEventId, cursor, requestedPhase);
  return NextResponse.json(payload, {
   headers: userId
    ? COMMUNITY_EVENTS_USER_CACHE_HEADERS

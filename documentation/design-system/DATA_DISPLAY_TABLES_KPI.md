@@ -61,7 +61,10 @@ bornée avec `hasMore` et `nextCursor`. Le curseur keyset versionné encode la
 phase (`upcoming` ou `past`), la date de l'événement, `created_at` et `id` ;
 ces trois derniers champs forment le tri déterministe et son tie-breaker. Une
 page suivante est ajoutée par identifiant, avec déduplication, sans remplacer
-le périmètre public par un dataset client supposé complet. Un événement
+le périmètre public par un dataset client supposé complet. Les fenêtres future
+et passée sont demandées séparément et conservent chacune leur continuation ;
+une revalidation de la première page réconcilie les pages déjà chargées avant
+de retirer un identifiant devenu inaccessible. Un événement
 adressé explicitement par `eventId` reste une lecture ciblée hors fenêtre et
 ne reçoit pas de curseur.
 

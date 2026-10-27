@@ -1,71 +1,97 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
-import { fetchCommunityEvents, type CommunityEventItem, type CommunityEventsResponse } from "@/lib/community/http";
+import {
+  fetchCommunityEvents,
+  type CommunityEventItem,
+  type CommunityEventsResponse,
+} from "@/lib/community/http";
 import { swrRecentViewOptions } from "@/lib/swr-config";
-import { isAppError, toAppError } from "@/lib/errors/app-errors";
+import { isAppError, toAppError, type AppError } from "@/lib/errors/app-errors";
+import type { CommunityEventsPagePhase } from "@/lib/community/events-pagination";
+
+type EventPhase = CommunityEventsPagePhase;
+
+type PhasePaginationState = {
+  additionalEvents: CommunityEventItem[];
+  continuationCursors: string[];
+  nextCursor: string | null;
+  error: unknown;
+  failedCursor: string | null;
+  loadingMore: boolean;
+};
+
+const EMPTY_PHASE_STATE: PhasePaginationState = {
+  additionalEvents: [],
+  continuationCursors: [],
+  nextCursor: null,
+  error: null,
+  failedCursor: null,
+  loadingMore: false,
+};
+
+function createPhaseState(): Record<EventPhase, PhasePaginationState> {
+  return {
+    upcoming: { ...EMPTY_PHASE_STATE },
+    past: { ...EMPTY_PHASE_STATE },
+  };
+}
+
+function mergeEvents(
+  existing: CommunityEventItem[],
+  incoming: CommunityEventItem[],
+): CommunityEventItem[] {
+  const byId = new Map(existing.map((event) => [event.id, event]));
+  for (const event of incoming) byId.set(event.id, event);
+  return [...byId.values()];
+}
+
+function responseSignature(response: CommunityEventsResponse | undefined): string | null {
+  if (!response) return null;
+  return JSON.stringify({ nextCursor: response.nextCursor, items: response.items });
+}
+
+function toLoadError(value: unknown): AppError | null {
+  if (isAppError(value)) return value;
+  if (value instanceof Error) {
+    return toAppError(value, {
+      kind: "server",
+      message: "Chargement agenda communautaire impossible.",
+    });
+  }
+  return null;
+}
+
+function compareEvents(left: CommunityEventItem, right: CommunityEventItem, ascending: boolean): number {
+  const dateOrder = left.eventDate.localeCompare(right.eventDate);
+  if (dateOrder !== 0) return ascending ? dateOrder : -dateOrder;
+  const createdOrder = left.createdAt.localeCompare(right.createdAt);
+  if (createdOrder !== 0) return -createdOrder;
+  return ascending ? left.id.localeCompare(right.id) : right.id.localeCompare(left.id);
+}
 
 export function useCommunityEvents(enabled = true, focusEventId: string | null = null) {
   const {
-    data: eventsData,
-    error: eventsError,
-    isLoading: eventsLoading,
-    isValidating: eventsValidating,
-    mutate: reloadEvents,
+    data: upcomingData,
+    error: upcomingError,
+    isLoading: upcomingLoading,
+    isValidating: upcomingValidating,
+    mutate: reloadUpcoming,
   } = useSWR<CommunityEventsResponse, unknown>(
-    enabled ? ["section-community-events"] : null,
-    () => fetchCommunityEvents({ limit: 120 }),
+    enabled ? ["section-community-events", "upcoming"] : null,
+    () => fetchCommunityEvents({ limit: 120, phase: "upcoming" }),
     swrRecentViewOptions,
   );
-  const [paginationState, setPaginationState] = useState<{
-    base: CommunityEventsResponse | null;
-    additionalEvents: CommunityEventItem[];
-    nextCursor: string | null;
-    error: unknown;
-  }>({ base: null, additionalEvents: [], nextCursor: null, error: null });
-  const [loadingMore, setLoadingMore] = useState(false);
-  const loadMoreSequenceRef = useRef(0);
-
-  const activePagination = useMemo(
-    () => paginationState.base === (eventsData ?? null)
-      ? paginationState
-      : {
-          base: eventsData ?? null,
-          additionalEvents: [],
-          nextCursor: eventsData?.nextCursor ?? null,
-          error: null,
-        },
-    [eventsData, paginationState],
+  const {
+    data: pastData,
+    error: pastError,
+    isLoading: pastLoading,
+    isValidating: pastValidating,
+    mutate: reloadPast,
+  } = useSWR<CommunityEventsResponse, unknown>(
+    enabled ? ["section-community-events", "past"] : null,
+    () => fetchCommunityEvents({ limit: 120, phase: "past" }),
+    swrRecentViewOptions,
   );
-
-  const loadMoreEvents = useCallback(async () => {
-    if (!enabled || loadingMore || !activePagination.nextCursor) return;
-    const requestSequence = ++loadMoreSequenceRef.current;
-    setLoadingMore(true);
-    setPaginationState((current) => ({
-      ...activePagination,
-      error: current.base === activePagination.base ? null : activePagination.error,
-    }));
-    try {
-      const page = await fetchCommunityEvents({ limit: 120, cursor: activePagination.nextCursor });
-      if (loadMoreSequenceRef.current !== requestSequence) return;
-      setPaginationState((current) => {
-        const byId = new Map(current.additionalEvents.map((event) => [event.id, event]));
-        for (const event of page.items) byId.set(event.id, event);
-        return {
-          base: activePagination.base,
-          additionalEvents: [...byId.values()],
-          nextCursor: page.nextCursor,
-          error: null,
-        };
-      });
-    } catch (error) {
-      if (loadMoreSequenceRef.current === requestSequence) {
-        setPaginationState((current) => ({ ...current, error }));
-      }
-    } finally {
-      if (loadMoreSequenceRef.current === requestSequence) setLoadingMore(false);
-    }
-  }, [activePagination, enabled, loadingMore]);
   const {
     data: focusedEventData,
     error: focusedEventError,
@@ -78,61 +104,188 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
     swrRecentViewOptions,
   );
 
-  const allEvents = useMemo(() => {
-    const byId = new Map<string, CommunityEventItem>();
-    for (const event of [...(eventsData?.items ?? []), ...activePagination.additionalEvents]) {
-      byId.set(event.id, event);
-    }
-    for (const event of focusedEventData?.items ?? []) byId.set(event.id, event);
-    return [...byId.values()];
-  }, [activePagination.additionalEvents, eventsData?.items, focusedEventData?.items]);
-  const mergedEvents = allEvents;
-  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const [paginationState, setPaginationState] = useState<Record<EventPhase, PhasePaginationState>>(createPhaseState);
+  const paginationRef = useRef(paginationState);
+  const generationRef = useRef<Record<EventPhase, number>>({ upcoming: 0, past: 0 });
+  const loadingMoreRef = useRef<Record<EventPhase, boolean>>({ upcoming: false, past: false });
+  const baseSignaturesRef = useRef<Record<EventPhase, string | null>>({ upcoming: null, past: null });
 
+  const updatePhaseState = useCallback(
+    (phase: EventPhase, update: (current: PhasePaginationState) => PhasePaginationState) => {
+      setPaginationState((current) => {
+        const next = { ...current, [phase]: update(current[phase]) };
+        paginationRef.current = next;
+        return next;
+      });
+    },
+    [],
+  );
+
+  const reconcileContinuationPages = useCallback(
+    async (phase: EventPhase, base: CommunityEventsResponse | undefined, generation: number) => {
+      const loadedCursors = paginationRef.current[phase].continuationCursors;
+      let cursor = base?.nextCursor ?? null;
+      const refreshedCursors: string[] = [];
+      let refreshedEvents: CommunityEventItem[] = [];
+
+      try {
+        for (let index = 0; index < loadedCursors.length && cursor; index += 1) {
+          const requestCursor = cursor;
+          const page = await fetchCommunityEvents({ limit: 120, phase, cursor: requestCursor });
+          if (generationRef.current[phase] !== generation) return;
+          refreshedCursors.push(requestCursor);
+          refreshedEvents = mergeEvents(refreshedEvents, page.items);
+          cursor = page.nextCursor;
+        }
+        if (generationRef.current[phase] !== generation) return;
+        updatePhaseState(phase, (current) => ({
+          ...current,
+          additionalEvents: refreshedEvents,
+          continuationCursors: refreshedCursors,
+          nextCursor: cursor,
+          error: null,
+          failedCursor: null,
+        }));
+      } catch (error) {
+        if (generationRef.current[phase] !== generation) return;
+        const retryCursor = cursor ?? loadedCursors[refreshedCursors.length] ?? null;
+        updatePhaseState(phase, (current) => ({ ...current, error, failedCursor: retryCursor }));
+      }
+    },
+    [updatePhaseState],
+  );
+
+  const reconcileBase = useCallback(
+    (phase: EventPhase, base: CommunityEventsResponse | undefined, force = false) => {
+      const signature = responseSignature(base);
+      if (!force && baseSignaturesRef.current[phase] === signature) return Promise.resolve();
+      baseSignaturesRef.current[phase] = signature;
+      const generation = ++generationRef.current[phase];
+      return reconcileContinuationPages(phase, base, generation);
+    },
+    [reconcileContinuationPages],
+  );
+
+  useEffect(() => {
+    if (upcomingData) void reconcileBase("upcoming", upcomingData);
+  }, [reconcileBase, upcomingData]);
+  useEffect(() => {
+    if (pastData) void reconcileBase("past", pastData);
+  }, [pastData, reconcileBase]);
+
+  const loadMoreEvents = useCallback(
+    async (phase: EventPhase = "upcoming") => {
+      const current = paginationRef.current[phase];
+      if (!enabled || loadingMoreRef.current[phase] || !current.nextCursor) return;
+      const requestCursor = current.nextCursor;
+      const generation = ++generationRef.current[phase];
+      loadingMoreRef.current[phase] = true;
+      updatePhaseState(phase, (state) => ({ ...state, error: null, failedCursor: null, loadingMore: true }));
+      try {
+        const page = await fetchCommunityEvents({ limit: 120, phase, cursor: requestCursor });
+        if (generationRef.current[phase] !== generation) return;
+        updatePhaseState(phase, (state) => ({
+          ...state,
+          additionalEvents: mergeEvents(state.additionalEvents, page.items),
+          continuationCursors: [...state.continuationCursors, requestCursor],
+          nextCursor: page.nextCursor,
+          error: null,
+          failedCursor: null,
+        }));
+      } catch (error) {
+        if (generationRef.current[phase] === generation) {
+          updatePhaseState(phase, (state) => ({ ...state, error, failedCursor: requestCursor, loadingMore: false }));
+        }
+      } finally {
+        loadingMoreRef.current[phase] = false;
+        if (generationRef.current[phase] === generation) {
+          updatePhaseState(phase, (state) => ({ ...state, loadingMore: false }));
+        }
+      }
+    },
+    [enabled, updatePhaseState],
+  );
+
+  const reloadPhase = useCallback(
+    async (phase: EventPhase) => {
+      const mutate = phase === "upcoming" ? reloadUpcoming : reloadPast;
+      const generation = ++generationRef.current[phase];
+      updatePhaseState(phase, (state) => ({ ...state, error: null, failedCursor: null }));
+      const refreshed = await mutate();
+      const base = (refreshed as CommunityEventsResponse | undefined) ?? (phase === "upcoming" ? upcomingData : pastData);
+      baseSignaturesRef.current[phase] = responseSignature(base);
+      await reconcileContinuationPages(phase, base, generation);
+    },
+    [pastData, reconcileContinuationPages, reloadPast, reloadUpcoming, updatePhaseState, upcomingData],
+  );
+
+  const reloadAllEvents = useCallback(async () => {
+    await Promise.all([reloadPhase("upcoming"), reloadPhase("past"), reloadFocusedEvent()]);
+  }, [reloadFocusedEvent, reloadPhase]);
+
+  const retryEvents = useCallback(
+    async (phase: EventPhase) => {
+      if (paginationRef.current[phase].failedCursor) {
+        await loadMoreEvents(phase);
+        return;
+      }
+      await reloadPhase(phase);
+    },
+    [loadMoreEvents, reloadPhase],
+  );
+
+  const phaseErrors = useMemo(
+    () => ({
+      upcoming: toLoadError(upcomingError ?? paginationState.upcoming.error),
+      past: toLoadError(pastError ?? paginationState.past.error),
+    }),
+    [pastError, paginationState.past.error, paginationState.upcoming.error, upcomingError],
+  );
+  const rawEventsError = upcomingError ?? pastError ?? focusedEventError ?? paginationState.upcoming.error ?? paginationState.past.error;
+  const eventsLoadError = toLoadError(rawEventsError);
+
+  const allEvents = useMemo(
+    () => mergeEvents(
+      mergeEvents(
+        mergeEvents(upcomingData?.items ?? [], paginationState.upcoming.additionalEvents),
+        mergeEvents(pastData?.items ?? [], paginationState.past.additionalEvents),
+      ),
+      focusedEventData?.items ?? [],
+    ),
+    [focusedEventData?.items, paginationState.past.additionalEvents, paginationState.upcoming.additionalEvents, pastData?.items, upcomingData?.items],
+  );
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const upcomingEvents = useMemo(
-    () =>
-      mergedEvents
-        .filter((event) => event.eventDate >= todayIso)
-        .sort((a, b) => a.eventDate.localeCompare(b.eventDate)),
-    [mergedEvents, todayIso],
+    () => allEvents.filter((event) => event.eventDate >= todayIso).sort((a, b) => compareEvents(a, b, true)),
+    [allEvents, todayIso],
   );
   const pastEvents = useMemo(
-    () =>
-      mergedEvents
-        .filter((event) => event.eventDate < todayIso)
-        .sort((a, b) => b.eventDate.localeCompare(a.eventDate)),
-    [mergedEvents, todayIso],
+    () => allEvents.filter((event) => event.eventDate < todayIso).sort((a, b) => compareEvents(a, b, false)),
+    [allEvents, todayIso],
   );
-  const myEvents = useMemo(
-    () => mergedEvents.filter((event) => event.myRsvpStatus !== null),
-    [mergedEvents],
-  );
-
-  const rawEventsError = eventsError ?? focusedEventError ?? activePagination.error;
-  const eventsLoadError = isAppError(rawEventsError)
-    ? rawEventsError
-    : rawEventsError instanceof Error
-      ? toAppError(rawEventsError, {
-          kind: "server",
-          message: "Chargement agenda communautaire impossible.",
-        })
-      : null;
-  const reloadAllEvents = useCallback(async () => {
-    await Promise.all([
-      reloadEvents(),
-      reloadFocusedEvent(),
-    ]);
-  }, [reloadEvents, reloadFocusedEvent]);
+  const myEvents = useMemo(() => allEvents.filter((event) => event.myRsvpStatus !== null), [allEvents]);
 
   return {
-    eventsLoading: eventsLoading || focusedEventLoading,
-    eventsValidating: eventsValidating || focusedEventValidating,
+    eventsLoading: upcomingLoading || pastLoading || focusedEventLoading,
+    eventsLoadingByPhase: { upcoming: upcomingLoading, past: pastLoading },
+    eventsValidating: upcomingValidating || pastValidating || focusedEventValidating,
+    eventsValidatingByPhase: { upcoming: upcomingValidating, past: pastValidating },
     eventsLoadError,
+    eventsLoadErrorByPhase: phaseErrors,
     reloadEvents: reloadAllEvents,
-    hasMore: Boolean(activePagination.nextCursor),
-    loadingMore,
+    retryEvents,
+    hasMore: Boolean(paginationState.upcoming.nextCursor),
+    hasMoreByPhase: {
+      upcoming: Boolean(paginationState.upcoming.nextCursor),
+      past: Boolean(paginationState.past.nextCursor),
+    },
+    loadingMore: paginationState.upcoming.loadingMore,
+    loadingMoreByPhase: {
+      upcoming: paginationState.upcoming.loadingMore,
+      past: paginationState.past.loadingMore,
+    },
     loadMoreEvents,
-    allEvents: mergedEvents,
+    allEvents,
     upcomingEvents,
     pastEvents,
     myEvents,

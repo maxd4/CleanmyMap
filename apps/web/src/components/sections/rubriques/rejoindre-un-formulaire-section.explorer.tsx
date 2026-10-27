@@ -21,9 +21,11 @@ export type ExplorerProps = Pick<ControllerState,
   | "addQueueParticipant"
 > & Partial<Pick<ControllerState,
   | "communityUpcomingEvents" | "communityEventsLoading" | "communityEventsError"
+  | "communityPastEventsLoading" | "communityPastEventsError"
   | "communityEventsRetry" | "focusCommunityEventId" | "communityRsvpLoadingEventId"
   | "onCommunityRsvp" | "communityMutationError" | "communitySuccessMessage"
   | "communityEventsHasMore" | "communityEventsLoadingMore" | "communityEventsLoadMore"
+  | "communityPastEventsHasMore" | "communityPastEventsLoadingMore" | "communityPastEventsLoadMore" | "communityPastEventsRetry"
 >> & {
   onShareAction?: (actionId: string) => void;
 };

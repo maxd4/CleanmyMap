@@ -54,12 +54,15 @@ distincts des actions canoniques, dans les deux onglets. Leur lecture passe par
 `communityEventId`/`eventId` sans les confondre avec `actionId`. Une lecture par
 identifiant peut retrouver un événement hors de la page courante afin qu’un
 ancien lien ne soit pas perdu. La liste commence par une fenêtre bornée et
-charge les pages suivantes avec `hasMore`/`nextCursor` ; le curseur keyset
-versionné conserve la phase temporelle et le tri `event_date`, `created_at`,
-`id`, afin qu'un ajout ou une suppression entre deux requêtes ne répète ni ne
-perde silencieusement un événement. La déduplication client reste limitée à
-ces identifiants communs et ne fusionne pas un événement avec une action
-canonique.
+charge les pages suivantes avec `hasMore`/`nextCursor` propres à chaque onglet ;
+la requête indique explicitement `phase=upcoming` ou `phase=past`, et le curseur
+keyset versionné doit rester dans cette phase. Le tri `event_date`, `created_at`,
+`id` reste déterministe ; après revalidation, les pages chargées sont
+réconciliées par identifiant pour conserver les mises à jour RSVP/ownership/
+suivi et retirer un événement devenu inaccessible. La déduplication client
+reste limitée à ces identifiants communs et ne fusionne pas un événement avec
+une action canonique. Un échec de continuation est retenté avec le même
+curseur, sans revalider artificiellement la première page.
 
 Permettre au créateur, organisateur ou coorganisateur autorisé de :
 
