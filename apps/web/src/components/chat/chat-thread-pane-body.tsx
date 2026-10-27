@@ -117,29 +117,35 @@ export function ChatThreadPaneBody({
   canSubmit,
 }: ChatThreadPaneBodyProps) {
   const isLight = tone === "light";
-
-  if (activeChannelType === "action" && selectedActionId && messagerieMode) {
-    return <ChatActionModeration actionId={selectedActionId} tone={tone} />;
-  }
+  const actionModeration = activeChannelType === "action" && selectedActionId && messagerieMode ? (
+    <ChatActionModeration actionId={selectedActionId} tone={tone} />
+  ) : null;
 
   if (isBugReportChannel) {
     return (
-      <div className={`flex-1 overflow-y-auto p-6 custom-scrollbar ${isLight ? "bg-white/40" : ""}`}>
-        <FeedbackSection pagePath={pagePath} source="feedback_discussion" />
-      </div>
+      <>
+        {actionModeration}
+        <div className={`flex-1 overflow-y-auto p-6 custom-scrollbar ${isLight ? "bg-white/40" : ""}`}>
+          <FeedbackSection pagePath={pagePath} source="feedback_discussion" />
+        </div>
+      </>
     );
   }
 
   if (viewMode === "graph") {
     return (
-      <div className="flex-1 overflow-hidden">
-        <TopicNetworkGraph />
-      </div>
+      <>
+        {actionModeration}
+        <div className="flex-1 overflow-hidden">
+          <TopicNetworkGraph />
+        </div>
+      </>
     );
   }
 
   return (
     <>
+      {actionModeration}
       <ChatMessageFeed
         scrollRef={scrollRef}
         hasMoreMessages={hasMoreMessages}

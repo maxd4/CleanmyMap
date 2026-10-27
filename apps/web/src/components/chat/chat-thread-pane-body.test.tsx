@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatThreadPaneBody, type ChatThreadPaneBodyProps } from "./chat-thread-pane-body";
+
+const moderationState = vi.hoisted(() => ({ visible: true }));
 
 vi.mock("@/components/sections/rubriques/feedback-section", () => ({
   FeedbackSection: ({ pagePath, source }: { pagePath: string; source: string }) => (
@@ -8,7 +10,7 @@ vi.mock("@/components/sections/rubriques/feedback-section", () => ({
   ),
 }));
 vi.mock("./chat-action-moderation", () => ({
-  ChatActionModeration: ({ actionId }: { actionId: string }) => <div data-testid="moderation">{actionId}</div>,
+  ChatActionModeration: ({ actionId }: { actionId: string }) => moderationState.visible ? <div data-testid="moderation">{actionId}</div> : null,
 }));
 vi.mock("./topic-network-graph", () => ({
   TopicNetworkGraph: () => <div data-testid="graph" />,
@@ -36,12 +38,46 @@ function renderBody(overrides: Partial<ChatThreadPaneBodyProps> = {}) {
 }
 
 describe("ChatThreadPaneBody branch ownership", () => {
-  it("routes action moderation before the feed when the action thread is selected", () => {
+  beforeEach(() => {
+    moderationState.visible = true;
+  });
+
+  it("renders action moderation, feed and composer in their original order", () => {
     const markup = renderBody({ activeChannelType: "action", selectedActionId: "action-42", messagerieMode: true });
 
     expect(markup).toContain('data-testid="moderation"');
     expect(markup).toContain("action-42");
+    expect(markup).toContain('data-testid="feed"');
+    expect(markup).toContain('data-testid="composer"');
+    expect(markup.indexOf('data-testid="moderation"')).toBeLessThan(markup.indexOf('data-testid="feed"'));
+    expect(markup.indexOf('data-testid="feed"')).toBeLessThan(markup.indexOf('data-testid="composer"'));
+    expect(markup.match(/data-testid="feed"/g)).toHaveLength(1);
+    expect(markup.match(/data-testid="composer"/g)).toHaveLength(1);
+  });
+
+  it("keeps the action conversation when moderation renders null", () => {
+    moderationState.visible = false;
+
+    const markup = renderBody({ activeChannelType: "action", selectedActionId: "action-42", messagerieMode: true });
+
+    expect(markup).not.toContain('data-testid="moderation"');
+    expect(markup).toContain('data-testid="feed"');
+    expect(markup).toContain('data-testid="composer"');
+  });
+
+  it("renders action moderation before the graph view", () => {
+    const markup = renderBody({ activeChannelType: "action", selectedActionId: "action-42", messagerieMode: true, viewMode: "graph" });
+
+    expect(markup).toContain('data-testid="moderation"');
+    expect(markup).toContain('data-testid="graph"');
     expect(markup).not.toContain('data-testid="feed"');
+    expect(markup).not.toContain('data-testid="composer"');
+    expect(markup.indexOf('data-testid="moderation"')).toBeLessThan(markup.indexOf('data-testid="graph"'));
+  });
+
+  it("does not add moderation without an action selection or messaging mode", () => {
+    expect(renderBody({ activeChannelType: "action", selectedActionId: null, messagerieMode: true })).not.toContain('data-testid="moderation"');
+    expect(renderBody({ activeChannelType: "action", selectedActionId: "action-42", messagerieMode: false })).not.toContain('data-testid="moderation"');
   });
 
   it("keeps feedback and graph presentation branches distinct from the message feed", () => {
