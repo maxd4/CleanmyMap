@@ -5,13 +5,8 @@ import {
   type ReportAdvancedFilterMediaAvailability,
   type ReportAdvancedFilters,
 } from "@/lib/reports/report-advanced-filters";
+import { buildWasteProfile as buildCanonicalWasteProfile } from "@/lib/reports/report-model/waste-profile";
 
-type WasteProfileCategory = {
-  key: "megotsKg" | "plastiqueKg" | "verreKg" | "metalKg" | "mixteKg";
-  label: string;
-  kg: number;
-  actions: number;
-};
 type ActionListItem = ReturnType<typeof toActionListItem>;
 
 export function buildAdvancedFilteredIds(params: {
@@ -37,34 +32,10 @@ export function buildAdvancedFilteredIds(params: {
 }
 
 export function buildWasteProfile(filteredActionsApproved: ActionListItem[]) {
-  const totals: Record<WasteProfileCategory["key"], WasteProfileCategory> = {
-    megotsKg: { key: "megotsKg", label: "Mégots", kg: 0, actions: 0 },
-    plastiqueKg: { key: "plastiqueKg", label: "Plastique", kg: 0, actions: 0 },
-    verreKg: { key: "verreKg", label: "Verre", kg: 0, actions: 0 },
-    metalKg: { key: "metalKg", label: "Métal", kg: 0, actions: 0 },
-    mixteKg: { key: "mixteKg", label: "Déchets mixtes", kg: 0, actions: 0 },
-  };
-  let coveredActions = 0;
-  for (const item of filteredActionsApproved) {
-    const breakdown = item.contract?.metadata.wasteBreakdown ?? item.waste_breakdown ?? null;
-    if (!breakdown) continue;
-    coveredActions += 1;
-    for (const key of Object.keys(totals) as WasteProfileCategory["key"][]) {
-      const value = Number(breakdown[key] ?? 0);
-      if (value > 0) {
-        totals[key].kg += value;
-        totals[key].actions += 1;
-      }
-    }
-  }
-  const categories = Object.values(totals).filter((category) => category.kg > 0).sort((a, b) => b.kg - a.kg || b.actions - a.actions);
-  const dominant = categories[0] ?? null;
-  return {
-    categories,
-    coveragePercent: filteredActionsApproved.length > 0 ? (coveredActions / filteredActionsApproved.length) * 100 : 0,
-    dominantLabel: dominant?.label ?? "Déchets non typés",
-    dominantKg: dominant?.kg ?? 0,
-  };
+  return buildCanonicalWasteProfile(
+    filteredActionsApproved,
+    (item) => item.contract?.metadata.wasteBreakdown ?? item.waste_breakdown ?? null,
+  );
 }
 
 export function buildReportExportRows(filteredActionsApproved: ActionListItem[]) {

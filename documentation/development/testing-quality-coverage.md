@@ -123,7 +123,7 @@ fichier n'est compté dans deux familles. Les quatre décisions démontrées son
 `business`.
 
 Cette reclassification change l'attribution et l'empreinte
-(`c2d642cada7e134c4096e42eab69984c0ad414e6cbc52f0f15ca5a04c0ed4f6b`) ; elle
+(`3c341077b40b736da099a047d87ba85dc6f668c0444f6021a5d1307410574bcd`) ; elle
 ne constitue pas un gain de couverture. Le snapshot historique du 26 octobre
 reste inchangé. Une couverture Web complète doit être régénérée sur le SHA
 exact du candidat après cette évolution de l'empreinte ; un rapport WORKTREE
