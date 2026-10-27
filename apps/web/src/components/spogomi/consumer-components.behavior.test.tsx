@@ -136,6 +136,7 @@ describe("SPOGOMI consumer components", () => {
     expect(renderer.root.findAll((node) => node.type === "img")).toHaveLength(2);
     await act(async () => { await propsOf<ButtonProps>(thumbnails[0]!).onClick(); });
     expect(renderer.root.findByProps({ role: "dialog" })).toBeTruthy();
+    expect(renderer.root.findByProps({ role: "presentation" }).props.className).toContain("z-[60]");
     expect(renderer.root.findAll((node) => node.type === "img")).toHaveLength(3);
     expect(renderer.root.findAll((node) => String(node.props["aria-label"] ?? "").startsWith("Photo suivante"))).toHaveLength(1);
     renderer.unmount();
