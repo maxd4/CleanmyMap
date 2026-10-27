@@ -776,6 +776,18 @@ jobs:
         if: needs.scope.outputs.mobile_code_relevant == 'true' || (github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL')
         run: node scripts/checks/check-coverage.mjs --scope=mobile --from-existing-summary
 
+      - name: Upload Mobile coverage provenance
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mobile-coverage-evidence-${{ env.CANDIDATE_SHA }}
+          path: |
+            apps/mobile/coverage/coverage-summary.json
+            apps/mobile/coverage/lcov.info
+            apps/mobile/coverage/coverage-evidence.json
+            artifacts/coverage-publication
+          if-no-files-found: error
+          retention-days: 3
+
       - name: Mobile lint
         run: npm run mobile:lint
 

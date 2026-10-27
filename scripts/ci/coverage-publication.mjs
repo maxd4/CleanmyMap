@@ -21,6 +21,7 @@ import { getCandidateSha, getWorktreeCandidateFiles } from "./validation-evidenc
 import { gitExecutable } from "./git-executable.mjs";
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
+const HASH_PATTERN = /^[0-9a-f]{64}$/i;
 const PROOF_SCHEMA_VERSION = 1;
 const PUBLICATION_ROOT = path.join("artifacts", "coverage-publication");
 
@@ -158,6 +159,25 @@ function gitSha(repositoryRoot, ref) {
   }).trim();
 }
 
+export function resolveCoverageCandidate({ repositoryRoot = process.cwd(), environment = process.env } = {}) {
+  const dynamicSha = String(environment.CMM_DYNAMIC_CANDIDATE_SHA ?? "").trim();
+  const ciSha = String(environment.CANDIDATE_SHA ?? "").trim();
+  const candidateSha = dynamicSha || ciSha || getCandidateSha(repositoryRoot);
+  if (!SHA_PATTERN.test(candidateSha)) {
+    throw new Error(`Cannot create coverage proof without a full candidate SHA: ${candidateSha || "<missing>"}.`);
+  }
+  if (dynamicSha || ciSha) {
+    const checkedOutSha = getCandidateSha(repositoryRoot);
+    if (checkedOutSha !== candidateSha) {
+      throw new Error(`Coverage candidate SHA does not match checked-out HEAD: ${candidateSha} !== ${checkedOutSha}.`);
+    }
+  }
+  return {
+    candidateSha,
+    candidateScope: dynamicSha ? "DYNAMIC_CANDIDATE" : ciSha ? "CI_CANDIDATE" : "WORKTREE",
+  };
+}
+
 function sha256(file) {
   return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 }
@@ -196,6 +216,17 @@ function readProof(repositoryRoot, candidateSha, scope, publicationRoot = null) 
   }
   if (!Array.isArray(proof.reports) || proof.reports.length === 0) {
     throw new Error(`Coverage proof has no reports for ${scope}/${candidateSha}.`);
+  }
+  const expectedSources = sourceReports(scope);
+  const proofSources = proof.reports.map((report) => report?.source);
+  if (proof.reports.length !== expectedSources.length || new Set(proofSources).size !== expectedSources.length) {
+    throw new Error(`Coverage proof report manifest is incomplete or ambiguous for ${scope}/${candidateSha}.`);
+  }
+  for (const source of expectedSources) {
+    const report = proof.reports.find((entry) => entry?.source === source);
+    if (!report || report.path !== source || !HASH_PATTERN.test(String(report.sha256 ?? ""))) {
+      throw new Error(`Coverage proof does not attest the required report: ${source}.`);
+    }
   }
   return { proof, root: proofRoot(repositoryRoot, candidateSha, scope, publicationRoot) };
 }
@@ -302,8 +333,8 @@ function copyReports(repositoryRoot, targetRoot, sources) {
 }
 
 export function writeCoveragePublicationProof({ repositoryRoot = process.cwd(), scope } = {}) {
-  const candidateSha = process.env.CMM_DYNAMIC_CANDIDATE_SHA ?? getCandidateSha(repositoryRoot);
-  if (!SHA_PATTERN.test(candidateSha)) throw new Error(`Cannot create coverage proof without a full candidate SHA: ${candidateSha}.`);
+  const candidate = resolveCoverageCandidate({ repositoryRoot });
+  const { candidateSha } = candidate;
   const targetRoot = proofRoot(repositoryRoot, candidateSha, scope);
   fs.mkdirSync(targetRoot, { recursive: true });
   const reports = copyReports(repositoryRoot, targetRoot, sourceReports(scope));
@@ -311,7 +342,7 @@ export function writeCoveragePublicationProof({ repositoryRoot = process.cwd(), 
     schemaVersion: PROOF_SCHEMA_VERSION,
     kind: "cleanmymap-coverage-publication-proof",
     candidateSha,
-    candidateScope: process.env.CMM_DYNAMIC_CANDIDATE_SHA ? "DYNAMIC_CANDIDATE" : "WORKTREE",
+    candidateScope: candidate.candidateScope,
     scope,
     scopeFingerprint: scope === "web" ? COVERAGE_SCOPE_FINGERPRINT : scope === "mobile" ? MOBILE_COVERAGE_SCOPE_FINGERPRINT : null,
     policyFingerprint: COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT,

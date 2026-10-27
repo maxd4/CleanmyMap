@@ -51,7 +51,12 @@ export function classifySupabaseStartFailure({
   for (const [category, pattern] of categoryPatterns) if (pattern.test(log)) return category;
   if (evidence && typeof evidence === "object") {
     if (evidence.portState === "conflict") return SUPABASE_START_CATEGORIES.PORT_CONFLICT;
-    if (evidence.durationSeconds >= 90 && evidence.dockerContainers === 0 && evidence.supabaseStatus === "unavailable") return SUPABASE_START_CATEGORIES.START_TIMEOUT;
+    if (evidence.durationSeconds >= 80
+      && evidence.dockerContainers === 0
+      && evidence.supabaseStatus === "unavailable"
+      && (!evidence.networkState || ["missing", "unobserved"].includes(evidence.networkState))) {
+      return SUPABASE_START_CATEGORIES.START_TIMEOUT;
+    }
   }
   return SUPABASE_START_CATEGORIES.UNCLASSIFIED;
 }

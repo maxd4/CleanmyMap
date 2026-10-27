@@ -478,6 +478,13 @@ function publicationRootFor(scopeRoot, proofFile = null) {
   return path.join(scopeRoot, "artifacts", "coverage-publication");
 }
 
+function optionalProofFile(args, key, scopeRoot, auditedSha, scope) {
+  if (!scopeRoot) return null;
+  if (args[key]) return path.resolve(args[key]);
+  const candidate = path.join(scopeRoot, "artifacts", "coverage-publication", auditedSha, scope, "coverage-publication-proof.json");
+  return fs.existsSync(candidate) ? candidate : null;
+}
+
 export function buildReference({ args = parseArgs(process.argv), now = new Date() } = {}) {
   const auditedSha = args.sha;
   if (!auditedSha) throw new Error("Missing required argument --sha.");
@@ -488,6 +495,8 @@ export function buildReference({ args = parseArgs(process.argv), now = new Date(
   const pythonRoot = args["python-root"] ? path.resolve(args["python-root"]) : null;
   const webEvidenceFile = args["web-evidence"] ? path.resolve(args["web-evidence"]) : path.join(webRoot, "apps/web/coverage/coverage-evidence.json");
   const nodeProofFile = args["node-proof"] ? path.resolve(args["node-proof"]) : path.join(nodeRoot, "artifacts/coverage-publication", auditedSha, "node", "coverage-publication-proof.json");
+  const mobileProofFile = optionalProofFile(args, "mobile-proof", mobileRoot, auditedSha, "mobile");
+  const pythonProofFile = optionalProofFile(args, "python-proof", pythonRoot, auditedSha, "python");
   const webSummary = path.join(webRoot, "apps/web/coverage/coverage-summary.json");
   const webLcov = path.join(webRoot, "apps/web/coverage/lcov.info");
   const nodeSummary = path.join(nodeRoot, "scripts/coverage/coverage-summary.json");
@@ -507,12 +516,16 @@ export function buildReference({ args = parseArgs(process.argv), now = new Date(
   })];
   if (mobileRoot) scopes.push(buildScope({
     scope: "mobile", root: mobileRoot, repositoryRoot, summaryFile: path.join(mobileRoot, "apps/mobile/coverage/coverage-summary.json"), lcovFile: path.join(mobileRoot, "apps/mobile/coverage/lcov.info"), auditedSha,
-    proofState: "WORKTREE_LIVE/PRESENT_NOT_ATTESTED",
+    proofState: "EVIDENCE_UNVERIFIED",
+    publicationRoot: publicationRootFor(mobileRoot, mobileProofFile),
+    attest: Boolean(mobileProofFile),
     definition: { scope: "mobile", lcovPath: "apps/mobile/coverage/lcov.info", summaryPath: "apps/mobile/coverage/coverage-summary.json", sourceRoot: "apps/mobile" },
   }));
   if (pythonRoot) scopes.push(buildScope({
     scope: "python", root: pythonRoot, repositoryRoot, summaryFile: null, lcovFile: path.join(pythonRoot, "maintenance/python/coverage.xml"), auditedSha,
-    proofState: "WORKTREE_LIVE/PRESENT_NOT_ATTESTED",
+    proofState: "EVIDENCE_UNVERIFIED",
+    publicationRoot: publicationRootFor(pythonRoot, pythonProofFile),
+    attest: Boolean(pythonProofFile),
     definition: { scope: "python", format: "cobertura", coveragePath: "maintenance/python/coverage.xml", sourceRoot: "maintenance/python" },
   }));
   const scopeByName = new Map(scopes.map((scope) => [scope.scope, scope]));
@@ -532,7 +545,7 @@ export function buildReference({ args = parseArgs(process.argv), now = new Date(
       web: readProvenance(webEvidenceFile, "web", { summary: webSummary, lcov: webLcov }, scopeByName.get("web")?.provenance),
       node: readProvenance(nodeProofFile, "node", { summary: nodeSummary, lcov: nodeLcov }, scopeByName.get("node")?.provenance),
       mobile: readProvenance(args["mobile-evidence"] ? path.resolve(args["mobile-evidence"]) : null, "mobile", { summary: mobileRoot ? path.join(mobileRoot, "apps/mobile/coverage/coverage-summary.json") : null, lcov: mobileRoot ? path.join(mobileRoot, "apps/mobile/coverage/lcov.info") : null }, scopeByName.get("mobile")?.provenance),
-      python: { scope: "python", report: pythonRoot ? path.relative(process.cwd(), path.join(pythonRoot, "maintenance/python/coverage.xml")).replaceAll("\\", "/") : null, reportSha256: pythonRoot ? hashFile(path.join(pythonRoot, "maintenance/python/coverage.xml")) : null, validation: scopeByName.get("python")?.provenance ? { state: scopeByName.get("python").provenance.state, diagnostics: scopeByName.get("python").provenance.diagnostics } : { state: "NOT_MEASURED", diagnostics: [] } },
+      python: readProvenance(pythonProofFile, "python", { report: pythonRoot ? path.join(pythonRoot, "maintenance/python/coverage.xml") : null }, scopeByName.get("python")?.provenance),
     },
     limits: ["DB_SEMANTICS_NOT_EXECUTED", "NO_TARGET_DEFINED for mobile/node/python", "RISK_CLASSIFICATION_REQUIRED for Web unclassified", "no Web new-code-non-critical prefix is currently qualified"],
   };

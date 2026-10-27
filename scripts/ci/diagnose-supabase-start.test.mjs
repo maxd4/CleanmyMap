@@ -123,6 +123,20 @@ test("turns a long failed start with no containers into an actionable bounded co
   assert.equal(evidence.startPhase, "UNKNOWN");
 });
 
+test("classifies a delayed start with no Supabase network or containers as a timeout", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "opaque startup failure",
+    exitCode: 1,
+    durationSeconds: 88,
+    probeCommand: createProbeCommand(),
+  });
+
+  assert.equal(
+    classifySupabaseStartFailure({ log: "opaque startup failure", exitCode: 1, evidence }),
+    SUPABASE_START_CATEGORIES.START_TIMEOUT,
+  );
+});
+
 test("never reports success for a non-zero Supabase start result", () => {
   assert.notEqual(
     classifySupabaseStartFailure({ log: "", exitCode: 1 }),

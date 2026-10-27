@@ -20,6 +20,7 @@ import {
 } from "../checks/coverage-evidence.mjs";
 import {
   getCoveragePublicationRequirements,
+  resolveCoverageCandidate,
   runCoveragePublicationGate,
   validateCoveragePublicationProof,
 } from "./coverage-publication.mjs";
@@ -322,6 +323,48 @@ test("a report changed after publication proof is rejected", () => {
     else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
     fs.rmSync(temporaryRoot, { recursive: true, force: true });
   }
+});
+
+test("publication proof requires the complete canonical report manifest", () => {
+  const sha = candidateSha();
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-incomplete-manifest-"));
+  const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;
+  try {
+    writeWebProof(temporaryRoot, sha);
+    const proofPath = path.join(temporaryRoot, sha, "web", "coverage-publication-proof.json");
+    const proof = JSON.parse(fs.readFileSync(proofPath, "utf8"));
+    proof.reports = proof.reports.filter((report) => !report.source.endsWith("lcov.info"));
+    fs.writeFileSync(proofPath, JSON.stringify(proof), "utf8");
+    assert.throws(
+      () => validateCoveragePublicationProof({ repositoryRoot, candidateSha: sha, scope: "web" }),
+      /report manifest is incomplete|required report/,
+    );
+  } finally {
+    if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("coverage proof provenance distinguishes CI, dynamic and local candidates", () => {
+  const sha = candidateSha();
+  assert.deepEqual(resolveCoverageCandidate({ repositoryRoot, environment: { CANDIDATE_SHA: sha } }), {
+    candidateSha: sha,
+    candidateScope: "CI_CANDIDATE",
+  });
+  assert.deepEqual(resolveCoverageCandidate({ repositoryRoot, environment: { CMM_DYNAMIC_CANDIDATE_SHA: sha } }), {
+    candidateSha: sha,
+    candidateScope: "DYNAMIC_CANDIDATE",
+  });
+  assert.deepEqual(resolveCoverageCandidate({ repositoryRoot, environment: {} }), {
+    candidateSha: sha,
+    candidateScope: "WORKTREE",
+  });
+  assert.throws(
+    () => resolveCoverageCandidate({ repositoryRoot, environment: { CANDIDATE_SHA: "f".repeat(40) } }),
+    /does not match checked-out HEAD/,
+  );
 });
 
 test("Web evidence rejects a summary or configuration fingerprint mismatch", () => {

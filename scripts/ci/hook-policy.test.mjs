@@ -122,6 +122,7 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   for (const command of ["npm run mobile:security", "npm run mobile:typecheck", "npm run mobile:coverage", "node scripts/checks/check-coverage.mjs --scope=mobile --from-existing-summary", "npm run mobile:lint"]) {
     assert.match(mobileJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
   }
+  assert.match(mobileJob, /name: mobile-coverage-evidence-\$\{\{ env\.CANDIDATE_SHA \}\}[\s\S]*artifacts\/coverage-publication/);
   assert.doesNotMatch(mobileJob, /npm run mobile:test/);
   assert.doesNotMatch(mobileJob, /npm run quality:mobile-coverage/);
   assert.doesNotMatch(mobileJob, /npm run security:secrets/);

@@ -8,6 +8,7 @@ import test from "node:test";
 
 import {
   COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT,
+  MOBILE_COVERAGE_SCOPE_FINGERPRINT,
   COVERAGE_SCOPE_FINGERPRINT,
 } from "../checks/coverage-policy.mjs";
 import {
@@ -159,11 +160,33 @@ function writeWebEvidence(root, report, { candidate = auditedSha, ciPaths = fals
   return evidencePath;
 }
 
+function writeMobileEvidence(root, report, { candidate = auditedSha } = {}) {
+  const evidencePath = path.join(root, "apps/mobile/coverage/coverage-evidence.json");
+  fs.writeFileSync(evidencePath, JSON.stringify({
+    schemaVersion: 2,
+    kind: "cleanmymap-mobile-coverage",
+    gitHead: candidate,
+    scope: "mobile",
+    scopeFingerprint: MOBILE_COVERAGE_SCOPE_FINGERPRINT,
+    configurationFingerprint: computeConfigurationFingerprint({ repositoryRoot, candidateRef: auditedSha, scope: "mobile" }),
+    environmentFingerprint: computeCoverageEnvironmentFingerprint(),
+    summarySha256: computeCoverageSummaryHash(report.summary, root),
+    summaryPath: "apps/mobile/coverage/coverage-summary.json",
+    lcovSha256: computeCoverageFileHash(report.lcovPath),
+    lcovPath: "apps/mobile/coverage/lcov.info",
+  }), "utf8");
+  return evidencePath;
+}
+
 function writePublicationProof(scopeRoot, scope, { candidate = auditedSha, candidateScope = "CI_CANDIDATE", mutateProof } = {}) {
   const proofRoot = path.join(scopeRoot, "artifacts", "coverage-publication", auditedSha, scope);
   const sources = scope === "web"
     ? ["apps/web/coverage/coverage-summary.json", "apps/web/coverage/lcov.info", "apps/web/coverage/coverage-evidence.json"]
-    : ["scripts/coverage/coverage-summary.json", "scripts/coverage/lcov.info"];
+    : scope === "mobile"
+      ? ["apps/mobile/coverage/coverage-summary.json", "apps/mobile/coverage/lcov.info", "apps/mobile/coverage/coverage-evidence.json"]
+      : scope === "python"
+        ? ["maintenance/python/coverage.xml"]
+        : ["scripts/coverage/coverage-summary.json", "scripts/coverage/lcov.info"];
   for (const source of sources) copyReport(scopeRoot, proofRoot, source);
   if (mutateProof) mutateProof(proofRoot);
   const reports = sources.map((source) => ({ source, path: source, sha256: sha256(path.join(proofRoot, ...source.split("/"))) }));
@@ -173,7 +196,7 @@ function writePublicationProof(scopeRoot, scope, { candidate = auditedSha, candi
     candidateSha: candidate,
     candidateScope,
     scope,
-    scopeFingerprint: scope === "web" ? COVERAGE_SCOPE_FINGERPRINT : null,
+    scopeFingerprint: scope === "web" ? COVERAGE_SCOPE_FINGERPRINT : scope === "mobile" ? MOBILE_COVERAGE_SCOPE_FINGERPRINT : null,
     policyFingerprint: COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT,
     reports,
   };
@@ -181,7 +204,7 @@ function writePublicationProof(scopeRoot, scope, { candidate = auditedSha, candi
   return { proofRoot, proofPath: path.join(proofRoot, "coverage-publication-proof.json") };
 }
 
-function createFixture({ mobile = false, python = false, ciPaths = false, candidateScope = "CI_CANDIDATE", candidate = auditedSha, mutateWebProof, mutateNodeProof } = {}) {
+function createFixture({ mobile = false, python = false, attestMobile = false, attestPython = false, ciPaths = false, candidateScope = "CI_CANDIDATE", candidate = auditedSha, mutateWebProof, mutateNodeProof } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-reference-"));
   const webRoot = path.join(root, "web");
   const nodeRoot = path.join(root, "node");
@@ -191,9 +214,12 @@ function createFixture({ mobile = false, python = false, ciPaths = false, candid
   const webProof = writePublicationProof(webRoot, "web", { candidate, candidateScope, mutateProof: mutateWebProof });
   const nodeProof = writePublicationProof(nodeRoot, "node", { candidate, candidateScope, mutateProof: mutateNodeProof });
   const mobileRoot = mobile ? path.join(root, "mobile") : null;
-  if (mobileRoot) writeLcovScope(mobileRoot, "mobile");
+  const mobileReport = mobileRoot ? writeLcovScope(mobileRoot, "mobile") : null;
+  if (mobileReport) writeMobileEvidence(mobileRoot, mobileReport);
   const pythonRoot = python ? path.join(root, "python") : null;
   if (pythonRoot) writePythonScope(pythonRoot);
+  const mobileProof = mobileRoot && attestMobile ? writePublicationProof(mobileRoot, "mobile", { candidate, candidateScope }) : null;
+  const pythonProof = pythonRoot && attestPython ? writePublicationProof(pythonRoot, "python", { candidate, candidateScope }) : null;
   return {
     root,
     webRoot,
@@ -209,6 +235,8 @@ function createFixture({ mobile = false, python = false, ciPaths = false, candid
       "node-root": nodeRoot,
       ...(mobileRoot ? { "mobile-root": mobileRoot } : {}),
       ...(pythonRoot ? { "python-root": pythonRoot } : {}),
+      ...(mobileProof ? { "mobile-proof": mobileProof.proofPath } : {}),
+      ...(pythonProof ? { "python-proof": pythonProof.proofPath } : {}),
     },
   };
 }
@@ -343,6 +371,14 @@ test("atteste les chemins d'artefacts CI et le sentinel V8 BRDA -1 sans les ré�
   assert.match(fs.readFileSync(path.join(fixture.webRoot, "apps/web/coverage/lcov.info"), "utf8"), /BRDA:2,0,1,-1/);
 });
 
+test("atteste les quatre scopes lorsque chaque producteur publie une preuve CI exacte", () => {
+  const { reference } = buildFixture({ mobile: true, python: true, attestMobile: true, attestPython: true });
+  for (const scope of ["web", "node", "mobile", "python"]) {
+    assert.equal(reference.scopes.find((entry) => entry.scope === scope)?.state, "CI_EXACT_SHA", scope);
+    assert.equal(reference.provenance[scope]?.validation?.state, "CI_EXACT_SHA", scope);
+  }
+});
+
 test("ne transforme pas un compteur BRDA négatif invalide en preuve attested", () => {
   const fixture = createFixture();
   const lcovFiles = [
@@ -366,12 +402,12 @@ test("ne transforme pas un compteur BRDA négatif invalide en preuve attested", 
   assert.match(fs.readFileSync(lcovFiles[0], "utf8"), /BRDA:2,0,1,-2/);
 });
 
-test("laisse Mobile et Python PRESENT_NOT_ATTESTED et expose les limites Cobertura", () => {
+test("refuse Mobile et Python sans preuve de publication et expose les limites Cobertura", () => {
   const { reference } = buildFixture({ mobile: true, python: true });
   const mobile = reference.scopes.find((scope) => scope.scope === "mobile");
   const python = reference.scopes.find((scope) => scope.scope === "python");
-  assert.equal(mobile.state, "WORKTREE_LIVE/PRESENT_NOT_ATTESTED");
-  assert.equal(python.state, "WORKTREE_LIVE/PRESENT_NOT_ATTESTED");
+  assert.equal(mobile.state, "EVIDENCE_UNVERIFIED");
+  assert.equal(python.state, "EVIDENCE_UNVERIFIED");
   assert.equal(python.files[0].metrics.statements.total, null);
   assert.equal(python.files[0].metrics.functions.total, null);
   assert.equal(python.files[0].metrics.lines.total, null);
