@@ -16,12 +16,15 @@ export function useTerritorySuggestions(
   const [suggestions, setSuggestions] = useState<GeoAddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [resolvedRequestKey, setResolvedRequestKey] = useState("");
   const trimmedQuery = query.trim();
   const hasActiveQuery = level !== "country" && trimmedQuery.length >= 2;
+  const requestKey = `${level}:${trimmedQuery}`;
 
   useEffect(() => {
     const nextTrimmedQuery = query.trim();
     const nextHasActiveQuery = level !== "country" && nextTrimmedQuery.length >= 2;
+    const nextRequestKey = `${level}:${nextTrimmedQuery}`;
 
     if (!nextHasActiveQuery) {
       return;
@@ -29,6 +32,7 @@ export function useTerritorySuggestions(
 
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
+      setResolvedRequestKey(nextRequestKey);
       setIsLoading(true);
       setErrorMessage(null);
 
@@ -58,6 +62,9 @@ export function useTerritorySuggestions(
           };
         })
         .then((payload) => {
+          if (controller.signal.aborted) {
+            return;
+          }
           const items = Array.isArray(payload.items) ? payload.items : [];
           setSuggestions(
             mergeGeoAddressSuggestions(
@@ -91,9 +98,9 @@ export function useTerritorySuggestions(
   }, [level, query]);
 
   return {
-    suggestions: hasActiveQuery ? suggestions : [],
-    isLoading: hasActiveQuery ? isLoading : false,
-    errorMessage: hasActiveQuery ? errorMessage : null,
+    suggestions: hasActiveQuery && resolvedRequestKey === requestKey ? suggestions : [],
+    isLoading: hasActiveQuery ? (resolvedRequestKey === requestKey ? isLoading : true) : false,
+    errorMessage: hasActiveQuery && resolvedRequestKey === requestKey ? errorMessage : null,
     trimmedQuery,
   };
 }

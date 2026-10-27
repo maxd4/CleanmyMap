@@ -63,6 +63,14 @@ function page(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve) => {
+    resolve = nextResolve;
+  });
+  return { promise, resolve };
+}
+
 describe("ReportsFiles history state", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -155,6 +163,47 @@ describe("ReportsFiles history state", () => {
       expect(refreshedButton).toBeTruthy();
       expect(renderer.root.findAllByType("button")
         .some((button) => button.children.includes("Rapport page 2"))).toBe(false);
+    } finally {
+      renderer?.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps only the newest filtered history response during concurrent refreshes", async () => {
+    const first = deferred<{ ok: boolean; json: () => Promise<unknown> }>();
+    const second = deferred<{ ok: boolean; json: () => Promise<unknown> }>();
+    const fetchMock = vi.fn()
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReactTestRenderer;
+
+    try {
+      act(() => {
+        renderer = create(<ReportsFiles initialPage={page()} />);
+      });
+      const form = renderer.root.findByType("form");
+      act(() => { form.props.onSubmit({ preventDefault: vi.fn() }); });
+      act(() => { form.props.onSubmit({ preventDefault: vi.fn() }); });
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect((fetchMock.mock.calls[0]?.[1] as RequestInit).signal?.aborted).toBe(true);
+
+      await act(async () => {
+        first.resolve({
+          ok: true,
+          json: async () => page({ rows: [{ ...page().rows[0], id: "stale", report: "Réponse obsolète" }] }),
+        });
+        second.resolve({
+          ok: true,
+          json: async () => page({ rows: [{ ...page().rows[0], id: "fresh", report: "Réponse récente" }] }),
+        });
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(renderer.root.findAllByType("button").some((button) => button.children.includes("Réponse récente"))).toBe(true);
+      expect(renderer.root.findAllByType("button").some((button) => button.children.includes("Réponse obsolète"))).toBe(false);
     } finally {
       renderer?.unmount();
       vi.unstubAllGlobals();

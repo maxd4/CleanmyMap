@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import type {
   ReportPublicLibraryPage,
@@ -54,23 +54,40 @@ export function ReportsLibrary({ initialPage, initialAvailability = "available" 
   const [loading, setLoading] = useState(false);
   const [availability, setAvailability] = useState(initialAvailability);
   const [error, setError] = useState<string | null>(null);
+  const libraryRequestAbortRef = useRef<AbortController | null>(null);
+  const libraryRequestSequenceRef = useRef(0);
+
+  useEffect(() => () => {
+    libraryRequestSequenceRef.current += 1;
+    libraryRequestAbortRef.current?.abort();
+  }, []);
 
   async function loadPage(nextPage: number): Promise<void> {
+    const requestSequence = libraryRequestSequenceRef.current + 1;
+    libraryRequestSequenceRef.current = requestSequence;
+    libraryRequestAbortRef.current?.abort();
+    const controller = new AbortController();
+    libraryRequestAbortRef.current = controller;
     setLoading(true);
     setError(null);
     const params = new URLSearchParams({ page: String(nextPage), pageSize: String(page.pageSize || 12), search: search.trim(), period, theme, sort });
     try {
-      const response = await fetch(`/api/reports/library?${params.toString()}`, { cache: "no-store" });
+      const response = await fetch(`/api/reports/library?${params.toString()}`, { cache: "no-store", signal: controller.signal });
       const body = await parseJsonSafely(response);
       const parsedPage = parseLibraryPage(body);
       if (!response.ok || !parsedPage) throw new Error(isRecord(body) && typeof body.error === "string" ? body.error : "Bibliothèque temporairement indisponible.");
+      if (libraryRequestSequenceRef.current !== requestSequence || controller.signal.aborted) return;
       setPage(parsedPage);
       setAvailability("available");
     } catch (loadError) {
+      if (libraryRequestSequenceRef.current !== requestSequence || controller.signal.aborted) return;
       setError(loadError instanceof Error ? loadError.message : "Bibliothèque temporairement indisponible.");
       setAvailability("unavailable");
     } finally {
-      setLoading(false);
+      if (libraryRequestSequenceRef.current === requestSequence) {
+        libraryRequestAbortRef.current = null;
+        setLoading(false);
+      }
     }
   }
 

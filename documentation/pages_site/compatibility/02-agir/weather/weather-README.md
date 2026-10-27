@@ -54,6 +54,7 @@ fallback.
 - L'état `access refused` n'est pas un état normal de cette surface.
 - Les données météo proviennent d'Open-Meteo et d'une résolution locale puis distante des lieux.
 - La localisation initiale peut venir de la préférence utilisateur, d'un choix manuel stocké ou de la géolocalisation si elle est autorisée.
+- Les suggestions de lieu utilisent un debounce de 220 ms et le cache SWR partagé de la surface ; une recherche devenue obsolète est annulée et sa réponse ne peut pas remplacer la recherche courante. Une indisponibilité distante conserve uniquement un fallback local réellement disponible, sinon l'état d'erreur reste explicite.
 
 ## Structure UI
 

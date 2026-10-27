@@ -64,11 +64,17 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
         }
 
         const remote = (await response.json()) as AddressSuggestionsResponse;
+        if (controller.signal.aborted) {
+          throw new DOMException("La requête a été annulée.", "AbortError");
+        }
         return {
           ...remote,
           items: mergeGeoAddressSuggestions(localSuggestions, remote.items ?? [], 6),
         };
       } catch (error) {
+        if (controller.signal.aborted) {
+          throw error;
+        }
         if (localSuggestions.length > 0) {
           return { status: "ok", query: debouncedLocationQuery, items: localSuggestions };
         }

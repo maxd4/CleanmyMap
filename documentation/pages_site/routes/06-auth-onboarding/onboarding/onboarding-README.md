@@ -68,6 +68,10 @@ pendant la navigation :
 - `Localisation` permet de renseigner séparément une ville de résidence et une
   ville de travail, ou de sélectionner explicitement l'absence de zone. Aucune
   adresse précise n'est demandée.
+- Les recherches de ville sont débouncées et annulables. Lorsqu'une saisie est
+  remplacée, les suggestions précédentes sont retirées pendant la recherche et
+  une réponse obsolète ne peut pas réécrire la saisie courante ; un échec réseau
+  reste signalé sans inventer de résultat.
 
 `/onboarding/localisation` reste une route historique sécurisée qui redirige
 vers `/onboarding` ; l'étape Localisation est désormais intégrée à ce parcours

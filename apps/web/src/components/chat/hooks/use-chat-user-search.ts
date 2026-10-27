@@ -49,25 +49,42 @@ export function useChatUserSearch({
   mentionUsersKey: string | null;
   dmUsersKey: string | null;
 }) {
-  const userSearchAbortRef = useRef<AbortController | null>(null);
-  const fetchUserSearch = useCallback(async (url: string) => {
-    userSearchAbortRef.current?.abort();
+  const mentionSearchAbortRef = useRef<AbortController | null>(null);
+  const dmSearchAbortRef = useRef<AbortController | null>(null);
+  const fetchUserSearch = useCallback(async (
+    url: string,
+    abortRef: { current: AbortController | null },
+  ) => {
+    abortRef.current?.abort();
     const controller = new AbortController();
-    userSearchAbortRef.current = controller;
+    abortRef.current = controller;
 
     try {
       return await fetchChatJson<ChatUsersResponse>(url, controller.signal);
     } finally {
-      if (userSearchAbortRef.current === controller) {
-        userSearchAbortRef.current = null;
+      if (abortRef.current === controller) {
+        abortRef.current = null;
       }
     }
   }, []);
 
-  useEffect(() => () => userSearchAbortRef.current?.abort(), []);
+  const fetchMentionUsers = useCallback(
+    (url: string) => fetchUserSearch(url, mentionSearchAbortRef),
+    [fetchUserSearch],
+  );
+  const fetchDmUsers = useCallback(
+    (url: string) => fetchUserSearch(url, dmSearchAbortRef),
+    [fetchUserSearch],
+  );
+
+  useEffect(() => () => {
+    mentionSearchAbortRef.current?.abort();
+    dmSearchAbortRef.current?.abort();
+  }, []);
   useEffect(() => {
     if (!mentionUsersKey && !dmUsersKey) {
-      userSearchAbortRef.current?.abort();
+      mentionSearchAbortRef.current?.abort();
+      dmSearchAbortRef.current?.abort();
     }
   }, [dmUsersKey, mentionUsersKey]);
 
@@ -78,12 +95,12 @@ export function useChatUserSearch({
   } as const;
   const { data: mentionUsersData } = useSWR<ChatUsersResponse>(
     mentionUsersKey,
-    fetchUserSearch,
+    fetchMentionUsers,
     swrOptions,
   );
   const { data: dmUsersData } = useSWR<ChatUsersResponse>(
     dmUsersKey,
-    fetchUserSearch,
+    fetchDmUsers,
     swrOptions,
   );
 

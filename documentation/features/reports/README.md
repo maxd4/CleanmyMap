@@ -43,6 +43,10 @@ au runtime et à ses tests, pas à une copie documentaire.
   historique depuis le serveur en conservant la recherche, les filtres, le
   tri, la pagination et le total courant. Une génération dérivée n'est donc
   jamais ajoutée localement à une page qui pourrait ne pas la contenir.
+- La lecture filtrée de `Mes fichiers` est annulable et séquencée : lorsqu'une
+  nouvelle soumission démarre, la réponse précédente ne peut pas écraser la
+  page demandée en dernier. Une erreur ou une indisponibilité reste exposée
+  comme état explicite, sans présenter une page obsolète comme confirmée.
 
 - `Tous les fichiers` est une bibliothèque communautaire distincte de
   l'historique privé. Seul le propriétaire peut demander une prévisualisation,
