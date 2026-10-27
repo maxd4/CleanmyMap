@@ -1,25 +1,9 @@
-import { NextResponse } from "next/server";
 import { buildReportScientificExport } from "@/lib/reports/report-scientific-export";
-import {
-  buildReportGenerationExportHeaders,
-  executeReportGenerationRoute,
-  requireReportGenerationAccess,
-} from "../route-helpers";
+import { createReportGenerationExportHandler } from "../route-helpers";
 
 export const runtime = "nodejs";
 
-type RouteContext = { params: Promise<{ id: string }> };
-
-export async function GET(_request: Request, { params }: RouteContext) {
-  const access = await requireReportGenerationAccess();
-  if (access instanceof Response) return access;
-
-  const { id } = await params;
-  return executeReportGenerationRoute(id, access.userId, (generation) => {
-    const exportData = buildReportScientificExport(generation);
-    return new NextResponse(JSON.stringify(exportData, null, 2), {
-      status: 200,
-      headers: buildReportGenerationExportHeaders(generation, "json"),
-    });
-  });
-}
+export const GET = createReportGenerationExportHandler(
+  "json",
+  (generation) => JSON.stringify(buildReportScientificExport(generation), null, 2),
+);

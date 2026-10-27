@@ -9,6 +9,8 @@ import { InvalidReportGenerationSnapshotError } from "@/lib/reports/report-gener
 
 type ReportGeneration = Awaited<ReturnType<typeof getReportGenerationSnapshotById>>;
 
+export type ReportGenerationRouteContext = { params: Promise<{ id: string }> };
+
 export function buildReportGenerationExportHeaders(
   generation: NonNullable<ReportGeneration>,
   format: "csv" | "json",
@@ -55,4 +57,23 @@ export async function executeReportGenerationRoute(
       { status: 503 },
     );
   }
+}
+
+export function createReportGenerationExportHandler(
+  format: "csv" | "json",
+  render: (generation: NonNullable<ReportGeneration>) => string,
+) {
+  return async (_request: Request, { params }: ReportGenerationRouteContext): Promise<Response> => {
+    const access = await requireReportGenerationAccess();
+    if (access instanceof Response) return access;
+
+    const { id } = await params;
+    return executeReportGenerationRoute(id, access.userId, (generation) => new NextResponse(
+      render(generation),
+      {
+        status: 200,
+        headers: buildReportGenerationExportHeaders(generation, format),
+      },
+    ));
+  };
 }
