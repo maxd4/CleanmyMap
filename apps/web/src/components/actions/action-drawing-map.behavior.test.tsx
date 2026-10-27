@@ -266,6 +266,13 @@ describe("ActionDrawingMap Leaflet lifecycle", () => {
     act(() => root?.render(<ActionDrawingMap {...props} />));
   }
 
+  function mountNode(node: React.ReactNode) {
+    host = document.createElement("div");
+    document.body.append(host);
+    root = createRoot(host);
+    act(() => root?.render(node));
+  }
+
   async function settle() {
     await act(async () => {
       await vi.runAllTimersAsync();
@@ -356,6 +363,29 @@ describe("ActionDrawingMap Leaflet lifecycle", () => {
     act(() => undo?.click());
     expect(group().getLayers()).toHaveLength(0);
     expect(onChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it("restores the exact local drawing through the accessible Annuler toast", async () => {
+    function ControlledDrawingMap() {
+      const [value, setValue] = React.useState<ActionDrawing | null>(polylineValue);
+      return <ActionDrawingMap value={value} onChange={(next) => setValue(next)} />;
+    }
+
+    mountNode(<ControlledDrawingMap />);
+    await settle();
+    expect(group().getLayers()).toHaveLength(1);
+
+    const clear = mapState.map?.container.querySelector<HTMLAnchorElement>(".cmm-undo-btn");
+    act(() => clear?.click());
+    expect(group().getLayers()).toHaveLength(0);
+    expect(host?.textContent).toContain("Tracé retiré");
+    expect(host?.textContent).toContain("Annuler");
+
+    const undo = [...(host?.querySelectorAll("button") ?? [])].find((button) => button.textContent === "Annuler");
+    act(() => undo?.click());
+    await settle();
+    expect(group().getLayers()).toHaveLength(1);
+    expect(host?.textContent).not.toContain("Tracé retiré");
   });
 
   it("loads, replaces, invalidates, and clears external values without duplicating layers", async () => {

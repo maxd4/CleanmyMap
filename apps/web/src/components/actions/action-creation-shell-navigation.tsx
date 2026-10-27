@@ -117,6 +117,7 @@ export function WorkflowStepper({
   onSelect: (step: ActionWorkflowStepId) => void;
   fr?: boolean;
 }) {
+ const totalSteps = ACTION_WORKFLOW_STEPS.length;
   return (
     <nav aria-label={fr ? "Étapes de préparation de l’action" : "Action preparation steps"} data-testid="action-workflow-stepper">
       <ol className="grid gap-2 sm:grid-cols-4">
@@ -131,7 +132,7 @@ export function WorkflowStepper({
                 <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-black", status === "done" ? "border-emerald-500 bg-emerald-500 text-white" : "border-emerald-300 text-emerald-800")}>
                   {status === "done" ? <Check size={16} aria-hidden="true" /> : index + 1}
                 </span>
-                <span className="min-w-0"><span className="block text-sm font-black text-emerald-950">{labels[fr ? "fr" : "en"]}</span><span className="block text-xs text-emerald-900/65">{statusLabel}</span></span>
+                <span className="min-w-0"><span className="block text-xs font-semibold text-emerald-900/65">{fr ? `Étape ${index + 1} sur ${totalSteps}` : `Step ${index + 1} of ${totalSteps}`}</span><span className="block text-sm font-black text-emerald-950">{labels[fr ? "fr" : "en"]}</span><span className="block text-xs text-emerald-900/65">{statusLabel}</span></span>
               </button>
             </li>
           );

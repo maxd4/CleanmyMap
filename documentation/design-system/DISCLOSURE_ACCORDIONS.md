@@ -47,6 +47,16 @@ Il ne remplace pas :
 Les `<details>` spécialisés de ces contrôles restent donc autorisés hors des
 consommateurs gouvernés par ce document.
 
+## Aide progressive dans un formulaire
+
+Une notion secondaire ou experte peut être expliquée dans un `CmmDisclosure`
+fermé par défaut, avec un résumé qui décrit clairement ce que l'ouverture
+révèle. Les instructions nécessaires pour remplir, corriger, enregistrer ou
+comprendre une erreur restent visibles dans le parcours principal ; un
+disclosure ne doit pas dissimuler une contrainte obligatoire, une erreur ou
+l'action suivante. L'ouverture et la fermeture doivent préserver les valeurs
+saisies et le focus du formulaire.
+
 ## Sémantique native, clavier et focus
 
 - conserver le couple `<details>/<summary>` fourni par la primitive ;

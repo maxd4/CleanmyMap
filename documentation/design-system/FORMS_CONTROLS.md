@@ -64,11 +64,18 @@ La temporalité de validation (en saisie, après blur, à la soumission) dépend
 Pour création d'action, signalement ou autre workflow guidé existant :
 
 - Rendre l'étape courante identifiable textuellement, par exemple « Étape X sur Y » lorsque le nombre d'étapes est stable ; distinguer terminé, courant, restant, sans couleur seule.
+- Le `WorkflowStepper` existant expose cette progression dans chaque étape ; le retour ou la reprise conserve l'étape et les valeurs du brouillon, sans transformer un statut d'orchestration en preuve de persistance serveur.
 - Utiliser la progression existante et ne pas créer un nouveau composant global uniquement pour afficher un numéro.
 - Préserver retour, reprise, état local et transitions métier. Le retour arrière ne doit pas effacer des données sans justification.
 - Les boutons « Continuer », « Précédent », « Enregistrer » et « Envoyer » désignent des actions différentes ; leurs libellés et leur hiérarchie doivent l'indiquer.
 - À la confirmation finale, distinguer le brouillon, la validation de l'étape, la soumission et la persistance effective.
 - Ne jamais annoncer une action comme publiée ou envoyée lorsque l'identité, l'autorisation ou le serveur ne l'ont pas confirmée.
+
+Pour une suppression locale réellement réversible (par exemple un tracé ou un
+brouillon non envoyé), utiliser `CmmToast` avec une action `Annuler` qui
+restaure exactement la valeur précédente. Le message doit préciser la portée
+locale et ne doit jamais suggérer l'annulation d'une mutation serveur déjà
+envoyée ; une opération non réversible n'utilise pas ce pattern.
 
 Le modèle de progression appartient à l'owner du workflow ; `CmmButton`, `CmmField` et `STATES_FEEDBACK.md` régissent seulement la présentation.
 
