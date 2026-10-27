@@ -1,3 +1,4 @@
+import { type ComponentProps } from "react";
 import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PendingGamificationReconciliation } from "@/lib/gamification/gamification-reconciliation-notice";
@@ -67,6 +68,44 @@ function findButton(renderer: ReturnType<typeof create>, label: string) {
   return renderer.root.findAllByType("button").find((node) => propsOf<ButtonProps>(node).children === label)!;
 }
 
+type ReconciliationNoticeProps = ComponentProps<typeof GamificationReconciliationNotice>;
+type MigrationNoticeProps = ComponentProps<typeof GamificationRulesMigrationNotice>;
+
+function renderReconciliationNotice(
+  overrides: Partial<ReconciliationNoticeProps> = {},
+) {
+  let renderer!: ReturnType<typeof create>;
+  act(() => {
+    renderer = create(
+      <GamificationReconciliationNotice
+        reconciliation={reconciliation}
+        progression={progression}
+        locale="fr"
+        onAcknowledged={vi.fn()}
+        {...overrides}
+      />,
+    );
+  });
+  return renderer;
+}
+
+function renderMigrationNotice(
+  overrides: Partial<MigrationNoticeProps> = {},
+) {
+  let renderer!: ReturnType<typeof create>;
+  act(() => {
+    renderer = create(
+      <GamificationRulesMigrationNotice
+        summary={migrationSummary}
+        locale="fr"
+        onAcknowledged={vi.fn()}
+        {...overrides}
+      />,
+    );
+  });
+  return renderer;
+}
+
 describe("Gamification interactive behavior", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -79,17 +118,7 @@ describe("Gamification interactive behavior", () => {
     const fetchMock = vi.fn(() => request.promise);
     vi.stubGlobal("fetch", fetchMock);
     const onAcknowledged = vi.fn();
-    let renderer!: ReturnType<typeof create>;
-    act(() => {
-      renderer = create(
-        <GamificationReconciliationNotice
-          reconciliation={reconciliation}
-          progression={progression}
-          locale="fr"
-          onAcknowledged={onAcknowledged}
-        />,
-      );
-    });
+    const renderer = renderReconciliationNotice({ onAcknowledged });
 
     const acknowledge = findButton(renderer, "Compris");
     await act(async () => {
@@ -115,17 +144,7 @@ describe("Gamification interactive behavior", () => {
   it("announces an acknowledgement failure while leaving the receipt visible for retry", async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error("Service indisponible"));
     vi.stubGlobal("fetch", fetchMock);
-    let renderer!: ReturnType<typeof create>;
-    act(() => {
-      renderer = create(
-        <GamificationReconciliationNotice
-          reconciliation={reconciliation}
-          progression={progression}
-          locale="fr"
-          onAcknowledged={vi.fn()}
-        />,
-      );
-    });
+    const renderer = renderReconciliationNotice();
 
     await act(async () => { await propsOf<ButtonProps>(findButton(renderer, "Compris")).onClick(); await Promise.resolve(); });
     expect(propsOf<AlertProps>(renderer.root.findByProps({ role: "alert" })).children).toBe("Service indisponible");
@@ -144,17 +163,7 @@ describe("Gamification interactive behavior", () => {
         hasUserVisibleChanges: true,
       },
     } as PendingGamificationReconciliation;
-    let renderer!: ReturnType<typeof create>;
-    act(() => {
-      renderer = create(
-        <GamificationReconciliationNotice
-          reconciliation={historyReceipt}
-          progression={progression}
-          locale="fr"
-          onAcknowledged={vi.fn()}
-        />,
-      );
-    });
+    const renderer = renderReconciliationNotice({ reconciliation: historyReceipt });
 
     expect(renderer.root.findByProps({ children: "2 mises à jour de progression non encore consultées." })).toBeTruthy();
     expect(renderer.root.findByProps({ children: "XP inchangée" })).toBeTruthy();
@@ -163,17 +172,7 @@ describe("Gamification interactive behavior", () => {
   });
 
   it("does not render a progression notice when the authenticated progression is unavailable", () => {
-    let renderer!: ReturnType<typeof create>;
-    act(() => {
-      renderer = create(
-        <GamificationReconciliationNotice
-          reconciliation={reconciliation}
-          progression={undefined}
-          locale="fr"
-          onAcknowledged={vi.fn()}
-        />,
-      );
-    });
+    const renderer = renderReconciliationNotice({ progression: undefined });
 
     expect(renderer.toJSON()).toBeNull();
     renderer.unmount();
@@ -184,12 +183,7 @@ describe("Gamification interactive behavior", () => {
     const fetchMock = vi.fn(() => request.promise);
     vi.stubGlobal("fetch", fetchMock);
     const onAcknowledged = vi.fn();
-    let renderer!: ReturnType<typeof create>;
-    act(() => {
-      renderer = create(
-        <GamificationRulesMigrationNotice summary={migrationSummary} locale="fr" onAcknowledged={onAcknowledged} />,
-      );
-    });
+    const renderer = renderMigrationNotice({ onAcknowledged });
     const acknowledge = findButton(renderer, "J’ai vu les nouveautés");
 
     await act(async () => {
@@ -209,12 +203,7 @@ describe("Gamification interactive behavior", () => {
 
   it("shows the migration error and remains retryable after a failed acknowledgement", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Service indisponible")));
-    let renderer!: ReturnType<typeof create>;
-    act(() => {
-      renderer = create(
-        <GamificationRulesMigrationNotice summary={migrationSummary} locale="fr" onAcknowledged={vi.fn()} />,
-      );
-    });
+    const renderer = renderMigrationNotice();
 
     await act(async () => {
       await propsOf<ButtonProps>(findButton(renderer, "J’ai vu les nouveautés")).onClick();

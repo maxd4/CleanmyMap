@@ -15,6 +15,27 @@ import {
 } from "./feedback-submission";
 import { QUESTIONNAIRES } from "./questionnaire-config";
 
+type FeedbackSubmissionInput = Parameters<typeof submitFeedbackQuestionnaire>[0];
+
+function createSubmissionInput(
+  type: (typeof QUESTIONNAIRES)[number]["id"],
+  overrides: Partial<FeedbackSubmissionInput> = {},
+): FeedbackSubmissionInput {
+  const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === type)!;
+  return {
+    questionnaire,
+    values: Object.fromEntries(
+      questionnaire.fields.map((field) => [field.key, `Valeur ${field.key}`]),
+    ),
+    pagePath: "/sections/feedback",
+    source: "feedback_section",
+    locale: "fr",
+    honeypot: "",
+    submittedAt: 1_761_480_000_000,
+    ...overrides,
+  };
+}
+
 describe("feedback submission contract", () => {
   function valuesForDescriptionLength(
     type: (typeof QUESTIONNAIRES)[number]["id"],
@@ -105,21 +126,10 @@ describe("feedback submission contract", () => {
       new Response(JSON.stringify({ requestId: "collaboration-42" }), { status: 201 }),
     );
     vi.stubGlobal("fetch", fetchMock);
-    const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "collaboration")!;
-    const values = Object.fromEntries(
-      questionnaire.fields.map((field) => [field.key, `Valeur ${field.key}`]),
-    );
-    values.subject = "Partenariat terrain choisi";
+    const input = createSubmissionInput("collaboration");
+    input.values.subject = "Partenariat terrain choisi";
 
-    await submitFeedbackQuestionnaire({
-      questionnaire,
-      values,
-      pagePath: "/sections/feedback",
-      source: "feedback_section",
-      locale: "fr",
-      honeypot: "",
-      submittedAt: Date.now(),
-    });
+    await submitFeedbackQuestionnaire(input);
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body as string) as { title: string };
     expect(body.title).toBe("Partenariat terrain choisi");
@@ -131,21 +141,10 @@ describe("feedback submission contract", () => {
       new Response(JSON.stringify({ requestId: "collaboration-43" }), { status: 201 }),
     );
     vi.stubGlobal("fetch", fetchMock);
-    const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "collaboration")!;
-    const values = Object.fromEntries(
-      questionnaire.fields.map((field) => [field.key, `Valeur ${field.key}`]),
-    );
-    values.subject = "";
+    const input = createSubmissionInput("collaboration");
+    input.values.subject = "";
 
-    await submitFeedbackQuestionnaire({
-      questionnaire,
-      values,
-      pagePath: "/sections/feedback",
-      source: "feedback_section",
-      locale: "fr",
-      honeypot: "",
-      submittedAt: Date.now(),
-    });
+    await submitFeedbackQuestionnaire(input);
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body as string) as { title: string };
     expect(body.title).toBe("Collaboration proposée — Valeur organization");
@@ -161,21 +160,8 @@ describe("feedback submission contract", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "idea")!;
-    const values = Object.fromEntries(
-      questionnaire.fields.map((field) => [field.key, `Valeur ${field.key}`]),
-    );
-
     await expect(
-      submitFeedbackQuestionnaire({
-        questionnaire,
-        values,
-        pagePath: "/sections/feedback",
-        source: "feedback_section",
-        locale: "fr",
-        honeypot: "",
-        submittedAt: Date.now(),
-      }),
+      submitFeedbackQuestionnaire(createSubmissionInput("idea")),
     ).resolves.toEqual({
       requestId: "report-42",
       screenshot: "not_requested",
@@ -195,22 +181,10 @@ describe("feedback submission contract", () => {
       new Response(JSON.stringify({ requestId: "bug-42" }), { status: 201 }),
     );
     vi.stubGlobal("fetch", fetchMock);
-    const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "bug")!;
-    const values = Object.fromEntries(
-      questionnaire.fields.map((field) => [field.key, `Valeur ${field.key}`]),
-    );
-
     await expect(
-      submitFeedbackQuestionnaire({
-        questionnaire,
-        values,
-        pagePath: "/sections/feedback",
-        source: "feedback_section",
-        locale: "fr",
-        honeypot: "",
-        submittedAt: Date.now(),
+      submitFeedbackQuestionnaire(createSubmissionInput("bug", {
         screenshotFile: new File(["png"], "capture.png", { type: "image/png" }),
-      }),
+      })),
     ).resolves.toEqual({
       requestId: "bug-42",
       screenshot: "failed",
@@ -247,15 +221,7 @@ describe("feedback submission contract", () => {
     );
 
     await expect(
-      submitFeedbackQuestionnaire({
-        questionnaire,
-        values,
-        pagePath: "/sections/feedback",
-        source: "feedback_section",
-        locale: "fr",
-        honeypot: "",
-        submittedAt: Date.now(),
-      }),
+      submitFeedbackQuestionnaire(createSubmissionInput("improvement", { questionnaire, values })),
     ).rejects.toThrow("Votre retour est trop long");
     expect(fetchMock).not.toHaveBeenCalled();
 
@@ -272,21 +238,8 @@ describe("feedback submission contract", () => {
         }),
       ),
     );
-    const questionnaire = QUESTIONNAIRES.find((candidate) => candidate.id === "idea")!;
-    const values = Object.fromEntries(
-      questionnaire.fields.map((field) => [field.key, `Valeur ${field.key}`]),
-    );
-
     await expect(
-      submitFeedbackQuestionnaire({
-        questionnaire,
-        values,
-        pagePath: "/sections/feedback",
-        source: "feedback_section",
-        locale: "fr",
-        honeypot: "",
-        submittedAt: Date.now(),
-      }),
+      submitFeedbackQuestionnaire(createSubmissionInput("idea")),
     ).rejects.toThrow("Quota atteint.");
 
     vi.unstubAllGlobals();
