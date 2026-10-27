@@ -64,6 +64,7 @@ const optionalBoolean = z.preprocess((value) => {
 
 const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: optionalUrl,
+  NEXT_PUBLIC_CMM_NAVIGATION_RIBBON_VARIANT: z.enum(["classic", "meniscus"]).optional(),
   NEXT_PUBLIC_CARTO_BASEMAP_KEY: z.string().optional(),
   NEXT_PUBLIC_CLERK_SUPABASE_JWT_TEMPLATE: z.string().optional(),
   NEXT_PUBLIC_SUPABASE_URL: optionalUrl,
