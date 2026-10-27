@@ -57,27 +57,34 @@ async function meniscusGeometry(page: Page, displayMode?: "exhaustif" | "minimal
     const ribbon = document.querySelector<HTMLElement>("[data-navigation-ribbon]");
     const indicator = ribbon?.querySelector<HTMLElement>(".cmm-navigation-meniscus-indicator");
     const active = ribbon?.querySelector<HTMLElement>('[data-navigation-block-active="true"]');
+    const bead = ribbon?.querySelector<HTMLElement>(".cmm-navigation-meniscus-bead");
     const surface = ribbon?.querySelector<SVGPathElement>(".cmm-navigation-meniscus-surface");
-    if (!ribbon || !indicator || !active || !surface) {
+    if (!ribbon || !indicator || !active || !bead || !surface) {
       throw new Error("Missing ribbon indicator geometry");
     }
 
     const indicatorRect = indicator.getBoundingClientRect();
     const activeRect = active.getBoundingClientRect();
-    const iconRect = active.querySelector<HTMLElement>(".cmm-navigation-block-icon")?.getBoundingClientRect();
+    const beadRect = bead.getBoundingClientRect();
+    const iconRect = bead.querySelector<HTMLElement>(".cmm-navigation-meniscus-bead-icon")?.getBoundingClientRect();
     const indicatorStyle = getComputedStyle(indicator);
     const activeStyle = getComputedStyle(active);
     const hitPoint = document.elementFromPoint(
-      activeRect.left + activeRect.width / 2,
-      activeRect.top + 4,
+      beadRect.left + beadRect.width / 2,
+      beadRect.top + 4,
     );
     return {
       activeCenter: activeRect.left + activeRect.width / 2,
       indicatorCenter: indicatorRect.left + indicatorRect.width / 2,
-      circleTop: activeRect.top,
-      circleBottom: activeRect.bottom,
-      circleWidth: activeRect.width,
-      circleHeight: activeRect.height,
+      beadCenter: beadRect.left + beadRect.width / 2,
+      circleTop: beadRect.top,
+      circleBottom: beadRect.bottom,
+      circleWidth: beadRect.width,
+      circleHeight: beadRect.height,
+      activeTop: activeRect.top,
+      activeBottom: activeRect.bottom,
+      activeWidth: activeRect.width,
+      activeHeight: activeRect.height,
       iconCenter: iconRect ? iconRect.left + iconRect.width / 2 : null,
       iconVerticalCenter: iconRect ? iconRect.top + iconRect.height / 2 : null,
       ribbonTop: ribbon.getBoundingClientRect().top,
@@ -90,10 +97,14 @@ async function meniscusGeometry(page: Page, displayMode?: "exhaustif" | "minimal
       elevatedPointElement: hitPoint instanceof Element
         ? `${hitPoint.tagName.toLowerCase()}.${hitPoint.className}`
         : null,
+      elevatedPointStack: document.elementsFromPoint(
+        beadRect.left + beadRect.width / 2,
+        beadRect.top + 4,
+      ).slice(0, 6).map((element) => `${element.tagName.toLowerCase()}.${element.className}`),
       indicatorPointerEvents: indicatorStyle.pointerEvents,
       indicatorTransitionProperty: indicatorStyle.transitionProperty,
       indicatorTransitionDuration: indicatorStyle.transitionDuration,
-      activeIconTransform: getComputedStyle(active.querySelector(".cmm-navigation-block-icon")!).transform,
+      activeIconTransform: getComputedStyle(bead.querySelector(".cmm-navigation-meniscus-bead-icon")!).transform,
       scrollWidth: document.documentElement.scrollWidth,
       viewportWidth: document.documentElement.getBoundingClientRect().width,
     };
@@ -126,7 +137,9 @@ test.describe("desktop central navigation ribbon variants", () => {
     await expect(meniscusIndicator).toHaveCSS("opacity", "1");
     const meniscus = await meniscusGeometry(page);
     expect(Math.abs(meniscus.indicatorCenter - meniscus.activeCenter)).toBeLessThanOrEqual(2);
-    expect(Math.abs(meniscus.iconCenter! - meniscus.activeCenter)).toBeLessThanOrEqual(1);
+    expect(Math.abs(meniscus.beadCenter - meniscus.indicatorCenter)).toBeLessThanOrEqual(1);
+    expect(Math.abs(meniscus.iconCenter! - meniscus.beadCenter)).toBeLessThanOrEqual(1);
+    expect(Math.abs(meniscus.beadCenter - meniscus.activeCenter)).toBeLessThanOrEqual(1);
     expect(Math.abs(meniscus.iconVerticalCenter! - (meniscus.circleTop! + meniscus.circleHeight! / 2))).toBeLessThanOrEqual(1);
     expect(meniscus.circleTop!).toBeLessThan(meniscus.ribbonTop - 8);
     expect(meniscus.circleBottom!).toBeGreaterThan(meniscus.ribbonTop);
@@ -141,8 +154,8 @@ test.describe("desktop central navigation ribbon variants", () => {
     expect(meniscus.indicatorTransitionProperty).toContain("left");
     expect(meniscus.activeIconTransform).not.toBe("none");
     expect(meniscus.scrollWidth).toBeLessThanOrEqual(meniscus.viewportWidth + 1);
-    await expect(ribbon.locator('[data-navigation-block-active="true"] .cmm-navigation-block-label')).toBeVisible();
-    await expect(ribbon.locator('[data-navigation-block-active="true"] .cmm-navigation-block-label')).not.toHaveText("");
+    await expect(ribbon.locator('.cmm-navigation-meniscus-bead-label')).toBeVisible();
+    await expect(ribbon.locator('.cmm-navigation-meniscus-bead-label')).not.toHaveText("");
     const hoveredTrigger = ribbon.locator('[data-navigation-block-active="false"]').first();
     await hoveredTrigger.hover();
     await expect(hoveredTrigger.locator(".cmm-navigation-block-label")).toBeVisible();
@@ -225,6 +238,118 @@ test.describe("desktop central navigation ribbon variants", () => {
       const reducedMotion = await meniscusGeometry(page);
       expect(reducedMotion.indicatorTransitionDuration).toBe("0s");
     }
+  });
+
+  test("moves the bead and concave surface continuously across client navigation", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
+    await dismissCookies(page);
+    const ribbon = await waitForRibbon(page);
+
+    const visualizeTrigger = ribbon.getByRole("button", { name: "Cartographie & Impact" });
+    await visualizeTrigger.press("Enter");
+    const panelId = await visualizeTrigger.getAttribute("aria-controls");
+    const panel = page.locator(`#${panelId}`);
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('a[href="/methodologie"]')).toBeVisible();
+
+    type RibbonSample = {
+      pathname: string;
+      indicatorCenter: number | null;
+      beadCenter: number | null;
+      indicatorLeft: string | null;
+      activeIds: string[];
+      triggerCenters: number[];
+    };
+    const collectRibbonSample = () => page.evaluate<RibbonSample>(() => {
+      const indicator = document.querySelector<HTMLElement>(".cmm-navigation-meniscus-indicator");
+      const bead = document.querySelector<HTMLElement>(".cmm-navigation-meniscus-bead");
+      const buttons = [...document.querySelectorAll<HTMLElement>("[data-navigation-block-trigger]")];
+      return {
+        pathname: window.location.pathname,
+        indicatorCenter: indicator ? indicator.getBoundingClientRect().left + indicator.getBoundingClientRect().width / 2 : null,
+        beadCenter: bead ? bead.getBoundingClientRect().left + bead.getBoundingClientRect().width / 2 : null,
+        indicatorLeft: indicator?.style.left ?? null,
+        activeIds: buttons.filter((button) => button.dataset.navigationBlockActive === "true").map((button) => button.getAttribute("aria-label") ?? ""),
+        triggerCenters: buttons.map((button) => button.getBoundingClientRect().left + button.getBoundingClientRect().width / 2),
+      };
+    });
+    const samples: RibbonSample[] = [await collectRibbonSample()];
+    const clickPromise = panel.locator('a[href="/methodologie"]').click({ noWaitAfter: true });
+    const sampleUntil = Date.now() + 420;
+    while (Date.now() < sampleUntil) {
+      try {
+        samples.push(await collectRibbonSample());
+      } catch {
+        // A document context can be replaced during the client transition.
+      }
+      await page.waitForTimeout(16);
+    }
+    await clickPromise;
+    await expect(page).toHaveURL(/\/methodologie$/);
+    samples.push(await collectRibbonSample());
+
+    if (EXPECTED_VARIANT === "classic") return;
+
+    const validSamples = samples.filter((sample): sample is typeof sample & { indicatorCenter: number; beadCenter: number; indicatorLeft: string } => sample.indicatorCenter !== null && sample.beadCenter !== null && sample.indicatorLeft !== null);
+    const firstCenter = validSamples[0].beadCenter;
+    const finalCenter = validSamples.at(-1)!.beadCenter;
+    expect(Math.abs(finalCenter - firstCenter), JSON.stringify(samples)).toBeGreaterThan(20);
+    expect(validSamples[0].activeIds).not.toEqual(validSamples.at(-1)!.activeIds);
+    for (const sample of validSamples) {
+      expect(Math.abs(sample.indicatorCenter - sample.beadCenter)).toBeLessThanOrEqual(1.5);
+      expect(sample.triggerCenters).toEqual(validSamples[0].triggerCenters);
+    }
+
+    const actTrigger = ribbon.getByRole("button", { name: "Agir" });
+    await actTrigger.press("Enter");
+    const actPanelId = await actTrigger.getAttribute("aria-controls");
+    const actPanel = page.locator(`#${actPanelId}`);
+    await expect(actPanel.locator('a[href="/actions/new"]')).toBeVisible();
+    await actPanel.locator('a[href="/actions/new"]').click({ noWaitAfter: true });
+    await expect(page).toHaveURL(/\/actions\/new$/);
+    await page.waitForTimeout(40);
+    const visualizeAgainTrigger = ribbon.getByRole("button", { name: "Cartographie & Impact" });
+    await visualizeAgainTrigger.press("Enter");
+    const visualizeAgainPanelId = await visualizeAgainTrigger.getAttribute("aria-controls");
+    const visualizeAgainPanel = page.locator(`#${visualizeAgainPanelId}`);
+    await expect(visualizeAgainPanel.locator('a[href="/methodologie"]')).toBeVisible();
+    await visualizeAgainPanel.locator('a[href="/methodologie"]').click({ noWaitAfter: true });
+    await expect(page).toHaveURL(/\/methodologie$/);
+
+    await expect(ribbon.locator('[data-navigation-block-active="true"]')).toHaveCount(1);
+    const rapidFinal = await meniscusGeometry(page);
+    expect(Math.abs(rapidFinal.indicatorCenter - rapidFinal.beadCenter)).toBeLessThanOrEqual(1);
+    expect(Math.abs(rapidFinal.beadCenter - rapidFinal.activeCenter)).toBeLessThanOrEqual(1);
+
+    const transitionSamples = await page.evaluate(() => {
+      const indicator = document.querySelector<HTMLElement>(".cmm-navigation-meniscus-indicator");
+      const bead = document.querySelector<HTMLElement>(".cmm-navigation-meniscus-bead");
+      if (!indicator || !bead) throw new Error("Missing transition probe nodes");
+      const originalLeft = indicator.style.left;
+      const currentLeft = Number.parseFloat(getComputedStyle(indicator).left);
+      const captured: number[] = [];
+      const startedAt = performance.now();
+      indicator.style.left = `${currentLeft + 38}px`;
+      return new Promise<number[]>((resolve) => {
+        const sample = () => {
+          captured.push(bead.getBoundingClientRect().left + bead.getBoundingClientRect().width / 2);
+          if (performance.now() - startedAt < 340) {
+            requestAnimationFrame(sample);
+          } else {
+            indicator.style.transition = "none";
+            indicator.style.left = originalLeft;
+            void indicator.offsetWidth;
+            indicator.style.transition = "";
+            resolve(captured);
+          }
+        };
+        captured.push(bead.getBoundingClientRect().left + bead.getBoundingClientRect().width / 2);
+        requestAnimationFrame(sample);
+      });
+    });
+    expect(Math.abs(transitionSamples.at(-1)! - transitionSamples[0])).toBeGreaterThan(20);
+    expect(transitionSamples.some((center) => Math.abs(center - transitionSamples[0]) > 2 && Math.abs(center - transitionSamples.at(-1)!) > 2)).toBe(true);
   });
 
   test("keeps the desktop-only variant out of mobile and tablet layouts", async ({ page }) => {

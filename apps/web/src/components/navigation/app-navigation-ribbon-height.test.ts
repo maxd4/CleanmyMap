@@ -65,6 +65,26 @@ describe("desktop ribbon control geometry", () => {
     expect(shellSource).toContain('className="cmm-navigation-meniscus-surface"');
   });
 
+  it("keeps the meniscus surface, bead and icon in one moving indicator", () => {
+    const shellSource = readSource("app-navigation-ribbon-shell.tsx");
+    const layoutSource = fs.readFileSync(
+      path.resolve(navigationDirectory, "../../styles/layout.css"),
+      "utf8",
+    );
+
+    expect(shellSource).toContain('className="cmm-navigation-meniscus-indicator"');
+    expect(shellSource).toContain('className="cmm-navigation-meniscus-surface"');
+    expect(shellSource).toContain('className="cmm-navigation-meniscus-bead"');
+    expect(shellSource).toContain('className="cmm-navigation-meniscus-bead-icon"');
+    expect(shellSource).toContain('className="cmm-navigation-meniscus-bead-label"');
+    expect(layoutSource).toContain(".cmm-navigation-meniscus-indicator {");
+    expect(layoutSource).toContain("left 260ms cubic-bezier(0.22, 0.8, 0.28, 1)");
+    expect(layoutSource).toContain(".cmm-navigation-meniscus-bead {");
+    expect(layoutSource).toContain("pointer-events: none;");
+    expect(layoutSource).toContain('data-navigation-block-active="true"]');
+    expect(layoutSource).toContain("top: -0.4375rem;");
+  });
+
   it("aligns first-level menus, notification, profile and account controls only on desktop", () => {
     const menusSource = readSource("app-navigation-ribbon-menus.tsx");
     const notificationSource = readSource("notification-bell.tsx");

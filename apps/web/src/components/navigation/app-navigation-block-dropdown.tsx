@@ -1,15 +1,5 @@
 "use client";
 
-import {
-  BarChart3,
-  BookOpen,
-  House,
-  Map,
-  MessageCircle,
-  Users,
-  Zap,
-  type LucideIcon,
-} from "lucide-react";
 import type { NavigationSpace } from "@/lib/navigation";
 import { getLocalizedText } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
@@ -18,6 +8,7 @@ import { CmmIcon } from "@/components/ui/cmm-icon";
 import { DEFAULT_DROPDOWN_VERTICAL_GAP_PX } from "@/components/ui/use-dropdown-placement";
 import { cn } from "@/lib/utils";
 import { NavigationDropdownContent } from "./navigation-dropdown-content";
+import { getNavigationBlockIcon } from "./app-navigation-block-icon";
 import { getNavigationDropdownShellTokens } from "./navigation-dropdown-shell-theme";
 import { buildNavigationBlockTriggerStyle } from "./navigation-dropdown-accent-theme";
 import { getNavigationBlockTriggerStateClassName } from "./navigation-block-trigger-state";
@@ -33,27 +24,6 @@ type AppNavigationBlockDropdownProps = {
   pathname: string;
   space: NavigationSpace;
 };
-
-function getNavigationBlockIcon(spaceId: NavigationSpace["id"]): LucideIcon {
-  switch (spaceId) {
-    case "home":
-      return House;
-    case "act":
-      return Zap;
-    case "visualize":
-      return Map;
-    case "impact":
-      return BarChart3;
-    case "network":
-      return Users;
-    case "connect":
-      return MessageCircle;
-    case "learn":
-      return BookOpen;
-    default:
-      return House;
-  }
-}
 
 export function AppNavigationBlockDropdown({
   activeSpaceId,

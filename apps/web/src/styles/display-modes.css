@@ -114,7 +114,7 @@
   transition-duration: 180ms;
 }
 
-[data-display-mode="minimaliste"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] {
+[data-display-mode="minimaliste"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-bead {
   box-shadow: none;
 }
 
@@ -154,8 +154,8 @@
   box-shadow: none !important;
 }
 
-[data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] {
-  background: var(--cmm-navigation-meniscus-accent) !important;
+[data-display-mode="sobre"] [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-bead {
+  background: var(--cmm-navigation-meniscus-accent);
   border-color: var(--border-strong) !important;
   box-shadow: none;
 }

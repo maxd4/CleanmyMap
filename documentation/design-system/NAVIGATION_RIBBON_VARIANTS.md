@@ -39,8 +39,11 @@ route sans bloc actif n'affiche aucun indicateur.
 ## Géométrie de `meniscus`
 
 `meniscus` conserve le ruban desktop de 15rem, son axe central et l'ordre des
-blocs visibles. Son indicateur visuel est une surface SVG non interactive, mais
-le déclencheur actif devient le cercle émergent réellement cliquable :
+blocs visibles. Son indicateur est un seul ensemble visuel mobile : surface SVG,
+cercle émergent, icône et libellé actif. La surface et le cercle se déplacent
+donc avec la même valeur `left` et la même transition. Le déclencheur actif
+reste le vrai bouton de dropdown, rendu transparent sous cet ensemble pour
+conserver sa zone de clic, y compris dans la partie émergente :
 
 - dock sombre arrondi, avec bordure et ombre discrètes ;
 - cercle ambre de 44px visiblement surélevé au-dessus du bloc actif, avec une
@@ -56,10 +59,13 @@ le déclencheur actif devient le cercle émergent réellement cliquable :
 - `pointer-events: none` sur l'indicateur et aucun changement de dimension du
   ruban pendant la transition.
 
-Les marges négatives compensent la taille du déclencheur actif afin de
-préserver la largeur de chaque bloc et la hauteur du ruban. La zone cliquable
-du cercle est donc portée par le bouton de dropdown lui-même, y compris dans
-sa partie émergente.
+Le bouton actif est positionné sur la même emprise verticale que le cercle,
+mais reste dans le flux des cinq déclencheurs ; ses voisins ne bougent pas.
+L'indicateur et ses enfants ont `pointer-events: none` : la zone cliquable du
+cercle est portée par le bouton de dropdown lui-même, y compris dans sa partie
+émergente. Une nouvelle rubrique remplace simplement la valeur `left`, ce qui
+permet à la transition en cours d'être interrompue et redirigée sans
+téléportation du cercle.
 
 La géométrie calculée par
 `apps/web/src/components/navigation/app-navigation-ribbon-geometry.ts` reste

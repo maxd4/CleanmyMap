@@ -70,32 +70,71 @@
   vector-effect: non-scaling-stroke;
 }
 
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] {
-  position: relative;
-  z-index: 3;
+.cmm-navigation-meniscus-bead {
+  position: absolute;
+  top: 1.125rem;
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
   width: 2.75rem;
   height: 2.75rem;
-  margin: -0.375rem -0.25rem;
-  border: 1px solid var(--cmm-navigation-meniscus-accent-edge) !important;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--cmm-navigation-meniscus-accent-edge);
   border-radius: 9999px;
-  background: var(--cmm-navigation-meniscus-accent) !important;
-  color: var(--cmm-navigation-meniscus-ink) !important;
-  transform: translateY(-0.375rem);
+  background: var(--cmm-navigation-meniscus-accent);
+  color: var(--cmm-navigation-meniscus-ink);
   box-shadow:
     0 8px 14px -8px rgba(2, 6, 23, 0.85),
     0 0 0 2px rgba(255, 255, 255, 0.08) inset;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.cmm-navigation-meniscus-bead-icon {
+  display: inline-flex;
+  transform: scale(1.04);
+}
+
+.cmm-navigation-meniscus-bead-label {
+  position: absolute;
+  top: calc(100% + 0.125rem);
+  left: 50%;
+  z-index: 4;
+  color: var(--cmm-navigation-meniscus-accent);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(2, 6, 23, 0.86);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] {
+  position: relative;
+  z-index: 3;
+  top: -0.4375rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: -0.375rem -0.25rem;
+  border-color: transparent !important;
+  border-radius: 9999px;
+  background: transparent !important;
+  color: transparent !important;
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"][aria-expanded="true"],
 [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"]:focus-visible {
-  background: var(--cmm-navigation-meniscus-accent) !important;
+  background: transparent !important;
 }
 
 [data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"]:focus-visible {
   box-shadow:
     0 0 0 3px rgba(255, 255, 255, 0.78),
-    0 8px 14px -8px rgba(2, 6, 23, 0.85),
-    0 0 0 2px rgba(255, 255, 255, 0.08) inset;
+    0 0 0 1px rgba(246, 161, 26, 0.72);
 }
 
 .cmm-navigation-block-icon {
@@ -109,9 +148,8 @@
   display: none;
 }
 
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger]:hover .cmm-navigation-block-label,
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger]:focus-visible .cmm-navigation-block-label,
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] .cmm-navigation-block-label {
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="false"]:hover .cmm-navigation-block-label,
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="false"]:focus-visible .cmm-navigation-block-label {
   position: absolute;
   top: calc(100% + 0.125rem);
   left: 50%;
@@ -127,9 +165,9 @@
   white-space: nowrap;
 }
 
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] .cmm-navigation-block-icon {
-  color: var(--cmm-navigation-meniscus-ink);
-  transform: scale(1.04);
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] .cmm-navigation-block-icon,
+[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] .cmm-navigation-block-label {
+  visibility: hidden;
 }
 
 .cmm-home-map-preview {

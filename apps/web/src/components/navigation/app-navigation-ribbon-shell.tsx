@@ -14,15 +14,18 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
   getActiveSpaceForPath,
   getNavigationSpacesForProfile,
+  getLocalizedText,
   type NavigationSpace,
 } from "@/lib/navigation";
 import { getProfileLabel } from "@/lib/profiles";
 import { trackNavigationClick } from "@/lib/analytics/navigation-client";
 import { cn } from "@/lib/utils";
+import { CmmIcon } from "@/components/ui/cmm-icon";
 import { GlobalSearch } from "./global-search";
 import { useAdaptiveRibbonChrome } from "./app-navigation-ribbon-theme";
 import { APP_NAVIGATION_RIBBON_VARIANT } from "./app-navigation-ribbon-variant";
 import { AppNavigationBlockDropdown } from "./app-navigation-block-dropdown";
+import { getNavigationBlockIcon } from "./app-navigation-block-icon";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
 import {
@@ -51,6 +54,7 @@ function RibbonDesktopSpaceNavigation({ spaces, activeSpaceId, locale, onTrackNa
     ? -1
     : spaces.findIndex((space) => space.id === activeSpaceId);
   const indicatorLeft = getNavigationRibbonIndicatorLeft(activeSpaceIndex, spaces.length);
+  const activeSpace = activeSpaceIndex >= 0 ? spaces[activeSpaceIndex] : null;
 
   return <div className="hidden items-center justify-center xl:col-start-2 xl:flex"><nav data-navigation-ribbon data-navigation-ribbon-variant={APP_NAVIGATION_RIBBON_VARIANT} aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"} className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)] cmm-navigation-ribbon-dock">
     {indicatorLeft ? (
@@ -71,6 +75,16 @@ function RibbonDesktopSpaceNavigation({ spaces, activeSpaceId, locale, onTrackNa
             d="M0 64V30H18C25 30 24 22 30 19C34 17 36 12 44 12C52 12 54 17 58 19C64 22 63 30 70 30H88V64Z"
           />
         </svg>
+        {activeSpace ? (
+          <span className="cmm-navigation-meniscus-bead">
+            <span className="cmm-navigation-meniscus-bead-icon">
+              <CmmIcon icon={getNavigationBlockIcon(activeSpace.id)} size="lg" />
+            </span>
+            <span className="cmm-navigation-meniscus-bead-label">
+              {getLocalizedText(activeSpace.label, locale, activeSpace.id)}
+            </span>
+          </span>
+        ) : null}
       </span>
     ) : null}
     {spaces.map((space) => <AppNavigationBlockDropdown key={space.id} activeSpaceId={activeSpaceId} locale={locale} onTrackNavigation={onTrackNavigation} onOpenChange={onOpenChange} open={openSpaceId === space.id} pathname={pathname} space={space} />)}

@@ -6,6 +6,7 @@ import {
 } from "./navigation-block-trigger-state";
 
 const source = readFileSync(new URL("./app-navigation-block-dropdown.tsx", import.meta.url), "utf8");
+const iconSource = readFileSync(new URL("./app-navigation-block-icon.ts", import.meta.url), "utf8");
 const shellSource = readFileSync(new URL("./app-navigation-ribbon-shell.tsx", import.meta.url), "utf8");
 const treeSource = readFileSync(
   new URL("./app-navigation-tree-menu.content.tsx", import.meta.url),
@@ -44,13 +45,13 @@ describe("app navigation block dropdown contract", () => {
     expect(source).toContain("getNavigationBlockIcon(space.id)");
     expect(source).not.toContain("displayMode");
     expect(source).not.toContain("{space.icon}");
-    expect(source).toContain("return House");
-    expect(source).toContain("return Zap");
-    expect(source).toContain("return Map");
-    expect(source).toContain("return BarChart3");
-    expect(source).toContain("return Users");
-    expect(source).toContain("return MessageCircle");
-    expect(source).toContain("return BookOpen");
+    expect(iconSource).toContain("return House");
+    expect(iconSource).toContain("return Zap");
+    expect(iconSource).toContain("return Map");
+    expect(iconSource).toContain("return BarChart3");
+    expect(iconSource).toContain("return Users");
+    expect(iconSource).toContain("return MessageCircle");
+    expect(iconSource).toContain("return BookOpen");
   });
 
   it("keeps block hover accents local and reserves the trigger border", () => {
@@ -131,7 +132,7 @@ describe("app navigation block dropdown contract", () => {
     expect(displayModes).not.toContain("outline: 2px solid var(--text-inverse);");
     expect(displayModes).toContain("box-shadow: none !important;");
     expect(displayModes).toContain(".cmm-navigation-meniscus-indicator");
-    expect(displayModes).toContain('[data-navigation-block-active="true"]');
+    expect(displayModes).toContain(".cmm-navigation-meniscus-bead");
     expect(displayModes).toContain(".cmm-navigation-block-icon");
   });
 
