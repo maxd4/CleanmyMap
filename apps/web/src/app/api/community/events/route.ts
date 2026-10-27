@@ -21,6 +21,11 @@ import {
  COMMUNITY_EVENTS_CACHE_TAG,
 } from "@/lib/community/event-cache-invalidation";
 import { parsePositiveInteger } from "@/lib/http/query-params";
+import {
+ buildCommunityEventsPageCursor,
+ parseCommunityEventsPageCursor,
+ type CommunityEventsPageCursor,
+} from "@/lib/community/events-pagination";
 
 const COMMUNITY_EVENTS_ANONYMOUS_CACHE_HEADERS = {
  "Cache-Control": "public, max-age=20, stale-while-revalidate=60",
@@ -32,9 +37,10 @@ const COMMUNITY_EVENTS_USER_CACHE_HEADERS = {
 };
 function buildCommunityEventsCacheKey(
  limit: number,
-  todayIso: string,
+ todayIso: string,
+ cursor: string | null,
 ): string {
- return `limit:${limit}:today:${todayIso}`;
+ return `limit:${limit}:today:${todayIso}:cursor:${cursor ?? "first"}`;
 }
 
 type CachedCommunityEventItem = {
@@ -50,12 +56,22 @@ type CachedCommunityEventItem = {
 
 type CachedCommunityEventsPayload = {
  items: CachedCommunityEventItem[];
+ hasMore: boolean;
+ nextCursor: string | null;
 };
 
 type CommunityEventsSuccessPayload = {
  status: "ok";
  count: number;
  items: ReturnType<typeof toCommunityEventItem>[];
+ hasMore: boolean;
+ nextCursor: string | null;
+};
+
+type CommunityEventsRowsPage = {
+ events: CommunityEventRow[];
+ hasMore: boolean;
+ nextCursor: string | null;
 };
 
 function toCachedCommunityEventItem(
@@ -83,7 +99,8 @@ async function loadCommunityEventRows(
   todayIso: string,
   limit: number,
   eventId: string | null,
-): Promise<CommunityEventRow[]> {
+ cursor: CommunityEventsPageCursor | null,
+): Promise<CommunityEventsRowsPage> {
   const selectFields =
     "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description";
   if (eventId) {
@@ -93,35 +110,97 @@ async function loadCommunityEventRows(
       .eq("id", eventId)
       .limit(limit);
     if (result.error) throw new Error(result.error.message);
-    return (result.data ?? []) as CommunityEventRow[];
+    return {
+      events: (result.data ?? []) as CommunityEventRow[],
+      hasMore: false,
+      nextCursor: null,
+    };
   }
 
-  const upcomingResult = await supabase
-    .from("community_events")
-    .select(selectFields)
-    .gte("event_date", todayIso)
-    .order("event_date", { ascending: true })
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (upcomingResult.error) throw new Error(upcomingResult.error.message);
-  const upcomingEvents = (upcomingResult.data ?? []) as CommunityEventRow[];
-  const remainingLimit = Math.max(0, limit - upcomingEvents.length);
-  if (remainingLimit === 0) return upcomingEvents;
+  const loadPhase = async (
+    phase: "upcoming" | "past",
+    phaseLimit: number,
+    phaseCursor: CommunityEventsPageCursor | null,
+  ): Promise<CommunityEventRow[]> => {
+    let query = supabase
+      .from("community_events")
+      .select(selectFields);
+    if (phase === "upcoming") {
+      query = query
+        .gte("event_date", todayIso)
+        .order("event_date", { ascending: true })
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false });
+      if (phaseCursor) {
+        query = query.or(
+          `event_date.gt.${phaseCursor.eventDate},and(event_date.eq.${phaseCursor.eventDate},created_at.lt.${phaseCursor.createdAt}),and(event_date.eq.${phaseCursor.eventDate},created_at.eq.${phaseCursor.createdAt},id.lt.${phaseCursor.id})`,
+        );
+      }
+    } else {
+      query = query
+        .lt("event_date", todayIso)
+        .order("event_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false });
+      if (phaseCursor) {
+        query = query.or(
+          `event_date.lt.${phaseCursor.eventDate},and(event_date.eq.${phaseCursor.eventDate},created_at.lt.${phaseCursor.createdAt}),and(event_date.eq.${phaseCursor.eventDate},created_at.eq.${phaseCursor.createdAt},id.lt.${phaseCursor.id})`,
+        );
+      }
+    }
+    const result = await query.limit(phaseLimit);
+    if (result.error) throw new Error(result.error.message);
+    return (result.data ?? []) as CommunityEventRow[];
+  };
 
-  const pastResult = await supabase
-    .from("community_events")
-    .select(selectFields)
-    .lt("event_date", todayIso)
-    .order("event_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(remainingLimit);
-  if (pastResult.error) throw new Error(pastResult.error.message);
-  const pastEvents = (pastResult.data ?? []) as CommunityEventRow[];
-  return Array.from(
-    new Map(
-      [...upcomingEvents, ...pastEvents].map((event) => [event.id, event]),
-    ).values(),
+  const phase = cursor?.phase ?? "upcoming";
+  const upcomingEvents = phase === "upcoming"
+    ? await loadPhase("upcoming", limit + 1, cursor)
+    : [];
+  if (phase === "upcoming" && upcomingEvents.length > limit) {
+    const events = upcomingEvents.slice(0, limit);
+    const last = events.at(-1);
+    return {
+      events,
+      hasMore: true,
+      nextCursor: last
+        ? buildCommunityEventsPageCursor({
+            phase: "upcoming",
+            eventDate: last.event_date,
+            createdAt: last.created_at,
+            id: last.id,
+          })
+        : null,
+    };
+  }
+
+  const remainingLimit = Math.max(0, limit - upcomingEvents.length);
+  const pastCursor = phase === "past" ? cursor : null;
+  const pastEvents = await loadPhase(
+    "past",
+    phase === "past" ? limit + 1 : Math.max(1, remainingLimit + 1),
+    pastCursor,
   );
+  const rawEvents = phase === "past"
+    ? pastEvents.slice(0, limit)
+    : [...upcomingEvents, ...pastEvents.slice(0, remainingLimit)].slice(0, limit);
+  const events = Array.from(new Map(rawEvents.map((event) => [event.id, event])).values());
+  const hasMore = phase === "past"
+    ? pastEvents.length > limit
+    : upcomingEvents.length > limit || pastEvents.length > remainingLimit;
+  const last = events.at(-1);
+  return {
+    events,
+    hasMore,
+    nextCursor: hasMore && last
+      ? buildCommunityEventsPageCursor({
+          phase: phase === "past" || upcomingEvents.length === 0 || events.length > upcomingEvents.length ? "past" : "upcoming",
+          eventDate: last.event_date,
+          createdAt: last.created_at,
+          id: last.id,
+        })
+      : null,
+  };
 }
 
 async function buildCachedCommunityEventsPayload(
@@ -129,9 +208,17 @@ async function buildCachedCommunityEventsPayload(
   todayIso: string,
   limit: number,
   eventId: string | null,
+ cursor: CommunityEventsPageCursor | null,
 ): Promise<CachedCommunityEventsPayload> {
-  const events = await loadCommunityEventRows(supabase, todayIso, limit, eventId);
-  if (events.length === 0) return { items: [] };
+  const page = await loadCommunityEventRows(supabase, todayIso, limit, eventId, cursor);
+  const events = page.events;
+  if (events.length === 0) {
+    return {
+      items: [],
+      hasMore: page.hasMore,
+      nextCursor: page.nextCursor,
+    };
+  }
 
   const summaries = await loadCommunityEventRsvpSummaries(supabase, {
     eventIds: events.map((event) => event.id),
@@ -154,6 +241,8 @@ async function buildCachedCommunityEventsPayload(
         organizerById.get(event.organizer_clerk_id),
       ),
     ),
+    hasMore: page.hasMore,
+    nextCursor: page.nextCursor,
   };
 }
 
@@ -161,6 +250,7 @@ async function loadCachedCommunityEvents(
  userId: string | null,
  limit: number,
  eventId: string | null,
+ cursor: CommunityEventsPageCursor | null,
 ): Promise<CommunityEventsSuccessPayload> {
  const todayIso = new Date().toISOString().slice(0, 10);
  const load = async () => {
@@ -169,13 +259,14 @@ async function loadCachedCommunityEvents(
      todayIso,
      limit,
      eventId,
+     cursor,
    );
  };
  const cached = eventId
   ? load
   : unstable_cache(
     load,
-    ["community-events", buildCommunityEventsCacheKey(limit, todayIso)],
+    ["community-events", buildCommunityEventsCacheKey(limit, todayIso, cursor ? buildCommunityEventsPageCursor(cursor) : null)],
     {
      revalidate: COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS,
      tags: [COMMUNITY_EVENTS_CACHE_TAG],
@@ -215,7 +306,13 @@ async function loadCachedCommunityEvents(
    },
   ),
  );
- return { status: "ok", count: items.length, items };
+ return {
+   status: "ok",
+   count: items.length,
+   items,
+   hasMore: cachedPayload.hasMore,
+   nextCursor: cachedPayload.nextCursor,
+ };
 }
 
 export async function GET(request: Request) {
@@ -237,9 +334,23 @@ export async function GET(request: Request) {
    { status: 400 },
   );
  }
+ const requestedCursor = url.searchParams.get("cursor")?.trim() || null;
+ const cursor = parseCommunityEventsPageCursor(requestedCursor);
+ if (requestedCursor && !cursor) {
+  return NextResponse.json(
+   { error: "Curseur d'événement invalide" },
+   { status: 400 },
+  );
+ }
+ if (requestedEventId && cursor) {
+  return NextResponse.json(
+   { error: "Un événement ciblé ne peut pas utiliser un curseur" },
+   { status: 400 },
+  );
+ }
 
  try {
- const payload = await loadCachedCommunityEvents(userId, limit, requestedEventId);
+ const payload = await loadCachedCommunityEvents(userId, limit, requestedEventId, cursor);
  return NextResponse.json(payload, {
   headers: userId
    ? COMMUNITY_EVENTS_USER_CACHE_HEADERS

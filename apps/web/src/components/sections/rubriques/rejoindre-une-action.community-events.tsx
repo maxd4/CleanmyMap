@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { QRCodeDialog } from "@/components/ui/qrcode-dialog";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { AppError } from "@/lib/errors/app-errors";
 import { ErrorMessage } from "@/components/ui/error-message";
 import {
@@ -31,6 +32,9 @@ type JoinCommunityEventsPanelProps = {
   getOpsDraft?: (event: CommunityEventItem) => OpsDraft;
   updateOpsDraft?: (event: CommunityEventItem, patch: Partial<OpsDraft>) => void;
   onSaveEventOps?: (event: CommunityEventItem) => Promise<void>;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => Promise<unknown> | void;
   tab: "future" | "past";
 };
 
@@ -61,6 +65,9 @@ export function JoinCommunityEventsPanel({
   getOpsDraft,
   updateOpsDraft,
   onSaveEventOps,
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
   tab,
 }: JoinCommunityEventsPanelProps) {
   const [shareEvent, setShareEvent] = useState<CommunityEventItem | null>(null);
@@ -72,6 +79,20 @@ export function JoinCommunityEventsPanel({
       <EventListStates eventsLoading={loading} eventsLoadError={error} onRetry={onRetry ? () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onRetry(); } : undefined} />
       <CommunityEventsFeedback fr={fr} isFuture={isFuture} mutationError={mutationError} successMessage={successMessage} />
       <CommunityEventsList events={events} fr={fr} isFuture={isFuture} loading={loading} error={error} focusedEventId={focusedEventId} onRsvp={onRsvp} rsvpLoadingEventId={rsvpLoadingEventId} setShareEvent={(event) => setShareEvent(event)} isUpdatingEventOpsId={isUpdatingEventOpsId} getOpsDraft={getOpsDraft} updateOpsDraft={updateOpsDraft} onSaveEventOps={onSaveEventOps} />
+      {hasMore && onLoadMore ? (
+        <div className="flex justify-center">
+          <CmmButton
+            type="button"
+            tone="secondary"
+            variant="pill"
+            loading={loadingMore}
+            disabled={loadingMore}
+            onClick={() => { void /* fire-and-forget -- pagination owner handles the continuation cursor. */ onLoadMore(); }}
+          >
+            {loadingMore ? (fr ? "Chargement…" : "Loading…") : (fr ? "Afficher plus d’événements" : "Show more events")}
+          </CmmButton>
+        </div>
+      ) : null}
 
       <QRCodeDialog
         isOpen={shareEvent !== null}

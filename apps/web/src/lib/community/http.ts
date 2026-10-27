@@ -53,6 +53,8 @@ export type CommunityEventsResponse = {
   status: "ok";
   count: number;
   items: CommunityEventItem[];
+  hasMore: boolean;
+  nextCursor: string | null;
 };
 
 type CommunityClientErrorCode =
@@ -209,11 +211,15 @@ function parseCommunityEventsPayload(
     status?: unknown;
     count?: unknown;
     items?: unknown;
+    hasMore?: unknown;
+    nextCursor?: unknown;
   };
   if (
     body.status !== "ok" ||
     typeof body.count !== "number" ||
-    !Array.isArray(body.items)
+    !Array.isArray(body.items) ||
+    typeof body.hasMore !== "boolean" ||
+    (body.nextCursor !== null && typeof body.nextCursor !== "string")
   ) {
     throw new CommunityClientError(
       "server_error",
@@ -224,6 +230,8 @@ function parseCommunityEventsPayload(
     status: "ok",
     count: body.count,
     items: body.items as CommunityEventItem[],
+    hasMore: body.hasMore,
+    nextCursor: body.nextCursor,
   };
 }
 
@@ -271,18 +279,21 @@ function parseCommunityRsvpPayload(payload: unknown): {
 }
 
 export function buildCommunityEventsQueryString(
-  params: { limit?: number; eventId?: string | null } = {},
+  params: { limit?: number; eventId?: string | null; cursor?: string | null } = {},
 ): string {
   const query = new URLSearchParams();
   query.set("limit", String(parsePositiveInteger(params.limit, 1, 300, 120)));
   if (params.eventId?.trim()) {
     query.set("eventId", params.eventId.trim());
   }
+  if (params.cursor?.trim()) {
+    query.set("cursor", params.cursor.trim());
+  }
   return query.toString();
 }
 
 export async function fetchCommunityEvents(
-  params: { limit?: number; eventId?: string | null } = {},
+  params: { limit?: number; eventId?: string | null; cursor?: string | null } = {},
 ): Promise<CommunityEventsResponse> {
   let response: Response;
   try {

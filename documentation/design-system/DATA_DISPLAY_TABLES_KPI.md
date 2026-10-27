@@ -53,6 +53,18 @@ interactions restent des responsabilités métier du consommateur.
 - Lorsque la comparaison de nombreuses colonnes n'est plus utilisable sur smartphone, adapter la présentation dans le consommateur seulement si une alternative équivalente est réellement plus compréhensible et ne duplique pas le calcul métier.
 - La pagination, les filtres et l'export affichent des états de chargement, vide et erreur honnêtes ; ne pas remplacer un résultat inaccessible par une table fictive.
 
+### Pagination des listes longues
+
+Les listes longues utilisent le contrat de leur source canonique. Pour les
+événements communautaires, `GET /api/community/events` renvoie une fenêtre
+bornée avec `hasMore` et `nextCursor`. Le curseur keyset versionné encode la
+phase (`upcoming` ou `past`), la date de l'événement, `created_at` et `id` ;
+ces trois derniers champs forment le tri déterministe et son tie-breaker. Une
+page suivante est ajoutée par identifiant, avec déduplication, sans remplacer
+le périmètre public par un dataset client supposé complet. Un événement
+adressé explicitement par `eventId` reste une lecture ciblée hors fenêtre et
+ne reçoit pas de curseur.
+
 ## Composition et frontières
 
 La présentation des données ne réimplémente pas les autres familles du design

@@ -41,6 +41,12 @@ Ce schéma décrit des **frontières logiques**, pas un ordre uniforme d'implém
 - Ne pas transformer un retour existant en `{ success, payload }` sans modifier explicitement les contrats de tous ses consommateurs.
 - Ne pas exposer dans le corps, l'URL, les logs ou un audit public de secret, stack trace, token, PII injustifiée, payload externe brut ou détail technique dangereux.
 - Préserver les réponses `429` et leurs champs spécifiques au flux ; ne pas supposer une enveloppe identique pour toutes les routes.
+- Une route qui pagine expose explicitement sa fenêtre et son état de
+  continuation (`hasMore`/`nextCursor` lorsqu'ils appartiennent à son contrat).
+  Le curseur doit être borné, validé côté serveur et lié au tri déterministe de
+  la source ; une page ciblée par identifiant reste distincte d'une fenêtre
+  paginée. Le champ `count` conserve la sémantique déjà consommée par la route
+  et ne devient pas silencieusement un total global.
 
 ## Sécurité des données et opérations
 

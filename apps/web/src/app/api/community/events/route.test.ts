@@ -84,6 +84,7 @@ function configurePublicRead() {
     eq: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
     lt: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockResolvedValue({ data: [event], error: null }),
   };
@@ -167,7 +168,7 @@ describe("GET /api/community/events", () => {
     expect(response.headers.get("vary")).toBe("Cookie");
     expect(unstableCacheMock).toHaveBeenCalledWith(
       expect.any(Function),
-      ["community-events", expect.stringMatching(/^limit:120:today:\d{4}-\d{2}-\d{2}$/)],
+      ["community-events", expect.stringMatching(/^limit:120:today:\d{4}-\d{2}-\d{2}:cursor:first$/)],
       expect.objectContaining({ tags: ["community-events"] }),
     );
   });
@@ -224,7 +225,7 @@ describe("GET /api/community/events", () => {
     expect(response.headers.get("cache-control")).toContain("private");
     expect(unstableCacheMock).toHaveBeenCalledWith(
       expect.any(Function),
-      ["community-events", expect.stringMatching(/^limit:120:today:\d{4}-\d{2}-\d{2}$/)],
+      ["community-events", expect.stringMatching(/^limit:120:today:\d{4}-\d{2}-\d{2}:cursor:first$/)],
       expect.objectContaining({ tags: ["community-events"] }),
     );
   });
@@ -265,6 +266,67 @@ describe("GET /api/community/events", () => {
     expect(body.items[0].canEditOwnOps).toBe(true);
     expect(body.items[0].organizerClerkId).toBeNull();
     expect(body.items[0].organizer.userId).toBeNull();
+  });
+
+  it("rejects an invalid continuation cursor before any privileged read", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/community/events?cursor=not-a-cursor"),
+    );
+
+    expect(response.status).toBe(400);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+    expect(unstableCacheMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts a valid continuation cursor and keeps the cursor in the cache partition", async () => {
+    const cursor = "v1|past|2026-01-01|2026-01-01T00%3A00%3A00.000Z|event-1";
+    const response = await GET(
+      new Request(`http://localhost/api/community/events?limit=2&cursor=${cursor}`),
+    );
+
+    expect(response.status).toBe(200);
+    expect(unstableCacheMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      ["community-events", expect.stringContaining(":cursor:v1|past")],
+      expect.objectContaining({ tags: ["community-events"] }),
+    );
+  });
+
+  it("returns a stable first-page cursor when the upcoming window is larger than the requested page", async () => {
+    const first = { ...event, id: "future-1", event_date: "2099-09-10", created_at: "2099-01-01T10:00:00.000Z" };
+    const second = { ...event, id: "future-2", event_date: "2099-09-11", created_at: "2099-01-01T10:00:00.000Z" };
+    let phase: "upcoming" | "past" = "upcoming";
+    const eventsQuery = {
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockImplementation(() => { phase = "upcoming"; return eventsQuery; }),
+      lt: vi.fn().mockImplementation(() => { phase = "past"; return eventsQuery; }),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockImplementation(async () => ({
+        data: phase === "upcoming" ? [first, second] : [],
+        error: null,
+      })),
+    };
+    getSupabaseServerClientMock.mockReturnValue({
+      from: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue(eventsQuery) }),
+    });
+
+    const response = await GET(new Request("http://localhost/api/community/events?limit=1"));
+    const body = await readCommunityEventsResponse(response);
+
+    expect(body.items.map((item: { id: string }) => item.id)).toEqual(["future-1"]);
+    expect(body.hasMore).toBe(true);
+    expect(body.nextCursor).toContain("v1|upcoming|");
+  });
+
+  it("returns the last page without a continuation cursor after a past cursor", async () => {
+    const cursor = "v1|past|2026-01-01|2026-01-01T00%3A00%3A00.000Z|event-1";
+    const response = await GET(new Request(`http://localhost/api/community/events?limit=2&cursor=${cursor}`));
+    const body = await readCommunityEventsResponse(response);
+
+    expect(body.items).toHaveLength(1);
+    expect(body.hasMore).toBe(false);
+    expect(body.nextCursor).toBeNull();
   });
 });
 

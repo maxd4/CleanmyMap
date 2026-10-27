@@ -276,6 +276,9 @@ export function PastActionsPanel({
   communityEventsLoading = false,
   communityEventsError = null,
   communityEventsRetry,
+  communityEventsHasMore = false,
+  communityEventsLoadingMore = false,
+  communityEventsLoadMore,
   focusCommunityEventId = null,
   communityMutationError = null,
   communitySuccessMessage = null,
@@ -296,6 +299,9 @@ export function PastActionsPanel({
   communityEventsLoading?: boolean;
   communityEventsError?: import("@/lib/errors/app-errors").AppError | null;
   communityEventsRetry?: () => Promise<unknown> | void;
+  communityEventsHasMore?: boolean;
+  communityEventsLoadingMore?: boolean;
+  communityEventsLoadMore?: () => Promise<unknown> | void;
   focusCommunityEventId?: string | null;
   communityMutationError?: import("@/lib/errors/app-errors").AppError | null;
   communitySuccessMessage?: string | null;
@@ -337,6 +343,9 @@ export function PastActionsPanel({
         error={communityEventsError}
         focusedEventId={focusCommunityEventId}
         onRetry={communityEventsRetry}
+        hasMore={communityEventsHasMore}
+        loadingMore={communityEventsLoadingMore}
+        onLoadMore={communityEventsLoadMore}
         mutationError={communityMutationError}
         successMessage={communitySuccessMessage}
         tab="past"

@@ -53,7 +53,13 @@ distincts des actions canoniques, dans les deux onglets. Leur lecture passe par
 `GET /api/community/events` et conserve les liens profonds
 `communityEventId`/`eventId` sans les confondre avec `actionId`. Une lecture par
 identifiant peut retrouver un événement hors de la page courante afin qu’un
-ancien lien ne soit pas perdu.
+ancien lien ne soit pas perdu. La liste commence par une fenêtre bornée et
+charge les pages suivantes avec `hasMore`/`nextCursor` ; le curseur keyset
+versionné conserve la phase temporelle et le tri `event_date`, `created_at`,
+`id`, afin qu'un ajout ou une suppression entre deux requêtes ne répète ni ne
+perde silencieusement un événement. La déduplication client reste limitée à
+ces identifiants communs et ne fusionne pas un événement avec une action
+canonique.
 
 Permettre au créateur, organisateur ou coorganisateur autorisé de :
 

@@ -23,6 +23,7 @@ export type ExplorerProps = Pick<ControllerState,
   | "communityUpcomingEvents" | "communityEventsLoading" | "communityEventsError"
   | "communityEventsRetry" | "focusCommunityEventId" | "communityRsvpLoadingEventId"
   | "onCommunityRsvp" | "communityMutationError" | "communitySuccessMessage"
+  | "communityEventsHasMore" | "communityEventsLoadingMore" | "communityEventsLoadMore"
 >> & {
   onShareAction?: (actionId: string) => void;
 };

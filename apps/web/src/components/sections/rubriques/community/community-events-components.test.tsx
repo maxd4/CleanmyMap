@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { AppError } from "@/lib/errors/app-errors";
 import type { CommunityEventItem } from "@/lib/community/http";
 import { EventArticlePast, EventArticleUpcoming, EventListStates } from "./community-events-components";
+import { JoinCommunityEventsPanel } from "../rejoindre-une-action.community-events";
 
 function makeEvent(canEditOwnOps: boolean): CommunityEventItem {
   return {
@@ -91,5 +92,26 @@ describe("community event ownership rendering", () => {
     expect(markup).toContain('href="/sections/rejoindre-une-action?tab=future&amp;communityEventId=event-1"');
     expect(markup).toContain("Voir l&#x27;événement");
     expect(markup).toContain("Peut-être");
+  });
+
+  it("exposes one keyboard-operable continuation action and keeps it busy while loading", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(JoinCommunityEventsPanel, {
+        fr: true,
+        events: [],
+        loading: false,
+        error: null,
+        focusedEventId: null,
+        hasMore: true,
+        loadingMore: true,
+        onLoadMore: async () => undefined,
+        tab: "future",
+      }),
+    );
+
+    expect(markup).not.toContain("Afficher plus d’événements");
+    expect(markup).toContain("Chargement…");
+    expect(markup).toContain('data-cmm-button-loading="true"');
+    expect(markup).toContain('disabled=""');
   });
 });

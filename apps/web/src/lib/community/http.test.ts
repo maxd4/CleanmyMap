@@ -16,6 +16,12 @@ describe("buildCommunityEventsQueryString", () => {
       "limit=1&eventId=event-42",
     );
   });
+
+  it("serializes a continuation cursor without allowing a second event selector", () => {
+    expect(buildCommunityEventsQueryString({ limit: 2, cursor: "v1|past|2026-01-01|2026-01-01T00%3A00%3A00.000Z|event-1" })).toBe(
+      "limit=2&cursor=v1%7Cpast%7C2026-01-01%7C2026-01-01T00%253A00%253A00.000Z%7Cevent-1",
+    );
+  });
 });
 
 describe("updateCommunityEventOps", () => {
