@@ -13,6 +13,22 @@ vi.mock("@/lib/community/http", () => ({
 
 import { useCommunityEvents } from "./use-community-events";
 
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason?: unknown) => void;
+};
+
+function deferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
+}
+
 function renderEventsHook(enabled: boolean) {
   useSWRMock.mockReturnValue({
     data: undefined,
@@ -268,6 +284,171 @@ describe("useCommunityEvents inactive-tab contract", () => {
     expect(result.upcomingEvents.map((event) => event.id)).toEqual(["future-1", "future-2"]);
     expect(result.upcomingEvents.find((event) => event.id === "future-1")?.myRsvpStatus).toBe("maybe");
     expect(result.upcomingEvents.find((event) => event.id === "future-2")?.myRsvpStatus).toBe("no");
+    act(() => renderer?.unmount());
+  });
+
+  it("blocks an old continuation while reconciliation establishes the new cursor chain", async () => {
+    const first = makeEvent("future-1", "2099-09-10", { myRsvpStatus: null });
+    const oldSecond = makeEvent("future-old-2", "2099-09-11", { myRsvpStatus: "yes" });
+    const oldThird = makeEvent("future-old-3", "2099-09-12", { canEditOwnOps: true });
+    const refreshedFirst = makeEvent("future-1", "2099-09-10", { myRsvpStatus: "maybe" });
+    const newSecond = makeEvent("future-new-2", "2099-09-11", { myRsvpStatus: "no" });
+    const newThird = makeEvent("future-new-3", "2099-09-12", { canEditOwnOps: false });
+    let upcomingData: unknown = { status: "ok", count: 1, items: [first], hasMore: true, nextCursor: "cursor-a-1" };
+    configurePhaseData({ upcoming: upcomingData, past: { status: "ok", count: 0, items: [], hasMore: false, nextCursor: null } });
+    fetchCommunityEventsMock
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [oldSecond], hasMore: true, nextCursor: "cursor-a-2" })
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [oldThird], hasMore: true, nextCursor: "cursor-a-3" });
+
+    let result!: ReturnType<typeof useCommunityEvents>;
+    function Harness() { result = useCommunityEvents(true); return null; }
+    let renderer: ReturnType<typeof create> | undefined;
+    act(() => { renderer = create(React.createElement(Harness)); });
+    await act(async () => { await result.loadMoreEvents("upcoming"); });
+    await act(async () => { await result.loadMoreEvents("upcoming"); });
+    expect(result.upcomingEvents.map((event) => event.id)).toEqual(["future-1", "future-old-2", "future-old-3"]);
+
+    const refreshedFirstPage = deferred<unknown>();
+    const refreshedSecondPage = deferred<unknown>();
+    upcomingData = { status: "ok", count: 1, items: [refreshedFirst], hasMore: true, nextCursor: "cursor-b-1" };
+    fetchCommunityEventsMock
+      .mockReturnValueOnce(refreshedFirstPage.promise)
+      .mockReturnValueOnce(refreshedSecondPage.promise);
+    await act(async () => {
+      configurePhaseData({ upcoming: upcomingData, past: { status: "ok", count: 0, items: [], hasMore: false, nextCursor: null } });
+      renderer?.update(React.createElement(Harness));
+      await flushHookEffects();
+    });
+
+    expect(result.loadingMoreByPhase.upcoming).toBe(true);
+    expect(fetchCommunityEventsMock).toHaveBeenLastCalledWith({ limit: 120, phase: "upcoming", cursor: "cursor-b-1" });
+    const callsWhileReconciling = fetchCommunityEventsMock.mock.calls.length;
+    await act(async () => { await result.loadMoreEvents("upcoming"); });
+    expect(fetchCommunityEventsMock.mock.calls).toHaveLength(callsWhileReconciling);
+
+    refreshedFirstPage.resolve({ status: "ok", count: 1, items: [newSecond], hasMore: true, nextCursor: "cursor-b-2" });
+    await act(async () => { await flushHookEffects(); });
+    expect(fetchCommunityEventsMock).toHaveBeenLastCalledWith({ limit: 120, phase: "upcoming", cursor: "cursor-b-2" });
+    expect(result.loadingMoreByPhase.upcoming).toBe(true);
+
+    refreshedSecondPage.resolve({ status: "ok", count: 1, items: [newThird], hasMore: true, nextCursor: "cursor-b-3" });
+    await act(async () => { await flushHookEffects(); });
+    expect(result.loadingMoreByPhase.upcoming).toBe(false);
+    expect(result.upcomingEvents.map((event) => event.id)).toEqual(["future-1", "future-new-2", "future-new-3"]);
+    expect(result.upcomingEvents.find((event) => event.id === "future-1")?.myRsvpStatus).toBe("maybe");
+
+    fetchCommunityEventsMock.mockResolvedValueOnce({ status: "ok", count: 1, items: [makeEvent("future-new-4", "2099-09-13")], hasMore: false, nextCursor: null });
+    await act(async () => { await result.loadMoreEvents("upcoming"); });
+    expect(fetchCommunityEventsMock).toHaveBeenLastCalledWith({ limit: 120, phase: "upcoming", cursor: "cursor-b-3" });
+    act(() => renderer?.unmount());
+  });
+
+  it("keeps the reconciliation lock when an older continuation finishes late", async () => {
+    const first = makeEvent("future-1", "2099-09-10");
+    const oldSecond = makeEvent("future-old-2", "2099-09-11", { myRsvpStatus: "yes" });
+    const refreshedFirst = makeEvent("future-1", "2099-09-10", { myRsvpStatus: "no" });
+    const newSecond = makeEvent("future-new-2", "2099-09-11", { myRsvpStatus: "maybe" });
+    let upcomingData: unknown = { status: "ok", count: 1, items: [first], hasMore: true, nextCursor: "cursor-a-1" };
+    configurePhaseData({ upcoming: upcomingData, past: { status: "ok", count: 0, items: [], hasMore: false, nextCursor: null } });
+    fetchCommunityEventsMock.mockResolvedValueOnce({ status: "ok", count: 1, items: [oldSecond], hasMore: true, nextCursor: "cursor-a-2" });
+
+    let result!: ReturnType<typeof useCommunityEvents>;
+    function Harness() { result = useCommunityEvents(true); return null; }
+    let renderer: ReturnType<typeof create> | undefined;
+    act(() => { renderer = create(React.createElement(Harness)); });
+    await act(async () => { await result.loadMoreEvents("upcoming"); });
+
+    const oldContinuation = deferred<unknown>();
+    const refreshedContinuation = deferred<unknown>();
+    fetchCommunityEventsMock.mockReturnValueOnce(oldContinuation.promise);
+    let oldLoadMore!: Promise<void>;
+    act(() => { oldLoadMore = result.loadMoreEvents("upcoming"); });
+    expect(result.loadingMoreByPhase.upcoming).toBe(true);
+
+    upcomingData = { status: "ok", count: 1, items: [refreshedFirst], hasMore: true, nextCursor: "cursor-b-1" };
+    fetchCommunityEventsMock.mockReturnValueOnce(refreshedContinuation.promise);
+    await act(async () => {
+      configurePhaseData({ upcoming: upcomingData, past: { status: "ok", count: 0, items: [], hasMore: false, nextCursor: null } });
+      renderer?.update(React.createElement(Harness));
+      await flushHookEffects();
+    });
+    expect(fetchCommunityEventsMock).toHaveBeenLastCalledWith({ limit: 120, phase: "upcoming", cursor: "cursor-b-1" });
+
+    oldContinuation.resolve({ status: "ok", count: 1, items: [makeEvent("stale-old", "2099-09-12")], hasMore: false, nextCursor: null });
+    await act(async () => { await oldLoadMore; });
+    expect(result.loadingMoreByPhase.upcoming).toBe(true);
+    expect(result.upcomingEvents.map((event) => event.id)).not.toContain("stale-old");
+
+    refreshedContinuation.resolve({ status: "ok", count: 1, items: [newSecond], hasMore: false, nextCursor: null });
+    await act(async () => { await flushHookEffects(); });
+    expect(result.loadingMoreByPhase.upcoming).toBe(false);
+    expect(result.upcomingEvents.map((event) => event.id)).toEqual(["future-1", "future-new-2"]);
+    act(() => renderer?.unmount());
+  });
+
+  it("keeps rapid revalidations generation-safe and independent between phases", async () => {
+    const firstUpcoming = makeEvent("future-1", "2099-09-10");
+    const firstPast = makeEvent("past-1", "2020-09-10");
+    const oldUpcoming = makeEvent("future-old", "2099-09-11");
+    const oldPast = makeEvent("past-old", "2020-09-11");
+    const currentUpcoming = makeEvent("future-current", "2099-09-12");
+    const currentPast = makeEvent("past-current", "2020-09-12");
+    const base = {
+      upcoming: { status: "ok", count: 1, items: [firstUpcoming], hasMore: true, nextCursor: "cursor-a-upcoming" },
+      past: { status: "ok", count: 1, items: [firstPast], hasMore: true, nextCursor: "cursor-a-past" },
+    };
+    configurePhaseData(base);
+    fetchCommunityEventsMock
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [oldUpcoming], hasMore: false, nextCursor: null })
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [oldPast], hasMore: false, nextCursor: null });
+
+    let result!: ReturnType<typeof useCommunityEvents>;
+    function Harness() { result = useCommunityEvents(true); return null; }
+    let renderer: ReturnType<typeof create> | undefined;
+    act(() => { renderer = create(React.createElement(Harness)); });
+    await act(async () => { await result.loadMoreEvents("upcoming"); });
+    await act(async () => { await result.loadMoreEvents("past"); });
+
+    const bUpcoming = deferred<unknown>();
+    const bPast = deferred<unknown>();
+    const cUpcoming = deferred<unknown>();
+    let upcomingData: unknown = { status: "ok", count: 1, items: [makeEvent("future-b", "2099-09-10")], hasMore: true, nextCursor: "cursor-b-upcoming" };
+    const pastData: unknown = { status: "ok", count: 1, items: [makeEvent("past-b", "2020-09-10")], hasMore: true, nextCursor: "cursor-b-past" };
+    fetchCommunityEventsMock.mockReturnValueOnce(bUpcoming.promise).mockReturnValueOnce(bPast.promise);
+    await act(async () => {
+      configurePhaseData({ upcoming: upcomingData, past: pastData });
+      renderer?.update(React.createElement(Harness));
+      await flushHookEffects();
+    });
+    expect(result.loadingMoreByPhase).toEqual({ upcoming: true, past: true });
+
+    const callsWhileReconciling = fetchCommunityEventsMock.mock.calls.length;
+    await act(async () => {
+      await result.loadMoreEvents("upcoming");
+      await result.loadMoreEvents("past");
+    });
+    expect(fetchCommunityEventsMock.mock.calls).toHaveLength(callsWhileReconciling);
+
+    upcomingData = { status: "ok", count: 1, items: [makeEvent("future-c", "2099-09-10")], hasMore: true, nextCursor: "cursor-c-upcoming" };
+    fetchCommunityEventsMock.mockReturnValueOnce(cUpcoming.promise);
+    await act(async () => {
+      configurePhaseData({ upcoming: upcomingData, past: pastData });
+      renderer?.update(React.createElement(Harness));
+      await flushHookEffects();
+    });
+    bUpcoming.resolve({ status: "ok", count: 1, items: [makeEvent("stale-b-upcoming", "2099-09-11")], hasMore: false, nextCursor: null });
+    await act(async () => { await flushHookEffects(); });
+    expect(result.loadingMoreByPhase.upcoming).toBe(true);
+    expect(result.upcomingEvents.map((event) => event.id)).not.toContain("stale-b-upcoming");
+
+    bPast.resolve({ status: "ok", count: 1, items: [currentPast], hasMore: false, nextCursor: null });
+    await act(async () => { await flushHookEffects(); });
+    expect(result.loadingMoreByPhase).toEqual({ upcoming: true, past: false });
+    cUpcoming.resolve({ status: "ok", count: 1, items: [currentUpcoming], hasMore: false, nextCursor: null });
+    await act(async () => { await flushHookEffects(); });
+    expect(result.loadingMoreByPhase).toEqual({ upcoming: false, past: false });
+    expect(result.upcomingEvents.map((event) => event.id)).toEqual(["future-c", "future-current"]);
+    expect(result.pastEvents.map((event) => event.id)).toEqual(["past-current", "past-b"]);
     act(() => renderer?.unmount());
   });
 

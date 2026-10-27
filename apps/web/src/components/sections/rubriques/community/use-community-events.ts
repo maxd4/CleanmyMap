@@ -129,16 +129,19 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
 
   const reconcileContinuationPages = useCallback(
     async (phase: EventPhase, base: CommunityEventsResponse | undefined, generation: number) => {
+      if (generationRef.current[phase] !== generation) return;
       const loadedCursors = [...paginationRef.current[phase].continuationCursors];
       let cursor = base?.nextCursor ?? null;
       const refreshedCursors: string[] = [];
       let refreshedEvents: CommunityEventItem[] = [];
 
+      loadingMoreRef.current[phase] = true;
       updatePhaseState(phase, (current) => ({
         ...current,
         error: null,
         failedCursor: null,
         failedOperation: null,
+        loadingMore: true,
       }));
 
       try {
@@ -151,6 +154,7 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
           cursor = page.nextCursor;
         }
         if (generationRef.current[phase] !== generation) return;
+        loadingMoreRef.current[phase] = false;
         updatePhaseState(phase, (current) => ({
           ...current,
           additionalEvents: refreshedEvents,
@@ -159,15 +163,18 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
           error: null,
           failedCursor: null,
           failedOperation: null,
+          loadingMore: false,
         }));
       } catch (error) {
         if (generationRef.current[phase] !== generation) return;
+        loadingMoreRef.current[phase] = false;
         const retryCursor = cursor ?? loadedCursors[refreshedCursors.length] ?? null;
         updatePhaseState(phase, (current) => ({
           ...current,
           error,
           failedCursor: retryCursor,
           failedOperation: "reconciliation",
+          loadingMore: false,
         }));
       }
     },
@@ -230,8 +237,8 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
           }));
         }
       } finally {
-        loadingMoreRef.current[phase] = false;
         if (generationRef.current[phase] === generation) {
+          loadingMoreRef.current[phase] = false;
           updatePhaseState(phase, (state) => ({ ...state, loadingMore: false }));
         }
       }
@@ -243,12 +250,26 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
     async (phase: EventPhase) => {
       const mutate = phase === "upcoming" ? reloadUpcoming : reloadPast;
       const generation = ++generationRef.current[phase];
-      updatePhaseState(phase, (state) => ({ ...state, error: null, failedCursor: null }));
-      const refreshed = await mutate();
-      const base = (refreshed as CommunityEventsResponse | undefined) ?? (phase === "upcoming" ? upcomingData : pastData);
-      baseSignaturesRef.current[phase] = responseSignature(base);
-      reconciliationBaseRef.current[phase] = base;
-      await reconcileContinuationPages(phase, base, generation);
+      loadingMoreRef.current[phase] = true;
+      updatePhaseState(phase, (state) => ({
+        ...state,
+        error: null,
+        failedCursor: null,
+        loadingMore: true,
+      }));
+      try {
+        const refreshed = await mutate();
+        if (generationRef.current[phase] !== generation) return;
+        const base = (refreshed as CommunityEventsResponse | undefined) ?? (phase === "upcoming" ? upcomingData : pastData);
+        baseSignaturesRef.current[phase] = responseSignature(base);
+        reconciliationBaseRef.current[phase] = base;
+        await reconcileContinuationPages(phase, base, generation);
+      } finally {
+        if (generationRef.current[phase] === generation) {
+          loadingMoreRef.current[phase] = false;
+          updatePhaseState(phase, (state) => ({ ...state, loadingMore: false }));
+        }
+      }
     },
     [pastData, reconcileContinuationPages, reloadPast, reloadUpcoming, updatePhaseState, upcomingData],
   );
