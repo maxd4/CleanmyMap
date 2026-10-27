@@ -210,15 +210,26 @@ npm run quality:mutation
 ```
 
 Son rapport distingue `Killed`, `Survived`, `NoCoverage`, `Timeout` et
-`error`. Le baseline ratcheté est
-`scripts/checks/mutation-baseline.json` : il a été mesuré sur l'état introduit
-par le commit `6a0a420bf7313535788f3e0dcb297f0aaa13dd2c`, avec 329 mutants, 270 killed,
-52 survived, 7 no coverage, 0 timeout/error et un score de `83.85 %` sur les
-mutants exécutables. Une baisse du score, une augmentation de `NoCoverage`, un
-timeout, une erreur d'exécution ou une baseline stale sont bloquants. Le score
-n'est pas un objectif arbitraire de 100 % ; chaque survivant reste un élément
-d'audit. Une assertion n'est ajoutée que lorsqu'elle protège un comportement
-métier réel, jamais pour tuer artificiellement un mutant statique.
+`error`. Deux états doivent rester distingués :
+
+* le résultat historique documenté sur l'état introduit par le commit
+  `6a0a420bf7313535788f3e0dcb297f0aaa13dd2c` comptait 329 mutants, 270
+  `Killed`, 52 `Survived`, 7 `NoCoverage`, 0 `Timeout/error`, soit `83.85 %`
+  sur les mutants exécutables de ce périmètre ;
+* le baseline actuellement enregistré dans
+  `scripts/checks/mutation-baseline.json` provient du commit
+  `2316826735c69e0ecf446b0fbf384381c3dd4b50` et de son
+  `scopeFingerprint`. Il compte 328 mutants : 316 `Killed`, 11 `Survived`,
+  1 `NoCoverage`, 0 `Timeout/error`. Son score est `96.64 %`, calculé sur les
+  mutants exécutables par `316 / (316 + 11)` ; le `NoCoverage` reste signalé et
+  n'est pas transformé en couverture.
+
+Le second état est une baseline ratchetée, pas une exécution récente. Une
+baisse de son score, une augmentation de `NoCoverage`, un timeout, une erreur
+d'exécution ou une baseline stale sont bloquants. Le score n'est pas un
+objectif arbitraire de 100 % ; chaque survivant reste un élément d'audit. Une
+assertion n'est ajoutée que lorsqu'elle protège un comportement métier réel,
+jamais pour tuer artificiellement un mutant statique.
 
 La mutation reste hors `checks:fast`, hors de la CI push quotidienne et hors du
 FULL courant. Sa mesure réelle reste une validation manuelle/pré-release
