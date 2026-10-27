@@ -64,4 +64,20 @@ describe("clerk supabase token helpers", () => {
       "Clerk/Supabase JWT accessToken unavailable for a required browser RLS flow.",
     );
   });
+
+  it("converts optional provider failures to null and preserves a required token", async () => {
+    getTokenMock.mockRejectedValue(new Error("Clerk unavailable"));
+
+    const {
+      buildClerkSupabaseAccessTokenProvider,
+      buildRequiredClerkSupabaseAccessTokenProvider,
+    } = await import("./clerk-supabase-token");
+
+    await expect(buildClerkSupabaseAccessTokenProvider(getTokenMock)()).resolves.toBeNull();
+
+    getTokenMock.mockResolvedValue("valid-token");
+    await expect(buildRequiredClerkSupabaseAccessTokenProvider(getTokenMock)()).resolves.toBe(
+      "valid-token",
+    );
+  });
 });

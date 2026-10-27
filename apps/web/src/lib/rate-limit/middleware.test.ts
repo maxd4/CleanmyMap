@@ -52,4 +52,28 @@ describe("rateLimitMiddleware", () => {
     expect(JSON.stringify(warnSpy.mock.calls)).not.toContain("user-");
     warnSpy.mockRestore();
   });
+
+  it("bypasses health and non-API routes without invoking the limiter", async () => {
+    const health = new NextRequest("https://example.com/api/health", { method: "GET" });
+    const page = new NextRequest("https://example.com/public", { method: "GET" });
+
+    await expect(rateLimitMiddleware(health, health.method)).resolves.toEqual({ allowed: true });
+    await expect(rateLimitMiddleware(page, page.method)).resolves.toEqual({ allowed: true });
+    expect(getRateLimitIdentityMock).not.toHaveBeenCalled();
+  });
+
+  it("records the critical abuse lock after repeated quota refusals", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const request = new NextRequest("https://example.com/api/p1b-critical", { method: "GET" });
+
+    for (let attempt = 0; attempt < 52; attempt += 1) {
+      await rateLimitMiddleware(request, request.method, { customLimit: 1, customWindow: 60 });
+    }
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[RateLimit] Critical abuse - key locked:",
+      { route: "/api/p1b-critical" },
+    );
+    errorSpy.mockRestore();
+  });
 });

@@ -4,7 +4,7 @@ import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ActionDrawing } from "@/lib/actions/types";
+import type { ActionDrawing, ActionGeometrySource } from "@/lib/actions/types";
 
 type MockMap = {
   container: HTMLElement;
@@ -343,18 +343,25 @@ describe("ActionDrawingMap Leaflet lifecycle", () => {
 
     const layer = group().getLayers()[0] as MockLayer;
     layer.setLatLngs([[48.86, 2.36], [48.861, 2.361]]);
-    mapState.map?.fire("draw:edited", {});
+    act(() => mapState.map?.fire("draw:edited", {}));
+    await settle();
     expect(onChange).toHaveBeenLastCalledWith(
       { kind: "polyline", coordinates: [[48.86, 2.36], [48.861, 2.361]] },
       "manual",
     );
+    expect(host?.textContent).toContain("Tracé modifié");
+    expect(host?.textContent).not.toContain("Tracé retiré");
 
     group().clearLayers();
-    mapState.map?.fire("draw:edited", {});
+    act(() => mapState.map?.fire("draw:edited", {}));
+    await settle();
     expect(onChange).toHaveBeenLastCalledWith(null);
 
     group().addLayer(new mockL.Polyline([[48.85, 2.35], [48.851, 2.351]]));
-    mapState.map?.fire("draw:deleted", {});
+    const clear = mapState.map?.container.querySelector<HTMLAnchorElement>(".cmm-undo-btn");
+    expect(clear).not.toBeNull();
+    act(() => clear?.click());
+    await settle();
     expect(onChange).toHaveBeenLastCalledWith(null);
 
     group().addLayer(new mockL.Polyline([[48.85, 2.35], [48.851, 2.351]]));
@@ -366,9 +373,11 @@ describe("ActionDrawingMap Leaflet lifecycle", () => {
   });
 
   it("restores the exact local drawing through the accessible Annuler toast", async () => {
+    const changes: Array<{ drawing: ActionDrawing | null; source?: ActionGeometrySource | null }> = [];
     function ControlledDrawingMap() {
       const [value, setValue] = React.useState<ActionDrawing | null>(polylineValue);
-      return <ActionDrawingMap value={value} onChange={(next) => setValue(next)} />;
+      const [source, setSource] = React.useState<ActionGeometrySource | null>("manual");
+      return <ActionDrawingMap value={value} drawingSource={source} onChange={(next, nextSource) => { changes.push({ drawing: next, source: nextSource }); setValue(next); setSource(nextSource ?? null); }} />;
     }
 
     mountNode(<ControlledDrawingMap />);
@@ -376,16 +385,54 @@ describe("ActionDrawingMap Leaflet lifecycle", () => {
     expect(group().getLayers()).toHaveLength(1);
 
     const clear = mapState.map?.container.querySelector<HTMLAnchorElement>(".cmm-undo-btn");
+    expect(clear).not.toBeNull();
     act(() => clear?.click());
+    await settle();
     expect(group().getLayers()).toHaveLength(0);
     expect(host?.textContent).toContain("Tracé retiré");
     expect(host?.textContent).toContain("Annuler");
 
     const undo = [...(host?.querySelectorAll("button") ?? [])].find((button) => button.textContent === "Annuler");
+    expect(undo?.type).toBe("button");
+    act(() => undo?.focus());
+    expect(document.activeElement).toBe(undo);
     act(() => undo?.click());
     await settle();
     expect(group().getLayers()).toHaveLength(1);
     expect(host?.textContent).not.toContain("Tracé retiré");
+    expect(changes.at(-1)).toEqual({ drawing: polylineValue, source: "manual" });
+  });
+
+  it("labels a replacement, supports keyboard-close, and never restores after a later external value", async () => {
+    const onChange = vi.fn();
+    mount({ value: polylineValue, drawingSource: "manual", onChange });
+    await settle();
+
+    act(() => mapState.map?.fire("draw:created", { layer: new mockL.Polyline([[48.86, 2.36], [48.861, 2.361]]) }));
+    await settle();
+    expect(host?.textContent).toContain("Tracé remplacé");
+    expect(host?.textContent).not.toContain("Tracé retiré");
+
+    const close = host?.querySelector<HTMLButtonElement>('[aria-label="Fermer le message du tracé"]');
+    expect(close).not.toBeNull();
+    act(() => close?.focus());
+    expect(document.activeElement).toBe(close);
+    act(() => close?.click());
+    expect(host?.textContent).not.toContain("Annuler");
+
+    act(() => mapState.map?.fire("draw:deleted", {}));
+    await settle();
+    expect(host?.textContent).toContain("Tracé retiré");
+
+    const later = { kind: "polyline" as const, coordinates: [[48.9, 2.4] as [number, number], [48.901, 2.401] as [number, number]] };
+    act(() => root?.render(<ActionDrawingMap value={later} drawingSource="gpx_import" readOnly onChange={onChange} />));
+    await settle();
+    expect(host?.textContent).not.toContain("Annuler");
+    expect(onChange).not.toHaveBeenCalledWith(polylineValue, "manual");
+
+    act(() => root?.unmount());
+    root = null;
+    expect(onChange).not.toHaveBeenCalledWith(polylineValue, "manual");
   });
 
   it("loads, replaces, invalidates, and clears external values without duplicating layers", async () => {

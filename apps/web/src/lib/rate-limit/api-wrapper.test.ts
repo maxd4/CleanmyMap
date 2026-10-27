@@ -57,4 +57,14 @@ describe("rate-limit API wrappers", () => {
     expect(response.status).toBe(429);
     expect(handler).not.toHaveBeenCalled();
   });
+
+  it("refuses an unsupported method after the rate-limit check", async () => {
+    rateLimitMiddlewareMock.mockResolvedValue({ allowed: true });
+    const request = new NextRequest("https://example.com/api/test", { method: "PUT" });
+
+    const response = await createRateLimitedHandler({ GET: vi.fn() })(request);
+
+    expect(response.status).toBe(405);
+    await expect(response.json()).resolves.toEqual({ error: "Method not allowed" });
+  });
 });

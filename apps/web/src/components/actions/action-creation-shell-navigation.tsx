@@ -128,7 +128,7 @@ export function WorkflowStepper({
           const active = state.activeStep === step;
           return (
             <li key={step}>
-              <button type="button" aria-current={active ? "step" : undefined} aria-label={`${index + 1}. ${labels[fr ? "fr" : "en"]} — ${statusLabel}`} onClick={() => onSelect(step)} className={cn("flex min-h-16 w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500", active ? "border-emerald-500 bg-emerald-50" : "border-emerald-100 bg-white/80")}>
+              <button type="button" aria-current={active ? "step" : undefined} aria-label={`${fr ? `Étape ${index + 1} sur ${totalSteps}` : `Step ${index + 1} of ${totalSteps}`} — ${labels[fr ? "fr" : "en"]} — ${statusLabel}`} onClick={() => onSelect(step)} className={cn("flex min-h-16 w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500", active ? "border-emerald-500 bg-emerald-50" : "border-emerald-100 bg-white/80")}>
                 <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-black", status === "done" ? "border-emerald-500 bg-emerald-500 text-white" : "border-emerald-300 text-emerald-800")}>
                   {status === "done" ? <Check size={16} aria-hidden="true" /> : index + 1}
                 </span>

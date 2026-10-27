@@ -334,4 +334,75 @@ describe("server rate-limit", () => {
       retryAfterSeconds: 42,
     });
   });
+
+  it("uses the configured window when a distributed reset is invalid", async () => {
+    distributedLimitMock.mockResolvedValue({
+      success: false,
+      limit: 1,
+      remaining: 0,
+      reset: 0,
+    });
+    const instance = await import("./server");
+
+    const result = await instance.verifyRateLimit(buildRequest("GET", "/api/p1b-reset"), {
+      limit: 1,
+      window: 37,
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.retryAfter).toBe(37);
+  });
+
+  it("falls back safely when acquiring Redis throws", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    getRedisClientMock.mockImplementation(() => {
+      throw new Error("configuration unavailable");
+    });
+    const instance = await import("./server");
+
+    const result = await instance.verifyRateLimit(buildRequest("GET", "/api/p1b-throw"), {
+      limit: 1,
+      window: 60,
+    });
+
+    expect(result).toMatchObject({
+      allowed: true,
+      source: "local-fallback",
+      failureMode: "best-effort",
+    });
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[RateLimit] Upstash unavailable; applying route failure policy.",
+      { reason: "unavailable" },
+    );
+    warnSpy.mockRestore();
+  });
+
+  it("keeps the public wrapper fail-closed and invokes only allowed handlers", async () => {
+    getRedisClientMock.mockReturnValue(null);
+    const instance = await import("./server");
+
+    const mutationResponse = await instance.enforceServerRateLimit(
+      buildRequest("POST", "/api/p1b-wrapper-mutation"),
+      { limit: 1, window: 60 },
+    );
+    expect(mutationResponse?.status).toBe(503);
+
+    const privateReadResponse = await instance.enforceServerRateLimitForAuthenticatedUser(
+      buildRequest("GET", "/api/account/p1b"),
+      "user-p1b",
+      { limit: 1, window: 60 },
+    );
+    expect(privateReadResponse?.status).toBe(503);
+
+    const handler = vi.fn(async () => new Response("ok", { status: 200 }));
+    const allowedResponse = await instance.withServerRateLimit(
+      buildRequest("GET", "/api/p1b-wrapper-read"),
+      { limit: 1, window: 60 },
+      handler,
+    );
+    expect(allowedResponse.status).toBe(200);
+    expect(await allowedResponse.text()).toBe("ok");
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(instance.createServerRateLimitResponse(true)).toBeNull();
+  });
 });

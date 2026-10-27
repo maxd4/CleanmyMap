@@ -6,15 +6,18 @@ import"leaflet-draw";
 import { MapContainer, TileLayer, useMap } from"react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
-import { RotateCcw } from "lucide-react";
-
 import type { ActionDrawing, ActionGeometrySource } from"@/lib/actions/types";
-import { CmmButton } from "@/components/ui/cmm-button";
-import { CmmToast } from "@/components/ui/cmm-toast";
 
 import { normalizeActionDrawing } from "@/lib/actions/geometry/geometry-core";
 import { resolveDrawnGeometry } from "./action-drawing-map.geometry";
 import { ACTION_DRAWING_EDIT_COLOR } from "./action-drawing-map.presentation";
+import { ActionDrawingUndoToast } from "./action-drawing-undo-toast";
+import {
+  createActionDrawingSnapshot,
+  createActionDrawingUndoState,
+  areActionDrawingSnapshotsEqual,
+  type ActionDrawingUndoState,
+} from "./action-drawing-undo";
 import {
   TERRITORY_CENTER,
   buildTerritoryLeafletBounds,
@@ -75,26 +78,30 @@ function asCoordinates(latLngs: L.LatLng[]): [number, number][] {
 
 function DrawingController({
  value,
+  drawingSource,
  onChange,
  onUndoAvailable,
  readOnly = false,
 }: {
  value: ActionDrawing | null;
+  drawingSource?: ActionGeometrySource | null;
  onChange: (
   drawing: ActionDrawing | null,
   geometrySource?: ActionGeometrySource | null,
  ) => void;
- onUndoAvailable: (drawing: ActionDrawing | null) => void;
+  onUndoAvailable: (state: ActionDrawingUndoState | null) => void;
  readOnly?: boolean;
 }) {
  const map = useMap();
  const layerGroupRef = useRef<L.FeatureGroup | null>(null);
- const currentDrawingRef = useRef<ActionDrawing | null>(normalizeActionDrawing(value));
+ const currentDrawingRef = useRef(
+  createActionDrawingSnapshot(normalizeActionDrawing(value), drawingSource),
+ );
  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 
  useEffect(() => {
-  currentDrawingRef.current = normalizeActionDrawing(value);
- }, [value]);
+  currentDrawingRef.current = createActionDrawingSnapshot(normalizeActionDrawing(value), drawingSource);
+ }, [drawingSource, value]);
 
  useEffect(() => {
  const layerGroup = new L.FeatureGroup();
@@ -169,7 +176,7 @@ function DrawingController({
   const previousDrawing = currentDrawingRef.current;
   currentDrawingRef.current = null;
  layerGroup.clearLayers();
-  onUndoAvailable(previousDrawing);
+  onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
  onChange(null);
  });
  return container;
@@ -188,48 +195,54 @@ function DrawingController({
  applyMapControlAccessibilityLabels(map.getContainer());
  }, 0);
 
- function normalizeAndEmit(layer: DrawingLayer) {
+ function normalizeAndEmit(layer: DrawingLayer, operation: "modified" | "replaced") {
  const previousDrawing = currentDrawingRef.current;
  const rawDrawing = extractDrawing(layer);
  const normalizedDrawing = normalizeActionDrawing(rawDrawing);
 
  if (!normalizedDrawing) {
  currentDrawingRef.current = null;
- onUndoAvailable(previousDrawing);
+  onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
  onChange(null);
  return;
  }
 
- currentDrawingRef.current = normalizedDrawing;
- onUndoAvailable(previousDrawing);
-
+ let nextDrawing;
  if (normalizedDrawing.kind ==="polygon") {
  // Les polygones représentent une zone, pas de snap automatique
- onChange(normalizedDrawing, "manual");
- return;
+  nextDrawing = createActionDrawingSnapshot(normalizedDrawing, "manual");
+ } else {
+  // Les tracés manuels restent les coordonnées saisies. Le routage réseau est
+  // réservé au serveur et ne doit pas être déclenché depuis le navigateur.
+  const resolved = resolveDrawnGeometry(normalizedDrawing, null);
+  nextDrawing = createActionDrawingSnapshot(resolved.drawing, resolved.geometrySource);
  }
- 
- // Les tracés manuels restent les coordonnées saisies. Le routage réseau est
- // réservé au serveur et ne doit pas être déclenché depuis le navigateur.
- const resolved = resolveDrawnGeometry(normalizedDrawing, null);
- onChange(resolved.drawing, resolved.geometrySource);
+ if (!nextDrawing) {
+  currentDrawingRef.current = null;
+  onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
+  onChange(null);
+  return;
+ }
+ currentDrawingRef.current = nextDrawing;
+ onUndoAvailable(createActionDrawingUndoState(previousDrawing, nextDrawing, operation));
+ onChange(nextDrawing.drawing, nextDrawing.source);
  }
 
  function handleCreated(event: LeafletEvent & { layer: DrawingLayer }) {
  layerGroup.clearLayers();
  layerGroup.addLayer(event.layer);
  // Fire async normalization
- void normalizeAndEmit(event.layer);
+ void normalizeAndEmit(event.layer, "replaced");
  }
 
  function handleEdited() {
  const firstLayer = layerGroup.getLayers()[0] as DrawingLayer | undefined;
  if (firstLayer) {
- void normalizeAndEmit(firstLayer);
+  void normalizeAndEmit(firstLayer, "modified");
  } else {
  const previousDrawing = currentDrawingRef.current;
  currentDrawingRef.current = null;
- onUndoAvailable(previousDrawing);
+  onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
  onChange(null);
  }
  }
@@ -237,7 +250,7 @@ function DrawingController({
  function handleDeleted() {
  const previousDrawing = currentDrawingRef.current;
  currentDrawingRef.current = null;
- onUndoAvailable(previousDrawing);
+  onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
  onChange(null);
  }
 
@@ -259,7 +272,7 @@ function DrawingController({
  map.removeLayer(layerGroup);
  layerGroupRef.current = null;
  };
- }, [map, onChange, onUndoAvailable, readOnly, isMobile]);
+ }, [drawingSource, map, onChange, onUndoAvailable, readOnly, isMobile]);
 
  useEffect(() => {
  const layerGroup = layerGroupRef.current;
@@ -335,7 +348,9 @@ type ActionDrawingMapProps = {
   drawing: ActionDrawing | null,
   geometrySource?: ActionGeometrySource | null,
  ) => void;
+ drawingSource?: ActionGeometrySource | null;
  readOnly?: boolean;
+ onUndoAvailable?: (state: ActionDrawingUndoState | null) => void;
 };
 
 export function ActionDrawingMap({
@@ -343,26 +358,63 @@ export function ActionDrawingMap({
  onChange,
  drawing,
  onDrawingChange,
+  drawingSource,
  readOnly = false,
+  onUndoAvailable,
 }: ActionDrawingMapProps) {
  const mapStyle = useMemo(() => ({ height:"400px", width:"100%" }), []);
- const [undoDrawing, setUndoDrawing] = useState<ActionDrawing | null>(null);
+ const [undoState, setUndoState] = useState<ActionDrawingUndoState | null>(null);
+ const [internalUndoObservation, setInternalUndoObservation] = useState<{
+  state: ActionDrawingUndoState;
+  baseline: ReturnType<typeof createActionDrawingSnapshot>;
+ } | null>(null);
  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
- const currentValue = normalizeActionDrawing(value ?? drawing ?? null);
+ const currentValue = useMemo(
+  () => normalizeActionDrawing(value ?? drawing ?? null),
+  [drawing, value],
+ );
  const handleChange = useMemo(
   () => onChange ?? onDrawingChange ?? (() => undefined),
   [onChange, onDrawingChange],
  );
- const handleUndoAvailable = useCallback((nextDrawing: ActionDrawing | null) => {
-  setUndoDrawing(nextDrawing);
- }, []);
- const handleUndo = useCallback(() => {
-  if (!undoDrawing) {
+ const currentSnapshot = useMemo(
+  () => createActionDrawingSnapshot(currentValue, drawingSource),
+  [currentValue, drawingSource],
+ );
+ const currentSnapshotRef = useRef(currentSnapshot);
+ useEffect(() => {
+  currentSnapshotRef.current = currentSnapshot;
+ }, [currentSnapshot]);
+ const handleUndoAvailable = useCallback((nextState: ActionDrawingUndoState | null) => {
+  if (onUndoAvailable) {
+   onUndoAvailable(nextState);
    return;
   }
-  handleChange(undoDrawing, "manual");
-  setUndoDrawing(null);
- }, [handleChange, undoDrawing]);
+  setInternalUndoObservation(nextState
+   ? {
+    state: nextState,
+    baseline: currentSnapshotRef.current,
+   }
+   : null);
+  setUndoState(nextState);
+ }, [onUndoAvailable]);
+ const clearInternalUndo = useCallback(() => {
+  setInternalUndoObservation(null);
+  setUndoState(null);
+ }, []);
+ const isUndoStateAdmissible = undoState && internalUndoObservation?.state === undoState
+  ? areActionDrawingSnapshotsEqual(undoState.current, currentSnapshot) ||
+   areActionDrawingSnapshotsEqual(internalUndoObservation.baseline, currentSnapshot)
+  : false;
+ const handleUndo = useCallback(() => {
+  if (!undoState || !isUndoStateAdmissible) {
+   return;
+  }
+  handleChange(undoState.previous.drawing, undoState.previous.source);
+  clearInternalUndo();
+ }, [clearInternalUndo, handleChange, isUndoStateAdmissible, undoState]);
+
+ const visibleUndoState = isUndoStateAdmissible ? undoState : null;
 
  const effectiveReadOnly = readOnly || isMobile;
 
@@ -394,20 +446,16 @@ export function ActionDrawingMap({
  <DrawingController
  value={currentValue}
  onChange={handleChange}
+   drawingSource={drawingSource}
    onUndoAvailable={handleUndoAvailable}
  readOnly={effectiveReadOnly}
  />
  </MapContainer>
- {undoDrawing ? (
-  <CmmToast
-   title="Tracé retiré"
-   tone="info"
-   icon={<RotateCcw className="h-4 w-4" />}
-   className="absolute bottom-3 left-3 right-3 z-[1100]"
-   message="La modification est locale au formulaire. Restaurer ici ne revient pas sur une mutation serveur déjà envoyée."
-   actions={<CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={handleUndo}>Annuler</CmmButton>}
-   onClose={() => setUndoDrawing(null)}
-   closeLabel="Fermer le message du tracé"
+ {!onUndoAvailable && visibleUndoState ? (
+  <ActionDrawingUndoToast
+   state={visibleUndoState}
+   onUndo={handleUndo}
+   onClose={clearInternalUndo}
   />
  ) : null}
  </div>

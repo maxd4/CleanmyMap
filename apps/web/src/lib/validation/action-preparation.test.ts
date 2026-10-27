@@ -143,4 +143,41 @@ describe("HTTP preparation data contract", () => {
     expect(createActionSchema.safeParse({ ...valid, preparationData: { equipmentInventory: { glovesPairs: 2, unknownItem: 1 } } }).success).toBe(false);
     expect(createActionSchema.safeParse({ ...valid, preparationData: { refreshmentsProvided: { waterDuringAction: true, drinksAfterAction: false } } }).success).toBe(true);
   });
+
+  it("keeps derived route targets versioned and manual targets unversioned", () => {
+    const derivedWithoutPolicy = createActionSchema.safeParse({
+      ...basePayload,
+      preparationData: {
+        routeTargetDistanceSource: "derived",
+      },
+    });
+    expect(derivedWithoutPolicy.success).toBe(false);
+    if (!derivedWithoutPolicy.success) {
+      expect(derivedWithoutPolicy.error.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: ["preparationData", "routeTargetDistancePolicyVersion"],
+          }),
+        ]),
+      );
+    }
+
+    const manualWithPolicy = createActionSchema.safeParse({
+      ...basePayload,
+      preparationData: {
+        routeTargetDistanceSource: "manual",
+        routeTargetDistancePolicyVersion: "route-policy-v1",
+      },
+    });
+    expect(manualWithPolicy.success).toBe(false);
+    if (!manualWithPolicy.success) {
+      expect(manualWithPolicy.error.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: ["preparationData", "routeTargetDistancePolicyVersion"],
+          }),
+        ]),
+      );
+    }
+  });
 });

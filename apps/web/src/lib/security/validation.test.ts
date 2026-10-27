@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import {
   buildPublicRateLimitPayload,
   createPublicRateLimitResponse,
@@ -10,6 +11,8 @@ import {
   isPlaceholderHost,
   isPlaceholderUrl,
   normalizePublicChannelUrl,
+  parseJsonBodyWithSchema,
+  rejectPublicFormAbuse,
 } from "./validation";
 
 const helperEmail = ["hello", "cleanmymap.fr"].join("@");
@@ -88,5 +91,77 @@ describe("security validation helpers", () => {
 
     expect(response.status).toBe(429);
     await expect(response.json()).resolves.toMatchObject(payload);
+  });
+
+  it("rejects honeypot and too-rapid submissions while allowing a clean payload", async () => {
+    const now = 1_750_000_000_000;
+    vi.spyOn(Date, "now").mockReturnValue(now);
+
+    const honeypotResponse = rejectPublicFormAbuse({ honeypot: "filled by a bot" });
+    expect(honeypotResponse?.status).toBe(429);
+    await expect(honeypotResponse?.json()).resolves.toMatchObject({
+      status: "rate_limited",
+    });
+
+    const recentResponse = rejectPublicFormAbuse({ submittedAt: now - 1 });
+    expect(recentResponse?.status).toBe(429);
+    expect(rejectPublicFormAbuse({ submittedAt: now - 2_000 })).toBeNull();
+  });
+
+  it("fails closed for malformed JSON and schema-invalid payloads without echoing content", async () => {
+    const schema = z.object({ name: z.string().min(1) }).strict();
+
+    const malformed = await parseJsonBodyWithSchema(
+      new Request("https://cleanmymap.fr/api/contact", {
+        method: "POST",
+        body: "{\"name\":",
+      }),
+      schema,
+    );
+    expect(malformed.ok).toBe(false);
+    if (!malformed.ok) {
+      expect(malformed.response.status).toBe(400);
+      await expect(malformed.response.json()).resolves.toEqual({
+        error: "Invalid JSON payload",
+      });
+    }
+
+    const secret = "do-not-echo";
+    const invalid = await parseJsonBodyWithSchema(
+      new Request("https://cleanmymap.fr/api/contact", {
+        method: "POST",
+        body: JSON.stringify({ name: "", secret }),
+      }),
+      schema,
+    );
+    expect(invalid.ok).toBe(false);
+    if (!invalid.ok) {
+      expect(invalid.response.status).toBe(400);
+      const body = await invalid.response.json();
+      expect(body.error).toBe("Invalid payload");
+      expect(JSON.stringify(body)).not.toContain(secret);
+    }
+
+    const valid = await parseJsonBodyWithSchema(
+      new Request("https://cleanmymap.fr/api/contact", {
+        method: "POST",
+        body: JSON.stringify({ name: "Alice" }),
+      }),
+      schema,
+    );
+    expect(valid).toEqual({ ok: true, data: { name: "Alice" } });
+  });
+
+  it("rejects non-string, overlong and malformed channel inputs", () => {
+    expect(normalizePublicChannelUrl(null)).toBeNull();
+    expect(normalizePublicChannelUrl(" ")).toBeNull();
+    expect(normalizePublicChannelUrl("x".repeat(2_049))).toBeNull();
+    expect(normalizePublicChannelUrl("not a URL")).toBeNull();
+    expect(isPlaceholderUrl("not a URL")).toBe(false);
+    expect(isIsoDateString(null)).toBe(false);
+    expect(isIsoDateString("2026-13-01")).toBe(false);
+    expect(is24HourTimeString(null)).toBe(false);
+    expect(is24HourTimeString("12-00")).toBe(false);
+    expect(is24HourTimeString("123:00")).toBe(false);
   });
 });

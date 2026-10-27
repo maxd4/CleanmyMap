@@ -1,9 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useCallback, useState } from "react";
 import { MapPinOff, Pencil, Trash2, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
+import { ActionDrawingUndoToast } from "../action-drawing-undo-toast";
+import {
+  areActionDrawingSnapshotsEqual,
+  canRestoreActionDrawingUndo,
+  createActionDrawingSnapshot,
+  createActionDrawingUndoState,
+  type ActionDrawingUndoState,
+} from "../action-drawing-undo";
 import { formatGeometryPointCount, type ActionLocationViewModel } from "./action-location.model";
 import type { ActionLocationGeometryPanelProps } from "./action-location.types";
 
@@ -49,15 +58,26 @@ function ActionLocationMapCanvas({
   setManualDrawing,
   gpxImport,
   viewModel,
+  undoState,
+  onUndoAvailable,
+  onUndo,
+  onCloseUndo,
 }: Pick<MapPanelProps, "setManualDrawing" | "gpxImport" | "viewModel"> & {
   isMapVisible: boolean;
+  undoState: ActionDrawingUndoState | null;
+  onUndoAvailable: (state: ActionDrawingUndoState | null) => void;
+  onUndo: () => void;
+  onCloseUndo: () => void;
 }) {
-  return isMapVisible ? <>
-        <ActionDrawingMap drawing={viewModel.displayedDrawing} onDrawingChange={setManualDrawing} readOnly={Boolean(gpxImport) || (viewModel.activeGeometry?.source != null && viewModel.activeGeometry.source !== "manual")} />
+  return <>
+      {isMapVisible ? <>
+        <ActionDrawingMap drawing={viewModel.displayedDrawing} drawingSource={viewModel.activeGeometry?.source} onDrawingChange={setManualDrawing} onUndoAvailable={onUndoAvailable} readOnly={Boolean(gpxImport) || (viewModel.activeGeometry?.source != null && viewModel.activeGeometry.source !== "manual")} />
         {!viewModel.hasDrawing ? <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F3FBF6]/72 backdrop-blur-[2px]"><div className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-5 py-4 text-center shadow-sm"><Pencil size={20} className="mx-auto mb-2 text-emerald-700/45" /><p className="text-sm font-semibold text-emerald-950">Aucun repère</p><p className="mt-1 text-xs text-emerald-900/45">Saisissez une adresse ou utilisez le GPS pour placer le lieu</p></div></div> : null}
         {viewModel.isGpx && viewModel.hasDrawing ? <div className="pointer-events-none absolute left-3 top-3 z-[1000] rounded-lg border border-violet-200 bg-white/95 px-3 py-2 text-xs font-semibold text-violet-900 shadow-sm">Tracé GPX importé · aucune reconstruction réseau</div> : null}
         {viewModel.isTracking && viewModel.hasDrawing ? <div className="pointer-events-none absolute left-3 top-3 z-[1000] rounded-lg border border-emerald-200 bg-white/95 px-3 py-2 text-xs font-semibold text-emerald-900 shadow-sm">Trace GPS observée · aucune reconstruction réseau</div> : null}
-      </> : <div className="flex h-full items-center justify-center bg-[#F3FBF6]"><div className="space-y-3 text-center"><div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-500" /><p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-emerald-900/45">Chargement de la carte...</p></div></div>;
+      </> : <div className="flex h-full items-center justify-center bg-[#F3FBF6]"><div className="space-y-3 text-center"><div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-500" /><p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-emerald-900/45">Chargement de la carte...</p></div></div>}
+      {undoState ? <ActionDrawingUndoToast state={undoState} onUndo={onUndo} onClose={onCloseUndo} /> : null}
+    </>;
 }
 
 function ActionLocationStatus({
@@ -85,13 +105,44 @@ function ActionLocationStatus({
 export function ActionLocationMapPanel({ form, setManualDrawing, onResetManualDrawing, gpxImport, viewModel }: MapPanelProps) {
   const isCleanPlaceMode = form.recordType === "clean_place";
   const { ref: mapShellRef, isInView: isMapVisible } = useInViewOnce<HTMLDivElement>({ rootMargin: "260px 0px" });
+  const [undoState, setUndoState] = useState<ActionDrawingUndoState | null>(null);
+  const currentSnapshot = createActionDrawingSnapshot(
+    viewModel.displayedDrawing,
+    viewModel.activeGeometry?.source,
+  );
+  const onUndoAvailable = useCallback((nextState: ActionDrawingUndoState | null) => {
+    setUndoState(nextState);
+  }, []);
+  const onUndo = useCallback(() => {
+    if (!undoState || !canRestoreActionDrawingUndo(undoState, currentSnapshot)) {
+      setUndoState(null);
+      return;
+    }
+    setManualDrawing(undoState.previous.drawing, undoState.previous.source);
+    setUndoState(null);
+  }, [currentSnapshot, setManualDrawing, undoState]);
+  const onResetManualDrawingWithUndo = useCallback(() => {
+    const previous = createActionDrawingSnapshot(
+      viewModel.displayedDrawing,
+      viewModel.activeGeometry?.source,
+    );
+    if (!previous || !onResetManualDrawing) {
+      setUndoState(null);
+      return;
+    }
+    setUndoState(createActionDrawingUndoState(previous, null, "removed"));
+    onResetManualDrawing();
+  }, [onResetManualDrawing, viewModel.activeGeometry?.source, viewModel.displayedDrawing]);
+  const visibleUndoState = undoState && areActionDrawingSnapshotsEqual(undoState.current, currentSnapshot)
+    ? undoState
+    : null;
   return (
     <div className="hidden space-y-3 rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)] md:block">
       <div className="flex items-center justify-between gap-3"><SectionTitle color="bg-slate-700">{isCleanPlaceMode ? "Point géographique" : "Aperçu de localisation"}</SectionTitle><p className="cmm-text-small text-emerald-900/45">{isCleanPlaceMode ? "Situez le lieu sur la carte" : "Situez le lieu sur la carte ou renseignez une adresse"}</p></div>
       <div ref={mapShellRef} className="relative h-[420px] overflow-hidden rounded-xl border border-emerald-200/70 bg-[#EFFAF3]">
-        <ActionLocationMapCanvas isMapVisible={isMapVisible} setManualDrawing={setManualDrawing} gpxImport={gpxImport} viewModel={viewModel} />
+        <ActionLocationMapCanvas isMapVisible={isMapVisible} setManualDrawing={setManualDrawing} gpxImport={gpxImport} viewModel={viewModel} undoState={visibleUndoState} onUndoAvailable={onUndoAvailable} onUndo={onUndo} onCloseUndo={() => setUndoState(null)} />
       </div>
-      <ActionLocationStatus viewModel={viewModel} onResetManualDrawing={onResetManualDrawing} />
+      <ActionLocationStatus viewModel={viewModel} onResetManualDrawing={onResetManualDrawingWithUndo} />
     </div>
   );
 }
