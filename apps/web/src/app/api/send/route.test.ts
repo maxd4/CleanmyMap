@@ -184,6 +184,27 @@ describe("POST /api/send", () => {
         stage: "send",
       },
     });
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+  });
+
+  it("does not report full success when the admin send audit is unavailable", async () => {
+    appendAdminOperationAuditMock.mockRejectedValueOnce(new Error("audit unavailable"));
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/send", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ to: "one@example.com" }),
+      }),
+    );
+    const body = (await response.json()) as { status?: string; error?: string };
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe("sent_audit_pending");
+    expect(body.error).toContain("audit");
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
   });
 
   it("does not allow the test token to bypass admin access in production", async () => {
@@ -209,6 +230,28 @@ describe("POST /api/send", () => {
     expect(requireAdminAccessMock).toHaveBeenCalledTimes(1);
     expect(sendEmailMock).not.toHaveBeenCalled();
     expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("does not allow the test token to bypass admin access outside local development/test", async () => {
+    vi.stubEnv("NODE_ENV", "preview");
+    requireAdminAccessMock.mockResolvedValue({ ok: false });
+
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("https://preview.cleanmymap.fr/api/send", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-resend-test-token": "local-token",
+        },
+        body: JSON.stringify({ to: "contact@cleanmymap.fr" }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(requireAdminAccessMock).toHaveBeenCalledTimes(1);
+    expect(sendEmailMock).not.toHaveBeenCalled();
   });
 
   it("rejects more than ten recipients", async () => {

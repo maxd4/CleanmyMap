@@ -47,6 +47,7 @@ describe("PATCH /api/account/identity", () => {
 
     expect(response.status).toBe(503);
     expect(payload.status).toBe("clerk_updated_supabase_sync_pending");
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
     expect(clerk.users.updateUser).toHaveBeenCalledWith("user-1", { firstName: "Ada", lastName: "Lovelace" });
   });
 

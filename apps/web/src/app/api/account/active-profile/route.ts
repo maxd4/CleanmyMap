@@ -6,6 +6,10 @@ import {
   getCurrentUserRoleLabel,
 } from "@/lib/authz";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
+import {
+  ACCOUNT_PRIVATE_RESPONSE_HEADERS,
+  buildClerkSyncPendingPayload,
+} from "@/lib/auth/account-mutation";
 import { getDevAuthBypassSession } from "@/lib/authz-identity";
 import { syncClerkUserToSupabase, trySyncClerkUserToSupabase } from "@/lib/auth/sync";
 import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
@@ -76,12 +80,15 @@ export async function POST(request: Request) {
 
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
-    return NextResponse.json({
-      role,
-      activeRole: targetRole,
-      activeProfile: targetRole,
-      profilePath: getProfileEntryPath(targetRole),
-    });
+    return NextResponse.json(
+      {
+        role,
+        activeRole: targetRole,
+        activeProfile: targetRole,
+        profilePath: getProfileEntryPath(targetRole),
+      },
+      { headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS },
+    );
   }
 
   const client = await clerkClient();
@@ -97,18 +104,20 @@ export async function POST(request: Request) {
   const syncedProfile = await trySyncClerkUserToSupabase(updatedUser, (user) => syncClerkUserToSupabase(user));
   if (!syncedProfile) {
     return NextResponse.json(
-      {
-        error: "Le rôle actif Clerk a été enregistré, mais sa projection Supabase n'est pas confirmée.",
-        status: "clerk_updated_supabase_sync_pending",
-      },
-      { status: 503 },
+      buildClerkSyncPendingPayload(
+        "Le rôle actif Clerk a été enregistré, mais sa projection Supabase n'est pas confirmée.",
+      ),
+      { status: 503, headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS },
     );
   }
 
-  return NextResponse.json({
-    role,
-    activeRole: targetRole,
-    activeProfile: targetRole,
-    profilePath: getProfileEntryPath(targetRole),
-  });
+  return NextResponse.json(
+    {
+      role,
+      activeRole: targetRole,
+      activeProfile: targetRole,
+      profilePath: getProfileEntryPath(targetRole),
+    },
+    { headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS },
+  );
 }

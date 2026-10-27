@@ -3,8 +3,9 @@ import { z } from "zod";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import {
-  appendEmailTestAudit,
   createEmailTestAuditOperationId,
+  EMAIL_PRIVATE_RESPONSE_HEADERS,
+  tryAppendEmailTestAudit,
 } from "@/lib/admin/audit/email-test-audit";
 import { env } from "@/lib/env";
 import { resolveContactEmail, resolveEmailFrom } from "@/lib/email-config";
@@ -29,33 +30,39 @@ export async function POST(request: Request) {
   const from = resolveEmailFrom();
   const replyTo = resolveContactEmail();
   if (!env.RESEND_API_KEY?.trim() || !from || !replyTo) {
-    await appendEmailTestAudit({
+    await tryAppendEmailTestAudit({
       operationId,
       actorUserId: access.userId,
       route: "email_test",
       stage: "configuration",
       code: "email_not_configured",
     });
-    return NextResponse.json({ error: "Resend not configured" }, { status: 503 });
+    return NextResponse.json(
+      { error: "Resend not configured" },
+      { status: 503, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
+    );
   }
 
   let rawPayload: unknown;
   try {
     rawPayload = await request.json();
   } catch {
-    await appendEmailTestAudit({
+    await tryAppendEmailTestAudit({
       operationId,
       actorUserId: access.userId,
       route: "email_test",
       stage: "validation",
       code: "invalid_json",
     });
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid JSON" },
+      { status: 400, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
+    );
   }
 
   const parsed = testEmailSchema.safeParse(rawPayload);
   if (!parsed.success) {
-    await appendEmailTestAudit({
+    await tryAppendEmailTestAudit({
       operationId,
       actorUserId: access.userId,
       route: "email_test",
@@ -64,7 +71,7 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(
       { error: "Invalid payload", details: parsed.error.flatten().fieldErrors },
-      { status: 400 },
+      { status: 400, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
     );
   }
 
@@ -84,7 +91,7 @@ export async function POST(request: Request) {
       replyTo,
     });
 
-    await appendEmailTestAudit({
+    const auditRecorded = await tryAppendEmailTestAudit({
       operationId,
       actorUserId: access.userId,
       route: "email_test",
@@ -93,10 +100,20 @@ export async function POST(request: Request) {
       deliveryStatus: result.status,
     });
 
-    return NextResponse.json({ status: result.status, id: result.id ?? null });
+    if (!auditRecorded) {
+      return NextResponse.json(
+        { error: "Email sent, but its audit entry is unavailable.", status: "sent_audit_pending" },
+        { status: 503, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
+      );
+    }
+
+    return NextResponse.json(
+      { status: result.status, id: result.id ?? null },
+      { headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
+    );
   } catch (error) {
     const quotaExceeded = isEmailQuotaExceededError(error);
-    await appendEmailTestAudit({
+    await tryAppendEmailTestAudit({
       operationId,
       actorUserId: access.userId,
       route: "email_test",
@@ -110,7 +127,7 @@ export async function POST(request: Request) {
         error: quotaExceeded ? "Email quota exceeded" : "Resend send failed",
         details: "Unavailable",
       },
-      { status: quotaExceeded ? 429 : 502 },
+      { status: quotaExceeded ? 429 : 502, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
     );
   }
 }

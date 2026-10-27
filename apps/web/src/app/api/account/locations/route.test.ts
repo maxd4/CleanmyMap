@@ -55,6 +55,7 @@ describe("PATCH /api/account/locations", () => {
     }));
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
     expect(clerk.users.updateUserMetadata).toHaveBeenCalledWith("user-1", {
       unsafeMetadata: expect.objectContaining({
         territoryPreferences: { residence: paris, work: paris },

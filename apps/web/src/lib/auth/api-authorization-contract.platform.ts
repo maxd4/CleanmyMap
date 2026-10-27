@@ -255,10 +255,10 @@ export const platformAuthorizationContract = {
   },
   send: {
     POST: {
-      expected: "Admin-like role for outbound send operation",
+      expected: "Admin-like role for outbound send operation; the exceptional test token is confined to development/test and this route",
       dimensions: ["admin/creator role"],
-      actual: "requireAdminAccess",
-      evidence: ["requireAdminAccess"],
+      actual: "hasValidLocalTestToken permits only the explicitly configured development/test token on /api/send; every other request uses requireAdminAccess before sendEmail",
+      evidence: ["hasValidLocalTestToken", "requireAdminAccess", "sendEmail"],
     },
   },
   services: {

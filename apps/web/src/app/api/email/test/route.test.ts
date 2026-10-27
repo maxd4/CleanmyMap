@@ -108,6 +108,21 @@ describe("POST /api/email/test", () => {
     expect(
       Object.keys(appendAdminOperationAuditMock.mock.calls[0]?.[0].details ?? {}),
     ).toEqual(["operation", "route", "stage", "recipientCount", "deliveryStatus"]);
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+  });
+
+  it("does not report full success when the post-send audit is unavailable", async () => {
+    appendAdminOperationAuditMock.mockRejectedValueOnce(new Error("audit unavailable"));
+    const { POST } = await import("./route");
+
+    const response = await POST(emailTestRequest({}));
+    const body = (await response.json()) as { status?: string; error?: string };
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe("sent_audit_pending");
+    expect(body.error).toContain("audit");
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
   });
 
   it("audits a send failure without exposing the provider error", async () => {

@@ -467,4 +467,25 @@ describe("GET/POST /api/admin/role-accounts", () => {
       }),
     );
   });
+
+  it("returns an explicit partial result when the successful role audit is unavailable", async () => {
+    appendAdminOperationAuditMock.mockRejectedValueOnce(new Error("audit unavailable"));
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      roleAccountsPostRequest({
+        userId: "user-2",
+        action: "assign",
+        role: "admin",
+        reason: "Audit failure after role assignment",
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "Le rôle a été modifié, mais son journal est indisponible.",
+    });
+    expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
+    expect(getManagedRoleAccountByIdMock).not.toHaveBeenCalled();
+  });
 });

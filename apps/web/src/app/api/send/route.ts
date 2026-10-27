@@ -4,8 +4,9 @@ import { z } from "zod";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import {
-  appendEmailTestAudit,
   createEmailTestAuditOperationId,
+  EMAIL_PRIVATE_RESPONSE_HEADERS,
+  tryAppendEmailTestAudit,
 } from "@/lib/admin/audit/email-test-audit";
 import { env } from "@/lib/env";
 import { resolveContactEmail, resolveEmailFrom } from "@/lib/email-config";
@@ -28,7 +29,7 @@ const sendSchema = z.object({
 });
 
 function hasValidLocalTestToken(request: Request): boolean {
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test") {
     return false;
   }
 
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
 
   if (!env.RESEND_API_KEY?.trim() || !from || !replyTo) {
     if (adminActorUserId && operationId) {
-      await appendEmailTestAudit({
+      await tryAppendEmailTestAudit({
         operationId,
         actorUserId: adminActorUserId,
         route: "send",
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(
       { error: "Resend not configured" },
-      { status: 503 },
+      { status: 503, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
     );
   }
 
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
     }
   } catch {
     if (adminActorUserId && operationId) {
-      await appendEmailTestAudit({
+      await tryAppendEmailTestAudit({
         operationId,
         actorUserId: adminActorUserId,
         route: "send",
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(
       { error: "Invalid JSON payload" },
-      { status: 400 },
+      { status: 400, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
     );
   }
 
@@ -105,7 +106,7 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     if (adminActorUserId && operationId) {
-      await appendEmailTestAudit({
+      await tryAppendEmailTestAudit({
         operationId,
         actorUserId: adminActorUserId,
         route: "send",
@@ -118,7 +119,7 @@ export async function POST(request: Request) {
         error: "Invalid payload",
         details: parsed.error.flatten().fieldErrors,
       },
-      { status: 400 },
+      { status: 400, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
     );
   }
 
@@ -137,8 +138,9 @@ export async function POST(request: Request) {
       replyTo,
     });
 
+    let auditRecorded = true;
     if (adminActorUserId && operationId) {
-      await appendEmailTestAudit({
+      auditRecorded = await tryAppendEmailTestAudit({
         operationId,
         actorUserId: adminActorUserId,
         route: "send",
@@ -148,18 +150,28 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({
-      ok: true,
-      status: result.status,
-      id: result.id ?? null,
-      to,
-    });
+    if (adminActorUserId && operationId && !auditRecorded) {
+      return NextResponse.json(
+        { error: "Email sent, but its audit entry is unavailable.", status: "sent_audit_pending" },
+        { status: 503, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        status: result.status,
+        id: result.id ?? null,
+        to,
+      },
+      { headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
+    );
   } catch (error) {
     const quotaExceeded = isEmailQuotaExceededError(error);
     const recipientCount = Array.isArray(to) ? to.length : 1;
 
     if (adminActorUserId && operationId) {
-      await appendEmailTestAudit({
+      await tryAppendEmailTestAudit({
         operationId,
         actorUserId: adminActorUserId,
         route: "send",
@@ -179,7 +191,7 @@ export async function POST(request: Request) {
         error: quotaExceeded ? "Email quota exceeded" : "Resend send failed",
         details: "Unavailable",
       },
-      { status: quotaExceeded ? 429 : 502 },
+      { status: quotaExceeded ? 429 : 502, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
     );
   }
 }

@@ -4,6 +4,10 @@ import { z } from "zod";
 
 import { requireAccountPatchBody } from "@/lib/auth/account-request";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
+import {
+  ACCOUNT_PRIVATE_RESPONSE_HEADERS,
+  buildClerkSyncPendingPayload,
+} from "@/lib/auth/account-mutation";
 import { syncClerkUserToSupabase, trySyncClerkUserToSupabase } from "@/lib/auth/sync";
 import { handleApiError } from "@/lib/http/api-errors";
 import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
@@ -32,11 +36,10 @@ export async function PATCH(request: Request) {
     const syncedProfile = await trySyncClerkUserToSupabase(updatedUser, (user) => syncClerkUserToSupabase(user));
     if (!syncedProfile) {
       return NextResponse.json(
-        {
-          error: "L’identité Clerk est enregistrée, mais sa projection Supabase n’est pas confirmée.",
-          status: "clerk_updated_supabase_sync_pending",
-        },
-        { status: 503 },
+        buildClerkSyncPendingPayload(
+          "L’identité Clerk est enregistrée, mais sa projection Supabase n’est pas confirmée.",
+        ),
+        { status: 503, headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS },
       );
     }
 
@@ -46,7 +49,7 @@ export async function PATCH(request: Request) {
       lastName: updatedUser.lastName,
     }, {
       // Données personnelles issues de Clerk : ne pas les stocker dans un cache partagé ou réutilisable.
-      headers: { "Cache-Control": "private, no-store" },
+      headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS,
     });
   } catch (error) {
     return handleApiError(error, "PATCH /api/account/identity");

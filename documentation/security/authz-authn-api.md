@@ -57,6 +57,21 @@ Une réponse positive de la mutation doit retourner le `role` résolu,
 `activeRole` et l'`activeProfile` appliqué afin que le client puisse se
 réaligner sans réinterpréter les métadonnées Clerk.
 
+Les mutations `PATCH /api/account/identity`, `PATCH /api/account/locations` et
+`POST /api/account/active-profile` renvoient `Cache-Control: private, no-store`
+sur leurs réponses de succès et d'état partiel. Si Clerk a été muté mais que
+la projection Supabase n'est pas confirmée, la réponse reste `503` avec
+`status=clerk_updated_supabase_sync_pending` afin de permettre une reprise sans
+présenter la mutation comme entièrement convergée.
+
+Les routes de transport de test `/api/email/test` et `/api/send` sont des
+surfaces admin et renvoient également `private, no-store`. Le token
+`RESEND_TEST_TOKEN` est une exception strictement locale de `/api/send` : il
+n'est accepté qu'en `development` ou `test`, ne s'applique jamais à
+`/api/email/test` et ne désactive pas l'autorisation admin hors de ces
+environnements. Après un envoi admin, une indisponibilité du journal retourne
+un état partiel `503` (`sent_audit_pending`) plutôt qu'un faux succès.
+
 ## Annuaire partenaire : frontière de publication
 
 `/partners/dashboard` est une surface de gouvernance admin-only : sa page appelle

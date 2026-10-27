@@ -10,6 +10,10 @@ import {
   type TerritoryLocationSelection,
 } from "@/lib/user-location-preference";
 import type { ParisArrondissement } from "@/lib/geo/paris-arrondissements";
+import {
+  ACCOUNT_PRIVATE_RESPONSE_HEADERS,
+  buildClerkSyncPendingPayload,
+} from "@/lib/auth/account-mutation";
 import { buildClerkMetadataPatch } from "@/lib/auth/clerk-metadata-patch";
 import { syncClerkUserToSupabase, trySyncClerkUserToSupabase } from "@/lib/auth/sync";
 import { handleApiError } from "@/lib/http/api-errors";
@@ -62,11 +66,10 @@ export async function PATCH(request: Request) {
     const syncedProfile = await trySyncClerkUserToSupabase(updatedUser, (user) => syncClerkUserToSupabase(user));
     if (!syncedProfile) {
       return NextResponse.json(
-        {
-          error: "La localisation Clerk est enregistrée, mais sa projection Supabase n’est pas confirmée.",
-          status: "clerk_updated_supabase_sync_pending",
-        },
-        { status: 503 },
+        buildClerkSyncPendingPayload(
+          "La localisation Clerk est enregistrée, mais sa projection Supabase n’est pas confirmée.",
+        ),
+        { status: 503, headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS },
       );
     }
 
@@ -75,7 +78,7 @@ export async function PATCH(request: Request) {
       locationPreferences: nextLocations,
     }, {
       // Données personnelles de localisation issues de Clerk : ne pas les stocker dans un cache partagé ou réutilisable.
-      headers: { "Cache-Control": "private, no-store" },
+      headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS,
     });
   } catch (error) {
     return handleApiError(error, "PATCH /api/account/locations");

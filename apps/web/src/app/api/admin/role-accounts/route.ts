@@ -73,6 +73,17 @@ async function appendRoleManagementErrorAudit(
   });
 }
 
+async function tryAppendRoleManagementErrorAudit(
+  params: RoleManagementAuditParams,
+): Promise<boolean> {
+  try {
+    await appendRoleManagementErrorAudit(params);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 type RoleMutationData = z.infer<typeof mutationSchema>;
 
 async function applyRoleAccountMutation(params: {
@@ -133,22 +144,34 @@ async function applyRoleAccountMutation(params: {
       throw new Error("Supabase role synchronization did not persist a profile.");
     }
   } catch {
-    await appendRoleManagementErrorAudit(auditParams());
+    const auditRecorded = await tryAppendRoleManagementErrorAudit(auditParams());
     return NextResponse.json(
-      { error: "Impossible de mettre à jour ce compte." },
+      {
+        error: auditRecorded
+          ? "Impossible de mettre à jour ce compte."
+          : "Impossible de mettre à jour ce compte et son journal.",
+      },
       { status: 500 },
     );
   }
 
-  await appendAudit({
-    operationId,
-    at: new Date().toISOString(),
-    actorUserId,
-    operationType: "role_management",
-    outcome: "success",
-    targetId: data.userId,
-    details: buildRoleManagementAuditDetails(auditParams(), false),
-  });
+  try {
+    await appendAudit({
+      operationId,
+      at: new Date().toISOString(),
+      actorUserId,
+      operationType: "role_management",
+      outcome: "success",
+      targetId: data.userId,
+      details: buildRoleManagementAuditDetails(auditParams(), false),
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Le rôle a été modifié, mais son journal est indisponible." },
+      { status: 503 },
+    );
+  }
+
   const account = await getManagedRoleAccountById(data.userId);
   return NextResponse.json({ status: "ok", account });
 }

@@ -144,6 +144,7 @@ describe("POST /api/account/active-profile", () => {
     });
     const response = await post({ activeRole: "scientifique" });
     expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
     expect(await response.json()).toMatchObject({
       role: "benevole",
       activeRole: "scientifique",
@@ -154,6 +155,18 @@ describe("POST /api/account/active-profile", () => {
       publicMetadata: { activeRole: "scientifique", activeProfile: null },
     });
     expect(syncMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns a private recoverable state when Supabase projection is not confirmed", async () => {
+    setupClerk({ role: "benevole" });
+    syncMock.mockResolvedValueOnce(null);
+
+    const response = await post({ activeRole: "scientifique" });
+    const payload = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(payload).toMatchObject({ status: "clerk_updated_supabase_sync_pending" });
   });
 
   it.each([

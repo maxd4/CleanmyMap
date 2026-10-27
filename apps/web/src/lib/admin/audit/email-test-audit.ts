@@ -21,6 +21,10 @@ export type EmailTestAuditParams = {
   code?: EmailAuditErrorCode;
 };
 
+export const EMAIL_PRIVATE_RESPONSE_HEADERS = {
+  "Cache-Control": "private, no-store",
+} as const;
+
 export function createEmailTestAuditOperationId(
   route: EmailAuditRoute,
 ): string {
@@ -61,4 +65,15 @@ export async function appendEmailTestAudit(
     outcome: params.code ? "error" : "success",
     details,
   });
+}
+
+export async function tryAppendEmailTestAudit(
+  params: EmailTestAuditParams,
+): Promise<boolean> {
+  try {
+    await appendEmailTestAudit(params);
+    return true;
+  } catch {
+    return false;
+  }
 }
